@@ -1,191 +1,338 @@
-# This workflow generates and deploys code coverage reports
-# It runs on a daily schedule (only if there were commits), or manually via workflow_dispatch
-
-name: Code Coverage Report
+# Publish measured JUnit and JaCoCo metrics without repository-specific parsers.
+name: Verified test and coverage metrics
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'pom.xml'
+      - '.mvn/**'
+      - 'sandbox*/**'
+      - 'features/**'
+      - 'plugins/**'
+      - 'org/**'
+      - '*.xml'
+      - '*.properties'
+      - '.github/actions/use-runner-maven/**'
+      - '.github/workflows/coverage.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'README.md'
+      - 'COVERAGE_DEPLOYMENT.md'
+      - 'docs/quality-metrics.md'
+      - '.github/workflows/coverage.yml'
   schedule:
-    - cron: '0 0 * * *'  # Daily at midnight UTC
-  workflow_dispatch:  # Allow manual trigger
-  # Optionally: push to main for immediate updates
-  # push:
-  #   branches: [main]
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verified-quality-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   coverage:
-    runs-on: ubuntu-latest
+    name: Build and verify/publish metrics
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
     permissions:
-      contents: write  # Required: deploy coverage report to gh-pages
+      contents: write
+      checks: write
     env:
-      DISPLAY: :0
       MAVEN_OPTS: -Djava.awt.headless=true
+      QUALITY_SITE: target/quality-site
 
     steps:
-    - uses: actions/checkout@v7
-      with:
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-    - name: Check for recent commits (schedule only)
-      if: github.event_name == 'schedule'
-      id: check_commits
-      run: |
-        if git log --since="24 hours ago" --oneline | grep -q .; then
-          echo "has_commits=true" >> $GITHUB_OUTPUT
-        else
-          echo "has_commits=false" >> $GITHUB_OUTPUT
-          echo "No commits in the last 24 hours, skipping coverage build"
-        fi
-
-    - name: Set up JDK 21
-      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      uses: actions/setup-java@v5
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-
-    - name: Set up Node.js
-      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      uses: actions/setup-node@v7
-      with:
-        node-version: '20'
-
-    - name: Install CSS tools for testing
-      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      run: |
-        npm install -g prettier stylelint stylelint-config-standard
-
-    - name: Install Xvfb
-      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y xvfb xauth \
-          libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
-          libasound2t64 libnss3 libgbm1
-        sudo /usr/bin/Xvfb $DISPLAY -screen 0 1280x1024x24 &
-
-    - name: Cache Maven dependencies
-      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      uses: actions/cache@v6
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
-        restore-keys: ${{ runner.os }}-maven-
-
-    - name: Set up Maven
-      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
-      with:
-        maven-version: 3.9.9
-
-    - name: Build with Coverage
-      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      run: xvfb-run --auto-servernum mvn -e -V -T 1C --batch-mode -Dtycho.localArtifacts=ignore -Pjacoco,product,repo,benchmark,cli-dist,maven-plugin clean verify
-
-    - name: Cleanup xvfb
-      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      uses: bcomnes/cleanup-xvfb@v1
-
-    - name: Prepare Test Reports for GitHub Pages
-      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      run: |
-        # Create directory structure for test reports
-        mkdir -p /tmp/gh-pages/tests
-        
-        # Create an index.html for the tests directory
-        cat > /tmp/gh-pages/tests/index.html << 'EOF'
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Sandbox Test Reports</title>
-          <style>
-            body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
-            h1 { color: #333; }
-            .module { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
-            .module h2 { margin-top: 0; color: #0066cc; }
-            a { color: #0066cc; text-decoration: none; }
-            a:hover { text-decoration: underline; }
-            .description { color: #666; margin: 10px 0; }
-            .update-info { background: #f0f0f0; padding: 10px; border-radius: 5px; margin: 20px 0; }
-          </style>
-        </head>
-        <body>
-          <h1>Sandbox Test Reports</h1>
-          <p class="description">
-            This page contains HTML test reports for all test modules in the Sandbox project.
-            Each module's report shows test results including passed, failed, and disabled tests.
-          </p>
-          <div class="update-info">
-            <strong>Note:</strong> These reports are updated from the scheduled (daily) coverage build,
-            which includes all test results alongside code coverage metrics. 
-            For the most recent test-only results (updated on every main commit), see the main build workflow.
-          </div>
-          <div class="modules">
-        EOF
-        
-        # Copy test reports and add links to index
-        for module in sandbox_*_test; do
-          if [ -d "$module/target/site" ] && [ -f "$module/target/site/surefire-report.html" ]; then
-            echo "Processing test report for $module..."
-            # Copy the entire site directory to preserve resources
-            mkdir -p "/tmp/gh-pages/tests/$module"
-            cp -r "$module/target/site/"* "/tmp/gh-pages/tests/$module/"
-            
-            # Add module entry to index with HTML escaping for display text
-            module_escaped=$(echo "$module" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'\''/\&#39;/g')
-            cat >> /tmp/gh-pages/tests/index.html << EOF
-            <div class="module">
-              <h2>${module_escaped}</h2>
-              <p><a href="${module}/surefire-report.html">View Test Report</a></p>
-            </div>
-        EOF
+      - name: Select repository-policy review context
+        shell: bash
+        env:
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == 'pull_request' ]]; then
+            base="refs/remotes/origin/$GITHUB_BASE_REF"
+            printf 'REPOSITORY_POLICY_BASE=%s\n' "$base" >> "$GITHUB_ENV"
+            printf 'Repository policy base: %s\n' "$base"
+          else
+            if [[ "$EVENT_BEFORE" =~ ^[0-9a-fA-F]{40}$ ]] \
+                && [[ "$EVENT_BEFORE" != '0000000000000000000000000000000000000000' ]]; then
+              printf 'REPOSITORY_POLICY_BASE=%s\n' "$EVENT_BEFORE" >> "$GITHUB_ENV"
+              printf 'Repository policy base: %s\n' "$EVENT_BEFORE"
+            fi
+            exception='Post-review push, scheduled, or manually dispatched verification has no active pull-request body; review-size approval was already handled before merge, while full tracked-tree and forbidden-automation policy checks remain active.'
+            printf 'REPOSITORY_POLICY_EXCEPTION=%s\n' "$exception" >> "$GITHUB_ENV"
+            printf '%s\n' "$exception"
           fi
-        done
-        
-        # Close HTML
-        cat >> /tmp/gh-pages/tests/index.html << 'EOF'
-          </div>
-          <hr>
-          <p style="text-align: center; color: #666; margin-top: 30px;">
-            Generated by <a href="https://github.com/carstenartur/sandbox">Sandbox Project</a> | 
-            <a href="../coverage/">Coverage Reports</a>
-          </p>
-        </body>
-        </html>
-        EOF
-        
-        echo "Test reports prepared in /tmp/gh-pages/tests"
 
-    - name: Deploy Test Reports to GitHub Pages
-      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: /tmp/gh-pages/tests
-        destination_dir: tests
-        keep_files: true
-        user_name: 'github-actions[bot]'
-        user_email: 'github-actions[bot]@users.noreply.github.com'
-        commit_message: 'Deploy test reports (from scheduled coverage build)'
+      - name: Decide whether the scheduled build is needed
+        id: gate
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          run=true
+          if [[ "$EVENT_NAME" == 'schedule' ]]; then
+            recent_commit="$(git log -1 --since='24 hours ago' --format='%H')"
+            if [[ -z "$recent_commit" ]]; then
+              run=false
+              echo 'No commits in the last 24 hours; keeping the last verified publication.'
+            fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
 
-    - name: Deploy Coverage to GitHub Pages
-      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./sandbox_coverage/target/site/jacoco-aggregate
-        destination_dir: coverage
-        keep_files: true
-        user_name: 'github-actions[bot]'
-        user_email: 'github-actions[bot]@users.noreply.github.com'
-        commit_message: 'Deploy JaCoCo coverage report'
+      - name: Set up JDK 21
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
 
-    - name: Report Deployed URLs
-      if: github.event_name != 'schedule' || steps.check_commits.outputs.has_commits == 'true'
-      run: |
-        echo "### 🔗 Deployed Reports" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "📊 [View Coverage Report](https://carstenartur.github.io/sandbox/coverage/)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "🧪 [View Test Reports](https://carstenartur.github.io/sandbox/tests/)" >> $GITHUB_STEP_SUMMARY
+      - name: Use runner Maven
+        if: steps.gate.outputs.run == 'true'
+        uses: ./.github/actions/use-runner-maven
+
+      - name: Set up Node.js for CSS tests
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: Install CSS and desktop-test tooling
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          npm install --global prettier stylelint stylelint-config-standard
+          sudo apt-get update
+          sudo apt-get install -y \
+            xvfb xauth libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 \
+            libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
+
+      - name: Build the complete coverage reactor
+        if: steps.gate.outputs.run == 'true'
+        run: >-
+          xvfb-run --auto-servernum mvn
+          --no-transfer-progress
+          -e
+          -V
+          -T 1C
+          --batch-mode
+          -Dtycho.localArtifacts=ignore
+          -Pjacoco,reports,product,repo,benchmark,cli-dist,maven-plugin
+          clean verify
+
+      - name: Collect JUnit results
+        id: junit
+        if: always() && steps.gate.outputs.run == 'true'
+        uses: mikepenz/action-junit-report@v6
+        with:
+          report_paths: |
+            **/target/surefire-reports/TEST-*.xml
+            **/target/failsafe-reports/TEST-*.xml
+          check_name: Verified quality test results
+          fail_on_failure: true
+          fail_on_parse_error: true
+          require_tests: true
+          detailed_summary: true
+          include_passed: false
+
+      - name: Stage generated HTML reports
+        if: success() && steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$QUALITY_SITE"
+          mkdir -p "$QUALITY_SITE/coverage" "$QUALITY_SITE/tests"
+
+          coverage_dir='sandbox_coverage/target/site/jacoco-aggregate'
+          test -s "$coverage_dir/jacoco.csv"
+          test -s "$coverage_dir/index.html"
+          cp -a "$coverage_dir/." "$QUALITY_SITE/coverage/"
+
+          while IFS= read -r -d '' report; do
+            site_dir="$(dirname "$report")"
+            target_dir="$(dirname "$site_dir")"
+            module_dir="$(dirname "$target_dir")"
+            module="${module_dir#./}"
+            mkdir -p "$QUALITY_SITE/tests/$module"
+            cp -a "$site_dir/." "$QUALITY_SITE/tests/$module/"
+          done < <(find . -type f -path '*/target/site/surefire-report.html' -print0)
+
+      - name: Generate JaCoCo coverage endpoint
+        id: jacoco
+        if: success() && steps.gate.outputs.run == 'true'
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          jacoco-csv-file: sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv
+          badges-directory: target/quality-site/badges
+          generate-coverage-badge: false
+          generate-coverage-endpoint: true
+          coverage-endpoint-filename: coverage.json
+          generate-branches-badge: false
+
+      - name: Generate test endpoint and report index
+        if: success() && steps.gate.outputs.run == 'true'
+        shell: bash
+        env:
+          TOTAL: ${{ steps.junit.outputs.total }}
+          PASSED: ${{ steps.junit.outputs.passed }}
+          SKIPPED: ${{ steps.junit.outputs.skipped }}
+          FAILED: ${{ steps.junit.outputs.failed }}
+          COVERAGE: ${{ steps.jacoco.outputs.coverage }}
+        run: |
+          set -euo pipefail
+          for value in "$TOTAL" "$PASSED" "$SKIPPED" "$FAILED"; do
+            [[ "$value" =~ ^[0-9]+$ ]] || {
+              echo "Invalid JUnit action output: $value" >&2
+              exit 1
+            }
+          done
+          [[ "$COVERAGE" =~ ^[0-9]+([.][0-9]+)?$ ]] || {
+            echo "Invalid JaCoCo action output: $COVERAGE" >&2
+            exit 1
+          }
+
+          color=brightgreen
+          if (( FAILED > 0 )); then
+            color=red
+          fi
+
+          mkdir -p "$QUALITY_SITE/badges" "$QUALITY_SITE/tests"
+          jq -n \
+            --arg message "$TOTAL tests, $SKIPPED skipped" \
+            --arg color "$color" \
+            '{schemaVersion: 1, label: "tests", message: $message, color: $color}' \
+            > "$QUALITY_SITE/badges/tests.json"
+
+          generated_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          jq -n \
+            --arg sourceCommit "$GITHUB_SHA" \
+            --arg generatedAt "$generated_at" \
+            --argjson total "$TOTAL" \
+            --argjson passed "$PASSED" \
+            --argjson skipped "$SKIPPED" \
+            --argjson failed "$FAILED" \
+            --argjson coverage "$COVERAGE" \
+            '{
+              schemaVersion: 1,
+              sourceCommit: $sourceCommit,
+              generatedAt: $generatedAt,
+              tests: {
+                total: $total,
+                passed: $passed,
+                skipped: $skipped,
+                failed: $failed
+              },
+              coverage: {
+                metric: "INSTRUCTION",
+                percent: $coverage
+              }
+            }' > "$QUALITY_SITE/quality-summary.json"
+
+          cat > "$QUALITY_SITE/tests/index.html" <<EOF
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Sandbox verified test results</title>
+            <style>
+              body { font: 16px/1.5 system-ui, sans-serif; max-width: 72rem; margin: 2rem auto; padding: 0 1rem; }
+              table { border-collapse: collapse; margin: 1rem 0 1.5rem; }
+              th, td { border: 1px solid #bbb; padding: .45rem .7rem; text-align: right; }
+              th:first-child, td:first-child { text-align: left; }
+              code { overflow-wrap: anywhere; }
+            </style>
+          </head>
+          <body>
+            <h1>Sandbox verified test results</h1>
+            <p>Source commit: <code>$GITHUB_SHA</code></p>
+            <table>
+              <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+              <tbody>
+                <tr><td>Total</td><td>$TOTAL</td></tr>
+                <tr><td>Passed</td><td>$PASSED</td></tr>
+                <tr><td>Skipped</td><td>$SKIPPED</td></tr>
+                <tr><td>Failed</td><td>$FAILED</td></tr>
+                <tr><td>Instruction coverage</td><td>$COVERAGE%</td></tr>
+              </tbody>
+            </table>
+            <p><a href="../coverage/">Aggregate JaCoCo report</a> · <a href="../quality-summary.json">Machine-readable summary</a></p>
+            <h2>Module reports</h2>
+            <ul>
+          EOF
+
+          while IFS= read -r -d '' report; do
+            relative="${report#"$QUALITY_SITE/tests/"}"
+            module="${relative%/surefire-report.html}"
+            printf '      <li><a href="%s">%s</a></li>\n' "$relative" "$module" \
+              >> "$QUALITY_SITE/tests/index.html"
+          done < <(find "$QUALITY_SITE/tests" -type f -name surefire-report.html -print0 | sort -z)
+
+          cat >> "$QUALITY_SITE/tests/index.html" <<'EOF'
+            </ul>
+          </body>
+          </html>
+          EOF
+
+          test -s "$QUALITY_SITE/badges/tests.json"
+          test -s "$QUALITY_SITE/badges/coverage.json"
+          test -s "$QUALITY_SITE/quality-summary.json"
+          test -s "$QUALITY_SITE/tests/index.html"
+
+      - name: Upload available metric evidence
+        if: always() && steps.gate.outputs.run == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: verified-quality-${{ github.run_number }}-${{ github.run_attempt }}
+          path: |
+            target/quality-site/**
+            sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv
+            sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml
+            **/target/surefire-reports/TEST-*.xml
+            **/target/failsafe-reports/TEST-*.xml
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Publish reports and badges to GitHub Pages
+        if: success() && steps.gate.outputs.run == 'true' && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: target/quality-site
+          keep_files: true
+          user_name: 'github-actions[bot]'
+          user_email: '41898282+github-actions[bot]@users.noreply.github.com'
+          commit_message: 'Publish verified test and coverage metrics for ${{ github.sha }}'
+
+      - name: Publish public report links
+        if: success() && steps.gate.outputs.run == 'true' && github.ref == 'refs/heads/main'
+        run: |
+          {
+            echo '## Verified quality evidence'
+            echo
+            echo '[Test totals and module reports](https://carstenartur.github.io/sandbox/tests/)'
+            echo
+            echo '[Aggregate JaCoCo coverage](https://carstenartur.github.io/sandbox/coverage/)'
+            echo
+            echo '[Machine-readable summary](https://carstenartur.github.io/sandbox/quality-summary.json)'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish verification-only summary
+        if: always() && steps.gate.outputs.run == 'true' && github.ref != 'refs/heads/main'
+        run: |
+          {
+            echo '## Verified quality evidence'
+            echo
+            echo 'This branch run verifies the generation path but does not update the public GitHub Pages reports.'
+            echo
+            echo "[Workflow run and retained evidence](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
+          } >> "$GITHUB_STEP_SUMMARY"
