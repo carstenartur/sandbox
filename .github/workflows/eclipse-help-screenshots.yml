@@ -115,7 +115,8 @@ jobs:
           fi
           for scenario in \
             captureCleanupConfigurationTabs \
-            captureRealCleanupPreviewAndVerifyIndependentSelection
+            captureRealCleanupPreviewAndVerifyIndependentSelection \
+            verifyRealMethodReuseCleanupPreviewApplyAndUndo
           do
             if ! grep -Fq "name=\"$scenario\"" "$report"; then
               echo "The required Help screenshot scenario did not execute: $scenario" >&2
