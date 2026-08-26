@@ -1,0 +1,52 @@
+name: One-shot enable PR 1519 auto-merge
+
+on:
+  push:
+    branches:
+      - dependabot/maven/tycho-version-5.0.4
+    paths:
+      - '.github/workflows/one-shot-enable-pr1519-auto-merge.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  enable:
+    if: github.event.head_commit.message == 'Bootstrap guarded PR 1519 auto-merge'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v7
+        with:
+          ref: dependabot/maven/tycho-version-5.0.4
+          fetch-depth: 0
+
+      - name: Remove bootstrap and create the final checked head
+        shell: bash
+        run: |
+          set -euo pipefail
+          bootstrap='.github/workflows/one-shot-enable-pr1519-auto-merge.yml'
+          git rm -- "$bootstrap"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Remove guarded auto-merge bootstrap'
+          git push origin HEAD:dependabot/maven/tycho-version-5.0.4
+
+      - name: Enable squash auto-merge for the exact final head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          head_sha="$(git rev-parse HEAD)"
+          state="$(gh pr view 1519 --repo "$GITHUB_REPOSITORY" --json state --jq .state)"
+          if [[ "$state" != OPEN ]]; then
+            printf 'PR #1519 is already %s; no merge action required.\n' "$state"
+            exit 0
+          fi
+          gh pr merge 1519 \
+            --repo "$GITHUB_REPOSITORY" \
+            --auto \
+            --squash \
+            --match-head-commit "$head_sha"
