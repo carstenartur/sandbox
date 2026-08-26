@@ -2,69 +2,93 @@
 
 > **Read this when**: You need to build, run CI, fix build failures, or understand Maven profiles.
 
-## Java 21 — REQUIRED
+## Current baseline
+
+| Component | Value |
+|---|---|
+| Java | 21 |
+| Tycho | 5.0.4 |
+| Eclipse target | Eclipse 2026-06 / Platform 4.40 |
+| Target definition | `sandbox_target/eclipse.target` |
 
 ```bash
 export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
 export PATH=$JAVA_HOME/bin:$PATH
-java -version  # Must show "21"
+java -version
+mvn -version
 ```
 
-**Why**: Tycho 5.0.3 and Eclipse 2025-12 require Java 21 (class file version 65.0).
-If you see `UnsupportedClassVersionError`, you're using Java 17 instead of 21.
+An `UnsupportedClassVersionError` normally means Maven is running with Java 17 or earlier. The version shown by `mvn -version`, not only the shell's `java -version`, must be Java 21.
 
-## Maven Profiles
+## Maven profiles
 
-| Profile | Description | Command |
-|---------|-------------|---------|
-| `dev` (default) | Fast — no Product/Updatesite | `mvn verify` |
-| `product` | With Eclipse Product | `mvn -Pproduct verify` |
-| `repo` | With P2 Update Site | `mvn -Prepo verify` |
-| `jacoco` | With Code Coverage | `mvn -Pjacoco verify` |
-| `web` | With WAR file | `mvn -Dinclude=web verify` |
-| `swtbot` | With SWTBot UI tests | `mvn -Pswtbot verify` |
+| Profile | Purpose | Command |
+|---|---|---|
+| default development reactor | Bundles, features, and tests | `mvn -T 1C clean verify` |
+| `product` | Materialized Eclipse product | `mvn -Pproduct -T 1C clean verify` |
+| `repo` | p2 update site | `mvn -Prepo -T 1C clean verify` |
+| `jacoco` | Coverage reports | `mvn -Pjacoco -T 1C clean verify` |
+| `reports` | Maven test reports | `mvn -Preports -T 1C clean verify` |
+| `distribution` | Product, update site, install/start/cleanup verification | `mvn -Pdistribution clean verify` |
 
-**Parallel builds**: `mvn -T 1C verify` (1 thread per CPU core)
+Do not add Maven parallelism to the `distribution` command. Product and p2 repository assembly must complete before the final verification module executes.
 
-**Full build**: `mvn -Pproduct,repo,jacoco -T 1C verify`
-
-## Makefile Shortcuts
+## Makefile shortcuts
 
 ```bash
-make dev          # Fast build with tests
-make dev-notests  # Fast build without tests
-make product      # Build with Eclipse Product
-make release      # Full release build
-make test         # Tests with coverage
-make clean        # Clean artifacts
+make dev
+make dev-notests
+make product
+make repo
+make release
+make test
+make clean
 ```
 
-## Code Quality Tools
+## UI tests on Linux
 
-- **SpotBugs**: Runs during compile, fails build on issues. Config: `../spotbugs-exclude.xml`
-- **JaCoCo**: Coverage reports in `<module>/target/site/jacoco/` and aggregated in `sandbox_coverage/`
-- **CodeQL**: Security scanning in CI
-- **Codacy**: Automated code review
+Most PDE/SWTBot tests require a display:
 
-## Build Outputs
+```bash
+xvfb-run --auto-servernum --server-args="-screen 0 1600x1200x24" \
+  mvn clean verify
+```
 
-- Product: `sandbox_product/target/products/`
-- WAR: `sandbox_web/target/`
-- Coverage: `sandbox_coverage/target/site/jacoco-aggregate/`
+CI verifies that the required Eclipse desktop runtime is present before starting those tests.
 
-## Target Platform
+## Quality and security gates
 
-Defined in `sandbox_target/eclipse.target`:
-- Eclipse 2025-12
-- Eclipse Orbit, JustJ, EGit dependencies
-- Tycho resolves from P2 repositories, NOT Maven Central
+- **JUnit/Maven** is the executable correctness authority.
+- **SpotBugs** and **Checkstyle/Codacy** report code-quality findings.
+- **CodeQL** performs security analysis.
+- **JaCoCo** produces module and aggregate coverage evidence.
+- **Test Source Inventory** checks that source tests and reported counts remain traceable.
+- **Capability Inventory** checks `docs/capabilities.json` and generated Markdown.
+- **Distribution Smoke Test** builds, installs, starts, and exercises the published artifacts.
+- **Eclipse Help screenshots** reproduces committed UI evidence from a real workbench.
+
+A green lightweight inventory gate does not replace Maven, distribution, or SWTBot evidence.
+
+## Build outputs
+
+- Product archives: `sandbox_product/target/products/`
+- Update site: `sandbox_updatesite/target/repository/`
+- Module coverage: `<module>/target/site/jacoco/`
+- Distribution evidence: `target/distribution-verification/`
+
+## Target platform
+
+`sandbox_target/eclipse.target` resolves the named Eclipse 2026-06 release, the matching Orbit aggregation, EGit, SWTBot, and the pinned Bouncy Castle 1.84 bundles from the Orbit 4.40 repository. The project intentionally uses named release repositories rather than a floating Eclipse `latest` URL.
+
+When the Eclipse or Tycho baseline changes, update all active build, product, Oomph, capability, and documentation references in the same reviewed change. `RepositoryBaselineConsistencyTest` rejects contradictory active values.
 
 ## Troubleshooting
 
-| Problem | Cause | Fix |
-|---------|-------|-----|
-| `UnsupportedClassVersionError: class file version 65.0` | Java 17 active | Set `JAVA_HOME` to temurin-21 |
-| Tycho resolution errors | Target platform issue | Check `sandbox_target/eclipse.target` |
-| SpotBugs failures | Code quality issue | Check `spotbugs-exclude.xml` |
-| Unused import errors | Tycho treats as errors | Remove all unused imports |
-| Missing NLS comments | Eclipse plugin requirement | Add `//$NON-NLS-1$` to string literals |
+| Problem | Likely cause | Action |
+|---|---|---|
+| `UnsupportedClassVersionError` | Maven uses an older JDK | Set `JAVA_HOME` to Java 21 and re-check `mvn -version` |
+| Tycho/p2 resolution failure | Repository or target mismatch | Compare `pom.xml` with `sandbox_target/eclipse.target` |
+| Product assembles but install verification fails | p2 metadata or category mismatch | Run the sequential `distribution` profile |
+| SWTBot timeout or missing shell | No display or stale workspace state | Use Xvfb and inspect uploaded SWTBot diagnostics |
+| Unused imports or NLS errors | Eclipse compiler conventions | Remove imports and add required NLS markers |
+| Screenshot mismatch | UI state or real rendering changed | Diagnose state isolation; do not accept unrelated baselines |

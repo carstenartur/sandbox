@@ -9,8 +9,7 @@
 	<version>1.3.4-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<properties>
-		<!-- Upgraded to Tycho 5.0.0 – resolves CodeQL autobuild
-		TargetPlatformArtifactResolver injection error (mixed Tycho versions). -->
+		<!-- One property keeps every Tycho extension and plugin on one version. -->
 		<tycho-version>5.0.4</tycho-version>
 		<rcp-version>eclipse</rcp-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
@@ -216,7 +215,7 @@
 										ERROR: Java 21 or later is required!
 										========================================
 										Current Java version: ${java.version}
-										This project uses Tycho 5.0.3 which
+										This project uses Tycho ${tycho-version}, which
 										requires Java 21+.
 
 										Building with Java 17 or earlier will
@@ -998,9 +997,9 @@
 								</configuration>
 							</execution>
 						</executions>
-						</plugin>
-					</plugins>
-				</build>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 
 		<!-- Benchmark profile: JMH performance benchmarks -->
