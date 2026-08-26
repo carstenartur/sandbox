@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "repository": {
     "javaVersion": "21",
-    "tychoVersion": "5.0.3",
+    "tychoVersion": "5.0.4",
     "eclipseRelease": "2026-06",
     "defaultStatus": "experimental",
     "testCountsSource": "GitHub Test Report workflow snapshot"
