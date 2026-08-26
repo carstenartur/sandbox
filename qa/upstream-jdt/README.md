@@ -205,14 +205,22 @@ profile. Its executable contract consists of:
 - `junit4-to-jupiter.properties` and
   `junit4-to-jupiter-best-effort.properties`;
 - `jdt-ui-junit4-corpus.json`, which names the required real source shapes;
-- `verify_jdt_ui_contract.py` and `verify_jdt_ui_corpus.py`; and
+- `JdtUiMigrationContractTest`, `JdtUiCorpusEvidenceVerifier` and
+  `JdtUiCorpusEvidenceExecutionTest` in `sandbox_common_test` as the Maven/JUnit
+  assertion authority;
+- `verify_jdt_ui_contract.py` and `verify_jdt_ui_corpus.py` as thin command-line
+  adapters that only invoke that Maven authority; and
 - the `JDT UI JUnit 4 Strict Migration QA` workflow.
 
-Validate the inexpensive contract with:
+Validate the inexpensive contract with the stable adapter command:
 
 ```bash
 PYTHONDONTWRITEBYTECODE=1 python3 qa/upstream-jdt/verify_jdt_ui_contract.py
 ```
+
+The adapter contains no contract or corpus assertions. It invokes the focused
+`JdtUiMigrationContractTest` through Maven, while the real-corpus adapter invokes
+`JdtUiCorpusEvidenceExecutionTest` with property-bound evidence paths.
 
 Run the strict scenario against the closed, pinned Oomph workspace with:
 
@@ -260,10 +268,10 @@ scenario. Two boundaries tracked by #1469 and #1497 remain:
 1. drive the interactive Cleanup preview from the same pinned JDT UI workspace
    and headless plan, verify candidate and affected-file agreement, and attach
    matching screenshot provenance;
-2. move checkout identity, corpus classification, report comparison and
-   provenance assertions from the current shell/Python orchestration into
-   reusable Java/JUnit fixtures executed by Maven/Tycho, leaving workflows to
-   provision the environment and invoke the same Maven authority.
+2. move the remaining checkout identity, test-inventory comparison and
+   provenance assertions from shell/Python orchestration into reusable
+   Java/JUnit fixtures executed by Maven/Tycho, leaving workflows to provision
+   the environment and invoke the same Maven authority.
 
 Until both boundaries pass on the integrated commit, Sandbox must not claim
 that the overall JUnit migration or its documentation-driven real-corpus QA is
