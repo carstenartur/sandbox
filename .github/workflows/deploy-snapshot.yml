@@ -39,18 +39,10 @@ jobs:
         with:
           java-version: '21'
           distribution: temurin
+          cache: maven
 
-      - name: Cache Maven dependencies
-        uses: actions/cache@v6
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml', 'sandbox_target/*.target') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      - name: Set up Maven
-        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
-        with:
-          maven-version: 3.9.14
+      - name: Use runner Maven
+        uses: ./.github/actions/use-runner-maven
 
       - name: Install Linux desktop runtime
         run: |
@@ -68,6 +60,7 @@ jobs:
           clean verify
 
       - name: Generate snapshot build manifest
+        id: generate_manifest
         run: |
           python3 .github/scripts/generate_test_report.py > /tmp/test-report-generation.log
           python3 .github/scripts/generate_build_manifest.py \
@@ -175,7 +168,7 @@ jobs:
             | tee target/distribution-verification/snapshot-publication-rollback.log
 
       - name: Upload immutable snapshot provenance
-        if: always()
+        if: ${{ always() && steps.generate_manifest.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
           name: snapshot-provenance-${{ env.VALIDATED_SHA }}
@@ -185,16 +178,25 @@ jobs:
           retention-days: 90
           if-no-files-found: error
 
-      - name: Report deployed resources
+      - name: Report snapshot publication
         if: always()
+        env:
+          DEPLOY_OUTCOME: ${{ steps.deploy_snapshot.outcome }}
+          VERIFY_OUTCOME: ${{ steps.verify_snapshot_urls.outcome }}
         run: |
           {
-            echo '### Deployed resources'
+            echo '### Snapshot publication'
             echo
             echo "- [Validated commit](https://github.com/${GITHUB_REPOSITORY}/commit/${VALIDATED_SHA})"
             echo "- [Source Java CI run](${SOURCE_JAVA_CI_RUN_URL})"
-            echo '- [Project dashboard](https://carstenartur.github.io/sandbox/)'
-            echo '- [Latest snapshot update site](https://carstenartur.github.io/sandbox/snapshots/latest/)'
-            echo '- [Snapshot build manifest](https://carstenartur.github.io/sandbox/snapshots/latest/build-manifest.json)'
-            echo '- [Distribution verification](https://carstenartur.github.io/sandbox/snapshots/latest/distribution-verification.md)'
+            if [[ "$DEPLOY_OUTCOME" == 'success' && "$VERIFY_OUTCOME" == 'success' ]]; then
+              echo '- [Project dashboard](https://carstenartur.github.io/sandbox/)'
+              echo '- [Latest snapshot update site](https://carstenartur.github.io/sandbox/snapshots/latest/)'
+              echo '- [Snapshot build manifest](https://carstenartur.github.io/sandbox/snapshots/latest/build-manifest.json)'
+              echo '- [Distribution verification](https://carstenartur.github.io/sandbox/snapshots/latest/distribution-verification.md)'
+            else
+              echo "- Deployment outcome: \`${DEPLOY_OUTCOME:-not-run}\`"
+              echo "- URL verification outcome: \`${VERIFY_OUTCOME:-not-run}\`"
+              echo '- No successful snapshot publication is reported for this run.'
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
