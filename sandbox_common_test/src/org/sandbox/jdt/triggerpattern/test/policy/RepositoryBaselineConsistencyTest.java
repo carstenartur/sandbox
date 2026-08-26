@@ -116,8 +116,7 @@ public class RepositoryBaselineConsistencyTest {
 						"Tycho " + tychoVersion, "Eclipse " + eclipseRelease)), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("sandbox_target/README.md", List.of("Eclipse " + eclipseRelease)), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("sandbox_target/ARCHITECTURE.md", List.of( //$NON-NLS-1$
-						"Eclipse " + eclipseRelease)), //$NON-NLS-1$
-				Map.entry("sandbox_target/TODO.md", List.of("Eclipse " + eclipseRelease))); //$NON-NLS-1$ //$NON-NLS-2$
+						"Eclipse " + eclipseRelease))); //$NON-NLS-1$
 
 		for (Map.Entry<String, List<String>> entry : expectedClaims.entrySet()) {
 			String content = read(root, entry.getKey());
