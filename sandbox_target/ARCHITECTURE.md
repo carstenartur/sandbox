@@ -1,365 +1,107 @@
-# Target Platform - Architecture
+# Target Platform Architecture
 
-## Overview
+> **Navigation**: [Main README](../README.md) | [Target README](README.md) | [Roadmap](TODO.md)
 
-The **Target Platform** module (`sandbox_target`) defines the Eclipse platform version and dependencies that the sandbox project is built against. It specifies which Eclipse features, plugins, and third-party libraries are available during compilation and runtime.
+## Responsibility
 
-## Purpose
+`sandbox_target` defines the external Eclipse/OSGi world in which Sandbox plug-ins are compiled and tested. It is a build-configuration module, not an Eclipse bundle and not application code.
 
-- Define Eclipse release version (currently 2025-12)
-- Specify required Eclipse features (JDT, SDK, PDE)
-- Declare external dependencies from Eclipse Orbit
-- Ensure consistent build environment across all developers
-- Pin dependency versions for reproducible builds
+The current executable baseline is Eclipse 2026-06 / Platform 4.40, Java 21, and Tycho 5.0.4.
 
-## Module Type
+## Resolution flow
 
-**Build Configuration Module** - Contains target platform definition
-
-This module:
-- ✅ Contains Eclipse target platform file (`eclipse.target`)
-- ✅ Defines P2 repositories for dependency resolution
-- ✅ Specifies required Eclipse features and plugins
-- ✅ Used by Tycho Maven plugin during build
-- ❌ No source code (src/ directory absent)
-- ❌ Not an Eclipse plugin itself
-
-## Target Platform File
-
-### File Structure
-
-**Location**: `sandbox_target/eclipse.target`
-
-The file defines multiple P2 repository locations, each providing specific components:
-
-```xml
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<?pde version="3.8"?>
-<target includeMode="Feature" name="target platform for sandbox">
-    <locations>
-        <location includeAllPlatforms="false" includeConfigurePhase="true" 
-                  includeMode="planner" includeSource="true" type="InstallableUnit">
-            <repository location="https://download.eclipse.org/releases/2025-12/"/>
-            <unit id="org.eclipse.jdt.feature.group" version="0.0.0"/>
-            <!-- more units -->
-        </location>
-    </locations>
-</target>
+```text
+root pom.xml
+  - Java and Tycho versions
+  - matching release repositories
+  - target-platform-configuration
+              |
+              v
+sandbox_target/pom.xml
+  packages eclipse.target as a target-definition artifact
+              |
+              v
+sandbox_target/eclipse.target
+  resolves Eclipse, Orbit, EGit, Bouncy Castle and SWTBot IUs
+              |
+              v
+Tycho reactors, PDE workspace, product and update-site builds
 ```
 
-### Repository Locations
+Every plug-in manifest is resolved against this graph. A dependency that is available in the developer's running IDE but absent from the target is not part of the supported build.
 
-#### 1. Eclipse 2025-12 Release
+## Repository roles
 
-**URL**: `https://download.eclipse.org/releases/2025-12/`
+### Eclipse 2026-06
 
-**Components**:
-- `org.eclipse.jdt.feature.group` - Java Development Tools
-- `org.eclipse.sdk.feature.group` - Eclipse SDK
-- `org.eclipse.pde.feature.group` - Plugin Development Environment
-- `org.eclipse.equinox.executable.feature.group` - Eclipse executable
-- `org.eclipse.jdt.astview.feature.feature.group` - AST View tool
-- `org.eclipse.jdt.jeview.feature.feature.group` - Java Element View
-- `org.eclipse.pde.spies.feature.group` - PDE Spy tools
+Provides the SDK, Platform, JDT, PDE, executable feature, AST View, Java Element View, and PDE spies. The target and root POM both use the named `2026-06` simultaneous-release repository.
 
-#### 2. Eclipse Orbit (Dependencies)
+### Orbit 2026-06
 
-**URL**: `https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-12/`
+Provides third-party OSGi bundles used by the target, including Apache Commons IO and Lang.
 
-**Components**:
-- `org.apache.commons.commons-io` - Apache Commons IO
-- `org.apache.commons.lang3` - Apache Commons Lang3
+### Orbit maven-osgi 4.40.0
 
-**Purpose**: Orbit provides third-party libraries as OSGi bundles.
+Provides the explicitly aligned Bouncy Castle 1.84 bundle set:
 
-#### 3. Eclipse License Feature
+- `bcutil`
+- `bcprov`
+- `bcpkix`
+- `bcpg`
 
-**URL**: `https://download.eclipse.org/cbi/updates/license`
+The root Tycho configuration declares the same versions as extra requirements so the resolver cannot mix an accidental older cryptography bundle into the product.
 
-**Components**:
-- `org.eclipse.license.feature.group` - Eclipse Public License information
+### EGit/JGit
 
-#### 4. EGit (Git Integration)
+The EGit update site supplies the Eclipse integration features. Standalone Maven modules may additionally use the root Maven JGit version; those are separate dependency surfaces and must not be conflated.
 
-**URL**: `https://download.eclipse.org/egit/updates/`
+### SWTBot
 
-**Components**:
-- `org.eclipse.egit.feature.group` - Eclipse Git Team Provider
-- `org.eclipse.jgit.feature.group` - JGit library
+The SWTBot repository supplies real-workbench test infrastructure used for Help screenshots and UI execution evidence.
 
-#### 5. Orbit Maven-OSGi (Bouncy Castle)
+## Version-selection policy
 
-**URL**: `https://download.eclipse.org/tools/orbit/simrel/maven-osgi/release/4.37.0`
+Most Eclipse feature units use `version="0.0.0"`. This means “newest matching IU in the named repository”, not “newest Eclipse release on the internet”. The release line is fixed at 2026-06, but qualifier-only repository updates can still change resolution over time.
 
-**Components**:
-- `bcutil` version 1.81.0 - Bouncy Castle utilities
-- `bcprov` version 1.81.0 - Bouncy Castle cryptography provider
+Critical externally mixed bundles are pinned explicitly. A future requirement for byte-for-byte offline resolution should be met with a checked and mirrored p2 repository or complete IU qualifier pins, not with undocumented local caches.
 
-**Note**: Pinned to specific release (4.37.0) for reproducible builds.
+## Related runtime and publication models
 
-## How It Works
+The target is one part of a coordinated baseline:
 
-### Tycho Integration
+- `sandbox_product/sandbox.product` declares what the materialized IDE contains and which repositories it exposes.
+- `sandbox_product/category.xml` declares repository references shown to p2 clients installing published features.
+- `sandbox_oomph/sandbox.setup` provisions the contributor IDE and carries the same default Eclipse release.
+- `docs/capabilities.json` publishes the Java, Tycho, and Eclipse baseline.
+- root `pom.xml` configures Tycho and matching repositories.
 
-The target platform is consumed by Tycho Maven plugin:
+These files cannot be generated from one another with the current toolchain, so `RepositoryBaselineConsistencyTest` treats their agreement as an executable invariant.
 
-```xml
-<!-- In parent pom.xml -->
-<plugin>
-    <groupId>org.eclipse.tycho</groupId>
-    <artifactId>target-platform-configuration</artifactId>
-    <configuration>
-        <target>
-            <artifact>
-                <groupId>org.sandbox</groupId>
-                <artifactId>sandbox_target</artifactId>
-                <version>${project.version}</version>
-            </artifact>
-        </target>
-    </configuration>
-</plugin>
-```
+## Build invariants
 
-### Build Process
+1. Maven runs with Java 21.
+2. Root POM and target resolve one named Eclipse release.
+3. Orbit aggregation matches that release.
+4. Product, p2 category, Oomph default, and capability inventory use the same release identifier.
+5. The root Tycho property and capability inventory use the same Tycho version.
+6. Bouncy Castle bundles form one compatible version set.
+7. Distribution verification installs from the generated p2 repository rather than trusting reactor success alone.
 
-```
-1. Tycho reads sandbox_target/eclipse.target
-   ↓
-2. Resolves P2 repositories
-   ├─ Downloads Eclipse features
-   ├─ Downloads Orbit dependencies
-   └─ Downloads EGit plugins
-   ↓
-3. Builds dependency graph
-   ↓
-4. Compiles plugins against target platform
-   ↓
-5. Validates OSGi dependencies
-```
+## Updating the architecture
 
-### Version Resolution
+An Eclipse or Tycho upgrade must update the complete invariant set and pass:
 
-**Strategy**: `version="0.0.0"` means "use latest available"
+- the normal Maven reactor;
+- repository baseline and capability inventory tests;
+- product/update-site distribution verification;
+- real-workbench Help/SWTBot gates;
+- CodeQL and configured quality gates.
 
-```xml
-<unit id="org.eclipse.jdt.feature.group" version="0.0.0"/>
-```
+A partial update that merely compiles is not complete if published p2 metadata, Oomph provisioning, or active documentation still identifies another release.
 
-**Rationale**:
-- Always get the latest from specified release (2025-12)
-- No need to update version numbers
-- Consistent across point releases (2025-12.1, 2025-12.2)
+## Non-goals
 
-**Alternative** (for reproducible builds):
-```xml
-<unit id="org.eclipse.jdt.feature.group" version="3.20.0.v20250101-1234"/>
-```
-
-## Target Platform Benefits
-
-### 1. Consistent Build Environment
-
-All developers and CI systems use the same Eclipse version:
-- Same API availability
-- Same dependency versions
-- Reproducible builds
-- No "works on my machine" issues
-
-### 2. Dependency Management
-
-Tycho resolves all dependencies from target platform:
-- No need for manual JAR management
-- Automatic dependency resolution
-- Transitive dependencies handled
-- OSGi manifest validation
-
-### 3. IDE Integration
-
-Eclipse PDE can use target platform:
-- Set as active target platform in Eclipse
-- Development environment matches build
-- Code completion uses correct APIs
-- Compilation errors match build errors
-
-### 4. Version Migration
-
-Upgrading Eclipse version is centralized:
-- Update URLs in eclipse.target
-- One file to change
-- All modules updated together
-- Consistent across project
-
-## Updating Eclipse Version
-
-### Process
-
-To migrate to a new Eclipse release (e.g., 2026-03):
-
-1. **Update eclipse.target**:
-   ```xml
-   <repository location="https://download.eclipse.org/releases/2026-03/"/>
-   ```
-
-2. **Update Orbit repository**:
-   ```xml
-   <repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-03/"/>
-   ```
-
-3. **Test build**:
-   ```bash
-   mvn clean verify -Pjacoco
-   ```
-
-4. **Fix compilation errors**: Update code for API changes
-
-5. **Update documentation**: Note new Eclipse version
-
-### Related Files
-
-When updating Eclipse version, also update:
-- `/pom.xml` - Repository URLs
-- `/sandbox_product/category.xml` - Repository references
-- `/sandbox_product/sandbox.product` - Repository locations
-- `/sandbox_oomph/sandbox.setup` - P2 repository URL
-- `/README.md` - Documentation
-
-See README.md section "Eclipse Version Configuration" for complete list.
-
-## Design Patterns
-
-### Single Source of Truth
-
-The target platform file is the authoritative source for:
-- Eclipse version
-- Feature versions
-- Dependency versions
-
-All other references derive from this.
-
-### Declarative Configuration
-
-Dependencies are declared, not scripted:
-- XML format
-- No imperative code
-- Tool-independent (PDE, Tycho)
-
-## Package Structure
-
-```
-sandbox_target/
-├── eclipse.target          # Target platform definition
-├── pom.xml                # Maven module configuration
-├── LICENSE.txt            # Eclipse Public License
-└── .settings/             # Eclipse project settings
-```
-
-## IDE Usage
-
-### Setting Active Target Platform
-
-1. Open Eclipse IDE
-2. Window → Preferences → Plug-in Development → Target Platform
-3. Click "Add..." → "Software Site"
-4. Browse to `sandbox_target/eclipse.target`
-5. Click "Set as Target Platform"
-
-### Benefits
-
-- Eclipse resolves dependencies from target platform
-- Code completion uses target platform APIs
-- Compilation uses target platform
-- Matches build environment exactly
-
-## Troubleshooting
-
-### "Cannot resolve target definition"
-
-**Cause**: Network issue or invalid repository URL
-
-**Solution**:
-```bash
-# Clear P2 cache
-rm -rf ~/.m2/repository/p2
-mvn clean verify
-```
-
-### "Unit not found in repository"
-
-**Cause**: Feature/plugin not available in specified Eclipse version
-
-**Solution**: 
-- Check feature ID is correct
-- Verify Eclipse version supports the feature
-- Update to newer Eclipse version if needed
-
-### "Conflicting dependencies"
-
-**Cause**: Multiple versions of same plugin requested
-
-**Solution**:
-- Pin specific versions
-- Exclude transitive dependencies
-- Update feature to compatible version
-
-## Best Practices
-
-### 1. Use Explicit Eclipse Version
-
-Don't use "latest":
-```xml
-<!-- Good -->
-<repository location="https://download.eclipse.org/releases/2025-12/"/>
-
-<!-- Bad -->
-<repository location="https://download.eclipse.org/releases/latest/"/>
-```
-
-### 2. Pin Critical Dependencies
-
-For critical dependencies, specify exact version:
-```xml
-<unit id="bcutil" version="1.81.0"/>
-```
-
-### 3. Include Source
-
-Always include source for debugging:
-```xml
-<location ... includeSource="true">
-```
-
-### 4. Document Custom Repositories
-
-Add comments explaining why each repository is needed:
-```xml
-<!-- Bouncy Castle for cryptography -->
-<location ...>
-```
-
-## Eclipse JDT Correspondence
-
-**Sandbox**: Defines custom target platform  
-**Eclipse JDT**: Uses Eclipse SDK as baseline
-
-When contributing to Eclipse JDT:
-- JDT builds against SDK baseline
-- No custom target platform needed
-- API Tools enforce baseline compatibility
-
-## References
-
-- [Eclipse Target Platform](https://help.eclipse.org/latest/topic/org.eclipse.pde.doc.user/concepts/target.htm)
-- [Tycho Target Platform](https://tycho.eclipseprojects.io/doc/latest/tycho-packaging-plugin/target-platform-configuration-mojo.html)
-- [Eclipse Releases](https://download.eclipse.org/releases/)
-- [Eclipse Orbit](https://download.eclipse.org/tools/orbit/)
-
-## Summary
-
-The target platform module is a critical build configuration component that:
-- Defines Eclipse version and dependencies
-- Ensures consistent build environment
-- Enables reproducible builds
-- Simplifies dependency management
-- Centralizes version configuration
-
-It contains no code, only configuration, but is essential for building the project correctly.
+- Supporting multiple Eclipse release lines from one `main` build is not currently claimed.
+- The Oomph-provisioned IDE is not the authority for Maven dependency resolution.
+- `0.0.0` IU versions are not presented as fully immutable dependency pins.
+- Target configuration does not establish runtime verification for every archive platform; native coverage is documented separately in `docs/distribution-compatibility.md`.
