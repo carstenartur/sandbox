@@ -6,6 +6,8 @@
 
 The **Oomph Setup** plugin provides Eclipse Oomph setup configurations for the Sandbox project. Oomph is Eclipse's automated workspace configuration tool, allowing developers to set up their development environment with a single click.
 
+The active contributor baseline is Eclipse 2026-06 / Platform 4.40, Java 21, and Tycho 5.0.4. The setup model defaults `eclipse.target.version` to `2026-06`.
+
 ## Key Features
 
 - 🚀 **One-Click Setup** - Automated workspace configuration
@@ -129,7 +131,7 @@ The Eclipse version used for IDE provisioning can be changed even after initial 
 **Method 1: Using Oomph Preferences (Recommended)**
 1. In Eclipse: `Help` → `Perform Setup Tasks...`
 2. In the dialog, find the "Eclipse Release Version" variable
-3. Change the value (e.g., from "2025-12" to "2025-09" or "2024-12")
+3. Change the value only as part of a coordinated baseline update (for example, from `2026-06` to a future named release)
 4. Click `OK` to re-trigger setup with the new version
 5. Restart Eclipse when prompted
 6. The Eclipse installation and Oomph provisioning repository will use the new release; the PDE target definition in `sandbox_target/eclipse.target` must still be updated separately if you need a different workspace target platform.
@@ -137,7 +139,7 @@ The Eclipse version used for IDE provisioning can be changed even after initial 
 **Method 2: Edit Setup File**
 1. Open `sandbox.setup` in a text editor
 2. Locate the `eclipse.target.version` variable
-3. Either change the `value` (and optionally `defaultValue`) for `eclipse.target.version` to the desired release (for example, from `2025-12` to `2025-09`), or remove the `value` attribute and update only `defaultValue` if you prefer to rely on Oomph defaults and user overrides
+3. Change both `value` and `defaultValue` from `2026-06` to the coordinated named release; do not update Oomph independently of the root build, product, p2 category, target, capability inventory, and active documentation
 4. Save and re-import the setup in Eclipse Installer
 5. Update `sandbox_target/eclipse.target` manually to match the new version if needed
 

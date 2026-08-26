@@ -120,6 +120,12 @@ public class RepositoryBaselineConsistencyTest {
 						"| Eclipse target | Eclipse " + eclipseRelease + " / Platform ")), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("docs/distribution-compatibility.md", List.of( //$NON-NLS-1$
 						"Tycho " + tychoVersion, "Eclipse " + eclipseRelease)), //$NON-NLS-1$ //$NON-NLS-2$
+				Map.entry("sandbox_oomph/README.md", List.of( //$NON-NLS-1$
+						"Eclipse " + eclipseRelease, "Tycho " + tychoVersion)), //$NON-NLS-1$ //$NON-NLS-2$
+				Map.entry("sandbox_oomph/ARCHITECTURE.md", List.of( //$NON-NLS-1$
+						"Eclipse " + eclipseRelease, "Tycho " + tychoVersion)), //$NON-NLS-1$ //$NON-NLS-2$
+				Map.entry("sandbox_oomph/TODO.md", List.of( //$NON-NLS-1$
+						"Eclipse " + eclipseRelease, "Tycho " + tychoVersion)), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("sandbox_target/README.md", List.of( //$NON-NLS-1$
 						"Eclipse " + eclipseRelease, //$NON-NLS-1$
 						"| Tycho | " + tychoVersion, //$NON-NLS-1$
