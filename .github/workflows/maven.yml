@@ -124,15 +124,20 @@ jobs:
             base="refs/remotes/origin/$GITHUB_BASE_REF"
             printf 'REPOSITORY_POLICY_BASE=%s\n' "$base" >> "$GITHUB_ENV"
             printf 'Repository policy base: %s\n' "$base"
-          else
-            if [[ "$EVENT_BEFORE" =~ ^[0-9a-fA-F]{40}$ ]] \
-                && [[ "$EVENT_BEFORE" != '0000000000000000000000000000000000000000' ]]; then
-              printf 'REPOSITORY_POLICY_BASE=%s\n' "$EVENT_BEFORE" >> "$GITHUB_ENV"
-              printf 'Repository policy base: %s\n' "$EVENT_BEFORE"
+          elif [[ "$GITHUB_EVENT_NAME" == 'push' && "$GITHUB_REF" == 'refs/heads/main' ]]; then
+            if [[ ! "$EVENT_BEFORE" =~ ^[0-9a-fA-F]{40}$ ]] \
+                || [[ "$EVENT_BEFORE" == '0000000000000000000000000000000000000000' ]]; then
+              echo 'A post-merge main push requires a valid github.event.before commit.' >&2
+              exit 1
             fi
-            exception='Post-review push or manually dispatched verification has no active pull-request body; review-size approval was already handled before merge, while full tracked-tree and forbidden-automation policy checks remain active.'
+            printf 'REPOSITORY_POLICY_BASE=%s\n' "$EVENT_BEFORE" >> "$GITHUB_ENV"
+            printf 'Repository policy base: %s\n' "$EVENT_BEFORE"
+            exception='Post-review main-branch verification has no active pull-request body; review-size approval was already handled before merge, while full tracked-tree and forbidden-automation policy checks remain active.'
             printf 'REPOSITORY_POLICY_EXCEPTION=%s\n' "$exception" >> "$GITHUB_ENV"
             printf '%s\n' "$exception"
+          else
+            printf 'No automatic repository-policy exception for event %s on %s.\n' \
+              "$GITHUB_EVENT_NAME" "$GITHUB_REF"
           fi
 
       - name: Maven clean verify
