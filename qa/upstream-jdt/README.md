@@ -2,7 +2,7 @@
 
 This directory defines reproducible, evidence-producing migration scenarios on
 real Eclipse JDT source code. They are deliberately separate from normal pull
-request CI where provisioning the complete JDT development workspace and
+request CI because provisioning the complete JDT development workspace and
 executing the upstream tests would be too expensive.
 
 The first scenario exercises Sandbox's **JUnit 3 to Jupiter** migration on the
