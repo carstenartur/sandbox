@@ -59,6 +59,8 @@ public class RepositoryBaselineConsistencyTest {
 		String eclipseRelease = repository.get("eclipseRelease").getAsString(); //$NON-NLS-1$
 		assertEquals(tychoVersion, inventoryTychoVersion,
 				"The capability inventory must use the root Tycho version"); //$NON-NLS-1$
+		assertTrue(pom.contains("This project uses Tycho ${tycho-version}, which"), //$NON-NLS-1$
+				"The Java enforcer diagnostic must interpolate the Tycho property"); //$NON-NLS-1$
 
 		assertEquals(Set.of(eclipseRelease), releaseRepositories(pom),
 				"The root POM must resolve only the declared Eclipse release"); //$NON-NLS-1$
@@ -79,6 +81,17 @@ public class RepositoryBaselineConsistencyTest {
 				"The Oomph release variable value must match the capability inventory"); //$NON-NLS-1$
 		assertTrue(variableTag.contains("defaultValue=\"" + eclipseRelease + "\""), //$NON-NLS-1$ //$NON-NLS-2$
 				"The Oomph release variable default must match the capability inventory"); //$NON-NLS-1$
+
+		String compatibilityScript = read(root,
+				".github/scripts/compare_patched_jdt_ui_with_target.sh"); //$NON-NLS-1$
+		assertTrue(compatibilityScript.contains(
+				"\"$ROOT_DIR/sandbox_target/eclipse.target\""), //$NON-NLS-1$
+				"The patched JDT UI check must read the executable target definition"); //$NON-NLS-1$
+		assertTrue(compatibilityScript.contains(
+				"target_release = eclipse_release(target_path)"), //$NON-NLS-1$
+				"The patched JDT UI report must derive its release from the target"); //$NON-NLS-1$
+		assertTrue(compatibilityScript.contains("Eclipse {target_release}"), //$NON-NLS-1$
+				"The patched JDT UI report must render the derived target release"); //$NON-NLS-1$
 	}
 
 	@Test
