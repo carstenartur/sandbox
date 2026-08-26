@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [ main ]
     paths:
+      - '.github/actions/use-runner-maven/**'
       - '.github/scripts/generate_build_manifest.py'
       - '.github/scripts/collect_commit_workflows.py'
       - '.github/scripts/test_build_provenance.py'
@@ -71,10 +72,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Set up Maven
-        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
-        with:
-          maven-version: 3.9.14
+          cache: maven
+      - name: Use runner Maven
+        uses: ./.github/actions/use-runner-maven
       - name: Run provenance unit tests
         run: python3 .github/scripts/test_build_provenance.py
       - name: Collect exact validation runs for the main commit
