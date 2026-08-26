@@ -53,7 +53,8 @@ if [[ ! -s "$CANDIDATE_LIST" ]]; then
   exit 1
 fi
 
-python3 - "$PATCHED_JAR" "$CANDIDATE_LIST" "$REPORT_DIR" "$PATCHED_JDT_UI_BUNDLE" <<'PY'
+python3 - "$PATCHED_JAR" "$CANDIDATE_LIST" "$REPORT_DIR" "$PATCHED_JDT_UI_BUNDLE" \
+  "$ROOT_DIR/sandbox_target/eclipse.target" <<'PY'
 import hashlib
 import json
 import re
@@ -65,6 +66,7 @@ patched_path = Path(sys.argv[1])
 candidate_paths = [Path(line) for line in Path(sys.argv[2]).read_text(encoding='utf-8').splitlines() if line]
 report_dir = Path(sys.argv[3])
 expected_symbolic_name = sys.argv[4]
+target_path = Path(sys.argv[5])
 
 
 def manifest(path: Path) -> dict[str, str]:
@@ -138,10 +140,21 @@ def clause_names(value: str) -> set[str]:
     return {clause.split(';', 1)[0].strip() for clause in split_clauses(value)}
 
 
+def eclipse_release(path: Path) -> str:
+    content = path.read_text(encoding='utf-8')
+    releases = sorted(set(re.findall(
+        r'https://download\.eclipse\.org/releases/([^/]+)/', content)))
+    if len(releases) != 1:
+        raise SystemExit(
+            f'Expected exactly one Eclipse release repository in {path}, found {releases}')
+    return releases[0]
+
+
 patched_manifest = manifest(patched_path)
 if symbolic_name(patched_manifest) != expected_symbolic_name:
     raise SystemExit(f'Patched bundle has unexpected symbolic name: {symbolic_name(patched_manifest)!r}')
 
+target_release = eclipse_release(target_path)
 stock: list[tuple[Path, dict[str, str]]] = []
 for candidate in candidate_paths:
     try:
@@ -196,7 +209,7 @@ compatible = all(bool(item['passed']) for item in checks)
 payload = {
     'schemaVersion': 1,
     'compatibleForReplacement': compatible,
-    'target': 'sandbox_target/eclipse.target (Eclipse 2025-12)',
+    'target': f'sandbox_target/eclipse.target (Eclipse {target_release})',
     'stockBundle': {
         'path': str(stock_path),
         'version': stock_version,
@@ -214,6 +227,7 @@ payload = {
 lines = [
     '# Patched JDT UI target compatibility',
     '',
+    f'- Target: `Eclipse {target_release}` from `{target_path}`',
     f'- Stock bundle: `{expected_symbolic_name} {stock_version}`',
     f'- Patched bundle: `{expected_symbolic_name} {patched_version}`',
     f'- Replacement gate: **{"PASS" if compatible else "BLOCKED"}**',
