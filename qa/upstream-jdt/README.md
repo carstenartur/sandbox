@@ -1,9 +1,9 @@
 # Upstream JDT migration QA
 
-This directory defines a reproducible, evidence-producing migration scenario on
-real Eclipse JDT source code. It is deliberately separate from normal pull
-request CI because provisioning the complete JDT development workspace and
-executing the upstream tests is expensive.
+This directory defines reproducible, evidence-producing migration scenarios on
+real Eclipse JDT source code. They are deliberately separate from normal pull
+request CI where provisioning the complete JDT development workspace and
+executing the upstream tests would be too expensive.
 
 The first scenario exercises Sandbox's **JUnit 3 to Jupiter** migration on the
 `org.eclipse.jdt.apt.tests` project from Eclipse 4.40. The corpus contains real
@@ -195,10 +195,68 @@ for the Oomph Advanced-Mode release evidence. Before release, the same runner
 must also pass against the actual provisioned workspace and its generated pin
 file.
 
-## Extending the corpus
+## JUnit 4 to Jupiter on pinned JDT UI
 
-The next scenario should retain the same model and add JDT UI's
-`org.eclipse.jdt.ui.tests` for JUnit 4 rules, runners, suites and mixed
-JUnit/Jupiter projects. Add a separate profile, overlay, named corpus contract,
-expected inventory and provenance entry rather than broadening the first JUnit
-3 scenario implicitly.
+The second real-corpus scenario is already implemented separately for
+`org.eclipse.jdt.ui.tests`. It deliberately does not broaden the JDT Core/JUnit 3
+profile. Its executable contract consists of:
+
+- `run-jdt-ui-before-after.sh`, with dedicated strict and best-effort modes;
+- `junit4-to-jupiter.properties` and
+  `junit4-to-jupiter-best-effort.properties`;
+- `jdt-ui-junit4-corpus.json`, which names the required real source shapes;
+- `verify_jdt_ui_contract.py` and `verify_jdt_ui_corpus.py`; and
+- the `JDT UI JUnit 4 Strict Migration QA` workflow.
+
+Validate the inexpensive contract with:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python3 qa/upstream-jdt/verify_jdt_ui_contract.py
+```
+
+Run the strict scenario against the closed, pinned Oomph workspace with:
+
+```bash
+bash qa/upstream-jdt/run-jdt-ui-before-after.sh \
+  --jdt-ui /path/to/eclipse.jdt.ui \
+  --workspace /path/to/sandbox-jdt-migration-qa-ws \
+  --sandbox-eclipse /path/to/sandbox-product/eclipse \
+  --mode strict \
+  --output /path/to/jdt-ui-evidence
+```
+
+The runner verifies the exact JDT UI repository, `R4_40` ref and commit before
+reading source. It executes the same pinned Maven reactor before and after one
+project-wide cleanup, compares the baseline and migrated JUnit XML inventories,
+requires check/apply agreement, records the named corpus and emits provenance.
+The strict GitHub workflow additionally builds the exact Sandbox product under
+test and checks that the migration introduced no whitespace regression relative
+to the pinned upstream baseline.
+
+The current named contract requires coordinated migration evidence for:
+
+- `JUnitSourceSetup.java` and its `ExternalResource` lifecycle;
+- `LeakTestSetup.java` and its superclass lifecycle chaining;
+- `FileAdapterTest.java` and its `@Rule` consumer;
+- `SearchLeakTestWrapper.java` and its combined lifecycle/rule usage.
+
+`ConvertLoopOperationTest.java` is an intentional negative boundary. Strict mode
+must leave its unsupported Parameterized field-injection shape byte-for-byte
+unchanged and report `PARAMETERIZED_FIELD_INJECTION`; best-effort mode must add
+explicit remediation scaffolding rather than silently performing a partial
+migration.
+
+### Headless and interactive evidence are distinct
+
+The pinned JDT UI runner proves the headless before/after migration contract.
+The separate `Patched JDT UI atomic Help screenshot` workflow proves that the
+Sandbox-patched Cleanup preview keeps coordinated JUnit and Int-to-Enum
+candidates atomic and reproduces the committed Help images from deterministic
+Workbench fixtures.
+
+These two green gates must not be described as one already unified upstream UI
+scenario. The remaining work tracked by #1469 is to drive the interactive
+Cleanup preview from the same pinned JDT UI workspace and headless plan, verify
+candidate and affected-file agreement, and attach matching screenshot
+provenance. Until that integration passes, Sandbox must not claim that the
+overall JUnit migration or its documentation-driven real-corpus QA is complete.
