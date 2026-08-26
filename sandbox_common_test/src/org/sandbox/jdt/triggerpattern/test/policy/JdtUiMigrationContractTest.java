@@ -91,25 +91,25 @@ public class JdtUiMigrationContractTest {
 				"REACTOR_PROJECTS", //$NON-NLS-1$
 				"verify_reactor_bcoview_runtime", //$NON-NLS-1$
 				"jdt-ui-junit4-corpus.json", //$NON-NLS-1$
-				"JdtUiCorpusEvidenceExecutionTest", //$NON-NLS-1$
+				"verify_jdt_ui_corpus.py", //$NON-NLS-1$
 				"compare_test_inventory.py", //$NON-NLS-1$
 				"strict|best-effort")) { //$NON-NLS-1$
 			assertTrue(runner.contains(marker), () -> "JDT UI runner is missing contract marker " + marker); //$NON-NLS-1$
 		}
-		assertFalse(runner.contains("verify_jdt_ui_corpus.py"), //$NON-NLS-1$
-				"The real-corpus runner must use the Maven/JUnit verifier"); //$NON-NLS-1$
 
 		String workflow = read(root, ".github/workflows/jdt-ui-junit4-strict-qa.yml"); //$NON-NLS-1$
 		assertTrue(workflow.contains("'sandbox_common_test/**'"), //$NON-NLS-1$
 				"Changes to the Maven/JUnit evidence authority must trigger the real-corpus workflow"); //$NON-NLS-1$
-		assertFalse(workflow.contains("verify_jdt_ui_contract.py"), //$NON-NLS-1$
-				"The workflow must not own a separate Python contract gate"); //$NON-NLS-1$
+		assertTrue(workflow.contains("verify_jdt_ui_contract.py"), //$NON-NLS-1$
+				"The workflow adapter must invoke the Maven/JUnit contract before the expensive build"); //$NON-NLS-1$
 
-		assertFalse(Files.exists(root.resolve("qa/upstream-jdt/verify_jdt_ui_contract.py"))); //$NON-NLS-1$
-		assertFalse(Files.exists(root.resolve("qa/upstream-jdt/verify_jdt_ui_corpus.py"))); //$NON-NLS-1$
+		assertMavenAdapter(read(root, "qa/upstream-jdt/verify_jdt_ui_contract.py"), //$NON-NLS-1$
+				"JdtUiMigrationContractTest"); //$NON-NLS-1$
+		assertMavenAdapter(read(root, "qa/upstream-jdt/verify_jdt_ui_corpus.py"), //$NON-NLS-1$
+				"JdtUiCorpusEvidenceExecutionTest"); //$NON-NLS-1$
 		String allowlist = read(root, ".github/repository-policy/python-files.allowlist"); //$NON-NLS-1$
-		assertFalse(allowlist.contains("verify_jdt_ui_contract.py")); //$NON-NLS-1$
-		assertFalse(allowlist.contains("verify_jdt_ui_corpus.py")); //$NON-NLS-1$
+		assertTrue(allowlist.contains("verify_jdt_ui_contract.py")); //$NON-NLS-1$
+		assertTrue(allowlist.contains("verify_jdt_ui_corpus.py")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -154,6 +154,22 @@ public class JdtUiMigrationContractTest {
 		assertThrows(IllegalArgumentException.class,
 				() -> verify(contractPath, bestEffort,
 						JdtUiCorpusEvidenceVerifier.Mode.BEST_EFFORT));
+	}
+
+	private static void assertMavenAdapter(String adapter, String testClass) {
+		assertTrue(adapter.contains(testClass),
+				() -> "Maven adapter does not invoke " + testClass); //$NON-NLS-1$
+		assertTrue(adapter.contains("subprocess.run")); //$NON-NLS-1$
+		assertFalse(adapter.contains("import json"), //$NON-NLS-1$
+				"The Python adapter must not own JSON/corpus assertions"); //$NON-NLS-1$
+		for (String assertionMarker : List.of(
+				"requiredFiles", //$NON-NLS-1$
+				"planningDiagnostics", //$NON-NLS-1$
+				"PARAMETERIZED_FIELD_INJECTION", //$NON-NLS-1$
+				"manualCompletionRequired")) { //$NON-NLS-1$
+			assertFalse(adapter.contains(assertionMarker),
+					"Python adapter still contains assertion marker " + assertionMarker); //$NON-NLS-1$
+		}
 	}
 
 	private static JsonObject verify(Path contractPath, Evidence evidence,
