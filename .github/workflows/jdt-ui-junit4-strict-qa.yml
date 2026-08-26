@@ -8,6 +8,7 @@ on:
       - 'sandbox_cleanup_application/**'
       - 'sandbox_common/**'
       - 'sandbox_common_core/**'
+      - 'sandbox_common_test/**'
       - 'sandbox_junit_cleanup/**'
       - 'sandbox_junit_cleanup_test/**'
       - 'sandbox_product/**'
