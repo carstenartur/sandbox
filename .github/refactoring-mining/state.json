@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "670f5746ad1360443642b3002818b6406a7a369d",
-      "lastProcessedDate": "2026-08-25T02:39:34.164586803Z",
-      "totalProcessed": 4655,
+      "lastProcessedCommit": "1994884b0fff7fdbf987bd491476432fbf8fe957",
+      "lastProcessedDate": "2026-08-26T02:43:25.796881682Z",
+      "totalProcessed": 4731,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3080,6 +3080,33 @@
           "deferredAt": "2026-08-25T02:34:41.772877791Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "193d4a25da232f1ad23353e3e66305a564a804b7",
+          "message": "Fixed bug 65571: [nls tooling][encoding] Properties file editor could use native2ascii",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-26T02:37:42.053011264Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "64efdf0a02331fbbb2166df8b6f6350cbe1ae43b",
+          "message": "Fixed bug 328233: [nls tooling] Externalize string broken with \\\\uHHHH in string",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-26T02:38:33.727770673Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "25f369ea05ffaadcfaaeef05746de9786fd77932",
+          "message": "Fixed bug 304135: [call hierarchy] Allow to pin Call Hierarchy",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-26T02:38:48.419341206Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3117,7 +3144,7 @@
         "JDT UI Bug Fix": 1,
         "Type Inference": 2,
         "Architecture Migration": 9,
-        "Code Style": 34,
+        "Code Style": 35,
         "Eclipse API Configuration": 14,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
@@ -3156,7 +3183,7 @@
         "Code Correctness": 7,
         "Code Structure Simplification": 5,
         "Concurrency": 4,
-        "Bug Fix": 6,
+        "Bug Fix": 7,
         "New Cleanup": 1,
         "Logical Simplification": 8,
         "UI Bug Fix": 9,
@@ -3223,18 +3250,18 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 21,
+        "API Migration": 22,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
         "Modernization": 5,
         "Defensive Programming": 1,
         "Preference Configuration": 1,
-        "Typo Fix": 2,
+        "Typo Fix": 3,
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 4,
-        "API Modernization": 43,
+        "API Modernization": 46,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3246,7 +3273,7 @@
         "API Simplification": 4,
         "Code Style/Clarity": 1,
         "Type Clarity": 1,
-        "String Literal Refactoring": 1,
+        "String Literal Refactoring": 2,
         "Generics Modernization": 2,
         "Configuration Update": 2,
         "Type Mismatch Cleanup": 1,
@@ -3314,7 +3341,11 @@
         "SWT Modernization": 1,
         "Logical Condition Simplification": 1,
         "Constructor Argument Addition": 1,
-        "Argument Removal": 1
+        "Argument Removal": 1,
+        "Robustness": 1,
+        "Naming": 1,
+        "API Usage Refactoring": 1,
+        "Code Cleanup": 1
       },
       "exhaustedCategories": []
     },
@@ -3355,5 +3386,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 27426
+  "globalTotalProcessed": 27502
 }
