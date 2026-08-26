@@ -9,21 +9,13 @@ import javax.imageio.ImageIO;
  * two-row permutation produced when the stock LTK preview returns the same two
  * selected files in the opposite presentation order.
  *
- * <p>The Ubuntu GTK renderer can also vary a few low-delta pixels on the left
- * edge of the disabled {@code Next} button. That exception is limited to the
- * observed 3-by-23-pixel edge; every difference outside it remains fatal.</p>
+ * <p>No pixel is ignored: acceptance after permutation requires the complete
+ * images to become identical after swapping the two full-width tree rows.</p>
  */
 public final class VerifyHelpScreenshotRowPermutation {
     private static final int FIRST_ROW_Y = 109;
     private static final int ROW_HEIGHT = 23;
     private static final int ROW_COUNT = 2;
-
-    private static final int GTK_NEXT_EDGE_MIN_X = 927;
-    private static final int GTK_NEXT_EDGE_MAX_X_EXCLUSIVE = 930;
-    private static final int GTK_NEXT_EDGE_MIN_Y = 851;
-    private static final int GTK_NEXT_EDGE_MAX_Y_EXCLUSIVE = 874;
-    private static final long MAX_GTK_NEXT_EDGE_CHANGED_PIXELS = 42;
-    private static final int MAX_GTK_NEXT_EDGE_CHANNEL_DELTA = 5;
 
     private VerifyHelpScreenshotRowPermutation() {
     }
@@ -40,32 +32,17 @@ public final class VerifyHelpScreenshotRowPermutation {
         BufferedImage candidate = requireImage(candidatePath);
         requireSameDimensions(baselinePath, baseline, candidatePath, candidate);
 
-        Difference direct = compare(baseline, candidate, false);
-        if (direct.changedPixels() == 0) {
+        if (imagesEqual(baseline, candidate)) {
             System.out.println("Screenshot is pixel-reproducible: " + candidatePath);
             return;
         }
-        if (isGtkNextButtonEdgeVariation(direct)) {
-            System.out.println("Accepted GTK disabled-Next-button edge variation: "
-                    + candidatePath + "; " + direct.describe());
-            return;
-        }
-
-        Difference permuted = compare(baseline, candidate, true);
-        if (permuted.changedPixels() == 0) {
+        if (equalsAfterTwoRowPermutation(baseline, candidate)) {
             System.out.println("Accepted exact LTK two-file row permutation: " + candidatePath);
             return;
         }
-        if (isGtkNextButtonEdgeVariation(permuted)) {
-            System.out.println(
-                    "Accepted LTK two-file row permutation with GTK disabled-Next-button edge variation: "
-                            + candidatePath + "; " + permuted.describe());
-            return;
-        }
 
-        throw new IllegalStateException(candidatePath + " is neither identical to " + baselinePath
-                + " nor its accepted LTK two-row presentation; direct=" + direct.describe()
-                + ", permuted=" + permuted.describe());
+        throw new IllegalStateException(describeDifference(baselinePath, baseline,
+                candidatePath, candidate));
     }
 
     private static BufferedImage requireImage(Path path) throws IOException {
@@ -91,69 +68,57 @@ public final class VerifyHelpScreenshotRowPermutation {
         }
     }
 
-    private static Difference compare(BufferedImage baseline, BufferedImage candidate,
-            boolean permuteRows) {
+    private static boolean imagesEqual(BufferedImage baseline, BufferedImage candidate) {
+        for (int y = 0; y < baseline.getHeight(); y++) {
+            for (int x = 0; x < baseline.getWidth(); x++) {
+                if (baseline.getRGB(x, y) != candidate.getRGB(x, y)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static boolean equalsAfterTwoRowPermutation(BufferedImage baseline,
+            BufferedImage candidate) {
+        int secondRowY = FIRST_ROW_Y + ROW_HEIGHT;
+        int afterRowsY = secondRowY + ROW_HEIGHT;
+        for (int y = 0; y < baseline.getHeight(); y++) {
+            int candidateY = y;
+            if (y >= FIRST_ROW_Y && y < secondRowY) {
+                candidateY = y + ROW_HEIGHT;
+            } else if (y >= secondRowY && y < afterRowsY) {
+                candidateY = y - ROW_HEIGHT;
+            }
+            for (int x = 0; x < baseline.getWidth(); x++) {
+                if (baseline.getRGB(x, y) != candidate.getRGB(x, candidateY)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private static String describeDifference(Path baselinePath, BufferedImage baseline,
+            Path candidatePath, BufferedImage candidate) {
         long changed = 0;
         int minX = baseline.getWidth();
         int minY = baseline.getHeight();
         int maxX = -1;
         int maxY = -1;
-        int maximumChannelDelta = 0;
-        int secondRowY = FIRST_ROW_Y + ROW_HEIGHT;
-        int afterRowsY = secondRowY + ROW_HEIGHT;
-
         for (int y = 0; y < baseline.getHeight(); y++) {
-            int candidateY = y;
-            if (permuteRows && y >= FIRST_ROW_Y && y < secondRowY) {
-                candidateY = y + ROW_HEIGHT;
-            } else if (permuteRows && y >= secondRowY && y < afterRowsY) {
-                candidateY = y - ROW_HEIGHT;
-            }
             for (int x = 0; x < baseline.getWidth(); x++) {
-                int expected = baseline.getRGB(x, y);
-                int actual = candidate.getRGB(x, candidateY);
-                if (expected == actual) {
-                    continue;
+                if (baseline.getRGB(x, y) != candidate.getRGB(x, y)) {
+                    changed++;
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x);
+                    maxY = Math.max(maxY, y);
                 }
-                changed++;
-                minX = Math.min(minX, x);
-                minY = Math.min(minY, y);
-                maxX = Math.max(maxX, x);
-                maxY = Math.max(maxY, y);
-                maximumChannelDelta = Math.max(maximumChannelDelta,
-                        maximumChannelDelta(expected, actual));
             }
         }
-        return new Difference(changed, minX, minY, maxX, maxY, maximumChannelDelta);
-    }
-
-    private static boolean isGtkNextButtonEdgeVariation(Difference difference) {
-        return difference.changedPixels() > 0
-                && difference.changedPixels() <= MAX_GTK_NEXT_EDGE_CHANGED_PIXELS
-                && difference.minX() >= GTK_NEXT_EDGE_MIN_X
-                && difference.maxX() < GTK_NEXT_EDGE_MAX_X_EXCLUSIVE
-                && difference.minY() >= GTK_NEXT_EDGE_MIN_Y
-                && difference.maxY() < GTK_NEXT_EDGE_MAX_Y_EXCLUSIVE
-                && difference.maximumChannelDelta() <= MAX_GTK_NEXT_EDGE_CHANNEL_DELTA;
-    }
-
-    private static int maximumChannelDelta(int first, int second) {
-        int alpha = Math.abs((first >>> 24) - (second >>> 24));
-        int red = Math.abs(((first >>> 16) & 0xff) - ((second >>> 16) & 0xff));
-        int green = Math.abs(((first >>> 8) & 0xff) - ((second >>> 8) & 0xff));
-        int blue = Math.abs((first & 0xff) - (second & 0xff));
-        return Math.max(Math.max(alpha, red), Math.max(green, blue));
-    }
-
-    private record Difference(long changedPixels, int minX, int minY, int maxX, int maxY,
-            int maximumChannelDelta) {
-        private String describe() {
-            if (changedPixels == 0) {
-                return "changedPixels=0";
-            }
-            return "changedPixels=" + changedPixels + ", bounds=" + minX + "," + minY + "-"
-                    + (maxX + 1) + "," + (maxY + 1)
-                    + ", maximumChannelDelta=" + maximumChannelDelta;
-        }
+        return candidatePath + " is neither identical to " + baselinePath
+                + " nor its exact two-row LTK permutation; changedPixels=" + changed
+                + ", bounds=" + minX + "," + minY + "-" + (maxX + 1) + "," + (maxY + 1);
     }
 }
