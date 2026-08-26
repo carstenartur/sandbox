@@ -2,7 +2,7 @@
 
 An experimental Java modernization toolkit built on Eclipse JDT (Java Development Tools). The repository provides tested cleanup plugins, quick fixes, static-analysis tools, and reusable transformation infrastructure for Eclipse-based and standalone Java development.
 
-**Main Technologies:** Eclipse JDT, Java 21, Maven/Tycho 5.0.3
+**Main Technologies:** Eclipse JDT, Java 21, Maven/Tycho 5.0.4
 
 **Status:** Experimental and under active development. Supported transformations are protected by regression tests; maturity and known limitations are documented per module.
 
@@ -139,7 +139,7 @@ Want to build and run the Eclipse product with bundled plugins? See the [Buildin
 
 | Branch          | Java Version | Tycho Version |
 |-----------------|--------------|---------------|
-| `main` (2026-06)| Java 21      | 5.0.3         |
+| `main` (2026-06)| Java 21      | 5.0.4         |
 
 **Legacy branches**: Older branches (`2022-06`, `2022-09`, `2022-12`) use Java 11-17 with Tycho 3.x-4.x.
 

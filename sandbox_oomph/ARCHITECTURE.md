@@ -6,6 +6,8 @@
 
 The **Oomph Module** (`sandbox_oomph`) contains Eclipse Oomph setup files that automate the configuration of a development environment for the sandbox project. Oomph is Eclipse's automated installation and configuration system.
 
+The active provisioning baseline is Eclipse 2026-06 / Platform 4.40, Java 21, and Tycho 5.0.4.
+
 ## Purpose
 
 - Automate Eclipse development environment setup
@@ -38,7 +40,7 @@ This module:
 - Project import configuration
 - Target platform activation
 - Workspace preference settings
-- P2 repository configuration for Eclipse 2025-12
+- P2 repository configuration for Eclipse 2026-06
 
 ### 2. sandboxproject.setup
 
@@ -69,7 +71,7 @@ This module:
 2. Import setup file (sandbox.setup)
    ↓
 3. Oomph Installer reads configuration
-   ├─ Installs Eclipse 2025-12
+   ├─ Installs Eclipse 2026-06
    ├─ Clones sandbox repository
    ├─ Imports Maven projects
    ├─ Sets target platform
@@ -108,7 +110,7 @@ Browse to sandbox.setup
 
 ```xml
 <setupTask xsi:type="p2:P2DirectorTask">
-    <repository url="https://download.eclipse.org/releases/2025-12"/>
+    <repository url="https://download.eclipse.org/releases/2026-06"/>
 </setupTask>
 ```
 
@@ -149,7 +151,7 @@ This module integrates with Eclipse's Oomph installer framework:
    - Configures remote tracking
 
 3. **P2 Integration**: Oomph's P2DirectorTask installs Eclipse features
-   - Resolves dependencies from Eclipse 2025-12 repository
+   - Resolves dependencies from Eclipse 2026-06 repository
    - Installs required JDT, PDE, and SDK features
    - Configures target platform
 
@@ -224,9 +226,9 @@ Configures Eclipse workspace preferences:
 ```xml
 <setupTask xsi:type="setup:VariableTask"
     name="eclipse.target.version"
-    value="2025-12"
+    value="2026-06"
     label="Eclipse Release Version"
-    defaultValue="2025-12">
+    defaultValue="2026-06">
   <description>The Eclipse release version to use for P2 repositories...</description>
 </setupTask>
 <repository url="https://download.eclipse.org/releases/${eclipse.target.version}"/>
@@ -246,9 +248,9 @@ Configures Eclipse workspace preferences:
 **How to Update Version After Installation**:
 1. In Eclipse: Help → Perform Setup Tasks...
 2. Find "Eclipse Release Version" variable
-3. Change value (e.g., from "2025-12" to "2025-09")
+3. Change `2026-06` only as part of a coordinated update to a future named release
 4. Click OK to re-trigger setup with new version
-5. Oomph P2 repository configuration updates (update `sandbox_target/eclipse.target` manually to match the new version if needed)
+5. Oomph P2 repository configuration updates; update the root build, product, p2 category, capability inventory, active documentation, and `sandbox_target/eclipse.target` in the same change
 
 ### Eclipse Heap Size Configuration
 
@@ -336,4 +338,4 @@ The Oomph module provides automated development environment setup:
 - Ensures consistent developer configuration (same Eclipse version, preferences, target platform)
 - Reduces manual setup errors (eliminates common misconfigurations)
 - Improves contributor experience (productive in minutes, not hours)
-- Aligns with requirements in Root README (Java 21, Eclipse 2025-12, main branch)
+- Aligns with requirements in Root README (Java 21, Eclipse 2026-06, Tycho 5.0.4, main branch)

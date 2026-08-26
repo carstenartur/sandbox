@@ -4,12 +4,12 @@
 
 ## Status Summary
 
-**Current State**: Basic Oomph setup available
+**Current State**: Oomph setup aligned with Eclipse 2026-06 and Tycho 5.0.4
 
 ### Completed
 - ✅ Repository clone configuration
 - ✅ Branch selection (main)
-- ✅ P2 repository for Eclipse 2025-12
+- ✅ P2 repository for Eclipse 2026-06
 - ✅ Basic project import
 - ✅ Configurable Eclipse target version (can be updated after installation)
 - ✅ Configurable Eclipse heap size (can be updated after installation)

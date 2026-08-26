@@ -1,262 +1,95 @@
-# Target Platform Module
+# Target Platform
 
-> **Navigation**: [Main README](../README.md) | [Architecture](ARCHITECTURE.md) | [TODO](TODO.md)
+> **Navigation**: [Main README](../README.md) | [Architecture](ARCHITECTURE.md) | [Roadmap](TODO.md)
 
-## Overview
+`sandbox_target` is the PDE target-definition module used by Tycho and by Eclipse developers working on Sandbox. It defines the APIs and installable units against which every Eclipse plug-in module is compiled and tested.
 
-The **Target Platform** module defines the Eclipse target platform used for building all sandbox plugins. It specifies the exact Eclipse version, features, and dependencies required for compilation and runtime, ensuring reproducible builds across different environments.
+## Current baseline
 
-## Key Features
+| Component | Value |
+|---|---|
+| Eclipse simultaneous release | Eclipse 2026-06 |
+| Eclipse Platform | 4.40 |
+| Java execution environment | Java 21 |
+| Tycho | 5.0.4, from the root `pom.xml` |
+| Orbit aggregation | 2026-06 |
+| Bouncy Castle | 1.84 from Orbit maven-osgi release 4.40.0 |
 
-- 🎯 **Target Platform Definition** - eclipse.target file with all dependencies
-- 📦 **Eclipse 2025-12** - Currently targets latest Eclipse release
-- 🔒 **Version Locking** - Pinned dependencies for reproducible builds
-- 🔌 **P2 Repositories** - Configured update sites and repositories
-- 🏗️ **Maven/Tycho Integration** - Used by Tycho build
+This is a named, pinned release line rather than a floating `latest` Eclipse repository. Installable units with version `0.0.0` select the newest matching IU currently published inside those named repositories, so a completely immutable build would additionally require a mirrored or qualifier-pinned repository snapshot.
 
-## Quick Start
+Sandbox is built and tested against Eclipse 2026-06. Compatibility with older Eclipse releases is not claimed by the current automated gates.
 
-### Using the Target Platform
+## Authoritative files
 
-The target platform is automatically used during Maven builds:
+- `eclipse.target` — PDE/Tycho target definition.
+- `pom.xml` — target-definition Maven artifact.
+- root `pom.xml` — Tycho, Java, and matching p2 repository configuration.
+- `../docs/capabilities.json` — machine-readable public baseline.
+
+`RepositoryBaselineConsistencyTest` verifies that the target, root build, product, p2 category, Oomph setup, capability inventory, and active documentation describe the same Eclipse release.
+
+## Repositories and installable units
+
+The target currently resolves:
+
+1. Eclipse 2026-06 SDK, JDT, PDE, executable, AST View, Java Element View, and PDE spies;
+2. the matching Orbit 2026-06 aggregation for Apache Commons bundles;
+3. the Eclipse license feature;
+4. EGit and JGit;
+5. Bouncy Castle 1.84 bundles from the Orbit 4.40 maven-osgi repository;
+6. SWTBot for real-workbench UI tests.
+
+The exact list is declared in `eclipse.target`; this README is explanatory and must not be treated as a substitute for that file.
+
+## Building with the target
+
+From the repository root:
 
 ```bash
-cd /path/to/sandbox
-mvn clean verify
+mvn -T 1C clean verify
 ```
 
-Tycho resolves dependencies from the target platform defined in `eclipse.target`.
+Tycho builds `sandbox_target` first and resolves all dependent plug-in modules against it. To exercise product and p2 packaging as well:
 
-### Opening in Eclipse
-
-1. **Open Target Definition**
-   - Navigate to `sandbox_target/eclipse.target`
-   - Double-click to open in Target Definition Editor
-
-2. **Set as Active Target**
-   - Click "Set as Active Target Platform" in editor
-   - Eclipse resolves dependencies from this target
-
-3. **Resolve Target**
-   - Click "Reload Target Platform"
-   - Wait for Eclipse to download and resolve dependencies
-
-## What's Included
-
-The target platform includes:
-
-### Core Eclipse
-- **Eclipse SDK** - Core platform and JDT
-- **Eclipse PDE** - Plugin Development Environment
-- **Eclipse Platform** - Base platform components
-
-### JDT Components
-- **JDT Core** - Java compiler and model
-- **JDT UI** - Java development tools UI
-- **JDT Debug** - Java debugging support
-
-### Additional Components
-- **Eclipse Orbit** - Third-party libraries
-- **JustJ JRE** - Embedded Java runtime
-- **EGit** - Git integration
-- **License Features** - Eclipse license information
-
-### P2 Repositories
-
-Configured repositories:
-- Eclipse 2025-12 release
-- Eclipse Orbit latest
-- JustJ JRE repository
-- EGit/EGit GitHub Connector
-
-## Target Platform File
-
-The `eclipse.target` file structure:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<target name="Eclipse 2025-12">
-  <locations>
-    <location includeAllPlatforms="false" includeConfigurePhase="true" 
-             includeMode="planner" includeSource="true" type="InstallableUnit">
-      <unit id="org.eclipse.sdk.feature.group" version="..."/>
-      <unit id="org.eclipse.jdt.feature.group" version="..."/>
-      <!-- ... more units ... -->
-      <repository location="https://download.eclipse.org/releases/2025-12"/>
-    </location>
-    <!-- ... more locations ... -->
-  </locations>
-</target>
+```bash
+mvn -Pdistribution clean verify
 ```
 
-## Benefits
+The distribution build is intentionally sequential.
 
-### Reproducible Builds
-- Same dependencies across all machines
-- Consistent compilation results
-- Predictable behavior
+## Using the target in Eclipse
 
-### Version Control
-- Target platform versioned in Git
-- Changes tracked and reviewable
-- Easy to rollback
+1. Open `sandbox_target/eclipse.target` in the PDE Target Definition editor.
+2. Let PDE resolve all repositories and installable units.
+3. Select **Set as Active Target Platform**.
+4. Check the Problems view before importing or editing plug-in projects.
 
-### Multi-Version Support
-- Can maintain multiple target files
-- Support different Eclipse versions
-- Test against multiple platforms
+The Oomph setup provisions the IDE and records the same default release, but it does not replace PDE target activation. IDE provisioning and the workspace target are related, separate contracts.
 
-## Configuration
+## Updating the baseline
 
-### Changing Eclipse Version
+Treat an Eclipse baseline update as one coordinated transaction:
 
-To target a different Eclipse version:
+1. update `eclipse.target`, including matching Orbit and Bouncy Castle sources;
+2. update root `pom.xml` repositories and any API version pins;
+3. update `sandbox_product/sandbox.product` and `sandbox_product/category.xml`;
+4. update `sandbox_oomph/sandbox.setup`;
+5. update `docs/capabilities.json` and regenerate `docs/capabilities.md`;
+6. update active build, contribution, target, product, and Oomph documentation;
+7. run Maven, capability, distribution, Help/SWTBot, and security gates.
 
-1. **Copy Target File**
-   ```bash
-   cp eclipse.target eclipse-2024-12.target
-   ```
-
-2. **Update Repository URLs**
-   - Change `2025-12` to `2024-12` in repository locations
-
-3. **Update Version Numbers**
-   - Update feature/plugin versions to match new Eclipse
-
-4. **Update Parent POM**
-   - Reference new target file in `pom.xml`
-
-5. **Test Build**
-   ```bash
-   mvn clean verify
-   ```
-
-### Adding Dependencies
-
-To add new dependencies:
-
-1. **Open Target Definition**
-   - Edit `eclipse.target` in Target Editor
-
-2. **Add Software Site**
-   - Click "Add..." → "Software Site"
-   - Enter repository URL
-
-3. **Select Features**
-   - Browse available features
-   - Select required features
-   - Click "Finish"
-
-4. **Reload Target**
-   - Save file
-   - Click "Reload Target Platform"
-
-## Version Information
-
-### Current Target
-
-- **Eclipse Version**: 2025-12
-- **Java Version**: Java 21 required
-- **JDT Version**: Latest from Eclipse 2025-12
-- **Platform Version**: Eclipse Platform 4.33
-
-### Compatibility
-
-The target platform ensures:
-- All plugins compile against same Eclipse version
-- API compatibility across modules
-- Test infrastructure compatibility
-
-## Documentation
-
-- **[Architecture](ARCHITECTURE.md)** - Target platform structure
-- **[TODO](TODO.md)** - Version update plans
-- **[Eclipse Version Configuration](../README.md#eclipse-version-configuration)** - Detailed upgrade guide
-
-## Maven/Tycho Integration
-
-The target platform integrates with Maven/Tycho build:
-
-### Parent POM Reference
-
-```xml
-<plugin>
-  <groupId>org.eclipse.tycho</groupId>
-  <artifactId>target-platform-configuration</artifactId>
-  <configuration>
-    <target>
-      <artifact>
-        <groupId>sandbox</groupId>
-        <artifactId>sandbox_target</artifactId>
-        <version>1.2.1-SNAPSHOT</version>
-      </artifact>
-    </target>
-  </configuration>
-</plugin>
-```
-
-### Resolution Process
-
-1. Maven builds sandbox_target module first
-2. Tycho reads eclipse.target file
-3. Dependencies resolved from P2 repositories
-4. Other modules compile against resolved target
-
-## Maintenance
-
-### Regular Updates
-
-Periodically update target platform:
-- When new Eclipse version released
-- When dependencies need updates
-- When security patches available
-
-### Testing Updates
-
-Test target platform changes:
-1. Update target file
-2. Build project: `mvn clean verify`
-3. Run tests: `mvn test`
-4. Verify all plugins work
-5. Commit if successful
-
-See [TODO.md](TODO.md) for update schedule and plans.
+Do not rewrite dated QA records to make an earlier review appear to have used the new baseline.
 
 ## Troubleshooting
 
-### Resolution Failures
+### Target does not resolve
 
-**Symptom**: "Unable to satisfy dependency" errors
+Verify the named release and Orbit URLs, then clear only the relevant local p2/Tycho cache if a corrupt download is proven. Do not solve a resolution conflict by silently switching one file to a different Eclipse release.
 
-**Solutions**:
-- Verify repository URLs are accessible
-- Check feature/plugin versions exist
-- Reload target platform
-- Clear P2 cache
+### Bundle version conflict
 
-### Slow Resolution
+Compare the target IU list with the root `target-platform-configuration` extra requirements. Bouncy Castle is intentionally aligned as a four-bundle 1.84 set.
 
-**Symptom**: Target platform takes long to resolve
+### IDE and Maven disagree
 
-**Solutions**:
-- Use local P2 mirror
-- Cache P2 repository locally
-- Reduce number of repositories
-- Use specific versions (not "latest")
-
-### Version Conflicts
-
-**Symptom**: Different plugins need different versions
-
-**Solutions**:
-- Find compatible version range
-- Update all dependencies together
-- Use Eclipse update site for consistency
-
-## License
-
-Eclipse Public License 2.0 (EPL-2.0)
-
----
-
-> **Related**: [Eclipse Version Configuration](../README.md#eclipse-version-configuration) - Guide for updating Eclipse versions
+Confirm that `eclipse.target` is the active PDE target and that Maven runs with Java 21. The active IDE installation alone does not determine Tycho's target platform.
