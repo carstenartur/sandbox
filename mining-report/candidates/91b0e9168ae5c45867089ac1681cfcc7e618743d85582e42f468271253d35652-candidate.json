@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "91b0e9168ae5c45867089ac1681cfcc7e618743d85582e42f468271253d35652",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "if ($var instanceof java.util.Map$)\n:: inClass(\"org.eclipse.jdt.internal.ui.preferences.ClasspathVariablesPreferencePage\")\n:: hasField(\"fVariableBlock\")\n\u003d\u003e\nif ($var instanceof java.util.Map \u0026\u0026 fVariableBlock !\u003d null$)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport java.util.Map;\nimport org.eclipse.jface.preference.PreferencePage;\n\npublic class ClasspathVariablesPreferencePage extends PreferencePage {\n\n    private Object fVariableBlock; // This field must exist for the rule to apply\n\n    public void applyData(Object data) {\n        // Original line in the diff\n        if (data instanceof Map) {\n            Object id \u003d ((Map) data).get(\"DATA_SELECT_VARIABLE\");\n            if (id instanceof String) {\n                // This line might cause NPE if fVariableBlock is null\n                // fVariableBlock.setSelection((String) id);\n            }\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport java.util.Map;\nimport org.eclipse.jface.preference.PreferencePage;\n\npublic class ClasspathVariablesPreferencePage extends PreferencePage {\n\n    private Object fVariableBlock;\n\n    public void applyData(Object data) {\n        // Transformed line after cleanup\n        if (data instanceof Map \u0026\u0026 fVariableBlock !\u003d null) {\n            Object id \u003d ((Map) data).get(\"DATA_SELECT_VARIABLE\");\n            if (id instanceof String) {\n                // fVariableBlock.setSelection((String) id);\n            }\n        }\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport java.util.Map;\nimport org.eclipse.jface.preference.PreferencePage;\n\npublic class AnotherPreferencePage extends PreferencePage {\n\n    // This class does NOT have a field named \u0027fVariableBlock\u0027\n\n    public void someOtherMethod(Object input) {\n        // This \u0027if\u0027 statement should NOT match because \u0027AnotherPreferencePage\u0027 lacks \u0027fVariableBlock\u0027\n        if (input instanceof Map) {\n            System.out.println(\"Processing map input.\");\n        }\n    }\n\n    public void applyData(Object data) {\n        // This \u0027if\u0027 statement should NOT match (even though method is \u0027applyData\u0027) because \u0027AnotherPreferencePage\u0027 lacks \u0027fVariableBlock\u0027\n        if (data instanceof Map) {\n            System.out.println(\"Another class\u0027s applyData processing map input.\");\n        }\n    }\n}\n\n// Another negative example within the same class, but a different condition\n// public class ClasspathVariablesPreferencePage extends PreferencePage {\n//     private Object fVariableBlock;\n//     public void anotherMethod(Object data) {\n//         if (data instanceof java.util.List) { // Different instanceof check\n//             System.out.println(\"List data\");\n//         }\n//     }\n// }",
+  "targetHintFile": "null-safety.sandbox-hint",
+  "sourceCommit": "c4d0bd63a9ab2db0c3d26283539f97443ffbacdb",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Robustness",
+  "summary": "Add null check for \u0027fVariableBlock\u0027 to an \u0027if (data instanceof Map)\u0027 condition.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-26T02:43:26.599462653Z",
+  "ruleFingerprint": "sha256:8336e054820661aa066389979b020cb06c244e58b7484248f4303dcd361778c0",
+  "behaviorFingerprint": "sha256:9b4118c6ddefff65573b309ac6ef215e6365ea5ecfff92b9c1911c17fa60b6a5",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jface.preference cannot be resolved",
+    "verifiedAt": "2026-08-26T02:43:29.810499596Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

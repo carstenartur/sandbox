@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a9059783ec26b38be5dd648335fe5bfbe14816c52c696883a53e780e2acd623c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.JavaPluginImages.setLocalImageDescriptors($action, \"refresh_nav.gif\")\n\u003d\u003e\norg.eclipse.jdt.internal.ui.JavaPluginImages.setLocalImageDescriptors($action, \"refresh.gif\")\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.callhierarchy;\n\nimport org.eclipse.jface.action.Action;\nimport org.eclipse.ui.IWorkbenchCommandConstants;\nimport org.eclipse.ui.PlatformUI;\n\nimport org.eclipse.jdt.internal.ui.IJavaHelpContextIds;\nimport org.eclipse.jdt.internal.ui.JavaPluginImages;\n\npublic class RefreshElementAction extends Action {\n    private Object fInput;\n\n    public RefreshElementAction(Object input) {\n        fInput \u003d input;\n        setText(\"Refresh Element\");\n        setToolTipText(\"Refresh Element Tooltip\");\n        setDescription(\"Refresh Element Description\");\n        JavaPluginImages.setLocalImageDescriptors(this, \"refresh_nav.gif\");//$NON-NLS-1$\n        setActionDefinitionId(IWorkbenchCommandConstants.FILE_REFRESH);\n        PlatformUI.getWorkbench().getHelpSystem().setHelp(this, IJavaHelpContextIds.CALL_HIERARCHY_REFRESH_SINGLE_ELEMENT_ACTION);\n        setEnabled(true);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.callhierarchy;\n\nimport org.eclipse.jface.action.Action;\nimport org.eclipse.ui.IWorkbenchCommandConstants;\nimport org.eclipse.ui.PlatformUI;\n\nimport org.eclipse.jdt.internal.ui.IJavaHelpContextIds;\nimport org.eclipse.jdt.internal.ui.JavaPluginImages;\n\npublic class RefreshElementAction extends Action {\n    private Object fInput;\n\n    public RefreshElementAction(Object input) {\n        fInput \u003d input;\n        setText(\"Refresh Element\");\n        setToolTipText(\"Refresh Element Tooltip\");\n        setDescription(\"Refresh Element Description\");\n        JavaPluginImages.setLocalImageDescriptors(this, \"refresh.gif\");//$NON-NLS-1$\n        setActionDefinitionId(IWorkbenchCommandConstants.FILE_REFRESH);\n        PlatformUI.getWorkbench().getHelpSystem().setHelp(this, IJavaHelpContextIds.CALL_HIERARCHY_REFRESH_SINGLE_ELEMENT_ACTION);\n        setEnabled(true);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.callhierarchy;\n\nimport org.eclipse.jface.action.Action;\nimport org.eclipse.ui.IWorkbenchCommandConstants;\nimport org.eclipse.ui.PlatformUI;\n\nimport org.eclipse.jdt.internal.ui.IJavaHelpContextIds;\nimport org.eclipse.jdt.internal.ui.JavaPluginImages;\n\npublic class AnotherAction extends Action {\n    public AnotherAction() {\n        setText(\"Another Action\");\n        JavaPluginImages.setLocalImageDescriptors(this, \"other_icon.gif\");\n    }\n}",
+  "targetHintFile": "resources.sandbox-hint",
+  "sourceCommit": "8ebc1092d289f727c900b6ad3f141ddfee27bbcd",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String Literal Refactoring",
+  "summary": "Replaces the specific string literal \u0027refresh_nav.gif\u0027 with \u0027refresh.gif\u0027 in calls to JavaPluginImages.setLocalImageDescriptors.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-26T02:43:26.659736621Z",
+  "ruleFingerprint": "sha256:c372284f9d367858bb5fc7ba7105e4ade9921535f50e9f8c3767f3d832e67a71",
+  "behaviorFingerprint": "sha256:57f9ccc1de1002215f99d858758df985f424b51c9f41174e706d6e6625560bdc",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.action cannot be resolved",
+    "verifiedAt": "2026-08-26T02:43:29.847244642Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

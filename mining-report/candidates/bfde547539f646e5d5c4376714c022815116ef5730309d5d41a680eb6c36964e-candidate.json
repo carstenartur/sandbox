@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "bfde547539f646e5d5c4376714c022815116ef5730309d5d41a680eb6c36964e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jface.internal.text.html.HTMLPrinter.convertToHTMLContent($x)\n\u003d\u003e\norg.eclipse.jface.internal.text.html.HTMLPrinter.convertToHTMLContentWithWhitespace($x)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.internal.text.html.HTMLPrinter;\n\npublic class MyClass {\n    public String processHtml(String content) {\n        if (content !\u003d null) {\n            return HTMLPrinter.convertToHTMLContent(content);\n        }\n        return null;\n    }\n    \n    public void otherMethod() {\n        String s \u003d \"test\";\n        String html \u003d HTMLPrinter.convertToHTMLContent(s);\n        System.out.println(html);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.internal.text.html.HTMLPrinter;\n\npublic class MyClass {\n    public String processHtml(String content) {\n        if (content !\u003d null) {\n            return HTMLPrinter.convertToHTMLContentWithWhitespace(content);\n        }\n        return null;\n    }\n    \n    public void otherMethod() {\n        String s \u003d \"test\";\n        String html \u003d HTMLPrinter.convertToHTMLContentWithWhitespace(s);\n        System.out.println(html);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.internal.text.html.HTMLPrinter;\n\npublic class MyClass {\n    public String processNonHtml(String content) {\n        return content.trim(); // Different method call, should not match\n    }\n\n    public String escapeContent(String content) {\n        return HTMLPrinter.escapeForHTMLString(content); // Different method from HTMLPrinter, should not match\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "8f7a5786322e3e27f4b87f6274969cc6c2ed56f4",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaced `HTMLPrinter.convertToHTMLContent()` with `HTMLPrinter.convertToHTMLContentWithWhitespace()` for improved handling of HTML content.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-26T02:43:26.688013637Z",
+  "ruleFingerprint": "sha256:d33c6bb28d061914fdcce46660dced833013b98585975c5997ab09c60d1c42be",
+  "behaviorFingerprint": "sha256:902a472f9acf8f7512dcfefc343e166ba0765d1ab40da8bb8db04e908364cffe",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.internal cannot be resolved",
+    "verifiedAt": "2026-08-26T02:43:29.871875377Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

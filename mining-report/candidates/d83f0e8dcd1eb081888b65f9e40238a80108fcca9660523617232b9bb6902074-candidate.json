@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d83f0e8dcd1eb081888b65f9e40238a80108fcca9660523617232b9bb6902074",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.jdt.internal.ui.text.JavaOutlineInformationControl.OrStringMatcher($pattern, $pattern2, $ignoreCase, false)\n\u003d\u003e\nnew org.eclipse.jdt.internal.ui.text.JavaOutlineInformationControl.OrStringMatcher($pattern, $pattern2, $ignoreCase)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text;\n\npublic class JavaOutlineInformationControl {\n    private OrStringMatcher fStringMatcher;\n\n    private static class OrStringMatcher {\n        private OrStringMatcher(String pattern1, String pattern2, boolean ignoreCase, boolean foo) {}\n    }\n\n    private static class StringMatcher {\n        public StringMatcher(String pattern, boolean ignoreCase, boolean ignoreWildcards) {}\n    }\n\n    public void setStringMatcher(String pattern, boolean update) {\n        boolean ignoreCase \u003d pattern.toLowerCase().equals(pattern);\n        String pattern2 \u003d \"*\" + \"::\" + pattern;\n        fStringMatcher \u003d new OrStringMatcher(pattern, pattern2, ignoreCase, false);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text;\n\npublic class JavaOutlineInformationControl {\n    private OrStringMatcher fStringMatcher;\n\n    private static class OrStringMatcher {\n        private OrStringMatcher(String pattern1, String pattern2, boolean ignoreCase) {}\n    }\n\n    private static class StringMatcher {\n        public StringMatcher(String pattern, boolean ignoreCase, boolean ignoreWildcards) {}\n    }\n\n    public void setStringMatcher(String pattern, boolean update) {\n        boolean ignoreCase \u003d pattern.toLowerCase().equals(pattern);\n        String pattern2 \u003d \"*\" + \"::\" + pattern;\n        fStringMatcher \u003d new OrStringMatcher(pattern, pattern2, ignoreCase);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text;\n\nclass OtherPackage {\n    static class OrStringMatcher {\n        public OrStringMatcher(String pattern1, String pattern2, boolean ignoreCase, boolean foo) {}\n    }\n}\n\npublic class NotJavaOutlineInformationControl {\n    private OtherPackage.OrStringMatcher fStringMatcher;\n\n    private static class OrStringMatcher {\n        private OrStringMatcher(String pattern1, String pattern2, boolean ignoreCase, boolean someOtherBoolean) {}\n    }\n\n    private static class StringMatcher {\n        public StringMatcher(String pattern, boolean ignoreCase, boolean ignoreWildcards) {}\n    }\n\n    public void someOtherMethod(String pattern, boolean update) {\n        boolean ignoreCase \u003d pattern.toLowerCase().equals(pattern);\n        String pattern2 \u003d \"*\" + \"::\" + pattern;\n        // Should not match this, as the last arg is a parameter, not \u0027false\u0027 literal\n        fStringMatcher \u003d new NotJavaOutlineInformationControl.OrStringMatcher(pattern, pattern2, ignoreCase, update);\n        // Should not match this, as the last arg is \u0027true\u0027 literal\n        fStringMatcher \u003d new NotJavaOutlineInformationControl.OrStringMatcher(pattern, pattern2, ignoreCase, true);\n        // Should not match this, as the FQN is different\n        fStringMatcher \u003d new OtherPackage.OrStringMatcher(pattern, pattern2, ignoreCase, false);\n    }\n}",
+  "targetHintFile": "code-cleanup.sandbox-hint",
+  "sourceCommit": "a33799d4cd8c0c12b561f05b5481b34853ea9ed8",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Code Cleanup",
+  "summary": "Removes the trailing \u0027false\u0027 literal argument from the constructor call of OrStringMatcher, reflecting the removal of an unused parameter.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-26T02:43:26.696673030Z",
+  "ruleFingerprint": "sha256:06a2564976d600ecdc7c5f390766d81d17add10c2a6d8cf84fd7567c19733d81",
+  "behaviorFingerprint": "sha256:1f57a0a304b9a2386c16c61af36a055990bb4700e38ca0c1bb9ef839458ddc5e",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type JavaOutlineInformationControl must be defined in its own file",
+    "verifiedAt": "2026-08-26T02:43:29.881493324Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

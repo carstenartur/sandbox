@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "624c47999423222cacbe4384356f6f0a3374a0a828dfa0806d4ad15b46d9b61a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jdt.ui.refactor.preference.constants\u003e\n\u003c!description: Migrate usage of internal JavaElementLabelComposer preference constants to public PreferenceConstants.\u003e\n\u003c!severity: HINT\u003e\n\u003c!map ABBREV_CONSTANTS: \"APPEARANCE_ABBREVIATE_PACKAGE_NAMES\" \u003d\u003e \"APPEARANCE_ABBREVIATE_PACKAGE_NAMES\", \"APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW\" \u003d\u003e \"APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW\"\u003e\n\norg.eclipse.jdt.internal.ui.viewsupport.JavaElementLabelComposer.#{ABBREV_CONSTANTS}\n\u003d\u003e\norg.eclipse.jdt.ui.PreferenceConstants.#{ABBREV_CONSTANTS_VALUE}\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport org.eclipse.jdt.internal.ui.viewsupport.JavaElementLabelComposer;\nimport org.eclipse.jdt.ui.PreferenceConstants;\n\npublic class MyClass {\n    private static final String PREF_ABBREVIATE_PACKAGE_NAMES\u003d JavaElementLabelComposer.APPEARANCE_ABBREVIATE_PACKAGE_NAMES;\n    private static final String PREF_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW\u003d JavaElementLabelComposer.APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW;\n\n    public void foo() {\n        System.out.println(JavaElementLabelComposer.APPEARANCE_ABBREVIATE_PACKAGE_NAMES);\n        boolean condition \u003d store.getBoolean(JavaElementLabelComposer.APPEARANCE_ABBREVIATE_PACKAGE_NAMES);\n        System.out.println(JavaElementLabelComposer.APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW);\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport org.eclipse.jdt.ui.PreferenceConstants;\n\npublic class MyClass {\n    private static final String PREF_ABBREVIATE_PACKAGE_NAMES\u003d PreferenceConstants.APPEARANCE_ABBREVIATE_PACKAGE_NAMES;\n    private static final String PREF_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW\u003d PreferenceConstants.APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW;\n\n    public void foo() {\n        System.out.println(PreferenceConstants.APPEARANCE_ABBREVIATE_PACKAGE_NAMES);\n        boolean condition \u003d store.getBoolean(PreferenceConstants.APPEARANCE_ABBREVIATE_PACKAGE_NAMES);\n        System.out.println(PreferenceConstants.APPEARANCE_PKG_NAME_ABBREVIATION_PATTERN_FOR_PKG_VIEW);\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport org.eclipse.jdt.internal.ui.viewsupport.JavaElementLabelComposer;\nimport org.eclipse.jdt.ui.PreferenceConstants;\n\npublic class MyClass {\n    public static final String SOME_OTHER_FIELD \u003d \"test\";\n    public void bar() {\n        // Should not match other members of JavaElementLabelComposer\n        String someOtherField \u003d JavaElementLabelComposer.SOME_OTHER_FIELD; // Assumes SOME_OTHER_FIELD exists\n        System.out.println(someOtherField);\n        // Should not match other PreferenceConstants\n        String otherPref \u003d PreferenceConstants.APPEARANCE_COMPRESS_PACKAGE_NAMES;\n        System.out.println(otherPref);\n    }\n}\n",
+  "targetHintFile": "api-usage.sandbox-hint",
+  "sourceCommit": "7a03bf80d79b6ac4e21d308bccabf8eb92be493b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Usage Refactoring",
+  "summary": "Replace references to internal JavaElementLabelComposer constants with their public counterparts in PreferenceConstants.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-26T02:43:26.670528595Z",
+  "ruleFingerprint": "sha256:59bb7110a84b50c647f2bb8c4fa69f72184caa6bfa468a13dbeceb95f82bd668",
+  "behaviorFingerprint": "sha256:394c7e002c8b4ca336a7761377d1b89148f3af5c9e78b25a3d98027ad180bf9d",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-26T02:43:29.851701836Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

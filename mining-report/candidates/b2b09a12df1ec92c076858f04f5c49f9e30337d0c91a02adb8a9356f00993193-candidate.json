@@ -13,8 +13,9 @@
   "category": "String Literal Replacement",
   "summary": "Replaces the deprecated Java platform identifier \u0027J2SE-1.6\u0027 with \u0027JavaSE-1.6\u0027.",
   "sourceVersion": "21",
-  "status": "READY_FOR_REVIEW",
+  "status": "REJECTED",
   "discoveredAt": "2026-08-22T02:33:23.993637131Z",
+  "rejectionReason": "Rejected because the mined rule discarded the source context. The upstream commit changes one return value in NewJavaProjectWizardPageOne.getDefaultEEName(), while the proposed DSL rewrites every exact \"J2SE-1.6\" string literal. That can alter compatibility tests, diagnostics, persisted legacy identifiers, or migration code where the old value is intentionally observed. The negative fixture only tests different literals and therefore does not cover the decisive same-literal/different-context near miss.",
   "ruleFingerprint": "sha256:2186cedfd5d5e7b45183d855825087132065098a7fe127ac7d4696b62a5ed6ba",
   "behaviorFingerprint": "sha256:0dd805a050a8879b551a0453e2c84a9310780594382998f5a61a1052376eacdd",
   "verification": {
@@ -40,6 +41,13 @@
       "actor": "CandidateVerificationCli",
       "reason": "All deterministic candidate gates passed",
       "occurredAt": "2026-08-22T02:33:28.115541677Z"
+    },
+    {
+      "from": "READY_FOR_REVIEW",
+      "to": "REJECTED",
+      "actor": "carstenartur",
+      "reason": "Rejected because the mined rule discarded the source context. The upstream commit changes one return value in NewJavaProjectWizardPageOne.getDefaultEEName(), while the proposed DSL rewrites every exact \"J2SE-1.6\" string literal. That can alter compatibility tests, diagnostics, persisted legacy identifiers, or migration code where the old value is intentionally observed. The negative fixture only tests different literals and therefore does not cover the decisive same-literal/different-context near miss.",
+      "occurredAt": "2026-08-25T04:00:27Z"
     }
   ]
 }
