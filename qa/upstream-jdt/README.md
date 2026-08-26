@@ -254,9 +254,17 @@ Sandbox-patched Cleanup preview keeps coordinated JUnit and Int-to-Enum
 candidates atomic and reproduces the committed Help images from deterministic
 Workbench fixtures.
 
-These two green gates must not be described as one already unified upstream UI
-scenario. The remaining work tracked by #1469 is to drive the interactive
-Cleanup preview from the same pinned JDT UI workspace and headless plan, verify
-candidate and affected-file agreement, and attach matching screenshot
-provenance. Until that integration passes, Sandbox must not claim that the
-overall JUnit migration or its documentation-driven real-corpus QA is complete.
+These two gates must not be described as one already unified upstream UI
+scenario. Two boundaries tracked by #1469 and #1497 remain:
+
+1. drive the interactive Cleanup preview from the same pinned JDT UI workspace
+   and headless plan, verify candidate and affected-file agreement, and attach
+   matching screenshot provenance;
+2. move checkout identity, corpus classification, report comparison and
+   provenance assertions from the current shell/Python orchestration into
+   reusable Java/JUnit fixtures executed by Maven/Tycho, leaving workflows to
+   provision the environment and invoke the same Maven authority.
+
+Until both boundaries pass on the integrated commit, Sandbox must not claim
+that the overall JUnit migration or its documentation-driven real-corpus QA is
+complete.
