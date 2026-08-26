@@ -5,6 +5,7 @@ on:
   push:
     branches: [ main ]
     paths:
+      - '.github/actions/use-runner-maven/**'
       - '.github/patched-jdt-ui.env'
       - '.github/probes/patched-jdt-ui/**'
       - '.github/scripts/add_p2_sha256_checksums.py'
@@ -22,6 +23,7 @@ on:
   pull_request:
     branches: [ main ]
     paths:
+      - '.github/actions/use-runner-maven/**'
       - '.github/patched-jdt-ui.env'
       - '.github/probes/patched-jdt-ui/**'
       - '.github/scripts/add_p2_sha256_checksums.py'
@@ -55,10 +57,10 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
-        with:
-          maven-version: 3.9.14
+      - name: Use runner Maven
+        uses: ./.github/actions/use-runner-maven
       - name: Build and verify pinned replacement bundle
+        id: build_bundle
         shell: bash
         run: |
           set +e
@@ -68,7 +70,7 @@ jobs:
           tail -n 250 patched-jdt-ui-build.log
           exit "$status"
       - name: Upload build diagnostics
-        if: always()
+        if: ${{ always() && steps.build_bundle.outcome != 'skipped' }}
         uses: actions/upload-artifact@v7
         with:
           name: patched-jdt-ui-build-log
@@ -94,9 +96,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
-        with:
-          maven-version: 3.9.14
+          cache: maven
+      - name: Use runner Maven
+        uses: ./.github/actions/use-runner-maven
       - name: Prepare compatibility evidence directory
         run: mkdir -p "$RUNNER_TEMP/patched-jdt-ui-compatibility"
       - name: Download verified replacement bundle
@@ -163,9 +165,8 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
-        with:
-          maven-version: 3.9.14
+      - name: Use runner Maven
+        uses: ./.github/actions/use-runner-maven
       - name: Download verified replacement bundle
         uses: actions/download-artifact@v8
         with:
@@ -213,9 +214,8 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1
-        with:
-          maven-version: 3.9.14
+      - name: Use runner Maven
+        uses: ./.github/actions/use-runner-maven
       - name: Install Linux product runtime libraries
         run: |
           sudo apt-get update
