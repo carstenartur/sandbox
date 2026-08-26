@@ -35,7 +35,7 @@ public class JdtUiCorpusEvidenceExecutionTest {
 	private static final Gson PRETTY_JSON = new GsonBuilder().setPrettyPrinting().create();
 
 	@Test
-	@EnabledIfSystemProperty(named = ENABLED, matches = "true")
+	@EnabledIfSystemProperty(named = ENABLED, matches = "true") //$NON-NLS-1$
 	public void verifyConfiguredEvidence() throws Exception {
 		JsonObject result = JdtUiCorpusEvidenceVerifier.verify(
 				requiredPath("sandbox.jdt.ui.evidence.repository"), //$NON-NLS-1$
