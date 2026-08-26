@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9096bf17931132bbfd5965660361051b8958cbada869b2e1753aeadcc42ca4b8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.typehierarchy.HistoryAction.getElementLabel($elements)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.typehierarchy.TypeHierarchyViewPart.getElementLabel($elements)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.typehierarchy;\n\nimport org.eclipse.jdt.core.IJavaElement;\n\npublic class MyClass {\n    public void someMethod(IJavaElement[] elements) {\n        String label \u003d HistoryAction.getElementLabel(elements);\n        System.out.println(label);\n    }\n}\n\nclass HistoryAction {\n    public static String getElementLabel(IJavaElement[] elements) {\n        return \"History: \" + elements.length;\n    }\n    public static String getSomeOtherLabel(Object o) {\n        return \"Other: \" + o.hashCode();\n    }\n}\n\nclass TypeHierarchyViewPart {\n    public static String getElementLabel(IJavaElement[] elements) {\n        return \"TypeHierarchy: \" + elements.length;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.typehierarchy;\n\nimport org.eclipse.jdt.core.IJavaElement;\n\npublic class MyClass {\n    public void someMethod(IJavaElement[] elements) {\n        String label \u003d TypeHierarchyViewPart.getElementLabel(elements);\n        System.out.println(label);\n    }\n}\n\nclass HistoryAction {\n    public static String getElementLabel(IJavaElement[] elements) {\n        return \"History: \" + elements.length;\n    }\n    public static String getSomeOtherLabel(Object o) {\n        return \"Other: \" + o.hashCode();\n    }\n}\n\nclass TypeHierarchyViewPart {\n    public static String getElementLabel(IJavaElement[] elements) {\n        return \"TypeHierarchy: \" + elements.length;\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.typehierarchy;\n\nimport org.eclipse.jdt.core.IJavaElement;\n\npublic class MyClass {\n    public void callDifferentMethod() {\n        // This call to a different method name should not be matched by the rule.\n        String someOtherLabel \u003d HistoryAction.getSomeOtherLabel(new Object());\n    }\n\n    public void callMethodWithDifferentArgumentType() {\n        // If an overload existed, e.g., HistoryAction.getElementLabel(String[]), it would not match\n        // because the rule is implicitly matching based on the method signature inferred from FQN and parameter count.\n        // Assuming HistoryAction.getElementLabel only takes IJavaElement[], this example serves to show it won\u0027t match a hypothetical overload.\n    }\n}\n\nclass HistoryAction {\n    public static String getElementLabel(IJavaElement[] elements) {\n        return \"History: \" + elements.length;\n    }\n    public static String getSomeOtherLabel(Object o) {\n        return \"Other: \" + o.hashCode();\n    }\n}\n\nclass TypeHierarchyViewPart {\n    public static String getElementLabel(IJavaElement[] elements) {\n        return \"TypeHierarchy: \" + elements.length;\n    }\n}",
+  "targetHintFile": "internal-api-refactoring.sandbox-hint",
+  "sourceCommit": "35ded8d4e5a5a7d8592a882f4aec4224b2248f61",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replace calls to HistoryAction.getElementLabel with TypeHierarchyViewPart.getElementLabel, reflecting an internal refactoring of a utility method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-26T02:43:26.632352208Z",
+  "ruleFingerprint": "sha256:e2ce069c49556f99065e670568637242e331cda6e4d258dd1a9bd73b94a66141",
+  "behaviorFingerprint": "sha256:c1c720ce7642495f924881a3328d2ef302f63eb5c152b5cce88583b54a638def",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-08-26T02:43:29.824714887Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

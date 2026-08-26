@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "52211ada242b5146d8a9e9e6f4d641f64e237d21fb776687278855e57df607ca",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "super(org.eclipse.jdt.internal.ui.viewsupport.AppearanceAwareLabelProvider.DEFAULT_TEXTFLAGS, $imageFlags)\n\u003d\u003e\nsuper(org.eclipse.jdt.internal.ui.viewsupport.AppearanceAwareLabelProvider.DEFAULT_TEXTFLAGS | org.eclipse.jdt.ui.JavaElementLabels.P_COMPRESSED, $imageFlags)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.viewsupport.AppearanceAwareLabelProvider;\n\n// Dummy classes to make it compile\nclass TypeHierarchyLifeCycle {}\nclass MethodsViewer {}\n\npublic class MethodsLabelProvider extends AppearanceAwareLabelProvider {\n    public MethodsLabelProvider(TypeHierarchyLifeCycle lifeCycle, MethodsViewer methodsViewer) {\n        super(AppearanceAwareLabelProvider.DEFAULT_TEXTFLAGS, AppearanceAwareLabelProvider.DEFAULT_IMAGEFLAGS);\n    }\n}\n\npackage org.eclipse.jdt.internal.ui.viewsupport;\n\nimport org.eclipse.jface.viewers.LabelProvider;\n\npublic class AppearanceAwareLabelProvider extends LabelProvider {\n    public static final long DEFAULT_TEXTFLAGS \u003d 1L;\n    public static final int DEFAULT_IMAGEFLAGS \u003d 2;\n\n    public AppearanceAwareLabelProvider(long textFlags, int imageFlags) {}\n}\n\npackage org.eclipse.jdt.ui;\n\npublic class JavaElementLabels {\n    public static final long P_COMPRESSED \u003d 128L;\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.viewsupport.AppearanceAwareLabelProvider;\nimport org.eclipse.jdt.ui.JavaElementLabels;\n\n// Dummy classes to make it compile\nclass TypeHierarchyLifeCycle {}\nclass MethodsViewer {}\n\npublic class MethodsLabelProvider extends AppearanceAwareLabelProvider {\n    public MethodsLabelProvider(TypeHierarchyLifeCycle lifeCycle, MethodsViewer methodsViewer) {\n        super(AppearanceAwareLabelProvider.DEFAULT_TEXTFLAGS | JavaElementLabels.P_COMPRESSED, AppearanceAwareLabelProvider.DEFAULT_IMAGEFLAGS);\n    }\n}\n\npackage org.eclipse.jdt.internal.ui.viewsupport;\n\nimport org.eclipse.jface.viewers.LabelProvider;\n\npublic class AppearanceAwareLabelProvider extends LabelProvider {\n    public static final long DEFAULT_TEXTFLAGS \u003d 1L;\n    public static final int DEFAULT_IMAGEFLAGS \u003d 2;\n\n    public AppearanceAwareLabelProvider(long textFlags, int imageFlags) {}\n}\n\npackage org.eclipse.jdt.ui;\n\npublic class JavaElementLabels {\n    public static final long P_COMPRESSED \u003d 128L;\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.viewsupport.AppearanceAwareLabelProvider;\nimport org.eclipse.jdt.ui.JavaElementLabels;\n\n// Dummy classes to make it compile\nclass TypeHierarchyLifeCycle {}\nclass MethodsViewer {}\n\npublic class MethodsLabelProvider extends AppearanceAwareLabelProvider {\n    public MethodsLabelProvider(TypeHierarchyLifeCycle lifeCycle, MethodsViewer methodsViewer) {\n        // This already contains P_COMPRESSED, so the rule should not match\n        super(AppearanceAwareLabelProvider.DEFAULT_TEXTFLAGS | JavaElementLabels.P_COMPRESSED, AppearanceAwareLabelProvider.DEFAULT_IMAGEFLAGS);\n    }\n}\n\npackage org.eclipse.jdt.internal.ui.viewsupport;\n\nimport org.eclipse.jface.viewers.LabelProvider;\n\npublic class AppearanceAwareLabelProvider extends LabelProvider {\n    public static final long DEFAULT_TEXTFLAGS \u003d 1L;\n    public static final int DEFAULT_IMAGEFLAGS \u003d 2;\n\n    public AppearanceAwareLabelProvider(long textFlags, int imageFlags) {}\n}\n\npackage org.eclipse.jdt.ui;\n\npublic class JavaElementLabels {\n    public static final long P_COMPRESSED \u003d 128L;\n}",
+  "targetHintFile": "labels.sandbox-hint",
+  "sourceCommit": "28127fea4c3a725b70418fc3a6a3490f02e04aa4",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Code Style",
+  "summary": "Adds JavaElementLabels.P_COMPRESSED flag to the DEFAULT_TEXTFLAGS argument in AppearanceAwareLabelProvider\u0027s constructor call via super().",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-26T02:43:26.704996381Z",
+  "ruleFingerprint": "sha256:4e9c8f08ae895b28406bd9c528eaee364f71a16f24b2b898276ab3cd723c6119",
+  "behaviorFingerprint": "sha256:bec55945f79049e51fde24d0cc14758650b4ff25de6d5cf556a81484080a732b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
+    "verifiedAt": "2026-08-26T02:43:29.892926246Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

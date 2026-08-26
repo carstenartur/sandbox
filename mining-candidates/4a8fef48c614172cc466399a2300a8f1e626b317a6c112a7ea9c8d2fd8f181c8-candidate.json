@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4a8fef48c614172cc466399a2300a8f1e626b317a6c112a7ea9c8d2fd8f181c8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: fix-properties-file-auto-edit-strategy-typo\u003e\n\u003c!description: Correct typo in instantiation of PropertiesFileAutoEditStrategy class name.\u003e\n\u003c!severity: WARNING\u003e\n\nnew org.eclipse.jdt.internal.ui.propertiesfileeditor.PropertiesFileAutoEditStratergy()\n\u003d\u003e\nnew org.eclipse.jdt.internal.ui.propertiesfileeditor.PropertiesFileAutoEditStrategy()\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.propertiesfileeditor;\n\nimport org.eclipse.jface.text.IAutoEditStrategy;\n\n// Assuming the typo\u0027d class definition exists for compilation\nclass PropertiesFileAutoEditStratergy implements IAutoEditStrategy {\n    @Override\n    public void customizeDocumentCommand(org.eclipse.jface.text.IDocument document, org.eclipse.jface.text.DocumentCommand command) {}\n}\n\npublic class MyClass {\n    void setup() {\n        IAutoEditStrategy strategy \u003d new PropertiesFileAutoEditStratergy();\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.propertiesfileeditor;\n\nimport org.eclipse.jface.text.IAutoEditStrategy;\n\n// Assuming the corrected class definition exists for compilation\nclass PropertiesFileAutoEditStrategy implements IAutoEditStrategy {\n    @Override\n    public void customizeDocumentCommand(org.eclipse.jface.text.IDocument document, org.eclipse.jface.text.DocumentCommand command) {}\n}\n\npublic class MyClass {\n    void setup() {\n        IAutoEditStrategy strategy \u003d new PropertiesFileAutoEditStrategy();\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.propertiesfileeditor;\n\nimport org.eclipse.jface.text.IAutoEditStrategy;\n\nclass PropertiesFileAutoEditStrategy implements IAutoEditStrategy {\n    @Override\n    public void customizeDocumentCommand(org.eclipse.jface.text.IDocument document, org.eclipse.jface.text.DocumentCommand command) {}\n}\n\npublic class MyClass {\n    void setup() {\n        IAutoEditStrategy strategy \u003d new PropertiesFileAutoEditStrategy(); // Already correct\n        IAutoEditStrategy otherStrategy \u003d new SomeOtherAutoEditStrategy(); // Different class, should not match\n    }\n}\n\nclass SomeOtherAutoEditStrategy implements IAutoEditStrategy {\n    @Override\n    public void customizeDocumentCommand(org.eclipse.jface.text.IDocument document, org.eclipse.jface.text.DocumentCommand command) {}\n}\n",
+  "targetHintFile": "misc.sandbox-hint",
+  "sourceCommit": "fce404b03c33c424114b1233b9d732389a8fc193",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Typo Fix",
+  "summary": "Fixes a typo in the class name during instantiation of `PropertiesFileAutoEditStratergy` to `PropertiesFileAutoEditStrategy`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-26T02:43:26.679566168Z",
+  "ruleFingerprint": "sha256:dfbd86d23b09b4d4fc3bf1a18480093bdfd56e7d5334e91ac317887bbfefa7dc",
+  "behaviorFingerprint": "sha256:d0e8cc61a070d52b18943105ce772468976f62d1a07838d30e2a94f2fa7db981",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-26T02:43:29.861564199Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
