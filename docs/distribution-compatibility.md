@@ -56,9 +56,13 @@ Windows and macOS archives are assembled by the same reactor but do not yet rece
 
 ### Latest snapshot
 
+[Latest snapshot p2 repository](https://carstenartur.github.io/sandbox/snapshots/latest/)
+
 The `Deploy Snapshot to GitHub Pages` workflow runs only after successful Java CI on `main`. It repeats the exact-commit distribution gate, publishes the p2 repository, and reads the public version and composite metadata back. A failed public verification restores the previously captured `gh-pages` revision with force-with-lease rollback evidence.
 
 ### Versioned releases
+
+[Versioned release repositories](https://carstenartur.github.io/sandbox/releases/)
 
 The `Release Workflow` uses the same fail-closed distribution contract. It verifies the local artifacts and public release repository before creating the release tag and GitHub Release. Tests cannot be skipped for a published release.
 
