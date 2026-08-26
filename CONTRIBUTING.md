@@ -1,222 +1,81 @@
 # Contributing to Sandbox
 
-> **Navigation**: [Main README](README.md)
+> **Navigation**: [Main README](README.md) | [Build and distribution compatibility](docs/distribution-compatibility.md)
 
-Contributions are welcome! This is an experimental sandbox project for testing Eclipse JDT cleanup implementations.
+Sandbox is an experimental Java modernization toolkit built on Eclipse JDT. Contributions should preserve the safety boundary of each cleanup, add executable evidence for supported behavior, and keep user-facing documentation consistent with the implementation.
 
-## How to Contribute
+## Supported development baseline
 
-1. **Fork the repository** on GitHub
-2. **Create a feature branch** from `main` (the default branch):
-   ```bash
-   git checkout -b feature/my-new-cleanup
-   ```
-3. **Make your changes** following the existing code structure and conventions
-4. **Test your changes** thoroughly:
-   ```bash
-   mvn -Pjacoco verify
-   ```
-5. **Commit your changes** with clear commit messages:
-   ```bash
-   git commit -m "feat: add new cleanup for XYZ pattern"
-   ```
-6. **Push to your fork** and **create a Pull Request** targeting the `main` branch
+| Component | Current baseline |
+|---|---|
+| Java | 21 |
+| Eclipse target | Eclipse 2026-06 / Platform 4.40 |
+| Build system | Maven with Tycho 5.0.4 |
+| Default branch | `main` |
 
-## Contribution Guidelines
+The authoritative values are declared in `pom.xml`, `sandbox_target/eclipse.target`, and `docs/capabilities.json`. A JUnit repository-consistency test checks the active product, p2 category, Oomph model, and documentation against those values.
 
-- Follow existing code patterns and cleanup structures
-- Add comprehensive test cases for new cleanups
-- Update documentation (README, architecture.md, todo.md) as needed
-- Ensure SpotBugs, CodeQL, and all tests pass
-- Keep changes focused and minimal
+## Contribution workflow
 
-## Reporting Issues
+1. Fork the repository and create a focused branch from `main`.
+2. Implement the change using the existing module and cleanup lifecycle contracts.
+3. Add positive, negative, and safety-boundary tests.
+4. Update the module README, architecture, installed Help, capability inventory, or roadmap when the public behavior changes.
+5. Run the relevant Maven verification from a clean working tree.
+6. Open a pull request against `main` and describe the supported scope, rejected cases, tests, and known limitations.
 
-Found a bug or have a feature request? Please [open an issue](https://github.com/carstenartur/sandbox/issues) on GitHub with:
-- Clear description of the problem or suggestion
-- Steps to reproduce (for bugs)
-- Expected vs. actual behavior
-- Eclipse and Java version information
+## Building and testing
 
-**Note**: This project primarily serves as an experimental playground. Features that prove stable and useful may be contributed upstream to Eclipse JDT.
-
----
-
-## Release Process
-
-> **For Maintainers**: This section describes how to create and publish new releases.
-
-The Sandbox project uses an **automated release workflow**:
-
-1. Navigate to **Actions** → **Release Workflow** → **Run workflow**
-2. Enter the release version (e.g., `1.2.2`)
-3. Enter the next SNAPSHOT version (e.g., `1.2.3-SNAPSHOT`)
-4. Click **Run workflow**
-
-The workflow automatically:
-- Updates all version files using `tycho-versions-plugin` (except `sandbox-functional-converter-core`)
-- Builds and verifies the release
-- Creates git tag and maintenance branch
-- Deploys to GitHub Pages
-- Generates release notes from closed issues
-- Creates GitHub release
-- Bumps to next SNAPSHOT version
-
-The new release will be available at `https://carstenartur.github.io/sandbox/releases/X.Y.Z/` within a few minutes.
-
-📖 **Detailed Release Documentation**: [GitHub Workflows README](.github/workflows/README.md#detailed-release-process)
-
----
-
-## Building from Source
-
-> **For Contributors/Developers**: This section describes how to build the project locally.
-
-### Prerequisites
-
-**IMPORTANT**: This project (main branch, targeting Eclipse 2025-12) requires **Java 21** or later.
-
-The project uses Tycho 5.0.3 which requires Java 21. Building with Java 17 or earlier will fail with:
-```
-UnsupportedClassVersionError: ... has been compiled by a more recent version of the Java Runtime (class file version 65.0)
-```
-
-Verify your Java version:
-```bash
-java -version  # Should show Java 21 or later
-```
-
-### Building
-
-#### Build Profiles
-
-The project supports Maven profiles to optimize build speed:
-
-| Profile | Modules Built | Use Case |
-|---------|---------------|----------|
-| `dev` (default) | All bundles, features, tests | Fast local development |
-| `product` | + Eclipse Product (`sandbox_product`) | Building distributable product |
-| `repo` | + P2 Update Site (`sandbox_updatesite`) | Building update site |
-| `jacoco` | + Coverage reports | CI/Coverage builds |
-| `reports` | + HTML test reports | CI/Test report builds |
-
-#### Build Commands
-
-| Command | Description |
-|---------|-------------|
-| `mvn -T 1C verify` | Quick dev build (fastest) |
-| `mvn -Pproduct -T 1C verify` | Build with Eclipse product |
-| `mvn -Prepo -T 1C verify` | Build with P2 update site |
-| `mvn -Pproduct,repo -T 1C verify` | Full release build |
-| `mvn -Pjacoco,product,repo -T 1C verify` | Full CI build with coverage |
-| `mvn -T 1C -DskipTests verify` | Skip tests for local iteration |
-
-#### Using Make (Convenience)
-
-A Makefile is provided for easier build commands:
+A normal development verification is:
 
 ```bash
-make dev         # Fast development build with tests
-make dev-notests # Fast development build without tests
-make product     # Build with product (requires xvfb for tests)
-make repo        # Build with repository (requires xvfb for tests)
-make release     # Full release build with coverage (requires xvfb for tests)
-make test        # Run tests with coverage (requires xvfb)
-make clean       # Clean all build artifacts
-make help        # Show all available targets
+mvn -T 1C clean verify
 ```
 
-**For advanced build optimization**: See [BUILD_ACCELERATION.md](BUILD_ACCELERATION.md) for detailed information on build profiles and performance optimization strategies.
-
-### Troubleshooting
-
-#### Build fails with `UnsupportedClassVersionError` or `TypeNotPresentException`
-
-This error occurs when building with Java 17 or earlier:
-
-```
-TypeNotPresentException: Type P2ArtifactRepositoryLayout not present
-...class file version 65.0, this version only recognizes class file versions up to 61.0
-```
-
-**Solution**: Upgrade to Java 21 or later. Verify with `java -version`.
-
-#### Build fails with `Unable to provision` errors
-
-This usually indicates a Java version mismatch. Check that:
-1. `JAVA_HOME` is set to Java 21+
-2. `java -version` shows Java 21+
-3. Maven is using the correct Java version: `mvn -version`
-
-### Using the Eclipse Product Locally
-
-After building the project, you can run the Eclipse product with the bundled cleanup plugins:
+For a focused Maven module and its dependencies:
 
 ```bash
-# Navigate to the product directory
-cd sandbox_product/target/products/org.sandbox.product/
-
-# Launch Eclipse
-./eclipse
+mvn -pl <module> -am clean verify
 ```
 
-### Using Cleanup Plugins via Command Line
-
-You can apply cleanup transformations using the Eclipse cleanup application:
+The complete product/update-site gate is deliberately sequential because repository assembly must finish before distribution verification:
 
 ```bash
-eclipse -nosplash -consolelog -debug \
-  -application org.eclipse.jdt.core.JavaCodeFormatter \
-  -verbose -config MyCleanupSettings.ini MyClassToCleanup.java
+mvn -Pdistribution \
+  --batch-mode \
+  -Dtycho.localArtifacts=ignore \
+  clean verify
 ```
 
-> **Note**: Replace `MyCleanupSettings.ini` with your cleanup configuration file and `MyClassToCleanup.java` with the Java file you want to process.
+Linux UI tests require a graphical display; CI supplies Xvfb. Do not use global test-skip or failure-ignore switches to make a transformation appear complete.
 
----
+## Change guidelines
 
-## Eclipse Version Configuration
+- Keep changes focused. The repository review target is about 1,500 changed text lines; stop and split at 2,000 unless the pull-request body contains a substantive `## Repository policy exception` explaining why the change is indivisible.
+- Treat Eclipse JDT refactorings and cleanup infrastructure as semantic authorities where an existing implementation already owns binding, control-flow, import, formatting, preview, apply, and undo behavior.
+- Preserve explicit save-action boundaries. A cleanup that may inspect or modify additional files must not silently become a save action.
+- Remove unused imports and follow the existing NLS conventions in Eclipse plug-in code.
+- Do not add a parallel Python test or validation framework. Repository semantics belong in Maven/JUnit; workflows should remain thin environment adapters.
+- Do not weaken tests, accept unrelated screenshot changes, or update baselines merely to make CI green.
 
-> **For Maintainers/Contributors**: This section contains technical details about Eclipse version migration.
+## Updating Eclipse or Tycho
 
-The Eclipse version (SimRel release) used by this project is **not centrally configured**. When updating to a new Eclipse release, you must update the version reference in **multiple files** throughout the repository.
+A baseline update is one coordinated change, not only a version-property edit. Verify and update, as applicable:
 
-### Files to Update
+- root `pom.xml` and Java-enforcer diagnostics;
+- `sandbox_target/eclipse.target` and Orbit/Bouncy Castle repositories;
+- `sandbox_product/sandbox.product` and `sandbox_product/category.xml`;
+- `sandbox_oomph/sandbox.setup`;
+- `README.md`, this guide, build references, and distribution documentation;
+- `docs/capabilities.json` and generated `docs/capabilities.md`;
+- the repository baseline consistency test.
 
-When migrating to a new Eclipse version, update the following files:
+Dated QA records describe their historical baseline and must not be rewritten as though an older review had used a later toolchain.
 
-1. **`pom.xml`** (root)
-   - Repository URLs in the `<repositories>` section
-   - Example: `https://download.eclipse.org/releases/2025-12/`
-   - Also update Orbit repository URL: `https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-12/`
+## Release process
 
-2. **`sandbox_target/eclipse.target`**
-   - Primary Eclipse release repository URL in first `<location>` block
-   - Example: `<repository location="https://download.eclipse.org/releases/2025-12/"/>`
-   - Also update Orbit repository URL
+Maintainers publish versioned releases through **Actions → Release Workflow**. The workflow performs the release build, verifies the public p2 repository, creates the release tag and GitHub Release only after successful publication, and then advances the development version. See [.github/workflows/README.md](.github/workflows/README.md#detailed-release-process) for the exact inputs and evidence contract.
 
-3. **`sandbox_product/category.xml`**
-   - Repository reference location
-   - Example: `<repository-reference location="https://download.eclipse.org/releases/2025-12/" .../>`
+## Reporting issues
 
-4. **`sandbox_product/sandbox.product`**
-   - Repository locations in `<repositories>` section
-   - Example: `<repository location="https://download.eclipse.org/releases/2025-12/" .../>`
-
-5. **`sandbox_oomph/sandbox.setup`**
-   - P2 repository URL in the version-specific `<setupTask>` block
-   - Example: `<repository url="https://download.eclipse.org/releases/2025-12"/>`
-
-### Version Consistency Guidelines
-
-- **Use HTTPS**: All Eclipse download URLs should use `https://` (not `http://`)
-- **Use explicit versions**: Prefer explicit version URLs (e.g., `2025-12`) over `latest` for reproducible builds
-- **Keep versions aligned**: All files should reference the same Eclipse SimRel version
-- **Git URLs**: Use HTTPS for git clone URLs (e.g., `https://github.com/...`, not `git://`)
-- **Main branch**: All Oomph setup files should reference the `main` branch, not `master`
-
-### Current Configuration
-
-- **Eclipse Version**: 2025-12
-- **Java Version**: 21
-- **Tycho Version**: 5.0.3
-- **Default Branch**: `main`
+Please include reproducible source, expected and actual behavior, the selected cleanup options, and the Java/Eclipse versions. For transformation defects, state whether the problem appears in preview, apply, undo, save actions, or the headless cleanup application.
