@@ -1,20 +1,21 @@
 # Distribution compatibility and verification
 
-Sandbox is an experimental Eclipse JDT cleanup distribution. The compatibility statements below describe what the repository builds and what its automated publication gates actually verify; they are not a production-support commitment.
+Sandbox is an experimental Eclipse JDT cleanup distribution. The statements below describe the baseline that the repository builds and the evidence produced by its automated gates; they are not a general production-support commitment.
 
 ## Runtime baseline
 
-| Component | Supported baseline |
+| Component | Verified baseline |
 |---|---|
 | Java runtime | Java 21 |
-| Eclipse target | Eclipse 2026-06 simultaneous release repository |
-| Build system | Maven 3.9.14 with Tycho 5.0.3 |
-| Plugin status | Experimental; validate in a disposable or development workspace before wider use |
+| Eclipse target | Eclipse 2026-06 / Platform 4.40 |
+| Build system | Maven with Tycho 5.0.4 |
+| Plug-in status | Experimental; evaluate in a disposable installation or development workspace |
 
-The target platform is resolved from `sandbox_target/eclipse.target`. Plugins and the cleanup application may depend on APIs present in that target and are not claimed to support older Eclipse releases.
-## Reproducing the distribution gate locally
+The target platform is resolved from `sandbox_target/eclipse.target`. Sandbox does not currently claim compatibility with older Eclipse releases merely because individual bundles may happen to resolve there.
 
-Run the same Maven entry point on Windows, Linux or macOS. A headless Linux CI runner additionally needs a virtual X display, but that is runner setup rather than part of the build:
+## Reproducing the distribution gate
+
+Run the same sequential Maven entry point used by CI:
 
 ```bash
 mvn -Pdistribution \
@@ -23,13 +24,13 @@ mvn -Pdistribution \
   clean verify
 ```
 
-The `distribution` profile builds the product and update site, then executes the Java-only `sandbox_distribution_verify` module. Do not add Maven parallelism to this command: product materialization and repository assembly must finish before the final verification module runs.
+A headless Linux runner also needs a virtual X display. Do not add Maven parallelism: product materialization and p2 assembly must finish before `sandbox_distribution_verify` examines their output.
 
-## Product build matrix
+## Product matrix
 
-Tycho materializes product archives for these x86-64 environments:
+Tycho currently materializes x86-64 archives for:
 
-| Operating system | Window system | Architecture | Build output |
+| Operating system | Window system | Architecture | Archive |
 |---|---|---|---|
 | Windows | win32 | x86_64 | ZIP |
 | Linux | GTK | x86_64 | tar.gz |
@@ -39,44 +40,44 @@ ARM64/AArch64 product archives are not currently built or advertised.
 
 ## Automated runtime coverage
 
-The required pull-request gate is named **Distribution Smoke Test**. It currently runs the complete native verification on Linux GTK x86_64 and performs all of the following:
+The required pull-request gate is **Distribution Smoke Test**. On Linux GTK x86-64 it:
 
-1. builds and tests the product and update site from a clean checkout under Xvfb;
-2. parses p2 metadata and verifies that every published feature and referenced artifact is present;
-3. checks the materialized product layout and rejects duplicate singleton bundles;
+1. builds the product and update site from a clean checkout;
+2. parses p2 metadata and verifies all published feature/artifact references;
+3. rejects duplicate singleton bundles and malformed materialized layouts;
 4. installs every published Sandbox feature into a fresh p2 destination;
 5. starts both the materialized product and the fresh installation;
-6. imports a real Java project through the installed cleanup application;
-7. applies a deterministic cleanup, verifies the JSON report and source change, then compiles the transformed source with Java 21.
+6. imports an isolated Java project through the installed cleanup application;
+7. applies a deterministic cleanup, validates the report and source change, and compiles the transformed source with Java 21.
 
-Windows and macOS archives are assembled by the same Tycho reactor, but they do not currently receive the equivalent native launch-and-transform smoke test. Treat those archives as build-verified rather than runtime-verified until platform-specific runners are added.
+Windows and macOS archives are assembled by the same reactor but do not yet receive equivalent native launch-and-transform verification. They are build-verified, not runtime-verified.
 
 ## Publication channels
 
 ### Latest snapshot
 
-`https://carstenartur.github.io/sandbox/snapshots/latest/`
-
-The named **Deploy Snapshot to GitHub Pages** gate runs only after a successful Java CI push on `main`. It repeats the full distribution gate for that exact commit, publishes the snapshot, and reads the public p2 metadata back from both the version endpoint and the snapshots composite repository. A failed build, test, p2 install, startup, cleanup transformation, compilation or public-URL check prevents successful promotion. If the public URL verification fails after the `gh-pages` write, the workflow restores the previously captured `gh-pages` revision with a force-with-lease rollback and records the rollback evidence.
+The `Deploy Snapshot to GitHub Pages` workflow runs only after successful Java CI on `main`. It repeats the exact-commit distribution gate, publishes the p2 repository, and reads the public version and composite metadata back. A failed public verification restores the previously captured `gh-pages` revision with force-with-lease rollback evidence.
 
 ### Versioned releases
 
-`https://carstenartur.github.io/sandbox/releases/`
-
-The named **Release Workflow** does not permit tests to be skipped for a published release. It runs the same local distribution gate, publishes the version-specific update site, verifies the public version URL and release composite, and only then creates the release tag and GitHub Release. Version-specific verification files are published beside the p2 repository and attached to the GitHub Release. The release publication follows the same fail-closed rule: a failed public repository verification must restore the previously captured `gh-pages` revision before any tag or GitHub Release is created.
+The `Release Workflow` uses the same fail-closed distribution contract. It verifies the local artifacts and public release repository before creating the release tag and GitHub Release. Tests cannot be skipped for a published release.
 
 ## Evidence
 
-Distribution workflows retain machine-readable and human-readable evidence under `target/distribution-verification/`, including:
+Distribution workflows retain machine- and human-readable evidence under `target/distribution-verification/`, including:
 
-- `verification.json` and `verification.md` for repository, artifact and product checks;
-- build, materialized-product, fresh-install, fresh-product and cleanup-application logs;
-- public snapshot or release URL verification JSON;
+- `verification.json` and `verification.md`;
+- build, product, fresh-install, startup, and cleanup-application logs;
+- public snapshot or release URL verification;
 - the cleanup transformation report;
-- a publication rollback log when an advertised URL fails validation after deployment.
+- rollback evidence when publication validation fails.
 
-GitHub Actions stores this directory as an immutable workflow artifact. Snapshot and release deployments also publish the summary and JSON report beside the corresponding p2 repository.
+GitHub Actions stores the evidence as an immutable workflow artifact. Snapshot and release deployments also publish the summary and JSON report beside the corresponding p2 repository.
 
 ## Installation guidance
 
-Use a separate Eclipse installation or a disposable workspace for initial evaluation. Back up source control state before enabling broad cleanup profiles. For the command-line cleanup application, provide a Java 21 runtime and an Eclipse workspace through `-data`; automated smoke tests use the internal `--import-project` option to register the isolated fixture project before invoking the normal cleanup path.
+Use a separate Eclipse installation or disposable workspace for initial evaluation, and keep source changes under version control. The command-line cleanup application requires Java 21 and an explicit Eclipse workspace through `-data`.
+
+## Baseline consistency
+
+`RepositoryBaselineConsistencyTest` checks that `pom.xml`, the capability inventory, PDE target, product, p2 category, Oomph setup, and active build documentation agree on the same Eclipse and Tycho baseline. Dated QA reports remain historical records and are intentionally excluded from this current-baseline contract.
