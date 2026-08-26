@@ -18,6 +18,10 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+
 /**
  * Maven entry point used by the pinned JDT UI before/after runner to classify
  * the produced evidence with the same Java verifier exercised by ordinary
@@ -28,11 +32,12 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 public class JdtUiCorpusEvidenceExecutionTest {
 
 	private static final String ENABLED = "sandbox.jdt.ui.evidence.enabled"; //$NON-NLS-1$
+	private static final Gson PRETTY_JSON = new GsonBuilder().setPrettyPrinting().create();
 
 	@Test
 	@EnabledIfSystemProperty(named = ENABLED, matches = "true")
 	public void verifyConfiguredEvidence() throws Exception {
-		JdtUiCorpusEvidenceVerifier.verify(
+		JsonObject result = JdtUiCorpusEvidenceVerifier.verify(
 				requiredPath("sandbox.jdt.ui.evidence.repository"), //$NON-NLS-1$
 				requiredPath("sandbox.jdt.ui.evidence.baselineSources"), //$NON-NLS-1$
 				requiredPath("sandbox.jdt.ui.evidence.contract"), //$NON-NLS-1$
@@ -42,6 +47,7 @@ public class JdtUiCorpusEvidenceExecutionTest {
 				requiredPath("sandbox.jdt.ui.evidence.checkReport"), //$NON-NLS-1$
 				requiredPath("sandbox.jdt.ui.evidence.applyReport"), //$NON-NLS-1$
 				requiredPath("sandbox.jdt.ui.evidence.output")); //$NON-NLS-1$
+		System.out.println(PRETTY_JSON.toJson(result));
 	}
 
 	private static Path requiredPath(String name) {
