@@ -21,7 +21,7 @@ Sandbox is built and tested against Eclipse 2026-06. Compatibility with older Ec
 
 ## Authoritative files
 
-- `eclipse.target` — PDE/ Tycho target definition.
+- `eclipse.target` — PDE/Tycho target definition.
 - `pom.xml` — target-definition Maven artifact.
 - root `pom.xml` — Tycho, Java, and matching p2 repository configuration.
 - `../docs/capabilities.json` — machine-readable public baseline.

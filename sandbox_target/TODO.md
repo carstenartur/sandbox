@@ -1,370 +1,142 @@
-# Target Platform - TODO
+# Target Platform Roadmap
 
-## Status Summary
+> **Navigation**: [Main README](../README.md) | [Target README](README.md) | [Architecture](ARCHITECTURE.md)
 
-**Current State**: Stable configuration for Eclipse 2025-12
+This roadmap tracks work that remains after establishing the current Sandbox target-platform baseline. It is not a promise that every listed compatibility mode will be supported.
 
-### Completed
-- ✅ Eclipse 2025-12 target platform definition
-- ✅ Orbit dependencies configured
-- ✅ EGit integration
-- ✅ Bouncy Castle libraries (version 1.81.0)
-- ✅ JDT, SDK, and PDE features
-- ✅ Source inclusion for debugging
+## Current baseline
 
-### In Progress
-- 🔄 Documentation (ARCHITECTURE.md complete, this TODO in progress)
+| Component | Value |
+|---|---|
+| Eclipse simultaneous release | Eclipse 2026-06 |
+| Eclipse Platform | 4.40 |
+| Java execution environment | Java 21 |
+| Tycho | 5.0.4 |
+| Orbit aggregation | 2026-06 |
+| Bouncy Castle | 1.84 from Orbit maven-osgi release 4.40.0 |
 
-### Pending
-- [ ] Multi-version target platform support
-- [ ] Automated target platform updates
-- [ ] Target platform validation
-- [ ] Local repository mirrors
+`main` builds and tests one active target platform. Compatibility with older Eclipse releases is not currently claimed.
 
-## Priority Tasks
+## Completed foundation
 
-### 1. Multi-Version Target Platform Support
-**Priority**: Medium  
-**Effort**: 4-6 hours
+- [x] Use a named Eclipse 2026-06 repository instead of a floating Eclipse release URL.
+- [x] Align the Orbit aggregation with Eclipse 2026-06.
+- [x] Pin the four Bouncy Castle bundles to one 1.84 version set.
+- [x] Include JDT, PDE, the Eclipse SDK, EGit/JGit, license information, and SWTBot.
+- [x] Validate the target through Tycho before compiling dependent plug-ins.
+- [x] Keep product, p2 category, Oomph, capability inventory, and active documentation on the same baseline through `RepositoryBaselineConsistencyTest`.
+- [x] Exercise the materialized Linux product and a fresh p2 installation in the distribution gate.
 
-Support multiple Eclipse versions for backporting:
+## Active priorities
 
-**Goal**: Build against multiple Eclipse releases (2025-09, 2024-12, 2024-09)
+### 1. Make dependency resolution fully immutable
 
-**Implementation**:
-```
-sandbox_target/
-├── eclipse-2025-09.target    # Latest release
-├── eclipse-2024-12.target    # Previous release
-└── eclipse-2024-09.target    # Older release
-```
+The named 2026-06 repositories constrain the release line, but installable units declared with `version="0.0.0"` may still resolve to newer qualifier builds published inside that line.
 
-**Maven Configuration**:
-```xml
-<profiles>
-    <profile>
-        <id>eclipse-2025-09</id>
-        <activation>
-            <activeByDefault>true</activeByDefault>
-        </activation>
-        <properties>
-            <target-file>eclipse-2025-09.target</target-file>
-        </properties>
-    </profile>
-    <profile>
-        <id>eclipse-2024-12</id>
-        <properties>
-            <target-file>eclipse-2024-12.target</target-file>
-        </properties>
-    </profile>
-</profiles>
-```
+Planned work:
 
-**Usage**:
-```bash
-# Build against latest (default)
-mvn clean verify
+- [ ] inventory every qualifier selected by a clean distribution build;
+- [ ] decide between complete IU qualifier pins and a verified repository mirror;
+- [ ] verify that an offline build can reproduce the same target from the retained inputs;
+- [ ] document mirror retention, integrity checks, and update procedure.
 
-# Build against 2024-12
-mvn clean verify -Peclipse-2024-12
+### 2. Add native runtime verification for every published archive
 
-# Build against 2024-09
-mvn clean verify -Peclipse-2024-09
-```
+The current distribution gate builds Windows, Linux, and macOS x86-64 archives, but the complete install/start/transform scenario runs natively only on Linux GTK.
 
-**Benefits**:
-- Support backporting features
-- Test compatibility across versions
-- Enable branch-specific builds
-- Maintain multiple release streams
+Planned work:
 
-### 2. Automated Target Platform Updates
-**Priority**: Low  
-**Effort**: 6-8 hours
+- [ ] run a Windows product launch and fresh p2 installation on a Windows runner;
+- [ ] run the equivalent scenario on macOS;
+- [ ] compare the evidence contract across platforms;
+- [ ] advertise a platform as runtime-verified only after its native gate is required.
 
-Automate detection and updates of new Eclipse releases:
+### 3. Automate coordinated baseline updates
 
-**Features**:
-1. **Version Check Script**:
-   ```bash
-   #!/bin/bash
-   # check-eclipse-updates.sh
-   
-   CURRENT="2025-09"
-   LATEST=$(curl -s https://download.eclipse.org/releases/ | 
-            grep -oP '\d{4}-\d{2}' | sort -V | tail -1)
-   
-   if [ "$LATEST" != "$CURRENT" ]; then
-       echo "New Eclipse version available: $LATEST"
-       echo "Current: $CURRENT"
-       exit 1
-   fi
-   ```
+A baseline update must change one reviewed set of files rather than only the Tycho property or target URL.
 
-2. **Automated PR Creation**:
-   - GitHub Actions workflow
-   - Detect new Eclipse releases
-   - Create PR with updated target platform
-   - Run CI to verify build
+Planned work:
 
-**Benefits**:
-- Stay current with Eclipse releases
-- Automated notification of updates
-- Reduce manual maintenance
-- Prevent falling behind
+- [ ] detect a new Eclipse simultaneous release without modifying the repository;
+- [ ] prepare one update branch covering Maven, target, product, p2 category, Oomph, capability inventory, and active documentation;
+- [ ] keep the generated change blocked until Maven, distribution, Help/SWTBot, patched-JDT-UI, and security gates pass;
+- [ ] retain dated QA reports as historical evidence rather than rewriting them.
 
-### 3. Target Platform Validation
-**Priority**: Medium  
-**Effort**: 3-4 hours
+### 4. Decide whether multi-release support is worth its cost
 
-Add validation to ensure target platform is correct:
+Multiple target files may be useful for maintenance branches or upstream compatibility checks, but they multiply product, Oomph, UI, and migration-test obligations.
 
-**Checks**:
-1. **Repository Availability**:
-   ```bash
-   # Verify all repositories are accessible
-   curl -f https://download.eclipse.org/releases/2025-09/
-   ```
+Before implementation:
 
-2. **Feature Availability**:
-   ```bash
-   # Verify required features exist
-   p2-admin -listFeatures -repository https://download.eclipse.org/releases/2025-09/ | 
-       grep org.eclipse.jdt.feature.group
-   ```
+- [ ] identify a concrete supported older release and user need;
+- [ ] define which transformations and product features must work there;
+- [ ] decide whether the support belongs on maintenance branches or in profiles on `main`;
+- [ ] require separate runtime and screenshot evidence for every advertised target.
 
-3. **Version Consistency**:
-   - Check all references use same Eclipse version
-   - Validate Orbit repository matches Eclipse release
+Until that decision is made, adding an old target file alone does not establish compatibility.
 
-**Integration**:
-```bash
-# Run as part of CI
-mvn verify -Pvalidate-target-platform
-```
+## Baseline update contract
 
-**Benefits**:
-- Catch configuration errors early
-- Prevent build failures due to invalid URLs
-- Ensure version consistency
-- Improve reliability
+When the active Eclipse or Tycho baseline changes:
 
-### 4. Local Repository Mirrors
-**Priority**: Low  
-**Effort**: 8-10 hours
+1. update the root `pom.xml` and Java-enforcer diagnostic;
+2. update `eclipse.target`, including matching Orbit and Bouncy Castle sources;
+3. update `sandbox_product/sandbox.product` and `sandbox_product/category.xml`;
+4. update `sandbox_oomph/sandbox.setup`;
+5. update `docs/capabilities.json` and regenerate `docs/capabilities.md`;
+6. update the contributor, build, distribution, target, product, and Oomph documentation;
+7. extend `RepositoryBaselineConsistencyTest` when another active contract is introduced;
+8. run the complete required CI set before merging.
 
-Create local mirrors of P2 repositories for faster builds:
+## Required verification
 
-**Approach**:
-1. **Mirror Eclipse Releases**:
-   ```bash
-   # Mirror Eclipse 2025-09
-   p2-mirror -source https://download.eclipse.org/releases/2025-09/ \
-             -destination file:///var/local/p2-mirror/2025-09/
-   ```
-
-2. **Update Target Platform**:
-   ```xml
-   <repository location="file:///var/local/p2-mirror/2025-09/"/>
-   ```
-
-3. **Automated Synchronization**:
-   - Cron job to sync with upstream
-   - Keep local mirror up-to-date
-   - Faster builds for all developers
-
-**Benefits**:
-- Faster dependency resolution (no network)
-- Works offline
-- Reduced bandwidth usage
-- Consistent build performance
-
-## Known Issues
-
-### 1. Large Download Size
-**Severity**: Low
-
-Initial build downloads ~1-2 GB from P2 repositories.
-
-**Impact**: Slow first build, especially on slow networks
-
-**Workaround**: Use local P2 mirror or shared Maven repository
-
-**Note**: Cached after first build
-
-### 2. Network Dependency
-**Severity**: Medium
-
-Build requires network access to download dependencies.
-
-**Impact**: Cannot build offline (first time)
-
-**Workaround**: 
-- Build once online to populate cache
-- Subsequent builds work offline
-- Use local P2 mirror
-
-### 3. Version Drift
-**Severity**: Low
-
-Using `version="0.0.0"` means builds can change over time.
-
-**Example**: Building today vs. 6 months from now may use different versions
-
-**Impact**: Builds not fully reproducible
-
-**Solution**: Pin specific versions for critical dependencies
-
-## Future Enhancements
-
-### Target Platform Profiles
-**Priority**: Low  
-**Effort**: 4-6 hours
-
-Create predefined profiles for common scenarios:
+The local authoritative commands are:
 
 ```bash
-# Minimal profile (fast build, fewer features)
-mvn verify -Ptarget-minimal
-
-# Full profile (all features, slow build)
-mvn verify -Ptarget-full
-
-# Testing profile (includes test frameworks)
-mvn verify -Ptarget-testing
+mvn -T 1C clean verify
+mvn -Pdistribution clean verify
 ```
 
-### Composite Target Platforms
-**Priority**: Low  
-**Effort**: 6-8 hours
+The distribution command remains sequential. Linux workbench tests additionally require Xvfb or another real display server.
 
-Combine multiple target definitions:
+A baseline update is complete only when the following evidence agrees:
 
-```xml
-<target name="composite">
-    <location>
-        <targetDefinition path="base.target"/>
-    </location>
-    <location>
-        <targetDefinition path="optional.target"/>
-    </location>
-</target>
-```
+- Maven/Tycho reactor and JUnit results;
+- target-platform validation;
+- product and p2 repository assembly;
+- fresh feature installation, product startup, cleanup execution, and transformed-source compilation;
+- Eclipse Help/SWTBot screenshot reproduction;
+- patched JDT UI compatibility and atomic-preview evidence;
+- capability inventory, CodeQL, and configured quality gates.
 
-**Benefits**:
-- Modular target platform
-- Share common definitions
-- Customize per use case
+## Known constraints
 
-### Target Platform Diff Tool
-**Priority**: Low  
-**Effort**: 4-6 hours
+### Network dependency
 
-Tool to compare target platforms:
+A first clean build resolves content from Eclipse repositories. Local caches improve later builds but are not authoritative release inputs.
 
-```bash
-# Compare two target platforms
-target-diff eclipse-2025-09.target eclipse-2024-12.target
+### Qualifier drift
 
-# Output:
-# Added features:
-#   - org.eclipse.jdt.new.feature 1.0.0
-# Removed features:
-#   - org.eclipse.old.feature 0.9.0
-# Updated features:
-#   - org.eclipse.jdt.core 3.19 → 3.20
-```
+`version="0.0.0"` can select a newer qualifier within a named repository. The target is release-line-pinned, not yet byte-for-byte immutable.
 
-**Benefits**:
-- Understand impact of upgrades
-- Review changes before committing
-- Document migration path
+### Download size and duration
 
-## Maintenance Tasks
+The complete target, product, coverage, and real-workbench gates are intentionally substantial. Optimizations must preserve the same semantic and runtime evidence rather than replacing it with a lightweight proxy.
 
-### When New Eclipse Release Available
-1. [ ] Update eclipse.target with new version URLs
-2. [ ] Update Orbit repository URL
-3. [ ] Test build: `mvn clean verify`
-4. [ ] Fix any compilation errors
-5. [ ] Update related files (pom.xml, README.md, etc.)
-6. [ ] Create PR with changes
-7. [ ] Update documentation
+### IDE and Maven are separate contracts
 
-### Quarterly Maintenance
-- [ ] Check for new Eclipse releases
-- [ ] Review dependency versions
-- [ ] Test build against latest Eclipse
-- [ ] Consider upgrading if stable
+The Oomph-provisioned IDE does not determine the Tycho target automatically. Developers must activate `sandbox_target/eclipse.target` in PDE, while Maven resolves the same file independently.
 
-### After Adding New Feature Dependency
-1. [ ] Add feature unit to eclipse.target
-2. [ ] Verify build succeeds
-3. [ ] Document why dependency was added
-4. [ ] Test in clean environment
+## Explicit non-goals
 
-## Documentation Improvements
-
-### Completed Documentation
-- ✅ ARCHITECTURE.md: Design and configuration details
-- ✅ TODO.md: This file
-
-### Additional Documentation Needed
-- [ ] Target platform migration guide
-- [ ] Troubleshooting guide for common issues
-- [ ] How to add new dependencies
-- [ ] Best practices for target platform management
-
-## Eclipse JDT Contribution
-
-### Target Platform Differences
-
-**Sandbox**: Custom target platform with specific features  
-**Eclipse JDT**: Uses Eclipse SDK baseline
-
-### Considerations for Contribution
-
-When contributing to Eclipse JDT:
-- JDT defines its own target platform
-- API baseline different from sandbox
-- May need to adjust dependencies
-- Follow Eclipse baseline policies
-
-## Performance Considerations
-
-### Build Time Impact
-
-**Initial Build**: 5-10 minutes (download dependencies)  
-**Subsequent Builds**: 3-5 minutes (cached dependencies)  
-**Offline Builds**: 2-3 minutes (no network)
-
-### Optimization Opportunities
-
-1. **Local P2 Mirror**: Save 2-5 minutes per build
-2. **Shared Maven Repo**: Team shares downloaded artifacts
-3. **Minimal Target**: Include only needed features
-4. **Parallel Downloads**: Use Maven parallel downloads
+- Do not switch the active target to an Eclipse `latest` repository.
+- Do not claim compatibility from successful compilation alone.
+- Do not add a second script-owned test authority beside Maven/JUnit.
+- Do not silently mix Bouncy Castle bundle versions.
+- Do not rewrite historical QA records to match a newer baseline.
 
 ## References
 
-- [Eclipse Target Platform Guide](https://help.eclipse.org/latest/topic/org.eclipse.pde.doc.user/concepts/target.htm)
-- [Tycho Target Configuration](https://tycho.eclipseprojects.io/doc/latest/tycho-packaging-plugin/target-platform-configuration-mojo.html)
-- [Eclipse Releases Download](https://download.eclipse.org/releases/)
-- [Eclipse Orbit Repository](https://download.eclipse.org/tools/orbit/)
-
-## Contact
-
-For questions about target platform configuration:
-- Open an issue in the repository
-- Submit a pull request
-- Contact: See project contributors
-
-## Impact on Other Modules
-
-Target platform affects:
-- **All plugin modules**: Compiled against target platform
-- **Test modules**: Tests run against target platform
-- **Product module**: Product built from target platform features
-- **Feature modules**: Feature resolution uses target platform
-
-Changes to target platform can affect entire project—test thoroughly.
+- [Eclipse target-platform concepts](https://help.eclipse.org/latest/topic/org.eclipse.pde.doc.user/concepts/target.htm)
+- [Tycho target-platform configuration](https://tycho.eclipseprojects.io/doc/latest/target-platform-configuration/target-platform-configuration-mojo.html)
+- [Distribution compatibility](../docs/distribution-compatibility.md)

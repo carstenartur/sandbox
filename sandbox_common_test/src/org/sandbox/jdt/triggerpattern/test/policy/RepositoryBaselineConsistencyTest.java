@@ -44,6 +44,8 @@ public class RepositoryBaselineConsistencyTest {
 			Pattern.compile("<tycho-version>([^<]+)</tycho-version>"); //$NON-NLS-1$
 	private static final Pattern ECLIPSE_RELEASE_REPOSITORY = Pattern.compile(
 			"https://download\\.eclipse\\.org/releases/([^/]+)/"); //$NON-NLS-1$
+	private static final Pattern BOUNCY_CASTLE_UNIT = Pattern.compile(
+			"<unit id=\"(?:bcutil|bcprov|bcpkix|bcpg)\" version=\"([^\"]+)\"/>"); //$NON-NLS-1$
 	private static final Pattern OOMPH_RELEASE_VARIABLE = Pattern.compile(
 			"(?s)<setupTask\\b(?=[^>]*name=\"eclipse\\.target\\.version\")[^>]*>"); //$NON-NLS-1$
 
@@ -51,6 +53,7 @@ public class RepositoryBaselineConsistencyTest {
 	public void machineReadableBaselineIsConsistent() throws Exception {
 		Path root = repositoryRoot();
 		String pom = read(root, "pom.xml"); //$NON-NLS-1$
+		String target = read(root, "sandbox_target/eclipse.target"); //$NON-NLS-1$
 		String tychoVersion = firstGroup(TYCHO_PROPERTY, pom, "root Tycho property"); //$NON-NLS-1$
 
 		JsonObject repository = JsonParser.parseString(read(root, "docs/capabilities.json")) //$NON-NLS-1$
@@ -64,8 +67,7 @@ public class RepositoryBaselineConsistencyTest {
 
 		assertEquals(Set.of(eclipseRelease), releaseRepositories(pom),
 				"The root POM must resolve only the declared Eclipse release"); //$NON-NLS-1$
-		assertEquals(Set.of(eclipseRelease),
-				releaseRepositories(read(root, "sandbox_target/eclipse.target")), //$NON-NLS-1$
+		assertEquals(Set.of(eclipseRelease), releaseRepositories(target),
 				"The PDE target must resolve only the declared Eclipse release"); //$NON-NLS-1$
 		assertEquals(Set.of(eclipseRelease),
 				releaseRepositories(read(root, "sandbox_product/sandbox.product")), //$NON-NLS-1$
@@ -73,6 +75,7 @@ public class RepositoryBaselineConsistencyTest {
 		assertEquals(Set.of(eclipseRelease),
 				releaseRepositories(read(root, "sandbox_product/category.xml")), //$NON-NLS-1$
 				"The published p2 category must refer clients to the declared Eclipse release"); //$NON-NLS-1$
+		bouncyCastleVersion(target);
 
 		String oomph = read(root, "sandbox_oomph/sandbox.setup"); //$NON-NLS-1$
 		String variableTag = firstMatch(OOMPH_RELEASE_VARIABLE, oomph,
@@ -98,10 +101,12 @@ public class RepositoryBaselineConsistencyTest {
 	public void activeDocumentationNamesTheExecutableBaseline() throws Exception {
 		Path root = repositoryRoot();
 		String pom = read(root, "pom.xml"); //$NON-NLS-1$
+		String target = read(root, "sandbox_target/eclipse.target"); //$NON-NLS-1$
 		String tychoVersion = firstGroup(TYCHO_PROPERTY, pom, "root Tycho property"); //$NON-NLS-1$
 		JsonObject repository = JsonParser.parseString(read(root, "docs/capabilities.json")) //$NON-NLS-1$
 				.getAsJsonObject().getAsJsonObject("repository"); //$NON-NLS-1$
 		String eclipseRelease = repository.get("eclipseRelease").getAsString(); //$NON-NLS-1$
+		String bouncyCastleVersion = displayVersion(bouncyCastleVersion(target));
 
 		Map<String, List<String>> expectedClaims = Map.ofEntries(
 				Map.entry("README.md", List.of("Maven/Tycho " + tychoVersion, //$NON-NLS-1$ //$NON-NLS-2$
@@ -115,9 +120,18 @@ public class RepositoryBaselineConsistencyTest {
 						"| Eclipse target | Eclipse " + eclipseRelease + " / Platform ")), //$NON-NLS-1$ //$NON-NLS-2$
 				Map.entry("docs/distribution-compatibility.md", List.of( //$NON-NLS-1$
 						"Tycho " + tychoVersion, "Eclipse " + eclipseRelease)), //$NON-NLS-1$ //$NON-NLS-2$
-				Map.entry("sandbox_target/README.md", List.of("Eclipse " + eclipseRelease)), //$NON-NLS-1$ //$NON-NLS-2$
+				Map.entry("sandbox_target/README.md", List.of( //$NON-NLS-1$
+						"Eclipse " + eclipseRelease, //$NON-NLS-1$
+						"| Tycho | " + tychoVersion, //$NON-NLS-1$
+						"| Bouncy Castle | " + bouncyCastleVersion)), //$NON-NLS-1$
 				Map.entry("sandbox_target/ARCHITECTURE.md", List.of( //$NON-NLS-1$
-						"Eclipse " + eclipseRelease))); //$NON-NLS-1$
+						"Eclipse " + eclipseRelease, //$NON-NLS-1$
+						"Tycho " + tychoVersion, //$NON-NLS-1$
+						"Bouncy Castle " + bouncyCastleVersion)), //$NON-NLS-1$
+				Map.entry("sandbox_target/TODO.md", List.of( //$NON-NLS-1$
+						"Eclipse " + eclipseRelease, //$NON-NLS-1$
+						"| Tycho | " + tychoVersion, //$NON-NLS-1$
+						"| Bouncy Castle | " + bouncyCastleVersion))); //$NON-NLS-1$
 
 		for (Map.Entry<String, List<String>> entry : expectedClaims.entrySet()) {
 			String content = read(root, entry.getKey());
@@ -154,6 +168,26 @@ public class RepositoryBaselineConsistencyTest {
 		Matcher matcher = pattern.matcher(content);
 		assertTrue(matcher.find(), () -> "Missing " + description); //$NON-NLS-1$
 		return matcher.group();
+	}
+
+	private static String bouncyCastleVersion(String target) {
+		List<String> versions = groups(BOUNCY_CASTLE_UNIT, target);
+		assertEquals(4, versions.size(),
+				"The target must declare the complete four-bundle Bouncy Castle set"); //$NON-NLS-1$
+		Set<String> distinctVersions = Set.copyOf(versions);
+		assertEquals(1, distinctVersions.size(),
+				"Every Bouncy Castle target unit must use one aligned version"); //$NON-NLS-1$
+		return distinctVersions.iterator().next();
+	}
+
+	private static String displayVersion(String version) {
+		return version.endsWith(".0") //$NON-NLS-1$
+				? version.substring(0, version.length() - 2)
+				: version;
+	}
+
+	private static List<String> groups(Pattern pattern, String content) {
+		return pattern.matcher(content).results().map(result -> result.group(1)).toList();
 	}
 
 	private static Set<String> releaseRepositories(String content) {
