@@ -13,46 +13,69 @@
    <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a dedicated profile, and select
       <strong>Method Reuse (Sandbox)</strong>.</p>
    <p><img class="screenshot" src="../images/method-reuse-cleanup.png"
-      alt="Method Reuse cleanup configuration with method-pattern and inline-sequence modes"/></p>
+      alt="Method Reuse cleanup configuration with extraction and existing-method modes"/></p>
    <ul>
-      <li><strong>Find reusable method patterns</strong> analyzes method-level duplication candidates.</li>
-      <li><strong>Find inline code sequences that can be replaced with method calls</strong> replaces a proven inline
-          expression or statement sequence with an existing compatible method invocation.</li>
+      <li><strong>Extract repeated code sequences into a shared method</strong> finds contiguous repeated statement
+          sequences, creates one private method, and replaces every duplicate accepted by Eclipse JDT with a call.</li>
+      <li><strong>Replace inline code sequences with calls to an existing method</strong> keeps the earlier local mode:
+          the target method already exists and only the matching inline sequence is replaced.</li>
    </ul>
 
-   <h2>Proven inline-sequence example</h2>
+   <h2>Configure the extraction threshold</h2>
+   <p>The minimum repeated sequence length can be set to three, four, or five statements. The default is three.
+      A shorter repeated fragment is deliberately ignored. The cleanup chooses the candidate with the greatest
+      estimated reduction, preferring longer sequences and then the earliest source occurrence when values tie.</p>
+
+   <h2>Repeated-sequence extraction</h2>
    <h3>Before</h3>
-   <pre>String formatName(String first, String last) {
-    return first.trim() + " " + last.trim();
+   <pre>void first(String value) {
+    String text = value.trim();
+    text = text.toLowerCase();
+    System.out.println(text);
 }
 
-void printUser(String firstName, String lastName) {
-    String name = firstName.trim() + " " + lastName.trim();
-    System.out.println(name);
+void second(String input) {
+    String text = input.trim();
+    text = text.toLowerCase();
+    System.out.println(text);
 }</pre>
    <h3>After</h3>
-   <pre>String formatName(String first, String last) {
-    return first.trim() + " " + last.trim();
+   <pre>void first(String value) {
+    extractedSequence(value);
 }
 
-void printUser(String firstName, String lastName) {
-    String name = formatName(firstName, lastName);
-    System.out.println(name);
+private void extractedSequence(String value) {
+    String text = value.trim();
+    text = text.toLowerCase();
+    System.out.println(text);
+}
+
+void second(String input) {
+    extractedSequence(input);
 }</pre>
 
-   <h2>Applicability</h2>
-   <p>The replacement is offered only when variable mapping, argument evaluation order, return value, visibility,
-      static or instance context, and side-effect analysis support the same observable behavior. Merely similar token
-      text is not sufficient. Ambiguous overloads, inaccessible methods, escaping intermediate values, unresolved
-      bindings, or additional side effects leave the source unchanged.</p>
-   <p>This cleanup remains experimental. Treat every candidate as a refactoring proposal to review, not as proof that
-      two arbitrary algorithms are equivalent.</p>
+   <h2>Safety authority</h2>
+   <p>Sandbox performs only candidate discovery. The actual transformation is Eclipse JDT's
+      <strong>Extract Method</strong> refactoring with duplicate replacement enabled. JDT determines parameters,
+      a possible return value, static context, checked exceptions, legal control flow, destination, method-name
+      conflicts, and which occurrences are semantically replaceable. A textual or coarse structural match alone
+      never authorizes a source change.</p>
 
-   <h2>Review the real execution preview</h2>
+   <h2>Current boundary</h2>
+   <ul>
+      <li>For each compilation unit, one cleanup pass extracts one best candidate and replaces all of its JDT-validated duplicates.</li>
+      <li>Duplicates are currently searched inside one enclosing Java type and compilation unit, matching JDT's
+          established duplicate-replacement contract.</li>
+      <li>Independent remaining groups can be extracted by running Cleanup again.</li>
+      <li>The transformation is disabled for save actions because it creates a structural refactoring that requires
+          explicit preview and review.</li>
+   </ul>
+
+   <h2>Review the execution preview</h2>
    <ol>
       <li>Enable only one Method Reuse mode while evaluating its candidates.</li>
-      <li>Run <strong>Source &gt; Clean Up...</strong> on a small source selection.</li>
-      <li>Inspect the removed inline statements, mapped arguments, receiver, imports, and selected overload.</li>
+      <li>Run <strong>Source &gt; Clean Up...</strong> on a class or source selection.</li>
+      <li>Inspect the newly extracted method, parameters, return handling, exceptions, and every replaced occurrence.</li>
       <li>Compile and run tests covering nulls, exceptions, side effects, and invocation order.</li>
    </ol>
    <p>The common standard-LTK file selection and code comparison are documented in

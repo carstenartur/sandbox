@@ -69,7 +69,10 @@ import org.eclipse.ui.PlatformUI;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * Generates the screenshots embedded in the independently installable Eclipse
@@ -92,6 +95,12 @@ import org.junit.jupiter.api.Test;
  *     -Phelp-screenshots clean verify
  * </pre>
  */
+/*
+ * Cleanup execution scenarios persist profiles in the shared workbench.
+ * Keep the documented local generator in the same deterministic order as
+ * the read-only CI merge gate and run profile-mutating scenarios last.
+ */
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SandboxHelpScreenshotsSWTBotTest {
 
     private record CleanupTab(String label, String helpBundle, String fileName) {
@@ -153,6 +162,10 @@ public class SandboxHelpScreenshotsSWTBotTest {
     private static final String JFACE_VIEWER_SORTER_LABEL = "Replace ViewerSorter with ViewerComparator";
     private static final String JFACE_IMAGE_DATA_PROVIDER_LABEL =
             "Modernize Image creation for DPI/zoom (ImageDataProvider)";
+    private static final String METHOD_REUSE_MASTER_LABEL =
+            "Extract repeated code sequences into a shared method";
+    private static final String METHOD_REUSE_INLINE_LABEL =
+            "Replace inline code sequences with calls to an existing method";
     private static final String INT_TO_ENUM_MASTER_LABEL = "Convert int constants to enum/switch";
     private static final String INT_TO_ENUM_PROJECT_WIDE_LABEL =
             "Analyze all project source files for coordinated migrations";
@@ -195,6 +208,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(5)
     public void captureCleanupConfigurationTabs() throws IOException {
         openPreferences();
         SWTBotShell preferences = bot.shell("Preferences").activate();
@@ -222,6 +236,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(4)
     public void captureRealCleanupPreviewAndVerifyIndependentSelection() throws Exception {
         System.out.println("[help-screenshots] Starting real Cleanup file-selection preview");
         configureJFaceCleanupProfile();
@@ -342,6 +357,56 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(8)
+    public void verifyRealMethodReuseCleanupPreviewApplyAndUndo() throws Exception {
+        System.out.println("[help-screenshots] Starting real Method Reuse Cleanup preview");
+        configureMethodReuseCleanupProfile();
+        IFile file = cleanupPreviewProject.getFile(
+                "src/demo/methodreuse/RepeatedSequence.java");
+        String before = readFile(file);
+
+        openProjectExplorer();
+        SWTBotTreeItem fileNode = projectTree().getTreeItem(CLEANUP_PREVIEW_PROJECT).expand()
+                .getNode("src").expand().getNode("demo.methodreuse").expand()
+                .getNode("RepeatedSequence.java");
+        fileNode.select();
+        SWTBotShell originatingWizard = openCleanUpWizard(fileNode);
+        CleanUpPreview preview = openCleanUpPreview(originatingWizard,
+                "RepeatedSequence.java");
+        SWTBotShell wizard = preview.shell();
+        prepareForScreenshot(wizard);
+
+        SWTBotTreeItem previewFile = findTreeItemContaining(preview.tree(),
+                "RepeatedSequence.java");
+        assertTrue(previewFile != null && previewFile.isChecked(),
+                "The real LTK preview must contain the selected Method Reuse file");
+        previewFile.select();
+        bot.sleep(300);
+        String diff = currentDiffText(wizard);
+        assertTrue(diff.contains("private void extractedSequence(String value)"),
+                "The LTK diff must show the extracted private method");
+        assertTrue(diff.contains("extractedSequence(value);"),
+                "The LTK diff must show replacement of the selected occurrence");
+        assertTrue(diff.contains("extractedSequence(input);"),
+                "The LTK diff must show replacement of the duplicate occurrence");
+
+        clickButtonAsync(wizard, "Finish");
+        waitForShellToClose(wizard, "Clean Up wizard");
+        String after = readFile(file);
+        assertTrue(after.contains("private void extractedSequence(String value)"),
+                "Apply must create the private shared method");
+        assertTrue(after.contains("extractedSequence(value);")
+                && after.contains("extractedSequence(input);"),
+                "Apply must replace both JDT-validated occurrences");
+        assertTrue(!before.equals(after), "Apply must change the Method Reuse fixture");
+
+        undoLastCleanup();
+        assertTrue(before.equals(readFile(file)),
+                "Undo must restore the Method Reuse fixture byte-for-byte");
+    }
+
+    @Test
+    @Order(7)
     public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
         System.out.println("[help-screenshots] Starting coordinated Int-to-Enum Cleanup preview");
         configureIntToEnumCleanupProfile();
@@ -427,6 +492,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(6)
     public void captureCssCleanupPreferences() throws IOException {
         openPreferences();
         SWTBotShell preferences = bot.shell("Preferences").activate();
@@ -437,6 +503,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(1)
     public void captureRuleInferencePreferences() throws IOException {
         openPreferences();
         SWTBotShell preferences = bot.shell("Preferences").activate();
@@ -447,6 +514,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(2)
     public void captureRefactoringMiningWorkflow() throws Exception {
         SWTBotShell workbench = workbenchShell().activate();
         showView(workbench, REFACTORING_MINING_VIEW);
@@ -480,6 +548,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
     }
 
     @Test
+    @Order(3)
     public void captureNewHintRuleWizard() throws Exception {
         SWTBotShell workbench = workbenchShell().activate();
         showView(workbench, PROJECT_EXPLORER_VIEW);
@@ -540,6 +609,24 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
         ensureChecked(profileDialog, INT_TO_ENUM_MASTER_LABEL, true);
         ensureChecked(profileDialog, INT_TO_ENUM_PROJECT_WIDE_LABEL, true);
+
+        clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "OK");
+        preferences.activate();
+        clickButtonAndWaitForShellToClose(preferences, "Preferences", "Apply and Close", "OK");
+    }
+
+    private static void configureMethodReuseCleanupProfile() {
+        openPreferences();
+        SWTBotShell preferences = bot.shell("Preferences").activate();
+        selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up");
+        clickButton(preferences, "Edit...", "Edit…");
+        SWTBotShell profileDialog = bot.activeShell();
+        profileDialog.bot().textWithLabel("Profile name:")
+                .setText("Sandbox Method Reuse Preview");
+        profileDialog.bot().tabItem("Method Reuse (Sandbox)").activate();
+
+        ensureChecked(profileDialog, METHOD_REUSE_MASTER_LABEL, true);
+        ensureChecked(profileDialog, METHOD_REUSE_INLINE_LABEL, false);
 
         clickButtonAndWaitForShellToClose(profileDialog, "Cleanup profile dialog", "OK");
         preferences.activate();
@@ -1079,6 +1166,24 @@ public class SandboxHelpScreenshotsSWTBotTest {
                         public class SorterOnly {
                             public ViewerSorter sorter() {
                                 return new ViewerSorter();
+                            }
+                        }
+                        """);
+        createUnit(sourceRoot, "demo.methodreuse", "RepeatedSequence.java",
+                """
+                        package demo.methodreuse;
+
+                        public class RepeatedSequence {
+                            public void first(String value) {
+                                String text = value.trim();
+                                text = text.toLowerCase();
+                                System.out.println(text);
+                            }
+
+                            public void second(String input) {
+                                String text = input.trim();
+                                text = text.toLowerCase();
+                                System.out.println(text);
                             }
                         }
                         """);

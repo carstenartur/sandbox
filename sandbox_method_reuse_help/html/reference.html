@@ -9,24 +9,44 @@
 </head>
 <body>
    <h1>Method Reuse: reference</h1>
-   <h2>Applicability contract</h2>
-   <p>Candidates must be available in the configured search scope and must match the required inputs, output, visibility, and static/instance context.</p>
+
+   <h2>Repeated-sequence mode</h2>
+   <dl>
+      <dt>Input</dt>
+      <dd>Two or more contiguous statement sequences with at least the configured minimum length.</dd>
+      <dt>Selection</dt>
+      <dd>The candidate with the greatest statement-count multiplied by the number of replaceable duplicates;
+          longer and earlier candidates win deterministic ties.</dd>
+      <dt>Transformation authority</dt>
+      <dd>Eclipse JDT <code>ExtractMethodRefactoring</code> with duplicate replacement enabled.</dd>
+      <dt>Output</dt>
+      <dd>One private extracted method and calls replacing every duplicate that JDT validates.</dd>
+   </dl>
+
+   <h2>Existing-method mode</h2>
+   <p>This separate mode replaces an inline sequence with an already available compatible method call. It does not
+      create a new target method.</p>
 
    <h2>Safety model</h2>
-   <p>A textual similarity is not sufficient: unsupported side effects, exception differences, evaluation ordering, or access constraints reject the candidate.</p>
+   <p>Candidate discovery groups only sequences with compatible statement shapes. This is a performance filter, not
+      a proof. JDT then checks binding-resolved local mappings, inputs, outputs, return handling, control-flow transfer,
+      static context, checked exceptions, destination legality, visibility, and method conflicts. Any JDT error rejects
+      the candidate without source changes.</p>
 
    <h2>Known limitations</h2>
    <ul>
-      <li>Complex semantic equivalence and cross-workspace discovery are outside the current deterministic scope.</li>
-      <li>Very large search scopes can increase analysis cost.</li>
-      <li>Candidates should be reviewed for readability and API intent, not only mechanical equivalence.</li>
+      <li>Duplicate replacement is currently scoped to one enclosing type and compilation unit.</li>
+      <li>One independent extraction is performed per compilation unit and Cleanup run to avoid composing edits calculated from stale source.</li>
+      <li>Anonymous-class extraction and cross-type common-method placement are not yet automatic.</li>
+      <li>Sequence discovery considers up to twenty statements per candidate and a bounded number of JDT validation
+          attempts per compilation unit to keep interactive Cleanup responsive.</li>
+      <li>The cleanup is not offered as a save action.</li>
    </ul>
 
    <h2>Support information</h2>
-   <p>The Help content is shipped with the same feature version as the runtime
-      plug-in. When reporting a problem, include the Sandbox feature version,
-      Eclipse version, Java version, the smallest reproducing source, and whether
-      bindings were available.</p>
+   <p>The Help content is shipped with the same feature version as the runtime plug-in. When reporting a problem,
+      include the Sandbox feature version, Eclipse version, Java version, configured minimum length, the smallest
+      reproducing source, and whether bindings were available.</p>
 
    <p><a href="index.html">Back to overview</a></p>
 </body>

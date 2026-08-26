@@ -9,16 +9,16 @@
 </head>
 <body>
    <h1>Method Reuse</h1>
-   <p>Finds supported duplicated logic that can be replaced by a call to an existing method.</p>
+   <p>Extracts repeated statement sequences into a shared private method or replaces an inline sequence with a call to an already existing compatible method.</p>
    <p class="note">This documentation is installed by <code>sandbox_method_reuse_feature</code>
       together with the runtime plug-in. The runtime plug-in does not depend on this Help bundle.</p>
 
    <h2>What the feature provides</h2>
    <ul>
-      <li>Compares supported expressions and statement sequences with existing methods.</li>
-      <li>Maps varying values to candidate method parameters.</li>
-      <li>Replaces matched inline logic with a method invocation when the data flow is compatible.</li>
-      <li>Promotes reuse of already tested project APIs.</li>
+      <li>Finds repeated contiguous statement sequences above a configurable minimum length.</li>
+      <li>Uses Eclipse JDT Extract Method to create the common method and replace every semantically valid duplicate.</li>
+      <li>Maps varying local names to generated method parameters through JDT's binding-aware duplicate machinery.</li>
+      <li>Keeps a separate mode for reusing an already existing method without creating a new one.</li>
    </ul>
 
    <h2>Where to start</h2>

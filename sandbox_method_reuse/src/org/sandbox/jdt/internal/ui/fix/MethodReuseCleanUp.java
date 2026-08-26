@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2025 Carsten Hammer.
+ * Copyright (c) 2025, 2026 Carsten Hammer.
  *
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
@@ -18,10 +18,9 @@ import java.util.Map;
 
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 
-/**
- * Method Reuse Cleanup - UI Integration
- */
+/** UI integration for Method Reuse cleanup options. */
 public class MethodReuseCleanUp extends AbstractCleanUpCoreWrapper<MethodReuseCleanUpCore> {
+
 	public MethodReuseCleanUp(final Map<String, String> options) {
 		super(options, new MethodReuseCleanUpCore());
 	}
