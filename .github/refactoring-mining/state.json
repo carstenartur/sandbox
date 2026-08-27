@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "1994884b0fff7fdbf987bd491476432fbf8fe957",
-      "lastProcessedDate": "2026-08-26T02:43:25.796881682Z",
-      "totalProcessed": 4731,
+      "lastProcessedCommit": "94d4a7b87a2ab3ceac6a006ab63ec4efdf9cd367",
+      "lastProcessedDate": "2026-08-27T03:58:11.105357376Z",
+      "totalProcessed": 4807,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3107,6 +3107,15 @@
           "deferredAt": "2026-08-26T02:38:48.419341206Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "9e1405f6ebd2500c7a724f76a644f45778178d44",
+          "message": "Fixed bug 328524: [nls tooling] Properties File editor could escape \\ on paste",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-27T03:54:18.271094198Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3120,7 +3129,7 @@
       "categoryHitCounts": {
         "Eclipse Specific": 1,
         "JDT Internal Refactoring": 190,
-        "Code Simplification": 11,
+        "Code Simplification": 12,
         "Performance": 30,
         "JDT Internal Bug Fix": 69,
         "Clean-up Bug Fix": 81,
@@ -3261,7 +3270,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 4,
-        "API Modernization": 46,
+        "API Modernization": 49,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3345,7 +3354,13 @@
         "Robustness": 1,
         "Naming": 1,
         "API Usage Refactoring": 1,
-        "Code Cleanup": 1
+        "Code Cleanup": 1,
+        "Comparison Operator Refactoring": 1,
+        "Declaration Refactoring": 1,
+        "JDT Core API Usage": 1,
+        "Logging cleanup": 1,
+        "api-usage": 1,
+        "Deprecated API Replacement": 1
       },
       "exhaustedCategories": []
     },
@@ -3386,5 +3401,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 27502
+  "globalTotalProcessed": 27578
 }
