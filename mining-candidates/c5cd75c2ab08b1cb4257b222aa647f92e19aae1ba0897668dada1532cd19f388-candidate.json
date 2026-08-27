@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c5cd75c2ab08b1cb4257b222aa647f92e19aae1ba0897668dada1532cd19f388",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.core.runtime.preferences.DefaultScope()\n\u003d\u003e\norg.eclipse.core.runtime.preferences.DefaultScope.INSTANCE\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.runtime.preferences.DefaultScope;\nimport org.eclipse.core.runtime.preferences.IEclipsePreferences;\n\npublic class Test {\n    public void setup() {\n        DefaultScope defaultScope\u003d new DefaultScope();\n        IEclipsePreferences defaultNode\u003d defaultScope.getNode(\"plugin.id\");\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.runtime.preferences.DefaultScope;\nimport org.eclipse.core.runtime.preferences.IEclipsePreferences;\n\npublic class Test {\n    public void setup() {\n        IEclipsePreferences defaultNode\u003d DefaultScope.INSTANCE.getNode(\"plugin.id\");\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.runtime.preferences.InstanceScope;\nimport org.eclipse.core.runtime.preferences.IEclipsePreferences;\n\npublic class Test {\n    public void setup() {\n        InstanceScope instanceScope\u003d new InstanceScope();\n        IEclipsePreferences instanceNode\u003d instanceScope.getNode(\"plugin.id\");\n    }\n}",
+  "targetHintFile": "eclipse-api-modernization.sandbox-hint",
+  "sourceCommit": "025318188b582f93ba63c976254753e97e28ea84",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces \u0027new DefaultScope()\u0027 with \u0027DefaultScope.INSTANCE\u0027 for singleton access.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-27T03:58:12.591164643Z",
+  "ruleFingerprint": "sha256:1ce9df39ea269d97cca7624fe907e53f964dc60b48f1a329df5ca3b224dcc5d7",
+  "behaviorFingerprint": "sha256:4248004d730e66422ab8c898382b77472414b3a3eb0af29c9aadf159bd7d9359",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type Test must be defined in its own file",
+    "verifiedAt": "2026-08-27T03:58:17.651235234Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

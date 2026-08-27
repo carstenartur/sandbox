@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7ad94f312cc03e3db91f0e8c3237d01976843d910779021484cfa994f7fae94e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.text.Symbols.TokenCOLON || $prevToken \u003d\u003d org.eclipse.jdt.internal.ui.text.Symbols.TokenEQUAL || $prevToken \u003d\u003d org.eclipse.jdt.internal.ui.text.Symbols.TokenRBRACKET\n\u003d\u003e\n$prevToken \u003d\u003d org.eclipse.jdt.internal.ui.text.Symbols.TokenCOLON || $prevToken \u003d\u003d org.eclipse.jdt.internal.ui.text.Symbols.TokenEQUAL\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text;\n\npublic class JavaIndenter {\n    private Prefs fPrefs;\n    private int prevToken;\n\n    static class Prefs {\n        boolean prefIndentBracesForBlocks \u003d false;\n        boolean prefIndentBracesForArrays \u003d false;\n        boolean prefIndentBracesForMethods \u003d false;\n    }\n    static class Symbols {\n        public static final int TokenLBRACE \u003d 1;\n        public static final int TokenCOLON \u003d 2;\n        public static final int TokenEQUAL \u003d 3;\n        public static final int TokenRBRACKET \u003d 4;\n        public static final int TokenRPAREN \u003d 5;\n        public static final int TokenTRY \u003d 6;\n    }\n\n    public void foo() {\n        boolean bracelessBlockStart \u003d false;\n        boolean unindent \u003d false;\n        boolean indent \u003d false;\n        fPrefs \u003d new Prefs();\n\n        int token \u003d Symbols.TokenLBRACE;\n        switch (token) {\n            case Symbols.TokenLBRACE:\n                if (bracelessBlockStart \u0026\u0026 !fPrefs.prefIndentBracesForBlocks)\n                    unindent \u003d true;\n                else if ((prevToken \u003d\u003d Symbols.TokenCOLON || prevToken \u003d\u003d Symbols.TokenEQUAL || prevToken \u003d\u003d Symbols.TokenRBRACKET) \u0026\u0026 !fPrefs.prefIndentBracesForArrays)\n                    unindent \u003d true;\n                else if (!bracelessBlockStart \u0026\u0026 fPrefs.prefIndentBracesForMethods)\n                    indent \u003d true;\n                break;\n        }\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text;\n\npublic class JavaIndenter {\n    private Prefs fPrefs;\n    private int prevToken;\n\n    static class Prefs {\n        boolean prefIndentBracesForBlocks \u003d false;\n        boolean prefIndentBracesForArrays \u003d false;\n        boolean prefIndentBracesForMethods \u003d false;\n    }\n    static class Symbols {\n        public static final int TokenLBRACE \u003d 1;\n        public static final int TokenCOLON \u003d 2;\n        public static final int TokenEQUAL \u003d 3;\n        public static final int TokenRBRACKET \u003d 4;\n        public static final int TokenRPAREN \u003d 5;\n        public static final int TokenTRY \u003d 6;\n    }\n\n    public void foo() {\n        boolean bracelessBlockStart \u003d false;\n        boolean unindent \u003d false;\n        boolean indent \u003d false;\n        fPrefs \u003d new Prefs();\n\n        int token \u003d Symbols.TokenLBRACE;\n        switch (token) {\n            case Symbols.TokenLBRACE:\n                if (bracelessBlockStart \u0026\u0026 !fPrefs.prefIndentBracesForBlocks)\n                    unindent \u003d true;\n                else if ((prevToken \u003d\u003d Symbols.TokenCOLON || prevToken \u003d\u003d Symbols.TokenEQUAL) \u0026\u0026 !fPrefs.prefIndentBracesForArrays)\n                    unindent \u003d true;\n                else if (!bracelessBlockStart \u0026\u0026 fPrefs.prefIndentBracesForMethods)\n                    indent \u003d true;\n                break;\n        }\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text;\n\npublic class JavaIndenter {\n    private Prefs fPrefs;\n    private int prevToken;\n\n    static class Prefs {\n        boolean prefIndentBracesForBlocks \u003d false;\n        boolean prefIndentBracesForArrays \u003d false;\n        boolean prefIndentBracesForMethods \u003d false;\n    }\n    static class Symbols {\n        public static final int TokenLBRACE \u003d 1;\n        public static final int TokenCOLON \u003d 2;\n        public static final int TokenEQUAL \u003d 3;\n        public static final int TokenRBRACKET \u003d 4;\n        public static final int TokenRPAREN \u003d 5;\n        public static final int TokenTRY \u003d 6;\n    }\n\n    public void anotherMethod() {\n        // This should not be touched, as it\u0027s not the exact pattern\n        if (prevToken \u003d\u003d Symbols.TokenRPAREN || prevToken \u003d\u003d Symbols.TokenCOLON) {\n            System.out.println(\"Another condition\");\n        }\n        // This also should not be touched, it\u0027s just TokenRBRACKET\n        if (prevToken \u003d\u003d Symbols.TokenRBRACKET) {\n            System.out.println(\"Only RBRACKET\");\n        }\n        // This should also not be touched as it\u0027s a different composition\n        if (prevToken \u003d\u003d Symbols.TokenEQUAL \u0026\u0026 prevToken \u003d\u003d Symbols.TokenRBRACKET) {\n            System.out.println(\"Different composition\");\n        }\n    }\n}\n",
+  "targetHintFile": "java-indenter-cleanup.sandbox-hint",
+  "sourceCommit": "2312598ebeb98d2f217f7d43e7c99d601261c1d3",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Code Simplification",
+  "summary": "Remove redundant `Symbols.TokenRBRACKET` check from boolean expression.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-27T03:58:12.533366189Z",
+  "ruleFingerprint": "sha256:1b9cd002a0df40c3c902d7af611df5ac74ac8215108811941fef8b7614840827",
+  "behaviorFingerprint": "sha256:85098c9356ac90ec44e3eb2f51f84e1c74cb781845d7a8802ab747c00576c319",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type JavaIndenter must be defined in its own file",
+    "verifiedAt": "2026-08-27T03:58:17.547851898Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

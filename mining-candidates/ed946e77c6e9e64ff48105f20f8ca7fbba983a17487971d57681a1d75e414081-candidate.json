@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ed946e77c6e9e64ff48105f20f8ca7fbba983a17487971d57681a1d75e414081",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: split-null-initialized-local-variable\u003e\n\u003c!description: Splits a local variable declaration that is initialized with a null literal into a declaration and an assignment. This transformation is applicable for Java 8 and later versions.\u003e\n\u003c!severity: HINT\u003e\n\n$Type $var \u003d $init; :: isNullLiteral($init) \u0026\u0026 isLocalVariable($var)\n\u003d\u003e\n$Type $var;\n$var \u003d $init;\n;;",
+  "beforeExample": "class Test {\n    void example() {\n        Object x \u003d null;\n        System.out.println(x);\n    }\n}",
+  "afterExample": "class Test {\n    void example() {\n        Object x;\n        x \u003d null;\n        System.out.println(x);\n    }\n}",
+  "negativeExample": "class Test {\n    void example() {\n        Object y \u003d new Object(); // Should not match: initializer is not null literal\n        String s \u003d \"hello\"; // Should not match: initializer is not null literal\n        System.out.println(y + s);\n    }\n}",
+  "targetHintFile": "declarations.sandbox-hint",
+  "sourceCommit": "4352f711291c10db62433d4006e57b562cbb426f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Declaration Refactoring",
+  "summary": "Splits a local variable declaration that is initialized with a `null` literal into a separate declaration and assignment statement.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-27T03:58:12.518364597Z",
+  "ruleFingerprint": "sha256:9215fc48b133f47553306362b651d879a9fd9d6d5fbd083b9b7b244f3678d6ed",
+  "behaviorFingerprint": "sha256:c42ae6112aef524edac621850483f221072865c2d74b0e3560b98c9e6beaeeb3",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-27T03:58:17.531979258Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

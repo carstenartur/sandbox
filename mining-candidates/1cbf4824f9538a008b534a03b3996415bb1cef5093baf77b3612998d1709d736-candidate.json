@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1cbf4824f9538a008b534a03b3996415bb1cef5093baf77b3612998d1709d736",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.JavaPluginImages.get(org.eclipse.jdt.internal.ui.JavaPluginImages.IMG_CORRECTION_CHANGE)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.JavaPluginImages.get(org.eclipse.jdt.internal.ui.JavaPluginImages.IMG_CORRECTION_CAST)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.graphics.Image;\n\n// Mock/stub classes for compilation\nclass JavaPluginImages {\n    public static final String IMG_CORRECTION_CHANGE \u003d \"change_icon\";\n    public static final String IMG_CORRECTION_CAST \u003d \"cast_icon\";\n    public static Image get(String key) {\n        return null; // Mock implementation\n    }\n}\n\npublic class MyClass {\n    public void doSomething() {\n        Image image \u003d JavaPluginImages.get(JavaPluginImages.IMG_CORRECTION_CHANGE);\n        System.out.println(\"Using image: \" + image);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.graphics.Image;\n\nclass JavaPluginImages {\n    public static final String IMG_CORRECTION_CHANGE \u003d \"change_icon\";\n    public static final String IMG_CORRECTION_CAST \u003d \"cast_icon\";\n    public static Image get(String key) {\n        return null;\n    }\n}\n\npublic class MyClass {\n    public void doSomething() {\n        Image image \u003d JavaPluginImages.get(JavaPluginImages.IMG_CORRECTION_CAST);\n        System.out.println(\"Using image: \" + image);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.graphics.Image;\n\nclass JavaPluginImages {\n    public static final String IMG_CORRECTION_CHANGE \u003d \"change_icon\";\n    public static final String IMG_CORRECTION_CAST \u003d \"cast_icon\";\n    public static final String IMG_CORRECTION_ADD \u003d \"add_icon\"; // Another constant\n    public static Image get(String key) {\n        return null;\n    }\n}\n\npublic class MyClass {\n    public void doSomethingElse() {\n        // This should not be changed as it uses IMG_CORRECTION_ADD\n        Image image \u003d JavaPluginImages.get(JavaPluginImages.IMG_CORRECTION_ADD);\n        System.out.println(\"Using image: \" + image);\n\n        // This should also not be changed as it\u0027s a different method\n        String name \u003d \"IMG_CORRECTION_CHANGE\";\n        System.out.println(name);\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui-fixes.sandbox-hint",
+  "sourceCommit": "e45ec0e528694c1cab24ae3ac20449801d8208ec",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "api-usage",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-27T03:58:12.566072200Z",
+  "ruleFingerprint": "sha256:4db9b9ec7774dc90b489e97e457aa5bdf7529e744ad4d84dce98fb396082b208",
+  "behaviorFingerprint": "sha256:5372920c6d215d59aff05e07a36c3b75aa86a93375cabd7cd1535e2d7646baa6",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-08-27T03:58:17.593683896Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

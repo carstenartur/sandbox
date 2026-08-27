@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "cc78f4f8c2c1f015672b71e5f45130db05edbce2d1649f52b6fc8d0fc0a38e54",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.core.dom.PrimitiveType.toCode(org.eclipse.jdt.core.Signature.toString($typeSignature)) !\u003d null\n\u003d\u003e\norg.eclipse.jdt.core.Signature.getTypeSignatureKind(org.eclipse.jdt.core.Signature.getElementType($typeSignature)) \u003d\u003d org.eclipse.jdt.core.Signature.BASE_TYPE_SIGNATURE\n;;",
+  "beforeExample": "import org.eclipse.jdt.core.IMethod;\nimport org.eclipse.jdt.core.JavaModelException;\nimport org.eclipse.jdt.core.Signature;\nimport org.eclipse.jdt.core.dom.PrimitiveType;\n\npublic class MyClass {\n    private boolean isPrimitive(IMethod method) throws JavaModelException {\n        String returnType \u003d method.getReturnType();\n        return (PrimitiveType.toCode(Signature.toString(returnType)) !\u003d null);\n    }\n}",
+  "afterExample": "import org.eclipse.jdt.core.IMethod;\nimport org.eclipse.jdt.core.JavaModelException;\nimport org.eclipse.jdt.core.Signature;\n\npublic class MyClass {\n    private boolean isPrimitive(IMethod method) throws JavaModelException {\n        String returnType \u003d method.getReturnType();\n        return Signature.getTypeSignatureKind(Signature.getElementType(returnType)) \u003d\u003d Signature.BASE_TYPE_SIGNATURE;\n    }\n}",
+  "negativeExample": "import org.eclipse.jdt.core.IMethod;\nimport org.eclipse.jdt.core.JavaModelException;\nimport org.eclipse.jdt.core.Signature;\nimport org.eclipse.jdt.core.dom.PrimitiveType;\n\npublic class NegativeTest {\n    public void method1(IMethod m) throws JavaModelException {\n        // Should not match: PrimitiveType.toCode() without the \u0027!\u003d null\u0027 comparison\n        Object x \u003d PrimitiveType.toCode(Signature.toString(m.getReturnType()));\n    }\n\n    public void method2(IMethod m) throws JavaModelException {\n        String returnType \u003d m.getReturnType();\n        // Should not match: Signature.getTypeSignatureKind() used with a different comparison\n        boolean isArray \u003d Signature.getTypeSignatureKind(Signature.getElementType(returnType)) \u003d\u003d Signature.ARRAY_TYPE_SIGNATURE;\n    }\n    \n    public void method3(IMethod m) throws JavaModelException {\n        // Should not match: Simple string comparison\n        boolean isNull \u003d (m.getReturnType() !\u003d null);\n    }\n}",
+  "targetHintFile": "jdt.sandbox-hint",
+  "sourceCommit": "593dd46eea0539de8feda6ce554df496d57d1042",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "JDT Core API Usage",
+  "summary": "Replaces a JDT Core primitive type check using `PrimitiveType.toCode(Signature.toString(...)) !\u003d null` with the more direct and robust `Signature.getTypeSignatureKind(Signature.getElementType(...)) \u003d\u003d Signature.BASE_TYPE_SIGNATURE`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-27T03:58:12.546538854Z",
+  "ruleFingerprint": "sha256:6e09f186957f03e21b93717ba374c05906fec24835cb165dd662216f7a708bc9",
+  "behaviorFingerprint": "sha256:ceb2b6f2ee6a64acc477bbb15fc24b2ac87b1d54737752e794756b89885736c0",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-08-27T03:58:17.563708064Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

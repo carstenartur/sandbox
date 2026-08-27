@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0ba5edb5cfaba6889afb6fd205598be6ba6f6171b7af7f430d8451a25cdc540b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.JavaPlugin.log($e) :: instanceof($e, \"org.eclipse.jdt.core.JavaModelException\")\n\u003d\u003e null\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.jdt.core.JavaModelException;\nimport org.eclipse.jdt.internal.ui.JavaPlugin;\n\npublic class TestClass {\n    public Object doSomething() {\n        try {\n            // Some operation that might throw JavaModelException\n            throw new JavaModelException(new CoreException(null));\n        } catch (JavaModelException e) {\n            JavaPlugin.log(e); // Matched line\n            return null;\n        }\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.jdt.core.JavaModelException;\nimport org.eclipse.jdt.internal.ui.JavaPlugin;\n\npublic class TestClass {\n    public Object doSomething() {\n        try {\n            // Some operation that might throw JavaModelException\n            throw new JavaModelException(new CoreException(null));\n        } catch (JavaModelException e) {\n            return null;\n        }\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.jdt.internal.ui.JavaPlugin;\nimport org.eclipse.core.runtime.Status;\n\npublic class TestClass {\n    public void anotherMethod() {\n        // This call should not be matched because the argument is a String, not JavaModelException\n        JavaPlugin.log(\"Informational message\");\n        // This call should not be matched because the argument is a Status, not JavaModelException\n        JavaPlugin.log(new Status(Status.INFO, \"plugin.id\", \"message\"));\n    }\n}",
+  "targetHintFile": "logging.sandbox-hint",
+  "sourceCommit": "eed33bb56a6242966a51703deb0a75cb4811eaa0",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Logging cleanup",
+  "summary": "Remove `JavaPlugin.log()` calls for `JavaModelException` instances, often when such exceptions are expected and their logging is considered noise.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-27T03:58:12.556906428Z",
+  "ruleFingerprint": "sha256:8def2ad47ee149fb6bcd177c47456abcd04c17a7b1162326da4b32904254dbf0",
+  "behaviorFingerprint": "sha256:1d3816b568592a1e3292577d88d82a767b6f85cbc5b492048417e97c0f1b3e9e",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui cannot be resolved",
+    "verifiedAt": "2026-08-27T03:58:17.578398602Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
