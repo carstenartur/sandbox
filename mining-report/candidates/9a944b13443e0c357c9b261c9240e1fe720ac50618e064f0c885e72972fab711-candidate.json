@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9a944b13443e0c357c9b261c9240e1fe720ac50618e064f0c885e72972fab711",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.core.JavaCore.getPlugin().getPluginPreferences()\n\u003d\u003e\norg.eclipse.jdt.internal.ui.JavaPlugin.getJavaCorePluginPreferences()\n;;",
+  "beforeExample": "package my.package;\n\nimport org.eclipse.core.runtime.Preferences;\nimport org.eclipse.jdt.core.JavaCore;\n// In a real project, org.eclipse.jdt.internal.ui.JavaPlugin would be on the classpath,\n// but for this \u0027before\u0027 example, we focus on the old API usage.\n\n// Minimal stubs for compilation context in a self-contained example\nclass Plugin { public Preferences getPluginPreferences() { return null; } }\nclass JdtCoreStub { public static Plugin getPlugin() { return new Plugin(); } }\n\npublic class MyClass {\n    public void method() {\n        Preferences prefs \u003d JdtCoreStub.getPlugin().getPluginPreferences();\n    }\n}",
+  "afterExample": "package my.package;\n\nimport org.eclipse.core.runtime.Preferences;\n// In a real project, org.eclipse.jdt.core.JavaCore would still be on the classpath,\n// but for this \u0027after\u0027 example, we focus on the new API usage.\n\n// Minimal stubs for compilation context in a self-contained example\nclass JavaPluginStub { public static Preferences getJavaCorePluginPreferences() { return null; } }\n\npublic class MyClass {\n    public void method() {\n        Preferences prefs \u003d JavaPluginStub.getJavaCorePluginPreferences();\n    }\n}",
+  "negativeExample": "package my.package;\n\nimport org.eclipse.core.runtime.Preferences;\nimport org.eclipse.jdt.core.JavaCore;\n\n// Minimal stubs for compilation context in a self-contained example\nclass Plugin { public Preferences getPluginPreferences() { return null; } }\nclass JdtCoreStub { public static Plugin getPlugin() { return new Plugin(); } public static void anotherMethod() {} }\n\npublic class MyClass {\n    public void method() {\n        // This call is different and should not be matched\n        JdtCoreStub.anotherMethod();\n\n        // This call is also different and should not be matched\n        Preferences anotherPrefs \u003d new Plugin().getPluginPreferences();\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "f83fb56da6fe8cb1615ab01e297af6c4f72190b7",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Deprecated API Replacement",
+  "summary": "Replace deprecated call to JavaCore.getPlugin().getPluginPreferences() with the new static helper JavaPlugin.getJavaCorePluginPreferences().",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-27T03:58:12.574396739Z",
+  "ruleFingerprint": "sha256:bdb39ac387c42e022673621a3e297d7c73877fa6d906c33df095108918af54a3",
+  "behaviorFingerprint": "sha256:496c12c794c84e2daaf5b1e3d8180d7a26d22936c0eb71af988d63c258a91a68",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: Syntax error on token \"package\", Identifier expected",
+    "verifiedAt": "2026-08-27T03:58:17.611651930Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

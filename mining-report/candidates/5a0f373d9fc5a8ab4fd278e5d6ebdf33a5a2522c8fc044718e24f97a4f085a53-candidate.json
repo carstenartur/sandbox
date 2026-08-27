@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5a0f373d9fc5a8ab4fd278e5d6ebdf33a5a2522c8fc044718e24f97a4f085a53",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$x \u003c $y\n\u003d\u003e\n$y \u003e\u003d $x\n;;",
+  "beforeExample": "class Example {\n    boolean check(int a, int b) {\n        return a \u003c b;\n    }\n}",
+  "afterExample": "class Example {\n    boolean check(int a, int b) {\n        return b \u003e\u003d a;\n    }\n}",
+  "negativeExample": "class Example {\n    boolean check(int a, int b) {\n        return a \u003e b; // Should not match \u0027a \u003c b\u0027 rule\n    }\n}",
+  "targetHintFile": "comparison.sandbox-hint",
+  "sourceCommit": "a03dd09bf11c85b5735c76ccc8edd7f2b06ffa16",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Comparison Operator Refactoring",
+  "summary": "Invert less-than comparison by swapping operands and changing operator to greater-than-or-equal.",
+  "sourceVersion": "21",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-08-27T03:58:12.456828692Z",
+  "ruleFingerprint": "sha256:f9b78e257cb1a7edda8bad9e7b2592fa82585f9b0b997830c8a64e5b45cdde8b",
+  "behaviorFingerprint": "sha256:ad0b581d474f5f6ab87174633a8267f46ce4e710f5f033de29875a3377c8834c",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Candidate behavior verified",
+    "verifiedAt": "2026-08-27T03:58:17.512380925Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-08-27T03:58:17.512680221Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-08-27T03:58:17.512710235Z"
+    }
+  ]
+}

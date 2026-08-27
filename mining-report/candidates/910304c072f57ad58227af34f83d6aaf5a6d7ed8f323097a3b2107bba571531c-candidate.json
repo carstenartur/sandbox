@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "910304c072f57ad58227af34f83d6aaf5a6d7ed8f323097a3b2107bba571531c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse-shared-image-constants\u003e\n\u003c!description: Replaces specific ISharedImages constants with their updated or correct counterparts. This fixes common UI icon issues by mapping old/incorrect image IDs to the intended ones.\n\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: eclipse-ui, constant-replacement, image-descriptor\u003e\n\n\u003c!map IMAGE_REPLACEMENT: \"IMG_TOOL_DELETE_DISABLED\" \u003d\u003e \"IMG_ELCL_REMOVE_DISABLED\", \"IMG_TOOL_DELETE\" \u003d\u003e \"IMG_ELCL_REMOVE\"\u003e\n\n$receiver.getImageDescriptor(org.eclipse.ui.ISharedImages.#{IMAGE_REPLACEMENT})\n\u003d\u003e\n$receiver.getImageDescriptor(org.eclipse.ui.ISharedImages.#{IMAGE_REPLACEMENT_VALUE})\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.ui.ISharedImages;\nimport org.eclipse.jface.resource.ImageDescriptor;\n\npublic class TestClass {\n    public void setup(ISharedImages workbenchImages) {\n        ImageDescriptor disabledImageDescriptor \u003d workbenchImages.getImageDescriptor(ISharedImages.IMG_TOOL_DELETE_DISABLED);\n        ImageDescriptor imageDescriptor \u003d workbenchImages.getImageDescriptor(ISharedImages.IMG_TOOL_DELETE);\n        ImageDescriptor hoverImageDescriptor \u003d workbenchImages.getImageDescriptor(ISharedImages.IMG_TOOL_DELETE);\n        System.out.println(disabledImageDescriptor);\n        System.out.println(imageDescriptor);\n        System.out.println(hoverImageDescriptor);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.ui.ISharedImages;\nimport org.eclipse.jface.resource.ImageDescriptor;\n\npublic class TestClass {\n    public void setup(ISharedImages workbenchImages) {\n        ImageDescriptor disabledImageDescriptor \u003d workbenchImages.getImageDescriptor(ISharedImages.IMG_ELCL_REMOVE_DISABLED);\n        ImageDescriptor imageDescriptor \u003d workbenchImages.getImageDescriptor(ISharedImages.IMG_ELCL_REMOVE);\n        ImageDescriptor hoverImageDescriptor \u003d workbenchImages.getImageDescriptor(ISharedImages.IMG_ELCL_REMOVE);\n        System.out.println(disabledImageDescriptor);\n        System.out.println(imageDescriptor);\n        System.out.println(hoverImageDescriptor);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.ui.ISharedImages;\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.SWT;\n\npublic class NegativeTestClass {\n    public void setup(ISharedImages workbenchImages) {\n        // Should not match other constants or different types\n        int style \u003d SWT.BORDER;\n        ImageDescriptor someOtherImage \u003d workbenchImages.getImageDescriptor(ISharedImages.IMG_ETOOL_SAVE); // Not in the defined map\n        String someString \u003d \"IMG_TOOL_DELETE\"; // Not an ISharedImages constant\n        System.out.println(style);\n        System.out.println(someOtherImage);\n        System.out.println(someString);\n    }\n}",
+  "targetHintFile": "eclipse-ui.sandbox-hint",
+  "sourceCommit": "ad5b8aaa439980e36d63177dbdd0d35a4aaf0df7",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replace IMG_TOOL_DELETE_DISABLED with IMG_ELCL_REMOVE_DISABLED and IMG_TOOL_DELETE with IMG_ELCL_REMOVE in calls to ISharedImages.getImageDescriptor.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-27T03:58:12.497777460Z",
+  "ruleFingerprint": "sha256:d3e191edbfc1eee218936424144ae7c6d82fb91229ef677d3f1e308644098b0e",
+  "behaviorFingerprint": "sha256:fbe4d2ec3cdf87327e3b09a6173085eaf727ef87884143ac730f5af65c582c37",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-27T03:58:17.522663412Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

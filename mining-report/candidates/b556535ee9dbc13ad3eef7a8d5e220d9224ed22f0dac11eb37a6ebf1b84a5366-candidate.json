@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b556535ee9dbc13ad3eef7a8d5e220d9224ed22f0dac11eb37a6ebf1b84a5366",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.core.runtime.preferences.InstanceScope()\n\u003d\u003e\norg.eclipse.core.runtime.preferences.InstanceScope.INSTANCE\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.runtime.preferences.InstanceScope;\nimport org.eclipse.core.runtime.preferences.IEclipsePreferences;\n\npublic class Test {\n    public void setup() {\n        InstanceScope instanceScope\u003d new InstanceScope();\n        IEclipsePreferences instanceNode\u003d instanceScope.getNode(\"plugin.id\");\n        instanceNode.addPreferenceChangeListener(event -\u003e {});\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.runtime.preferences.InstanceScope;\nimport org.eclipse.core.runtime.preferences.IEclipsePreferences;\n\npublic class Test {\n    public void setup() {\n        IEclipsePreferences instanceNode\u003d InstanceScope.INSTANCE.getNode(\"plugin.id\");\n        instanceNode.addPreferenceChangeListener(event -\u003e {});\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.runtime.preferences.DefaultScope;\nimport org.eclipse.core.runtime.preferences.IEclipsePreferences;\n\npublic class Test {\n    public void setup() {\n        DefaultScope defaultScope\u003d new DefaultScope();\n        IEclipsePreferences defaultNode\u003d defaultScope.getNode(\"plugin.id\");\n    }\n}",
+  "targetHintFile": "eclipse-api-modernization.sandbox-hint",
+  "sourceCommit": "6b114984b4639b7396ebc914027bea356a59711f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces \u0027new InstanceScope()\u0027 with \u0027InstanceScope.INSTANCE\u0027 for singleton access.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-27T03:58:12.582806014Z",
+  "ruleFingerprint": "sha256:48b7a5fc857f05658ee3c2b95752e5659d537beed32f594395e84f62651e598b",
+  "behaviorFingerprint": "sha256:89a34bc1403b32fdb65c533dcd6a884cc5b76a868fca12aa553ff0136b0ef7cc",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type Test must be defined in its own file",
+    "verifiedAt": "2026-08-27T03:58:17.637384788Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
