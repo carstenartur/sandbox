@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "94d4a7b87a2ab3ceac6a006ab63ec4efdf9cd367",
-      "lastProcessedDate": "2026-08-27T03:58:11.105357376Z",
-      "totalProcessed": 4807,
+      "lastProcessedCommit": "9875e0c92a49104182b8f36de9ba7848d1c0deb2",
+      "lastProcessedDate": "2026-08-28T04:57:01.665070491Z",
+      "totalProcessed": 4891,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3144,7 +3144,7 @@
         "Collection Performance": 1,
         "Null-Safety": 20,
         "Lambda-Simplification": 5,
-        "Architectural Refactoring": 2,
+        "Architectural Refactoring": 4,
         "Collections": 10,
         "JDT Internal Feature Enhancement": 7,
         "Clean-up Enhancement": 4,
@@ -3179,7 +3179,7 @@
         "Algorithm/Sorting Logic": 1,
         "Exception Handling": 1,
         "UI Feature Implementation": 1,
-        "Refactoring": 3,
+        "Refactoring": 4,
         "Concurrency / Thread-Safety": 2,
         "JDT UI Feature": 2,
         "JDT UI Internal Refactoring": 1,
@@ -3259,7 +3259,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 22,
+        "API Migration": 24,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -3360,7 +3360,13 @@
         "JDT Core API Usage": 1,
         "Logging cleanup": 1,
         "api-usage": 1,
-        "Deprecated API Replacement": 1
+        "Deprecated API Replacement": 1,
+        "API Usage Correction": 1,
+        "Argument inlining": 1,
+        "Stylistic/Documentation": 1,
+        "Structural Change/New Code Insertion": 1,
+        "Method Argument Update": 1,
+        "API usage improvement": 1
       },
       "exhaustedCategories": []
     },
@@ -3401,5 +3407,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 27578
+  "globalTotalProcessed": 27662
 }
