@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "404ce632660c7cc9f071b86ec7fb1da0c6ce36e4cc1ea33d2f874fb507690cff",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.io.File($path$).isAbsolute()\n\u003d\u003e\norg.eclipse.core.runtime.Path.fromOSString($path$).isAbsolute()\n;;",
+  "beforeExample": "import java.io.File;\nimport org.eclipse.jface.wizard.WizardPage;\nimport org.eclipse.swt.widgets.Combo;\nimport org.eclipse.jface.dialogs.IMessageProvider;\n\nclass MyWizardPage extends WizardPage {\n    private Combo fDestinationNamesCombo;\n\n    protected MyWizardPage(String pageName) {\n        super(pageName);\n        // Minimal initialization for example compilation\n        fDestinationNamesCombo \u003d new Combo(null, 0);\n    }\n\n    public void initCombo(String text) {\n        fDestinationNamesCombo.setText(text);\n    }\n\n    // Assume fDestinationNamesCombo is initialized elsewhere\n    public void validatePage() {\n        String currentMessage \u003d getMessage();\n        // This is the specific pattern to match\n        if (!(new File(fDestinationNamesCombo.getText()).isAbsolute())) {\n            if (currentMessage \u003d\u003d null)\n                setMessage(\"Info: relative export destination\", IMessageProvider.INFORMATION);\n        } else {\n            // some other logic\n        }\n    }\n}\n",
+  "afterExample": "import org.eclipse.core.runtime.Path;\nimport org.eclipse.jface.wizard.WizardPage;\nimport org.eclipse.swt.widgets.Combo;\nimport org.eclipse.jface.dialogs.IMessageProvider;\n\nclass MyWizardPage extends WizardPage {\n    private Combo fDestinationNamesCombo;\n\n    protected MyWizardPage(String pageName) {\n        super(pageName);\n        // Minimal initialization for example compilation\n        fDestinationNamesCombo \u003d new Combo(null, 0);\n    }\n\n    public void initCombo(String text) {\n        fDestinationNamesCombo.setText(text);\n    }\n\n    // Assume fDestinationNamesCombo is initialized elsewhere\n    public void validatePage() {\n        String currentMessage \u003d getMessage();\n        // The pattern is transformed here\n        if (!(org.eclipse.core.runtime.Path.fromOSString(fDestinationNamesCombo.getText()).isAbsolute())) {\n            if (currentMessage \u003d\u003d null)\n                setMessage(\"Info: relative export destination\", IMessageProvider.INFORMATION);\n        } else {\n            // some other logic\n        }\n    }\n}\n",
+  "negativeExample": "import java.io.File;\nimport org.eclipse.core.runtime.Path;\n\npublic class PathChecks {\n    // This method takes an existing File object, so the rule should not apply.\n    public boolean checkFileIsAbsolute(File existingFile) {\n        return existingFile.isAbsolute(); // Should not match: \u0027existingFile\u0027 is a variable, not \u0027new File(...)\u0027\n    }\n\n    // This method already uses the desired Eclipse Path API, so the rule should not apply.\n    public boolean checkEclipsePathIsAbsolute(String pathString) {\n        return Path.fromOSString(pathString).isAbsolute(); // Should not match: already desired form\n    }\n\n    // This method explicitly creates a java.io.File from a string but uses its methods later in a chain.\n    // The rule specifically targets `.isAbsolute()` directly on the `new File(...)` result.\n    public void anotherCheck(String filePath) {\n        File file \u003d new File(filePath);\n        if (file.canRead() \u0026\u0026 file.isAbsolute()) { // Should not match: `.isAbsolute()` is not called directly on \u0027new File(...)\u0027\n            System.out.println(\"File can be read and is absolute.\");\n        }\n    }\n}\n",
+  "targetHintFile": "eclipse-path-api.sandbox-hint",
+  "sourceCommit": "095f686ef2dd852c5072cacc88f06f883d04efe6",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Usage Correction",
+  "summary": "Replaces checking path absoluteness using `new java.io.File(pathString).isAbsolute()` with `org.eclipse.core.runtime.Path.fromOSString(pathString).isAbsolute()` for Eclipse API compatibility and correctness in handling platform-specific path strings. This ensures robust path handling in Eclipse contexts.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-28T04:57:02.329891159Z",
+  "ruleFingerprint": "sha256:21fc76e9223fee20277a73b6b57fd42706e049746b752ab2252e853aead7a39a",
+  "behaviorFingerprint": "sha256:50c5ff3d7326701a1826c13252d58506c9c2eabfd5efe8c7893969653016a2a7",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.jface.wizard cannot be resolved",
+    "verifiedAt": "2026-08-28T04:57:05.812643881Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

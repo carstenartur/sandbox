@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9d8db77ef53c1b095e826a5d39eb195f37c0c6a3690b93bb8bf88db1d6faa99f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "fShowSearchInDialogAction.getSearchInDialog().getIncludeMask()\n\u003d\u003e\ngetIncludeMask()\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.callhierarchy;\n\nclass CallHierarchyViewPart {\n    CallHierarchySearchInDialogAction fShowSearchInDialogAction \u003d new CallHierarchySearchInDialogAction();\n\n    public void someMethod() {\n        int includeMask \u003d fShowSearchInDialogAction.getSearchInDialog().getIncludeMask();\n        System.out.println(includeMask);\n    }\n\n    // Method stub to satisfy compilation and enable the \u0027after\u0027 state conceptually\n    // In a real scenario, getIncludeMask() would be defined to return the original expression.\n    public int getIncludeMask() {\n        return 0; \n    }\n    public void setContentDescription(String description) {}\n    public void setContentDescription(int includeMask) {\n        setContentDescription(computeContentDescription(includeMask));\n    }\n    public String computeContentDescription(int includeMask) { return \"\"; }\n}\n\nclass CallHierarchySearchInDialogAction {\n    SearchInDialog getSearchInDialog() { return new SearchInDialog(); }\n}\nclass SearchInDialog {\n    int getIncludeMask() { return 0; }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.callhierarchy;\n\nclass CallHierarchyViewPart {\n    CallHierarchySearchInDialogAction fShowSearchInDialogAction \u003d new CallHierarchySearchInDialogAction();\n\n    public void someMethod() {\n        int includeMask \u003d getIncludeMask();\n        System.out.println(includeMask);\n    }\n\n    public int getIncludeMask() {\n        return 0;\n    }\n    public void setContentDescription(String description) {}\n    public void setContentDescription(int includeMask) {\n        setContentDescription(computeContentDescription(includeMask));\n    }\n    public String computeContentDescription(int includeMask) { return \"\"; }\n}\n\nclass CallHierarchySearchInDialogAction {\n    SearchInDialog getSearchInDialog() { return new SearchInDialog(); }\n}\nclass SearchInDialog {\n    int getIncludeMask() { return 0; }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.callhierarchy;\n\nclass CallHierarchyViewPart {\n    CallHierarchySearchInDialogAction fShowSearchInDialogAction \u003d new CallHierarchySearchInDialogAction();\n    AnotherAction anotherAction \u003d new AnotherAction();\n\n    public void someMethod() {\n        int anotherMask \u003d anotherAction.getOtherDialog().getMask();\n        System.out.println(anotherMask);\n    }\n\n    public void setContentDescription(String description) {}\n    public void setContentDescription(int includeMask) {\n        setContentDescription(computeContentDescription(includeMask));\n    }\n    public String computeContentDescription(int includeMask) { return \"\"; }\n}\n\nclass CallHierarchySearchInDialogAction {\n    SearchInDialog getSearchInDialog() { return new SearchInDialog(); }\n}\nclass SearchInDialog {\n    int getIncludeMask() { return 0; }\n}\n\nclass AnotherAction {\n    OtherDialog getOtherDialog() { return new OtherDialog(); }\n}\nclass OtherDialog {\n    int getMask() { return 1; }\n}",
+  "targetHintFile": "callhierarchy.sandbox-hint",
+  "sourceCommit": "eafdd36bcbc3259c5e0df61d2e77533d2f3fa4ec",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Refactoring",
+  "summary": "Replaces a specific chained method call with a local helper method call, assuming the helper method exists in the same class.",
+  "sourceVersion": "21",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-08-28T04:57:02.376988359Z",
+  "ruleFingerprint": "sha256:cc0c5e1c3800134fa623e9dcdb4e717d847ada9c6fae50a4a84ef61ca5457e66",
+  "behaviorFingerprint": "sha256:a5d1e09c59f42342cfea1b4766a0b1e36fe566867663145209de83e870c106a2",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Candidate behavior verified",
+    "verifiedAt": "2026-08-28T04:57:05.858999705Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-08-28T04:57:05.859183802Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-08-28T04:57:05.859209987Z"
+    }
+  ]
+}

@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The import org.eclipse.ltk cannot be resolved",
-    "verifiedAt": "2026-08-27T03:58:15.918994339Z",
+    "verifiedAt": "2026-08-28T04:57:04.690692308Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
