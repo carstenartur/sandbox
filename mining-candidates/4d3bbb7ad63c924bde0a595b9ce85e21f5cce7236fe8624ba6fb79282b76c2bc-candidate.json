@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4d3bbb7ad63c924bde0a595b9ce85e21f5cce7236fe8624ba6fb79282b76c2bc",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.core.resources.ResourcesPlugin.getWorkspace().getRoot().findContainersForLocation(new org.eclipse.core.runtime.Path($fileName))\n\u003d\u003e\norg.eclipse.core.resources.ResourcesPlugin.getWorkspace().getRoot().findContainersForLocationURI(org.eclipse.core.filesystem.URIUtil.toURI(new org.eclipse.core.runtime.Path($fileName).makeAbsolute()))\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.resources.IContainer;\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.Path;\n\npublic class MyClass {\n    public void processFile(String selectedFileName) {\n        if (selectedFileName !\u003d null) {\n            // Deprecated usage\n            IContainer[] containers \u003d ResourcesPlugin.getWorkspace().getRoot().findContainersForLocation(new Path(selectedFileName));\n            if (containers.length \u003e 0) {\n                System.out.println(\"Found container: \" + containers[0].getFullPath().toString());\n            }\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.filesystem.URIUtil;\nimport org.eclipse.core.resources.IContainer;\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.Path;\n\npublic class MyClass {\n    public void processFile(String selectedFileName) {\n        if (selectedFileName !\u003d null) {\n            // Modernized usage\n            IContainer[] containers \u003d ResourcesPlugin.getWorkspace().getRoot().findContainersForLocationURI(URIUtil.toURI(new Path(selectedFileName).makeAbsolute()));\n            if (containers.length \u003e 0) {\n                System.out.println(\"Found container: \" + containers[0].getFullPath().toString());\n            }\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.resources.IContainer;\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.Path;\n\npublic class NegativeTestClass {\n    public void processFile(String selectedFileName, Path existingPath) {\n        if (selectedFileName !\u003d null) {\n            // This call uses an existing Path variable, not \u0027new Path(String)\u0027, so it should not match the rule.\n            IContainer[] containers \u003d ResourcesPlugin.getWorkspace().getRoot().findContainersForLocation(existingPath);\n            if (containers.length \u003e 0) {\n                System.out.println(\"Found container: \" + containers[0].getFullPath().toString());\n            }\n        }\n        Path p \u003d new Path(selectedFileName);\n        String s \u003d p.toOSString(); // A different method call\n    }\n}",
+  "targetHintFile": "eclipse-api-migrations.sandbox-hint",
+  "sourceCommit": "3b378c753509a4fa0f6c7dda94ca0fc67cb60825",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces the deprecated `IWorkspaceRoot.findContainersForLocation(IPath)` with `findContainersForLocationURI(URI)`, converting the `Path` argument to `URI` using `URIUtil.toURI` and ensuring the path is absolute for correctness.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-28T04:57:02.357833457Z",
+  "ruleFingerprint": "sha256:b26728837f4c9aea1d80015b3412b72b04297ecd7bd52e06f58a075ecbdeba26",
+  "behaviorFingerprint": "sha256:a8a9166ccb05dfd4bef495fce74b1a70e7c46980b2a72f3b77b395debdfaa85a",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-08-28T04:57:05.823829884Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

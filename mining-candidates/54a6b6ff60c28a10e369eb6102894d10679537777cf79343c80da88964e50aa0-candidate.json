@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "54a6b6ff60c28a10e369eb6102894d10679537777cf79343c80da88964e50aa0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: enhance.classpath.check\u003e\n\u003c!description: Extend IJavaProject.isOnClasspath() check with IJavaProject.equals() for improved logic to handle cases where the project itself is the element being checked.\u003e\n\u003c!severity: WARNING\u003e\n\n$x.isOnClasspath($y) :: instanceof($x, \"org.eclipse.jdt.core.IJavaProject\")\n\u003d\u003e\n$x.equals($y) || $x.isOnClasspath($y)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.core.IJavaElement;\n\npublic class Test {\n    public void checkClasspath(IJavaProject javaProject, IJavaElement je) {\n        if (javaProject !\u003d null \u0026\u0026 je !\u003d null \u0026\u0026 je.exists() \u0026\u0026 javaProject.exists()) {\n            if (javaProject.isOnClasspath(je)) {\n                System.out.println(\"Element is on project classpath.\");\n            } else {\n                System.out.println(\"Element is NOT on project classpath.\");\n            }\n        }\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.core.IJavaElement;\n\npublic class Test {\n    public void checkClasspath(IJavaProject javaProject, IJavaElement je) {\n        if (javaProject !\u003d null \u0026\u0026 je !\u003d null \u0026\u0026 je.exists() \u0026\u0026 javaProject.exists()) {\n            if (javaProject.equals(je) || javaProject.isOnClasspath(je)) {\n                System.out.println(\"Element is on project classpath.\");\n            } else {\n                System.out.println(\"Element is NOT on project classpath.\");\n            }\n        }\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.core.IJavaElement;\n\nclass MyProject {\n    public boolean isOnClasspath(IJavaElement element) {\n        return true; // Custom implementation\n    }\n    public boolean equals(Object obj) { return super.equals(obj); }\n}\n\npublic class TestNegative {\n    public void checkClasspath(MyProject myProject, IJavaElement je) {\n        if (myProject.isOnClasspath(je)) { // Should NOT match, as myProject is not an IJavaProject\n            System.out.println(\"On classpath\");\n        }\n    }\n}",
+  "targetHintFile": "misc.sandbox-hint",
+  "sourceCommit": "2aaa936bbe70e9881cb90ab146337632228fbb5d",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API usage improvement",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-28T04:57:02.395424187Z",
+  "ruleFingerprint": "sha256:d95ead87ba00d81e2fe3cee17bc8447801508d5aa03befa60724a25dda38b46a",
+  "behaviorFingerprint": "sha256:46e16e003c35783290ee5f4f6d82ae1818235f7b243ae27cd0767db249ae49ba",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-28T04:57:05.887695999Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4e26a634432e006b1f89b7eaeba80f0083ff0bc26d54fa5b3b17981daccb88f0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.core.dom.SharedASTProvider.getAST($inputElement, $waitFlag, $monitor) :: isLocalVariable($inputElement) \u0026\u0026 instanceof($inputElement, \"org.eclipse.jdt.core.ITypeRoot\")\n\u003d\u003e org.eclipse.jdt.core.dom.SharedASTProvider.getAST(this.getInputJavaElement(), $waitFlag, $monitor)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.javaeditor;\n\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.jdt.core.ITypeRoot;\nimport org.eclipse.jdt.core.dom.CompilationUnit;\nimport org.eclipse.jdt.core.dom.SharedASTProvider;\n\nclass ClassFileEditor {\n    protected ITypeRoot getInputJavaElement() {\n        return null;\n    }\n\n    public void editorInputChanged() {\n        final ITypeRoot inputElement \u003d getInputJavaElement();\n        CompilationUnit ast \u003d SharedASTProvider.getAST(inputElement, SharedASTProvider.WAIT_YES, null);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.javaeditor;\n\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.jdt.core.ITypeRoot;\nimport org.eclipse.jdt.core.dom.CompilationUnit;\nimport org.eclipse.jdt.core.dom.SharedASTProvider;\n\nclass ClassFileEditor {\n    protected ITypeRoot getInputJavaElement() {\n        return null;\n    }\n\n    public void editorInputChanged() {\n        final ITypeRoot inputElement \u003d getInputJavaElement();\n        CompilationUnit ast \u003d SharedASTProvider.getAST(this.getInputJavaElement(), SharedASTProvider.WAIT_YES, null);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.javaeditor;\n\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.jdt.core.ITypeRoot;\nimport org.eclipse.jdt.core.dom.CompilationUnit;\nimport org.eclipse.jdt.core.dom.SharedASTProvider;\n\nclass AnotherClass {\n    private ITypeRoot inputElement; // Not a local variable\n\n    public void someMethod(ITypeRoot paramElement) { // Not a local variable\n        // Should not match for field access\n        CompilationUnit astField \u003d SharedASTProvider.getAST(this.inputElement, SharedASTProvider.WAIT_YES, null);\n\n        // Should not match for parameter access\n        CompilationUnit astParam \u003d SharedASTProvider.getAST(paramElement, SharedASTProvider.WAIT_YES, null);\n\n        // Should not match if inputElement is used in other contexts\n        ITypeRoot localOtherUsage \u003d null;\n        if (localOtherUsage !\u003d null) {\n            System.out.println(localOtherUsage);\n        }\n    }\n\n    public ITypeRoot getInputJavaElement() {\n        return null;\n    }\n}",
+  "targetHintFile": "inlining.sandbox-hint",
+  "sourceCommit": "66f3a3c1216483b2de235487522317109009a12b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Argument inlining",
+  "summary": "Replaces a local variable argument with an instance method call within a specific static method invocation.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-28T04:57:02.368643371Z",
+  "ruleFingerprint": "sha256:e1a080d644e0c53a87ff100f59b491a58fef5af351f26de903bae5928f61db00",
+  "behaviorFingerprint": "sha256:082edff15926afdefdde580648a65e68ca6d1469db9a87bd96e14b4bf626ba12",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The import org.eclipse.jdt.core.dom.SharedASTProvider cannot be resolved",
+    "verifiedAt": "2026-08-28T04:57:05.833518514Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

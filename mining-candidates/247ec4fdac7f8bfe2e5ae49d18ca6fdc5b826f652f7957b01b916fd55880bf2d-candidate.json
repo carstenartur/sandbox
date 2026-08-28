@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "247ec4fdac7f8bfe2e5ae49d18ca6fdc5b826f652f7957b01b916fd55880bf2d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.util.ElementValidator.check($arg1$, $arg2$, org.eclipse.jdt.internal.ui.actions.ActionMessages.FormatElementAction_label, $arg4$)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.util.ElementValidator.check($arg1$, $arg2$, org.eclipse.jdt.internal.ui.javaeditor.JavaEditorMessages.JavaEditor_FormatElementDialog_label, $arg4$)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    ICompilationUnit cu;\n    Shell shell;\n    boolean editorExists \u003d true;\n\n    public void testMethod() {\n        ElementValidator.check(cu, shell, ActionMessages.FormatElementAction_label, editorExists);\n    }\n\n    // Dummy classes for compilation\n    static class ElementValidator {\n        public static boolean check(Object o1, Object o2, String s, boolean b) { return true; }\n    }\n    static class ActionMessages {\n        public static String FormatElementAction_label \u003d \"Old Label\";\n    }\n    static class JavaEditorMessages {\n        public static String JavaEditor_FormatElementDialog_label \u003d \"New Label\";\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    ICompilationUnit cu;\n    Shell shell;\n    boolean editorExists \u003d true;\n\n    public void testMethod() {\n        ElementValidator.check(cu, shell, JavaEditorMessages.JavaEditor_FormatElementDialog_label, editorExists);\n    }\n\n    // Dummy classes for compilation\n    static class ElementValidator {\n        public static boolean check(Object o1, Object o2, String s, boolean b) { return true; }\n    }\n    static class ActionMessages {\n        public static String FormatElementAction_label \u003d \"Old Label\";\n    }\n    static class JavaEditorMessages {\n        public static String JavaEditor_FormatElementDialog_label \u003d \"New Label\";\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    ICompilationUnit cu;\n    Shell shell;\n    boolean editorExists \u003d true;\n\n    public void testMethod() {\n        ElementValidator.check(cu, shell, \"SomeOtherLabel\", editorExists);\n        ElementValidator.check(cu, shell, JavaEditorMessages.JavaEditor_FormatElementDialog_label, editorExists);\n    }\n\n    // Dummy classes for compilation\n    static class ElementValidator {\n        public static boolean check(Object o1, Object o2, String s, boolean b) { return true; }\n    }\n    static class ActionMessages {\n        public static String FormatElementAction_label \u003d \"Old Label\";\n    }\n    static class JavaEditorMessages {\n        public static String JavaEditor_FormatElementDialog_label \u003d \"New Label\";\n    }\n}",
+  "targetHintFile": "eclipse-api.sandbox-hint",
+  "sourceCommit": "340acdcba823660d3fc7b45296915dfdd17960b7",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces the usage of the deprecated ActionMessages.FormatElementAction_label with JavaEditorMessages.JavaEditor_FormatElementDialog_label when passed as an argument to ElementValidator.check.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-28T04:57:02.384678001Z",
+  "ruleFingerprint": "sha256:949d5e0353fea6dcabbacf4e00ebeaf657e3b149e3f7a9d827456e6d8e5b005a",
+  "behaviorFingerprint": "sha256:ff51f4432a076bce53fcdb53fc688cadddda8a38ca6856548294e2cfb150d165",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-08-28T04:57:05.869075546Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
