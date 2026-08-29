@@ -24,11 +24,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          previous=9e683cae3ef910166131b703518911467873b711
-          test "$(git rev-parse HEAD^)" = "$previous"
+          expected_parent=5293ec331762bee2c6f1f1bd5d4113fd821b1f94
+          source_commit=9e683cae3ef910166131b703518911467873b711
+          test "$(git rev-parse HEAD^)" = "$expected_parent"
 
           legacy=/tmp/temporary-junit-pde-and-help-repair.yml
-          git show "$previous:.github/workflows/temporary-junit-pde-and-help-repair.yml" > "$legacy"
+          git show "$source_commit:.github/workflows/temporary-junit-pde-and-help-repair.yml" > "$legacy"
 
           awk '
             /python3 <<'"'"'PY'"'"'/ { capture=1; next }
@@ -36,6 +37,27 @@ jobs:
             capture { sub(/^          /, ""); print }
           ' "$legacy" > /tmp/apply-junit-pde-repair.py
           test -s /tmp/apply-junit-pde-repair.py
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('/tmp/apply-junit-pde-repair.py')
+          text = path.read_text(encoding='utf-8')
+          old = '''if text.count(old_sequence) != 2:
+              raise SystemExit(f"Expected two apply/check sequences, found {text.count(old_sequence)}")
+          text = text.replace(old_sequence, new_sequence)'''
+          new = '''if text.count(old_sequence) != 1:
+              raise SystemExit(f"Expected one apply sequence, found {text.count(old_sequence)}")
+          text = text.replace(old_sequence, new_sequence)
+          nested_old_sequence = old_sequence.replace("\\t\\t\\t\\t\\t", "\\t\\t\\t\\t\\t\\t")
+          nested_new_sequence = new_sequence.replace("\\t\\t\\t\\t\\t", "\\t\\t\\t\\t\\t\\t")
+          if text.count(nested_old_sequence) != 1:
+              raise SystemExit(f"Expected one check sequence, found {text.count(nested_old_sequence)}")
+          text = text.replace(nested_old_sequence, nested_new_sequence)'''
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected one obsolete sequence assertion, found {text.count(old)}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
           python3 /tmp/apply-junit-pde-repair.py
 
           extract_java() {
