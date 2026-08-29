@@ -424,11 +424,16 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 
 	private static void restore(List<SourceSnapshot> sources, List<ResourceSnapshot> resources,
 			IProgressMonitor monitor, List<String> errors) {
-		for (SourceSnapshot source : sources) {
-			restore(source.file(), source.path(), source.relativePath(), source.before(), monitor, errors);
-		}
+		restore(sources, monitor, errors);
 		for (ResourceSnapshot resource : resources) {
 			restore(resource.file(), resource.path(), resource.relativePath(), resource.before(), monitor, errors);
+		}
+	}
+
+	private static void restore(List<SourceSnapshot> sources, IProgressMonitor monitor,
+			List<String> errors) {
+		for (SourceSnapshot source : sources) {
+			restore(source.file(), source.path(), source.relativePath(), source.before(), monitor, errors);
 		}
 	}
 
@@ -449,22 +454,17 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			String relative= source.relativePath();
 			String before= new String(source.before(), StandardCharsets.UTF_8);
 			String after= new String(source.after(), StandardCharsets.UTF_8);
-			patch.append("--- a/").append(relative).append('
-'); //$NON-NLS-1$
-			patch.append("+++ b/").append(relative).append('
-'); //$NON-NLS-1$
-			String[] beforeLines= before.split("\R", -1); //$NON-NLS-1$
-			String[] afterLines= after.split("\R", -1); //$NON-NLS-1$
+			patch.append("--- a/").append(relative).append('\n'); //$NON-NLS-1$
+			patch.append("+++ b/").append(relative).append('\n'); //$NON-NLS-1$
+			String[] beforeLines= before.split("\\R", -1); //$NON-NLS-1$
+			String[] afterLines= after.split("\\R", -1); //$NON-NLS-1$
 			patch.append("@@ -1,").append(beforeLines.length).append(" +1,") //$NON-NLS-1$ //$NON-NLS-2$
-					.append(afterLines.length).append(" @@
-"); //$NON-NLS-1$
+					.append(afterLines.length).append(" @@\n"); //$NON-NLS-1$
 			for (String line : beforeLines) {
-				patch.append('-').append(line).append('
-');
+				patch.append('-').append(line).append('\n');
 			}
 			for (String line : afterLines) {
-				patch.append('+').append(line).append('
-');
+				patch.append('+').append(line).append('\n');
 			}
 		}
 		Files.writeString(path, patch.toString(), StandardCharsets.UTF_8);
