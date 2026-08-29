@@ -25,6 +25,44 @@
 		<jgit-storage-hibernate.version>0.11.0</jgit-storage-hibernate.version>
 	</properties>
 
+	<!--
+		The parent reactor deliberately manages its unrelated application stack at
+		Hibernate ORM 6.6 / Search 7.2. Maven dependency management also rewrites
+		transitive versions, so the server must override every managed artifact it
+		consumes through the independent JGit ORM 7.4 / Search 8.4 bridge. Without
+		this local boundary, hibernate-core 7.4 is combined with 6.6 Hikari/JCache
+		modules and Search 7.2 at runtime.
+	-->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.hibernate.orm</groupId>
+				<artifactId>hibernate-core</artifactId>
+				<version>${jgit.hibernate-orm.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.hibernate.orm</groupId>
+				<artifactId>hibernate-hikaricp</artifactId>
+				<version>${jgit.hibernate-orm.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.hibernate.orm</groupId>
+				<artifactId>hibernate-jcache</artifactId>
+				<version>${jgit.hibernate-orm.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.hibernate.search</groupId>
+				<artifactId>hibernate-search-mapper-orm</artifactId>
+				<version>${jgit.hibernate-search.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.hibernate.search</groupId>
+				<artifactId>hibernate-search-backend-lucene</artifactId>
+				<version>${jgit.hibernate-search.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<repositories>
 		<repository>
 			<id>jgit-storage-hibernate-public</id>
