@@ -21,13 +21,13 @@ jobs:
           ref: dependabot/maven/com.github.spotbugs-spotbugs-maven-plugin-4.10.4.0
           fetch-depth: 0
 
-      - name: Restore only the four reproducibly stale screenshots
+      - name: Restore only the three reproducibly stale JFace screenshots
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^^)" = "6b1d4802d648ef8acc257d608c820cac04232507"
+          test "$(git rev-parse HEAD~3)" = "6b1d4802d648ef8acc257d608c820cac04232507"
 
           rm -rf /tmp/help-screenshots
           mkdir -p /tmp/help-screenshots
@@ -37,13 +37,11 @@ jobs:
             --dir /tmp/help-screenshots
 
           files=(
-            sandbox_css_cleanup_help/images/css-cleanup-preferences.png
             sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
             sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
             sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
           )
           expected_hashes=(
-            cefc15b595d06552e5870a68d0d09bcd22dd7c24
             7d92820144305447b8a3a06a93666dcb751b53e1
             9dcb62646374baa0fb8c6b6294bc5bb73315448a
             03b7e198e0c27843d53573008391af176905fb2a
