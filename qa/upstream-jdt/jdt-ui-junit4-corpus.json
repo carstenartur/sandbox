@@ -49,6 +49,7 @@
       ],
       "migratedMustContain": [
         "RegisterExtension",
+        "Isolated",
         "JUnitSourceSetup"
       ],
       "migratedMustNotContain": [
@@ -68,7 +69,8 @@
       "migratedMustContain": [
         "BeforeEach",
         "AfterEach",
-        "RegisterExtension"
+        "RegisterExtension",
+        "Isolated"
       ],
       "migratedMustNotContain": [
         "import org.junit.After;",
