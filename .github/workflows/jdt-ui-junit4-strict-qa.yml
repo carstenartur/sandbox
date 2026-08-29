@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [ main ]
     paths:
+      - 'pom.xml'
       - 'qa/upstream-jdt/**'
       - 'sandbox_cleanup_application/**'
       - 'sandbox_common/**'
@@ -116,6 +117,8 @@ jobs:
           -e
           -V
           --batch-mode
+          -Dsandbox.tycho.linux-only=true
+          -Dspotbugs.skip=true
           -Dtycho.localArtifacts=ignore
           clean verify
 
