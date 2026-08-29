@@ -27,13 +27,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "2880857b10ac706e6c8555f148b24bc31f8b7b68"
+          test "$(git rev-parse HEAD^)" = "0950fc0b7a6468016a8ded6db123dd029ae8c052"
 
           rm -rf /tmp/help-screenshots
           mkdir -p /tmp/help-screenshots
           gh run download 33251971223 \
             --repo carstenartur/sandbox \
-            --name generated-help-screenshots-778 \
+            --name generated-help-screenshots-778-33251971223 \
             --dir /tmp/help-screenshots
 
           source=/tmp/help-screenshots/generated-help-screenshot-evidence/files/sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
