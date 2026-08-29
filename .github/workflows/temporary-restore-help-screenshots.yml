@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "b3dba6cf8658824379cfe700a56ffc35d7ef5747"
+          test "$(git rev-parse HEAD^^)" = "6b1d4802d648ef8acc257d608c820cac04232507"
 
           rm -rf /tmp/help-screenshots
           mkdir -p /tmp/help-screenshots
