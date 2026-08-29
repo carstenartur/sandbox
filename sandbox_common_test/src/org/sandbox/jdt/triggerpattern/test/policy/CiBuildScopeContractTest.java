@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -85,13 +86,14 @@ public class CiBuildScopeContractTest {
 				"compatibility.json"); //$NON-NLS-1$
 
 		for (Map.Entry<String, String> entry : semanticMarkers.entrySet()) {
-			String content = Files.readString(root.resolve(entry.getKey()));
+			String content = Files.readString(root.resolve(entry.getKey()), StandardCharsets.UTF_8);
 			assertEquals(1, occurrences(content, LINUX_ONLY), entry.getKey());
 			assertTrue(content.contains(SPOTBUGS_SKIP), entry.getKey());
 			assertTrue(content.contains(entry.getValue()), entry.getKey());
 		}
 
-		String strict = Files.readString(root.resolve(".github/workflows/jdt-ui-junit4-strict-qa.yml")); //$NON-NLS-1$
+		String strict = Files.readString(root.resolve(".github/workflows/jdt-ui-junit4-strict-qa.yml"), //$NON-NLS-1$
+				StandardCharsets.UTF_8);
 		assertTrue(strict.contains("--mode strict")); //$NON-NLS-1$
 		assertTrue(strict.contains("VerifyWhitespaceRegression.java")); //$NON-NLS-1$
 	}
@@ -101,7 +103,7 @@ public class CiBuildScopeContractTest {
 		Path root = repositoryRoot();
 		for (String path : List.of(".github/workflows/maven.yml", //$NON-NLS-1$
 				".github/workflows/distribution-smoke.yml")) { //$NON-NLS-1$
-			String content = Files.readString(root.resolve(path));
+			String content = Files.readString(root.resolve(path), StandardCharsets.UTF_8);
 			assertFalse(content.contains(ACTIVATION_PROPERTY), path);
 			assertFalse(content.contains("spotbugs.skip"), path); //$NON-NLS-1$
 			assertTrue(content.contains("clean verify"), path); //$NON-NLS-1$
