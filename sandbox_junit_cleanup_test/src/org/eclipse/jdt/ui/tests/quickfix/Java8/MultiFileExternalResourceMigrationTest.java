@@ -94,7 +94,9 @@ public class MultiFileExternalResourceMigrationTest {
 						"""
 						package test;
 						import org.junit.jupiter.api.extension.RegisterExtension;
+						import org.junit.jupiter.api.parallel.Isolated;
 
+						@Isolated
 						public class MyTest {
 							@RegisterExtension
 							public SharedResource resource = new SharedResource();
@@ -154,7 +156,9 @@ public class MultiFileExternalResourceMigrationTest {
 						"""
 						package test;
 						import org.junit.jupiter.api.extension.RegisterExtension;
+						import org.junit.jupiter.api.parallel.Isolated;
 
+						@Isolated
 						public class MyTest {
 							@RegisterExtension
 							public static SharedResource resource = new SharedResource();
@@ -207,6 +211,7 @@ public class MultiFileExternalResourceMigrationTest {
 						import org.junit.jupiter.api.extension.BeforeEachCallback;
 						import org.junit.jupiter.api.extension.ExtensionContext;
 						import org.junit.jupiter.api.extension.RegisterExtension;
+						import org.junit.jupiter.api.parallel.Isolated;
 
 						class SharedResource implements BeforeEachCallback, AfterEachCallback {
 							@Override
@@ -218,6 +223,7 @@ public class MultiFileExternalResourceMigrationTest {
 							}
 						}
 
+						@Isolated
 						public class LocalTest {
 							@RegisterExtension
 							public SharedResource local = new SharedResource();
@@ -226,7 +232,9 @@ public class MultiFileExternalResourceMigrationTest {
 						"""
 						package test;
 						import org.junit.jupiter.api.extension.RegisterExtension;
+						import org.junit.jupiter.api.parallel.Isolated;
 
+						@Isolated
 						public class RemoteTest {
 							@RegisterExtension
 							public SharedResource remote = new SharedResource();
@@ -287,7 +295,9 @@ public class MultiFileExternalResourceMigrationTest {
 						import org.junit.jupiter.api.BeforeEach;
 						import org.junit.jupiter.api.TestInfo;
 						import org.junit.jupiter.api.extension.RegisterExtension;
+						import org.junit.jupiter.api.parallel.Isolated;
 
+						@Isolated
 						public class MyTest {
 							@RegisterExtension
 							public SharedResource resource = new SharedResource();
@@ -301,6 +311,118 @@ public class MultiFileExternalResourceMigrationTest {
 							String currentTestName() {
 								return testName;
 							}
+						}
+						""" }, null);
+	}
+
+	@Test
+	public void addsOneIsolatedAnnotationForSeveralRuleFields() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit resource= pack.createCompilationUnit("SharedResource.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.rules.ExternalResource;
+
+				public class SharedResource extends ExternalResource {
+					@Override
+					protected void before() {
+					}
+				}
+				""", false, null);
+		ICompilationUnit test= pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+
+				public class MyTest {
+					@Rule
+					public SharedResource first = new SharedResource();
+					@Rule
+					public SharedResource second = new SharedResource();
+				}
+				""", false, null);
+
+		enableExternalResourceRuleMigration();
+
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { resource, test },
+				new String[] {
+						"""
+						package test;
+						import org.junit.jupiter.api.extension.BeforeEachCallback;
+						import org.junit.jupiter.api.extension.ExtensionContext;
+
+						public class SharedResource implements BeforeEachCallback {
+							@Override
+							public void beforeEach(ExtensionContext context) {
+							}
+						}
+						""",
+						"""
+						package test;
+						import org.junit.jupiter.api.extension.RegisterExtension;
+						import org.junit.jupiter.api.parallel.Isolated;
+
+						@Isolated
+						public class MyTest {
+							@RegisterExtension
+							public SharedResource first = new SharedResource();
+							@RegisterExtension
+							public SharedResource second = new SharedResource();
+						}
+						""" }, null);
+	}
+
+	@Test
+	public void keepsExistingIsolatedAnnotationWithoutDuplicates() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit resource= pack.createCompilationUnit("SharedResource.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.rules.ExternalResource;
+
+				public class SharedResource extends ExternalResource {
+					@Override
+					protected void before() {
+					}
+				}
+				""", false, null);
+		ICompilationUnit test= pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
+				"""
+				package test;
+				import org.junit.Rule;
+				import org.junit.jupiter.api.parallel.Isolated;
+
+				@Isolated
+				public class MyTest {
+					@Rule
+					public SharedResource resource = new SharedResource();
+				}
+				""", false, null);
+
+		enableExternalResourceRuleMigration();
+
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { resource, test },
+				new String[] {
+						"""
+						package test;
+						import org.junit.jupiter.api.extension.BeforeEachCallback;
+						import org.junit.jupiter.api.extension.ExtensionContext;
+
+						public class SharedResource implements BeforeEachCallback {
+							@Override
+							public void beforeEach(ExtensionContext context) {
+							}
+						}
+						""",
+						"""
+						package test;
+						import org.junit.jupiter.api.extension.RegisterExtension;
+						import org.junit.jupiter.api.parallel.Isolated;
+
+						@Isolated
+						public class MyTest {
+							@RegisterExtension
+							public SharedResource resource = new SharedResource();
 						}
 						""" }, null);
 	}
