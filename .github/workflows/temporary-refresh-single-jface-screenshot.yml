@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "0950fc0b7a6468016a8ded6db123dd029ae8c052"
+          test "$(git rev-parse HEAD^)" = "ddb28d7ef20c24b147e0426a4c6a4c34164fd129"
 
           rm -rf /tmp/help-screenshots
           mkdir -p /tmp/help-screenshots
@@ -46,13 +46,13 @@ jobs:
           install -D -m 0644 "$source" "$target"
           test "$(git hash-object "$target")" = "4ce66cf2b1d6c7e7a8ffe760befe130b59f35117"
 
+          git add "$target"
           git rm "$workflow"
           printf '%s\n' "$target" "$workflow" | sort > /tmp/expected-files
-          git diff --name-only | sort > /tmp/actual-files
+          git diff --cached --name-only | sort > /tmp/actual-files
           diff -u /tmp/expected-files /tmp/actual-files
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$target"
           git commit -m "Refresh reproducible JFace preview screenshot"
           git push origin HEAD:dependabot/maven/com.github.spotbugs-spotbugs-maven-plugin-4.10.4.0
