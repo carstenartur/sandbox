@@ -92,6 +92,8 @@ jobs:
           -e
           -V
           --batch-mode
+          -Dsandbox.tycho.linux-only=true
+          -Dspotbugs.skip=true
           -Dtycho.localArtifacts=ignore
           -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.SandboxHelpScreenshotsMergeGateSWTBotTest
           -DfailIfNoTests=false

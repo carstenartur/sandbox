@@ -36,9 +36,12 @@ mkdir -p "$MAVEN_REPOSITORY"
 # The target definition is referenced as a Maven artifact by Tycho and therefore
 # must be present in the selected reactor when using an otherwise empty local
 # repository. A normal full build includes it implicitly; this focused build must
-# name it explicitly.
+# name it explicitly. The manifest comparison is platform-independent, while the
+# compatibility build itself runs on Linux, so cross-platform target resolution
+# would add cost without increasing the evidence produced here.
 mvn --batch-mode -ntp -f "$ROOT_DIR/pom.xml" \
   -Dmaven.repo.local="$MAVEN_REPOSITORY" \
+  -Dsandbox.tycho.linux-only=true \
   -pl sandbox_target,sandbox_common -am \
   -DskipTests -DskipITs -Dspotbugs.skip=true -Dlicense.skip=true \
   package

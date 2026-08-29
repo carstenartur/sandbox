@@ -140,4 +140,31 @@
 			</plugin>
 		</plugins>
 	</build>
+	<profiles>
+		<!-- Keep normal product and distribution builds cross-platform. Only
+		specialized Linux CI jobs activate this format override explicitly. -->
+		<profile>
+			<id>linux-only-product</id>
+			<activation>
+				<property>
+					<name>sandbox.tycho.linux-only</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-p2-director-plugin</artifactId>
+						<version>${tycho-version}</version>
+						<configuration>
+							<formats combine.self="override">
+								<linux>tar.gz</linux>
+							</formats>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
