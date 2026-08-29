@@ -62,8 +62,10 @@ public final class PdeManifestImportUpdater {
 
 		String prefix= mainSectionEnd == 0 || isLineBreakBefore(manifest, mainSectionEnd)
 				? "" : lineDelimiter; //$NON-NLS-1$
+		String suffix= mainSectionEnd == manifest.length() && isLineBreakBefore(manifest, mainSectionEnd)
+				? lineDelimiter : ""; //$NON-NLS-1$
 		return manifest.substring(0, mainSectionEnd) + prefix + IMPORT_PACKAGE_HEADER + " " //$NON-NLS-1$
-				+ packageName + manifest.substring(mainSectionEnd);
+				+ packageName + suffix + manifest.substring(mainSectionEnd);
 	}
 
 	private static int mainSectionEnd(String manifest) {

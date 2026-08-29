@@ -57,6 +57,17 @@ public class PdeManifestImportUpdaterTest {
 	}
 
 	@Test
+	public void preservesTerminalLineDelimiterWhenAppendingHeader() {
+		String manifest= """
+				Manifest-Version: 1.0
+				Bundle-SymbolicName: example
+				"""; //$NON-NLS-1$
+		String expected= manifest + "Import-Package: org.junit.jupiter.api.parallel\n"; //$NON-NLS-1$
+
+		assertEquals(expected, PdeManifestImportUpdater.addImport(manifest, PARALLEL_PACKAGE));
+	}
+
+	@Test
 	public void existingAttributedImportIsByteIdentical() {
 		byte[] original= ("Manifest-Version: 1.0\n" //$NON-NLS-1$
 				+ "Import-Package: org.junit.jupiter.api.parallel;version=\"[5.10,6.0)\"\n") //$NON-NLS-1$
