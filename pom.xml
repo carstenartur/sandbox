@@ -882,6 +882,37 @@
 			</activation>
 		</profile>
 
+		<!-- Linux-only target resolution for specialized CI jobs that execute
+		exclusively on Linux. Normal, release and distribution builds retain the
+		complete Windows/Linux/macOS target unless the property is set explicitly. -->
+		<profile>
+			<id>linux-only-tycho</id>
+			<activation>
+				<property>
+					<name>sandbox.tycho.linux-only</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>target-platform-configuration</artifactId>
+						<version>${tycho-version}</version>
+						<configuration>
+							<environments combine.self="override">
+								<environment>
+									<os>linux</os>
+									<ws>gtk</ws>
+									<arch>x86_64</arch>
+								</environment>
+							</environments>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
 		<!-- Complete distributable: standalone IDE archives, p2 update site and
 		Java-based runtime installation verification. -->
 		<profile>
