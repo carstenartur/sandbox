@@ -1,0 +1,69 @@
+name: Temporary restore generated Help screenshots
+
+on:
+  push:
+    branches:
+      - dependabot/maven/com.github.spotbugs-spotbugs-maven-plugin-4.10.4.0
+    paths:
+      - .github/workflows/temporary-restore-help-screenshots.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout the exact PR branch
+        uses: actions/checkout@v7
+        with:
+          ref: dependabot/maven/com.github.spotbugs-spotbugs-maven-plugin-4.10.4.0
+          fetch-depth: 0
+
+      - name: Restore only the four reproducibly stale screenshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "b3dba6cf8658824379cfe700a56ffc35d7ef5747"
+
+          rm -rf /tmp/help-screenshots
+          mkdir -p /tmp/help-screenshots
+          gh run download 33247954522 \
+            --repo carstenartur/sandbox \
+            --name eclipse-help-screenshots-770 \
+            --dir /tmp/help-screenshots
+
+          files=(
+            sandbox_css_cleanup_help/images/css-cleanup-preferences.png
+            sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
+            sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
+            sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-single-file-steps.png
+          )
+          expected_hashes=(
+            cefc15b595d06552e5870a68d0d09bcd22dd7c24
+            7d92820144305447b8a3a06a93666dcb751b53e1
+            9dcb62646374baa0fb8c6b6294bc5bb73315448a
+            03b7e198e0c27843d53573008391af176905fb2a
+          )
+
+          for index in "${!files[@]}"; do
+            source="/tmp/help-screenshots/${files[$index]}"
+            target="${files[$index]}"
+            test -f "$source"
+            test "$(git hash-object "$source")" = "${expected_hashes[$index]}"
+            install -D -m 0644 "$source" "$target"
+            test "$(git hash-object "$target")" = "${expected_hashes[$index]}"
+          done
+
+          printf '%s\n' "${files[@]}" | sort > /tmp/expected-files
+          git diff --name-only | sort > /tmp/actual-files
+          diff -u /tmp/expected-files /tmp/actual-files
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "${files[@]}"
+          git commit -m "Refresh reproducible Eclipse Help screenshots"
+          git push origin HEAD:dependabot/maven/com.github.spotbugs-spotbugs-maven-plugin-4.10.4.0
