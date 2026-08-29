@@ -111,7 +111,9 @@ public class MultiFileExternalResourceLifecycleTest {
 						"""
 						package test;
 						import org.junit.jupiter.api.extension.RegisterExtension;
+						import org.junit.jupiter.api.parallel.Isolated;
 
+						@Isolated
 						public class MyTest {
 							@RegisterExtension
 							public SharedResource resource = new SharedResource();

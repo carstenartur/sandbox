@@ -126,7 +126,9 @@ public class MultiFileExternalResourceNoOpSubclassTest {
 						"""
 						package test;
 						import org.junit.jupiter.api.extension.RegisterExtension;
+						import org.junit.jupiter.api.parallel.Isolated;
 
+						@Isolated
 						public class MyTest {
 							@RegisterExtension
 							public JUnit4WorkspaceTestSetup workspace = new JUnit4WorkspaceTestSetup();

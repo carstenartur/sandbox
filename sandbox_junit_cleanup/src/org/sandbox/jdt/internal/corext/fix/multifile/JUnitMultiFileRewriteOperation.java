@@ -29,6 +29,7 @@ import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -180,16 +181,31 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 	private boolean hasIsolated(TypeDeclaration type) {
 		for (Object modifier : type.modifiers()) {
 			if (modifier instanceof Annotation annotation) {
+				String name= annotation.getTypeName().getFullyQualifiedName();
+				if (ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(name)) {
+					return true;
+				}
 				ITypeBinding binding= annotation.resolveTypeBinding();
 				if (binding != null && ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(binding.getQualifiedName())) {
 					return true;
 				}
-				if (binding == null) {
-					String name= annotation.getTypeName().getFullyQualifiedName();
-					if (ANNOTATION_ISOLATED.equals(name) || ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(name)) {
-						return true;
-					}
+				if (ANNOTATION_ISOLATED.equals(name) && importsIsolated(type)) {
+					return true;
 				}
+			}
+		}
+		return false;
+	}
+
+	private boolean importsIsolated(TypeDeclaration type) {
+		if (!(type.getRoot() instanceof CompilationUnit root)) {
+			return false;
+		}
+		for (Object element : root.imports()) {
+			if (element instanceof ImportDeclaration declaration && !declaration.isStatic()
+					&& !declaration.isOnDemand()
+					&& ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(declaration.getName().getFullyQualifiedName())) {
+				return true;
 			}
 		}
 		return false;
