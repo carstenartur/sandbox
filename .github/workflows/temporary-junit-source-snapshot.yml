@@ -1,0 +1,29 @@
+name: Temporary JUnit source snapshot
+
+on:
+  push:
+    branches:
+      - docs/jdt-ui-junit4-qa-status
+    paths:
+      - .github/workflows/temporary-junit-source-snapshot.yml
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout branch sources
+        uses: actions/checkout@v7
+
+      - name: Upload JUnit migration sources
+        uses: actions/upload-artifact@v7
+        with:
+          name: junit-source-snapshot-${{ github.sha }}
+          path: |
+            sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMultiFileRewriteOperation.java
+            sandbox_junit_cleanup_test/src/**
+            sandbox_junit_cleanup_test/resources/**
+          retention-days: 1
+          if-no-files-found: error
