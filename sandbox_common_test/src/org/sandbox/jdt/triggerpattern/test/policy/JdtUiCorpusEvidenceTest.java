@@ -35,39 +35,43 @@ public class JdtUiCorpusEvidenceTest {
 	private static final String PREFIX = "sandbox.jdt.ui.corpus."; //$NON-NLS-1$
 	private static final String REPOSITORY = PREFIX + "repository"; //$NON-NLS-1$
 	private static final String BASELINE_SOURCES = PREFIX + "baselineSources"; //$NON-NLS-1$
-	private static final String EVIDENCE = PREFIX + "evidence"; //$NON-NLS-1$
 	private static final String MODE = PREFIX + "mode"; //$NON-NLS-1$
+	private static final String CHANGED_FILES = PREFIX + "changedFiles"; //$NON-NLS-1$
+	private static final String CHECK_REPORT = PREFIX + "checkReport"; //$NON-NLS-1$
+	private static final String APPLY_REPORT = PREFIX + "applyReport"; //$NON-NLS-1$
+	private static final String OUTPUT = PREFIX + "output"; //$NON-NLS-1$
 
 	@Test
 	public void verifiesConfiguredRetainedWorkspaceEvidence() throws Exception {
 		String repositoryValue = System.getProperty(REPOSITORY);
 		String baselineValue = System.getProperty(BASELINE_SOURCES);
-		String evidenceValue = System.getProperty(EVIDENCE);
 		String modeValue = System.getProperty(MODE);
-		boolean configured = Stream.of(repositoryValue, baselineValue, evidenceValue, modeValue)
-				.anyMatch(Objects::nonNull);
+		String changedFilesValue = System.getProperty(CHANGED_FILES);
+		String checkReportValue = System.getProperty(CHECK_REPORT);
+		String applyReportValue = System.getProperty(APPLY_REPORT);
+		String outputValue = System.getProperty(OUTPUT);
+		boolean configured = Stream.of(repositoryValue, baselineValue, modeValue, changedFilesValue,
+				checkReportValue, applyReportValue, outputValue).anyMatch(Objects::nonNull);
 		Assumptions.assumeTrue(configured,
 				"External pinned JDT UI evidence was not configured for this Maven run"); //$NON-NLS-1$
-		assertNotNull(repositoryValue,
-				"All sandbox.jdt.ui.corpus.* properties must be configured together"); //$NON-NLS-1$
-		assertNotNull(baselineValue,
-				"All sandbox.jdt.ui.corpus.* properties must be configured together"); //$NON-NLS-1$
-		assertNotNull(evidenceValue,
-				"All sandbox.jdt.ui.corpus.* properties must be configured together"); //$NON-NLS-1$
-		assertNotNull(modeValue,
-				"All sandbox.jdt.ui.corpus.* properties must be configured together"); //$NON-NLS-1$
+		assertConfigured(REPOSITORY, repositoryValue);
+		assertConfigured(BASELINE_SOURCES, baselineValue);
+		assertConfigured(MODE, modeValue);
+		assertConfigured(CHANGED_FILES, changedFilesValue);
+		assertConfigured(CHECK_REPORT, checkReportValue);
+		assertConfigured(APPLY_REPORT, applyReportValue);
+		assertConfigured(OUTPUT, outputValue);
 
 		Path root = repositoryRoot();
-		Path evidence = Path.of(evidenceValue).toAbsolutePath().normalize();
 		JdtUiCorpusEvidenceVerifier.Request request = new JdtUiCorpusEvidenceVerifier.Request(
-				Path.of(repositoryValue).toAbsolutePath().normalize(),
-				Path.of(baselineValue).toAbsolutePath().normalize(),
+				path(repositoryValue),
+				path(baselineValue),
 				root.resolve("qa/upstream-jdt/jdt-ui-junit4-corpus.json"), //$NON-NLS-1$
 				JdtUiCorpusEvidenceVerifier.Mode.parse(modeValue),
-				evidence.resolve("changed-files.txt"), //$NON-NLS-1$
-				evidence.resolve("cleanup-check-report.json"), //$NON-NLS-1$
-				evidence.resolve("cleanup-apply-report.json"), //$NON-NLS-1$
-				evidence.resolve("corpus-result.json")); //$NON-NLS-1$
+				path(changedFilesValue),
+				path(checkReportValue),
+				path(applyReportValue),
+				path(outputValue));
 		JdtUiCorpusEvidenceVerifier.Result result = JdtUiCorpusEvidenceVerifier.verify(request);
 
 		assertEquals("https://github.com/eclipse-jdt/eclipse.jdt.ui.git", //$NON-NLS-1$
@@ -77,6 +81,15 @@ public class JdtUiCorpusEvidenceTest {
 				result.contract().commit());
 		assertEquals("org.eclipse.jdt.ui.tests", result.contract().project()); //$NON-NLS-1$
 		assertEquals(JdtUiCorpusEvidenceVerifier.Mode.parse(modeValue), result.mode());
+	}
+
+	private static void assertConfigured(String name, String value) {
+		assertNotNull(value, () -> "All sandbox.jdt.ui.corpus.* properties must be configured together; missing " //$NON-NLS-1$
+				+ name);
+	}
+
+	private static Path path(String value) {
+		return Path.of(value).toAbsolutePath().normalize();
 	}
 
 	private static Path repositoryRoot() {
