@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Sandbox Container Cleanup Help
 Bundle-SymbolicName: sandbox_container_cleanup_help;singleton:=true
-Bundle-Version: 1.3.4
+Bundle-Version: 1.3.5.qualifier
 Bundle-Vendor: Carsten Hammer
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Eclipse-BundleShape: dir
