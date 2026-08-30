@@ -205,13 +205,19 @@ profile. Its executable contract consists of:
 - `junit4-to-jupiter.properties` and
   `junit4-to-jupiter-best-effort.properties`;
 - `jdt-ui-junit4-corpus.json`, which names the required real source shapes;
-- `verify_jdt_ui_contract.py` and `verify_jdt_ui_corpus.py`; and
+- `JdtUiCorpusEvidenceVerifier`, `JdtUiCorpusContractTest` and
+  `JdtUiCorpusEvidenceVerifierTest` in `sandbox_common_test`; and
 - the `JDT UI JUnit 4 Strict Migration QA` workflow.
 
-Validate the inexpensive contract with:
+Validate the inexpensive contract and its strict/best-effort negative tests
+through the same Maven/JUnit authority used by the retained-workspace runner:
 
 ```bash
-PYTHONDONTWRITEBYTECODE=1 python3 qa/upstream-jdt/verify_jdt_ui_contract.py
+mvn --batch-mode --no-transfer-progress \
+  -pl sandbox_common_test -am \
+  -Dtest=JdtUiCorpusContractTest,JdtUiCorpusEvidenceVerifierTest \
+  -Dsurefire.failIfNoSpecifiedTests=false \
+  test
 ```
 
 Run the strict scenario against the closed, pinned Oomph workspace with:
@@ -227,11 +233,14 @@ bash qa/upstream-jdt/run-jdt-ui-before-after.sh \
 
 The runner verifies the exact JDT UI repository, `R4_40` ref and commit before
 reading source. It executes the same pinned Maven reactor before and after one
-project-wide cleanup, compares the baseline and migrated JUnit XML inventories,
-requires check/apply agreement, records the named corpus and emits provenance.
-The strict GitHub workflow additionally builds the exact Sandbox product under
-test and checks that the migration introduced no whitespace regression relative
-to the pinned upstream baseline.
+project-wide cleanup. The runner then invokes the property-driven
+`retainedWorkspaceEvidenceMatchesContract` JUnit test, which requires
+check/apply/Git changed-file agreement, verifies every named source shape,
+enforces byte-exact strict quarantine and writes `corpus-result.json`. The
+remaining test-inventory comparator and provenance assembly still run after
+that Java authority. The strict GitHub workflow additionally builds the exact
+Sandbox product under test and checks that the migration introduced no
+whitespace regression relative to the pinned upstream baseline.
 
 The current named contract requires coordinated migration evidence for:
 
@@ -260,10 +269,11 @@ scenario. Two boundaries tracked by #1469 and #1497 remain:
 1. drive the interactive Cleanup preview from the same pinned JDT UI workspace
    and headless plan, verify candidate and affected-file agreement, and attach
    matching screenshot provenance;
-2. move checkout identity, corpus classification, report comparison and
-   provenance assertions from the current shell/Python orchestration into
-   reusable Java/JUnit fixtures executed by Maven/Tycho, leaving workflows to
-   provision the environment and invoke the same Maven authority.
+2. move the remaining checkout/workspace identity, JUnit XML inventory
+   comparison and provenance assertions from shell/Python into reusable
+   Java/JUnit fixtures. Corpus identity, profile policy, check/apply agreement,
+   named-source classification and strict quarantine already use that Maven
+   authority.
 
 Until both boundaries pass on the integrated commit, Sandbox must not claim
 that the overall JUnit migration or its documentation-driven real-corpus QA is
