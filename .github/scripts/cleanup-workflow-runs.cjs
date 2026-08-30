@@ -15,11 +15,8 @@ function parseInteger(value, name, fallback, minimum, maximum) {
 
 function parseBoolean(value, name, fallback = false) {
   const raw = value === undefined || value === null || value === '' ? String(fallback) : String(value);
-  if (raw === 'true') {
-    return true;
-  }
-  if (raw === 'false') {
-    return false;
+  if (raw === 'true' || raw === 'false') {
+    return raw === 'true';
   }
   throw new Error(`${name} must be true or false; got ${raw}`);
 }
@@ -35,61 +32,51 @@ function createdRange(startSeconds, endSeconds) {
   return `${isoFromSeconds(startSeconds)}..${isoFromSeconds(endSeconds)}`;
 }
 
-function minimalRun(run) {
-  return {
-    id: run.id,
-    workflowId: run.workflow_id,
-    workflowName: run.name || run.path || String(run.workflow_id),
-    createdAt: run.created_at,
-    conclusion: run.conclusion || 'unknown',
-    event: run.event || 'unknown',
-    headBranch: run.head_branch || '',
-  };
-}
-
 function selectDeletionCandidates(runs, keepMinimumRuns) {
   const byWorkflow = new Map();
   for (const run of runs) {
-    const key = run.workflowId;
-    const group = byWorkflow.get(key) || [];
+    const group = byWorkflow.get(run.workflowId) || [];
     group.push(run);
-    byWorkflow.set(key, group);
+    byWorkflow.set(run.workflowId, group);
   }
 
   const protectedIds = new Set();
   for (const group of byWorkflow.values()) {
-    group.sort((left, right) => {
-      const byTime = Date.parse(right.createdAt) - Date.parse(left.createdAt);
-      return byTime !== 0 ? byTime : right.id - left.id;
-    });
-    for (const run of group.slice(0, keepMinimumRuns)) {
-      protectedIds.add(run.id);
-    }
+    group.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id - a.id);
+    group.slice(0, keepMinimumRuns).forEach((run) => protectedIds.add(run.id));
   }
 
-  const candidates = runs
-    .filter((run) => !protectedIds.has(run.id))
-    .sort((left, right) => {
-      const byTime = Date.parse(left.createdAt) - Date.parse(right.createdAt);
-      return byTime !== 0 ? byTime : left.id - right.id;
-    });
-
   return {
-    candidates,
+    candidates: runs
+      .filter((run) => !protectedIds.has(run.id))
+      .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt) || a.id - b.id),
     protectedCount: protectedIds.size,
     workflowCount: byWorkflow.size,
   };
 }
 
 function computeDeletionBudget(rateRemaining, requestedMaximum, dryRun) {
-  if (dryRun) {
-    return requestedMaximum;
-  }
-  return Math.min(requestedMaximum, Math.max(0, rateRemaining - RATE_LIMIT_RESERVE));
+  return dryRun
+    ? requestedMaximum
+    : Math.min(requestedMaximum, Math.max(0, rateRemaining - RATE_LIMIT_RESERVE));
 }
 
-function sleep(milliseconds) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+function pageRuns(response) {
+  const runs = Array.isArray(response.data) ? response.data : response.data?.workflow_runs;
+  if (!Array.isArray(runs)) {
+    throw new Error('Unexpected workflow-run pagination response shape');
+  }
+  return runs;
+}
+
+function compactRun(run) {
+  return {
+    id: run.id,
+    workflowId: run.workflow_id,
+    workflowName: run.name || run.path || String(run.workflow_id),
+    createdAt: run.created_at,
+    conclusion: run.conclusion || 'unknown',
+  };
 }
 
 async function listWindow({ github, owner, repo, startSeconds, endSeconds }) {
@@ -106,28 +93,15 @@ async function listWindow({ github, owner, repo, startSeconds, endSeconds }) {
     return [];
   }
 
-  // GitHub caps filtered workflow-run searches at 1,000 returned results. Split
-  // the time interval recursively until every interval can be paginated fully.
+  // Filtered workflow-run searches return at most 1,000 results. Recursively
+  // split the date interval so every leaf can be paginated completely.
   if (total >= MAX_FILTERED_RESULTS) {
     if (startSeconds === endSeconds) {
-      throw new Error(`More than ${MAX_FILTERED_RESULTS - 1} completed runs share ${created}`);
+      throw new Error(`At least ${MAX_FILTERED_RESULTS} runs share ${created}`);
     }
     const midpoint = Math.floor((startSeconds + endSeconds) / 2);
-    const left = await listWindow({
-      github,
-      owner,
-      repo,
-      startSeconds,
-      endSeconds: midpoint,
-    });
-    const right = await listWindow({
-      github,
-      owner,
-      repo,
-      startSeconds: midpoint + 1,
-      endSeconds,
-    });
-    return left.concat(right);
+    return (await listWindow({ github, owner, repo, startSeconds, endSeconds: midpoint }))
+      .concat(await listWindow({ github, owner, repo, startSeconds: midpoint + 1, endSeconds }));
   }
 
   const runs = [];
@@ -138,9 +112,7 @@ async function listWindow({ github, owner, repo, startSeconds, endSeconds }) {
     created,
     per_page: 100,
   })) {
-    for (const run of response.data.workflow_runs) {
-      runs.push(minimalRun(run));
-    }
+    pageRuns(response).forEach((run) => runs.push(compactRun(run)));
   }
   return runs;
 }
@@ -149,7 +121,7 @@ async function listOldCompletedRuns({ github, owner, repo, cutoffSeconds, core }
   if (cutoffSeconds <= SEARCH_START_SECONDS) {
     return [];
   }
-  core.info(`Scanning completed runs from ${isoFromSeconds(SEARCH_START_SECONDS)} through ${isoFromSeconds(cutoffSeconds - 1)}`);
+  core.info(`Scanning ${isoFromSeconds(SEARCH_START_SECONDS)} through ${isoFromSeconds(cutoffSeconds - 1)}`);
   const runs = await listWindow({
     github,
     owner,
@@ -157,24 +129,22 @@ async function listOldCompletedRuns({ github, owner, repo, cutoffSeconds, core }
     startSeconds: SEARCH_START_SECONDS,
     endSeconds: cutoffSeconds - 1,
   });
-
-  const unique = new Map();
-  for (const run of runs) {
-    unique.set(run.id, run);
-  }
-  return [...unique.values()];
+  return [...new Map(runs.map((run) => [run.id, run])).values()];
 }
 
-function isRetryable(error) {
+function retryDelay(error, attempt) {
   const status = error.status || error.response?.status;
-  if ([500, 502, 503, 504].includes(status)) {
-    return true;
+  if (![403, 429, 500, 502, 503, 504].includes(status)) {
+    return null;
   }
-  if (status === 403 || status === 429) {
-    const headers = error.response?.headers || {};
-    return Boolean(headers['retry-after']) || String(headers['x-ratelimit-remaining']) === '0';
+  const headers = error.response?.headers || {};
+  if ((status === 403 || status === 429)
+      && !headers['retry-after']
+      && String(headers['x-ratelimit-remaining']) !== '0') {
+    return null;
   }
-  return false;
+  const retryAfter = Number.parseInt(headers['retry-after'] || '', 10);
+  return Number.isFinite(retryAfter) ? retryAfter * 1000 : 1000 * (2 ** (attempt - 1));
 }
 
 async function deleteRun({ github, owner, repo, run, core }) {
@@ -183,20 +153,18 @@ async function deleteRun({ github, owner, repo, run, core }) {
       await github.rest.actions.deleteWorkflowRun({ owner, repo, run_id: run.id });
       return 'deleted';
     } catch (error) {
-      const status = error.status || error.response?.status;
-      if (status === 404) {
+      if ((error.status || error.response?.status) === 404) {
         return 'already-gone';
       }
-      if (!isRetryable(error) || attempt === 4) {
+      const delay = retryDelay(error, attempt);
+      if (delay === null || attempt === 4) {
         throw error;
       }
-      const retryAfter = Number.parseInt(error.response?.headers?.['retry-after'] || '', 10);
-      const delay = Number.isFinite(retryAfter) ? retryAfter * 1000 : 1000 * (2 ** (attempt - 1));
-      core.warning(`Delete of run ${run.id} was rate-limited or transiently failed; retrying in ${delay} ms`);
-      await sleep(delay);
+      core.warning(`Retrying deletion of run ${run.id} in ${delay} ms`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  throw new Error(`Unreachable delete retry state for run ${run.id}`);
+  throw new Error(`Unreachable retry state for run ${run.id}`);
 }
 
 async function deleteInParallel({ github, owner, repo, runs, parallelism, core }) {
@@ -207,13 +175,8 @@ async function deleteInParallel({ github, owner, repo, runs, parallelism, core }
   const deletedByWorkflow = new Map();
 
   async function worker() {
-    while (true) {
-      const index = cursor;
-      cursor += 1;
-      if (index >= runs.length) {
-        return;
-      }
-      const run = runs[index];
+    while (cursor < runs.length) {
+      const run = runs[cursor++];
       try {
         const result = await deleteRun({ github, owner, repo, run, core });
         if (result === 'deleted') {
@@ -224,63 +187,45 @@ async function deleteInParallel({ github, owner, repo, runs, parallelism, core }
         }
       } catch (error) {
         failures.push({ run, error });
-        core.error(`Failed to delete run ${run.id} (${run.workflowName}): ${error.message}`);
+        core.error(`Failed to delete ${run.id} (${run.workflowName}): ${error.message}`);
       }
       const processed = deleted + alreadyGone + failures.length;
       if (processed % 100 === 0 || processed === runs.length) {
-        core.info(`Cleanup progress: ${processed}/${runs.length} processed; ${deleted} deleted; ${failures.length} failed`);
+        core.info(`Progress ${processed}/${runs.length}: ${deleted} deleted, ${failures.length} failed`);
       }
     }
   }
 
-  await Promise.all(Array.from({ length: Math.min(parallelism, runs.length || 1) }, () => worker()));
+  await Promise.all(Array.from({ length: Math.min(parallelism, Math.max(1, runs.length)) }, worker));
   return { deleted, alreadyGone, failures, deletedByWorkflow };
 }
 
-async function writeSummary({
-  core,
-  cutoffIso,
-  retainDays,
-  keepMinimumRuns,
-  requestedMaximum,
-  deletionBudget,
-  dryRun,
-  oldRuns,
-  selectedRuns,
-  protectedCount,
-  workflowCount,
-  deleted,
-  alreadyGone,
-  failures,
-  deletedByWorkflow,
-}) {
-  const rows = [...deletedByWorkflow.entries()]
-    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+async function summarize(core, data) {
+  const workflowRows = [...data.deletedByWorkflow.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, 30)
     .map(([name, count]) => [name, String(count)]);
 
   core.summary
-    .addHeading(dryRun ? 'Workflow run cleanup — dry run' : 'Workflow run cleanup')
+    .addHeading(data.dryRun ? 'Workflow run cleanup — dry run' : 'Workflow run cleanup')
     .addTable([
-      [{ data: 'Setting', header: true }, { data: 'Value', header: true }],
-      ['Retention', `${retainDays} days`],
-      ['Cutoff', cutoffIso],
-      ['Minimum retained per workflow', String(keepMinimumRuns)],
-      ['Requested deletion cap', String(requestedMaximum)],
-      ['Rate-aware deletion budget', String(deletionBudget)],
-      ['Completed old runs discovered', String(oldRuns)],
-      ['Protected old runs', String(protectedCount)],
-      ['Workflows represented', String(workflowCount)],
-      ['Runs selected this execution', String(selectedRuns)],
-      ['Deleted', String(deleted)],
-      ['Already gone', String(alreadyGone)],
-      ['Failures', String(failures)],
+      [{ data: 'Metric', header: true }, { data: 'Value', header: true }],
+      ['Retention', `${data.retainDays} days`],
+      ['Cutoff', data.cutoffIso],
+      ['Old completed runs discovered', String(data.oldRuns)],
+      ['Old runs protected', String(data.protectedCount)],
+      ['Workflows represented', String(data.workflowCount)],
+      ['Rate-aware deletion budget', String(data.deletionBudget)],
+      ['Selected this execution', String(data.selectedRuns)],
+      ['Deleted', String(data.deleted)],
+      ['Already gone', String(data.alreadyGone)],
+      ['Failures', String(data.failures)],
+      ['Eligible backlog after this execution', String(data.remaining)],
     ]);
-
-  if (rows.length > 0) {
+  if (workflowRows.length > 0) {
     core.summary.addHeading('Deleted runs by workflow', 3).addTable([
       [{ data: 'Workflow', header: true }, { data: 'Deleted', header: true }],
-      ...rows,
+      ...workflowRows,
     ]);
   }
   await core.summary.write();
@@ -291,66 +236,44 @@ async function run({ github, context, core, env = process.env }) {
   const keepMinimumRuns = parseInteger(env.KEEP_MINIMUM_RUNS, 'KEEP_MINIMUM_RUNS', 5, 0, 100);
   const requestedMaximum = parseInteger(env.MAX_DELETIONS, 'MAX_DELETIONS', 4000, 1, 4500);
   const parallelism = parseInteger(env.PARALLELISM, 'PARALLELISM', 4, 1, 12);
-  const dryRun = parseBoolean(env.DRY_RUN, 'DRY_RUN', false);
-
-  const nowMilliseconds = Date.now();
-  const cutoffMilliseconds = nowMilliseconds - retainDays * 24 * 60 * 60 * 1000;
-  const cutoffSeconds = Math.floor(cutoffMilliseconds / 1000);
+  const dryRun = parseBoolean(env.DRY_RUN, 'DRY_RUN');
+  const cutoffSeconds = Math.floor((Date.now() - retainDays * 86400000) / 1000);
   const cutoffIso = isoFromSeconds(cutoffSeconds);
   const { owner, repo } = context.repo;
 
-  core.info(`Repository: ${owner}/${repo}`);
-  core.info(`Retention cutoff: ${cutoffIso}; keep minimum: ${keepMinimumRuns}; requested cap: ${requestedMaximum}; parallelism: ${parallelism}; dry run: ${dryRun}`);
-
+  core.info(`Retention=${retainDays}d cutoff=${cutoffIso} keep=${keepMinimumRuns} cap=${requestedMaximum} parallelism=${parallelism} dryRun=${dryRun}`);
   const oldRuns = await listOldCompletedRuns({ github, owner, repo, cutoffSeconds, core });
-  const { candidates, protectedCount, workflowCount } = selectDeletionCandidates(oldRuns, keepMinimumRuns);
-
+  const selection = selectDeletionCandidates(oldRuns, keepMinimumRuns);
   const rate = await github.rest.rateLimit.get();
-  const rateRemaining = rate.data.resources.core.remaining;
-  const deletionBudget = computeDeletionBudget(rateRemaining, requestedMaximum, dryRun);
-  const selected = candidates.slice(0, deletionBudget);
+  const deletionBudget = computeDeletionBudget(rate.data.resources.core.remaining, requestedMaximum, dryRun);
+  const selected = selection.candidates.slice(0, deletionBudget);
+  core.info(`Found ${oldRuns.length} old runs; ${selection.candidates.length} eligible; selecting ${selected.length}`);
 
-  core.info(`Discovered ${oldRuns.length} old completed runs; ${protectedCount} protected; ${candidates.length} eligible; core API remaining: ${rateRemaining}; deleting up to ${selected.length}`);
-
-  let result = {
-    deleted: 0,
-    alreadyGone: 0,
-    failures: [],
-    deletedByWorkflow: new Map(),
-  };
-
+  let result = { deleted: 0, alreadyGone: 0, failures: [], deletedByWorkflow: new Map() };
   if (dryRun) {
-    for (const run of selected.slice(0, 50)) {
-      core.info(`[dry run] ${run.id}\t${run.createdAt}\t${run.workflowName}\t${run.conclusion}`);
-    }
-    if (selected.length > 50) {
-      core.info(`[dry run] ${selected.length - 50} additional selected runs omitted from the log`);
-    }
+    selected.slice(0, 50).forEach((run) => core.info(`[dry run] ${run.id}\t${run.createdAt}\t${run.workflowName}`));
   } else if (selected.length > 0) {
     result = await deleteInParallel({ github, owner, repo, runs: selected, parallelism, core });
   }
 
-  await writeSummary({
-    core,
-    cutoffIso,
-    retainDays,
-    keepMinimumRuns,
-    requestedMaximum,
-    deletionBudget,
+  const remaining = Math.max(0, selection.candidates.length - result.deleted - result.alreadyGone);
+  await summarize(core, {
     dryRun,
+    retainDays,
+    cutoffIso,
     oldRuns: oldRuns.length,
+    protectedCount: selection.protectedCount,
+    workflowCount: selection.workflowCount,
+    deletionBudget,
     selectedRuns: selected.length,
-    protectedCount,
-    workflowCount,
     deleted: result.deleted,
     alreadyGone: result.alreadyGone,
     failures: result.failures.length,
+    remaining,
     deletedByWorkflow: result.deletedByWorkflow,
   });
-
   core.setOutput('deleted', result.deleted);
-  core.setOutput('remaining', Math.max(0, candidates.length - result.deleted - result.alreadyGone));
-
+  core.setOutput('remaining', remaining);
   if (result.failures.length > 0) {
     core.setFailed(`${result.failures.length} workflow runs could not be deleted`);
   }
@@ -363,6 +286,7 @@ module.exports = {
   isoFromSeconds,
   parseBoolean,
   parseInteger,
+  pageRuns,
   run,
   selectDeletionCandidates,
 };
