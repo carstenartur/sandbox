@@ -55,3 +55,28 @@ jobs:
           if failures:
               raise SystemExit(f"gh-pages publishers must share the release-workflow lock: {failures}")
           PY
+      - name: Validate protected-main release transition
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/deploy-release.yml').read_text(encoding='utf-8')
+          forbidden = [
+              'Fast-forward main to verified stable release commit',
+              'git push origin "${RELEASE_COMMIT}:refs/heads/main"',
+          ]
+          present = [marker for marker in forbidden if marker in workflow]
+          if present:
+              raise SystemExit(f"Release workflow still bypasses protected main: {present}")
+
+          required = [
+              'uses: actions/setup-java@v6',
+              'branch="release/prepare-next-${NEXT_SNAPSHOT}"',
+              'git checkout -b "$branch" "$RELEASE_COMMIT"',
+              'main moved before the next-development PR was created',
+              '--base main --head "$branch"',
+          ]
+          missing = [marker for marker in required if marker not in workflow]
+          if missing:
+              raise SystemExit(f"Release workflow lacks the protected-main PR contract: {missing}")
+          PY
