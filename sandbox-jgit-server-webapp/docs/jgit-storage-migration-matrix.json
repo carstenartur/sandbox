@@ -7,8 +7,8 @@
   "releasePolicy": {
     "required": "non-SNAPSHOT",
     "minimumDocumentedCandidate": "0.1.13",
-    "selectedVersion": "0.11.0",
-    "selectionState": "selected for consumer verification; Core 0.11.0 is resolved by the Sandbox module POMs in PR #1522, while immutable Core 0.10.0 compatibility evidence remains recorded below until the full 0.11.0 consumer matrix succeeds"
+    "selectedVersion": "0.11.2",
+    "selectionState": "selected for consumer verification; Core 0.11.2 is resolved by the Sandbox module POMs in PR #1544, while immutable Core 0.10.0 compatibility evidence remains recorded below until the full 0.11.2 consumer matrix succeeds"
   },
   "runtime": {
     "currentDatabase": "MSSQL",
@@ -27,7 +27,7 @@
         "org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService",
         "org.eclipse.jgit.server.config.ExternalServerPersistenceContext"
       ],
-      "currentBackend": "Sandbox adapter boundary with copied backend for normal startup and released Core 0.11.0 for guarded external startup",
+      "currentBackend": "Sandbox adapter boundary with copied backend for normal startup and released Core 0.11.2 for guarded external startup",
       "targetOwner": "jgit-storage-hibernate-core",
       "targetApi": [
         "HibernateRepositoryFactory",
