@@ -168,22 +168,19 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 
 			Change change= refactoring.createChange(monitor);
 			if (change != null) {
-				if (arguments.mode() == Mode.CHECK) {
-					try {
-						change.perform(monitor);
-						preserveOriginalLineDelimiters(sources);
-						updateProjectMetadata(sources, resources);
-						refresh(sources, resources, monitor);
-						changed= changedFiles(sources, resources);
-					} finally {
-						restore(sources, resources, monitor, errors);
-					}
-				} else {
+				boolean restoreAfterExecution= arguments.mode() == Mode.CHECK;
+				boolean executionCompleted= false;
+				try {
 					change.perform(monitor);
 					preserveOriginalLineDelimiters(sources);
 					updateProjectMetadata(sources, resources);
 					refresh(sources, resources, monitor);
 					changed= changedFiles(sources, resources);
+					executionCompleted= true;
+				} finally {
+					if (restoreAfterExecution || !executionCompleted) {
+						restore(sources, resources, monitor, errors);
+					}
 				}
 			}
 		} catch (CoreException | IOException | RuntimeException e) {
