@@ -21,8 +21,13 @@ on:
         required: false
         type: number
         default: 5
+      stale_queue_hours:
+        description: 'Cancel queued/waiting runs older than this many hours'
+        required: false
+        type: number
+        default: 24
       dry_run:
-        description: 'Log the selected runs without deleting them'
+        description: 'Log selected cancellation/deletion operations without changing runs'
         required: false
         type: boolean
         default: false
@@ -32,7 +37,7 @@ on:
         type: number
         default: 4000
       parallelism:
-        description: 'Concurrent delete requests'
+        description: 'Concurrent cancel/delete requests'
         required: false
         type: number
         default: 4
@@ -57,12 +62,13 @@ jobs:
       - name: Verify cleanup selection and rate-limit logic
         run: node --test .github/scripts/cleanup-workflow-runs.test.cjs
 
-      - name: Delete old completed workflow runs
+      - name: Cancel stale queued runs and delete old completed runs
         id: cleanup
         uses: actions/github-script@v9
         env:
           RETAIN_DAYS: ${{ inputs.retain_days || '30' }}
           KEEP_MINIMUM_RUNS: ${{ inputs.keep_minimum_runs || '5' }}
+          STALE_QUEUE_HOURS: ${{ inputs.stale_queue_hours || '24' }}
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
           MAX_DELETIONS: ${{ inputs.max_deletions || '4000' }}
           PARALLELISM: ${{ inputs.parallelism || '4' }}
@@ -75,5 +81,6 @@ jobs:
       - name: Publish cleanup result
         if: always()
         run: |
-          echo "Deleted: ${{ steps.cleanup.outputs.deleted || '0' }}"
+          echo "Stale queued/waiting runs cancelled: ${{ steps.cleanup.outputs.cancelled || '0' }}"
+          echo "Old completed runs deleted: ${{ steps.cleanup.outputs.deleted || '0' }}"
           echo "Remaining eligible backlog: ${{ steps.cleanup.outputs.remaining || 'unknown' }}"
