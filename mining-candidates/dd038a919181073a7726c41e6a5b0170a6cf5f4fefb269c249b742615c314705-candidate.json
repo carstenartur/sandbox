@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "dd038a919181073a7726c41e6a5b0170a6cf5f4fefb269c249b742615c314705",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: replace-sharedastprovider-wait-policy\u003e\n\u003c!description: Replace SharedASTProvider.WAIT_ACTIVE_ONLY with SharedASTProvider.WAIT_NO for AST retrieval. This avoids blocking the UI thread and improves responsiveness, but might lead to null ASTs more often.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: performance, threading\u003e\n\norg.eclipse.jdt.ui.SharedASTProvider.WAIT_ACTIVE_ONLY\n\u003d\u003e org.eclipse.jdt.ui.SharedASTProvider.WAIT_NO\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.dom.CompilationUnit;\nimport org.eclipse.jdt.core.ITypeRoot;\nimport org.eclipse.jdt.ui.SharedASTProvider;\n\npublic class Example {\n    public CompilationUnit getAst(ITypeRoot input) {\n        return SharedASTProvider.getAST(input, SharedASTProvider.WAIT_ACTIVE_ONLY, null);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.dom.CompilationUnit;\nimport org.eclipse.jdt.core.ITypeRoot;\nimport org.eclipse.jdt.ui.SharedASTProvider;\n\npublic class Example {\n    public CompilationUnit getAst(ITypeRoot input) {\n        return SharedASTProvider.getAST(input, SharedASTProvider.WAIT_NO, null);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.ui.SharedASTProvider;\n\npublic class AnotherExample {\n    public int getWaitPolicy() {\n        return SharedASTProvider.WAIT_ACTIVE_RECONCILE; // Should not match\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui-refactoring.sandbox-hint",
+  "sourceCommit": "cd7b7774a27d1154e4fbda8545ac4e70b9872f40",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces SharedASTProvider.WAIT_ACTIVE_ONLY with SharedASTProvider.WAIT_NO to prevent blocking the UI thread during AST retrieval.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-30T02:27:29.573057581Z",
+  "ruleFingerprint": "sha256:6f78f973568ae8abd84f45f4979a8c6c582d6c6de43b67405a6a2c1b66a2274d",
+  "behaviorFingerprint": "sha256:b1561079dd1d309fed53a0df75c1042f81ab26679d7bb2334281f454c29d62de",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-30T02:27:35.596204238Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

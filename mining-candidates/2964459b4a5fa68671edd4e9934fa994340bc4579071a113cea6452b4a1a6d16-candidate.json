@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2964459b4a5fa68671edd4e9934fa994340bc4579071a113cea6452b4a1a6d16",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.workingsets.WorkingSetModel.$model.setWorkingSets($workingSets, false, $workingSets)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.workingsets.WorkingSetModel.$model.setActiveWorkingSets($workingSets)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.ui.IWorkingSet;\n\nclass MyClass {\n    WorkingSetModel fWorkingSetModel;\n\n    public MyClass() {\n        this.fWorkingSetModel \u003d new WorkingSetModel();\n    }\n\n    public void internalTestShowWorkingSets(IWorkingSet[] workingSets) {\n        fWorkingSetModel.setWorkingSets(workingSets, false, workingSets);\n        fWorkingSetModel.configured();\n    }\n}\n\n// Dummy classes for compilation context\ninterface IWorkingSet {}\n\nclass WorkingSetModel {\n    public void setWorkingSets(IWorkingSet[] allWorkingSets, boolean isSortingEnabled, IWorkingSet[] activeWorkingSets) {}\n    public void setActiveWorkingSets(IWorkingSet[] workingSets) {}\n    public void configured() {}\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.ui.IWorkingSet;\n\nclass MyClass {\n    WorkingSetModel fWorkingSetModel;\n\n    public MyClass() {\n        this.fWorkingSetModel \u003d new WorkingSetModel();\n    }\n\n    public void internalTestShowWorkingSets(IWorkingSet[] workingSets) {\n        fWorkingSetModel.setActiveWorkingSets(workingSets);\n        fWorkingSetModel.configured();\n    }\n}\n\n// Dummy classes for compilation context\ninterface IWorkingSet {}\n\nclass WorkingSetModel {\n    public void setWorkingSets(IWorkingSet[] allWorkingSets, boolean isSortingEnabled, IWorkingSet[] activeWorkingSets) {}\n    public void setActiveWorkingSets(IWorkingSet[] workingSets) {}\n    public void configured() {}\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.ui.IWorkingSet;\n\nclass MyClass {\n    WorkingSetModel fWorkingSetModel;\n\n    public MyClass() {\n        this.fWorkingSetModel \u003d new WorkingSetModel();\n    }\n\n    public void someOtherMethod(IWorkingSet[] allWorkingSets, IWorkingSet[] activeWorkingSets) {\n        // Case 1: First and third arguments are different\n        fWorkingSetModel.setWorkingSets(allWorkingSets, false, activeWorkingSets);\n        // Case 2: Second argument is true (sorting enabled)\n        fWorkingSetModel.setWorkingSets(allWorkingSets, true, allWorkingSets);\n        fWorkingSetModel.setWorkingSets(allWorkingSets, true, activeWorkingSets);\n    }\n}\n\n// Dummy classes for compilation context\ninterface IWorkingSet {}\n\nclass WorkingSetModel {\n    public void setWorkingSets(IWorkingSet[] allWorkingSets, boolean isSortingEnabled, IWorkingSet[] activeWorkingSets) {}\n    public void setActiveWorkingSets(IWorkingSet[] workingSets) {}\n    public void configured() {}\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "08cc3cc4d4c336ba689a9aa67be29c5afb145067",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API simplification",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-30T02:27:29.687965782Z",
+  "ruleFingerprint": "sha256:e03e71b5be33556d4c3ddad7b9a2102d1d765742a791c4a82ffa625d43eed731",
+  "behaviorFingerprint": "sha256:800934a9a34a0ea6c6571d412b120250dde648bad9e1158825b0f449a7708c06",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.ui cannot be resolved",
+    "verifiedAt": "2026-08-30T02:27:35.669346181Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

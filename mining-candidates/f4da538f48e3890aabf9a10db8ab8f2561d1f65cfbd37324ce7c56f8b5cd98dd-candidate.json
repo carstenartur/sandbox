@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f4da538f48e3890aabf9a10db8ab8f2561d1f65cfbd37324ce7c56f8b5cd98dd",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: modernize-workingsetmodel-collection-check\u003e\n\u003c!description: Replace direct field access to \u0027fAllWorkingSets\u0027 with a call to \u0027getAllWorkingSets()\u0027 for collection containment checks, promoting encapsulation and consistency.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: encapsulation, refactoring\u003e\n\nfAllWorkingSets.containsAll($listArg$)\n\u003d\u003e getAllWorkingSets().containsAll($listArg$)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.workingsets;\n\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\nimport org.eclipse.core.runtime.Assert;\nimport org.eclipse.ui.IWorkingSet;\n\npublic class WorkingSetModel {\n    private List\u003cIWorkingSet\u003e fAllWorkingSets \u003d new ArrayList\u003c\u003e();\n\n    public List\u003cIWorkingSet\u003e getAllWorkingSets() {\n        List\u003cIWorkingSet\u003e result \u003d new ArrayList\u003c\u003e();\n        result.addAll(fAllWorkingSets);\n        return result;\n    }\n\n    public void setWorkingSets(IWorkingSet[] workingSets, boolean isSortingEnabled, IWorkingSet[] activeWorkingSets) {\n        Assert.isLegal(fAllWorkingSets.containsAll(Arrays.asList(activeWorkingSets)));\n    }\n\n    public void setActiveWorkingSets(IWorkingSet[] workingSets) {\n        Assert.isLegal(fAllWorkingSets.containsAll(Arrays.asList(workingSets)));\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.workingsets;\n\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.List;\n\nimport org.eclipse.core.runtime.Assert;\nimport org.eclipse.ui.IWorkingSet;\n\npublic class WorkingSetModel {\n    private List\u003cIWorkingSet\u003e fAllWorkingSets \u003d new ArrayList\u003c\u003e();\n\n    public List\u003cIWorkingSet\u003e getAllWorkingSets() {\n        List\u003cIWorkingSet\u003e result \u003d new ArrayList\u003c\u003e();\n        result.addAll(fAllWorkingSets);\n        return result;\n    }\n\n    public void setWorkingSets(IWorkingSet[] workingSets, boolean isSortingEnabled, IWorkingSet[] activeWorkingSets) {\n        Assert.isLegal(getAllWorkingSets().containsAll(Arrays.asList(activeWorkingSets)));\n    }\n\n    public void setActiveWorkingSets(IWorkingSet[] workingSets) {\n        Assert.isLegal(getAllWorkingSets().containsAll(Arrays.asList(workingSets)));\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.workingsets;\n\nimport java.util.ArrayList;\nimport java.util.List;\nimport org.eclipse.ui.IWorkingSet;\n\npublic class WorkingSetModelNegative {\n    private List\u003cIWorkingSet\u003e fAllWorkingSets \u003d new ArrayList\u003c\u003e();\n\n    public void someOtherMethod(List\u003cIWorkingSet\u003e someOtherList) {\n        fAllWorkingSets.contains(someOtherList.get(0)); // Should not match (not containsAll)\n        fAllWorkingSets.isEmpty(); // Should not match\n    }\n\n    public List\u003cIWorkingSet\u003e getAllWorkingSets() {\n        return fAllWorkingSets;\n    }\n\n    public void anotherMethod(List\u003cIWorkingSet\u003e aList) {\n        getAllWorkingSets().contains(aList.get(0)); // Should not match (target has getAllWorkingSets, not fAllWorkingSets)\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui-refactoring.sandbox-hint",
+  "sourceCommit": "58e78d28ea3a36fa9cf87c5487e293fa652c6979",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Encapsulation Refactoring",
+  "summary": "Replaces direct field access for collection containment checks with a public getter method for better encapsulation.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-30T02:27:29.633663817Z",
+  "ruleFingerprint": "sha256:9fbd61908578b57201af44e453ee81c093e380c0cd741ae7216ce0b5d11f0d54",
+  "behaviorFingerprint": "sha256:e12b2cd0addfddab004d2fc75ba97a7765ca4f747d81f7fc7355734bb4d0d982",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-30T02:27:35.612231566Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
