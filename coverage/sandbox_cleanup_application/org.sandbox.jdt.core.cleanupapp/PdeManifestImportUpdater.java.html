@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>PdeManifestImportUpdater.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp</a> &gt; <span class="el_source">PdeManifestImportUpdater.java</span></div><h1>PdeManifestImportUpdater.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0.
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.core.cleanupapp;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/** Adds one package to the main OSGi {@code Import-Package} header without reformatting existing clauses. */
+public final class PdeManifestImportUpdater {
+
+	private static final String IMPORT_PACKAGE_HEADER= &quot;Import-Package:&quot;; //$NON-NLS-1$
+<span class="fc" id="L24">	private static final Pattern IMPORT_PACKAGE_PATTERN= Pattern.compile(</span>
+<span class="fc" id="L25">			&quot;(?m)^Import-Package:[^\\r\\n]*(?:\\r?\\n [^\\r\\n]*)*&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L26">	private static final Pattern MAIN_SECTION_SEPARATOR= Pattern.compile(&quot;\\r?\\n\\r?\\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L27">	private static final Pattern PACKAGE_NAME= Pattern.compile(</span>
+<span class="fc" id="L28">			&quot;[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)*&quot;); //$NON-NLS-1$</span>
+
+	private PdeManifestImportUpdater() {
+	}
+
+	public static byte[] addImport(byte[] original, String packageName) {
+<span class="fc" id="L34">		Objects.requireNonNull(original);</span>
+<span class="fc" id="L35">		String content= new String(original, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L36">		String updated= addImport(content, packageName);</span>
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">		return content.equals(updated) ? original : updated.getBytes(StandardCharsets.UTF_8);</span>
+	}
+
+	public static String addImport(String manifest, String packageName) {
+<span class="fc" id="L41">		Objects.requireNonNull(manifest);</span>
+<span class="fc" id="L42">		Objects.requireNonNull(packageName);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">		if (!PACKAGE_NAME.matcher(packageName).matches()) {</span>
+<span class="fc" id="L44">			throw new IllegalArgumentException(&quot;Invalid Java package name: &quot; + packageName); //$NON-NLS-1$</span>
+		}
+
+<span class="fc" id="L47">		int mainSectionEnd= mainSectionEnd(manifest);</span>
+<span class="fc" id="L48">		Matcher header= IMPORT_PACKAGE_PATTERN.matcher(manifest.substring(0, mainSectionEnd));</span>
+<span class="fc" id="L49">		String lineDelimiter= lineDelimiter(manifest);</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">		if (header.find()) {</span>
+<span class="fc" id="L51">			String physicalHeader= header.group();</span>
+<span class="fc" id="L52">			String unfolded= physicalHeader.substring(IMPORT_PACKAGE_HEADER.length())</span>
+<span class="fc" id="L53">					.replace(&quot;\r\n &quot;, &quot;&quot;).replace(&quot;\n &quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">			if (containsPackage(unfolded, packageName)) {</span>
+<span class="fc" id="L55">				return manifest;</span>
+			}
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">			String separator= physicalHeader.stripTrailing().endsWith(&quot;,&quot;) //$NON-NLS-1$</span>
+<span class="pc" id="L58">					? lineDelimiter + &quot; &quot; : &quot;,&quot; + lineDelimiter + &quot; &quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L59">			return manifest.substring(0, header.end()) + separator + packageName</span>
+<span class="fc" id="L60">					+ manifest.substring(header.end());</span>
+		}
+
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">		String prefix= mainSectionEnd == 0 || isLineBreakBefore(manifest, mainSectionEnd)</span>
+<span class="fc" id="L64">				? &quot;&quot; : lineDelimiter; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L65" title="1 of 4 branches missed.">		String suffix= mainSectionEnd == manifest.length() &amp;&amp; isLineBreakBefore(manifest, mainSectionEnd)</span>
+<span class="fc" id="L66">				? lineDelimiter : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L67">		return manifest.substring(0, mainSectionEnd) + prefix + IMPORT_PACKAGE_HEADER + &quot; &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L68">				+ packageName + suffix + manifest.substring(mainSectionEnd);</span>
+	}
+
+	private static int mainSectionEnd(String manifest) {
+<span class="fc" id="L72">		Matcher separator= MAIN_SECTION_SEPARATOR.matcher(manifest);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">		return separator.find() ? separator.start() : manifest.length();</span>
+	}
+
+	private static boolean isLineBreakBefore(String value, int offset) {
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">		if (offset &lt;= 0) {</span>
+<span class="nc" id="L78">			return false;</span>
+		}
+<span class="fc" id="L80">		char previous= value.charAt(offset - 1);</span>
+<span class="pc bpc" id="L81" title="1 of 4 branches missed.">		return previous == '\n' || previous == '\r';</span>
+	}
+
+	private static String lineDelimiter(String manifest) {
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		return manifest.contains(&quot;\r\n&quot;) ? &quot;\r\n&quot; : &quot;\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+	}
+
+	private static boolean containsPackage(String headerValue, String packageName) {
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		for (String clause : splitOutsideQuotes(headerValue, ',')) {</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">			for (String segment : splitOutsideQuotes(clause, ';')) {</span>
+<span class="fc" id="L91">				String candidate= segment.trim();</span>
+<span class="pc bpc" id="L92" title="1 of 4 branches missed.">				if (candidate.contains(&quot;:=&quot;) || candidate.indexOf('=') &gt;= 0) { //$NON-NLS-1$</span>
+<span class="fc" id="L93">					break;</span>
+				}
+<span class="fc bfc" id="L95" title="All 2 branches covered.">				if (packageName.equals(candidate)) {</span>
+<span class="fc" id="L96">					return true;</span>
+				}
+			}
+		}
+<span class="fc" id="L100">		return false;</span>
+	}
+
+	private static List&lt;String&gt; splitOutsideQuotes(String value, char delimiter) {
+<span class="fc" id="L104">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L105">		int start= 0;</span>
+<span class="fc" id="L106">		boolean quoted= false;</span>
+<span class="fc" id="L107">		boolean escaped= false;</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">		for (int index= 0; index &lt; value.length(); index++) {</span>
+<span class="fc" id="L109">			char current= value.charAt(index);</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">			if (escaped) {</span>
+<span class="nc" id="L111">				escaped= false;</span>
+<span class="nc" id="L112">				continue;</span>
+			}
+<span class="pc bpc" id="L114" title="1 of 4 branches missed.">			if (quoted &amp;&amp; current == '\\') {</span>
+<span class="nc" id="L115">				escaped= true;</span>
+<span class="nc" id="L116">				continue;</span>
+			}
+<span class="fc bfc" id="L118" title="All 2 branches covered.">			if (current == '&quot;') {</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">				quoted= !quoted;</span>
+<span class="fc" id="L120">				continue;</span>
+			}
+<span class="fc bfc" id="L122" title="All 4 branches covered.">			if (!quoted &amp;&amp; current == delimiter) {</span>
+<span class="fc" id="L123">				result.add(value.substring(start, index));</span>
+<span class="fc" id="L124">				start= index + 1;</span>
+			}
+		}
+<span class="fc" id="L127">		result.add(value.substring(start));</span>
+<span class="fc" id="L128">		return result;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
