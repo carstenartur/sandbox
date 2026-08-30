@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "9875e0c92a49104182b8f36de9ba7848d1c0deb2",
-      "lastProcessedDate": "2026-08-28T04:57:01.665070491Z",
-      "totalProcessed": 4891,
+      "lastProcessedCommit": "cb310c6672b37211b7ee6614fd3989b4db142748",
+      "lastProcessedDate": "2026-08-30T02:27:28.171149157Z",
+      "totalProcessed": 4975,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3116,6 +3116,15 @@
           "deferredAt": "2026-08-27T03:54:18.271094198Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "ea4ef7c135437dabc6c9758e4aa194c65607c92d",
+          "message": "Bug 340470: [implementation] Use ASTProvider.SHARED_AST_LEVEL instead of AST.JLS3 where it makes sense",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-08-30T02:26:28.465998472Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3270,7 +3279,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 4,
-        "API Modernization": 49,
+        "API Modernization": 51,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3366,7 +3375,12 @@
         "Stylistic/Documentation": 1,
         "Structural Change/New Code Insertion": 1,
         "Method Argument Update": 1,
-        "API usage improvement": 1
+        "API usage improvement": 1,
+        "Encapsulation Refactoring": 1,
+        "API Misuse / Correctness": 1,
+        "API simplification": 1,
+        "API Constant Replacement": 1,
+        "Debug String Enhancement": 1
       },
       "exhaustedCategories": []
     },
@@ -3407,5 +3421,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 27662
+  "globalTotalProcessed": 27746
 }
