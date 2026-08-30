@@ -48,7 +48,10 @@ permissions:
 
 concurrency:
   group: cleanup-workflow-runs-${{ github.repository }}
-  cancel-in-progress: false
+  # A newer maintenance implementation supersedes an older cleanup run safely:
+  # deletes and cancellations are idempotent, and already completed operations
+  # remain effective. This also prevents the cleanup workflow from queuing itself.
+  cancel-in-progress: true
 
 jobs:
   cleanup:
