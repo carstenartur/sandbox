@@ -3,6 +3,7 @@
 const MAX_FILTERED_RESULTS = 1000;
 const SEARCH_START_SECONDS = Math.floor(Date.UTC(2008, 0, 1) / 1000);
 const RATE_LIMIT_RESERVE = 350;
+const STALE_QUEUE_STATUSES = ['queued', 'waiting', 'requested', 'pending'];
 
 function parseInteger(value, name, fallback, minimum, maximum) {
   const raw = value === undefined || value === null || value === '' ? fallback : value;
@@ -76,7 +77,41 @@ function compactRun(run) {
     workflowName: run.name || run.path || String(run.workflow_id),
     createdAt: run.created_at,
     conclusion: run.conclusion || 'unknown',
+    status: run.status || 'unknown',
   };
+}
+
+function isStaleQueuedRun(run, cutoffMilliseconds) {
+  const created = Date.parse(run.createdAt);
+  return Number.isFinite(created) && created < cutoffMilliseconds;
+}
+
+async function listRunsForStatus({ github, owner, repo, status }) {
+  const runs = [];
+  for await (const response of github.paginate.iterator(github.rest.actions.listWorkflowRunsForRepo, {
+    owner,
+    repo,
+    status,
+    per_page: 100,
+  })) {
+    pageRuns(response).forEach((run) => runs.push(compactRun(run)));
+  }
+  return runs;
+}
+
+async function listStaleQueuedRuns({ github, owner, repo, cutoffMilliseconds, core }) {
+  const unique = new Map();
+  for (const status of STALE_QUEUE_STATUSES) {
+    const runs = await listRunsForStatus({ github, owner, repo, status });
+    for (const run of runs) {
+      if (isStaleQueuedRun(run, cutoffMilliseconds)) {
+        unique.set(run.id, run);
+      }
+    }
+  }
+  const stale = [...unique.values()].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt));
+  core.info(`Found ${stale.length} queued/waiting runs older than ${new Date(cutoffMilliseconds).toISOString()}`);
+  return stale;
 }
 
 async function listWindow({ github, owner, repo, startSeconds, endSeconds }) {
@@ -147,24 +182,72 @@ function retryDelay(error, attempt) {
   return Number.isFinite(retryAfter) ? retryAfter * 1000 : 1000 * (2 ** (attempt - 1));
 }
 
-async function deleteRun({ github, owner, repo, run, core }) {
+async function retryAction(action, { core, description, alreadyFinishedStatuses = [] }) {
   for (let attempt = 1; attempt <= 4; attempt += 1) {
     try {
-      await github.rest.actions.deleteWorkflowRun({ owner, repo, run_id: run.id });
-      return 'deleted';
+      await action();
+      return 'changed';
     } catch (error) {
-      if ((error.status || error.response?.status) === 404) {
-        return 'already-gone';
+      const status = error.status || error.response?.status;
+      if (alreadyFinishedStatuses.includes(status)) {
+        return 'already-finished';
       }
       const delay = retryDelay(error, attempt);
       if (delay === null || attempt === 4) {
         throw error;
       }
-      core.warning(`Retrying deletion of run ${run.id} in ${delay} ms`);
+      core.warning(`Retrying ${description} in ${delay} ms`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  throw new Error(`Unreachable retry state for run ${run.id}`);
+  throw new Error(`Unreachable retry state for ${description}`);
+}
+
+async function cancelStaleRuns({ github, owner, repo, runs, parallelism, core }) {
+  let cursor = 0;
+  let cancelled = 0;
+  let alreadyFinished = 0;
+  const failures = [];
+
+  async function worker() {
+    while (cursor < runs.length) {
+      const run = runs[cursor++];
+      try {
+        const result = await retryAction(
+          () => github.rest.actions.cancelWorkflowRun({ owner, repo, run_id: run.id }),
+          {
+            core,
+            description: `cancellation of run ${run.id}`,
+            alreadyFinishedStatuses: [404, 409],
+          },
+        );
+        if (result === 'changed') {
+          cancelled += 1;
+          core.info(`Cancelled stale ${run.status} run ${run.id}: ${run.workflowName}`);
+        } else {
+          alreadyFinished += 1;
+        }
+      } catch (error) {
+        failures.push({ run, error });
+        core.error(`Failed to cancel ${run.id} (${run.workflowName}): ${error.message}`);
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(parallelism, Math.max(1, runs.length)) }, worker));
+  return { cancelled, alreadyFinished, failures };
+}
+
+async function deleteRun({ github, owner, repo, run, core }) {
+  const result = await retryAction(
+    () => github.rest.actions.deleteWorkflowRun({ owner, repo, run_id: run.id }),
+    {
+      core,
+      description: `deletion of run ${run.id}`,
+      alreadyFinishedStatuses: [404],
+    },
+  );
+  return result === 'changed' ? 'deleted' : 'already-gone';
 }
 
 async function deleteInParallel({ github, owner, repo, runs, parallelism, core }) {
@@ -211,7 +294,12 @@ async function summarize(core, data) {
     .addTable([
       [{ data: 'Metric', header: true }, { data: 'Value', header: true }],
       ['Retention', `${data.retainDays} days`],
-      ['Cutoff', data.cutoffIso],
+      ['Completed-run cutoff', data.cutoffIso],
+      ['Stale queue threshold', `${data.staleQueueHours} hours`],
+      ['Stale queued/waiting runs found', String(data.staleQueuedFound)],
+      ['Stale runs cancelled', String(data.cancelled)],
+      ['Stale runs already finished', String(data.cancelAlreadyFinished)],
+      ['Cancellation failures', String(data.cancelFailures)],
       ['Old completed runs discovered', String(data.oldRuns)],
       ['Old runs protected', String(data.protectedCount)],
       ['Workflows represented', String(data.workflowCount)],
@@ -219,7 +307,7 @@ async function summarize(core, data) {
       ['Selected this execution', String(data.selectedRuns)],
       ['Deleted', String(data.deleted)],
       ['Already gone', String(data.alreadyGone)],
-      ['Failures', String(data.failures)],
+      ['Deletion failures', String(data.deleteFailures)],
       ['Eligible backlog after this execution', String(data.remaining)],
     ]);
   if (workflowRows.length > 0) {
@@ -236,12 +324,30 @@ async function run({ github, context, core, env = process.env }) {
   const keepMinimumRuns = parseInteger(env.KEEP_MINIMUM_RUNS, 'KEEP_MINIMUM_RUNS', 5, 0, 100);
   const requestedMaximum = parseInteger(env.MAX_DELETIONS, 'MAX_DELETIONS', 4000, 1, 4500);
   const parallelism = parseInteger(env.PARALLELISM, 'PARALLELISM', 4, 1, 12);
+  const staleQueueHours = parseInteger(env.STALE_QUEUE_HOURS, 'STALE_QUEUE_HOURS', 24, 1, 720);
   const dryRun = parseBoolean(env.DRY_RUN, 'DRY_RUN');
-  const cutoffSeconds = Math.floor((Date.now() - retainDays * 86400000) / 1000);
+  const now = Date.now();
+  const cutoffSeconds = Math.floor((now - retainDays * 86400000) / 1000);
+  const staleQueueCutoff = now - staleQueueHours * 3600000;
   const cutoffIso = isoFromSeconds(cutoffSeconds);
   const { owner, repo } = context.repo;
 
-  core.info(`Retention=${retainDays}d cutoff=${cutoffIso} keep=${keepMinimumRuns} cap=${requestedMaximum} parallelism=${parallelism} dryRun=${dryRun}`);
+  core.info(`Retention=${retainDays}d cutoff=${cutoffIso} queue=${staleQueueHours}h keep=${keepMinimumRuns} cap=${requestedMaximum} parallelism=${parallelism} dryRun=${dryRun}`);
+
+  const staleQueued = await listStaleQueuedRuns({
+    github,
+    owner,
+    repo,
+    cutoffMilliseconds: staleQueueCutoff,
+    core,
+  });
+  let cancelResult = { cancelled: 0, alreadyFinished: 0, failures: [] };
+  if (dryRun) {
+    staleQueued.forEach((run) => core.info(`[dry run] cancel ${run.status} ${run.id}\t${run.createdAt}\t${run.workflowName}`));
+  } else if (staleQueued.length > 0) {
+    cancelResult = await cancelStaleRuns({ github, owner, repo, runs: staleQueued, parallelism, core });
+  }
+
   const oldRuns = await listOldCompletedRuns({ github, owner, repo, cutoffSeconds, core });
   const selection = selectDeletionCandidates(oldRuns, keepMinimumRuns);
   const rate = await github.rest.rateLimit.get();
@@ -249,33 +355,41 @@ async function run({ github, context, core, env = process.env }) {
   const selected = selection.candidates.slice(0, deletionBudget);
   core.info(`Found ${oldRuns.length} old runs; ${selection.candidates.length} eligible; selecting ${selected.length}`);
 
-  let result = { deleted: 0, alreadyGone: 0, failures: [], deletedByWorkflow: new Map() };
+  let deleteResult = { deleted: 0, alreadyGone: 0, failures: [], deletedByWorkflow: new Map() };
   if (dryRun) {
-    selected.slice(0, 50).forEach((run) => core.info(`[dry run] ${run.id}\t${run.createdAt}\t${run.workflowName}`));
+    selected.slice(0, 50).forEach((run) => core.info(`[dry run] delete ${run.id}\t${run.createdAt}\t${run.workflowName}`));
   } else if (selected.length > 0) {
-    result = await deleteInParallel({ github, owner, repo, runs: selected, parallelism, core });
+    deleteResult = await deleteInParallel({ github, owner, repo, runs: selected, parallelism, core });
   }
 
-  const remaining = Math.max(0, selection.candidates.length - result.deleted - result.alreadyGone);
+  const remaining = Math.max(0, selection.candidates.length - deleteResult.deleted - deleteResult.alreadyGone);
   await summarize(core, {
     dryRun,
     retainDays,
+    staleQueueHours,
     cutoffIso,
+    staleQueuedFound: staleQueued.length,
+    cancelled: cancelResult.cancelled,
+    cancelAlreadyFinished: cancelResult.alreadyFinished,
+    cancelFailures: cancelResult.failures.length,
     oldRuns: oldRuns.length,
     protectedCount: selection.protectedCount,
     workflowCount: selection.workflowCount,
     deletionBudget,
     selectedRuns: selected.length,
-    deleted: result.deleted,
-    alreadyGone: result.alreadyGone,
-    failures: result.failures.length,
+    deleted: deleteResult.deleted,
+    alreadyGone: deleteResult.alreadyGone,
+    deleteFailures: deleteResult.failures.length,
     remaining,
-    deletedByWorkflow: result.deletedByWorkflow,
+    deletedByWorkflow: deleteResult.deletedByWorkflow,
   });
-  core.setOutput('deleted', result.deleted);
+  core.setOutput('cancelled', cancelResult.cancelled);
+  core.setOutput('deleted', deleteResult.deleted);
   core.setOutput('remaining', remaining);
-  if (result.failures.length > 0) {
-    core.setFailed(`${result.failures.length} workflow runs could not be deleted`);
+
+  const failures = cancelResult.failures.length + deleteResult.failures.length;
+  if (failures > 0) {
+    core.setFailed(`${failures} workflow-run cleanup operations failed`);
   }
 }
 
@@ -283,6 +397,7 @@ module.exports = {
   RATE_LIMIT_RESERVE,
   computeDeletionBudget,
   createdRange,
+  isStaleQueuedRun,
   isoFromSeconds,
   parseBoolean,
   parseInteger,
