@@ -68,7 +68,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           java-version: '21'
           distribution: temurin
@@ -492,21 +492,16 @@ jobs:
           fi
           exit 0
 
-      - name: Fast-forward main to verified stable release commit
+      - name: Prepare next development iteration pull request
         if: env.DRY_RUN != 'true'
         run: |
           set -euo pipefail
           remote_main=$(git ls-remote origin refs/heads/main | cut -f1)
           if [[ "$remote_main" != "$STARTING_SHA" ]]; then
-            echo "::error::main moved before stable promotion: expected $STARTING_SHA, found $remote_main."
+            echo "::error::main moved before the next-development PR was created: expected $STARTING_SHA, found $remote_main."
             exit 1
           fi
-          git push origin "${RELEASE_COMMIT}:refs/heads/main"
 
-      - name: Prepare next development iteration pull request
-        if: env.DRY_RUN != 'true'
-        run: |
-          set -euo pipefail
           branch="release/prepare-next-${NEXT_SNAPSHOT}"
           git checkout -b "$branch" "$RELEASE_COMMIT"
           tycho_version=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version | tail -n 1)
@@ -517,12 +512,32 @@ jobs:
           mvn -f sandbox-maven-plugin/pom.xml versions:set \
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
           sed -i "s/next.release.version=.*/next.release.version=${NEXT_RELEASE}/" release.properties
+
+          actual=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version | tail -n 1)
+          if [[ "$actual" != "$NEXT_SNAPSHOT" ]]; then
+            echo "::error::Next-development tree reports project version '$actual', expected '$NEXT_SNAPSHOT'."
+            exit 1
+          fi
+          git diff --check
+
           git add -A -- ':!.github/workflows/'
           git commit -m "Prepare for next development iteration ${NEXT_SNAPSHOT}"
           git push origin "$branch"
+
+          body=$(cat <<EOF
+          ## Verified release transition
+
+          - Stable tag: v${RELEASE_VERSION}
+          - Immutable release commit: ${RELEASE_COMMIT}
+          - Published release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/v${RELEASE_VERSION}
+          - Next development version: ${NEXT_SNAPSHOT}
+
+          The branch starts at the fully built and verified release commit, then applies only the mechanical next-development version transition. Protected main is updated exclusively through this pull request; the release workflow does not push to main directly.
+          EOF
+          )
           gh pr create \
             --title "Prepare for next development iteration ${NEXT_SNAPSHOT}" \
-            --body "Automated version transition after verified release v${RELEASE_VERSION}." \
+            --body "$body" \
             --base main --head "$branch"
 
       - name: Create Marketplace and Zenodo verification issue
