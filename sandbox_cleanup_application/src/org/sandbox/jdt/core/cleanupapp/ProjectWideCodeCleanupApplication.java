@@ -63,8 +63,9 @@ import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvide
  * <p>This application exists for semantic migration QA and documentation. In
  * contrast to the legacy file-oriented application it preserves the JDT cleanup
  * lifecycle: one cleanup instance sees the complete project scope in
- * {@code checkPreConditions}, one {@link Change} is previewed/applied, and a
- * check run restores every source file byte-for-byte.</p>
+ * {@code checkPreConditions}, one {@link Change} is previewed/applied, check
+ * runs restore every tracked file byte-for-byte, and incomplete apply runs roll
+ * back the source and project-resource snapshots.</p>
  */
 public final class ProjectWideCodeCleanupApplication implements IApplication {
 
