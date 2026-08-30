@@ -9,6 +9,7 @@ const {
   createdRange,
   parseBoolean,
   parseInteger,
+  pageRuns,
   selectDeletionCandidates,
 } = require('./cleanup-workflow-runs.cjs');
 
@@ -41,6 +42,13 @@ test('selectDeletionCandidates handles a zero minimum and returns oldest first',
   const result = selectDeletionCandidates(runs, 0);
   assert.equal(result.protectedCount, 0);
   assert.deepEqual(result.candidates.map((candidate) => candidate.id), [7, 8, 9]);
+});
+
+test('pageRuns accepts both Octokit pagination response shapes', () => {
+  const runs = [{ id: 1 }];
+  assert.equal(pageRuns({ data: runs }), runs);
+  assert.equal(pageRuns({ data: { workflow_runs: runs } }), runs);
+  assert.throws(() => pageRuns({ data: {} }), /Unexpected workflow-run pagination response shape/);
 });
 
 test('computeDeletionBudget leaves a safety reserve for API reporting', () => {
