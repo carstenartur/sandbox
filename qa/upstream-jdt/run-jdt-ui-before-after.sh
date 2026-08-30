@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+SANDBOX_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd -P)"
 # shellcheck source=pins.env
 source "$SCRIPT_DIR/pins.env"
 
@@ -9,7 +10,7 @@ APPLICATION_ID="org.sandbox.jdt.core.ProjectWideJavaCleanup"
 STRICT_PROFILE="$SCRIPT_DIR/junit4-to-jupiter.properties"
 BEST_EFFORT_PROFILE="$SCRIPT_DIR/junit4-to-jupiter-best-effort.properties"
 CORPUS_CONTRACT="$SCRIPT_DIR/jdt-ui-junit4-corpus.json"
-CORPUS_VERIFIER="$SCRIPT_DIR/verify_jdt_ui_corpus.py"
+CORPUS_TEST="JdtUiCorpusEvidenceVerifierTest#retainedWorkspaceEvidenceMatchesContract"
 COMPARATOR="$SCRIPT_DIR/compare_test_inventory.py"
 MAPPING="$SCRIPT_DIR/expected-test-mapping.json"
 PROJECT="org.eclipse.jdt.ui.tests"
@@ -349,6 +350,35 @@ run_cleanup() {
   timeout --signal=TERM --kill-after=1m 30m "${display_prefix[@]}" "${command[@]}" >"$OUTPUT/logs/$cleanup_mode-cleanup.stdout.log" 2>"$OUTPUT/logs/$cleanup_mode-cleanup.stderr.log"
 }
 
+verify_corpus_evidence() {
+  local -a command=(
+    "$MAVEN_BIN"
+    --batch-mode
+    --no-transfer-progress
+    -f "$SANDBOX_ROOT/pom.xml"
+    -pl sandbox_common_test
+    -am
+    -DskipTests=false
+    -Dsurefire.failIfNoSpecifiedTests=false
+    "-Dtest=$CORPUS_TEST"
+    "-Dsandbox.jdtui.repository=$JDT_UI"
+    "-Dsandbox.jdtui.baselineSources=$OUTPUT/corpus/baseline"
+    "-Dsandbox.jdtui.contract=$CORPUS_CONTRACT"
+    "-Dsandbox.jdtui.mode=$MODE"
+    "-Dsandbox.jdtui.changedFiles=$OUTPUT/changed-files.txt"
+    "-Dsandbox.jdtui.checkReport=$OUTPUT/cleanup-check-report.json"
+    "-Dsandbox.jdtui.applyReport=$OUTPUT/cleanup-apply-report.json"
+    "-Dsandbox.jdtui.output=$OUTPUT/corpus-result.json"
+    test
+  )
+  printf '%q ' "${command[@]}" > "$OUTPUT/logs/corpus-verifier-command.txt"
+  printf '\n' >> "$OUTPUT/logs/corpus-verifier-command.txt"
+  (
+    cd "$SANDBOX_ROOT"
+    "${command[@]}"
+  ) 2>&1 | tee "$OUTPUT/logs/corpus-result.log"
+}
+
 verify_cleanup_application() {
   local stdout="$OUTPUT/logs/cleanup-application-preflight.stdout.log"
   local stderr="$OUTPUT/logs/cleanup-application-preflight.stderr.log"
@@ -405,16 +435,7 @@ JAVA_CHANGE_COUNT=$(grep -cE '\.java$' "$OUTPUT/changed-files.txt" || true)
 ((JAVA_CHANGE_COUNT > 0)) || fail "Cleanup apply changed no JDT UI Java source files"
 
 printf 'VERIFYING_REAL_JDT_UI_CORPUS\n' > "$OUTPUT/run-state.txt"
-python3 "$CORPUS_VERIFIER" \
-  --repository "$JDT_UI" \
-  --baseline-sources "$OUTPUT/corpus/baseline" \
-  --contract "$CORPUS_CONTRACT" \
-  --mode "$MODE" \
-  --changed-files "$OUTPUT/changed-files.txt" \
-  --check-report "$OUTPUT/cleanup-check-report.json" \
-  --apply-report "$OUTPUT/cleanup-apply-report.json" \
-  --output "$OUTPUT/corpus-result.json" \
-  > "$OUTPUT/logs/corpus-result.log"
+verify_corpus_evidence
 copy_corpus_sources "$OUTPUT/corpus/migrated"
 
 printf 'MIGRATED_TESTS\n' > "$OUTPUT/run-state.txt"
