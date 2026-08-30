@@ -95,6 +95,7 @@ def main() -> int:
 
     actual_changed = changed_files(args.changed_files)
     actual_java = {path for path in actual_changed if path.endswith(".java")}
+    actual_non_java = actual_changed - actual_java
     minimum = int(contract.get("minimumChangedJavaFiles", 0))
     if len(actual_java) < minimum:
         fail(f"Only {len(actual_java)} Java files changed; contract requires at least {minimum}")
@@ -107,11 +108,11 @@ def main() -> int:
     apply_changed = report_changed_files(apply_report, project, "apply")
     if check_changed != apply_changed:
         fail("Cleanup check and apply report different changed-file sets")
-    if check_changed != actual_java:
+    if check_changed != actual_changed:
         fail(
             "Cleanup reports and Git migration patch differ: "
-            f"reportOnly={sorted(check_changed - actual_java)}, "
-            f"gitOnly={sorted(actual_java - check_changed)}"
+            f"reportOnly={sorted(check_changed - actual_changed)}, "
+            f"gitOnly={sorted(actual_changed - check_changed)}"
         )
 
     strict_unchanged: list[str] = []
@@ -186,7 +187,9 @@ def main() -> int:
         "result": "PASS",
         "mode": args.mode,
         "project": project,
+        "changedFiles": len(actual_changed),
         "changedJavaFiles": len(actual_java),
+        "changedNonJavaFiles": sorted(actual_non_java),
         "verifiedChangedCorpusFiles": verified_changed,
         "strictlyQuarantinedCorpusFiles": strict_unchanged,
         "requiredReasonCodes": sorted(required_reason_codes),
