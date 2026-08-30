@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0f9ec13592e36744f0b36d1f144a82da48241f063129926a5cdb6825613418fd",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.text.java.PositionBasedCompletionProposal.NO_TRIGGERS\n\u003d\u003e\nnew char[] {\u0027,\u0027}\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\ninterface ICompletionProposal {}\n\n// Dummy class to compile the example\nclass PositionBasedCompletionProposal {\n    public static final char[] NO_TRIGGERS \u003d new char[0];\n\n    public PositionBasedCompletionProposal(String paramName, int pos, int replacementLength, Object o1, String s1, Object o2, Object o3, char[] triggers) {}\n}\n\npublic class ParameterGuesser {\n    public ICompletionProposal[] guessParameter(String paramName, int pos, int replacementLength, ICompletionProposal[] ret) {\n        ICompletionProposal[] extended\u003d new ICompletionProposal[ret.length + 1];\n        System.arraycopy(ret, 0, extended, 1, ret.length);\n        extended[0]\u003d new PositionBasedCompletionProposal(paramName, pos, replacementLength, null, paramName, null, null, PositionBasedCompletionProposal.NO_TRIGGERS);\n        return extended;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.java;\n\ninterface ICompletionProposal {}\n\n// Dummy class to compile the example\nclass PositionBasedCompletionProposal {\n    public static final char[] NO_TRIGGERS \u003d new char[0];\n\n    public PositionBasedCompletionProposal(String paramName, int pos, int replacementLength, Object o1, String s1, Object o2, Object o3, char[] triggers) {}\n}\n\npublic class ParameterGuesser {\n    public ICompletionProposal[] guessParameter(String paramName, int pos, int replacementLength, ICompletionProposal[] ret) {\n        ICompletionProposal[] extended\u003d new ICompletionProposal[ret.length + 1];\n        System.arraycopy(ret, 0, extended, 1, ret.length);\n        extended[0]\u003d new PositionBasedCompletionProposal(paramName, pos, replacementLength, null, paramName, null, null, new char[] {\u0027,\u0027});\n        return extended;\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\ninterface ICompletionProposal {}\n\n// Dummy class to compile the example\nclass PositionBasedCompletionProposal {\n    public static final char[] NO_TRIGGERS \u003d new char[0];\n    public static final char[] OTHER_TRIGGERS \u003d {\u0027x\u0027}; // Another constant\n\n    public PositionBasedCompletionProposal(String paramName, int pos, int replacementLength, Object o1, String s1, Object o2, Object o3, char[] triggers) {}\n}\n\npublic class AnotherClass {\n    public void doSomething(String paramName, int pos, int replacementLength) {\n        // This usage of OTHER_TRIGGERS should not match\n        new PositionBasedCompletionProposal(paramName, pos, replacementLength, null, paramName, null, null, PositionBasedCompletionProposal.OTHER_TRIGGERS);\n        // A local variable char array should also not match\n        char[] myTriggers \u003d {\u0027a\u0027, \u0027b\u0027};\n        new PositionBasedCompletionProposal(paramName, pos, replacementLength, null, paramName, null, null, myTriggers);\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui-internal.sandbox-hint",
+  "sourceCommit": "ea340c4508d2ddf3d5327452dc8ae63a1e596e7c",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Constant Replacement",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-30T02:27:29.723431077Z",
+  "ruleFingerprint": "sha256:be7420e61307b090205be5128fd75c7fd0676082309db3b53081b6d49a0d8de6",
+  "behaviorFingerprint": "sha256:3111ba865a7f8c1b68ecad3fe8274ff5af0698a2e501439c041916200d35ac25",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 12: The public type ParameterGuesser must be defined in its own file",
+    "verifiedAt": "2026-08-30T02:27:35.690513534Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

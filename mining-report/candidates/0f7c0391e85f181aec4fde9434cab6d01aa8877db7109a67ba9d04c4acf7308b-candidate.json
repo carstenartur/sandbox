@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0f7c0391e85f181aec4fde9434cab6d01aa8877db7109a67ba9d04c4acf7308b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.core.dom.AST.JLS3\n\u003d\u003e\norg.eclipse.jdt.core.dom.AST.JLS4\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.core.dom.AST;\npublic class MyASTConsumer {\n    public void configureAST(AST ast) {\n        // The AST API level is AST.JLS3\n        int level \u003d AST.JLS3;\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.core.dom.AST;\npublic class MyASTConsumer {\n    public void configureAST(AST ast) {\n        // The AST API level is AST.JLS4\n        int level \u003d AST.JLS4;\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.core.dom.AST;\npublic class MyASTConsumer {\n    public void configureAST(AST ast) {\n        // This should not be changed as it\u0027s already JLS4 or higher\n        int level4 \u003d AST.JLS4;\n        int level8 \u003d AST.JLS8;\n    }\n}",
+  "targetHintFile": "jdt-api.sandbox-hint",
+  "sourceCommit": "37e0d2d4b36ac831afe0cdb9aa16d47cc9e9f954",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replace JDT AST API constant JLS3 with JLS4 for Java 7 compatibility.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-30T02:27:29.741953717Z",
+  "ruleFingerprint": "sha256:e94f0e83dab62e9cba9d81f66d4852a0cae88a26aaffb2d1d45c5df31d63a28f",
+  "behaviorFingerprint": "sha256:2a3ceedff6da81a6fb45eff16ba5a73218aba4affde20d26bf7b9e0a9d4c250d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type MyASTConsumer must be defined in its own file",
+    "verifiedAt": "2026-08-30T02:27:35.709743502Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
