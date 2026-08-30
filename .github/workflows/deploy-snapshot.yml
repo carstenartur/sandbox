@@ -14,16 +14,74 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-and-deploy:
+  select-snapshot-source:
+    name: Select snapshot source
     if: >-
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      is_snapshot: ${{ steps.project_version.outputs.is_snapshot }}
+      project_version: ${{ steps.project_version.outputs.project_version }}
+
+    steps:
+      - name: Checkout the validated commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 1
+
+      - name: Read and classify the project version
+        id: project_version
+        shell: bash
+        run: |
+          set -euo pipefail
+          project_version="$(
+            python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree
+
+          root = ElementTree.parse(Path('pom.xml')).getroot()
+          namespace = {'m': 'http://maven.apache.org/POM/4.0.0'}
+          version = root.find('m:version', namespace)
+          if version is None or not version.text or not version.text.strip():
+              raise SystemExit('root pom.xml has no direct project version')
+          print(version.text.strip())
+          PY
+          )"
+
+          is_snapshot=false
+          if [[ "$project_version" == *-SNAPSHOT ]]; then
+            is_snapshot=true
+          fi
+
+          echo "project_version=$project_version" >> "$GITHUB_OUTPUT"
+          echo "is_snapshot=$is_snapshot" >> "$GITHUB_OUTPUT"
+          {
+            echo '### Snapshot source selection'
+            echo
+            printf -- '- Validated project version: `%s`\n' "$project_version"
+            if [[ "$is_snapshot" == 'true' ]]; then
+              echo '- Snapshot publication selected.'
+            else
+              echo '- Stable project version; snapshot publication skipped.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build-and-deploy:
+    name: Build and deploy selected snapshot
+    needs: select-snapshot-source
+    if: needs.select-snapshot-source.outputs.is_snapshot == 'true'
+    runs-on: ubuntu-latest
     timeout-minutes: 150
     env:
       VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
       VALIDATED_REF: refs/heads/main
+      VALIDATED_VERSION: ${{ needs.select-snapshot-source.outputs.project_version }}
       SOURCE_JAVA_CI_RUN_ID: ${{ github.event.workflow_run.id }}
       SOURCE_JAVA_CI_RUN_URL: ${{ github.event.workflow_run.html_url }}
 
@@ -188,6 +246,7 @@ jobs:
             echo '### Snapshot publication'
             echo
             echo "- [Validated commit](https://github.com/${GITHUB_REPOSITORY}/commit/${VALIDATED_SHA})"
+            echo "- Validated project version: \`${VALIDATED_VERSION}\`"
             echo "- [Source Java CI run](${SOURCE_JAVA_CI_RUN_URL})"
             if [[ "$DEPLOY_OUTCOME" == 'success' && "$VERIFY_OUTCOME" == 'success' ]]; then
               echo '- [Project dashboard](https://carstenartur.github.io/sandbox/)'
