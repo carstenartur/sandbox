@@ -84,7 +84,7 @@ public class JdtUiCorpusEvidenceTest {
 	}
 
 	private static void assertConfigured(String name, String value) {
-		assertNotNull(value, () -> "All sandbox.jdt.ui.corpus.* properties must be configured together; missing " //$NON-NLS-1$
+		assertNotNull(value, "All sandbox.jdt.ui.corpus.* properties must be configured together; missing " //$NON-NLS-1$
 				+ name);
 	}
 
