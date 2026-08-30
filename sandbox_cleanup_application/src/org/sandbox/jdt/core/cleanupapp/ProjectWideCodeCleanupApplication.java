@@ -63,14 +63,21 @@ import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvide
  * <p>This application exists for semantic migration QA and documentation. In
  * contrast to the legacy file-oriented application it preserves the JDT cleanup
  * lifecycle: one cleanup instance sees the complete project scope in
- * {@code checkPreConditions}, one {@link Change} is previewed/applied, and a
- * check run restores every source file byte-for-byte.</p>
+ * {@code checkPreConditions}, one {@link Change} is previewed/applied, check
+ * runs restore every tracked file byte-for-byte, and incomplete apply runs roll
+ * back the source and project-resource snapshots.</p>
  */
 public final class ProjectWideCodeCleanupApplication implements IApplication {
 
 	private static final int EXIT_OK= 0;
 	private static final int EXIT_ERROR= 1;
 	private static final int EXIT_CHANGES= 2;
+
+	private static final String PDE_MANIFEST= "META-INF/MANIFEST.MF"; //$NON-NLS-1$
+	private static final String JUNIT_ISOLATED_TYPE=
+			"org.junit.jupiter.api.parallel.Isolated"; //$NON-NLS-1$
+	private static final String JUNIT_PARALLEL_PACKAGE=
+			"org.junit.jupiter.api.parallel"; //$NON-NLS-1$
 
 	private enum Mode {
 		CHECK,
@@ -85,7 +92,10 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			byte[] before) {
 	}
 
-	private record ChangedSource(SourceSnapshot source, byte[] after) {
+	private record ResourceSnapshot(IFile file, Path path, String relativePath, byte[] before) {
+	}
+
+	private record ChangedFile(String relativePath, byte[] before, byte[] after) {
 	}
 
 	@Override
@@ -94,7 +104,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		List<String> errors= new ArrayList<>();
 		List<String> statusMessages= new ArrayList<>();
 		List<String> planningDiagnostics= new ArrayList<>();
-		List<ChangedSource> changed= new ArrayList<>();
+		List<ChangedFile> changed= new ArrayList<>();
 		Arguments arguments;
 		try {
 			arguments= parseArguments((String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS));
@@ -109,6 +119,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		}
 
 		List<SourceSnapshot> sources= List.of();
+		List<ResourceSnapshot> resources= List.of();
 		Map<String, String> options= Map.of();
 		try {
 			options= readOptions(arguments.configuration());
@@ -119,6 +130,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 						+ arguments.projectName());
 			}
 			sources= snapshots(javaProject);
+			resources= resourceSnapshots(project);
 			if (sources.isEmpty()) {
 				throw new IllegalArgumentException("Java project contains no source compilation units: " //$NON-NLS-1$
 						+ arguments.projectName());
@@ -157,20 +169,19 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 
 			Change change= refactoring.createChange(monitor);
 			if (change != null) {
-				if (arguments.mode() == Mode.CHECK) {
-					try {
-						change.perform(monitor);
-						preserveOriginalLineDelimiters(sources);
-						refresh(sources, monitor);
-						changed= changedSources(sources);
-					} finally {
-						restore(sources, monitor, errors);
-					}
-				} else {
+				boolean restoreAfterExecution= arguments.mode() == Mode.CHECK;
+				boolean executionCompleted= false;
+				try {
 					change.perform(monitor);
 					preserveOriginalLineDelimiters(sources);
-					refresh(sources, monitor);
-					changed= changedSources(sources);
+					updateProjectMetadata(sources, resources);
+					refresh(sources, resources, monitor);
+					changed= changedFiles(sources, resources);
+					executionCompleted= true;
+				} finally {
+					if (restoreAfterExecution || !executionCompleted) {
+						restore(sources, resources, monitor, errors);
+					}
 				}
 			}
 		} catch (CoreException | IOException | RuntimeException e) {
@@ -339,40 +350,107 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		return List.copyOf(result);
 	}
 
-	private static void refresh(List<SourceSnapshot> sources, IProgressMonitor monitor) throws CoreException {
+
+	private static List<ResourceSnapshot> resourceSnapshots(IProject project) throws IOException {
+		IFile manifest= project.getFile(PDE_MANIFEST);
+		if (!manifest.exists() || manifest.getLocation() == null) {
+			return List.of();
+		}
+		Path path= manifest.getLocation().toFile().toPath().toAbsolutePath().normalize();
+		return List.of(new ResourceSnapshot(manifest, path,
+				manifest.getProjectRelativePath().toPortableString(), Files.readAllBytes(path)));
+	}
+
+	private static void updateProjectMetadata(List<SourceSnapshot> sources,
+			List<ResourceSnapshot> resources) throws IOException {
+		boolean isolatedIntroduced= false;
+		for (SourceSnapshot source : sources) {
+			byte[] after= Files.readAllBytes(source.path());
+			if (!contains(source.before(), JUNIT_ISOLATED_TYPE) && contains(after, JUNIT_ISOLATED_TYPE)) {
+				isolatedIntroduced= true;
+				break;
+			}
+		}
+		if (!isolatedIntroduced) {
+			return;
+		}
+		for (ResourceSnapshot resource : resources) {
+			if (!PDE_MANIFEST.equals(resource.relativePath())) {
+				continue;
+			}
+			byte[] current= Files.readAllBytes(resource.path());
+			byte[] updated= PdeManifestImportUpdater.addImport(current, JUNIT_PARALLEL_PACKAGE);
+			if (!Arrays.equals(current, updated)) {
+				Files.write(resource.path(), updated);
+			}
+			return;
+		}
+	}
+
+	private static boolean contains(byte[] content, String token) {
+		return new String(content, StandardCharsets.UTF_8).contains(token);
+	}
+
+	private static void refresh(List<SourceSnapshot> sources, List<ResourceSnapshot> resources,
+			IProgressMonitor monitor) throws CoreException {
 		for (SourceSnapshot source : sources) {
 			source.file().refreshLocal(IResource.DEPTH_ZERO, monitor);
 		}
+		for (ResourceSnapshot resource : resources) {
+			resource.file().refreshLocal(IResource.DEPTH_ZERO, monitor);
+		}
 	}
 
-	private static List<ChangedSource> changedSources(List<SourceSnapshot> sources) throws IOException {
-		List<ChangedSource> result= new ArrayList<>();
+	private static List<ChangedFile> changedFiles(List<SourceSnapshot> sources,
+			List<ResourceSnapshot> resources) throws IOException {
+		List<ChangedFile> result= new ArrayList<>();
 		for (SourceSnapshot source : sources) {
 			byte[] after= Files.readAllBytes(source.path());
 			if (!Arrays.equals(source.before(), after)) {
-				result.add(new ChangedSource(source, after));
+				result.add(new ChangedFile(source.relativePath(), source.before(), after));
 			}
 		}
+		for (ResourceSnapshot resource : resources) {
+			byte[] after= Files.readAllBytes(resource.path());
+			if (!Arrays.equals(resource.before(), after)) {
+				result.add(new ChangedFile(resource.relativePath(), resource.before(), after));
+			}
+		}
+		result.sort(Comparator.comparing(ChangedFile::relativePath));
 		return List.copyOf(result);
 	}
 
-	private static void restore(List<SourceSnapshot> sources, IProgressMonitor monitor, List<String> errors) {
-		for (SourceSnapshot source : sources) {
-			try {
-				Files.write(source.path(), source.before());
-				source.file().refreshLocal(IResource.DEPTH_ZERO, monitor);
-			} catch (IOException | CoreException e) {
-				errors.add("Cannot restore " + source.relativePath() + ": " + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
-			}
+	private static void restore(List<SourceSnapshot> sources, List<ResourceSnapshot> resources,
+			IProgressMonitor monitor, List<String> errors) {
+		restore(sources, monitor, errors);
+		for (ResourceSnapshot resource : resources) {
+			restore(resource.file(), resource.path(), resource.relativePath(), resource.before(), monitor, errors);
 		}
 	}
 
-	private static void writePatch(Path path, List<ChangedSource> changed) throws IOException {
+	private static void restore(List<SourceSnapshot> sources, IProgressMonitor monitor,
+			List<String> errors) {
+		for (SourceSnapshot source : sources) {
+			restore(source.file(), source.path(), source.relativePath(), source.before(), monitor, errors);
+		}
+	}
+
+	private static void restore(IFile file, Path path, String relativePath, byte[] before,
+			IProgressMonitor monitor, List<String> errors) {
+		try {
+			Files.write(path, before);
+			file.refreshLocal(IResource.DEPTH_ZERO, monitor);
+		} catch (IOException | CoreException e) {
+			errors.add("Cannot restore " + relativePath + ": " + e.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+	}
+
+	private static void writePatch(Path path, List<ChangedFile> changed) throws IOException {
 		createParent(path);
 		StringBuilder patch= new StringBuilder();
-		for (ChangedSource source : changed) {
-			String relative= source.source().relativePath();
-			String before= new String(source.source().before(), StandardCharsets.UTF_8);
+		for (ChangedFile source : changed) {
+			String relative= source.relativePath();
+			String before= new String(source.before(), StandardCharsets.UTF_8);
 			String after= new String(source.after(), StandardCharsets.UTF_8);
 			patch.append("--- a/").append(relative).append('\n'); //$NON-NLS-1$
 			patch.append("+++ b/").append(relative).append('\n'); //$NON-NLS-1$
@@ -391,7 +469,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 	}
 
 	private static void writeReport(Path path, Arguments arguments, Instant started, Instant ended,
-			Map<String, String> options, List<SourceSnapshot> sources, List<ChangedSource> changed,
+			Map<String, String> options, List<SourceSnapshot> sources, List<ChangedFile> changed,
 			List<String> statusMessages, List<String> planningDiagnostics, List<String> errors) throws IOException {
 		createParent(path);
 		StringBuilder json= new StringBuilder(2048);
@@ -407,7 +485,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		number(json, "durationMs", ended.toEpochMilli() - started.toEpochMilli(), 1).append(",\n"); //$NON-NLS-1$
 		number(json, "filesProcessed", sources.size(), 1).append(",\n"); //$NON-NLS-1$
 		number(json, "filesChanged", changed.size(), 1).append(",\n"); //$NON-NLS-1$
-		array(json, "changedFiles", changed.stream().map(item -> item.source().relativePath()).toList(), 1) //$NON-NLS-1$
+		array(json, "changedFiles", changed.stream().map(ChangedFile::relativePath).toList(), 1) //$NON-NLS-1$
 				.append(",\n");
 		json.append("  \"cleanupOptions\": {"); //$NON-NLS-1$
 		int optionIndex= 0;

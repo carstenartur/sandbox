@@ -366,7 +366,9 @@ public class JUnit4SemanticHardeningTest {
 						"""
 						package test;
 						import org.junit.jupiter.api.extension.RegisterExtension;
+						import org.junit.jupiter.api.parallel.Isolated;
 
+						@Isolated
 						public class UsingTest {
 							@RegisterExtension
 							public LeakTestSetup setup = new LeakTestSetup();

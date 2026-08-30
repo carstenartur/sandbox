@@ -23,11 +23,13 @@ import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -44,6 +46,10 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.ExternalResourceRefactorer
 
 /** Applies the local part of a coordinated JUnit migration plan. */
 final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperationWithSourceRange {
+
+	private static final String ANNOTATION_ISOLATED= "Isolated"; //$NON-NLS-1$
+	private static final String ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED=
+			"org.junit.jupiter.api.parallel.Isolated"; //$NON-NLS-1$
 
 	record FieldEdit(String bindingKey, boolean classRule, Annotation ruleAnnotation) {
 	}
@@ -103,9 +109,10 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		ImportRewrite imports= cuRewrite.getImportRewrite();
+		Set<TypeDeclaration> isolatedTypes= new LinkedHashSet<>();
 
 		for (Map.Entry<FieldDeclaration, FieldEdit> entry : edits.fields().entrySet()) {
-			rewriteRuleField(entry.getKey(), entry.getValue(), rewrite, ast, imports, group);
+			rewriteRuleField(entry.getKey(), entry.getValue(), rewrite, ast, imports, group, isolatedTypes);
 		}
 		removeUnusedRuleImports(imports);
 
@@ -122,7 +129,7 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 	}
 
 	private void rewriteRuleField(FieldDeclaration field, FieldEdit edit, ASTRewrite rewrite, AST ast,
-			ImportRewrite imports, TextEditGroup group) {
+			ImportRewrite imports, TextEditGroup group, Set<TypeDeclaration> isolatedTypes) {
 		rewrite.remove(edit.ruleAnnotation(), group);
 		if (!hasRegisterExtension(field)) {
 			String annotationName= imports.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);
@@ -131,6 +138,28 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 			ListRewrite modifiers= rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);
 			modifiers.insertFirst(annotation, group);
 		}
+		isolateOwningTestType(field, rewrite, ast, imports, group, isolatedTypes);
+	}
+
+	private void isolateOwningTestType(FieldDeclaration field, ASTRewrite rewrite, AST ast,
+			ImportRewrite imports, TextEditGroup group, Set<TypeDeclaration> isolatedTypes) {
+		ASTNode current= field.getParent();
+		while (current != null && !(current instanceof TypeDeclaration)) {
+			current= current.getParent();
+		}
+		if (current == null) {
+			return;
+		}
+		TypeDeclaration type= (TypeDeclaration) current;
+		if (!isolatedTypes.add(type) || hasIsolated(type)) {
+			return;
+		}
+
+		String annotationName= imports.addImport(ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED);
+		MarkerAnnotation annotation= ast.newMarkerAnnotation();
+		annotation.setTypeName(ast.newName(annotationName));
+		ListRewrite modifiers= rewrite.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);
+		modifiers.insertFirst(annotation, group);
 	}
 
 	private boolean hasRegisterExtension(FieldDeclaration field) {
@@ -144,6 +173,39 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 				if (binding == null && ANNOTATION_REGISTER_EXTENSION.equals(annotation.getTypeName().getFullyQualifiedName())) {
 					return true;
 				}
+			}
+		}
+		return false;
+	}
+
+	private boolean hasIsolated(TypeDeclaration type) {
+		for (Object modifier : type.modifiers()) {
+			if (modifier instanceof Annotation annotation) {
+				String name= annotation.getTypeName().getFullyQualifiedName();
+				if (ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(name)) {
+					return true;
+				}
+				ITypeBinding binding= annotation.resolveTypeBinding();
+				if (binding != null && ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(binding.getQualifiedName())) {
+					return true;
+				}
+				if (ANNOTATION_ISOLATED.equals(name) && importsIsolated(type)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private boolean importsIsolated(TypeDeclaration type) {
+		if (!(type.getRoot() instanceof CompilationUnit root)) {
+			return false;
+		}
+		for (Object element : root.imports()) {
+			if (element instanceof ImportDeclaration declaration && !declaration.isStatic()
+					&& !declaration.isOnDemand()
+					&& ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(declaration.getName().getFullyQualifiedName())) {
+				return true;
 			}
 		}
 		return false;

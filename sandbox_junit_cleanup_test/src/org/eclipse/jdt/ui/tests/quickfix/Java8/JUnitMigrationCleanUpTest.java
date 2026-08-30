@@ -230,9 +230,11 @@ package test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import test.MyExternalResource;
 
+@Isolated
 public class MyTest {
 
 	@RegisterExtension
@@ -434,9 +436,11 @@ public class MyExternalResource2 extends ExternalResource {
 package test;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Isolated;
 
 import test.MyExternalResource;
 
+@Isolated
 public class MyTest {
 
 	@RegisterExtension
@@ -575,7 +579,9 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Isolated;
 
+@Isolated
 public class MyTest {
 
 	// Final abgeleitete Klasse
@@ -671,7 +677,9 @@ import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.Isolated;
 
+@Isolated
 public class MyTest {
 
 	// Final abgeleitete Klasse

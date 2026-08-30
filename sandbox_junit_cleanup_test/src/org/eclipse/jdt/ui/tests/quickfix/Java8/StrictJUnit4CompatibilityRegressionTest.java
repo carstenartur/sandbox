@@ -236,7 +236,9 @@ public class StrictJUnit4CompatibilityRegressionTest {
 
 						import org.junit.jupiter.api.Test;
 						import org.junit.jupiter.api.extension.RegisterExtension;
+						import org.junit.jupiter.api.parallel.Isolated;
 
+						@Isolated
 						public class JupiterCandidate {
 							@RegisterExtension
 							public SharedResource resource = new SharedResource();
