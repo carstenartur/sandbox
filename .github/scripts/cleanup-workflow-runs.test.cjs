@@ -7,6 +7,7 @@ const {
   RATE_LIMIT_RESERVE,
   computeDeletionBudget,
   createdRange,
+  isStaleQueuedRun,
   parseBoolean,
   parseInteger,
   pageRuns,
@@ -49,6 +50,13 @@ test('pageRuns accepts both Octokit pagination response shapes', () => {
   assert.equal(pageRuns({ data: runs }), runs);
   assert.equal(pageRuns({ data: { workflow_runs: runs } }), runs);
   assert.throws(() => pageRuns({ data: {} }), /Unexpected workflow-run pagination response shape/);
+});
+
+test('stale queue selection uses a strict age boundary', () => {
+  const cutoff = Date.parse('2026-08-29T00:00:00Z');
+  assert.equal(isStaleQueuedRun({ createdAt: '2026-08-28T23:59:59Z' }, cutoff), true);
+  assert.equal(isStaleQueuedRun({ createdAt: '2026-08-29T00:00:00Z' }, cutoff), false);
+  assert.equal(isStaleQueuedRun({ createdAt: 'invalid' }, cutoff), false);
 });
 
 test('computeDeletionBudget leaves a safety reserve for API reporting', () => {
