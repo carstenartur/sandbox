@@ -9,6 +9,7 @@ on:
       - 'sandbox_cleanup_application/**'
       - 'sandbox_common/**'
       - 'sandbox_common_core/**'
+      - 'sandbox_common_test/**'
       - 'sandbox_junit_cleanup/**'
       - 'sandbox_junit_cleanup_test/**'
       - 'sandbox_product/**'
@@ -104,9 +105,15 @@ jobs:
 
       - name: Validate the dedicated JDT UI corpus contract
         working-directory: sandbox
-        env:
-          PYTHONDONTWRITEBYTECODE: '1'
-        run: python3 qa/upstream-jdt/verify_jdt_ui_contract.py
+        run: >-
+          mvn
+          --batch-mode
+          --no-transfer-progress
+          -pl sandbox_common_test
+          -am
+          -Dtest=JdtUiCorpusContractTest,JdtUiCorpusEvidenceVerifierTest
+          -Dsurefire.failIfNoSpecifiedTests=false
+          test
 
       - name: Build and test the Sandbox product under test
         working-directory: sandbox
