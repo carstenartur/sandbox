@@ -1,0 +1,15 @@
+{
+  "name": "sandbox-css-cleanup-test-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pinned Node.js tools used by the Sandbox CSS cleanup integration tests.",
+  "engines": {
+    "node": "24.19.0",
+    "npm": "11.17.0"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2",
+    "stylelint": "17.14.1",
+    "stylelint-config-standard": "40.0.0"
+  }
+}
