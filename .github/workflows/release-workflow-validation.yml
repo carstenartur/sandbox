@@ -55,6 +55,30 @@ jobs:
           if failures:
               raise SystemExit(f"gh-pages publishers must share the release-workflow lock: {failures}")
           PY
+      - name: Validate snapshot Pages publication contract
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/deploy-snapshot.yml').read_text(encoding='utf-8')
+          required = [
+              'pages: write',
+              '- name: Await exact GitHub Pages publication',
+              'id: await_pages_build',
+              "steps.await_pages_build.outcome == 'failure'",
+              '--expected-commit "$previous"',
+              'pages-rollback-build.json',
+              'GitHub Pages build outcome',
+          ]
+          missing = [marker for marker in required if marker not in workflow]
+          if missing:
+              raise SystemExit(f"Snapshot publication lacks the exact Pages build contract: {missing}")
+
+          await_marker = '- name: Await exact GitHub Pages publication'
+          verify_marker = '- name: Verify advertised snapshot URLs'
+          if workflow.index(await_marker) > workflow.index(verify_marker):
+              raise SystemExit('Snapshot URLs are verified before the exact Pages build is complete')
+          PY
       - name: Validate protected-main release transition
         run: |
           python3 - <<'PY'
