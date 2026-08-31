@@ -104,14 +104,6 @@ jobs:
       - name: Verify pinned Maven Wrapper
         run: ./mvnw --batch-mode --no-transfer-progress --version
 
-      - name: Set up Node.js for CSS tests
-        uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-
-      - name: Install CSS tooling
-        run: npm install --global prettier stylelint stylelint-config-standard
-
       - name: Verify preinstalled Eclipse desktop runtime
         uses: ./.github/actions/verify-eclipse-desktop-runtime
 
