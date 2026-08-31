@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-08-28
+# Refactoring Mining Report — 2026-08-31
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 313 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1346 | 75 | 11 |
+| sandbox | 1349 | 75 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -121,7 +121,7 @@
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ThemeElementHelper.java:239` — `System.arraycopy(allDefs,0,copy,0,allDefs.length)`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ColorsAndFontsPreferencePage.java:1487` — `System.arraycopy(definitions,0,definitionsCopy,0,definitions.length)`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/themes/ColorsAndFontsPreferencePage.java:1532` — `System.arraycopy(definitions,0,definitionsCopy,0,definitions.length)`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:2298` — `System.arraycopy(parts,0,editors,0,parts.length)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:2318` — `System.arraycopy(parts,0,editors,0,parts.length)`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/commands/CommandImageManagerEvent.java:95` — `System.arraycopy(changedCommandIds,0,copy,0,changedCommandIds.length)`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/keys/KeysPreferencePage.java:191` — `System.arraycopy(sortOrder,0,newSortOrder,0,sortOrder.length)`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/AggregateWorkingSet.java:49` — `System.arraycopy(components,0,componentCopy,0,components.length)`
@@ -140,8 +140,8 @@
 
 #### Rule: `arrays` → `arrays.aslist-contains.review`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/LargeFileLimitsPreferenceHandler.java:417` — `Arrays.asList(disabled).contains(fileExtension)`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:3777` — `Arrays.asList(models).contains(model)`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:3787` — `Arrays.asList(models).contains(model)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:3801` — `Arrays.asList(models).contains(model)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:3811` — `Arrays.asList(models).contains(model)`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/e4/migration/MementoReader.java:56` — `Arrays.asList(memento.getAttributeKeys()).contains(attribute)`
 
 #### Rule: `string-isblank` → `string-isblank1`

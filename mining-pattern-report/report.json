@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1346,
+        "files": 1349,
         "matches": 75,
         "rules": 11
       }
@@ -791,7 +791,7 @@
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
-      "line": 2298,
+      "line": 2318,
       "matchedCode": "System.arraycopy(parts,0,editors,0,parts.length)"
     },
     {
@@ -799,7 +799,7 @@
       "hintFile": "arrays",
       "rule": "arrays.aslist-contains.review",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
-      "line": 3777,
+      "line": 3801,
       "matchedCode": "Arrays.asList(models).contains(model)"
     },
     {
@@ -807,7 +807,7 @@
       "hintFile": "arrays",
       "rule": "arrays.aslist-contains.review",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
-      "line": 3787,
+      "line": 3811,
       "matchedCode": "Arrays.asList(models).contains(model)"
     },
     {
