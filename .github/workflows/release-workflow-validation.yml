@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [ main ]
     paths:
+      - '.github/actions/wait-for-pages-build/**'
       - '.github/workflows/*.yml'
       - '.github/workflows/*.yaml'
       - '.github/scripts/verify_release_identity.py'
@@ -36,7 +37,7 @@ jobs:
           python3 .github/scripts/test_verify_release_identity.py
           python3 .github/scripts/test_wait_for_pages_build.py
           python3 .github/scripts/test_verify_published_repository.py
-      - name: Validate every gh-pages writer and shared publication lock
+      - name: Validate Pages publishers, snapshot publication and native coverage
         run: |
           python3 - <<'PY'
           import re
@@ -118,39 +119,50 @@ jobs:
                   raise SystemExit(f'{filename}:{job_name} lacks the shared release-workflow lock')
               if publisher_marker not in block:
                   raise SystemExit(f'{filename}:{job_name} no longer contains its gh-pages writer')
-          PY
-      - name: Validate snapshot Pages publication contract
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
 
-          workflow = Path('.github/workflows/deploy-snapshot.yml').read_text(encoding='utf-8')
+          snapshot = (workflow_dir / 'deploy-snapshot.yml').read_text(encoding='utf-8')
+          pages_action_path = Path('.github/actions/wait-for-pages-build/action.yml')
+          pages_action = pages_action_path.read_text(encoding='utf-8')
           await_marker = '- name: Await exact GitHub Pages publication'
           verify_marker = '- name: Verify advertised snapshot URLs'
-          required = [
+          rollback_marker = '- name: Roll back a failed snapshot publication'
+          required_snapshot = [
               'pages: write',
               await_marker,
               verify_marker,
+              rollback_marker,
               'id: await_pages_build',
+              'uses: ./.github/actions/wait-for-pages-build',
+              'expected-commit: ${{ steps.gh_pages_after.outputs.sha }}',
               "steps.await_pages_build.outcome == 'failure'",
-              '--expected-commit "$previous"',
+              'id: rollback_snapshot',
+              "steps.rollback_snapshot.outcome == 'success'",
+              'expected-commit: ${{ steps.gh_pages_before.outputs.sha }}',
               'pages-rollback-build.json',
               'GitHub Pages build outcome',
           ]
-          missing = [marker for marker in required if marker not in workflow]
+          missing = [marker for marker in required_snapshot if marker not in snapshot]
           if missing:
-              raise SystemExit(f"Snapshot publication lacks the exact Pages build contract: {missing}")
+              raise SystemExit(f'Snapshot publication lacks the exact Pages build contract: {missing}')
+          if not snapshot.index(await_marker) < snapshot.index(verify_marker) < snapshot.index(rollback_marker):
+              raise SystemExit('Snapshot publication, public verification and rollback are incorrectly ordered')
 
-          if workflow.index(await_marker) > workflow.index(verify_marker):
-              raise SystemExit('Snapshot URLs are verified before the exact Pages build is complete')
-          PY
-      - name: Validate native line-coverage contract
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
+          required_action = [
+              'runs:\n  using: composite',
+              'GH_TOKEN: ${{ inputs.token }}',
+              'pages/builds/latest',
+              '--request POST',
+              '"$status" != \'201\' && "$status" != \'409\'',
+              '"$latest_status" == \'built\'',
+              'Timed out waiting for GitHub Pages build',
+              'schemaVersion: 1',
+          ]
+          missing = [marker for marker in required_action if marker not in pages_action]
+          if missing:
+              raise SystemExit(f'Pages build action lacks the exact-commit contract: {missing}')
 
-          workflow = Path('.github/workflows/coverage.yml').read_text(encoding='utf-8')
-          required = [
+          coverage = (workflow_dir / 'coverage.yml').read_text(encoding='utf-8')
+          required_coverage = [
               'code-quality: write',
               'pull-requests: read',
               'github.event.pull_request.head.sha || github.sha',
@@ -163,35 +175,32 @@ jobs:
               'publish:\n    name: Publish verified metrics to GitHub Pages',
               'actions/download-artifact@v8',
           ]
-          missing = [marker for marker in required if marker not in workflow]
+          missing = [marker for marker in required_coverage if marker not in coverage]
           if missing:
-              raise SystemExit(f"Coverage workflow lacks the native line-coverage contract: {missing}")
+              raise SystemExit(f'Coverage workflow lacks the native line-coverage contract: {missing}')
 
-          pull_request_block = workflow.split('  pull_request:\n', 1)[1].split('  schedule:\n', 1)[0]
+          pull_request_block = coverage.split('  pull_request:\n', 1)[1].split('  schedule:\n', 1)[0]
           if 'paths:' in pull_request_block:
               raise SystemExit('Native coverage must run for every pull request, not a path-filtered subset')
-          if 'cicirello/jacoco-badge-generator' in workflow:
+          if 'cicirello/jacoco-badge-generator' in coverage:
               raise SystemExit('Instruction coverage must not be advertised as the GitHub line-coverage metric')
 
-          coverage_block, publish_block = workflow.split('\n  publish:\n', 1)
-          if 'peaceiris/actions-gh-pages@v4' in coverage_block:
+          coverage_build, coverage_publish = coverage.split('\n  publish:\n', 1)
+          if 'peaceiris/actions-gh-pages@v4' in coverage_build:
               raise SystemExit('Coverage must not publish to gh-pages outside the shared publication lock')
-          if 'peaceiris/actions-gh-pages@v4' not in publish_block:
+          if 'peaceiris/actions-gh-pages@v4' not in coverage_publish:
               raise SystemExit('The locked coverage publication job no longer publishes gh-pages')
-          PY
-      - name: Validate derived Pages publication isolation
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
 
-          provenance = Path('.github/workflows/post-merge-provenance.yml').read_text(encoding='utf-8')
-          provenance_build, provenance_publish = provenance.split('\n  publish-main-provenance-dashboard:\n', 1)
+          provenance = (workflow_dir / 'post-merge-provenance.yml').read_text(encoding='utf-8')
+          provenance_build, provenance_publish = provenance.split(
+              '\n  publish-main-provenance-dashboard:\n', 1
+          )
           if 'peaceiris/actions-gh-pages@v4' in provenance_build:
               raise SystemExit('Provenance generation must not publish before entering the shared lock')
           if 'peaceiris/actions-gh-pages@v4' not in provenance_publish:
               raise SystemExit('Locked provenance publication is missing')
 
-          benchmark = Path('.github/workflows/benchmark.yml').read_text(encoding='utf-8')
+          benchmark = (workflow_dir / 'benchmark.yml').read_text(encoding='utf-8')
           benchmark_build, benchmark_publish = benchmark.split('\n  publish-benchmark:\n', 1)
           if 'auto-push: true' in benchmark_build:
               raise SystemExit('Benchmark execution must not push before entering the shared lock')
