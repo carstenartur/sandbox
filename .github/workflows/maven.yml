@@ -168,7 +168,7 @@ jobs:
           -e
           -V
           --batch-mode
-          -Dtycho.localArtifacts=ignore
+          --define "tycho.localArtifacts=ignore"
           clean verify
 
       - name: Publish JUnit annotations
