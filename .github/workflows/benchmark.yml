@@ -19,46 +19,106 @@ on:
       - '.github/workflows/benchmark.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    
     permissions:
-      contents: write       # Required: auto-push benchmark results to gh-pages
-      deployments: write    # Required: create deployment status for benchmark
-      pull-requests: write  # Required: post alert comments on PRs
-    
+      contents: read
+      pull-requests: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        
+
       - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-          
+
       - name: Install Parent POM
         run: mvn install -N -DskipTests
-          
+
       - name: Build Core Module
         working-directory: sandbox-functional-converter-core
         run: mvn clean install -DskipTests
-        
+
       - name: Build AST API Module
         working-directory: sandbox-ast-api
         run: mvn clean install -DskipTests
-        
+
       - name: Build Benchmark Module
         working-directory: sandbox-benchmarks
         run: mvn clean package
-        
+
       - name: Run Benchmarks
         working-directory: sandbox-benchmarks
         run: |
           java -jar target/benchmarks.jar -rf json -rff target/jmh-result.json
-          
+
+      - name: Compare benchmark results without publishing
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: JMH Benchmarks
+          tool: 'jmh'
+          output-file-path: sandbox-benchmarks/target/jmh-result.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          alert-threshold: '115%'
+          comment-on-alert: true
+          fail-on-alert: false
+          alert-comment-cc-users: '@carstenartur'
+
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: benchmark-results-${{ github.sha }}
+          path: sandbox-benchmarks/target/jmh-result.json
+          if-no-files-found: error
+
+      - name: Report existing benchmark URL
+        if: always() && (github.event_name != 'push' || github.ref != 'refs/heads/main')
+        run: |
+          echo "### 🔗 Benchmark Results" >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo "📊 [View the last published performance charts](https://carstenartur.github.io/sandbox/dev/bench/)" >> "$GITHUB_STEP_SUMMARY"
+
+  publish-benchmark:
+    name: Publish benchmark results to GitHub Pages
+    needs: benchmark
+    if: ${{ needs.benchmark.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+      deployments: write
+      pull-requests: write
+    concurrency:
+      group: release-workflow
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout validated benchmark commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Download benchmark result
+        uses: actions/download-artifact@v8
+        with:
+          name: benchmark-results-${{ github.sha }}
+          path: sandbox-benchmarks/target
+
+      - name: Validate benchmark result
+        run: test -s sandbox-benchmarks/target/jmh-result.json
+
       - name: Store Benchmark Results
         uses: benchmark-action/github-action-benchmark@v1
         with:
@@ -66,24 +126,15 @@ jobs:
           tool: 'jmh'
           output-file-path: sandbox-benchmarks/target/jmh-result.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          auto-push: true
           alert-threshold: '115%'
           comment-on-alert: true
           fail-on-alert: false
           alert-comment-cc-users: '@carstenartur'
-          
-      - name: Upload Benchmark Results
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: benchmark-results
-          path: |
-            sandbox-benchmarks/target/jmh-result.json
-            sandbox-benchmarks/target/jmh-result.txt
 
       - name: Report Deployed URL
         if: always()
         run: |
-          echo "### 🔗 Deployed Benchmark Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 [View Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Deployed Benchmark Results" >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
+          echo "📊 [View Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)" >> "$GITHUB_STEP_SUMMARY"

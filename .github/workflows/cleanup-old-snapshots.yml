@@ -11,7 +11,10 @@ permissions:
 jobs:
   cleanup:
     runs-on: ubuntu-latest
-    
+    concurrency:
+      group: release-workflow
+      cancel-in-progress: false
+
     steps:
     - name: Checkout gh-pages branch
       uses: actions/checkout@v7
@@ -24,7 +27,7 @@ jobs:
         REPO_SIZE=$(du -sm . | cut -f1)
         echo "size=$REPO_SIZE" >> $GITHUB_OUTPUT
         echo "Repository size: ${REPO_SIZE}MB"
-        
+
         # GitHub Pages has a 1GB soft limit
         if [ $REPO_SIZE -gt 900 ]; then
           echo "cleanup_needed=true" >> $GITHUB_OUTPUT
@@ -38,7 +41,7 @@ jobs:
       if: steps.size.outputs.cleanup_needed == 'true'
       run: |
         echo "Cleaning up old snapshot artifacts..."
-        
+
         # Remove all snapshot directories except "latest"
         if [ -d "snapshots" ]; then
           echo "Removing old snapshots (keeping only 'latest')..."
@@ -53,7 +56,7 @@ jobs:
       run: |
         git config user.name 'github-actions[bot]'
         git config user.email 'github-actions[bot]@users.noreply.github.com'
-        
+
         if git diff --quiet && git diff --cached --quiet; then
           echo "No changes to commit"
         else

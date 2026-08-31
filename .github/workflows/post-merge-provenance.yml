@@ -54,7 +54,7 @@ jobs:
     timeout-minutes: 75
     permissions:
       actions: read
-      contents: write
+      contents: read
     env:
       COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
       GITHUB_TOKEN: ${{ github.token }}
@@ -106,16 +106,42 @@ jobs:
           cp "$commit_dir/build-manifest.json" "$publish_dir/latest.json"
           cp test-report.json "$commit_dir/test-report.json"
           cp related-workflow-runs.json "$commit_dir/related-workflow-runs.json"
-      - name: Upload immutable provenance artifact
+      - name: Upload immutable provenance and dashboard artifact
         uses: actions/upload-artifact@v7
         with:
           name: build-provenance-${{ github.event.workflow_run.head_sha }}
-          path: |
-            /tmp/gh-pages/provenance/${{ github.event.workflow_run.head_sha }}/build-manifest.json
-            /tmp/gh-pages/provenance/${{ github.event.workflow_run.head_sha }}/test-report.json
-            /tmp/gh-pages/provenance/${{ github.event.workflow_run.head_sha }}/related-workflow-runs.json
+          path: /tmp/gh-pages/provenance
           retention-days: 90
           if-no-files-found: error
+
+  publish-main-provenance-dashboard:
+    name: Publish main provenance dashboard
+    needs: publish-main-provenance
+    if: ${{ needs.publish-main-provenance.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    concurrency:
+      group: release-workflow
+      cancel-in-progress: false
+    env:
+      COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Download verified provenance artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: build-provenance-${{ github.event.workflow_run.head_sha }}
+          path: /tmp/gh-pages/provenance
+      - name: Validate staged provenance dashboard
+        run: |
+          set -euo pipefail
+          test -s /tmp/gh-pages/provenance/index.html
+          test -s /tmp/gh-pages/provenance/latest.json
+          test -s "/tmp/gh-pages/provenance/$COMMIT_SHA/build-manifest.json"
+          test -s "/tmp/gh-pages/provenance/$COMMIT_SHA/test-report.json"
+          test -s "/tmp/gh-pages/provenance/$COMMIT_SHA/related-workflow-runs.json"
       - name: Publish provenance dashboard
         uses: peaceiris/actions-gh-pages@v4
         with:

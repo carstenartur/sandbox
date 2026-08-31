@@ -4,10 +4,13 @@ on:
   pull_request:
     branches: [ main ]
     paths:
+      - '.github/workflows/benchmark.yml'
+      - '.github/workflows/cleanup-old-snapshots.yml'
       - '.github/workflows/coverage.yml'
       - '.github/workflows/deploy-release.yml'
       - '.github/workflows/deploy-snapshot.yml'
       - '.github/workflows/mining-core.yml'
+      - '.github/workflows/post-merge-provenance.yml'
       - '.github/workflows/refactoring-mining.yml'
       - '.github/workflows/release-workflow-validation.yml'
       - '.github/scripts/verify_release_identity.py'
@@ -40,21 +43,85 @@ jobs:
           python3 .github/scripts/test_verify_release_identity.py
           python3 .github/scripts/test_wait_for_pages_build.py
           python3 .github/scripts/test_verify_published_repository.py
-      - name: Validate shared gh-pages publication lock
+      - name: Validate every gh-pages writer and shared publication lock
         run: |
           python3 - <<'PY'
+          import re
           from pathlib import Path
 
-          workflows = [
-              Path('.github/workflows/deploy-release.yml'),
-              Path('.github/workflows/deploy-snapshot.yml'),
-              Path('.github/workflows/mining-core.yml'),
-              Path('.github/workflows/refactoring-mining.yml'),
+          workflow_dir = Path('.github/workflows')
+          publisher_markers = (
+              'peaceiris/actions-gh-pages@',
+              'git push origin gh-pages',
+              'auto-push: true',
+          )
+          expected_publishers = {
+              'benchmark.yml',
+              'cleanup-old-snapshots.yml',
+              'coverage.yml',
+              'deploy-release.yml',
+              'deploy-snapshot.yml',
+              'mining-core.yml',
+              'post-merge-provenance.yml',
+              'refactoring-mining.yml',
+          }
+          discovered_publishers = {
+              path.name
+              for path in workflow_dir.glob('*.yml')
+              if any(marker in path.read_text(encoding='utf-8') for marker in publisher_markers)
+          }
+          if discovered_publishers != expected_publishers:
+              missing = sorted(expected_publishers - discovered_publishers)
+              unregistered = sorted(discovered_publishers - expected_publishers)
+              raise SystemExit(
+                  f'gh-pages publisher inventory changed; missing={missing}, unregistered={unregistered}'
+              )
+
+          top_level_publishers = [
+              workflow_dir / 'deploy-release.yml',
+              workflow_dir / 'deploy-snapshot.yml',
+              workflow_dir / 'mining-core.yml',
+              workflow_dir / 'refactoring-mining.yml',
           ]
-          contract = "concurrency:\n  group: release-workflow\n  cancel-in-progress: false"
-          failures = [str(path) for path in workflows if contract not in path.read_text(encoding='utf-8')]
+          top_level_contract = "concurrency:\n  group: release-workflow\n  cancel-in-progress: false"
+          failures = [
+              str(path)
+              for path in top_level_publishers
+              if top_level_contract not in path.read_text(encoding='utf-8')
+          ]
           if failures:
-              raise SystemExit(f"gh-pages publishers must share the release-workflow lock: {failures}")
+              raise SystemExit(f'gh-pages publishers lack the shared workflow lock: {failures}')
+
+          job_publishers = {
+              'coverage.yml': ('publish', 'peaceiris/actions-gh-pages@v4'),
+              'post-merge-provenance.yml': (
+                  'publish-main-provenance-dashboard',
+                  'peaceiris/actions-gh-pages@v4',
+              ),
+              'benchmark.yml': ('publish-benchmark', 'auto-push: true'),
+              'cleanup-old-snapshots.yml': ('cleanup', 'git push origin gh-pages'),
+          }
+          job_lock = "    concurrency:\n      group: release-workflow\n      cancel-in-progress: false"
+
+          def job_block(workflow: str, job_name: str) -> str:
+              marker = f'\n  {job_name}:\n'
+              try:
+                  start = workflow.index(marker) + 1
+              except ValueError as failure:
+                  raise SystemExit(f'Missing gh-pages publication job {job_name!r}') from failure
+              remainder = workflow[start + len(marker) - 1:]
+              next_job = re.search(r'\n  [A-Za-z0-9_-]+:\n', remainder)
+              if next_job is None:
+                  return workflow[start:]
+              return workflow[start:start + len(marker) - 1 + next_job.start()]
+
+          for filename, (job_name, publisher_marker) in job_publishers.items():
+              workflow = (workflow_dir / filename).read_text(encoding='utf-8')
+              block = job_block(workflow, job_name)
+              if job_lock not in block:
+                  raise SystemExit(f'{filename}:{job_name} lacks the shared release-workflow lock')
+              if publisher_marker not in block:
+                  raise SystemExit(f'{filename}:{job_name} no longer contains its gh-pages writer')
           PY
       - name: Validate snapshot Pages publication contract
         run: |
@@ -99,7 +166,6 @@ jobs:
               'metric: "LINE"',
               'publish:\n    name: Publish verified metrics to GitHub Pages',
               'actions/download-artifact@v8',
-              '    concurrency:\n      group: release-workflow\n      cancel-in-progress: false',
           ]
           missing = [marker for marker in required if marker not in workflow]
           if missing:
@@ -116,6 +182,25 @@ jobs:
               raise SystemExit('Coverage must not publish to gh-pages outside the shared publication lock')
           if 'peaceiris/actions-gh-pages@v4' not in publish_block:
               raise SystemExit('The locked coverage publication job no longer publishes gh-pages')
+          PY
+      - name: Validate derived Pages publication isolation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          provenance = Path('.github/workflows/post-merge-provenance.yml').read_text(encoding='utf-8')
+          provenance_build, provenance_publish = provenance.split('\n  publish-main-provenance-dashboard:\n', 1)
+          if 'peaceiris/actions-gh-pages@v4' in provenance_build:
+              raise SystemExit('Provenance generation must not publish before entering the shared lock')
+          if 'peaceiris/actions-gh-pages@v4' not in provenance_publish:
+              raise SystemExit('Locked provenance publication is missing')
+
+          benchmark = Path('.github/workflows/benchmark.yml').read_text(encoding='utf-8')
+          benchmark_build, benchmark_publish = benchmark.split('\n  publish-benchmark:\n', 1)
+          if 'auto-push: true' in benchmark_build:
+              raise SystemExit('Benchmark execution must not push before entering the shared lock')
+          if 'auto-push: true' not in benchmark_publish:
+              raise SystemExit('Locked benchmark publication is missing')
           PY
       - name: Validate protected-main release transition
         run: |
