@@ -11,6 +11,11 @@
 	<artifactId>sandbox_css_cleanup_test</artifactId>
 	<name>Sandbox CSS cleanup test</name>
 	<packaging>eclipse-test-plugin</packaging>
+	<properties>
+		<frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
+		<css-test-node.version>v24.20.0</css-test-node.version>
+		<css-test-npm.version>11.19.0</css-test-npm.version>
+	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.sandbox</groupId>
@@ -21,6 +26,61 @@
 		<testSourceDirectory>src</testSourceDirectory>
 		<plugins>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.4.0</version>
+				<executions>
+					<execution>
+						<id>prepare-css-test-tooling</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/css-tooling</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/src/test/node</directory>
+									<filtering>false</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.github.eirslett</groupId>
+				<artifactId>frontend-maven-plugin</artifactId>
+				<version>${frontend-maven-plugin.version}</version>
+				<configuration>
+					<workingDirectory>${project.build.directory}/css-tooling</workingDirectory>
+					<installDirectory>${project.build.directory}</installDirectory>
+				</configuration>
+				<executions>
+					<execution>
+						<id>install-css-test-node-and-npm</id>
+						<phase>generate-test-resources</phase>
+						<goals>
+							<goal>install-node-and-npm</goal>
+						</goals>
+						<configuration>
+							<nodeVersion>${css-test-node.version}</nodeVersion>
+							<npmVersion>${css-test-npm.version}</npmVersion>
+						</configuration>
+					</execution>
+					<execution>
+						<id>install-css-test-packages</id>
+						<phase>generate-test-resources</phase>
+						<goals>
+							<goal>npm</goal>
+						</goals>
+						<configuration>
+							<arguments>ci --ignore-scripts --no-audit --no-fund</arguments>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-surefire-plugin</artifactId>
 				<version>${tycho-version}</version>
@@ -28,6 +88,10 @@
 					<showEclipseLog>true</showEclipseLog>
 					<useJDK>BREE</useJDK>
 					<useUIHarness>false</useUIHarness>
+					<systemProperties>
+						<sandbox.css.node.home>${project.build.directory}/node</sandbox.css.node.home>
+						<sandbox.css.node.modules>${project.build.directory}/css-tooling/node_modules</sandbox.css.node.modules>
+					</systemProperties>
 					<dependencies>
 						<dependency>
 							<type>eclipse-plugin</type>

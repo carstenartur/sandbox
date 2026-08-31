@@ -107,14 +107,6 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Set up Node.js for CSS tests
-        uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-
-      - name: Install CSS tooling
-        run: npm install --global prettier stylelint stylelint-config-standard
-
       - name: Verify preinstalled Eclipse desktop runtime
         if: runner.os == 'Linux'
         uses: ./.github/actions/verify-eclipse-desktop-runtime

@@ -28,17 +28,9 @@ import org.sandbox.jdt.internal.css.preferences.CSSPreferenceConstants;
 /** Runs Prettier to format CSS files. */
 public class PrettierRunner {
 
-	/** Check if Prettier is available via npx. */
+	/** Check if Prettier is available through the configured Node.js toolchain. */
 	public static boolean isPrettierAvailable() {
-		if (!NodeExecutor.isNpxAvailable()) {
-			return false;
-		}
-		try {
-			NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx("prettier", "--version"); //$NON-NLS-1$ //$NON-NLS-2$
-			return result.isSuccess();
-		} catch (Exception e) {
-			return false;
-		}
+		return NodeExecutor.isToolAvailable(NodeExecutor.Tool.PRETTIER);
 	}
 
 	/** Format a CSS file using Prettier and the configured JSON options. */
@@ -49,8 +41,8 @@ public class PrettierRunner {
 	}
 
 	static String format(IFile file, String optionsJson) throws IOException, InterruptedException {
-		if (!NodeExecutor.isNpxAvailable()) {
-			throw new IllegalStateException("npx is not available. Please install Node.js and npm."); //$NON-NLS-1$
+		if (!isPrettierAvailable()) {
+			throw new IllegalStateException("Prettier is not available in the configured Node.js toolchain"); //$NON-NLS-1$
 		}
 
 		Path sourcePath = localPath(file);
@@ -62,8 +54,8 @@ public class PrettierRunner {
 				configFile = createTemporaryConfig(sourcePath, normalizedOptions);
 			}
 			List<String> args = buildArguments(sourcePath.toString(), configFile != null ? configFile.toString() : null);
-			NodeExecutor.ExecutionResult result = NodeExecutor.executeNpxWithInput(
-					originalContent, args.toArray(String[]::new));
+			NodeExecutor.ExecutionResult result = NodeExecutor.executeToolWithInput(
+					NodeExecutor.Tool.PRETTIER, originalContent, args.toArray(String[]::new));
 			if (!result.isSuccess()) {
 				throw new IOException(toolFailure("Prettier", result)); //$NON-NLS-1$
 			}
@@ -86,8 +78,7 @@ public class PrettierRunner {
 	}
 
 	static List<String> buildArguments(String filePath, String configPath) {
-		List<String> args = new ArrayList<>(List.of(
-				"prettier", "--stdin-filepath", filePath)); //$NON-NLS-1$ //$NON-NLS-2$
+		List<String> args = new ArrayList<>(List.of("--stdin-filepath", filePath)); //$NON-NLS-1$
 		if (configPath != null && !configPath.isBlank()) {
 			args.add("--config"); //$NON-NLS-1$
 			args.add(configPath);

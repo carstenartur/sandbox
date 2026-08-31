@@ -38,13 +38,14 @@ public class StylelintRunner {
 	}
 
 	static CSSValidationResult validate(IFile file, String configPath) throws Exception {
-		if (!NodeExecutor.isNpxAvailable()) {
-			throw new IllegalStateException("npx is not available. Please install Node.js and npm."); //$NON-NLS-1$
+		if (!isStylelintAvailable()) {
+			throw new IllegalStateException("Stylelint is not available in the configured Node.js toolchain"); //$NON-NLS-1$
 		}
 
 		Path filePath = localPath(file);
 		List<String> args = buildValidateArguments(filePath.toString(), configPath);
-		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx(args.toArray(String[]::new));
+		NodeExecutor.ExecutionResult result = NodeExecutor.executeTool(
+				NodeExecutor.Tool.STYLELINT, args.toArray(String[]::new));
 		String report = extractJsonReport(result.stderr);
 		if (report == null) {
 			report = extractJsonReport(result.stdout);
@@ -79,15 +80,15 @@ public class StylelintRunner {
 	}
 
 	static String fix(IFile file, String configPath) throws IOException, InterruptedException {
-		if (!NodeExecutor.isNpxAvailable()) {
-			throw new IllegalStateException("npx is not available. Please install Node.js and npm."); //$NON-NLS-1$
+		if (!isStylelintAvailable()) {
+			throw new IllegalStateException("Stylelint is not available in the configured Node.js toolchain"); //$NON-NLS-1$
 		}
 
 		Path filePath = localPath(file);
 		String originalContent = Files.readString(filePath, StandardCharsets.UTF_8);
 		List<String> args = buildFixArguments(filePath.toString(), configPath);
-		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpxWithInput(
-				originalContent, args.toArray(String[]::new));
+		NodeExecutor.ExecutionResult result = NodeExecutor.executeToolWithInput(
+				NodeExecutor.Tool.STYLELINT, originalContent, args.toArray(String[]::new));
 
 		if (result.exitCode != 0 && result.exitCode != LINT_PROBLEMS_EXIT_CODE) {
 			throw new IOException(toolFailure("Stylelint --fix", result)); //$NON-NLS-1$
@@ -96,15 +97,14 @@ public class StylelintRunner {
 	}
 
 	static List<String> buildValidateArguments(String filePath, String configPath) {
-		List<String> args = new ArrayList<>(List.of(
-				"stylelint", filePath, "--formatter", "json")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		List<String> args = new ArrayList<>(List.of(filePath, "--formatter", "json")); //$NON-NLS-1$ //$NON-NLS-2$
 		appendConfig(args, configPath);
 		return List.copyOf(args);
 	}
 
 	static List<String> buildFixArguments(String filePath, String configPath) {
 		List<String> args = new ArrayList<>(List.of(
-				"stylelint", "--stdin", "--stdin-filename", filePath, "--fix")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				"--stdin", "--stdin-filename", filePath, "--fix")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		appendConfig(args, configPath);
 		return List.copyOf(args);
 	}
@@ -148,12 +148,7 @@ public class StylelintRunner {
 
 	/** Check if Stylelint is available. */
 	public static boolean isStylelintAvailable() {
-		try {
-			NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx("stylelint", "--version"); //$NON-NLS-1$ //$NON-NLS-2$
-			return result.isSuccess();
-		} catch (Exception e) {
-			return false;
-		}
+		return NodeExecutor.isToolAvailable(NodeExecutor.Tool.STYLELINT);
 	}
 
 	private static void collectWarnings(Object warningValue, List<CSSValidationResult.Issue> issues) {

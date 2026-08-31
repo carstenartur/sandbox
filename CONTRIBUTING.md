@@ -72,7 +72,7 @@ Windows:
 
 Linux UI tests require a graphical display. Run the same Maven command in a desktop session or prefix it with `xvfb-run --auto-servernum`. Windows runs the wrapper directly in the interactive desktop environment. GitHub Actions uses these same wrapper commands; CI-specific setup must provide only the operating-system environment and must not replace Maven/JUnit test semantics.
 
-Some CSS integration tests currently invoke Node-based tools through `npx`. Their remaining checkout-managed versioning work is tracked separately; do not make them pass by adding another unversioned global installation to a new workflow.
+The CSS integration tests use Maven-managed Node.js 24.20.0 and npm 11.19.0 together with a committed npm lockfile. Prettier and Stylelint are installed below the module's `target` directory and invoked through their pinned package entry points. Developers and CI therefore do not need global installations of Node.js, npm, Prettier, or Stylelint for this test path.
 
 Do not use global test-skip or failure-ignore switches to make a transformation appear complete.
 

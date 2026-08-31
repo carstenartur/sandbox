@@ -33,7 +33,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 
 /** Tests for {@link PrettierRunner}. */
 public class PrettierRunnerTest {
@@ -116,36 +115,21 @@ public class PrettierRunnerTest {
 	}
 
 	@Test
-	public void testFormatThrowsWhenNpxNotAvailable() {
-		if (NodeExecutor.isNpxAvailable()) {
-			return;
-		}
-		assertThrows(IllegalStateException.class, () -> {
-			IFile file = createTestCssFile("test.css", "body { color: red; }"); //$NON-NLS-1$ //$NON-NLS-2$
-			PrettierRunner.format(file);
-		});
-	}
-
-	@Test
-	@EnabledIf("isPrettierAvailable")
 	public void testIsPrettierAvailable() {
-		assertTrue(PrettierRunner.isPrettierAvailable(), "Prettier should be available"); //$NON-NLS-1$
+		assertTrue(PrettierRunner.isPrettierAvailable(),
+				"Maven must provision the pinned Prettier package"); //$NON-NLS-1$
 	}
 
 	@Test
-	@EnabledIf("isPrettierAvailable")
 	public void testFormatSimpleCss() throws Exception {
-		String unformattedCss = "body{color:red;margin:0}"; //$NON-NLS-1$
-		IFile file = createTestCssFile("simple.css", unformattedCss); //$NON-NLS-1$
+		IFile file = createTestCssFile("simple.css", "body{color:red;margin:0}"); //$NON-NLS-1$ //$NON-NLS-2$
+
 		String formatted = PrettierRunner.format(file);
-		assertNotNull(formatted, "Formatted output should not be null"); //$NON-NLS-1$
-		assertFalse(formatted.isEmpty(), "Formatted output should not be empty"); //$NON-NLS-1$
-		assertTrue(formatted.contains("body"), "Formatted CSS should contain 'body'"); //$NON-NLS-1$ //$NON-NLS-2$
-		assertTrue(formatted.contains("color"), "Formatted CSS should contain 'color'"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		assertEquals("body {\n  color: red;\n  margin: 0;\n}\n", formatted); //$NON-NLS-1$
 	}
 
 	@Test
-	@EnabledIf("isPrettierAvailable")
 	public void testFormatCssWithMultipleRules() throws Exception {
 		String unformattedCss = ".header{font-size:16px;}.footer{padding:10px;}"; //$NON-NLS-1$
 		IFile file = createTestCssFile("multi.css", unformattedCss); //$NON-NLS-1$
@@ -156,7 +140,6 @@ public class PrettierRunnerTest {
 	}
 
 	@Test
-	@EnabledIf("isPrettierAvailable")
 	public void testFormatPreservesSemantics() throws Exception {
 		String originalCss = "body { color: #ff0000; background: white; }"; //$NON-NLS-1$
 		IFile file = createTestCssFile("preserve.css", originalCss); //$NON-NLS-1$
@@ -173,9 +156,5 @@ public class PrettierRunnerTest {
 		}
 		file.create(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), true, new NullProgressMonitor());
 		return file;
-	}
-
-	static boolean isPrettierAvailable() {
-		return PrettierRunner.isPrettierAvailable();
 	}
 }
