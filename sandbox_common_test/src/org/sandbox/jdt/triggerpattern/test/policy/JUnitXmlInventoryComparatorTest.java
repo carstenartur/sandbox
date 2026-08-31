@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import org.sandbox.jdt.triggerpattern.test.policy.JUnitXmlInventoryComparator.Comparison;
+import org.sandbox.jdt.triggerpattern.test.policy.JUnitXmlInventoryComparator.Inventory;
 import org.sandbox.jdt.triggerpattern.test.policy.JUnitXmlInventoryComparator.Mapping;
 
 /**
@@ -133,10 +134,24 @@ public class JUnitXmlInventoryComparatorTest {
 	}
 
 	@Test
+	public void uncheckedParserConfigurationFailuresAreRecordedPerReport() throws Exception {
+		Path reports = temporaryDirectory.resolve("reports"); //$NON-NLS-1$
+		writeReport(reports, "TEST-valid.xml", suite("example.SampleTest", "runs", "")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+		Inventory inventory = JUnitXmlInventoryComparator.collect(reports, () -> {
+			throw new IllegalArgumentException("Unsupported XML parser feature"); //$NON-NLS-1$
+		});
+
+		assertEquals(1, inventory.reportFiles());
+		assertEquals(0, inventory.testCount());
+		assertEquals(1, inventory.parseErrors().size());
+		assertTrue(inventory.parseErrors().get(0).contains("Unsupported XML parser feature")); //$NON-NLS-1$
+	}
+
+	@Test
 	public void mappingDocumentMustUseTheDeclaredTypes() throws Exception {
 		Path mapping = temporaryDirectory.resolve("mapping.json"); //$NON-NLS-1$
-		Files.writeString(mapping, "{\"renames\":[],\"allowedMissing\":[],\"allowedAdded\":[]}", //$NON-NLS-1$
-				StandardCharsets.UTF_8);
+		writeUtf8(mapping, "{\"renames\":[],\"allowedMissing\":[],\"allowedAdded\":[]}"); //$NON-NLS-1$
 
 		assertThrows(IllegalArgumentException.class, () -> JUnitXmlInventoryComparator.readMapping(mapping));
 	}
@@ -173,6 +188,10 @@ public class JUnitXmlInventoryComparatorTest {
 
 	private static void writeReport(Path directory, String name, String content) throws IOException {
 		Files.createDirectories(directory);
-		Files.writeString(directory.resolve(name), content, StandardCharsets.UTF_8);
+		writeUtf8(directory.resolve(name), content);
+	}
+
+	private static void writeUtf8(Path path, String content) throws IOException {
+		Files.writeString(path, content, StandardCharsets.UTF_8);
 	}
 }
