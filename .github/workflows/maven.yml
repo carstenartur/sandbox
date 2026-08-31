@@ -4,6 +4,8 @@ on:
   push:
     branches: [ main ]
     paths:
+      - 'mvnw'
+      - 'mvnw.cmd'
       - 'pom.xml'
       - '.mvn/**'
       - 'sandbox*/**'
@@ -13,7 +15,6 @@ on:
       - '*.xml'
       - '*.properties'
       - '.github/actions/cleanup-action/**'
-      - '.github/actions/use-runner-maven/**'
       - '.github/actions/verify-eclipse-desktop-runtime/**'
       - '.github/workflows/maven.yml'
   pull_request:
@@ -60,9 +61,9 @@ jobs:
           relevant=false
           while IFS= read -r path; do
             case "$path" in
-              pom.xml|.mvn/*|sandbox*/*|features/*|plugins/*|org/*|*.xml|*.properties|\
-              .github/actions/cleanup-action/*|.github/actions/use-runner-maven/*|\
-              .github/actions/verify-eclipse-desktop-runtime/*|.github/workflows/maven.yml)
+              mvnw|mvnw.cmd|pom.xml|.mvn/*|sandbox*/*|features/*|plugins/*|org/*|*.xml|*.properties|\
+              .github/actions/cleanup-action/*|.github/actions/verify-eclipse-desktop-runtime/*|\
+              .github/workflows/maven.yml)
                 relevant=true
                 break
                 ;;
@@ -100,8 +101,8 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Use runner Maven
-        uses: ./.github/actions/use-runner-maven
+      - name: Verify pinned Maven Wrapper
+        run: ./mvnw --batch-mode --no-transfer-progress --version
 
       - name: Set up Node.js for CSS tests
         uses: actions/setup-node@v7
@@ -142,9 +143,9 @@ jobs:
               "$GITHUB_EVENT_NAME" "$GITHUB_REF"
           fi
 
-      - name: Maven clean verify
+      - name: Maven Wrapper clean verify
         run: >-
-          xvfb-run --auto-servernum mvn
+          xvfb-run --auto-servernum ./mvnw
           --no-transfer-progress
           -e
           -V
