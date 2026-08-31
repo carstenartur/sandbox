@@ -1,4 +1,4 @@
-# Publish measured JUnit and JaCoCo metrics without repository-specific parsers.
+# Publish measured JUnit and line-coverage metrics and upload native GitHub coverage.
 name: Verified test and coverage metrics
 
 on:
@@ -17,11 +17,6 @@ on:
       - '.github/workflows/coverage.yml'
   pull_request:
     branches: [ main ]
-    paths:
-      - 'README.md'
-      - 'COVERAGE_DEPLOYMENT.md'
-      - 'docs/quality-metrics.md'
-      - '.github/workflows/coverage.yml'
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
@@ -41,14 +36,18 @@ jobs:
     permissions:
       contents: write
       checks: write
+      code-quality: write
+      pull-requests: read
     env:
       MAVEN_OPTS: -Djava.awt.headless=true
       QUALITY_SITE: target/quality-site
+      COVERAGE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
 
       - name: Select repository-policy review context
@@ -107,6 +106,13 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Set up .NET for coverage conversion
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.x'
+          dotnet-quality: ga
+
       - name: Install CSS and desktop-test tooling
         if: steps.gate.outputs.run == 'true'
         run: |
@@ -154,6 +160,7 @@ jobs:
 
           coverage_dir='sandbox_coverage/target/site/jacoco-aggregate'
           test -s "$coverage_dir/jacoco.csv"
+          test -s "$coverage_dir/jacoco.xml"
           test -s "$coverage_dir/index.html"
           cp -a "$coverage_dir/." "$QUALITY_SITE/coverage/"
 
@@ -166,17 +173,84 @@ jobs:
             cp -a "$site_dir/." "$QUALITY_SITE/tests/$module/"
           done < <(find . -type f -path '*/target/site/surefire-report.html' -print0)
 
-      - name: Generate JaCoCo coverage endpoint
-        id: jacoco
+      - name: Discover Java source roots
+        id: coverage_sources
         if: success() && steps.gate.outputs.run == 'true'
-        uses: cicirello/jacoco-badge-generator@v2
+        shell: bash
+        run: |
+          set -euo pipefail
+          roots="$({
+            find . -type d \
+              \( -path './.git' -o -path '*/target' -o -path '*/node_modules' \) -prune -o \
+              -type d \( -name src -o -path '*/src/main/java' \) -print
+          } | LC_ALL=C sort -u | paste -sd';' -)"
+          if [[ -z "$roots" ]]; then
+            echo '::error::No Java source roots were discovered.'
+            exit 1
+          fi
+          echo "roots=$roots" >> "$GITHUB_OUTPUT"
+
+      - name: Convert aggregate JaCoCo coverage
+        if: success() && steps.gate.outputs.run == 'true'
+        uses: danielpalme/ReportGenerator-GitHub-Action@5.5.11
         with:
-          jacoco-csv-file: sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv
-          badges-directory: target/quality-site/badges
-          generate-coverage-badge: false
-          generate-coverage-endpoint: true
-          coverage-endpoint-filename: coverage.json
-          generate-branches-badge: false
+          reports: sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml
+          targetdir: target/native-coverage
+          reporttypes: Cobertura;JsonSummary
+          sourcedirs: ${{ steps.coverage_sources.outputs.roots }}
+          tag: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Validate and publish line-coverage endpoint
+        id: line_coverage
+        if: success() && steps.gate.outputs.run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          summary='target/native-coverage/Summary.json'
+          cobertura='target/native-coverage/Cobertura.xml'
+          test -s "$summary"
+          test -s "$cobertura"
+
+          coverage="$(jq -er '.summary.linecoverage | select(type == "number")' "$summary")"
+          covered="$(jq -er '.summary.coveredlines | select(type == "number")' "$summary")"
+          uncovered="$(jq -er '.summary.uncoveredlines | select(type == "number")' "$summary")"
+          coverable="$(jq -er '.summary.coverablelines | select(type == "number")' "$summary")"
+          [[ "$covered" =~ ^[0-9]+$ ]]
+          [[ "$uncovered" =~ ^[0-9]+$ ]]
+          [[ "$coverable" =~ ^[0-9]+$ ]]
+          (( covered + uncovered == coverable ))
+          (( coverable > 0 ))
+          awk -v value="$coverage" 'BEGIN { exit !(value >= 0 && value <= 100) }'
+
+          message="$(awk -v value="$coverage" 'BEGIN { printf "%.1f%%", value }')"
+          color="$(awk -v value="$coverage" 'BEGIN {
+            if (value >= 80) print "brightgreen";
+            else if (value >= 60) print "green";
+            else if (value >= 40) print "yellow";
+            else print "red";
+          }')"
+
+          mkdir -p "$QUALITY_SITE/badges"
+          jq -n \
+            --arg message "$message" \
+            --arg color "$color" \
+            '{schemaVersion: 1, label: "line coverage", message: $message, color: $color}' \
+            > "$QUALITY_SITE/badges/coverage.json"
+
+          {
+            echo "percent=$coverage"
+            echo "covered=$covered"
+            echo "coverable=$coverable"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload native GitHub code coverage
+        if: ${{ success() && steps.gate.outputs.run == 'true' && (github.event_name == 'push' || github.event_name == 'pull_request') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        uses: actions/upload-code-coverage@v1
+        with:
+          file: target/native-coverage/Cobertura.xml
+          language: Java
+          label: code-coverage/jacoco
+          wait-for-processing-timeout: 300
 
       - name: Generate test endpoint and report index
         if: success() && steps.gate.outputs.run == 'true'
@@ -186,17 +260,19 @@ jobs:
           PASSED: ${{ steps.junit.outputs.passed }}
           SKIPPED: ${{ steps.junit.outputs.skipped }}
           FAILED: ${{ steps.junit.outputs.failed }}
-          COVERAGE: ${{ steps.jacoco.outputs.coverage }}
+          COVERAGE: ${{ steps.line_coverage.outputs.percent }}
+          COVERED_LINES: ${{ steps.line_coverage.outputs.covered }}
+          COVERABLE_LINES: ${{ steps.line_coverage.outputs.coverable }}
         run: |
           set -euo pipefail
-          for value in "$TOTAL" "$PASSED" "$SKIPPED" "$FAILED"; do
+          for value in "$TOTAL" "$PASSED" "$SKIPPED" "$FAILED" "$COVERED_LINES" "$COVERABLE_LINES"; do
             [[ "$value" =~ ^[0-9]+$ ]] || {
-              echo "Invalid JUnit action output: $value" >&2
+              echo "Invalid measured integer: $value" >&2
               exit 1
             }
           done
           [[ "$COVERAGE" =~ ^[0-9]+([.][0-9]+)?$ ]] || {
-            echo "Invalid JaCoCo action output: $COVERAGE" >&2
+            echo "Invalid line coverage: $COVERAGE" >&2
             exit 1
           }
 
@@ -214,15 +290,17 @@ jobs:
 
           generated_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           jq -n \
-            --arg sourceCommit "$GITHUB_SHA" \
+            --arg sourceCommit "$COVERAGE_COMMIT" \
             --arg generatedAt "$generated_at" \
             --argjson total "$TOTAL" \
             --argjson passed "$PASSED" \
             --argjson skipped "$SKIPPED" \
             --argjson failed "$FAILED" \
             --argjson coverage "$COVERAGE" \
+            --argjson coveredLines "$COVERED_LINES" \
+            --argjson coverableLines "$COVERABLE_LINES" \
             '{
-              schemaVersion: 1,
+              schemaVersion: 2,
               sourceCommit: $sourceCommit,
               generatedAt: $generatedAt,
               tests: {
@@ -232,8 +310,10 @@ jobs:
                 failed: $failed
               },
               coverage: {
-                metric: "INSTRUCTION",
-                percent: $coverage
+                metric: "LINE",
+                percent: $coverage,
+                coveredLines: $coveredLines,
+                coverableLines: $coverableLines
               }
             }' > "$QUALITY_SITE/quality-summary.json"
 
@@ -254,7 +334,7 @@ jobs:
           </head>
           <body>
             <h1>Sandbox verified test results</h1>
-            <p>Source commit: <code>$GITHUB_SHA</code></p>
+            <p>Source commit: <code>$COVERAGE_COMMIT</code></p>
             <table>
               <thead><tr><th>Metric</th><th>Value</th></tr></thead>
               <tbody>
@@ -262,7 +342,8 @@ jobs:
                 <tr><td>Passed</td><td>$PASSED</td></tr>
                 <tr><td>Skipped</td><td>$SKIPPED</td></tr>
                 <tr><td>Failed</td><td>$FAILED</td></tr>
-                <tr><td>Instruction coverage</td><td>$COVERAGE%</td></tr>
+                <tr><td>Line coverage</td><td>$COVERAGE%</td></tr>
+                <tr><td>Covered lines</td><td>$COVERED_LINES of $COVERABLE_LINES</td></tr>
               </tbody>
             </table>
             <p><a href="../coverage/">Aggregate JaCoCo report</a> · <a href="../quality-summary.json">Machine-readable summary</a></p>
@@ -295,6 +376,8 @@ jobs:
           name: verified-quality-${{ github.run_number }}-${{ github.run_attempt }}
           path: |
             target/quality-site/**
+            target/native-coverage/Cobertura.xml
+            target/native-coverage/Summary.json
             sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv
             sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml
             **/target/surefire-reports/TEST-*.xml
@@ -332,7 +415,7 @@ jobs:
           {
             echo '## Verified quality evidence'
             echo
-            echo 'This branch run verifies the generation path but does not update the public GitHub Pages reports.'
+            echo 'This branch run verifies and uploads native line coverage but does not update the public GitHub Pages reports.'
             echo
             echo "[Workflow run and retained evidence](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
           } >> "$GITHUB_STEP_SUMMARY"
