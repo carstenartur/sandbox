@@ -10,16 +10,20 @@
 <body>
    <h1>PDE XML Cleanup: reference</h1>
    <h2>Applicability contract</h2>
-   <p>Only supported PDE metadata and schema resources are processed. The command visibility is restricted to matching files or projects.</p>
+   <p>Only supported PDE metadata and schema resources are processed. The context command is restricted to matching
+      files or projects; the main-menu command uses the current workbench selection.</p>
 
    <h2>Safety model</h2>
-   <p>XML is parsed structurally; malformed resources or constructs that cannot be rewritten safely are reported or left unchanged.</p>
+   <p>XML is parsed structurally; malformed resources or constructs that cannot be rewritten safely are reported or left
+      unchanged. The operation is explicit and does not create background indentation markers or silently rewrite files.</p>
 
    <h2>Known limitations</h2>
    <ul>
       <li>Formatting is intentionally scoped and is not a general-purpose XML pretty printer.</li>
       <li>Comments, processing instructions, and schema-specific layout should be reviewed after large changes.</li>
       <li>External entity behavior is not used to infer formatting decisions.</li>
+      <li>The command does not provide a problem-marker quick fix; use the cleanup profile, context menu, or
+         <strong>XML Cleanup</strong> main menu and review the resulting diff.</li>
    </ul>
 
    <h2>Support information</h2>
