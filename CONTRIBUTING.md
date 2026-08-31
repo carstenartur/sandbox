@@ -66,7 +66,7 @@ Windows:
 ```powershell
 .\mvnw.cmd -Pdistribution `
   --batch-mode `
-  -Dtycho.localArtifacts=ignore `
+  --define "tycho.localArtifacts=ignore" `
   clean verify
 ```
 
