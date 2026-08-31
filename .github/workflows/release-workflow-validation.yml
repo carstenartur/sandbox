@@ -4,6 +4,7 @@ on:
   pull_request:
     branches: [ main ]
     paths:
+      - '.github/workflows/coverage.yml'
       - '.github/workflows/deploy-release.yml'
       - '.github/workflows/deploy-snapshot.yml'
       - '.github/workflows/mining-core.yml'
@@ -78,6 +79,33 @@ jobs:
           verify_marker = '- name: Verify advertised snapshot URLs'
           if workflow.index(await_marker) > workflow.index(verify_marker):
               raise SystemExit('Snapshot URLs are verified before the exact Pages build is complete')
+          PY
+      - name: Validate native line-coverage contract
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/coverage.yml').read_text(encoding='utf-8')
+          required = [
+              'code-quality: write',
+              'pull-requests: read',
+              'github.event.pull_request.head.sha || github.sha',
+              'danielpalme/ReportGenerator-GitHub-Action@5.5.11',
+              'reporttypes: Cobertura;JsonSummary',
+              'actions/upload-code-coverage@v1',
+              'file: target/native-coverage/Cobertura.xml',
+              'label: code-coverage/jacoco',
+              'metric: "LINE"',
+          ]
+          missing = [marker for marker in required if marker not in workflow]
+          if missing:
+              raise SystemExit(f"Coverage workflow lacks the native line-coverage contract: {missing}")
+
+          pull_request_block = workflow.split('  pull_request:\n', 1)[1].split('  schedule:\n', 1)[0]
+          if 'paths:' in pull_request_block:
+              raise SystemExit('Native coverage must run for every pull request, not a path-filtered subset')
+          if 'cicirello/jacoco-badge-generator' in workflow:
+              raise SystemExit('Instruction coverage must not be advertised as the GitHub line-coverage metric')
           PY
       - name: Validate protected-main release transition
         run: |
