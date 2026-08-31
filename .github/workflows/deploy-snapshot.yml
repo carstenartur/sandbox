@@ -200,13 +200,12 @@ jobs:
 
       - name: Await exact GitHub Pages publication
         id: await_pages_build
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          python3 .github/scripts/wait_for_pages_build.py \
-            --repository "${{ github.repository }}" \
-            --expected-commit "${{ steps.gh_pages_after.outputs.sha }}" \
-            --output target/distribution-verification/pages-build.json
+        uses: ./.github/actions/wait-for-pages-build
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          expected-commit: ${{ steps.gh_pages_after.outputs.sha }}
+          output: target/distribution-verification/pages-build.json
 
       - name: Verify advertised snapshot URLs
         id: verify_snapshot_urls
@@ -221,9 +220,8 @@ jobs:
             --output target/distribution-verification/snapshot-composite-verification.json
 
       - name: Roll back a failed snapshot publication
+        id: rollback_snapshot
         if: ${{ failure() && steps.deploy_snapshot.outcome == 'success' && (steps.await_pages_build.outcome == 'failure' || steps.verify_snapshot_urls.outcome == 'failure') }}
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           previous="${{ steps.gh_pages_before.outputs.sha }}"
@@ -237,10 +235,16 @@ jobs:
             origin "${previous}:refs/heads/gh-pages"
           echo "Rolled gh-pages back from ${deployed} to ${previous}." \
             | tee target/distribution-verification/snapshot-publication-rollback.log
-          python3 .github/scripts/wait_for_pages_build.py \
-            --repository "${{ github.repository }}" \
-            --expected-commit "$previous" \
-            --output target/distribution-verification/pages-rollback-build.json
+
+      - name: Await rolled-back GitHub Pages publication
+        id: await_rollback_pages_build
+        if: ${{ always() && steps.rollback_snapshot.outcome == 'success' }}
+        uses: ./.github/actions/wait-for-pages-build
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          expected-commit: ${{ steps.gh_pages_before.outputs.sha }}
+          output: target/distribution-verification/pages-rollback-build.json
 
       - name: Upload immutable snapshot provenance
         if: ${{ always() && steps.generate_manifest.outcome == 'success' }}
@@ -259,6 +263,8 @@ jobs:
           DEPLOY_OUTCOME: ${{ steps.deploy_snapshot.outcome }}
           PAGES_BUILD_OUTCOME: ${{ steps.await_pages_build.outcome }}
           VERIFY_OUTCOME: ${{ steps.verify_snapshot_urls.outcome }}
+          ROLLBACK_OUTCOME: ${{ steps.rollback_snapshot.outcome }}
+          ROLLBACK_PAGES_BUILD_OUTCOME: ${{ steps.await_rollback_pages_build.outcome }}
         run: |
           {
             echo '### Snapshot publication'
@@ -275,6 +281,8 @@ jobs:
               echo "- Deployment outcome: \`${DEPLOY_OUTCOME:-not-run}\`"
               echo "- GitHub Pages build outcome: \`${PAGES_BUILD_OUTCOME:-not-run}\`"
               echo "- URL verification outcome: \`${VERIFY_OUTCOME:-not-run}\`"
+              echo "- Rollback outcome: \`${ROLLBACK_OUTCOME:-not-run}\`"
+              echo "- Rollback Pages build outcome: \`${ROLLBACK_PAGES_BUILD_OUTCOME:-not-run}\`"
               echo '- No successful snapshot publication is reported for this run.'
             fi
           } >> "$GITHUB_STEP_SUMMARY"
