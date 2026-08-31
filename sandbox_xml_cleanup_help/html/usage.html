@@ -10,8 +10,15 @@
 <body>
    <h1>Using PDE XML Cleanup</h1>
    <h2>Entry points</h2>
-   <p>Enable <strong>XML Cleanup (Sandbox)</strong> in a cleanup profile, or select a supported PDE resource or project
-      and invoke <strong>Clean Up PDE XML</strong> from its context menu.</p>
+   <p>Choose the entry point that matches the intended scope:</p>
+   <ul>
+      <li><strong>Cleanup profile:</strong> enable <strong>XML Cleanup (Sandbox)</strong> and run the normal Eclipse
+         cleanup command for a selected project, package, or resource.</li>
+      <li><strong>Selected resource or project:</strong> select a supported PDE file or project in an Eclipse view,
+         open its context menu, and choose <strong>Clean Up PDE XML</strong>.</li>
+      <li><strong>Main menu:</strong> choose <strong>XML Cleanup &gt; Clean Up PDE XML Files</strong>. The current
+         workbench selection determines the processed file or project.</li>
+   </ul>
    <p><img class="screenshot" src="../images/xml-cleanup.png"
       alt="PDE XML cleanup configuration"/></p>
 
@@ -43,16 +50,18 @@
       must remain equivalent.</p>
    <p>Unsupported resources, malformed XML, mixed-content cases that cannot be formatted safely, and paths outside the
       PDE scope are left unchanged or reported rather than processed as generic XML.</p>
+   <p>The feature does not create background problem markers for indentation. Cleanup is an explicit operation through
+      one of the entry points above; inspect the resulting source-control diff before committing it.</p>
 
    <h2>Recommended workflow</h2>
    <ol>
       <li>Start with one descriptor in version control.</li>
-      <li>Run the cleanup or context command and inspect the actual XML diff.</li>
+      <li>Run the cleanup or context/main-menu command and inspect the actual XML diff.</li>
       <li>Confirm that only formatting changed and run PDE/schema validation.</li>
       <li>Run the operation a second time; a stable result should produce no further diff.</li>
    </ol>
-   <p>Java cleanup preview screenshots do not represent the direct PDE XML context command. The configuration image
-      shows the cleanup options; the source-control diff is the authoritative result evidence for the selected XML file.</p>
+   <p>Java cleanup preview screenshots do not represent the direct PDE XML command. The configuration image shows the
+      cleanup options; the source-control diff is the authoritative result evidence for the selected XML file.</p>
 
    <h2>Screenshot regeneration</h2>
    <p>The configuration image is generated from a real Eclipse workbench by
