@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "cb310c6672b37211b7ee6614fd3989b4db142748",
-      "lastProcessedDate": "2026-08-30T02:27:28.171149157Z",
-      "totalProcessed": 4975,
+      "lastProcessedCommit": "1f0b3e148142b9c49f971addaa68d33d466a9fec",
+      "lastProcessedDate": "2026-08-31T02:29:25.560429278Z",
+      "totalProcessed": 5061,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3125,6 +3125,33 @@
           "deferredAt": "2026-08-30T02:26:28.465998472Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "b3186f5c396ad6abfe8658b2b69cc5cf5cafa32b",
+          "message": "Fixed bug 343422: [javadoc wizard] Generating Javadoc for CUs with UTF-8 names fails on Windows\n",
+          "diffLines": 73,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-31T02:25:41.738045128Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9d270ef6c2102a96ff84141adfa2871953573586",
+          "message": "reverted Bug 311212: [package explorer] Performance problem with refreshing external class folders\n",
+          "diffLines": 63,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-31T02:25:41.738518405Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1c2bbdd9b67014f738df45ec44cb45d507a80a62",
+          "message": "Part 2 of fix for bug 339176: [navigation] Ctrl+click on continue must jump to the label\n",
+          "diffLines": 20,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-08-31T02:25:52.519602672Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3279,7 +3306,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 4,
-        "API Modernization": 51,
+        "API Modernization": 52,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3304,7 +3331,7 @@
         "Method call argument replacement": 1,
         "API Constant Renaming": 1,
         "API Renaming": 1,
-        "API Usage": 1,
+        "API Usage": 2,
         "String Comparison": 1,
         "Method Call Update": 1,
         "Return Value Refactoring": 1,
@@ -3319,7 +3346,7 @@
         "Utility Simplification": 1,
         "Annotation modernization": 1,
         "Conditional expression modernization": 1,
-        "API usage modernization": 1,
+        "API usage modernization": 2,
         "Preference Defaults": 1,
         "Constructor Call Refactoring": 1,
         "Annotations": 1,
@@ -3336,13 +3363,13 @@
         "Code Modernization": 1,
         "Annotation Addition": 1,
         "String Modernization": 1,
-        "String Manipulation": 2,
+        "String Manipulation": 3,
         "Code Style/Readability": 1,
         "Control Flow Refactoring": 1,
         "Method Extraction/Call Site Refactoring": 1,
         "Bug Fix / Robustness": 1,
         "Nullability": 1,
-        "Redundant Code": 1,
+        "Redundant Code": 2,
         "Deprecated API Usage": 2,
         "UI State Management": 1,
         "Constant Refactoring": 1,
@@ -3380,7 +3407,9 @@
         "API Misuse / Correctness": 1,
         "API simplification": 1,
         "API Constant Replacement": 1,
-        "Debug String Enhancement": 1
+        "Debug String Enhancement": 1,
+        "Method Argument Transformation": 1,
+        "Array Comparison": 1
       },
       "exhaustedCategories": []
     },
@@ -3421,5 +3450,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 27746
+  "globalTotalProcessed": 27832
 }
