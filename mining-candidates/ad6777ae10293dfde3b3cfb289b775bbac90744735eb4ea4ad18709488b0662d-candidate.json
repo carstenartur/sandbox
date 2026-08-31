@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ad6777ae10293dfde3b3cfb289b775bbac90744735eb4ea4ad18709488b0662d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n\u003c!id: stubutility.conditional.typeparameternames\u003e\n\u003c!description: Conditionally generate method type parameter names based on project settings to ignore them for Javadoc generation.\u003e\n\u003c!severity: INFO\u003e\n*/\norg.eclipse.jdt.internal.corext.codemanipulation.StubUtility.getTypeParameterNames($method.getTypeParameters())\n\u003d\u003e\norg.eclipse.jdt.internal.corext.codemanipulation.StubUtility.shouldGenerateMethodTypeParameterTags($method.getJavaProject()) ? org.eclipse.jdt.internal.corext.codemanipulation.StubUtility.getTypeParameterNames($method.getTypeParameters()) : new java.lang.String[0]\n;;",
+  "beforeExample": "import org.eclipse.jdt.core.IMethod;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.internal.corext.codemanipulation.StubUtility;\n\nclass Example {\n    // Assume IMethod and IJavaProject are available in the context\n    public String[] generate(IMethod method) {\n        String[] typeParameterNames \u003d StubUtility.getTypeParameterNames(method.getTypeParameters());\n        return typeParameterNames;\n    }\n}",
+  "afterExample": "import org.eclipse.jdt.core.IMethod;\nimport org.eclipse.jdt.core.IJavaProject;\nimport org.eclipse.jdt.internal.corext.codemanipulation.StubUtility;\n\nclass Example {\n    // Assume IMethod and IJavaProject are available in the context\n    public String[] generate(IMethod method) {\n        String[] typeParameterNames \u003d StubUtility.shouldGenerateMethodTypeParameterTags(method.getJavaProject()) ? StubUtility.getTypeParameterNames(method.getTypeParameters()) : new java.lang.String[0];\n        return typeParameterNames;\n    }\n}",
+  "negativeExample": "import org.eclipse.jdt.core.IMethod;\nimport org.eclipse.jdt.internal.corext.codemanipulation.StubUtility;\n\nclass Example {\n    public String[] someOtherCall(IMethod method) {\n        // This method call is different and should not be matched\n        String[] otherNames \u003d StubUtility.getTypeParameterNames(null);\n        return otherNames;\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "8c3591bc267eb83f1fbc0a93f50d81cacb3fabcb",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-31T02:29:26.402996838Z",
+  "ruleFingerprint": "sha256:cd4411fa59d8917c18017adfbb7fb7b895aaeed02e669f029a5ddf70f15c269b",
+  "behaviorFingerprint": "sha256:629f7022ad8d6e637c1eb3f8627ba250c569e7f11d5f5178c21bd14768835e9d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
+    "verifiedAt": "2026-08-31T02:29:31.308252024Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "10f7ee4c9408e410e96cde5371ec11422bcc97a6310f32ead879a68e14693148",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.core.runtime.preferences.BundleDefaultsScope().getNode($arg$)\n\u003d\u003e org.eclipse.core.runtime.preferences.BundleDefaultsScope.INSTANCE.getNode($arg$)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.core.runtime.preferences.BundleDefaultsScope;\nimport org.osgi.service.prefs.Preferences;\n\npublic class Example {\n    public void method() {\n        Preferences bundleDefaults \u003d new BundleDefaultsScope().getNode(\"plugin.id\");\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.core.runtime.preferences.BundleDefaultsScope;\nimport org.osgi.service.prefs.Preferences;\n\npublic class Example {\n    public void method() {\n        Preferences bundleDefaults \u003d BundleDefaultsScope.INSTANCE.getNode(\"plugin.id\");\n    }\n}",
+  "negativeExample": "package test;\nimport org.osgi.service.prefs.Preferences;\n\npublic class Example {\n    public void method() {\n        // This should not match, it\u0027s a different class\n        Preferences other \u003d new SomeOtherScope().getNode(\"plugin.id\");\n    }\n}\n\nclass SomeOtherScope {\n    public Preferences getNode(String id) { return null; }\n}",
+  "targetHintFile": "general.sandbox-hint",
+  "sourceCommit": "58de94b3f23946e7f4bf75d5e358d0c45188ce60",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API usage modernization",
+  "summary": "Replace `new BundleDefaultsScope()` with `BundleDefaultsScope.INSTANCE`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-31T02:29:26.388291400Z",
+  "ruleFingerprint": "sha256:dcdf6412ac3b57ff04771f8bfca53c6b0673b60fd92c8609873f597fa9cc7ec2",
+  "behaviorFingerprint": "sha256:6a1f478ad0f6d02c1090dd5dd7126b0182299d048f4446ee2c1c6cc01cd1ff6d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-08-31T02:29:31.294852412Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
