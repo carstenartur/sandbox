@@ -13,16 +13,83 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.css.core;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-/** Tests for the cross-platform command resolution in {@link NodeExecutor}. */
+/**
+ * Tests for {@link NodeExecutor}.
+ */
 public class NodeExecutorTest {
+
+	@Test
+	public void testIsNodeAvailableDoesNotThrow() {
+		assertDoesNotThrow(() -> NodeExecutor.isNodeAvailable());
+	}
+
+	@Test
+	public void testIsNpxAvailableDoesNotThrow() {
+		assertDoesNotThrow(() -> NodeExecutor.isNpxAvailable());
+	}
+
+	@Test
+	public void testNodeAvailabilityCheckIsConsistent() {
+		boolean first = NodeExecutor.isNodeAvailable();
+		boolean second = NodeExecutor.isNodeAvailable();
+
+		assertEquals(first, second, "Node availability check should be consistent"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testNpxAvailabilityCheckIsConsistent() {
+		boolean first = NodeExecutor.isNpxAvailable();
+		boolean second = NodeExecutor.isNpxAvailable();
+
+		assertEquals(first, second, "Npx availability check should be consistent"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testExecutionResultClassExists() {
+		assertNotNull(NodeExecutor.ExecutionResult.class);
+	}
+
+	@Test
+	public void testNodeIsActuallyAvailable() {
+		assertTrue(NodeExecutor.isNodeAvailable(), "Maven-owned Node.js should be available"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testPinnedCssToolsAreActuallyAvailable() {
+		assertTrue(NodeExecutor.isNpxAvailable(), "Maven-owned Prettier and Stylelint should be available"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testExecutePrettierWithVersion() throws IOException, InterruptedException {
+		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx("prettier", "--version"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		assertNotNull(result);
+		assertTrue(result.isSuccess(), result.stderr);
+		assertFalse(result.stdout.isEmpty(), "Prettier --version should produce output"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testExecuteStylelintWithInvalidOption() throws IOException, InterruptedException {
+		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx(
+				"stylelint", "--this-option-does-not-exist"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		assertNotNull(result);
+		assertFalse(result.isSuccess(), "Invalid Stylelint option should not succeed"); //$NON-NLS-1$
+		assertTrue(result.exitCode != 0, "Invalid Stylelint option should have non-zero exit code"); //$NON-NLS-1$
+	}
 
 	@Test
 	public void testWindowsUsesCmdForUserNpx() {
