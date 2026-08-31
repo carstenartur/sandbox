@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write
+  pages: write
 
 concurrency:
   group: release-workflow
@@ -197,6 +198,16 @@ jobs:
           git -C gh-pages-before fetch origin gh-pages
           echo "sha=$(git -C gh-pages-before rev-parse origin/gh-pages)" >> "$GITHUB_OUTPUT"
 
+      - name: Await exact GitHub Pages publication
+        id: await_pages_build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 .github/scripts/wait_for_pages_build.py \
+            --repository "${{ github.repository }}" \
+            --expected-commit "${{ steps.gh_pages_after.outputs.sha }}" \
+            --output target/distribution-verification/pages-build.json
+
       - name: Verify advertised snapshot URLs
         id: verify_snapshot_urls
         run: |
@@ -209,8 +220,10 @@ jobs:
             --expected-child latest \
             --output target/distribution-verification/snapshot-composite-verification.json
 
-      - name: Roll back a failed snapshot-site verification
-        if: ${{ failure() && steps.deploy_snapshot.outcome == 'success' && steps.verify_snapshot_urls.outcome == 'failure' }}
+      - name: Roll back a failed snapshot publication
+        if: ${{ failure() && steps.deploy_snapshot.outcome == 'success' && (steps.await_pages_build.outcome == 'failure' || steps.verify_snapshot_urls.outcome == 'failure') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           previous="${{ steps.gh_pages_before.outputs.sha }}"
@@ -224,6 +237,10 @@ jobs:
             origin "${previous}:refs/heads/gh-pages"
           echo "Rolled gh-pages back from ${deployed} to ${previous}." \
             | tee target/distribution-verification/snapshot-publication-rollback.log
+          python3 .github/scripts/wait_for_pages_build.py \
+            --repository "${{ github.repository }}" \
+            --expected-commit "$previous" \
+            --output target/distribution-verification/pages-rollback-build.json
 
       - name: Upload immutable snapshot provenance
         if: ${{ always() && steps.generate_manifest.outcome == 'success' }}
@@ -240,6 +257,7 @@ jobs:
         if: always()
         env:
           DEPLOY_OUTCOME: ${{ steps.deploy_snapshot.outcome }}
+          PAGES_BUILD_OUTCOME: ${{ steps.await_pages_build.outcome }}
           VERIFY_OUTCOME: ${{ steps.verify_snapshot_urls.outcome }}
         run: |
           {
@@ -248,13 +266,14 @@ jobs:
             echo "- [Validated commit](https://github.com/${GITHUB_REPOSITORY}/commit/${VALIDATED_SHA})"
             echo "- Validated project version: \`${VALIDATED_VERSION}\`"
             echo "- [Source Java CI run](${SOURCE_JAVA_CI_RUN_URL})"
-            if [[ "$DEPLOY_OUTCOME" == 'success' && "$VERIFY_OUTCOME" == 'success' ]]; then
+            if [[ "$DEPLOY_OUTCOME" == 'success' && "$PAGES_BUILD_OUTCOME" == 'success' && "$VERIFY_OUTCOME" == 'success' ]]; then
               echo '- [Project dashboard](https://carstenartur.github.io/sandbox/)'
               echo '- [Latest snapshot update site](https://carstenartur.github.io/sandbox/snapshots/latest/)'
               echo '- [Snapshot build manifest](https://carstenartur.github.io/sandbox/snapshots/latest/build-manifest.json)'
               echo '- [Distribution verification](https://carstenartur.github.io/sandbox/snapshots/latest/distribution-verification.md)'
             else
               echo "- Deployment outcome: \`${DEPLOY_OUTCOME:-not-run}\`"
+              echo "- GitHub Pages build outcome: \`${PAGES_BUILD_OUTCOME:-not-run}\`"
               echo "- URL verification outcome: \`${VERIFY_OUTCOME:-not-run}\`"
               echo '- No successful snapshot publication is reported for this run.'
             fi
