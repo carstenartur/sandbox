@@ -30,14 +30,16 @@ concurrency:
 
 jobs:
   coverage:
-    name: Build and verify/publish metrics
+    name: Build and verify metrics
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     permissions:
-      contents: write
+      contents: read
       checks: write
       code-quality: write
       pull-requests: read
+    outputs:
+      ran: ${{ steps.gate.outputs.run }}
     env:
       MAVEN_OPTS: -Djava.awt.headless=true
       QUALITY_SITE: target/quality-site
@@ -385,8 +387,47 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+      - name: Publish verification-only summary
+        if: always() && steps.gate.outputs.run == 'true' && github.ref != 'refs/heads/main'
+        run: |
+          {
+            echo '## Verified quality evidence'
+            echo
+            echo 'This branch run verifies and uploads native line coverage but does not update the public GitHub Pages reports.'
+            echo
+            echo "[Workflow run and retained evidence](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    name: Publish verified metrics to GitHub Pages
+    needs: coverage
+    if: ${{ needs.coverage.result == 'success' && needs.coverage.outputs.ran == 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
+    concurrency:
+      group: release-workflow
+      cancel-in-progress: false
+
+    steps:
+      - name: Download verified metric evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: verified-quality-${{ github.run_number }}-${{ github.run_attempt }}
+          path: .
+
+      - name: Validate staged public report
+        run: |
+          set -euo pipefail
+          test -s target/quality-site/badges/tests.json
+          test -s target/quality-site/badges/coverage.json
+          test -s target/quality-site/quality-summary.json
+          test -s target/quality-site/tests/index.html
+          test -s target/quality-site/coverage/index.html
+
       - name: Publish reports and badges to GitHub Pages
-        if: success() && steps.gate.outputs.run == 'true' && github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -397,7 +438,6 @@ jobs:
           commit_message: 'Publish verified test and coverage metrics for ${{ github.sha }}'
 
       - name: Publish public report links
-        if: success() && steps.gate.outputs.run == 'true' && github.ref == 'refs/heads/main'
         run: |
           {
             echo '## Verified quality evidence'
@@ -407,15 +447,4 @@ jobs:
             echo '[Aggregate JaCoCo coverage](https://carstenartur.github.io/sandbox/coverage/)'
             echo
             echo '[Machine-readable summary](https://carstenartur.github.io/sandbox/quality-summary.json)'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Publish verification-only summary
-        if: always() && steps.gate.outputs.run == 'true' && github.ref != 'refs/heads/main'
-        run: |
-          {
-            echo '## Verified quality evidence'
-            echo
-            echo 'This branch run verifies and uploads native line coverage but does not update the public GitHub Pages reports.'
-            echo
-            echo "[Workflow run and retained evidence](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
           } >> "$GITHUB_STEP_SUMMARY"

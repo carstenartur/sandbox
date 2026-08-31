@@ -97,6 +97,9 @@ jobs:
               'file: target/native-coverage/Cobertura.xml',
               'label: code-coverage/jacoco',
               'metric: "LINE"',
+              'publish:\n    name: Publish verified metrics to GitHub Pages',
+              'actions/download-artifact@v8',
+              '    concurrency:\n      group: release-workflow\n      cancel-in-progress: false',
           ]
           missing = [marker for marker in required if marker not in workflow]
           if missing:
@@ -107,6 +110,12 @@ jobs:
               raise SystemExit('Native coverage must run for every pull request, not a path-filtered subset')
           if 'cicirello/jacoco-badge-generator' in workflow:
               raise SystemExit('Instruction coverage must not be advertised as the GitHub line-coverage metric')
+
+          coverage_block, publish_block = workflow.split('\n  publish:\n', 1)
+          if 'peaceiris/actions-gh-pages@v4' in coverage_block:
+              raise SystemExit('Coverage must not publish to gh-pages outside the shared publication lock')
+          if 'peaceiris/actions-gh-pages@v4' not in publish_block:
+              raise SystemExit('The locked coverage publication job no longer publishes gh-pages')
           PY
       - name: Validate protected-main release transition
         run: |
