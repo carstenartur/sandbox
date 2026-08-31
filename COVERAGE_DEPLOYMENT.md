@@ -1,9 +1,10 @@
 # Verified test and coverage publication
 
-Sandbox publishes measured test and coverage values from the complete Maven verification. The implementation deliberately delegates report interpretation to established GitHub Actions rather than maintaining repository-specific parsers:
+Sandbox publishes measured test and line-coverage values from the complete Maven verification. The implementation delegates report interpretation and format conversion to established tools instead of maintaining a second Java-coverage engine:
 
 - `mikepenz/action-junit-report@v6` supplies JUnit totals from Surefire and Failsafe reports;
-- `cicirello/jacoco-badge-generator@v2` generates the instruction-coverage endpoint from JaCoCo CSV.
+- `danielpalme/ReportGenerator-GitHub-Action@5.5.11` converts the aggregate JaCoCo XML report into Cobertura and a machine-readable JSON summary;
+- `actions/upload-code-coverage@v1` uploads the Cobertura result to GitHub Code Quality for the pull-request head or the protected default branch.
 
 The detailed contract is documented in [`docs/quality-metrics.md`](docs/quality-metrics.md).
 
@@ -12,8 +13,8 @@ The detailed contract is documented in [`docs/quality-metrics.md`](docs/quality-
 A successful `main` run updates these GitHub Pages resources in one publication:
 
 - `badges/tests.json` — test total and skipped count;
-- `badges/coverage.json` — aggregate instruction coverage;
-- `quality-summary.json` — source commit, timestamp, JUnit totals, and coverage percentage;
+- `badges/coverage.json` — aggregate line coverage;
+- `quality-summary.json` — source commit, timestamp, JUnit totals, covered lines, coverable lines, and line-coverage percentage;
 - `tests/` — readable totals and generated module reports;
 - `coverage/` — aggregate JaCoCo HTML report.
 
@@ -39,4 +40,13 @@ sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv
 sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml
 ```
 
-Publication is handled by [`.github/workflows/coverage.yml`](.github/workflows/coverage.yml). Pull requests validate the full generation path but do not mutate GitHub Pages. Failed runs retain available JUnit and JaCoCo evidence as workflow artifacts.
+The workflow converts the XML input to:
+
+```text
+target/native-coverage/Cobertura.xml
+target/native-coverage/Summary.json
+```
+
+Publication is handled by [`.github/workflows/coverage.yml`](.github/workflows/coverage.yml). Every pull request checks out and measures its head commit. Same-repository pull requests upload their Cobertura report to GitHub Code Quality, while only successful `main` runs mutate GitHub Pages. Failed runs retain available JUnit, JaCoCo, Cobertura, and JSON evidence as workflow artifacts.
+
+GitHub coverage rules evaluate **line coverage**, not JaCoCo instruction coverage. The badge, machine-readable summary, native upload, and repository rule therefore use the same metric.
