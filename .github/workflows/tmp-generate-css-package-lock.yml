@@ -1,0 +1,49 @@
+name: Temporary CSS package lock generation
+
+on:
+  push:
+    branches:
+      - tmp/generate-css-package-lock
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up pinned Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24.20.0'
+
+      - name: Verify Node.js and npm versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node --version)" = 'v24.20.0'
+          test "$(npm --version)" = '11.19.0'
+
+      - name: Generate and verify lockfile
+        working-directory: sandbox_css_cleanup_test
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm ci --ignore-scripts --no-audit --no-fund
+          test "$(npx --no-install prettier --version)" = '3.9.6'
+          test "$(npx --no-install stylelint --version)" = '17.14.1'
+
+      - name: Upload generated lockfile
+        uses: actions/upload-artifact@v7
+        with:
+          name: css-package-lock
+          path: |
+            sandbox_css_cleanup_test/package.json
+            sandbox_css_cleanup_test/package-lock.json
+          if-no-files-found: error
+          retention-days: 1

@@ -1,0 +1,17 @@
+{
+  "name": "sandbox-css-test-tooling",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pinned Node.js tools used by the Sandbox CSS integration tests.",
+  "license": "EPL-2.0",
+  "engines": {
+    "node": "24.20.0",
+    "npm": "11.19.0"
+  },
+  "packageManager": "npm@11.19.0",
+  "devDependencies": {
+    "prettier": "3.9.6",
+    "stylelint": "17.14.1",
+    "stylelint-config-standard": "40.0.0"
+  }
+}
