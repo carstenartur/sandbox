@@ -6,6 +6,7 @@ on:
     paths:
       - 'mvnw'
       - 'mvnw.cmd'
+      - '.gitattributes'
       - 'pom.xml'
       - '.mvn/**'
       - 'sandbox*/**'
@@ -61,7 +62,7 @@ jobs:
           relevant=false
           while IFS= read -r path; do
             case "$path" in
-              mvnw|mvnw.cmd|pom.xml|.mvn/*|sandbox*/*|features/*|plugins/*|org/*|*.xml|*.properties|\
+              mvnw|mvnw.cmd|.gitattributes|pom.xml|.mvn/*|sandbox*/*|features/*|plugins/*|org/*|*.xml|*.properties|\
               .github/actions/cleanup-action/*|.github/actions/verify-eclipse-desktop-runtime/*|\
               .github/workflows/maven.yml)
                 relevant=true

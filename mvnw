@@ -41,23 +41,25 @@ CYGWIN* | MINGW*)
   ;;
 esac
 
-# set JAVACMD and JAVACCMD
+# set Java tool commands
 set_java_home() {
   # For Cygwin and MinGW, ensure paths are in Unix format before anything is touched
   if [ -n "${JAVA_HOME-}" ]; then
     if [ -x "$JAVA_HOME/jre/sh/java" ]; then
       # IBM's JDK on AIX uses strange locations for the executables
       JAVACMD="$JAVA_HOME/jre/sh/java"
-      JAVACCMD="$JAVA_HOME/jre/sh/javac"
+      JAVACCMD="$JAVA_HOME/bin/javac"
+      JARCMD="$JAVA_HOME/bin/jar"
     else
       JAVACMD="$JAVA_HOME/bin/java"
       JAVACCMD="$JAVA_HOME/bin/javac"
+      JARCMD="$JAVA_HOME/bin/jar"
+    fi
 
-      if [ ! -x "$JAVACMD" ] || [ ! -x "$JAVACCMD" ]; then
-        echo "The JAVA_HOME environment variable is not defined correctly, so mvnw cannot run." >&2
-        echo "JAVA_HOME is set to \"$JAVA_HOME\", but \"\$JAVA_HOME/bin/java\" or \"\$JAVA_HOME/bin/javac\" does not exist." >&2
-        return 1
-      fi
+    if [ ! -x "$JAVACMD" ] || [ ! -x "$JAVACCMD" ] || [ ! -x "$JARCMD" ]; then
+      echo "The JAVA_HOME environment variable is not defined correctly, so mvnw cannot run." >&2
+      echo "JAVA_HOME is set to \"$JAVA_HOME\", but its java, javac, or jar executable does not exist." >&2
+      return 1
     fi
   else
     JAVACMD="$(
@@ -70,9 +72,14 @@ set_java_home() {
       'unset' -f command 2>/dev/null
       'command' -v javac
     )" || :
+    JARCMD="$(
+      'set' +e
+      'unset' -f command 2>/dev/null
+      'command' -v jar
+    )" || :
 
-    if [ ! -x "${JAVACMD-}" ] || [ ! -x "${JAVACCMD-}" ]; then
-      echo "The java/javac command does not exist in PATH nor is JAVA_HOME set, so mvnw cannot run." >&2
+    if [ ! -x "${JAVACMD-}" ] || [ ! -x "${JAVACCMD-}" ] || [ ! -x "${JARCMD-}" ]; then
+      echo "The java/javac/jar commands do not exist in PATH nor is JAVA_HOME set, so mvnw cannot run." >&2
       return 1
     fi
   fi
@@ -116,6 +123,7 @@ while IFS="=" read -r key value; do
   esac
 done <"$scriptDir/.mvn/wrapper/maven-wrapper.properties"
 [ -n "${distributionUrl-}" ] || die "cannot read distributionUrl property in $scriptDir/.mvn/wrapper/maven-wrapper.properties"
+[ -z "${distributionSha256Sum-}" ] || distributionSha256Sum="$(printf %s "$distributionSha256Sum" | tr '[:upper:]' '[:lower:]')"
 
 case "${distributionUrl##*/}" in
 maven-mvnd-*bin.*)
@@ -175,15 +183,9 @@ verbose "Couldn't find MAVEN_HOME, downloading and installing it ..."
 verbose "Downloading from: $distributionUrl"
 verbose "Downloading to: $TMP_DOWNLOAD_DIR/$distributionUrlName"
 
-# select .zip or .tar.gz
-if ! command -v unzip >/dev/null; then
-  distributionUrl="${distributionUrl%.zip}.tar.gz"
-  distributionUrlName="${distributionUrl##*/}"
-fi
-
 # verbose opt
-__MVNW_QUIET_WGET=--quiet __MVNW_QUIET_CURL=--silent __MVNW_QUIET_UNZIP=-q __MVNW_QUIET_TAR=''
-[ "${MVNW_VERBOSE-}" != true ] || __MVNW_QUIET_WGET='' __MVNW_QUIET_CURL='' __MVNW_QUIET_UNZIP='' __MVNW_QUIET_TAR=v
+__MVNW_QUIET_WGET=--quiet __MVNW_QUIET_CURL=--silent __MVNW_QUIET_UNZIP=-q
+[ "${MVNW_VERBOSE-}" != true ] || __MVNW_QUIET_WGET='' __MVNW_QUIET_CURL='' __MVNW_QUIET_UNZIP=''
 
 # normalize http auth
 case "${MVNW_PASSWORD:+has-password}" in
@@ -220,6 +222,8 @@ elif set_java_home; then
   "$(native_path "$JAVACCMD")" "$(native_path "$javaSource")" || die "Failed to compile Downloader.java"
   verbose " - Running Downloader.java ..."
   "$(native_path "$JAVACMD")" -cp "$(native_path "$TMP_DOWNLOAD_DIR")" Downloader "$distributionUrl" "$(native_path "$targetZip")"
+else
+  die "No supported Maven distribution downloader is available"
 fi
 
 # If specified, validate the SHA-256 sum of the Maven distribution zip file
@@ -237,23 +241,54 @@ if [ -n "${distributionSha256Sum-}" ]; then
     if echo "$distributionSha256Sum  $TMP_DOWNLOAD_DIR/$distributionUrlName" | shasum -a 256 -c >/dev/null 2>&1; then
       distributionSha256Result=true
     fi
+  elif set_java_home; then
+    checksumSource="$TMP_DOWNLOAD_DIR/Checksum.java"
+    cat >"$checksumSource" <<-END
+	public class Checksum
+	{
+	  public static void main( String[] args ) throws Exception
+	  {
+	    java.security.MessageDigest digest = java.security.MessageDigest.getInstance( "SHA-256" );
+	    try ( java.io.InputStream input = java.nio.file.Files.newInputStream( java.nio.file.Path.of( args[0] ) ) )
+	    {
+	      byte[] buffer = new byte[8192];
+	      int read;
+	      while ( ( read = input.read( buffer ) ) >= 0 )
+	      {
+	        digest.update( buffer, 0, read );
+	      }
+	    }
+	    System.out.print( java.util.HexFormat.of().formatHex( digest.digest() ) );
+	  }
+	}
+	END
+    "$(native_path "$JAVACCMD")" "$(native_path "$checksumSource")" || die "Failed to compile Checksum.java"
+    checksumResult="$("$(native_path "$JAVACMD")" -cp "$(native_path "$TMP_DOWNLOAD_DIR")" Checksum "$(native_path "$TMP_DOWNLOAD_DIR/$distributionUrlName")")"
+    if [ "$checksumResult" = "$distributionSha256Sum" ]; then
+      distributionSha256Result=true
+    fi
   else
-    echo "Checksum validation was requested but neither 'sha256sum' or 'shasum' are available." >&2
-    echo "Please install either command, or disable validation by removing 'distributionSha256Sum' from your maven-wrapper.properties." >&2
+    echo "Checksum validation was requested but no SHA-256 implementation is available." >&2
     exit 1
   fi
-  if [ $distributionSha256Result = false ]; then
+  if [ "$distributionSha256Result" = false ]; then
     echo "Error: Failed to validate Maven distribution SHA-256, your Maven distribution might be compromised." >&2
     echo "If you updated your Maven version, you need to update the specified distributionSha256Sum property." >&2
     exit 1
   fi
 fi
 
-# unzip and move
+# unzip and move. Java 21 is sufficient when no native unzip command exists.
 if command -v unzip >/dev/null; then
   unzip ${__MVNW_QUIET_UNZIP:+"$__MVNW_QUIET_UNZIP"} "$TMP_DOWNLOAD_DIR/$distributionUrlName" -d "$TMP_DOWNLOAD_DIR" || die "failed to unzip"
+elif set_java_home; then
+  verbose "Falling back to the JDK jar tool for ZIP extraction"
+  (
+    cd "$TMP_DOWNLOAD_DIR"
+    "$(native_path "$JARCMD")" xf "$(native_path "$TMP_DOWNLOAD_DIR/$distributionUrlName")"
+  ) || die "failed to extract Maven with the JDK jar tool"
 else
-  tar xzf${__MVNW_QUIET_TAR:+"$__MVNW_QUIET_TAR"} "$TMP_DOWNLOAD_DIR/$distributionUrlName" -C "$TMP_DOWNLOAD_DIR" || die "failed to untar"
+  die "Cannot extract the Maven distribution: neither unzip nor a complete JDK is available"
 fi
 
 # Find the actual extracted directory name (handles snapshots where filename != directory name)
@@ -290,6 +325,7 @@ fi
 verbose "Found extracted Maven distribution directory: $actualDistributionDir"
 printf %s\\n "$distributionUrl" >"$TMP_DOWNLOAD_DIR/$actualDistributionDir/mvnw.url"
 mv -- "$TMP_DOWNLOAD_DIR/$actualDistributionDir" "$MAVEN_HOME" || [ -d "$MAVEN_HOME" ] || die "fail to move MAVEN_HOME"
+chmod +x "$MAVEN_HOME/bin/$MVN_CMD" || die "cannot make $MAVEN_HOME/bin/$MVN_CMD executable"
 
 clean || :
 exec_maven "$@"
