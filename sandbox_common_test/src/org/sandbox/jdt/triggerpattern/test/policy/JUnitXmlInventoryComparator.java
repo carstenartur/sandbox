@@ -14,8 +14,6 @@
 package org.sandbox.jdt.triggerpattern.test.policy;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -105,20 +104,25 @@ final class JUnitXmlInventoryComparator {
 
 	static Mapping readMapping(Path path) throws IOException {
 		Objects.requireNonNull(path, "path"); //$NON-NLS-1$
-		try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
-			JsonElement parsed = JsonParser.parseReader(reader);
-			if (!parsed.isJsonObject()) {
-				throw new IllegalArgumentException("Mapping document must be a JSON object: " + path); //$NON-NLS-1$
-			}
-			JsonObject object = parsed.getAsJsonObject();
-			Map<String, String> renames = stringMap(object.get("renames"), "renames"); //$NON-NLS-1$ //$NON-NLS-2$
-			List<String> allowedMissing = stringList(object.get("allowedMissing"), "allowedMissing"); //$NON-NLS-1$ //$NON-NLS-2$
-			List<String> allowedAdded = stringList(object.get("allowedAdded"), "allowedAdded"); //$NON-NLS-1$ //$NON-NLS-2$
-			return new Mapping(renames, allowedMissing, allowedAdded);
+		JsonElement parsed = JsonParser.parseString(Files.readString(path, StandardCharsets.UTF_8));
+		if (!parsed.isJsonObject()) {
+			throw new IllegalArgumentException("Mapping document must be a JSON object: " + path); //$NON-NLS-1$
 		}
+		JsonObject object = parsed.getAsJsonObject();
+		Map<String, String> renames = stringMap(object.get("renames"), "renames"); //$NON-NLS-1$ //$NON-NLS-2$
+		List<String> allowedMissing = stringList(object.get("allowedMissing"), "allowedMissing"); //$NON-NLS-1$ //$NON-NLS-2$
+		List<String> allowedAdded = stringList(object.get("allowedAdded"), "allowedAdded"); //$NON-NLS-1$ //$NON-NLS-2$
+		return new Mapping(renames, allowedMissing, allowedAdded);
 	}
 
 	private static Inventory collect(Path directory) throws IOException {
+		return collect(directory, DocumentBuilderFactory::newInstance);
+	}
+
+	static Inventory collect(Path directory, Supplier<DocumentBuilderFactory> factorySupplier) throws IOException {
+		Objects.requireNonNull(directory, "directory"); //$NON-NLS-1$
+		Objects.requireNonNull(factorySupplier, "factorySupplier"); //$NON-NLS-1$
+
 		List<Path> reports;
 		if (!Files.isDirectory(directory)) {
 			reports = List.of();
@@ -134,18 +138,20 @@ final class JUnitXmlInventoryComparator {
 		Map<TestStateKey, Integer> states = new HashMap<>();
 		List<String> parseErrors = new ArrayList<>();
 		for (Path report : reports) {
+			Map<TestStateKey, Integer> reportStates = new HashMap<>();
 			try {
-				collectReport(report, states);
-			} catch (IOException | ParserConfigurationException | SAXException failure) {
+				collectReport(report, reportStates, factorySupplier.get());
+				reportStates.forEach((key, count) -> states.merge(key, count, Integer::sum));
+			} catch (IOException | ParserConfigurationException | SAXException | RuntimeException failure) {
 				parseErrors.add(report + ": " + message(failure)); //$NON-NLS-1$
 			}
 		}
 		return new Inventory(Map.copyOf(states), reports.size(), List.copyOf(parseErrors));
 	}
 
-	private static void collectReport(Path report, Map<TestStateKey, Integer> states)
-			throws IOException, ParserConfigurationException, SAXException {
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+	private static void collectReport(Path report, Map<TestStateKey, Integer> states,
+			DocumentBuilderFactory factory) throws IOException, ParserConfigurationException, SAXException {
+		Objects.requireNonNull(factory, "factory"); //$NON-NLS-1$
 		factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
 		factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true); //$NON-NLS-1$
 		factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, ""); //$NON-NLS-1$
@@ -419,10 +425,7 @@ final class JUnitXmlInventoryComparator {
 			if (parent != null) {
 				Files.createDirectories(parent);
 			}
-			try (Writer writer = Files.newBufferedWriter(output, StandardCharsets.UTF_8)) {
-				GSON.toJson(this, writer);
-				writer.write(System.lineSeparator());
-			}
+			Files.writeString(output, GSON.toJson(this) + System.lineSeparator(), StandardCharsets.UTF_8);
 		}
 	}
 }
