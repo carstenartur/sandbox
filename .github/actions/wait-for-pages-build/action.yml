@@ -1,0 +1,154 @@
+name: Await exact GitHub Pages build
+description: Request and await the GitHub Pages build for one exact gh-pages commit.
+
+inputs:
+  token:
+    description: GitHub token with pages write permission.
+    required: true
+  repository:
+    description: Repository in owner/name form.
+    required: true
+  expected-commit:
+    description: Exact gh-pages commit that must reach the built state.
+    required: true
+  expected-source-branch:
+    description: Configured GitHub Pages source branch.
+    required: false
+    default: gh-pages
+  output:
+    description: JSON evidence file written by the action.
+    required: true
+  attempts:
+    description: Maximum number of status observations.
+    required: false
+    default: '90'
+  delay-seconds:
+    description: Delay between observations in seconds.
+    required: false
+    default: '10'
+
+runs:
+  using: composite
+  steps:
+    - name: Request and await exact Pages build
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        PAGES_REPOSITORY: ${{ inputs.repository }}
+        EXPECTED_COMMIT: ${{ inputs.expected-commit }}
+        EXPECTED_SOURCE_BRANCH: ${{ inputs.expected-source-branch }}
+        EVIDENCE_OUTPUT: ${{ inputs.output }}
+        MAX_ATTEMPTS: ${{ inputs.attempts }}
+        DELAY_SECONDS: ${{ inputs.delay-seconds }}
+      run: |
+        set -euo pipefail
+
+        api_url="${GITHUB_API_URL:-https://api.github.com}"
+        api_version='2022-11-28'
+        request_status=0
+        observed_attempts=0
+        latest_commit=''
+        latest_status=''
+        latest_error='null'
+
+        [[ "$PAGES_REPOSITORY" =~ ^[^/[:space:]]+/[^/[:space:]]+$ ]] \
+          || { echo "::error::Invalid repository: $PAGES_REPOSITORY"; exit 1; }
+        [[ "$EXPECTED_COMMIT" =~ ^[0-9a-fA-F]{40}$ ]] \
+          || { echo '::error::Expected commit must be a 40-character SHA.'; exit 1; }
+        [[ "$MAX_ATTEMPTS" =~ ^[0-9]+$ ]] && (( MAX_ATTEMPTS >= 1 )) \
+          || { echo '::error::attempts must be a positive integer.'; exit 1; }
+        [[ "$DELAY_SECONDS" =~ ^[0-9]+$ ]] \
+          || { echo '::error::delay-seconds must be a non-negative integer.'; exit 1; }
+        [[ -n "$EVIDENCE_OUTPUT" ]] \
+          || { echo '::error::An evidence output path is required.'; exit 1; }
+        mkdir -p "$(dirname "$EVIDENCE_OUTPUT")"
+
+        site="$(gh api "repos/$PAGES_REPOSITORY/pages")"
+        actual_branch="$(jq -r '.source.branch // empty' <<< "$site")"
+        actual_path="$(jq -r '.source.path // empty' <<< "$site")"
+
+        write_report() {
+          local result="$1"
+          local failure="${2:-}"
+          jq -n \
+            --arg repository "$PAGES_REPOSITORY" \
+            --arg expectedCommit "$EXPECTED_COMMIT" \
+            --arg expectedSourceBranch "$EXPECTED_SOURCE_BRANCH" \
+            --arg actualSourceBranch "$actual_branch" \
+            --arg actualSourcePath "$actual_path" \
+            --arg latestCommit "$latest_commit" \
+            --arg latestStatus "$latest_status" \
+            --argjson latestError "$latest_error" \
+            --argjson requestStatusCode "$request_status" \
+            --argjson attempts "$observed_attempts" \
+            --arg result "$result" \
+            --arg failure "$failure" \
+            '{
+              schemaVersion: 1,
+              repository: $repository,
+              expectedCommit: $expectedCommit,
+              expectedSourceBranch: $expectedSourceBranch,
+              actualSourceBranch: $actualSourceBranch,
+              actualSourcePath: $actualSourcePath,
+              requestStatusCode: $requestStatusCode,
+              attempts: $attempts,
+              latestBuild: {commit: $latestCommit, status: $latestStatus, error: $latestError},
+              result: $result
+            } + (if $failure == "" then {} else {failure: $failure} end)' \
+            > "$EVIDENCE_OUTPUT"
+        }
+
+        fail() {
+          write_report FAIL "$1"
+          echo "::error::$1"
+          exit 1
+        }
+
+        request_build() {
+          local body_file status
+          body_file="$(mktemp)"
+          status="$(curl --silent --show-error --location \
+            --output "$body_file" --write-out '%{http_code}' --request POST \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "X-GitHub-Api-Version: $api_version" \
+            "$api_url/repos/$PAGES_REPOSITORY/pages/builds")"
+          if [[ "$status" != '201' && "$status" != '409' ]]; then
+            cat "$body_file" >&2 || true
+            rm -f "$body_file"
+            return 1
+          fi
+          rm -f "$body_file"
+          printf '%s\n' "$status"
+        }
+
+        if [[ "$actual_branch" != "$EXPECTED_SOURCE_BRANCH" || "$actual_path" != '/' ]]; then
+          fail "GitHub Pages source must be $EXPECTED_SOURCE_BRANCH at /; found branch=$actual_branch path=$actual_path."
+        fi
+        request_status="$(request_build)" || fail 'Could not request the GitHub Pages build.'
+
+        for (( attempt = 1; attempt <= MAX_ATTEMPTS; attempt++ )); do
+          build="$(gh api "repos/$PAGES_REPOSITORY/pages/builds/latest")"
+          observed_attempts="$attempt"
+          latest_commit="$(jq -r '.commit // empty' <<< "$build")"
+          latest_status="$(jq -r '.status // empty' <<< "$build")"
+          latest_error="$(jq -c '.error // null' <<< "$build")"
+          echo "Pages build attempt $attempt/$MAX_ATTEMPTS: commit=${latest_commit:-unknown} status=${latest_status:-unknown}"
+
+          if [[ "$latest_commit" == "$EXPECTED_COMMIT" && "$latest_status" == 'built' ]]; then
+            write_report PASS
+            exit 0
+          fi
+          if [[ "$latest_commit" == "$EXPECTED_COMMIT" \
+                && "$latest_status" =~ ^(error|errored|failed)$ ]]; then
+            fail "GitHub Pages build for $EXPECTED_COMMIT failed with status $latest_status."
+          fi
+          if [[ "$request_status" == '409' && "$latest_commit" != "$EXPECTED_COMMIT" \
+                && "$latest_status" =~ ^(built|error|errored|failed)$ ]]; then
+            request_status="$(request_build)" \
+              || fail 'Could not re-request the Pages build after a queued build completed.'
+          fi
+          (( attempt == MAX_ATTEMPTS )) || sleep "$DELAY_SECONDS"
+        done
+
+        fail "Timed out waiting for GitHub Pages build of $EXPECTED_COMMIT."
