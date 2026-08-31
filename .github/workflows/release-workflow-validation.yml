@@ -50,6 +50,7 @@ jobs:
           from pathlib import Path
 
           workflow_dir = Path('.github/workflows')
+          validator_name = 'release-workflow-validation.yml'
           publisher_markers = (
               'peaceiris/actions-gh-pages@',
               'git push origin gh-pages',
@@ -65,10 +66,12 @@ jobs:
               'post-merge-provenance.yml',
               'refactoring-mining.yml',
           }
+          workflow_paths = sorted((*workflow_dir.glob('*.yml'), *workflow_dir.glob('*.yaml')))
           discovered_publishers = {
               path.name
-              for path in workflow_dir.glob('*.yml')
-              if any(marker in path.read_text(encoding='utf-8') for marker in publisher_markers)
+              for path in workflow_paths
+              if path.name != validator_name
+              and any(marker in path.read_text(encoding='utf-8') for marker in publisher_markers)
           }
           if discovered_publishers != expected_publishers:
               missing = sorted(expected_publishers - discovered_publishers)
