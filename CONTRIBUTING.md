@@ -10,10 +10,10 @@ Sandbox is an experimental Java modernization toolkit built on Eclipse JDT. Cont
 |---|---|
 | Java | 21 |
 | Eclipse target | Eclipse 2026-06 / Platform 4.40 |
-| Build system | Maven with Tycho 5.0.4 |
+| Build system | Apache Maven 3.9.16 through Maven Wrapper 3.3.4 |
 | Default branch | `main` |
 
-The authoritative values are declared in `pom.xml`, `sandbox_target/eclipse.target`, and `docs/capabilities.json`. A JUnit repository-consistency test checks the active product, p2 category, Oomph model, and documentation against those values.
+The authoritative values are declared in `pom.xml`, `.mvn/wrapper/maven-wrapper.properties`, `sandbox_target/eclipse.target`, and `docs/capabilities.json`. A JUnit repository-consistency test checks the active product, p2 category, Oomph model, and documentation against those values.
 
 ## Contribution workflow
 
@@ -26,28 +26,55 @@ The authoritative values are declared in `pom.xml`, `sandbox_target/eclipse.targ
 
 ## Building and testing
 
-A normal development verification is:
+Install a JDK 21 and set `JAVA_HOME`. Do not install a separate Maven version for this project: the checked-in Maven Wrapper downloads the pinned Maven distribution and verifies its checksum.
+
+A normal development verification on Linux or macOS is:
 
 ```bash
-mvn -T 1C clean verify
+./mvnw -T 1C clean verify
 ```
 
-For a focused Maven module and its dependencies:
+The equivalent Windows command is:
 
-```bash
-mvn -pl <module> -am clean verify
+```powershell
+.\mvnw.cmd -T 1C clean verify
 ```
 
-The complete product/update-site gate is deliberately sequential because repository assembly must finish before distribution verification:
+For a focused Maven module and its dependencies, use the same wrapper:
 
 ```bash
-mvn -Pdistribution \
+./mvnw -pl <module> -am clean verify
+```
+
+```powershell
+.\mvnw.cmd -pl <module> -am clean verify
+```
+
+The complete product/update-site gate is deliberately sequential because repository assembly must finish before distribution verification.
+
+Linux and macOS:
+
+```bash
+./mvnw -Pdistribution \
   --batch-mode \
   -Dtycho.localArtifacts=ignore \
   clean verify
 ```
 
-Linux UI tests require a graphical display; CI supplies Xvfb. Do not use global test-skip or failure-ignore switches to make a transformation appear complete.
+Windows:
+
+```powershell
+.\mvnw.cmd -Pdistribution `
+  --batch-mode `
+  -Dtycho.localArtifacts=ignore `
+  clean verify
+```
+
+Linux UI tests require a graphical display. Run the same Maven command in a desktop session or prefix it with `xvfb-run --auto-servernum`. Windows runs the wrapper directly in the interactive desktop environment. GitHub Actions uses these same wrapper commands; CI-specific setup must provide only the operating-system environment and must not replace Maven/JUnit test semantics.
+
+Some CSS integration tests currently invoke Node-based tools through `npx`. Their remaining checkout-managed versioning work is tracked separately; do not make them pass by adding another unversioned global installation to a new workflow.
+
+Do not use global test-skip or failure-ignore switches to make a transformation appear complete.
 
 ## Change guidelines
 
@@ -58,17 +85,18 @@ Linux UI tests require a graphical display; CI supplies Xvfb. Do not use global 
 - Do not add a parallel Python test or validation framework. Repository semantics belong in Maven/JUnit; workflows should remain thin environment adapters.
 - Do not weaken tests, accept unrelated screenshot changes, or update baselines merely to make CI green.
 
-## Updating Eclipse or Tycho
+## Updating Eclipse, Tycho, or Maven
 
 A baseline update is one coordinated change, not only a version-property edit. Verify and update, as applicable:
 
-- root `pom.xml` and Java-enforcer diagnostics;
+- root `pom.xml`, Maven Wrapper properties, and Java-enforcer diagnostics;
 - `sandbox_target/eclipse.target` and Orbit/Bouncy Castle repositories;
 - `sandbox_product/sandbox.product` and `sandbox_product/category.xml`;
 - `sandbox_oomph/sandbox.setup`;
 - `README.md`, this guide, build references, and distribution documentation;
 - `docs/capabilities.json` and generated `docs/capabilities.md`;
-- the repository baseline consistency test.
+- the repository baseline consistency test;
+- the Linux and Windows build matrix using the identical wrapper goals.
 
 Dated QA records describe their historical baseline and must not be rewritten as though an older review had used a later toolchain.
 
