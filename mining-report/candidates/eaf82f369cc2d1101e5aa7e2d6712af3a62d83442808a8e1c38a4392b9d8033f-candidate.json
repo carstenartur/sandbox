@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "eaf82f369cc2d1101e5aa7e2d6712af3a62d83442808a8e1c38a4392b9d8033f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: remove.redundant.null.check.in.if\u003e\n\u003c!description: Remove redundant null check from an \u0027if\u0027 condition when the variable is guaranteed non-null by static analysis.\nThis transformation is safe only when static analysis confirms that \u0027$var\u0027 is provably non-null in this specific context, making the \u0027$var !\u003d null\u0027 check superfluous.\u003e\n\u003c!severity: HINT\u003e\nif ($var !\u003d null \u0026\u0026 $condition) :: isNonNull($var)\n\u003d\u003e if ($condition)\n;;",
+  "beforeExample": "import org.eclipse.jdt.core.IJavaElement;\n\n// Mock classes to make example compile\nclass JavaModelUtil {\n    public static boolean isPrimitive(String typeSignature) { return false; }\n}\nclass SelectionConverter {\n    public static boolean canOperateOn(JavaEditor editor) { return true; }\n}\nclass JavaEditor {}\n\npublic class TestClass {\n    public void foo(IJavaElement element, JavaEditor editor) {\n        // Assume \u0027element\u0027 is guaranteed non-null in this method\u0027s context due to prior checks or call contracts.\n        if (element !\u003d null \u0026\u0026 (element.getElementType() \u003d\u003d IJavaElement.FIELD || element.getElementType() \u003d\u003d IJavaElement.LOCAL_VARIABLE) \u0026\u0026 !JavaModelUtil.isPrimitive(getTypeSignature(element))\n                \u0026\u0026 SelectionConverter.canOperateOn(editor)) {\n            System.out.println(\"Element type check passed.\");\n        }\n    }\n\n    // Dummy method to satisfy compilation\n    private String getTypeSignature(IJavaElement element) { return \"\"; }\n}",
+  "afterExample": "import org.eclipse.jdt.core.IJavaElement;\n\n// Mock classes to make example compile\nclass JavaModelUtil {\n    public static boolean isPrimitive(String typeSignature) { return false; }\n}\nclass SelectionConverter {\n    public static boolean canOperateOn(JavaEditor editor) { return true; }\n}\nclass JavaEditor {}\n\npublic class TestClass {\n    public void foo(IJavaElement element, JavaEditor editor) {\n        if ((element.getElementType() \u003d\u003d IJavaElement.FIELD || element.getElementType() \u003d\u003d IJavaElement.LOCAL_VARIABLE) \u0026\u0026 !JavaModelUtil.isPrimitive(getTypeSignature(element))\n                \u0026\u0026 SelectionConverter.canOperateOn(editor)) {\n            System.out.println(\"Element type check passed.\");\n        }\n    }\n\n    // Dummy method to satisfy compilation\n    private String getTypeSignature(IJavaElement element) { return \"\"; }\n}",
+  "negativeExample": "import org.eclipse.jdt.core.IJavaElement;\n\npublic class TestClass {\n    public void bar(IJavaElement element) {\n        // In this context, \u0027element\u0027 is not guaranteed non-null. The rule should NOT apply.\n        if (element !\u003d null \u0026\u0026 element.getElementType() \u003d\u003d IJavaElement.FIELD) {\n            System.out.println(\"Field element.\");\n        }\n\n        // Another case where a variable is explicitly assigned null; \u0027isNonNull\u0027 guard should prevent application.\n        IJavaElement potentiallyNullElement \u003d null;\n        if (potentiallyNullElement !\u003d null \u0026\u0026 potentiallyNullElement.getElementType() \u003d\u003d IJavaElement.FIELD) {\n            System.out.println(\"Potentially null field element.\");\n        }\n    }\n}",
+  "targetHintFile": "redundant.sandbox-hint",
+  "sourceCommit": "f047db35aff644fbc9dafab1e551a07d730b6a3b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Redundant Code",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-31T02:29:26.322865853Z",
+  "ruleFingerprint": "sha256:47d1170221d3ac07895fdc27008cd4c084df1dad09ecad588bfe78d74391b937",
+  "behaviorFingerprint": "sha256:5523fb2f7d5f16841f0444da0ce908a7049718b49e8cb4cd812003966cf05873",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-31T02:29:31.267400752Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

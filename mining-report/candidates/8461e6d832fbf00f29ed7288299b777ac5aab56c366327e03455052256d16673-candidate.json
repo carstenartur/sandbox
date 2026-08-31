@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "8461e6d832fbf00f29ed7288299b777ac5aab56c366327e03455052256d16673",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.internal.dialogfield.refresh.validate\u003e\n\u003c!description: After refreshing a DialogField, ensure its validation is triggered.\nThis rule applies to internal Eclipse UI components (org.eclipse.jdt.internal.ui.wizards.dialogfields.DialogField and its subtypes).\u003e\n\u003c!severity: HINT\u003e\n$x.refresh() :: instanceof($x, \"org.eclipse.jdt.internal.ui.wizards.dialogfields.DialogField\")\n\u003d\u003e\n$x.refresh()\n$x.dialogFieldChanged()\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.wizards.buildpaths;\n\nimport org.eclipse.jdt.internal.ui.wizards.dialogfields.DialogField;\nimport org.eclipse.jdt.internal.ui.wizards.dialogfields.ListDialogField;\n\npublic class SourceContainerWorkbookPage {\n    private ListDialogField fFoldersList \u003d new ListDialogField(null, null, null);\n\n    public void dialogFieldChanged(DialogField field) {\n        if (field \u003d\u003d fFoldersList) {\n            // Some logic\n            fFoldersList.refresh();\n        }\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.wizards.buildpaths;\n\nimport org.eclipse.jdt.internal.ui.wizards.dialogfields.DialogField;\nimport org.eclipse.jdt.internal.ui.wizards.dialogfields.ListDialogField;\n\npublic class SourceContainerWorkbookPage {\n    private ListDialogField fFoldersList \u003d new ListDialogField(null, null, null);\n\n    public void dialogFieldChanged(DialogField field) {\n        if (field \u003d\u003d fFoldersList) {\n            // Some logic\n            fFoldersList.refresh();\n            fFoldersList.dialogFieldChanged(); // validate\n        }\n    }\n}\n",
+  "negativeExample": "package com.example;\n\nclass MyCustomRefreshable {\n    public void refresh() {\n        System.out.println(\"Refreshing custom object\");\n    }\n}\n\npublic class MyClass {\n    public void doSomething() {\n        MyCustomRefreshable myObject \u003d new MyCustomRefreshable();\n        myObject.refresh(); // Should NOT match, as MyCustomRefreshable is not a DialogField\n    }\n}\n",
+  "targetHintFile": "eclipse-ui-internal.sandbox-hint",
+  "sourceCommit": "7faff91afa22ab2dc23e3a10e81d5ecb9a2ee1bf",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Usage",
+  "summary": "Adds `dialogFieldChanged()` call after `refresh()` on `DialogField` instances to trigger immediate UI validation. This applies only to types derived from `org.eclipse.jdt.internal.ui.wizards.dialogfields.DialogField`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-31T02:29:26.428417211Z",
+  "ruleFingerprint": "sha256:cbbbda9775a98e5901c0df7bf4ae66a30a8525001219702e36a3fe6755bd55da",
+  "behaviorFingerprint": "sha256:42de77f52e4cd3a33d1430ed04a1020985e42827a787249c1b7edde628671439",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-31T02:29:31.324122800Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

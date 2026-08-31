@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a1aac074c3972301ecb340701cacd0c4ccde6c6560e27c7d49ce495ea19df3df",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: org.eclipse.jdt.internal.ui.preferences.encode_desc_append\u003e\n\u003c!description: Encodes a description string by wrapping it in a call to the local static `encode()` method before appending it to a `StringBuffer`.\nThis ensures the string is properly formatted to prevent `NumberFormatException` during subsequent decoding operations.\u003e\n\u003c!severity: WARNING\u003e\n$buffer.append($desc); :: instanceof($buffer, \"java.lang.StringBuffer\")\n\u003d\u003e\n$buffer.append(encode($desc));\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\npublic class NewJavaProjectPreferencePage {\n    // Dummy local static method for compilation context\n    private static String encode(String str) {\n        // In real code, this would perform actual encoding\n        return str + \"_encoded\"; \n    }\n\n    public void processDescription(String desc) {\n        java.lang.StringBuffer buf \u003d new java.lang.StringBuffer();\n        buf.append(\"prefix \");\n        buf.append(desc); // This is the target for the transformation\n        buf.append(\" suffix\");\n        System.out.println(buf.toString());\n    }\n\n    public void anotherMethod() {\n        // This append to StringBuilder should not match\n        java.lang.StringBuilder sb \u003d new java.lang.StringBuilder();\n        sb.append(\"some string\");\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences;\n\npublic class NewJavaProjectPreferencePage {\n    // Dummy local static method for compilation context\n    private static String encode(String str) {\n        // In real code, this would perform actual encoding\n        return str + \"_encoded\"; \n    }\n\n    public void processDescription(String desc) {\n        java.lang.StringBuffer buf \u003d new java.lang.StringBuffer();\n        buf.append(\"prefix \");\n        buf.append(encode(desc)); // Transformed: desc is now encoded\n        buf.append(\" suffix\");\n        System.out.println(buf.toString());\n    }\n\n    public void anotherMethod() {\n        // This append to StringBuilder should not match\n        java.lang.StringBuilder sb \u003d new java.lang.StringBuilder();\n        sb.append(\"some string\");\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\npublic class NewJavaProjectPreferencePage {\n    // Dummy local static method for compilation context\n    private static String encode(String str) {\n        return str + \"_encoded\";\n    }\n\n    public void processDescription(String desc) {\n        // This StringBuffer.append() should not match because \u0027desc\u0027 is not a variable\n        java.lang.StringBuffer buf1 \u003d new java.lang.StringBuffer();\n        buf1.append(\"literal string\");\n\n        // This StringBuilder.append() should not match due to type guard\n        java.lang.StringBuilder sb \u003d new java.lang.StringBuilder();\n        sb.append(desc);\n    }\n}\n",
+  "targetHintFile": "jdt.ui.preferences.sandbox-hint",
+  "sourceCommit": "5db4717c1c20923afae57d56817215616e0f8557",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Method Argument Transformation",
+  "summary": "Wrap a `String` argument passed to `StringBuffer.append()` with a call to the local static `encode()` method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-31T02:29:26.415892327Z",
+  "ruleFingerprint": "sha256:b41613197efe84f58a98e693990442c20c8d492ffde0202acf56f8e0b13c1024",
+  "behaviorFingerprint": "sha256:53d848a649015a3d669849373daf10dc206846875fe60adc4bb5ffc8c4f2f517",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-08-31T02:29:31.315960553Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

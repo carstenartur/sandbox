@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "328a6c36f4515dc93824792ebedb5670ede5fc4586bd7e77d3021b3c406649a6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$x.trim().length() !\u003d 0\n\u003d\u003e\n$x.length() !\u003d 0 \u0026\u0026 !$x.trim().equals(\"+\")\n;;",
+  "beforeExample": "public class Example {\n    public void someMethod(String s) {\n        // This pattern matches a string length check after trimming\n        if (s.trim().length() !\u003d 0) {\n            System.out.println(\"String has non-whitespace content.\");\n        }\n    }\n}",
+  "afterExample": "public class Example {\n    public void someMethod(String s) {\n        // The pattern is replaced with a more specific check\n        if (s.length() !\u003d 0 \u0026\u0026 !s.trim().equals(\"+\")) {\n            System.out.println(\"String has non-whitespace content.\");\n        }\n    }\n}",
+  "negativeExample": "public class Example {\n    public void someOtherMethod(String s) {\n        // This should not match, as it uses a different string check\n        if (s.isEmpty()) {\n            System.out.println(\"String is empty.\");\n        }\n        // This should not match, as it compares to a different value\n        if (!s.trim().equals(\"-\")) {\n            System.out.println(\"String is not a minus sign.\");\n        }\n    }\n}",
+  "targetHintFile": "string_manipulation.sandbox-hint",
+  "sourceCommit": "aaf57e0883b4131bdc890a217ca2cc1501513727",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String Manipulation",
+  "summary": "Replaces `string.trim().length() !\u003d 0` with `string.length() !\u003d 0 \u0026\u0026 !string.trim().equals(\"+\")` to refine string content checks.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-08-31T02:29:26.363347423Z",
+  "ruleFingerprint": "sha256:98fb4d637d2120d9376bc566d17717c89b1192d80dd9e40c49d9e22fd2f53813",
+  "behaviorFingerprint": "sha256:c3b3c76ce4dfba931392607094022a0820b14fa606bf8ed3cdaeecf7379965ac",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-08-31T02:29:31.280753956Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
