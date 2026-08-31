@@ -62,9 +62,12 @@ jobs:
           from pathlib import Path
 
           workflow = Path('.github/workflows/deploy-snapshot.yml').read_text(encoding='utf-8')
+          await_marker = '- name: Await exact GitHub Pages publication'
+          verify_marker = '- name: Verify advertised snapshot URLs'
           required = [
               'pages: write',
-              '- name: Await exact GitHub Pages publication',
+              await_marker,
+              verify_marker,
               'id: await_pages_build',
               "steps.await_pages_build.outcome == 'failure'",
               '--expected-commit "$previous"',
@@ -75,8 +78,6 @@ jobs:
           if missing:
               raise SystemExit(f"Snapshot publication lacks the exact Pages build contract: {missing}")
 
-          await_marker = '- name: Await exact GitHub Pages publication'
-          verify_marker = '- name: Verify advertised snapshot URLs'
           if workflow.index(await_marker) > workflow.index(verify_marker):
               raise SystemExit('Snapshot URLs are verified before the exact Pages build is complete')
           PY
