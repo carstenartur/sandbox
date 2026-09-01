@@ -132,10 +132,10 @@ class PinnedJdtXmlCorpusTest {
 		Map<String, String> values= new LinkedHashMap<>();
 		for (String raw : Files.readAllLines(pinFile, StandardCharsets.UTF_8)) {
 			String line= raw.trim();
-			if (line.isEmpty() || line.startsWith("#") || !line.contains("=")) { //$NON-NLS-1$ //$NON-NLS-2$
+			int separator= line.indexOf('=');
+			if (line.isEmpty() || line.charAt(0) == '#' || separator < 0) {
 				continue;
 			}
-			int separator= line.indexOf('=');
 			values.put(line.substring(0, separator), line.substring(separator + 1));
 		}
 		return Map.copyOf(values);
