@@ -22,29 +22,27 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.IMarkerResolutionGenerator2;
 
-/**
- * Marker resolution generator for EXSD cleanup markers.
- */
+/** Marker resolution generator for actionable PDE XML cleanup problems. */
 public class ExsdMarkerResolutionGenerator implements IMarkerResolutionGenerator2 {
 
-	private static final ILog LOG = Platform.getLog(ExsdMarkerResolutionGenerator.class);
-	private static final String PLUGIN_ID = "org.sandbox.jdt.internal.corext.fix.helper";
-	
+	private static final ILog LOG= Platform.getLog(ExsdMarkerResolutionGenerator.class);
+	private static final String PLUGIN_ID= "sandbox_xml_cleanup"; //$NON-NLS-1$
+
 	@Override
 	public boolean hasResolutions(IMarker marker) {
 		try {
-			return "my.exsd.cleanup.marker".equals(marker.getType());
+			return PdeXmlCleanupMarkerService.MARKER_TYPE.equals(marker.getType());
 		} catch (CoreException e) {
 			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,
-				"Error checking marker type", e));
+					"Error checking PDE XML marker type", e)); //$NON-NLS-1$
+			return false;
 		}
-		return false;
 	}
 
 	@Override
 	public IMarkerResolution[] getResolutions(IMarker marker) {
-		return new IMarkerResolution[] {
-			new ReplaceSpacesWithTabsQuickFix()
-		};
+		return hasResolutions(marker)
+				? new IMarkerResolution[] { new ReplaceSpacesWithTabsQuickFix() }
+				: new IMarkerResolution[0];
 	}
 }
