@@ -10,10 +10,10 @@ Sandbox is an experimental Java modernization toolkit built on Eclipse JDT. Cont
 |---|---|
 | Java | 21 |
 | Eclipse target | Eclipse 2026-06 / Platform 4.40 |
-| Build system | Maven with Tycho 5.0.4 |
+| Build system | Maven Wrapper 3.3.4, Maven 3.9.16, Tycho 5.0.4 |
 | Default branch | `main` |
 
-The authoritative values are declared in `pom.xml`, `sandbox_target/eclipse.target`, and `docs/capabilities.json`. A JUnit repository-consistency test checks the active product, p2 category, Oomph model, and documentation against those values.
+The authoritative values are declared in `.mvn/wrapper/maven-wrapper.properties`, `pom.xml`, `sandbox_target/eclipse.target`, and `docs/capabilities.json`. A JUnit repository-consistency test checks the active product, p2 category, Oomph model, and documentation against those values.
 
 ## Contribution workflow
 
@@ -26,25 +26,39 @@ The authoritative values are declared in `pom.xml`, `sandbox_target/eclipse.targ
 
 ## Building and testing
 
-A normal development verification is:
+Only Java 21 is required to bootstrap Maven. Do not depend on a separately installed system Maven; the checked-in wrapper downloads and verifies the pinned Maven distribution.
+
+A normal development verification on Linux or macOS is:
 
 ```bash
-mvn -T 1C clean verify
+./mvnw -T 1C clean verify
 ```
 
-For a focused Maven module and its dependencies:
+On Windows, run the same reactor through the batch wrapper:
+
+```bat
+mvnw.cmd -T 1C clean verify
+```
+
+For a focused Maven module and its dependencies, use `./mvnw` on Linux/macOS or `mvnw.cmd` on Windows:
 
 ```bash
-mvn -pl <module> -am clean verify
+./mvnw -pl <module> -am clean verify
 ```
 
 The complete product/update-site gate is deliberately sequential because repository assembly must finish before distribution verification:
 
 ```bash
-mvn -Pdistribution \
+./mvnw -Pdistribution \
   --batch-mode \
   -Dtycho.localArtifacts=ignore \
   clean verify
+```
+
+The equivalent Windows command is:
+
+```bat
+mvnw.cmd -Pdistribution --batch-mode -Dtycho.localArtifacts=ignore clean verify
 ```
 
 Linux UI tests require a graphical display; CI supplies Xvfb. Do not use global test-skip or failure-ignore switches to make a transformation appear complete.
@@ -58,10 +72,11 @@ Linux UI tests require a graphical display; CI supplies Xvfb. Do not use global 
 - Do not add a parallel Python test or validation framework. Repository semantics belong in Maven/JUnit; workflows should remain thin environment adapters.
 - Do not weaken tests, accept unrelated screenshot changes, or update baselines merely to make CI green.
 
-## Updating Eclipse or Tycho
+## Updating Eclipse, Maven, or Tycho
 
 A baseline update is one coordinated change, not only a version-property edit. Verify and update, as applicable:
 
+- Maven Wrapper scripts and `.mvn/wrapper/maven-wrapper.properties`;
 - root `pom.xml` and Java-enforcer diagnostics;
 - `sandbox_target/eclipse.target` and Orbit/Bouncy Castle repositories;
 - `sandbox_product/sandbox.product` and `sandbox_product/category.xml`;
