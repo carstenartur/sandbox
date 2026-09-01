@@ -39,6 +39,7 @@ class PinnedJdtXmlCorpusTest {
 	private static final String REPOSITORY_ROOT_PROPERTY= "sandbox.repository.root"; //$NON-NLS-1$
 	private static final String JDT_CORE_PROPERTY= "sandbox.xml.corpus.jdtCore"; //$NON-NLS-1$
 	private static final String JDT_UI_PROPERTY= "sandbox.xml.corpus.jdtUi"; //$NON-NLS-1$
+	private static final String REQUIRED_PROPERTY= "sandbox.xml.corpus.required"; //$NON-NLS-1$
 
 	private static final List<String> JDT_CORE_FILES= List.of(
 			"org.eclipse.jdt.core/plugin.xml", //$NON-NLS-1$
@@ -66,8 +67,12 @@ class PinnedJdtXmlCorpusTest {
 	private void verifyRepository(String property, String pinKey, String projectName,
 			List<String> relativeFiles) throws Exception {
 		String configured= System.getProperty(property, "").trim(); //$NON-NLS-1$
-		Assumptions.assumeTrue(!configured.isEmpty(),
-				() -> "Pinned XML corpus path is not configured: " + property); //$NON-NLS-1$
+		if (configured.isEmpty()) {
+			assertFalse(Boolean.getBoolean(REQUIRED_PROPERTY),
+					() -> "Required pinned XML corpus path is not configured: " + property); //$NON-NLS-1$
+			Assumptions.assumeTrue(false,
+					() -> "Pinned XML corpus path is not configured: " + property); //$NON-NLS-1$
+		}
 
 		Path repository= Path.of(configured).toAbsolutePath().normalize();
 		assertTrue(Files.isDirectory(repository), () -> "Missing pinned checkout: " + repository); //$NON-NLS-1$
@@ -87,7 +92,8 @@ class PinnedJdtXmlCorpusTest {
 			int changedFiles= 0;
 			for (String relative : relativeFiles) {
 				Path source= repository.resolve(relative);
-				assertTrue(Files.isRegularFile(source), () -> "Pinned PDE XML source is missing: " + source); //$NON-NLS-1$
+				assertTrue(Files.isRegularFile(source),
+						() -> "Pinned PDE XML source is missing: " + source); //$NON-NLS-1$
 				byte[] bytes= Files.readAllBytes(source);
 				totalBytes+= bytes.length;
 				assertTrue(bytes.length > 2_000,
@@ -118,8 +124,11 @@ class PinnedJdtXmlCorpusTest {
 	}
 
 	private static Map<String, String> readPins() throws IOException {
-		Path root= Path.of(System.getProperty(REPOSITORY_ROOT_PROPERTY)).toAbsolutePath().normalize();
-		Path pinFile= root.resolve("qa/upstream-jdt/pins.env"); //$NON-NLS-1$
+		String configuredRoot= System.getProperty(REPOSITORY_ROOT_PROPERTY, "").trim(); //$NON-NLS-1$
+		assertFalse(configuredRoot.isEmpty(),
+				() -> "Repository root is not configured: " + REPOSITORY_ROOT_PROPERTY); //$NON-NLS-1$
+		Path pinFile= Path.of(configuredRoot).toAbsolutePath().normalize()
+				.resolve("qa/upstream-jdt/pins.env"); //$NON-NLS-1$
 		Map<String, String> values= new LinkedHashMap<>();
 		for (String raw : Files.readAllLines(pinFile, StandardCharsets.UTF_8)) {
 			String line= raw.trim();
