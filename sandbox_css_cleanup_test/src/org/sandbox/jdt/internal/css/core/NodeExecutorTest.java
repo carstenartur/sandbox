@@ -74,9 +74,13 @@ public class NodeExecutorTest {
 
 	@Test
 	public void testMavenOwnedCssToolsRemainBelowTarget() {
-		Path installDirectory = Path.of(System.getProperty(NodeExecutor.NODE_INSTALL_DIRECTORY_PROPERTY)).normalize();
-		Path modulesDirectory = Path.of(System.getProperty(NodeExecutor.NODE_MODULES_DIRECTORY_PROPERTY)).normalize();
+		String configuredInstallDirectory = System.getProperty(NodeExecutor.NODE_INSTALL_DIRECTORY_PROPERTY);
+		String configuredModulesDirectory = System.getProperty(NodeExecutor.NODE_MODULES_DIRECTORY_PROPERTY);
+		assertNotNull(configuredInstallDirectory, "Maven did not configure the Node.js installation directory"); //$NON-NLS-1$
+		assertNotNull(configuredModulesDirectory, "Maven did not configure the CSS dependency directory"); //$NON-NLS-1$
 
+		Path installDirectory = Path.of(configuredInstallDirectory).normalize();
+		Path modulesDirectory = Path.of(configuredModulesDirectory).normalize();
 		assertTrue(installDirectory.endsWith(Path.of("target", "frontend")), //$NON-NLS-1$ //$NON-NLS-2$
 				() -> "Node.js installation escaped the Maven target directory: " + installDirectory); //$NON-NLS-1$
 		assertTrue(modulesDirectory.endsWith(Path.of("target", "node-tools", "node_modules")), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
