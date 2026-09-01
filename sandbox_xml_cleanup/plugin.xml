@@ -11,7 +11,7 @@
 	</extension>
  <!-- Definition des Markers -->
     <extension
-        id="sandbox_xml_cleanup.pdeXmlCleanupProblem"
+        id="pdeXmlCleanupProblem"
         name="PDE XML cleanup problem"
         point="org.eclipse.core.resources.markers">
         <super type="org.eclipse.core.resources.problemmarker" />
@@ -21,7 +21,7 @@
 
     <!-- Registrierung des MarkerResolutionGenerators -->
     <extension
-        id="sandbox_xml_cleanup.pdeXmlCleanupQuickFixGenerator"
+        id="pdeXmlCleanupQuickFixGenerator"
         point="org.eclipse.ui.ide.markerResolution">
         <markerResolutionGenerator
             markerType="sandbox_xml_cleanup.pdeXmlCleanupProblem"
