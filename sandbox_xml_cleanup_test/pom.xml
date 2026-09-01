@@ -14,6 +14,7 @@
 	<properties>
 		<sandbox.xml.corpus.jdtCore></sandbox.xml.corpus.jdtCore>
 		<sandbox.xml.corpus.jdtUi></sandbox.xml.corpus.jdtUi>
+		<sandbox.xml.corpus.required>false</sandbox.xml.corpus.required>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -41,6 +42,7 @@
 						<sandbox.repository.root>${maven.multiModuleProjectDirectory}</sandbox.repository.root>
 						<sandbox.xml.corpus.jdtCore>${sandbox.xml.corpus.jdtCore}</sandbox.xml.corpus.jdtCore>
 						<sandbox.xml.corpus.jdtUi>${sandbox.xml.corpus.jdtUi}</sandbox.xml.corpus.jdtUi>
+						<sandbox.xml.corpus.required>${sandbox.xml.corpus.required}</sandbox.xml.corpus.required>
 					</systemProperties>
 					<dependencies>
 						<dependency>
