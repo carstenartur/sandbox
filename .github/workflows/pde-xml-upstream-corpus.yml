@@ -79,6 +79,8 @@ jobs:
 
       # Tycho resolves the target definition before Maven's normal -am graph is
       # complete, so the focused reactor must name sandbox_target explicitly.
+      # The normal Java-CI reactor runs every test; this additional gate selects
+      # only the real-corpus class to avoid paying that full test cost twice.
       - name: Run the existing Sandbox XML tests on the pinned corpora
         shell: bash
         run: >-
@@ -91,6 +93,8 @@ jobs:
           -T 1C
           -Dspotbugs.skip=true
           -Dtycho.localArtifacts=ignore
+          -Dtest=PinnedJdtXmlCorpusTest
+          -DfailIfNoTests=false
           -Dsandbox.xml.corpus.required=true
           -Dsandbox.xml.corpus.jdtCore="$GITHUB_WORKSPACE/upstream/eclipse.jdt.core"
           -Dsandbox.xml.corpus.jdtUi="$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui"
