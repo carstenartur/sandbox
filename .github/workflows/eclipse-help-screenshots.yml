@@ -7,6 +7,7 @@ on:
       - 'pom.xml'
       - 'docs/ECLIPSE_HELP.md'
       - 'docs/ECLIPSE_HELP_COVERAGE.md'
+      - 'qa/upstream-jdt/pins.env'
       - 'sandbox_help_build/**'
       - 'sandbox_target/**'
       - 'sandbox-functional-converter-core/**'
@@ -57,11 +58,27 @@ jobs:
       GDK_BACKEND: x11
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
+      SANDBOX_HELP_XML_CORPUS_REPOSITORY: https://github.com/eclipse-jdt/eclipse.jdt.ui.git
+      SANDBOX_HELP_XML_CORPUS_REF: R4_40
+      SANDBOX_HELP_XML_CORPUS_PATH: org.eclipse.jdt.ui/schema/cleanUps.exsd
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      # Reuse one substantial upstream schema in the existing SWTBot session;
+      # sparse checkout avoids cloning or building the complete JDT UI reactor.
+      - name: Checkout pinned JDT UI XML screenshot corpus
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-jdt/eclipse.jdt.ui
+          ref: R4_40
+          fetch-depth: 1
+          path: upstream/eclipse.jdt.ui
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            org.eclipse.jdt.ui/schema/cleanUps.exsd
 
       - name: Set up JDK 21
         uses: actions/setup-java@v6
@@ -75,6 +92,18 @@ jobs:
 
       - name: Verify preinstalled Eclipse desktop runtime
         uses: ./.github/actions/verify-eclipse-desktop-runtime
+
+      - name: Verify exact PDE XML screenshot corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          source qa/upstream-jdt/pins.env
+          actual="$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')"
+          test "$actual" = "$PIN_JDT_UI_COMMIT"
+          source_file="$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui/$SANDBOX_HELP_XML_CORPUS_PATH"
+          test -s "$source_file"
+          printf 'SANDBOX_HELP_XML_CORPUS_COMMIT=%s\n' "$PIN_JDT_UI_COMMIT" >> "$GITHUB_ENV"
+          printf 'SANDBOX_HELP_XML_CORPUS_FILE=%s\n' "$source_file" >> "$GITHUB_ENV"
 
       # This is the documented local Maven command with only the Linux virtual
       # display wrapper added. The workflow is a verifier, not the generator API.
@@ -118,6 +147,7 @@ jobs:
           for scenario in \
             captureCleanupConfigurationTabs \
             captureRealCleanupPreviewAndVerifyIndependentSelection \
+            capturePdeXmlMarkerQuickFix \
             verifyRealMethodReuseCleanupPreviewApplyAndUndo
           do
             if ! grep -Fq "name=\"$scenario\"" "$report"; then
@@ -187,8 +217,9 @@ jobs:
           code_patterns='sandbox_triggerpattern_help/images/code-patterns-cleanup.png'
           jface_diff='sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png'
           jface_selection='sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png'
+          pde_xml_provenance='sandbox_xml_cleanup_help/images/xml-cleanup-marker-quick-fix.provenance.json'
           mapfile -t changes < <(git status --porcelain=v1 --untracked-files=all -- \
-            ':(glob)sandbox*_help/images/*.png')
+            ':(glob)sandbox*_help/images/*.png' "$pde_xml_provenance")
           unexpected=()
           row_permutations=()
           code_patterns_changed=false
@@ -208,7 +239,7 @@ jobs:
           done
 
           if (( ${#unexpected[@]} > 0 )); then
-            echo 'Regenerated Help screenshots differ from the checkout:' >&2
+            echo 'Regenerated Help screenshot evidence differs from the checkout:' >&2
             printf '%s\n' "${unexpected[@]}" >&2
             exit 1
           fi
@@ -239,6 +270,7 @@ jobs:
           path: |
             target/generated-help-screenshot-evidence/
             target/generated-help-screenshots-${{ github.run_id }}.tar.gz
+            sandbox_xml_cleanup_help/images/xml-cleanup-marker-quick-fix.provenance.json
           retention-days: 14
           if-no-files-found: error
 
@@ -247,7 +279,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: eclipse-help-screenshots-${{ github.run_number }}
-          path: sandbox*_help/images/*.png
+          path: |
+            sandbox*_help/images/*.png
+            sandbox_xml_cleanup_help/images/xml-cleanup-marker-quick-fix.provenance.json
           retention-days: 14
           if-no-files-found: error
 
