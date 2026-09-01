@@ -23,6 +23,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.ltk.core.refactoring.IUndoManager;
 import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
+import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
 import org.junit.jupiter.api.AfterAll;
@@ -136,6 +137,12 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 
 	@Test
 	@Order(7)
+	public void capturePdeXmlMarkerQuickFix() throws Exception {
+		PdeXmlQuickFixScreenshot.capture();
+	}
+
+	@Test
+	@Order(8)
 	public void verifyRealMethodReuseCleanupPreviewApplyAndUndo() throws Exception {
 		IUndoManager undoManager= RefactoringCore.getUndoManager();
 		undoManager.flush();
