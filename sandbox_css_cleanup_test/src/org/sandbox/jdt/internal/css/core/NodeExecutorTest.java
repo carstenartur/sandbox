@@ -73,6 +73,17 @@ public class NodeExecutorTest {
 	}
 
 	@Test
+	public void testMavenOwnedCssToolsRemainBelowTarget() {
+		Path installDirectory = Path.of(System.getProperty(NodeExecutor.NODE_INSTALL_DIRECTORY_PROPERTY)).normalize();
+		Path modulesDirectory = Path.of(System.getProperty(NodeExecutor.NODE_MODULES_DIRECTORY_PROPERTY)).normalize();
+
+		assertTrue(installDirectory.endsWith(Path.of("target", "frontend")), //$NON-NLS-1$ //$NON-NLS-2$
+				() -> "Node.js installation escaped the Maven target directory: " + installDirectory); //$NON-NLS-1$
+		assertTrue(modulesDirectory.endsWith(Path.of("target", "node-tools", "node_modules")), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				() -> "CSS test dependencies escaped the Maven target directory: " + modulesDirectory); //$NON-NLS-1$
+	}
+
+	@Test
 	public void testExecutePrettierWithVersion() throws IOException, InterruptedException {
 		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx("prettier", "--version"); //$NON-NLS-1$ //$NON-NLS-2$
 
