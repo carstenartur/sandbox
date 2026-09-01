@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f88906471b8aaa0bd4004b65a0bf4e883582b09b9b50836fd52bf2c00841255a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.swt.graphics.Image($display, $image, org.eclipse.swt.SWT.IMAGE_GRAY)\n\u003d\u003e\norg.eclipse.swt.graphics.Image($display, $image, org.eclipse.swt.SWT.IMAGE_DISABLE)\n;;",
+  "beforeExample": "import org.eclipse.swt.graphics.Device;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Display;\n\npublic class ImageCreator {\n    public Image createGrayImage(Device display, Image sourceImage) {\n        // This line will be matched\n        return new Image(display, sourceImage, SWT.IMAGE_GRAY);\n    }\n\n    public static void main(String[] args) {\n        Display display \u003d new Display();\n        try {\n            // Create dummy images for demonstration\n            Image source \u003d new Image(display, 10, 10); \n            ImageCreator creator \u003d new ImageCreator();\n            Image grayImage \u003d creator.createGrayImage(display, source);\n            \n            // Dispose images\n            grayImage.dispose();\n            source.dispose();\n        } finally {\n            display.dispose();\n        }\n    }\n}",
+  "afterExample": "import org.eclipse.swt.graphics.Device;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Display;\n\npublic class ImageCreator {\n    public Image createGrayImage(Device display, Image sourceImage) {\n        // This line has been transformed\n        return new Image(display, sourceImage, SWT.IMAGE_DISABLE);\n    }\n\n    public static void main(String[] args) {\n        Display display \u003d new Display();\n        try {\n            // Create dummy images for demonstration\n            Image source \u003d new Image(display, 10, 10); \n            ImageCreator creator \u003d new ImageCreator();\n            Image disabledImage \u003d creator.createGrayImage(display, source);\n            \n            // Dispose images\n            disabledImage.dispose();\n            source.dispose();\n        } finally {\n            display.dispose();\n        }\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.graphics.Device;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Display;\n\npublic class ImageCreator {\n    public Image createOtherImage(Device display, Image sourceImage) {\n        // This line should NOT be matched as it uses a different SWT constant\n        return new Image(display, sourceImage, SWT.IMAGE_COPY);\n    }\n\n    public static void main(String[] args) {\n        Display display \u003d new Display();\n        try {\n            // Create dummy images for demonstration\n            Image source \u003d new Image(display, 10, 10); \n            ImageCreator creator \u003d new ImageCreator();\n            Image otherImage \u003d creator.createOtherImage(display, source);\n            \n            // Dispose images\n            otherImage.dispose();\n            source.dispose();\n        } finally {\n            display.dispose();\n        }\n    }\n}",
+  "targetHintFile": "swt-constants.sandbox-hint",
+  "sourceCommit": "8a98dd1ef1bed6e32f6423260d4cc31d8ee9a196",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Constant Replacement",
+  "summary": "Replaces the deprecated SWT.IMAGE_GRAY constant with SWT.IMAGE_DISABLE in the Image constructor, improving accessibility for disabled image rendering.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-01T02:27:32.341512217Z",
+  "ruleFingerprint": "sha256:bf4ae560eea1a80c0465c9f4aa7cbb7eb8312efbed0a74deb95cf1eb711009ce",
+  "behaviorFingerprint": "sha256:a54161f01d5cacd08a2be9be32a0fac3fec4126a9a1095b2a1a92aeaabb9e74b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-09-01T02:27:38.431070775Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

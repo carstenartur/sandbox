@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "613587b34c13f187f09e5209fac3bbe71b885f83ed5dc32a58e56941a36e8e68",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.refactoring.nls.NLSRefactoring.BUNDLE_NAME\n\u003d\u003e\norg.eclipse.jdt.internal.ui.refactoring.nls.NLSRefactoring.BUNDLE_NAME_FIELD\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.refactoring.nls.NLSRefactoring;\n\npublic class TestClass {\n    public boolean checkField(String fieldName) {\n        if (NLSRefactoring.BUNDLE_NAME.equals(fieldName)) {\n            return false;\n        }\n        return true;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.refactoring.nls.NLSRefactoring;\n\npublic class TestClass {\n    public boolean checkField(String fieldName) {\n        if (NLSRefactoring.BUNDLE_NAME_FIELD.equals(fieldName)) {\n            return false;\n        }\n        return true;\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.internal.ui.refactoring.nls.NLSRefactoring;\n\npublic class TestClassNegative {\n    public boolean checkOtherField(String fieldName) {\n        if (\"OTHER_CONSTANT\".equals(fieldName)) { \n            return false;\n        }\n        return true;\n    }\n    public String getAnotherConstant() {\n        return NLSRefactoring.ANOTHER_CONSTANT; // Should not match this\n    }\n}",
+  "targetHintFile": "misc.sandbox-hint",
+  "sourceCommit": "de2edee12b0bcf250a1bd184bd7daaf6e13e0172",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant Replacement",
+  "summary": "Replaces the old constant `NLSRefactoring.BUNDLE_NAME` with its corrected form `NLSRefactoring.BUNDLE_NAME_FIELD`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-01T02:27:32.394486789Z",
+  "ruleFingerprint": "sha256:c145cb225ff520198a1f59415526901bf6bdb8c891977d5b41ea1a895804d8dc",
+  "behaviorFingerprint": "sha256:f57b7f1f4d7215f53596fb6ef6f51904da5181ae013cea866ad4d38c61b9252a",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui cannot be resolved",
+    "verifiedAt": "2026-09-01T02:27:38.444909280Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

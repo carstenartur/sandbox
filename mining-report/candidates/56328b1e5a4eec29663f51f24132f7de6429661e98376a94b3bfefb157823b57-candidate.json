@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "56328b1e5a4eec29663f51f24132f7de6429661e98376a94b3bfefb157823b57",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$var \u003d\u003d org.eclipse.jface.text.ITextOperationTarget.REDO\n\u003d\u003e\n$var \u003d\u003d org.eclipse.jface.text.ITextOperationTarget.UNDO || $var \u003d\u003d org.eclipse.jface.text.ITextOperationTarget.REDO\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.ITextOperationTarget;\n\npublic class MyClass {\n    private int fOperationCode;\n\n    public void update() {\n        if (fOperationCode \u003d\u003d ITextOperationTarget.REDO)\n            return;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.ITextOperationTarget;\n\npublic class MyClass {\n    private int fOperationCode;\n\n    public void update() {\n        if (fOperationCode \u003d\u003d ITextOperationTarget.UNDO || fOperationCode \u003d\u003d ITextOperationTarget.REDO)\n            return;\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.ITextOperationTarget;\n\npublic class MyClass {\n    private int fOperationCode;\n\n    public void update() {\n        if (fOperationCode \u003d\u003d ITextOperationTarget.UNDO) // Should not change\n            return;\n        if (fOperationCode \u003d\u003d 1) // Should not change\n            return;\n    }\n}",
+  "targetHintFile": "common.sandbox-hint",
+  "sourceCommit": "d873b41099252133b921f0c7c8fe05c757998935",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Expression Expansion",
+  "summary": "Extend condition to include ITextOperationTarget.UNDO",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-01T02:27:32.483830733Z",
+  "ruleFingerprint": "sha256:54e84c95e98644407e1fcd04ef3427d6c0ad0987a546a9b1f00c3f27e50c5bfa",
+  "behaviorFingerprint": "sha256:349cb1e24ab3ac840c565088d30a7d6d88935cfd88eadc3f122ce82498d36516",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.text.ITextOperationTarget cannot be resolved",
+    "verifiedAt": "2026-09-01T02:27:38.504746375Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

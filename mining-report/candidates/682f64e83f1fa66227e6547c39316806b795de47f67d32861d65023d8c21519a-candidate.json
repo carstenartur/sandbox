@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "682f64e83f1fa66227e6547c39316806b795de47f67d32861d65023d8c21519a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.propertiesfileeditor.PropertiesFileEditorMessages.PropertiesCorrectionProcessor_remove_key_label\n\u003d\u003e\norg.eclipse.jdt.internal.ui.propertiesfileeditor.PropertiesFileEditorMessages.PropertiesCorrectionProcessor_remove_property_label\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.propertiesfileeditor;\n\n// Mock class for compilation\nclass PropertiesFileEditorMessages {\n    public static String PropertiesCorrectionProcessor_remove_key_label \u003d \"Remove key\";\n    public static String PropertiesCorrectionProcessor_remove_property_label \u003d \"Remove property\";\n}\n\npublic class Example {\n    public static String oldLabel \u003d PropertiesFileEditorMessages.PropertiesCorrectionProcessor_remove_key_label;\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.propertiesfileeditor;\n\n// Mock class for compilation\nclass PropertiesFileEditorMessages {\n    public static String PropertiesCorrectionProcessor_remove_key_label \u003d \"Remove key\";\n    public static String PropertiesCorrectionProcessor_remove_property_label \u003d \"Remove property\";\n}\n\npublic class Example {\n    public static String oldLabel \u003d PropertiesFileEditorMessages.PropertiesCorrectionProcessor_remove_property_label;\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.propertiesfileeditor;\n\n// Mock class for compilation\nclass PropertiesFileEditorMessages {\n    public static String PropertiesCorrectionProcessor_remove_keys_label \u003d \"Remove keys\";\n}\n\npublic class Example {\n    public static String pluralLabel \u003d PropertiesFileEditorMessages.PropertiesCorrectionProcessor_remove_keys_label;\n}",
+  "targetHintFile": "renames.sandbox-hint",
+  "sourceCommit": "f9af56faa31c9f8ce35f7a417ea5fa4204ca4d11",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Rename",
+  "summary": "Rename `PropertiesCorrectionProcessor_remove_key_label` to `_remove_property_label`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-01T02:27:32.443422554Z",
+  "ruleFingerprint": "sha256:1e355f623b43b6f54e4ac08039b6c2e7d3649e7ef5fef460a4241aa449ee626c",
+  "behaviorFingerprint": "sha256:5ebe7834d27a2b0be2f81fca42aa8f95456b207103759314abda0e04929af6e5",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 9: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-01T02:27:38.469038574Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
