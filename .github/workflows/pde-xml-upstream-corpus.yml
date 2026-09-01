@@ -94,30 +94,12 @@ jobs:
           -T 1C
           -Dspotbugs.skip=true
           -Dtycho.localArtifacts=ignore
-          -Dtest=PinnedJdtXmlCorpusTest
-          -DfailIfNoTests=false
-          -Dsurefire.failIfNoSpecifiedTests=false
-          -Dsandbox.xml.corpus.required=true
           -Dsandbox.xml.corpus.jdtCore="$GITHUB_WORKSPACE/upstream/eclipse.jdt.core"
           -Dsandbox.xml.corpus.jdtUi="$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui"
+          -Ppde-xml-upstream-corpus
           -pl sandbox_target,sandbox_common,sandbox_test_commons,sandbox_xml_cleanup_test
           -am
           clean verify
-
-      - name: Require both real-corpus JUnit scenarios
-        shell: bash
-        run: |
-          set -euo pipefail
-          report="$(find sandbox_xml_cleanup_test/target/surefire-reports -type f \
-            -name '*PinnedJdtXmlCorpusTest*.xml' -print -quit)"
-          test -n "$report"
-          grep -F 'name="verifiesPinnedJdtCorePdeXmlCorpus"' "$report"
-          grep -F 'name="verifiesPinnedJdtUiPdeXmlCorpus"' "$report"
-          if grep -Fq '<skipped' "$report"; then
-            echo "The required pinned XML corpus tests were skipped: $report" >&2
-            exit 1
-          fi
-          printf 'Verified real PDE XML corpus report: %s\n' "$report"
 
       - name: Upload focused JUnit evidence
         if: always()
