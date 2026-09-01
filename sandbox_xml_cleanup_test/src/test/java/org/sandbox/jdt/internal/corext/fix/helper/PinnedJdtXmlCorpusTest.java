@@ -17,12 +17,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -129,14 +131,13 @@ class PinnedJdtXmlCorpusTest {
 				() -> "Repository root is not configured: " + REPOSITORY_ROOT_PROPERTY); //$NON-NLS-1$
 		Path pinFile= Path.of(configuredRoot).toAbsolutePath().normalize()
 				.resolve("qa/upstream-jdt/pins.env"); //$NON-NLS-1$
+		Properties properties= new Properties();
+		try (Reader reader= Files.newBufferedReader(pinFile, StandardCharsets.UTF_8)) {
+			properties.load(reader);
+		}
 		Map<String, String> values= new LinkedHashMap<>();
-		for (String raw : Files.readAllLines(pinFile, StandardCharsets.UTF_8)) {
-			String line= raw.trim();
-			int separator= line.indexOf('=');
-			if (line.isEmpty() || line.charAt(0) == '#' || separator < 0) {
-				continue;
-			}
-			values.put(line.substring(0, separator), line.substring(separator + 1));
+		for (String name : properties.stringPropertyNames()) {
+			values.put(name, properties.getProperty(name));
 		}
 		return Map.copyOf(values);
 	}
