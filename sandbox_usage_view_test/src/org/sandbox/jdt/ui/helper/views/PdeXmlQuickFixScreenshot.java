@@ -19,6 +19,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
@@ -32,6 +34,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
+import org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException;
 import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
 import org.eclipse.swtbot.swt.finder.results.Result;
 import org.eclipse.swtbot.swt.finder.utils.SWTUtils;
@@ -49,6 +52,11 @@ final class PdeXmlQuickFixScreenshot {
 	private static final String CORPUS_REF_PROPERTY= "sandbox.help.xml.corpus.ref"; //$NON-NLS-1$
 	private static final String CORPUS_COMMIT_PROPERTY= "sandbox.help.xml.corpus.commit"; //$NON-NLS-1$
 	private static final String CORPUS_PATH_PROPERTY= "sandbox.help.xml.corpus.path"; //$NON-NLS-1$
+	private static final String CORPUS_FILE_ENV= "SANDBOX_HELP_XML_CORPUS_FILE"; //$NON-NLS-1$
+	private static final String CORPUS_REPOSITORY_ENV= "SANDBOX_HELP_XML_CORPUS_REPOSITORY"; //$NON-NLS-1$
+	private static final String CORPUS_REF_ENV= "SANDBOX_HELP_XML_CORPUS_REF"; //$NON-NLS-1$
+	private static final String CORPUS_COMMIT_ENV= "SANDBOX_HELP_XML_CORPUS_COMMIT"; //$NON-NLS-1$
+	private static final String CORPUS_PATH_ENV= "SANDBOX_HELP_XML_CORPUS_PATH"; //$NON-NLS-1$
 	private static final String MARKER_TYPE= "sandbox_xml_cleanup.pdeXmlCleanupProblem"; //$NON-NLS-1$
 	private static final String MARKER_MESSAGE= "PDE XML formatting can be normalized"; //$NON-NLS-1$
 	private static final String ANALYZE_LABEL= "Find PDE XML Cleanup Problems"; //$NON-NLS-1$
@@ -63,12 +71,21 @@ final class PdeXmlQuickFixScreenshot {
 	}
 
 	static void capture() throws Exception {
-		Path source= Path.of(System.getProperty(CORPUS_FILE_PROPERTY, "")).toAbsolutePath().normalize(); //$NON-NLS-1$
+		String repository= configured(CORPUS_REPOSITORY_PROPERTY, CORPUS_REPOSITORY_ENV);
+		String ref= configured(CORPUS_REF_PROPERTY, CORPUS_REF_ENV);
+		String commit= configured(CORPUS_COMMIT_PROPERTY, CORPUS_COMMIT_ENV);
+		String sourcePath= configured(CORPUS_PATH_PROPERTY, CORPUS_PATH_ENV);
+		Path source= Path.of(configured(CORPUS_FILE_PROPERTY, CORPUS_FILE_ENV))
+				.toAbsolutePath().normalize();
 		assertTrue(Files.isRegularFile(source),
 				() -> "Pinned PDE XML screenshot corpus is missing: " + source); //$NON-NLS-1$
 		byte[] sourceBytes= Files.readAllBytes(source);
 		assertTrue(sourceBytes.length > 2_000,
 				"The marker screenshot must use a substantial real PDE schema"); //$NON-NLS-1$
+		assertTrue(commit.matches("[0-9a-f]{40}"), //$NON-NLS-1$
+				() -> "Invalid pinned JDT UI commit: " + commit); //$NON-NLS-1$
+		assertTrue(sourcePath.endsWith(".exsd"), //$NON-NLS-1$
+				() -> "The screenshot source is not a PDE extension schema: " + sourcePath); //$NON-NLS-1$
 
 		NullProgressMonitor monitor= new NullProgressMonitor();
 		IProject project= ResourcesPlugin.getWorkspace().getRoot().getProject(PROJECT_NAME);
@@ -94,7 +111,7 @@ final class PdeXmlQuickFixScreenshot {
 			SWTBotTreeItem fileItem= explorerTree.getTreeItem(PROJECT_NAME).expand()
 					.getNode("schema").expand().getNode("cleanUps.exsd"); //$NON-NLS-1$ //$NON-NLS-2$
 			fileItem.select();
-			fileItem.contextMenu(ANALYZE_LABEL).click();
+			clickContextMenu(fileItem, ANALYZE_LABEL);
 
 			bot.waitUntil(new DefaultCondition() {
 				@Override
@@ -109,21 +126,24 @@ final class PdeXmlQuickFixScreenshot {
 			});
 			IMarker marker= markers(file)[0];
 			assertEquals(MARKER_MESSAGE, marker.getAttribute(IMarker.MESSAGE));
+			assertTrue(marker.getAttribute(IMarker.LINE_NUMBER, -1) > 0,
+					"The real schema marker must identify a source line"); //$NON-NLS-1$
 
 			SWTBotView problems= bot.viewById(PROBLEMS_VIEW);
 			problems.show();
 			SWTBotTree problemTree= problems.bot().tree();
 			SWTBotTreeItem problem= waitForTreeItem(bot, problemTree, MARKER_MESSAGE);
 			problem.select();
-			problem.contextMenu("Quick Fix").click(); //$NON-NLS-1$
+			clickContextMenu(problem, "Quick Fix...", "Quick Fix…", "Quick Fix"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 			SWTBotShell quickFix= bot.shell("Quick Fix").activate(); //$NON-NLS-1$
 			SWTBotTable table= quickFix.bot().table();
 			table.getTableItem(QUICK_FIX_LABEL).select();
-			captureWorkbench(SandboxCheckout.locate("sandbox.help.screenshot.output") //$NON-NLS-1$
-					.resolve("sandbox_xml_cleanup_help/images").resolve(SCREENSHOT)); //$NON-NLS-1$
-			writeProvenance(SandboxCheckout.locate("sandbox.help.screenshot.output") //$NON-NLS-1$
-					.resolve("sandbox_xml_cleanup_help/images").resolve(PROVENANCE)); //$NON-NLS-1$
+			Path output= SandboxCheckout.locate("sandbox.help.screenshot.output") //$NON-NLS-1$
+					.resolve("sandbox_xml_cleanup_help/images"); //$NON-NLS-1$
+			captureWorkbench(output.resolve(SCREENSHOT));
+			writeProvenance(output.resolve(PROVENANCE), repository, ref, commit,
+					sourcePath, sourceBytes);
 			clickButton(quickFix, "Finish", "OK"); //$NON-NLS-1$ //$NON-NLS-2$
 			bot.waitUntil(new DefaultCondition() {
 				@Override
@@ -139,9 +159,24 @@ final class PdeXmlQuickFixScreenshot {
 			String after= read(file);
 			assertFalse(before.equals(after), "The real PDE schema must be changed by the quick fix"); //$NON-NLS-1$
 			assertTrue(after.contains("<schema"), "The quick fix must preserve the PDE schema root"); //$NON-NLS-1$ //$NON-NLS-2$
+			assertTrue(after.contains("Schema file written by PDE"), //$NON-NLS-1$
+					"The quick fix must preserve the upstream schema comment"); //$NON-NLS-1$
+			assertTrue(after.contains("This extension point allows to add clean ups"), //$NON-NLS-1$
+					"The quick fix must preserve the upstream schema documentation"); //$NON-NLS-1$
 		} finally {
 			project.delete(true, true, monitor);
 		}
+	}
+
+	private static String configured(String property, String environment) {
+		String value= System.getProperty(property);
+		if (value == null || value.isBlank()) {
+			value= System.getenv(environment);
+		}
+		assertTrue(value != null && !value.isBlank(),
+				() -> "Missing PDE XML screenshot configuration: " + property //$NON-NLS-1$
+						+ " or " + environment); //$NON-NLS-1$
+		return value.strip();
 	}
 
 	private static IMarker[] markers(IFile file) throws Exception {
@@ -178,12 +213,25 @@ final class PdeXmlQuickFixScreenshot {
 		return null;
 	}
 
+	private static void clickContextMenu(SWTBotTreeItem item, String... labels) {
+		for (String label : labels) {
+			try {
+				item.contextMenu(label).click();
+				return;
+			} catch (WidgetNotFoundException exception) {
+				// Try the next platform spelling.
+			}
+		}
+		throw new IllegalStateException("None of the expected context actions is visible: " //$NON-NLS-1$
+				+ List.of(labels));
+	}
+
 	private static void clickButton(SWTBotShell shell, String... labels) {
 		for (String label : labels) {
 			try {
 				shell.bot().button(label).click();
 				return;
-			} catch (org.eclipse.swtbot.swt.finder.exceptions.WidgetNotFoundException exception) {
+			} catch (WidgetNotFoundException exception) {
 				// Try the next platform label.
 			}
 		}
@@ -204,7 +252,8 @@ final class PdeXmlQuickFixScreenshot {
 		assertTrue(Files.size(image) > 0, () -> "Empty PDE XML screenshot: " + image); //$NON-NLS-1$
 	}
 
-	private static void writeProvenance(Path target) throws Exception {
+	private static void writeProvenance(Path target, String repository, String ref,
+			String commit, String sourcePath, byte[] sourceBytes) throws Exception {
 		String json= """
 				{
 				  "schemaVersion": 1,
@@ -212,13 +261,14 @@ final class PdeXmlQuickFixScreenshot {
 				  "ref": "%s",
 				  "commit": "%s",
 				  "sourcePath": "%s",
+				  "sourceSha256": "%s",
+				  "sourceBytes": %d,
 				  "scenario": "Problems view marker and Quick Fix"
 				}
-				""".formatted(
-					json(System.getProperty(CORPUS_REPOSITORY_PROPERTY, "")), //$NON-NLS-1$
-					json(System.getProperty(CORPUS_REF_PROPERTY, "")), //$NON-NLS-1$
-					json(System.getProperty(CORPUS_COMMIT_PROPERTY, "")), //$NON-NLS-1$
-					json(System.getProperty(CORPUS_PATH_PROPERTY, ""))); //$NON-NLS-1$
+				""".formatted(json(repository), json(ref), json(commit), json(sourcePath),
+						HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256") //$NON-NLS-1$
+								.digest(sourceBytes)),
+						Integer.valueOf(sourceBytes.length));
 		Files.writeString(target, json, StandardCharsets.UTF_8);
 	}
 
