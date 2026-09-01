@@ -77,6 +77,8 @@ jobs:
           test -s upstream/eclipse.jdt.core/org.eclipse.jdt.core/plugin.xml
           test -s upstream/eclipse.jdt.ui/org.eclipse.jdt.ui/schema/cleanUps.exsd
 
+      # Tycho resolves the target definition before Maven's normal -am graph is
+      # complete, so the focused reactor must name sandbox_target explicitly.
       - name: Run the existing Sandbox XML tests on the pinned corpora
         shell: bash
         run: >-
@@ -92,7 +94,7 @@ jobs:
           -Dsandbox.xml.corpus.required=true
           -Dsandbox.xml.corpus.jdtCore="$GITHUB_WORKSPACE/upstream/eclipse.jdt.core"
           -Dsandbox.xml.corpus.jdtUi="$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui"
-          -pl sandbox_xml_cleanup_test
+          -pl sandbox_target,sandbox_xml_cleanup_test
           -am
           clean verify
 
