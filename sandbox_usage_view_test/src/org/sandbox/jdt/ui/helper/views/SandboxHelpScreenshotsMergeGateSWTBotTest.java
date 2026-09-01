@@ -24,8 +24,13 @@ import org.eclipse.ltk.core.refactoring.IUndoManager;
 import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.eclipse.finder.widgets.SWTBotView;
+import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
+import org.eclipse.swtbot.swt.finder.results.VoidResult;
+import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -44,6 +49,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseBundleClasspath;
 public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 
 	private static final String CLEANUP_PREVIEW_PROJECT= "SandboxCleanupPreviewProject"; //$NON-NLS-1$
+	private static final String PROBLEMS_VIEW= "org.eclipse.ui.views.ProblemView"; //$NON-NLS-1$
 	private static final List<String> SHADOW_PLATFORM_SOURCES= List.of(
 			"src/org/eclipse/core/runtime/IProgressMonitor.java", //$NON-NLS-1$
 			"src/org/eclipse/core/runtime/SubMonitor.java", //$NON-NLS-1$
@@ -138,6 +144,8 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 	@Test
 	@Order(7)
 	public void capturePdeXmlMarkerQuickFix() throws Exception {
+		SWTWorkbenchBot workbench= new SWTWorkbenchBot();
+		showView(workbench.activeShell(), PROBLEMS_VIEW);
 		PdeXmlQuickFixScreenshot.capture();
 	}
 
@@ -151,6 +159,19 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 		} finally {
 			undoManager.flush();
 		}
+	}
+
+	private static void showView(SWTBotShell workbench, String viewId) {
+		UIThreadRunnable.syncExec(workbench.display, new VoidResult() {
+			@Override
+			public void run() {
+				try {
+					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().showView(viewId);
+				} catch (PartInitException exception) {
+					throw new IllegalStateException("Could not open view " + viewId, exception); //$NON-NLS-1$
+				}
+			}
+		});
 	}
 
 	private static String activePreviewTree() {
