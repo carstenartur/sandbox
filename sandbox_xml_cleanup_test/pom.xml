@@ -57,4 +57,25 @@
 			</plugin>
 		</plugins>
 	</build>
+	<profiles>
+		<profile>
+			<id>pde-xml-upstream-corpus</id>
+			<properties>
+				<sandbox.xml.corpus.required>true</sandbox.xml.corpus.required>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-surefire-plugin</artifactId>
+						<version>${tycho-version}</version>
+						<configuration>
+							<failIfNoTests>true</failIfNoTests>
+							<testClass>org.sandbox.jdt.internal.corext.fix.helper.PinnedJdtXmlCorpusTest</testClass>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
