@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "1f0b3e148142b9c49f971addaa68d33d466a9fec",
-      "lastProcessedDate": "2026-08-31T02:29:25.560429278Z",
-      "totalProcessed": 5061,
+      "lastProcessedCommit": "cb853f6d792d2f5cf8367a3f35f5acf306eb1314",
+      "lastProcessedDate": "2026-09-01T02:27:30.968114177Z",
+      "totalProcessed": 5149,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3152,6 +3152,15 @@
           "deferredAt": "2026-08-31T02:25:52.519602672Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "08d4c4c84b31f4e626a33a1c55bc38d5a9625e1f",
+          "message": "Fixed bug 358384: [quick assist][nls tooling] Add Quick Assists to synchronize Java properties file and corresponding me",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-01T02:24:58.742541736Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3306,7 +3315,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 4,
-        "API Modernization": 52,
+        "API Modernization": 53,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3314,7 +3323,7 @@
         "API Constant Update": 1,
         "Null Safety": 6,
         "Boolean Simplification": 1,
-        "Constant Replacement": 4,
+        "Constant Replacement": 5,
         "API Simplification": 4,
         "Code Style/Clarity": 1,
         "Type Clarity": 1,
@@ -3397,7 +3406,7 @@
         "Logging cleanup": 1,
         "api-usage": 1,
         "Deprecated API Replacement": 1,
-        "API Usage Correction": 1,
+        "API Usage Correction": 2,
         "Argument inlining": 1,
         "Stylistic/Documentation": 1,
         "Structural Change/New Code Insertion": 1,
@@ -3406,10 +3415,12 @@
         "Encapsulation Refactoring": 1,
         "API Misuse / Correctness": 1,
         "API simplification": 1,
-        "API Constant Replacement": 1,
+        "API Constant Replacement": 2,
         "Debug String Enhancement": 1,
         "Method Argument Transformation": 1,
-        "Array Comparison": 1
+        "Array Comparison": 1,
+        "API Rename": 1,
+        "Expression Expansion": 1
       },
       "exhaustedCategories": []
     },
@@ -3450,5 +3461,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 27832
+  "globalTotalProcessed": 27920
 }
