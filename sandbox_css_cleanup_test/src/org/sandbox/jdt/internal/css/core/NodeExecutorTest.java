@@ -17,12 +17,14 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 
 /**
  * Tests for {@link NodeExecutor}.
@@ -31,87 +33,105 @@ public class NodeExecutorTest {
 
 	@Test
 	public void testIsNodeAvailableDoesNotThrow() {
-		// The method should return a boolean without throwing
 		assertDoesNotThrow(() -> NodeExecutor.isNodeAvailable());
 	}
 
 	@Test
 	public void testIsNpxAvailableDoesNotThrow() {
-		// The method should return a boolean without throwing
 		assertDoesNotThrow(() -> NodeExecutor.isNpxAvailable());
 	}
 
 	@Test
 	public void testNodeAvailabilityCheckIsConsistent() {
-		// Running the check multiple times should give consistent results
 		boolean first = NodeExecutor.isNodeAvailable();
 		boolean second = NodeExecutor.isNodeAvailable();
-		
+
 		assertEquals(first, second, "Node availability check should be consistent"); //$NON-NLS-1$
 	}
 
 	@Test
 	public void testNpxAvailabilityCheckIsConsistent() {
-		// Running the check multiple times should give consistent results
 		boolean first = NodeExecutor.isNpxAvailable();
 		boolean second = NodeExecutor.isNpxAvailable();
-		
+
 		assertEquals(first, second, "Npx availability check should be consistent"); //$NON-NLS-1$
 	}
 
 	@Test
 	public void testExecutionResultClassExists() {
-		// Verify that the ExecutionResult inner class is accessible
 		assertNotNull(NodeExecutor.ExecutionResult.class);
 	}
 
-	// ========== Integration tests (require Node.js) ==========
-
 	@Test
-	@EnabledIf("isNodeAvailable")
 	public void testNodeIsActuallyAvailable() {
-		assertTrue(NodeExecutor.isNodeAvailable(), "Node.js should be available in CI environment"); //$NON-NLS-1$
+		assertTrue(NodeExecutor.isNodeAvailable(), "Maven-owned Node.js should be available"); //$NON-NLS-1$
 	}
 
 	@Test
-	@EnabledIf("isNpxAvailable")
-	public void testNpxIsActuallyAvailable() {
-		assertTrue(NodeExecutor.isNpxAvailable(), "npx should be available in CI environment"); //$NON-NLS-1$
+	public void testPinnedCssToolsAreActuallyAvailable() {
+		assertTrue(NodeExecutor.isNpxAvailable(), "Maven-owned Prettier and Stylelint should be available"); //$NON-NLS-1$
 	}
 
 	@Test
-	@EnabledIf("isNpxAvailable")
-	public void testExecuteNpxWithVersion() throws IOException, InterruptedException {
-		// Execute a simple npx command that should always work
-		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx("--version"); //$NON-NLS-1$
-		
+	public void testExecutePrettierWithVersion() throws IOException, InterruptedException {
+		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx("prettier", "--version"); //$NON-NLS-1$ //$NON-NLS-2$
+
 		assertNotNull(result);
-		assertNotNull(result.stdout);
-		assertFalse(result.stdout.isEmpty(), "npx --version should produce output"); //$NON-NLS-1$
+		assertTrue(result.isSuccess(), result.stderr);
+		assertFalse(result.stdout.isEmpty(), "Prettier --version should produce output"); //$NON-NLS-1$
 	}
 
 	@Test
-	@EnabledIf("isNpxAvailable")
-	public void testExecuteNpxWithInvalidCommand() throws IOException, InterruptedException {
-		// Execute an npx command that should fail
-		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx("this-package-definitely-does-not-exist-12345"); //$NON-NLS-1$
-		
+	public void testExecuteStylelintWithInvalidOption() throws IOException, InterruptedException {
+		NodeExecutor.ExecutionResult result = NodeExecutor.executeNpx(
+				"stylelint", "--this-option-does-not-exist"); //$NON-NLS-1$ //$NON-NLS-2$
+
 		assertNotNull(result);
-		assertFalse(result.isSuccess(), "Invalid command should not succeed"); //$NON-NLS-1$
-		assertTrue(result.exitCode != 0, "Invalid command should have non-zero exit code"); //$NON-NLS-1$
+		assertFalse(result.isSuccess(), "Invalid Stylelint option should not succeed"); //$NON-NLS-1$
+		assertTrue(result.exitCode != 0, "Invalid Stylelint option should have non-zero exit code"); //$NON-NLS-1$
 	}
 
-	/**
-	 * Condition method for EnabledIf annotation.
-	 */
-	static boolean isNodeAvailable() {
-		return NodeExecutor.isNodeAvailable();
+	@Test
+	public void testWindowsUsesCmdForUserNpx() {
+		assertEquals(List.of("npx.cmd", "prettier", "--version"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				NodeExecutor.buildNpxCommand("Windows 11", null, null, "prettier", "--version")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
-	/**
-	 * Condition method for EnabledIf annotation.
-	 */
-	static boolean isNpxAvailable() {
-		return NodeExecutor.isNpxAvailable();
+	@Test
+	public void testUnixUsesNpxForUserToolchain() {
+		assertEquals(List.of("npx", "stylelint", "--version"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				NodeExecutor.buildNpxCommand("Linux", null, null, "stylelint", "--version")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@Test
+	public void testPinnedPrettierRunsThroughPinnedNode() {
+		List<String> command = NodeExecutor.buildNpxCommand(
+				"Linux", "target/frontend", "node_modules", "prettier", "--version"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+
+		assertEquals(Path.of("target", "frontend", "node", "node").toString(), command.get(0)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		assertEquals(Path.of("node_modules", "prettier", "bin", "prettier.cjs").toString(), command.get(1)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		assertEquals("--version", command.get(2)); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testPinnedWindowsNodeUsesExe() {
+		List<String> command = NodeExecutor.buildNpxCommand(
+				"Windows 11", "target/frontend", "node_modules", "stylelint", "--version"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+
+		assertEquals("node.exe", Path.of(command.get(0)).getFileName().toString()); //$NON-NLS-1$
+		assertEquals("stylelint.mjs", Path.of(command.get(1)).getFileName().toString()); //$NON-NLS-1$
+	}
+
+	@Test
+	public void testPartialPinnedConfigurationIsRejected() {
+		assertThrows(IllegalStateException.class,
+				() -> NodeExecutor.buildNpxCommand("Linux", "target/frontend", null, "prettier")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@Test
+	public void testPinnedToolchainRejectsUnknownCommands() {
+		assertThrows(IllegalArgumentException.class,
+				() -> NodeExecutor.buildNpxCommand(
+						"Linux", "target/frontend", "node_modules", "unknown-tool")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	}
 }
