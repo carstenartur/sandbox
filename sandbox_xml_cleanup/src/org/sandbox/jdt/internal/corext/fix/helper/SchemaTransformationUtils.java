@@ -36,9 +36,13 @@ import javax.xml.transform.stream.StreamSource;
  */
 public class SchemaTransformationUtils {
 
-	private static final Pattern MARKUP_INDENTATION= Pattern.compile("^( {4})+(?=<)", Pattern.MULTILINE); //$NON-NLS-1$
+	private static final Pattern MARKUP_INDENTATION= Pattern.compile("^( {4})+(?= *<)", Pattern.MULTILINE); //$NON-NLS-1$
 
 	private SchemaTransformationUtils() {
+	}
+
+	/** Location of the first structural indentation that can be normalized. */
+	record IndentationFinding(int lineNumber, int offset, int length) {
 	}
 
 	/**
@@ -99,11 +103,11 @@ public class SchemaTransformationUtils {
 	}
 
 	/**
-	 * Converts groups of four leading spaces only when they indent serialized XML
-	 * markup. Text lines are left unchanged, including intentional blank lines and
-	 * leading spaces inside element content.
+	 * Converts complete groups of four leading spaces only when they indent XML
+	 * markup. Any remaining spaces are retained, so three-space PDE indentation
+	 * levels and mixed indentation widths remain semantically unchanged.
 	 */
-	private static String convertMarkupIndentationToTabs(String content) {
+	static String convertMarkupIndentationToTabs(String content) {
 		Matcher matcher= MARKUP_INDENTATION.matcher(content);
 		StringBuilder result= new StringBuilder(content.length());
 		while (matcher.find()) {
@@ -112,5 +116,19 @@ public class SchemaTransformationUtils {
 		}
 		matcher.appendTail(result);
 		return result.toString();
+	}
+
+	static IndentationFinding firstConvertibleMarkupIndentation(String content) {
+		Matcher matcher= MARKUP_INDENTATION.matcher(content);
+		if (!matcher.find()) {
+			return null;
+		}
+		int lineNumber= 1;
+		for (int offset= 0; offset < matcher.start(); offset++) {
+			if (content.charAt(offset) == '\n') {
+				lineNumber++;
+			}
+		}
+		return new IndentationFinding(lineNumber, matcher.start(), matcher.end() - matcher.start());
 	}
 }
