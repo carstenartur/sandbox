@@ -11,11 +11,6 @@
 	<artifactId>sandbox_xml_cleanup_test</artifactId>
 	<name>Sandbox xml cleanup test</name>
 	<packaging>eclipse-test-plugin</packaging>
-	<properties>
-		<sandbox.xml.corpus.jdtCore></sandbox.xml.corpus.jdtCore>
-		<sandbox.xml.corpus.jdtUi></sandbox.xml.corpus.jdtUi>
-		<sandbox.xml.corpus.required>false</sandbox.xml.corpus.required>
-	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.sandbox</groupId>
@@ -40,9 +35,6 @@
 					<useUIHarness>true</useUIHarness>
 					<systemProperties>
 						<sandbox.repository.root>${maven.multiModuleProjectDirectory}</sandbox.repository.root>
-						<sandbox.xml.corpus.jdtCore>${sandbox.xml.corpus.jdtCore}</sandbox.xml.corpus.jdtCore>
-						<sandbox.xml.corpus.jdtUi>${sandbox.xml.corpus.jdtUi}</sandbox.xml.corpus.jdtUi>
-						<sandbox.xml.corpus.required>${sandbox.xml.corpus.required}</sandbox.xml.corpus.required>
 					</systemProperties>
 					<dependencies>
 						<dependency>
@@ -60,9 +52,6 @@
 	<profiles>
 		<profile>
 			<id>pde-xml-upstream-corpus</id>
-			<properties>
-				<sandbox.xml.corpus.required>true</sandbox.xml.corpus.required>
-			</properties>
 			<build>
 				<plugins>
 					<plugin>
@@ -72,6 +61,12 @@
 						<configuration>
 							<failIfNoTests>true</failIfNoTests>
 							<testClass>org.sandbox.jdt.internal.corext.fix.helper.PinnedJdtXmlCorpusTest</testClass>
+							<systemProperties>
+								<sandbox.repository.root>${maven.multiModuleProjectDirectory}</sandbox.repository.root>
+								<sandbox.xml.corpus.jdtCore>${sandbox.xml.corpus.jdtCore}</sandbox.xml.corpus.jdtCore>
+								<sandbox.xml.corpus.jdtUi>${sandbox.xml.corpus.jdtUi}</sandbox.xml.corpus.jdtUi>
+								<sandbox.xml.corpus.required>true</sandbox.xml.corpus.required>
+							</systemProperties>
 						</configuration>
 					</plugin>
 				</plugins>

@@ -103,32 +103,51 @@ public class SchemaTransformationUtils {
 	}
 
 	/**
-	 * Converts complete groups of four leading spaces only when they indent XML
-	 * markup. Any remaining spaces are retained, so three-space PDE indentation
-	 * levels and mixed indentation widths remain semantically unchanged.
+	 * Converts complete groups of four leading spaces only when the spaces form a
+	 * whitespace-only segment between XML markup. Indentation that follows
+	 * meaningful text is retained because it belongs to that text node, even when
+	 * the next line starts with a closing tag.
 	 */
 	static String convertMarkupIndentationToTabs(String content) {
 		Matcher matcher= MARKUP_INDENTATION.matcher(content);
 		StringBuilder result= new StringBuilder(content.length());
+		int copiedThrough= 0;
 		while (matcher.find()) {
-			int tabs= matcher.group().length() / 4;
-			matcher.appendReplacement(result, "\t".repeat(tabs)); //$NON-NLS-1$
+			result.append(content, copiedThrough, matcher.start());
+			if (isFormattingOnlyIndentation(content, matcher.start())) {
+				result.append("\t".repeat(matcher.group().length() / 4)); //$NON-NLS-1$
+			} else {
+				result.append(matcher.group());
+			}
+			copiedThrough= matcher.end();
 		}
-		matcher.appendTail(result);
-		return result.toString();
+		return result.append(content, copiedThrough, content.length()).toString();
 	}
 
 	static IndentationFinding firstConvertibleMarkupIndentation(String content) {
 		Matcher matcher= MARKUP_INDENTATION.matcher(content);
-		if (!matcher.find()) {
-			return null;
+		while (matcher.find()) {
+			if (!isFormattingOnlyIndentation(content, matcher.start())) {
+				continue;
+			}
+			int lineNumber= 1;
+			for (int offset= 0; offset < matcher.start(); offset++) {
+				if (content.charAt(offset) == '\n') {
+					lineNumber++;
+				}
+			}
+			return new IndentationFinding(lineNumber, matcher.start(), matcher.end() - matcher.start());
 		}
-		int lineNumber= 1;
-		for (int offset= 0; offset < matcher.start(); offset++) {
-			if (content.charAt(offset) == '\n') {
-				lineNumber++;
+		return null;
+	}
+
+	private static boolean isFormattingOnlyIndentation(String content, int indentationOffset) {
+		int previousMarkupEnd= content.lastIndexOf('>', indentationOffset - 1);
+		for (int offset= previousMarkupEnd + 1; offset < indentationOffset; offset++) {
+			if (!Character.isWhitespace(content.charAt(offset))) {
+				return false;
 			}
 		}
-		return new IndentationFinding(lineNumber, matcher.start(), matcher.end() - matcher.start());
+		return true;
 	}
 }
