@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5fd766410a30f66aa5aca4e5541bbdcb7b8adce8945bff754285336459579969",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "addWarning(org.eclipse.jdt.internal.ui.jarpackager.Messages.format($messageKey, $pathLabel), null)\n\u003d\u003e\naddError(org.eclipse.jdt.internal.ui.jarpackager.Messages.format($messageKey, $pathLabel), null)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.jarpackager;\n\nimport org.eclipse.core.resources.IFile;\nimport org.eclipse.core.runtime.IPath;\n\n// Mock classes/methods for compilation\nclass JarPackagerMessages {\n    public static String JarFileExportOperation_notExportedDueToCompileErrors \u003d \"Error message {0}\";\n    public static String JarFileExportOperation_notExportedDueToCompileWarnings \u003d \"Warning message {0}\";\n}\nclass BasicElementLabels {\n    public static String getPathLabel(IPath path, boolean b) { return path.toString(); }\n}\n\npublic class JarFileExportOperation {\n    protected void addWarning(String message, Object info) { /* ... */ }\n    protected void addError(String message, Object info) { /* ... */ }\n    \n    public void processFile(IFile file) {\n        // This call is the target of the transformation\n        addWarning(org.eclipse.jdt.internal.ui.jarpackager.Messages.format(JarPackagerMessages.JarFileExportOperation_notExportedDueToCompileErrors, BasicElementLabels.getPathLabel(file.getFullPath(), false)), null);\n    }\n}\n\nclass Messages {\n    public static String format(String message, String arg) {\n        return message.replace(\"{0}\", arg);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.jarpackager;\n\nimport org.eclipse.core.resources.IFile;\nimport org.eclipse.core.runtime.IPath;\n\n// Mock classes/methods for compilation\nclass JarPackagerMessages {\n    public static String JarFileExportOperation_notExportedDueToCompileErrors \u003d \"Error message {0}\";\n    public static String JarFileExportOperation_notExportedDueToCompileWarnings \u003d \"Warning message {0}\";\n}\nclass BasicElementLabels {\n    public static String getPathLabel(IPath path, boolean b) { return path.toString(); }\n}\n\npublic class JarFileExportOperation {\n    protected void addWarning(String message, Object info) { /* ... */ }\n    protected void addError(String message, Object info) { /* ... */ }\n    \n    public void processFile(IFile file) {\n        // This call is the result of the transformation\n        addError(org.eclipse.jdt.internal.ui.jarpackager.Messages.format(JarPackagerMessages.JarFileExportOperation_notExportedDueToCompileErrors, BasicElementLabels.getPathLabel(file.getFullPath(), false)), null);\n    }\n}\n\nclass Messages {\n    public static String format(String message, String arg) {\n        return message.replace(\"{0}\", arg);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.jarpackager;\n\nimport org.eclipse.core.resources.IFile;\nimport org.eclipse.core.runtime.IPath;\n\n// Mock classes/methods for compilation\nclass JarPackagerMessages {\n    public static String JarFileExportOperation_exportedWithCompileErrors \u003d \"Exported with compile errors {0}\";\n    public static String JarFileExportOperation_notExportedDueToCompileWarnings \u003d \"Warning message {0}\";\n}\nclass BasicElementLabels {\n    public static String getPathLabel(IPath path, boolean b) { return path.toString(); }\n}\n\npublic class JarFileExportOperation {\n    protected void addWarning(String message, Object info) { /* ... */ }\n    protected void addError(String message, Object info) { /* ... */ }\n    \n    public void processFile(IFile file) {\n        // This `addWarning` call should not be transformed because it uses a different message key.\n        addWarning(org.eclipse.jdt.internal.ui.jarpackager.Messages.format(JarPackagerMessages.JarFileExportOperation_exportedWithCompileErrors, BasicElementLabels.getPathLabel(file.getFullPath(), false)), null);\n    }\n}\n\nclass Messages {\n    public static String format(String message, String arg) {\n        return message.replace(\"{0}\", arg);\n    }\n}",
+  "targetHintFile": "api-misuse.sandbox-hint",
+  "sourceCommit": "d442e5c4dafd664aea4d4671fa358b754c05a37d",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Usage Correction",
+  "summary": "Replace `addWarning` with `addError` for specific \u0027not exported due to compile errors/warnings\u0027 messages.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-01T02:27:32.463843487Z",
+  "ruleFingerprint": "sha256:8689fda33d3df8ca134e93fc0514a965a67b89aca36379999f5552fb862b8127",
+  "behaviorFingerprint": "sha256:47d89b328c3f29ff1f3d93e869cc5f4550d3e9231da07f32d98dc5e25b428b7f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 15: The public type JarFileExportOperation must be defined in its own file",
+    "verifiedAt": "2026-09-01T02:27:38.490171282Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

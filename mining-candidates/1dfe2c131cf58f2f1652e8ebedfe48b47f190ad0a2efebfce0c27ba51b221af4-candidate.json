@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1dfe2c131cf58f2f1652e8ebedfe48b47f190ad0a2efebfce0c27ba51b221af4",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.image.sharedimagestopluginimages\u003e\n\u003c!description: Replace PlatformUI shared images for error, warning, and info with internal JavaPluginImages alternatives to improve color accessibility.\u003e\n\u003c!severity: WARNING\u003e\n\n\u003c!map IMAGE_REPLACEMENT: \"org.eclipse.ui.ISharedImages.IMG_OBJS_ERROR_TSK\" \u003d\u003e \"org.eclipse.jdt.internal.ui.JavaPluginImages.IMG_OBJS_ERROR_ALT\", \"org.eclipse.ui.ISharedImages.IMG_OBJS_WARN_TSK\" \u003d\u003e \"org.eclipse.jdt.internal.ui.JavaPluginImages.IMG_OBJS_WARNING_ALT\", \"org.eclipse.ui.ISharedImages.IMG_OBJS_INFO_TSK\" \u003d\u003e \"org.eclipse.jdt.internal.ui.JavaPluginImages.IMG_OBJS_INFO_ALT\"\u003e\n\norg.eclipse.ui.PlatformUI.getWorkbench().getSharedImages().getImage(#{IMAGE_REPLACEMENT})\n\u003d\u003e\norg.eclipse.jdt.internal.ui.JavaPluginImages.get(#{IMAGE_REPLACEMENT_VALUE})\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.ui.ISharedImages;\nimport org.eclipse.ui.PlatformUI;\n\npublic class MyImageProvider {\n    public Image getErrorImage() {\n        return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_ERROR_TSK);\n    }\n\n    public Image getWarningImage() {\n        return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_WARN_TSK);\n    }\n\n    public Image getInfoImage() {\n        return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_INFO_TSK);\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.ui.ISharedImages;\nimport org.eclipse.ui.PlatformUI;\nimport org.eclipse.jdt.internal.ui.JavaPluginImages; // Added by the cleanup engine\n\npublic class MyImageProvider {\n    public Image getErrorImage() {\n        return JavaPluginImages.get(JavaPluginImages.IMG_OBJS_ERROR_ALT);\n    }\n\n    public Image getWarningImage() {\n        return JavaPluginImages.get(JavaPluginImages.IMG_OBJS_WARNING_ALT);\n    }\n\n    public Image getInfoImage() {\n        return JavaPluginImages.get(JavaPluginImages.IMG_OBJS_INFO_ALT);\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.ui.ISharedImages;\nimport org.eclipse.ui.PlatformUI;\n\npublic class MyImageProvider {\n    public Image getOtherImage() {\n        // This should not be affected as it\u0027s a different shared image constant\n        return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_ADD_TSK);\n    }\n}\n",
+  "targetHintFile": "eclipse.images.sandbox-hint",
+  "sourceCommit": "b031c714b439460ac139287bda9b2b9abf9f6f3f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces specific Eclipse shared images with internal JavaPluginImages equivalents.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-01T02:27:32.421664887Z",
+  "ruleFingerprint": "sha256:7aa09dd3e3f194f5a7895cc4af02a935b931ae9c9c9c3880ce737c549b8b4180",
+  "behaviorFingerprint": "sha256:db04d5753240965fe5c243f9e9f2712456d4edbb07035c0e261178693e13dcc6",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-01T02:27:38.455143553Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 4: The import org.eclipse.jface.preference cannot be resolved",
-    "verifiedAt": "2026-08-31T02:29:30.823372737Z",
+    "verifiedAt": "2026-09-01T02:27:37.803528693Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
