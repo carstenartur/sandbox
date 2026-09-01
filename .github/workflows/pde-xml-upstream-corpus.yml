@@ -95,6 +95,7 @@ jobs:
           -Dtycho.localArtifacts=ignore
           -Dtest=PinnedJdtXmlCorpusTest
           -DfailIfNoTests=false
+          -Dsurefire.failIfNoSpecifiedTests=false
           -Dsandbox.xml.corpus.required=true
           -Dsandbox.xml.corpus.jdtCore="$GITHUB_WORKSPACE/upstream/eclipse.jdt.core"
           -Dsandbox.xml.corpus.jdtUi="$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui"
