@@ -117,7 +117,7 @@ class PinnedJdtXmlCorpusTest {
 						() -> "PDE XML cleanup is not idempotent for " + relative); //$NON-NLS-1$
 			}
 			assertTrue(totalBytes > 25_000,
-					() -> "The selected upstream XML corpus is not substantial: " + totalBytes); //$NON-NLS-1$
+					"The selected upstream XML corpus is not substantial: " + totalBytes); //$NON-NLS-1$
 			assertTrue(changedFiles > 0,
 					() -> "The pinned corpus exercised no real cleanup change for " + property); //$NON-NLS-1$
 		} finally {
