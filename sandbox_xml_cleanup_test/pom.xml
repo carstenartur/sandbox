@@ -11,6 +11,10 @@
 	<artifactId>sandbox_xml_cleanup_test</artifactId>
 	<name>Sandbox xml cleanup test</name>
 	<packaging>eclipse-test-plugin</packaging>
+	<properties>
+		<sandbox.xml.corpus.jdtCore></sandbox.xml.corpus.jdtCore>
+		<sandbox.xml.corpus.jdtUi></sandbox.xml.corpus.jdtUi>
+	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.sandbox</groupId>
@@ -33,6 +37,11 @@
 					<useJDK>BREE</useJDK>
 					<skip>false</skip>
 					<useUIHarness>true</useUIHarness>
+					<systemProperties>
+						<sandbox.repository.root>${maven.multiModuleProjectDirectory}</sandbox.repository.root>
+						<sandbox.xml.corpus.jdtCore>${sandbox.xml.corpus.jdtCore}</sandbox.xml.corpus.jdtCore>
+						<sandbox.xml.corpus.jdtUi>${sandbox.xml.corpus.jdtUi}</sandbox.xml.corpus.jdtUi>
+					</systemProperties>
 					<dependencies>
 						<dependency>
 							<type>eclipse-plugin</type>
