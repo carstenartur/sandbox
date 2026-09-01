@@ -77,10 +77,11 @@ jobs:
           test -s upstream/eclipse.jdt.core/org.eclipse.jdt.core/plugin.xml
           test -s upstream/eclipse.jdt.ui/org.eclipse.jdt.ui/schema/cleanUps.exsd
 
-      # Tycho resolves the target definition before Maven's normal -am graph is
-      # complete, so the focused reactor must name sandbox_target explicitly.
-      # The normal Java-CI reactor runs every test; this additional gate selects
-      # only the real-corpus class to avoid paying that full test cost twice.
+      # Tycho's target resolution must see every in-reactor OSGi bundle used by
+      # the focused test. Maven -am follows POM dependencies, but the XML bundle's
+      # Require-Bundle dependency on sandbox_common is intentionally PDE-owned.
+      # Naming sandbox_common and sandbox_test_commons keeps this much smaller
+      # than a second full product build while preserving the real bundle graph.
       - name: Run the existing Sandbox XML tests on the pinned corpora
         shell: bash
         run: >-
@@ -99,7 +100,7 @@ jobs:
           -Dsandbox.xml.corpus.required=true
           -Dsandbox.xml.corpus.jdtCore="$GITHUB_WORKSPACE/upstream/eclipse.jdt.core"
           -Dsandbox.xml.corpus.jdtUi="$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui"
-          -pl sandbox_target,sandbox_xml_cleanup_test
+          -pl sandbox_target,sandbox_common,sandbox_test_commons,sandbox_xml_cleanup_test
           -am
           clean verify
 
