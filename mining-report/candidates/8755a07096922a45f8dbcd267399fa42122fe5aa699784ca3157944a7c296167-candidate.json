@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "8755a07096922a45f8dbcd267399fa42122fe5aa699784ca3157944a7c296167",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: jdt-editor-add-bracket-highlight-prefs\u003e\n\u003c!description: Adds new preference keys for bracket highlighting to SourceViewerDecorationSupport.setMatchingCharacterPainterPreferenceKeys.\u003e\n\u003c!severity: INFO\u003e\n\n$support.setMatchingCharacterPainterPreferenceKeys($key1, $key2) :: instanceof($support, \"org.eclipse.jface.text.source.SourceViewerDecorationSupport\")\n\u003d\u003e\n$support.setMatchingCharacterPainterPreferenceKeys($key1, $key2, org.eclipse.jdt.ui.PreferenceConstants.EDITOR_HIGHLIGHT_BRACKET_AT_CARET_LOCATION, org.eclipse.jdt.ui.PreferenceConstants.EDITOR_ENCLOSING_BRACKETS)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.source.SourceViewerDecorationSupport;\nimport org.eclipse.jdt.ui.PreferenceConstants;\n\npublic class MyEditor {\n    protected final static String MATCHING_BRACKETS \u003d PreferenceConstants.EDITOR_MATCHING_BRACKETS;\n    protected final static String MATCHING_BRACKETS_COLOR \u003d PreferenceConstants.EDITOR_MATCHING_BRACKETS_COLOR;\n\n    public void configureSourceViewerDecorationSupport(SourceViewerDecorationSupport support) {\n        support.setCharacterPairMatcher(null);\n        support.setMatchingCharacterPainterPreferenceKeys(MATCHING_BRACKETS, MATCHING_BRACKETS_COLOR);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.source.SourceViewerDecorationSupport;\nimport org.eclipse.jdt.ui.PreferenceConstants;\n\npublic class MyEditor {\n    protected final static String MATCHING_BRACKETS \u003d PreferenceConstants.EDITOR_MATCHING_BRACKETS;\n    protected final static String MATCHING_BRACKETS_COLOR \u003d PreferenceConstants.EDITOR_MATCHING_BRACKETS_COLOR;\n\n    public void configureSourceViewerDecorationSupport(SourceViewerDecorationSupport support) {\n        support.setCharacterPairMatcher(null);\n        support.setMatchingCharacterPainterPreferenceKeys(MATCHING_BRACKETS, MATCHING_BRACKETS_COLOR, org.eclipse.jdt.ui.PreferenceConstants.EDITOR_HIGHLIGHT_BRACKET_AT_CARET_LOCATION, org.eclipse.jdt.ui.PreferenceConstants.EDITOR_ENCLOSING_BRACKETS);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.source.SourceViewerDecorationSupport;\nimport org.eclipse.jdt.ui.PreferenceConstants;\n\npublic class MyEditor {\n    protected final static String MATCHING_BRACKETS \u003d PreferenceConstants.EDITOR_MATCHING_BRACKETS;\n    protected final static String MATCHING_BRACKETS_COLOR \u003d PreferenceConstants.EDITOR_MATCHING_BRACKETS_COLOR;\n\n    public void configureSourceViewerDecorationSupport(SourceViewerDecorationSupport support) {\n        support.setCharacterPairMatcher(null);\n        support.setMatchingCharacterPainterPreferenceKeys(MATCHING_BRACKETS, MATCHING_BRACKETS_COLOR, \"someExtraKey\");\n        support.setAnotherMethodCall(MATCHING_BRACKETS, MATCHING_BRACKETS_COLOR);\n    }\n}",
+  "targetHintFile": "jdt-editor.sandbox-hint",
+  "sourceCommit": "a84b7b2087d40d3379292f09611cebb78a28e6be",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Adds new `HIGHLIGHT_BRACKET_AT_CARET_LOCATION` and `ENCLOSING_BRACKETS` preference keys as arguments to `SourceViewerDecorationSupport.setMatchingCharacterPainterPreferenceKeys`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-02T02:44:38.223564565Z",
+  "ruleFingerprint": "sha256:3f49a3a9c5f27195f72825a599f2a02ce8cc22fb7c7483489b01d5f4a02d0378",
+  "behaviorFingerprint": "sha256:a42abf9a38d348354122a4e210a8e99cfa19fa2827b6f4388e01ae2ea9e14bf7",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-02T02:44:43.629170652Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1d8cac6cf2b539d70ea6c9bef480b1178bf6aab449842f041873b376787cdc88",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "(org.eclipse.jface.text.source.ICharacterPairMatcher.RIGHT \u003d\u003d $anchor) ? ($offset + 1) : ($offset + $length)\n\u003d\u003e\n(org.eclipse.jface.text.source.ICharacterPairMatcher.RIGHT \u003d\u003d $anchor) ? ($offset + 1) : ($offset + $length - 1)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.source.ICharacterPairMatcher;\n\npublic class TestClass {\n    public void calculateOffset(int anchor, int offset, int length) {\n        int targetOffset \u003d (ICharacterPairMatcher.RIGHT \u003d\u003d anchor) ? offset + 1 : offset + length;\n        System.out.println(targetOffset);\n    }\n    public void calculateOtherOffset(int anchor, int offset, int length) {\n        int otherOffset \u003d (ICharacterPairMatcher.LEFT \u003d\u003d anchor) ? offset : offset + length;\n        System.out.println(otherOffset);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.source.ICharacterPairMatcher;\n\npublic class TestClass {\n    public void calculateOffset(int anchor, int offset, int length) {\n        int targetOffset \u003d (ICharacterPairMatcher.RIGHT \u003d\u003d anchor) ? offset + 1 : offset + length - 1;\n        System.out.println(targetOffset);\n    }\n    public void calculateOtherOffset(int anchor, int offset, int length) {\n        int otherOffset \u003d (ICharacterPairMatcher.LEFT \u003d\u003d anchor) ? offset : offset + length;\n        System.out.println(otherOffset);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.source.ICharacterPairMatcher;\n\npublic class NegativeTestClass {\n    public void calculateOffset(int anchor, int offset, int length) {\n        // Different condition, should not match\n        int targetOffset \u003d (ICharacterPairMatcher.LEFT \u003d\u003d anchor) ? offset + 1 : offset + length;\n        System.out.println(targetOffset);\n    }\n\n    public void anotherCalculation(int val1, int val2, int val3) {\n        // Different pattern structure, should not match\n        int result \u003d val1 + val2 + val3;\n        System.out.println(result);\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui-fixes.sandbox-hint",
+  "sourceCommit": "345ebc8ae2e73a08ac5d390790bdb6d33f0d4f1a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Expression Correction",
+  "summary": "Corrects a one-off error in a ternary operator calculation for text editor pair matching logic in Eclipse JDT UI by decrementing the \u0027length\u0027 component in the false branch.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-02T02:44:38.200939820Z",
+  "ruleFingerprint": "sha256:54b84eed87a03ff724a8db1dd1e9019d17bbee74892b2c366053d5f14811bde5",
+  "behaviorFingerprint": "sha256:b72ce0cc5309fde4519b9ed87ad5213f3390c1a682e134657e00cf249d710069",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.text.source.ICharacterPairMatcher cannot be resolved",
+    "verifiedAt": "2026-09-02T02:44:43.620620688Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
