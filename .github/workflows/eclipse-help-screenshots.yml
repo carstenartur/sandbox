@@ -9,6 +9,7 @@ on:
       - 'docs/ECLIPSE_HELP_COVERAGE.md'
       - 'qa/upstream-jdt/pins.env'
       - 'sandbox_help_build/**'
+      - 'sandbox_eclipse_help_swtbot_test/**'
       - 'sandbox_target/**'
       - 'sandbox-functional-converter-core/**'
       - 'sandbox_common_core/**'
@@ -32,8 +33,6 @@ on:
       - 'sandbox_triggerpattern_help/**'
       - 'sandbox_use_general_type/**'
       - 'sandbox_use_general_type_help/**'
-      - 'sandbox_usage_view/**'
-      - 'sandbox_usage_view_test/**'
       - '.github/actions/use-runner-maven/**'
       - '.github/actions/verify-eclipse-desktop-runtime/**'
       - '.github/scripts/*.java'
@@ -139,7 +138,7 @@ jobs:
           set -euo pipefail
           report="$(grep -R -l --include='TEST-*.xml' \
             'SandboxHelpScreenshotsMergeGateSWTBotTest' \
-            sandbox_usage_view_test/target/surefire-reports | head -n 1 || true)"
+            sandbox_eclipse_help_swtbot_test/target/surefire-reports | head -n 1 || true)"
           if [[ -z "$report" ]]; then
             echo 'The selected Help screenshot JUnit merge gate did not execute.' >&2
             exit 1
@@ -291,7 +290,7 @@ jobs:
         with:
           name: eclipse-help-swtbot-diagnostics-${{ github.run_number }}
           path: |
-            sandbox_usage_view_test/target/work/data/.metadata/.log
-            sandbox_usage_view_test/target/surefire-reports/**
+            sandbox_eclipse_help_swtbot_test/target/work/data/.metadata/.log
+            sandbox_eclipse_help_swtbot_test/target/surefire-reports/**
           retention-days: 14
           if-no-files-found: warn
