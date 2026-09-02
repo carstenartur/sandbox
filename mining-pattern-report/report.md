@@ -1,11 +1,11 @@
-# Refactoring Mining Report — 2026-09-01
+# Refactoring Mining Report — 2026-09-02
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
 |----------------|-------|---------|-------|
 | eclipse.jdt.core | 227 | 0 | 0 |
 | eclipse.jdt.ui | 1476 | 52 | 9 |
-| eclipse.platform.ui | 1147 | 62 | 8 |
+| eclipse.platform.ui | 1140 | 62 | 8 |
 | eclipse.platform | 313 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
@@ -183,7 +183,7 @@
 #### Rule: `arrays` → `arrays.clone.review`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTreeReaderImpl_1.java:59` — `data.clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTree.java:167` — `data.clone()`
-- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTree.java:694` — `oldData.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTree.java:714` — `oldData.clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildContext.java:68` — `requestedBuilt.clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildManager.java:1157` — `prereqs.clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildCommand.java:151` — `arguments.clone()`

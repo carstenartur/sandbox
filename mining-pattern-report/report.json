@@ -13,7 +13,7 @@
         "rules": 9
       },
       "eclipse.platform.ui": {
-        "files": 1147,
+        "files": 1140,
         "matches": 62,
         "rules": 8
       },
@@ -1021,7 +1021,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/watson/ElementTree.java",
-      "line": 694,
+      "line": 714,
       "matchedCode": "oldData.clone()"
     },
     {
