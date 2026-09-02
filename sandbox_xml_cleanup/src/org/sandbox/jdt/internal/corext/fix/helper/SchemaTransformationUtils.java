@@ -37,6 +37,9 @@ import javax.xml.transform.stream.StreamSource;
 public class SchemaTransformationUtils {
 
 	private static final Pattern MARKUP_INDENTATION= Pattern.compile("^( {4})+(?= *<)", Pattern.MULTILINE); //$NON-NLS-1$
+	private static final Pattern PROTECTED_XML_REGION= Pattern.compile(
+			"<!--.*?(?:-->|\\z)|<!\\[CDATA\\[.*?(?:\\]\\]>|\\z)|<\\?.*?(?:\\?>|\\z)", //$NON-NLS-1$
+			Pattern.DOTALL);
 
 	private SchemaTransformationUtils() {
 	}
@@ -110,11 +113,12 @@ public class SchemaTransformationUtils {
 	 */
 	static String convertMarkupIndentationToTabs(String content) {
 		Matcher matcher= MARKUP_INDENTATION.matcher(content);
+		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);
 		StringBuilder result= new StringBuilder(content.length());
 		int copiedThrough= 0;
 		while (matcher.find()) {
 			result.append(content, copiedThrough, matcher.start());
-			if (isFormattingOnlyIndentation(content, matcher.start())) {
+			if (isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {
 				result.append("\t".repeat(matcher.group().length() / 4)); //$NON-NLS-1$
 			} else {
 				result.append(matcher.group());
@@ -126,8 +130,9 @@ public class SchemaTransformationUtils {
 
 	static IndentationFinding firstConvertibleMarkupIndentation(String content) {
 		Matcher matcher= MARKUP_INDENTATION.matcher(content);
+		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);
 		while (matcher.find()) {
-			if (!isFormattingOnlyIndentation(content, matcher.start())) {
+			if (!isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {
 				continue;
 			}
 			int lineNumber= 1;
@@ -139,6 +144,40 @@ public class SchemaTransformationUtils {
 			return new IndentationFinding(lineNumber, matcher.start(), matcher.end() - matcher.start());
 		}
 		return null;
+	}
+
+	private static boolean isConvertibleMarkupIndentation(String content, int indentationOffset,
+			ProtectedXmlRegions protectedRegions) {
+		return !protectedRegions.contains(indentationOffset)
+				&& isFormattingOnlyIndentation(content, indentationOffset);
+	}
+
+	private static final class ProtectedXmlRegions {
+
+		private final Matcher matcher;
+		private int start;
+		private int end;
+		private boolean available;
+
+		ProtectedXmlRegions(String content) {
+			matcher= PROTECTED_XML_REGION.matcher(content);
+			advance();
+		}
+
+		boolean contains(int offset) {
+			while (available && end <= offset) {
+				advance();
+			}
+			return available && start < offset;
+		}
+
+		private void advance() {
+			available= matcher.find();
+			if (available) {
+				start= matcher.start();
+				end= matcher.end();
+			}
+		}
 	}
 
 	private static boolean isFormattingOnlyIndentation(String content, int indentationOffset) {
