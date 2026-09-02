@@ -128,6 +128,10 @@ final class PdeXmlQuickFixScreenshot {
 			assertEquals(MARKER_MESSAGE, marker.getAttribute(IMarker.MESSAGE));
 			assertTrue(marker.getAttribute(IMarker.LINE_NUMBER, -1) > 0,
 					"The real schema marker must identify a source line"); //$NON-NLS-1$
+			assertTrue(marker.isSubtypeOf(IMarker.PROBLEM),
+					"The custom PDE XML marker must be a subtype of the Eclipse problem marker"); //$NON-NLS-1$
+			assertTrue(file.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO).length > 0,
+					"The Eclipse problem-marker query must expose the custom PDE XML marker"); //$NON-NLS-1$
 
 			SWTBotView problems= bot.viewById(PROBLEMS_VIEW);
 			problems.show();
@@ -194,7 +198,8 @@ final class PdeXmlQuickFixScreenshot {
 
 			@Override
 			public String getFailureMessage() {
-				return "Problems view does not contain marker: " + text; //$NON-NLS-1$
+				return "Problems view does not contain marker: " + text //$NON-NLS-1$
+						+ "\nVisible Problems tree:\n" + describe(tree); //$NON-NLS-1$
 			}
 		});
 		return result[0];
@@ -202,15 +207,45 @@ final class PdeXmlQuickFixScreenshot {
 
 	private static SWTBotTreeItem find(SWTBotTreeItem[] items, String text) {
 		for (SWTBotTreeItem item : items) {
-			if (item.getText().contains(text)) {
+			if (item.row().toString().contains(text)) {
 				return item;
 			}
-			SWTBotTreeItem child= find(item.getItems(), text);
-			if (child != null) {
-				return child;
+			if (item.rowCount() > 0) {
+				if (!item.isExpanded()) {
+					item.expand();
+				}
+				SWTBotTreeItem child= find(item.getItems(), text);
+				if (child != null) {
+					return child;
+				}
 			}
 		}
 		return null;
+	}
+
+	private static String describe(SWTBotTree tree) {
+		try {
+			StringBuilder result= new StringBuilder();
+			for (SWTBotTreeItem item : tree.getAllItems()) {
+				append(result, item, 0);
+			}
+			return result.isEmpty() ? "<empty>" : result.toString(); //$NON-NLS-1$
+		} catch (RuntimeException exception) {
+			return "<unavailable: " + exception.getClass().getSimpleName() //$NON-NLS-1$
+					+ ": " + exception.getMessage() + ">"; //$NON-NLS-1$ //$NON-NLS-2$
+		}
+	}
+
+	private static void append(StringBuilder result, SWTBotTreeItem item, int depth) {
+		result.append("  ".repeat(depth)).append(item.row()).append('\n'); //$NON-NLS-1$
+		if (item.rowCount() > 0) {
+			if (!item.isExpanded()) {
+				item.expand();
+			}
+			for (SWTBotTreeItem child : item.getItems()) {
+				append(result, child, depth + 1);
+			}
+		}
 	}
 
 	private static void clickContextMenu(SWTBotTreeItem item, String... labels) {
