@@ -1,0 +1,111 @@
+name: Import verified Help screenshot baseline once
+
+on:
+  push:
+    branches:
+      - qa/pde-xml-upstream-corpus-marker-screenshot
+    paths:
+      - '.github/workflows/import-help-screenshot-baseline-once.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: import-help-screenshot-baseline-once
+  cancel-in-progress: false
+
+jobs:
+  import:
+    name: Import reviewed screenshot artifact
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      ARTIFACT_ID: '9850961869'
+      TARGET_BRANCH: qa/pde-xml-upstream-corpus-marker-screenshot
+    steps:
+      - name: Checkout exact branch head
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+
+      - name: Download completed read-only verifier artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl \
+            --location \
+            --fail \
+            --retry 3 \
+            --retry-all-errors \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" \
+            --output artifact.zip
+          unzip -q artifact.zip -d artifact
+
+      - name: Verify and import only the reviewed files
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_root='artifact/target/generated-help-screenshot-evidence/files'
+          provenance='artifact/sandbox_xml_cleanup_help/images/xml-cleanup-marker-quick-fix.provenance.json'
+
+          verify() {
+            local expected="$1"
+            local file="$2"
+            printf '%s  %s\n' "$expected" "$file" | sha256sum --check --strict
+          }
+
+          verify d49f5f99071a33196511d4d811add2fe7d94e83518b8a55da3c3ed92126f41b3 \
+            "$source_root/sandbox_css_cleanup_help/images/css-cleanup-preferences.png"
+          verify c693fe2358ceb447d325ad4b01ec90eccb61a3c2425e7486882d1b10320343c8 \
+            "$source_root/sandbox_triggerpattern_help/images/llm-rule-inference-preferences.png"
+          verify b97726dc970263fef3f716af8665687f81f4d456bbac7515dc4b75e8f86265ee \
+            "$source_root/sandbox_triggerpattern_help/images/refactoring-mining-view.png"
+          verify 4efd709466185225a63e8a6fc0af9b23df16c90852ab6a3fd8f609c87271af61 \
+            "$source_root/sandbox_xml_cleanup_help/images/xml-cleanup-marker-quick-fix.png"
+          verify 7e1527be0efb5b9e73262a048c10af327cc78d672848fbcbdd6ff30fb48161ec \
+            "$provenance"
+
+          install -m 0644 \
+            "$source_root/sandbox_css_cleanup_help/images/css-cleanup-preferences.png" \
+            sandbox_css_cleanup_help/images/css-cleanup-preferences.png
+          install -m 0644 \
+            "$source_root/sandbox_triggerpattern_help/images/llm-rule-inference-preferences.png" \
+            sandbox_triggerpattern_help/images/llm-rule-inference-preferences.png
+          install -m 0644 \
+            "$source_root/sandbox_triggerpattern_help/images/refactoring-mining-view.png" \
+            sandbox_triggerpattern_help/images/refactoring-mining-view.png
+          install -m 0644 \
+            "$source_root/sandbox_xml_cleanup_help/images/xml-cleanup-marker-quick-fix.png" \
+            sandbox_xml_cleanup_help/images/xml-cleanup-marker-quick-fix.png
+          install -m 0644 \
+            "$provenance" \
+            sandbox_xml_cleanup_help/images/xml-cleanup-marker-quick-fix.provenance.json
+
+      - name: Commit the artifact and remove this one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm -- .github/workflows/import-help-screenshot-baseline-once.yml
+          git add -- \
+            sandbox_css_cleanup_help/images/css-cleanup-preferences.png \
+            sandbox_triggerpattern_help/images/llm-rule-inference-preferences.png \
+            sandbox_triggerpattern_help/images/refactoring-mining-view.png \
+            sandbox_xml_cleanup_help/images/xml-cleanup-marker-quick-fix.png \
+            sandbox_xml_cleanup_help/images/xml-cleanup-marker-quick-fix.provenance.json
+
+          git diff --cached --check
+          git status --short
+          test "$(git diff --cached --name-only | wc -l)" -eq 6
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Refresh reproducible Eclipse Help screenshot baselines'
+          git push origin "HEAD:$TARGET_BRANCH"
