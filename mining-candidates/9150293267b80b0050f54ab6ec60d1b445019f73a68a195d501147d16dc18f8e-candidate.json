@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9150293267b80b0050f54ab6ec60d1b445019f73a68a195d501147d16dc18f8e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: jface.text.ICharacterPairMatcher.match.signature\n\u003c!description: Update ICharacterPairMatcher.match() signature to use separate offset and length parameters, improving selection handling.\n\u003c!severity: HINT\u003e\n\u003c!tags: api-migration, jface\u003e\n*/\n$matcher.match($document, $region.getOffset() + $region.getLength()) :: instanceof($region, \"org.eclipse.jface.text.IRegion\") \u0026\u0026 instanceof($matcher, \"org.eclipse.jface.text.source.ICharacterPairMatcher\")\n\u003d\u003e\n$matcher.match($document, $region.getOffset(), $region.getLength())\n;;",
+  "beforeExample": "package example;\n\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.IRegion;\nimport org.eclipse.jface.text.Region;\nimport org.eclipse.jface.text.source.DefaultCharacterPairMatcher;\nimport org.eclipse.jface.text.source.ICharacterPairMatcher;\n\npublic class EditorExample {\n    ICharacterPairMatcher fBracketMatcher \u003d new DefaultCharacterPairMatcher(\"()[]{}\");\n    IDocument document;\n\n    public void foo(IRegion selection) {\n        int sourceCaretOffset \u003d selection.getOffset() + selection.getLength();\n        IRegion region \u003d fBracketMatcher.match(document, sourceCaretOffset);\n    }\n}",
+  "afterExample": "package example;\n\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.IRegion;\nimport org.eclipse.jface.text.Region;\nimport org.eclipse.jface.text.source.DefaultCharacterPairMatcher;\nimport org.eclipse.jface.text.source.ICharacterPairMatcher;\n\npublic class EditorExample {\n    ICharacterPairMatcher fBracketMatcher \u003d new DefaultCharacterPairMatcher(\"()[]{}\");\n    IDocument document;\n\n    public void foo(IRegion selection) {\n        IRegion region \u003d fBracketMatcher.match(document, selection.getOffset(), selection.getLength());\n    }\n}",
+  "negativeExample": "package example;\n\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.IRegion;\nimport org.eclipse.jface.text.Region;\nimport org.eclipse.jface.text.source.DefaultCharacterPairMatcher;\nimport org.eclipse.jface.text.source.ICharacterPairMatcher;\n\npublic class EditorExample {\n    ICharacterPairMatcher fBracketMatcher \u003d new DefaultCharacterPairMatcher(\"()[]{}\");\n    IDocument document;\n\n    public void foo(MyCustomRegion selection) { // selection is not IRegion\n        int sourceCaretOffset \u003d selection.getOffset() + selection.getLength();\n        IRegion region \u003d fBracketMatcher.match(document, sourceCaretOffset);\n    }\n}\n\nclass MyCustomRegion {\n    public int getOffset() { return 0; }\n    public int getLength() { return 0; }\n}",
+  "targetHintFile": "jface-text.sandbox-hint",
+  "sourceCommit": "8fc5b67fd7594b88349285d7b446d55cf4337a0a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Refactor ICharacterPairMatcher.match() calls to use separate offset and length parameters, aligning with a new API signature for improved handling of text selections.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-02T02:44:38.244711716Z",
+  "ruleFingerprint": "sha256:05613995bd652a14931237c1ea30071eb88501186fc903e360cf426942288bf2",
+  "behaviorFingerprint": "sha256:8547e27883cc071139ab41f3426d1b99abcd4241c48d8204a0a49fb149ed8c74",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The import org.eclipse.jface.text.source.DefaultCharacterPairMatcher cannot be resolved",
+    "verifiedAt": "2026-09-02T02:44:43.642765334Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

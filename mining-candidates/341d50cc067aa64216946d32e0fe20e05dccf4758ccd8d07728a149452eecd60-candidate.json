@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "341d50cc067aa64216946d32e0fe20e05dccf4758ccd8d07728a149452eecd60",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jdt.ui.javadoc.useAstNodesEscapedString\u003e\n\u003c!description: Replace JavadocHover.getEscapedStringLiteral with ASTNodes.getEscapedStringLiteral to use a shared utility method.\u003e\n\u003c!severity: HINT\u003e\norg.eclipse.jdt.internal.ui.text.java.hover.JavadocHover.getEscapedStringLiteral($value$)\n\u003d\u003e\norg.eclipse.jdt.internal.corext.dom.ASTNodes.getEscapedStringLiteral($value$)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.java.hover;\n\n// Mock AST and related classes for compilation\nclass AST { public static AST newAST(int level) { return new AST(); } public StringLiteral newStringLiteral() { return new StringLiteral(); } }\nclass StringLiteral { public void setLiteralValue(String value) {} public String getEscapedValue() { return \"mock_escaped_value\"; } }\nclass JavaElementLabels { public static final String ELLIPSIS_STRING \u003d \"...\"; }\n\npublic class JavadocHover {\n\n    // This method is defined privately in JavadocHover in the \u0027before\u0027 state\n    private static String getEscapedStringLiteral(String stringValue) {\n        StringLiteral stringLiteral \u003d AST.newAST(0).newStringLiteral();\n        stringLiteral.setLiteralValue(stringValue);\n        String stringConstant \u003d stringLiteral.getEscapedValue();\n        if (stringConstant.length() \u003e 80) {\n            return stringConstant.substring(0, 80) + JavaElementLabels.ELLIPSIS_STRING;\n        } else {\n            return stringConstant;\n        }\n    }\n\n    public void someMethod(Object constantValue) {\n        if (constantValue instanceof String) {\n            String result \u003d getEscapedStringLiteral((String) constantValue);\n            System.out.println(result);\n        }\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.java.hover;\n\nimport org.eclipse.jdt.internal.corext.dom.ASTNodes;\n\n// Mock AST and related classes for compilation (even if not directly used after change)\nclass AST { public static AST newAST(int level) { return new AST(); } public StringLiteral newStringLiteral() { return new StringLiteral(); } }\nclass StringLiteral { public void setLiteralValue(String value) {} public String getEscapedValue() { return \"mock_escaped_value\"; } }\nclass JavaElementLabels { public static final String ELLIPSIS_STRING \u003d \"...\"; }\n\n// Mock ASTNodes for compilation\npackage org.eclipse.jdt.internal.corext.dom;\npublic class ASTNodes {\n    public static String getEscapedStringLiteral(String stringValue) {\n        return \"\\\"\" + stringValue + \"\\\"\"; // Simplified mock\n    }\n    public static String getEscapedCharacterLiteral(char ch) {\n        return \"\u0027\" + ch + \"\u0027\"; // Simplified mock\n    }\n}\n\npackage org.eclipse.jdt.internal.ui.text.java.hover;\n\nimport org.eclipse.jdt.internal.corext.dom.ASTNodes;\n\npublic class JavadocHover {\n    // In the \u0027after\u0027 state, the original getEscapedStringLiteral method is removed.\n    // The call site now directly uses ASTNodes.\n    public void someMethod(Object constantValue) {\n        if (constantValue instanceof String) {\n            String result \u003d ASTNodes.getEscapedStringLiteral((String) constantValue);\n            System.out.println(result);\n        }\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.java.hover;\n\n// Mock AST and related classes for compilation\nclass AST { public static AST newAST(int level) { return new AST(); } public StringLiteral newStringLiteral() { return new StringLiteral(); } }\nclass StringLiteral { public void setLiteralValue(String value) {} public String getEscapedValue() { return \"mock_escaped_value\"; } }\nclass JavaElementLabels { public static final String ELLIPSIS_STRING \u003d \"...\"; }\n\npublic class JavadocHover {\n\n    // This method is defined privately in JavadocHover in the \u0027before\u0027 state\n    private static String getEscapedStringLiteral(String stringValue) {\n        StringLiteral stringLiteral \u003d AST.newAST(0).newStringLiteral();\n        stringLiteral.setLiteralValue(stringValue);\n        String stringConstant \u003d stringLiteral.getEscapedValue();\n        if (stringConstant.length() \u003e 80) {\n            return stringConstant.substring(0, 80) + JavaElementLabels.ELLIPSIS_STRING;\n        } else {\n            return stringConstant;\n        }\n    }\n\n    // This method call should NOT be matched by the rule\n    public void someOtherMethod(String input) {\n        String trimmed \u003d input.trim();\n        System.out.println(trimmed);\n    }\n}\n",
+  "targetHintFile": "eclipse-jdt-ui.sandbox-hint",
+  "sourceCommit": "b441737900fbbd3fe2346d6c05daa02ec061f6c1",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces calls to the internal JavadocHover.getEscapedStringLiteral method with calls to the shared utility org.eclipse.jdt.internal.corext.dom.ASTNodes.getEscapedStringLiteral method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-02T02:44:38.117733591Z",
+  "ruleFingerprint": "sha256:e3ebcca718a9cd956be87799b67265cf60823581020f49fcbe0477c8d9075edc",
+  "behaviorFingerprint": "sha256:098418d7d145c106a73e0e886bd546476c9451861aa42f18dc28f5d4061b7043",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-02T02:44:43.597186698Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
