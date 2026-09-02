@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "cb853f6d792d2f5cf8367a3f35f5acf306eb1314",
-      "lastProcessedDate": "2026-09-01T02:27:30.968114177Z",
-      "totalProcessed": 5149,
+      "lastProcessedCommit": "c7788bb57c980fcd127473dfd166d073964b8375",
+      "lastProcessedDate": "2026-09-02T02:44:36.746868796Z",
+      "totalProcessed": 5226,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3161,6 +3161,69 @@
           "deferredAt": "2026-09-01T02:24:58.742541736Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "a83a65bf46366a0d6ecdd9ac36da2c19a4e05268",
+          "message": "Bug 364947: [move method] The design of the Move Instance Method\nrefactoring tool doesn\u0027t match users\u0027 expectations",
+          "diffLines": 86,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-02T02:36:50.533473436Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2d2440c7f27a364ebf0a9e6d074280fa6c54ff45",
+          "message": "Bug 364815: [preferences] UI for new preferences regarding annotation\nbased null analysis\n\nFirst cut (annotation text fi",
+          "diffLines": 349,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-02T02:36:50.534147948Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "018e4d6c13b846005b7fda362b74dc53fe789c73",
+          "message": "Bug 364815: [preferences] UI for new preferences regarding annotation\nbased null analysis",
+          "diffLines": 280,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-02T02:36:50.534273743Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e7c4b9c222d5aea7f6613838bdb5851672306793",
+          "message": "Bug 368015: Support for source attachment encoding at classpath entry level",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-02T02:39:22.183090447Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "cfb978b48b0fa396e6d3029e19f05b31faa716e4",
+          "message": "Bug 366013: [preferences] Polish preference UI for null annotations",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-02T02:39:52.988589819Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3c0e36f85d5a39b357d2b784e0d14acac5614f0c",
+          "message": "Bug 220928: [buildpath] Should be able to ignore warnings from certain source folders",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-02T02:43:33.445344059Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c9a970ffedacf77104bb19189e8c12280bcacd7b",
+          "message": "Bug 220928: [buildpath] Should be able to ignore warnings from certain source folders",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-02T02:43:33.460279140Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3237,7 +3300,7 @@
         "Code Correctness": 7,
         "Code Structure Simplification": 5,
         "Concurrency": 4,
-        "Bug Fix": 7,
+        "Bug Fix": 8,
         "New Cleanup": 1,
         "Logical Simplification": 8,
         "UI Bug Fix": 9,
@@ -3304,7 +3367,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 24,
+        "API Migration": 25,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -3315,7 +3378,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 4,
-        "API Modernization": 53,
+        "API Modernization": 55,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3420,7 +3483,9 @@
         "Method Argument Transformation": 1,
         "Array Comparison": 1,
         "API Rename": 1,
-        "Expression Expansion": 1
+        "Expression Expansion": 1,
+        "Expression Correction": 1,
+        "Redundant Code Removal": 1
       },
       "exhaustedCategories": []
     },
@@ -3461,5 +3526,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 27920
+  "globalTotalProcessed": 27997
 }
