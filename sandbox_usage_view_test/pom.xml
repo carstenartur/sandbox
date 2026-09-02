@@ -29,8 +29,6 @@
 					<skip>false</skip>
 					<useUIHarness>true</useUIHarness>
 					<showEclipseLog>true</showEclipseLog>
-					<argLine>-Dsandbox.repository.root="${maven.multiModuleProjectDirectory}"</argLine>
-					<!-- Default: Exclude SWTBot tests -->
 					<excludes>
 						<exclude>**/*SWTBotTest.class</exclude>
 					</excludes>
@@ -39,7 +37,6 @@
 							<type>eclipse-plugin</type>
 							<groupId>org.sandbox</groupId>
 							<artifactId>sandbox_usage_view</artifactId>
-							<!-- This is the minimum required version -->
 							<version>0.0.0</version>
 						</dependency>
 					</dependencies>
@@ -47,9 +44,7 @@
 			</plugin>
 		</plugins>
 	</build>
-
 	<profiles>
-		<!-- SWTBot profile: Include all SWTBot tests. -->
 		<profile>
 			<id>swtbot</id>
 			<build>
@@ -72,175 +67,6 @@
 								<dependency>
 									<type>eclipse-plugin</type>
 									<artifactId>org.eclipse.swtbot.swt.finder</artifactId>
-								</dependency>
-							</dependencies>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-
-		<!--
-			Generates the committed Eclipse Help screenshots from a real Eclipse
-			workbench. The test writes directly into the corresponding *_help/images
-			directories below the Maven checkout root. GitHub Actions only invokes
-			the same local Maven profile; it is not part of the generation contract.
-		-->
-		<profile>
-			<id>help-screenshots</id>
-			<properties>
-				<help.screenshot.testClass>org.sandbox.jdt.ui.helper.views.SandboxHelpScreenshotsSWTBotTest</help.screenshot.testClass>
-			</properties>
-			<dependencies>
-				<dependency>
-					<groupId>org.sandbox</groupId>
-					<artifactId>sandbox_css_cleanup</artifactId>
-					<version>${project.version}</version>
-				</dependency>
-				<dependency>
-					<groupId>org.sandbox</groupId>
-					<artifactId>sandbox_encoding_quickfix</artifactId>
-					<version>${project.version}</version>
-				</dependency>
-				<dependency>
-					<groupId>org.sandbox</groupId>
-					<artifactId>sandbox_functional_converter</artifactId>
-					<version>${project.version}</version>
-				</dependency>
-				<dependency>
-					<groupId>org.sandbox</groupId>
-					<artifactId>sandbox_int_to_enum</artifactId>
-					<version>${project.version}</version>
-				</dependency>
-				<dependency>
-					<groupId>org.sandbox</groupId>
-					<artifactId>sandbox_jface_cleanup</artifactId>
-					<version>${project.version}</version>
-				</dependency>
-				<dependency>
-					<groupId>org.sandbox</groupId>
-					<artifactId>sandbox_junit_cleanup</artifactId>
-					<version>${project.version}</version>
-				</dependency>
-				<dependency>
-					<groupId>org.sandbox</groupId>
-					<artifactId>sandbox_method_reuse</artifactId>
-					<version>${project.version}</version>
-				</dependency>
-				<dependency>
-					<groupId>org.sandbox</groupId>
-					<artifactId>sandbox_platform_helper</artifactId>
-					<version>${project.version}</version>
-				</dependency>
-				<dependency>
-					<groupId>org.sandbox</groupId>
-					<artifactId>sandbox_triggerpattern</artifactId>
-					<version>${project.version}</version>
-				</dependency>
-				<dependency>
-					<groupId>org.sandbox</groupId>
-					<artifactId>sandbox_use_general_type</artifactId>
-					<version>${project.version}</version>
-				</dependency>
-				<dependency>
-					<groupId>org.sandbox</groupId>
-					<artifactId>sandbox_xml_cleanup</artifactId>
-					<version>${project.version}</version>
-				</dependency>
-			</dependencies>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.eclipse.tycho</groupId>
-						<artifactId>tycho-surefire-plugin</artifactId>
-						<version>${tycho-version}</version>
-						<configuration>
-							<useJDK>BREE</useJDK>
-							<skip>false</skip>
-							<useUIHarness>true</useUIHarness>
-							<useUIThread>false</useUIThread>
-							<showEclipseLog>true</showEclipseLog>
-							<failIfNoTests>true</failIfNoTests>
-							<!-- Preview planning is asynchronous and can be slow on a cold CI workbench. -->
-							<forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
-							<appArgLine>-nl en</appArgLine>
-							<argLine>-Dsandbox.repository.root="${maven.multiModuleProjectDirectory}" -Dsandbox.help.screenshot.output="${maven.multiModuleProjectDirectory}" -Dsandbox.help.screenshot.mode=true -Dorg.eclipse.swtbot.search.timeout=120000 -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8</argLine>
-							<excludes combine.self="override" />
-							<testClass>${help.screenshot.testClass}</testClass>
-							<dependencies>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<artifactId>org.eclipse.swtbot.eclipse.finder</artifactId>
-								</dependency>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<artifactId>org.eclipse.swtbot.swt.finder</artifactId>
-								</dependency>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<groupId>org.sandbox</groupId>
-									<artifactId>sandbox_css_cleanup</artifactId>
-									<version>0.0.0</version>
-								</dependency>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<groupId>org.sandbox</groupId>
-									<artifactId>sandbox_encoding_quickfix</artifactId>
-									<version>0.0.0</version>
-								</dependency>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<groupId>org.sandbox</groupId>
-									<artifactId>sandbox_functional_converter</artifactId>
-									<version>0.0.0</version>
-								</dependency>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<groupId>org.sandbox</groupId>
-									<artifactId>sandbox_int_to_enum</artifactId>
-									<version>0.0.0</version>
-								</dependency>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<groupId>org.sandbox</groupId>
-									<artifactId>sandbox_jface_cleanup</artifactId>
-									<version>0.0.0</version>
-								</dependency>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<groupId>org.sandbox</groupId>
-									<artifactId>sandbox_junit_cleanup</artifactId>
-									<version>0.0.0</version>
-								</dependency>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<groupId>org.sandbox</groupId>
-									<artifactId>sandbox_method_reuse</artifactId>
-									<version>0.0.0</version>
-								</dependency>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<groupId>org.sandbox</groupId>
-									<artifactId>sandbox_platform_helper</artifactId>
-									<version>0.0.0</version>
-								</dependency>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<groupId>org.sandbox</groupId>
-									<artifactId>sandbox_triggerpattern</artifactId>
-									<version>0.0.0</version>
-								</dependency>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<groupId>org.sandbox</groupId>
-									<artifactId>sandbox_use_general_type</artifactId>
-									<version>0.0.0</version>
-								</dependency>
-								<dependency>
-									<type>eclipse-plugin</type>
-									<groupId>org.sandbox</groupId>
-									<artifactId>sandbox_xml_cleanup</artifactId>
-									<version>0.0.0</version>
 								</dependency>
 							</dependencies>
 						</configuration>
