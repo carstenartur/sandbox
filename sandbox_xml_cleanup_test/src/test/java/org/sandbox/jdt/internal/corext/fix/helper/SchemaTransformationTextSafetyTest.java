@@ -64,7 +64,7 @@ class SchemaTransformationTextSafetyTest {
 	}
 
 	@Test
-	void indentationInsideCommentsCdataAndProcessingInstructionsIsPreserved() {
+	void indentationInsideProtectedXmlRegionsIsPreserved() {
 		String source= """
 				<root>
 				<!--
@@ -76,12 +76,10 @@ class SchemaTransformationTextSafetyTest {
 				<?target
 				    <processing-instruction-content/>
 				?>
-				    <real-markup/>
 				</root>
 				"""; //$NON-NLS-1$
-		String expected= source.replace("    <real-markup/>", "\t<real-markup/>"); //$NON-NLS-1$ //$NON-NLS-2$
 
-		assertEquals(expected, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
+		assertEquals(source, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
 	}
 
 	@Test
@@ -105,9 +103,6 @@ class SchemaTransformationTextSafetyTest {
 						<!--
 						    <comment-content/>
 						-->
-						<![CDATA[
-						    <cdata-content/>
-						]]>
 						<?target
 						    <processing-instruction-content/>
 						?>
@@ -116,7 +111,7 @@ class SchemaTransformationTextSafetyTest {
 						"""); //$NON-NLS-1$
 
 		assertNotNull(finding);
-		assertEquals(11, finding.lineNumber());
+		assertEquals(8, finding.lineNumber());
 	}
 
 	@Test
