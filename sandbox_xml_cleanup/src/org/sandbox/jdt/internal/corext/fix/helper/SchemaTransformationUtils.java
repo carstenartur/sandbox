@@ -20,6 +20,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,6 +42,7 @@ public class SchemaTransformationUtils {
 	private static final Pattern PROTECTED_XML_REGION= Pattern.compile(
 			"<!--.*?(?:-->|\\z)|<!\\[CDATA\\[.*?(?:\\]\\]>|\\z)|<\\?.*?(?:\\?>|\\z)", //$NON-NLS-1$
 			Pattern.DOTALL);
+	private static final String CDATA_START= "<![CDATA["; //$NON-NLS-1$
 
 	private SchemaTransformationUtils() {
 	}
@@ -149,44 +152,92 @@ public class SchemaTransformationUtils {
 	private static boolean isConvertibleMarkupIndentation(String content, int indentationOffset,
 			ProtectedXmlRegions protectedRegions) {
 		return !protectedRegions.contains(indentationOffset)
-				&& isFormattingOnlyIndentation(content, indentationOffset);
+				&& isFormattingOnlyIndentation(content, indentationOffset, protectedRegions);
+	}
+
+	private record ProtectedXmlRegion(int start, int end, boolean textContent) {
 	}
 
 	private static final class ProtectedXmlRegions {
 
-		private final Matcher matcher;
-		private int start;
-		private int end;
-		private boolean available;
+		private final List<ProtectedXmlRegion> regions= new ArrayList<>();
 
 		ProtectedXmlRegions(String content) {
-			matcher= PROTECTED_XML_REGION.matcher(content);
-			advance();
+			Matcher matcher= PROTECTED_XML_REGION.matcher(content);
+			while (matcher.find()) {
+				regions.add(new ProtectedXmlRegion(matcher.start(), matcher.end(),
+						content.startsWith(CDATA_START, matcher.start())));
+			}
 		}
 
 		boolean contains(int offset) {
-			while (available && end <= offset) {
-				advance();
-			}
-			return available && start < offset;
+			return containing(offset) != null;
 		}
 
-		private void advance() {
-			available= matcher.find();
-			if (available) {
-				start= matcher.start();
-				end= matcher.end();
+		ProtectedXmlRegion containing(int offset) {
+			int low= 0;
+			int high= regions.size() - 1;
+			while (low <= high) {
+				int middle= (low + high) >>> 1;
+				ProtectedXmlRegion region= regions.get(middle);
+				if (offset < region.start()) {
+					high= middle - 1;
+				} else if (offset >= region.end()) {
+					low= middle + 1;
+				} else {
+					return region;
+				}
 			}
+			return null;
 		}
 	}
 
-	private static boolean isFormattingOnlyIndentation(String content, int indentationOffset) {
-		int previousMarkupEnd= content.lastIndexOf('>', indentationOffset - 1);
-		for (int offset= previousMarkupEnd + 1; offset < indentationOffset; offset++) {
-			if (!Character.isWhitespace(content.charAt(offset))) {
+	private static boolean isFormattingOnlyIndentation(String content, int indentationOffset,
+			ProtectedXmlRegions protectedRegions) {
+		int offset= indentationOffset - 1;
+		while (offset >= 0) {
+			ProtectedXmlRegion protectedRegion= protectedRegions.containing(offset);
+			if (protectedRegion != null) {
+				if (protectedRegion.textContent()) {
+					return false;
+				}
+				offset= protectedRegion.start() - 1;
+				continue;
+			}
+			char character= content.charAt(offset);
+			if (Character.isWhitespace(character)) {
+				offset--;
+				continue;
+			}
+			return character == '>' && isMarkupEnd(content, offset, protectedRegions);
+		}
+		return true;
+	}
+
+	private static boolean isMarkupEnd(String content, int markupEnd,
+			ProtectedXmlRegions protectedRegions) {
+		char quote= 0;
+		for (int offset= markupEnd - 1; offset >= 0; offset--) {
+			ProtectedXmlRegion protectedRegion= protectedRegions.containing(offset);
+			if (protectedRegion != null) {
+				offset= protectedRegion.start();
+				continue;
+			}
+			char character= content.charAt(offset);
+			if (quote != 0) {
+				if (character == quote) {
+					quote= 0;
+				}
+				continue;
+			}
+			if (character == '\'' || character == '"') {
+				quote= character;
+			} else if (character == '<') {
+				return true;
+			} else if (character == '>') {
 				return false;
 			}
 		}
-		return true;
+		return false;
 	}
 }

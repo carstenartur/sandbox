@@ -133,6 +133,72 @@ class SchemaTransformationTextSafetyTest {
 				""")); //$NON-NLS-1$
 	}
 
+	@Test
+	void greaterThanCharacterInTextDoesNotLookLikeMarkup() {
+		String source= """
+				<root>
+				Meaningful text >
+				    <child/>
+				</root>
+				"""; //$NON-NLS-1$
+
+		assertEquals(source, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
+		assertNull(SchemaTransformationUtils.firstConvertibleMarkupIndentation(source));
+	}
+
+	@Test
+	void greaterThanCharacterInAttributeDoesNotHideMarkupEnd() {
+		String source= """
+				<root description="a > b">
+				    <child/>
+				</root>
+				"""; //$NON-NLS-1$
+		String expected= source.replace("    <child/>", "\t<child/>"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		assertEquals(expected, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
+		assertEquals(2, SchemaTransformationUtils.firstConvertibleMarkupIndentation(source).lineNumber());
+	}
+
+	@Test
+	void protectedMarkupIsSkippedWhenFindingThePreviousMarkupEnd() {
+		String source= """
+				<root>
+				<!-- comment > -->
+				<?target value=">"?>
+				    <child/>
+				</root>
+				"""; //$NON-NLS-1$
+		String expected= source.replace("    <child/>", "\t<child/>"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		assertEquals(expected, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
+		assertEquals(4, SchemaTransformationUtils.firstConvertibleMarkupIndentation(source).lineNumber());
+	}
+
+	@Test
+	void protectedMarkupDoesNotHidePrecedingMeaningfulText() {
+		String source= """
+				<root>Meaningful text >
+				<!-- comment > -->
+				    <child/>
+				</root>
+				"""; //$NON-NLS-1$
+
+		assertEquals(source, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
+		assertNull(SchemaTransformationUtils.firstConvertibleMarkupIndentation(source));
+	}
+
+	@Test
+	void indentationAfterCdataRemainsCharacterData() {
+		String source= """
+				<root><![CDATA[value > value]]>
+				    <child/>
+				</root>
+				"""; //$NON-NLS-1$
+
+		assertEquals(source, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
+		assertNull(SchemaTransformationUtils.firstConvertibleMarkupIndentation(source));
+	}
+
 	private static void assertSemanticsPreserved(String source, boolean enableIndent) throws Exception {
 		String transformed= SchemaTransformationUtils.transform(source,
 				StandardCharsets.UTF_8, enableIndent);
