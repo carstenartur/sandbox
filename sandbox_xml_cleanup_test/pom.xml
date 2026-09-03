@@ -33,6 +33,9 @@
 					<useJDK>BREE</useJDK>
 					<skip>false</skip>
 					<useUIHarness>true</useUIHarness>
+					<systemProperties>
+						<sandbox.repository.root>${maven.multiModuleProjectDirectory}</sandbox.repository.root>
+					</systemProperties>
 					<dependencies>
 						<dependency>
 							<type>eclipse-plugin</type>
@@ -46,4 +49,28 @@
 			</plugin>
 		</plugins>
 	</build>
+	<profiles>
+		<profile>
+			<id>pde-xml-upstream-corpus</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-surefire-plugin</artifactId>
+						<version>${tycho-version}</version>
+						<configuration>
+							<failIfNoTests>true</failIfNoTests>
+							<testClass>org.sandbox.jdt.internal.corext.fix.helper.PinnedJdtXmlCorpusTest</testClass>
+							<systemProperties>
+								<sandbox.repository.root>${maven.multiModuleProjectDirectory}</sandbox.repository.root>
+								<sandbox.xml.corpus.jdtCore>${sandbox.xml.corpus.jdtCore}</sandbox.xml.corpus.jdtCore>
+								<sandbox.xml.corpus.jdtUi>${sandbox.xml.corpus.jdtUi}</sandbox.xml.corpus.jdtUi>
+								<sandbox.xml.corpus.required>true</sandbox.xml.corpus.required>
+							</systemProperties>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>
