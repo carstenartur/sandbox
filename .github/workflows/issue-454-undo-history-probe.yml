@@ -8,6 +8,8 @@ on:
       - 'sandbox_usage_view_test/**'
       - 'sandbox_usage_view/**'
       - 'sandbox_test_commons/**'
+      - 'sandbox_common/**'
+      - 'sandbox_common_core/**'
       - 'sandbox_target/**'
       - 'pom.xml'
       - '.github/actions/use-runner-maven/**'
@@ -71,8 +73,7 @@ jobs:
           -DfailIfNoTests=false
           -Dtest=UndoRedoHistorySWTBotTest
           -Pswtbot
-          -pl sandbox_target,sandbox_usage_view_test
-          -am
+          -pl sandbox_target,sandbox_common_core,sandbox_common,sandbox_test_commons,sandbox_usage_view,sandbox_usage_view_test
           clean
           verify
 
