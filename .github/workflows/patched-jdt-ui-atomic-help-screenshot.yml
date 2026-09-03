@@ -25,8 +25,7 @@ on:
       - 'sandbox_int_to_enum_help/**'
       - 'sandbox_junit_cleanup/**'
       - 'sandbox_junit_cleanup_help/**'
-      - 'sandbox_usage_view/**'
-      - 'sandbox_usage_view_test/**'
+      - 'sandbox_eclipse_help_swtbot_test/**'
   workflow_dispatch:
 
 permissions:
@@ -157,7 +156,7 @@ jobs:
           set -euo pipefail
           report="$(grep -R -l --include='TEST-*.xml' \
             'SandboxAtomicPreviewPatchedJdtSWTBotTest' \
-            sandbox_usage_view_test/target/surefire-reports | head -n 1 || true)"
+            sandbox_eclipse_help_swtbot_test/target/surefire-reports | head -n 1 || true)"
           if [[ -z "$report" ]]; then
             echo 'The patched-runtime atomic preview test class did not execute.' >&2
             exit 1
@@ -209,8 +208,8 @@ jobs:
         with:
           name: patched-jdt-ui-atomic-preview-diagnostics-${{ github.run_number }}
           path: |
-            sandbox_usage_view_test/target/work/data/.metadata/.log
-            sandbox_usage_view_test/target/surefire-reports/**
+            sandbox_eclipse_help_swtbot_test/target/work/data/.metadata/.log
+            sandbox_eclipse_help_swtbot_test/target/surefire-reports/**
           retention-days: 14
           if-no-files-found: warn
           include-hidden-files: true
