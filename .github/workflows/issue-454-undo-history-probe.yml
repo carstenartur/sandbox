@@ -71,7 +71,7 @@ jobs:
           -DfailIfNoTests=false
           -Dtest=UndoRedoHistorySWTBotTest
           -Pswtbot
-          -pl sandbox_usage_view_test
+          -pl sandbox_target,sandbox_usage_view_test
           -am
           clean
           verify
