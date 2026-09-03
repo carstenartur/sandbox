@@ -15,9 +15,9 @@ package org.sandbox.jdt.ui.helper.views;
 
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.security.CodeSource;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,6 +82,6 @@ final class SandboxCheckout {
 		return Files.isRegularFile(candidate.resolve("pom.xml")) //$NON-NLS-1$
 				&& Files.isRegularFile(candidate.resolve("sandbox_help_build/pom.xml")) //$NON-NLS-1$
 				&& Files.isDirectory(candidate.resolve("sandbox_target")) //$NON-NLS-1$
-				&& Files.isDirectory(candidate.resolve("sandbox_usage_view_test")); //$NON-NLS-1$
+				&& Files.isDirectory(candidate.resolve("sandbox_eclipse_help_swtbot_test")); //$NON-NLS-1$
 	}
 }
