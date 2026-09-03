@@ -21,9 +21,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.core.resources.IFile;
@@ -67,7 +65,7 @@ class PinnedJdtXmlCorpusTest {
 	}
 
 	private void verifyRepository(String property, String pinKey, String projectName,
-			List<String> relativeFiles) throws Exception {
+			Iterable<String> relativeFiles) throws Exception {
 		String configured= System.getProperty(property, "").trim(); //$NON-NLS-1$
 		if (configured.isEmpty()) {
 			assertFalse(Boolean.getBoolean(REQUIRED_PROPERTY),
@@ -78,8 +76,7 @@ class PinnedJdtXmlCorpusTest {
 
 		Path repository= Path.of(configured).toAbsolutePath().normalize();
 		assertTrue(Files.isDirectory(repository), () -> "Missing pinned checkout: " + repository); //$NON-NLS-1$
-		Map<String, String> pins= readPins();
-		assertEquals(pins.get(pinKey), gitHead(repository),
+		assertEquals(readPin(pinKey), gitHead(repository),
 				() -> "Pinned checkout does not match " + pinKey); //$NON-NLS-1$
 
 		IProject project= ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
@@ -125,7 +122,7 @@ class PinnedJdtXmlCorpusTest {
 		}
 	}
 
-	private static Map<String, String> readPins() throws IOException {
+	private static String readPin(String pinKey) throws IOException {
 		String configuredRoot= System.getProperty(REPOSITORY_ROOT_PROPERTY, "").trim(); //$NON-NLS-1$
 		assertFalse(configuredRoot.isEmpty(),
 				() -> "Repository root is not configured: " + REPOSITORY_ROOT_PROPERTY); //$NON-NLS-1$
@@ -135,24 +132,55 @@ class PinnedJdtXmlCorpusTest {
 		try (Reader reader= Files.newBufferedReader(pinFile, StandardCharsets.UTF_8)) {
 			properties.load(reader);
 		}
-		Map<String, String> values= new LinkedHashMap<>();
-		for (String name : properties.stringPropertyNames()) {
-			values.put(name, properties.getProperty(name));
+		String pin= properties.getProperty(pinKey);
+		if (pin == null || pin.isBlank()) {
+			throw new IOException("Missing repository pin " + pinKey + " in " + pinFile); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		return Map.copyOf(values);
+		return pin.trim();
 	}
 
-	private static String gitHead(Path repository) throws Exception {
-		Process process= new ProcessBuilder("git", "-C", repository.toString(), //$NON-NLS-1$ //$NON-NLS-2$
-				"rev-parse", "HEAD^{commit}") //$NON-NLS-1$ //$NON-NLS-2$
-				.redirectErrorStream(true)
-				.start();
-		String output;
-		try (InputStream input= process.getInputStream()) {
-			output= new String(input.readAllBytes(), StandardCharsets.UTF_8).trim();
+	private static String gitHead(Path repository) throws IOException {
+		Path gitDirectory= gitDirectory(repository);
+		String head= readTrimmed(gitDirectory.resolve("HEAD")); //$NON-NLS-1$
+		if (!head.startsWith("ref: ")) { //$NON-NLS-1$
+			return head;
 		}
-		assertEquals(0, process.waitFor(), () -> "Could not resolve pinned Git HEAD: " + output); //$NON-NLS-1$
-		return output;
+
+		String reference= head.substring("ref: ".length()).trim(); //$NON-NLS-1$
+		Path looseReference= gitDirectory.resolve(reference);
+		if (Files.isRegularFile(looseReference)) {
+			return readTrimmed(looseReference);
+		}
+
+		Path packedReferences= gitDirectory.resolve("packed-refs"); //$NON-NLS-1$
+		if (Files.isRegularFile(packedReferences)) {
+			for (String line : Files.readAllLines(packedReferences, StandardCharsets.UTF_8)) {
+				int separator= line.indexOf(' ');
+				if (separator > 0 && line.substring(separator + 1).equals(reference)) {
+					return line.substring(0, separator);
+				}
+			}
+		}
+		throw new IOException("Could not resolve Git reference " + reference + " in " + repository); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private static Path gitDirectory(Path repository) throws IOException {
+		Path dotGit= repository.resolve(".git"); //$NON-NLS-1$
+		if (Files.isDirectory(dotGit)) {
+			return dotGit;
+		}
+
+		String descriptor= readTrimmed(dotGit);
+		String prefix= "gitdir: "; //$NON-NLS-1$
+		if (!descriptor.startsWith(prefix)) {
+			throw new IOException("Unsupported Git directory descriptor in " + dotGit); //$NON-NLS-1$
+		}
+		Path configured= Path.of(descriptor.substring(prefix.length()).trim());
+		return configured.isAbsolute() ? configured.normalize() : repository.resolve(configured).normalize();
+	}
+
+	private static String readTrimmed(Path path) throws IOException {
+		return Files.readString(path, StandardCharsets.UTF_8).trim();
 	}
 
 	private IFile createFile(IProject project, String path, byte[] bytes) throws Exception {
