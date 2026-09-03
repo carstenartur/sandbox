@@ -36,9 +36,16 @@ import javax.xml.transform.stream.StreamSource;
  */
 public class SchemaTransformationUtils {
 
-	private static final Pattern MARKUP_INDENTATION= Pattern.compile("^( {4})+(?=<)", Pattern.MULTILINE); //$NON-NLS-1$
+	private static final Pattern MARKUP_INDENTATION= Pattern.compile("^( {4})+(?= *<)", Pattern.MULTILINE); //$NON-NLS-1$
+	private static final Pattern PROTECTED_XML_REGION= Pattern.compile(
+			"<!--.*?(?:-->|\\z)|<!\\[CDATA\\[.*?(?:\\]\\]>|\\z)|<\\?.*?(?:\\?>|\\z)", //$NON-NLS-1$
+			Pattern.DOTALL);
 
 	private SchemaTransformationUtils() {
+	}
+
+	/** Location of the first structural indentation that can be normalized. */
+	record IndentationFinding(int lineNumber, int offset, int length) {
 	}
 
 	/**
@@ -99,18 +106,87 @@ public class SchemaTransformationUtils {
 	}
 
 	/**
-	 * Converts groups of four leading spaces only when they indent serialized XML
-	 * markup. Text lines are left unchanged, including intentional blank lines and
-	 * leading spaces inside element content.
+	 * Converts complete groups of four leading spaces only when the spaces form a
+	 * whitespace-only segment between XML markup. Indentation that follows
+	 * meaningful text is retained because it belongs to that text node, even when
+	 * the next line starts with a closing tag.
 	 */
-	private static String convertMarkupIndentationToTabs(String content) {
+	static String convertMarkupIndentationToTabs(String content) {
 		Matcher matcher= MARKUP_INDENTATION.matcher(content);
+		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);
 		StringBuilder result= new StringBuilder(content.length());
+		int copiedThrough= 0;
 		while (matcher.find()) {
-			int tabs= matcher.group().length() / 4;
-			matcher.appendReplacement(result, "\t".repeat(tabs)); //$NON-NLS-1$
+			result.append(content, copiedThrough, matcher.start());
+			if (isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {
+				result.append("\t".repeat(matcher.group().length() / 4)); //$NON-NLS-1$
+			} else {
+				result.append(matcher.group());
+			}
+			copiedThrough= matcher.end();
 		}
-		matcher.appendTail(result);
-		return result.toString();
+		return result.append(content, copiedThrough, content.length()).toString();
+	}
+
+	static IndentationFinding firstConvertibleMarkupIndentation(String content) {
+		Matcher matcher= MARKUP_INDENTATION.matcher(content);
+		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);
+		while (matcher.find()) {
+			if (!isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {
+				continue;
+			}
+			int lineNumber= 1;
+			for (int offset= 0; offset < matcher.start(); offset++) {
+				if (content.charAt(offset) == '\n') {
+					lineNumber++;
+				}
+			}
+			return new IndentationFinding(lineNumber, matcher.start(), matcher.end() - matcher.start());
+		}
+		return null;
+	}
+
+	private static boolean isConvertibleMarkupIndentation(String content, int indentationOffset,
+			ProtectedXmlRegions protectedRegions) {
+		return !protectedRegions.contains(indentationOffset)
+				&& isFormattingOnlyIndentation(content, indentationOffset);
+	}
+
+	private static final class ProtectedXmlRegions {
+
+		private final Matcher matcher;
+		private int start;
+		private int end;
+		private boolean available;
+
+		ProtectedXmlRegions(String content) {
+			matcher= PROTECTED_XML_REGION.matcher(content);
+			advance();
+		}
+
+		boolean contains(int offset) {
+			while (available && end <= offset) {
+				advance();
+			}
+			return available && start < offset;
+		}
+
+		private void advance() {
+			available= matcher.find();
+			if (available) {
+				start= matcher.start();
+				end= matcher.end();
+			}
+		}
+	}
+
+	private static boolean isFormattingOnlyIndentation(String content, int indentationOffset) {
+		int previousMarkupEnd= content.lastIndexOf('>', indentationOffset - 1);
+		for (int offset= previousMarkupEnd + 1; offset < indentationOffset; offset++) {
+			if (!Character.isWhitespace(content.charAt(offset))) {
+				return false;
+			}
+		}
+		return true;
 	}
 }
