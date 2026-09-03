@@ -13,12 +13,12 @@
         "rules": 9
       },
       "eclipse.platform.ui": {
-        "files": 1140,
+        "files": 1138,
         "matches": 62,
         "rules": 8
       },
       "eclipse.platform": {
-        "files": 313,
+        "files": 311,
         "matches": 62,
         "rules": 3
       },
