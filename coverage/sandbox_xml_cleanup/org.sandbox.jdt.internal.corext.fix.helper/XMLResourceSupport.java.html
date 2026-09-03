@@ -69,14 +69,14 @@ public final class XMLResourceSupport {
 	/** Immutable source snapshot used for optimistic conflict detection. */
 	public record Snapshot(byte[] originalBytes, String content, Charset charset,
 			byte[] bom, long modificationStamp, String lineDelimiter) {
-<span class="nc" id="L72">		public Snapshot {</span>
-<span class="nc" id="L73">			originalBytes= originalBytes.clone();</span>
-<span class="nc" id="L74">			bom= bom.clone();</span>
-<span class="nc" id="L75">		}</span>
+<span class="fc" id="L72">		public Snapshot {</span>
+<span class="fc" id="L73">			originalBytes= originalBytes.clone();</span>
+<span class="fc" id="L74">			bom= bom.clone();</span>
+<span class="fc" id="L75">		}</span>
 
 		@Override
 		public byte[] originalBytes() {
-<span class="nc" id="L79">			return originalBytes.clone();</span>
+<span class="fc" id="L79">			return originalBytes.clone();</span>
 		}
 
 		@Override
@@ -88,72 +88,72 @@ public final class XMLResourceSupport {
 	/** Prepared, validated transformation that can later be applied safely. */
 	public record Transformation(Snapshot snapshot, String transformedContent,
 			byte[] transformedBytes) {
-<span class="nc" id="L91">		public Transformation {</span>
-<span class="nc" id="L92">			transformedBytes= transformedBytes.clone();</span>
-<span class="nc" id="L93">		}</span>
+<span class="fc" id="L91">		public Transformation {</span>
+<span class="fc" id="L92">			transformedBytes= transformedBytes.clone();</span>
+<span class="fc" id="L93">		}</span>
 
 		@Override
 		public byte[] transformedBytes() {
-<span class="nc" id="L97">			return transformedBytes.clone();</span>
+<span class="fc" id="L97">			return transformedBytes.clone();</span>
 		}
 
 		public boolean changed() {
-<span class="nc bnc" id="L101" title="All 2 branches missed.">			return !Arrays.equals(snapshot.originalBytes, transformedBytes);</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">			return !Arrays.equals(snapshot.originalBytes, transformedBytes);</span>
 		}
 	}
 
 	/** Reads, transforms and validates an XML resource without changing it. */
 	public static Transformation prepare(IFile file, boolean enableIndent,
 			IProgressMonitor monitor) throws CoreException {
-<span class="nc" id="L108">		checkCanceled(monitor);</span>
-<span class="nc" id="L109">		ensureNoDirtyBuffer(file);</span>
-<span class="nc" id="L110">		Snapshot snapshot= read(file);</span>
-<span class="nc" id="L111">		checkCanceled(monitor);</span>
+<span class="fc" id="L108">		checkCanceled(monitor);</span>
+<span class="fc" id="L109">		ensureNoDirtyBuffer(file);</span>
+<span class="fc" id="L110">		Snapshot snapshot= read(file);</span>
+<span class="fc" id="L111">		checkCanceled(monitor);</span>
 		String transformed;
 		try {
-<span class="nc" id="L114">			transformed= SchemaTransformationUtils.transform(snapshot.content,</span>
-<span class="nc" id="L115">					snapshot.charset, enableIndent);</span>
-<span class="nc" id="L116">		} catch (Exception e) {</span>
+<span class="fc" id="L114">			transformed= SchemaTransformationUtils.transform(snapshot.content,</span>
+<span class="fc" id="L115">					snapshot.charset, enableIndent);</span>
+<span class="pc" id="L116">		} catch (Exception e) {</span>
 <span class="nc" id="L117">			throw error(&quot;Failed to transform XML resource: &quot; + file.getFullPath(), e); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L119">		transformed= normalizeLineDelimiters(transformed, snapshot.lineDelimiter);</span>
-<span class="nc" id="L120">		validateWellFormed(transformed);</span>
-<span class="nc" id="L121">		byte[] encoded= encode(transformed, snapshot.charset, snapshot.bom);</span>
-<span class="nc" id="L122">		return new Transformation(snapshot, transformed, encoded);</span>
+<span class="fc" id="L119">		transformed= normalizeLineDelimiters(transformed, snapshot.lineDelimiter);</span>
+<span class="fc" id="L120">		validateWellFormed(transformed);</span>
+<span class="fc" id="L121">		byte[] encoded= encode(transformed, snapshot.charset, snapshot.bom);</span>
+<span class="fc" id="L122">		return new Transformation(snapshot, transformed, encoded);</span>
 	}
 
 	/** Applies a prepared transformation after rechecking dirty state and content. */
 	public static void write(IFile file, Transformation transformation,
 			IProgressMonitor monitor) throws CoreException {
-<span class="nc" id="L128">		checkCanceled(monitor);</span>
-<span class="nc" id="L129">		ensureNoDirtyBuffer(file);</span>
-<span class="nc" id="L130">		Snapshot snapshot= transformation.snapshot;</span>
-<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (!file.exists()) {</span>
+<span class="fc" id="L128">		checkCanceled(monitor);</span>
+<span class="fc" id="L129">		ensureNoDirtyBuffer(file);</span>
+<span class="fc" id="L130">		Snapshot snapshot= transformation.snapshot;</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		if (!file.exists()) {</span>
 <span class="nc" id="L132">			throw error(&quot;XML resource no longer exists: &quot; + file.getFullPath(), null); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L134">		byte[] current= readBytes(file);</span>
-<span class="nc bnc" id="L135" title="All 2 branches missed.">		if (file.getModificationStamp() != snapshot.modificationStamp</span>
-<span class="nc bnc" id="L136" title="All 2 branches missed.">				|| !Arrays.equals(current, snapshot.originalBytes)) {</span>
+<span class="fc" id="L134">		byte[] current= readBytes(file);</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">		if (file.getModificationStamp() != snapshot.modificationStamp</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">				|| !Arrays.equals(current, snapshot.originalBytes)) {</span>
 <span class="nc" id="L137">			throw error(&quot;XML resource changed after analysis: &quot; + file.getFullPath(), null); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L139">		validateWellFormed(transformation.transformedContent);</span>
-<span class="nc" id="L140">		try (ByteArrayInputStream input= new ByteArrayInputStream(transformation.transformedBytes)) {</span>
-<span class="nc" id="L141">			file.setContents(input, IResource.KEEP_HISTORY, monitor);</span>
-<span class="nc" id="L142">			String currentCharset= file.getCharset(true);</span>
-<span class="nc bnc" id="L143" title="All 2 branches missed.">			if (!snapshot.charset.name().equalsIgnoreCase(currentCharset)) {</span>
+<span class="fc" id="L139">		validateWellFormed(transformation.transformedContent);</span>
+<span class="fc" id="L140">		try (ByteArrayInputStream input= new ByteArrayInputStream(transformation.transformedBytes)) {</span>
+<span class="fc" id="L141">			file.setContents(input, IResource.KEEP_HISTORY, monitor);</span>
+<span class="fc" id="L142">			String currentCharset= file.getCharset(true);</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">			if (!snapshot.charset.name().equalsIgnoreCase(currentCharset)) {</span>
 <span class="nc" id="L144">				file.setCharset(snapshot.charset.name(), monitor);</span>
 			}
 <span class="nc" id="L146">		} catch (IOException e) {</span>
 <span class="nc" id="L147">			throw error(&quot;Failed to close XML content stream&quot;, e); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L149">	}</span>
+<span class="fc" id="L149">	}</span>
 
 	static Snapshot read(IFile file) throws CoreException {
-<span class="nc" id="L152">		byte[] bytes= readBytes(file);</span>
-<span class="nc" id="L153">		String resourceCharset= file.getCharset(true);</span>
-<span class="nc" id="L154">		Decoded decoded= decode(bytes, resourceCharset);</span>
-<span class="nc" id="L155">		return new Snapshot(bytes, decoded.content, decoded.charset, decoded.bom,</span>
-<span class="nc" id="L156">				file.getModificationStamp(), detectLineDelimiter(decoded.content));</span>
+<span class="fc" id="L152">		byte[] bytes= readBytes(file);</span>
+<span class="fc" id="L153">		String resourceCharset= file.getCharset(true);</span>
+<span class="fc" id="L154">		Decoded decoded= decode(bytes, resourceCharset);</span>
+<span class="fc" id="L155">		return new Snapshot(bytes, decoded.content, decoded.charset, decoded.bom,</span>
+<span class="fc" id="L156">				file.getModificationStamp(), detectLineDelimiter(decoded.content));</span>
 	}
 
 	static Decoded decode(byte[] bytes, String resourceCharset) throws CoreException {
@@ -234,24 +234,24 @@ public final class XMLResourceSupport {
 	private static byte[] readBytes(IFile file) throws CoreException {
 <span class="fc" id="L235">		try (InputStream input= file.getContents()) {</span>
 <span class="fc" id="L236">			byte[] bytes= input.readNBytes(MAX_INPUT_BYTES + 1);</span>
-<span class="pc bpc" id="L237" title="1 of 2 branches missed.">			if (bytes.length &gt; MAX_INPUT_BYTES) {</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">			if (bytes.length &gt; MAX_INPUT_BYTES) {</span>
 <span class="fc" id="L238">				throw error(&quot;XML resource exceeds the 16 MiB cleanup limit: &quot; //$NON-NLS-1$</span>
 <span class="fc" id="L239">						+ file.getFullPath(), null);</span>
 			}
-<span class="nc" id="L241">			return bytes;</span>
+<span class="fc" id="L241">			return bytes;</span>
 <span class="nc" id="L242">		} catch (IOException e) {</span>
 <span class="nc" id="L243">			throw error(&quot;Failed to read XML resource: &quot; + file.getFullPath(), e); //$NON-NLS-1$</span>
 		}
 	}
 
 	private static void ensureNoDirtyBuffer(IFile file) throws CoreException {
-<span class="nc" id="L248">		ITextFileBuffer buffer= FileBuffers.getTextFileBufferManager()</span>
-<span class="nc" id="L249">				.getTextFileBuffer(file.getFullPath(), LocationKind.IFILE);</span>
-<span class="nc bnc" id="L250" title="All 4 branches missed.">		if (buffer != null &amp;&amp; buffer.isDirty()) {</span>
+<span class="fc" id="L248">		ITextFileBuffer buffer= FileBuffers.getTextFileBufferManager()</span>
+<span class="fc" id="L249">				.getTextFileBuffer(file.getFullPath(), LocationKind.IFILE);</span>
+<span class="pc bpc" id="L250" title="3 of 4 branches missed.">		if (buffer != null &amp;&amp; buffer.isDirty()) {</span>
 <span class="nc" id="L251">			throw error(&quot;XML resource has unsaved editor changes: &quot; //$NON-NLS-1$</span>
 <span class="nc" id="L252">					+ file.getFullPath(), null);</span>
 		}
-<span class="nc" id="L254">	}</span>
+<span class="fc" id="L254">	}</span>
 
 	private static String declaredEncoding(byte[] bytes, int offset,
 			Charset byteCharset) throws CoreException {
@@ -296,27 +296,27 @@ public final class XMLResourceSupport {
 			throws CoreException {
 		byte[] body;
 		try {
-<span class="nc" id="L299">			ByteBuffer encoded= charset.newEncoder()</span>
-<span class="nc" id="L300">					.onMalformedInput(CodingErrorAction.REPORT)</span>
-<span class="nc" id="L301">					.onUnmappableCharacter(CodingErrorAction.REPORT)</span>
-<span class="nc" id="L302">					.encode(java.nio.CharBuffer.wrap(content));</span>
-<span class="nc" id="L303">			body= new byte[encoded.remaining()];</span>
-<span class="nc" id="L304">			encoded.get(body);</span>
-<span class="nc" id="L305">		} catch (CharacterCodingException e) {</span>
+<span class="fc" id="L299">			ByteBuffer encoded= charset.newEncoder()</span>
+<span class="fc" id="L300">					.onMalformedInput(CodingErrorAction.REPORT)</span>
+<span class="fc" id="L301">					.onUnmappableCharacter(CodingErrorAction.REPORT)</span>
+<span class="fc" id="L302">					.encode(java.nio.CharBuffer.wrap(content));</span>
+<span class="fc" id="L303">			body= new byte[encoded.remaining()];</span>
+<span class="fc" id="L304">			encoded.get(body);</span>
+<span class="pc" id="L305">		} catch (CharacterCodingException e) {</span>
 <span class="nc" id="L306">			throw error(&quot;Transformed XML cannot be represented as &quot; + charset.name(), e); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L308">		byte[] result= Arrays.copyOf(bom, bom.length + body.length);</span>
-<span class="nc" id="L309">		System.arraycopy(body, 0, result, bom.length, body.length);</span>
-<span class="nc" id="L310">		return result;</span>
+<span class="fc" id="L308">		byte[] result= Arrays.copyOf(bom, bom.length + body.length);</span>
+<span class="fc" id="L309">		System.arraycopy(body, 0, result, bom.length, body.length);</span>
+<span class="fc" id="L310">		return result;</span>
 	}
 
 	private static String detectLineDelimiter(String content) {
-<span class="nc bnc" id="L314" title="All 2 branches missed.">		return content.contains(&quot;\r\n&quot;) ? &quot;\r\n&quot; : &quot;\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">		return content.contains(&quot;\r\n&quot;) ? &quot;\r\n&quot; : &quot;\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 	}
 
 	private static String normalizeLineDelimiters(String content, String delimiter) {
-<span class="nc" id="L318">		String normalized= content.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc bnc" id="L319" title="All 2 branches missed.">		return &quot;\n&quot;.equals(delimiter) ? normalized : normalized.replace(&quot;\n&quot;, delimiter); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L318">		String normalized= content.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		return &quot;\n&quot;.equals(delimiter) ? normalized : normalized.replace(&quot;\n&quot;, delimiter); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	private static boolean startsWith(byte[] content, byte[] prefix) {
@@ -332,10 +332,10 @@ public final class XMLResourceSupport {
 	}
 
 	private static void checkCanceled(IProgressMonitor monitor) {
-<span class="nc bnc" id="L335" title="All 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="pc bpc" id="L335" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
 <span class="nc" id="L336">			throw new org.eclipse.core.runtime.OperationCanceledException();</span>
 		}
-<span class="nc" id="L338">	}</span>
+<span class="fc" id="L338">	}</span>
 
 	private static CoreException error(String message, Throwable cause) {
 <span class="fc" id="L341">		return new CoreException(new Status(IStatus.ERROR, PLUGIN_ID, message, cause));</span>

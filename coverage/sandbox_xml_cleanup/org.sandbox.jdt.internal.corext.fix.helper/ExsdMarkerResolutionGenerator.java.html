@@ -22,30 +22,28 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.IMarkerResolutionGenerator2;
 
-/**
- * Marker resolution generator for EXSD cleanup markers.
- */
-<span class="nc" id="L28">public class ExsdMarkerResolutionGenerator implements IMarkerResolutionGenerator2 {</span>
+/** Marker resolution generator for actionable PDE XML cleanup problems. */
+<span class="fc" id="L26">public class ExsdMarkerResolutionGenerator implements IMarkerResolutionGenerator2 {</span>
 
-<span class="nc" id="L30">	private static final ILog LOG = Platform.getLog(ExsdMarkerResolutionGenerator.class);</span>
-<span class="nc" id="L31">	private static final String PLUGIN_ID = &quot;org.sandbox.jdt.internal.corext.fix.helper&quot;;</span>
-	
+<span class="fc" id="L28">	private static final ILog LOG= Platform.getLog(ExsdMarkerResolutionGenerator.class);</span>
+<span class="fc" id="L29">	private static final String PLUGIN_ID= &quot;sandbox_xml_cleanup&quot;; //$NON-NLS-1$</span>
+
 	@Override
 	public boolean hasResolutions(IMarker marker) {
 		try {
-<span class="nc" id="L36">			return &quot;my.exsd.cleanup.marker&quot;.equals(marker.getType());</span>
-<span class="nc" id="L37">		} catch (CoreException e) {</span>
-<span class="nc" id="L38">			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,</span>
-<span class="nc" id="L39">				&quot;Error checking marker type&quot;, e));</span>
+<span class="fc" id="L34">			return PdeXmlCleanupMarkerService.MARKER_TYPE.equals(marker.getType());</span>
+<span class="nc" id="L35">		} catch (CoreException e) {</span>
+<span class="nc" id="L36">			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,</span>
+<span class="nc" id="L37">					&quot;Error checking PDE XML marker type&quot;, e)); //$NON-NLS-1$</span>
+<span class="nc" id="L38">			return false;</span>
 		}
-<span class="nc" id="L41">		return false;</span>
 	}
 
 	@Override
 	public IMarkerResolution[] getResolutions(IMarker marker) {
-<span class="nc" id="L46">		return new IMarkerResolution[] {</span>
-<span class="nc" id="L47">			new ReplaceSpacesWithTabsQuickFix()</span>
-		};
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">		return hasResolutions(marker)</span>
+<span class="fc" id="L45">				? new IMarkerResolution[] { new ReplaceSpacesWithTabsQuickFix() }</span>
+<span class="nc" id="L46">				: new IMarkerResolution[0];</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

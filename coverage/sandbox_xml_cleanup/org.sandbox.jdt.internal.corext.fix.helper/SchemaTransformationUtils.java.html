@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SchemaTransformationUtils.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_xml_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">SchemaTransformationUtils.java</span></div><h1>SchemaTransformationUtils.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SchemaTransformationUtils.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_xml_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">SchemaTransformationUtils.java</span></div><h1>SchemaTransformationUtils.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
  * Copyright (c) 2021 Carsten Hammer.
  *
  * This program and the accompanying materials
@@ -20,6 +20,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,9 +38,17 @@ import javax.xml.transform.stream.StreamSource;
  */
 public class SchemaTransformationUtils {
 
-<span class="fc" id="L39">	private static final Pattern MARKUP_INDENTATION= Pattern.compile(&quot;^( {4})+(?=&lt;)&quot;, Pattern.MULTILINE); //$NON-NLS-1$</span>
+<span class="fc" id="L41">	private static final Pattern MARKUP_INDENTATION= Pattern.compile(&quot;^( {4})+(?= *&lt;)&quot;, Pattern.MULTILINE); //$NON-NLS-1$</span>
+<span class="fc" id="L42">	private static final Pattern PROTECTED_XML_REGION= Pattern.compile(</span>
+<span class="fc" id="L43">			&quot;&lt;!--.*?(?:--&gt;|\\z)|&lt;!\\[CDATA\\[.*?(?:\\]\\]&gt;|\\z)|&lt;\\?.*?(?:\\?&gt;|\\z)&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L44">			Pattern.DOTALL);</span>
+<span class="fc" id="L45">	private static final String CDATA_START= &quot;&lt;![CDATA[&quot;; //$NON-NLS-1$</span>
 
 	private SchemaTransformationUtils() {
+	}
+
+	/** Location of the first structural indentation that can be normalized. */
+	record IndentationFinding(int lineNumber, int offset, int length) {
 	}
 
 	/**
@@ -49,7 +59,7 @@ public class SchemaTransformationUtils {
 	 * @throws Exception if transformation fails
 	 */
 	public static String transform(Path schemaPath) throws Exception {
-<span class="fc" id="L52">		return transform(schemaPath, false);</span>
+<span class="fc" id="L62">		return transform(schemaPath, false);</span>
 	}
 
 	/**
@@ -62,8 +72,8 @@ public class SchemaTransformationUtils {
 	 * @throws Exception if transformation fails
 	 */
 	public static String transform(Path schemaPath, boolean enableIndent) throws Exception {
-<span class="fc" id="L65">		return transform(Files.readString(schemaPath, StandardCharsets.UTF_8),</span>
-<span class="fc" id="L66">				StandardCharsets.UTF_8, enableIndent);</span>
+<span class="fc" id="L75">		return transform(Files.readString(schemaPath, StandardCharsets.UTF_8),</span>
+<span class="fc" id="L76">				StandardCharsets.UTF_8, enableIndent);</span>
 	}
 
 	/**
@@ -77,41 +87,158 @@ public class SchemaTransformationUtils {
 	 */
 	public static String transform(String sourceContent, Charset outputCharset,
 			boolean enableIndent) throws Exception {
-<span class="fc" id="L80">		try (InputStream xslStream= SchemaTransformationUtils.class.getClassLoader()</span>
-<span class="fc" id="L81">				.getResourceAsStream(&quot;resources/formatter.xsl&quot;)) { //$NON-NLS-1$</span>
-<span class="pc bpc" id="L82" title="1 of 2 branches missed.">			if (xslStream == null) {</span>
-<span class="nc" id="L83">				throw new IllegalArgumentException(&quot;Unable to find formatter.xsl in resources.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L90">		try (InputStream xslStream= SchemaTransformationUtils.class.getClassLoader()</span>
+<span class="fc" id="L91">				.getResourceAsStream(&quot;resources/formatter.xsl&quot;)) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">			if (xslStream == null) {</span>
+<span class="nc" id="L93">				throw new IllegalArgumentException(&quot;Unable to find formatter.xsl in resources.&quot;); //$NON-NLS-1$</span>
 			}
 
-<span class="fc" id="L86">			TransformerFactory factory= TransformerFactory.newInstance();</span>
-<span class="fc" id="L87">			factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);</span>
-<span class="fc" id="L88">			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, &quot;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L89">			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L96">			TransformerFactory factory= TransformerFactory.newInstance();</span>
+<span class="fc" id="L97">			factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);</span>
+<span class="fc" id="L98">			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L99">			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, &quot;&quot;); //$NON-NLS-1$</span>
 
-<span class="fc" id="L91">			Transformer transformer= factory.newTransformer(new StreamSource(xslStream));</span>
-<span class="fc bfc" id="L92" title="All 2 branches covered.">			transformer.setOutputProperty(OutputKeys.INDENT, enableIndent ? &quot;yes&quot; : &quot;no&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L93">			transformer.setOutputProperty(OutputKeys.ENCODING, outputCharset.name());</span>
-<span class="fc" id="L94">			StringWriter output= new StringWriter(Math.max(1024, sourceContent.length()));</span>
-<span class="fc" id="L95">			transformer.transform(new StreamSource(new StringReader(sourceContent)),</span>
-<span class="fc" id="L96">					new StreamResult(output));</span>
-<span class="fc" id="L97">			return convertMarkupIndentationToTabs(output.toString());</span>
+<span class="fc" id="L101">			Transformer transformer= factory.newTransformer(new StreamSource(xslStream));</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">			transformer.setOutputProperty(OutputKeys.INDENT, enableIndent ? &quot;yes&quot; : &quot;no&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L103">			transformer.setOutputProperty(OutputKeys.ENCODING, outputCharset.name());</span>
+<span class="fc" id="L104">			StringWriter output= new StringWriter(Math.max(1024, sourceContent.length()));</span>
+<span class="fc" id="L105">			transformer.transform(new StreamSource(new StringReader(sourceContent)),</span>
+<span class="fc" id="L106">					new StreamResult(output));</span>
+<span class="fc" id="L107">			return convertMarkupIndentationToTabs(output.toString());</span>
 		}
 	}
 
 	/**
-	 * Converts groups of four leading spaces only when they indent serialized XML
-	 * markup. Text lines are left unchanged, including intentional blank lines and
-	 * leading spaces inside element content.
+	 * Converts complete groups of four leading spaces only when the spaces form a
+	 * whitespace-only segment between XML markup. Indentation that follows
+	 * meaningful text is retained because it belongs to that text node, even when
+	 * the next line starts with a closing tag.
 	 */
-	private static String convertMarkupIndentationToTabs(String content) {
-<span class="fc" id="L107">		Matcher matcher= MARKUP_INDENTATION.matcher(content);</span>
-<span class="fc" id="L108">		StringBuilder result= new StringBuilder(content.length());</span>
-<span class="fc bfc" id="L109" title="All 2 branches covered.">		while (matcher.find()) {</span>
-<span class="fc" id="L110">			int tabs= matcher.group().length() / 4;</span>
-<span class="fc" id="L111">			matcher.appendReplacement(result, &quot;\t&quot;.repeat(tabs)); //$NON-NLS-1$</span>
+	static String convertMarkupIndentationToTabs(String content) {
+<span class="fc" id="L118">		Matcher matcher= MARKUP_INDENTATION.matcher(content);</span>
+<span class="fc" id="L119">		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);</span>
+<span class="fc" id="L120">		StringBuilder result= new StringBuilder(content.length());</span>
+<span class="fc" id="L121">		int copiedThrough= 0;</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		while (matcher.find()) {</span>
+<span class="fc" id="L123">			result.append(content, copiedThrough, matcher.start());</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">			if (isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {</span>
+<span class="fc" id="L125">				result.append(&quot;\t&quot;.repeat(matcher.group().length() / 4)); //$NON-NLS-1$</span>
+<span class="fc" id="L126">			} else {</span>
+<span class="fc" id="L127">				result.append(matcher.group());</span>
+			}
+<span class="fc" id="L129">			copiedThrough= matcher.end();</span>
 		}
-<span class="fc" id="L113">		matcher.appendTail(result);</span>
-<span class="fc" id="L114">		return result.toString();</span>
+<span class="fc" id="L131">		return result.append(content, copiedThrough, content.length()).toString();</span>
+	}
+
+	static IndentationFinding firstConvertibleMarkupIndentation(String content) {
+<span class="fc" id="L135">		Matcher matcher= MARKUP_INDENTATION.matcher(content);</span>
+<span class="fc" id="L136">		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">		while (matcher.find()) {</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">			if (!isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {</span>
+<span class="fc" id="L139">				continue;</span>
+			}
+<span class="fc" id="L141">			int lineNumber= 1;</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">			for (int offset= 0; offset &lt; matcher.start(); offset++) {</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">				if (content.charAt(offset) == '\n') {</span>
+<span class="fc" id="L144">					lineNumber++;</span>
+				}
+			}
+<span class="fc" id="L147">			return new IndentationFinding(lineNumber, matcher.start(), matcher.end() - matcher.start());</span>
+		}
+<span class="fc" id="L149">		return null;</span>
+	}
+
+	private static boolean isConvertibleMarkupIndentation(String content, int indentationOffset,
+			ProtectedXmlRegions protectedRegions) {
+<span class="fc bfc" id="L154" title="All 2 branches covered.">		return !protectedRegions.contains(indentationOffset)</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">				&amp;&amp; isFormattingOnlyIndentation(content, indentationOffset, protectedRegions);</span>
+	}
+
+	private record ProtectedXmlRegion(int start, int end, boolean textContent) {
+	}
+
+	private static final class ProtectedXmlRegions {
+
+<span class="fc" id="L163">		private final List&lt;ProtectedXmlRegion&gt; regions= new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L165">		ProtectedXmlRegions(String content) {</span>
+<span class="fc" id="L166">			Matcher matcher= PROTECTED_XML_REGION.matcher(content);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">			while (matcher.find()) {</span>
+<span class="fc" id="L168">				regions.add(new ProtectedXmlRegion(matcher.start(), matcher.end(),</span>
+<span class="fc" id="L169">						content.startsWith(CDATA_START, matcher.start())));</span>
+			}
+<span class="fc" id="L171">		}</span>
+
+		boolean contains(int offset) {
+<span class="fc bfc" id="L174" title="All 2 branches covered.">			return containing(offset) != null;</span>
+		}
+
+		ProtectedXmlRegion containing(int offset) {
+<span class="fc" id="L178">			int low= 0;</span>
+<span class="fc" id="L179">			int high= regions.size() - 1;</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">			while (low &lt;= high) {</span>
+<span class="fc" id="L181">				int middle= (low + high) &gt;&gt;&gt; 1;</span>
+<span class="fc" id="L182">				ProtectedXmlRegion region= regions.get(middle);</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">				if (offset &lt; region.start()) {</span>
+<span class="fc" id="L184">					high= middle - 1;</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">				} else if (offset &gt;= region.end()) {</span>
+<span class="fc" id="L186">					low= middle + 1;</span>
+<span class="fc" id="L187">				} else {</span>
+<span class="fc" id="L188">					return region;</span>
+				}
+			}
+<span class="fc" id="L191">			return null;</span>
+		}
+	}
+
+	private static boolean isFormattingOnlyIndentation(String content, int indentationOffset,
+			ProtectedXmlRegions protectedRegions) {
+<span class="fc" id="L197">		int offset= indentationOffset - 1;</span>
+<span class="pc bpc" id="L198" title="1 of 2 branches missed.">		while (offset &gt;= 0) {</span>
+<span class="fc" id="L199">			ProtectedXmlRegion protectedRegion= protectedRegions.containing(offset);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">			if (protectedRegion != null) {</span>
+<span class="fc bfc" id="L201" title="All 2 branches covered.">				if (protectedRegion.textContent()) {</span>
+<span class="fc" id="L202">					return false;</span>
+				}
+<span class="fc" id="L204">				offset= protectedRegion.start() - 1;</span>
+<span class="fc" id="L205">				continue;</span>
+			}
+<span class="fc" id="L207">			char character= content.charAt(offset);</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">			if (Character.isWhitespace(character)) {</span>
+<span class="fc" id="L209">				offset--;</span>
+<span class="fc" id="L210">				continue;</span>
+			}
+<span class="fc bfc" id="L212" title="All 4 branches covered.">			return character == '&gt;' &amp;&amp; isMarkupEnd(content, offset, protectedRegions);</span>
+		}
+<span class="nc" id="L214">		return true;</span>
+	}
+
+	private static boolean isMarkupEnd(String content, int markupEnd,
+			ProtectedXmlRegions protectedRegions) {
+<span class="fc" id="L219">		char quote= 0;</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		for (int offset= markupEnd - 1; offset &gt;= 0; offset--) {</span>
+<span class="fc" id="L221">			ProtectedXmlRegion protectedRegion= protectedRegions.containing(offset);</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">			if (protectedRegion != null) {</span>
+<span class="nc" id="L223">				offset= protectedRegion.start();</span>
+<span class="nc" id="L224">				continue;</span>
+			}
+<span class="fc" id="L226">			char character= content.charAt(offset);</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">			if (quote != 0) {</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">				if (character == quote) {</span>
+<span class="fc" id="L229">					quote= 0;</span>
+				}
+<span class="fc" id="L231">				continue;</span>
+			}
+<span class="pc bpc" id="L233" title="1 of 4 branches missed.">			if (character == '\'' || character == '&quot;') {</span>
+<span class="fc" id="L234">				quote= character;</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">			} else if (character == '&lt;') {</span>
+<span class="fc" id="L236">				return true;</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">			} else if (character == '&gt;') {</span>
+<span class="fc" id="L238">				return false;</span>
+			}
+		}
+<span class="nc" id="L241">		return false;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
