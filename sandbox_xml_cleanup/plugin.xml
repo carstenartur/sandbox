@@ -11,23 +11,20 @@
 	</extension>
  <!-- Definition des Markers -->
     <extension
-        id="my.exsd.cleanup.marker"
+        id="pdeXmlCleanupProblem"
+        name="PDE XML cleanup problem"
         point="org.eclipse.core.resources.markers">
         <super type="org.eclipse.core.resources.problemmarker" />
         <super type="org.eclipse.core.resources.textmarker" />
-        <persistent value="true" />
-        <attribute name="id" />
-        <attribute name="flags" />
-        <attribute name="arguments" />
-        <attribute name="categoryId" />
+        <persistent value="false" />
     </extension>
 
     <!-- Registrierung des MarkerResolutionGenerators -->
     <extension
-        id="my.exsd.cleanup.quickfix.generator"
+        id="pdeXmlCleanupQuickFixGenerator"
         point="org.eclipse.ui.ide.markerResolution">
         <markerResolutionGenerator
-            markerType="my.exsd.cleanup.marker"
+            markerType="sandbox_xml_cleanup.pdeXmlCleanupProblem"
             class="org.sandbox.jdt.internal.corext.fix.helper.ExsdMarkerResolutionGenerator">
         </markerResolutionGenerator>
     </extension>
@@ -39,6 +36,12 @@
             name="XML Cleanup">
         </category>
         <command
+            id="org.sandbox.jdt.xml.cleanup.analyze"
+            name="Find PDE XML Cleanup Problems"
+            description="Find PDE XML files whose formatting can be normalized"
+            categoryId="org.sandbox.jdt.xml.cleanup.category">
+        </command>
+        <command
             id="org.sandbox.jdt.xml.cleanup.command"
             name="Clean Up PDE XML Files"
             description="Optimize whitespace in PDE XML files (plugin.xml, feature.xml, etc.)"
@@ -46,8 +49,12 @@
         </command>
     </extension>
 
-    <!-- PDE Integration: Command handler -->
+    <!-- PDE Integration: Command handlers -->
     <extension point="org.eclipse.ui.handlers">
+        <handler
+            commandId="org.sandbox.jdt.xml.cleanup.analyze"
+            class="org.sandbox.jdt.internal.ui.handlers.XMLCleanupMarkerHandler">
+        </handler>
         <handler
             commandId="org.sandbox.jdt.xml.cleanup.command"
             class="org.sandbox.jdt.internal.ui.handlers.XMLCleanupHandler">
@@ -58,6 +65,30 @@
     <extension point="org.eclipse.ui.menus">
         <!-- Context menu on XML files -->
         <menuContribution locationURI="popup:org.eclipse.ui.popup.any?after=additions">
+            <command
+                commandId="org.sandbox.jdt.xml.cleanup.analyze"
+                label="Find PDE XML Cleanup Problems"
+                icon="icons/full/obj16/sandbox.png"
+                style="push">
+                <visibleWhen checkEnabled="false">
+                    <or>
+                        <iterate ifEmpty="false">
+                            <adapt type="org.eclipse.core.resources.IFile">
+                                <or>
+                                    <test property="org.eclipse.core.resources.name" value="plugin.xml"/>
+                                    <test property="org.eclipse.core.resources.name" value="feature.xml"/>
+                                    <test property="org.eclipse.core.resources.name" value="fragment.xml"/>
+                                    <test property="org.eclipse.core.resources.extension" value="exsd"/>
+                                    <test property="org.eclipse.core.resources.extension" value="xsd"/>
+                                </or>
+                            </adapt>
+                        </iterate>
+                        <iterate ifEmpty="false">
+                            <adapt type="org.eclipse.core.resources.IProject"/>
+                        </iterate>
+                    </or>
+                </visibleWhen>
+            </command>
             <command
                 commandId="org.sandbox.jdt.xml.cleanup.command"
                 label="Clean Up PDE XML"
@@ -90,6 +121,11 @@
                 id="org.sandbox.jdt.xml.cleanup.menu"
                 label="XML Cleanup">
                 <command
+                    commandId="org.sandbox.jdt.xml.cleanup.analyze"
+                    label="Find PDE XML Cleanup Problems"
+                    style="push">
+                </command>
+                <command
                     commandId="org.sandbox.jdt.xml.cleanup.command"
                     label="Clean Up PDE XML Files"
                     style="push">
@@ -103,7 +139,7 @@
             id="org.sandbox.jdt.xml.cleanup.gettingStarted"
             name="Cleaning Up PDE XML Files"
             contentFile="cheatsheets/xml-cleanup-getting-started.xml">
-         <description>Learn how to normalize whitespace and self-closing tags in PDE XML files</description>
+         <description>Learn how to find and normalize PDE XML formatting problems</description>
       </cheatsheet>
    </extension>
 

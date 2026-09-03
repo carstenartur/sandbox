@@ -20,6 +20,8 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,9 +38,17 @@ import javax.xml.transform.stream.StreamSource;
  */
 public class SchemaTransformationUtils {
 
-	private static final Pattern MARKUP_INDENTATION= Pattern.compile("^( {4})+(?=<)", Pattern.MULTILINE); //$NON-NLS-1$
+	private static final Pattern MARKUP_INDENTATION= Pattern.compile("^( {4})+(?= *<)", Pattern.MULTILINE); //$NON-NLS-1$
+	private static final Pattern PROTECTED_XML_REGION= Pattern.compile(
+			"<!--.*?(?:-->|\\z)|<!\\[CDATA\\[.*?(?:\\]\\]>|\\z)|<\\?.*?(?:\\?>|\\z)", //$NON-NLS-1$
+			Pattern.DOTALL);
+	private static final String CDATA_START= "<![CDATA["; //$NON-NLS-1$
 
 	private SchemaTransformationUtils() {
+	}
+
+	/** Location of the first structural indentation that can be normalized. */
+	record IndentationFinding(int lineNumber, int offset, int length) {
 	}
 
 	/**
@@ -99,18 +109,135 @@ public class SchemaTransformationUtils {
 	}
 
 	/**
-	 * Converts groups of four leading spaces only when they indent serialized XML
-	 * markup. Text lines are left unchanged, including intentional blank lines and
-	 * leading spaces inside element content.
+	 * Converts complete groups of four leading spaces only when the spaces form a
+	 * whitespace-only segment between XML markup. Indentation that follows
+	 * meaningful text is retained because it belongs to that text node, even when
+	 * the next line starts with a closing tag.
 	 */
-	private static String convertMarkupIndentationToTabs(String content) {
+	static String convertMarkupIndentationToTabs(String content) {
 		Matcher matcher= MARKUP_INDENTATION.matcher(content);
+		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);
 		StringBuilder result= new StringBuilder(content.length());
+		int copiedThrough= 0;
 		while (matcher.find()) {
-			int tabs= matcher.group().length() / 4;
-			matcher.appendReplacement(result, "\t".repeat(tabs)); //$NON-NLS-1$
+			result.append(content, copiedThrough, matcher.start());
+			if (isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {
+				result.append("\t".repeat(matcher.group().length() / 4)); //$NON-NLS-1$
+			} else {
+				result.append(matcher.group());
+			}
+			copiedThrough= matcher.end();
 		}
-		matcher.appendTail(result);
-		return result.toString();
+		return result.append(content, copiedThrough, content.length()).toString();
+	}
+
+	static IndentationFinding firstConvertibleMarkupIndentation(String content) {
+		Matcher matcher= MARKUP_INDENTATION.matcher(content);
+		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);
+		while (matcher.find()) {
+			if (!isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {
+				continue;
+			}
+			int lineNumber= 1;
+			for (int offset= 0; offset < matcher.start(); offset++) {
+				if (content.charAt(offset) == '\n') {
+					lineNumber++;
+				}
+			}
+			return new IndentationFinding(lineNumber, matcher.start(), matcher.end() - matcher.start());
+		}
+		return null;
+	}
+
+	private static boolean isConvertibleMarkupIndentation(String content, int indentationOffset,
+			ProtectedXmlRegions protectedRegions) {
+		return !protectedRegions.contains(indentationOffset)
+				&& isFormattingOnlyIndentation(content, indentationOffset, protectedRegions);
+	}
+
+	private record ProtectedXmlRegion(int start, int end, boolean textContent) {
+	}
+
+	private static final class ProtectedXmlRegions {
+
+		private final List<ProtectedXmlRegion> regions= new ArrayList<>();
+
+		ProtectedXmlRegions(String content) {
+			Matcher matcher= PROTECTED_XML_REGION.matcher(content);
+			while (matcher.find()) {
+				regions.add(new ProtectedXmlRegion(matcher.start(), matcher.end(),
+						content.startsWith(CDATA_START, matcher.start())));
+			}
+		}
+
+		boolean contains(int offset) {
+			return containing(offset) != null;
+		}
+
+		ProtectedXmlRegion containing(int offset) {
+			int low= 0;
+			int high= regions.size() - 1;
+			while (low <= high) {
+				int middle= (low + high) >>> 1;
+				ProtectedXmlRegion region= regions.get(middle);
+				if (offset < region.start()) {
+					high= middle - 1;
+				} else if (offset >= region.end()) {
+					low= middle + 1;
+				} else {
+					return region;
+				}
+			}
+			return null;
+		}
+	}
+
+	private static boolean isFormattingOnlyIndentation(String content, int indentationOffset,
+			ProtectedXmlRegions protectedRegions) {
+		int offset= indentationOffset - 1;
+		while (offset >= 0) {
+			ProtectedXmlRegion protectedRegion= protectedRegions.containing(offset);
+			if (protectedRegion != null) {
+				if (protectedRegion.textContent()) {
+					return false;
+				}
+				offset= protectedRegion.start() - 1;
+				continue;
+			}
+			char character= content.charAt(offset);
+			if (Character.isWhitespace(character)) {
+				offset--;
+				continue;
+			}
+			return character == '>' && isMarkupEnd(content, offset, protectedRegions);
+		}
+		return true;
+	}
+
+	private static boolean isMarkupEnd(String content, int markupEnd,
+			ProtectedXmlRegions protectedRegions) {
+		char quote= 0;
+		for (int offset= markupEnd - 1; offset >= 0; offset--) {
+			ProtectedXmlRegion protectedRegion= protectedRegions.containing(offset);
+			if (protectedRegion != null) {
+				offset= protectedRegion.start();
+				continue;
+			}
+			char character= content.charAt(offset);
+			if (quote != 0) {
+				if (character == quote) {
+					quote= 0;
+				}
+				continue;
+			}
+			if (character == '\'' || character == '"') {
+				quote= character;
+			} else if (character == '<') {
+				return true;
+			} else if (character == '>') {
+				return false;
+			}
+		}
+		return false;
 	}
 }
