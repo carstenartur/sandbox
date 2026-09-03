@@ -33,7 +33,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 
 /** Tests for {@link StylelintRunner}. */
 public class StylelintRunnerTest {
@@ -163,13 +162,11 @@ public class StylelintRunnerTest {
 	}
 
 	@Test
-	@EnabledIf("isStylelintAvailable")
 	public void testIsStylelintAvailable() {
 		assertTrue(StylelintRunner.isStylelintAvailable(), "Stylelint should be available"); //$NON-NLS-1$
 	}
 
 	@Test
-	@EnabledIf("isStylelintAvailable")
 	public void testValidateValidCss() throws Exception {
 		String validCss = "body {\n  color: red;\n  margin: 0;\n}\n"; //$NON-NLS-1$
 		IFile file = createTestCssFile("valid.css", validCss); //$NON-NLS-1$
@@ -179,7 +176,6 @@ public class StylelintRunnerTest {
 	}
 
 	@Test
-	@EnabledIf("isStylelintAvailable")
 	public void testValidateReturnsCSSValidationResult() throws Exception {
 		String css = "body { color: red; }"; //$NON-NLS-1$
 		IFile file = createTestCssFile("result.css", css); //$NON-NLS-1$
@@ -189,7 +185,6 @@ public class StylelintRunnerTest {
 	}
 
 	@Test
-	@EnabledIf("isStylelintAvailable")
 	public void testFixReturnsString() throws Exception {
 		String css = "body{color:red;}"; //$NON-NLS-1$
 		IFile file = createTestCssFile("tofix.css", css); //$NON-NLS-1$
@@ -199,7 +194,6 @@ public class StylelintRunnerTest {
 	}
 
 	@Test
-	@EnabledIf("isStylelintAvailable")
 	public void testFixPreservesSemantics() throws Exception {
 		String css = "body { color: #ff0000; background: white; }"; //$NON-NLS-1$
 		IFile file = createTestCssFile("semantics.css", css); //$NON-NLS-1$
@@ -222,9 +216,5 @@ public class StylelintRunnerTest {
 		}
 		file.create(new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)), true, new NullProgressMonitor());
 		return file;
-	}
-
-	static boolean isStylelintAvailable() {
-		return StylelintRunner.isStylelintAvailable();
 	}
 }
