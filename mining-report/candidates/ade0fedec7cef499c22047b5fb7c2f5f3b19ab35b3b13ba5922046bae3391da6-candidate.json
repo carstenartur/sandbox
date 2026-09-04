@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ade0fedec7cef499c22047b5fb7c2f5f3b19ab35b3b13ba5922046bae3391da6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "fAntScriptLocation \u003d $path; :: instanceof($path, \"org.eclipse.core.runtime.IPath\")\n\u003d\u003e\nfAntScriptLocation \u003d this.getAbsoluteLocation($path);\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.jarpackagerfat;\n\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.Path;\n\npublic class FatJarPackageWizardPage {\n    private IPath fAntScriptLocation;\n\n    // Assume getAbsoluteLocation method exists in this class for the \u0027after\u0027 state to be valid.\n    private IPath getAbsoluteLocation(IPath location) { \n        // Simplified implementation for example purposes\n        return location; \n    }\n\n    public void setAntScriptLocation(IPath path) {\n        // Original code\n        fAntScriptLocation \u003d path;\n    }\n    \n    public void updateLocation(IPath newPath) {\n        fAntScriptLocation \u003d newPath;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.jarpackagerfat;\n\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.Path;\n\npublic class FatJarPackageWizardPage {\n    private IPath fAntScriptLocation;\n\n    private IPath getAbsoluteLocation(IPath location) { \n        return location; \n    }\n\n    public void setAntScriptLocation(IPath path) {\n        // Transformed code\n        fAntScriptLocation \u003d this.getAbsoluteLocation(path);\n    }\n    \n    public void updateLocation(IPath newPath) {\n        fAntScriptLocation \u003d this.getAbsoluteLocation(newPath);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.jarpackagerfat;\n\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.Path;\n\npublic class NegativeTestClass {\n    private IPath someOtherLocationField;\n\n    private IPath getAbsoluteLocation(IPath location) { return location; }\n\n    public void setOtherLocation(IPath path) {\n        // Should not match as it\u0027s not \u0027fAntScriptLocation\u0027\n        someOtherLocationField \u003d path;\n    }\n}",
+  "targetHintFile": "api-usage.sandbox-hint",
+  "sourceCommit": "e2a5dd87daffe634c6555aae819b229424ad9d23",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Usage",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-04T02:29:09.086742985Z",
+  "ruleFingerprint": "sha256:6703d0ae5fd6774f1a2cb106c1a0806ed603eee4bd214a0683464cd5d03dd94b",
+  "behaviorFingerprint": "sha256:94ab5fdfd13a0e0961e4a49e2afac9d0c19cd5a392bf1810ed9f668cc1a1cedd",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type FatJarPackageWizardPage must be defined in its own file",
+    "verifiedAt": "2026-09-04T02:29:15.361433839Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "8883177403d36d663f080f6fd3578f1f124c0836b2dfa8fa337075fe1f0ea77a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$e.keyCode \u003d\u003d 0x0D\n\u003d\u003e $e.keyCode \u003d\u003d 0x0D || org.eclipse.swt.SWT.KEYPAD_CR\n;;",
+  "beforeExample": "import org.eclipse.swt.events.KeyEvent;\nimport org.eclipse.swt.events.KeyListener;\nimport org.eclipse.swt.SWT;\n\nclass MyKeyListener implements KeyListener {\n    @Override\n    public void keyPressed(KeyEvent e) {\n        if (e.keyCode \u003d\u003d 0x0D) { // return\n            System.out.println(\"Standard Enter pressed\");\n        }\n        if (e.keyCode \u003d\u003d SWT.ARROW_DOWN) {\n            System.out.println(\"Arrow Down pressed\");\n        }\n    }\n\n    @Override\n    public void keyReleased(KeyEvent e) {}\n}\n\npublic class MyClass {\n    public void setup(org.eclipse.swt.widgets.Text fFilterText) {\n        fFilterText.addKeyListener(new MyKeyListener());\n    }\n}",
+  "afterExample": "import org.eclipse.swt.events.KeyEvent;\nimport org.eclipse.swt.events.KeyListener;\nimport org.eclipse.swt.SWT;\n\nclass MyKeyListener implements KeyListener {\n    @Override\n    public void keyPressed(KeyEvent e) {\n        if (e.keyCode \u003d\u003d 0x0D || org.eclipse.swt.SWT.KEYPAD_CR) { // Enter key\n            System.out.println(\"Standard or Keypad Enter pressed\");\n        }\n        if (e.keyCode \u003d\u003d SWT.ARROW_DOWN) {\n            System.out.println(\"Arrow Down pressed\");\n        }\n    }\n\n    @Override\n    public void keyReleased(KeyEvent e) {}\n}\n\npublic class MyClass {\n    public void setup(org.eclipse.swt.widgets.Text fFilterText) {\n        fFilterText.addKeyListener(new MyKeyListener());\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.events.KeyEvent;\nimport org.eclipse.swt.events.KeyListener;\nimport org.eclipse.swt.SWT;\n\nclass MyKeyListener implements KeyListener {\n    @Override\n    public void keyPressed(KeyEvent e) {\n        if (e.keyCode \u003d\u003d SWT.CR) { // Using SWT.CR constant, not the literal 0x0D\n            System.out.println(\"SWT.CR pressed\");\n        }\n        if (e.keyCode \u003d\u003d SWT.LF) { // Another key code\n            System.out.println(\"Line Feed pressed\");\n        }\n    }\n\n    @Override\n    public void keyReleased(KeyEvent e) {}\n}\n\npublic class MyClass {\n    public void setup(org.eclipse.swt.widgets.Text fFilterText) {\n        fFilterText.addKeyListener(new MyKeyListener());\n    }\n}",
+  "targetHintFile": "keyevent.sandbox-hint",
+  "sourceCommit": "cac0c43b33bbe0f668e5bf7e4329d0b5015c4751",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Code Quality",
+  "summary": "Extend Enter key detection to include numeric keypad Enter key when using the magic number 0x0D.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-04T02:29:09.050049640Z",
+  "ruleFingerprint": "sha256:f406f08967b88bc703cf61abb0263fce40d63fa0957bc68946d67f42eda848ce",
+  "behaviorFingerprint": "sha256:55837199eb6fd057d9b393b0a02ee700b659b7525729a557e814c4427a9f4dca",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-09-04T02:29:15.315718548Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

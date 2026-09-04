@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "757acc86202df1726b5cc33261eeddc8cfef7413784db0ec4ccf1224532d1583",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jdt.abstract_config_block.make_scrollable_composite_aware_visibility\u003e\n\u003c!description: Change visibility of makeScrollableCompositeAware from private to protected in AbstractConfigurationBlock.\u003e\n\u003c!severity: HINT\u003e\nprivate void $methodName(org.eclipse.swt.widgets.Control $control) :: methodNameMatches($methodName, \"makeScrollableCompositeAware\") \u0026\u0026 inClass(\"org.eclipse.jdt.internal.ui.preferences.AbstractConfigurationBlock\")\n\u003d\u003e\nprotected void $methodName(org.eclipse.swt.widgets.Control $control)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport org.eclipse.swt.widgets.Control;\n\npublic abstract class AbstractConfigurationBlock {\n    // other fields and methods\n    private void makeScrollableCompositeAware(Control control) {\n        // body of method\n        System.out.println(control);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport org.eclipse.swt.widgets.Control;\n\npublic abstract class AbstractConfigurationBlock {\n    // other fields and methods\n    protected void makeScrollableCompositeAware(Control control) {\n        // body of method\n        System.out.println(control);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport org.eclipse.swt.widgets.Control;\n\npublic class SomeOtherClass {\n    private void makeScrollableCompositeAware(Control control) {\n        System.out.println(\"This should not be changed\");\n    }\n}",
+  "targetHintFile": "misc.sandbox-hint",
+  "sourceCommit": "310b5a4861b7c93e44dc110dca42def5aace82ab",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Refactoring",
+  "summary": "Change visibility of `AbstractConfigurationBlock.makeScrollableCompositeAware` from `private` to `protected`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-04T02:29:09.037992742Z",
+  "ruleFingerprint": "sha256:773e8d362010e71290855562d50c024799f5bdff94c7ab9ef201c01f3f34d5e6",
+  "behaviorFingerprint": "sha256:a5ea7a1ffbb7fe16007df8b27a01651353c415b50ce61e98be60ced123317aac",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-04T02:29:15.296786688Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
