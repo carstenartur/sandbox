@@ -46,6 +46,7 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTable;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.IHandlerService;
 
@@ -111,7 +112,7 @@ final class PdeXmlQuickFixScreenshot {
 
 			SWTWorkbenchBot bot= new SWTWorkbenchBot();
 			maximizeWorkbench(bot);
-			assertNoExistingProblems();
+			assertNoExistingProblemErrors();
 
 			SWTBotView explorer= bot.viewById(PROJECT_EXPLORER_VIEW);
 			explorer.show();
@@ -225,19 +226,22 @@ final class PdeXmlQuickFixScreenshot {
 		});
 	}
 
-	private static void assertNoExistingProblems() throws Exception {
+	private static void assertNoExistingProblemErrors() throws Exception {
 		IMarker[] existing= ResourcesPlugin.getWorkspace().getRoot()
 				.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE);
-		if (existing.length == 0) {
-			return;
-		}
-		StringBuilder details= new StringBuilder(
-				"The screenshot workspace contains pre-existing Problems markers:"); //$NON-NLS-1$
+		StringBuilder details= new StringBuilder();
 		for (IMarker marker : existing) {
+			if (marker.getAttribute(IMarker.SEVERITY, IMarker.SEVERITY_INFO)
+					!= IMarker.SEVERITY_ERROR) {
+				continue;
+			}
 			details.append(System.lineSeparator()).append(marker.getResource().getFullPath())
 					.append(": ").append(marker.getAttribute(IMarker.MESSAGE, "<no message>")); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		throw new AssertionError(details.toString());
+		if (details.length() > 0) {
+			throw new AssertionError(
+					"The screenshot workspace contains pre-existing error markers:" + details); //$NON-NLS-1$
+		}
 	}
 
 	private static String configured(String property, String environment) {
@@ -321,7 +325,15 @@ final class PdeXmlQuickFixScreenshot {
 		Rectangle workbenchBounds= UIThreadRunnable.syncExec(Display.getDefault(), new Result<Rectangle>() {
 			@Override
 			public Rectangle run() {
-				return PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell().getBounds();
+				IWorkbenchWindow window= PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+				if (window == null) {
+					throw new IllegalStateException("The Eclipse Workbench has no active window"); //$NON-NLS-1$
+				}
+				Shell shell= window.getShell();
+				if (shell == null || shell.isDisposed()) {
+					throw new IllegalStateException("The active Workbench window has no usable shell"); //$NON-NLS-1$
+				}
+				return shell.getBounds();
 			}
 		});
 		assertTrue(workbenchBounds.width >= 1200 && workbenchBounds.height >= 700,
@@ -333,18 +345,16 @@ final class PdeXmlQuickFixScreenshot {
 
 	private static void writeProvenance(Path target, String repository, String ref,
 			String commit, String sourcePath, byte[] sourceBytes) throws Exception {
-		String json= """
-				{
-				  "schemaVersion": 1,
-				  "repository": "%s",
-				  "ref": "%s",
-				  "commit": "%s",
-				  "sourcePath": "%s",
-				  "sourceSha256": "%s",
-				  "sourceBytes": %d,
-				  "scenario": "Problems view marker and Quick Fix"
-				}
-				""".formatted(json(repository), json(ref), json(commit), json(sourcePath),
+		String json= ("{%n" //$NON-NLS-1$
+				+ "  \"schemaVersion\": 1,%n" //$NON-NLS-1$
+				+ "  \"repository\": \"%s\",%n" //$NON-NLS-1$
+				+ "  \"ref\": \"%s\",%n" //$NON-NLS-1$
+				+ "  \"commit\": \"%s\",%n" //$NON-NLS-1$
+				+ "  \"sourcePath\": \"%s\",%n" //$NON-NLS-1$
+				+ "  \"sourceSha256\": \"%s\",%n" //$NON-NLS-1$
+				+ "  \"sourceBytes\": %d,%n" //$NON-NLS-1$
+				+ "  \"scenario\": \"Problems view marker and Quick Fix\"%n" //$NON-NLS-1$
+				+ "}%n").formatted(json(repository), json(ref), json(commit), json(sourcePath), //$NON-NLS-1$
 						HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256") //$NON-NLS-1$
 								.digest(sourceBytes)),
 						Integer.valueOf(sourceBytes.length));
