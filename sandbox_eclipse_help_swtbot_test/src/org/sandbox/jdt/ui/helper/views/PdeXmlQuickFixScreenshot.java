@@ -150,10 +150,7 @@ final class PdeXmlQuickFixScreenshot {
 
 			SWTBotShell quickFix= bot.shell("Quick Fix").activate(); //$NON-NLS-1$
 			SWTBotTable table= quickFix.bot().table();
-			if (table.selectionCount() != 1
-					|| !QUICK_FIX_LABEL.equals(table.selection().get(0, 0))) {
-				table.getTableItem(QUICK_FIX_LABEL).select();
-			}
+			table.getTableItem(QUICK_FIX_LABEL).select();
 			SWTBotButton finish= button(quickFix, "Finish", "OK"); //$NON-NLS-1$ //$NON-NLS-2$
 			bot.waitUntil(new DefaultCondition() {
 				@Override
