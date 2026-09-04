@@ -22,9 +22,16 @@ import org.eclipse.jdt.core.IJavaModelMarker;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.ltk.core.refactoring.IUndoManager;
 import org.eclipse.ltk.core.refactoring.RefactoringCore;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
+import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
+import org.eclipse.swtbot.swt.finder.results.VoidResult;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.ui.IViewReference;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,6 +50,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseBundleClasspath;
 public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 
 	private static final String CLEANUP_PREVIEW_PROJECT= "SandboxCleanupPreviewProject"; //$NON-NLS-1$
+	private static final String REFACTORING_MINING_VIEW= "org.sandbox.jdt.views.refactoringMining"; //$NON-NLS-1$
 	private static final List<String> SHADOW_PLATFORM_SOURCES= List.of(
 			"src/org/eclipse/core/runtime/IProgressMonitor.java", //$NON-NLS-1$
 			"src/org/eclipse/core/runtime/SubMonitor.java", //$NON-NLS-1$
@@ -93,6 +101,7 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 	@Test
 	@Order(2)
 	public void captureRefactoringMiningWorkflow() throws Exception {
+		maximizeView(REFACTORING_MINING_VIEW);
 		screenshots.captureRefactoringMiningWorkflow();
 	}
 
@@ -144,6 +153,26 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 		} finally {
 			undoManager.flush();
 		}
+	}
+
+	private static void maximizeView(String viewId) {
+		UIThreadRunnable.syncExec(Display.getDefault(), new VoidResult() {
+			@Override
+			public void run() {
+				IWorkbenchPage page= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+				try {
+					page.showView(viewId);
+				} catch (PartInitException exception) {
+					throw new IllegalStateException("Could not open view " + viewId, exception); //$NON-NLS-1$
+				}
+				IViewReference reference= page.findViewReference(viewId);
+				if (reference == null) {
+					throw new IllegalStateException("Could not find view reference " + viewId); //$NON-NLS-1$
+				}
+				page.setPartState(reference, IWorkbenchPage.STATE_MAXIMIZED);
+			}
+		});
+		new SWTWorkbenchBot().sleep(500);
 	}
 
 	private static String activePreviewTree() {

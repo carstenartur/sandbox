@@ -107,6 +107,7 @@
 		<module>sandbox_usage_view</module>
 		<module>sandbox_usage_view_feature</module>
 		<module>sandbox_usage_view_test</module>
+		<module>sandbox_eclipse_help_swtbot_test</module>
 		<module>sandbox_int_to_enum</module>
 		<module>sandbox_int_to_enum_help</module>
 		<module>sandbox_int_to_enum_feature</module>
@@ -636,6 +637,11 @@
 			</dependency>
 			<dependency>
 				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_eclipse_help_swtbot_test</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.sandbox</groupId>
 				<artifactId>sandbox_int_to_enum</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -1061,9 +1067,9 @@
 			<activation>
 				<activeByDefault>false</activeByDefault>
 			</activation>
-			<!-- SWTBot tests are included in sandbox_usage_view_test but
-			skipped by default.
-			     This profile enables them. -->
+			<!-- Usage View SWTBot tests remain in sandbox_usage_view_test.
+			     Cleanup-independent Help SWTBot tests live in
+			     sandbox_eclipse_help_swtbot_test. -->
 		</profile>
 	</profiles>
 </project>
