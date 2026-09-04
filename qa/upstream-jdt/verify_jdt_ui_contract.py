@@ -229,11 +229,17 @@ def main() -> int:
         "verify_reactor_bcoview_runtime",
         "jdt-ui-junit4-corpus.json",
         "verify_jdt_ui_corpus.py",
-        "compare_test_inventory.py",
+        "JUnitXmlInventoryComparatorTest#configuredUpstreamEvidenceIsComparedByMaven",
+        "sandbox.junit.inventory.baseline",
+        "sandbox.junit.inventory.migrated",
+        "sandbox.junit.inventory.mapping",
+        "sandbox.junit.inventory.output",
         "strict|best-effort",
     ):
         if marker not in runner:
             fail(f"JDT UI runner is missing contract marker {marker!r}")
+    if "compare_test_inventory.py" in runner:
+        fail("JDT UI runner still delegates inventory comparison to Python")
 
     validate_sources()
     validate_verifier(contract)

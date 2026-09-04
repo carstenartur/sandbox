@@ -8,6 +8,7 @@ on:
       - 'qa/upstream-jdt/**'
       - 'sandbox_cleanup_application/**'
       - 'sandbox_common/**'
+      - 'sandbox_common_test/**'
       - 'sandbox_common_core/**'
       - 'sandbox_junit_cleanup/**'
       - 'sandbox_junit_cleanup_test/**'
