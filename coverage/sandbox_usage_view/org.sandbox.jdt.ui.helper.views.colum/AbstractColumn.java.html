@@ -26,20 +26,20 @@ import org.eclipse.swt.widgets.TableColumn;
  * Abstract base class for table columns displaying variable binding information.
  * Supports both fixed-width columns and weighted columns via TableColumnLayout.
  */
-<span class="nc" id="L29">public abstract class AbstractColumn {</span>
-<span class="nc" id="L30">	static int columnIndex = 0;</span>
-<span class="nc" id="L31">	private static final ColumnViewerComparator comparator = new ColumnViewerComparator();</span>
+<span class="fc" id="L29">public abstract class AbstractColumn {</span>
+<span class="fc" id="L30">	static int columnIndex = 0;</span>
+<span class="fc" id="L31">	private static final ColumnViewerComparator comparator = new ColumnViewerComparator();</span>
 
 	protected TableViewerColumn createTableViewerColumn(TableViewer viewer, String title, int minimumWidth,
 			final int colNumber) {
-<span class="nc" id="L35">		final TableViewerColumn viewerColumn = new TableViewerColumn(viewer, SWT.NONE);</span>
-<span class="nc" id="L36">		final TableColumn column = viewerColumn.getColumn();</span>
-<span class="nc" id="L37">		column.setText(title);</span>
-<span class="nc" id="L38">		column.setWidth(minimumWidth);</span>
-<span class="nc" id="L39">		column.setResizable(true);</span>
-<span class="nc" id="L40">		column.setMoveable(true);</span>
-<span class="nc" id="L41">		column.addSelectionListener(getSelectionAdapter(column, colNumber, viewer));</span>
-<span class="nc" id="L42">		return viewerColumn;</span>
+<span class="fc" id="L35">		final TableViewerColumn viewerColumn = new TableViewerColumn(viewer, SWT.NONE);</span>
+<span class="fc" id="L36">		final TableColumn column = viewerColumn.getColumn();</span>
+<span class="fc" id="L37">		column.setText(title);</span>
+<span class="fc" id="L38">		column.setWidth(minimumWidth);</span>
+<span class="fc" id="L39">		column.setResizable(true);</span>
+<span class="fc" id="L40">		column.setMoveable(true);</span>
+<span class="fc" id="L41">		column.addSelectionListener(getSelectionAdapter(column, colNumber, viewer));</span>
+<span class="fc" id="L42">		return viewerColumn;</span>
 	}
 
 	/**
@@ -73,7 +73,7 @@ import org.eclipse.swt.widgets.TableColumn;
 	public abstract int getMinimumWidth();
 
 	private SelectionAdapter getSelectionAdapter(final TableColumn column, final int index, TableViewer viewer) {
-<span class="nc" id="L76">		return new SelectionAdapter() {</span>
+<span class="fc" id="L76">		return new SelectionAdapter() {</span>
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 <span class="nc" id="L79">				comparator.setColumn(index);</span>
@@ -86,7 +86,7 @@ import org.eclipse.swt.widgets.TableColumn;
 	}
 
 	public static ColumnViewerComparator getComparator() {
-<span class="nc" id="L89">		return comparator;</span>
+<span class="fc" id="L89">		return comparator;</span>
 	}
 
 	/**
@@ -106,9 +106,9 @@ import org.eclipse.swt.widgets.TableColumn;
 	 * @param tableColumnLayout the table column layout for weighted sizing
 	 */
 	public static void addColumn(TableViewer viewer, AbstractColumn column, TableColumnLayout tableColumnLayout) {
-<span class="nc" id="L109">		ColumnViewerComparator.addColumn(column);</span>
-<span class="nc" id="L110">		column.createColumn(viewer, columnIndex++, tableColumnLayout);</span>
-<span class="nc" id="L111">	}</span>
+<span class="fc" id="L109">		ColumnViewerComparator.addColumn(column);</span>
+<span class="fc" id="L110">		column.createColumn(viewer, columnIndex++, tableColumnLayout);</span>
+<span class="fc" id="L111">	}</span>
 
 	protected abstract int compare(IVariableBinding p1, IVariableBinding p2);
 }

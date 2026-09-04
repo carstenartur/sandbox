@@ -24,36 +24,36 @@ import org.sandbox.jdt.ui.helper.views.preferences.UsageViewPreferenceConstants;
 /**
  * Startup class that shows the JavaHelper View at startup if the preference is enabled.
  */
-<span class="nc" id="L27">public class UsageViewStartup implements IStartup {</span>
+<span class="fc" id="L27">public class UsageViewStartup implements IStartup {</span>
 
 	@Override
 	public void earlyStartup() {
 		// Run in UI thread
-<span class="nc" id="L32">		PlatformUI.getWorkbench().getDisplay().asyncExec(() -&gt; {</span>
+<span class="fc" id="L32">		PlatformUI.getWorkbench().getDisplay().asyncExec(() -&gt; {</span>
 			// Check if plugin is properly activated
-<span class="nc" id="L34">			UsageViewPlugin plugin = UsageViewPlugin.getDefault();</span>
-<span class="nc bnc" id="L35" title="All 2 branches missed.">			if (plugin == null) {</span>
+<span class="fc" id="L34">			UsageViewPlugin plugin = UsageViewPlugin.getDefault();</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">			if (plugin == null) {</span>
 <span class="nc" id="L36">				return;</span>
 			}
 			
-<span class="nc" id="L39">			IPreferenceStore store = plugin.getPreferenceStore();</span>
-<span class="nc" id="L40">			boolean showAtStartup = store.getBoolean(UsageViewPreferenceConstants.SHOW_VIEW_AT_STARTUP);</span>
+<span class="fc" id="L39">			IPreferenceStore store = plugin.getPreferenceStore();</span>
+<span class="fc" id="L40">			boolean showAtStartup = store.getBoolean(UsageViewPreferenceConstants.SHOW_VIEW_AT_STARTUP);</span>
 			
-<span class="nc bnc" id="L42" title="All 2 branches missed.">			if (showAtStartup) {</span>
-<span class="nc" id="L43">				IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();</span>
-<span class="nc bnc" id="L44" title="All 2 branches missed.">				if (window != null) {</span>
-<span class="nc" id="L45">					IWorkbenchPage page = window.getActivePage();</span>
-<span class="nc bnc" id="L46" title="All 2 branches missed.">					if (page != null) {</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">			if (showAtStartup) {</span>
+<span class="fc" id="L43">				IWorkbenchWindow window = PlatformUI.getWorkbench().getActiveWorkbenchWindow();</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">				if (window != null) {</span>
+<span class="fc" id="L45">					IWorkbenchPage page = window.getActivePage();</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">					if (page != null) {</span>
 						try {
-<span class="nc" id="L48">							page.showView(UsageViewPlugin.VIEW_ID);</span>
-<span class="nc" id="L49">						} catch (PartInitException e) {</span>
+<span class="fc" id="L48">							page.showView(UsageViewPlugin.VIEW_ID);</span>
+<span class="pc" id="L49">						} catch (PartInitException e) {</span>
 							// Log error but don't fail startup
 <span class="nc" id="L51">							plugin.getLog().error(&quot;Failed to show JavaHelper View at startup&quot;, e);</span>
 						}
 					}
 				}
 			}
-<span class="nc" id="L56">		});</span>
-<span class="nc" id="L57">	}</span>
+<span class="fc" id="L56">		});</span>
+<span class="fc" id="L57">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

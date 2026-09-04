@@ -100,12 +100,12 @@ public final class TypeWideningAnalyzer {
 		 * general (widestType). The widestType is included as the last element.
 		 */
 		public List&lt;ITypeBinding&gt; getIntermediateTypes() {
-<span class="nc" id="L103">			return Collections.unmodifiableList(intermediateTypes);</span>
+<span class="fc" id="L103">			return Collections.unmodifiableList(intermediateTypes);</span>
 		}
 
 		/** Whether the variable can be widened to a more general type */
 		public boolean canWiden() {
-<span class="nc bnc" id="L108" title="All 4 branches missed.">			return widestType != null &amp;&amp; !widestType.getQualifiedName().equals(currentType.getQualifiedName());</span>
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">			return widestType != null &amp;&amp; !widestType.getQualifiedName().equals(currentType.getQualifiedName());</span>
 		}
 	}
 
