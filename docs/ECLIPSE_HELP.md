@@ -11,6 +11,15 @@ Sandbox keeps installed end-user documentation separate from runtime code. Each 
 
 The runtime plug-in must not require its Help plug-in. The feature is the installation boundary that brings both bundles into Eclipse.
 
+Cleanup-independent Help and screenshot scenarios have a separate ownership boundary:
+
+```text
+sandbox_eclipse_help_swtbot_test   standalone Eclipse test plug-in
+sandbox_usage_view_test            Usage View tests only
+```
+
+The Help SWTBot plug-in is not a fragment of any product bundle. This prevents documentation tests from inheriting unrelated product dependencies or making the Usage View test fragment the accidental host for every Workbench scenario.
+
 ## Documentation is part of QA
 
 Installed Help is not considered complete merely because a TOC, a generic usage page, and one screenshot exist. Writing the documentation is also a product inspection exercise:
@@ -39,19 +48,19 @@ Every screenshot-generating SWTBot scenario must assert the claimed semantic sta
 
 ## Reproducing the screenshots locally
 
-The screenshot generator is a normal Tycho/SWTBot test. It does not call GitHub, download an Actions artifact, or depend on a GitHub-specific environment variable. It writes the generated PNG files directly into the checked-out `sandbox*_help/images` directories.
+The screenshot generator is a normal Tycho/SWTBot test in `sandbox_eclipse_help_swtbot_test`. It does not call GitHub, download an Actions artifact, or depend on a GitHub-specific environment variable. It writes the generated PNG files directly into the checked-out `sandbox*_help/images` directories.
 
 Prerequisites:
 
 - Java 21 or later;
-- Maven as used for the normal Sandbox build;
+- the repository Maven Wrapper;
 - an available graphical display;
 - on headless Linux, Xvfb and the same GTK runtime libraries required by the normal UI test build.
 
 From the repository root on a graphical workstation:
 
 ```bash
-mvn \
+./mvnw \
   -Dtycho.localArtifacts=ignore \
   -f sandbox_help_build/pom.xml \
   -Phelp-screenshots \
@@ -64,16 +73,16 @@ From the repository root on headless Linux:
 xvfb-run \
   --auto-servernum \
   --server-args="-screen 0 1600x1200x24" \
-  mvn \
+  ./mvnw \
   -Dtycho.localArtifacts=ignore \
   -f sandbox_help_build/pom.xml \
   -Phelp-screenshots \
   clean verify
 ```
 
-`sandbox_help_build/pom.xml` is a repository-owned Maven aggregator. It contains the complete Help reactor: target platform, shared runtime bundles such as `sandbox_common`, every documented runtime/Help/feature family, and the SWTBot host and tests. This is necessary because Maven's `-am` follows Maven dependencies, while Tycho also resolves OSGi `Require-Bundle` relationships. A fresh checkout must not rely on an already installed `sandbox_common` or target artifact in the developer's local Maven repository.
+`sandbox_help_build/pom.xml` is a repository-owned Maven aggregator. It contains the complete Help reactor: target platform, shared runtime bundles such as `sandbox_common`, every documented runtime/Help/feature family, and the standalone `sandbox_eclipse_help_swtbot_test` plug-in. This is necessary because Maven's `-am` follows Maven dependencies, while Tycho also resolves OSGi `Require-Bundle` relationships. A fresh checkout must not rely on an already installed `sandbox_common` or target artifact in the developer's local Maven repository.
 
-The aggregator is not a second parent POM and does not alter the normal module ownership. Participating projects continue to inherit the central repository POM; the Help build POM only defines the complete, reproducible reactor for this task.
+The aggregator is not a second parent POM and does not alter normal module ownership. Participating projects continue to inherit the central repository POM; the Help build POM only defines the complete, reproducible reactor for this task.
 
 The Maven profile supplies the checkout root to the test through the standard Maven property `maven.multiModuleProjectDirectory`. The test rejects any output directory that is not recognizably the Sandbox checkout root, so it cannot silently place documentation assets in an unrelated directory.
 
@@ -109,4 +118,4 @@ Every Help bundle must contain:
 - referenced images;
 - a `build.properties` entry for every shipped documentation resource.
 
-The normal Maven/Tycho reactor validates bundle metadata and feature resolution. Repository-level structural validation additionally checks local TOC links and image references so missing documentation resources fail before publication. A separate evidence test rejects unreferenced PNGs, unreadable preview images, byte-identical JFace states, and preview images that merely duplicate a configuration tab.
+The normal Maven/Tycho reactor validates bundle metadata and feature resolution. Repository-level structural validation in `sandbox_eclipse_help_swtbot_test` additionally checks local TOC links and image references so missing documentation resources fail before publication. A separate evidence test rejects unreferenced PNGs, unreadable preview images, byte-identical JFace states, and preview images that merely duplicate a configuration tab.

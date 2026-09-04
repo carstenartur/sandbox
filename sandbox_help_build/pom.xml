@@ -94,16 +94,16 @@
 		<module>../sandbox_use_general_type_help</module>
 		<module>../sandbox_use_general_type_feature</module>
 
-		<!-- SWTBot host and screenshot/structure tests. -->
-		<module>../sandbox_usage_view</module>
-		<module>../sandbox_usage_view_test</module>
+		<!-- Dedicated Help structure, screenshot and Workbench integration tests. -->
+		<module>../sandbox_eclipse_help_swtbot_test</module>
 	</modules>
 
 	<profiles>
 		<!--
-			The same profile ID exists in sandbox_usage_view_test and activates the
-			actual screenshot test there. Defining it here makes the documented
-			execution-root contract explicit and avoids a root-profile warning.
+			The same profile ID exists in sandbox_eclipse_help_swtbot_test and
+			activates the actual screenshot test there. Defining it here makes the
+			documented execution-root contract explicit and avoids a root-profile
+			warning.
 		-->
 		<profile>
 			<id>help-screenshots</id>

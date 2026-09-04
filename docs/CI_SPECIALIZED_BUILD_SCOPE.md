@@ -67,9 +67,10 @@ Linux-only property or the SpotBugs skip flag.
 The optimization does not change the selected test classes or real-corpus
 runner:
 
-- `SandboxHelpScreenshotsMergeGateSWTBotTest` still drives the normal Help gate;
-- `SandboxAtomicPreviewPatchedJdtSWTBotTest` still drives both coordinated atomic
-  preview scenarios;
+- `SandboxHelpScreenshotsMergeGateSWTBotTest` in the standalone
+  `sandbox_eclipse_help_swtbot_test` plug-in still drives the normal Help gate;
+- `SandboxAtomicPreviewPatchedJdtSWTBotTest` in that same dedicated plug-in still
+  drives both coordinated atomic preview scenarios;
 - `run-jdt-ui-before-after.sh --mode strict` still performs project-wide check
   and apply, identical upstream test execution, inventory comparison, whitespace
   regression analysis, and provenance generation.
@@ -82,7 +83,7 @@ and duplicate static analysis differ.
 The optimized Help command is:
 
 ```bash
-mvn --batch-mode --no-transfer-progress \
+./mvnw --batch-mode --no-transfer-progress \
   -Dsandbox.tycho.linux-only=true \
   -Dspotbugs.skip=true \
   -Dtycho.localArtifacts=ignore \
