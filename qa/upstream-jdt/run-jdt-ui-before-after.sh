@@ -322,7 +322,6 @@ run_tests() {
   return "$status"
 }
 
-
 compare_test_inventory() {
   local output=$1
   local command_log="$OUTPUT/test-inventory-comparison-command.txt"
@@ -338,7 +337,7 @@ compare_test_inventory() {
     "-Dsandbox.junit.inventory.migrated=$OUTPUT/migrated"
     "-Dsandbox.junit.inventory.mapping=$MAPPING"
     "-Dsandbox.junit.inventory.output=$output"
-    -pl sandbox_common_test
+    -pl sandbox_target,sandbox_common_test
     -am
     test
   )
