@@ -112,7 +112,7 @@ final class PdeXmlQuickFixScreenshot {
 
 			SWTWorkbenchBot bot= new SWTWorkbenchBot();
 			maximizeWorkbench(bot);
-			assertNoExistingProblemErrors();
+			assertNoExistingProblems();
 
 			SWTBotView explorer= bot.viewById(PROJECT_EXPLORER_VIEW);
 			explorer.show();
@@ -226,22 +226,19 @@ final class PdeXmlQuickFixScreenshot {
 		});
 	}
 
-	private static void assertNoExistingProblemErrors() throws Exception {
+	private static void assertNoExistingProblems() throws Exception {
 		IMarker[] existing= ResourcesPlugin.getWorkspace().getRoot()
 				.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE);
-		StringBuilder details= new StringBuilder();
+		if (existing.length == 0) {
+			return;
+		}
+		StringBuilder details= new StringBuilder(
+				"The screenshot workspace contains pre-existing Problems markers:"); //$NON-NLS-1$
 		for (IMarker marker : existing) {
-			if (marker.getAttribute(IMarker.SEVERITY, IMarker.SEVERITY_INFO)
-					!= IMarker.SEVERITY_ERROR) {
-				continue;
-			}
 			details.append(System.lineSeparator()).append(marker.getResource().getFullPath())
 					.append(": ").append(marker.getAttribute(IMarker.MESSAGE, "<no message>")); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		if (details.length() > 0) {
-			throw new AssertionError(
-					"The screenshot workspace contains pre-existing error markers:" + details); //$NON-NLS-1$
-		}
+		throw new AssertionError(details.toString());
 	}
 
 	private static String configured(String property, String environment) {
