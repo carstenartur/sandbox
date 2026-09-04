@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+SANDBOX_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd -P)"
 # shellcheck source=pins.env
 source "$SCRIPT_DIR/pins.env"
 
@@ -10,7 +11,6 @@ STRICT_PROFILE="$SCRIPT_DIR/junit4-to-jupiter.properties"
 BEST_EFFORT_PROFILE="$SCRIPT_DIR/junit4-to-jupiter-best-effort.properties"
 CORPUS_CONTRACT="$SCRIPT_DIR/jdt-ui-junit4-corpus.json"
 CORPUS_VERIFIER="$SCRIPT_DIR/verify_jdt_ui_corpus.py"
-COMPARATOR="$SCRIPT_DIR/compare_test_inventory.py"
 MAPPING="$SCRIPT_DIR/expected-test-mapping.json"
 PROJECT="org.eclipse.jdt.ui.tests"
 BCOVIEW_PROJECT="org.eclipse.jdt.bcoview"
@@ -322,6 +322,34 @@ run_tests() {
   return "$status"
 }
 
+
+compare_test_inventory() {
+  local output=$1
+  local command_log="$OUTPUT/test-inventory-comparison-command.txt"
+  local result_log="$OUTPUT/logs/test-inventory-comparison.log"
+  local -a command=(
+    "$MAVEN_BIN"
+    --batch-mode
+    --no-transfer-progress
+    "-Dtest=org.sandbox.jdt.triggerpattern.test.policy.JUnitXmlInventoryComparatorTest#configuredUpstreamEvidenceIsComparedByMaven"
+    -Dsurefire.failIfNoSpecifiedTests=false
+    -DfailIfNoTests=false
+    "-Dsandbox.junit.inventory.baseline=$OUTPUT/baseline"
+    "-Dsandbox.junit.inventory.migrated=$OUTPUT/migrated"
+    "-Dsandbox.junit.inventory.mapping=$MAPPING"
+    "-Dsandbox.junit.inventory.output=$output"
+    -pl sandbox_common_test
+    -am
+    test
+  )
+  printf '%q ' "${command[@]}" > "$command_log"
+  printf '\n' >> "$command_log"
+  (
+    cd "$SANDBOX_ROOT"
+    "${command[@]}"
+  ) > "$result_log" 2>&1
+}
+
 run_cleanup() {
   local cleanup_mode=$1 report=$2 patch=${3:-}
   local -a command=(
@@ -422,13 +450,16 @@ if [[ "$MODE" == strict ]]; then
   run_tests migrated "$OUTPUT/migrated" true \
     || fail "Strict JDT UI migration did not compile or pass its tests"
   printf 'COMPARING_TEST_INVENTORY\n' > "$OUTPUT/run-state.txt"
-  python3 "$COMPARATOR" \
-    --baseline "$OUTPUT/baseline" \
-    --migrated "$OUTPUT/migrated" \
-    --mapping "$MAPPING" \
-    --output "$OUTPUT/test-inventory-comparison.json" \
-    > "$OUTPUT/logs/test-inventory-comparison.log"
-  printf '0\n' > "$OUTPUT/test-inventory-comparison-exit-code.txt"
+  if compare_test_inventory "$OUTPUT/test-inventory-comparison.json"; then
+    INVENTORY_STATUS=0
+  else
+    INVENTORY_STATUS=$?
+  fi
+  printf '%s\n' "$INVENTORY_STATUS" > "$OUTPUT/test-inventory-comparison-exit-code.txt"
+  if ((INVENTORY_STATUS != 0)); then
+    cat "$OUTPUT/logs/test-inventory-comparison.log" >&2 || true
+    fail "Strict JDT UI migration changed the JUnit XML inventory"
+  fi
 else
   if run_tests migrated "$OUTPUT/migrated" false; then
     MIGRATED_STATUS=0
@@ -438,15 +469,11 @@ else
   printf '%s\n' "$MIGRATED_STATUS" > "$OUTPUT/migrated-maven-exit-code.txt"
   REPORT_COUNT=$(cat "$OUTPUT/migrated-report-count.txt")
   if [[ "$REPORT_COUNT" -gt 0 ]]; then
-    set +e
-    python3 "$COMPARATOR" \
-      --baseline "$OUTPUT/baseline" \
-      --migrated "$OUTPUT/migrated" \
-      --mapping "$MAPPING" \
-      --output "$OUTPUT/test-inventory-comparison.json" \
-      > "$OUTPUT/logs/test-inventory-comparison.log" 2>&1
-    INVENTORY_STATUS=$?
-    set -e
+    if compare_test_inventory "$OUTPUT/test-inventory-comparison.json"; then
+      INVENTORY_STATUS=0
+    else
+      INVENTORY_STATUS=$?
+    fi
   else
     INVENTORY_STATUS=3
     cat > "$OUTPUT/test-inventory-comparison.json" <<EOF
