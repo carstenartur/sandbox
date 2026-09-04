@@ -50,6 +50,7 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseBundleClasspath;
 public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 
 	private static final String CLEANUP_PREVIEW_PROJECT= "SandboxCleanupPreviewProject"; //$NON-NLS-1$
+	private static final String PROBLEMS_VIEW= "org.eclipse.ui.views.ProblemView"; //$NON-NLS-1$
 	private static final String REFACTORING_MINING_VIEW= "org.sandbox.jdt.views.refactoringMining"; //$NON-NLS-1$
 	private static final List<String> SHADOW_PLATFORM_SOURCES= List.of(
 			"src/org/eclipse/core/runtime/IProgressMonitor.java", //$NON-NLS-1$
@@ -145,6 +146,13 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 
 	@Test
 	@Order(7)
+	public void capturePdeXmlMarkerQuickFix() throws Exception {
+		showView(PROBLEMS_VIEW);
+		PdeXmlQuickFixScreenshot.capture();
+	}
+
+	@Test
+	@Order(8)
 	public void verifyRealMethodReuseCleanupPreviewApplyAndUndo() throws Exception {
 		IUndoManager undoManager= RefactoringCore.getUndoManager();
 		undoManager.flush();
@@ -153,6 +161,21 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 		} finally {
 			undoManager.flush();
 		}
+	}
+
+	private static void showView(String viewId) {
+		UIThreadRunnable.syncExec(Display.getDefault(), new VoidResult() {
+			@Override
+			public void run() {
+				IWorkbenchPage page= PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+				try {
+					page.showView(viewId);
+				} catch (PartInitException exception) {
+					throw new IllegalStateException("Could not open view " + viewId, exception); //$NON-NLS-1$
+				}
+			}
+		});
+		new SWTWorkbenchBot().sleep(500);
 	}
 
 	private static void maximizeView(String viewId) {

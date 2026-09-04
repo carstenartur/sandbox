@@ -46,6 +46,9 @@ public class EclipseHelpScreenshotEvidenceTest {
             "jface-cleanup-real-preview-single-file-steps.png", //$NON-NLS-1$
             "jface-cleanup-real-preview-diff-step.png", //$NON-NLS-1$
             "jface-cleanup-real-preview-multi-file-selection.png"); //$NON-NLS-1$
+    private static final String PDE_XML_SCREENSHOT = "xml-cleanup-marker-quick-fix.png"; //$NON-NLS-1$
+    private static final String PDE_XML_PROVENANCE =
+            "xml-cleanup-marker-quick-fix.provenance.json"; //$NON-NLS-1$
 
     @Test
     public void everyShippedScreenshotIsReferencedFromItsHelpBundle() throws Exception {
@@ -96,6 +99,45 @@ public class EclipseHelpScreenshotEvidenceTest {
                 "junit-coordinated-preview.png"); //$NON-NLS-1$
     }
 
+    @Test
+    public void pdeXmlMarkerQuickFixEvidenceIsPinnedAndReferenced() throws Exception {
+        Path repository = SandboxCheckout.locate(null);
+        Path helpBundle = repository.resolve("sandbox_xml_cleanup_help"); //$NON-NLS-1$
+        Path image = helpBundle.resolve("images").resolve(PDE_XML_SCREENSHOT); //$NON-NLS-1$
+        assertTrue(Files.isRegularFile(image) && Files.size(image) > 0,
+                () -> "Missing PDE XML Problems marker and Quick Fix screenshot: " + image); //$NON-NLS-1$
+        assertTrue(allHtml(helpBundle.resolve("html")).contains(PDE_XML_SCREENSHOT), //$NON-NLS-1$
+                () -> "PDE XML Problems marker and Quick Fix screenshot is not referenced from Help: " //$NON-NLS-1$
+                        + image);
+
+        BufferedImage screenshot = requireImage(image);
+        assertTrue(screenshot.getWidth() >= 1_200 && screenshot.getHeight() >= 700,
+                () -> "The PDE XML Problems view and Quick Fix are not fully visible in " + image); //$NON-NLS-1$
+
+        Path provenanceFile = helpBundle.resolve("images").resolve(PDE_XML_PROVENANCE); //$NON-NLS-1$
+        assertTrue(Files.isRegularFile(provenanceFile) && Files.size(provenanceFile) > 0,
+                () -> "Missing PDE XML screenshot provenance: " + provenanceFile); //$NON-NLS-1$
+        assertTrue(allHtml(helpBundle.resolve("html")).contains(PDE_XML_PROVENANCE), //$NON-NLS-1$
+                () -> "PDE XML screenshot provenance is not referenced from Help: " //$NON-NLS-1$
+                        + provenanceFile);
+
+        String provenance = Files.readString(provenanceFile, StandardCharsets.UTF_8);
+        assertEquals(1, jsonLong(provenance, "schemaVersion")); //$NON-NLS-1$
+        assertEquals("eclipse-jdt/eclipse.jdt.ui", jsonString(provenance, "repository")); //$NON-NLS-1$ //$NON-NLS-2$
+        assertEquals("R4_40", jsonString(provenance, "ref")); //$NON-NLS-1$ //$NON-NLS-2$
+        assertEquals(readPin(repository, "PIN_JDT_UI_COMMIT"), //$NON-NLS-1$
+                jsonString(provenance, "commit")); //$NON-NLS-1$
+        assertEquals("org.eclipse.jdt.ui/schema/cleanUps.exsd", //$NON-NLS-1$
+                jsonString(provenance, "sourcePath")); //$NON-NLS-1$
+        assertEquals("Problems view marker and Quick Fix", //$NON-NLS-1$
+                jsonString(provenance, "scenario")); //$NON-NLS-1$
+        String sourceDigest = jsonString(provenance, "sourceSha256"); //$NON-NLS-1$
+        assertTrue(sourceDigest.matches("[0-9a-f]{64}"), //$NON-NLS-1$
+                () -> "Invalid pinned PDE XML source digest in " + provenanceFile); //$NON-NLS-1$
+        assertTrue(jsonLong(provenance, "sourceBytes") > 2_000, //$NON-NLS-1$
+                () -> "PDE XML screenshot provenance does not identify a substantial real schema"); //$NON-NLS-1$
+    }
+
     private static void assertEveryPngIsReferenced(Path helpBundle) throws IOException {
         Path imageDirectory = helpBundle.resolve("images"); //$NON-NLS-1$
         if (!Files.isDirectory(imageDirectory)) {
@@ -137,6 +179,42 @@ public class EclipseHelpScreenshotEvidenceTest {
             }
         }
         return result.toString();
+    }
+
+    private static String readPin(Path repository, String key) throws IOException {
+        String prefix = key + '=';
+        for (String line : Files.readAllLines(repository.resolve("qa/upstream-jdt/pins.env"), //$NON-NLS-1$
+                StandardCharsets.UTF_8)) {
+            if (line.startsWith(prefix)) {
+                String value = line.substring(prefix.length()).strip();
+                assertFalse(value.isEmpty(), () -> "Empty upstream pin " + key); //$NON-NLS-1$
+                return value;
+            }
+        }
+        throw new AssertionError("Missing upstream pin " + key); //$NON-NLS-1$
+    }
+
+    private static String jsonString(String json, String property) {
+        String prefix = '"' + property + "\": \""; //$NON-NLS-1$
+        int start = json.indexOf(prefix);
+        assertTrue(start >= 0, () -> "Missing JSON string property " + property); //$NON-NLS-1$
+        start += prefix.length();
+        int end = json.indexOf('"', start);
+        assertTrue(end > start, () -> "Invalid JSON string property " + property); //$NON-NLS-1$
+        return json.substring(start, end);
+    }
+
+    private static long jsonLong(String json, String property) {
+        String prefix = '"' + property + "\": "; //$NON-NLS-1$
+        int start = json.indexOf(prefix);
+        assertTrue(start >= 0, () -> "Missing JSON integer property " + property); //$NON-NLS-1$
+        start += prefix.length();
+        int end = start;
+        while (end < json.length() && Character.isDigit(json.charAt(end))) {
+            end++;
+        }
+        assertTrue(end > start, () -> "Invalid JSON integer property " + property); //$NON-NLS-1$
+        return Long.parseLong(json.substring(start, end));
     }
 
     private static String pathFileName(Path path) {

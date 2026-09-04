@@ -7,6 +7,7 @@ on:
       - 'pom.xml'
       - 'docs/ECLIPSE_HELP.md'
       - 'docs/ECLIPSE_HELP_COVERAGE.md'
+      - 'qa/upstream-jdt/pins.env'
       - 'sandbox_help_build/**'
       - 'sandbox_target/**'
       - 'sandbox-functional-converter-core/**'
@@ -61,6 +62,34 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Checkout pinned JDT UI PDE XML screenshot corpus
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-jdt/eclipse.jdt.ui
+          ref: R4_40
+          fetch-depth: 1
+          path: upstream/eclipse.jdt.ui
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            org.eclipse.jdt.ui/schema/cleanUps.exsd
+
+      - name: Verify and configure pinned screenshot corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          source qa/upstream-jdt/pins.env
+          actual_commit="$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')"
+          test "$actual_commit" = "$PIN_JDT_UI_COMMIT"
+          source_file="$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui/org.eclipse.jdt.ui/schema/cleanUps.exsd"
+          test -s "$source_file"
+          {
+            echo "SANDBOX_HELP_XML_CORPUS_FILE=$source_file"
+            echo 'SANDBOX_HELP_XML_CORPUS_REPOSITORY=eclipse-jdt/eclipse.jdt.ui'
+            echo 'SANDBOX_HELP_XML_CORPUS_REF=R4_40'
+            echo "SANDBOX_HELP_XML_CORPUS_COMMIT=$actual_commit"
+            echo 'SANDBOX_HELP_XML_CORPUS_PATH=org.eclipse.jdt.ui/schema/cleanUps.exsd'
+          } >> "$GITHUB_ENV"
 
       - name: Set up JDK 21
         uses: actions/setup-java@v6
@@ -117,6 +146,7 @@ jobs:
           for scenario in \
             captureCleanupConfigurationTabs \
             captureRealCleanupPreviewAndVerifyIndependentSelection \
+            capturePdeXmlMarkerQuickFix \
             verifyRealMethodReuseCleanupPreviewApplyAndUndo
           do
             if ! grep -Fq "name=\"$scenario\"" "$report"; then
@@ -143,9 +173,8 @@ jobs:
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
           sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
 
-      # Preserve every generated PNG before the intentional baseline mismatch can
-      # fail this read-only verifier. The original relative paths, SHA-256
-      # manifest and deterministic archive make stale artifact content obvious.
+      # Preserve every generated image and its deterministic source provenance
+      # before an intentional baseline mismatch can fail this read-only verifier.
       - name: Stage generated Help screenshot evidence
         id: stage_help_screenshots
         shell: bash
@@ -156,13 +185,15 @@ jobs:
           rm -rf "$evidence"
           mkdir -p "$evidence/files"
           : > "$evidence/sha256.txt"
-          while IFS= read -r image; do
-            destination="$evidence/files/$image"
+          while IFS= read -r evidence_file; do
+            destination="$evidence/files/$evidence_file"
             mkdir -p "$(dirname "$destination")"
-            cp -- "$image" "$destination"
-            digest="$(sha256sum "$image" | cut -d' ' -f1)"
-            printf '%s  %s\n' "$digest" "$image" >> "$evidence/sha256.txt"
-          done < <(find . -path './sandbox*_help/images/*.png' -type f -printf '%P\n' | sort)
+            cp -- "$evidence_file" "$destination"
+            digest="$(sha256sum "$evidence_file" | cut -d' ' -f1)"
+            printf '%s  %s\n' "$digest" "$evidence_file" >> "$evidence/sha256.txt"
+          done < <(find . \( -path './sandbox*_help/images/*.png' \
+              -o -path './sandbox*_help/images/*.provenance.json' \) \
+              -type f -printf '%P\n' | sort)
           sort -o "$evidence/sha256.txt" "$evidence/sha256.txt"
           tar \
             --sort=name \

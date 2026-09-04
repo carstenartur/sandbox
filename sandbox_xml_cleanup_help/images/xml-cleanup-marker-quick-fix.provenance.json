@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "repository": "eclipse-jdt/eclipse.jdt.ui",
+  "ref": "R4_40",
+  "commit": "c922f757b27b7e2b6215db383cec5f8aafd13227",
+  "sourcePath": "org.eclipse.jdt.ui/schema/cleanUps.exsd",
+  "sourceSha256": "27dbf2ac13e2ec2762d03df3a64404100d1fd5de923493f0e8e7b0fb95fd907e",
+  "sourceBytes": 8588,
+  "scenario": "Problems view marker and Quick Fix"
+}

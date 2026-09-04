@@ -15,6 +15,22 @@
    <p><img class="screenshot" src="../images/xml-cleanup.png"
       alt="PDE XML cleanup configuration"/></p>
 
+   <h2>Problems marker and Quick Fix</h2>
+   <p>Select a supported PDE descriptor or schema and invoke
+      <strong>Find PDE XML Cleanup Problems</strong>. Sandbox analyzes the selected resource and creates a non-persistent
+      entry in the <strong>Problems</strong> view when formatting can be normalized. Open
+      <strong>Quick Fix...</strong> on that marker and select <strong>Normalize PDE XML formatting</strong>.</p>
+   <p><img class="screenshot" src="../images/xml-cleanup-marker-quick-fix.png"
+      alt="Problems view marker with the enabled Normalize PDE XML formatting Quick Fix"/></p>
+   <p>The shown action is an executable Workbench state, not a mock-up or disabled configuration. The generating SWTBot
+      scenario selects the real marker, verifies that <strong>Finish</strong> is enabled, applies the resolution, checks
+      that the marker disappears, and confirms that the schema root, upstream comment, and schema documentation remain
+      present after formatting.</p>
+   <p>The canonical image is generated from
+      <code>org.eclipse.jdt.ui/schema/cleanUps.exsd</code> at the repository's exact pinned JDT UI revision. Its
+      <a href="../images/xml-cleanup-marker-quick-fix.provenance.json">machine-readable provenance</a> records the
+      repository, ref, full commit, source path, byte count, and SHA-256 source digest.</p>
+
    <h2>Representative formatting result</h2>
    <h3>Before</h3>
    <pre>&lt;plugin&gt;
@@ -47,17 +63,19 @@
    <h2>Recommended workflow</h2>
    <ol>
       <li>Start with one descriptor in version control.</li>
-      <li>Run the cleanup or context command and inspect the actual XML diff.</li>
+      <li>Run the cleanup, marker analysis, or context command and inspect the actual XML diff.</li>
       <li>Confirm that only formatting changed and run PDE/schema validation.</li>
       <li>Run the operation a second time; a stable result should produce no further diff.</li>
    </ol>
    <p>Java cleanup preview screenshots do not represent the direct PDE XML context command. The configuration image
-      shows the cleanup options; the source-control diff is the authoritative result evidence for the selected XML file.</p>
+      shows the cleanup options; the Problems-view image proves marker and Quick Fix integration; the source-control
+      diff remains the authoritative result evidence for the selected XML file.</p>
 
    <h2>Screenshot regeneration</h2>
-   <p>The configuration image is generated from a real Eclipse workbench by
-      <code>SandboxHelpScreenshotsSWTBotTest</code>. Run the Maven profile
-      <code>help-screenshots</code> under Xvfb after UI changes.</p>
+   <p>The configuration image and Problems-view Quick Fix image are generated from a real Eclipse Workbench by
+      <code>SandboxHelpScreenshotsMergeGateSWTBotTest</code>. The PDE scenario consumes a locally provided, exactly
+      pinned schema corpus and performs no network access itself. Run the Maven profile <code>help-screenshots</code>
+      under Xvfb after UI changes.</p>
    <p><a href="index.html">Back to overview</a></p>
 </body>
 </html>
