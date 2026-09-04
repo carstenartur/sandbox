@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "717b9fb9c26d4ccb1995d6bf061feaccbcb9cab1bb72c2f19b97cbe824c56783",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jdt.pref.null_unchecked_conversion_key\u003e\n\u003c!description: Rename internal preference key for unchecked null conversion.\u003e\n\u003c!severity: HINT\u003e\norg.eclipse.jdt.internal.ui.preferences.ProblemSeveritiesConfigurationBlock.PREF_PB_NULL_SPECIFICATION_INSUFFICIENT_INFO\n\u003d\u003e\norg.eclipse.jdt.internal.ui.preferences.ProblemSeveritiesConfigurationBlock.PREF_PB_NULL_UNCHECKED_CONVERSION\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\npublic class ProblemSeveritiesConfigurationBlock {\n    private static final Key PREF_PB_NULL_SPECIFICATION_VIOLATION\u003d getJDTCoreKey(\"A\");\n    private static final Key PREF_PB_NULL_SPECIFICATION_INSUFFICIENT_INFO\u003d getJDTCoreKey(\"B\"); // Old field\n    \n    private static Key getJDTCoreKey(String s) { return new Key(); }\n\n    static class Key {}\n\n    public void someMethod(Key changedKey) {\n        if (PREF_PB_NULL_SPECIFICATION_INSUFFICIENT_INFO.equals(changedKey)) { // Reference to old field\n            System.out.println(\"Old reference\");\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences;\n\npublic class ProblemSeveritiesConfigurationBlock {\n    private static final Key PREF_PB_NULL_SPECIFICATION_VIOLATION\u003d getJDTCoreKey(\"A\");\n    private static final Key PREF_PB_NULL_UNCHECKED_CONVERSION\u003d getJDTCoreKey(\"B\"); // New field\n    \n    private static Key getJDTCoreKey(String s) { return new Key(); }\n\n    static class Key {}\n\n    public void someMethod(Key changedKey) {\n        if (PREF_PB_NULL_UNCHECKED_CONVERSION.equals(changedKey)) { // Reference to new field\n            System.out.println(\"New reference\");\n        }\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\npublic class ProblemSeveritiesConfigurationBlock {\n    private static final Key PREF_PB_NULL_SPECIFICATION_VIOLATION\u003d getJDTCoreKey(\"A\");\n    \n    private static Key getJDTCoreKey(String s) { return new Key(); }\n\n    static class Key {}\n\n    public void someMethod(Key changedKey) {\n        if (PREF_PB_NULL_SPECIFICATION_VIOLATION.equals(changedKey)) { \n            System.out.println(\"Not the target field\");\n        }\n    }\n}",
+  "targetHintFile": "misc.sandbox-hint",
+  "sourceCommit": "e4b13447adb6965a8f37f71161368b392e186ec4",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Rename `ProblemSeveritiesConfigurationBlock.PREF_PB_NULL_SPECIFICATION_INSUFFICIENT_INFO` to `PREF_PB_NULL_UNCHECKED_CONVERSION`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-04T02:29:09.000943708Z",
+  "ruleFingerprint": "sha256:a85009ca504f44b7785b32579ddcfb792285521ebe8acce7dbd55e043e8f497e",
+  "behaviorFingerprint": "sha256:b8e69f5738cbca24f7808d6c8c969dfc47cfd11ababe7d681069808d83fe22bf",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-04T02:29:15.276332572Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

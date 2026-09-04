@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9052dec2e2f9fa657e2016bbeb94d17894420c41fd6dc981ede3b61947916627",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "((org.eclipse.jdt.internal.ui.callhierarchy.CallLocation) $elem).getCalledMember()\n\u003d\u003e\n((org.eclipse.jdt.internal.ui.callhierarchy.CallLocation) $elem).getMember()\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.callhierarchy;\n\npublic class CallHierarchyUI {\n    // Minimal definitions to make the example self-contained and compilable\n    static class IJavaElement {}\n    static class CallLocation {\n        public IJavaElement getCalledMember() { return null; }\n        public IJavaElement getMember() { return null; }\n    }\n    static class MethodWrapper {\n        public IJavaElement getMember() { return null; }\n    }\n    static class EditorUtility {\n        public static boolean isOpenInEditor(IJavaElement element) { return true; }\n    }\n\n    public boolean revealElementInEditor(Object elem) {\n        IJavaElement javaElement \u003d null;\n        if (elem instanceof MethodWrapper) {\n            javaElement \u003d ((MethodWrapper) elem).getMember();\n        } else if (elem instanceof CallLocation) {\n            // The target line for the cleanup\n            javaElement \u003d ((CallLocation) elem).getCalledMember();\n        }\n        if (javaElement !\u003d null) {\n            return EditorUtility.isOpenInEditor(javaElement);\n        }\n        return false;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.callhierarchy;\n\npublic class CallHierarchyUI {\n    static class IJavaElement {}\n    static class CallLocation {\n        public IJavaElement getCalledMember() { return null; }\n        public IJavaElement getMember() { return null; }\n    }\n    static class MethodWrapper {\n        public IJavaElement getMember() { return null; }\n    }\n    static class EditorUtility {\n        public static boolean isOpenInEditor(IJavaElement element) { return true; }\n    }\n\n    public boolean revealElementInEditor(Object elem) {\n        IJavaElement javaElement \u003d null;\n        if (elem instanceof MethodWrapper) {\n            javaElement \u003d ((MethodWrapper) elem).getMember();\n        } else if (elem instanceof CallLocation) {\n            javaElement \u003d ((CallLocation) elem).getMember();\n        }\n        if (javaElement !\u003d null) {\n            return EditorUtility.isOpenInEditor(javaElement);\n        }\n        return false;\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.callhierarchy;\n\npublic class CallHierarchyUI {\n    static class IJavaElement {}\n    static class CallLocation {\n        public IJavaElement getCalledMember() { return null; } // Should not match if only getMember() is used elsewhere\n        public IJavaElement getMember() { return null; }\n    }\n    static class MethodWrapper {\n        public IJavaElement getMember() { return null; }\n    }\n    static class EditorUtility {\n        public static boolean isOpenInEditor(IJavaElement element) { return true; }\n    }\n\n    public boolean revealElementInEditor(Object elem) {\n        IJavaElement javaElement \u003d null;\n        if (elem instanceof MethodWrapper) {\n            javaElement \u003d ((MethodWrapper) elem).getMember(); // Different type, should not match\n        } else if (elem instanceof CallLocation) {\n            javaElement \u003d ((CallLocation) elem).getMember(); // Already in the desired state, should not be rewritten\n        }\n        if (javaElement !\u003d null) {\n            return EditorUtility.isOpenInEditor(javaElement);\n        }\n        return false;\n    }\n}",
+  "targetHintFile": "eclipse-jdt-internal.sandbox-hint",
+  "sourceCommit": "6bbf682e6522f612bf600a0d65b63cc8658b3bbe",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Usage",
+  "summary": "Replace internal `CallLocation.getCalledMember()` with `CallLocation.getMember()` for consistency within Eclipse JDT UI.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-04T02:29:08.920360941Z",
+  "ruleFingerprint": "sha256:321314e488ba72a5f94847f97bf5b2d1aafb5b18056d35210f59f3c41d377a57",
+  "behaviorFingerprint": "sha256:a2718acd17ac52fd93945e4062bc8afc5cab1b2ad4f10b1f7be79e2805384033",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type CallHierarchyUI must be defined in its own file",
+    "verifiedAt": "2026-09-04T02:29:15.250119685Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

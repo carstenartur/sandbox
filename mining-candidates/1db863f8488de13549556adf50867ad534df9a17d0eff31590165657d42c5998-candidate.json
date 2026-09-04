@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1db863f8488de13549556adf50867ad534df9a17d0eff31590165657d42c5998",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.preferences.NewJavaProjectPreferencePage.fgDefaultEncoding\n\u003d\u003e\n\"UTF-8\"\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport java.io.UnsupportedEncodingException;\nimport java.net.URLDecoder;\nimport java.net.URLEncoder;\n\npublic class NewJavaProjectPreferencePage {\n    // This field declaration is part of the original code, but the rule focuses on its *usage*\n    private static String fgDefaultEncoding \u003d System.getProperty(\"file.encoding\"); //$NON-NLS-1$\n\n    public static String decodeValue(String str) {\n        try {\n            // This is the target match\n            return URLDecoder.decode(str, fgDefaultEncoding);\n        } catch (UnsupportedEncodingException e) {\n            return str;\n        }\n    }\n\n    public static String encodeValue(String str) {\n        try {\n            // This is another target match\n            return URLEncoder.encode(str, fgDefaultEncoding);\n        } catch (UnsupportedEncodingException e) {\n            return str;\n        }\n    }\n\n    public static String getEncoding() {\n        return fgDefaultEncoding; // This will also be changed by the rule\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport java.io.UnsupportedEncodingException;\nimport java.net.URLDecoder;\nimport java.net.URLEncoder;\n\npublic class NewJavaProjectPreferencePage {\n    private static String fgDefaultEncoding \u003d System.getProperty(\"file.encoding\"); //$NON-NLS-1$\n\n    public static String decodeValue(String str) {\n        try {\n            return URLDecoder.decode(str, \"UTF-8\");\n        } catch (UnsupportedEncodingException e) {\n            return str;\n        }\n    }\n\n    public static String encodeValue(String str) {\n        try {\n            return URLEncoder.encode(str, \"UTF-8\");\n        } catch (UnsupportedEncodingException e) {\n            return str;\n        }\n    }\n\n    public static String getEncoding() {\n        return \"UTF-8\";\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nimport java.io.UnsupportedEncodingException;\nimport java.net.URLDecoder;\nimport java.net.URLEncoder;\nimport java.nio.charset.StandardCharsets;\n\npublic class NewJavaProjectPreferencePage {\n    // This class uses a different encoding field, so it should not match\n    private static String someOtherEncoding \u003d \"ISO-8859-1\";\n\n    public static String decodeValue(String str) {\n        try {\n            return URLDecoder.decode(str, someOtherEncoding); // Should not match\n        } catch (UnsupportedEncodingException e) {\n            return str;\n        }\n    }\n\n    public static String encodeValue(String str) {\n        try {\n            return URLEncoder.encode(str, StandardCharsets.UTF_8.name()); // Should not match\n        } catch (UnsupportedEncodingException e) {\n            return str;\n        }\n    }\n}",
+  "targetHintFile": "encoding.sandbox-hint",
+  "sourceCommit": "89b6316e31bfe1e38e0ebf5b73f38ec7c82be93c",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Encoding Fix",
+  "summary": "Replaces all usages of the specific field \u0027fgDefaultEncoding\u0027 with the string literal \"UTF-8\", aligning with the commit\u0027s intent to fix encoding problems by standardizing on UTF-8.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-04T02:29:09.062127837Z",
+  "ruleFingerprint": "sha256:c9a54146275a21de72ba5e8227abd84503c8d8601956a462cd73c26c52745da7",
+  "behaviorFingerprint": "sha256:322082889f230e0cd8086a181221b341f0188bb4fa76fd1ef630d504e2509d74",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type NewJavaProjectPreferencePage must be defined in its own file",
+    "verifiedAt": "2026-09-04T02:29:15.331186698Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

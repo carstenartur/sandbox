@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The public type Example must be defined in its own file",
-    "verifiedAt": "2026-09-02T02:44:40.379160006Z",
+    "verifiedAt": "2026-09-04T02:29:11.247990918Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

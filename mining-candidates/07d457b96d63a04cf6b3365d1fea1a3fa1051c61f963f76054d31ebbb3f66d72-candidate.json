@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "07d457b96d63a04cf6b3365d1fea1a3fa1051c61f963f76054d31ebbb3f66d72",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jdt.java_completion_processor.rename_and_override_sort_proposals\u003e\n\u003c!description: Rename filterAndSortProposals to sortProposals and add @Override annotation in JavaCompletionProcessor.\u003e\n\u003c!severity: HINT\u003e\nprotected java.util.List\u003corg.eclipse.jface.text.contentassist.ICompletionProposal\u003e $methodName(java.util.List\u003corg.eclipse.jface.text.contentassist.ICompletionProposal\u003e $proposals, org.eclipse.core.runtime.IProgressMonitor $monitor, org.eclipse.jdt.ui.text.java.ContentAssistInvocationContext $context) :: methodNameMatches($methodName, \"filterAndSortProposals\") \u0026\u0026 inClass(\"org.eclipse.jdt.internal.ui.text.java.JavaCompletionProcessor\")\n\u003d\u003e\n@java.lang.Override protected java.util.List\u003corg.eclipse.jface.text.contentassist.ICompletionProposal\u003e sortProposals(java.util.List\u003corg.eclipse.jface.text.contentassist.ICompletionProposal\u003e $proposals, org.eclipse.core.runtime.IProgressMonitor $monitor, org.eclipse.jdt.ui.text.java.ContentAssistInvocationContext $context)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport java.util.List;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.jface.text.contentassist.ICompletionProposal;\nimport org.eclipse.jdt.ui.text.java.ContentAssistInvocationContext;\n\n// Dummy superclass for compilation context\nclass ContentAssistProcessor {\n    protected List\u003cICompletionProposal\u003e sortProposals(List\u003cICompletionProposal\u003e proposals, IProgressMonitor monitor, ContentAssistInvocationContext context) {\n        return proposals;\n    }\n}\n\npublic class JavaCompletionProcessor extends ContentAssistProcessor {\n    // This method needs to be renamed and get @Override\n    protected List\u003cICompletionProposal\u003e filterAndSortProposals(List\u003cICompletionProposal\u003e proposals, IProgressMonitor monitor, ContentAssistInvocationContext context) {\n        // Dummy implementation\n        return proposals;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport java.util.List;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.jface.text.contentassist.ICompletionProposal;\nimport org.eclipse.jdt.ui.text.java.ContentAssistInvocationContext;\n\n// Dummy superclass for compilation context\nclass ContentAssistProcessor {\n    protected List\u003cICompletionProposal\u003e sortProposals(List\u003cICompletionProposal\u003e proposals, IProgressMonitor monitor, ContentAssistInvocationContext context) {\n        return proposals;\n    }\n}\n\npublic class JavaCompletionProcessor extends ContentAssistProcessor {\n    @java.lang.Override // Added annotation\n    protected List\u003cICompletionProposal\u003e sortProposals(List\u003cICompletionProposal\u003e proposals, IProgressMonitor monitor, ContentAssistInvocationContext context) {\n        // Dummy implementation\n        return proposals;\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nimport java.util.List;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.jface.text.contentassist.ICompletionProposal;\nimport org.eclipse.jdt.ui.text.java.ContentAssistInvocationContext;\n\npublic class OtherCompletionProcessor {\n    // This method should not be touched\n    protected List\u003cICompletionProposal\u003e filterAndSortProposals(List\u003cICompletionProposal\u003e proposals, IProgressMonitor monitor, ContentAssistInvocationContext context) {\n        return proposals;\n    }\n}",
+  "targetHintFile": "misc.sandbox-hint",
+  "sourceCommit": "b194caeeec9e921dd0da73661bc8cc46cc1d629c",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Rename `JavaCompletionProcessor.filterAndSortProposals` to `sortProposals` and add `@Override`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-04T02:29:09.022252321Z",
+  "ruleFingerprint": "sha256:4a7ca443799b3aa55fe8896dadf28419c7e2233e5c8b81db9537b57c1972ca41",
+  "behaviorFingerprint": "sha256:d45fbdf182fcc21bd7d83257ff642eabd70ba8badce008a0030573c6d95405cf",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-04T02:29:15.286614198Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

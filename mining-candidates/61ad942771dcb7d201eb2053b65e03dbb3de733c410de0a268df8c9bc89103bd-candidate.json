@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "61ad942771dcb7d201eb2053b65e03dbb3de733c410de0a268df8c9bc89103bd",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.jdt.internal.ui.text.java.hover.JavaTypeHover()\n\u003d\u003e\nnew org.eclipse.jdt.internal.ui.text.java.hover.BestMatchHover()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.ui.IEditorPart;\n// Assume \u0027org.eclipse.jdt.internal.ui.text.java.hover.JavaTypeHover\u0027 class exists for this example\n// Assume \u0027org.eclipse.jdt.internal.ui.text.java.hover.BestMatchHover\u0027 class exists for the replacement\n\npublic class TestClass {\n    public TestClass(IEditorPart editor) {\n        if (editor !\u003d null) {\n            // Original code\n            Object fImplementation \u003d new org.eclipse.jdt.internal.ui.text.java.hover.JavaTypeHover();\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.ui.IEditorPart;\n// Assume \u0027org.eclipse.jdt.internal.ui.text.java.hover.BestMatchHover\u0027 class exists\n\npublic class TestClass {\n    public TestClass(IEditorPart editor) {\n        if (editor !\u003d null) {\n            // Transformed code\n            Object fImplementation \u003d new org.eclipse.jdt.internal.ui.text.java.hover.BestMatchHover();\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.ui.IEditorPart;\n// Assume \u0027org.eclipse.jdt.internal.ui.text.java.hover.SomeOtherHover\u0027 class exists\n\npublic class NegativeTestClass {\n    public NegativeTestClass(IEditorPart editor) {\n        if (editor !\u003d null) {\n            // Should not match other hover constructors\n            Object fImplementation \u003d new org.eclipse.jdt.internal.ui.text.java.hover.SomeOtherHover();\n        }\n    }\n}",
+  "targetHintFile": "api-migration.sandbox-hint",
+  "sourceCommit": "2c7065cefa0f5130d9ca5529e51e9d2e0d47718b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaces the constructor call for `JavaTypeHover` with `BestMatchHover`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-04T02:29:09.074073595Z",
+  "ruleFingerprint": "sha256:1df186a82cd70931d9456915c490b5eebe3ec38ebe8f603c54639f4427d1004c",
+  "behaviorFingerprint": "sha256:f887ff692f6e1d124721f22f64cde597aa00ce4ebbb2c8e60e58a6a719ba483c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
+    "verifiedAt": "2026-09-04T02:29:15.346746630Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

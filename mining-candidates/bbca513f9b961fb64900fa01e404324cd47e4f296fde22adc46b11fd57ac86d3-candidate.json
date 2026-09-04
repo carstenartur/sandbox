@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "bbca513f9b961fb64900fa01e404324cd47e4f296fde22adc46b11fd57ac86d3",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "private static final int $name \u003d $value;\n\u003d\u003e\nprotected static final int $name \u003d $value;\n;;",
+  "beforeExample": "import org.eclipse.swt.SWT;\n\npublic class MyClass {\n    private static final int HIGHLIGHT_FOCUS \u003d SWT.COLOR_WIDGET_DARK_SHADOW;\n    private static final int HIGHLIGHT_MOUSE \u003d SWT.COLOR_WIDGET_NORMAL_SHADOW;\n    private static final int HIGHLIGHT_NONE \u003d SWT.NONE;\n\n    public void someMethod() {\n        int focus \u003d HIGHLIGHT_FOCUS;\n        // Other code\n    }\n}",
+  "afterExample": "import org.eclipse.swt.SWT;\n\npublic class MyClass {\n    protected static final int HIGHLIGHT_FOCUS \u003d SWT.COLOR_WIDGET_DARK_SHADOW;\n    protected static final int HIGHLIGHT_MOUSE \u003d SWT.COLOR_WIDGET_NORMAL_SHADOW;\n    protected static final int HIGHLIGHT_NONE \u003d SWT.NONE;\n\n    public void someMethod() {\n        int focus \u003d HIGHLIGHT_FOCUS;\n        // Other code\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.SWT;\n\npublic class MyOtherClass {\n    // Not an int\n    private static final String VERSION \u003d \"1.0\"; \n    // Not static final\n    private int counter \u003d 0;\n    // Not private\n    protected static final int DEFAULT_VALUE \u003d 10; \n    // Not a field (local variable)\n    public void anotherMethod() {\n        private static final int LOCAL_CONST \u003d 5; // Invalid Java syntax, won\u0027t match\n    }\n\n    public void someMethod() {\n        // Other code\n    }\n}",
+  "targetHintFile": "field-visibility.sandbox-hint",
+  "sourceCommit": "e0b0a2c4fcec0e789737791caf4143efda6d0d2a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Visibility Refactoring",
+  "summary": "Change private static final int fields to protected static final int.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-04T02:29:08.975601982Z",
+  "ruleFingerprint": "sha256:c75d6a74e3d693dd41bcd32e0ab62d610b0a1df07811da0ac70d0d9d4722e0ef",
+  "behaviorFingerprint": "sha256:fe45875d9d27d6a7bac8f74386ff207d647d5d1c576c5b95a842079ab0ac5741",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-09-04T02:29:15.265970475Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
