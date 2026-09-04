@@ -19,6 +19,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IJavaModelMarker;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.ltk.core.refactoring.IUndoManager;
 import org.eclipse.ltk.core.refactoring.RefactoringCore;
@@ -232,7 +233,13 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 			}
 		}
 
-		EclipseBundleClasspath.addBundles(JavaCore.create(project),
+		IJavaProject javaProject= JavaCore.create(project);
+		// These diagnostics are intentional inputs of the preview fixture. Suppress
+		// only their compiler categories so later Problems-view evidence can still
+		// fail on every unrelated marker without deleting workspace evidence.
+		javaProject.setOption(JavaCore.COMPILER_PB_DEPRECATION, JavaCore.IGNORE);
+		javaProject.setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.IGNORE);
+		EclipseBundleClasspath.addBundles(javaProject,
 				"org.eclipse.equinox.common", //$NON-NLS-1$
 				"org.eclipse.jface", //$NON-NLS-1$
 				"org.eclipse.swt"); //$NON-NLS-1$
