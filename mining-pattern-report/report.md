@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-09-03
+# Refactoring Mining Report — 2026-09-04
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1349 | 75 | 11 |
+| sandbox | 1355 | 75 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -212,14 +212,14 @@
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:359` — `dynamicConfigRefs.clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:378` — `((BuildCommand)oldCommands[i]).clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:394` — `dynamicRefs.clone()`
-- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:475` — `natures.clone()`
-- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:487` — `staticRefs.clone()`
-- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:671` — `((BuildCommand)value[i]).clone()`
-- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:787` — `tempMap.clone()`
-- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:801` — `tempMap.clone()`
-- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:864` — `tempMap.clone()`
-- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:878` — `tempMap.clone()`
-- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:941` — `value.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:476` — `natures.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:488` — `staticRefs.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:672` — `((BuildCommand)value[i]).clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:788` — `tempMap.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:802` — `tempMap.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:865` — `tempMap.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:879` — `tempMap.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java:942` — `value.clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java:324` — `((ProjectDescription)description).clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java:451` — `description.clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Workspace.java:1093` — `resources.clone()`

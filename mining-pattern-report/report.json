@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1349,
+        "files": 1355,
         "matches": 75,
         "rules": 11
       }
@@ -1269,7 +1269,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
-      "line": 475,
+      "line": 476,
       "matchedCode": "natures.clone()"
     },
     {
@@ -1277,7 +1277,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
-      "line": 487,
+      "line": 488,
       "matchedCode": "staticRefs.clone()"
     },
     {
@@ -1285,7 +1285,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
-      "line": 671,
+      "line": 672,
       "matchedCode": "((BuildCommand)value[i]).clone()"
     },
     {
@@ -1293,7 +1293,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
-      "line": 787,
+      "line": 788,
       "matchedCode": "tempMap.clone()"
     },
     {
@@ -1301,7 +1301,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
-      "line": 801,
+      "line": 802,
       "matchedCode": "tempMap.clone()"
     },
     {
@@ -1309,7 +1309,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
-      "line": 864,
+      "line": 865,
       "matchedCode": "tempMap.clone()"
     },
     {
@@ -1317,7 +1317,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
-      "line": 878,
+      "line": 879,
       "matchedCode": "tempMap.clone()"
     },
     {
@@ -1325,7 +1325,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectDescription.java",
-      "line": 941,
+      "line": 942,
       "matchedCode": "value.clone()"
     },
     {
