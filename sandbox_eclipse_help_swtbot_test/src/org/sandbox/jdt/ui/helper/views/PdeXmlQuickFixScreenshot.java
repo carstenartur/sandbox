@@ -322,10 +322,16 @@ final class PdeXmlQuickFixScreenshot {
 
 	private static void captureWorkbench(SWTWorkbenchBot bot, Path image,
 			SWTBotShell quickFix, SWTBotButton finish) throws Exception {
-		Files.createDirectories(image.getParent());
+		Path directory= image.getParent();
+		if (directory == null) {
+			throw new IllegalArgumentException("Screenshot path has no parent directory: " + image); //$NON-NLS-1$
+		}
+		Files.createDirectories(directory);
 		bot.waitUntil(new DefaultCondition() {
+			private byte[] previousImage;
+
 			@Override
-			public boolean test() {
+			public boolean test() throws Exception {
 				Boolean captured= UIThreadRunnable.syncExec(Display.getDefault(), new Result<Boolean>() {
 					@Override
 					public Boolean run() {
@@ -333,14 +339,13 @@ final class PdeXmlQuickFixScreenshot {
 								|| !finish.widget.isEnabled()) {
 							return Boolean.FALSE;
 						}
-						quickFix.widget.forceActive();
-						if (!finish.widget.setFocus()) {
-							return Boolean.FALSE;
-						}
-						quickFix.widget.layout(true, true);
-						quickFix.widget.redraw();
-						quickFix.widget.update();
-						if (!finish.widget.isEnabled() || !finish.widget.isFocusControl()) {
+						if (!finish.widget.isFocusControl()) {
+							quickFix.widget.forceActive();
+							finish.widget.setFocus();
+							quickFix.widget.layout(true, true);
+							quickFix.widget.redraw();
+							quickFix.widget.update();
+							// Let native paint events run before capturing on a later poll.
 							return Boolean.FALSE;
 						}
 
@@ -361,12 +366,21 @@ final class PdeXmlQuickFixScreenshot {
 								image.toString(), workbenchBounds));
 					}
 				});
-				return Boolean.TRUE.equals(captured);
+				if (!Boolean.TRUE.equals(captured)) {
+					previousImage= null;
+					return false;
+				}
+				// Enabled SWT state can precede native painting. Require identical
+				// captures on consecutive polls without refocusing or redrawing.
+				byte[] currentImage= Files.readAllBytes(image);
+				boolean stable= previousImage != null && MessageDigest.isEqual(previousImage, currentImage);
+				previousImage= currentImage;
+				return stable;
 			}
 
 			@Override
 			public String getFailureMessage() {
-				return "Could not capture the Quick Fix dialog while Finish was active"; //$NON-NLS-1$
+				return "Could not capture a stable Quick Fix dialog while Finish was active"; //$NON-NLS-1$
 			}
 		});
 		assertTrue(Files.size(image) > 0, () -> "Empty PDE XML screenshot: " + image); //$NON-NLS-1$
