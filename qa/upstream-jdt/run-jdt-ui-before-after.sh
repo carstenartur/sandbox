@@ -339,7 +339,7 @@ compare_test_inventory() {
     "-Dsandbox.junit.inventory.output=$output"
     -pl sandbox_target,sandbox_common_test
     -am
-    test
+    package
   )
   printf '%q ' "${command[@]}" > "$command_log"
   printf '\n' >> "$command_log"
