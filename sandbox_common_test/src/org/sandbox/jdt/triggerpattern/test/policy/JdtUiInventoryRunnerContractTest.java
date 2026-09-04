@@ -42,7 +42,7 @@ public class JdtUiInventoryRunnerContractTest {
 				"sandbox.junit.inventory.output")) { //$NON-NLS-1$
 			assertEquals(1, occurrences(runner, property), property);
 		}
-		assertTrue(runner.contains("-pl sandbox_common_test")); //$NON-NLS-1$
+		assertTrue(runner.contains("-pl sandbox_target,sandbox_common_test")); //$NON-NLS-1$
 		assertTrue(runner.contains("test-inventory-comparison-command.txt")); //$NON-NLS-1$
 		assertTrue(runner.contains("test-inventory-comparison-exit-code.txt")); //$NON-NLS-1$
 		assertFalse(runner.contains("compare_test_inventory.py")); //$NON-NLS-1$
