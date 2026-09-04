@@ -1,0 +1,117 @@
+name: PDE XML upstream corpus
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'qa/upstream-jdt/pins.env'
+      - 'sandbox_xml_cleanup/**'
+      - 'sandbox_xml_cleanup_test/**'
+      - '.github/actions/verify-eclipse-desktop-runtime/**'
+      - '.github/workflows/pde-xml-upstream-corpus.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  corpus:
+    name: Verify pinned JDT Core and JDT UI PDE XML
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=true
+    steps:
+      - name: Checkout Sandbox
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Checkout pinned JDT Core XML corpus
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-jdt/eclipse.jdt.core
+          ref: R4_40
+          fetch-depth: 1
+          path: upstream/eclipse.jdt.core
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            org.eclipse.jdt.core/plugin.xml
+            org.eclipse.jdt.core/schema/codeFormatter.exsd
+            org.eclipse.jdt.core/schema/compilationParticipant.exsd
+
+      - name: Checkout pinned JDT UI XML corpus
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-jdt/eclipse.jdt.ui
+          ref: R4_40
+          fetch-depth: 1
+          path: upstream/eclipse.jdt.ui
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            org.eclipse.jdt.ui/plugin.xml
+            org.eclipse.jdt.ui/schema/cleanUps.exsd
+            org.eclipse.jdt.ui/schema/quickFixProcessors.exsd
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Verify preinstalled Eclipse desktop runtime
+        uses: ./.github/actions/verify-eclipse-desktop-runtime
+
+      - name: Verify exact pinned repositories
+        shell: bash
+        run: |
+          set -euo pipefail
+          source qa/upstream-jdt/pins.env
+          test "$(git -C upstream/eclipse.jdt.core rev-parse 'HEAD^{commit}')" = "$PIN_JDT_CORE_COMMIT"
+          test "$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')" = "$PIN_JDT_UI_COMMIT"
+          test -s upstream/eclipse.jdt.core/org.eclipse.jdt.core/plugin.xml
+          test -s upstream/eclipse.jdt.ui/org.eclipse.jdt.ui/schema/cleanUps.exsd
+
+      # Tycho's target resolution must see every in-reactor OSGi bundle used by
+      # the focused test. Maven -am follows POM dependencies, but the XML bundle's
+      # Require-Bundle dependency on sandbox_common is intentionally PDE-owned.
+      # Naming sandbox_common and sandbox_test_commons keeps this much smaller
+      # than a second full product build while preserving the real bundle graph.
+      - name: Run the existing Sandbox XML tests on the pinned corpora
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          xvfb-run \
+            --auto-servernum \
+            --server-args="-screen 0 1600x1200x24" \
+            ./mvnw \
+            --batch-mode \
+            --no-transfer-progress \
+            -T 1C \
+            -Dspotbugs.skip=true \
+            -Dtycho.localArtifacts=ignore \
+            -Dsandbox.xml.corpus.jdtCore="$GITHUB_WORKSPACE/upstream/eclipse.jdt.core" \
+            -Dsandbox.xml.corpus.jdtUi="$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui" \
+            -Ppde-xml-upstream-corpus \
+            -pl sandbox_target,sandbox_common,sandbox_test_commons,sandbox_xml_cleanup_test \
+            -am \
+            clean verify \
+            2>&1 | tee evidence/pde-xml-upstream-corpus-maven.log
+
+      - name: Upload focused Maven and JUnit evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pde-xml-upstream-corpus-${{ github.run_number }}
+          path: |
+            evidence/pde-xml-upstream-corpus-maven.log
+            sandbox_xml_cleanup_test/target/surefire-reports/**
+            sandbox_xml_cleanup_test/target/work/data/.metadata/.log
+          retention-days: 14
+          if-no-files-found: error
