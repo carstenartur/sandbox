@@ -150,7 +150,10 @@ final class PdeXmlQuickFixScreenshot {
 
 			SWTBotShell quickFix= bot.shell("Quick Fix").activate(); //$NON-NLS-1$
 			SWTBotTable table= quickFix.bot().table();
-			table.getTableItem(QUICK_FIX_LABEL).select();
+			if (table.selectionCount() != 1
+					|| !QUICK_FIX_LABEL.equals(table.selection().get(0, 0))) {
+				table.getTableItem(QUICK_FIX_LABEL).select();
+			}
 			SWTBotButton finish= button(quickFix, "Finish", "OK"); //$NON-NLS-1$ //$NON-NLS-2$
 			bot.waitUntil(new DefaultCondition() {
 				@Override
@@ -166,7 +169,7 @@ final class PdeXmlQuickFixScreenshot {
 
 			Path output= SandboxCheckout.locate("sandbox.help.screenshot.output") //$NON-NLS-1$
 					.resolve("sandbox_xml_cleanup_help/images"); //$NON-NLS-1$
-			captureWorkbench(output.resolve(SCREENSHOT));
+			captureWorkbench(bot, output.resolve(SCREENSHOT), quickFix, finish);
 			writeProvenance(output.resolve(PROVENANCE), repository, ref, commit,
 					sourcePath, sourceBytes);
 			finish.click();
@@ -317,26 +320,55 @@ final class PdeXmlQuickFixScreenshot {
 				+ List.of(labels));
 	}
 
-	private static void captureWorkbench(Path image) throws Exception {
+	private static void captureWorkbench(SWTWorkbenchBot bot, Path image,
+			SWTBotShell quickFix, SWTBotButton finish) throws Exception {
 		Files.createDirectories(image.getParent());
-		Rectangle workbenchBounds= UIThreadRunnable.syncExec(Display.getDefault(), new Result<Rectangle>() {
+		bot.waitUntil(new DefaultCondition() {
 			@Override
-			public Rectangle run() {
-				IWorkbenchWindow window= PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-				if (window == null) {
-					throw new IllegalStateException("The Eclipse Workbench has no active window"); //$NON-NLS-1$
-				}
-				Shell shell= window.getShell();
-				if (shell == null || shell.isDisposed()) {
-					throw new IllegalStateException("The active Workbench window has no usable shell"); //$NON-NLS-1$
-				}
-				return shell.getBounds();
+			public boolean test() {
+				Boolean captured= UIThreadRunnable.syncExec(Display.getDefault(), new Result<Boolean>() {
+					@Override
+					public Boolean run() {
+						if (quickFix.widget.isDisposed() || finish.widget.isDisposed()
+								|| !finish.widget.isEnabled()) {
+							return Boolean.FALSE;
+						}
+						quickFix.widget.forceActive();
+						if (!finish.widget.setFocus()) {
+							return Boolean.FALSE;
+						}
+						quickFix.widget.layout(true, true);
+						quickFix.widget.redraw();
+						quickFix.widget.update();
+						if (!finish.widget.isEnabled() || !finish.widget.isFocusControl()) {
+							return Boolean.FALSE;
+						}
+
+						IWorkbenchWindow window= PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+						if (window == null) {
+							throw new IllegalStateException("The Eclipse Workbench has no active window"); //$NON-NLS-1$
+						}
+						Shell shell= window.getShell();
+						if (shell == null || shell.isDisposed()) {
+							throw new IllegalStateException(
+									"The active Workbench window has no usable shell"); //$NON-NLS-1$
+						}
+						Rectangle workbenchBounds= shell.getBounds();
+						assertTrue(workbenchBounds.width >= 1200 && workbenchBounds.height >= 700,
+								() -> "Workbench was not maximized before capture: " //$NON-NLS-1$
+										+ workbenchBounds);
+						return Boolean.valueOf(SWTUtils.captureScreenshot(
+								image.toString(), workbenchBounds));
+					}
+				});
+				return Boolean.TRUE.equals(captured);
+			}
+
+			@Override
+			public String getFailureMessage() {
+				return "Could not capture the Quick Fix dialog while Finish was active"; //$NON-NLS-1$
 			}
 		});
-		assertTrue(workbenchBounds.width >= 1200 && workbenchBounds.height >= 700,
-				() -> "Workbench was not maximized before capture: " + workbenchBounds); //$NON-NLS-1$
-		assertTrue(SWTUtils.captureScreenshot(image.toString(), workbenchBounds),
-				() -> "Could not capture PDE XML marker quick-fix screenshot: " + image); //$NON-NLS-1$
 		assertTrue(Files.size(image) > 0, () -> "Empty PDE XML screenshot: " + image); //$NON-NLS-1$
 	}
 
