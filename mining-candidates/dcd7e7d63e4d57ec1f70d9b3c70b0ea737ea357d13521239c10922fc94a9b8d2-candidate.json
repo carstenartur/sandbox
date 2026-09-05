@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "dcd7e7d63e4d57ec1f70d9b3c70b0ea737ea357d13521239c10922fc94a9b8d2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: simplify.static.method.fqn\u003e\n\u003c!description: Replace fully qualified static method invocation with a simple name, adding static import.\nThis cleanup improves code readability and conciseness by replacing \u0027FQCN.method()\u0027 with \u0027method()\u0027.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: static-import, style, readability, java-8\u003e\n\n$type.$methodName($args$) :: isStatic($methodName)\n\u003d\u003e\n$methodName($args$)\n;;",
+  "beforeExample": "import java.util.Collections;\nimport java.util.List;\n\npublic class Example {\n    public void foo() {\n        List\u003cString\u003e empty \u003d java.util.Collections.emptyList();\n        System.out.println(\"Hello\");\n    }\n}",
+  "afterExample": "import static java.util.Collections.emptyList;\n\nimport java.util.List;\n\npublic class Example {\n    public void foo() {\n        List\u003cString\u003e empty \u003d emptyList();\n        System.out.println(\"Hello\");\n    }\n}",
+  "negativeExample": "import java.util.List;\n\npublic class Example {\n    public void bar(List\u003cString\u003e list) {\n        // This should not be simplified as it\u0027s an instance method call\n        list.size();\n    }\n    \n    static class MyUtility {\n        public static void doSomethingStatic() {}\n        public void doSomethingNonStatic() {}\n    }\n\n    public void other() {\n        // Non-static method, should not match\n        MyUtility util \u003d new MyUtility();\n        util.doSomethingNonStatic();\n\n        // MyUtility is a local type reference, not an FQN starting with its package.\n        // The rule matches against fully qualified type names (e.g., java.util.Collections).\n        MyUtility.doSomethingStatic();\n    }\n}",
+  "targetHintFile": "style.sandbox-hint",
+  "sourceCommit": "f0a9341a485c0c105acb2197f7f62f49b9e3fb8a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Code Style",
+  "summary": "Simplifies fully qualified static method calls to their simple names by adding static imports.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-05T02:27:21.995060778Z",
+  "ruleFingerprint": "sha256:553f0632cfe8dc4ce39202f02c797eaa020254b7985d163a290ca7621d5ca990",
+  "behaviorFingerprint": "sha256:1cffa9e753ef199cbe18f118764aee8655811b2101a822fe7843384141fdcf79",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-05T02:27:27.951641424Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

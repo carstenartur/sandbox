@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "8792e42440b9dfe00c0da86b8f38d1373432d58e4f10d078218ea8c045152dd8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: jface.document.getLineOffset.fix\u003e\n\u003c!description: Fix incorrect usage of IDocument.getLineOffset by providing a line number instead of an offset.\u003e\n\u003c!severity: ERROR\u003e\n\n$document.getLineOffset($match.getOffset())\n:: instanceof($document, \"org.eclipse.jface.text.IDocument\") \u0026\u0026 instanceof($match, \"org.eclipse.jface.text.IRegion\")\n\u003d\u003e\n$document.getLineOffset($document.getLineOfOffset($match.getOffset()))\n;;",
+  "beforeExample": "import org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.IRegion;\nimport org.eclipse.jface.text.BadLocationException;\n\npublic class Example {\n    void calculateSpaces(IDocument document, IRegion match) throws BadLocationException {\n        // Incorrect usage: getLineOffset expects a line number, not a document offset\n        int spaces \u003d match.getOffset() + match.getLength() - document.getLineOffset(match.getOffset());\n        System.out.println(spaces);\n    }\n}",
+  "afterExample": "import org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.IRegion;\nimport org.eclipse.jface.text.BadLocationException;\n\npublic class Example {\n    void calculateSpaces(IDocument document, IRegion match) throws BadLocationException {\n        // Correct usage: first get the line number for the offset, then use it\n        int spaces \u003d match.getOffset() + match.getLength() - document.getLineOffset(document.getLineOfOffset(match.getOffset()));\n        System.out.println(spaces);\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.IRegion;\nimport org.eclipse.jface.text.BadLocationException;\n\npublic class Example {\n    void calculateSpaces(IDocument document, IRegion match, int lineNumber) throws BadLocationException {\n        // Correct usage with an explicit line number, should not be matched\n        int spaces1 \u003d document.getLineOffset(lineNumber);\n        System.out.println(spaces1);\n\n        // Correct usage with a literal line number, should not be matched\n        int spaces2 \u003d document.getLineOffset(5);\n        System.out.println(spaces2);\n\n        // Call to a different method, should not be matched\n        // Assuming \u0027document\u0027 has a method \u0027someOtherMethodTakingOffset\u0027\n        int spaces3 \u003d document.getLineOfOffset(match.getOffset());\n        System.out.println(spaces3);\n    }\n}",
+  "targetHintFile": "api-misuse.sandbox-hint",
+  "sourceCommit": "a918f74c71001dc67e1c502cfd21cb174a7199c4",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Misuse Correction",
+  "summary": "Corrects the misuse of `IDocument.getLineOffset` by ensuring a line number (obtained via `getLineOfOffset`) is passed instead of a raw offset.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-05T02:27:21.974192604Z",
+  "ruleFingerprint": "sha256:aa6fc6c73dea607fbb33e9496cb0253b8b06d1c1a2163c5093e7dc7e85c9ce52",
+  "behaviorFingerprint": "sha256:6f14830e44d0889ed73de3b6c0fc828b929c32e7dd6ed24241b8173d17beb788",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-05T02:27:27.941271815Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

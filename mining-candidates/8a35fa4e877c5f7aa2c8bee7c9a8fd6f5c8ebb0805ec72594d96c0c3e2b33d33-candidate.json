@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "8a35fa4e877c5f7aa2c8bee7c9a8fd6f5c8ebb0805ec72594d96c0c3e2b33d33",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: information.presenter.fixed.width\u003e\n\u003c!description: Set InformationPresenter to not resize width dynamically for the width dimension.\u003e\n\u003c!severity: HINT\u003e\n\norg.eclipse.jface.text.information.InformationPresenter.setSizeConstraints($minWidth, $minHeight, true, $canResizeHeight)\n\u003d\u003e\norg.eclipse.jface.text.information.InformationPresenter.setSizeConstraints($minWidth, $minHeight, false, $canResizeHeight)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.information.InformationPresenter;\n\npublic class TestClass {\n    void setupPresenter(InformationPresenter presenter) {\n        // Original line from diff\n        presenter.setSizeConstraints(100, 12, true, true);\n        // Another valid match\n        presenter.setSizeConstraints(80, 10, true, false);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.information.InformationPresenter;\n\npublic class TestClass {\n    void setupPresenter(InformationPresenter presenter) {\n        // Transformed line\n        presenter.setSizeConstraints(100, 12, false, true);\n        // Transformed line\n        presenter.setSizeConstraints(80, 10, false, false);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.information.InformationPresenter;\n\npublic class TestClass {\n    void setupPresenter(InformationPresenter presenter) {\n        // Already uses \u0027false\u0027 for width resizing, should not match\n        presenter.setSizeConstraints(100, 12, false, true);\n        // Different method call, should not match\n        presenter.setAnchor(1);\n    }\n}",
+  "targetHintFile": "eclipse-ui-hovers.sandbox-hint",
+  "sourceCommit": "bd3da5c7e8cb67ab1136a0f06b7d00e5929221f3",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Configuration",
+  "summary": "Updates InformationPresenter.setSizeConstraints to disable width resizing.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-05T02:27:21.922511051Z",
+  "ruleFingerprint": "sha256:fdf6a63a45f16839e24798afab67d12a3b8f75d19555949852085c65a02b24d7",
+  "behaviorFingerprint": "sha256:fa548652b09325667e4fab654c4bcf0dc81f768c3317b0e8fec028f79807c5c2",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-05T02:27:27.916250778Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

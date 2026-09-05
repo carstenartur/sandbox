@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3c3785df28f55bd6058da20df59debfa4a17a73013692c8aa023477c0e634289",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "($selectedNode instanceof org.eclipse.jdt.core.dom.Name \u0026\u0026 $selectedNode.getParent() instanceof org.eclipse.jdt.core.dom.SwitchStatement)\n\u003d\u003e\n($selectedNode instanceof org.eclipse.jdt.core.dom.Expression \u0026\u0026 $selectedNode.getLocationInParent() \u003d\u003d org.eclipse.jdt.core.dom.SwitchStatement.EXPRESSION_PROPERTY)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.core.dom.*;\npublic class MyClass {\n    public void myMethod(ASTNode selectedNode) {\n        if (selectedNode instanceof Name \u0026\u0026 selectedNode.getParent() instanceof SwitchStatement) {\n            System.out.println(\"Match!\");\n        }\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.core.dom.*;\npublic class MyClass {\n    public void myMethod(ASTNode selectedNode) {\n        if (selectedNode instanceof Expression \u0026\u0026 selectedNode.getLocationInParent() \u003d\u003d SwitchStatement.EXPRESSION_PROPERTY) {\n            System.out.println(\"Match!\");\n        }\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.core.dom.*;\npublic class MyClass {\n    public void myMethod(ASTNode selectedNode) {\n        if (selectedNode instanceof Name \u0026\u0026 selectedNode.getParent() instanceof Block) {\n            System.out.println(\"No match!\");\n        }\n    }\n}",
+  "targetHintFile": "jdt-dom-api.sandbox-hint",
+  "sourceCommit": "0d9287b23a3484fb9c3b8d9532c35da4f83cd25b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "AST API Modernization",
+  "summary": "Refine the condition for identifying a SwitchStatement\u0027s expression from a combination of instanceof and getParent() to a more precise check using instanceof and getLocationInParent() with EXPRESSION_PROPERTY.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-05T02:27:22.033774421Z",
+  "ruleFingerprint": "sha256:8fd820776ce5467e65ff258f541259917033ab51090b3512417f8cbfc19c5f77",
+  "behaviorFingerprint": "sha256:6c9d077854b510924ec47e1d32fb6fdd772c87f00ab4342fd246392073d56991",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-09-05T02:27:27.988829636Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

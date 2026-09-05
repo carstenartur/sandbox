@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "13f1b18ac226ca6f21b44eb61d0e61e5d93f360e15d93e3f0d0e26ff7ce194df",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$fImplementation.getHoverInfo2($textViewer, $subject) :: instanceof($fImplementation, \"org.eclipse.jdt.internal.ui.text.java.hover.BestMatchHover\")\n\u003d\u003e\n$fImplementation.getHoverInfo2($textViewer, $subject, true)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.java.hover;\n\nimport org.eclipse.jface.text.IRegion;\nimport org.eclipse.jface.text.ITextViewer;\nimport org.eclipse.jface.text.ITextHoverExtension2;\n\n// Dummy BestMatchHover for example\nclass BestMatchHover implements ITextHoverExtension2 {\n    @Override\n    public Object getHoverInfo2(ITextViewer textViewer, IRegion hoverRegion) {\n        return null; // Original method\n    }\n    // New method introduced by the actual commit\n    public Object getHoverInfo2(ITextViewer textViewer, IRegion hoverRegion, boolean forInformationProvider) {\n        return null; \n    }\n}\n\npublic class JavaInformationProvider {\n\n    private BestMatchHover fImplementation \u003d new BestMatchHover();\n\n    public Object getInformation2(ITextViewer textViewer, IRegion subject) {\n        if (fImplementation \u003d\u003d null)\n            return null;\n        return fImplementation.getHoverInfo2(textViewer, subject); // Matches pattern\n    }\n\n    public Object anotherMethod(BestMatchHover someHover, ITextViewer viewer, IRegion region) {\n        return someHover.getHoverInfo2(viewer, region); // Also matches\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.java.hover;\n\nimport org.eclipse.jface.text.IRegion;\nimport org.eclipse.jface.text.ITextViewer;\nimport org.eclipse.jface.text.ITextHoverExtension2;\n\n// Dummy BestMatchHover for example\nclass BestMatchHover implements ITextHoverExtension2 {\n    @Override\n    public Object getHoverInfo2(ITextViewer textViewer, IRegion hoverRegion) {\n        return null; // Original method\n    }\n    // New method introduced by the actual commit\n    public Object getHoverInfo2(ITextViewer textViewer, IRegion hoverRegion, boolean forInformationProvider) {\n        return null; \n    }\n}\n\npublic class JavaInformationProvider {\n\n    private BestMatchHover fImplementation \u003d new BestMatchHover();\n\n    public Object getInformation2(ITextViewer textViewer, IRegion subject) {\n        if (fImplementation \u003d\u003d null)\n            return null;\n        return fImplementation.getHoverInfo2(textViewer, subject, true); // Transformed\n    }\n\n    public Object anotherMethod(BestMatchHover someHover, ITextViewer viewer, IRegion region) {\n        return someHover.getHoverInfo2(viewer, region, true); // Also transformed\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.jface.text.IRegion;\nimport org.eclipse.jface.text.ITextViewer;\nimport org.eclipse.jface.text.ITextHoverExtension2;\n\n// Dummy interface for a non-matching type\ninterface SomeOtherHover extends ITextHoverExtension2 {\n    // Must have the method from ITextHoverExtension2\n    @Override\n    default Object getHoverInfo2(ITextViewer textViewer, IRegion hoverRegion) {\n        return null;\n    }\n}\n\n// Dummy BestMatchHover for compilation\nclass BestMatchHover implements ITextHoverExtension2 {\n    @Override\n    public Object getHoverInfo2(ITextViewer textViewer, IRegion hoverRegion) {\n        return null;\n    }\n    public Object getHoverInfo2(ITextViewer textViewer, IRegion hoverRegion, boolean forInformationProvider) {\n        return null;\n    }\n}\n\npublic class NegativeCases {\n\n    private SomeOtherHover otherImpl \u003d () -\u003e null; // Receiver is not BestMatchHover\n    private BestMatchHover bmHover \u003d new BestMatchHover();\n\n    public Object noMatchMethod(ITextViewer textViewer, IRegion subject) {\n        // Should NOT match: receiver is not BestMatchHover\n        otherImpl.getHoverInfo2(textViewer, subject);\n\n        // Should NOT match: method already has 3 arguments\n        return bmHover.getHoverInfo2(textViewer, subject, true);\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui-hovers.sandbox-hint",
+  "sourceCommit": "862f59de6f6edf269467a7632ab8f6b75d031f70",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-05T02:27:22.015424074Z",
+  "ruleFingerprint": "sha256:695acc736d63af125995d4968149048e57627d2f694969d31a730ac56e75c76a",
+  "behaviorFingerprint": "sha256:eae9ee380e35be837230c6e502679dbf1bbd400282554ed1e177ee088df5c3c8",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jface.text.ITextViewer cannot be resolved",
+    "verifiedAt": "2026-09-05T02:27:27.972361328Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
