@@ -10,7 +10,7 @@ APPLICATION_ID="org.sandbox.jdt.core.ProjectWideJavaCleanup"
 STRICT_PROFILE="$SCRIPT_DIR/junit4-to-jupiter.properties"
 BEST_EFFORT_PROFILE="$SCRIPT_DIR/junit4-to-jupiter-best-effort.properties"
 CORPUS_CONTRACT="$SCRIPT_DIR/jdt-ui-junit4-corpus.json"
-CORPUS_VERIFIER="$SCRIPT_DIR/verify_jdt_ui_corpus.py"
+CORPUS_VERIFIER="$SCRIPT_DIR/run-jdt-ui-corpus-verifier.sh"
 MAPPING="$SCRIPT_DIR/expected-test-mapping.json"
 PROJECT="org.eclipse.jdt.ui.tests"
 BCOVIEW_PROJECT="org.eclipse.jdt.bcoview"
@@ -432,7 +432,7 @@ JAVA_CHANGE_COUNT=$(grep -cE '\.java$' "$OUTPUT/changed-files.txt" || true)
 ((JAVA_CHANGE_COUNT > 0)) || fail "Cleanup apply changed no JDT UI Java source files"
 
 printf 'VERIFYING_REAL_JDT_UI_CORPUS\n' > "$OUTPUT/run-state.txt"
-python3 "$CORPUS_VERIFIER" \
+MAVEN_BIN="$MAVEN_BIN" bash "$CORPUS_VERIFIER" \
   --repository "$JDT_UI" \
   --baseline-sources "$OUTPUT/corpus/baseline" \
   --contract "$CORPUS_CONTRACT" \

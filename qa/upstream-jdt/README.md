@@ -206,13 +206,16 @@ profile. Its executable contract consists of:
   `junit4-to-jupiter-best-effort.properties`;
 - `jdt-ui-junit4-corpus.json`, which names the required real source shapes;
 - `JUnitXmlInventoryComparatorTest`, which is invoked by Maven to compare exact test identity, state, and multiplicity;
-- `verify_jdt_ui_contract.py` and `verify_jdt_ui_corpus.py`; and
+- `JdtUiCorpusContractTest` and `JdtUiCorpusEvidenceVerifierTest`, which validate the pinned contract and source/report evidence under Maven; and
 - the `JDT UI JUnit 4 Strict Migration QA` workflow.
 
 Validate the inexpensive contract with:
 
 ```bash
-PYTHONDONTWRITEBYTECODE=1 python3 qa/upstream-jdt/verify_jdt_ui_contract.py
+mvn --batch-mode --no-transfer-progress \
+  -Dtest='JdtUiCorpus*Test' \
+  -Dsurefire.failIfNoSpecifiedTests=false -DfailIfNoTests=false \
+  -pl sandbox_target,sandbox_common_test -am package
 ```
 
 Run the strict scenario against the closed, pinned Oomph workspace with:
@@ -234,6 +237,22 @@ requires check/apply agreement, records the named corpus and emits provenance.
 The strict GitHub workflow additionally builds the exact Sandbox product under
 test and checks that the migration introduced no whitespace regression relative
 to the pinned upstream baseline.
+
+Corpus verification is delegated to the same Java verifier through
+`run-jdt-ui-corpus-verifier.sh`, a thin Maven process adapter. It forwards every
+input as a separate argument, preserves a failing Maven exit code, deletes an
+old result before execution, and rejects a successful process that produced no
+fresh non-empty result. The result remains `corpus-result.json`; the evidence
+directory additionally records `corpus-verification-command.txt`,
+`corpus-verification-maven-exit-code.txt`, and
+`logs/corpus-verification-maven.log`.
+
+The two former JDT UI Python validators have been removed. This does not mean
+that all orchestration is Python-free: workspace-pin checks, source copying,
+bytecode-view runtime inspection, provenance assembly and the separate JDT Core
+track still contain legacy Python. The new JUnit fixtures exercise the actual
+five-file contract synthetically; they do not replace the pinned before/after
+execution or claim upstream execution evidence.
 
 The current named contract requires coordinated migration evidence for:
 
@@ -262,7 +281,7 @@ scenario. Two boundaries tracked by #1469 and #1497 remain:
 1. drive the interactive Cleanup preview from the same pinned JDT UI workspace
    and headless plan, verify candidate and affected-file agreement, and attach
    matching screenshot provenance;
-2. move the remaining checkout identity, corpus classification and
+2. move the remaining checkout identity, bytecode-view runtime and
    provenance assertions from the current shell/Python orchestration into
    reusable Java/JUnit fixtures executed by Maven/Tycho, leaving workflows to
    provision the environment and invoke the same Maven authority.
