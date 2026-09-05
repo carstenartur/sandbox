@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "41fa875f911e49712453696d7a3ef5b5c87a01a33f52b86c0f3daaa9c2514f4e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: java.source.hover.enable.shift.up\u003e\n\u003c!description: Migrate calls to createInformationControlCreator to use the new \u0027doShiftUp\u0027 parameter, setting it to true.\u003e\n\u003c!severity: HINT\u003e\n\ncreateInformationControlCreator($isResizable, $statusFieldText)\n\u003d\u003e\ncreateInformationControlCreator($isResizable, $statusFieldText, true)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.java.hover;\n\nimport org.eclipse.jface.text.IInformationControlCreator;\nimport org.eclipse.ui.editors.text.EditorsUI;\n\npublic class JavaSourceHover {\n    // Simplified stub representing the method prior to the commit\n    protected IInformationControlCreator createInformationControlCreator(boolean isResizable, String statusFieldText) {\n        return null; \n    }\n\n    // Method signature after the commit\n    protected IInformationControlCreator createInformationControlCreator(boolean isResizable, String statusFieldText, boolean doShiftUp) {\n        return null; \n    }\n\n    String fBracketHoverStatus \u003d \"status\";\n\n    public IInformationControlCreator getHoverControlCreator() {\n        // Original line 1\n        return createInformationControlCreator(false, fBracketHoverStatus);\n    }\n\n    public IInformationControlCreator getAnotherControlCreator() {\n        // Original line 2\n        return createInformationControlCreator(true, EditorsUI.getTooltipAffordanceString());\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.java.hover;\n\nimport org.eclipse.jface.text.IInformationControlCreator;\nimport org.eclipse.ui.editors.text.EditorsUI;\n\npublic class JavaSourceHover {\n    // Simplified stub representing the method prior to the commit\n    protected IInformationControlCreator createInformationControlCreator(boolean isResizable, String statusFieldText) {\n        return null; \n    }\n\n    // Method signature after the commit\n    protected IInformationControlCreator createInformationControlCreator(boolean isResizable, String statusFieldText, boolean doShiftUp) {\n        return null; \n    }\n\n    String fBracketHoverStatus \u003d \"status\";\n\n    public IInformationControlCreator getHoverControlCreator() {\n        // Transformed line 1\n        return createInformationControlCreator(false, fBracketHoverStatus, true);\n    }\n\n    public IInformationControlCreator getAnotherControlCreator() {\n        // Transformed line 2\n        return createInformationControlCreator(true, EditorsUI.getTooltipAffordanceString(), true);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.java.hover;\n\nimport org.eclipse.jface.text.IInformationControlCreator;\nimport org.eclipse.ui.editors.text.EditorsUI;\n\npublic class JavaSourceHover {\n    protected IInformationControlCreator createInformationControlCreator(boolean isResizable, String statusFieldText) {\n        return null; \n    }\n\n    protected IInformationControlCreator createInformationControlCreator(boolean isResizable, String statusFieldText, boolean doShiftUp) {\n        return null; \n    }\n\n    String fBracketHoverStatus \u003d \"status\";\n\n    public IInformationControlCreator getHoverControlCreator() {\n        // Already transformed, should not match\n        return createInformationControlCreator(false, fBracketHoverStatus, true);\n    }\n\n    public void someOtherMethod() {\n        // Should not match a different method\n        System.out.println(\"Hello\");\n    }\n}",
+  "targetHintFile": "eclipse-ui-hovers.sandbox-hint",
+  "sourceCommit": "8436ee40f0b01d556613b653442f9dccc3f69c16",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Adds \u0027true\u0027 as the third argument to calls to `createInformationControlCreator`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-05T02:27:21.951047554Z",
+  "ruleFingerprint": "sha256:0a44da22f3ce9f8ed3b952743cce4d93f4cf68b898c1685b22c9a4d40be0369b",
+  "behaviorFingerprint": "sha256:0252f38430cba19f9a8158b2ba1e1bce25de094f28ca9cea0165317fd428a842",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-05T02:27:27.931249518Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

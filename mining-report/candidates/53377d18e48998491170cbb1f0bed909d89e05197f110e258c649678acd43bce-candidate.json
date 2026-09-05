@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "53377d18e48998491170cbb1f0bed909d89e05197f110e258c649678acd43bce",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: java.lang.String.equals.nullsafe\u003e\n\u003c!description: Replace potentially null-unsafe `variable.equals(literal)` with null-safe `literal.equals(variable)` for String comparisons when the variable may be null.\u003e\n\u003c!severity: HINT\u003e\n\n$var.equals($literal) :: instanceof($var, \"java.lang.String\") \u0026\u0026 isStringLiteral($literal) \u0026\u0026 isNullable($var)\n\u003d\u003e\n$literal.equals($var)\n;;",
+  "beforeExample": "class Example {\n    void method(String s) {\n        // This should be refactored\n        if (s.equals(\"literalValue\")) {\n            System.out.println(\"Matched literalValue\");\n        }\n        // This should not be refactored (already safe)\n        if (\"anotherLiteral\".equals(s)) {\n            System.out.println(\"Matched anotherLiteral\");\n        }\n        // This should not be refactored (argument is not a string literal)\n        String variable \u003d \"someValue\";\n        if (s.equals(variable)) {\n            System.out.println(\"Matched variable\");\n        }\n    }\n}",
+  "afterExample": "class Example {\n    void method(String s) {\n        // This should be refactored\n        if (\"literalValue\".equals(s)) {\n            System.out.println(\"Matched literalValue\");\n        }\n        // This should not be refactored (already safe)\n        if (\"anotherLiteral\".equals(s)) {\n            System.out.println(\"Matched anotherLiteral\");\n        }\n        // This should not be refactored (argument is not a string literal)\n        String variable \u003d \"someValue\";\n        if (s.equals(variable)) {\n            System.out.println(\"Matched variable\");\n        }\n    }\n}",
+  "negativeExample": "class NegativeExample {\n    void method(String s) {\n        // Receiver is guaranteed non-null, so no change needed.\n        String nonNullString \u003d \"fixed\";\n        if (nonNullString.equals(\"value\")) {\n            System.out.println(\"No change\");\n        }\n        // Argument is not a String literal.\n        String otherVar \u003d \"test\";\n        if (s.equals(otherVar)) {\n            System.out.println(\"No change\");\n        }\n        // Already in safe form\n        if (\"safe\".equals(s)) {\n            System.out.println(\"No change\");\n        }\n    }\n    // Not a string comparison\n    void otherMethod(Object o) {\n        if (o.equals(Integer.valueOf(5))) { // Not String.equals\n            System.out.println(\"No change\");\n        }\n    }\n}",
+  "targetHintFile": "java-best-practices.sandbox-hint",
+  "sourceCommit": "86bc8f61b4784ce158aa0b3332711b5f8e096b73",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Null Safety",
+  "summary": "Replaces `variable.equals(\"literal\")` with `\"literal\".equals(variable)` for String comparisons when `variable` may be null, to prevent NullPointerExceptions.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-05T02:27:22.071630773Z",
+  "ruleFingerprint": "sha256:ad293711a1180c3f9a074703b25a888eb785e7e50392e4efd43e69a13b1c413d",
+  "behaviorFingerprint": "sha256:05b80f29e5a79f93390f32e46b31e7e873f22a511f6fc11baed5258d18b52ff1",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-05T02:27:28.034503018Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

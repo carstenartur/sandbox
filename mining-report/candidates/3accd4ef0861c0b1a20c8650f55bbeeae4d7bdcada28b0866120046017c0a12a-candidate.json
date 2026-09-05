@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3accd4ef0861c0b1a20c8650f55bbeeae4d7bdcada28b0866120046017c0a12a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.text.correction.CorrectionMessages.UnresolvedElementsSubProcessor_add_annotation_bundle_info + \"\u003cbr\u003e\u003ccode\u003e\" + $entry + \"\u003c/code\u003e\"\n\u003d\u003e\norg.eclipse.jdt.internal.ui.text.correction.Messages.format(org.eclipse.jdt.internal.ui.text.correction.CorrectionMessages.UnresolvedElementsSubProcessor_add_annotation_bundle_info, $entry)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\npublic class UnresolvedElementsSubProcessor {\n    public static void someMethod(String buildPropertiesEntry) {\n        String info \u003d CorrectionMessages.UnresolvedElementsSubProcessor_add_annotation_bundle_info + \"\u003cbr\u003e\u003ccode\u003e\" + buildPropertiesEntry + \"\u003c/code\u003e\";\n        System.out.println(info);\n    }\n}\n\nclass CorrectionMessages {\n    public static String UnresolvedElementsSubProcessor_add_annotation_bundle_info \u003d \"Add library to build path: %s\";\n}\n\n// Minimal stub for Messages class in the same package\nclass Messages {\n    public static String format(String message, Object... args) {\n        // Simplified for example, actual implementation might vary\n        return String.format(message.replace(\"\u003cbr\u003e\u003ccode\u003e\", \"\\n\u003ccode\u003e\").replace(\"\u003c/code\u003e\", \"\"), args);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\npublic class UnresolvedElementsSubProcessor {\n    public static void someMethod(String buildPropertiesEntry) {\n        String info \u003d org.eclipse.jdt.internal.ui.text.correction.Messages.format(org.eclipse.jdt.internal.ui.text.correction.CorrectionMessages.UnresolvedElementsSubProcessor_add_annotation_bundle_info, buildPropertiesEntry);\n        System.out.println(info);\n    }\n}\n\nclass CorrectionMessages {\n    public static String UnresolvedElementsSubProcessor_add_annotation_bundle_info \u003d \"Add library to build path: %s\";\n}\n\n// Minimal stub for Messages class in the same package\nclass Messages {\n    public static String format(String message, Object... args) {\n        // Simplified for example, actual implementation might vary\n        return String.format(message.replace(\"\u003cbr\u003e\u003ccode\u003e\", \"\\n\u003ccode\u003e\").replace(\"\u003c/code\u003e\", \"\"), args);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\npublic class UnresolvedElementsSubProcessor {\n    public static void anotherMethod(String someOtherEntry) {\n        String otherInfo \u003d \"Prefix\" + someOtherEntry + \"Suffix\"; // This should not match\n        System.out.println(otherInfo);\n    }\n}\n\nclass CorrectionMessages {\n    public static String UnresolvedElementsSubProcessor_add_annotation_bundle_info \u003d \"Add library to build path: %s\";\n}\n\nclass Messages {\n    public static String format(String message, Object... args) {\n        return String.format(message.replace(\"\u003cbr\u003e\u003ccode\u003e\", \"\\n\u003ccode\u003e\").replace(\"\u003c/code\u003e\", \"\"), args);\n    }\n}",
+  "targetHintFile": "string-formatting.sandbox-hint",
+  "sourceCommit": "3a8080ac86f0c74d0239a15409ac8e6d96797e58",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String formatting",
+  "summary": "Replaces specific string concatenation pattern with a Messages.format utility call.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-05T02:27:22.048147669Z",
+  "ruleFingerprint": "sha256:dd440265d64fa16784c59847e01ccad32c005089c9192a16b418a2eb4516da99",
+  "behaviorFingerprint": "sha256:072d7c70b8afcce5a0a0dd9e8dc901e74d576b915fe191cd65f165f86418aa8b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type UnresolvedElementsSubProcessor must be defined in its own file",
+    "verifiedAt": "2026-09-05T02:27:28.005275604Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

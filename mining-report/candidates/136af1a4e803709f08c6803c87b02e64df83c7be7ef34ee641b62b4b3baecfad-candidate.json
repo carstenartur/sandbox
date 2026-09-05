@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "136af1a4e803709f08c6803c87b02e64df83c7be7ef34ee641b62b4b3baecfad",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: field.visibility.private.to.public.editor.save.participant\u003e\n\u003c!description: Changes the visibility of the specific static final field \u0027EDITOR_SAVE_PARTICIPANT_PREFIX\u0027 from private to public.\u003e\n\u003c!severity: INFO\u003e\n\nprivate static final $Type $fieldName \u003d $init; :: matchesAny($fieldName, \"EDITOR_SAVE_PARTICIPANT_PREFIX\")\n\u003d\u003e\npublic static final $Type $fieldName \u003d $init;\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.javaeditor.saveparticipant;\n\npublic abstract class AbstractSaveParticipantPreferenceConfiguration {\n    /**\n     * Preference prefix that is appended to the id of {@link SaveParticipantDescriptor save participants}.\n     * Value is of type \u003ccode\u003eBoolean\u003c/code\u003e.\n     * @see SaveParticipantDescriptor\n     * @since 3.3\n     */\n    private static final String EDITOR_SAVE_PARTICIPANT_PREFIX\u003d \"editor_save_participant_\";\n    private static final String OTHER_FIELD \u003d \"value\";\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.javaeditor.saveparticipant;\n\npublic abstract class AbstractSaveParticipantPreferenceConfiguration {\n    /**\n     * Preference prefix that is prepended to the id of {@link SaveParticipantDescriptor save participants}.\n     * Value is of type \u003ccode\u003eBoolean\u003c/code\u003e.\n     * @see SaveParticipantDescriptor\n     * @since 3.3\n     */\n    public static final String EDITOR_SAVE_PARTICIPANT_PREFIX\u003d \"editor_save_participant_\";\n    private static final String OTHER_FIELD \u003d \"value\";\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.javaeditor.saveparticipant;\n\npublic abstract class AbstractSaveParticipantPreferenceConfiguration {\n    private static final String DIFFERENT_FIELD_NAME \u003d \"different_prefix_\"; // Should not match due to guard\n    public static final String ALREADY_PUBLIC_FIELD \u003d \"already_public\"; // Should not match due to \u0027public\u0027 in pattern\n    private String nonStaticField \u003d \"test\"; // Should not match due to \u0027static\u0027 in pattern\n}",
+  "targetHintFile": "field-visibility.sandbox-hint",
+  "sourceCommit": "e1164504c89003e2a6ee1c3c312ae6247c431cfb",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Modifier Change",
+  "summary": "Changes \u0027private static final\u0027 to \u0027public static final\u0027 for a field named \u0027EDITOR_SAVE_PARTICIPANT_PREFIX\u0027.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-05T02:27:21.869378585Z",
+  "ruleFingerprint": "sha256:ca7765c9c7481b0e27905999a77391ac0941b1824e4f1919092d3053e398b977",
+  "behaviorFingerprint": "sha256:0024931e3db4ddaace5465b5cbed8971df67a657d2a0a456558d519bf073e036",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-05T02:27:27.898603075Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

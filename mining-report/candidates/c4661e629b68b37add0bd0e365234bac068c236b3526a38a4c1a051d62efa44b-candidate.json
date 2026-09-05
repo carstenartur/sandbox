@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c4661e629b68b37add0bd0e365234bac068c236b3526a38a4c1a051d62efa44b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$file.toURL() :: instanceof($file, \"java.io.File\")\n\u003d\u003e\n$file.toURI().toURL()\n;;",
+  "beforeExample": "import java.io.File;\nimport java.net.MalformedURLException;\nimport java.net.URL;\n\npublic class Example {\n    public void processFile(File file) throws MalformedURLException {\n        URL url \u003d file.toURL();\n        System.out.println(url);\n    }\n}",
+  "afterExample": "import java.io.File;\nimport java.net.MalformedURLException;\nimport java.net.URL;\n\npublic class Example {\n    public void processFile(File file) throws MalformedURLException {\n        URL url \u003d file.toURI().toURL();\n        System.out.println(url);\n    }\n}",
+  "negativeExample": "import java.io.File;\nimport java.net.MalformedURLException;\nimport java.net.URL;\nimport java.net.URI;\n\npublic class Example {\n    public void processOther() throws MalformedURLException, java.net.URISyntaxException {\n        File anotherFile \u003d new File(\"some/path\"); // Should not match\n        URI uri \u003d anotherFile.toURI(); // Should not match\n        URL someUrl \u003d new URL(\"http://example.com\"); // Should not match\n        String s \u003d \"Hello\";\n        s.trim(); // No match\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "3b943594b074108f1f0c2947216e91d834623b6f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces `File.toURL()` with `File.toURI().toURL()` for robust URL generation, addressing the deprecation of `File.toURL()` since Java 8 and its known issues with URL encoding.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-05T02:27:22.059845875Z",
+  "ruleFingerprint": "sha256:71e08924dd3008cc8a2d3d89df9c8d3eec78694bd9884056433893228ced68be",
+  "behaviorFingerprint": "sha256:58eb9c05446a9339d5ddbfcaa3beca18114470596a19ffe9f112a887be9c261c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-05T02:27:28.023928173Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
