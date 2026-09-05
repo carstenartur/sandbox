@@ -44,7 +44,7 @@ jobs:
           echo "// Category: ${{ inputs.category }}" >> "${{ inputs.target_hint_file }}"
           cat /tmp/new-rule.txt >> "${{ inputs.target_hint_file }}"
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           java-version: '21'
           distribution: 'temurin'
