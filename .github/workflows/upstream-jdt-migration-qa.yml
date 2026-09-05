@@ -9,6 +9,7 @@ on:
       - 'sandbox_oomph/jdt-migration-qa.configuration.setup'
       - 'sandbox_cleanup_application/**'
       - 'sandbox_common_core/**'
+      - 'sandbox_common_test/**'
       - 'sandbox_junit_cleanup/**'
       - 'sandbox_junit_cleanup_test/**'
       - '.github/workflows/upstream-jdt-migration-qa.yml'
@@ -50,17 +51,33 @@ jobs:
   validate-contract:
     name: Validate the pinned Oomph and evidence contract
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 45
     steps:
       - name: Checkout Sandbox
         uses: actions/checkout@v7
 
-      - name: Validate Oomph, JDT Core, JDT UI, corpus and evidence comparators
+      - name: Set up Java 21 for the JDT UI contract
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Validate Oomph and JDT Core evidence comparators
         env:
           PYTHONDONTWRITEBYTECODE: '1'
         run: |
           python3 qa/upstream-jdt/verify_contract.py
-          python3 qa/upstream-jdt/verify_jdt_ui_contract.py
+
+      - name: Validate the JDT UI corpus and Maven runner contract
+        run: >-
+          mvn --batch-mode --no-transfer-progress
+          -Dsandbox.tycho.linux-only=true
+          -Dspotbugs.skip=true
+          -Dtest='JdtUiCorpus*Test'
+          -Dsurefire.failIfNoSpecifiedTests=false
+          -DfailIfNoTests=false
+          -pl sandbox_target,sandbox_common_test -am package
 
       - name: Verify repository whitespace
         run: git diff --check
