@@ -342,9 +342,7 @@ final class PdeXmlQuickFixScreenshot {
 						if (!finish.widget.isFocusControl()) {
 							quickFix.widget.forceActive();
 							finish.widget.setFocus();
-							quickFix.widget.layout(true, true);
-							quickFix.widget.redraw();
-							quickFix.widget.update();
+							// Focusing must not relayout the dialog's split panes.
 							// Let native paint events run before capturing on a later poll.
 							return Boolean.FALSE;
 						}
