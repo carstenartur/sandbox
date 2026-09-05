@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "45db761601abdc312863514858a8a9ed2904f865",
-      "lastProcessedDate": "2026-09-04T02:29:07.604836281Z",
-      "totalProcessed": 5294,
+      "lastProcessedCommit": "a78dd099ed0210a89cf20f09bcb7907282e0fbc2",
+      "lastProcessedDate": "2026-09-05T02:27:20.479497404Z",
+      "totalProcessed": 5382,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3242,6 +3242,42 @@
           "deferredAt": "2026-09-04T02:22:38.563726922Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "9111b3597068d5b204ca0b82d1296baa55af9bd1",
+          "message": "Bug 86168: [type wizards] Allow the creation of a compilation unit called package-info.java",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-05T02:19:12.239723203Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f63a426a0aa77b391bf2116dcd4eb3749abad092",
+          "message": "Bug 337977: [quick fix] Add quickfixes for null annotations",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-05T02:22:11.136935778Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b85527e60dfbcc11c80a8d923b355c68ffbcf6e8",
+          "message": "Bug 337977: [quick fix] Add quick fixes for null annotations - Format code - Quick fix relevance - method visibility - f",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-05T02:22:11.149098963Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f833c65b223d89174b1d63fb1ef341d5a77b99e5",
+          "message": "Bug 272472: [extract method] preview shows useless scrollbar",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-05T02:24:24.797699633Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3279,7 +3315,7 @@
         "JDT UI Bug Fix": 1,
         "Type Inference": 2,
         "Architecture Migration": 9,
-        "Code Style": 35,
+        "Code Style": 36,
         "Eclipse API Configuration": 14,
         "Javadoc Generation Enhancement": 1,
         "Clean-up Logic Enhancement": 1,
@@ -3385,7 +3421,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 27,
+        "API Migration": 28,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -3396,13 +3432,13 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 4,
-        "API Modernization": 56,
+        "API Modernization": 58,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
         "Generics": 1,
         "API Constant Update": 1,
-        "Null Safety": 6,
+        "Null Safety": 7,
         "Boolean Simplification": 1,
         "Constant Replacement": 5,
         "API Simplification": 4,
@@ -3416,7 +3452,7 @@
         "UI Color Management": 1,
         "Expression Simplification": 2,
         "API Fix": 1,
-        "API Misuse Correction": 1,
+        "API Misuse Correction": 2,
         "readability": 1,
         "Method call argument replacement": 1,
         "API Constant Renaming": 1,
@@ -3504,7 +3540,11 @@
         "Expression Expansion": 1,
         "Expression Correction": 1,
         "Redundant Code Removal": 1,
-        "Encoding Fix": 1
+        "Encoding Fix": 1,
+        "Modifier Change": 1,
+        "API Configuration": 1,
+        "AST API Modernization": 1,
+        "String formatting": 1
       },
       "exhaustedCategories": []
     },
@@ -3545,5 +3585,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 28065
+  "globalTotalProcessed": 28153
 }
