@@ -34,6 +34,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 			"EclipseHelpTestModuleBoundaryTest.java", //$NON-NLS-1$
 			"FocusedCleanupConfigurationScreenshots.java", //$NON-NLS-1$
 			"JUnitBestEffortCleanupDialogSWTBotTest.java", //$NON-NLS-1$
+			"PdeXmlQuickFixScreenshot.java", //$NON-NLS-1$
 			"SandboxAtomicPreviewPatchedJdtSWTBotTest.java", //$NON-NLS-1$
 			"SandboxCheckout.java", //$NON-NLS-1$
 			"SandboxHelpScreenshotsMergeGateSWTBotTest.java", //$NON-NLS-1$

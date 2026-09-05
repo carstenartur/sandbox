@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -590,15 +591,52 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
         Path imageDirectory = outputRoot.resolve("sandbox_junit_cleanup_help").resolve("images");
         Files.createDirectories(imageDirectory);
         Path image = imageDirectory.resolve(SCREENSHOT_FILE);
-        Rectangle clientBounds = UIThreadRunnable.syncExec(shell.display, new Result<Rectangle>() {
+        var finish = shell.bot().button("Finish"); //$NON-NLS-1$
+        bot.waitUntil(new DefaultCondition() {
+            private byte[] previousImage;
+
             @Override
-            public Rectangle run() {
-                Rectangle clientArea = shell.widget.getClientArea();
-                return shell.widget.getDisplay().map(shell.widget, null, clientArea);
+            public boolean test() throws Exception {
+                Boolean captured = UIThreadRunnable.syncExec(shell.display, new Result<Boolean>() {
+                    @Override
+                    public Boolean run() {
+                        if (shell.widget.isDisposed() || finish.widget.isDisposed()
+                                || shell.display.getActiveShell() != shell.widget
+                                || !finish.widget.isEnabled()) {
+                            return Boolean.FALSE;
+                        }
+                        if (!finish.widget.isFocusControl()) {
+                            finish.widget.setFocus();
+                            // Let native focus and paint events run on a later poll.
+                            // Do not relayout the already sized preview while focusing.
+                            return Boolean.FALSE;
+                        }
+                        Rectangle clientArea = shell.widget.getClientArea();
+                        if (clientArea.width != SCREENSHOT_CLIENT_WIDTH
+                                || clientArea.height != SCREENSHOT_CLIENT_HEIGHT) {
+                            return Boolean.FALSE;
+                        }
+                        Rectangle clientBounds = shell.display.map(shell.widget, null, clientArea);
+                        return Boolean.valueOf(SWTUtils.captureScreenshot(image.toString(), clientBounds));
+                    }
+                });
+                if (!Boolean.TRUE.equals(captured)) {
+                    previousImage = null;
+                    return false;
+                }
+                // An active shell can still be repainting its native controls.
+                // Keep the real image only after consecutive captures are identical.
+                byte[] currentImage = Files.readAllBytes(image);
+                boolean stable = previousImage != null && MessageDigest.isEqual(previousImage, currentImage);
+                previousImage = currentImage;
+                return stable;
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return "Could not capture a stable atomic JUnit preview with Finish enabled and focused"; //$NON-NLS-1$
             }
         });
-        assertTrue(SWTUtils.captureScreenshot(image.toString(), clientBounds),
-                () -> "Could not capture " + image);
         assertTrue(Files.isRegularFile(image) && Files.size(image) > 0,
                 () -> "Screenshot was not written: " + image);
     }
