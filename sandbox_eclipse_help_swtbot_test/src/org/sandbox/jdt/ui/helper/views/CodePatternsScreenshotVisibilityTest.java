@@ -12,12 +12,17 @@ package org.sandbox.jdt.ui.helper.views;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
@@ -86,6 +91,63 @@ class CodePatternsScreenshotVisibilityTest {
 			Shell shell= button.getShell();
 			viewport.setLocation(shell.getClientArea().width - 15, 0);
 			assertFalse(CodePatternsScreenshotVisibility.checkboxProblem(button).isEmpty(), "Clipped by shell");
+		});
+	}
+
+	@Test
+	void anOwnedDialogIsNotClippedToItsSmallerOwner() {
+		withOwnedDialog((button, preview) -> {
+			Shell dialog= button.getShell();
+			Composite owner= dialog.getParent();
+			Rectangle ownerArea= owner.getDisplay().map(owner, null, owner.getClientArea());
+			for (var control : List.of(button, preview)) {
+				Point size= control.getSize();
+				Rectangle area= control.getDisplay().map(control, null, new Rectangle(0, 0, size.x, size.y));
+				assertFalse(area.intersection(ownerArea).equals(area), "Fixture must exceed the owner window");
+				assertEquals("", CodePatternsScreenshotVisibility.controlProblem(control));
+			}
+			assertEquals("", CodePatternsScreenshotVisibility.checkboxProblem(button));
+		});
+	}
+
+	@Test
+	void anOwnedDialogsOwnClientAreaStillClipsItsControls() {
+		withOwnedDialog((button, preview) -> {
+			Rectangle client= button.getShell().getClientArea();
+			button.setLocation(client.width - button.getSize().x + 1, 10);
+			assertTrue(CodePatternsScreenshotVisibility.checkboxProblem(button).contains("Shell viewport"),
+					"The dialog itself must reject a clipped checkbox");
+			button.setLocation(10, 10);
+			assertEquals("", CodePatternsScreenshotVisibility.checkboxProblem(button));
+			preview.setLocation(10, client.height - preview.getSize().y + 1);
+			assertTrue(CodePatternsScreenshotVisibility.controlProblem(preview).contains("Shell viewport"),
+					"The dialog itself must reject a clipped preview");
+			preview.setLocation(10, 80);
+			assertEquals("", CodePatternsScreenshotVisibility.controlProblem(preview));
+		});
+	}
+
+	private static void withOwnedDialog(BiConsumer<Button, StyledText> assertion) {
+		Display.getDefault().syncExec(() -> {
+			Shell owner= new Shell(Display.getDefault());
+			try {
+				owner.setSize(80, 80);
+				owner.open();
+				Shell dialog= new Shell(owner, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
+				Button button= new Button(dialog, SWT.CHECK | SWT.LEFT);
+				button.setText("Apply transformation rules from .sandbox-hint files");
+				Point preferred= button.computeSize(SWT.DEFAULT, SWT.DEFAULT);
+				dialog.setSize(preferred.x + 200, 300);
+				button.setBounds(10, 10, preferred.x, preferred.y);
+				StyledText preview= new StyledText(dialog, SWT.BORDER);
+				preview.setText("boolean empty = list.isEmpty();");
+				preview.setBounds(10, 80, preferred.x, 60);
+				dialog.open();
+				assertion.accept(button, preview);
+			} finally {
+				// Disposing the owner also disposes its owned dialog, including assertion failures.
+				owner.dispose();
+			}
 		});
 	}
 

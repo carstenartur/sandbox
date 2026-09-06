@@ -16,6 +16,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Shell;
 
 /** Read-only geometry checks for the left-aligned Hint File checkbox. Call on the UI thread. */
 @SuppressWarnings("nls")
@@ -60,6 +61,11 @@ final class CodePatternsScreenshotVisibility {
 			if (!bounds.intersection(viewport).equals(bounds)) {
 				return "Content " + bounds + " is clipped by " + parent.getClass().getSimpleName()
 						+ " viewport " + viewport;
+			}
+			// An owned dialog is a separate window, not content clipped by its owner shell.
+			// Its own client area still clips the control and must be checked above.
+			if (parent instanceof Shell) {
+				break;
 			}
 		}
 		return "";
