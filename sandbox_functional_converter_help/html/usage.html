@@ -14,8 +14,17 @@
       <strong>Functional Converter (Sandbox)</strong>.</p>
    <p><img class="screenshot" src="../images/functional-converter-cleanup.png"
       alt="Functional Converter cleanup configuration"/></p>
-   <p>The implemented target is <strong>Stream</strong>. Target choices shown as not implemented do not authorize a
-      speculative conversion and leave the source unchanged.</p>
+   <p>In <strong>Loop Conversion</strong>, select <strong>Enable bidirectional loop conversions</strong>, choose a
+      target format, and enable the source formats to convert. The examples below use
+      <strong>Stream (forEach, map, filter)</strong> as the target. Each source checkbox is independent.</p>
+   <p>The other target formats support only their implemented directions: enhanced-for can consume supported stream
+      or iterator loops; iterator-while can consume supported enhanced-for or stream forms. The experimental
+      classic-for source is supported only with the Stream target. A target choice is not a promise that every
+      source shape can be converted.</p>
+
+   <p>Older profiles may also contain the separate legacy functional-cleanup switches. Those keep their existing
+      Stream-only behavior and are independent of the bidirectional source selections. Use a dedicated profile
+      without the legacy switches when checking one bidirectional option in isolation.</p>
 
    <h2>Simple iteration</h2>
    <h3>Before</h3>
@@ -47,6 +56,48 @@ for (Integer value : values) {
 }</pre>
    <h3>After</h3>
    <pre>int max = values.stream().reduce(Integer.MIN_VALUE, Math::max);</pre>
+
+   <h2>Iterator while-loop</h2>
+   <p>Enable <strong>Convert from: Iterator while-loops</strong> with the Stream target.</p>
+   <!-- IteratorLoopConversionTest.testSimpleWhileIterator_forEach -->
+   <h3>Before</h3>
+   <pre>Iterator&lt;String&gt; it = items.iterator();
+while (it.hasNext()) {
+    String item = it.next();
+    System.out.println(item);
+}</pre>
+   <h3>After</h3>
+   <pre>items.stream().forEach(item -&gt; System.out.println(item));</pre>
+   <p>The recognized shape consumes one element per iteration. Iterator removal, multiple <code>next()</code> calls,
+      and loops with an unsupported <code>break</code> are not replaced by an assumed equivalent stream.</p>
+   <!-- IteratorLoopConversionTest.testIteratorWithRemove_notConverted -->
+   <h3>Left unchanged: iterator removal</h3>
+   <pre>Iterator&lt;String&gt; it = items.iterator();
+while (it.hasNext()) {
+    String item = it.next();
+    if (item.isEmpty()) {
+        it.remove();
+    }
+}</pre>
+
+   <h2>Classic index-based for-loop</h2>
+   <p>Enable <strong>Convert from: Classic index-based for-loops (experimental)</strong> with the Stream target.
+      This source option is disabled by default. In the bidirectional configuration, disabling it or the master switch
+      prevents this conversion;
+      selecting enhanced-for or iterator-while does not silently produce a stream instead.</p>
+   <!-- AdditionalLoopPatternsTest.testIndexBasedForLoop_toIntStream; ClassicForSourceSelectionTest -->
+   <h3>Before</h3>
+   <pre>for (int i = 0; i &lt; 10; i++) {
+    System.out.println(i);
+}</pre>
+   <h3>After</h3>
+   <pre>IntStream.range(0, 10).forEach(i -&gt; System.out.println(i));</pre>
+   <p>The cleanup adds <code>java.util.stream.IntStream</code> when needed. This example is the simple increasing,
+      unit-step, exclusive-upper-bound case; it is not a guarantee for arbitrary bounds, counter writes,
+      labeled control flow, or externally observed loop variables.</p>
+   <p>Ordinary counter-based <code>while</code> loops, <code>do-while</code> loops, and queue-draining loops are not
+      iterator-loop equivalents and remain unchanged. Review each proposed conversion rather than enabling
+      all directions on the assumption that they are interchangeable.</p>
 
    <h2>Safety boundary</h2>
    <p>The cleanup is intentionally conservative around mutation, side effects, encounter order, exception behavior,
