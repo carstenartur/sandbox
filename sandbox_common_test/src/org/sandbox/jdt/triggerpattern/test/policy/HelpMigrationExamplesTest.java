@@ -35,10 +35,13 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TextBlock;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
 import org.junit.jupiter.api.Test;
 import org.w3c.dom.Document;
@@ -86,6 +89,32 @@ public class HelpMigrationExamplesTest {
 	}
 
 	@Test
+	void encodingKeepBehaviorMakesTheRuntimeDefaultExplicit() throws Exception {
+		assertEncodingExamples("KeepBehavior", "encoding-keep-after", false);
+	}
+
+	@Test
+	void encodingPreferUtf8DocumentsItsPolicyChange() throws Exception {
+		assertEncodingExamples("PreferUTF8", "encoding-prefer-after", false);
+	}
+
+	@Test
+	void encodingAggregationIncludesTheFieldAndQualifiedUses() throws Exception {
+		assertEncodingExamples("AggregateUTF8", "encoding-aggregate-after", true);
+	}
+
+	@Test
+	void encodingComparisonRejectsAChangedDefaultAndAnUnchangedCall() throws Exception {
+		String source= "class E1 { void example() throws Exception { "
+				+ "InputStreamReader is1 = new InputStreamReader(input, Charset.defaultCharset()); } }";
+		for (String broken : List.of(source.replace("Charset.defaultCharset()", "StandardCharsets.UTF_8"),
+				source.replace(", Charset.defaultCharset()", ""))) {
+			Document page= parseHtml("<html><pre id=\"policy\">" + broken + "</pre></html>");
+			assertThrows(AssertionError.class, () -> assertExample(source, page, "policy"), broken);
+		}
+	}
+
+	@Test
 	void exampleComparisonRejectsMissingDuplicateBlankInvalidAndStaleCode() throws Exception {
 		String expected= "public class Example { void run() { process(Status.PENDING); } }";
 		String element= "<pre id=\"sample\">" + expected + "</pre>";
@@ -97,9 +126,68 @@ public class HelpMigrationExamplesTest {
 		}
 	}
 
+	private static void assertEncodingExamples(String strategy, String afterId, boolean aggregate) throws Exception {
+		Path root= repositoryRoot();
+		String fixture= "sandbox_encoding_quickfix_test/src/org/eclipse/jdt/ui/tests/quickfix/Java10/"
+				+ "ExplicitEncodingPatterns" + strategy + ".java";
+		List<String> sources= fixtureSources(root, fixture, "INPUTSTREAMREADER");
+		assertEquals(2, sources.size(), fixture);
+		Document page= parseHtml(Files.readString(root.resolve("sandbox_encoding_quickfix_help/html/usage.html"),
+				StandardCharsets.UTF_8));
+		assertExample(encodingExcerpt(sources.get(0), false), page, "encoding-before");
+		assertExample(encodingExcerpt(sources.get(1), aggregate), page, afterId);
+	}
+
+	private static String encodingExcerpt(String source, boolean aggregate) {
+		List<String> fields= new ArrayList<>();
+		List<String> statements= new ArrayList<>();
+		List<String> names= new ArrayList<>();
+		parseJava(source).accept(new ASTVisitor() {
+			@Override
+			public boolean visit(MethodDeclaration node) {
+				return "method".equals(node.getName().getIdentifier());
+			}
+
+			@Override
+			public boolean visit(FieldDeclaration node) {
+				if (node.fragments().size() == 1 && "UTF_8".equals(
+						((VariableDeclarationFragment) node.fragments().get(0)).getName().getIdentifier())) {
+					fields.add(node.toString());
+				}
+				return false;
+			}
+
+			@Override
+			public boolean visit(VariableDeclarationStatement node) {
+				if (node.fragments().size() == 1) {
+					String name= ((VariableDeclarationFragment) node.fragments().get(0)).getName().getIdentifier();
+					if (List.of("is1", "is2").contains(name)) {
+						names.add(name);
+						statements.add(node.toString());
+					}
+				}
+				return false;
+			}
+		});
+		assertEquals(List.of("is1", "is2"), names, "Missing or ambiguous reader declarations in fixture");
+		assertEquals(aggregate ? 1 : 0, fields.size(), "Unexpected aggregation field in fixture");
+		// Presentation wrapper only: the original constructor/field ASTs are retained, not recomputed.
+		return "class E1 {\n" + String.join("\n", fields) + "\nvoid example() throws Exception {\n"
+				+ String.join("\n", statements) + "\n}\n}";
+	}
+
 	private static void assertFixtureExamples(String helpBundle, String testPath, String memberName,
 			String... exampleIds) throws Exception {
 		Path root= repositoryRoot();
+		List<String> sources= fixtureSources(root, testPath, memberName);
+		assertEquals(exampleIds.length, sources.size(), "Fixture source count: " + testPath + "#" + memberName);
+		Document page= parseHtml(Files.readString(root.resolve(helpBundle + "/html/usage.html"), StandardCharsets.UTF_8));
+		for (int index= 0; index < exampleIds.length; index++) {
+			assertExample(sources.get(index), page, exampleIds[index]);
+		}
+	}
+
+	private static List<String> fixtureSources(Path root, String testPath, String memberName) throws IOException {
 		CompilationUnit test= parseJava(Files.readString(root.resolve(testPath), StandardCharsets.UTF_8));
 		List<ASTNode> members= new ArrayList<>();
 		test.accept(new ASTVisitor() {
@@ -133,11 +221,7 @@ public class HelpMigrationExamplesTest {
 				return true;
 			}
 		});
-		assertEquals(exampleIds.length, sources.size(), "Fixture source count: " + testPath + "#" + memberName);
-		Document page= parseHtml(Files.readString(root.resolve(helpBundle + "/html/usage.html"), StandardCharsets.UTF_8));
-		for (int index= 0; index < exampleIds.length; index++) {
-			assertExample(sources.get(index), page, exampleIds[index]);
-		}
+		return sources;
 	}
 
 	private static void assertExample(String expected, Document page, String id) {
