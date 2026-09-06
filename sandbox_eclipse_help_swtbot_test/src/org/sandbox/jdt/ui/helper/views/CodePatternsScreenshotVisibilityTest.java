@@ -26,12 +26,13 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.junit.jupiter.api.Test;
 
-/** Real SWT clipping tests; no screenshot baseline or SWTBot dependency is needed. */
+/** Real SWT clipping and scroll-position tests; no screenshot baseline or SWTBot session is needed. */
 @SuppressWarnings("nls")
 class CodePatternsScreenshotVisibilityTest {
 
@@ -152,6 +153,68 @@ class CodePatternsScreenshotVisibilityTest {
 				assertEquals("", CodePatternsScreenshotVisibility.controlProblem(preview));
 			});
 		}
+	}
+
+	@Test
+	void scrollingAGroupUsesItsOuterFrameRatherThanItsClientOrigin() {
+		for (int sectionY : new int[] { 0, 300 }) {
+			withGroup(sectionY, (button, viewport) -> {
+				Composite section= button.getParent();
+				Rectangle sectionBounds= section.getBounds();
+				Rectangle optionBounds= button.getBounds();
+				assertTrue(sectionBounds.height > viewport.getClientArea().height,
+						"The whole section must not fit in the viewport");
+				CodePatternsConfigurationScreenshot.scrollToOption(button);
+				Point outerTop= section.getDisplay().map(section.getParent(), viewport, section.getLocation());
+				assertTrue(viewport.getClientArea().contains(outerTop), "The native section title must start in view");
+				assertEquals("", CodePatternsConfigurationScreenshot.optionSectionProblem(button));
+				assertEquals("", CodePatternsScreenshotVisibility.checkboxProblem(button));
+				assertEquals(sectionBounds, section.getBounds(), "Scrolling must not resize or move the section");
+				assertEquals(optionBounds, button.getBounds(), "Scrolling must not alter the option geometry");
+			});
+		}
+	}
+
+	@Test
+	void aVisibleCheckboxDoesNotAuthorizeAClippedSectionStart() {
+		withGroup(300, (button, viewport) -> {
+			CodePatternsConfigurationScreenshot.scrollToOption(button);
+			assertEquals("", CodePatternsConfigurationScreenshot.optionSectionProblem(button));
+			viewport.setOrigin(0, button.getParent().getBounds().y + 1);
+			assertEquals("", CodePatternsScreenshotVisibility.checkboxProblem(button),
+					"The checkbox alone must still pass, reproducing the missing heading guard");
+			assertFalse(CodePatternsConfigurationScreenshot.optionSectionProblem(button).isEmpty(),
+					"A later scroll must invalidate readiness even when the option remains visible");
+			CodePatternsConfigurationScreenshot.scrollToOption(button);
+			assertEquals("", CodePatternsConfigurationScreenshot.optionSectionProblem(button));
+			assertEquals("", CodePatternsScreenshotVisibility.checkboxProblem(button));
+		});
+	}
+
+	private static void withGroup(int sectionY, BiConsumer<Button, ScrolledComposite> assertion) {
+		Display.getDefault().syncExec(() -> {
+			Shell shell= new Shell(Display.getDefault());
+			try {
+				ScrolledComposite viewport= new ScrolledComposite(shell, SWT.H_SCROLL | SWT.V_SCROLL);
+				Composite content= new Composite(viewport, SWT.NONE);
+				Group section= new Group(content, SWT.NONE);
+				section.setText("Declarative transformations (.sandbox-hint files)");
+				Button button= new Button(section, SWT.CHECK | SWT.LEFT);
+				button.setText("Apply transformation rules from .sandbox-hint files");
+				Point preferred= button.computeSize(SWT.DEFAULT, SWT.DEFAULT);
+				int width= preferred.x + 100;
+				shell.setSize(width + 100, 400);
+				viewport.setBounds(10, 10, width, 200);
+				content.setSize(width + 600, 1200);
+				viewport.setContent(content);
+				section.setBounds(10, sectionY, width + 550, 700);
+				button.setBounds(10, 15, width + 500, preferred.y);
+				shell.open();
+				assertion.accept(button, viewport);
+			} finally {
+				shell.dispose();
+			}
+		});
 	}
 
 	private static void withTabFolder(int position, Consumer<StyledText> assertion) {

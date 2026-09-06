@@ -103,6 +103,10 @@ final class CodePatternsConfigurationScreenshot {
 						lastProblem= "Profile dialog is not the active shell";
 						return Boolean.FALSE;
 					}
+					lastProblem= optionSectionProblem(controls.option());
+					if (!lastProblem.isEmpty()) {
+						return Boolean.FALSE;
+					}
 					lastProblem= CodePatternsScreenshotVisibility.checkboxProblem(controls.option());
 					if (!lastProblem.isEmpty()) {
 						return Boolean.FALSE;
@@ -201,14 +205,37 @@ final class CodePatternsConfigurationScreenshot {
 				&& (enabled ? AFTER_CODE : BEFORE_CODE).stream().allMatch(text.substring(start)::contains);
 	}
 
-	private static void scrollToOption(Button option) {
+	static void scrollToOption(Button option) {
+		ScrolledComposite scrolled= configurationPane(option);
+		Composite section= option.getParent();
+		// Map the native Group's outer frame from its parent. Its own (0, 0) is the
+		// client origin on GTK and lies below the title that the screenshot must retain.
+		Point top= option.getDisplay().map(section.getParent(), scrolled.getContent(), section.getLocation());
+		scrolled.setOrigin(0, Math.max(0, top.y - 8));
+		assertTrue(option.computeSize(SWT.DEFAULT, SWT.DEFAULT).x <= option.getSize().x,
+				"The Hint File label is clipped horizontally");
+	}
+
+	static String optionSectionProblem(Button option) {
+		if (option.isDisposed()) {
+			return "Hint File option is disposed";
+		}
+		Composite section= option.getParent();
+		if (!section.isVisible()) {
+			return "Hint File section is hidden";
+		}
+		ScrolledComposite scrolled= configurationPane(option);
+		Point top= option.getDisplay().map(section.getParent(), scrolled, section.getLocation());
+		// The checkbox can remain fully visible while the section title is above the
+		// viewport. Check the outer start independently before every native capture.
+		return scrolled.getClientArea().contains(top) ? ""
+				: "Hint File section starts outside the configuration viewport: " + top;
+	}
+
+	private static ScrolledComposite configurationPane(Button option) {
 		for (Composite parent= option.getParent(); parent != null; parent= parent.getParent()) {
 			if (parent instanceof ScrolledComposite scrolled) {
-				Point group= option.getDisplay().map(option.getParent(), scrolled.getContent(), 0, 0);
-				scrolled.setOrigin(0, Math.max(0, group.y - 8));
-				assertTrue(option.computeSize(SWT.DEFAULT, SWT.DEFAULT).x <= option.getSize().x,
-						"The Hint File label is clipped horizontally");
-				return;
+				return scrolled;
 			}
 		}
 		throw new AssertionError("Hint File option has no scrollable configuration pane");
