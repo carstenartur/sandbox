@@ -29,6 +29,4 @@ fix_legacy_hint_directives.py
 qa/upstream-jdt/compare_test_inventory.py
 qa/upstream-jdt/verify_contract.py
 qa/upstream-jdt/verify_corpus_result.py
-qa/upstream-jdt/verify_jdt_ui_contract.py
-qa/upstream-jdt/verify_jdt_ui_corpus.py
 scan_hints.py
