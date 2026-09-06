@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_ENABLED;
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM;
@@ -201,6 +202,9 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 			}
 			if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {
 				fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);
+			}
+			if (isEnabled(LOOP_CONVERSION_FROM_CLASSIC_FOR)) {
+				fixSet.add(UseFunctionalCallFixCore.TRADITIONAL_FOR_LOOP);
 			}
 			break;
 		}

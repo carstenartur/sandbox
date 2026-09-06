@@ -96,13 +96,11 @@ public class XMLCleanupHandler extends AbstractHandler {
 	}
 	
 	/**
-	 * Create and configure the XML cleanup service.
+	 * Uses the standalone compact mode, independently of JDT cleanup profiles.
+	 * Both the context-menu and main-menu command use this fixed policy.
 	 */
 	private XMLCleanupService createXMLCleanupService() {
-		XMLCleanupService service = new XMLCleanupService();
-		// TODO: Add preference support for indent option
-		service.setEnableIndent(false);
-		return service;
+		return XMLCleanupService.compactFormatting();
 	}
 	
 	/**

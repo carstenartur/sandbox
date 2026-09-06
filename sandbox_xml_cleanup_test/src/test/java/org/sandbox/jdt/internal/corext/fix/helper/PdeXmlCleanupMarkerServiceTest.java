@@ -12,6 +12,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -62,10 +63,14 @@ class PdeXmlCleanupMarkerServiceTest {
 
 	@Test
 	void createsProblemResolutionAppliesSharedCleanupAndClearsMarker() throws Exception {
+		String compact= SchemaTransformationUtils.transform(SOURCE, StandardCharsets.UTF_8, false);
+		String indented= SchemaTransformationUtils.transform(SOURCE, StandardCharsets.UTF_8, true);
+		assertNotEquals(compact, indented, "The fixture must distinguish compact and indented modes"); //$NON-NLS-1$
 		IFile file= createFile("schema/sample.exsd", SOURCE); //$NON-NLS-1$
 		PdeXmlCleanupMarkerService service= new PdeXmlCleanupMarkerService();
 
 		assertEquals(1, service.refresh(file, monitor));
+		assertEquals(SOURCE, read(file), "Marker analysis must not apply formatting"); //$NON-NLS-1$
 		IMarker[] markers= file.findMarkers(PdeXmlCleanupMarkerService.MARKER_TYPE,
 				false, IResource.DEPTH_ZERO);
 		assertEquals(1, markers.length);
@@ -83,12 +88,33 @@ class PdeXmlCleanupMarkerServiceTest {
 		resolutions[0].run(markers[0]);
 
 		String normalized= read(file);
+		assertEquals(compact, normalized, "The marker resolution uses the standalone compact mode"); //$NON-NLS-1$
 		assertFalse(SOURCE.equals(normalized));
 		XMLTestUtils.assertXmlSemanticallyEqual(SOURCE, normalized);
 		assertEquals(0, file.findMarkers(PdeXmlCleanupMarkerService.MARKER_TYPE,
 				false, IResource.DEPTH_ZERO).length);
 		assertEquals(0, service.refresh(file, monitor),
 				"The applied quick fix must be idempotent"); //$NON-NLS-1$
+	}
+
+	@Test
+	void standaloneCompactServicesDoNotShareIndentationState() throws Exception {
+		XMLCleanupService configured= XMLCleanupService.compactFormatting();
+		configured.setEnableIndent(true);
+		XMLCleanupService standalone= XMLCleanupService.compactFormatting();
+		IFile indentedFile= createFile("schema/indented.exsd", SOURCE); //$NON-NLS-1$
+		IFile compactFile= createFile("schema/compact.exsd", SOURCE); //$NON-NLS-1$
+
+		assertTrue(configured.processFile(indentedFile, monitor));
+		assertTrue(standalone.processFile(compactFile, monitor));
+		String indented= read(indentedFile);
+		String compact= read(compactFile);
+		assertEquals(SchemaTransformationUtils.transform(SOURCE, StandardCharsets.UTF_8, true), indented);
+		assertEquals(SchemaTransformationUtils.transform(SOURCE, StandardCharsets.UTF_8, false), compact);
+		assertNotEquals(indented, compact, "Changing another service must not change the standalone policy"); //$NON-NLS-1$
+		XMLTestUtils.assertXmlSemanticallyEqual(SOURCE, compact);
+		XMLTestUtils.assertXmlSemanticallyEqual(SOURCE, indented);
+		assertFalse(standalone.processFile(compactFile, monitor), "Compact formatting must be idempotent"); //$NON-NLS-1$
 	}
 
 	@Test

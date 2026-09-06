@@ -9,20 +9,118 @@
 </head>
 <body>
    <h1>Using Int to Enum</h1>
-   <h2>Entry point</h2>
-   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, and select <strong>Int to Enum (Sandbox)</strong>.</p>
+   <h2>Entry point and scope</h2>
+   <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, select
+      <strong>Int to Enum (Sandbox)</strong>, and enable <strong>Convert int constants to enum/switch</strong>.</p>
+   <p>Leave <strong>Analyze all project source files for coordinated migrations</strong> off for a local conversion.
+      Enable it explicitly when a declaration and its callers in other project source files must be planned together.
+      This scope choice is separate from the optional host support for atomic preview selection described below.</p>
 
-   <h2>When it is offered</h2>
-   <p>The cleanup requires a coherent constant domain and enough resolved usage information to avoid mixing unrelated integers.</p>
+   <h2>Local conversion: constants, signature and calls</h2>
+   <p>This closed local example uses a private parameter and private constants. The migration changes their uses
+      together; merely introducing the enum would leave the old call sites incompatible.</p>
+   <!-- IntToEnumCleanUpTest.testBasicIfElseIntStateToEnum -->
+   <h3>Before</h3>
+   <pre id="local-before">package test1;
 
-   <h2>Recommended workflow</h2>
-   <ol>
-      <li>Enable only the transformation options you intend to evaluate.</li>
-      <li>Run the cleanup on a small, version-controlled selection.</li>
-      <li>Inspect the preview or diff before accepting the change.</li>
-      <li>Compile and execute the relevant tests.</li>
-      <li>Expand the scope only after the result is understood.</li>
-   </ol>
+public class E2 {
+    private static final int STATUS_PENDING = 0;
+    private static final int STATUS_APPROVED = 1;
+    private static final int STATUS_REJECTED = 2;
+
+    public void run() {
+        process(STATUS_PENDING);
+        process(STATUS_REJECTED);
+    }
+
+    private void process(int status) {
+        if (status == STATUS_PENDING) {
+            System.out.println("Pending");
+        } else if (STATUS_APPROVED == status) {
+            System.out.println("Approved");
+        } else if (status == STATUS_REJECTED) {
+            System.out.println("Rejected");
+        }
+    }
+}</pre>
+   <h3>After</h3>
+   <pre id="local-after">package test1;
+
+public class E2 {
+    private enum Status {
+        PENDING, APPROVED, REJECTED
+    }
+
+    public void run() {
+        process(Status.PENDING);
+        process(Status.REJECTED);
+    }
+
+    private void process(Status status) {
+        if (status == Status.PENDING) {
+            System.out.println("Pending");
+        } else if (Status.APPROVED == status) {
+            System.out.println("Approved");
+        } else if (status == Status.REJECTED) {
+            System.out.println("Rejected");
+        }
+    }
+}</pre>
+
+   <h2>Coordinated conversion across two source files</h2>
+   <p>Enable project-wide analysis for this example. Both files are in the same default package, matching the
+      executable fixture. The method and generated enum remain package-accessible; the generic owner does not
+      require a parameterized qualifier for its nested enum.</p>
+   <!-- IntEnumReferenceQualificationTest.supportsGenericOwnerInDefaultPackage -->
+   <h3>Before: OrderProcessor.java</h3>
+   <pre id="project-owner-before">public class OrderProcessor&lt;T&gt; {
+    static final int STATUS_PENDING = 0;
+    static final int STATUS_APPROVED = 1;
+
+    void process(int status) {
+        if (status == STATUS_PENDING) {
+            System.out.println("pending");
+        } else if (status == STATUS_APPROVED) {
+            System.out.println("approved");
+        }
+    }
+}</pre>
+   <h3>Before: OrderClient.java</h3>
+   <pre id="project-client-before">public class OrderClient {
+    void run(OrderProcessor&lt;String&gt; processor) {
+        processor.process(OrderProcessor.STATUS_PENDING);
+    }
+}</pre>
+   <h3>After: OrderProcessor.java</h3>
+   <pre id="project-owner-after">public class OrderProcessor&lt;T&gt; {
+    enum Status {
+        PENDING, APPROVED
+    }
+
+    void process(Status status) {
+        if (status == Status.PENDING) {
+            System.out.println("pending");
+        } else if (status == Status.APPROVED) {
+            System.out.println("approved");
+        }
+    }
+}</pre>
+   <h3>After: OrderClient.java</h3>
+   <pre id="project-client-after">public class OrderClient {
+    void run(OrderProcessor&lt;String&gt; processor) {
+        processor.process(OrderProcessor.Status.PENDING);
+    }
+}</pre>
+   <p>The regression fixture applies both files, compiles the result, and checks Undo. The Help contract compares
+      these examples with that fixture, ignoring formatting but not signatures, qualifiers, or calls.</p>
+
+   <h2>Applicability and review</h2>
+   <p>A caller passing an arbitrary <code>int</code> is not covered by the local constant-domain proof. Neither is
+      an additional use that still requires the numeric constant. Do not infer support for persistence formats,
+      wire values, bit masks, or consumers outside the analyzed source scope from these examples.</p>
+   <p>Run <strong>Source &gt; Clean Up...</strong> on a version-controlled selection, inspect every changed signature
+      and call site, then compile and run the affected tests. Save actions remain single-file and do not expand to
+      unrelated project files. Project-wide scope must be chosen through an explicit cleanup operation.</p>
 
    <h2>Atomic project-wide preview</h2>
    <p>With the pinned optional patched JDT UI host, every coordinated Int-to-Enum migration is shown as one

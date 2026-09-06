@@ -44,8 +44,7 @@ public class ReplaceSpacesWithTabsQuickFix implements IMarkerResolution {
 		}
 
 		try {
-			XMLCleanupService service= new XMLCleanupService();
-			service.setEnableIndent(false);
+			XMLCleanupService service= XMLCleanupService.compactFormatting();
 			service.processFile(file, null);
 			file.deleteMarkers(PdeXmlCleanupMarkerService.MARKER_TYPE, false, IResource.DEPTH_ZERO);
 			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,

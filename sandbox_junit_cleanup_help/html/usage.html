@@ -22,6 +22,77 @@
    <p>Best-effort mode is never enabled implicitly by a migration preset. Every preset selects a strict, complete option state;
       Best Effort remains a separate explicit policy choice.</p>
 
+   <h2>Presets and individual options</h2>
+   <p>The <strong>Migration preset</strong> selector offers all supported migrations, annotations and lifecycle,
+      lifecycle only, assertions and assumptions, and rules only. <strong>Custom (keep manual choices)</strong>
+      retains the current selections. A preset selects an option group; it does not prove that every source construct
+      in that group has a safe replacement.</p>
+   <p>For the JUnit 4 example below, enable <strong>Enable JUnit migrations and compatibility rewrites</strong>
+      and the individual <strong>Assert</strong> and <strong>Test</strong> options. The assertions-only preset does
+      not replace the separate Test option. For the JUnit 3 example, use the separate <strong>JUnit 3 migration</strong>
+      group and enable its supported-test conversion. Keep Best effort off while checking these examples.</p>
+
+   <h2>JUnit 3: standalone TestCase to Jupiter</h2>
+   <p>This minimal fixture isolates test discovery and lifecycle conversion. It removes the direct TestCase
+      superclass, adds Jupiter lifecycle and test annotations, and retains the method names and visibility.</p>
+   <!-- MigrationJUnit3Test.removes_extends_TestCase -->
+   <h3>Before</h3>
+   <pre id="junit3-before">package test;
+import junit.framework.TestCase;
+
+public class MyTest extends TestCase {
+    protected void setUp() {
+    }
+    public void testSomething() {
+    }
+}</pre>
+   <h3>After</h3>
+   <pre id="junit3-after">package test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+    @BeforeEach
+    protected void setUp() {
+    }
+    @Test
+    public void testSomething() {
+    }
+}</pre>
+   <p>A custom harness, suite factory, or inherited lifecycle needs its own closed-scope proof. This standalone
+      example is not a recipe for simply deleting TestCase from an arbitrary hierarchy.</p>
+
+   <h2>JUnit 4: test annotation and assertion message</h2>
+   <p>The message moves from the first argument to the last; expected and actual values keep their order.</p>
+   <!-- MigrationAssertionsTest.migrates_assertEquals_with_message_parameter_order -->
+   <h3>Before</h3>
+   <pre id="junit4-before">package test;
+import org.junit.Assert;
+import org.junit.Test;
+
+public class MyTest {
+    @Test
+    public void testEquals() {
+        Assert.assertEquals("Values should match", 42, 42);
+    }
+}</pre>
+   <h3>After</h3>
+   <pre id="junit4-after">package test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+public class MyTest {
+    @Test
+    public void testEquals() {
+        Assertions.assertEquals(42, 42, "Values should match");
+    }
+}</pre>
+   <p>The Help examples are checked against the corresponding executable regression fixtures, including imports,
+      annotations, and argument order. This documentation check does not replace running the migrated test suite.</p>
+   <p>Make the target Jupiter API and test engine available in the build. Do not remove JUnit 3/4 or Vintage merely
+      because these two examples convert successfully: other tests, custom runners, rules, and dependencies may
+      still require them. Compare the same test identities, results, and invocation counts before and after migration.</p>
+
    <h2>When a transformation is offered</h2>
    <p>The cleanup requires resolvable JUnit types and only rewrites patterns for which a supported Jupiter equivalent has been implemented.
       Coordinated rules and fixtures additionally require the complete source lifecycle scope.</p>

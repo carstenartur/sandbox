@@ -35,6 +35,20 @@ public class XMLCleanupService {
 
 	private boolean enableIndent;
 
+	/**
+	 * Creates an independent service for the fixed compact formatting mode used
+	 * by standalone Workbench commands and marker resolutions. This mode does
+	 * not read or inherit the active JDT cleanup profile's indentation setting.
+	 *
+	 * @return a new service with serializer indentation disabled
+	 * @since 1.3.5
+	 */
+	public static XMLCleanupService compactFormatting() {
+		XMLCleanupService service= new XMLCleanupService();
+		service.setEnableIndent(false);
+		return service;
+	}
+
 	/** Sets whether transformed markup is indented. */
 	public void setEnableIndent(boolean enable) {
 		enableIndent= enable;
