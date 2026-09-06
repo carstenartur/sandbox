@@ -9,11 +9,18 @@
 </head>
 <body>
    <h1>Using PDE XML Cleanup</h1>
-   <h2>Entry points</h2>
-   <p>Enable <strong>XML Cleanup (Sandbox)</strong> in a cleanup profile, or select a supported PDE resource or project
-      and invoke <strong>Clean Up PDE XML</strong> from its context menu.</p>
+   <h2>Entry points and formatting policy</h2>
+   <p>Configure <strong>XML Cleanup (Sandbox)</strong> in a JDT cleanup profile when using the cleanup-profile
+      integration. Its configured options do not automatically apply to the standalone PDE commands below.</p>
    <p><img class="screenshot" src="../images/xml-cleanup.png"
       alt="PDE XML cleanup configuration"/></p>
+   <p>Select a supported PDE resource or project and invoke <strong>Clean Up PDE XML</strong> from its context menu
+      or the <strong>XML Cleanup</strong> main menu. Both entry points use the same <strong>fixed compact formatting
+      mode</strong>: serializer indentation is disabled. They do not read the selected JDT cleanup profile or inherit
+      its indentation option.</p>
+   <p>The Problems-view analysis and <strong>Normalize PDE XML formatting</strong> Quick Fix use that same compact
+      mode. Analysis only creates or refreshes markers; applying the Quick Fix performs the formatting. Changing a
+      JDT cleanup profile does not change the standalone command, marker analysis, or resolution policy.</p>
 
    <h2>Problems marker and Quick Fix</h2>
    <p>Select a supported PDE descriptor or schema and invoke
@@ -31,7 +38,7 @@
       <a href="../images/xml-cleanup-marker-quick-fix.provenance.json">machine-readable provenance</a> records the
       repository, ref, full commit, source path, byte count, and SHA-256 source digest.</p>
 
-   <h2>Representative formatting result</h2>
+   <h2>Representative standalone compact result</h2>
    <h3>Before</h3>
    <pre>&lt;plugin&gt;
     &lt;extension point="org.eclipse.ui.views"&gt;
@@ -41,16 +48,11 @@
             name="My View" /&gt;
     &lt;/extension&gt;
 &lt;/plugin&gt;</pre>
-   <h3>After</h3>
-   <pre>&lt;plugin&gt;
-  &lt;extension point="org.eclipse.ui.views"&gt;
-    &lt;view class="com.example.MyView"
-          id="com.example.myview"
-          name="My View"/&gt;
-  &lt;/extension&gt;
-&lt;/plugin&gt;</pre>
-   <p>When tab conversion is enabled, only structural leading indentation is converted. Attribute values and text
-      content are not rewritten as indentation.</p>
+   <h3>After (compact mode, XML declaration omitted here)</h3>
+   <pre>&lt;plugin&gt;&lt;extension point="org.eclipse.ui.views"&gt;&lt;view class="com.example.MyView" id="com.example.myview" name="My View"/&gt;&lt;/extension&gt;&lt;/plugin&gt;</pre>
+   <p>The standalone formatter does not produce the indented preview of an indentation-enabled JDT profile.
+      Attribute values and meaningful text content are preserved; only structural formatting is normalized.
+      Always inspect the actual source-control diff, including the XML declaration and encoding.</p>
 
    <h2>Supported scope and guarantees</h2>
    <p>The cleanup is restricted to supported PDE descriptors and schema resources in approved project locations,
