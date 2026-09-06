@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "28d1cd99aa87a3432245f66b68dee99f5510a241bcdf348774943a0812c6e16a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: remove-redundant-nonnullbydefault-method-class\u003e\n\u003c!description: Remove @NonNullByDefault annotation from a method if its enclosing class is already annotated with @NonNullByDefault, making the method-level annotation redundant.\u003e\n\u003c!severity: HINT\u003e\n@org.eclipse.jdt.annotation.NonNullByDefault void $name($params$) :: containsAnnotation(\"org.eclipse.jdt.annotation.NonNullByDefault\")\n\u003d\u003e void $name($params$)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.annotation.NonNullByDefault;\n\n@NonNullByDefault\npublic class MyClass {\n    @org.eclipse.jdt.annotation.NonNullByDefault // This method annotation is redundant\n    public String myMethod(String param) {\n        return \"value\";\n    }\n\n    // Another method which should not be affected\n    public void anotherMethod() {\n        System.out.println(\"Hello\");\n    }\n\n    // An inner class, its methods should not be affected by outer class\u0027s @NonNullByDefault\n    @NonNullByDefault\n    public static class InnerClass {\n        public String innerMethod() { return \"inner\"; }\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.annotation.NonNullByDefault;\n\n@NonNullByDefault\npublic class MyClass {\n    public String myMethod(String param) {\n        return \"value\";\n    }\n\n    // Another method which should not be affected\n    public void anotherMethod() {\n        System.out.println(\"Hello\");\n    }\n\n    // An inner class, its methods should not be affected by outer class\u0027s @NonNullByDefault\n    @NonNullByDefault\n    public static class InnerClass {\n        public String innerMethod() { return \"inner\"; }\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.annotation.NonNullByDefault;\n\npublic class MyClass { // No @NonNullByDefault on the class itself\n    @org.eclipse.jdt.annotation.NonNullByDefault // This method annotation is NOT redundant here\n    public String myMethod(String param) {\n        return \"value\";\n    }\n\n    // Another method which should not be affected\n    public void anotherMethod() {\n        System.out.println(\"Hello\");\n    }\n\n    // An inner class with its own @NonNullByDefault\n    @NonNullByDefault\n    public static class InnerClass {\n        @org.eclipse.jdt.annotation.NonNullByDefault // Redundant relative to InnerClass, but not MyClass\n        public String innerMethod() { return \"inner\"; }\n    }\n}\n",
+  "targetHintFile": "nullannotations.sandbox-hint",
+  "sourceCommit": "7bb0fd23fd2aab330efc99f68a43869e09fc81c4",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Nullability",
+  "summary": "Remove redundant @NonNullByDefault from a method if its enclosing class also has it.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-06T02:25:41.682879980Z",
+  "ruleFingerprint": "sha256:d5afdcc84a6d93daf448feca2e5060a7d2924226b0a68b5b39905bd0c3b32371",
+  "behaviorFingerprint": "sha256:4ff4f13538a6012d65262fe51d24dfc6341393290588ae31f6f6020256d2b397",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-06T02:25:47.839707903Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

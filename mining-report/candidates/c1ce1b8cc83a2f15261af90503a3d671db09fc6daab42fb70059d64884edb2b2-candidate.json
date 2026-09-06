@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c1ce1b8cc83a2f15261af90503a3d671db09fc6daab42fb70059d64884edb2b2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.api.EditorUtility_getEditorInputJavaElement\u003e\n\u003c!description: Replace JavaUI.getEditorInputTypeRoot with EditorUtility.getEditorInputJavaElement.\nThis updates an internal Eclipse JDT UI API usage, replacing an older or deprecated access method with a newer utility function.\n\u003e\n\u003c!severity: INFO\u003e\norg.eclipse.jdt.ui.JavaUI.getEditorInputTypeRoot($editor.getEditorInput())\n\u003d\u003e\norg.eclipse.jdt.internal.ui.javaeditor.EditorUtility.getEditorInputJavaElement($editor, false)\n;;",
+  "beforeExample": "package com.example;\n\nimport org.eclipse.jdt.core.ITypeRoot;\nimport org.eclipse.ui.IEditorPart;\nimport org.eclipse.jdt.ui.JavaUI; // Assume this type is available in Eclipse JDT UI\n\npublic class MyHoverProvider {\n    protected ITypeRoot getEditorInputJavaElement(IEditorPart editor) {\n        if (editor !\u003d null) {\n            // Old API call\n            return JavaUI.getEditorInputTypeRoot(editor.getEditorInput());\n        }\n        return null;\n    }\n}",
+  "afterExample": "package com.example;\n\nimport org.eclipse.jdt.core.ITypeRoot;\nimport org.eclipse.ui.IEditorPart;\nimport org.eclipse.jdt.internal.ui.javaeditor.EditorUtility; // Assume this type is available in Eclipse JDT UI\n\npublic class MyHoverProvider {\n    protected ITypeRoot getEditorInputJavaElement(IEditorPart editor) {\n        if (editor !\u003d null) {\n            // New API call\n            return EditorUtility.getEditorInputJavaElement(editor, false);\n        }\n        return null;\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.jdt.core.ITypeRoot;\nimport org.eclipse.ui.IEditorPart;\nimport org.eclipse.jdt.ui.JavaUI;\nimport org.eclipse.jdt.internal.ui.javaeditor.EditorUtility;\n\npublic class AnotherHoverProvider {\n    protected ITypeRoot getOtherElement(IEditorPart editor) {\n        // This should not be changed as it uses a different method on JavaUI\n        String editorId \u003d JavaUI.ID_JAVA_EDITOR; \n        \n        // This should not be changed as it uses EditorUtility with a different boolean argument\n        return EditorUtility.getEditorInputJavaElement(editor, true);\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui-api.sandbox-hint",
+  "sourceCommit": "b198b5165af44f7ec251dd8ccae68e0ff1509635",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Replacement",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-06T02:25:41.726050197Z",
+  "ruleFingerprint": "sha256:2376ff056ec477ef7756e2e31945fa3cdacc4d0d73f733579037f2731bf259c6",
+  "behaviorFingerprint": "sha256:3c5085af267a02d089b9ad8aa7f005aeecfdfeea600160930842b57b9dfc4c35",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-06T02:25:47.852261762Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
