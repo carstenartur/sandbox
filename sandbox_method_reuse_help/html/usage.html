@@ -54,14 +54,47 @@ void second(String input) {
     extractedSequence(input);
 }</pre>
 
-   <h2>Safety authority</h2>
+   <h2>Safety authority for extraction</h2>
    <p>Sandbox performs only candidate discovery. The actual transformation is Eclipse JDT's
       <strong>Extract Method</strong> refactoring with duplicate replacement enabled. JDT determines parameters,
       a possible return value, static context, checked exceptions, legal control flow, destination, method-name
       conflicts, and which occurrences are semantically replaceable. A textual or coarse structural match alone
       never authorizes a source change.</p>
 
-   <h2>Current boundary</h2>
+   <h2>Reuse an existing method</h2>
+   <p>Enable only <strong>Replace inline code sequences with calls to an existing method</strong> to evaluate
+      this separate mode. Here <code>formatName</code> already exists; no new helper is extracted.</p>
+   <!-- MethodReuseCleanUpTest.MethodReuseScenarios.SIMPLE_INLINE_SEQUENCE -->
+   <h3>Before</h3>
+   <pre id="existing-method-before">package test1;
+public class Test {
+    public String formatName(String first, String last) {
+        return first.trim() + " " + last.trim();
+    }
+
+    public void printUser(String firstName, String lastName) {
+        String name = firstName.trim() + " " + lastName.trim();
+        System.out.println(name);
+    }
+}</pre>
+   <h3>After</h3>
+   <pre id="existing-method-after">package test1;
+public class Test {
+    public String formatName(String first, String last) {
+        return first.trim() + " " + last.trim();
+    }
+
+    public void printUser(String firstName, String lastName) {
+        String name = formatName(firstName, lastName);
+        System.out.println(name);
+    }
+}</pre>
+   <p>The existing declaration stays unchanged; the inline expression becomes a call with the matched arguments.
+      The Help contract compares both complete sources with the existing-method regression fixture. The extraction
+      threshold and JDT Extract Method description above belong to the other mode. In either mode, inspect parameter
+      mapping, return handling, side effects, and invocation order before accepting a change.</p>
+
+   <h2>Current extraction boundary</h2>
    <ul>
       <li>For each compilation unit, one cleanup pass extracts one best candidate and replaces all of its JDT-validated duplicates.</li>
       <li>Duplicates are currently searched inside one enclosing Java type and compilation unit, matching JDT's
