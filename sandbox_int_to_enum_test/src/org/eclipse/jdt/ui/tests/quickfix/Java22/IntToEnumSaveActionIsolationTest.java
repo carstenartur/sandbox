@@ -10,13 +10,16 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java22;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +38,9 @@ import org.eclipse.ui.PlatformUI;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.compiler.IProblem;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.fix.CleanUpConstants;
@@ -145,30 +151,73 @@ public class IntToEnumSaveActionIsolationTest {
 		saveEditor(localEditor);
 
 		String savedLocal= Files.readString(local.getResource().getLocation().toFile().toPath(), StandardCharsets.UTF_8);
-		assertTrue(savedLocal.contains("enum Status"), "The proven local cleanup must run during save"); //$NON-NLS-1$ //$NON-NLS-2$
 		int invocationStart= savedLocal.indexOf("process("); //$NON-NLS-1$
 		int invocationEnd= invocationStart < 0 ? -1 : savedLocal.indexOf(')', invocationStart);
 		String invocationArgument= invocationEnd < 0 ? "" //$NON-NLS-1$
 				: savedLocal.substring(invocationStart + "process(".length(), invocationEnd).replaceAll("\\s+", ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		assertTrue(invocationArgument.endsWith("Status.PENDING"), //$NON-NLS-1$
-				() -> "The local call site must use the generated enum, but was: " + invocationArgument); //$NON-NLS-1$
-		assertFalse(savedLocal.contains("process(STATUS_PENDING)"), //$NON-NLS-1$
-				"The local call site must no longer use the integer constant"); //$NON-NLS-1$
-		assertTrue(savedLocal.contains("process(Status status)"), "The private local signature must be migrated"); //$NON-NLS-1$ //$NON-NLS-2$
-		assertFalse(savedLocal.contains("STATUS_PENDING = 0"), "The local integer constants must be removed"); //$NON-NLS-1$ //$NON-NLS-2$
 
-		assertEquals(processorSource, processor.getBuffer().getContents(),
-				"Saving another editor must not migrate the project-wide API owner"); //$NON-NLS-1$
-		assertEquals(processorSource,
-				Files.readString(processor.getResource().getLocation().toFile().toPath(), StandardCharsets.UTF_8),
-				"The API owner on disk must remain unchanged"); //$NON-NLS-1$
-		assertEquals(callerDirtyBuffer, caller.getBuffer().getContents(),
-				"The unrelated dirty editor buffer must remain untouched"); //$NON-NLS-1$
-		assertTrue(caller.hasUnsavedChanges(), "Saving the local editor must not save the unrelated caller editor"); //$NON-NLS-1$
-		assertTrue(callerEditor.isDirty(), "Saving the local editor must leave the unrelated editor dirty"); //$NON-NLS-1$
-		assertEquals(callerOnDisk,
-				Files.readString(caller.getResource().getLocation().toFile().toPath(), StandardCharsets.UTF_8),
-				"The unrelated caller resource on disk must remain untouched"); //$NON-NLS-1$
+		// Retain the complete source in the JUnit report and check isolation even if a rewrite assertion fails.
+		assertAll("Int-to-Enum save result\nBefore save (editor):\n" + localInEditor //$NON-NLS-1$
+				+ "\nAfter save (disk):\n" + savedLocal, //$NON-NLS-1$
+				() -> assertTrue(savedLocal.contains("enum Status"), "The proven local cleanup must run during save"), //$NON-NLS-1$ //$NON-NLS-2$
+				() -> assertTrue(invocationArgument.endsWith("Status.PENDING"), //$NON-NLS-1$
+						() -> "The local call site must use the generated enum, but was: " + invocationArgument), //$NON-NLS-1$
+				() -> assertFalse(savedLocal.contains("process(STATUS_PENDING)"), //$NON-NLS-1$
+						"The local call site must no longer use the integer constant"), //$NON-NLS-1$
+				() -> assertTrue(savedLocal.contains("process(Status status)"), "The private local signature must be migrated"), //$NON-NLS-1$ //$NON-NLS-2$
+				() -> assertFalse(savedLocal.contains("STATUS_PENDING = 0"), "The local integer constants must be removed"), //$NON-NLS-1$ //$NON-NLS-2$
+				() -> assertEquals(processorSource, processor.getBuffer().getContents(),
+						"Saving another editor must not migrate the project-wide API owner"), //$NON-NLS-1$
+				() -> assertEquals(processorSource,
+						Files.readString(processor.getResource().getLocation().toFile().toPath(), StandardCharsets.UTF_8),
+						"The API owner on disk must remain unchanged"), //$NON-NLS-1$
+				() -> assertEquals(callerDirtyBuffer, caller.getBuffer().getContents(),
+						"The unrelated dirty editor buffer must remain untouched"), //$NON-NLS-1$
+				() -> assertTrue(caller.hasUnsavedChanges(), "Saving the local editor must not save the unrelated caller editor"), //$NON-NLS-1$
+				() -> assertTrue(callerEditor.isDirty(), "Saving the local editor must leave the unrelated editor dirty"), //$NON-NLS-1$
+				() -> assertEquals(callerOnDisk,
+						Files.readString(caller.getResource().getLocation().toFile().toPath(), StandardCharsets.UTF_8),
+						"The unrelated caller resource on disk must remain untouched"), //$NON-NLS-1$
+				() -> assertEquals(savedLocal, local.getBuffer().getContents(),
+						"The saved local resource and editor buffer must agree"), //$NON-NLS-1$
+				() -> assertCompiles(local, savedLocal));
+	}
+
+	@Test
+	void compilationCheckRejectsPartialMigrationEvenWhenTheWorkspaceSourceIsValid() throws Exception {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
+		String valid= """
+				package test;
+				class SavedState {
+					enum Status { PENDING }
+					void run() { process(Status.PENDING); }
+					private void process(Status status) { }
+				}
+				"""; //$NON-NLS-1$
+		ICompilationUnit unit= pack.createCompilationUnit("SavedState.java", valid, false, null); //$NON-NLS-1$
+		assertCompiles(unit, valid);
+		for (String argument : List.of("STATUS_PENDING", "0")) { //$NON-NLS-1$ //$NON-NLS-2$
+			String broken= valid.replace("Status.PENDING", argument); //$NON-NLS-1$
+			AssertionError failure= assertThrows(AssertionError.class, () -> assertCompiles(unit, broken), argument);
+			assertTrue(failure.getMessage().contains("ERROR line"), failure::getMessage); //$NON-NLS-1$
+		}
+		assertEquals(valid, unit.getBuffer().getContents(), "The compiler probe must not modify the workspace source"); //$NON-NLS-1$
+	}
+
+	private static void assertCompiles(ICompilationUnit unit, String source) {
+		// Parse the captured disk text, not the shared editor AST or a different working-copy version.
+		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
+		parser.setProject(unit.getJavaProject());
+		parser.setUnitName(unit.getPath().toString());
+		parser.setSource(source.toCharArray());
+		parser.setResolveBindings(true);
+		CompilationUnit ast= (CompilationUnit) parser.createAST(null);
+		List<String> errors= Arrays.stream(ast.getProblems())
+				.filter(IProblem::isError)
+				.map(problem -> "ERROR line " + problem.getSourceLineNumber() + ": " + problem.getMessage() //$NON-NLS-1$ //$NON-NLS-2$
+						+ " [id=" + problem.getID() + "]") //$NON-NLS-1$ //$NON-NLS-2$
+				.toList();
+		assertEquals(List.of(), errors, "Saved source must compile"); //$NON-NLS-1$
 	}
 
 	private void enableSaveParticipant() throws Exception {
