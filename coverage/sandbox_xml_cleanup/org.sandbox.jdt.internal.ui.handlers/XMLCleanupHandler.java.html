@@ -96,80 +96,78 @@ import org.sandbox.jdt.internal.corext.fix.helper.XMLCleanupService;
 	}
 	
 	/**
-	 * Create and configure the XML cleanup service.
+	 * Uses the standalone compact mode, independently of JDT cleanup profiles.
+	 * Both the context-menu and main-menu command use this fixed policy.
 	 */
 	private XMLCleanupService createXMLCleanupService() {
-<span class="nc" id="L102">		XMLCleanupService service = new XMLCleanupService();</span>
-		// TODO: Add preference support for indent option
-<span class="nc" id="L104">		service.setEnableIndent(false);</span>
-<span class="nc" id="L105">		return service;</span>
+<span class="nc" id="L103">		return XMLCleanupService.compactFormatting();</span>
 	}
 	
 	/**
 	 * Perform the actual cleanup on selected resources.
 	 */
 	private IStatus performCleanup(List&lt;IResource&gt; resources, IProgressMonitor monitor) {
-<span class="nc" id="L112">		XMLCleanupService service = createXMLCleanupService();</span>
+<span class="nc" id="L110">		XMLCleanupService service = createXMLCleanupService();</span>
 		
-<span class="nc" id="L114">		int totalFilesProcessed = 0;</span>
-<span class="nc" id="L115">		int totalProjects = 0;</span>
-<span class="nc" id="L116">		int totalFiles = 0;</span>
+<span class="nc" id="L112">		int totalFilesProcessed = 0;</span>
+<span class="nc" id="L113">		int totalProjects = 0;</span>
+<span class="nc" id="L114">		int totalFiles = 0;</span>
 		
 		// Count total work
-<span class="nc bnc" id="L119" title="All 2 branches missed.">		for (IResource resource : resources) {</span>
-<span class="nc bnc" id="L120" title="All 2 branches missed.">			if (resource instanceof IProject) {</span>
-<span class="nc" id="L121">				totalProjects++;</span>
-<span class="nc bnc" id="L122" title="All 2 branches missed.">			} else if (resource instanceof IFile) {</span>
-<span class="nc" id="L123">				totalFiles++;</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		for (IResource resource : resources) {</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">			if (resource instanceof IProject) {</span>
+<span class="nc" id="L119">				totalProjects++;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">			} else if (resource instanceof IFile) {</span>
+<span class="nc" id="L121">				totalFiles++;</span>
 			}
 		}
 		
 		// Estimate work units (projects are more expensive)
-<span class="nc" id="L128">		int totalWork = totalProjects * 50 + totalFiles;</span>
-<span class="nc" id="L129">		monitor.beginTask(&quot;Cleaning up PDE XML files&quot;, totalWork);</span>
+<span class="nc" id="L126">		int totalWork = totalProjects * 50 + totalFiles;</span>
+<span class="nc" id="L127">		monitor.beginTask(&quot;Cleaning up PDE XML files&quot;, totalWork);</span>
 		
 		try {
-<span class="nc bnc" id="L132" title="All 2 branches missed.">			for (IResource resource : resources) {</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">				if (monitor.isCanceled()) {</span>
-<span class="nc" id="L134">					return Status.CANCEL_STATUS;</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">			for (IResource resource : resources) {</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">				if (monitor.isCanceled()) {</span>
+<span class="nc" id="L132">					return Status.CANCEL_STATUS;</span>
 				}
 				
-<span class="nc bnc" id="L137" title="All 2 branches missed.">				if (resource instanceof IProject) {</span>
-<span class="nc" id="L138">					IProject project = (IProject) resource;</span>
-<span class="nc" id="L139">					monitor.subTask(&quot;Processing project: &quot; + project.getName());</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">				if (resource instanceof IProject) {</span>
+<span class="nc" id="L136">					IProject project = (IProject) resource;</span>
+<span class="nc" id="L137">					monitor.subTask(&quot;Processing project: &quot; + project.getName());</span>
 					
-<span class="nc" id="L141">					int filesChanged = service.processProject(project, monitor);</span>
-<span class="nc" id="L142">					totalFilesProcessed += filesChanged;</span>
+<span class="nc" id="L139">					int filesChanged = service.processProject(project, monitor);</span>
+<span class="nc" id="L140">					totalFilesProcessed += filesChanged;</span>
 					
-<span class="nc" id="L144">					monitor.worked(50);</span>
-<span class="nc bnc" id="L145" title="All 2 branches missed.">				} else if (resource instanceof IFile) {</span>
-<span class="nc" id="L146">					IFile file = (IFile) resource;</span>
-<span class="nc" id="L147">					monitor.subTask(&quot;Processing file: &quot; + file.getName());</span>
+<span class="nc" id="L142">					monitor.worked(50);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">				} else if (resource instanceof IFile) {</span>
+<span class="nc" id="L144">					IFile file = (IFile) resource;</span>
+<span class="nc" id="L145">					monitor.subTask(&quot;Processing file: &quot; + file.getName());</span>
 					
 					try {
-<span class="nc" id="L150">						boolean changed = service.processFile(file, monitor);</span>
-<span class="nc bnc" id="L151" title="All 2 branches missed.">						if (changed) {</span>
-<span class="nc" id="L152">							totalFilesProcessed++;</span>
+<span class="nc" id="L148">						boolean changed = service.processFile(file, monitor);</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">						if (changed) {</span>
+<span class="nc" id="L150">							totalFilesProcessed++;</span>
 						}
-<span class="nc" id="L154">					} catch (CoreException e) {</span>
-<span class="nc" id="L155">						return new Status(IStatus.ERROR, PLUGIN_ID,</span>
-<span class="nc" id="L156">							&quot;Error processing file: &quot; + file.getName(), e);</span>
+<span class="nc" id="L152">					} catch (CoreException e) {</span>
+<span class="nc" id="L153">						return new Status(IStatus.ERROR, PLUGIN_ID,</span>
+<span class="nc" id="L154">							&quot;Error processing file: &quot; + file.getName(), e);</span>
 					}
 					
-<span class="nc" id="L159">					monitor.worked(1);</span>
+<span class="nc" id="L157">					monitor.worked(1);</span>
 				}
 			}
 			
-<span class="nc" id="L163">			String message = String.format(&quot;XML Cleanup completed. %d file(s) processed and updated.&quot;, </span>
-<span class="nc" id="L164">				totalFilesProcessed);</span>
+<span class="nc" id="L161">			String message = String.format(&quot;XML Cleanup completed. %d file(s) processed and updated.&quot;, </span>
+<span class="nc" id="L162">				totalFilesProcessed);</span>
 			
-<span class="nc" id="L166">			return new Status(IStatus.OK, PLUGIN_ID, message);</span>
+<span class="nc" id="L164">			return new Status(IStatus.OK, PLUGIN_ID, message);</span>
 			
-<span class="nc" id="L168">		} catch (Exception e) {</span>
-<span class="nc" id="L169">			return new Status(IStatus.ERROR, PLUGIN_ID, </span>
-<span class="nc" id="L170">				&quot;Error during XML cleanup&quot;, e);</span>
+<span class="nc" id="L166">		} catch (Exception e) {</span>
+<span class="nc" id="L167">			return new Status(IStatus.ERROR, PLUGIN_ID, </span>
+<span class="nc" id="L168">				&quot;Error during XML cleanup&quot;, e);</span>
 		} finally {
-<span class="nc" id="L172">			monitor.done();</span>
+<span class="nc" id="L170">			monitor.done();</span>
 		}
 	}
 }

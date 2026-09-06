@@ -44,16 +44,15 @@ import org.eclipse.ui.IMarkerResolution;
 		}
 
 		try {
-<span class="fc" id="L47">			XMLCleanupService service= new XMLCleanupService();</span>
-<span class="fc" id="L48">			service.setEnableIndent(false);</span>
-<span class="fc" id="L49">			service.processFile(file, null);</span>
-<span class="fc" id="L50">			file.deleteMarkers(PdeXmlCleanupMarkerService.MARKER_TYPE, false, IResource.DEPTH_ZERO);</span>
-<span class="fc" id="L51">			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,</span>
-<span class="fc" id="L52">					&quot;Normalized PDE XML formatting in: &quot; + file.getFullPath())); //$NON-NLS-1$</span>
-<span class="pc" id="L53">		} catch (CoreException e) {</span>
-<span class="nc" id="L54">			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,</span>
-<span class="nc" id="L55">					&quot;Error applying PDE XML quick fix&quot;, e)); //$NON-NLS-1$</span>
+<span class="fc" id="L47">			XMLCleanupService service= XMLCleanupService.compactFormatting();</span>
+<span class="fc" id="L48">			service.processFile(file, null);</span>
+<span class="fc" id="L49">			file.deleteMarkers(PdeXmlCleanupMarkerService.MARKER_TYPE, false, IResource.DEPTH_ZERO);</span>
+<span class="fc" id="L50">			LOG.log(new Status(IStatus.INFO, PLUGIN_ID,</span>
+<span class="fc" id="L51">					&quot;Normalized PDE XML formatting in: &quot; + file.getFullPath())); //$NON-NLS-1$</span>
+<span class="pc" id="L52">		} catch (CoreException e) {</span>
+<span class="nc" id="L53">			LOG.log(new Status(IStatus.ERROR, PLUGIN_ID,</span>
+<span class="nc" id="L54">					&quot;Error applying PDE XML quick fix&quot;, e)); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L57">	}</span>
+<span class="fc" id="L56">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
