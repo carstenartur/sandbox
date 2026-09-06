@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "a78dd099ed0210a89cf20f09bcb7907282e0fbc2",
-      "lastProcessedDate": "2026-09-05T02:27:20.479497404Z",
-      "totalProcessed": 5382,
+      "lastProcessedCommit": "09ed6f87a493fd32d5eff0cf1ae4182f76d5d780",
+      "lastProcessedDate": "2026-09-06T02:25:40.307003704Z",
+      "totalProcessed": 5462,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3431,7 +3431,7 @@
         "Typo Fix": 3,
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
-        "API Replacement": 4,
+        "API Replacement": 5,
         "API Modernization": 58,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
@@ -3494,7 +3494,7 @@
         "Control Flow Refactoring": 1,
         "Method Extraction/Call Site Refactoring": 1,
         "Bug Fix / Robustness": 1,
-        "Nullability": 1,
+        "Nullability": 2,
         "Redundant Code": 2,
         "Deprecated API Usage": 2,
         "UI State Management": 1,
@@ -3544,7 +3544,10 @@
         "Modifier Change": 1,
         "API Configuration": 1,
         "AST API Modernization": 1,
-        "String formatting": 1
+        "String formatting": 1,
+        "Redundant Call": 1,
+        "Constants Replacement": 1,
+        "Collections Modernization": 1
       },
       "exhaustedCategories": []
     },
@@ -3585,5 +3588,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 28153
+  "globalTotalProcessed": 28233
 }
