@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c034bef037ab5ff84e1b52a14da1dd3ac154400dd9fc2ed140f875a3dd3d1116",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n@id: eclipse.dialogs.use-idialogconstants-cancel-label\n@description: Replace specific JavaHoverMessages constant for cancel button with IDialogConstants.CANCEL_LABEL.\n@severity: INFO\n*/\norg.eclipse.jdt.internal.ui.text.java.hover.JavaHoverMessages.ProblemHover_chooseSettingsTypeDialog_button_cancel\n\u003d\u003e\norg.eclipse.jface.dialogs.IDialogConstants.CANCEL_LABEL\n;;",
+  "beforeExample": "import org.eclipse.jface.dialogs.MessageDialog;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.jdt.internal.ui.text.java.hover.JavaHoverMessages;\n\npublic class MyDialog extends MessageDialog {\n    public MyDialog(Shell parentShell, String dialogTitle, String dialogMessage, int dialogImageType, String[] dialogButtonLabels, int defaultIndex) {\n        super(parentShell, dialogTitle, null, dialogMessage, dialogImageType, dialogButtonLabels, defaultIndex);\n    }\n    public static void open(Shell shell) {\n        String[] buttons\u003d new String[] {\n            \"Button1\",\n            \"Button2\",\n            JavaHoverMessages.ProblemHover_chooseSettingsTypeDialog_button_cancel\n        };\n        new MyDialog(shell, \"Title\", \"Message\", QUESTION, buttons, 0).open();\n    }\n}",
+  "afterExample": "import org.eclipse.jface.dialogs.IDialogConstants;\nimport org.eclipse.jface.dialogs.MessageDialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyDialog extends MessageDialog {\n    public MyDialog(Shell parentShell, String dialogTitle, String dialogMessage, int dialogImageType, String[] dialogButtonLabels, int defaultIndex) {\n        super(parentShell, dialogTitle, null, dialogMessage, dialogImageType, dialogButtonLabels, defaultIndex);\n    }\n    public static void open(Shell shell) {\n        String[] buttons\u003d new String[] {\n            \"Button1\",\n            \"Button2\",\n            IDialogConstants.CANCEL_LABEL\n        };\n        new MyDialog(shell, \"Title\", \"Message\", QUESTION, buttons, 0).open();\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.dialogs.IDialogConstants;\nimport org.eclipse.jface.dialogs.MessageDialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyOtherDialog extends MessageDialog {\n    public MyOtherDialog(Shell parentShell, String dialogTitle, String dialogMessage, int dialogImageType, String[] dialogButtonLabels, int defaultIndex) {\n        super(parentShell, dialogTitle, null, dialogMessage, dialogImageType, dialogButtonLabels, defaultIndex);\n    }\n    public static void open(Shell shell) {\n        String[] buttons\u003d new String[] {\n            \"Button1\",\n            \"Button2\",\n            \"SomeOtherCustomButton\" \n        };\n        new MyOtherDialog(shell, \"Title\", \"Message\", QUESTION, buttons, 0).open();\n    }\n}",
+  "targetHintFile": "constants.sandbox-hint",
+  "sourceCommit": "52406848d1e3a494e93dde16bd63a9087ff55709",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constants Replacement",
+  "summary": "Replaces a specific internal JavaHoverMessages constant for \u0027Cancel\u0027 button with the standard IDialogConstants.CANCEL_LABEL.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-06T02:25:41.751655645Z",
+  "ruleFingerprint": "sha256:4a321c4cf8a2ef9c52e72002aab304384adb7c3f502356b83fac5e0b6bab8b2e",
+  "behaviorFingerprint": "sha256:f8abb322e4cfb5ffa70c0b59216032c33eab3a9dd2cee048e3dd84a834c0d86b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.jface.dialogs cannot be resolved",
+    "verifiedAt": "2026-09-06T02:25:47.871302293Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

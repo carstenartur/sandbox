@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "dcff6d3485a67c0309a3c1a41b3cba1e98ab774e785301cf3c23e87a358b1c59",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n@id: eclipse.collections.array-to-collectionsutil-ipath\n@description: Replace List.toArray(new String[size]) with CollectionsUtil.toArray(List, IPath.class) for lists of IPath objects.\n@severity: WARNING\n*/\n$list.toArray(new java.lang.String[$list.size()]) :: instanceof($list, \"java.util.List\") \u0026\u0026 genericTypeIs($list, 0, \"org.eclipse.core.runtime.IPath\")\n\u003d\u003e\norg.eclipse.jdt.internal.corext.util.CollectionsUtil.toArray($list, org.eclipse.core.runtime.IPath.class)\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.List;\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.Path;\n\npublic class Example {\n    private IPath[] fInstallLocations;\n    public void setup() {\n        List\u003cIPath\u003e locations \u003d new ArrayList\u003c\u003e();\n        locations.add(Path.fromOSString(\"/path/to/jre1\"));\n        locations.add(Path.fromOSString(\"/path/to/jre2\"));\n        fInstallLocations \u003d locations.toArray(new String[locations.size()]);\n    }\n}",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.List;\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.Path;\nimport org.eclipse.jdt.internal.corext.util.CollectionsUtil;\n\npublic class Example {\n    private IPath[] fInstallLocations;\n    public void setup() {\n        List\u003cIPath\u003e locations \u003d new ArrayList\u003c\u003e();\n        locations.add(Path.fromOSString(\"/path/to/jre1\"));\n        locations.add(Path.fromOSString(\"/path/to/jre2\"));\n        fInstallLocations \u003d CollectionsUtil.toArray(locations, IPath.class);\n    }\n}",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class NegativeExample {\n    private String[] fNames;\n    public void setup() {\n        List\u003cString\u003e names \u003d new ArrayList\u003c\u003e();\n        names.add(\"name1\");\n        names.add(\"name2\");\n        fNames \u003d names.toArray(new String[names.size()]);\n    }\n}",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "b224854b46cb58daeb8d7778edd8fe0f379e6078",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Collections Modernization",
+  "summary": "Replaces the problematic `List\u003cIPath\u003e.toArray(new String[size])` with a type-safe call to an internal `CollectionsUtil.toArray` for lists containing `IPath` objects.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-06T02:25:41.775331853Z",
+  "ruleFingerprint": "sha256:f3d987d449fbb900938d7c01dc563657a558f8f94c57a573d79df194bf443ed2",
+  "behaviorFingerprint": "sha256:461bce5a95b23e6ad180db1535977a0fd37e87427e911684bd35a40375c41260",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-06T02:25:47.892496471Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

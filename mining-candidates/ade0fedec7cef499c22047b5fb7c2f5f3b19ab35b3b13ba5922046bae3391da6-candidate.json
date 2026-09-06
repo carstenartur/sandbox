@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 6: The public type FatJarPackageWizardPage must be defined in its own file",
-    "verifiedAt": "2026-09-05T02:27:27.881988051Z",
+    "verifiedAt": "2026-09-06T02:25:47.686037259Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
