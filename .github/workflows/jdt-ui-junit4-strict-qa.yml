@@ -105,9 +105,14 @@ jobs:
 
       - name: Validate the dedicated JDT UI corpus contract
         working-directory: sandbox
-        env:
-          PYTHONDONTWRITEBYTECODE: '1'
-        run: python3 qa/upstream-jdt/verify_jdt_ui_contract.py
+        run: >-
+          mvn --batch-mode --no-transfer-progress
+          -Dsandbox.tycho.linux-only=true
+          -Dspotbugs.skip=true
+          -Dtest='JdtUiCorpus*Test'
+          -Dsurefire.failIfNoSpecifiedTests=false
+          -DfailIfNoTests=false
+          -pl sandbox_target,sandbox_common_test -am package
 
       - name: Build and test the Sandbox product under test
         working-directory: sandbox

@@ -15,6 +15,7 @@ package org.sandbox.jdt.triggerpattern.test.policy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -42,6 +43,9 @@ public class CiBuildScopeContractTest {
 	private static final String ACTIVATION_PROPERTY = "sandbox.tycho.linux-only"; //$NON-NLS-1$
 	private static final String SPOTBUGS_SKIP = "-Dspotbugs.skip=true"; //$NON-NLS-1$
 	private static final String LINUX_ONLY = "-D" + ACTIVATION_PROPERTY + "=true"; //$NON-NLS-1$ //$NON-NLS-2$
+	private static final String STRICT_WORKFLOW = ".github/workflows/jdt-ui-junit4-strict-qa.yml"; //$NON-NLS-1$
+	private static final String CONTRACT_STEP = "Validate the dedicated JDT UI corpus contract"; //$NON-NLS-1$
+	private static final String PRODUCT_STEP = "Build and test the Sandbox product under test"; //$NON-NLS-1$
 
 	@Test
 	public void linuxOnlyProfilesReplaceTargetAndArchivePlatformLists() throws Exception {
@@ -80,8 +84,6 @@ public class CiBuildScopeContractTest {
 				"SandboxHelpScreenshotsMergeGateSWTBotTest"); //$NON-NLS-1$
 		semanticMarkers.put(".github/workflows/patched-jdt-ui-atomic-help-screenshot.yml", //$NON-NLS-1$
 				"SandboxAtomicPreviewPatchedJdtSWTBotTest"); //$NON-NLS-1$
-		semanticMarkers.put(".github/workflows/jdt-ui-junit4-strict-qa.yml", //$NON-NLS-1$
-				"run-jdt-ui-before-after.sh"); //$NON-NLS-1$
 		semanticMarkers.put(".github/scripts/compare_patched_jdt_ui_with_target.sh", //$NON-NLS-1$
 				"compatibility.json"); //$NON-NLS-1$
 
@@ -92,10 +94,41 @@ public class CiBuildScopeContractTest {
 			assertTrue(content.contains(entry.getValue()), entry.getKey());
 		}
 
-		String strict = Files.readString(root.resolve(".github/workflows/jdt-ui-junit4-strict-qa.yml"), //$NON-NLS-1$
-				StandardCharsets.UTF_8);
+		String strict = Files.readString(root.resolve(STRICT_WORKFLOW), StandardCharsets.UTF_8);
+		assertStrictMavenScopes(strict);
+		assertTrue(strict.contains("run-jdt-ui-before-after.sh")); //$NON-NLS-1$
 		assertTrue(strict.contains("--mode strict")); //$NON-NLS-1$
 		assertTrue(strict.contains("VerifyWhitespaceRegression.java")); //$NON-NLS-1$
+	}
+
+	@Test
+	public void strictScopeFlagsCannotMoveBetweenContractAndProductSteps() throws IOException {
+		String strict = Files.readString(repositoryRoot().resolve(STRICT_WORKFLOW), StandardCharsets.UTF_8);
+		assertStrictMavenScopes(strict);
+		for (String sourceStep : List.of(CONTRACT_STEP, PRODUCT_STEP)) {
+			String targetStep = sourceStep.equals(CONTRACT_STEP) ? PRODUCT_STEP : CONTRACT_STEP;
+			String source = workflowStep(strict, sourceStep);
+			String target = workflowStep(strict, targetStep);
+			for (String flag : List.of(LINUX_ONLY, SPOTBUGS_SKIP)) {
+				String moved = strict.replace(source, source.replace(flag, "")) //$NON-NLS-1$
+						.replace(target, target.replace(flag, flag + ' ' + flag));
+				assertEquals(2, occurrences(moved, flag), "Mutation must preserve the global count"); //$NON-NLS-1$
+				assertThrows(AssertionError.class, () -> assertStrictMavenScopes(moved), sourceStep + ' ' + flag);
+			}
+		}
+	}
+
+	@Test
+	public void strictScopeRequiresBothSemanticBuildSteps() throws IOException {
+		String strict = Files.readString(repositoryRoot().resolve(STRICT_WORKFLOW), StandardCharsets.UTF_8);
+		for (String step : List.of(CONTRACT_STEP, PRODUCT_STEP)) {
+			String missing = strict.replace(workflowStep(strict, step), ""); //$NON-NLS-1$
+			assertThrows(AssertionError.class, () -> assertStrictMavenScopes(missing), step);
+		}
+		for (String marker : List.of("-Dtest='JdtUiCorpus*Test'", "-am package", "-Pproduct", "clean verify")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			String missing = strict.replace(marker, ""); //$NON-NLS-1$
+			assertThrows(AssertionError.class, () -> assertStrictMavenScopes(missing), marker);
+		}
 	}
 
 	@Test
@@ -108,6 +141,32 @@ public class CiBuildScopeContractTest {
 			assertFalse(content.contains("spotbugs.skip"), path); //$NON-NLS-1$
 			assertTrue(content.contains("clean verify"), path); //$NON-NLS-1$
 		}
+	}
+
+	private static void assertStrictMavenScopes(String workflow) {
+		assertEquals(2, occurrences(workflow, LINUX_ONLY), STRICT_WORKFLOW);
+		assertEquals(2, occurrences(workflow, SPOTBUGS_SKIP), STRICT_WORKFLOW);
+		for (String name : List.of(CONTRACT_STEP, PRODUCT_STEP)) {
+			String step = workflowStep(workflow, name);
+			assertEquals(1, occurrences(step, LINUX_ONLY), name);
+			assertEquals(1, occurrences(step, SPOTBUGS_SKIP), name);
+		}
+		String contract = workflowStep(workflow, CONTRACT_STEP);
+		assertTrue(contract.contains("mvn "), CONTRACT_STEP); //$NON-NLS-1$
+		assertTrue(contract.contains("-Dtest='JdtUiCorpus*Test'"), CONTRACT_STEP); //$NON-NLS-1$
+		assertTrue(contract.contains("-pl sandbox_target,sandbox_common_test -am package"), CONTRACT_STEP); //$NON-NLS-1$
+		String product = workflowStep(workflow, PRODUCT_STEP);
+		assertTrue(product.contains("xvfb-run --auto-servernum mvn"), PRODUCT_STEP); //$NON-NLS-1$
+		assertTrue(product.contains("-Pproduct"), PRODUCT_STEP); //$NON-NLS-1$
+		assertTrue(product.contains("clean verify"), PRODUCT_STEP); //$NON-NLS-1$
+	}
+
+	private static String workflowStep(String workflow, String name) {
+		String marker = "      - name: " + name + '\n'; //$NON-NLS-1$
+		assertEquals(1, occurrences(workflow, marker), name);
+		int start = workflow.indexOf(marker);
+		int end = workflow.indexOf("\n      - ", start + marker.length()); //$NON-NLS-1$
+		return workflow.substring(start, end < 0 ? workflow.length() : end);
 	}
 
 	private static void assertActivation(Element profile) {
