@@ -38,8 +38,8 @@ import org.eclipse.ui.PlatformUI;
 
 /**
  * Replaces generic default-state cleanup-tab captures with focused, enabled
- * documentation states. The TriggerPattern tab remains owned by its dedicated
- * deterministic hint-file setup in {@link SandboxHelpScreenshotsSWTBotTest}.
+ * documentation states. TriggerPattern receives its own explicit profile and
+ * live-preview checks after the other configuration images are captured.
  */
 final class FocusedCleanupConfigurationScreenshots {
 
@@ -93,6 +93,8 @@ final class FocusedCleanupConfigurationScreenshots {
 			capture(profileDialog, outputRoot, tab.helpBundle(), tab.fileName());
 			System.out.println("[help-screenshots] Captured focused enabled cleanup tab: " + tab.label()); //$NON-NLS-1$
 		}
+
+		CodePatternsConfigurationScreenshot.capture(bot, profileDialog, outputRoot);
 
 		clickButton(profileDialog, "Cancel"); //$NON-NLS-1$
 		waitForShellToClose(bot, profileDialog, "Cleanup profile dialog"); //$NON-NLS-1$

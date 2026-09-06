@@ -28,6 +28,9 @@ import org.junit.jupiter.api.Test;
 public class EclipseHelpTestModuleBoundaryTest {
 
 	private static final Set<String> HELP_TEST_SOURCES= Set.of(
+			"CodePatternsConfigurationScreenshot.java", //$NON-NLS-1$
+			"CodePatternsScreenshotVisibility.java", //$NON-NLS-1$
+			"CodePatternsScreenshotVisibilityTest.java", //$NON-NLS-1$
 			"CoordinatedJUnitPreviewSWTBotScenario.java", //$NON-NLS-1$
 			"EclipseHelpScreenshotEvidenceTest.java", //$NON-NLS-1$
 			"EclipseHelpStructureTest.java", //$NON-NLS-1$
