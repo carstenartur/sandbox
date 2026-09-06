@@ -17,6 +17,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.TabFolder;
 
 /** Read-only geometry checks for the left-aligned Hint File checkbox. Call on the UI thread. */
 @SuppressWarnings("nls")
@@ -51,13 +52,26 @@ final class CodePatternsScreenshotVisibility {
 		return regionProblem(control, new Rectangle(0, 0, size.x, size.y));
 	}
 
+	private static Rectangle viewportOnDisplay(Composite parent) {
+		Rectangle client= parent.getClientArea();
+		if (parent instanceof TabFolder folder) {
+			// GTK returns a zero-based TabFolder client area, while Display.map uses the
+			// notebook origin. Derive the client offset from native trim, not tab-height guesses.
+			// Assign rather than add: platforms may already include this offset in getClientArea().
+			Rectangle trim= folder.computeTrim(0, 0, 0, 0);
+			client.x= -trim.x;
+			client.y= -trim.y;
+		}
+		return parent.getDisplay().map(parent, null, client);
+	}
+
 	private static String regionProblem(Control control, Rectangle area) {
 		if (!control.isVisible() || area.width <= 0 || area.height <= 0) {
 			return "Control is hidden or has an empty area: " + area;
 		}
 		Rectangle bounds= control.getDisplay().map(control, null, area);
 		for (Composite parent= control.getParent(); parent != null; parent= parent.getParent()) {
-			Rectangle viewport= parent.getDisplay().map(parent, null, parent.getClientArea());
+			Rectangle viewport= viewportOnDisplay(parent);
 			if (!bounds.intersection(viewport).equals(bounds)) {
 				return "Content " + bounds + " is clipped by " + parent.getClass().getSimpleName()
 						+ " viewport " + viewport;

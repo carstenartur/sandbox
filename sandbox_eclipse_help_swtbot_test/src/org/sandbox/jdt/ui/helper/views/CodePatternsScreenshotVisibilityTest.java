@@ -27,6 +27,8 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.TabFolder;
+import org.eclipse.swt.widgets.TabItem;
 import org.junit.jupiter.api.Test;
 
 /** Real SWT clipping tests; no screenshot baseline or SWTBot dependency is needed. */
@@ -124,6 +126,56 @@ class CodePatternsScreenshotVisibilityTest {
 					"The dialog itself must reject a clipped preview");
 			preview.setLocation(10, 80);
 			assertEquals("", CodePatternsScreenshotVisibility.controlProblem(preview));
+		});
+	}
+
+	@Test
+	void nativeTabFoldersKeepTheVisibleBottomOfTheirSelectedPage() {
+		for (int position : new int[] { SWT.TOP, SWT.BOTTOM }) {
+			withTabFolder(position, preview -> {
+				assertEquals("", CodePatternsScreenshotVisibility.controlProblem(preview),
+						"The selected page's visible bottom must not be clipped by the tab strip");
+			});
+		}
+	}
+
+	@Test
+	void nativeTabFoldersStillRejectActuallyClippedPreviewControls() {
+		for (int position : new int[] { SWT.TOP, SWT.BOTTOM }) {
+			withTabFolder(position, preview -> {
+				Rectangle page= preview.getParent().getClientArea();
+				preview.setLocation(10, page.height - preview.getSize().y + 1);
+				assertFalse(CodePatternsScreenshotVisibility.controlProblem(preview).isEmpty(), "Bottom edge");
+				preview.setLocation(-1, 10);
+				assertFalse(CodePatternsScreenshotVisibility.controlProblem(preview).isEmpty(), "Left edge");
+				preview.setLocation(10, page.height - preview.getSize().y - 10);
+				assertEquals("", CodePatternsScreenshotVisibility.controlProblem(preview));
+			});
+		}
+	}
+
+	private static void withTabFolder(int position, Consumer<StyledText> assertion) {
+		Display.getDefault().syncExec(() -> {
+			Shell shell= new Shell(Display.getDefault());
+			try {
+				shell.setSize(700, 500);
+				TabFolder folder= new TabFolder(shell, position);
+				folder.setBounds(10, 10, 600, 400);
+				TabItem item= new TabItem(folder, SWT.NONE);
+				item.setText("Code Patterns");
+				Composite page= new Composite(folder, SWT.NONE);
+				item.setControl(page);
+				StyledText preview= new StyledText(page, SWT.BORDER);
+				preview.setText("boolean empty = list.isEmpty();");
+				shell.open();
+				shell.layout(true, true);
+				Rectangle client= page.getClientArea();
+				assertTrue(client.width > 100 && client.height > 100, "The native tab page must be allocated");
+				preview.setBounds(10, client.height - 70, client.width - 20, 60);
+				assertion.accept(preview);
+			} finally {
+				shell.dispose();
+			}
 		});
 	}
 
