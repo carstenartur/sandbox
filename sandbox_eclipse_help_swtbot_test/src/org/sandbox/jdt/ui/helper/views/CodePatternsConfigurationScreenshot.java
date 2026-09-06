@@ -86,20 +86,41 @@ final class CodePatternsConfigurationScreenshot {
 		});
 		bot.waitUntil(new DefaultCondition() {
 			private byte[] previousImage;
+			private String lastProblem= "No capture attempted";
 
 			@Override
 			public boolean test() throws Exception {
 				boolean captured= Boolean.TRUE.equals(onUi(shell, () -> {
-					if (!PROFILE.equals(name.widget.getText()) || !hasPreview(controls, true)
-							|| shell.display.getActiveShell() != shell.widget
-							|| !fullyVisible(controls.option()) || !fullyVisible(controls.preview())
-							|| !previewFactsVisible(controls.preview())) {
+					if (shell.widget.isDisposed() || name.widget.isDisposed()) {
+						lastProblem= "Profile dialog was disposed";
+						return Boolean.FALSE;
+					}
+					if (!PROFILE.equals(name.widget.getText()) || !hasPreview(controls, true)) {
+						lastProblem= "Profile, isolated option selection or live after preview changed";
+						return Boolean.FALSE;
+					}
+					if (shell.display.getActiveShell() != shell.widget) {
+						lastProblem= "Profile dialog is not the active shell";
+						return Boolean.FALSE;
+					}
+					lastProblem= CodePatternsScreenshotVisibility.checkboxProblem(controls.option());
+					if (!lastProblem.isEmpty()) {
+						return Boolean.FALSE;
+					}
+					lastProblem= CodePatternsScreenshotVisibility.controlProblem(controls.preview());
+					if (!lastProblem.isEmpty()) {
+						return Boolean.FALSE;
+					}
+					lastProblem= previewProblem(controls.preview());
+					if (!lastProblem.isEmpty()) {
 						return Boolean.FALSE;
 					}
 					Rectangle area= shell.widget.getClientArea();
 					if (area.width != 1280 || area.height != 900) {
+						lastProblem= "Unexpected profile client area: " + area;
 						return Boolean.FALSE;
 					}
+					lastProblem= "Native screenshot API returned false";
 					return Boolean.valueOf(SWTUtils.captureScreenshot(image.toString(),
 							shell.display.map(shell.widget, null, area)));
 				}));
@@ -109,13 +130,16 @@ final class CodePatternsConfigurationScreenshot {
 				}
 				byte[] currentImage= Files.readAllBytes(image);
 				boolean stable= previousImage != null && MessageDigest.isEqual(previousImage, currentImage);
+				lastProblem= previousImage == null ? "Waiting for a second native image"
+						: "Consecutive native images differ";
 				previousImage= currentImage;
 				return stable;
 			}
 
 			@Override
 			public String getFailureMessage() {
-				return "Hint File screenshot requires one enabled option, visible after code and stable native painting";
+				return "Hint File screenshot requires one enabled option, visible after code and stable native painting: "
+						+ lastProblem;
 			}
 		});
 		assertTrue(Files.isRegularFile(image) && Files.size(image) > 0, "Missing Code Patterns screenshot");
@@ -190,38 +214,20 @@ final class CodePatternsConfigurationScreenshot {
 		throw new AssertionError("Hint File option has no scrollable configuration pane");
 	}
 
-	private static boolean fullyVisible(Control control) {
-		if (control.isDisposed() || !control.isVisible()) {
-			return false;
-		}
-		Point size= control.getSize();
-		Rectangle bounds= control.getDisplay().map(control, null, new Rectangle(0, 0, size.x, size.y));
-		if (bounds.width <= 0 || bounds.height <= 0) {
-			return false;
-		}
-		for (Composite parent= control.getParent(); parent != null; parent= parent.getParent()) {
-			Rectangle viewport= parent.getDisplay().map(parent, null, parent.getClientArea());
-			if (!bounds.intersection(viewport).equals(bounds)) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	private static boolean previewFactsVisible(StyledText preview) {
+	private static String previewProblem(StyledText preview) {
 		String text= preview.getText();
 		int start= text.indexOf(AFTER);
 		for (String fact : List.of(AFTER, AFTER_CODE.get(0), AFTER_CODE.get(1))) {
 			int offset= start < 0 ? -1 : text.indexOf(fact, start);
 			if (offset < 0) {
-				return false;
+				return "Missing after-preview statement: " + fact;
 			}
 			Rectangle textBounds= preview.getTextBounds(offset, offset + fact.length() - 1);
 			if (!textBounds.intersection(preview.getClientArea()).equals(textBounds)) {
-				return false;
+				return "Preview text " + textBounds + " is outside " + preview.getClientArea() + ": " + fact;
 			}
 		}
-		return true;
+		return "";
 	}
 
 	private static List<Control> controls(Composite root) {
