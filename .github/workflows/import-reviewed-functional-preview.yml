@@ -1,0 +1,49 @@
+name: Import reviewed Functional Converter preview
+
+on:
+  push:
+    branches: [fix/classic-for-source-option-20260906]
+    paths: [.github/workflows/import-reviewed-functional-preview.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  import-reviewed-image:
+    if: github.repository == 'carstenartur/sandbox'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 2
+      - name: Import the single digest-pinned reviewed PNG
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '4e71b9b6f38d34268fdd6491a513a6913c559a3c'
+          image='sandbox_functional_converter_help/images/functional-converter-cleanup.png'
+          test "$(git rev-parse "HEAD:$image")" = '0163b3f5694ec4d13cb89b6fb4356113b44dd0db'
+          git diff --exit-code
+          archive="$RUNNER_TEMP/reviewed-help.zip"
+          curl --fail --silent --show-error --location \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            'https://api.github.com/repos/carstenartur/sandbox/actions/artifacts/9983312266/zip' \
+            --output "$archive"
+          printf '%s  %s\n' '577f2eb4653e4f58a61a34707a539722478c56715f8c745fe7edc724581f9cec' "$archive" | sha256sum --check --status
+          unzip -p "$archive" "generated-help-screenshot-evidence/files/$image" > "$RUNNER_TEMP/reviewed.png"
+          printf '%s  %s\n' '6fbd34c44b23b0a269c0737a80fc49eb6dac87dc022c40811dc8f313a3d58d2c' "$RUNNER_TEMP/reviewed.png" | sha256sum --check --status
+          test "$(git hash-object "$RUNNER_TEMP/reviewed.png")" = 'd2976af0806cc33ddab1495ab703af1de03e27e9'
+          cp "$RUNNER_TEMP/reviewed.png" "$image"
+          test "$(git diff --name-only)" = "$image"
+          git add -- "$image"
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m 'Record the reviewed classic-for-enabled Help preview'
+          git push origin "HEAD:refs/heads/fix/classic-for-source-option-20260906"
