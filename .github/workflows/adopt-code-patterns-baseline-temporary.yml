@@ -1,0 +1,50 @@
+name: Adopt verified Code Patterns baseline (temporary)
+
+on:
+  push:
+    branches:
+      - qa/code-patterns-enabled-preview-20260906
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  adopt:
+    if: github.repository == 'carstenartur/sandbox'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Adopt exact reviewed screenshot and remove helper
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_ID: '9993372880'
+          EXPECTED_SHA256: '0adc05ba518f74b580f6fc0363e54fafa306934e54cb8273b04764bb1c0a707f'
+          TARGET: sandbox_triggerpattern_help/images/code-patterns-cleanup.png
+          HELPER: .github/workflows/adopt-code-patterns-baseline-temporary.yml
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$(mktemp --suffix=.zip)"
+          extracted="$(mktemp --suffix=.png)"
+          curl --fail --location --silent --show-error \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'Accept: application/vnd.github+json' \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            --output "$archive" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}/zip"
+          unzip -p "$archive" \
+            generated-help-screenshot-evidence/files/sandbox_triggerpattern_help/images/code-patterns-cleanup.png \
+            > "$extracted"
+          actual="$(sha256sum "$extracted" | cut -d' ' -f1)"
+          test "$actual" = "$EXPECTED_SHA256"
+          cp "$extracted" "$TARGET"
+          git rm "$HELPER"
+          git add "$TARGET"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Adopt verified Code Patterns Help screenshot'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
