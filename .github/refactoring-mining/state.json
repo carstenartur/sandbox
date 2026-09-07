@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "09ed6f87a493fd32d5eff0cf1ae4182f76d5d780",
-      "lastProcessedDate": "2026-09-06T02:25:40.307003704Z",
-      "totalProcessed": 5462,
+      "lastProcessedCommit": "7a7a7b54f02ab46df5eae936f5b63cfb9cc5d8fd",
+      "lastProcessedDate": "2026-09-07T02:26:27.283686610Z",
+      "totalProcessed": 5534,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3278,6 +3278,24 @@
           "deferredAt": "2026-09-05T02:24:24.797699633Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "2a9ffe29bdd06c14d706d8f3865ef59c1255be9e",
+          "message": "Added support to show package doc in hovers and in Javadoc view",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-07T02:22:34.553944975Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3dc7c2a368684cdcd97bee9b8d41b031ee17aef3",
+          "message": "Bug 397464: No Javadoc for package-info.java in source attachment when package-info.class doesn\u0027t exist",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-07T02:25:26.618696088Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3292,7 +3310,7 @@
         "Eclipse Specific": 1,
         "JDT Internal Refactoring": 190,
         "Code Simplification": 12,
-        "Performance": 30,
+        "Performance": 31,
         "JDT Internal Bug Fix": 69,
         "Clean-up Bug Fix": 81,
         "Try-with-Resources": 9,
@@ -3432,7 +3450,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 5,
-        "API Modernization": 58,
+        "API Modernization": 59,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3457,7 +3475,7 @@
         "Method call argument replacement": 1,
         "API Constant Renaming": 1,
         "API Renaming": 1,
-        "API Usage": 4,
+        "API Usage": 5,
         "String Comparison": 1,
         "Method Call Update": 1,
         "Return Value Refactoring": 1,
@@ -3547,7 +3565,11 @@
         "String formatting": 1,
         "Redundant Call": 1,
         "Constants Replacement": 1,
-        "Collections Modernization": 1
+        "Collections Modernization": 1,
+        "IDE Feature Implementation": 1,
+        "Control Flow Restructuring": 1,
+        "Formatting": 1,
+        "API Safety": 1
       },
       "exhaustedCategories": []
     },
@@ -3588,5 +3610,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 28233
+  "globalTotalProcessed": 28305
 }
