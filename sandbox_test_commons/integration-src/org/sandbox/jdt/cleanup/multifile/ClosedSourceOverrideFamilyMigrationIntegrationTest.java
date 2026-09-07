@@ -346,7 +346,7 @@ class ClosedSourceOverrideFamilyMigrationIntegrationTest {
 	private static String implementationSource(String typeName) {
 		return """
 			package test;
-			class %s implements Contract {
+			class TYPE_NAME implements Contract {
 				@Override
 				public void consume(String[] values) {
 					int count = values.length;
@@ -355,7 +355,7 @@ class ClosedSourceOverrideFamilyMigrationIntegrationTest {
 					}
 				}
 			}
-			""".formatted(typeName);
+			""".replace("TYPE_NAME", typeName); //$NON-NLS-1$
 	}
 
 	private record CallerFacts(
