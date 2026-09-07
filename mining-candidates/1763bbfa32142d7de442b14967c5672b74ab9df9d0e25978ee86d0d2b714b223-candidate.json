@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1763bbfa32142d7de442b14967c5672b74ab9df9d0e25978ee86d0d2b714b223",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "boolean $var \u003d $root.getKind() \u003d\u003d org.eclipse.jdt.core.IPackageFragmentRoot.K_BINARY; :: instanceof($root, \"org.eclipse.jdt.core.IPackageFragmentRoot\")\n\u003d\u003e\nboolean $var \u003d $root.exists() \u0026\u0026 $root.getKind() \u003d\u003d org.eclipse.jdt.core.IPackageFragmentRoot.K_BINARY;\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.core.IPackageFragmentRoot;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class TestClass {\n    public void foo(IJavaElement element) throws JavaModelException {\n        IPackageFragmentRoot root \u003d (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);\n        if (root !\u003d null) {\n            boolean isBinary \u003d root.getKind() \u003d\u003d IPackageFragmentRoot.K_BINARY;\n            System.out.println(isBinary);\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.core.IPackageFragmentRoot;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class TestClass {\n    public void foo(IJavaElement element) throws JavaModelException {\n        IPackageFragmentRoot root \u003d (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);\n        if (root !\u003d null) {\n            boolean isBinary \u003d root.exists() \u0026\u0026 root.getKind() \u003d\u003d IPackageFragmentRoot.K_BINARY;\n            System.out.println(isBinary);\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.core.IPackageFragmentRoot;\nimport org.eclipse.jdt.core.JavaModelException;\n\npublic class TestClass {\n    public void foo(IJavaElement element) throws JavaModelException {\n        IPackageFragmentRoot root \u003d (IPackageFragmentRoot) element.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT);\n        if (root !\u003d null) {\n            boolean isSource \u003d root.getKind() \u003d\u003d IPackageFragmentRoot.K_SOURCE; // Different constant\n            System.out.println(isSource);\n\n            Object someOtherObject \u003d new Object();\n            boolean isSomething \u003d someOtherObject.equals(\"test\"); // Not IPackageFragmentRoot\n            System.out.println(isSomething);\n        }\n    }\n}",
+  "targetHintFile": "api-safety.sandbox-hint",
+  "sourceCommit": "9dbbfa2f7d38d37dfa9ba067c22d84aa5bedb6ec",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Safety",
+  "summary": "Add .exists() check before IPackageFragmentRoot.getKind() to prevent exceptions.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-07T02:26:28.649149134Z",
+  "ruleFingerprint": "sha256:5020011a87716a0a4cdbf72ead124d049348d364bcd4a814350338214d68e056",
+  "behaviorFingerprint": "sha256:01663fd33c77b6f48a71c9b25e46834ca1c8b454ba6bf0b6a544d29bb39f9b66",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-09-07T02:26:34.714309615Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
