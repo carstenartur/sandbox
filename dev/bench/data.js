@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788169062164,
+  "lastUpdate": 1788760355531,
   "repoUrl": "https://github.com/carstenartur/sandbox",
   "entries": {
     "JMH Benchmarks": [
@@ -12316,6 +12316,294 @@ window.BENCHMARK_DATA = {
           {
             "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.wrapperTypeComparison",
             "value": 39.70684005034612,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "855851dc333bb8672e0027a1bcc806f40fa99b0c",
+          "message": "Bump actions/setup-java from 5 to 6 (#1573)\n\n* Bump actions/setup-java from 5 to 6\n\nBumps [actions/setup-java](https://github.com/actions/setup-java) from 5 to 6.\n- [Release notes](https://github.com/actions/setup-java/releases)\n- [Commits](https://github.com/actions/setup-java/compare/v5...v6)\n\n---\nupdated-dependencies:\n- dependency-name: actions/setup-java\n  dependency-version: '6'\n  dependency-type: direct:production\n  update-type: version-update:semver-major\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\n\n* Update Maven Compiler Plugin to 3.16.0 (#1572)\n\nAlign the root compiler property and the two independently declared compiler plugins. Preserve Java release 21 and the existing compilation settings.\n\nVerified exact head: all eleven reported workflows, including Maven, distribution, both screenshot gates and the full pinned JDT UI migration. Independent raw report comparison retains the same 3,607 test executions, results and multiplicities.\n\n* Update Maven Surefire to 3.6.0 (#1577)\n\nUpdate the root property and independently configured common test module without changing test selection, assertions or failure handling.\n\nVerified exact head on main 3727d4d7: all eleven reported workflows passed, including distribution, both screenshot gates, consumer contract and full pinned JDT UI before/after migration.\n\nIndependent raw comparison of Maven 7767 and 7769 retains 443 reports and 3,607 testcase records: 3,596 passed, the same 11 skipped, zero failures/errors/flaky reruns. Accounted for 350 classname format changes through 83 bijective within-report mappings, including nested-class duplicate method names. No testcase or multiplicity loss. Two corrected suite headers account for the apparent three-test increase in aggregate counts.\n\n* Correct encoding Help policies using the existing reader fixtures (#1582)\n\nAlign Explicit Encoding Help with the existing reader fixtures and add executable correspondence tests for Keep behavior, Prefer UTF-8, and Aggregate UTF-8 policies.\n\n* Generate Code Patterns Help from a live enabled Hint File preview (#1583)\n\n* Capture the Hint File option in an explicit live-preview profile\n\nUse the existing canonical Help driver, isolate the Code Patterns options, verify disabled/enabled/disabled/enabled preview transitions, scroll the actual controls and preview facts into view, and require stable native captures. Do not alter preview text, product logic, screenshot baselines or comparison limits.\n\nRefs #1437.\n\n* Check the visible Hint File label instead of its stretched padding\n\nCorrect the final Code Patterns screenshot readiness check for a left-aligned checkbox stretched to the longest option label. Require the full native indicator, preferred label width and allocated height in every ancestor viewport; allow only trailing empty padding outside the viewport.\n\nAdd five real SWT clipping regression tests and detailed readiness diagnostics. Preserve all four live-preview transitions, after-text visibility, image stability, production behavior, baselines and comparison limits.\n\nFollow-up to the exact-head timeout in Help run 926. The old report does not identify the failing conjunct; the new diagnostic distinguishes geometry from focus, profile, text and capture readiness. Runtime confirmation remains required.\n\nRefs #1437.\n\n* Stop Help screenshot clipping checks at the control's own shell\n\nAn owned SWT dialog is a separate native window. Its parent shell expresses ownership, not a clipping viewport. Check every content ancestor and the dialog's own client area, then stop before traversing into the owning Preferences/workbench shell.\n\nAdd two real-SWT regression tests for a larger owned dialog and for genuine checkbox/StyledText clipping by that dialog. Keep the original five cases, preview transition checks, screenshot baselines and comparison limits unchanged.\n\nLocal validation: exact original Git blobs and Java 21 syntax parsing only; full Eclipse/SWT runtime validation remains required in CI.\n\nRefs #1437.\n\n* Map native TabFolder client geometry and register Code Patterns test sources\n\nRun 928 on fe5a5e64 completed seven of eight Help scenarios. Its precise rejection was the preview rectangle {674,168,602,632} against the TabFolder viewport {32,88,1254,688}, not the checkbox or live-preview transitions. GTK TabFolder returns zero-based client coordinates; obtain the native client offset from computeTrim instead of treating the notebook origin as the content origin. Keep the full control bounds and ancestor clipping checks.\n\nAdd real SWT tests for top/bottom native tab folders and actual preview clipping. The preceding shell-boundary fix has its own two tests; the original five tests are unchanged and all five passed in Maven run 7766.\n\nThat Maven run failed the exact Help module source inventory because the three new Code Patterns classes were missing from its allowlist. Add exactly these entries; retain set equality, module isolation and workflow assertions.\n\nVerified raw artifacts: run 928 diagnostics SHA-256 e996e01f21093d1cd2c4bfc934b4cb7df7d9094e8dc4ac9ba11068c097d10fac; run 7766 reports SHA-256 43c0da533fc9a2b3aebc3fec5783e14c6857954336648838216476e0739bea5b. Local validation is Java 21 syntax parsing, not SWT runtime execution. Fresh CI remains mandatory.\n\nRefs #1437.\n\n* Keep the native Hint File section heading in screenshot view\n\nVisual review of the raw Code Patterns image from Help run 932 found the section heading clipped above the configuration viewport even though the checkbox and after-preview statements were visible. The generated image is therefore not accepted as a baseline.\n\nScroll using the section's outer location mapped from its parent, not the GTK Group client origin below the title. Recheck the outer section start before every native capture. Retain the existing option, preview, shell and stable-image checks.\n\nAdd two real-SWT tests for section positions at the content start and farther down, and for a later scroll that clips the section start while its checkbox still passes. All nine existing geometry tests remain unchanged.\n\nPrevious-head evidence: Maven 7771 executed all nine geometry tests and all three module-boundary tests successfully. Independently parsed raw artifact 9992164976 (SHA-256 e044ec73b3b18b16b9171730ba8f8017d02c81b0664518eb39e183b0d0a5f349). Screenshot artifact 9992087080 SHA-256 855be5c4c814e37f1c1fae6335b9ad7d90f4882e81553da5bb851a41e3bda984.\n\nLocal verification is Java 21 syntax parsing and exact blob/diff review only, not SWT runtime execution. Fresh Maven and complete Help scenario evidence are required. No PNG, production cleanup, workflow, timeout or comparison tolerance changes.\n\nRefs #1437.\n\n* Temporarily adopt verified Code Patterns screenshot\n\n* Adopt verified Code Patterns Help screenshot\n\n---------\n\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>\n\n* Bump org.yaml:snakeyaml from 2.6 to 2.7 (#1575)\n\nBumps org.yaml:snakeyaml from 2.6 to 2.7.\n\n---\nupdated-dependencies:\n- dependency-name: org.yaml:snakeyaml\n  dependency-version: '2.7'\n  dependency-type: direct:production\n  update-type: version-update:semver-minor\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>\nCo-authored-by: Carsten Hammer <carsten.hammer@t-online.de>\n\n* Bump com.diffplug.spotless:spotless-maven-plugin from 3.10.0 to 3.10.1 (#1576)\n\nBumps [com.diffplug.spotless:spotless-maven-plugin](https://github.com/diffplug/spotless) from 3.10.0 to 3.10.1.\n- [Release notes](https://github.com/diffplug/spotless/releases)\n- [Changelog](https://github.com/diffplug/spotless/blob/main/CHANGES.md)\n- [Commits](https://github.com/diffplug/spotless/compare/maven/3.10.0...maven/3.10.1)\n\n---\nupdated-dependencies:\n- dependency-name: com.diffplug.spotless:spotless-maven-plugin\n  dependency-version: 3.10.1\n  dependency-type: direct:development\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>\n\n---------\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>\nCo-authored-by: Carsten Hammer <carsten.hammer@t-online.de>\nCo-authored-by: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>",
+          "timestamp": "2026-09-07T06:52:04+02:00",
+          "tree_id": "bc09d4de4149b9d6881792a262675b34bbc3ac8f",
+          "url": "https://github.com/carstenartur/sandbox/commit/855851dc333bb8672e0027a1bcc806f40fa99b0c"
+        },
+        "date": 1788760335715,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "org.sandbox.benchmarks.ASTParsingBenchmark.parseASTWithBindings ( {\"codeSize\":\"small\"} )",
+            "value": 217.849708033304,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.ASTParsingBenchmark.parseASTWithBindings ( {\"codeSize\":\"medium\"} )",
+            "value": 563.7026240308136,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.ASTParsingBenchmark.parseASTWithBindings ( {\"codeSize\":\"large\"} )",
+            "value": 3532.553352504316,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.ASTParsingBenchmark.parseASTWithoutBindings ( {\"codeSize\":\"small\"} )",
+            "value": 39.202092419291304,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.ASTParsingBenchmark.parseASTWithoutBindings ( {\"codeSize\":\"medium\"} )",
+            "value": 195.03512848530653,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.ASTParsingBenchmark.parseASTWithoutBindings ( {\"codeSize\":\"large\"} )",
+            "value": 1725.6474459297708,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.LoopTransformBenchmark.buildComplexLoopModel",
+            "value": 0.07284225982359364,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.LoopTransformBenchmark.buildSimpleLoopModel",
+            "value": 0.016094303863568884,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.LoopTransformBenchmark.generateStreamCodeCollect",
+            "value": 0.06341581663867504,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.LoopTransformBenchmark.generateStreamCodeComplex",
+            "value": 0.09505282419783467,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.LoopTransformBenchmark.generateStreamCodeForEach",
+            "value": 0.04763047602648527,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.PatternMatchingBenchmark.detectAssertionsWithASTVisitor",
+            "value": 76.6941178466119,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.PatternMatchingBenchmark.detectAssertionsWithRegex",
+            "value": 39.399437059024585,
+            "unit": "us/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark.createSimpleMethod",
+            "value": 7.862671578554656,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark.newStyleMathMaxCheck",
+            "value": 78.5781032243543,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark.oldStyleMathMaxCheck",
+            "value": 0.37493294987316206,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark.queryHasSignature",
+            "value": 79.63002916769808,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark.queryIsListAdd",
+            "value": 113.89481410620097,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.MethodInfoBenchmark.queryIsMathMax",
+            "value": 78.30172717350898,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.complexNewStyleCheck",
+            "value": 21.068365557277566,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.complexOldStyleCheck",
+            "value": 0.3749870904207318,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.newStyleIsMathMax",
+            "value": 78.58292038677332,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.newStyleModifierChecks",
+            "value": 14.073096730147384,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.newStylePatternDetection",
+            "value": 107.37365162122185,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.oldStyleIsMathMax",
+            "value": 0.3729577872815269,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.oldStyleModifierChecks",
+            "value": 0.37689507234924996,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.PatternMatchingStyleBenchmark.oldStylePatternDetection",
+            "value": 0.3716949640538677,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.createParameterizedType",
+            "value": 64.12100737804234,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.createSimpleType",
+            "value": 23.87334465661072,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.newStyleTypeCheck",
+            "value": 20.694672210619764,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.oldStyleTypeCheck",
+            "value": 0.37094288730343916,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.queryIsClass",
+            "value": 20.32493867178598,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.queryIsCollection",
+            "value": 23.183983654155423,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.queryIsNumeric",
+            "value": 0.3746880161240445,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.queryIsOptional",
+            "value": 22.623199606216332,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.TypeInfoBenchmark.queryIsStream",
+            "value": 21.699006316729683,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.builderAllocation",
+            "value": 24.027348715792677,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.iterateRawStrings",
+            "value": 23.748835696641404,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.iterateTypeInfos",
+            "value": 24.64800393716494,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.rawCollectionCheck",
+            "value": 0.37282986314133465,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.rawTypeComparison",
+            "value": 0.37253619519151127,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.recordAllocation",
+            "value": 3.9669417530139635,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.wrapperCollectionCheck",
+            "value": 23.246785797902767,
+            "unit": "ns/op",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "org.sandbox.benchmarks.astapi.WrapperOverheadBenchmark.wrapperTypeComparison",
+            "value": 39.5332280930965,
             "unit": "ns/op",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
