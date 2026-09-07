@@ -11,6 +11,7 @@
 package org.sandbox.jdt.container.analysis;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
@@ -77,7 +78,7 @@ class ClosedSourceSignatureBoundaryTest {
 	}
 
 	@Test
-	void overrideFamilyRemainsRejectedForAutomaticExecution() {
+	void completeOverrideFamilyCanBeAutomaticClosedSourceGroup() {
 		FlowNode first= parameter(
 				"parameter:first:0", "First.java", "first-handle"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		FlowNode second= parameter(
@@ -91,9 +92,13 @@ class ClosedSourceSignatureBoundaryTest {
 		var plan= planner.planClosedSource(
 				component(List.of(first, second)), resolved, recommendation());
 
-		assertEquals(PlanningStatus.REJECTED, plan.status());
-		assertEquals(DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
-				plan.diagnostics().get(0).kind());
+		assertEquals(PlanningStatus.CLOSED_SOURCE_AUTOMATIC, plan.status());
+		assertTrue(plan.diagnostics().isEmpty());
+		assertEquals(2, plan.groups().get(0).members().size());
+		assertEquals(List.of("first-handle", "second-handle"), //$NON-NLS-1$ //$NON-NLS-2$
+				plan.groups().get(0).members().stream()
+						.map(member -> member.javaElementHandle())
+						.toList());
 	}
 
 	private static FlowNode parameter(String id, String unit, String handle) {
