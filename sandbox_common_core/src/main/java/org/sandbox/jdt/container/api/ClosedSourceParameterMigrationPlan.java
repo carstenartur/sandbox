@@ -10,47 +10,69 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.api;
 
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
 
 /**
- * Immutable two-compilation-unit plan for the first closed-source local-array to
- * parameter-list migration.
+ * Immutable aggregate plan for one closed-source local-array to parameter-list
+ * migration.
  *
- * <p>The unchanged call expression connects the two local edits: the caller's array
- * declaration becomes a list and the exact callee parameter becomes the same list
- * contract. Both plans must be applied through one coordinated cleanup lifecycle.</p>
+ * <p>One local source may feed a complete source-resolved parameter atomicity group,
+ * including interface declarations and all editable implementations/overrides. The
+ * unchanged call expressions are tied to exact target method handles and parameter
+ * indices. Every local and parameter member is re-resolved before the existing
+ * coordinated cleanup lifecycle emits edits.</p>
  */
 public record ClosedSourceParameterMigrationPlan(
 		TargetContainerContract targetContract,
 		ContainerLocalRewritePlan callerPlan,
-		ContainerParameterRewritePlan parameterPlan) {
+		List<ContainerParameterRewritePlan> parameterPlans) {
+
+	/** Compatibility constructor for the existing single-parameter vertical slice. */
+	public ClosedSourceParameterMigrationPlan(
+			TargetContainerContract targetContract,
+			ContainerLocalRewritePlan callerPlan,
+			ContainerParameterRewritePlan parameterPlan) {
+		this(targetContract, callerPlan, List.of(parameterPlan));
+	}
 
 	public ClosedSourceParameterMigrationPlan {
 		Objects.requireNonNull(targetContract, "targetContract"); //$NON-NLS-1$
 		Objects.requireNonNull(callerPlan, "callerPlan"); //$NON-NLS-1$
-		Objects.requireNonNull(parameterPlan, "parameterPlan"); //$NON-NLS-1$
-		if (!targetContract.equals(callerPlan.targetContract())
-				|| !targetContract.equals(parameterPlan.targetContract())) {
+		parameterPlans= List.copyOf(
+				Objects.requireNonNull(parameterPlans, "parameterPlans")); //$NON-NLS-1$
+		if (parameterPlans.isEmpty()) {
+			throw new IllegalArgumentException(
+					"A closed-source parameter migration requires parameter rewrites"); //$NON-NLS-1$
+		}
+		if (!targetContract.equals(callerPlan.targetContract())) {
 			throw new IllegalArgumentException(
 					"All closed-source migration members must share one target contract"); //$NON-NLS-1$
 		}
-		if (callerPlan.compilationUnitHandle()
-				.equals(parameterPlan.compilationUnitHandle())) {
-			throw new IllegalArgumentException(
-					"The first aggregate slice requires distinct caller and parameter units"); //$NON-NLS-1$
+		for (ContainerParameterRewritePlan parameterPlan : parameterPlans) {
+			if (!targetContract.equals(parameterPlan.targetContract())) {
+				throw new IllegalArgumentException(
+						"All closed-source migration members must share one target contract"); //$NON-NLS-1$
+			}
 		}
-		validateArgumentTransfer(callerPlan, parameterPlan);
+		validateUniqueParameterTargets(parameterPlans);
+		validateArgumentTransfers(callerPlan, parameterPlans);
 	}
 
-	/** Returns the two affected compilation-unit handles in execution order. */
+	/** Returns affected compilation-unit handles in deterministic execution order. */
 	public List<String> affectedCompilationUnitHandles() {
-		return List.of(
-				callerPlan.compilationUnitHandle(),
-				parameterPlan.compilationUnitHandle());
+		Set<String> handles= new LinkedHashSet<>();
+		handles.add(callerPlan.compilationUnitHandle());
+		for (ContainerParameterRewritePlan parameterPlan : parameterPlans) {
+			handles.add(parameterPlan.compilationUnitHandle());
+		}
+		return List.copyOf(handles);
 	}
 
 	/** Planning result retaining fail-closed aggregate diagnostics. */
@@ -101,23 +123,44 @@ public record ClosedSourceParameterMigrationPlan(
 		RECOMMENDATION_MISMATCH,
 		SIGNATURE_PLAN_MISMATCH,
 		LOCAL_REWRITE_REJECTED,
-		PARAMETER_REWRITE_REJECTED,
-		SAME_COMPILATION_UNIT
+		PARAMETER_REWRITE_REJECTED
 	}
 
-	private static void validateArgumentTransfer(
-			ContainerLocalRewritePlan caller,
-			ContainerParameterRewritePlan parameter) {
-		if (caller.argumentTransfers().size() != 1) {
-			throw new IllegalArgumentException(
-					"The first aggregate slice requires one exact argument transfer"); //$NON-NLS-1$
+	private static void validateUniqueParameterTargets(
+			List<ContainerParameterRewritePlan> parameterPlans) {
+		Set<ParameterTarget> targets= HashSet.newHashSet(parameterPlans.size());
+		for (ContainerParameterRewritePlan parameterPlan : parameterPlans) {
+			ParameterTarget target= new ParameterTarget(
+					parameterPlan.methodJavaElementHandle(),
+					parameterPlan.parameterIndex());
+			if (!targets.add(target)) {
+				throw new IllegalArgumentException(
+						"Closed-source parameter targets must be unique: " + target); //$NON-NLS-1$
+			}
 		}
-		ArgumentTransfer transfer= caller.argumentTransfers().get(0);
-		if (!transfer.methodJavaElementHandle()
-				.equals(parameter.methodJavaElementHandle())
-				|| transfer.parameterIndex() != parameter.parameterIndex()) {
+	}
+
+	private static void validateArgumentTransfers(
+			ContainerLocalRewritePlan caller,
+			List<ContainerParameterRewritePlan> parameterPlans) {
+		if (caller.argumentTransfers().isEmpty()) {
 			throw new IllegalArgumentException(
-					"Caller argument target and parameter rewrite must describe the same method position"); //$NON-NLS-1$
+					"A closed-source parameter migration requires an exact argument transfer"); //$NON-NLS-1$
+		}
+		Set<ParameterTarget> targets= HashSet.newHashSet(parameterPlans.size());
+		for (ContainerParameterRewritePlan parameterPlan : parameterPlans) {
+			targets.add(new ParameterTarget(
+					parameterPlan.methodJavaElementHandle(),
+					parameterPlan.parameterIndex()));
+		}
+		for (ArgumentTransfer transfer : caller.argumentTransfers()) {
+			ParameterTarget target= new ParameterTarget(
+					transfer.methodJavaElementHandle(),
+					transfer.parameterIndex());
+			if (!targets.contains(target)) {
+				throw new IllegalArgumentException(
+						"Caller argument target has no matching parameter rewrite: " + target); //$NON-NLS-1$
+			}
 		}
 	}
 
@@ -127,5 +170,16 @@ public record ClosedSourceParameterMigrationPlan(
 			throw new IllegalArgumentException(fieldName + " must not be empty"); //$NON-NLS-1$
 		}
 		return text;
+	}
+
+	private record ParameterTarget(String methodJavaElementHandle, int parameterIndex) {
+		private ParameterTarget {
+			methodJavaElementHandle= requiredText(
+					methodJavaElementHandle, "methodJavaElementHandle"); //$NON-NLS-1$
+			if (parameterIndex < 0) {
+				throw new IllegalArgumentException(
+						"parameterIndex must not be negative"); //$NON-NLS-1$
+			}
+		}
 	}
 }
