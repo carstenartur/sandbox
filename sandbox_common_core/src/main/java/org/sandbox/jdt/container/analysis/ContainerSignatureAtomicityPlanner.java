@@ -173,7 +173,7 @@ public final class ContainerSignatureAtomicityPlanner {
 		}
 		groups.sort(Comparator.comparing(SignatureAtomicityGroup::groupId));
 		if (completedStatus == PlanningStatus.CLOSED_SOURCE_AUTOMATIC
-				&& !supportsAutomaticExecution(groups)) {
+				&& !supportsAutomaticExecution(groups, component)) {
 			diagnostics.add(new SignatureDiagnostic(
 					DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
 					component.rootNodeId(),
@@ -188,10 +188,18 @@ public final class ContainerSignatureAtomicityPlanner {
 	}
 
 	private static boolean supportsAutomaticExecution(
-			List<SignatureAtomicityGroup> groups) {
-		return groups.size() == 1
-				&& groups.get(0).positionKind() == PositionKind.PARAMETER
-				&& !groups.get(0).members().isEmpty();
+			List<SignatureAtomicityGroup> groups,
+			ContainerFlowComponent component) {
+		if (groups.size() != 1
+				|| groups.get(0).positionKind() != PositionKind.PARAMETER
+				|| groups.get(0).members().isEmpty()) {
+			return false;
+		}
+		return groups.get(0).members().stream().allMatch(member ->
+				component.node(member.flowNodeId())
+						.filter(node -> node.kind() == NodeKind.PARAMETER)
+						.filter(FlowNode::sourceResolved)
+						.isPresent());
 	}
 
 	private static boolean declarationTarget(ResolvedSearchTarget target) {
