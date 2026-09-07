@@ -50,12 +50,27 @@ public final class ContainerParameterRewriteFix {
 			ICompilationUnit unit,
 			org.eclipse.jdt.core.dom.CompilationUnit root,
 			ContainerParameterRewritePlan plan) throws CoreException {
-		ResolvedPlan resolved= ContainerParameterRewriteResolver.resolve(unit, root, plan);
 		return new CompilationUnitRewriteOperationsFixCore(
 				DESCRIPTION,
 				root,
 				new CompilationUnitRewriteOperationWithSourceRange[] {
-						new RewriteOperation(resolved) });
+						operation(unit, root, plan) });
+	}
+
+	/** Package-visible operation factory used by an aggregate multi-file migration. */
+	static CompilationUnitRewriteOperationWithSourceRange operation(
+			ICompilationUnit unit,
+			org.eclipse.jdt.core.dom.CompilationUnit root,
+			ContainerParameterRewritePlan plan) throws CoreException {
+		return new RewriteOperation(resolve(unit, root, plan));
+	}
+
+	/** Package-visible semantic resolution used by aggregate cleanup adapters. */
+	static ResolvedPlan resolve(
+			ICompilationUnit unit,
+			org.eclipse.jdt.core.dom.CompilationUnit root,
+			ContainerParameterRewritePlan plan) throws CoreException {
+		return ContainerParameterRewriteResolver.resolve(unit, root, plan);
 	}
 
 	private static final class RewriteOperation
