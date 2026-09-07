@@ -178,7 +178,7 @@ public final class ContainerSignatureAtomicityPlanner {
 					DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
 					component.rootNodeId(),
 					"", //$NON-NLS-1$
-					"Automatic signature execution requires exactly one complete non-empty source-resolved parameter atomicity group; return, external and omitted parameter members remain unsupported.")); //$NON-NLS-1$
+					"Automatic signature execution requires exactly one complete non-empty source-resolved parameter atomicity group; return, external and omitted signature members remain unsupported.")); //$NON-NLS-1$
 		}
 		return new ContainerSignatureMigrationPlan(
 				recommendation.targetContract(),
@@ -199,15 +199,16 @@ public final class ContainerSignatureAtomicityPlanner {
 		List<String> memberNodeIds= group.members().stream()
 				.map(SignatureMember::flowNodeId)
 				.toList();
-		List<FlowNode> parameterNodes= component.nodes().stream()
+		List<FlowNode> signatureNodes= component.nodes().stream()
 				.filter(node -> node.kind() == NodeKind.PARAMETER
-						|| node.kind() == NodeKind.EXTERNAL_PARAMETER)
-				.filter(node -> node.signatureIndex() == group.signatureIndex())
+						|| node.kind() == NodeKind.EXTERNAL_PARAMETER
+						|| node.kind() == NodeKind.RETURN_POSITION)
 				.toList();
-		return parameterNodes.size() == memberNodeIds.size()
-				&& parameterNodes.stream().allMatch(node ->
+		return signatureNodes.size() == memberNodeIds.size()
+				&& signatureNodes.stream().allMatch(node ->
 						node.kind() == NodeKind.PARAMETER
 								&& node.sourceResolved()
+								&& node.signatureIndex() == group.signatureIndex()
 								&& memberNodeIds.contains(node.stableId()));
 	}
 
