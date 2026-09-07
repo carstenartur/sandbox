@@ -39,8 +39,10 @@ import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.ResolvedSea
  *
  * <p>The ordinary planning entry point remains report-only and records Java-level
  * coexistence constraints for compatibility-policy analysis. The explicit
- * closed-source entry point marks only the currently executable single-parameter
- * group as directly automatic.</p>
+ * closed-source entry point marks one complete source-resolved parameter atomicity
+ * group as directly automatic, including an override/implementation family. Return
+ * groups remain report-only because Java cannot preserve the old signature by
+ * overloading on return type.</p>
  */
 public final class ContainerSignatureAtomicityPlanner {
 
@@ -54,8 +56,8 @@ public final class ContainerSignatureAtomicityPlanner {
 	}
 
 	/**
-	 * Builds an immutable direct-migration plan for the implemented closed-source
-	 * parameter slice. No compatibility bridge is implied by this mode.
+	 * Builds an immutable direct-migration plan for a complete closed-source parameter
+	 * atomicity group. No compatibility bridge is implied by this mode.
 	 */
 	public ContainerSignatureMigrationPlan planClosedSource(
 			ContainerFlowComponent component,
@@ -176,7 +178,7 @@ public final class ContainerSignatureAtomicityPlanner {
 					DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
 					component.rootNodeId(),
 					"", //$NON-NLS-1$
-					"Automatic signature execution currently supports exactly one source-resolved parameter declaration and no return or override family.")); //$NON-NLS-1$
+					"Automatic signature execution requires exactly one non-empty source-resolved parameter atomicity group; return groups remain unsupported.")); //$NON-NLS-1$
 		}
 		return new ContainerSignatureMigrationPlan(
 				recommendation.targetContract(),
@@ -189,7 +191,7 @@ public final class ContainerSignatureAtomicityPlanner {
 			List<SignatureAtomicityGroup> groups) {
 		return groups.size() == 1
 				&& groups.get(0).positionKind() == PositionKind.PARAMETER
-				&& groups.get(0).members().size() == 1;
+				&& !groups.get(0).members().isEmpty();
 	}
 
 	private static boolean declarationTarget(ResolvedSearchTarget target) {
