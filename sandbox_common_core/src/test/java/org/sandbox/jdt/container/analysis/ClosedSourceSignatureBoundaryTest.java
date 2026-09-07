@@ -121,6 +121,24 @@ class ClosedSourceSignatureBoundaryTest {
 				plan.diagnostics().get(0).kind());
 	}
 
+	@Test
+	void omittedOverrideMemberKeepsTheFamilyNonAutomatic() {
+		FlowNode first= parameter(
+				"parameter:first:0", "First.java", "first-handle", true); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		FlowNode omitted= parameter(
+				"parameter:second:0", "Second.java", "second-handle", true); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		ResolvedContainerFlowSearchPlan incomplete= new ResolvedContainerFlowSearchPlan(List.of(
+				target(first, SearchKind.METHOD_OVERRIDE_FAMILY, 0,
+						"parameter:family:0"))); //$NON-NLS-1$
+
+		var plan= planner.planClosedSource(
+				component(List.of(first, omitted)), incomplete, recommendation());
+
+		assertEquals(PlanningStatus.REJECTED, plan.status());
+		assertEquals(DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
+				plan.diagnostics().get(0).kind());
+	}
+
 	private static FlowNode parameter(
 			String id,
 			String unit,
