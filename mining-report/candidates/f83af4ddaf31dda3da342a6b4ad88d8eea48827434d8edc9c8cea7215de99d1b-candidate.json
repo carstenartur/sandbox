@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f83af4ddaf31dda3da342a6b4ad88d8eea48827434d8edc9c8cea7215de99d1b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.corext.util.JavaModelUtil.PACKAGE_INFO_JAVA.equals($input.getElementName()) :: instanceof($input, \"org.eclipse.jdt.core.ICompilationUnit\")\n\u003d\u003e\norg.eclipse.jdt.internal.corext.util.JavaModelUtil.isPackageInfo((org.eclipse.jdt.core.ICompilationUnit) $input)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.internal.corext.util.JavaModelUtil;\n\npublic class TestClass {\n    public void processCompilationUnit(ICompilationUnit input) {\n        if (JavaModelUtil.PACKAGE_INFO_JAVA.equals(input.getElementName())) {\n            System.out.println(\"It\u0027s package-info.java\");\n        } else {\n            System.out.println(\"It\u0027s not package-info.java\");\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jdt.core.ICompilationUnit;\nimport org.eclipse.jdt.internal.corext.util.JavaModelUtil;\n\npublic class TestClass {\n    public void processCompilationUnit(ICompilationUnit input) {\n        if (JavaModelUtil.isPackageInfo((ICompilationUnit) input)) {\n            System.out.println(\"It\u0027s package-info.java\");\n        } else {\n            System.out.println(\"It\u0027s not package-info.java\");\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.internal.corext.util.JavaModelUtil;\n\npublic class TestClass {\n    public void processElement(IJavaElement input) {\n        if (\"someOtherFile.java\".equals(input.getElementName())) { \n            System.out.println(\"Some other file\");\n        }\n        \n        String myFileName \u003d \"MyClass.java\";\n        if (myFileName.equals(input.getElementName())) { \n            System.out.println(\"My class file\");\n        }\n    }\n}",
+  "targetHintFile": "api-simplification.sandbox-hint",
+  "sourceCommit": "52ff99eb9b2828612fe521d9d8c881b170bf8b02",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replace direct string comparison for \u0027package-info.java\u0027 with JavaModelUtil.isPackageInfo().",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-07T02:26:28.679304970Z",
+  "ruleFingerprint": "sha256:d5972098971176f1a0472b8098f679d28608b8576719a126ff2e839700ceb8fb",
+  "behaviorFingerprint": "sha256:f9c44f81c6d2aa3ea910b4af5160818a3bdadab6063c337588d50f753c3120fe",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.corext cannot be resolved",
+    "verifiedAt": "2026-09-07T02:26:34.735315495Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

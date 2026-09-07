@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "04f120a2fe88bec9c9295b134f24f30037f84dd0833aa149eb0c9fd1be843c54",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: swt.link.noWrap\u003e\n\u003c!description: Replace SWT.WRAP with SWT.NONE for org.eclipse.swt.widgets.Link constructors to prevent text wrapping.\nThis aligns with a policy to avoid wrapping for Link widgets, improving display consistency.\u003e\n\u003c!severity: WARNING\u003e\n\nnew org.eclipse.swt.widgets.Link($parent$, org.eclipse.swt.SWT.WRAP)\n\u003d\u003e\nnew org.eclipse.swt.widgets.Link($parent$, org.eclipse.swt.SWT.NONE)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.swt.widgets.Link;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.SWT;\n\npublic class MyClass {\n    public void createLink(Composite parent) {\n        Link proposalLink \u003d new Link(parent, SWT.WRAP);\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.swt.widgets.Link;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.SWT;\n\npublic class MyClass {\n    public void createLink(Composite parent) {\n        Link proposalLink \u003d new Link(parent, SWT.NONE);\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.swt.widgets.Text;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Link;\n\npublic class MyClass {\n    public void createText(Composite parent) {\n        // Different widget (Text) should not match\n        Text textWidget \u003d new Text(parent, SWT.WRAP);\n        // Already uses SWT.NONE, should not match\n        Link linkWidget \u003d new Link(parent, SWT.NONE);\n    }\n}",
+  "targetHintFile": "swt.sandbox-hint",
+  "sourceCommit": "ce590e50a4d315a2ad4d37a7a3899361e7fed928",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Usage",
+  "summary": "Replaces the SWT.WRAP style constant with SWT.NONE when creating an org.eclipse.swt.widgets.Link widget, based on an observed project policy.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-07T02:26:28.592422704Z",
+  "ruleFingerprint": "sha256:737233a847461a1ffa23b3714817fa8fda17a2865236eb408a1ff8505315362f",
+  "behaviorFingerprint": "sha256:cde31dacce628773da57971a3c755d2ad2d9ae2d5d026965672981b5a321434b",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-07T02:26:34.695597983Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
