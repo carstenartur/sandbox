@@ -80,9 +80,9 @@ class ClosedSourceSignatureBoundaryTest {
 	@Test
 	void completeOverrideFamilyCanBeAutomaticClosedSourceGroup() {
 		FlowNode first= parameter(
-				"parameter:first:0", "First.java", "first-handle"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"parameter:first:0", "First.java", "first-handle", true); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		FlowNode second= parameter(
-				"parameter:second:0", "Second.java", "second-handle"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"parameter:second:0", "Second.java", "second-handle", true); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		ResolvedContainerFlowSearchPlan resolved= new ResolvedContainerFlowSearchPlan(List.of(
 				target(first, SearchKind.METHOD_OVERRIDE_FAMILY, 0,
 						"parameter:family:0"), //$NON-NLS-1$
@@ -101,7 +101,31 @@ class ClosedSourceSignatureBoundaryTest {
 						.toList());
 	}
 
-	private static FlowNode parameter(String id, String unit, String handle) {
+	@Test
+	void unresolvedOverrideMemberKeepsTheFamilyNonAutomatic() {
+		FlowNode first= parameter(
+				"parameter:first:0", "First.java", "first-handle", true); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		FlowNode unresolved= parameter(
+				"parameter:second:0", "Second.java", "second-handle", false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		ResolvedContainerFlowSearchPlan resolved= new ResolvedContainerFlowSearchPlan(List.of(
+				target(first, SearchKind.METHOD_OVERRIDE_FAMILY, 0,
+						"parameter:family:0"), //$NON-NLS-1$
+				target(unresolved, SearchKind.METHOD_OVERRIDE_FAMILY, 0,
+						"parameter:family:0"))); //$NON-NLS-1$
+
+		var plan= planner.planClosedSource(
+				component(List.of(first, unresolved)), resolved, recommendation());
+
+		assertEquals(PlanningStatus.REJECTED, plan.status());
+		assertEquals(DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
+				plan.diagnostics().get(0).kind());
+	}
+
+	private static FlowNode parameter(
+			String id,
+			String unit,
+			String handle,
+			boolean sourceResolved) {
 		return new FlowNode(
 				id,
 				NodeKind.PARAMETER,
@@ -110,7 +134,7 @@ class ClosedSourceSignatureBoundaryTest {
 				unit,
 				handle,
 				0,
-				true,
+				sourceResolved,
 				10,
 				6);
 	}
