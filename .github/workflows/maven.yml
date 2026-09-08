@@ -75,7 +75,7 @@ jobs:
               sandbox_oomph/*|sandbox_target/*|sandbox_product/*|*/.project|*/.classpath|pom.xml|.github/workflows/maven.yml)
                 oomph=true ;;
             esac
-          done < <(git diff --name-only --diff-filter=ACMRT "$BASE_SHA"...HEAD)
+          done < <(git diff --name-only --diff-filter=ACDMRT "$BASE_SHA"...HEAD)
 
           echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
           echo "oomph=$oomph" >> "$GITHUB_OUTPUT"
