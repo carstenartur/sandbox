@@ -58,7 +58,7 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-		org.sandbox.jdt.internal.common.HelperVisitorFactory.callEnhancedForStatementVisitor(compilationUnit, 
+		org.sandbox.jdt.internal.common.HelperVisitorFactory.callEnhancedForStatementVisitor(LoopConversionService.scanRoot(compilationUnit),
 			new ReferenceHolder<Integer, Object>(), nodesprocessed, (visited, aholder) -> {
 				if (ExpressionHelper.overlapsProcessedNode(visited, nodesprocessed)) {
 					return false;

@@ -32,7 +32,7 @@ public final class StreamForEachConverter {
 
 	public static void find(UseFunctionalCallFixCore fix, CompilationUnit unit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> processed) {
-		unit.accept(new ASTVisitor() {
+		LoopConversionService.scanRoot(unit).accept(new ASTVisitor() {
 			@Override
 			public boolean visit(MethodInvocation node) {
 				if (ExpressionHelper.overlapsProcessedNode(node, processed)) {

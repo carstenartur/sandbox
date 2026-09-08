@@ -34,6 +34,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore.LoopConversi
 
 /** One semantic decision path for cleanup, Quick Assist and style diagnostics. */
 public final class LoopConversionService {
+	private static final String SCAN_ROOT = LoopConversionService.class.getName();
 
 	private LoopConversionService() {
 	}
@@ -72,20 +73,39 @@ public final class LoopConversionService {
 
 		/** A caret targets the innermost enclosing loop, never a neighbouring loop. */
 		public Analysis atSelection(int offset, int length) {
-			if (offset < 0 || length < 0 || (long) offset + length > unit.getLength()) {
-				return new Analysis(unit, List.of(), names);
-			}
-			ASTNode selected = NodeFinder.perform(unit, offset, length);
-			while (selected != null && !(selected instanceof EnhancedForStatement || selected instanceof ForStatement
-					|| selected instanceof WhileStatement || isForEachStatement(selected))) {
-				selected = selected.getParent();
-			}
-			ASTNode anchor = selected;
+			ASTNode anchor = selection(unit, offset, length);
 			List<CompilationUnitRewriteOperation> matches = operations.stream()
 					.filter(operation -> operation instanceof LoopConversionOperation loop && loop.getAnchor() == anchor)
 					.toList();
 			return new Analysis(unit, matches, names);
 		}
+	}
+
+	/** Scope editor discovery before overlap suppression can hide a selected inner loop. */
+	public static Analysis analyzeSelection(CompilationUnit unit, EnumSet<UseFunctionalCallFixCore> handlers, int offset, int length) {
+		synchronized (unit) {
+			ASTNode selected = selection(unit, offset, length);
+			if (selected == null) return new Analysis(unit, List.of(), Set.of());
+			Object previous = unit.getProperty(SCAN_ROOT);
+			unit.setProperty(SCAN_ROOT, selected);
+			try {
+				return analyze(unit, handlers).atSelection(offset, length);
+			} finally {
+				unit.setProperty(SCAN_ROOT, previous);
+			}
+		}
+	}
+
+	static ASTNode scanRoot(CompilationUnit unit) {
+		return unit.getProperty(SCAN_ROOT) instanceof ASTNode root ? root : unit;
+	}
+
+	private static ASTNode selection(CompilationUnit unit, int offset, int length) {
+		if (offset < 0 || length < 0 || (long) offset + length > unit.getLength()) return null;
+		ASTNode selected = NodeFinder.perform(unit, offset, length);
+		while (selected != null && !(selected instanceof EnhancedForStatement || selected instanceof ForStatement
+				|| selected instanceof WhileStatement || isForEachStatement(selected))) selected = selected.getParent();
+		return selected;
 	}
 
 	public static Analysis analyze(CompilationUnit unit, EnumSet<UseFunctionalCallFixCore> handlers) {

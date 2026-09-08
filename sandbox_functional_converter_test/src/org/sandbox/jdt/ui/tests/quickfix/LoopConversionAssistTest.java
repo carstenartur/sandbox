@@ -136,6 +136,17 @@ class LoopConversionAssistTest {
 	}
 
 	@Test
+	void caretSelectsConvertibleInnerLoopWithoutChangingItsOuterLoop() throws Exception {
+		String outer = "for (java.util.List<String> inner : values)";
+		String source = "package test1; class Example { void run(java.util.List<java.util.List<String>> values) { " + outer
+				+ " { for (String item : inner) { System.out.println(item); } } } }";
+		String preview = proposal(invocation(source, source.indexOf("println"), 0), LoopTargetFormat.WHILE_LOOP).getPreviewContent();
+		assertTrue(preview.contains(outer), preview);
+		assertFalse(preview.contains("for (String item"), preview);
+		assertFalse(Arrays.stream(invocation(preview, preview.indexOf("while"), 0).getASTRoot().getProblems()).anyMatch(problem -> problem.isError()));
+	}
+
+	@Test
 	void offersCaretInsideOrdinaryLoopBodyButRejectsCompilationErrors() throws Exception {
 		String source = "class Example { void run(java.util.List<String> values) { for (String s : values) { System.out.println(s); } } }";
 		assertTrue(new LoopConversionQuickAssistProcessor().hasAssists(invocation(source, source.indexOf("println"), 0)));
