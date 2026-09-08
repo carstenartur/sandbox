@@ -23,7 +23,11 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
@@ -68,7 +72,7 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 		compilationUnit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(WhileStatement node) {
-				if (nodesprocessed.contains(node)) {
+				if (ExpressionHelper.overlapsProcessedNode(node, nodesprocessed)) {
 					return false;
 				}
 				
@@ -81,7 +85,7 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 				Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, node);
 				
 				IteratorPattern pattern = patternDetector.detectWhilePattern(node, previousStmt);
-				if (pattern == null) {
+				if (pattern == null || elementDeclaration(node, pattern) == null) {
 					return true;
 				}
 				
@@ -129,7 +133,11 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 		Statement iteratorDecl = IteratorPatternDetector.findPreviousStatement(parentBlock, whileStmt);
 		
 		// Build LoopModel from the iterator-while pattern using ULR pipeline
-		LoopModel model = buildLoopModel(pattern);
+		VariableDeclarationFragment element = elementDeclaration(whileStmt, pattern);
+		if (element == null) {
+			return;
+		}
+		LoopModel model = buildLoopModel(pattern, element);
 		
 		// Extract body statements (skip the first item = it.next() declaration)
 		List<Statement> bodyStatements = extractBodyStatements(whileStmt);
@@ -142,16 +150,31 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 	/**
 	 * Builds a LoopModel from an iterator-while pattern using the ULR pipeline.
 	 */
-	private LoopModel buildLoopModel(IteratorPattern pattern) {
+	private LoopModel buildLoopModel(IteratorPattern pattern, VariableDeclarationFragment element) {
 		String collectionExpr = pattern.collectionExpression().toString();
-		String elementType = pattern.elementType() != null ? pattern.elementType() : "Object"; //$NON-NLS-1$
-		String elementName = "item"; //$NON-NLS-1$
+		String elementType = ((VariableDeclarationStatement) element.getParent()).getType().toString();
+		String elementName = element.getName().getIdentifier();
 		
 		return new LoopModelBuilder()
 			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr, elementType)
 			.element(elementName, elementType, false)
 			.terminal(new ForEachTerminal(List.of(), false))
 			.build();
+	}
+
+	private static VariableDeclarationFragment elementDeclaration(WhileStatement loop, IteratorPattern pattern) {
+		if (loop.getBody() instanceof Block body && !body.statements().isEmpty()
+				&& body.statements().get(0) instanceof VariableDeclarationStatement declaration
+				&& declaration.fragments().size() == 1) {
+			VariableDeclarationFragment element = (VariableDeclarationFragment) declaration.fragments().get(0);
+			if (element.getInitializer() instanceof MethodInvocation next && next.arguments().isEmpty()
+					&& "next".equals(next.getName().getIdentifier()) //$NON-NLS-1$
+					&& next.getExpression() instanceof SimpleName iterator
+					&& pattern.iteratorVariableName().equals(iterator.getIdentifier())) {
+				return element;
+			}
+		}
+		return null;
 	}
 
 	/**

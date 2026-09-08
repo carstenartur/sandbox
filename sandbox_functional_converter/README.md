@@ -48,6 +48,10 @@ typed-function path. Each function is created once; each map is evaluated once
 per accepted element, in pipeline order. Ordinary `Iterable.forEach` calls are
 also supported.
 
+When several source formats are enabled, overlapping nested loops are converted
+in separate cleanup passes. The handlers share variable-name reservations so
+their generated iterator declarations cannot collide.
+
 The conversion remains conservative: parallel streams, other stream sources,
 stateful operations (`sorted`, `distinct`, `limit`, etc.), primitive streams,
 other terminals (`collect`, `reduce`, matches, etc.), unresolved/non-denotable

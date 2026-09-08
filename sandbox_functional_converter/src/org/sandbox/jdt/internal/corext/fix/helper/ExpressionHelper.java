@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -39,6 +40,25 @@ public final class ExpressionHelper {
 
 	private ExpressionHelper() {
 		// Utility class — not instantiable
+	}
+
+	/** Avoid overlapping replacements when several source formats are enabled. */
+	public static boolean overlapsProcessedNode(ASTNode node, Set<ASTNode> processed) {
+		for (ASTNode selected : processed) {
+			if (isAncestor(node, selected) || isAncestor(selected, node)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean isAncestor(ASTNode ancestor, ASTNode node) {
+		for (ASTNode current = node; current != null; current = current.getParent()) {
+			if (current == ancestor) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

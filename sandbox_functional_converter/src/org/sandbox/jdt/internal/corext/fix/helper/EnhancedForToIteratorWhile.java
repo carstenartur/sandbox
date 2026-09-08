@@ -59,6 +59,9 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
 		org.sandbox.jdt.internal.common.HelperVisitorFactory.callEnhancedForStatementVisitor(compilationUnit, 
 			new ReferenceHolder<Integer, Object>(), nodesprocessed, (visited, aholder) -> {
+				if (ExpressionHelper.overlapsProcessedNode(visited, nodesprocessed)) {
+					return false;
+				}
 				// Safety: reject arrays — arrays don't have .iterator() method
 				Expression iterable = visited.getExpression();
 				ITypeBinding typeBinding = iterable.resolveTypeBinding();

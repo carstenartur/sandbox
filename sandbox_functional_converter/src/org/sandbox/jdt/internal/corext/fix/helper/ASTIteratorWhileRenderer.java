@@ -42,7 +42,7 @@ import org.sandbox.functional.core.terminal.ForEachTerminal;
  */
 public class ASTIteratorWhileRenderer {
 
-	private static final String ITERATOR_NAME = "it"; //$NON-NLS-1$
+	private String iteratorName;
 
 	private final AST ast;
 	private final ASTRewrite rewrite;
@@ -50,6 +50,10 @@ public class ASTIteratorWhileRenderer {
 	public ASTIteratorWhileRenderer(AST ast, ASTRewrite rewrite) {
 		this.ast = ast;
 		this.rewrite = rewrite;
+	}
+
+	private void reserveIteratorName(Statement originalStatement) {
+		iteratorName = LoopVariableNames.fresh("it", LoopVariableNames.usedNames(originalStatement)); //$NON-NLS-1$
 	}
 
 	/**
@@ -61,6 +65,7 @@ public class ASTIteratorWhileRenderer {
 	 * @param group the text edit group
 	 */
 	public void render(LoopModel model, Statement originalStatement, Statement originalBody, TextEditGroup group) {
+		reserveIteratorName(originalStatement);
 		String elementType = model.getElement().typeName();
 		String elementName = model.getElement().variableName();
 		String collectionExpr = model.getSource().expression();
@@ -84,6 +89,7 @@ public class ASTIteratorWhileRenderer {
 	 * @param group the text edit group
 	 */
 	public void renderFromModel(LoopModel model, Statement originalStatement, TextEditGroup group) {
+		reserveIteratorName(originalStatement);
 		String elementType = model.getElement().typeName();
 		String elementName = model.getElement().variableName();
 		String collectionExpr = model.getSource().expression();
@@ -110,6 +116,7 @@ public class ASTIteratorWhileRenderer {
 	@SuppressWarnings("unchecked")
 	public void renderWithBodyStatements(LoopModel model, Statement originalStatement,
 			java.util.List<Statement> bodyStatements, TextEditGroup group) {
+		reserveIteratorName(originalStatement);
 		String elementType = model.getElement().typeName();
 		String elementName = model.getElement().variableName();
 		String collectionExpr = model.getSource().expression();
@@ -119,7 +126,7 @@ public class ASTIteratorWhileRenderer {
 
 		// Create while statement with body from provided statements
 		MethodInvocation hasNextCall = ast.newMethodInvocation();
-		hasNextCall.setExpression(ast.newSimpleName(ITERATOR_NAME));
+		hasNextCall.setExpression(ast.newSimpleName(iteratorName));
 		hasNextCall.setName(ast.newSimpleName("hasNext")); //$NON-NLS-1$
 
 		WhileStatement whileStmt = ast.newWhileStatement();
@@ -170,7 +177,7 @@ public class ASTIteratorWhileRenderer {
 
 		// it = collection.iterator()
 		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();
-		fragment.setName(ast.newSimpleName(ITERATOR_NAME));
+		fragment.setName(ast.newSimpleName(iteratorName));
 
 		MethodInvocation iteratorCall = ast.newMethodInvocation();
 		iteratorCall.setExpression(createExpression(collectionExpr));
@@ -186,7 +193,7 @@ public class ASTIteratorWhileRenderer {
 	private WhileStatement createWhileStatement(String elementType, String elementName, Statement originalBody) {
 		// while (it.hasNext())
 		MethodInvocation hasNextCall = ast.newMethodInvocation();
-		hasNextCall.setExpression(ast.newSimpleName(ITERATOR_NAME));
+		hasNextCall.setExpression(ast.newSimpleName(iteratorName));
 		hasNextCall.setName(ast.newSimpleName("hasNext")); //$NON-NLS-1$
 
 		WhileStatement whileStmt = ast.newWhileStatement();
@@ -213,7 +220,7 @@ public class ASTIteratorWhileRenderer {
 	private WhileStatement createWhileStatementFromModel(String elementType, String elementName, LoopModel model) {
 		// while (it.hasNext())
 		MethodInvocation hasNextCall = ast.newMethodInvocation();
-		hasNextCall.setExpression(ast.newSimpleName(ITERATOR_NAME));
+		hasNextCall.setExpression(ast.newSimpleName(iteratorName));
 		hasNextCall.setName(ast.newSimpleName("hasNext")); //$NON-NLS-1$
 
 		WhileStatement whileStmt = ast.newWhileStatement();
@@ -240,7 +247,7 @@ public class ASTIteratorWhileRenderer {
 	private VariableDeclarationStatement createItemDeclaration(String elementType, String elementName) {
 		// T item = it.next();
 		MethodInvocation nextCall = ast.newMethodInvocation();
-		nextCall.setExpression(ast.newSimpleName(ITERATOR_NAME));
+		nextCall.setExpression(ast.newSimpleName(iteratorName));
 		nextCall.setName(ast.newSimpleName("next")); //$NON-NLS-1$
 
 		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();

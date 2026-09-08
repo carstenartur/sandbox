@@ -51,11 +51,19 @@ class StreamChainToLoopTest {
 		}
 
 		String convert(String source, String target) throws CoreException {
+			return convert(source, target, false);
+		}
+
+		String convert(String source, String target, boolean allSources) throws CoreException {
 			ICompilationUnit unit = getSourceFolder().createPackageFragment("test1", false, null)
 					.createCompilationUnit("Example.java", source, true, null);
 			enable(MYCleanUpConstants.LOOP_CONVERSION_ENABLED);
 			set(MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT, target);
 			enable(MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM);
+			if (allSources) {
+				enable(MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR);
+				enable(MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE);
+			}
 			assertNoCompilationError(unit);
 			performRefactoring(new ICompilationUnit[] { unit }, null);
 			assertNoCompilationError(unit);
@@ -280,6 +288,9 @@ class StreamChainToLoopTest {
 						result.add(item); // beside statement
 						// after statement
 					});
+					Arrays.asList("a", "b").stream().forEach(item -> {
+						// empty consumer
+					});
 					return result.toString();
 				}
 				""";
@@ -289,7 +300,7 @@ class StreamChainToLoopTest {
 	@ValueSource(strings = { "enhanced_for", "iterator_while" })
 	void preservesAllTerminalBodyComments(String target) throws Exception {
 		String converted = context.convert(source(commentBody()), target);
-		for (String comment : new String[] { "before pipeline", "before statement", "beside statement", "after statement" }) {
+		for (String comment : new String[] { "before pipeline", "before statement", "beside statement", "after statement", "empty consumer" }) {
 			assertTrue(converted.contains("// " + comment), converted);
 		}
 		assertEquals("[a, b]", execute(converted, "body-comments"));
@@ -308,6 +319,53 @@ class StreamChainToLoopTest {
 				"items.stream() /* keep pipeline comment */ .filter(item -> true).forEach(item -> sink.add(item));",
 				"java.util.stream.Stream.of(\"a\").forEach(item -> sink.add(item));")
 				.map(statement -> Arguments.of(target, statement)));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "enhanced_for", "iterator_while" })
+	void nestedSourceFormatsUseSeparateRewrites(String target) throws Exception {
+		String outer = "iterator_while".equals(target)
+				? "for (String prefix : groups) {"
+				: "Iterator<String> cursor = groups.iterator(); while (cursor.hasNext()) { Object prefix = cursor.next();";
+		String original = source("""
+				public static String run() {
+					List<String> groups = Arrays.asList("A", "B");
+					List<String> words = Arrays.asList(" a ", " b ");
+					List<String> result = new ArrayList<>();
+					LOOP_HEADER
+						words.stream().map(String::trim).forEach(word -> result.add(label(prefix) + word));
+					}
+					return result.toString();
+				}
+				static String label(Object value) { return "object:" + value; }
+				static String label(String value) { return "string:" + value; }
+				""".replace("LOOP_HEADER", outer));
+		String first = context.convert(original, target, true);
+		assertFalse(first.contains(".stream()"), first);
+		String second = context.convert(first, target, true);
+		assertNotEquals(first, second, "The enclosing loop is converted on the next pass");
+		String expected = execute(original, "nested-original");
+		assertEquals(expected, execute(first, "nested-first"));
+		assertEquals(expected, execute(second, "nested-second"));
+		assertEquals(second, context.convert(second, target, true));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "iterator_while" })
+	void independentSourceFormatsReserveDifferentIterators(String target) throws Exception {
+		String original = source("""
+				public static String run() {
+					List<String> items = Arrays.asList("a", "b");
+					List<String> result = new ArrayList<>();
+					for (String item : items) { result.add(item); }
+					items.stream().map(String::toUpperCase).forEach(item -> result.add(item));
+					return result.toString();
+				}
+				""");
+		String converted = context.convert(original, target, true);
+		assertFalse(converted.contains(".stream()"));
+		assertFalse(converted.contains("for ("));
+		assertEquals("[a, b, A, B]", execute(converted, "independent-sources"));
 	}
 
 	@ParameterizedTest
@@ -336,9 +394,9 @@ class StreamChainToLoopTest {
 	void leavesUnsupportedChainsIntact(String target, String statement) throws CoreException {
 		String original = source("""
 				void process(List<String> items, List<String> sink, Predicate<String> predicate) {
-					%s
+					STATEMENT
 				}
-				""".formatted(statement));
+				""".replace("STATEMENT", statement));
 		assertEquals(original, context.convert(original, target));
 	}
 

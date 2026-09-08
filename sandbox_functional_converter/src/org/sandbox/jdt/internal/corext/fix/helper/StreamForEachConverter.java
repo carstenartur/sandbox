@@ -10,9 +10,10 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.internal.corext.fix.helper.LoopVariableNames.fresh;
+
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -90,18 +91,11 @@ public final class StreamForEachConverter {
 
 	public static void find(UseFunctionalCallFixCore fix, CompilationUnit unit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> processed) {
-		Set<String> names = new HashSet<>();
-		unit.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(SimpleName name) {
-				names.add(name.getIdentifier());
-				return true;
-			}
-		});
+		Set<String> names = LoopVariableNames.usedNames(unit);
 		unit.accept(new ASTVisitor() {
 			@Override
 			public boolean visit(MethodInvocation node) {
-				if (processed.contains(node)) {
+				if (ExpressionHelper.overlapsProcessedNode(node, processed)) {
 					return false;
 				}
 				Plan plan = analyze(node, names);
@@ -272,7 +266,8 @@ public final class StreamForEachConverter {
 		CompilationUnit unit = (CompilationUnit) lambda.getRoot();
 		for (Object entry : unit.getCommentList()) {
 			Comment comment = (Comment) entry;
-			if (contains(lambda, comment) && !contains(lambda.getBody(), comment)) {
+			if (contains(lambda, comment) && (!contains(lambda.getBody(), comment)
+					|| lambda.getBody() instanceof Block block && block.statements().isEmpty())) {
 				return false;
 			}
 		}
@@ -332,14 +327,6 @@ public final class StreamForEachConverter {
 			}
 		});
 		return found[0];
-	}
-
-	private static String fresh(String base, Set<String> names) {
-		String name = base;
-		for (int suffix = 1; !names.add(name); suffix++) {
-			name = base + suffix;
-		}
-		return name;
 	}
 
 	public static void rewrite(ASTNode node, CompilationUnitRewrite cuRewrite, TextEditGroup group,
