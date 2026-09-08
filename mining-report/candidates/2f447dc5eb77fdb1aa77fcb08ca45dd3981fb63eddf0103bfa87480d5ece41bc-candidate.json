@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2f447dc5eb77fdb1aa77fcb08ca45dd3981fb63eddf0103bfa87480d5ece41bc",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: jdt.imethod.exists.guard\u003e\n\u003c!description: Add method.exists() guard before calling isConstructor() to prevent issues with non-existent methods, improving robustness for JDT Core IMethod usages.\u003e\n\u003c!severity: INFO\u003e\norg.eclipse.jdt.internal.ui.viewsupport.JavaElementLabels.getFlag($flags, org.eclipse.jdt.internal.ui.viewsupport.JavaElementLabels.T_TYPE_PARAMETERS) \u0026\u0026 $method.isConstructor() :: instanceof($method, \"org.eclipse.jdt.core.IMethod\")\n\u003d\u003e\norg.eclipse.jdt.internal.ui.viewsupport.JavaElementLabels.getFlag($flags, org.eclipse.jdt.internal.ui.viewsupport.JavaElementLabels.T_TYPE_PARAMETERS) \u0026\u0026 $method.exists() \u0026\u0026 $method.isConstructor()\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.viewsupport;\n\n// Simulate JDT Core IMethod and JavaModelException for example compilation\npackage org.eclipse.jdt.core {\n    public interface IMethod {\n        boolean isConstructor();\n        boolean exists();\n    }\n    public class JavaModelException extends Exception {\n        private static final long serialVersionUID \u003d 1L;\n    }\n}\n\n// Original context class\nimport org.eclipse.jdt.core.IMethod;\nimport org.eclipse.jdt.core.JavaModelException;\n\nclass JavaElementLabels {\n    public static final int T_TYPE_PARAMETERS \u003d 1;\n    public static boolean getFlag(int flags, int flag) {\n        return (flags \u0026 flag) !\u003d 0;\n    }\n}\n\npublic class MyClass {\n    public void someMethod(int flags, IMethod method) throws JavaModelException {\n        if (JavaElementLabels.getFlag(flags, JavaElementLabels.T_TYPE_PARAMETERS) \u0026\u0026 method.isConstructor()) {\n            System.out.println(\"Processing...\");\n        }\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.viewsupport;\n\n// Simulate JDT Core IMethod and JavaModelException for example compilation\npackage org.eclipse.jdt.core {\n    public interface IMethod {\n        boolean isConstructor();\n        boolean exists();\n    }\n    public class JavaModelException extends Exception {\n        private static final long serialVersionUID \u003d 1L;\n    }\n}\n\n// Original context class\nimport org.eclipse.jdt.core.IMethod;\nimport org.eclipse.jdt.core.JavaModelException;\n\nclass JavaElementLabels {\n    public static final int T_TYPE_PARAMETERS \u003d 1;\n    public static boolean getFlag(int flags, int flag) {\n        return (flags \u0026 flag) !\u003d 0;\n    }\n}\n\npublic class MyClass {\n    public void someMethod(int flags, IMethod method) throws JavaModelException {\n        if (JavaElementLabels.getFlag(flags, JavaElementLabels.T_TYPE_PARAMETERS) \u0026\u0026 method.exists() \u0026\u0026 method.isConstructor()) {\n            System.out.println(\"Processing...\");\n        }\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.viewsupport;\n\n// Simulate JDT Core IMethod and JavaModelException for example compilation\npackage org.eclipse.jdt.core {\n    public interface IMethod {\n        boolean isConstructor();\n        boolean exists();\n    }\n    public class JavaModelException extends Exception {\n        private static final long serialVersionUID \u003d 1L;\n    }\n}\n\n// Original context class\nimport org.eclipse.jdt.core.IMethod;\nimport org.eclipse.jdt.core.JavaModelException;\n\nclass JavaElementLabels {\n    public static final int T_TYPE_PARAMETERS \u003d 1;\n    public static boolean getFlag(int flags, int flag) {\n        return (flags \u0026 flag) !\u003d 0;\n    }\n}\n\npublic class MyClass {\n    public void anotherMethod(int flags, IMethod method) throws JavaModelException {\n        if (method.isConstructor()) { // Does not have the \u0027getFlag\u0027 part of the pattern\n            System.out.println(\"Simple constructor check.\");\n        }\n        if (JavaElementLabels.getFlag(flags, JavaElementLabels.T_TYPE_PARAMETERS)) { // Does not have the \u0027isConstructor\u0027 part\n            System.out.println(\"Just flag check.\");\n        }\n    }\n}\n",
+  "targetHintFile": "robustness.sandbox-hint",
+  "sourceCommit": "ac363e063ab27f9187b62de26868fc5b08876b02",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Robustness",
+  "summary": "Adds a \u0027.exists()\u0027 check to IMethod before calling \u0027.isConstructor()\u0027 when also checking for type parameters.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-08T02:25:43.485332492Z",
+  "ruleFingerprint": "sha256:226c78cfc389bddcb2f82994396cb3d6edf2ae737373cbc9bf7af1046da26670",
+  "behaviorFingerprint": "sha256:deb5b60f26176348645b4edbb3ef483ecd1ed1a8224c2319b72df2afa79d8b8d",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-08T02:25:50.067954771Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

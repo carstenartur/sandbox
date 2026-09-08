@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "67656c65109bbe8f0f054cf935585a07448b6212dde46286767ffb4f01fce0fb",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.JavaPlugin.log($exception) :: instanceof($exception, \"org.eclipse.core.runtime.CoreException\")\n\u003d\u003e\norg.eclipse.jdt.internal.corext.javadoc.JavaDocLocations.handleFailedJavadocFetch($exception)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.jdt.internal.ui.JavaPlugin;\n\npublic class TestClass {\n    public void handleJavadocError(CoreException e) {\n        // ... existing code ...\n        JavaPlugin.log(e);\n        // ... more existing code ...\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.jdt.internal.corext.javadoc.JavaDocLocations;\n\npublic class TestClass {\n    public void handleJavadocError(CoreException e) {\n        // ... existing code ...\n        JavaDocLocations.handleFailedJavadocFetch(e);\n        // ... more existing code ...\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.runtime.Status;\nimport org.eclipse.jdt.internal.ui.JavaPlugin;\n\npublic class TestClass {\n    public void handleOtherError() {\n        // This should not match, as the argument is IStatus, not CoreException.\n        JavaPlugin.log(Status.CANCEL_STATUS);\n    }\n}",
+  "targetHintFile": "javadoc-cleanup.sandbox-hint",
+  "sourceCommit": "cf103b7d08229dd462c934cfb7b64e1342ebce38",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replaces JavaPlugin.log(CoreException) with JavaDocLocations.handleFailedJavadocFetch(CoreException).",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-08T02:25:43.438659052Z",
+  "ruleFingerprint": "sha256:cdf4bcf28ee27019b062cbe30aa6ad0ddf86a4e4ff0a40b60e2d75602136f8e8",
+  "behaviorFingerprint": "sha256:a33859efae9f2541f0784109e86c8577a1e7df93d18e077d766212544c6d1de2",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui cannot be resolved",
+    "verifiedAt": "2026-09-08T02:25:50.039928043Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

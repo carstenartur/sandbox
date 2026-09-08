@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "772be2ac4c2a8ee08ce2448854e1ca5a3211347962a8e6b1903d6110fdaec3e4",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: eclipse.jdt.ui.AbstractInfoView.computeAndSetInput_replacement*/\n/*!description: Replaces a call to the removed AbstractInfoView.computeAndSetInput(IWorkbenchPart) method with a call to AbstractInfoView.computeAndDoSetInput(IWorkbenchPart, IJavaElement, boolean), providing default arguments null and true.*/\n/*!severity: HINT*/\norg.eclipse.jdt.internal.ui.infoviews.AbstractInfoView.computeAndSetInput($part)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.infoviews.AbstractInfoView.computeAndDoSetInput($part, null, true)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.infoviews;\n\nimport org.eclipse.ui.IWorkbenchPart;\nimport org.eclipse.ui.ISelectionProvider;\nimport org.eclipse.jdt.core.IJavaElement; // Required for type resolution in target method\n\npublic abstract class AbstractInfoView {\n    protected ISelectionProvider fLastSelectionProvider;\n    protected boolean fLinking;\n\n    // Method to be replaced (conceptually removed by the commit)\n    protected void computeAndSetInput(final IWorkbenchPart part) {\n        // Original logic\n    }\n\n    // Method whose signature changed and is now the target\n    protected void computeAndDoSetInput(final IWorkbenchPart part, final IJavaElement element, final boolean resetIfInvalid) {\n        // New logic with added parameter\n    }\n\n    protected void setLinkingEnabled(boolean enabled) {\n        if (fLinking \u0026\u0026 fLastSelectionProvider !\u003d null) {\n            computeAndSetInput(fLastSelectionProvider); // Target line for transformation\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.infoviews;\n\nimport org.eclipse.ui.IWorkbenchPart;\nimport org.eclipse.ui.ISelectionProvider;\nimport org.eclipse.jdt.core.IJavaElement; // Required for type resolution in target method\n\npublic abstract class AbstractInfoView {\n    protected ISelectionProvider fLastSelectionProvider;\n    protected boolean fLinking;\n\n    // Method to be replaced (conceptually removed by the commit)\n    protected void computeAndSetInput(final IWorkbenchPart part) {\n        // Original logic\n    }\n\n    // Method whose signature changed and is now the target\n    protected void computeAndDoSetInput(final IWorkbenchPart part, final IJavaElement element, final boolean resetIfInvalid) {\n        // New logic with added parameter\n    }\n\n    protected void setLinkingEnabled(boolean enabled) {\n        if (fLinking \u0026\u0026 fLastSelectionProvider !\u003d null) {\n            computeAndDoSetInput(fLastSelectionProvider, null, true); // Transformed line\n        }\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.infoviews;\n\nimport org.eclipse.ui.IWorkbenchPart;\nimport org.eclipse.ui.ISelectionProvider;\nimport org.eclipse.jdt.core.IJavaElement;\n\npublic abstract class AbstractInfoView {\n    protected ISelectionProvider fLastSelectionProvider;\n    protected boolean fLinking;\n\n    protected void computeAndSetInput(final IWorkbenchPart part) {\n        // Method that the rule targets calls *to*, not itself.\n    }\n\n    protected void computeAndDoSetInput(final IWorkbenchPart part, final IJavaElement element, final boolean resetIfInvalid) {\n        // Example of a call to the *new* method signature, which should not be matched by the rule.\n    }\n\n    protected void setLinkingEnabled(boolean enabled) {\n        if (fLinking \u0026\u0026 fLastSelectionProvider !\u003d null) {\n            // computeAndSetInput(fLastSelectionProvider); // This line is not present for the negative example\n        }\n    }\n\n    public void anotherMethodCall(IWorkbenchPart part, IJavaElement element) {\n        computeAndDoSetInput(part, element, false); // This specific call should NOT be matched by the rule for `computeAndSetInput`\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui.sandbox-hint",
+  "sourceCommit": "02b61b229b776a9f74932e1a6b791c41af63d07f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Method Call Replacement",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-08T02:25:43.464629961Z",
+  "ruleFingerprint": "sha256:784050ee05f1ca94e048273fe835f87be400aaa7e9a8fd73c0948f3f1b42fe11",
+  "behaviorFingerprint": "sha256:d22b5fe884cff90f807ea8ae74600cbcf0646b6fc5aeea1b19234db718595f53",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
+    "verifiedAt": "2026-09-08T02:25:50.056137239Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

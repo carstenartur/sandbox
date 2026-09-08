@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "bcbe4236b68f68f453ddcf78ad39635b45bd296aa3b3df5a03591d2d94632985",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$textVar$ \u003d $textVar$.replaceFirst(\"^\\\\s+\", \"\");\n\u003d\u003e\n$textVar$ \u003d $textVar$.replaceFirst(\"^\\\\s+\", \"\");\n$textVar$ \u003d $textVar$.replaceAll(\"(\\\\r\\\\n?|\\\\n)([ \\\\t]*\\\\*)\", \"$1\");\n;;",
+  "beforeExample": "public class Example {\n    void processText(String input, boolean skipLeadingWhitespace) {\n        String text \u003d input;\n        if (skipLeadingWhitespace) {\n            text \u003d text.replaceFirst(\"^\\\\s+\", \"\");\n        }\n        System.out.println(text);\n    }\n    void otherMethod(String someText) {\n        String result \u003d someText.replaceFirst(\"prefix\", \"\"); // Should not match\n        System.out.println(result);\n    }\n}",
+  "afterExample": "public class Example {\n    void processText(String input, boolean skipLeadingWhitespace) {\n        String text \u003d input;\n        if (skipLeadingWhitespace) {\n            text \u003d text.replaceFirst(\"^\\\\s+\", \"\");\n            text \u003d text.replaceAll(\"(\\\\r\\\\n?|\\\\n)([ \\\\t]*\\\\*)\", \"$1\");\n        }\n        System.out.println(text);\n    }\n    void otherMethod(String someText) {\n        String result \u003d someText.replaceFirst(\"prefix\", \"\"); // Should not match\n        System.out.println(result);\n    }\n}",
+  "negativeExample": "public class Example {\n    void processText(String input, boolean skipLeadingWhitespace) {\n        String text \u003d input;\n        if (skipLeadingWhitespace) {\n            // Different replaceFirst regex, should not match\n            text \u003d text.replaceFirst(\"\\\\s+$\", \"\");\n        }\n        System.out.println(text);\n    }\n    void anotherTextProcessing(String line) {\n        String processedLine \u003d line.replaceFirst(\"^\", \"\"); // Placeholder name mismatch ($textVar$ vs. processedLine), should not match\n        System.out.println(processedLine);\n    }\n}",
+  "targetHintFile": "string.sandbox-hint",
+  "sourceCommit": "2fb2b7ab35104c02ff4e30a60c87411cad32d54e",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "String Manipulation",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-08T02:25:43.386333270Z",
+  "ruleFingerprint": "sha256:299b5bcee542583b89d40771fc4bf31e34ae0dfe9a524853ae5ce53abd3f7b78",
+  "behaviorFingerprint": "sha256:bce57c617c22b22c20f327611f44ad42e60192df684898733b92d59281c8d792",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-08T02:25:50.024112117Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
