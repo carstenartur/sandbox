@@ -60,7 +60,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 	public void find(UseFunctionalCallFixCore fixCore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesProcessed) {
 		ReferenceHolder<ASTNode, Object> data= ReferenceHolder.create();
-		compilationUnit.accept(new ASTVisitor() {
+		LoopConversionService.scanRoot(compilationUnit).accept(new ASTVisitor() {
 			@Override
 			public boolean visit(WhileStatement node) {
 				if (nodesProcessed.contains(node)) {

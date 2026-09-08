@@ -34,7 +34,7 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 	@Override
 	public void find(UseFunctionalCallFixCore fix, CompilationUnit unit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> processed) {
-		unit.accept(new ASTVisitor() {
+		LoopConversionService.scanRoot(unit).accept(new ASTVisitor() {
 			@Override
 			public boolean visit(WhileStatement loop) {
 				if (!(loop.getParent() instanceof Block block)) return true;

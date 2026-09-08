@@ -55,7 +55,7 @@ public final class LoopConversionQuickAssistProcessor implements IQuickAssistPro
 	}
 
 	static LoopConversionService.Analysis analyze(IInvocationContext context, LoopTargetFormat target, int offset, int length) {
-		return LoopConversionService.analyze(context.getASTRoot(), LoopConversionService.handlers(target)).atSelection(offset, length);
+		return LoopConversionService.analyzeSelection(context.getASTRoot(), LoopConversionService.handlers(target), offset, length);
 	}
 
 	static FixCorrectionProposal proposal(IInvocationContext context, LoopTargetFormat target, int offset, int length) {
