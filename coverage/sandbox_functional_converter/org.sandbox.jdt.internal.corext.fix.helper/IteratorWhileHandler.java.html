@@ -60,7 +60,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
 	public void find(UseFunctionalCallFixCore fixCore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesProcessed) {
 <span class="fc" id="L62">		ReferenceHolder&lt;ASTNode, Object&gt; data= ReferenceHolder.create();</span>
-<span class="fc" id="L63">		compilationUnit.accept(new ASTVisitor() {</span>
+<span class="fc" id="L63">		LoopConversionService.scanRoot(compilationUnit).accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(WhileStatement node) {
 <span class="pc bpc" id="L66" title="1 of 2 branches missed.">				if (nodesProcessed.contains(node)) {</span>

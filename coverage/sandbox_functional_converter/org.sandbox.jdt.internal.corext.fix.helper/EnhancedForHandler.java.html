@@ -79,7 +79,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.ConsecutiveLoopGroupDetector.C
         
         // Use BiPredicate (visit) and BiConsumer (endVisit) for tree-based analysis
 <span class="nc" id="L81">        ReferenceHolder&lt;ASTNode, Object&gt; dataHolder = ReferenceHolder.create();</span>
-<span class="nc" id="L82">        HelperVisitorFactory.callEnhancedForStatementVisitor(compilationUnit, dataHolder, nodesprocessed,</span>
+<span class="nc" id="L82">        HelperVisitorFactory.callEnhancedForStatementVisitor(LoopConversionService.scanRoot(compilationUnit), dataHolder, nodesprocessed,</span>
                 // Visit (BiPredicate): pushLoop and continue traversal
 <span class="nc" id="L84">                (visited, holder) -&gt; visitLoop(visited, treeHolder, nodesprocessed, holder),</span>
                 // EndVisit (BiConsumer): popLoop and make conversion decision

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LoopConversionQuickAssistProcessor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.fix</a> &gt; <span class="el_source">LoopConversionQuickAssistProcessor.java</span></div><h1>LoopConversionQuickAssistProcessor.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.fix;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.internal.ui.text.correction.proposals.FixCorrectionProposal;
+import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
+import org.eclipse.jdt.ui.text.java.IInvocationContext;
+import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
+import org.eclipse.jdt.ui.text.java.IProblemLocation;
+import org.eclipse.jdt.ui.text.java.IQuickAssistProcessor;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopConversionService;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopTargetFormat;
+import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.internal.ui.preferences.cleanup.CleanUpMessages;
+
+/** Native JDT proposals, including its change preview, undo and cleanup support. */
+<span class="fc" id="L27">public final class LoopConversionQuickAssistProcessor implements IQuickAssistProcessor {</span>
+
+	@Override
+	public boolean hasAssists(IInvocationContext context) {
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">		if (context.getASTRoot() == null) {</span>
+<span class="nc" id="L32">			return false;</span>
+		}
+<span class="fc bfc" id="L34" title="All 2 branches covered.">		for (LoopTargetFormat target : LoopTargetFormat.values()) {</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">			if (!analyze(context, target, context.getSelectionOffset(), context.getSelectionLength()).operations().isEmpty()) {</span>
+<span class="fc" id="L36">				return true;</span>
+			}
+		}
+<span class="fc" id="L39">		return false;</span>
+	}
+
+	@Override
+	public IJavaCompletionProposal[] getAssists(IInvocationContext context, IProblemLocation[] locations) throws CoreException {
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">		if (context.getASTRoot() == null) {</span>
+<span class="nc" id="L45">			return new IJavaCompletionProposal[0];</span>
+		}
+<span class="fc" id="L47">		var proposals = new ArrayList&lt;IJavaCompletionProposal&gt;();</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">		for (LoopTargetFormat target : LoopTargetFormat.values()) {</span>
+<span class="fc" id="L49">			var proposal = proposal(context, target, context.getSelectionOffset(), context.getSelectionLength());</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">			if (proposal != null) {</span>
+<span class="fc" id="L51">				proposals.add(proposal);</span>
+			}
+		}
+<span class="fc" id="L54">		return proposals.toArray(IJavaCompletionProposal[]::new);</span>
+	}
+
+	static LoopConversionService.Analysis analyze(IInvocationContext context, LoopTargetFormat target, int offset, int length) {
+<span class="fc" id="L58">		return LoopConversionService.analyzeSelection(context.getASTRoot(), LoopConversionService.handlers(target), offset, length);</span>
+	}
+
+	static FixCorrectionProposal proposal(IInvocationContext context, LoopTargetFormat target, int offset, int length) {
+<span class="fc" id="L62">		var fix = analyze(context, target, offset, length).createFix(label(target));</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">		return fix == null ? null : new FixCorrectionProposal(fix,</span>
+<span class="fc" id="L64">				new UseFunctionalCallCleanUp(options(target)), 50, null, context);</span>
+	}
+
+	public static String label(LoopTargetFormat target) {
+<span class="fc bfc" id="L68" title="All 3 branches covered.">		return switch (target) {</span>
+<span class="fc" id="L69">		case STREAM -&gt; CleanUpMessages.LoopConversion_Assist_Stream;</span>
+<span class="fc" id="L70">		case FOR_LOOP -&gt; CleanUpMessages.LoopConversion_Assist_EnhancedFor;</span>
+<span class="fc" id="L71">		case WHILE_LOOP -&gt; CleanUpMessages.LoopConversion_Assist_IteratorWhile;</span>
+		};
+	}
+
+	public static Map&lt;String, String&gt; options(LoopTargetFormat target) {
+<span class="fc" id="L76">		Map&lt;String, String&gt; options = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L77">		options.put(MYCleanUpConstants.LOOP_CONVERSION_ENABLED, CleanUpOptions.TRUE);</span>
+<span class="fc" id="L78">		options.put(MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT, target.getId());</span>
+<span class="fc" id="L79">		LoopConversionService.handlers(target).forEach(handler -&gt;</span>
+<span class="fc" id="L80">				options.put(UseFunctionalCallCleanUpCore.sourceOption(handler), CleanUpOptions.TRUE));</span>
+<span class="fc" id="L81">		return options;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LoopConversionQuickFixProcessor.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.fix</a> &gt; <span class="el_source">LoopConversionQuickFixProcessor.java</span></div><h1>LoopConversionQuickFixProcessor.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.fix;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.ui.text.java.IInvocationContext;
+import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
+import org.eclipse.jdt.ui.text.java.IProblemLocation;
+import org.eclipse.jdt.ui.text.java.IQuickFixProcessor;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopConversionInspection;
+
+/** Offers fixes only for the converter's explicitly enabled style diagnostics. */
+<span class="fc" id="L22">public final class LoopConversionQuickFixProcessor implements IQuickFixProcessor {</span>
+
+	@Override
+	public boolean hasCorrections(ICompilationUnit unit, int problemId) {
+<span class="nc bnc" id="L26" title="All 4 branches missed.">		return problemId == LoopConversionInspection.PROBLEM_ID &amp;&amp; LoopConversionInspection.isEnabled();</span>
+	}
+
+	@Override
+	public IJavaCompletionProposal[] getCorrections(IInvocationContext context, IProblemLocation[] locations) {
+<span class="fc" id="L31">		var proposals = new ArrayList&lt;IJavaCompletionProposal&gt;();</span>
+<span class="fc" id="L32">		Set&lt;Integer&gt; offsets = new HashSet&lt;&gt;();</span>
+<span class="pc bpc" id="L33" title="2 of 6 branches missed.">		if (context.getASTRoot() != null &amp;&amp; locations != null &amp;&amp; LoopConversionInspection.isEnabled()) {</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">			for (IProblemLocation location : locations) {</span>
+<span class="pc bpc" id="L35" title="1 of 2 branches missed.">				if (location.getProblemId() == LoopConversionInspection.PROBLEM_ID</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">						&amp;&amp; LoopConversionInspection.MARKER_TYPE.equals(location.getMarkerType())</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">						&amp;&amp; offsets.add(location.getOffset())) {</span>
+<span class="fc" id="L38">					var proposal = LoopConversionQuickAssistProcessor.proposal(context, LoopConversionInspection.target(),</span>
+<span class="fc" id="L39">							location.getOffset(), location.getLength());</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">					if (proposal != null) {</span>
+<span class="fc" id="L41">						proposals.add(proposal);</span>
+					}
+				}
+			}
+		}
+<span class="fc" id="L46">		return proposals.toArray(IJavaCompletionProposal[]::new);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

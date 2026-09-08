@@ -140,12 +140,12 @@ public final class ExpressionHelper {
 	 */
 	public static List&lt;String&gt; bodyStatementsToStrings(Statement body) {
 <span class="fc" id="L142">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">		if (body instanceof Block block) {</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">		if (body instanceof Block block) {</span>
 <span class="fc bfc" id="L144" title="All 2 branches covered.">			for (Object stmt : block.statements()) {</span>
 <span class="fc" id="L145">				result.add(stripTrailingSemicolon(stmt.toString()));</span>
 			}
 <span class="fc" id="L147">		} else {</span>
-<span class="nc" id="L148">			result.add(stripTrailingSemicolon(body.toString()));</span>
+<span class="fc" id="L148">			result.add(stripTrailingSemicolon(body.toString()));</span>
 		}
 <span class="fc" id="L150">		return result;</span>
 	}

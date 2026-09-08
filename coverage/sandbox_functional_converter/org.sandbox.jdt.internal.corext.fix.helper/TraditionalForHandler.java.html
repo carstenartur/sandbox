@@ -87,7 +87,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
     public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
                      Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
         
-<span class="fc" id="L90">        compilationUnit.accept(new ASTVisitor() {</span>
+<span class="fc" id="L90">        LoopConversionService.scanRoot(compilationUnit).accept(new ASTVisitor() {</span>
             @Override
             public boolean visit(ForStatement node) {
 <span class="fc bfc" id="L93" title="All 2 branches covered.">                if (nodesprocessed.contains(node)) {</span>

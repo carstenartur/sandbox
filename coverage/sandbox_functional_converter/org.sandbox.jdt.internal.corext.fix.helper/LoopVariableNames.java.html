@@ -50,5 +50,24 @@ final class LoopVariableNames {
 		}
 <span class="fc" id="L51">		return name;</span>
 	}
+
+	/** Isolates repeated analyses and previews on JDT's shared editor AST. */
+	static final class Scope implements AutoCloseable {
+		private final ASTNode root;
+		private final Object previous;
+
+<span class="fc" id="L59">		Scope(ASTNode root, Set&lt;String&gt; reserved) {</span>
+<span class="fc" id="L60">			this.root = root;</span>
+<span class="fc" id="L61">			previous = root.getProperty(KEY);</span>
+<span class="fc" id="L62">			LoopVariableNames allocator = new LoopVariableNames(root);</span>
+<span class="fc" id="L63">			allocator.names.addAll(reserved);</span>
+<span class="fc" id="L64">			root.setProperty(KEY, allocator);</span>
+<span class="fc" id="L65">		}</span>
+
+		@Override
+		public void close() {
+<span class="fc" id="L69">			root.setProperty(KEY, previous);</span>
+<span class="fc" id="L70">		}</span>
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

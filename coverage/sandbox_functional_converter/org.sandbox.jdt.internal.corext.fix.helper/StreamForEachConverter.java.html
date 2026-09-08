@@ -32,7 +32,7 @@ public final class StreamForEachConverter {
 
 	public static void find(UseFunctionalCallFixCore fix, CompilationUnit unit,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; processed) {
-<span class="fc" id="L35">		unit.accept(new ASTVisitor() {</span>
+<span class="fc" id="L35">		LoopConversionService.scanRoot(unit).accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MethodInvocation node) {
 <span class="pc bpc" id="L38" title="1 of 2 branches missed.">				if (ExpressionHelper.overlapsProcessedNode(node, processed)) {</span>

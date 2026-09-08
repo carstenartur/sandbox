@@ -104,7 +104,7 @@ public enum UseFunctionalCallFixCore {
 <span class="fc" id="L104">	}</span>
 
 	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, final org.sandbox.jdt.internal.common.ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L107">		return new CompilationUnitRewriteOperation() {</span>
+<span class="fc" id="L107">		return new LoopConversionOperation(visited) {</span>
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
 <span class="fc" id="L110">				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,new Object[] {UseFunctionalCallFixCore.this.toString()}), cuRewrite);</span>
@@ -112,6 +112,19 @@ public enum UseFunctionalCallFixCore {
 <span class="fc" id="L112">				functionalcall.rewrite(UseFunctionalCallFixCore.this, visited, cuRewrite, group, data);</span>
 <span class="fc" id="L113">			}</span>
 		};
+	}
+
+	/** The source anchor lets editor assists select the same operations as cleanup. */
+	public abstract static class LoopConversionOperation extends CompilationUnitRewriteOperation {
+		private final ASTNode anchor;
+
+<span class="fc" id="L121">		protected LoopConversionOperation(ASTNode anchor) {</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">			this.anchor = anchor.getParent() instanceof org.eclipse.jdt.core.dom.ExpressionStatement statement ? statement : anchor;</span>
+<span class="fc" id="L123">		}</span>
+
+		public final ASTNode getAnchor() {
+<span class="fc" id="L126">			return anchor;</span>
+		}
 	}
 
 	/**
@@ -125,38 +138,38 @@ public enum UseFunctionalCallFixCore {
 	 * @return the rewrite operation for the group
 	 */
 	public CompilationUnitRewriteOperation rewriteConsecutiveLoops(final ConsecutiveLoopGroup group) {
-<span class="nc" id="L128">		return new CompilationUnitRewriteOperation() {</span>
+<span class="nc" id="L141">		return new CompilationUnitRewriteOperation() {</span>
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
-<span class="nc" id="L131">				TextEditGroup editGroup = createTextEditGroup(</span>
-<span class="nc" id="L132">					Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,</span>
-<span class="nc" id="L133">						new Object[] { &quot;Stream.concat() for consecutive loops&quot; }),</span>
-<span class="nc" id="L134">					cuRewrite);</span>
-<span class="nc" id="L135">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
+<span class="nc" id="L144">				TextEditGroup editGroup = createTextEditGroup(</span>
+<span class="nc" id="L145">					Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,</span>
+<span class="nc" id="L146">						new Object[] { &quot;Stream.concat() for consecutive loops&quot; }),</span>
+<span class="nc" id="L147">					cuRewrite);</span>
+<span class="nc" id="L148">				cuRewrite.getASTRewrite().setTargetSourceRangeComputer(computer);</span>
 				
 				// Create and execute the StreamConcatRefactorer
-<span class="nc" id="L138">				StreamConcatRefactorer refactorer = new StreamConcatRefactorer(</span>
-<span class="nc" id="L139">					group, </span>
-<span class="nc" id="L140">					cuRewrite.getASTRewrite(), </span>
-<span class="nc" id="L141">					editGroup, </span>
-<span class="nc" id="L142">					cuRewrite</span>
+<span class="nc" id="L151">				StreamConcatRefactorer refactorer = new StreamConcatRefactorer(</span>
+<span class="nc" id="L152">					group, </span>
+<span class="nc" id="L153">					cuRewrite.getASTRewrite(), </span>
+<span class="nc" id="L154">					editGroup, </span>
+<span class="nc" id="L155">					cuRewrite</span>
 				);
 				
-<span class="nc bnc" id="L145" title="All 2 branches missed.">				if (refactorer.canRefactor()) {</span>
-<span class="nc" id="L146">					refactorer.refactor();</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">				if (refactorer.canRefactor()) {</span>
+<span class="nc" id="L159">					refactorer.refactor();</span>
 				}
-<span class="nc" id="L148">			}</span>
+<span class="nc" id="L161">			}</span>
 		};
 	}
 
-<span class="fc" id="L152">	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {</span>
+<span class="fc" id="L165">	final static TargetSourceRangeComputer computer= new TargetSourceRangeComputer() {</span>
 		@Override
 		public SourceRange computeSourceRange(final ASTNode nodeWithComment) {
-<span class="fc bfc" id="L155" title="All 2 branches covered.">			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
-<span class="fc" id="L156">				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">			if (Boolean.TRUE.equals(nodeWithComment.getProperty(ASTNodes.UNTOUCH_COMMENT))) {</span>
+<span class="fc" id="L169">				return new SourceRange(nodeWithComment.getStartPosition(), nodeWithComment.getLength());</span>
 			}
-<span class="fc" id="L158">			return super.computeSourceRange(nodeWithComment);</span>
+<span class="fc" id="L171">			return super.computeSourceRange(nodeWithComment);</span>
 		}
-<span class="fc" id="L160">	};</span>
+<span class="fc" id="L173">	};</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

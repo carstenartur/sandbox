@@ -23,62 +23,85 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUp;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopTargetFormat;
 
-<span class="nc" id="L27">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
+<span class="fc" id="L28">public class SandboxCodeTabPage extends AbstractCleanUpTabPage {</span>
 
 	/**
 	 * Constant array for boolean selection
 	 */
-<span class="nc" id="L32">	static final String[] FALSE_TRUE = {</span>
-<span class="nc" id="L33">			CleanUpOptions.FALSE,</span>
-<span class="nc" id="L34">			CleanUpOptions.TRUE</span>
+<span class="fc" id="L33">	static final String[] FALSE_TRUE = {</span>
+<span class="fc" id="L34">			CleanUpOptions.FALSE,</span>
+<span class="fc" id="L35">			CleanUpOptions.TRUE</span>
 	};
 
-<span class="nc" id="L37">	public static final String ID= &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.functional&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L38">	public static final String ID= &quot;org.eclipse.jdt.ui.cleanup.tabpage.sandbox.functional&quot;; //$NON-NLS-1$</span>
+
+	@Override
+	public void setWorkingValues(Map&lt;String, String&gt; values) {
+<span class="fc" id="L42">		String key = MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT;</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">		if (values.containsKey(key)) {</span>
+<span class="fc" id="L44">			values.put(key, LoopTargetFormat.fromId(values.get(key)).getId());</span>
+		}
+<span class="fc" id="L46">		super.setWorkingValues(values);</span>
+<span class="fc" id="L47">	}</span>
 
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map&lt;String, String&gt; values) {
-<span class="nc" id="L41">		return new AbstractCleanUp[] {</span>
-<span class="nc" id="L42">				new UseFunctionalCallCleanUp(values)</span>
+<span class="nc" id="L51">		return new AbstractCleanUp[] {</span>
+<span class="nc" id="L52">				new UseFunctionalCallCleanUp(values)</span>
 		};
 	}
 
 	@Override
 	protected void doCreatePreferences(Composite composite, int numColumns) {
-<span class="nc" id="L48">		PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,</span>
-<span class="nc" id="L49">				&quot;sandbox_functional_converter.cleanup_configuration&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L58">		PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,</span>
+<span class="fc" id="L59">				&quot;sandbox_functional_converter.cleanup_configuration&quot;); //$NON-NLS-1$</span>
 
 		// Unified Loop Conversion Group
-<span class="nc" id="L52">		Group loopConversionGroup = createGroup(numColumns, composite, CleanUpMessages.LoopConversion_GroupName);</span>
+<span class="fc" id="L62">		Group loopConversionGroup = createGroup(numColumns, composite, CleanUpMessages.LoopConversion_GroupName);</span>
 
 		// Master checkbox to enable loop conversions
-<span class="nc" id="L55">		final CheckboxPreference loopConversionEnabled = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L56">			CleanUpMessages.LoopConversion_Enable, MYCleanUpConstants.LOOP_CONVERSION_ENABLED, FALSE_TRUE);</span>
-<span class="nc" id="L57">		intent(loopConversionGroup);</span>
+<span class="fc" id="L65">		final CheckboxPreference loopConversionEnabled = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="fc" id="L66">			CleanUpMessages.LoopConversion_Enable, MYCleanUpConstants.LOOP_CONVERSION_ENABLED, FALSE_TRUE);</span>
 
 		// Target format combo box (for string-valued preference)
-<span class="nc" id="L60">		final ComboPreference targetFormatCombo = createComboPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L61">			CleanUpMessages.LoopConversion_TargetFormat_Stream, // Use existing label</span>
-<span class="nc" id="L62">			MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT,</span>
-<span class="nc" id="L63">			new String[] {&quot;stream&quot;, &quot;enhanced_for&quot;, &quot;iterator_while&quot;},</span>
-<span class="nc" id="L64">			new String[] {CleanUpMessages.LoopConversion_TargetFormat_Stream, CleanUpMessages.LoopConversion_TargetFormat_EnhancedFor, CleanUpMessages.LoopConversion_TargetFormat_IteratorWhile});</span>
+<span class="fc" id="L69">		final ComboPreference targetFormatCombo = createComboPref(loopConversionGroup, numColumns,</span>
+<span class="fc" id="L70">			CleanUpMessages.LoopConversion_TargetFormat,</span>
+<span class="fc" id="L71">			MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT,</span>
+<span class="fc" id="L72">			new String[] {LoopTargetFormat.STREAM.getId(), LoopTargetFormat.FOR_LOOP.getId(), LoopTargetFormat.WHILE_LOOP.getId()},</span>
+<span class="fc" id="L73">			new String[] {CleanUpMessages.LoopConversion_TargetFormat_Stream, CleanUpMessages.LoopConversion_TargetFormat_EnhancedFor, CleanUpMessages.LoopConversion_TargetFormat_IteratorWhile});</span>
 
 		// Source format checkboxes
-<span class="nc" id="L67">		final CheckboxPreference fromEnhancedFor = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L68">			CleanUpMessages.LoopConversion_From_EnhancedFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR, FALSE_TRUE);</span>
-<span class="nc" id="L69">		final CheckboxPreference fromIteratorWhile = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L70">			CleanUpMessages.LoopConversion_From_IteratorWhile, MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE, FALSE_TRUE);</span>
-<span class="nc" id="L71">		final CheckboxPreference fromStream = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L72">			CleanUpMessages.LoopConversion_From_Stream, MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM, FALSE_TRUE);</span>
-<span class="nc" id="L73">		final CheckboxPreference fromClassicFor = createCheckboxPref(loopConversionGroup, numColumns,</span>
-<span class="nc" id="L74">			CleanUpMessages.LoopConversion_From_ClassicFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, FALSE_TRUE);</span>
+<span class="fc" id="L76">		final CheckboxPreference fromEnhancedFor = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="fc" id="L77">			CleanUpMessages.LoopConversion_From_EnhancedFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_ENHANCED_FOR, FALSE_TRUE);</span>
+<span class="fc" id="L78">		final CheckboxPreference fromIteratorWhile = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="fc" id="L79">			CleanUpMessages.LoopConversion_From_IteratorWhile, MYCleanUpConstants.LOOP_CONVERSION_FROM_ITERATOR_WHILE, FALSE_TRUE);</span>
+<span class="fc" id="L80">		final CheckboxPreference fromStream = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="fc" id="L81">			CleanUpMessages.LoopConversion_From_Stream, MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM, FALSE_TRUE);</span>
+<span class="fc" id="L82">		final CheckboxPreference fromClassicFor = createCheckboxPref(loopConversionGroup, numColumns,</span>
+<span class="fc" id="L83">			CleanUpMessages.LoopConversion_From_ClassicFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, FALSE_TRUE);</span>
 
-		// Register dependencies: enable/disable based on master checkbox
-<span class="nc" id="L77">		registerSlavePreference(loopConversionEnabled, new CheckboxPreference[] {</span>
-<span class="nc" id="L78">			fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor</span>
+<span class="fc" id="L85">		Runnable updateAvailability = () -&gt; {</span>
+<span class="fc" id="L86">			boolean enabled = loopConversionEnabled.getChecked();</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">			LoopTargetFormat target = targetFormatCombo.hasValue(LoopTargetFormat.FOR_LOOP.getId()) ? LoopTargetFormat.FOR_LOOP</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">					: targetFormatCombo.hasValue(LoopTargetFormat.WHILE_LOOP.getId()) ? LoopTargetFormat.WHILE_LOOP : LoopTargetFormat.STREAM;</span>
+<span class="fc" id="L89">			targetFormatCombo.setEnabled(enabled);</span>
+<span class="fc bfc" id="L90" title="All 4 branches covered.">			fromEnhancedFor.setEnabled(enabled &amp;&amp; target != LoopTargetFormat.FOR_LOOP);</span>
+<span class="pc bpc" id="L91" title="1 of 4 branches missed.">			fromIteratorWhile.setEnabled(enabled &amp;&amp; target != LoopTargetFormat.WHILE_LOOP);</span>
+<span class="fc bfc" id="L92" title="All 4 branches covered.">			fromStream.setEnabled(enabled &amp;&amp; target != LoopTargetFormat.STREAM);</span>
+<span class="fc bfc" id="L93" title="All 4 branches covered.">			fromClassicFor.setEnabled(enabled &amp;&amp; target == LoopTargetFormat.STREAM);</span>
+<span class="fc" id="L94">		};</span>
+<span class="fc" id="L95">		loopConversionEnabled.addObserver((source, value) -&gt; updateAvailability.run());</span>
+<span class="fc" id="L96">		targetFormatCombo.addObserver((source, value) -&gt; updateAvailability.run());</span>
+		// Keep JDT's selection/count lifecycle. Observable invokes newer observers first,
+		// so the target-specific availability above runs after the master dependency.
+<span class="fc" id="L99">		registerSlavePreference(loopConversionEnabled, new CheckboxPreference[] {</span>
+<span class="fc" id="L100">			fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor</span>
 		});
+<span class="fc" id="L102">		updateAvailability.run();</span>
 
-<span class="nc" id="L81">		registerPreference(loopConversionEnabled);</span>
-<span class="nc" id="L82">	}</span>
+<span class="fc" id="L104">		registerPreference(loopConversionEnabled);</span>
+<span class="fc" id="L105">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -24,43 +24,42 @@ package org.sandbox.jdt.internal.corext.fix.helper;
  * &lt;/ul&gt;
  * &lt;/p&gt;
  * 
- * &lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This enum is retained for potential future use with combo box preferences,
- * but the current implementation uses radio buttons with separate boolean constants in
- * {@link org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants}.&lt;/p&gt;
+ * &lt;p&gt;Identifiers are shared by cleanup profiles, editor assists and inspections.
+ * Legacy profile identifiers remain readable through {@link #fromId(String)}.&lt;/p&gt;
  */
-<span class="fc" id="L31">public enum LoopTargetFormat {</span>
-<span class="fc" id="L32">    /**</span>
+<span class="fc" id="L30">public enum LoopTargetFormat {</span>
+<span class="fc" id="L31">    /**</span>
      * Convert to Java 8+ Stream API operations.
      * Example: list.stream().forEach(item -&gt; System.out.println(item))
      */
-<span class="fc" id="L36">    STREAM(&quot;stream&quot;),</span>
+<span class="fc" id="L35">    STREAM(&quot;stream&quot;),</span>
     
-<span class="fc" id="L38">    /**</span>
+<span class="fc" id="L37">    /**</span>
      * Convert to enhanced for-loop (for-each style).
      * Example: for (String item : list) { System.out.println(item); }
      * 
      * &lt;p&gt;&lt;b&gt;Note:&lt;/b&gt; This targets the enhanced for-loop introduced in Java 5,
      * not the classic indexed for-loop with initialization/condition/update.&lt;/p&gt;
      */
-<span class="fc" id="L45">    FOR_LOOP(&quot;for&quot;),</span>
+<span class="fc" id="L44">    FOR_LOOP(&quot;enhanced_for&quot;),</span>
     
-<span class="fc" id="L47">    /**</span>
+<span class="fc" id="L46">    /**</span>
      * Convert to while loop with iterator.
      * Example: Iterator&lt;String&gt; it = list.iterator(); while (it.hasNext()) { String item = it.next(); ... }
      */
-<span class="fc" id="L51">    WHILE_LOOP(&quot;while&quot;);</span>
+<span class="fc" id="L50">    WHILE_LOOP(&quot;iterator_while&quot;);</span>
     
     private final String id;
     
-<span class="fc" id="L55">    LoopTargetFormat(String id) {</span>
-<span class="fc" id="L56">        this.id = id;</span>
-<span class="fc" id="L57">    }</span>
+<span class="fc" id="L54">    LoopTargetFormat(String id) {</span>
+<span class="fc" id="L55">        this.id = id;</span>
+<span class="fc" id="L56">    }</span>
     
     /**
      * Returns the string identifier for this format.
      */
     public String getId() {
-<span class="fc" id="L63">        return id;</span>
+<span class="fc" id="L62">        return id;</span>
     }
     
     /**
@@ -70,15 +69,21 @@ package org.sandbox.jdt.internal.corext.fix.helper;
      * @return the corresponding LoopTargetFormat, or STREAM if not found
      */
     public static LoopTargetFormat fromId(String id) {
-<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (id == null) {</span>
-<span class="fc" id="L74">            return STREAM; // default</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (&quot;for&quot;.equals(id)) {</span>
+<span class="fc" id="L73">            return FOR_LOOP;</span>
         }
-<span class="fc bfc" id="L76" title="All 2 branches covered.">        for (LoopTargetFormat format : values()) {</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">            if (format.id.equals(id)) {</span>
-<span class="fc" id="L78">                return format;</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        if (&quot;while&quot;.equals(id)) {</span>
+<span class="fc" id="L76">            return WHILE_LOOP;</span>
+        }
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (id == null) {</span>
+<span class="fc" id="L79">            return STREAM; // default</span>
+        }
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (LoopTargetFormat format : values()) {</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            if (format.id.equals(id)) {</span>
+<span class="fc" id="L83">                return format;</span>
             }
         }
-<span class="fc" id="L81">        return STREAM; // default fallback</span>
+<span class="fc" id="L86">        return STREAM; // default fallback</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
