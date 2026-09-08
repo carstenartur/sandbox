@@ -96,6 +96,7 @@ public final class IntEnumMultiFilePlanner {
 		int parameterIndex;
 		String prefix;
 		String enumName;
+		boolean sourceNameConflict;
 		IVariableBinding stateBinding;
 		final List<ConstantDecl> constants= new ArrayList<>();
 		final Map<Expression, String> recognisedReferences= new IdentityHashMap<>();
@@ -312,10 +313,7 @@ public final class IntEnumMultiFilePlanner {
 			if (candidate.methodKey == null || candidate.ownerTypeQualifiedName.isEmpty()) {
 				return null;
 			}
-			if (EnumNameSafety.conflicts(type, candidate.enumName)) {
-				candidate.invalidate("GENERATED_NAME_COLLISION", //$NON-NLS-1$
-						"The generated enum name would hide an existing declaration or reference."); //$NON-NLS-1$
-			}
+			candidate.sourceNameConflict= EnumNameSafety.conflicts(type, candidate.enumName);
 			return candidate;
 		}
 		return null;
@@ -491,10 +489,14 @@ public final class IntEnumMultiFilePlanner {
 		for (Map.Entry<String, Allocation> entry : allocations.entrySet()) {
 			MultiFilePlanningBudget.checkCanceled(monitor);
 			Allocation allocation= entry.getValue();
+			CandidateBuilder candidate= candidatesByRequestId.get(entry.getKey());
 			if (allocation.available()) {
+				if (candidate != null && candidate.sourceNameConflict) {
+					candidate.invalidate("GENERATED_NAME_COLLISION", //$NON-NLS-1$
+							"Nested enum " + candidate.enumName + " would hide an existing declaration or reference."); //$NON-NLS-1$ //$NON-NLS-2$
+				}
 				continue;
 			}
-			CandidateBuilder candidate= candidatesByRequestId.get(entry.getKey());
 			if (candidate != null) {
 				candidate.invalidate("GENERATED_NAME_COLLISION", //$NON-NLS-1$
 						"Nested enum " + candidate.enumName + " cannot be generated in " //$NON-NLS-1$ //$NON-NLS-2$
