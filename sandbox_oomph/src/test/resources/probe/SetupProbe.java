@@ -27,6 +27,7 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.Diagnostician;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.equinox.p2.metadata.ILicense;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.oomph.internal.setup.SetupPrompter;
@@ -47,6 +48,7 @@ import org.eclipse.oomph.setup.log.ProgressLog;
 import org.eclipse.oomph.ui.UICallback;
 import org.eclipse.oomph.ui.UIUtil;
 import org.eclipse.oomph.util.OS;
+import org.eclipse.oomph.util.Confirmer;
 import org.eclipse.oomph.util.UserCallback;
 import org.eclipse.pde.core.target.ITargetPlatformService;
 import org.eclipse.pde.internal.launching.launcher.BundleLauncherHelper;
@@ -207,6 +209,9 @@ public class SetupProbe implements IApplication {
             }
         }, update ? Trigger.MANUAL : Trigger.STARTUP, context, false);
         require(performer != null, "Setup was cancelled");
+        // The regular wizard supplies this callback. This disposable batch
+        // installation accepts development-tool licenses without a dialog.
+        performer.put(ILicense.class, Confirmer.ACCEPT);
         require(run.resolve("eclipse").equals(performer.getProductLocation().toPath()),
                 "Oomph must configure the actual test installation: " + performer.getProductLocation());
         performer.setProgress(new ProgressLog() {
