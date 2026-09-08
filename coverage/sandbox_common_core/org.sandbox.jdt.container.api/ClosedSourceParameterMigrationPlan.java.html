@@ -10,47 +10,69 @@
  *******************************************************************************/
 package org.sandbox.jdt.container.api;
 
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
 
 /**
- * Immutable two-compilation-unit plan for the first closed-source local-array to
- * parameter-list migration.
+ * Immutable aggregate plan for one closed-source local-array to parameter-list
+ * migration.
  *
- * &lt;p&gt;The unchanged call expression connects the two local edits: the caller's array
- * declaration becomes a list and the exact callee parameter becomes the same list
- * contract. Both plans must be applied through one coordinated cleanup lifecycle.&lt;/p&gt;
+ * &lt;p&gt;One local source may feed a complete source-resolved parameter atomicity group,
+ * including interface declarations and all editable implementations/overrides. The
+ * unchanged call expressions are tied to exact target method handles and parameter
+ * indices. Every local and parameter member is re-resolved before the existing
+ * coordinated cleanup lifecycle emits edits.&lt;/p&gt;
  */
 public record ClosedSourceParameterMigrationPlan(
 		TargetContainerContract targetContract,
 		ContainerLocalRewritePlan callerPlan,
-		ContainerParameterRewritePlan parameterPlan) {
+		List&lt;ContainerParameterRewritePlan&gt; parameterPlans) {
 
-<span class="fc" id="L32">	public ClosedSourceParameterMigrationPlan {</span>
-<span class="fc" id="L33">		Objects.requireNonNull(targetContract, &quot;targetContract&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L34">		Objects.requireNonNull(callerPlan, &quot;callerPlan&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L35">		Objects.requireNonNull(parameterPlan, &quot;parameterPlan&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L36" title="1 of 2 branches missed.">		if (!targetContract.equals(callerPlan.targetContract())</span>
-<span class="pc bpc" id="L37" title="1 of 2 branches missed.">				|| !targetContract.equals(parameterPlan.targetContract())) {</span>
-<span class="nc" id="L38">			throw new IllegalArgumentException(</span>
+	/** Compatibility constructor for the existing single-parameter vertical slice. */
+	public ClosedSourceParameterMigrationPlan(
+			TargetContainerContract targetContract,
+			ContainerLocalRewritePlan callerPlan,
+			ContainerParameterRewritePlan parameterPlan) {
+<span class="fc" id="L42">		this(targetContract, callerPlan, List.of(parameterPlan));</span>
+<span class="fc" id="L43">	}</span>
+
+<span class="fc" id="L45">	public ClosedSourceParameterMigrationPlan {</span>
+<span class="fc" id="L46">		Objects.requireNonNull(targetContract, &quot;targetContract&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L47">		Objects.requireNonNull(callerPlan, &quot;callerPlan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L48">		parameterPlans= List.copyOf(</span>
+<span class="fc" id="L49">				Objects.requireNonNull(parameterPlans, &quot;parameterPlans&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">		if (parameterPlans.isEmpty()) {</span>
+<span class="nc" id="L51">			throw new IllegalArgumentException(</span>
+					&quot;A closed-source parameter migration requires parameter rewrites&quot;); //$NON-NLS-1$
+		}
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">		if (!targetContract.equals(callerPlan.targetContract())) {</span>
+<span class="nc" id="L55">			throw new IllegalArgumentException(</span>
 					&quot;All closed-source migration members must share one target contract&quot;); //$NON-NLS-1$
 		}
-<span class="fc" id="L41">		if (callerPlan.compilationUnitHandle()</span>
-<span class="pc bpc" id="L42" title="1 of 2 branches missed.">				.equals(parameterPlan.compilationUnitHandle())) {</span>
-<span class="nc" id="L43">			throw new IllegalArgumentException(</span>
-					&quot;The first aggregate slice requires distinct caller and parameter units&quot;); //$NON-NLS-1$
-		}
-<span class="fc" id="L46">		validateArgumentTransfer(callerPlan, parameterPlan);</span>
-<span class="fc" id="L47">	}</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">		for (ContainerParameterRewritePlan parameterPlan : parameterPlans) {</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">			if (!targetContract.equals(parameterPlan.targetContract())) {</span>
+<span class="nc" id="L60">				throw new IllegalArgumentException(</span>
+						&quot;All closed-source migration members must share one target contract&quot;); //$NON-NLS-1$
+			}
+<span class="fc" id="L63">		}</span>
+<span class="fc" id="L64">		validateUniqueParameterTargets(parameterPlans);</span>
+<span class="fc" id="L65">		validateArgumentTransfers(callerPlan, parameterPlans);</span>
+<span class="fc" id="L66">	}</span>
 
-	/** Returns the two affected compilation-unit handles in execution order. */
+	/** Returns affected compilation-unit handles in deterministic execution order. */
 	public List&lt;String&gt; affectedCompilationUnitHandles() {
-<span class="fc" id="L51">		return List.of(</span>
-<span class="fc" id="L52">				callerPlan.compilationUnitHandle(),</span>
-<span class="fc" id="L53">				parameterPlan.compilationUnitHandle());</span>
+<span class="fc" id="L70">		Set&lt;String&gt; handles= LinkedHashSet.newLinkedHashSet(parameterPlans.size() + 1);</span>
+<span class="fc" id="L71">		handles.add(callerPlan.compilationUnitHandle());</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		for (ContainerParameterRewritePlan parameterPlan : parameterPlans) {</span>
+<span class="fc" id="L73">			handles.add(parameterPlan.compilationUnitHandle());</span>
+<span class="fc" id="L74">		}</span>
+<span class="fc" id="L75">		return List.copyOf(handles);</span>
 	}
 
 	/** Planning result retaining fail-closed aggregate diagnostics. */
@@ -58,75 +80,107 @@ public record ClosedSourceParameterMigrationPlan(
 			Optional&lt;ClosedSourceParameterMigrationPlan&gt; plan,
 			List&lt;PlanningDiagnostic&gt; diagnostics) {
 
-<span class="fc" id="L61">		public PlanningResult {</span>
-<span class="fc" id="L62">			plan= Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L63">			diagnostics= List.copyOf(Objects.requireNonNull(diagnostics, &quot;diagnostics&quot;)); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L64" title="2 of 4 branches missed.">			if (plan.isPresent() == !diagnostics.isEmpty()) {</span>
-<span class="nc" id="L65">				throw new IllegalArgumentException(</span>
+<span class="fc" id="L83">		public PlanningResult {</span>
+<span class="fc" id="L84">			plan= Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L85">			diagnostics= List.copyOf(Objects.requireNonNull(diagnostics, &quot;diagnostics&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L86" title="1 of 4 branches missed.">			if (plan.isPresent() == !diagnostics.isEmpty()) {</span>
+<span class="nc" id="L87">				throw new IllegalArgumentException(</span>
 						&quot;An aggregate result must contain either one plan or diagnostics&quot;); //$NON-NLS-1$
 			}
-<span class="fc" id="L68">		}</span>
+<span class="fc" id="L90">		}</span>
 
 		public static PlanningResult accepted(
 				ClosedSourceParameterMigrationPlan plan) {
-<span class="fc" id="L72">			return new PlanningResult(Optional.of(plan), List.of());</span>
+<span class="fc" id="L94">			return new PlanningResult(Optional.of(plan), List.of());</span>
 		}
 
 		public static PlanningResult rejected(
 				List&lt;PlanningDiagnostic&gt; diagnostics) {
-<span class="nc bnc" id="L77" title="All 2 branches missed.">			if (diagnostics.isEmpty()) {</span>
-<span class="nc" id="L78">				throw new IllegalArgumentException(</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">			if (diagnostics.isEmpty()) {</span>
+<span class="nc" id="L100">				throw new IllegalArgumentException(</span>
 						&quot;A rejected aggregate migration requires diagnostics&quot;); //$NON-NLS-1$
 			}
-<span class="nc" id="L81">			return new PlanningResult(Optional.empty(), diagnostics);</span>
+<span class="fc" id="L103">			return new PlanningResult(Optional.empty(), diagnostics);</span>
 		}
 
 		public boolean ready() {
-<span class="fc" id="L85">			return plan.isPresent();</span>
+<span class="fc" id="L107">			return plan.isPresent();</span>
 		}
 	}
 
 	/** One aggregate eligibility or delegated member diagnostic. */
 	public record PlanningDiagnostic(DiagnosticKind kind, String message) {
 
-<span class="nc" id="L92">		public PlanningDiagnostic {</span>
-<span class="nc" id="L93">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L94">			message= requiredText(message, &quot;message&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L95">		}</span>
+<span class="fc" id="L114">		public PlanningDiagnostic {</span>
+<span class="fc" id="L115">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L116">			message= requiredText(message, &quot;message&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L117">		}</span>
 	}
 
-<span class="nc" id="L98">	public enum DiagnosticKind {</span>
-<span class="nc" id="L99">		UNSUPPORTED_FLOW_TOPOLOGY,</span>
-<span class="nc" id="L100">		PROFILE_NOT_FOUND,</span>
-<span class="nc" id="L101">		RECOMMENDATION_MISMATCH,</span>
-<span class="nc" id="L102">		SIGNATURE_PLAN_MISMATCH,</span>
-<span class="nc" id="L103">		LOCAL_REWRITE_REJECTED,</span>
-<span class="nc" id="L104">		PARAMETER_REWRITE_REJECTED,</span>
-<span class="nc" id="L105">		SAME_COMPILATION_UNIT</span>
+<span class="fc" id="L120">	public enum DiagnosticKind {</span>
+<span class="fc" id="L121">		UNSUPPORTED_FLOW_TOPOLOGY,</span>
+<span class="fc" id="L122">		PROFILE_NOT_FOUND,</span>
+<span class="fc" id="L123">		RECOMMENDATION_MISMATCH,</span>
+<span class="fc" id="L124">		SIGNATURE_PLAN_MISMATCH,</span>
+<span class="fc" id="L125">		LOCAL_REWRITE_REJECTED,</span>
+<span class="fc" id="L126">		PARAMETER_REWRITE_REJECTED</span>
 	}
 
-	private static void validateArgumentTransfer(
+	private static void validateUniqueParameterTargets(
+			List&lt;ContainerParameterRewritePlan&gt; parameterPlans) {
+<span class="fc" id="L131">		Set&lt;ParameterTarget&gt; targets= HashSet.newHashSet(parameterPlans.size());</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">		for (ContainerParameterRewritePlan parameterPlan : parameterPlans) {</span>
+<span class="fc" id="L133">			ParameterTarget target= new ParameterTarget(</span>
+<span class="fc" id="L134">					parameterPlan.methodJavaElementHandle(),</span>
+<span class="fc" id="L135">					parameterPlan.parameterIndex());</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">			if (!targets.add(target)) {</span>
+<span class="fc" id="L137">				throw new IllegalArgumentException(</span>
+						&quot;Closed-source parameter targets must be unique: &quot; + target); //$NON-NLS-1$
+			}
+<span class="fc" id="L140">		}</span>
+<span class="fc" id="L141">	}</span>
+
+	private static void validateArgumentTransfers(
 			ContainerLocalRewritePlan caller,
-			ContainerParameterRewritePlan parameter) {
-<span class="pc bpc" id="L111" title="1 of 2 branches missed.">		if (caller.argumentTransfers().size() != 1) {</span>
-<span class="nc" id="L112">			throw new IllegalArgumentException(</span>
-					&quot;The first aggregate slice requires one exact argument transfer&quot;); //$NON-NLS-1$
+			List&lt;ContainerParameterRewritePlan&gt; parameterPlans) {
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (caller.argumentTransfers().isEmpty()) {</span>
+<span class="nc" id="L147">			throw new IllegalArgumentException(</span>
+					&quot;A closed-source parameter migration requires an exact argument transfer&quot;); //$NON-NLS-1$
 		}
-<span class="fc" id="L115">		ArgumentTransfer transfer= caller.argumentTransfers().get(0);</span>
-<span class="fc" id="L116">		if (!transfer.methodJavaElementHandle()</span>
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">				.equals(parameter.methodJavaElementHandle())</span>
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">				|| transfer.parameterIndex() != parameter.parameterIndex()) {</span>
-<span class="nc" id="L119">			throw new IllegalArgumentException(</span>
-					&quot;Caller argument target and parameter rewrite must describe the same method position&quot;); //$NON-NLS-1$
-		}
-<span class="fc" id="L122">	}</span>
+<span class="fc" id="L150">		Set&lt;ParameterTarget&gt; targets= HashSet.newHashSet(parameterPlans.size());</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">		for (ContainerParameterRewritePlan parameterPlan : parameterPlans) {</span>
+<span class="fc" id="L152">			targets.add(new ParameterTarget(</span>
+<span class="fc" id="L153">					parameterPlan.methodJavaElementHandle(),</span>
+<span class="fc" id="L154">					parameterPlan.parameterIndex()));</span>
+<span class="fc" id="L155">		}</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">		for (ArgumentTransfer transfer : caller.argumentTransfers()) {</span>
+<span class="fc" id="L157">			ParameterTarget target= new ParameterTarget(</span>
+<span class="fc" id="L158">					transfer.methodJavaElementHandle(),</span>
+<span class="fc" id="L159">					transfer.parameterIndex());</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">			if (!targets.contains(target)) {</span>
+<span class="fc" id="L161">				throw new IllegalArgumentException(</span>
+						&quot;Caller argument target has no matching parameter rewrite: &quot; + target); //$NON-NLS-1$
+			}
+<span class="fc" id="L164">		}</span>
+<span class="fc" id="L165">	}</span>
 
 	private static String requiredText(String value, String fieldName) {
-<span class="nc" id="L125">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
-<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (text.isEmpty()) {</span>
-<span class="nc" id="L127">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L168">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L170">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L129">		return text;</span>
+<span class="fc" id="L172">		return text;</span>
+	}
+
+	private record ParameterTarget(String methodJavaElementHandle, int parameterIndex) {
+<span class="fc" id="L176">		private ParameterTarget {</span>
+<span class="fc" id="L177">			methodJavaElementHandle= requiredText(</span>
+					methodJavaElementHandle, &quot;methodJavaElementHandle&quot;); //$NON-NLS-1$
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">			if (parameterIndex &lt; 0) {</span>
+<span class="nc" id="L180">				throw new IllegalArgumentException(</span>
+						&quot;parameterIndex must not be negative&quot;); //$NON-NLS-1$
+			}
+<span class="fc" id="L183">		}</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
