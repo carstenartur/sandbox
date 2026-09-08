@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -27,6 +28,13 @@ import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,6 +42,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.functional.core.operation.FilterOp;
+import org.sandbox.functional.core.operation.MapOp;
+import org.sandbox.functional.core.renderer.StringRenderer;
+import org.sandbox.functional.core.terminal.ForEachTerminal;
+import org.sandbox.functional.core.transformer.LoopModelTransformer;
+import org.sandbox.jdt.internal.corext.fix.helper.ASTStreamRenderer;
+import org.sandbox.jdt.internal.corext.fix.helper.JdtStreamExtractor;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 
 /** Exercises the actual cleanup, compilation of both versions and runtime behavior. */
@@ -68,6 +83,30 @@ class StreamChainToLoopTest {
 			performRefactoring(new ICompilationUnit[] { unit }, null);
 			assertNoCompilationError(unit);
 			return unit.getSource();
+		}
+
+		JdtStreamExtractor.ExtractedStream extract(String source) throws CoreException {
+			ICompilationUnit unit = getSourceFolder().createPackageFragment("test1", false, null)
+					.createCompilationUnit("Example.java", source, true, null);
+			assertNoCompilationError(unit);
+			ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+			parser.setSource(unit);
+			parser.setResolveBindings(true);
+			CompilationUnit root = (CompilationUnit) parser.createAST(null);
+			JdtStreamExtractor.ExtractedStream[] result = { null };
+			root.accept(new ASTVisitor() {
+				@Override
+				public boolean visit(MethodInvocation node) {
+					var extracted = JdtStreamExtractor.extract(node);
+					if (extracted != null) {
+						result[0] = extracted;
+						return false;
+					}
+					return true;
+				}
+			});
+			assertNotNull(result[0]);
+			return result[0];
 		}
 	}
 
@@ -424,10 +463,51 @@ class StreamChainToLoopTest {
 		return "package test1;\nimport java.util.*;\nimport java.util.function.*;\npublic class Example {\n" + body + "}\n";
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "enhanced_for", "iterator_while" })
+	void extractedUlrSupportsStreamAndLoopRenderers(String target) throws Exception {
+		String original = source("""
+				public static String run() {
+					List<String> result = new ArrayList<>();
+					Arrays.asList("a", "bb").stream().<Number>map(text -> {
+						// retain this function boundary and comment
+						return text.length();
+					}).filter((Object value) -> value != null)
+						.forEachOrdered(number -> result.add(label(number)));
+					return result.toString();
+				}
+				static String label(Number value) { return "number:" + value; }
+				static String label(Integer value) { return "integer:" + value; }
+				""");
+		var extracted = context.extract(original);
+		var model = extracted.model();
+		assertEquals(2, model.getOperations().size());
+		MapOp map = (MapOp) model.getOperations().get(0);
+		FilterOp filter = (FilterOp) model.getOperations().get(1);
+		assertEquals("java.lang.Number", map.targetType());
+		assertEquals("java.lang.String", map.function().inputType());
+		assertTrue(map.function().requiresInvocation());
+		assertEquals("java.lang.Object", filter.function().inputType());
+		assertFalse(filter.function().requiresInvocation());
+		assertTrue(((ForEachTerminal) model.getTerminal()).ordered());
+		String textPipeline = new LoopModelTransformer<>(new StringRenderer()).transform(model);
+		assertTrue(textPipeline.contains("// retain this function boundary and comment"));
+		CompilationUnit root = (CompilationUnit) extracted.context().statement().getRoot();
+		var astRenderer = new ASTStreamRenderer(root.getAST(), ASTRewrite.create(root.getAST()), root, null);
+		String astPipeline = new LoopModelTransformer<Expression>(astRenderer).transform(model).toString();
+		String expected = execute(original, "ulr-original");
+		assertEquals("[number:1, number:2]", expected);
+		int start = extracted.context().statement().getStartPosition();
+		int end = start + extracted.context().statement().getLength();
+		assertEquals(expected, execute(original.substring(0, start) + textPipeline + ";" + original.substring(end), "ulr-text"));
+		assertEquals(expected, execute(original.substring(0, start) + astPipeline + ";" + original.substring(end), "ulr-ast"));
+		assertEquals(expected, execute(context.convert(original, target), "ulr-loop"));
+	}
+
 	private String execute(String source, String directory) throws Exception {
 		Path output = Files.createDirectories(temporary.resolve(directory));
 		Path file = output.resolve("Example.java");
-		Files.writeString(file, source);
+		Files.writeString(file, source, StandardCharsets.UTF_8);
 		var compiler = ToolProvider.getSystemJavaCompiler();
 		assertNotNull(compiler, "The runtime equivalence tests require a full JDK");
 		assertEquals(0, compiler.run(null, null, null, "-d", output.toString(), file.toString()), source);

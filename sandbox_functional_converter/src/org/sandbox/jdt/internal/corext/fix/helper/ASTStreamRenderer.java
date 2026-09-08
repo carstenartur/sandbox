@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.sandbox.functional.core.model.SourceDescriptor;
+import org.sandbox.functional.core.model.FunctionalExpression;
 import org.sandbox.functional.core.operation.FilterOp;
 import org.sandbox.functional.core.operation.MapOp;
 import org.sandbox.functional.core.renderer.ASTAwareRenderer;
@@ -125,6 +126,9 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     
     @Override
     public Expression renderFilterOp(Expression pipeline, FilterOp filterOp, String variableName) {
+        if (filterOp.function() != null) {
+            return ASTAwareRenderer.super.renderFilterOp(pipeline, filterOp, variableName);
+        }
         // Check if operation has comments - if so, use block lambda
         if (filterOp.hasComments()) {
             return renderFilterWithComments(pipeline, filterOp, variableName);
@@ -145,6 +149,9 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     
     @Override
     public Expression renderMapOp(Expression pipeline, MapOp mapOp, String variableName) {
+        if (mapOp.function() != null) {
+            return ASTAwareRenderer.super.renderMapOp(pipeline, mapOp, variableName);
+        }
         // Side-effect maps: map(var -> { statements; return var; })
         if (mapOp.isSideEffect()) {
             return renderSideEffectMap(pipeline, mapOp.expression(), variableName);
@@ -155,6 +162,16 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         }
         // Otherwise use simple expression lambda
         return renderMap(pipeline, mapOp.expression(), variableName, mapOp.targetType());
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Expression renderFunction(Expression pipeline, String operation, FunctionalExpression function) {
+        MethodInvocation call = ast.newMethodInvocation();
+        call.setExpression(pipeline);
+        call.setName(ast.newSimpleName(operation));
+        call.arguments().add(createExpression("(" + function.functionType() + ") (" + function.expression() + ")")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        return call;
     }
     
     /**

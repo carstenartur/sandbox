@@ -29,8 +29,8 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * 
  * <p>Transformation: {@code collection.forEach(item -> ...)} → {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}</p>
  * 
- * <p>Uses the shared binding-aware {@link StreamForEachConverter}, including
- * filter/map chains ending in forEach or forEachOrdered.</p>
+ * <p>Uses JdtStreamExtractor → ULR LoopModel → ASTIteratorWhileRenderer,
+ * including filter/map chains ending in forEach or forEachOrdered.</p>
  * 
  * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453</a>
  * @see <a href="https://github.com/carstenartur/sandbox/issues/549">Issue #549</a>

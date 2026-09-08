@@ -86,8 +86,7 @@ public class LoopModelTransformer<T> {
     
     private T applyTerminal(T pipeline, TerminalOperation terminal, String varName) {
         return switch (terminal) {
-            case ForEachTerminal fe -> renderer.renderForEach(
-                pipeline, fe.bodyStatements(), varName, fe.ordered());
+            case ForEachTerminal fe -> renderer.renderForEachTerminal(pipeline, fe, varName);
             case CollectTerminal c -> renderer.renderCollect(pipeline, c, varName);
             case ReduceTerminal r -> renderer.renderReduce(pipeline, r, varName);
             case CountTerminal ct -> renderer.renderCount(pipeline);

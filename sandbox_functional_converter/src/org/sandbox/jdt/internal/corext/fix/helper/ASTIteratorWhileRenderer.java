@@ -16,6 +16,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.List;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.LoopModel;
@@ -50,6 +51,11 @@ public class ASTIteratorWhileRenderer {
 	public ASTIteratorWhileRenderer(AST ast, ASTRewrite rewrite) {
 		this.ast = ast;
 		this.rewrite = rewrite;
+	}
+
+	/** Lowers ULR filter/map/forEach operations using their original JDT attachments. */
+	public void renderPipeline(LoopModel model, JdtStreamContext context, ImportRewrite imports, TextEditGroup group) {
+		new ASTImperativeLoopRenderer(rewrite, imports, group).render(model, context, true);
 	}
 
 	private void reserveIteratorName(Statement originalStatement) {

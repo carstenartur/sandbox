@@ -48,6 +48,12 @@ typed-function path. Each function is created once; each map is evaluated once
 per accepted element, in pipeline order. Ordinary `Iterable.forEach` calls are
 also supported.
 
+These reverse conversions use the shared ULR (`LoopModel`, `FilterOp`, `MapOp`,
+`ForEachTerminal`). Functional type and scope metadata live in the Core model;
+original AST nodes and bindings remain in a JDT context. Both loop renderers and
+the stream renderers consume this model. See [Architecture](ARCHITECTURE.md) for
+the extraction/rendering contracts.
+
 When several source formats are enabled, overlapping nested loops are converted
 in separate cleanup passes. The handlers share variable-name reservations so
 their generated iterator declarations cannot collide.
