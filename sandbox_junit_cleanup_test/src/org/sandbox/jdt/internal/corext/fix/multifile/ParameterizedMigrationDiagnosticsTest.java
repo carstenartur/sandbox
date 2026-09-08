@@ -121,7 +121,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 	}
 
 	@Test
-	public void fieldInjectionStillRejectsUnprovenProviderConversion() throws CoreException {
+	public void fieldInjectionRejectsUnsupportedProviderBody() throws CoreException {
 		ICompilationUnit unit= compilationUnit("fieldinjection", //$NON-NLS-1$
 				"FieldInjectionTest", //$NON-NLS-1$
 				"""
@@ -148,7 +148,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 				}
 				"""); //$NON-NLS-1$
 
-		assertReason(planClosed(unit), "PARAMETERIZED_PROVIDER_DELEGATE_UNRESOLVED"); //$NON-NLS-1$
+		assertReason(planClosed(unit), "PARAMETERIZED_PROVIDER_BODY_UNSUPPORTED"); //$NON-NLS-1$
 	}
 
 	@Test
@@ -219,7 +219,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 				"""); //$NON-NLS-1$
 
 		assertReason(planClosed(unit),
-				"PARAMETERIZED_PROVIDER_DELEGATE_UNRESOLVED"); //$NON-NLS-1$
+				"PARAMETERIZED_PROVIDER_BODY_UNSUPPORTED"); //$NON-NLS-1$
 	}
 
 	@Test

@@ -335,8 +335,10 @@ final class JUnit4ParameterizedPlanner {
 			Expression receiver= invocation.getExpression();
 			boolean typeReceiver= receiver == null
 					|| receiver instanceof Name name && name.resolveBinding() instanceof ITypeBinding;
-			require(resolved(binding) && Modifier.isStatic(binding.getModifiers()) && invocation.arguments().isEmpty()
-					&& typeReceiver,
+			require(invocation.arguments().isEmpty() && typeReceiver
+					&& (!resolved(binding) || Modifier.isStatic(binding.getModifiers())),
+					"PROVIDER_BODY_UNSUPPORTED", "Only static no-argument calls can delegate to a source provider."); //$NON-NLS-1$ //$NON-NLS-2$
+			require(resolved(binding),
 					"PROVIDER_DELEGATE_UNRESOLVED", "Resolve the static no-argument provider delegation."); //$NON-NLS-1$ //$NON-NLS-2$
 			MethodDeclaration delegate= methods.get(binding.getMethodDeclaration().getKey());
 			require(delegate != null, "PROVIDER_OUTSIDE_SCOPE", //$NON-NLS-1$

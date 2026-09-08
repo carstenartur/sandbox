@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -52,9 +53,8 @@ public class SemanticRewritePlanFactsTest {
 					void other(int value) { }
 				}
 				""");
-		TypeDeclaration type= (TypeDeclaration) root.types().get(0);
-		SingleVariableDeclaration parameter= (SingleVariableDeclaration) type.getMethods()[0].parameters().get(0);
-		SingleVariableDeclaration other= (SingleVariableDeclaration) type.getMethods()[1].parameters().get(0);
+		SingleVariableDeclaration parameter= firstParameter(root, "Sample"); //$NON-NLS-1$
+		SingleVariableDeclaration other= firstParameter(root, "other"); //$NON-NLS-1$
 		NodeKey key= NodeKey.from(parameter);
 		assertNotNull(key);
 		assertEquals(NodeKind.PARAMETER, key.kind());
@@ -70,9 +70,16 @@ public class SemanticRewritePlanFactsTest {
 			}
 		});
 		CompilationUnit reparsed= parse(root.toString());
-		SingleVariableDeclaration stable= (SingleVariableDeclaration)
-				((TypeDeclaration) reparsed.types().get(0)).getMethods()[0].parameters().get(0);
+		SingleVariableDeclaration stable= firstParameter(reparsed, "Sample"); //$NON-NLS-1$
 		assertEquals(key, NodeKey.from(stable));
+	}
+
+	private static SingleVariableDeclaration firstParameter(CompilationUnit unit, String methodName) {
+		TypeDeclaration type= (TypeDeclaration) unit.types().get(0);
+		MethodDeclaration method= Arrays.stream(type.getMethods())
+				.filter(candidate -> methodName.equals(candidate.getName().getIdentifier()))
+				.findFirst().orElseThrow();
+		return (SingleVariableDeclaration) method.parameters().get(0);
 	}
 
 	@Test

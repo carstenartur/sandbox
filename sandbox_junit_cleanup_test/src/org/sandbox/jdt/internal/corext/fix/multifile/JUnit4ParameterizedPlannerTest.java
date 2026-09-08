@@ -20,6 +20,8 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -157,6 +159,20 @@ public class JUnit4ParameterizedPlannerTest {
 		unit.getBuffer().setContents(IMPORTS + "@RunWith(Parameterized.class) public class Sample {"
 				+ CONSTRUCTOR + PROVIDER.replace("{1, \"one\"}", "{\"1\", \"one\"}") + "}");
 		assertRejected(plan(unit), "PARAMETERIZED_CONVERSION_UNPROVEN");
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings= { "Rows.withArgument(1)", "new Rows().instanceRows()", "new Rows().rows()" })
+	public void nonDelegatingCallsReportUnsupportedProviderBodies(String expression) throws CoreException {
+		ICompilationUnit unit= sample(CONSTRUCTOR + """
+				@Parameters public static Object[][] data() { return PROVIDER_EXPRESSION; }
+				static class Rows {
+					static Object[][] rows() { return new Object[][] { {1, "one"} }; }
+					Object[][] instanceRows() { return rows(); }
+					static Object[][] withArgument(int value) { return rows(); }
+				}
+				""".replace("PROVIDER_EXPRESSION", expression));
+		assertRejected(plan(unit), "PARAMETERIZED_PROVIDER_BODY_UNSUPPORTED");
 	}
 
 	@Test
