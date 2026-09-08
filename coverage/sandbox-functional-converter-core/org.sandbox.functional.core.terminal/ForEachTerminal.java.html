@@ -14,26 +14,32 @@
 package org.sandbox.functional.core.terminal;
 
 import java.util.List;
+import org.sandbox.functional.core.model.FunctionalExpression;
 
 /**
  * Represents a forEach or forEachOrdered terminal operation.
  */
-<span class="fc" id="L21">public record ForEachTerminal(</span>
+<span class="fc" id="L22">public record ForEachTerminal(</span>
     List&lt;String&gt; bodyStatements,
-    boolean ordered
+    boolean ordered,
+    FunctionalExpression function
 ) implements TerminalOperation {
+
+    public ForEachTerminal(List&lt;String&gt; bodyStatements, boolean ordered) {
+<span class="fc" id="L29">        this(bodyStatements, ordered, null);</span>
+<span class="fc" id="L30">    }</span>
     
     /**
      * Creates a ForEachTerminal with unordered forEach.
      * @param bodyStatements the statements to execute for each element
      */
     public ForEachTerminal(List&lt;String&gt; bodyStatements) {
-<span class="fc" id="L31">        this(bodyStatements, false);</span>
-<span class="fc" id="L32">    }</span>
+<span class="fc" id="L37">        this(bodyStatements, false);</span>
+<span class="fc" id="L38">    }</span>
     
     @Override
     public String operationType() { 
-<span class="fc bfc" id="L36" title="All 2 branches covered.">        return ordered ? &quot;forEachOrdered&quot; : &quot;forEach&quot;; </span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        return ordered ? &quot;forEachOrdered&quot; : &quot;forEach&quot;; </span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

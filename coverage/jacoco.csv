@@ -236,27 +236,28 @@ sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.m
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.model,LoopModelVisualizer,127,856,31,76,22,161,29,41,0,10
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.model,LoopMetadata,0,54,0,10,0,3,0,8,0,3
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.model,LoopModel,5,181,8,10,2,39,8,18,0,17
+sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.model,FunctionalExpression,5,44,1,3,1,7,1,2,0,1
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.operation,DistinctOp,0,7,0,0,0,3,0,3,0,3
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.operation,PeekOp,0,8,0,0,0,2,0,2,0,2
-sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.operation,FilterOp,2,82,2,10,0,20,2,14,0,10
+sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.operation,FilterOp,2,111,3,13,0,24,3,17,0,12
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.operation,SortOp,0,15,0,0,0,5,0,4,0,4
-sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.operation,MapOp,65,97,15,5,8,28,11,15,2,14
+sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.operation,MapOp,76,126,17,9,9,34,12,19,2,16
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.operation,FlatMapOp,0,8,0,0,0,2,0,2,0,2
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.operation,LimitOp,0,12,0,0,0,3,0,3,0,3
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.operation,SkipOp,0,12,0,0,0,3,0,3,0,3
-sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.renderer,StreamPipelineRenderer,16,0,0,0,2,0,2,0,2,0
+sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.renderer,StreamPipelineRenderer,21,42,2,4,3,7,3,4,1,3
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.renderer,ASTAwareRenderer,15,0,0,0,3,0,3,0,3,0
-sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.renderer,StringRenderer,12,315,11,36,5,60,11,37,0,20
+sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.renderer,StringRenderer,12,343,11,40,5,65,11,40,0,21
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.terminal,MatchTerminal,0,19,0,3,0,5,0,4,0,2
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.terminal,MatchTerminal.MatchType,0,21,0,0,0,4,0,1,0,1
-sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.terminal,ForEachTerminal,0,21,0,2,0,4,0,4,0,3
+sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.terminal,ForEachTerminal,0,30,0,2,0,6,0,5,0,4
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.terminal,CountTerminal,0,5,0,0,0,2,0,2,0,2
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.terminal,ReduceTerminal.ReduceType,0,45,0,0,0,8,0,1,0,1
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.terminal,FindTerminal,0,13,0,2,0,2,0,3,0,2
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.terminal,ReduceTerminal,0,28,0,0,0,4,0,3,0,3
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.terminal,CollectTerminal.CollectorType,0,39,0,0,0,7,0,1,0,1
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.terminal,CollectTerminal,0,31,0,4,0,5,0,6,0,4
-sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.transformer,LoopModelTransformer,0,262,1,31,0,37,1,25,0,5
+sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.transformer,LoopModelTransformer,0,259,1,31,0,36,1,25,0,5
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.tree,LoopTreeNode,18,83,4,6,2,27,4,16,2,13
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.tree,LoopKind,0,33,0,0,0,6,0,1,0,1
 sandbox_coverage/sandbox-functional-converter-core,org.sandbox.functional.core.tree,ScopeInfo,6,90,1,1,1,20,2,8,1,8
@@ -325,11 +326,14 @@ sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.prefer
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.preferences.cleanup,SandboxCodeTabPage,139,0,0,0,30,0,4,0,4,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix,UseFunctionalCallFixCore.new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation() {...},41,0,2,0,14,0,3,0,2,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix,UseFunctionalCallFixCore.new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation() {...},0,43,0,0,0,5,0,2,0,2
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix,UseFunctionalCallFixCore.new TargetSourceRangeComputer() {...},8,13,1,1,1,3,1,2,0,2
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix,UseFunctionalCallFixCore.new TargetSourceRangeComputer() {...},0,21,0,2,0,4,0,3,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix,UseFunctionalCallFixCore,11,122,0,0,2,21,2,4,2,4
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.fix,MultiFixMessages,3,4,0,0,1,2,1,1,1,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.fix,UseFunctionalCallCleanUp,0,12,0,0,0,4,0,2,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.ui.fix,UseFunctionalCallCleanUpCore,118,254,14,51,23,60,12,33,2,10
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtStreamExtractor.new ASTVisitor() {...},14,53,8,8,3,9,6,4,0,2
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtStreamExtractor.new ASTVisitor() {...},2,24,3,3,0,5,3,3,0,3
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtStreamExtractor.new ASTVisitor() {...},0,13,0,0,0,3,0,2,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,FunctionalHolder,17,0,0,0,8,0,5,0,5,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,LoopBodyParser.ParseResult,0,40,0,0,0,13,0,7,0,7
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopBodyParser.ParsedBody,0,12,0,0,0,1,0,1,0,1
@@ -345,33 +349,38 @@ sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fi
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,TraditionalForHandler.new ASTVisitor() {...},0,54,0,4,0,11,0,4,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,TraditionalForHandler.new ASTVisitor() {...},21,9,0,0,6,1,3,1,3,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ConsecutiveLoopGroupDetector.ConsecutiveLoopGroup,25,0,0,0,7,0,4,0,4,0
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorWhileToEnhancedFor,14,163,9,9,6,38,9,6,1,5
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorWhileToEnhancedFor,16,242,18,18,8,49,18,7,1,6
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StatementHandlerType.new StatementHandlerType() {...},78,0,8,0,23,0,7,0,3,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StatementHandlerType.new StatementHandlerType() {...},166,0,18,0,47,0,15,0,6,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StatementHandlerType.new StatementHandlerType() {...},62,0,10,0,16,0,8,0,3,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StatementHandlerType.new StatementHandlerType() {...},134,0,20,0,33,0,15,0,5,0
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ASTImperativeLoopRenderer,23,674,2,36,4,117,2,27,0,9
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ProspectiveOperation,463,108,65,1,106,35,50,11,17,11
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,LoopVariableNames,0,62,0,4,0,15,0,6,0,4
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtLoopExtractor.ExtractedLoop,0,9,0,0,0,4,0,1,0,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,PipelineAssembler,550,0,60,0,132,0,52,0,22,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType,190,168,34,4,43,39,32,5,10,4
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StreamConcatRefactorer,516,0,64,0,134,0,42,0,10,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,CollectPatternDetector.new ASTVisitor() {...},70,0,12,0,17,0,9,0,3,0
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ASTImperativeLoopRenderer.new ASTVisitor() {...},0,42,0,4,0,5,0,4,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StreamPipelineBuilder,527,0,100,0,123,0,69,0,19,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,AbstractFunctionalCall,0,3,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtLoopExtractor.new ASTVisitor() {...},2,36,2,4,1,7,2,3,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,TraditionalForHandler,142,424,57,55,43,120,46,24,1,13
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StreamForEachConverter.new ASTVisitor() {...},2,49,1,3,1,10,1,3,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorPatternDetector,32,240,17,29,16,57,17,14,0,8
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,CollectionModificationDetector,66,401,27,57,14,79,24,29,0,11
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,LoopBodyParser,691,0,128,0,179,0,75,0,11,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,LoopTargetFormat,0,77,0,6,0,17,0,7,0,4
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.MapExpressionContext,18,0,0,0,1,0,1,0,1,0
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ASTEnhancedForRenderer,8,143,3,7,1,35,3,7,0,5
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ASTEnhancedForRenderer,17,146,3,7,4,34,4,7,1,5
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ConsecutiveLoopGroupDetector,170,0,28,0,51,0,17,0,3,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,LambdaGenerator,119,76,10,8,29,22,9,7,3,4
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducePatternDetector,763,0,150,0,223,0,89,0,14,0
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtStreamExtractor.ExtractedStream,0,9,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,EnhancedForHandler.new ASTVisitor() {...},56,0,4,0,7,0,4,0,2,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,PreconditionsChecker.new ASTVisitor() {...},21,0,2,0,4,0,3,0,2,0
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ASTStreamRenderer,586,1098,45,61,123,239,39,48,5,24
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ASTStreamRenderer,586,1144,45,65,123,248,39,51,5,25
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,CollectorType,24,75,3,13,7,20,6,8,3,3
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,LoopBodyScopeScanner,26,121,10,12,6,27,9,9,2,5
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,EnhancedForHandler,301,505,64,57,77,126,52,24,7,8
@@ -386,24 +395,26 @@ sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fi
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IfStatementAnalyzer,502,0,104,0,149,0,75,0,22,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,OperationType.new OperationType() {...},4,8,0,0,2,1,2,1,2,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ConcreteCollectionASTStreamRenderer,0,97,0,4,0,21,0,4,0,2
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ASTIteratorWhileRenderer,146,330,9,7,28,70,8,10,2,8
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ASTIteratorWhileRenderer,239,270,12,4,48,57,10,10,3,9
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StatementHandlerContext,15,0,0,0,6,0,3,0,3,0
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtStreamExtractor,46,781,55,142,11,126,53,59,0,13
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StatementHandlerType,79,0,4,0,15,0,4,0,2,0
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ExpressionHelper.ForEachRewriteInfo,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,LambdaCaptureSafety,10,91,5,9,5,21,5,5,0,3
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,PreconditionsChecker,863,0,146,0,230,0,119,0,46,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtLoopExtractor,326,2031,146,329,83,479,127,150,1,37
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtStreamContext,0,49,0,0,0,7,0,5,0,5
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,SideEffectChecker,51,68,19,13,15,21,13,7,0,4
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ExpressionHelper,67,254,21,23,16,56,19,12,1,8
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,EnhancedForToIteratorWhile,9,117,5,3,5,28,5,6,1,6
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ExpressionHelper,92,94,13,15,18,20,10,11,2,5
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,EnhancedForToIteratorWhile,9,123,5,5,5,30,5,7,1,6
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StatementParsingContext,9,86,0,0,3,38,3,12,3,12
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StreamToEnhancedFor,7,34,3,1,4,8,3,3,1,3
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorWhileToEnhancedFor.new ASTVisitor() {...},6,87,3,5,3,18,3,3,0,2
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StreamToEnhancedFor,6,16,2,0,3,5,2,3,1,3
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorWhileToEnhancedFor.new ASTVisitor() {...},4,93,3,7,2,19,3,4,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorWhileHandler,31,493,27,57,16,111,27,26,1,10
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopAnalyzer,89,139,35,25,19,33,23,10,0,3
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,TraditionalForHandler.ForLoopPattern,0,18,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StatementHandlerType.new StatementHandlerType() {...},360,0,40,0,84,0,31,0,11,0
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StreamOperationDetector,2,26,2,4,1,6,2,2,0,1
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,LoopVariableNames.new ASTVisitor() {...},0,15,0,0,0,3,0,2,0,2
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StreamOperationDetector,28,0,6,0,7,0,4,0,1,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.new ReducerType() {...},8,10,0,0,2,2,2,2,2,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.new ReducerType() {...},12,5,0,0,3,1,3,1,3,1
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ReducerType.new ReducerType() {...},3,10,0,0,1,2,1,2,1,2
@@ -417,10 +428,11 @@ sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fi
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,ConcreteCollectionFactory.new ASTVisitor() {...},0,41,0,6,0,7,0,5,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,OperationType.LambdaBodyContext,35,0,2,0,6,0,4,0,3,0
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopAnalyzer.SafetyAnalysis,0,41,0,0,0,3,0,3,0,3
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StreamForEachConverter,0,53,1,3,0,10,1,3,0,2
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IfStatementAnalyzer.MatchPatternType,44,0,0,0,9,0,1,0,1,0
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StreamToIteratorWhile,7,39,3,1,4,9,3,3,1,3
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,StreamToIteratorWhile,6,16,2,0,3,5,2,3,1,3
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,JdtLoopExtractor.LoopBodyAnalyzer,3,119,1,9,1,43,2,22,1,18
-sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopAnalyzer.IteratorUsageVisitor,64,154,18,20,17,38,20,14,6,9
+sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopAnalyzer.IteratorUsageVisitor,62,156,18,20,16,39,19,15,5,10
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorLoopBodyParser,40,109,10,10,12,21,10,4,1,3
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,IteratorWhileHandler.new ASTVisitor() {...},4,136,4,10,2,22,4,6,0,3
 sandbox_coverage/sandbox_functional_converter,org.sandbox.jdt.internal.corext.fix.helper,OperationType,17,125,0,0,5,23,4,3,4,3

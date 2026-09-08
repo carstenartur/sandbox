@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StreamForEachConverter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_functional_converter</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">StreamForEachConverter.java</span></div><h1>StreamForEachConverter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.Set;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.common.ReferenceHolder;
+import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
+
+/**
+ * Registers stream-to-loop rewrites using the common ULR and imperative renderers.
+ * Parsing and semantic metadata belong to JdtStreamExtractor; this class owns
+ * only integration with the cleanup lifecycle.
+ */
+public final class StreamForEachConverter {
+	private StreamForEachConverter() {
+	}
+
+	public static void find(UseFunctionalCallFixCore fix, CompilationUnit unit,
+			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; processed) {
+<span class="fc" id="L35">		unit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(MethodInvocation node) {
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">				if (ExpressionHelper.overlapsProcessedNode(node, processed)) {</span>
+<span class="nc" id="L39">					return false;</span>
+				}
+<span class="fc" id="L41">				JdtStreamExtractor.ExtractedStream extracted = JdtStreamExtractor.extract(node);</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">				if (extracted == null) {</span>
+<span class="fc" id="L43">					return true;</span>
+				}
+<span class="fc" id="L45">				ReferenceHolder&lt;ASTNode, Object&gt; data = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L46">				data.put(node, extracted);</span>
+<span class="fc" id="L47">				operations.add(fix.rewrite(node, data));</span>
+<span class="fc" id="L48">				processed.add(node);</span>
+				// One owner per replaced statement, including nested calls in its lambdas.
+<span class="fc" id="L50">				return false;</span>
+			}
+		});
+<span class="fc" id="L53">	}</span>
+
+	public static void rewrite(ASTNode node, CompilationUnitRewrite cuRewrite, TextEditGroup group,
+			ReferenceHolder&lt;ASTNode, Object&gt; data, boolean iteratorTarget) {
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">		if (data.get(node) instanceof JdtStreamExtractor.ExtractedStream extracted) {</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">			if (iteratorTarget) {</span>
+<span class="fc" id="L59">				new ASTIteratorWhileRenderer(cuRewrite.getAST(), cuRewrite.getASTRewrite())</span>
+<span class="fc" id="L60">						.renderPipeline(extracted.model(), extracted.context(), cuRewrite.getImportRewrite(), group);</span>
+<span class="fc" id="L61">			} else {</span>
+<span class="fc" id="L62">				new ASTEnhancedForRenderer(cuRewrite.getAST(), cuRewrite.getASTRewrite())</span>
+<span class="fc" id="L63">						.renderPipeline(extracted.model(), extracted.context(), cuRewrite.getImportRewrite(), group);</span>
+			}
+		}
+<span class="fc" id="L66">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

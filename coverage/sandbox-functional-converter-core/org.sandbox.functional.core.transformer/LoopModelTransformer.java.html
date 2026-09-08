@@ -86,13 +86,12 @@ public class LoopModelTransformer&lt;T&gt; {
     
     private T applyTerminal(T pipeline, TerminalOperation terminal, String varName) {
 <span class="fc bfc" id="L88" title="All 6 branches covered.">        return switch (terminal) {</span>
-<span class="fc" id="L89">            case ForEachTerminal fe -&gt; renderer.renderForEach(</span>
-<span class="fc" id="L90">                pipeline, fe.bodyStatements(), varName, fe.ordered());</span>
-<span class="fc" id="L91">            case CollectTerminal c -&gt; renderer.renderCollect(pipeline, c, varName);</span>
-<span class="fc" id="L92">            case ReduceTerminal r -&gt; renderer.renderReduce(pipeline, r, varName);</span>
-<span class="fc" id="L93">            case CountTerminal ct -&gt; renderer.renderCount(pipeline);</span>
-<span class="fc" id="L94">            case FindTerminal f -&gt; renderer.renderFind(pipeline, f.findFirst());</span>
-<span class="fc" id="L95">            case MatchTerminal m -&gt; renderer.renderMatch(pipeline, m, varName);</span>
+<span class="fc" id="L89">            case ForEachTerminal fe -&gt; renderer.renderForEachTerminal(pipeline, fe, varName);</span>
+<span class="fc" id="L90">            case CollectTerminal c -&gt; renderer.renderCollect(pipeline, c, varName);</span>
+<span class="fc" id="L91">            case ReduceTerminal r -&gt; renderer.renderReduce(pipeline, r, varName);</span>
+<span class="fc" id="L92">            case CountTerminal ct -&gt; renderer.renderCount(pipeline);</span>
+<span class="fc" id="L93">            case FindTerminal f -&gt; renderer.renderFind(pipeline, f.findFirst());</span>
+<span class="fc" id="L94">            case MatchTerminal m -&gt; renderer.renderMatch(pipeline, m, varName);</span>
         };
     }
     
@@ -100,8 +99,8 @@ public class LoopModelTransformer&lt;T&gt; {
      * Checks if the model can be transformed.
      */
     public boolean canTransform(LoopModel model) {
-<span class="fc bfc" id="L103" title="All 4 branches covered.">        if (model == null || model.getSource() == null) return false;</span>
-<span class="fc" id="L104">        return model.isConvertible();</span>
+<span class="fc bfc" id="L102" title="All 4 branches covered.">        if (model == null || model.getSource() == null) return false;</span>
+<span class="fc" id="L103">        return model.isConvertible();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

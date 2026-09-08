@@ -57,105 +57,117 @@ import org.sandbox.functional.core.terminal.*;
     
     @Override
     public String renderFilterOp(String pipeline, FilterOp filterOp, String variableName) {
-<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (filterOp.hasComments()) {</span>
-<span class="fc" id="L61">            return renderBlockLambda(pipeline, &quot;filter&quot;, filterOp.getComments(),</span>
-<span class="fc" id="L62">                    &quot;return &quot; + filterOp.expression() + &quot;;&quot;, variableName);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">        if (filterOp.function() != null) {</span>
+<span class="fc" id="L61">            return StreamPipelineRenderer.super.renderFilterOp(pipeline, filterOp, variableName);</span>
         }
-<span class="fc" id="L64">        return renderFilter(pipeline, filterOp.expression(), variableName);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (filterOp.hasComments()) {</span>
+<span class="fc" id="L64">            return renderBlockLambda(pipeline, &quot;filter&quot;, filterOp.getComments(),</span>
+<span class="fc" id="L65">                    &quot;return &quot; + filterOp.expression() + &quot;;&quot;, variableName);</span>
+        }
+<span class="fc" id="L67">        return renderFilter(pipeline, filterOp.expression(), variableName);</span>
     }
     
     @Override
     public String renderMap(String pipeline, String expression, String variableName, String targetType) {
-<span class="fc" id="L69">        return pipeline + &quot;.map(&quot; + variableName + &quot; -&gt; &quot; + expression + &quot;)&quot;;</span>
+<span class="fc" id="L72">        return pipeline + &quot;.map(&quot; + variableName + &quot; -&gt; &quot; + expression + &quot;)&quot;;</span>
     }
     
     @Override
     public String renderMapOp(String pipeline, MapOp mapOp, String variableName) {
-<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (mapOp.isSideEffect()) {</span>
-<span class="fc" id="L75">            return pipeline + &quot;.map(&quot; + variableName + &quot; -&gt; { &quot; + mapOp.expression() + &quot;; return &quot; + variableName + &quot;; })&quot;;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (mapOp.function() != null) {</span>
+<span class="fc" id="L78">            return StreamPipelineRenderer.super.renderMapOp(pipeline, mapOp, variableName);</span>
         }
-<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (mapOp.hasComments()) {</span>
-<span class="fc" id="L78">            return renderBlockLambda(pipeline, &quot;map&quot;, mapOp.getComments(),</span>
-<span class="fc" id="L79">                    &quot;return &quot; + mapOp.expression() + &quot;;&quot;, variableName);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (mapOp.isSideEffect()) {</span>
+<span class="fc" id="L81">            return pipeline + &quot;.map(&quot; + variableName + &quot; -&gt; { &quot; + mapOp.expression() + &quot;; return &quot; + variableName + &quot;; })&quot;;</span>
         }
-<span class="fc" id="L81">        return renderMap(pipeline, mapOp.expression(), variableName, mapOp.targetType());</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (mapOp.hasComments()) {</span>
+<span class="fc" id="L84">            return renderBlockLambda(pipeline, &quot;map&quot;, mapOp.getComments(),</span>
+<span class="fc" id="L85">                    &quot;return &quot; + mapOp.expression() + &quot;;&quot;, variableName);</span>
+        }
+<span class="fc" id="L87">        return renderMap(pipeline, mapOp.expression(), variableName, mapOp.targetType());</span>
     }
     
     @Override
     public String renderFlatMap(String pipeline, String expression, String variableName) {
-<span class="fc" id="L86">        return pipeline + &quot;.flatMap(&quot; + variableName + &quot; -&gt; &quot; + expression + &quot;)&quot;;</span>
+<span class="fc" id="L92">        return pipeline + &quot;.flatMap(&quot; + variableName + &quot; -&gt; &quot; + expression + &quot;)&quot;;</span>
+    }
+
+    @Override
+    public String renderFunction(String pipeline, String operation, FunctionalExpression function) {
+        // Preserve target typing even when the original call used an explicit type witness.
+<span class="fc" id="L98">        return pipeline + &quot;.&quot; + operation + &quot;((&quot; + function.functionType() + &quot;) (&quot; + function.expression() + &quot;))&quot;;</span>
     }
     
     @Override
     public String renderPeek(String pipeline, String expression, String variableName) {
-<span class="fc" id="L91">        return pipeline + &quot;.peek(&quot; + variableName + &quot; -&gt; &quot; + expression + &quot;)&quot;;</span>
+<span class="fc" id="L103">        return pipeline + &quot;.peek(&quot; + variableName + &quot; -&gt; &quot; + expression + &quot;)&quot;;</span>
     }
     
     @Override
     public String renderDistinct(String pipeline) {
-<span class="fc" id="L96">        return pipeline + &quot;.distinct()&quot;;</span>
+<span class="fc" id="L108">        return pipeline + &quot;.distinct()&quot;;</span>
     }
     
     @Override
     public String renderSorted(String pipeline, String comparatorExpression) {
-<span class="pc bpc" id="L101" title="1 of 4 branches missed.">        if (comparatorExpression == null || comparatorExpression.isEmpty()) {</span>
-<span class="fc" id="L102">            return pipeline + &quot;.sorted()&quot;;</span>
+<span class="pc bpc" id="L113" title="1 of 4 branches missed.">        if (comparatorExpression == null || comparatorExpression.isEmpty()) {</span>
+<span class="fc" id="L114">            return pipeline + &quot;.sorted()&quot;;</span>
         }
-<span class="fc" id="L104">        return pipeline + &quot;.sorted(&quot; + comparatorExpression + &quot;)&quot;;</span>
+<span class="fc" id="L116">        return pipeline + &quot;.sorted(&quot; + comparatorExpression + &quot;)&quot;;</span>
     }
     
     @Override
     public String renderLimit(String pipeline, long maxSize) {
-<span class="fc" id="L109">        return pipeline + &quot;.limit(&quot; + maxSize + &quot;)&quot;;</span>
+<span class="fc" id="L121">        return pipeline + &quot;.limit(&quot; + maxSize + &quot;)&quot;;</span>
     }
     
     @Override
     public String renderSkip(String pipeline, long count) {
-<span class="fc" id="L114">        return pipeline + &quot;.skip(&quot; + count + &quot;)&quot;;</span>
+<span class="fc" id="L126">        return pipeline + &quot;.skip(&quot; + count + &quot;)&quot;;</span>
     }
     
     @Override
     public String renderForEach(String pipeline, List&lt;String&gt; bodyStatements, 
                                  String variableName, boolean ordered) {
-<span class="fc" id="L120">        String body = String.join(&quot;; &quot;, bodyStatements);</span>
-<span class="fc bfc" id="L121" title="All 2 branches covered.">        String method = ordered ? &quot;.forEachOrdered&quot; : &quot;.forEach&quot;;</span>
-<span class="fc" id="L122">        return pipeline + method + &quot;(&quot; + variableName + &quot; -&gt; &quot; + body + &quot;)&quot;;</span>
+<span class="fc" id="L132">        String body = String.join(&quot;; &quot;, bodyStatements);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        String method = ordered ? &quot;.forEachOrdered&quot; : &quot;.forEach&quot;;</span>
+<span class="fc" id="L134">        return pipeline + method + &quot;(&quot; + variableName + &quot; -&gt; &quot; + body + &quot;)&quot;;</span>
     }
     
     @Override
     public String renderCollect(String pipeline, CollectTerminal terminal, String variableName) {
         // Use modern Java 16+ .toList() for conciseness (project targets Java 21)
         // For other collectors, use Collectors API
-<span class="pc bpc" id="L129" title="4 of 6 branches missed.">        String collector = switch (terminal.collectorType()) {</span>
-<span class="fc" id="L130">            case TO_LIST -&gt; &quot;.toList()&quot;;  // Java 16+ - more concise than Collectors.toList()</span>
-<span class="fc" id="L131">            case TO_SET -&gt; &quot;.collect(Collectors.toSet())&quot;;</span>
-<span class="nc" id="L132">            case TO_MAP -&gt; &quot;.collect(Collectors.toMap(...))&quot;;</span>
-<span class="nc" id="L133">            case JOINING -&gt; &quot;.collect(Collectors.joining())&quot;;</span>
-<span class="nc" id="L134">            case GROUPING_BY -&gt; &quot;.collect(Collectors.groupingBy(...))&quot;;</span>
-<span class="pc" id="L135">            case CUSTOM -&gt; &quot;.collect(...)&quot;;</span>
+<span class="pc bpc" id="L141" title="4 of 6 branches missed.">        String collector = switch (terminal.collectorType()) {</span>
+<span class="fc" id="L142">            case TO_LIST -&gt; &quot;.toList()&quot;;  // Java 16+ - more concise than Collectors.toList()</span>
+<span class="fc" id="L143">            case TO_SET -&gt; &quot;.collect(Collectors.toSet())&quot;;</span>
+<span class="nc" id="L144">            case TO_MAP -&gt; &quot;.collect(Collectors.toMap(...))&quot;;</span>
+<span class="nc" id="L145">            case JOINING -&gt; &quot;.collect(Collectors.joining())&quot;;</span>
+<span class="nc" id="L146">            case GROUPING_BY -&gt; &quot;.collect(Collectors.groupingBy(...))&quot;;</span>
+<span class="pc" id="L147">            case CUSTOM -&gt; &quot;.collect(...)&quot;;</span>
         };
         
-<span class="fc" id="L138">        return pipeline + collector;</span>
+<span class="fc" id="L150">        return pipeline + collector;</span>
     }
     
     @Override
     public String renderReduce(String pipeline, ReduceTerminal terminal, String variableName) {
-<span class="fc" id="L143">        return pipeline + &quot;.reduce(&quot; + terminal.identity() + &quot;, &quot; + terminal.accumulator() + &quot;)&quot;;</span>
+<span class="fc" id="L155">        return pipeline + &quot;.reduce(&quot; + terminal.identity() + &quot;, &quot; + terminal.accumulator() + &quot;)&quot;;</span>
     }
     
     @Override
     public String renderCount(String pipeline) {
-<span class="fc" id="L148">        return pipeline + &quot;.count()&quot;;</span>
+<span class="fc" id="L160">        return pipeline + &quot;.count()&quot;;</span>
     }
     
     @Override
     public String renderFind(String pipeline, boolean findFirst) {
-<span class="fc bfc" id="L153" title="All 2 branches covered.">        return pipeline + (findFirst ? &quot;.findFirst()&quot; : &quot;.findAny()&quot;);</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        return pipeline + (findFirst ? &quot;.findFirst()&quot; : &quot;.findAny()&quot;);</span>
     }
     
     @Override
     public String renderMatch(String pipeline, MatchTerminal terminal, String variableName) {
-<span class="fc" id="L158">        return pipeline + &quot;.&quot; + terminal.operationType() + &quot;(&quot; + variableName + &quot; -&gt; &quot; + terminal.predicate() + &quot;)&quot;;</span>
+<span class="fc" id="L170">        return pipeline + &quot;.&quot; + terminal.operationType() + &quot;(&quot; + variableName + &quot; -&gt; &quot; + terminal.predicate() + &quot;)&quot;;</span>
     }
     
     /**
@@ -164,14 +176,14 @@ import org.sandbox.functional.core.terminal.*;
      */
     private String renderBlockLambda(String pipeline, String method, List&lt;String&gt; comments,
                                       String returnStatement, String variableName) {
-<span class="fc" id="L167">        StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L168">        sb.append(pipeline).append('.').append(method).append('(').append(variableName).append(&quot; -&gt; {\n&quot;);</span>
-<span class="fc bfc" id="L169" title="All 2 branches covered.">        for (String comment : comments) {</span>
-<span class="fc" id="L170">            appendNormalizedCommentLines(sb, comment);</span>
-<span class="fc" id="L171">        }</span>
-<span class="fc" id="L172">        sb.append(&quot;    &quot;).append(returnStatement).append('\n');</span>
-<span class="fc" id="L173">        sb.append(&quot;})&quot;);</span>
-<span class="fc" id="L174">        return sb.toString();</span>
+<span class="fc" id="L179">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L180">        sb.append(pipeline).append('.').append(method).append('(').append(variableName).append(&quot; -&gt; {\n&quot;);</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        for (String comment : comments) {</span>
+<span class="fc" id="L182">            appendNormalizedCommentLines(sb, comment);</span>
+<span class="fc" id="L183">        }</span>
+<span class="fc" id="L184">        sb.append(&quot;    &quot;).append(returnStatement).append('\n');</span>
+<span class="fc" id="L185">        sb.append(&quot;})&quot;);</span>
+<span class="fc" id="L186">        return sb.toString();</span>
     }
     
     /**
@@ -181,16 +193,16 @@ import org.sandbox.functional.core.terminal.*;
      * each resulting line as a {@code //} comment indented by four spaces.
      */
     private void appendNormalizedCommentLines(StringBuilder sb, String rawComment) {
-<span class="pc bpc" id="L184" title="2 of 4 branches missed.">        if (rawComment == null || rawComment.isEmpty()) {</span>
-<span class="nc" id="L185">            return;</span>
+<span class="pc bpc" id="L196" title="2 of 4 branches missed.">        if (rawComment == null || rawComment.isEmpty()) {</span>
+<span class="nc" id="L197">            return;</span>
         }
-<span class="fc bfc" id="L187" title="All 2 branches covered.">        for (String line : rawComment.split(&quot;\\R&quot;)) {</span>
-<span class="fc" id="L188">            String normalized = line.stripLeading();</span>
-<span class="pc bpc" id="L189" title="1 of 4 branches missed.">            if (!normalized.isEmpty() &amp;&amp; normalized.charAt(0) == '*') {</span>
-<span class="fc" id="L190">                normalized = normalized.substring(1).stripLeading();</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        for (String line : rawComment.split(&quot;\\R&quot;)) {</span>
+<span class="fc" id="L200">            String normalized = line.stripLeading();</span>
+<span class="pc bpc" id="L201" title="1 of 4 branches missed.">            if (!normalized.isEmpty() &amp;&amp; normalized.charAt(0) == '*') {</span>
+<span class="fc" id="L202">                normalized = normalized.substring(1).stripLeading();</span>
             }
-<span class="fc" id="L192">            sb.append(&quot;    // &quot;).append(normalized).append('\n');</span>
+<span class="fc" id="L204">            sb.append(&quot;    // &quot;).append(normalized).append('\n');</span>
         }
-<span class="fc" id="L194">    }</span>
+<span class="fc" id="L206">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

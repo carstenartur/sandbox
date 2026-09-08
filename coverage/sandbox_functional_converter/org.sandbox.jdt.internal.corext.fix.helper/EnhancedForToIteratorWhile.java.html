@@ -59,70 +59,73 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
 <span class="fc" id="L60">		org.sandbox.jdt.internal.common.HelperVisitorFactory.callEnhancedForStatementVisitor(compilationUnit, </span>
 <span class="fc" id="L61">			new ReferenceHolder&lt;Integer, Object&gt;(), nodesprocessed, (visited, aholder) -&gt; {</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">				if (ExpressionHelper.overlapsProcessedNode(visited, nodesprocessed)) {</span>
+<span class="fc" id="L63">					return false;</span>
+				}
 				// Safety: reject arrays — arrays don't have .iterator() method
-<span class="fc" id="L63">				Expression iterable = visited.getExpression();</span>
-<span class="fc" id="L64">				ITypeBinding typeBinding = iterable.resolveTypeBinding();</span>
-<span class="pc bpc" id="L65" title="2 of 4 branches missed.">				if (typeBinding != null &amp;&amp; typeBinding.isArray()) {</span>
-<span class="nc" id="L66">					return false;</span>
+<span class="fc" id="L66">				Expression iterable = visited.getExpression();</span>
+<span class="fc" id="L67">				ITypeBinding typeBinding = iterable.resolveTypeBinding();</span>
+<span class="pc bpc" id="L68" title="2 of 4 branches missed.">				if (typeBinding != null &amp;&amp; typeBinding.isArray()) {</span>
+<span class="nc" id="L69">					return false;</span>
 				}
 				
-<span class="fc" id="L69">				operations.add(fixcore.rewrite(visited, new ReferenceHolder&lt;&gt;()));</span>
-<span class="fc" id="L70">				nodesprocessed.add(visited);</span>
-<span class="fc" id="L71">				return false;</span>
+<span class="fc" id="L72">				operations.add(fixcore.rewrite(visited, new ReferenceHolder&lt;&gt;()));</span>
+<span class="fc" id="L73">				nodesprocessed.add(visited);</span>
+<span class="fc" id="L74">				return false;</span>
 			});
-<span class="fc" id="L73">	}</span>
+<span class="fc" id="L76">	}</span>
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; data)
 			throws CoreException {
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">		if (!(visited instanceof EnhancedForStatement forStmt)) {</span>
-<span class="nc" id="L80">			return;</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">		if (!(visited instanceof EnhancedForStatement forStmt)) {</span>
+<span class="nc" id="L83">			return;</span>
 		}
 		
-<span class="fc" id="L83">		AST ast = cuRewrite.getAST();</span>
-<span class="fc" id="L84">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L86">		AST ast = cuRewrite.getAST();</span>
+<span class="fc" id="L87">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
 		
 		// Build LoopModel from the enhanced for-loop using ULR pipeline
-<span class="fc" id="L87">		LoopModel model = buildLoopModel(forStmt);</span>
+<span class="fc" id="L90">		LoopModel model = buildLoopModel(forStmt);</span>
 		
 		// Render iterator-while loop using ULR-based renderer
-<span class="fc" id="L90">		ASTIteratorWhileRenderer renderer = new ASTIteratorWhileRenderer(ast, rewrite);</span>
-<span class="fc" id="L91">		renderer.render(model, forStmt, forStmt.getBody(), group);</span>
+<span class="fc" id="L93">		ASTIteratorWhileRenderer renderer = new ASTIteratorWhileRenderer(ast, rewrite);</span>
+<span class="fc" id="L94">		renderer.render(model, forStmt, forStmt.getBody(), group);</span>
 		
 		// Add Iterator import
-<span class="fc" id="L94">		cuRewrite.getImportRewrite().addImport(&quot;java.util.Iterator&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L95">	}</span>
+<span class="fc" id="L97">		cuRewrite.getImportRewrite().addImport(&quot;java.util.Iterator&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L98">	}</span>
 
 	/**
 	 * Builds a LoopModel from an enhanced for-loop using the ULR pipeline.
 	 */
 	private LoopModel buildLoopModel(EnhancedForStatement forStmt) {
-<span class="fc" id="L101">		String paramName = forStmt.getParameter().getName().getIdentifier();</span>
-<span class="fc" id="L102">		String paramType = forStmt.getParameter().getType().toString();</span>
-<span class="fc" id="L103">		String collectionExpr = forStmt.getExpression().toString();</span>
+<span class="fc" id="L104">		String paramName = forStmt.getParameter().getName().getIdentifier();</span>
+<span class="fc" id="L105">		String paramType = forStmt.getParameter().getType().toString();</span>
+<span class="fc" id="L106">		String collectionExpr = forStmt.getExpression().toString();</span>
 		
 		// Extract body statements as expression strings
-<span class="fc" id="L106">		List&lt;String&gt; bodyStatements = extractBodyStatements(forStmt.getBody());</span>
+<span class="fc" id="L109">		List&lt;String&gt; bodyStatements = extractBodyStatements(forStmt.getBody());</span>
 		
-<span class="fc" id="L108">		return new LoopModelBuilder()</span>
-<span class="fc" id="L109">			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr, paramType)</span>
-<span class="fc" id="L110">			.element(paramName, paramType, false)</span>
-<span class="fc" id="L111">			.terminal(new ForEachTerminal(bodyStatements, false))</span>
-<span class="fc" id="L112">			.build();</span>
+<span class="fc" id="L111">		return new LoopModelBuilder()</span>
+<span class="fc" id="L112">			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr, paramType)</span>
+<span class="fc" id="L113">			.element(paramName, paramType, false)</span>
+<span class="fc" id="L114">			.terminal(new ForEachTerminal(bodyStatements, false))</span>
+<span class="fc" id="L115">			.build();</span>
 	}
 
 	/**
 	 * Extracts body statements as strings from the loop body.
 	 */
 	private List&lt;String&gt; extractBodyStatements(Statement body) {
-<span class="fc" id="L119">		return ExpressionHelper.bodyStatementsToStrings(body);</span>
+<span class="fc" id="L122">		return ExpressionHelper.bodyStatementsToStrings(body);</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L124" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L125">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L128">			return &quot;&quot;&quot;</span>
 					Iterator&lt;String&gt; it = items.iterator();
 					while (it.hasNext()) {
 						String item = it.next();
@@ -130,7 +133,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 					}
 					&quot;&quot;&quot;;
 		}
-<span class="nc" id="L133">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L136">		return &quot;&quot;&quot;</span>
 				for (String item : items) {
 					System.out.println(item);
 				}

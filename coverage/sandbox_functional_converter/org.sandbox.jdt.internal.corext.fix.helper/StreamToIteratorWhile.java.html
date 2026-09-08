@@ -21,7 +21,6 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
@@ -30,41 +29,31 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * 
  * &lt;p&gt;Transformation: {@code collection.forEach(item -&gt; ...)} → {@code Iterator&lt;T&gt; it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}&lt;/p&gt;
  * 
- * &lt;p&gt;Uses the ULR pipeline: {@code LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer}.&lt;/p&gt;
+ * &lt;p&gt;Uses JdtStreamExtractor → ULR LoopModel → ASTIteratorWhileRenderer,
+ * including filter/map chains ending in forEach or forEachOrdered.&lt;/p&gt;
  * 
- * @see LoopModel
- * @see ASTIteratorWhileRenderer
  * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/453&quot;&gt;Issue #453&lt;/a&gt;
  * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/549&quot;&gt;Issue #549&lt;/a&gt;
  */
-<span class="fc" id="L40">public class StreamToIteratorWhile extends AbstractFunctionalCall&lt;ASTNode&gt; {</span>
+<span class="fc" id="L38">public class StreamToIteratorWhile extends AbstractFunctionalCall&lt;ASTNode&gt; {</span>
 
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L45">		ExpressionHelper.findForEachInvocations(fixcore, compilationUnit, operations, nodesprocessed);</span>
-<span class="fc" id="L46">	}</span>
+<span class="fc" id="L43">		StreamForEachConverter.find(fixcore, compilationUnit, operations, nodesprocessed);</span>
+<span class="fc" id="L44">	}</span>
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; data)
 			throws CoreException {
-<span class="fc" id="L52">		ExpressionHelper.ForEachRewriteInfo info = ExpressionHelper.extractForEachRewriteInfo(visited, cuRewrite.getAST());</span>
-<span class="pc bpc" id="L53" title="1 of 2 branches missed.">		if (info == null) {</span>
-<span class="nc" id="L54">			return;</span>
-		}
-		
-<span class="fc" id="L57">		ASTIteratorWhileRenderer renderer = new ASTIteratorWhileRenderer(cuRewrite.getAST(), cuRewrite.getASTRewrite());</span>
-<span class="fc" id="L58">		renderer.renderWithBodyStatements(info.model(), info.forEachStatement(), info.bodyStatements(), group);</span>
-		
-		// Add Iterator import
-<span class="fc" id="L61">		cuRewrite.getImportRewrite().addImport(&quot;java.util.Iterator&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L62">	}</span>
+<span class="fc" id="L50">		StreamForEachConverter.rewrite(visited, cuRewrite, group, data, true);</span>
+<span class="fc" id="L51">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L66" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L67">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L56">			return &quot;&quot;&quot;</span>
 					Iterator&lt;String&gt; it = items.iterator();
 					while (it.hasNext()) {
 						String item = it.next();
@@ -72,7 +61,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 					}
 					&quot;&quot;&quot;;
 		}
-<span class="nc" id="L75">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L64">		return &quot;&quot;&quot;</span>
 				items.forEach(item -&gt; System.out.println(item));
 				&quot;&quot;&quot;;
 	}

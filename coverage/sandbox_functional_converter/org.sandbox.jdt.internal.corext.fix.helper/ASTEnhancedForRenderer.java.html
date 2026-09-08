@@ -15,6 +15,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.LoopModel;
@@ -42,10 +43,15 @@ public class ASTEnhancedForRenderer {
 	private final AST ast;
 	private final ASTRewrite rewrite;
 
-<span class="fc" id="L45">	public ASTEnhancedForRenderer(AST ast, ASTRewrite rewrite) {</span>
-<span class="fc" id="L46">		this.ast = ast;</span>
-<span class="fc" id="L47">		this.rewrite = rewrite;</span>
-<span class="fc" id="L48">	}</span>
+<span class="fc" id="L46">	public ASTEnhancedForRenderer(AST ast, ASTRewrite rewrite) {</span>
+<span class="fc" id="L47">		this.ast = ast;</span>
+<span class="fc" id="L48">		this.rewrite = rewrite;</span>
+<span class="fc" id="L49">	}</span>
+
+	/** Lowers ULR filter/map/forEach operations using their original JDT attachments. */
+	public void renderPipeline(LoopModel model, JdtStreamContext context, ImportRewrite imports, TextEditGroup group) {
+<span class="fc" id="L53">		new ASTImperativeLoopRenderer(rewrite, imports, group).render(model, context, false);</span>
+<span class="fc" id="L54">	}</span>
 
 	/**
 	 * Renders the given LoopModel as an enhanced for-loop, replacing the original statement
@@ -60,16 +66,16 @@ public class ASTEnhancedForRenderer {
 	@SuppressWarnings(&quot;unchecked&quot;)
 	public void render(LoopModel model, WhileStatement whileStatement, Statement iteratorDecl,
 			java.util.List&lt;Statement&gt; bodyStatements, TextEditGroup group) {
-<span class="fc" id="L63">		EnhancedForStatement forStmt = buildEnhancedFor(model, bodyStatements);</span>
+<span class="fc" id="L69">		EnhancedForStatement forStmt = buildEnhancedFor(model, bodyStatements);</span>
 
 		// Replace while with for-loop and remove iterator declaration
-<span class="fc" id="L66">		Block parentBlock = (Block) whileStatement.getParent();</span>
-<span class="fc" id="L67">		ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
-<span class="pc bpc" id="L68" title="1 of 2 branches missed.">		if (iteratorDecl != null) {</span>
-<span class="fc" id="L69">			listRewrite.remove(iteratorDecl, group);</span>
+<span class="fc" id="L72">		Block parentBlock = (Block) whileStatement.getParent();</span>
+<span class="fc" id="L73">		ListRewrite listRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">		if (iteratorDecl != null) {</span>
+<span class="fc" id="L75">			listRewrite.remove(iteratorDecl, group);</span>
 		}
-<span class="fc" id="L71">		listRewrite.replace(whileStatement, forStmt, group);</span>
-<span class="fc" id="L72">	}</span>
+<span class="fc" id="L77">		listRewrite.replace(whileStatement, forStmt, group);</span>
+<span class="fc" id="L78">	}</span>
 
 	/**
 	 * Renders the given LoopModel as an enhanced for-loop, replacing an ExpressionStatement
@@ -83,49 +89,49 @@ public class ASTEnhancedForRenderer {
 	@SuppressWarnings(&quot;unchecked&quot;)
 	public void renderReplace(LoopModel model, Statement originalStatement,
 			java.util.List&lt;Statement&gt; bodyStatements, TextEditGroup group) {
-<span class="fc" id="L86">		EnhancedForStatement forStmt = buildEnhancedFor(model, bodyStatements);</span>
-<span class="fc" id="L87">		rewrite.replace(originalStatement, forStmt, group);</span>
-<span class="fc" id="L88">	}</span>
+<span class="nc" id="L92">		EnhancedForStatement forStmt = buildEnhancedFor(model, bodyStatements);</span>
+<span class="nc" id="L93">		rewrite.replace(originalStatement, forStmt, group);</span>
+<span class="nc" id="L94">	}</span>
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private EnhancedForStatement buildEnhancedFor(LoopModel model, java.util.List&lt;Statement&gt; bodyStatements) {
-<span class="fc" id="L92">		String elementType = model.getElement().typeName();</span>
-<span class="fc" id="L93">		String elementName = model.getElement().variableName();</span>
-<span class="fc" id="L94">		String collectionExpr = model.getSource().expression();</span>
+<span class="fc" id="L98">		String elementType = model.getElement().typeName();</span>
+<span class="fc" id="L99">		String elementName = model.getElement().variableName();</span>
+<span class="fc" id="L100">		String collectionExpr = model.getSource().expression();</span>
 
 		// Create the enhanced for-loop parameter: T item
 		Type paramType;
-<span class="pc bpc" id="L98" title="2 of 4 branches missed.">		if (elementType != null &amp;&amp; !&quot;Object&quot;.equals(elementType)) { //$NON-NLS-1$</span>
-<span class="fc" id="L99">			paramType = (Type) rewrite.createStringPlaceholder(elementType, ASTNode.SIMPLE_TYPE);</span>
-<span class="fc" id="L100">		} else {</span>
-<span class="nc" id="L101">			paramType = ast.newSimpleType(ast.newName(&quot;Object&quot;)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L104" title="1 of 4 branches missed.">		if (elementType != null &amp;&amp; !&quot;Object&quot;.equals(elementType)) { //$NON-NLS-1$</span>
+<span class="fc" id="L105">			paramType = (Type) rewrite.createStringPlaceholder(elementType, ASTNode.SIMPLE_TYPE);</span>
+<span class="fc" id="L106">		} else {</span>
+<span class="fc" id="L107">			paramType = ast.newSimpleType(ast.newName(&quot;Object&quot;)); //$NON-NLS-1$</span>
 		}
 
-<span class="fc" id="L104">		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();</span>
-<span class="fc" id="L105">		param.setType(paramType);</span>
-<span class="fc" id="L106">		param.setName(ast.newSimpleName(elementName));</span>
+<span class="fc" id="L110">		SingleVariableDeclaration param = ast.newSingleVariableDeclaration();</span>
+<span class="fc" id="L111">		param.setType(paramType);</span>
+<span class="fc" id="L112">		param.setName(ast.newSimpleName(elementName));</span>
 
 		// Create enhanced for-loop
-<span class="fc" id="L109">		EnhancedForStatement forStmt = ast.newEnhancedForStatement();</span>
-<span class="fc" id="L110">		forStmt.setParameter(param);</span>
-<span class="fc" id="L111">		forStmt.setExpression(createExpression(collectionExpr));</span>
+<span class="fc" id="L115">		EnhancedForStatement forStmt = ast.newEnhancedForStatement();</span>
+<span class="fc" id="L116">		forStmt.setParameter(param);</span>
+<span class="fc" id="L117">		forStmt.setExpression(createExpression(collectionExpr));</span>
 
 		// Copy body statements: use createCopyTarget for original AST nodes,
 		// add directly for newly created nodes (e.g., from expression lambdas)
-<span class="fc" id="L115">		Block forBody = ast.newBlock();</span>
-<span class="fc bfc" id="L116" title="All 2 branches covered.">		for (Statement stmt : bodyStatements) {</span>
-<span class="fc bfc" id="L117" title="All 2 branches covered.">			if (stmt.getParent() != null) {</span>
-<span class="fc" id="L118">				forBody.statements().add(rewrite.createCopyTarget(stmt));</span>
-<span class="fc" id="L119">			} else {</span>
-<span class="fc" id="L120">				forBody.statements().add(stmt);</span>
+<span class="fc" id="L121">		Block forBody = ast.newBlock();</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		for (Statement stmt : bodyStatements) {</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">			if (stmt.getParent() != null) {</span>
+<span class="fc" id="L124">				forBody.statements().add(rewrite.createCopyTarget(stmt));</span>
+<span class="fc" id="L125">			} else {</span>
+<span class="nc" id="L126">				forBody.statements().add(stmt);</span>
 			}
 		}
-<span class="fc" id="L123">		forStmt.setBody(forBody);</span>
-<span class="fc" id="L124">		return forStmt;</span>
+<span class="fc" id="L129">		forStmt.setBody(forBody);</span>
+<span class="fc" id="L130">		return forStmt;</span>
 	}
 
 	private Expression createExpression(String expressionStr) {
-<span class="fc" id="L128">		return ExpressionHelper.createExpression(ast, rewrite, expressionStr);</span>
+<span class="fc" id="L134">		return ExpressionHelper.createExpression(ast, rewrite, expressionStr);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
