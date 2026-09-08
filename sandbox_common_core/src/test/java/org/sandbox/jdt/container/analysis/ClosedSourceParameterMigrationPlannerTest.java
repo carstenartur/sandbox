@@ -12,6 +12,7 @@ package org.sandbox.jdt.container.analysis;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -115,10 +116,10 @@ class ClosedSourceParameterMigrationPlannerTest {
 		ContainerParameterRewritePlan parameter= plan.parameterPlans().get(0);
 
 		assertThrows(IllegalArgumentException.class,
-				() -> new ClosedSourceParameterMigrationPlan(
+				() -> assertNotNull(new ClosedSourceParameterMigrationPlan(
 						plan.targetContract(),
 						plan.callerPlan(),
-						List.of(parameter, parameter)));
+						List.of(parameter, parameter))));
 	}
 
 	@Test
@@ -140,10 +141,10 @@ class ClosedSourceParameterMigrationPlannerTest {
 						transfer.sourceLength())));
 
 		assertThrows(IllegalArgumentException.class,
-				() -> new ClosedSourceParameterMigrationPlan(
+				() -> assertNotNull(new ClosedSourceParameterMigrationPlan(
 						plan.targetContract(),
 						mismatchedCaller,
-						plan.parameterPlans()));
+						plan.parameterPlans())));
 	}
 
 	private static ClosedSourceParameterMigrationPlan readyPlan() {
