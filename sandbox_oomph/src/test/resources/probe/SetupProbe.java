@@ -44,6 +44,8 @@ import org.eclipse.oomph.setup.internal.core.SetupContext;
 import org.eclipse.oomph.setup.internal.core.SetupTaskPerformer;
 import org.eclipse.oomph.setup.internal.core.util.SetupCoreUtil;
 import org.eclipse.oomph.setup.log.ProgressLog;
+import org.eclipse.oomph.ui.UICallback;
+import org.eclipse.oomph.ui.UIUtil;
 import org.eclipse.oomph.util.OS;
 import org.eclipse.oomph.util.UserCallback;
 import org.eclipse.pde.core.target.ITargetPlatformService;
@@ -180,10 +182,16 @@ public class SetupProbe implements IApplication {
             sentinel.open(monitor);
             Files.writeString(Path.of(sentinel.getLocation().toOSString(), "keep.txt"), "user content");
         }
+        var callback = new UICallback(UIUtil.getShell(), "Sandbox Oomph verification") {
+            @Override public void information(boolean async, String message) { System.out.println(message); }
+            @Override public boolean question(String message) {
+                throw new AssertionError("Unexpected setup confirmation: " + message);
+            }
+        };
         var performer = SetupTaskPerformer.create(rs.getURIConverter(), new SetupPrompter() {
             @Override public OS getOS() { return OS.INSTANCE; }
             @Override public String getVMPath() { return Path.of(System.getProperty("java.home"), "bin/java").toString(); }
-            @Override public UserCallback getUserCallback() { return null; }
+            @Override public UserCallback getUserCallback() { return callback; }
             @Override public String getValue(VariableTask variable) { return null; }
             @Override public boolean promptVariables(List<? extends SetupTaskContext> performers) {
                 var unresolved = performers.stream()
