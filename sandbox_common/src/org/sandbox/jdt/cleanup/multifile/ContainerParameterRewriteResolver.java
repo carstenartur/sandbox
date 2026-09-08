@@ -66,7 +66,10 @@ final class ContainerParameterRewriteResolver {
 			throw stale(unit, "compilation-unit handle changed"); //$NON-NLS-1$
 		}
 		if (!isExpectedTarget(plan)) {
-			throw stale(unit, "target strategy changed"); //$NON-NLS-1$
+			throw stale(unit, "target strategy changed: interface=" //$NON-NLS-1$
+					+ plan.targetInterfaceType()
+					+ ", shape=" + plan.targetContract().shape() //$NON-NLS-1$
+					+ ", mutability=" + plan.targetContract().mutability()); //$NON-NLS-1$
 		}
 
 		MethodDeclaration method= findMethod(unit, root, plan.methodJavaElementHandle());

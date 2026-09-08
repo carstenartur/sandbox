@@ -10,25 +10,34 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.core.runtime.CoreException;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 
 import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
 
-/** Resolves the compilation-unit-local member of one aggregate migration plan. */
+/** Resolves all compilation-unit-local members of one aggregate migration plan. */
 public final class ClosedSourceParameterMigrationFix {
+
+	private static final String DESCRIPTION=
+			"Migrate closed caller and parameter container contract"; //$NON-NLS-1$
 
 	private ClosedSourceParameterMigrationFix() {
 	}
 
 	/**
-	 * Revalidates and creates the fix for the supplied unit, or returns {@code null}
-	 * when the unit is not part of the immutable aggregate plan.
+	 * Revalidates and combines every member for the supplied unit, or returns
+	 * {@code null} when the unit is not part of the immutable aggregate plan.
 	 */
 	public static ICleanUpFix create(
 			ICompilationUnit unit,
@@ -37,13 +46,26 @@ public final class ClosedSourceParameterMigrationFix {
 		Objects.requireNonNull(unit, "unit"); //$NON-NLS-1$
 		Objects.requireNonNull(root, "root"); //$NON-NLS-1$
 		Objects.requireNonNull(plan, "plan"); //$NON-NLS-1$
+
 		String handle= unit.getHandleIdentifier();
+		List<CompilationUnitRewriteOperationWithSourceRange> operations=
+				new ArrayList<>();
 		if (handle.equals(plan.callerPlan().compilationUnitHandle())) {
-			return ContainerLocalRewriteFix.create(unit, root, plan.callerPlan());
+			operations.add(ContainerLocalRewriteFix.operation(
+					unit, root, plan.callerPlan()));
 		}
-		if (handle.equals(plan.parameterPlan().compilationUnitHandle())) {
-			return ContainerParameterRewriteFix.create(unit, root, plan.parameterPlan());
+		for (ContainerParameterRewritePlan parameterPlan : plan.parameterPlans()) {
+			if (handle.equals(parameterPlan.compilationUnitHandle())) {
+				operations.add(ContainerParameterRewriteFix.operation(
+						unit, root, parameterPlan));
+			}
 		}
-		return null;
+		if (operations.isEmpty()) {
+			return null;
+		}
+		return new CompilationUnitRewriteOperationsFixCore(
+				DESCRIPTION,
+				root,
+				operations.toArray(CompilationUnitRewriteOperationWithSourceRange[]::new));
 	}
 }

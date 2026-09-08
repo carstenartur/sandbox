@@ -11,6 +11,7 @@
 package org.sandbox.jdt.container.analysis;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
@@ -29,6 +30,7 @@ import org.sandbox.jdt.container.api.ContainerRuleDescriptor.RuleOwnership;
 import org.sandbox.jdt.container.api.ContainerShape;
 import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.DiagnosticKind;
 import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.PlanningStatus;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureMember;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AccessProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
@@ -77,11 +79,11 @@ class ClosedSourceSignatureBoundaryTest {
 	}
 
 	@Test
-	void overrideFamilyRemainsRejectedForAutomaticExecution() {
+	void completeOverrideFamilyCanBeAutomaticClosedSourceGroup() {
 		FlowNode first= parameter(
-				"parameter:first:0", "First.java", "first-handle"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"parameter:first:0", "First.java", "first-handle", true); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		FlowNode second= parameter(
-				"parameter:second:0", "Second.java", "second-handle"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"parameter:second:0", "Second.java", "second-handle", true); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		ResolvedContainerFlowSearchPlan resolved= new ResolvedContainerFlowSearchPlan(List.of(
 				target(first, SearchKind.METHOD_OVERRIDE_FAMILY, 0,
 						"parameter:family:0"), //$NON-NLS-1$
@@ -91,12 +93,58 @@ class ClosedSourceSignatureBoundaryTest {
 		var plan= planner.planClosedSource(
 				component(List.of(first, second)), resolved, recommendation());
 
+		assertEquals(PlanningStatus.CLOSED_SOURCE_AUTOMATIC, plan.status());
+		assertTrue(plan.diagnostics().isEmpty());
+		assertEquals(2, plan.groups().get(0).members().size());
+		assertEquals(List.of("first-handle", "second-handle"), //$NON-NLS-1$ //$NON-NLS-2$
+				plan.groups().get(0).members().stream()
+						.map(SignatureMember::javaElementHandle)
+						.toList());
+	}
+
+	@Test
+	void unresolvedOverrideMemberKeepsTheFamilyNonAutomatic() {
+		FlowNode first= parameter(
+				"parameter:first:0", "First.java", "first-handle", true); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		FlowNode unresolved= parameter(
+				"parameter:second:0", "Second.java", "second-handle", false); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		ResolvedContainerFlowSearchPlan resolved= new ResolvedContainerFlowSearchPlan(List.of(
+				target(first, SearchKind.METHOD_OVERRIDE_FAMILY, 0,
+						"parameter:family:0"), //$NON-NLS-1$
+				target(unresolved, SearchKind.METHOD_OVERRIDE_FAMILY, 0,
+						"parameter:family:0"))); //$NON-NLS-1$
+
+		var plan= planner.planClosedSource(
+				component(List.of(first, unresolved)), resolved, recommendation());
+
 		assertEquals(PlanningStatus.REJECTED, plan.status());
 		assertEquals(DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
 				plan.diagnostics().get(0).kind());
 	}
 
-	private static FlowNode parameter(String id, String unit, String handle) {
+	@Test
+	void omittedOverrideMemberKeepsTheFamilyNonAutomatic() {
+		FlowNode first= parameter(
+				"parameter:first:0", "First.java", "first-handle", true); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		FlowNode omitted= parameter(
+				"parameter:second:0", "Second.java", "second-handle", true); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		ResolvedContainerFlowSearchPlan incomplete= new ResolvedContainerFlowSearchPlan(List.of(
+				target(first, SearchKind.METHOD_OVERRIDE_FAMILY, 0,
+						"parameter:family:0"))); //$NON-NLS-1$
+
+		var plan= planner.planClosedSource(
+				component(List.of(first, omitted)), incomplete, recommendation());
+
+		assertEquals(PlanningStatus.REJECTED, plan.status());
+		assertEquals(DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
+				plan.diagnostics().get(0).kind());
+	}
+
+	private static FlowNode parameter(
+			String id,
+			String unit,
+			String handle,
+			boolean sourceResolved) {
 		return new FlowNode(
 				id,
 				NodeKind.PARAMETER,
@@ -105,7 +153,7 @@ class ClosedSourceSignatureBoundaryTest {
 				unit,
 				handle,
 				0,
-				true,
+				sourceResolved,
 				10,
 				6);
 	}
