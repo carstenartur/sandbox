@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.dom.Bindings;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.builder.LoopModelBuilder;
@@ -65,7 +66,9 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 				// Safety: reject arrays — arrays don't have .iterator() method
 				Expression iterable = visited.getExpression();
 				ITypeBinding typeBinding = iterable.resolveTypeBinding();
-				if (typeBinding != null && typeBinding.isArray()) {
+				if (typeBinding == null || typeBinding.isRecovered() || typeBinding.isArray()
+						|| Bindings.findTypeInHierarchy(typeBinding, "java.lang.Iterable") == null //$NON-NLS-1$
+						|| visited.getParameter().resolveBinding() == null || LoopConversionService.hasErrors(visited)) {
 					return false;
 				}
 				
@@ -91,10 +94,7 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 		
 		// Render iterator-while loop using ULR-based renderer
 		ASTIteratorWhileRenderer renderer = new ASTIteratorWhileRenderer(ast, rewrite);
-		renderer.render(model, forStmt, forStmt.getBody(), group);
-		
-		// Add Iterator import
-		cuRewrite.getImportRewrite().addImport("java.util.Iterator"); //$NON-NLS-1$
+		renderer.renderEnhancedFor(model, forStmt, cuRewrite.getImportRewrite(), group);
 	}
 
 	/**
@@ -109,8 +109,8 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 		List<String> bodyStatements = extractBodyStatements(forStmt.getBody());
 		
 		return new LoopModelBuilder()
-			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr, paramType)
-			.element(paramName, paramType, false)
+			.source(SourceDescriptor.SourceType.ITERABLE, collectionExpr, paramType)
+			.element(paramName, paramType, forStmt.getParameter().resolveBinding().getType().isPrimitive())
 			.terminal(new ForEachTerminal(bodyStatements, false))
 			.build();
 	}

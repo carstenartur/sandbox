@@ -158,6 +158,8 @@ public class LoopTargetFormatTest {
 		assertEquals(LoopTargetFormat.STREAM, LoopTargetFormat.fromId("stream"));
 		assertEquals(LoopTargetFormat.FOR_LOOP, LoopTargetFormat.fromId("for"));
 		assertEquals(LoopTargetFormat.WHILE_LOOP, LoopTargetFormat.fromId("while"));
+		assertEquals(LoopTargetFormat.FOR_LOOP, LoopTargetFormat.fromId("enhanced_for"));
+		assertEquals(LoopTargetFormat.WHILE_LOOP, LoopTargetFormat.fromId("iterator_while"));
 		assertEquals(LoopTargetFormat.STREAM, LoopTargetFormat.fromId(null)); // default
 		assertEquals(LoopTargetFormat.STREAM, LoopTargetFormat.fromId("invalid")); // default fallback
 	}
@@ -169,7 +171,7 @@ public class LoopTargetFormatTest {
 	@DisplayName("LoopTargetFormat.getId() returns correct IDs")
 	public void testLoopTargetFormat_ids() {
 		assertEquals("stream", LoopTargetFormat.STREAM.getId());
-		assertEquals("for", LoopTargetFormat.FOR_LOOP.getId());
-		assertEquals("while", LoopTargetFormat.WHILE_LOOP.getId());
+		assertEquals("enhanced_for", LoopTargetFormat.FOR_LOOP.getId());
+		assertEquals("iterator_while", LoopTargetFormat.WHILE_LOOP.getId());
 	}
 }

@@ -23,6 +23,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUp;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopTargetFormat;
 
 public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 
@@ -58,7 +59,7 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 
 		// Target format combo box (for string-valued preference)
 		final ComboPreference targetFormatCombo = createComboPref(loopConversionGroup, numColumns,
-			CleanUpMessages.LoopConversion_TargetFormat_Stream, // Use existing label
+			CleanUpMessages.LoopConversion_TargetFormat,
 			MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT,
 			new String[] {"stream", "enhanced_for", "iterator_while"},
 			new String[] {CleanUpMessages.LoopConversion_TargetFormat_Stream, CleanUpMessages.LoopConversion_TargetFormat_EnhancedFor, CleanUpMessages.LoopConversion_TargetFormat_IteratorWhile});
@@ -73,10 +74,19 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		final CheckboxPreference fromClassicFor = createCheckboxPref(loopConversionGroup, numColumns,
 			CleanUpMessages.LoopConversion_From_ClassicFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, FALSE_TRUE);
 
-		// Register dependencies: enable/disable based on master checkbox
-		registerSlavePreference(loopConversionEnabled, new CheckboxPreference[] {
-			fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor
-		});
+		Runnable updateAvailability = () -> {
+			boolean enabled = loopConversionEnabled.getChecked();
+			LoopTargetFormat target = targetFormatCombo.hasValue(LoopTargetFormat.FOR_LOOP.getId()) ? LoopTargetFormat.FOR_LOOP
+					: targetFormatCombo.hasValue(LoopTargetFormat.WHILE_LOOP.getId()) ? LoopTargetFormat.WHILE_LOOP : LoopTargetFormat.STREAM;
+			targetFormatCombo.setEnabled(enabled);
+			fromEnhancedFor.setEnabled(enabled && target != LoopTargetFormat.FOR_LOOP);
+			fromIteratorWhile.setEnabled(enabled && target != LoopTargetFormat.WHILE_LOOP);
+			fromStream.setEnabled(enabled && target != LoopTargetFormat.STREAM);
+			fromClassicFor.setEnabled(enabled && target == LoopTargetFormat.STREAM);
+		};
+		loopConversionEnabled.addObserver((source, value) -> updateAvailability.run());
+		targetFormatCombo.addObserver((source, value) -> updateAvailability.run());
+		updateAvailability.run();
 
 		registerPreference(loopConversionEnabled);
 	}

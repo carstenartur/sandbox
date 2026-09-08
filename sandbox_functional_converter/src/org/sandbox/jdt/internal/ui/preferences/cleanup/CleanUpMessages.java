@@ -38,6 +38,14 @@ public class CleanUpMessages {
 	public static String LoopConversion_From_Stream;
 	public static String LoopConversion_From_ClassicFor;
 	public static String LoopConversion_Description;
+	public static String LoopConversion_Assist_Stream;
+	public static String LoopConversion_Assist_EnhancedFor;
+	public static String LoopConversion_Assist_IteratorWhile;
+	public static String LoopConversion_Inspection_Description;
+	public static String LoopConversion_Inspection_Severity;
+	public static String LoopConversion_Inspection_Off;
+	public static String LoopConversion_Inspection_Info;
+	public static String LoopConversion_Inspection_Warning;
 
 	static {
 		// initialize resource bundle

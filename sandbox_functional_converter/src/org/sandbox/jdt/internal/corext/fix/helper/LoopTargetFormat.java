@@ -24,9 +24,8 @@ package org.sandbox.jdt.internal.corext.fix.helper;
  * </ul>
  * </p>
  * 
- * <p><b>Note:</b> This enum is retained for potential future use with combo box preferences,
- * but the current implementation uses radio buttons with separate boolean constants in
- * {@link org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants}.</p>
+ * <p>Identifiers are shared by cleanup profiles, editor assists and inspections.
+ * Legacy profile identifiers remain readable through {@link #fromId(String)}.</p>
  */
 public enum LoopTargetFormat {
     /**
@@ -42,13 +41,13 @@ public enum LoopTargetFormat {
      * <p><b>Note:</b> This targets the enhanced for-loop introduced in Java 5,
      * not the classic indexed for-loop with initialization/condition/update.</p>
      */
-    FOR_LOOP("for"),
+    FOR_LOOP("enhanced_for"),
     
     /**
      * Convert to while loop with iterator.
      * Example: Iterator<String> it = list.iterator(); while (it.hasNext()) { String item = it.next(); ... }
      */
-    WHILE_LOOP("while");
+    WHILE_LOOP("iterator_while");
     
     private final String id;
     
@@ -70,6 +69,12 @@ public enum LoopTargetFormat {
      * @return the corresponding LoopTargetFormat, or STREAM if not found
      */
     public static LoopTargetFormat fromId(String id) {
+        if ("for".equals(id)) {
+            return FOR_LOOP;
+        }
+        if ("while".equals(id)) {
+            return WHILE_LOOP;
+        }
         if (id == null) {
             return STREAM; // default
         }

@@ -139,44 +139,46 @@ For detailed examples and technical information, see [ARCHITECTURE.md](ARCHITECT
   - Bidirectional transformations preserve loop body comments
   - See [ARCHITECTURE.md](ARCHITECTURE.md) and [FAQ.md](FAQ.md#q-was-ist-mit-inline-kommentaren--what-about-inline-comments) for details
 
-## Target Format Selection (New!)
+## Editor assists, style hints and cleanup
 
-**Status**: 🆕 **UI Available** - Transformation logic in progress
+| Entry point | Scope | How to use |
+|-------------|-------|------------|
+| Quick Assist | The innermost loop or pipeline at the caret | Press **Ctrl+1** in Java source and choose a conversion target. |
+| Quick Fix | A reported, currently convertible loop | Enable optional hints under **Java → Loop Conversion (Sandbox)**, then use **Ctrl+1** on a hint. |
+| Cleanup | Supported loops in the selected compilation units | **Source → Clean Up… → Functional Converter (Sandbox)**: enable loop conversion, choose a target and source formats. |
+| Save action | Supported loops in the file being saved | Configure the Functional Converter's existing save-action profile explicitly. |
 
-The cleanup now supports selecting the target loop format through a combo box in the cleanup preferences dialog:
+All entries use the same resolved-AST analysis and ULR transformations. Quick
+Assist works independently of cleanup settings. It offers only applicable
+conversions and never rewrites an adjacent loop because the caret is near it.
+Proposals use JDT's native change preview and LTK undo. Previewing repeatedly
+leaves the source unchanged and produces stable variable names. Stream targets
+require Java 8 or later in the project settings.
 
-### Available Formats
+Style hints are **off by default**. Choose Information or Warning and the desired
+target to enable them. They describe a style choice, not a Java compilation
+error. Hints update during reconciliation and Java builds; the Problems view
+updates on the next build after changing this preference. JDT owns removal of
+managed markers on rebuild and clean. Unsupported code gets no conversion hint.
 
-| Format | Description | Status |
-|--------|-------------|--------|
-| **Stream** (default) | Java 8+ functional style (`forEach`, `map`, `filter`, `reduce`) | ✅ Fully implemented |
-| **Classic for-loop** | Enhanced for-loop (`for (T item : collection)`) | ⏳ UI only - transformation pending |
-| **While-loop** | Iterator-based while loop | ⏳ UI only - transformation pending |
+| Target | Accepted source forms |
+|--------|-----------------------|
+| Stream | Enhanced for, supported iterator while/for patterns, supported classic index loops |
+| Enhanced for | Supported sequential stream/forEach expressions and iterator while loops |
+| Iterator while | Enhanced for over `Iterable`, supported sequential stream/forEach expressions |
 
-### How to Use
+The cleanup dialog disables source choices that do not apply to the selected
+target and previews the chosen conversions. An explicit conversion target takes
+precedence over legacy stream-only cleanup flags. Existing `for` and `while`
+profile identifiers are accepted as aliases for `enhanced_for` and
+`iterator_while`.
 
-1. Open **Source** → **Clean Up...** in Eclipse
-2. Navigate to **Sandbox** → **Java 8** section
-3. Enable **"Use functional call"**
-4. Select your preferred **Target format** from the dropdown
-5. Click **OK** to apply
-
-### Current Behavior
-
-- **Stream format**: Converts enhanced for-loops and iterator patterns to functional stream operations (existing behavior)
-- **For-loop format**: Currently skips transformation (implementation pending)
-- **While-loop format**: Currently skips transformation (implementation pending)
-
-### Planned Enhancements
-
-Future versions will support bidirectional transformations:
-- Stream → enhanced for-loop
-- Stream → while-iterator
-- Enhanced for → while-iterator
-- While-iterator → enhanced for
-
-See [TODO.md](TODO.md#phase-9-target-format-selection-in-progress---january-2026) for implementation roadmap.
-
+Enhanced-for to iterator conversion preserves the iterator's generic element
+type separately from the loop variable's type. This covers unboxing and widening,
+wildcards, nested generic types, `var`, raw iterables with an `Object` variable,
+final/annotated variables and array-valued elements. Imports respect local type
+names, and labeled `continue`/`break` still target the generated loop. Array
+sources and unresolved or erroneous loops are left unchanged.
 
 ## Supported Transformations
 
