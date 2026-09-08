@@ -13,13 +13,27 @@
  *******************************************************************************/
 package org.sandbox.functional.core.operation;
 
+import java.util.Objects;
+import org.sandbox.functional.core.model.FunctionalExpression;
+
 /**
  * Represents a peek operation in a stream pipeline.
  */
-<span class="fc" id="L19">public record PeekOp(String expression) implements Operation {</span>
+public record PeekOp(String expression, FunctionalExpression function) implements Operation {
+    public PeekOp(String expression) {
+<span class="fc" id="L24">        this(expression, null);</span>
+<span class="fc" id="L25">    }</span>
+
+<span class="fc" id="L27">    public PeekOp {</span>
+<span class="fc" id="L28">        Objects.requireNonNull(expression, &quot;expression must not be null&quot;);</span>
+<span class="fc bfc" id="L29" title="All 4 branches covered.">        if (function != null &amp;&amp; !&quot;void&quot;.equals(function.outputType())) {</span>
+<span class="fc" id="L30">            throw new IllegalArgumentException(&quot;A peek action must return void&quot;);</span>
+        }
+<span class="fc" id="L32">    }</span>
+
     @Override
     public String operationType() { 
-<span class="fc" id="L22">        return &quot;peek&quot;; </span>
+<span class="fc" id="L36">        return &quot;peek&quot;; </span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

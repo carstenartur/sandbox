@@ -42,27 +42,32 @@ public final class StreamForEachConverter {
 <span class="fc bfc" id="L42" title="All 2 branches covered.">				if (extracted == null) {</span>
 <span class="fc" id="L43">					return true;</span>
 				}
-<span class="fc" id="L45">				ReferenceHolder&lt;ASTNode, Object&gt; data = new ReferenceHolder&lt;&gt;();</span>
-<span class="fc" id="L46">				data.put(node, extracted);</span>
-<span class="fc" id="L47">				operations.add(fix.rewrite(node, data));</span>
-<span class="fc" id="L48">				processed.add(node);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">				if (fix == UseFunctionalCallFixCore.STREAM_TO_FOR</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">						&amp;&amp; extracted.model().getSource().type() == org.sandbox.functional.core.model.SourceDescriptor.SourceType.STREAM) {</span>
+					// A Stream has no enhanced-for protocol; preserve lazy factories via an iterator target.
+<span class="fc" id="L48">					return true;</span>
+				}
+<span class="fc" id="L50">				ReferenceHolder&lt;ASTNode, Object&gt; data = new ReferenceHolder&lt;&gt;();</span>
+<span class="fc" id="L51">				data.put(node, extracted);</span>
+<span class="fc" id="L52">				operations.add(fix.rewrite(node, data));</span>
+<span class="fc" id="L53">				processed.add(node);</span>
 				// One owner per replaced statement, including nested calls in its lambdas.
-<span class="fc" id="L50">				return false;</span>
+<span class="fc" id="L55">				return false;</span>
 			}
 		});
-<span class="fc" id="L53">	}</span>
+<span class="fc" id="L58">	}</span>
 
 	public static void rewrite(ASTNode node, CompilationUnitRewrite cuRewrite, TextEditGroup group,
 			ReferenceHolder&lt;ASTNode, Object&gt; data, boolean iteratorTarget) {
-<span class="pc bpc" id="L57" title="1 of 2 branches missed.">		if (data.get(node) instanceof JdtStreamExtractor.ExtractedStream extracted) {</span>
-<span class="fc bfc" id="L58" title="All 2 branches covered.">			if (iteratorTarget) {</span>
-<span class="fc" id="L59">				new ASTIteratorWhileRenderer(cuRewrite.getAST(), cuRewrite.getASTRewrite())</span>
-<span class="fc" id="L60">						.renderPipeline(extracted.model(), extracted.context(), cuRewrite.getImportRewrite(), group);</span>
-<span class="fc" id="L61">			} else {</span>
-<span class="fc" id="L62">				new ASTEnhancedForRenderer(cuRewrite.getAST(), cuRewrite.getASTRewrite())</span>
-<span class="fc" id="L63">						.renderPipeline(extracted.model(), extracted.context(), cuRewrite.getImportRewrite(), group);</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">		if (data.get(node) instanceof JdtStreamExtractor.ExtractedStream extracted) {</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">			if (iteratorTarget) {</span>
+<span class="fc" id="L64">				new ASTIteratorWhileRenderer(cuRewrite.getAST(), cuRewrite.getASTRewrite())</span>
+<span class="fc" id="L65">						.renderPipeline(extracted.model(), extracted.context(), cuRewrite.getImportRewrite(), group);</span>
+<span class="fc" id="L66">			} else {</span>
+<span class="fc" id="L67">				new ASTEnhancedForRenderer(cuRewrite.getAST(), cuRewrite.getASTRewrite())</span>
+<span class="fc" id="L68">						.renderPipeline(extracted.model(), extracted.context(), cuRewrite.getImportRewrite(), group);</span>
 			}
 		}
-<span class="fc" id="L66">	}</span>
+<span class="fc" id="L71">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

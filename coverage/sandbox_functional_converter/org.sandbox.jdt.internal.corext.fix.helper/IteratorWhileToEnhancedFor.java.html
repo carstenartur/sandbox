@@ -13,209 +13,78 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
-import org.eclipse.jdt.core.dom.WhileStatement;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.builder.LoopModelBuilder;
-import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.terminal.ForEachTerminal;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.IteratorPattern;
 
-/**
- * Transformer for converting iterator-based while-loops to enhanced for-loops.
- * 
- * &lt;p&gt;Transformation: {@code Iterator&lt;T&gt; it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }} → {@code for (T item : collection) { ... }}&lt;/p&gt;
- * 
- * &lt;p&gt;Uses the ULR pipeline: {@code LoopModelBuilder → LoopModel → ASTEnhancedForRenderer}.&lt;/p&gt;
- * 
- * &lt;p&gt;&lt;b&gt;Safety rules (Issue #670):&lt;/b&gt;&lt;/p&gt;
- * &lt;ul&gt;
- *   &lt;li&gt;Rejects conversion when iterator.remove() is used (cannot be expressed in enhanced for)&lt;/li&gt;
- *   &lt;li&gt;Rejects conversion when multiple iterator.next() calls are detected&lt;/li&gt;
- *   &lt;li&gt;Rejects conversion when break or labeled continue is present&lt;/li&gt;
- * &lt;/ul&gt;
- * 
- * @see LoopModel
- * @see ASTEnhancedForRenderer
- * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/453&quot;&gt;Issue #453&lt;/a&gt;
- * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/549&quot;&gt;Issue #549&lt;/a&gt;
- * @see &lt;a href=&quot;https://github.com/carstenartur/sandbox/issues/670&quot;&gt;Issue #670&lt;/a&gt;
- */
-<span class="fc" id="L64">public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall&lt;ASTNode&gt; {</span>
+/** Converts verified iterator while/for protocols to enhanced for through the ULR. */
+<span class="fc" id="L31">public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall&lt;ASTNode&gt; {</span>
+<span class="fc" id="L32">	private final IteratorPatternDetector detector = new IteratorPatternDetector();</span>
 
-<span class="fc" id="L66">	private final IteratorPatternDetector patternDetector = new IteratorPatternDetector();</span>
-<span class="fc" id="L67">	private final IteratorLoopAnalyzer loopAnalyzer = new IteratorLoopAnalyzer();</span>
-	
 	@Override
-	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
-			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed) {
-<span class="fc" id="L72">		LoopConversionService.scanRoot(compilationUnit).accept(new ASTVisitor() {</span>
+	public void find(UseFunctionalCallFixCore fix, CompilationUnit unit,
+			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; processed) {
+<span class="fc" id="L37">		LoopConversionService.scanRoot(unit).accept(new ASTVisitor() {</span>
 			@Override
-			public boolean visit(WhileStatement node) {
-<span class="fc bfc" id="L75" title="All 2 branches covered.">				if (ExpressionHelper.overlapsProcessedNode(node, nodesprocessed)) {</span>
-<span class="fc" id="L76">					return false;</span>
-				}
-				
-				// Find previous statement for while-iterator pattern
-<span class="pc bpc" id="L80" title="1 of 2 branches missed.">				if (!IteratorPatternDetector.isStatementInBlock(node)) {</span>
-<span class="nc" id="L81">					return true;</span>
-				}
-				
-<span class="fc" id="L84">				Block parentBlock = (Block) node.getParent();</span>
-<span class="fc" id="L85">				Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, node);</span>
-				
-<span class="fc" id="L87">				IteratorPattern pattern = patternDetector.detectWhilePattern(node, previousStmt);</span>
-<span class="pc bpc" id="L88" title="1 of 4 branches missed.">				if (pattern == null || elementDeclaration(node, pattern) == null) {</span>
-<span class="fc" id="L89">					return true;</span>
-				}
-				
-				// Issue #670: Safety check - reject conversion if iterator has unsafe usage
-				// (remove(), multiple next(), break, labeled continue)
-<span class="fc" id="L94">				IteratorLoopAnalyzer.SafetyAnalysis analysis = loopAnalyzer.analyze(</span>
-<span class="fc" id="L95">						node.getBody(), pattern.iteratorVariableName());</span>
-<span class="fc bfc" id="L96" title="All 2 branches covered.">				if (!analysis.isSafe()) {</span>
-<span class="fc" id="L97">					return true;</span>
-				}
-				
-				// Mark both the iterator declaration and the while loop as processed
-<span class="fc" id="L101">				nodesprocessed.add(previousStmt);</span>
-<span class="fc" id="L102">				nodesprocessed.add(node);</span>
-				
-<span class="fc" id="L104">				ReferenceHolder&lt;ASTNode, Object&gt; holder = ReferenceHolder.create();</span>
-<span class="fc" id="L105">				holder.put(node, pattern);</span>
-<span class="fc" id="L106">				holder.put(previousStmt, pattern); // Store pattern for both nodes</span>
-				
-<span class="fc" id="L108">				operations.add(fixcore.rewrite(node, holder));</span>
-				
-<span class="fc" id="L110">				return false;</span>
+			public boolean visit(WhileStatement loop) {
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">				if (!(loop.getParent() instanceof Block block)) return true;</span>
+<span class="fc" id="L41">				Statement previous = IteratorPatternDetector.findPreviousStatement(block, loop);</span>
+<span class="fc" id="L42">				return schedule(loop, previous, detector.detectWhilePattern(loop, previous));</span>
+			}
+
+			@Override
+			public boolean visit(ForStatement loop) {
+<span class="fc" id="L47">				return schedule(loop, null, detector.detectForLoopPattern(loop));</span>
+			}
+
+			private boolean schedule(Statement loop, Statement previous, IteratorPattern pattern) {
+<span class="fc bfc" id="L51" title="All 2 branches covered.">				if (ExpressionHelper.overlapsProcessedNode(loop, processed)) return false;</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">				if (IteratorLoopBindings.element(loop, previous, pattern) == null) return true;</span>
+<span class="fc" id="L53">				ReferenceHolder&lt;ASTNode, Object&gt; data = ReferenceHolder.create();</span>
+<span class="fc" id="L54">				data.put(loop, pattern);</span>
+<span class="fc" id="L55">				operations.add(fix.rewrite(loop, data));</span>
+<span class="fc" id="L56">				processed.add(loop);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">				if (previous != null) processed.add(previous);</span>
+<span class="fc" id="L58">				return false;</span>
 			}
 		});
-<span class="fc" id="L113">	}</span>
+<span class="fc" id="L61">	}</span>
 
 	@Override
-	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
-			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; data)
-			throws CoreException {
-<span class="pc bpc" id="L119" title="1 of 2 branches missed.">		if (!(visited instanceof WhileStatement whileStmt)) {</span>
-<span class="nc" id="L120">			return;</span>
-		}
-		
-<span class="fc" id="L123">		Object patternObj = data.get(visited);</span>
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">		if (!(patternObj instanceof IteratorPattern pattern)) {</span>
-<span class="nc" id="L125">			return;</span>
-		}
-		
-<span class="fc" id="L128">		AST ast = cuRewrite.getAST();</span>
-<span class="fc" id="L129">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-		
-		// Find the iterator declaration statement that should be removed
-<span class="fc" id="L132">		Block parentBlock = (Block) whileStmt.getParent();</span>
-<span class="fc" id="L133">		Statement iteratorDecl = IteratorPatternDetector.findPreviousStatement(parentBlock, whileStmt);</span>
-		
-		// Build LoopModel from the iterator-while pattern using ULR pipeline
-<span class="fc" id="L136">		VariableDeclarationFragment element = elementDeclaration(whileStmt, pattern);</span>
-<span class="pc bpc" id="L137" title="1 of 2 branches missed.">		if (element == null) {</span>
-<span class="nc" id="L138">			return;</span>
-		}
-<span class="fc" id="L140">		LoopModel model = buildLoopModel(pattern, element);</span>
-		
-		// Extract body statements (skip the first item = it.next() declaration)
-<span class="fc" id="L143">		List&lt;Statement&gt; bodyStatements = extractBodyStatements(whileStmt);</span>
-		
-		// Render enhanced for-loop using ULR-based renderer
-<span class="fc" id="L146">		ASTEnhancedForRenderer renderer = new ASTEnhancedForRenderer(ast, rewrite);</span>
-<span class="fc" id="L147">		renderer.render(model, whileStmt, iteratorDecl, bodyStatements, group);</span>
-<span class="fc" id="L148">	}</span>
+	public void rewrite(UseFunctionalCallFixCore fix, ASTNode visited, CompilationUnitRewrite rewrite,
+			TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; data) throws CoreException {
+<span class="pc bpc" id="L66" title="2 of 4 branches missed.">		if (!(visited instanceof Statement loop) || !(data.get(visited) instanceof IteratorPattern pattern)) return;</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		Statement previous = loop instanceof WhileStatement ? IteratorPatternDetector.findPreviousStatement((Block) loop.getParent(), loop) : null;</span>
+<span class="fc" id="L68">		VariableDeclarationFragment element = IteratorLoopBindings.element(loop, previous, pattern);</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">		if (element == null) return;</span>
+<span class="fc" id="L70">		ITypeBinding type = element.resolveBinding().getType();</span>
+<span class="fc" id="L71">		List&lt;String&gt; body = ExpressionHelper.bodyStatementsToStrings(pattern.loopBody());</span>
+<span class="fc" id="L72">		var model = new LoopModelBuilder()</span>
+<span class="fc" id="L73">				.source(SourceDescriptor.SourceType.ITERABLE, pattern.collectionExpression().toString(),</span>
+<span class="fc" id="L74">						IteratorLoopBindings.sourceElementType(pattern.collectionExpression().resolveTypeBinding()))</span>
+<span class="fc" id="L75">				.element(element.getName().getIdentifier(), type.getQualifiedName(), type.isPrimitive())</span>
+<span class="fc" id="L76">				.terminal(new ForEachTerminal(body.subList(1, body.size()), false)).build();</span>
+<span class="fc" id="L77">		new ASTEnhancedForRenderer(rewrite.getAST(), rewrite.getASTRewrite()).renderIteratorLoop(model, loop,</span>
+<span class="fc" id="L78">				previous, pattern.collectionExpression(), (VariableDeclarationStatement) element.getParent(), rewrite.getImportRewrite(), group);</span>
+<span class="fc" id="L79">	}</span>
 
-	/**
-	 * Builds a LoopModel from an iterator-while pattern using the ULR pipeline.
-	 */
-	private LoopModel buildLoopModel(IteratorPattern pattern, VariableDeclarationFragment element) {
-<span class="fc" id="L154">		String collectionExpr = pattern.collectionExpression().toString();</span>
-<span class="fc" id="L155">		String elementType = ((VariableDeclarationStatement) element.getParent()).getType().toString();</span>
-<span class="fc" id="L156">		String elementName = element.getName().getIdentifier();</span>
-		
-<span class="fc" id="L158">		return new LoopModelBuilder()</span>
-<span class="fc" id="L159">			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr, elementType)</span>
-<span class="fc" id="L160">			.element(elementName, elementType, false)</span>
-<span class="fc" id="L161">			.terminal(new ForEachTerminal(List.of(), false))</span>
-<span class="fc" id="L162">			.build();</span>
-	}
-
-	private static VariableDeclarationFragment elementDeclaration(WhileStatement loop, IteratorPattern pattern) {
-<span class="pc bpc" id="L166" title="2 of 4 branches missed.">		if (loop.getBody() instanceof Block body &amp;&amp; !body.statements().isEmpty()</span>
-<span class="pc bpc" id="L167" title="1 of 2 branches missed.">				&amp;&amp; body.statements().get(0) instanceof VariableDeclarationStatement declaration</span>
-<span class="pc bpc" id="L168" title="1 of 2 branches missed.">				&amp;&amp; declaration.fragments().size() == 1) {</span>
-<span class="fc" id="L169">			VariableDeclarationFragment element = (VariableDeclarationFragment) declaration.fragments().get(0);</span>
-<span class="pc bpc" id="L170" title="2 of 4 branches missed.">			if (element.getInitializer() instanceof MethodInvocation next &amp;&amp; next.arguments().isEmpty()</span>
-<span class="pc bpc" id="L171" title="1 of 2 branches missed.">					&amp;&amp; &quot;next&quot;.equals(next.getName().getIdentifier()) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">					&amp;&amp; next.getExpression() instanceof SimpleName iterator</span>
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">					&amp;&amp; pattern.iteratorVariableName().equals(iterator.getIdentifier())) {</span>
-<span class="fc" id="L174">				return element;</span>
-			}
-		}
-<span class="nc" id="L177">		return null;</span>
-	}
-
-	/**
-	 * Extracts the actual body statements from the while loop, skipping the
-	 * first {@code T item = it.next()} variable declaration.
-	 */
-	private List&lt;Statement&gt; extractBodyStatements(WhileStatement whileStmt) {
-<span class="fc" id="L185">		List&lt;Statement&gt; result = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L186">		Statement whileBody = whileStmt.getBody();</span>
-		
-<span class="pc bpc" id="L188" title="1 of 2 branches missed.">		if (whileBody instanceof Block block) {</span>
-<span class="fc" id="L189">			boolean skipFirst = false;</span>
-			
-			// Check if first statement is item = it.next()
-<span class="pc bpc" id="L192" title="1 of 2 branches missed.">			if (!block.statements().isEmpty()) {</span>
-<span class="fc" id="L193">				Object firstStmt = block.statements().get(0);</span>
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">				if (firstStmt instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement) {</span>
-<span class="fc" id="L195">					skipFirst = true;</span>
+	@Override
+	public String getPreview(boolean after) {
+<span class="nc bnc" id="L83" title="All 2 branches missed.">		return after ? &quot;&quot;&quot;</span>
+				for (String item : items) {
+					System.out.println(item);
 				}
-			}
-			
-<span class="pc bpc" id="L199" title="1 of 2 branches missed.">			int startIdx = skipFirst ? 1 : 0;</span>
-<span class="fc bfc" id="L200" title="All 2 branches covered.">			for (int i = startIdx; i &lt; block.statements().size(); i++) {</span>
-<span class="fc" id="L201">				result.add((Statement) block.statements().get(i));</span>
-			}
-<span class="fc" id="L203">		} else {</span>
-<span class="nc" id="L204">			result.add(whileBody);</span>
-		}
-<span class="fc" id="L206">		return result;</span>
-	}
-
-	@Override
-	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L211" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L212">			return &quot;&quot;&quot;</span>
-					for (String item : items) {
-						System.out.println(item);
-					}
-					&quot;&quot;&quot;;
-		}
-<span class="nc" id="L218">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L87">				&quot;&quot;&quot; : &quot;&quot;&quot;</span>
 				Iterator&lt;String&gt; it = items.iterator();
 				while (it.hasNext()) {
 					String item = it.next();

@@ -75,8 +75,8 @@ public final class ExpressionHelper {
 	 */
 	public static Expression createExpression(AST ast, ASTRewrite rewrite, String expressionStr) {
 		// For simple names, create SimpleName directly
-<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		if (expressionStr.matches(&quot;[a-zA-Z_$][a-zA-Z0-9_$]*&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L79">			return ast.newSimpleName(expressionStr);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">		if (expressionStr.matches(&quot;[a-zA-Z_$][a-zA-Z0-9_$]*&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L79">			return ast.newSimpleName(expressionStr);</span>
 		}
 		// For qualified names (e.g., &quot;this.items&quot;), create QualifiedName
 <span class="nc bnc" id="L82" title="All 2 branches missed.">		if (expressionStr.matches(&quot;[a-zA-Z_$][a-zA-Z0-9_$.]*&quot;)) { //$NON-NLS-1$</span>

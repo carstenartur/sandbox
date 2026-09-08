@@ -137,8 +137,8 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
         
 <span class="fc" id="L138">        VariableDeclarationExpression varDecl = (VariableDeclarationExpression) initObj;</span>
 <span class="fc" id="L139">        Type type = varDecl.getType();</span>
-<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        if (!isPrimitiveInt(type)) {</span>
-<span class="nc" id="L141">            return null;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (!isPrimitiveInt(type)) {</span>
+<span class="fc" id="L141">            return null;</span>
         }
         
 <span class="fc" id="L144">        List&lt;?&gt; fragments = varDecl.fragments();</span>
@@ -244,11 +244,11 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
      * Checks if a Type represents primitive int.
      */
     private boolean isPrimitiveInt(Type type) {
-<span class="pc bpc" id="L247" title="1 of 2 branches missed.">        if (type instanceof PrimitiveType) {</span>
+<span class="fc bfc" id="L247" title="All 2 branches covered.">        if (type instanceof PrimitiveType) {</span>
 <span class="fc" id="L248">            PrimitiveType primType = (PrimitiveType) type;</span>
 <span class="pc bpc" id="L249" title="1 of 2 branches missed.">            return primType.getPrimitiveTypeCode() == PrimitiveType.INT;</span>
         }
-<span class="nc" id="L251">        return false;</span>
+<span class="fc" id="L251">        return false;</span>
     }
     
     /**

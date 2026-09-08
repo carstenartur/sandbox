@@ -93,6 +93,15 @@ public interface StreamPipelineRenderer&lt;T&gt; {
      * Renders a peek operation.
      */
     T renderPeek(T pipeline, String expression, String variableName);
+
+    default T renderPeekOp(T pipeline, org.sandbox.functional.core.operation.PeekOp peek, String variableName) {
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        return peek.function() == null ? renderPeek(pipeline, peek.expression(), variableName)</span>
+<span class="fc" id="L99">                : renderFunction(pipeline, peek.operationType(), peek.function());</span>
+    }
+
+    default T renderTypeConversion(T pipeline, org.sandbox.functional.core.operation.StreamTypeConversionOp conversion) {
+<span class="nc" id="L103">        throw new UnsupportedOperationException(&quot;Stream type conversions are not supported&quot;);</span>
+    }
     
     /**
      * Renders a distinct operation.
@@ -120,10 +129,10 @@ public interface StreamPipelineRenderer&lt;T&gt; {
     T renderForEach(T pipeline, List&lt;String&gt; bodyStatements, String variableName, boolean ordered);
 
     default T renderForEachTerminal(T pipeline, ForEachTerminal terminal, String variableName) {
-<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (terminal.function() != null) {</span>
-<span class="fc" id="L124">            return renderFunction(pipeline, terminal.operationType(), terminal.function());</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (terminal.function() != null) {</span>
+<span class="fc" id="L133">            return renderFunction(pipeline, terminal.operationType(), terminal.function());</span>
         }
-<span class="fc" id="L126">        return renderForEach(pipeline, terminal.bodyStatements(), variableName, terminal.ordered());</span>
+<span class="fc" id="L135">        return renderForEach(pipeline, terminal.bodyStatements(), variableName, terminal.ordered());</span>
     }
     
     /**

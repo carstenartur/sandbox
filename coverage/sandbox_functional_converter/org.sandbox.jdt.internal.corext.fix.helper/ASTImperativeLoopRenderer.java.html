@@ -46,8 +46,11 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.FunctionalExpression;
 import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
 import org.sandbox.functional.core.operation.FilterOp;
 import org.sandbox.functional.core.operation.MapOp;
+import org.sandbox.functional.core.operation.PeekOp;
+import org.sandbox.functional.core.operation.StreamTypeConversionOp;
 import org.sandbox.functional.core.terminal.ForEachTerminal;
 
 /** Shared ULR operation lowering used by both imperative AST renderers. */
@@ -59,173 +62,210 @@ final class ASTImperativeLoopRenderer {
 	private final AST ast;
 	private ImportRewriteContext importContext;
 	private JdtStreamContext context;
-<span class="fc" id="L62">	private final Map&lt;FunctionalExpression, String&gt; functionNames = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc" id="L65">	private final Map&lt;FunctionalExpression, String&gt; functionNames = new IdentityHashMap&lt;&gt;();</span>
 
-<span class="fc" id="L64">	ASTImperativeLoopRenderer(ASTRewrite rewrite, ImportRewrite imports, TextEditGroup group) {</span>
-<span class="fc" id="L65">		this.rewrite = rewrite;</span>
-<span class="fc" id="L66">		this.imports = imports;</span>
-<span class="fc" id="L67">		this.group = group;</span>
-<span class="fc" id="L68">		this.ast = rewrite.getAST();</span>
-<span class="fc" id="L69">	}</span>
+<span class="fc" id="L67">	ASTImperativeLoopRenderer(ASTRewrite rewrite, ImportRewrite imports, TextEditGroup group) {</span>
+<span class="fc" id="L68">		this.rewrite = rewrite;</span>
+<span class="fc" id="L69">		this.imports = imports;</span>
+<span class="fc" id="L70">		this.group = group;</span>
+<span class="fc" id="L71">		this.ast = rewrite.getAST();</span>
+<span class="fc" id="L72">	}</span>
 
 	void render(LoopModel model, JdtStreamContext sourceContext, boolean iteratorTarget) {
-<span class="fc" id="L72">		context = sourceContext;</span>
+<span class="fc" id="L75">		context = sourceContext;</span>
+<span class="pc bpc" id="L76" title="1 of 4 branches missed.">		if (!iteratorTarget &amp;&amp; model.getSource().type() == SourceType.STREAM) {</span>
+<span class="nc" id="L77">			throw new IllegalArgumentException(&quot;A lazy stream source requires an iterator loop target&quot;); //$NON-NLS-1$</span>
+		}
 		// The ULR owns operation order, kinds, function boundaries and scopes.
-<span class="fc" id="L74">		List&lt;Object&gt; operations = new ArrayList&lt;&gt;(model.getOperations());</span>
-<span class="fc" id="L75">		operations.add(model.getTerminal());</span>
-<span class="fc bfc" id="L76" title="All 2 branches covered.">		for (Object operation : operations) {</span>
-<span class="fc" id="L77">			context.expression(function(operation));</span>
+<span class="fc" id="L80">		List&lt;Object&gt; operations = new ArrayList&lt;&gt;(model.getOperations());</span>
+<span class="fc" id="L81">		operations.add(model.getTerminal());</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">		for (Object operation : operations) {</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">			if (!(operation instanceof StreamTypeConversionOp)) context.expression(function(operation));</span>
 		}
-<span class="fc" id="L79">		Set&lt;String&gt; names = LoopVariableNames.usedNames(context.statement());</span>
-<span class="fc" id="L80">		importContext = new ContextSensitiveImportRewriteContext((CompilationUnit) context.statement().getRoot(),</span>
-<span class="fc" id="L81">				context.statement().getStartPosition(), imports);</span>
-<span class="fc" id="L82">		context.statement().setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);</span>
-<span class="fc" id="L83">		Block replacement = ast.newBlock();</span>
-<span class="fc bfc" id="L84" title="All 2 branches covered.">		for (Object operation : operations) {</span>
-<span class="fc" id="L85">			FunctionalExpression function = function(operation);</span>
-<span class="fc bfc" id="L86" title="All 2 branches covered.">			if (function.requiresInvocation()) {</span>
-<span class="fc" id="L87">				String name = LoopVariableNames.fresh(&quot;function&quot;, names); //$NON-NLS-1$</span>
-<span class="fc" id="L88">				functionNames.put(function, name);</span>
-<span class="fc" id="L89">				replacement.statements().add(declaration(type(context.functionType(function)), name, copy(context.expression(function))));</span>
+<span class="fc" id="L85">		Set&lt;String&gt; names = LoopVariableNames.usedNames(context.statement());</span>
+<span class="fc" id="L86">		importContext = new ContextSensitiveImportRewriteContext((CompilationUnit) context.statement().getRoot(),</span>
+<span class="fc" id="L87">				context.statement().getStartPosition(), imports);</span>
+<span class="fc" id="L88">		context.statement().setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);</span>
+<span class="fc" id="L89">		Block replacement = ast.newBlock();</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">		for (Object operation : operations) {</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">			if (operation instanceof StreamTypeConversionOp) continue;</span>
+<span class="fc" id="L92">			FunctionalExpression function = function(operation);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">			if (function.requiresInvocation()) {</span>
+<span class="fc" id="L94">				String name = LoopVariableNames.fresh(&quot;function&quot;, names); //$NON-NLS-1$</span>
+<span class="fc" id="L95">				functionNames.put(function, name);</span>
+<span class="fc" id="L96">				replacement.statements().add(declaration(type(context.functionType(function)), name, copy(context.expression(function))));</span>
 			}
 		}
-<span class="fc" id="L92">		Block body = ast.newBlock();</span>
-<span class="fc" id="L93">		String current = model.getElement().variableName();</span>
-<span class="fc" id="L94">		ITypeBinding currentType = context.elementType();</span>
-<span class="fc bfc" id="L95" title="All 2 branches covered.">		for (Object operation : operations) {</span>
-<span class="fc" id="L96">			FunctionalExpression function = function(operation);</span>
-<span class="fc" id="L97">			String input = current;</span>
-<span class="fc bfc" id="L98" title="All 4 branches covered.">			if (!function.requiresInvocation() &amp;&amp; !context.inputType(function).isEqualTo(currentType)) {</span>
-<span class="fc" id="L99">				input = LoopVariableNames.fresh(&quot;value&quot;, names); //$NON-NLS-1$</span>
-<span class="fc" id="L100">				body.statements().add(declaration(type(context.inputType(function)), input, ast.newSimpleName(current)));</span>
+<span class="fc" id="L99">		Block body = ast.newBlock();</span>
+<span class="fc" id="L100">		String current = model.getElement().variableName();</span>
+<span class="fc" id="L101">		ITypeBinding currentType = context.elementType();</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		for (Object operation : operations) {</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">			if (operation instanceof StreamTypeConversionOp conversion) {</span>
+<span class="fc" id="L104">				String previous = current;</span>
+<span class="fc" id="L105">				current = LoopVariableNames.fresh(&quot;mapped&quot;, names); //$NON-NLS-1$</span>
+<span class="fc" id="L106">				currentType = ast.resolveWellKnownType(conversion.outputType());</span>
+<span class="fc" id="L107">				body.statements().add(declaration(type(currentType), current, ast.newSimpleName(previous)));</span>
+<span class="fc" id="L108">				continue;</span>
 			}
-<span class="fc bfc" id="L102" title="All 4 branches covered.">			if (!function.requiresInvocation() &amp;&amp; ((LambdaExpression) context.expression(function)).getBody() instanceof Block block) {</span>
-<span class="fc" id="L103">				renameParameter((LambdaExpression) context.expression(function), input);</span>
-<span class="fc bfc" id="L104" title="All 2 branches covered.">				for (Object statement : block.statements()) {</span>
-<span class="fc" id="L105">					body.statements().add(rewrite.createCopyTarget((Statement) statement));</span>
+<span class="fc" id="L110">			FunctionalExpression function = function(operation);</span>
+<span class="fc" id="L111">			String input = current;</span>
+<span class="fc bfc" id="L112" title="All 4 branches covered.">			if (!function.requiresInvocation() &amp;&amp; !context.inputType(function).isEqualTo(currentType)) {</span>
+<span class="fc" id="L113">				input = LoopVariableNames.fresh(&quot;value&quot;, names); //$NON-NLS-1$</span>
+<span class="fc" id="L114">				body.statements().add(declaration(type(context.inputType(function)), input, ast.newSimpleName(current)));</span>
+			}
+<span class="fc bfc" id="L116" title="All 4 branches covered.">			if (!function.requiresInvocation() &amp;&amp; ((LambdaExpression) context.expression(function)).getBody() instanceof Block block) {</span>
+<span class="fc" id="L117">				renameParameter((LambdaExpression) context.expression(function), input);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">				Block scope = operation instanceof PeekOp ? ast.newBlock() : body;</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">				for (Object statement : block.statements()) {</span>
+<span class="fc" id="L120">					scope.statements().add(rewrite.createCopyTarget((Statement) statement));</span>
 				}
-<span class="fc" id="L107">				continue;</span>
-			}
-<span class="fc" id="L109">			Expression expression = invocation(function, input);</span>
-<span class="fc bfc" id="L110" title="All 2 branches covered.">			if (operation instanceof FilterOp) {</span>
-<span class="fc" id="L111">				PrefixExpression negated = ast.newPrefixExpression();</span>
-<span class="fc" id="L112">				negated.setOperator(PrefixExpression.Operator.NOT);</span>
-<span class="fc" id="L113">				ParenthesizedExpression parentheses = ast.newParenthesizedExpression();</span>
-<span class="fc" id="L114">				parentheses.setExpression(expression);</span>
-<span class="fc" id="L115">				negated.setOperand(parentheses);</span>
-<span class="fc" id="L116">				IfStatement guard = ast.newIfStatement();</span>
-<span class="fc" id="L117">				guard.setExpression(negated);</span>
-<span class="fc" id="L118">				Block rejected = ast.newBlock();</span>
-<span class="fc" id="L119">				rejected.statements().add(ast.newContinueStatement());</span>
-<span class="fc" id="L120">				guard.setThenStatement(rejected);</span>
-<span class="fc bfc" id="L121" title="All 2 branches covered.">				if (function.containsPatternVariable()) {</span>
-<span class="fc" id="L122">					Block scope = ast.newBlock();</span>
-<span class="fc" id="L123">					scope.statements().add(guard);</span>
-<span class="fc" id="L124">					body.statements().add(scope);</span>
-<span class="fc" id="L125">				} else {</span>
-<span class="fc" id="L126">					body.statements().add(guard);</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">				if (scope != body) {</span>
+<span class="fc" id="L123">					body.statements().add(scope);</span>
 				}
-<span class="fc bfc" id="L128" title="All 2 branches covered.">			} else if (operation instanceof MapOp) {</span>
-<span class="fc" id="L129">				current = LoopVariableNames.fresh(&quot;mapped&quot;, names); //$NON-NLS-1$</span>
-<span class="fc" id="L130">				currentType = context.outputType(function);</span>
-<span class="fc" id="L131">				body.statements().add(declaration(type(currentType), current, expression));</span>
-<span class="fc" id="L132">			} else {</span>
-<span class="fc" id="L133">				body.statements().add(ast.newExpressionStatement(expression));</span>
+<span class="fc" id="L125">				continue;</span>
+			}
+<span class="fc" id="L127">			Expression expression = invocation(function, input);</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">			if (operation instanceof FilterOp) {</span>
+<span class="fc" id="L129">				PrefixExpression negated = ast.newPrefixExpression();</span>
+<span class="fc" id="L130">				negated.setOperator(PrefixExpression.Operator.NOT);</span>
+<span class="fc" id="L131">				ParenthesizedExpression parentheses = ast.newParenthesizedExpression();</span>
+<span class="fc" id="L132">				parentheses.setExpression(expression);</span>
+<span class="fc" id="L133">				negated.setOperand(parentheses);</span>
+<span class="fc" id="L134">				IfStatement guard = ast.newIfStatement();</span>
+<span class="fc" id="L135">				guard.setExpression(negated);</span>
+<span class="fc" id="L136">				Block rejected = ast.newBlock();</span>
+<span class="fc" id="L137">				rejected.statements().add(ast.newContinueStatement());</span>
+<span class="fc" id="L138">				guard.setThenStatement(rejected);</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">				if (function.containsPatternVariable()) {</span>
+<span class="fc" id="L140">					Block scope = ast.newBlock();</span>
+<span class="fc" id="L141">					scope.statements().add(guard);</span>
+<span class="fc" id="L142">					body.statements().add(scope);</span>
+<span class="fc" id="L143">				} else {</span>
+<span class="fc" id="L144">					body.statements().add(guard);</span>
+				}
+<span class="fc bfc" id="L146" title="All 2 branches covered.">			} else if (operation instanceof MapOp) {</span>
+<span class="fc" id="L147">				current = LoopVariableNames.fresh(&quot;mapped&quot;, names); //$NON-NLS-1$</span>
+<span class="fc" id="L148">				currentType = context.outputType(function);</span>
+<span class="fc" id="L149">				body.statements().add(declaration(type(currentType), current, expression));</span>
+<span class="fc" id="L150">			} else {</span>
+<span class="fc" id="L151">				body.statements().add(ast.newExpressionStatement(expression));</span>
 			}
 		}
-<span class="fc" id="L136">		String elementName = model.getElement().variableName();</span>
-<span class="fc bfc" id="L137" title="All 2 branches covered.">		if (iteratorTarget) {</span>
-<span class="fc" id="L138">			String iteratorName = LoopVariableNames.fresh(&quot;it&quot;, names); //$NON-NLS-1$</span>
-<span class="fc" id="L139">			ParameterizedType iteratorType = ast.newParameterizedType(ast.newSimpleType(ast.newName(imports.addImport(&quot;java.util.Iterator&quot;, importContext)))); //$NON-NLS-1$</span>
-<span class="fc" id="L140">			iteratorType.typeArguments().add(type(context.elementType()));</span>
-<span class="fc" id="L141">			replacement.statements().add(declaration(iteratorType, iteratorName, call(copy(context.source()), &quot;iterator&quot;))); //$NON-NLS-1$</span>
-<span class="fc" id="L142">			body.statements().add(0, declaration(type(context.elementType()), elementName, call(ast.newSimpleName(iteratorName), &quot;next&quot;))); //$NON-NLS-1$</span>
-<span class="fc" id="L143">			WhileStatement loop = ast.newWhileStatement();</span>
-<span class="fc" id="L144">			loop.setExpression(call(ast.newSimpleName(iteratorName), &quot;hasNext&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L145">			loop.setBody(body);</span>
-<span class="fc" id="L146">			replacement.statements().add(loop);</span>
-<span class="fc" id="L147">		} else {</span>
-<span class="fc" id="L148">			EnhancedForStatement loop = ast.newEnhancedForStatement();</span>
-<span class="fc" id="L149">			SingleVariableDeclaration parameter = ast.newSingleVariableDeclaration();</span>
-<span class="fc" id="L150">			parameter.setType(type(context.elementType()));</span>
-<span class="fc" id="L151">			parameter.setName(ast.newSimpleName(elementName));</span>
-<span class="fc" id="L152">			loop.setParameter(parameter);</span>
-<span class="fc" id="L153">			loop.setExpression(copy(context.source()));</span>
-<span class="fc" id="L154">			loop.setBody(body);</span>
-<span class="fc" id="L155">			replacement.statements().add(loop);</span>
-		}
-<span class="fc bfc" id="L157" title="All 2 branches covered.">		if (context.statement().getParent() instanceof Block parent) {</span>
-<span class="fc bfc" id="L158" title="All 2 branches covered.">			for (Object statement : List.copyOf(replacement.statements())) {</span>
-<span class="fc" id="L159">				((Statement) statement).delete();</span>
-<span class="fc" id="L160">				rewrite.getListRewrite(parent, Block.STATEMENTS_PROPERTY).insertBefore((Statement) statement, context.statement(), group);</span>
+<span class="fc" id="L154">		String elementName = model.getElement().variableName();</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		if (iteratorTarget) {</span>
+<span class="fc" id="L156">			String iteratorName = LoopVariableNames.fresh(&quot;it&quot;, names); //$NON-NLS-1$</span>
+			Type iteratorType;
+<span class="fc" id="L158">			String nextMethod = &quot;next&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">			if (context.elementType().isPrimitive()) {</span>
+<span class="pc bpc" id="L160" title="1 of 4 branches missed.">				String suffix = switch (context.elementType().getName()) {</span>
+<span class="fc" id="L161">				case &quot;int&quot; -&gt; &quot;Int&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L162">				case &quot;long&quot; -&gt; &quot;Long&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L163">				case &quot;double&quot; -&gt; &quot;Double&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L164">				default -&gt; throw new IllegalArgumentException(&quot;Unsupported primitive stream element type&quot;); //$NON-NLS-1$</span>
+				};
+<span class="fc" id="L166">				iteratorType = ast.newSimpleType(ast.newName(imports.addImport(&quot;java.util.PrimitiveIterator.Of&quot; + suffix, importContext))); //$NON-NLS-1$</span>
+<span class="fc" id="L167">				nextMethod += suffix;</span>
+<span class="fc" id="L168">			} else {</span>
+<span class="fc" id="L169">				ParameterizedType parameterized = ast.newParameterizedType(ast.newSimpleType(ast.newName(imports.addImport(&quot;java.util.Iterator&quot;, importContext)))); //$NON-NLS-1$</span>
+<span class="fc" id="L170">				parameterized.typeArguments().add(type(context.elementType()));</span>
+<span class="fc" id="L171">				iteratorType = parameterized;</span>
 			}
-<span class="fc" id="L162">			rewrite.remove(context.statement(), group);</span>
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">		} else if (replacement.statements().size() == 1) {</span>
-<span class="nc" id="L164">			Statement loop = (Statement) replacement.statements().remove(0);</span>
-<span class="nc" id="L165">			rewrite.replace(context.statement(), loop, group);</span>
-<span class="nc" id="L166">		} else {</span>
-<span class="fc" id="L167">			rewrite.replace(context.statement(), replacement, group);</span>
+			// Copy only the selected source; unattached copy targets make an invalid edit tree.
+			// The original array factory retains explicit witnesses such as Arrays.&lt;Number&gt;stream(Integer[]).
+<span class="fc bfc" id="L175" title="All 2 branches covered.">			Expression source = copy(model.getSource().type() == SourceType.ARRAY</span>
+<span class="fc" id="L176">					? Objects.requireNonNull(context.streamSource()) : context.source());</span>
+<span class="fc" id="L177">			replacement.statements().add(declaration(iteratorType, iteratorName, call(source, &quot;iterator&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L178">			body.statements().add(0, declaration(type(context.elementType()), elementName, call(ast.newSimpleName(iteratorName), nextMethod)));</span>
+<span class="fc" id="L179">			WhileStatement loop = ast.newWhileStatement();</span>
+<span class="fc" id="L180">			loop.setExpression(call(ast.newSimpleName(iteratorName), &quot;hasNext&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L181">			loop.setBody(body);</span>
+<span class="fc" id="L182">			replacement.statements().add(loop);</span>
+<span class="fc" id="L183">		} else {</span>
+<span class="fc" id="L184">			EnhancedForStatement loop = ast.newEnhancedForStatement();</span>
+<span class="fc" id="L185">			SingleVariableDeclaration parameter = ast.newSingleVariableDeclaration();</span>
+<span class="fc" id="L186">			parameter.setType(type(context.elementType()));</span>
+<span class="fc" id="L187">			parameter.setName(ast.newSimpleName(elementName));</span>
+<span class="fc" id="L188">			loop.setParameter(parameter);</span>
+<span class="fc" id="L189">			loop.setExpression(copy(context.source()));</span>
+<span class="fc" id="L190">			loop.setBody(body);</span>
+<span class="fc" id="L191">			replacement.statements().add(loop);</span>
 		}
-<span class="fc" id="L169">	}</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">		if (context.statement().getParent() instanceof Block parent) {</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">			for (Object statement : List.copyOf(replacement.statements())) {</span>
+<span class="fc" id="L195">				((Statement) statement).delete();</span>
+<span class="fc" id="L196">				rewrite.getListRewrite(parent, Block.STATEMENTS_PROPERTY).insertBefore((Statement) statement, context.statement(), group);</span>
+			}
+<span class="fc" id="L198">			rewrite.remove(context.statement(), group);</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">		} else if (replacement.statements().size() == 1) {</span>
+<span class="nc" id="L200">			Statement loop = (Statement) replacement.statements().remove(0);</span>
+<span class="nc" id="L201">			rewrite.replace(context.statement(), loop, group);</span>
+<span class="nc" id="L202">		} else {</span>
+<span class="fc" id="L203">			rewrite.replace(context.statement(), replacement, group);</span>
+		}
+<span class="fc" id="L205">	}</span>
 
 	private static FunctionalExpression function(Object operation) {
-<span class="pc bpc" id="L172" title="1 of 4 branches missed.">		FunctionalExpression function = switch (operation) {</span>
-<span class="fc" id="L173">			case FilterOp filter -&gt; filter.function();</span>
-<span class="fc" id="L174">			case MapOp map -&gt; map.function();</span>
-<span class="fc" id="L175">			case ForEachTerminal terminal -&gt; terminal.function();</span>
-<span class="nc" id="L176">			default -&gt; throw new IllegalArgumentException(&quot;Unsupported imperative ULR operation: &quot; + operation); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L208" title="1 of 5 branches missed.">		FunctionalExpression function = switch (operation) {</span>
+<span class="fc" id="L209">			case FilterOp filter -&gt; filter.function();</span>
+<span class="fc" id="L210">			case MapOp map -&gt; map.function();</span>
+<span class="fc" id="L211">			case PeekOp peek -&gt; peek.function();</span>
+<span class="fc" id="L212">			case ForEachTerminal terminal -&gt; terminal.function();</span>
+<span class="nc" id="L213">			default -&gt; throw new IllegalArgumentException(&quot;Unsupported imperative ULR operation: &quot; + operation); //$NON-NLS-1$</span>
 		};
-<span class="fc" id="L178">		return Objects.requireNonNull(function, &quot;Imperative pipeline rendering requires functional metadata&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L215">		return Objects.requireNonNull(function, &quot;Imperative pipeline rendering requires functional metadata&quot;); //$NON-NLS-1$</span>
 	}
 
 	private Expression invocation(FunctionalExpression function, String input) {
-<span class="fc bfc" id="L182" title="All 2 branches covered.">		if (function.requiresInvocation()) {</span>
-<span class="fc" id="L183">			String method = context.functionType(function).getFunctionalInterfaceMethod().getName();</span>
-<span class="fc" id="L184">			MethodInvocation call = call(ast.newSimpleName(functionNames.get(function)), method);</span>
-<span class="fc" id="L185">			call.arguments().add(ast.newSimpleName(input));</span>
-<span class="fc" id="L186">			return call;</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">		if (function.requiresInvocation()) {</span>
+<span class="fc" id="L220">			String method = context.functionType(function).getFunctionalInterfaceMethod().getName();</span>
+<span class="fc" id="L221">			MethodInvocation call = call(ast.newSimpleName(functionNames.get(function)), method);</span>
+<span class="fc" id="L222">			call.arguments().add(ast.newSimpleName(input));</span>
+<span class="fc" id="L223">			return call;</span>
 		}
-<span class="fc" id="L188">		LambdaExpression lambda = (LambdaExpression) context.expression(function);</span>
-<span class="fc" id="L189">		renameParameter(lambda, input);</span>
-<span class="fc" id="L190">		return copy((Expression) lambda.getBody());</span>
+<span class="fc" id="L225">		LambdaExpression lambda = (LambdaExpression) context.expression(function);</span>
+<span class="pc bpc" id="L226" title="1 of 4 branches missed.">		if (lambda.getBody() instanceof SimpleName name &amp;&amp; JdtStreamExtractor.parameter(lambda).resolveBinding().isEqualTo(name.resolveBinding())) {</span>
+<span class="fc" id="L227">			return ast.newSimpleName(input);</span>
+		}
+<span class="fc" id="L229">		renameParameter(lambda, input);</span>
+<span class="fc" id="L230">		return copy((Expression) lambda.getBody());</span>
 	}
 
 	private void renameParameter(LambdaExpression lambda, String input) {
-<span class="fc" id="L194">		IVariableBinding binding = JdtStreamExtractor.parameter(lambda).resolveBinding();</span>
-<span class="fc" id="L195">		lambda.getBody().accept(new ASTVisitor() {</span>
+<span class="fc" id="L234">		IVariableBinding binding = JdtStreamExtractor.parameter(lambda).resolveBinding();</span>
+<span class="fc" id="L235">		lambda.getBody().accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(SimpleName name) {
-<span class="fc" id="L198">				IBinding resolved = name.resolveBinding();</span>
-<span class="fc bfc" id="L199" title="All 4 branches covered.">				if (binding.isEqualTo(resolved) &amp;&amp; !name.getIdentifier().equals(input)) {</span>
-<span class="fc" id="L200">					rewrite.replace(name, ast.newSimpleName(input), group);</span>
+<span class="fc" id="L238">				IBinding resolved = name.resolveBinding();</span>
+<span class="fc bfc" id="L239" title="All 4 branches covered.">				if (binding.isEqualTo(resolved) &amp;&amp; !name.getIdentifier().equals(input)) {</span>
+<span class="fc" id="L240">					rewrite.replace(name, ast.newSimpleName(input), group);</span>
 				}
-<span class="fc" id="L202">				return true;</span>
+<span class="fc" id="L242">				return true;</span>
 			}
 		});
-<span class="fc" id="L205">	}</span>
+<span class="fc" id="L245">	}</span>
 
 	private Type type(ITypeBinding binding) {
-<span class="fc" id="L208">		return imports.addImport(binding, ast, importContext);</span>
+<span class="fc" id="L248">		return imports.addImport(binding, ast, importContext);</span>
 	}
 
 	private Expression copy(Expression expression) {
-<span class="fc" id="L212">		return (Expression) rewrite.createCopyTarget(expression);</span>
+<span class="fc" id="L252">		return (Expression) rewrite.createCopyTarget(expression);</span>
 	}
 
 	private MethodInvocation call(Expression receiver, String name) {
-<span class="fc" id="L216">		MethodInvocation call = ast.newMethodInvocation();</span>
-<span class="fc" id="L217">		call.setExpression(receiver);</span>
-<span class="fc" id="L218">		call.setName(ast.newSimpleName(name));</span>
-<span class="fc" id="L219">		return call;</span>
+<span class="fc" id="L256">		MethodInvocation call = ast.newMethodInvocation();</span>
+<span class="fc" id="L257">		call.setExpression(receiver);</span>
+<span class="fc" id="L258">		call.setName(ast.newSimpleName(name));</span>
+<span class="fc" id="L259">		return call;</span>
 	}
 
 	private VariableDeclarationStatement declaration(Type type, String name, Expression initializer) {
-<span class="fc" id="L223">		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L224">		fragment.setName(ast.newSimpleName(name));</span>
-<span class="fc" id="L225">		fragment.setInitializer(initializer);</span>
-<span class="fc" id="L226">		VariableDeclarationStatement declaration = ast.newVariableDeclarationStatement(fragment);</span>
-<span class="fc" id="L227">		declaration.setType(type);</span>
-<span class="fc" id="L228">		return declaration;</span>
+<span class="fc" id="L263">		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L264">		fragment.setName(ast.newSimpleName(name));</span>
+<span class="fc" id="L265">		fragment.setInitializer(initializer);</span>
+<span class="fc" id="L266">		VariableDeclarationStatement declaration = ast.newVariableDeclarationStatement(fragment);</span>
+<span class="fc" id="L267">		declaration.setType(type);</span>
+<span class="fc" id="L268">		return declaration;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

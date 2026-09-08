@@ -71,61 +71,65 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 <span class="pc bpc" id="L71" title="1 of 4 branches missed.">						|| visited.getParameter().resolveBinding() == null || LoopConversionService.hasErrors(visited)) {</span>
 <span class="fc" id="L72">					return false;</span>
 				}
+<span class="pc bpc" id="L74" title="1 of 4 branches missed.">				if (!IteratorLoopBindings.denotableIterator(typeBinding) || !JdtStreamExtractor.denotable(visited.getParameter().resolveBinding().getType())) {</span>
+<span class="fc" id="L75">					return false;</span>
+				}
 				
-<span class="fc" id="L75">				operations.add(fixcore.rewrite(visited, new ReferenceHolder&lt;&gt;()));</span>
-<span class="fc" id="L76">				nodesprocessed.add(visited);</span>
-<span class="fc" id="L77">				return false;</span>
+<span class="fc" id="L78">				operations.add(fixcore.rewrite(visited, new ReferenceHolder&lt;&gt;()));</span>
+<span class="fc" id="L79">				nodesprocessed.add(visited);</span>
+<span class="fc" id="L80">				return false;</span>
 			});
-<span class="fc" id="L79">	}</span>
+<span class="fc" id="L82">	}</span>
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder&lt;ASTNode, Object&gt; data)
 			throws CoreException {
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">		if (!(visited instanceof EnhancedForStatement forStmt)) {</span>
-<span class="nc" id="L86">			return;</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		if (!(visited instanceof EnhancedForStatement forStmt)) {</span>
+<span class="nc" id="L89">			return;</span>
 		}
 		
-<span class="fc" id="L89">		AST ast = cuRewrite.getAST();</span>
-<span class="fc" id="L90">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L92">		AST ast = cuRewrite.getAST();</span>
+<span class="fc" id="L93">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
 		
 		// Build LoopModel from the enhanced for-loop using ULR pipeline
-<span class="fc" id="L93">		LoopModel model = buildLoopModel(forStmt);</span>
+<span class="fc" id="L96">		LoopModel model = buildLoopModel(forStmt);</span>
 		
 		// Render iterator-while loop using ULR-based renderer
-<span class="fc" id="L96">		ASTIteratorWhileRenderer renderer = new ASTIteratorWhileRenderer(ast, rewrite);</span>
-<span class="fc" id="L97">		renderer.renderEnhancedFor(model, forStmt, cuRewrite.getImportRewrite(), group);</span>
-<span class="fc" id="L98">	}</span>
+<span class="fc" id="L99">		ASTIteratorWhileRenderer renderer = new ASTIteratorWhileRenderer(ast, rewrite);</span>
+<span class="fc" id="L100">		renderer.renderEnhancedFor(model, forStmt, cuRewrite.getImportRewrite(), group);</span>
+<span class="fc" id="L101">	}</span>
 
 	/**
 	 * Builds a LoopModel from an enhanced for-loop using the ULR pipeline.
 	 */
 	private LoopModel buildLoopModel(EnhancedForStatement forStmt) {
-<span class="fc" id="L104">		String paramName = forStmt.getParameter().getName().getIdentifier();</span>
-<span class="fc" id="L105">		String paramType = forStmt.getParameter().getType().toString();</span>
-<span class="fc" id="L106">		String collectionExpr = forStmt.getExpression().toString();</span>
+<span class="fc" id="L107">		String paramName = forStmt.getParameter().getName().getIdentifier();</span>
+<span class="fc" id="L108">		String paramType = forStmt.getParameter().resolveBinding().getType().getQualifiedName();</span>
+<span class="fc" id="L109">		String collectionExpr = forStmt.getExpression().toString();</span>
 		
 		// Extract body statements as expression strings
-<span class="fc" id="L109">		List&lt;String&gt; bodyStatements = extractBodyStatements(forStmt.getBody());</span>
+<span class="fc" id="L112">		List&lt;String&gt; bodyStatements = extractBodyStatements(forStmt.getBody());</span>
 		
-<span class="fc" id="L111">		return new LoopModelBuilder()</span>
-<span class="fc" id="L112">			.source(SourceDescriptor.SourceType.ITERABLE, collectionExpr, paramType)</span>
-<span class="fc" id="L113">			.element(paramName, paramType, forStmt.getParameter().resolveBinding().getType().isPrimitive())</span>
-<span class="fc" id="L114">			.terminal(new ForEachTerminal(bodyStatements, false))</span>
-<span class="fc" id="L115">			.build();</span>
+<span class="fc" id="L114">		return new LoopModelBuilder()</span>
+<span class="fc" id="L115">			.source(SourceDescriptor.SourceType.ITERABLE, collectionExpr,</span>
+<span class="fc" id="L116">					IteratorLoopBindings.sourceElementType(forStmt.getExpression().resolveTypeBinding()))</span>
+<span class="fc" id="L117">			.element(paramName, paramType, forStmt.getParameter().resolveBinding().getType().isPrimitive())</span>
+<span class="fc" id="L118">			.terminal(new ForEachTerminal(bodyStatements, false))</span>
+<span class="fc" id="L119">			.build();</span>
 	}
 
 	/**
 	 * Extracts body statements as strings from the loop body.
 	 */
 	private List&lt;String&gt; extractBodyStatements(Statement body) {
-<span class="fc" id="L122">		return ExpressionHelper.bodyStatementsToStrings(body);</span>
+<span class="fc" id="L126">		return ExpressionHelper.bodyStatementsToStrings(body);</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L127" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L128">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L132">			return &quot;&quot;&quot;</span>
 					Iterator&lt;String&gt; it = items.iterator();
 					while (it.hasNext()) {
 						String item = it.next();
@@ -133,7 +137,7 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 					}
 					&quot;&quot;&quot;;
 		}
-<span class="nc" id="L136">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L140">		return &quot;&quot;&quot;</span>
 				for (String item : items) {
 					System.out.println(item);
 				}

@@ -103,7 +103,7 @@ public final class LoopConversionService {
 	private static ASTNode selection(CompilationUnit unit, int offset, int length) {
 <span class="pc bpc" id="L104" title="3 of 6 branches missed.">		if (offset &lt; 0 || length &lt; 0 || (long) offset + length &gt; unit.getLength()) return null;</span>
 <span class="fc" id="L105">		ASTNode selected = NodeFinder.perform(unit, offset, length);</span>
-<span class="pc bpc" id="L106" title="1 of 6 branches missed.">		while (selected != null &amp;&amp; !(selected instanceof EnhancedForStatement || selected instanceof ForStatement</span>
+<span class="fc bfc" id="L106" title="All 6 branches covered.">		while (selected != null &amp;&amp; !(selected instanceof EnhancedForStatement || selected instanceof ForStatement</span>
 <span class="fc bfc" id="L107" title="All 4 branches covered.">				|| selected instanceof WhileStatement || isForEachStatement(selected))) selected = selected.getParent();</span>
 <span class="fc" id="L108">		return selected;</span>
 	}

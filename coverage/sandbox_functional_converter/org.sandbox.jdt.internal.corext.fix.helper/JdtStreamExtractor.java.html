@@ -52,6 +52,8 @@ import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.operation.FilterOp;
 import org.sandbox.functional.core.operation.MapOp;
+import org.sandbox.functional.core.operation.PeekOp;
+import org.sandbox.functional.core.operation.StreamTypeConversionOp;
 import org.sandbox.functional.core.terminal.ForEachTerminal;
 
 /**
@@ -61,6 +63,11 @@ import org.sandbox.functional.core.terminal.ForEachTerminal;
 public final class JdtStreamExtractor {
 	private static final String STREAM = &quot;java.util.stream.Stream&quot;; //$NON-NLS-1$
 	private static final String ITERABLE = &quot;java.lang.Iterable&quot;; //$NON-NLS-1$
+<span class="fc" id="L66">	private static final Set&lt;String&gt; STREAM_TYPES = Set.of(STREAM, &quot;java.util.stream.IntStream&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L67">			&quot;java.util.stream.LongStream&quot;, &quot;java.util.stream.DoubleStream&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L68">	private static final Set&lt;String&gt; FUNCTION_OPERATIONS = Set.of(&quot;filter&quot;, &quot;peek&quot;, &quot;map&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L69">			&quot;mapToInt&quot;, &quot;mapToLong&quot;, &quot;mapToDouble&quot;, &quot;mapToObj&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L70">	private static final Set&lt;String&gt; TYPE_OPERATIONS = Set.of(&quot;boxed&quot;, &quot;asLongStream&quot;, &quot;asDoubleStream&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 
 	public record ExtractedStream(LoopModel model, JdtStreamContext context) {
 	}
@@ -69,251 +76,299 @@ public final class JdtStreamExtractor {
 	}
 
 	public static ExtractedStream extract(MethodInvocation terminal) {
-<span class="fc" id="L72">		String terminalName = terminal.getName().getIdentifier();</span>
-<span class="fc bfc" id="L73" title="All 2 branches covered.">		if (!(terminal.getParent() instanceof ExpressionStatement statement)</span>
-<span class="fc bfc" id="L74" title="All 4 branches covered.">				|| !(&quot;forEach&quot;.equals(terminalName) || &quot;forEachOrdered&quot;.equals(terminalName))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L75">			return null;</span>
+<span class="fc" id="L79">		String terminalName = terminal.getName().getIdentifier();</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		if (!(terminal.getParent() instanceof ExpressionStatement statement)</span>
+<span class="fc bfc" id="L81" title="All 4 branches covered.">				|| !(&quot;forEach&quot;.equals(terminalName) || &quot;forEachOrdered&quot;.equals(terminalName))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L82">			return null;</span>
 		}
-<span class="fc" id="L77">		CompilationUnit unit = (CompilationUnit) statement.getRoot();</span>
-<span class="fc bfc" id="L78" title="All 2 branches covered.">		for (var problem : unit.getProblems()) {</span>
-<span class="pc bpc" id="L79" title="3 of 4 branches missed.">			if (problem.isError() &amp;&amp; problem.getSourceStart() &lt;= statement.getStartPosition() + statement.getLength()</span>
-<span class="nc bnc" id="L80" title="All 2 branches missed.">					&amp;&amp; problem.getSourceEnd() &gt;= statement.getStartPosition()) {</span>
-<span class="nc" id="L81">				return null;</span>
+<span class="fc" id="L84">		CompilationUnit unit = (CompilationUnit) statement.getRoot();</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		for (var problem : unit.getProblems()) {</span>
+<span class="pc bpc" id="L86" title="3 of 4 branches missed.">			if (problem.isError() &amp;&amp; problem.getSourceStart() &lt;= statement.getStartPosition() + statement.getLength()</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">					&amp;&amp; problem.getSourceEnd() &gt;= statement.getStartPosition()) {</span>
+<span class="nc" id="L88">				return null;</span>
 			}
 		}
-<span class="fc" id="L84">		List&lt;MethodInvocation&gt; calls = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L85">		calls.add(terminal);</span>
-<span class="fc" id="L86">		Expression source = terminal.getExpression();</span>
+<span class="fc" id="L91">		List&lt;MethodInvocation&gt; calls = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L92">		calls.add(terminal);</span>
+<span class="fc" id="L93">		Expression source = terminal.getExpression();</span>
 		ITypeBinding elementType;
-<span class="fc bfc" id="L88" title="All 2 branches covered.">		if (declaredBy(terminal, STREAM)) {</span>
-<span class="pc bpc" id="L89" title="1 of 4 branches missed.">			while (source instanceof MethodInvocation call &amp;&amp; declaredBy(call, STREAM)</span>
-<span class="fc bfc" id="L90" title="All 2 branches covered.">					&amp;&amp; Set.of(&quot;filter&quot;, &quot;map&quot;).contains(call.getName().getIdentifier())) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L91">				calls.add(call);</span>
-<span class="fc" id="L92">				source = call.getExpression();</span>
+		SourceDescriptor.SourceType sourceKind;
+<span class="fc" id="L96">		String streamExpression = null;</span>
+<span class="fc" id="L97">		Expression streamSource = null;</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">		if (standardStreamMethod(terminal)) {</span>
+<span class="pc bpc" id="L99" title="1 of 4 branches missed.">			while (source instanceof MethodInvocation call &amp;&amp; standardStreamMethod(call)</span>
+<span class="fc bfc" id="L100" title="All 4 branches covered.">					&amp;&amp; (FUNCTION_OPERATIONS.contains(call.getName().getIdentifier()) || TYPE_OPERATIONS.contains(call.getName().getIdentifier()))) {</span>
+<span class="fc" id="L101">				calls.add(call);</span>
+<span class="fc" id="L102">				source = call.getExpression();</span>
 			}
-<span class="pc bpc" id="L94" title="1 of 4 branches missed.">			if (!(source instanceof MethodInvocation stream) || !declaredBy(stream, &quot;java.util.Collection&quot;) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L95" title="1 of 4 branches missed.">					|| !&quot;stream&quot;.equals(stream.getName().getIdentifier()) || !stream.arguments().isEmpty()) { //$NON-NLS-1$</span>
-<span class="fc" id="L96">				return null;</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">			if (!(source instanceof MethodInvocation stream)) {</span>
+<span class="nc" id="L105">				return null;</span>
 			}
-<span class="fc" id="L98">			elementType = elementType(stream.resolveTypeBinding(), STREAM);</span>
-<span class="fc" id="L99">			source = stream.getExpression();</span>
-<span class="pc bpc" id="L100" title="1 of 4 branches missed.">		} else if (&quot;forEach&quot;.equals(terminalName) &amp;&amp; standardForEach(terminal)) { //$NON-NLS-1$</span>
-<span class="pc bpc" id="L101" title="1 of 2 branches missed.">			elementType = source == null ? null : elementType(source.resolveTypeBinding(), ITERABLE);</span>
-<span class="fc" id="L102">		} else {</span>
-<span class="fc" id="L103">			return null;</span>
+<span class="fc" id="L107">			elementType = streamElementType(stream);</span>
+<span class="fc" id="L108">			streamSource = stream;</span>
+<span class="fc bfc" id="L109" title="All 4 branches covered.">			if (declaredBy(stream, &quot;java.util.Collection&quot;) &amp;&amp; &quot;stream&quot;.equals(stream.getName().getIdentifier()) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">					&amp;&amp; stream.arguments().isEmpty()) {</span>
+<span class="fc" id="L111">				sourceKind = SourceDescriptor.SourceType.COLLECTION;</span>
+<span class="fc" id="L112">				source = stream.getExpression();</span>
+<span class="pc bpc" id="L113" title="1 of 4 branches missed.">			} else if (declaredBy(stream, &quot;java.util.Arrays&quot;) &amp;&amp; &quot;stream&quot;.equals(stream.getName().getIdentifier())) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">				if (stream.arguments().size() == 1) {</span>
+<span class="fc" id="L115">					streamExpression = sourceText(stream);</span>
+<span class="fc" id="L116">					sourceKind = SourceDescriptor.SourceType.ARRAY;</span>
+<span class="fc" id="L117">					source = (Expression) stream.arguments().get(0);</span>
+<span class="fc" id="L118">				} else {</span>
+					// Retain JDK slice validation and evaluation of array/from/to exactly once.
+<span class="fc" id="L120">					sourceKind = SourceDescriptor.SourceType.STREAM;</span>
+				}
+<span class="fc bfc" id="L122" title="All 4 branches covered.">			} else if (standardStreamMethod(stream) &amp;&amp; org.eclipse.jdt.core.dom.Modifier.isStatic(stream.resolveMethodBinding().getModifiers())</span>
+<span class="fc" id="L123">					&amp;&amp; Set.of(&quot;of&quot;, &quot;empty&quot;, &quot;ofNullable&quot;, &quot;range&quot;, &quot;rangeClosed&quot;, &quot;iterate&quot;, &quot;generate&quot;) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">							.contains(stream.getName().getIdentifier())) {</span>
+<span class="fc" id="L125">				sourceKind = SourceDescriptor.SourceType.STREAM;</span>
+<span class="fc" id="L126">			} else {</span>
+<span class="fc" id="L127">				return null;</span>
+			}
+<span class="pc bpc" id="L129" title="1 of 4 branches missed.">		} else if (&quot;forEach&quot;.equals(terminalName) &amp;&amp; standardForEach(terminal)) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">			elementType = source == null ? null : elementType(source.resolveTypeBinding(), ITERABLE);</span>
+<span class="pc bpc" id="L131" title="2 of 4 branches missed.">			sourceKind = elementType(source == null ? null : source.resolveTypeBinding(), &quot;java.util.Collection&quot;) != null //$NON-NLS-1$</span>
+<span class="pc" id="L132">					? SourceDescriptor.SourceType.COLLECTION : SourceDescriptor.SourceType.ITERABLE;</span>
+<span class="fc" id="L133">		} else {</span>
+<span class="fc" id="L134">			return null;</span>
 		}
-<span class="pc bpc" id="L105" title="2 of 4 branches missed.">		if (source == null || !denotable(elementType)) {</span>
-<span class="nc" id="L106">			return null;</span>
+<span class="pc bpc" id="L136" title="2 of 4 branches missed.">		if (source == null || !denotable(elementType)) {</span>
+<span class="nc" id="L137">			return null;</span>
 		}
-<span class="fc" id="L108">		Collections.reverse(calls);</span>
-<span class="fc" id="L109">		LoopModelBuilder builder = new LoopModelBuilder()</span>
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">				.source(elementType(source.resolveTypeBinding(), &quot;java.util.Collection&quot;) != null //$NON-NLS-1$</span>
-<span class="pc" id="L111">						? SourceDescriptor.SourceType.COLLECTION : SourceDescriptor.SourceType.ITERABLE,</span>
-<span class="fc" id="L112">						sourceText(source), elementType.getQualifiedName())</span>
-<span class="fc" id="L113">				.metadata(false, false, false, false, true);</span>
-<span class="fc" id="L114">		Map&lt;FunctionalExpression, Expression&gt; functions = new IdentityHashMap&lt;&gt;();</span>
-<span class="fc" id="L115">		FunctionalExpression firstFunction = null;</span>
-<span class="fc bfc" id="L116" title="All 2 branches covered.">		for (MethodInvocation call : calls) {</span>
-<span class="pc bpc" id="L117" title="2 of 4 branches missed.">			if (call.arguments().size() != 1 || !(call.arguments().get(0) instanceof Expression function)</span>
-<span class="fc bfc" id="L118" title="All 2 branches covered.">					|| !safeToMove(function)) {</span>
-<span class="fc" id="L119">				return null;</span>
+<span class="fc" id="L139">		Collections.reverse(calls);</span>
+<span class="fc" id="L140">		LoopModelBuilder builder = new LoopModelBuilder()</span>
+<span class="fc" id="L141">				.source(new SourceDescriptor(sourceKind, sourceText(source), elementType.getQualifiedName(), streamExpression))</span>
+<span class="fc" id="L142">				.metadata(false, false, false, false, true);</span>
+<span class="fc" id="L143">		Map&lt;FunctionalExpression, Expression&gt; functions = new IdentityHashMap&lt;&gt;();</span>
+<span class="fc" id="L144">		FunctionalExpression firstFunction = null;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">		for (MethodInvocation call : calls) {</span>
+<span class="fc" id="L146">			String operation = call.getName().getIdentifier();</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">			if (TYPE_OPERATIONS.contains(operation)) {</span>
+<span class="fc" id="L148">				ITypeBinding input = streamElementType(call.getExpression());</span>
+<span class="pc bpc" id="L149" title="2 of 4 branches missed.">				if (!call.arguments().isEmpty() || input == null) return null;</span>
+<span class="fc" id="L150">				builder.operation(new StreamTypeConversionOp(StreamTypeConversionOp.Kind.fromMethod(operation), input.getQualifiedName()));</span>
+<span class="fc" id="L151">				continue;</span>
 			}
-<span class="fc" id="L121">			ITypeBinding type = function.resolveTypeBinding();</span>
-<span class="pc bpc" id="L122" title="1 of 2 branches missed.">			IMethodBinding method = type == null ? null : type.getFunctionalInterfaceMethod();</span>
-<span class="pc bpc" id="L123" title="4 of 8 branches missed.">			if (!denotable(type) || method == null || method.isRecovered() || method.getParameterTypes().length != 1</span>
-<span class="pc bpc" id="L124" title="2 of 4 branches missed.">					|| !denotable(method.getParameterTypes()[0]) || !denotable(method.getReturnType())) {</span>
-<span class="nc" id="L125">				return null;</span>
+<span class="pc bpc" id="L153" title="2 of 4 branches missed.">			if (call.arguments().size() != 1 || !(call.arguments().get(0) instanceof Expression function)</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">					|| !safeToMove(function)) {</span>
+<span class="fc" id="L155">				return null;</span>
 			}
-<span class="fc" id="L127">			String operation = call.getName().getIdentifier();</span>
-<span class="fc" id="L128">			FunctionalExpression descriptor = new FunctionalExpression(sourceText(function),</span>
-<span class="fc bfc" id="L129" title="All 2 branches covered.">					function instanceof LambdaExpression lambda ? parameter(lambda).getName().getIdentifier() : null,</span>
-<span class="fc" id="L130">					method.getParameterTypes()[0].getQualifiedName(), method.getReturnType().getQualifiedName(),</span>
-<span class="fc bfc" id="L131" title="All 2 branches covered.">					type.getQualifiedName(), !inlineable(function, operation), hasPatternVariable(function));</span>
-<span class="fc" id="L132">			functions.put(descriptor, function);</span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">			if (firstFunction == null) {</span>
-<span class="fc" id="L134">				firstFunction = descriptor;</span>
+<span class="fc" id="L157">			ITypeBinding type = function.resolveTypeBinding();</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">			IMethodBinding method = type == null ? null : type.getFunctionalInterfaceMethod();</span>
+<span class="pc bpc" id="L159" title="4 of 8 branches missed.">			if (!denotable(type) || method == null || method.isRecovered() || method.getParameterTypes().length != 1</span>
+<span class="pc bpc" id="L160" title="2 of 4 branches missed.">					|| !denotable(method.getParameterTypes()[0]) || !denotable(method.getReturnType())) {</span>
+<span class="nc" id="L161">				return null;</span>
 			}
-<span class="fc bfc" id="L136" title="All 2 branches covered.">			String expression = function instanceof LambdaExpression lambda ? lambda.getBody().toString() : function.toString();</span>
-<span class="fc bfc" id="L137" title="All 3 branches covered.">			switch (operation) {</span>
+<span class="fc" id="L163">			FunctionalExpression descriptor = new FunctionalExpression(sourceText(function),</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">					function instanceof LambdaExpression lambda ? parameter(lambda).getName().getIdentifier() : null,</span>
+<span class="fc" id="L165">					method.getParameterTypes()[0].getQualifiedName(), method.getReturnType().getQualifiedName(),</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">					type.getQualifiedName(), !inlineable(function, operation), hasPatternVariable(function));</span>
+<span class="fc" id="L167">			functions.put(descriptor, function);</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">			if (firstFunction == null) {</span>
+<span class="fc" id="L169">				firstFunction = descriptor;</span>
+			}
+<span class="fc bfc" id="L171" title="All 2 branches covered.">			String expression = function instanceof LambdaExpression lambda ? lambda.getBody().toString() : function.toString();</span>
+<span class="fc bfc" id="L172" title="All 4 branches covered.">			switch (operation) {</span>
 			case &quot;filter&quot;: //$NON-NLS-1$
-<span class="fc" id="L139">				builder.operation(new FilterOp(expression, descriptor));</span>
-<span class="fc" id="L140">				break;</span>
-			case &quot;map&quot;: //$NON-NLS-1$
-<span class="fc" id="L142">				builder.operation(new MapOp(expression, descriptor.outputType(), null, false, descriptor));</span>
-<span class="fc" id="L143">				break;</span>
+<span class="fc" id="L174">				builder.operation(new FilterOp(expression, descriptor));</span>
+<span class="fc" id="L175">				break;</span>
+			case &quot;map&quot;, &quot;mapToInt&quot;, &quot;mapToLong&quot;, &quot;mapToDouble&quot;, &quot;mapToObj&quot;: //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+<span class="fc" id="L177">				builder.operation(new MapOp(expression, descriptor.outputType(), null, false, descriptor, MapOp.Kind.fromMethod(operation)));</span>
+<span class="fc" id="L178">				break;</span>
+			case &quot;peek&quot;: //$NON-NLS-1$
+<span class="fc" id="L180">				builder.operation(new PeekOp(expression, descriptor));</span>
+<span class="fc" id="L181">				break;</span>
 			default:
-<span class="fc" id="L145">				builder.terminal(new ForEachTerminal(List.of(expression), &quot;forEachOrdered&quot;.equals(operation), descriptor)); //$NON-NLS-1$</span>
+<span class="fc" id="L183">				builder.terminal(new ForEachTerminal(List.of(expression), &quot;forEachOrdered&quot;.equals(operation), descriptor)); //$NON-NLS-1$</span>
 			}
 		}
 		// Keep comments between calls at their original location.
-<span class="fc bfc" id="L149" title="All 2 branches covered.">		for (Object entry : unit.getCommentList()) {</span>
-<span class="fc" id="L150">			Comment comment = (Comment) entry;</span>
-<span class="pc bpc" id="L151" title="1 of 4 branches missed.">			if (contains(statement, comment) &amp;&amp; !contains(source, comment)</span>
-<span class="fc bfc" id="L152" title="All 2 branches covered.">					&amp;&amp; functions.values().stream().noneMatch(function -&gt; contains(function, comment))) {</span>
-<span class="fc" id="L153">				return null;</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">		for (Object entry : unit.getCommentList()) {</span>
+<span class="fc" id="L188">			Comment comment = (Comment) entry;</span>
+<span class="pc bpc" id="L189" title="1 of 4 branches missed.">			if (contains(statement, comment) &amp;&amp; !contains(source, comment)</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">					&amp;&amp; functions.values().stream().noneMatch(function -&gt; contains(function, comment))) {</span>
+<span class="fc" id="L191">				return null;</span>
 			}
 		}
-<span class="fc" id="L156">		Set&lt;String&gt; names = LoopVariableNames.usedNames(unit);</span>
-<span class="pc bpc" id="L157" title="1 of 6 branches missed.">		String elementName = calls.size() == 1 &amp;&amp; firstFunction != null &amp;&amp; !firstFunction.requiresInvocation()</span>
-<span class="fc" id="L158">				? firstFunction.parameterName() : fresh(&quot;element&quot;, names); //$NON-NLS-1$</span>
-<span class="fc" id="L159">		LoopModel model = builder.element(elementName, elementType.getQualifiedName(), false).build();</span>
-<span class="fc" id="L160">		return new ExtractedStream(model, new JdtStreamContext(statement, source, elementType, functions));</span>
+<span class="fc" id="L194">		Set&lt;String&gt; names = LoopVariableNames.usedNames(unit);</span>
+<span class="pc bpc" id="L195" title="1 of 6 branches missed.">		String elementName = calls.size() == 1 &amp;&amp; firstFunction != null &amp;&amp; !firstFunction.requiresInvocation()</span>
+<span class="fc" id="L196">				? firstFunction.parameterName() : fresh(&quot;element&quot;, names); //$NON-NLS-1$</span>
+<span class="fc" id="L197">		LoopModel model = builder.element(elementName, elementType.getQualifiedName(), elementType.isPrimitive()).build();</span>
+<span class="fc" id="L198">		return new ExtractedStream(model, new JdtStreamContext(statement, source, elementType, functions, streamSource));</span>
 	}
 
 	private static boolean contains(ASTNode outer, ASTNode inner) {
-<span class="fc bfc" id="L164" title="All 4 branches covered.">		return inner.getStartPosition() &gt;= outer.getStartPosition()</span>
-<span class="fc" id="L165">				&amp;&amp; inner.getStartPosition() + inner.getLength() &lt;= outer.getStartPosition() + outer.getLength();</span>
+<span class="fc bfc" id="L202" title="All 4 branches covered.">		return inner.getStartPosition() &gt;= outer.getStartPosition()</span>
+<span class="fc" id="L203">				&amp;&amp; inner.getStartPosition() + inner.getLength() &lt;= outer.getStartPosition() + outer.getLength();</span>
 	}
 
 	private static String sourceText(Expression expression) {
-<span class="fc" id="L169">		CompilationUnit unit = (CompilationUnit) expression.getRoot();</span>
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">		if (unit.getTypeRoot() != null) {</span>
+<span class="fc" id="L207">		CompilationUnit unit = (CompilationUnit) expression.getRoot();</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">		if (unit.getTypeRoot() != null) {</span>
 			try {
-<span class="fc" id="L172">				var buffer = unit.getTypeRoot().getBuffer();</span>
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">				if (buffer != null) {</span>
-<span class="fc" id="L174">					return buffer.getText(expression.getStartPosition(), expression.getLength());</span>
+<span class="fc" id="L210">				var buffer = unit.getTypeRoot().getBuffer();</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">				if (buffer != null) {</span>
+<span class="fc" id="L212">					return buffer.getText(expression.getStartPosition(), expression.getLength());</span>
 				}
-<span class="nc" id="L176">			} catch (JavaModelException unavailable) {</span>
+<span class="nc" id="L214">			} catch (JavaModelException unavailable) {</span>
 				// The JDT renderer still uses the original AST; text is a portable fallback.
 			}
 		}
-<span class="nc" id="L180">		return expression.toString();</span>
+<span class="nc" id="L218">		return expression.toString();</span>
 	}
 
 	private static boolean declaredBy(MethodInvocation call, String owner) {
-<span class="fc" id="L184">		IMethodBinding method = call.resolveMethodBinding();</span>
-<span class="pc bpc" id="L185" title="3 of 6 branches missed.">		return method != null &amp;&amp; !method.isRecovered() &amp;&amp; method.getDeclaringClass() != null</span>
-<span class="fc bfc" id="L186" title="All 2 branches covered.">				&amp;&amp; owner.equals(method.getDeclaringClass().getErasure().getQualifiedName());</span>
+<span class="fc" id="L222">		IMethodBinding method = call.resolveMethodBinding();</span>
+<span class="pc bpc" id="L223" title="3 of 6 branches missed.">		return method != null &amp;&amp; !method.isRecovered() &amp;&amp; method.getDeclaringClass() != null</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">				&amp;&amp; owner.equals(method.getDeclaringClass().getErasure().getQualifiedName());</span>
+	}
+
+	private static boolean standardStreamMethod(MethodInvocation call) {
+<span class="fc" id="L228">		IMethodBinding method = call.resolveMethodBinding();</span>
+<span class="pc bpc" id="L229" title="3 of 6 branches missed.">		return method != null &amp;&amp; !method.isRecovered() &amp;&amp; method.getDeclaringClass() != null</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">				&amp;&amp; STREAM_TYPES.contains(method.getDeclaringClass().getErasure().getQualifiedName());</span>
+	}
+
+	private static ITypeBinding streamElementType(Expression source) {
+<span class="fc" id="L234">		ITypeBinding type = source.resolveTypeBinding();</span>
+<span class="pc bpc" id="L235" title="2 of 4 branches missed.">		if (type == null || type.isRecovered()) return null;</span>
+<span class="fc bfc" id="L236" title="All 4 branches covered.">		return switch (type.getErasure().getQualifiedName()) {</span>
+<span class="fc" id="L237">		case &quot;java.util.stream.IntStream&quot; -&gt; source.getAST().resolveWellKnownType(&quot;int&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L238">		case &quot;java.util.stream.LongStream&quot; -&gt; source.getAST().resolveWellKnownType(&quot;long&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L239">		case &quot;java.util.stream.DoubleStream&quot; -&gt; source.getAST().resolveWellKnownType(&quot;double&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L240">		default -&gt; elementType(type, STREAM);</span>
+		};
 	}
 
 	private static boolean standardForEach(MethodInvocation call) {
-<span class="fc" id="L190">		IMethodBinding method = call.resolveMethodBinding();</span>
-<span class="pc bpc" id="L191" title="3 of 6 branches missed.">		return method != null &amp;&amp; !method.isRecovered() &amp;&amp; method.getDeclaringClass() != null</span>
-<span class="fc bfc" id="L192" title="All 4 branches covered.">				&amp;&amp; (declaredBy(call, ITERABLE) || method.getDeclaringClass().getQualifiedName().startsWith(&quot;java.util.&quot;)) //$NON-NLS-1$</span>
-<span class="pc bpc" id="L193" title="1 of 2 branches missed.">				&amp;&amp; method.getParameterTypes().length == 1</span>
-<span class="fc bfc" id="L194" title="All 2 branches covered.">				&amp;&amp; &quot;java.util.function.Consumer&quot;.equals(method.getParameterTypes()[0].getErasure().getQualifiedName()); //$NON-NLS-1$</span>
+<span class="fc" id="L245">		IMethodBinding method = call.resolveMethodBinding();</span>
+<span class="pc bpc" id="L246" title="3 of 6 branches missed.">		return method != null &amp;&amp; !method.isRecovered() &amp;&amp; method.getDeclaringClass() != null</span>
+<span class="pc bpc" id="L247" title="1 of 4 branches missed.">				&amp;&amp; (declaredBy(call, ITERABLE) || method.getDeclaringClass().getQualifiedName().startsWith(&quot;java.util.&quot;)) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">				&amp;&amp; method.getParameterTypes().length == 1</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">				&amp;&amp; &quot;java.util.function.Consumer&quot;.equals(method.getParameterTypes()[0].getErasure().getQualifiedName()); //$NON-NLS-1$</span>
 	}
 
 	private static ITypeBinding elementType(ITypeBinding type, String owner) {
-<span class="pc bpc" id="L198" title="2 of 4 branches missed.">		if (type == null || type.isRecovered()) {</span>
-<span class="nc" id="L199">			return null;</span>
+<span class="pc bpc" id="L253" title="2 of 4 branches missed.">		if (type == null || type.isRecovered()) {</span>
+<span class="nc" id="L254">			return null;</span>
 		}
-<span class="fc bfc" id="L201" title="All 2 branches covered.">		if (owner.equals(type.getErasure().getQualifiedName())) {</span>
-<span class="pc bpc" id="L202" title="1 of 2 branches missed.">			return type.getTypeArguments().length == 1 ? type.getTypeArguments()[0] : null;</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">		if (owner.equals(type.getErasure().getQualifiedName())) {</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">			return type.getTypeArguments().length == 1 ? type.getTypeArguments()[0] : null;</span>
 		}
-<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		for (ITypeBinding iface : type.getInterfaces()) {</span>
-<span class="fc" id="L205">			ITypeBinding element = elementType(iface, owner);</span>
-<span class="pc bpc" id="L206" title="1 of 2 branches missed.">			if (element != null) {</span>
-<span class="fc" id="L207">				return element;</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">		for (ITypeBinding iface : type.getInterfaces()) {</span>
+<span class="fc" id="L260">			ITypeBinding element = elementType(iface, owner);</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">			if (element != null) {</span>
+<span class="fc" id="L262">				return element;</span>
 			}
 		}
-<span class="nc" id="L210">		return elementType(type.getSuperclass(), owner);</span>
+<span class="nc" id="L265">		return elementType(type.getSuperclass(), owner);</span>
 	}
 
-	private static boolean denotable(ITypeBinding type) {
-<span class="pc bpc" id="L214" title="4 of 8 branches missed.">		if (type == null || type.isRecovered() || type.isCapture() || type.isWildcardType()</span>
-<span class="pc bpc" id="L215" title="3 of 6 branches missed.">				|| type.isAnonymous() || type.isIntersectionType() || type.isNullType()) {</span>
-<span class="nc" id="L216">			return false;</span>
+	static boolean denotable(ITypeBinding type) {
+<span class="pc bpc" id="L269" title="4 of 8 branches missed.">		if (type == null || type.isRecovered() || type.isCapture() || type.isWildcardType()</span>
+<span class="pc bpc" id="L270" title="2 of 6 branches missed.">				|| type.isAnonymous() || type.isIntersectionType() || type.isNullType()) {</span>
+<span class="fc" id="L271">			return false;</span>
 		}
-<span class="pc bpc" id="L218" title="1 of 2 branches missed.">		if (type.isArray()) {</span>
-<span class="nc" id="L219">			return denotable(type.getElementType());</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">		if (type.isArray()) {</span>
+<span class="fc" id="L274">			return denotable(type.getElementType());</span>
 		}
-<span class="fc bfc" id="L221" title="All 2 branches covered.">		for (ITypeBinding argument : type.getTypeArguments()) {</span>
-<span class="pc bpc" id="L222" title="2 of 6 branches missed.">			if (!(argument.isWildcardType() ? argument.getBound() == null || denotable(argument.getBound())</span>
-<span class="pc bpc" id="L223" title="1 of 2 branches missed.">					: denotable(argument))) {</span>
-<span class="nc" id="L224">				return false;</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">		for (ITypeBinding argument : type.getTypeArguments()) {</span>
+<span class="pc bpc" id="L277" title="2 of 6 branches missed.">			if (!(argument.isWildcardType() ? argument.getBound() == null || denotable(argument.getBound())</span>
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">					: denotable(argument))) {</span>
+<span class="nc" id="L279">				return false;</span>
 			}
 		}
-<span class="fc" id="L227">		return true;</span>
+<span class="fc" id="L282">		return true;</span>
 	}
 
 	private static boolean safeToMove(Expression function) {
-<span class="pc bpc" id="L231" title="1 of 4 branches missed.">		if (function instanceof LambdaExpression || function instanceof TypeMethodReference</span>
-<span class="fc bfc" id="L232" title="All 2 branches covered.">				|| function instanceof CreationReference) {</span>
-<span class="fc" id="L233">			return true;</span>
+<span class="pc bpc" id="L286" title="1 of 4 branches missed.">		if (function instanceof LambdaExpression || function instanceof TypeMethodReference</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">				|| function instanceof CreationReference) {</span>
+<span class="fc" id="L288">			return true;</span>
 		}
-<span class="fc bfc" id="L235" title="All 2 branches covered.">		if (function instanceof ExpressionMethodReference reference) {</span>
-<span class="fc" id="L236">			Expression receiver = reference.getExpression();</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">		if (function instanceof ExpressionMethodReference reference) {</span>
+<span class="fc" id="L291">			Expression receiver = reference.getExpression();</span>
 			// Arbitrary bound receivers have eager evaluation/null-check semantics.
-<span class="fc bfc" id="L238" title="All 2 branches covered.">			return receiver instanceof ThisExpression</span>
-<span class="pc bpc" id="L239" title="1 of 4 branches missed.">					|| receiver instanceof Name name &amp;&amp; name.resolveBinding() instanceof ITypeBinding;</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">			return receiver instanceof ThisExpression</span>
+<span class="pc bpc" id="L294" title="1 of 4 branches missed.">					|| receiver instanceof Name name &amp;&amp; name.resolveBinding() instanceof ITypeBinding;</span>
 		}
-<span class="fc" id="L241">		return false;</span>
+<span class="fc" id="L296">		return false;</span>
 	}
 
 	static VariableDeclaration parameter(LambdaExpression lambda) {
-<span class="fc" id="L245">		return (VariableDeclaration) lambda.parameters().get(0);</span>
+<span class="fc" id="L300">		return (VariableDeclaration) lambda.parameters().get(0);</span>
 	}
 
 	private static boolean inlineable(Expression function, String operation) {
-<span class="pc bpc" id="L249" title="1 of 4 branches missed.">		if (!(function instanceof LambdaExpression lambda) || lambda.parameters().size() != 1</span>
-<span class="pc bpc" id="L250" title="1 of 2 branches missed.">				|| parameter(lambda).resolveBinding() == null) {</span>
-<span class="fc" id="L251">			return false;</span>
+<span class="pc bpc" id="L304" title="1 of 4 branches missed.">		if (!(function instanceof LambdaExpression lambda) || lambda.parameters().size() != 1</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">				|| parameter(lambda).resolveBinding() == null) {</span>
+<span class="fc" id="L306">			return false;</span>
 		}
-<span class="fc" id="L253">		CompilationUnit unit = (CompilationUnit) lambda.getRoot();</span>
-<span class="fc bfc" id="L254" title="All 2 branches covered.">		for (Object entry : unit.getCommentList()) {</span>
-<span class="fc" id="L255">			Comment comment = (Comment) entry;</span>
-<span class="pc bpc" id="L256" title="1 of 4 branches missed.">			if (contains(lambda, comment) &amp;&amp; (!contains(lambda.getBody(), comment)</span>
-<span class="pc bpc" id="L257" title="1 of 4 branches missed.">					|| lambda.getBody() instanceof Block block &amp;&amp; block.statements().isEmpty())) {</span>
-<span class="fc" id="L258">				return false;</span>
+<span class="fc" id="L308">		CompilationUnit unit = (CompilationUnit) lambda.getRoot();</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">		for (Object entry : unit.getCommentList()) {</span>
+<span class="fc" id="L310">			Comment comment = (Comment) entry;</span>
+<span class="pc bpc" id="L311" title="1 of 4 branches missed.">			if (contains(lambda, comment) &amp;&amp; (!contains(lambda.getBody(), comment)</span>
+<span class="pc bpc" id="L312" title="1 of 4 branches missed.">					|| lambda.getBody() instanceof Block block &amp;&amp; block.statements().isEmpty())) {</span>
+<span class="fc" id="L313">				return false;</span>
 			}
 		}
 		// Intermediate blocks and terminal blocks with local returns retain their
 		// functional boundary. Ordinary terminal blocks can be copied verbatim.
-<span class="fc bfc" id="L263" title="All 4 branches covered.">		if (lambda.getBody() instanceof Block &amp;&amp; (&quot;filter&quot;.equals(operation) //$NON-NLS-1$</span>
-<span class="fc bfc" id="L264" title="All 4 branches covered.">				|| &quot;map&quot;.equals(operation) || hasReturn(lambda.getBody()))) { //$NON-NLS-1$</span>
-<span class="fc" id="L265">			return false;</span>
+<span class="fc bfc" id="L318" title="All 4 branches covered.">		if (lambda.getBody() instanceof Block &amp;&amp; (&quot;filter&quot;.equals(operation) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L319" title="All 4 branches covered.">				|| operation.startsWith(&quot;map&quot;) || hasReturn(lambda.getBody()))) { //$NON-NLS-1$</span>
+<span class="fc" id="L320">			return false;</span>
 		}
-<span class="fc" id="L267">		IVariableBinding binding = parameter(lambda).resolveBinding();</span>
-<span class="fc" id="L268">		boolean[] written = { false };</span>
-<span class="fc" id="L269">		lambda.getBody().accept(new ASTVisitor() {</span>
+<span class="fc" id="L322">		IVariableBinding binding = parameter(lambda).resolveBinding();</span>
+<span class="fc" id="L323">		boolean[] written = { false };</span>
+<span class="fc" id="L324">		lambda.getBody().accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(SimpleName name) {
-<span class="fc bfc" id="L272" title="All 2 branches covered.">				if (binding.isEqualTo(name.resolveBinding())) {</span>
-<span class="fc" id="L273">					ASTNode operand = name;</span>
-<span class="pc bpc" id="L274" title="1 of 2 branches missed.">					while (operand.getParent() instanceof ParenthesizedExpression) {</span>
-<span class="nc" id="L275">						operand = operand.getParent();</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">				if (binding.isEqualTo(name.resolveBinding())) {</span>
+<span class="fc" id="L328">					ASTNode operand = name;</span>
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">					while (operand.getParent() instanceof ParenthesizedExpression) {</span>
+<span class="nc" id="L330">						operand = operand.getParent();</span>
 					}
-<span class="fc" id="L277">					ASTNode parent = operand.getParent();</span>
-<span class="pc bpc" id="L278" title="1 of 4 branches missed.">					written[0] |= parent instanceof Assignment assignment &amp;&amp; assignment.getLeftHandSide() == operand</span>
-<span class="pc bpc" id="L279" title="1 of 2 branches missed.">							|| parent instanceof PostfixExpression</span>
-<span class="pc bpc" id="L280" title="1 of 2 branches missed.">							|| parent instanceof PrefixExpression prefix</span>
-<span class="nc bnc" id="L281" title="All 2 branches missed.">									&amp;&amp; (prefix.getOperator() == PrefixExpression.Operator.INCREMENT</span>
-<span class="nc bnc" id="L282" title="All 2 branches missed.">											|| prefix.getOperator() == PrefixExpression.Operator.DECREMENT);</span>
+<span class="fc" id="L332">					ASTNode parent = operand.getParent();</span>
+<span class="pc bpc" id="L333" title="1 of 4 branches missed.">					written[0] |= parent instanceof Assignment assignment &amp;&amp; assignment.getLeftHandSide() == operand</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">							|| parent instanceof PostfixExpression</span>
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">							|| parent instanceof PrefixExpression prefix</span>
+<span class="nc bnc" id="L336" title="All 2 branches missed.">									&amp;&amp; (prefix.getOperator() == PrefixExpression.Operator.INCREMENT</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">											|| prefix.getOperator() == PrefixExpression.Operator.DECREMENT);</span>
 				}
-<span class="fc" id="L284">				return true;</span>
+<span class="fc" id="L339">				return true;</span>
 			}
 		});
-<span class="fc bfc" id="L287" title="All 2 branches covered.">		return !written[0];</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">		return !written[0];</span>
 	}
 
 	private static boolean hasReturn(ASTNode body) {
-<span class="fc" id="L291">		boolean[] found = { false };</span>
-<span class="fc" id="L292">		body.accept(new ASTVisitor() {</span>
+<span class="fc" id="L346">		boolean[] found = { false };</span>
+<span class="fc" id="L347">		body.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean preVisit2(ASTNode node) {
-<span class="pc bpc" id="L295" title="2 of 4 branches missed.">				return !(node instanceof LambdaExpression || node instanceof AbstractTypeDeclaration</span>
-<span class="pc bpc" id="L296" title="1 of 2 branches missed.">						|| node instanceof AnonymousClassDeclaration);</span>
+<span class="pc bpc" id="L350" title="2 of 4 branches missed.">				return !(node instanceof LambdaExpression || node instanceof AbstractTypeDeclaration</span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">						|| node instanceof AnonymousClassDeclaration);</span>
 			}
 			@Override
 			public boolean visit(ReturnStatement node) {
-<span class="fc" id="L300">				found[0] = true;</span>
-<span class="fc" id="L301">				return false;</span>
+<span class="fc" id="L355">				found[0] = true;</span>
+<span class="fc" id="L356">				return false;</span>
 			}
 		});
-<span class="fc" id="L304">		return found[0];</span>
+<span class="fc" id="L359">		return found[0];</span>
 	}
 
 	private static boolean hasPatternVariable(Expression function) {
-<span class="fc" id="L308">		boolean[] found = { false };</span>
-<span class="fc" id="L309">		function.accept(new ASTVisitor() {</span>
+<span class="fc" id="L363">		boolean[] found = { false };</span>
+<span class="fc" id="L364">		function.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(PatternInstanceofExpression node) {
-<span class="fc" id="L312">				found[0] = true;</span>
-<span class="fc" id="L313">				return false;</span>
+<span class="fc" id="L367">				found[0] = true;</span>
+<span class="fc" id="L368">				return false;</span>
 			}
 		});
-<span class="fc" id="L316">		return found[0];</span>
+<span class="fc" id="L371">		return found[0];</span>
 	}
 
 }

@@ -304,92 +304,93 @@ public final class LoopModelVisualizer {
 <span class="fc" id="L304">			return &quot;[no source]&quot;; //$NON-NLS-1$</span>
 		}
 <span class="fc" id="L306">		SourceDescriptor src = model.getSource();</span>
-<span class="pc bpc" id="L307" title="4 of 7 branches missed.">		return switch (src.type()) {</span>
-<span class="fc" id="L308">			case COLLECTION -&gt; src.expression() + &quot;.stream()&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L309">			case ARRAY -&gt; &quot;Arrays.stream(&quot; + src.expression() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L310">			case ITERABLE -&gt; &quot;StreamSupport.stream(&quot; + src.expression() + &quot;.spliterator(), false)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L311">			case STREAM -&gt; src.expression();</span>
-<span class="nc" id="L312">			case ITERATOR -&gt; src.expression() + &quot;.stream()&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L313">			case INT_RANGE -&gt; &quot;IntStream.range(0, &quot; + src.expression() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L307" title="1 of 2 branches missed.">		if (src.streamExpression() != null) return src.streamExpression();</span>
+<span class="pc bpc" id="L308" title="4 of 7 branches missed.">		return switch (src.type()) {</span>
+<span class="fc" id="L309">			case COLLECTION -&gt; src.expression() + &quot;.stream()&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L310">			case ARRAY -&gt; &quot;Arrays.stream(&quot; + src.expression() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L311">			case ITERABLE -&gt; &quot;StreamSupport.stream(&quot; + src.expression() + &quot;.spliterator(), false)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L312">			case STREAM -&gt; src.expression();</span>
+<span class="nc" id="L313">			case ITERATOR -&gt; src.expression() + &quot;.stream()&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L314">			case INT_RANGE -&gt; &quot;IntStream.range(0, &quot; + src.expression() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 			case EXPLICIT_RANGE -&gt; {
-<span class="fc" id="L315">				String[] parts = src.expression().split(&quot;,&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L316" title="1 of 2 branches missed.">				if (parts.length == 2) {</span>
-<span class="fc" id="L317">					yield &quot;IntStream.range(&quot; + parts[0].trim() + &quot;, &quot; + parts[1].trim() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L316">				String[] parts = src.expression().split(&quot;,&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L317" title="1 of 2 branches missed.">				if (parts.length == 2) {</span>
+<span class="fc" id="L318">					yield &quot;IntStream.range(&quot; + parts[0].trim() + &quot;, &quot; + parts[1].trim() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 				}
-<span class="nc" id="L319">				yield &quot;IntStream.range(&quot; + src.expression() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L320">				yield &quot;IntStream.range(&quot; + src.expression() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 			}
 		};
 	}
 
 	private static String renderOperation(Operation op) {
-<span class="pc bpc" id="L325" title="1 of 3 branches missed.">		return switch (op) {</span>
-<span class="fc" id="L326">			case FilterOp f -&gt; &quot;filter(&quot; + f.expression() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L327">			case MapOp m -&gt; renderMapOp(m);</span>
-<span class="nc" id="L328">			default -&gt; op.operationType() + &quot;(&quot; + //$NON-NLS-1$</span>
-<span class="nc bnc" id="L329" title="All 2 branches missed.">				(op.expression() != null ? op.expression() : &quot;&quot;) + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L326" title="1 of 3 branches missed.">		return switch (op) {</span>
+<span class="fc" id="L327">			case FilterOp f -&gt; &quot;filter(&quot; + f.expression() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L328">			case MapOp m -&gt; renderMapOp(m);</span>
+<span class="nc" id="L329">			default -&gt; op.operationType() + &quot;(&quot; + //$NON-NLS-1$</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">				(op.expression() != null ? op.expression() : &quot;&quot;) + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		};
 	}
 
 	private static String renderMapOp(MapOp m) {
-<span class="fc" id="L334">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L335">		sb.append(&quot;map(&quot;).append(m.expression()); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L336" title="1 of 2 branches missed.">		if (m.targetType() != null) {</span>
-<span class="fc" id="L337">			sb.append(&quot; -&gt; &quot;).append(m.targetType()); //$NON-NLS-1$</span>
+<span class="fc" id="L335">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L336">		sb.append(m.operationType()).append('(').append(m.expression());</span>
+<span class="pc bpc" id="L337" title="1 of 2 branches missed.">		if (m.targetType() != null) {</span>
+<span class="fc" id="L338">			sb.append(&quot; -&gt; &quot;).append(m.targetType()); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L339">		sb.append(')');</span>
-<span class="pc bpc" id="L340" title="1 of 2 branches missed.">		if (m.isSideEffect()) {</span>
-<span class="nc" id="L341">			sb.append(&quot; [side-effect]&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L340">		sb.append(')');</span>
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">		if (m.isSideEffect()) {</span>
+<span class="nc" id="L342">			sb.append(&quot; [side-effect]&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L343">		return sb.toString();</span>
+<span class="fc" id="L344">		return sb.toString();</span>
 	}
 
 	private static List&lt;String&gt; getComments(Operation op) {
-<span class="fc bfc" id="L347" title="All 2 branches covered.">		if (op instanceof FilterOp f) {</span>
-<span class="fc" id="L348">			return f.getComments();</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">		if (op instanceof FilterOp f) {</span>
+<span class="fc" id="L349">			return f.getComments();</span>
 		}
-<span class="pc bpc" id="L350" title="1 of 2 branches missed.">		if (op instanceof MapOp m) {</span>
-<span class="fc" id="L351">			return m.getComments();</span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">		if (op instanceof MapOp m) {</span>
+<span class="fc" id="L352">			return m.getComments();</span>
 		}
-<span class="nc" id="L353">		return List.of();</span>
+<span class="nc" id="L354">		return List.of();</span>
 	}
 
 	private static String renderTerminal(TerminalOperation term) {
-<span class="pc bpc" id="L357" title="4 of 6 branches missed.">		return switch (term) {</span>
-<span class="pc bpc" id="L358" title="1 of 2 branches missed.">			case ForEachTerminal fe -&gt; fe.ordered() ? &quot;forEachOrdered(...)&quot; : &quot;forEach(...)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L359">			case CollectTerminal ct -&gt; &quot;collect(&quot; + ct.collectorType() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L360">			case ReduceTerminal rt -&gt; &quot;reduce(&quot; + rt.reduceType() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L361">			case MatchTerminal mt -&gt; mt.operationType() + &quot;(&quot; + mt.predicate() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L362">			case FindTerminal ft -&gt; ft.operationType() + &quot;()&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L363">			default -&gt; term.operationType() + &quot;()&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L358" title="4 of 6 branches missed.">		return switch (term) {</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">			case ForEachTerminal fe -&gt; fe.ordered() ? &quot;forEachOrdered(...)&quot; : &quot;forEach(...)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L360">			case CollectTerminal ct -&gt; &quot;collect(&quot; + ct.collectorType() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L361">			case ReduceTerminal rt -&gt; &quot;reduce(&quot; + rt.reduceType() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L362">			case MatchTerminal mt -&gt; mt.operationType() + &quot;(&quot; + mt.predicate() + &quot;)&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L363">			case FindTerminal ft -&gt; ft.operationType() + &quot;()&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L364">			default -&gt; term.operationType() + &quot;()&quot;; //$NON-NLS-1$</span>
 		};
 	}
 
 	private static void appendTerminalDetails(StringBuilder sb, TerminalOperation term) {
-<span class="pc bpc" id="L368" title="3 of 5 branches missed.">		switch (term) {</span>
-<span class="fc" id="L369">			case ForEachTerminal fe -&gt; {</span>
-<span class="fc" id="L370">				sb.append(&quot;  ordered = &quot;).append(fe.ordered()).append('\n'); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L371" title="1 of 2 branches missed.">				if (!fe.bodyStatements().isEmpty()) {</span>
-<span class="fc" id="L372">					sb.append(&quot;  bodyStatements = &quot;).append(fe.bodyStatements()).append('\n'); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L369" title="3 of 5 branches missed.">		switch (term) {</span>
+<span class="fc" id="L370">			case ForEachTerminal fe -&gt; {</span>
+<span class="fc" id="L371">				sb.append(&quot;  ordered = &quot;).append(fe.ordered()).append('\n'); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L372" title="1 of 2 branches missed.">				if (!fe.bodyStatements().isEmpty()) {</span>
+<span class="fc" id="L373">					sb.append(&quot;  bodyStatements = &quot;).append(fe.bodyStatements()).append('\n'); //$NON-NLS-1$</span>
 				}
 			}
-<span class="nc" id="L375">			case CollectTerminal ct -&gt; {</span>
-<span class="nc" id="L376">				sb.append(&quot;  collectorType = &quot;).append(ct.collectorType()).append('\n'); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L377" title="All 2 branches missed.">				if (ct.targetVariable() != null) {</span>
-<span class="nc" id="L378">					sb.append(&quot;  targetVariable = &quot;).append(ct.targetVariable()).append('\n'); //$NON-NLS-1$</span>
+<span class="nc" id="L376">			case CollectTerminal ct -&gt; {</span>
+<span class="nc" id="L377">				sb.append(&quot;  collectorType = &quot;).append(ct.collectorType()).append('\n'); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L378" title="All 2 branches missed.">				if (ct.targetVariable() != null) {</span>
+<span class="nc" id="L379">					sb.append(&quot;  targetVariable = &quot;).append(ct.targetVariable()).append('\n'); //$NON-NLS-1$</span>
 				}
 			}
-<span class="fc" id="L381">			case ReduceTerminal rt -&gt; {</span>
-<span class="fc" id="L382">				sb.append(&quot;  reduceType = &quot;).append(rt.reduceType()).append('\n'); //$NON-NLS-1$</span>
-<span class="fc" id="L383">				sb.append(&quot;  identity = &quot;).append(rt.identity()).append('\n'); //$NON-NLS-1$</span>
-<span class="fc" id="L384">				sb.append(&quot;  accumulator = &quot;).append(rt.accumulator()).append('\n'); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L385" title="1 of 2 branches missed.">				if (rt.combiner() != null) {</span>
-<span class="nc" id="L386">					sb.append(&quot;  combiner = &quot;).append(rt.combiner()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L382">			case ReduceTerminal rt -&gt; {</span>
+<span class="fc" id="L383">				sb.append(&quot;  reduceType = &quot;).append(rt.reduceType()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L384">				sb.append(&quot;  identity = &quot;).append(rt.identity()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L385">				sb.append(&quot;  accumulator = &quot;).append(rt.accumulator()).append('\n'); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L386" title="1 of 2 branches missed.">				if (rt.combiner() != null) {</span>
+<span class="nc" id="L387">					sb.append(&quot;  combiner = &quot;).append(rt.combiner()).append('\n'); //$NON-NLS-1$</span>
 				}
 			}
-<span class="nc" id="L389">			case MatchTerminal mt -&gt;</span>
-<span class="nc" id="L390">				sb.append(&quot;  predicate = &quot;).append(mt.predicate()).append('\n'); //$NON-NLS-1$</span>
+<span class="nc" id="L390">			case MatchTerminal mt -&gt;</span>
+<span class="nc" id="L391">				sb.append(&quot;  predicate = &quot;).append(mt.predicate()).append('\n'); //$NON-NLS-1$</span>
 			default -&gt; { /* no extra details */ }
 		}
-<span class="fc" id="L393">	}</span>
+<span class="fc" id="L394">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -19,31 +19,37 @@ package org.sandbox.functional.core.model;
  * @param type the source type
  * @param expression the expression to iterate over
  * @param elementTypeName the element type name
+ * @param streamExpression optional original stream factory, including qualification and type witnesses
  * @since 1.0.0
  */
-<span class="fc" id="L24">public record SourceDescriptor(</span>
+<span class="fc" id="L25">public record SourceDescriptor(</span>
     SourceType type,
     String expression,
-    String elementTypeName
+    String elementTypeName,
+    String streamExpression
 ) {
+    public SourceDescriptor(SourceType type, String expression, String elementTypeName) {
+<span class="fc" id="L32">        this(type, expression, elementTypeName, null);</span>
+<span class="fc" id="L33">    }</span>
+
     /**
      * The type of iteration source.
      */
-<span class="fc" id="L32">    public enum SourceType {</span>
+<span class="fc" id="L38">    public enum SourceType {</span>
         /** A collection like List, Set, etc. Generates: {@code collection.stream()} */
-<span class="fc" id="L34">        COLLECTION,</span>
+<span class="fc" id="L40">        COLLECTION,</span>
         
         /** An array. Generates: {@code Arrays.stream(array)} */
-<span class="fc" id="L37">        ARRAY,</span>
+<span class="fc" id="L43">        ARRAY,</span>
         
         /** An Iterable. Generates: {@code StreamSupport.stream(iterable.spliterator(), false)} */
-<span class="fc" id="L40">        ITERABLE,</span>
+<span class="fc" id="L46">        ITERABLE,</span>
         
         /** An Iterator (future use) */
-<span class="fc" id="L43">        ITERATOR,</span>
+<span class="fc" id="L49">        ITERATOR,</span>
         
         /** Already a Stream. Expression is used as-is */
-<span class="fc" id="L46">        STREAM,</span>
+<span class="fc" id="L52">        STREAM,</span>
         
         /** 
          * Integer range from 0 to N (exclusive).
@@ -51,7 +57,7 @@ package org.sandbox.functional.core.model;
          * Generates: {@code IntStream.range(0, N)}
          * Example: {@code &quot;10&quot;} → {@code IntStream.range(0, 10)}
          */
-<span class="fc" id="L54">        INT_RANGE,</span>
+<span class="fc" id="L60">        INT_RANGE,</span>
         
         /** 
          * Explicit integer range with start and end.
@@ -70,7 +76,7 @@ package org.sandbox.functional.core.model;
          * &lt;/p&gt;
          * Used for classic index-based for loops: {@code for(int i=start; i&lt;end; i++)}
          */
-<span class="fc" id="L73">        EXPLICIT_RANGE</span>
+<span class="fc" id="L79">        EXPLICIT_RANGE</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

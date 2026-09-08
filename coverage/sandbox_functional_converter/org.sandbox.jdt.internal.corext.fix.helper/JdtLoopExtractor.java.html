@@ -123,7 +123,7 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
 <span class="pc bpc" id="L123" title="1 of 2 branches missed.">                || analyzer.hasLabeledContinue()</span>
 <span class="pc bpc" id="L124" title="1 of 2 branches missed.">                || analyzer.hasTryCatch()</span>
 <span class="pc bpc" id="L125" title="1 of 2 branches missed.">                || analyzer.hasSynchronized()</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">                || analyzer.hasNestedLoop()</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">                || analyzer.hasNestedLoop()</span>
 <span class="pc bpc" id="L127" title="1 of 2 branches missed.">                || analyzer.hasVoidReturn()</span>
 <span class="pc bpc" id="L128" title="1 of 2 branches missed.">                || analyzer.modifiesIteratedCollection()</span>
 <span class="pc bpc" id="L129" title="1 of 2 branches missed.">                || isConcurrentCollection;</span>
@@ -133,7 +133,7 @@ import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
 <span class="fc" id="L133">                .element(variableName, elementType, false)</span>
 <span class="fc" id="L134">                .metadata(analyzer.hasBreak(), analyzer.hasLabeledContinue(), false,</span>
 <span class="fc" id="L135">                        analyzer.modifiesIteratedCollection(), true);</span>
-<span class="pc bpc" id="L136" title="1 of 2 branches missed.">        if (!hasUnconvertiblePatterns) {</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        if (!hasUnconvertiblePatterns) {</span>
 <span class="fc" id="L137">            analyzeIteratorStatements(parsedBody.actualBodyStatements(), builder, variableName, compilationUnit);</span>
         }
 <span class="fc" id="L139">        return new ExtractedLoop(builder.build(), actualBody);</span>

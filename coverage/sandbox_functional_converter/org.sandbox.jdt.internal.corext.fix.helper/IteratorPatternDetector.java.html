@@ -190,8 +190,8 @@ import org.eclipse.jdt.core.dom.*;
      * @return element type as string or &quot;Object&quot; if not determinable
      */
     private String extractElementType(Type type) {
-<span class="pc bpc" id="L193" title="1 of 2 branches missed.">        if (!(type instanceof ParameterizedType paramType)) {</span>
-<span class="nc" id="L194">            return &quot;Object&quot;;</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        if (!(type instanceof ParameterizedType paramType)) {</span>
+<span class="fc" id="L194">            return &quot;Object&quot;;</span>
         }
         
 <span class="pc bpc" id="L197" title="1 of 2 branches missed.">        if (paramType.typeArguments().isEmpty()) {</span>
@@ -230,8 +230,8 @@ import org.eclipse.jdt.core.dom.*;
      * Checks if a statement is part of a block (required for while-iterator pattern detection).
      */
     public static boolean isStatementInBlock(Statement statement) {
-<span class="fc" id="L233">        ASTNode parent = statement.getParent();</span>
-<span class="fc" id="L234">        return parent instanceof Block;</span>
+<span class="nc" id="L233">        ASTNode parent = statement.getParent();</span>
+<span class="nc" id="L234">        return parent instanceof Block;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

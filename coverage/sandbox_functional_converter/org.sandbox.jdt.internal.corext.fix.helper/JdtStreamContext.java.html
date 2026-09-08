@@ -26,26 +26,31 @@ import org.sandbox.functional.core.model.FunctionalExpression;
  * Identity keys distinguish identical-looking functions at different source sites.
  */
 public record JdtStreamContext(ExpressionStatement statement, Expression source,
-        ITypeBinding elementType, Map&lt;FunctionalExpression, Expression&gt; functions) {
+        ITypeBinding elementType, Map&lt;FunctionalExpression, Expression&gt; functions, Expression streamSource) {
 
-<span class="fc" id="L31">    public JdtStreamContext {</span>
-<span class="fc" id="L32">        functions = Collections.unmodifiableMap(new IdentityHashMap&lt;&gt;(functions));</span>
-<span class="fc" id="L33">    }</span>
+    public JdtStreamContext(ExpressionStatement statement, Expression source,
+            ITypeBinding elementType, Map&lt;FunctionalExpression, Expression&gt; functions) {
+<span class="nc" id="L33">        this(statement, source, elementType, functions, null);</span>
+<span class="nc" id="L34">    }</span>
+
+<span class="fc" id="L36">    public JdtStreamContext {</span>
+<span class="fc" id="L37">        functions = Collections.unmodifiableMap(new IdentityHashMap&lt;&gt;(functions));</span>
+<span class="fc" id="L38">    }</span>
 
     public Expression expression(FunctionalExpression function) {
-<span class="fc" id="L36">        return Objects.requireNonNull(functions.get(function), &quot;Function is not attached to this AST snapshot&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L41">        return Objects.requireNonNull(functions.get(function), &quot;Function is not attached to this AST snapshot&quot;); //$NON-NLS-1$</span>
     }
 
     public ITypeBinding functionType(FunctionalExpression function) {
-<span class="fc" id="L40">        return expression(function).resolveTypeBinding();</span>
+<span class="fc" id="L45">        return expression(function).resolveTypeBinding();</span>
     }
 
     public ITypeBinding inputType(FunctionalExpression function) {
-<span class="fc" id="L44">        return functionType(function).getFunctionalInterfaceMethod().getParameterTypes()[0];</span>
+<span class="fc" id="L49">        return functionType(function).getFunctionalInterfaceMethod().getParameterTypes()[0];</span>
     }
 
     public ITypeBinding outputType(FunctionalExpression function) {
-<span class="fc" id="L48">        return functionType(function).getFunctionalInterfaceMethod().getReturnType();</span>
+<span class="fc" id="L53">        return functionType(function).getFunctionalInterfaceMethod().getReturnType();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
