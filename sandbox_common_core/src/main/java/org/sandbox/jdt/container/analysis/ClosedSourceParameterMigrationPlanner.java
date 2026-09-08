@@ -12,8 +12,13 @@ package org.sandbox.jdt.container.analysis;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
 import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan.DiagnosticKind;
@@ -38,12 +43,14 @@ import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureMe
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 
 /**
- * Builds the first aggregate two-compilation-unit caller/parameter rewrite plan.
+ * Builds the first aggregate closed-source caller/parameter rewrite plan.
  *
- * <p>The accepted topology is deliberately narrow: one local array source, one direct
- * {@code ARGUMENT_TO_PARAMETER} edge and one source-resolved parameter declaration in
- * a different compilation unit. The unchanged argument is tied to the exact target
- * method handle and parameter index before either member plan is emitted.</p>
+ * <p>The accepted topology remains deliberately narrow on the producer side: one
+ * local append-array source and one or more direct {@code ARGUMENT_TO_PARAMETER}
+ * edges. The parameter side may now be one complete source-resolved atomicity group,
+ * including interface declarations and all editable implementations/overrides. Every
+ * group member requires its own complete parameter usage profile before any member
+ * plan is emitted.</p>
  */
 public final class ClosedSourceParameterMigrationPlanner {
 
@@ -71,24 +78,23 @@ public final class ClosedSourceParameterMigrationPlanner {
 		if (topology == null) {
 			diagnostics.add(diagnostic(
 					DiagnosticKind.UNSUPPORTED_FLOW_TOPOLOGY,
-					"The first aggregate rewrite requires one local caller and one direct source parameter edge.")); //$NON-NLS-1$
+					"The closed-source parameter rewrite requires one local caller, one or more source parameters, and only direct argument-to-parameter edges from that caller.")); //$NON-NLS-1$
 			return PlanningResult.rejected(diagnostics);
 		}
-		Signature signature= signature(signaturePlan, topology.parameter());
+		Signature signature= signature(signaturePlan, topology.parameters());
 		if (signature == null) {
 			diagnostics.add(diagnostic(
 					DiagnosticKind.SIGNATURE_PLAN_MISMATCH,
-					"The automatic signature plan does not contain the exact parameter member.")); //$NON-NLS-1$
+					"The automatic signature plan does not cover the complete source parameter atomicity group.")); //$NON-NLS-1$
 			return PlanningResult.rejected(diagnostics);
 		}
+
 		ContainerUsageProfile callerProfile= profile(
 				memberProfiles, topology.caller().bindingKey());
-		ContainerUsageProfile parameterProfile= profile(
-				memberProfiles, topology.parameter().bindingKey());
-		if (callerProfile == null || parameterProfile == null) {
+		if (callerProfile == null) {
 			diagnostics.add(diagnostic(
 					DiagnosticKind.PROFILE_NOT_FOUND,
-					"Caller and parameter profiles must both be present exactly once.")); //$NON-NLS-1$
+					"The local caller profile must be present exactly once.")); //$NON-NLS-1$
 			return PlanningResult.rejected(diagnostics);
 		}
 		if (!recommendation.sourceProfile().equals(callerProfile)
@@ -99,95 +105,157 @@ public final class ClosedSourceParameterMigrationPlanner {
 			return PlanningResult.rejected(diagnostics);
 		}
 
-		ArgumentTransfer transfer= new ArgumentTransfer(
-				signature.member().javaElementHandle(),
-				signature.group().signatureIndex(),
-				topology.edge().sourceStart(),
-				topology.edge().sourceLength());
+		Map<String, SignatureMember> membersByNodeId= signature.group().members().stream()
+				.collect(Collectors.toMap(
+						SignatureMember::flowNodeId,
+						Function.identity(),
+						(left, right) -> left,
+						LinkedHashMap::new));
+		List<ArgumentTransfer> transfers=
+				new ArrayList<>(topology.argumentEdges().size());
+		for (LocatedFlowEdge edge : topology.argumentEdges()) {
+			SignatureMember member= membersByNodeId.get(edge.targetNodeId());
+			if (member == null) {
+				diagnostics.add(diagnostic(
+						DiagnosticKind.SIGNATURE_PLAN_MISMATCH,
+						"An argument edge targets a parameter outside the automatic signature group.")); //$NON-NLS-1$
+				continue;
+			}
+			transfers.add(new ArgumentTransfer(
+					member.javaElementHandle(),
+					signature.group().signatureIndex(),
+					edge.sourceStart(),
+					edge.sourceLength()));
+		}
+
 		ContainerLocalRewritePlan.PlanningResult callerResult= localPlanner.plan(
 				localComponent(topology.caller()),
 				recommendation,
 				readiness,
-				List.of(transfer));
+				transfers);
 		if (!callerResult.ready()) {
 			callerResult.diagnostics().forEach(item -> diagnostics.add(diagnostic(
 					DiagnosticKind.LOCAL_REWRITE_REJECTED,
 					item.kind() + ": " + item.message()))); //$NON-NLS-1$
 		}
-		ContainerParameterRewritePlan.PlanningResult parameterResult=
-				parameterPlanner.plan(
-						component,
-						signaturePlan,
-						signature.group(),
-						signature.member(),
-						parameterProfile,
-						readiness);
-		if (!parameterResult.ready()) {
-			parameterResult.diagnostics().forEach(item -> diagnostics.add(diagnostic(
-					DiagnosticKind.PARAMETER_REWRITE_REJECTED,
-					item.kind() + ": " + item.message()))); //$NON-NLS-1$
+
+		List<ContainerParameterRewritePlan> parameterPlans=
+				new ArrayList<>(signature.group().members().size());
+		for (SignatureMember member : signature.group().members()) {
+			FlowNode parameter= component.node(member.flowNodeId()).orElse(null);
+			ContainerUsageProfile parameterProfile= parameter == null
+					? null : profile(memberProfiles, parameter.bindingKey());
+			if (parameter == null || parameterProfile == null) {
+				diagnostics.add(diagnostic(
+						DiagnosticKind.PROFILE_NOT_FOUND,
+						"Every automatic signature member requires one exact parameter profile: "
+								+ member.javaElementHandle())); //$NON-NLS-1$
+				continue;
+			}
+			ContainerParameterRewritePlan.PlanningResult parameterResult=
+					parameterPlanner.plan(
+							component,
+							signaturePlan,
+							signature.group(),
+							member,
+							parameterProfile,
+							readiness);
+			if (!parameterResult.ready()) {
+				parameterResult.diagnostics().forEach(item -> diagnostics.add(diagnostic(
+						DiagnosticKind.PARAMETER_REWRITE_REJECTED,
+						member.javaElementHandle() + ": " //$NON-NLS-1$
+								+ item.kind() + ": " + item.message()))); //$NON-NLS-1$
+				continue;
+			}
+			parameterPlans.add(parameterResult.plan().orElseThrow());
 		}
 		if (!diagnostics.isEmpty()) {
 			return PlanningResult.rejected(diagnostics);
 		}
 
-		ContainerLocalRewritePlan callerPlan= callerResult.plan().orElseThrow();
-		ContainerParameterRewritePlan parameterPlan=
-				parameterResult.plan().orElseThrow();
-		if (callerPlan.compilationUnitHandle()
-				.equals(parameterPlan.compilationUnitHandle())) {
-			return PlanningResult.rejected(List.of(diagnostic(
-					DiagnosticKind.SAME_COMPILATION_UNIT,
-					"The first aggregate slice requires caller and parameter in distinct units."))); //$NON-NLS-1$
-		}
 		return PlanningResult.accepted(new ClosedSourceParameterMigrationPlan(
-				recommendation.targetContract(), callerPlan, parameterPlan));
+				recommendation.targetContract(),
+				callerResult.plan().orElseThrow(),
+				parameterPlans));
 	}
 
 	private static Topology topology(ContainerFlowComponent component) {
 		if (component.closureStatus() != ClosureStatus.LOCAL_CLOSED
-				|| !component.diagnostics().isEmpty()
-				|| component.nodes().size() != 2
-				|| component.edges().size() != 1) {
+				|| !component.diagnostics().isEmpty()) {
 			return null;
 		}
-		LocatedFlowEdge edge= component.edges().get(0);
-		if (edge.kind() != EdgeKind.ARGUMENT_TO_PARAMETER) {
+		List<FlowNode> callers= component.nodes().stream()
+				.filter(node -> node.kind() == NodeKind.LOCAL_VARIABLE)
+				.toList();
+		List<FlowNode> parameters= component.nodes().stream()
+				.filter(node -> node.kind() == NodeKind.PARAMETER)
+				.toList();
+		if (callers.size() != 1 || parameters.isEmpty()
+				|| component.nodes().size() != callers.size() + parameters.size()) {
 			return null;
 		}
-		FlowNode source= component.node(edge.sourceNodeId()).orElse(null);
-		FlowNode target= component.node(edge.targetNodeId()).orElse(null);
-		if (source == null || target == null
-				|| source.kind() != NodeKind.LOCAL_VARIABLE
-				|| target.kind() != NodeKind.PARAMETER
-				|| !source.sourceResolved()
-				|| !target.sourceResolved()
-				|| source.compilationUnitHandle().equals(target.compilationUnitHandle())
-				|| !edge.compilationUnitHandle().equals(source.compilationUnitHandle())) {
+		FlowNode caller= callers.get(0);
+		if (!caller.sourceResolved() || caller.bindingKey().isBlank()
+				|| caller.compilationUnitHandle().isBlank()) {
 			return null;
 		}
-		return new Topology(source, target, edge);
+		if (parameters.stream().anyMatch(parameter ->
+				!parameter.sourceResolved()
+						|| parameter.bindingKey().isBlank()
+						|| parameter.javaElementHandle().isBlank()
+						|| parameter.compilationUnitHandle().isBlank()
+						|| parameter.signatureIndex() < 0)) {
+			return null;
+		}
+		Set<String> parameterIds= parameters.stream()
+				.map(FlowNode::stableId)
+				.collect(Collectors.toSet());
+		List<LocatedFlowEdge> argumentEdges= component.edges();
+		if (argumentEdges.isEmpty()) {
+			return null;
+		}
+		for (LocatedFlowEdge edge : argumentEdges) {
+			if (edge.kind() != EdgeKind.ARGUMENT_TO_PARAMETER
+					|| !edge.sourceNodeId().equals(caller.stableId())
+					|| !parameterIds.contains(edge.targetNodeId())
+					|| !edge.compilationUnitHandle().equals(
+							caller.compilationUnitHandle())) {
+				return null;
+			}
+		}
+		return new Topology(caller, parameters, argumentEdges);
 	}
 
 	private static Signature signature(
 			ContainerSignatureMigrationPlan plan,
-			FlowNode parameter) {
+			List<FlowNode> parameters) {
 		if (plan.status() != PlanningStatus.CLOSED_SOURCE_AUTOMATIC
 				|| plan.groups().size() != 1) {
 			return null;
 		}
 		SignatureAtomicityGroup group= plan.groups().get(0);
 		if (group.positionKind() != PositionKind.PARAMETER
-				|| group.signatureIndex() != parameter.signatureIndex()
-				|| group.members().size() != 1) {
+				|| group.members().size() != parameters.size()) {
 			return null;
 		}
-		SignatureMember member= group.members().get(0);
-		return member.flowNodeId().equals(parameter.stableId())
-				&& member.compilationUnitHandle()
-						.equals(parameter.compilationUnitHandle())
-				&& member.javaElementHandle().equals(parameter.javaElementHandle())
-						? new Signature(group, member) : null;
+		Map<String, FlowNode> parametersById= parameters.stream()
+				.collect(Collectors.toMap(
+						FlowNode::stableId,
+						Function.identity(),
+						(left, right) -> left,
+						LinkedHashMap::new));
+		for (SignatureMember member : group.members()) {
+			FlowNode parameter= parametersById.get(member.flowNodeId());
+			if (parameter == null
+					|| parameter.signatureIndex() != group.signatureIndex()
+					|| !member.compilationUnitHandle().equals(
+							parameter.compilationUnitHandle())
+					|| !member.javaElementHandle().equals(
+							parameter.javaElementHandle())) {
+				return null;
+			}
+		}
+		return new Signature(group);
 	}
 
 	private static ContainerUsageProfile profile(
@@ -216,12 +284,15 @@ public final class ClosedSourceParameterMigrationPlanner {
 
 	private record Topology(
 			FlowNode caller,
-			FlowNode parameter,
-			LocatedFlowEdge edge) {
+			List<FlowNode> parameters,
+			List<LocatedFlowEdge> argumentEdges) {
+
+		private Topology {
+			parameters= List.copyOf(parameters);
+			argumentEdges= List.copyOf(argumentEdges);
+		}
 	}
 
-	private record Signature(
-			SignatureAtomicityGroup group,
-			SignatureMember member) {
+	private record Signature(SignatureAtomicityGroup group) {
 	}
 }
