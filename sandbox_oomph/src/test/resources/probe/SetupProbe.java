@@ -1,9 +1,14 @@
 /* SPDX-License-Identifier: EPL-2.0 */
 package org.sandbox.oomph.probe;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.cert.Certificate;
 import java.util.Arrays;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -11,6 +16,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import org.bouncycastle.openpgp.PGPPublicKey;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -30,6 +36,7 @@ import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.equinox.internal.p2.director.app.DirectorApplication.AvoidTrustPromptService;
 import org.eclipse.equinox.p2.core.UIServices;
+import org.eclipse.equinox.p2.metadata.IArtifactKey;
 import org.eclipse.equinox.p2.metadata.ILicense;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -232,12 +239,10 @@ public class SetupProbe implements IApplication {
         System.out.println("Executing Oomph " + (update ? "MANUAL" : "STARTUP") + " tasks");
         // A running workbench supplies interactive p2 trust dialogs, independently
         // of the wizard's license callback. Reuse the director's batch service for
-        // this disposable installation, accepting only signed Eclipse content.
+        // this disposable installation, with an exact digest pin for legacy JAXB.
         var agent = P2Util.getCurrentProvisioningAgent();
         var previousUI = agent.getService(UIServices.class);
-        var batchUI = new AvoidTrustPromptService(true, true,
-                Set.of(java.net.URI.create("https://download.eclipse.org"),
-                        java.net.URI.create("https://archive.eclipse.org")), null, null);
+        var batchUI = new BatchTrustService();
         agent.registerService(UIServices.SERVICE_NAME, batchUI);
         try {
             performer.perform(monitor);
@@ -311,6 +316,50 @@ public class SetupProbe implements IApplication {
         result.setProperty("target", target.getName());
         saveResult(run, update, result);
         System.out.println("OOMPH VERIFIED: " + result);
+    }
+
+    static final class BatchTrustService extends AvoidTrustPromptService {
+        // Published SHA-512 in Eclipse WTP R3.41.0's artifacts.xml.xz (see ARCHITECTURE.md).
+        private static final String JAXB_SHA512 =
+                "b64f727cfc2f524b74f633fac524f66fb84987ca42427fb0a5d3bc438f135ff1b530d5"
+                + "dc00e60dad7902ff5448d3acddea601f7c16533b57ad87b2d8f8398a97";
+
+        BatchTrustService() {
+            super(true, true, Set.of(java.net.URI.create("https://download.eclipse.org"),
+                    java.net.URI.create("https://archive.eclipse.org")), null, null);
+        }
+
+        @Override
+        public TrustInfo getTrustInfo(Map<List<Certificate>, Set<IArtifactKey>> chains,
+                Map<PGPPublicKey, Set<IArtifactKey>> keys, Set<IArtifactKey> unsigned,
+                Map<IArtifactKey, File> files) {
+            TrustInfo trust = super.getTrustInfo(chains, keys, unsigned, files);
+            if (unsigned == null || unsigned.isEmpty()) {
+                return trust;
+            }
+            for (IArtifactKey artifact : unsigned) {
+                require(isPinnedJaxb(artifact, files.get(artifact)),
+                        "Unexpected unsigned p2 artifact: " + artifact);
+            }
+            System.out.println("Verified the pinned unsigned Eclipse JAXB artifact by SHA-512");
+            return new TrustInfo(Arrays.asList(trust.getTrustedCertificates()), trust.getTrustedPGPKeys(), false, true);
+        }
+
+        private static boolean isPinnedJaxb(IArtifactKey artifact, File file) {
+            if (!"osgi.bundle".equals(artifact.getClassifier()) || !"jakarta.xml.bind".equals(artifact.getId())
+                    || !"2.3.3.v20201118-1818".equals(artifact.getVersion().toString()) || file == null) {
+                return false;
+            }
+            try {
+                var digest = MessageDigest.getInstance("SHA-512");
+                try (var in = new DigestInputStream(Files.newInputStream(file.toPath()), digest)) {
+                    in.transferTo(java.io.OutputStream.nullOutputStream());
+                }
+                return JAXB_SHA512.equals(HexFormat.of().formatHex(digest.digest()));
+            } catch (Exception e) {
+                throw new IllegalStateException("Cannot verify the pinned JAXB artifact", e);
+            }
+        }
     }
 
     private static void saveResult(Path run, boolean update, Properties result) throws Exception {

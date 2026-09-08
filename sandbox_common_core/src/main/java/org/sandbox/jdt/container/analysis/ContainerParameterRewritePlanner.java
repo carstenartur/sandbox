@@ -46,7 +46,7 @@ import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 
-/** Plans the first executable closed-source array-parameter to list rewrite. */
+/** Plans one executable member of a closed-source array-parameter to list rewrite. */
 public final class ContainerParameterRewritePlanner {
 
 	private static final String LIST_TYPE= "java.util.List"; //$NON-NLS-1$
@@ -59,10 +59,11 @@ public final class ContainerParameterRewritePlanner {
 			Kind.FLOW_CONTINUATION_ROOT);
 
 	/**
-	 * Plans one member of a single-member closed-source parameter group.
+	 * Plans one member of a complete closed-source parameter atomicity group.
 	 *
-	 * <p>Override families remain rejected until every member can be emitted through
-	 * one aggregate multi-file rewrite plan.</p>
+	 * <p>The group may contain an interface/override family. This member planner
+	 * validates one exact member; the aggregate planner is responsible for requiring
+	 * and emitting every member of the automatic group as one migration unit.</p>
 	 */
 	public PlanningResult plan(
 			ContainerFlowComponent component,
@@ -121,10 +122,10 @@ public final class ContainerParameterRewritePlanner {
 				.findFirst();
 		if (plannedGroup.isEmpty() || !plannedGroup.get().equals(group)
 				|| group.positionKind() != PositionKind.PARAMETER
-				|| group.members().size() != 1) {
+				|| group.members().isEmpty()) {
 			diagnostics.add(diagnostic(
 					DiagnosticKind.UNSUPPORTED_SIGNATURE_GROUP,
-					"The first executable slice requires one exact, single-member parameter group.")); //$NON-NLS-1$
+					"Parameter rewriting requires one non-empty automatic parameter atomicity group.")); //$NON-NLS-1$
 		}
 		if (!group.members().contains(member)) {
 			diagnostics.add(diagnostic(

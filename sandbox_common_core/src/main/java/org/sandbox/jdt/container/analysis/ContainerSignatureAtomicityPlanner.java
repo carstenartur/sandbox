@@ -16,6 +16,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.sandbox.jdt.container.api.ContainerFlowComponent;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
@@ -39,8 +41,10 @@ import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.ResolvedSea
  *
  * <p>The ordinary planning entry point remains report-only and records Java-level
  * coexistence constraints for compatibility-policy analysis. The explicit
- * closed-source entry point marks only the currently executable single-parameter
- * group as directly automatic.</p>
+ * closed-source entry point marks one complete source-resolved parameter atomicity
+ * group as directly automatic, including an override/implementation family. Return
+ * groups remain report-only because Java cannot preserve the old signature by
+ * overloading on return type.</p>
  */
 public final class ContainerSignatureAtomicityPlanner {
 
@@ -54,8 +58,8 @@ public final class ContainerSignatureAtomicityPlanner {
 	}
 
 	/**
-	 * Builds an immutable direct-migration plan for the implemented closed-source
-	 * parameter slice. No compatibility bridge is implied by this mode.
+	 * Builds an immutable direct-migration plan for a complete closed-source parameter
+	 * atomicity group. No compatibility bridge is implied by this mode.
 	 */
 	public ContainerSignatureMigrationPlan planClosedSource(
 			ContainerFlowComponent component,
@@ -171,12 +175,12 @@ public final class ContainerSignatureAtomicityPlanner {
 		}
 		groups.sort(Comparator.comparing(SignatureAtomicityGroup::groupId));
 		if (completedStatus == PlanningStatus.CLOSED_SOURCE_AUTOMATIC
-				&& !supportsAutomaticExecution(groups)) {
+				&& !supportsAutomaticExecution(groups, component)) {
 			diagnostics.add(new SignatureDiagnostic(
 					DiagnosticKind.UNSUPPORTED_AUTOMATIC_GROUP,
 					component.rootNodeId(),
 					"", //$NON-NLS-1$
-					"Automatic signature execution currently supports exactly one source-resolved parameter declaration and no return or override family.")); //$NON-NLS-1$
+					"Automatic signature execution requires exactly one complete non-empty source-resolved parameter atomicity group; return, external and omitted signature members remain unsupported.")); //$NON-NLS-1$
 		}
 		return new ContainerSignatureMigrationPlan(
 				recommendation.targetContract(),
@@ -186,10 +190,28 @@ public final class ContainerSignatureAtomicityPlanner {
 	}
 
 	private static boolean supportsAutomaticExecution(
-			List<SignatureAtomicityGroup> groups) {
-		return groups.size() == 1
-				&& groups.get(0).positionKind() == PositionKind.PARAMETER
-				&& groups.get(0).members().size() == 1;
+			List<SignatureAtomicityGroup> groups,
+			ContainerFlowComponent component) {
+		if (groups.size() != 1
+				|| groups.get(0).positionKind() != PositionKind.PARAMETER
+				|| groups.get(0).members().isEmpty()) {
+			return false;
+		}
+		SignatureAtomicityGroup group= groups.get(0);
+		Set<String> memberNodeIds= group.members().stream()
+				.map(SignatureMember::flowNodeId)
+				.collect(Collectors.toSet());
+		List<FlowNode> signatureNodes= component.nodes().stream()
+				.filter(node -> node.kind() == NodeKind.PARAMETER
+						|| node.kind() == NodeKind.EXTERNAL_PARAMETER
+						|| node.kind() == NodeKind.RETURN_POSITION)
+				.toList();
+		return signatureNodes.size() == memberNodeIds.size()
+				&& signatureNodes.stream().allMatch(node ->
+						node.kind() == NodeKind.PARAMETER
+								&& node.sourceResolved()
+								&& node.signatureIndex() == group.signatureIndex()
+								&& memberNodeIds.contains(node.stableId()));
 	}
 
 	private static boolean declarationTarget(ResolvedSearchTarget target) {
