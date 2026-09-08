@@ -14,6 +14,7 @@ import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit4ParameterizedP
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,17 +76,20 @@ final class JUnit4ParameterizedPlanner {
 	private final Map<String, CompilationUnit> roots;
 	private final Map<String, TypeDeclaration> types= new LinkedHashMap<>();
 	private final Map<String, MethodDeclaration> methods= new LinkedHashMap<>();
-	private final Map<String, String> fingerprints= new LinkedHashMap<>();
+	private final Map<ASTNode, String> handlesByRoot= new IdentityHashMap<>();
+	private final Map<String, String> fingerprints;
 	private final IProgressMonitor monitor;
 
 	private JUnit4ParameterizedPlanner(Map<String, CompilationUnit> roots, IProgressMonitor monitor)
 			throws CoreException {
 		this.roots= new TreeMap<>(roots);
 		this.monitor= monitor;
+		Map<String, String> snapshots= new LinkedHashMap<>();
 		for (Map.Entry<String, CompilationUnit> entry : this.roots.entrySet()) {
 			MultiFilePlanningBudget.checkCanceled(monitor);
+			handlesByRoot.put(entry.getValue(), entry.getKey());
 			if (entry.getValue().getJavaElement() instanceof ICompilationUnit unit) {
-				fingerprints.put(entry.getKey(), JUnit4ParameterizedPlan.fingerprint(unit.getSource()));
+				snapshots.put(entry.getKey(), JUnit4ParameterizedPlan.fingerprint(unit.getSource()));
 			}
 			entry.getValue().accept(new ASTVisitor() {
 				@Override
@@ -107,6 +111,8 @@ final class JUnit4ParameterizedPlanner {
 				}
 			});
 		}
+		// Map.copyOf in each retained plan can share this immutable scope snapshot.
+		fingerprints= Map.copyOf(snapshots);
 	}
 
 	static Result discover(Map<String, CompilationUnit> roots, boolean closedScope, IProgressMonitor monitor)
@@ -305,7 +311,7 @@ final class JUnit4ParameterizedPlanner {
 		return provider;
 	}
 
-	private static void validateRows(MethodDeclaration provider, List<ITypeBinding> parameters) {
+	private void validateRows(MethodDeclaration provider, List<ITypeBinding> parameters) {
 		Expression expression= ((ReturnStatement) provider.getBody().statements().get(0)).getExpression();
 		if (expression instanceof MethodInvocation invocation && arraysAsList(invocation)) {
 			require(invocation.arguments().size() == 1, "PROVIDER_BODY_UNSUPPORTED", //$NON-NLS-1$
@@ -320,6 +326,7 @@ final class JUnit4ParameterizedPlanner {
 				&& matrix.getInitializer() != null, "PROVIDER_BODY_UNSUPPORTED", //$NON-NLS-1$
 				"The provider must return an initialized Object[][] matrix."); //$NON-NLS-1$
 		for (Object row : matrix.getInitializer().expressions()) {
+			MultiFilePlanningBudget.checkCanceled(monitor);
 			ArrayInitializer values= row instanceof ArrayInitializer initializer ? initializer
 					: row instanceof ArrayCreation creation ? creation.getInitializer() : null;
 			require(values != null && values.expressions().size() == parameters.size(), "ROW_ARITY", //$NON-NLS-1$
@@ -340,8 +347,7 @@ final class JUnit4ParameterizedPlanner {
 	private NodeKey add(SemanticRewritePlan.Builder builder, Map<NodeKey, String> owners, ASTNode node, String role) {
 		NodeKey key= NodeKey.from(node);
 		require(key != null, "BINDING_UNRESOLVED", "Resolve every planned declaration binding."); //$NON-NLS-1$ //$NON-NLS-2$
-		String owner= roots.entrySet().stream().filter(entry -> entry.getValue() == node.getRoot())
-				.map(Map.Entry::getKey).findFirst().orElse(null);
+		String owner= handlesByRoot.get(node.getRoot());
 		require(owner != null, "SOURCE_OUTSIDE_SCOPE", "Include every planned source declaration."); //$NON-NLS-1$ //$NON-NLS-2$
 		owners.put(key, owner);
 		builder.add(key, role);
