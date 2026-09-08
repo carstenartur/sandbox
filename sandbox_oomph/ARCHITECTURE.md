@@ -26,6 +26,7 @@ The separately pinned upstream JDT QA models retain their own product, repositor
 Explicit predecessor references enforce the import/target/build order. Maven import must precede Eclipse import:
 Oomph's Maven task skips STARTUP import when any project from a source locator is already in the workspace.
 MANUAL setup runs Maven discovery again and restores missing projects.
+An explicit second Maven source locator imports this standalone verification module because m2e follows root-POM modules.
 The two import tasks exclude `.git`, `.github`, root `target` content and the test installation under `sandbox_oomph/target`.
 
 The repository target remains the source of workspace dependencies. Installing development tools into the host IDE is a
