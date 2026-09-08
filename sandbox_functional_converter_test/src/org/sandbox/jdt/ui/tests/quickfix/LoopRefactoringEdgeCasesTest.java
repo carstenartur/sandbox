@@ -404,21 +404,21 @@ class MyTest {
 	// ===========================================
 
 	/**
-	 * Tests loop variable name that shadows outer variable.
+	 * Tests loop variable name that shadows a field.
 	 * 
-	 * <p><b>Edge Case:</b> Loop variable shadows an outer scope variable</p>
+	 * <p><b>Edge Case:</b> Loop variable shadows a field (local-variable redeclaration is illegal Java)</p>
 	 * <p><b>Expected:</b> Lambda parameter preserves shadowing semantics</p>
 	 * <p><b>Why Important:</b> Incorrect transformation could change variable resolution</p>
 	 */
 	@Test
-	@DisplayName("Variable shadowing: lambda preserves scope")
+	@DisplayName("Field shadowing: lambda preserves scope")
 	void testVariableShadowing() throws CoreException {
 		String input = """
 				package test1;
 				import java.util.*;
 				class MyTest {
+					String item = "outer";
 					public void process(List<String> items) {
-						String item = "outer";
 						for (String item : items) {
 							System.out.println(item);
 						}
@@ -431,8 +431,8 @@ class MyTest {
 				package test1;
 				import java.util.*;
 				class MyTest {
+					String item = "outer";
 					public void process(List<String> items) {
-						String item = "outer";
 						items.forEach(item -> System.out.println(item));
 						System.out.println(item);
 					}

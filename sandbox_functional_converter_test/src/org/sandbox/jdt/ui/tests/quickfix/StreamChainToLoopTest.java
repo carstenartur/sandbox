@@ -504,6 +504,80 @@ class StreamChainToLoopTest {
 		assertEquals(expected, execute(context.convert(original, target), "ulr-loop"));
 	}
 
+	static Stream<String> iteratorBodies() {
+		return Stream.of(
+				"""
+				public static String run() {
+					List<String> result = new ArrayList<>();
+					for (long value : Arrays.asList(1, 2, 3)) { result.add(select(value)); }
+					return result.toString();
+				}
+				static String select(long value) { return "long:" + value; }
+				static String select(Integer value) { return "boxed:" + value; }
+				""",
+				"""
+				public static String run() {
+					List<String> result = new ArrayList<>();
+					List<? extends Number> values = Arrays.asList(1, 2.5);
+					for (Number value : values) { result.add(value.toString()); }
+					return result.toString();
+				}
+				""",
+				"""
+				static class Iterator { }
+				public static String run() {
+					List<String> result = new ArrayList<>();
+					for (List<String> value : Arrays.asList(Arrays.asList("a"), Arrays.asList("b"))) {
+						result.addAll(value);
+					}
+					return result.toString();
+				}
+				""",
+				"""
+				public static String run() {
+					List<String> result = new ArrayList<>();
+					outer: for (int value : Arrays.asList(1, 2, 3, 4)) {
+						// label must still denote the loop
+						if (value == 2) continue outer;
+						if (value == 4) break outer;
+						result.add("v" + value);
+					}
+					return result.toString();
+				}
+				""",
+				"""
+				public static String run() {
+					List<String> result = new ArrayList<>();
+					for (final String row[] : Arrays.<String[]>asList(new String[] {"a"}, new String[] {"b"})) {
+						result.add(row[0]);
+					}
+					return result.toString();
+				}
+				""",
+				"""
+				public static String run() {
+					List<String> result = new ArrayList<>();
+					Iterable values = Arrays.asList("a", 1);
+					if (values != null) for (Object value : values) result.add(value.toString());
+					for (var value : Arrays.asList("b", "c")) { /* empty body comment */ }
+					return result.toString();
+				}
+				""");
+	}
+
+	@ParameterizedTest
+	@MethodSource("iteratorBodies")
+	void enhancedForPreservesTypesLabelsAndScope(String body) throws Exception {
+		String original = source(body);
+		String converted = context.convert(original, "iterator_while", true);
+		assertNotEquals(original, converted);
+		assertTrue(converted.contains("while ("), converted);
+		if (original.contains("/* empty body comment */")) {
+			assertTrue(converted.contains("/* empty body comment */"), converted);
+		}
+		assertEquals(execute(original, "iterator-original"), execute(converted, "iterator-converted"), converted);
+	}
+
 	private String execute(String source, String directory) throws Exception {
 		Path output = Files.createDirectories(temporary.resolve(directory));
 		Path file = output.resolve("Example.java");

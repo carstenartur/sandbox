@@ -69,7 +69,7 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-		compilationUnit.accept(new ASTVisitor() {
+		LoopConversionService.scanRoot(compilationUnit).accept(new ASTVisitor() {
 			@Override
 			public boolean visit(WhileStatement node) {
 				if (ExpressionHelper.overlapsProcessedNode(node, nodesprocessed)) {
