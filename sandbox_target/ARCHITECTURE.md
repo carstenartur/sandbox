@@ -38,7 +38,8 @@ Provides the SDK, Platform, JDT, PDE, executable feature, AST View, Java Element
 
 ### Orbit 2026-06
 
-Provides third-party OSGi bundles used by the target, including Apache Commons IO and Lang.
+Provides third-party OSGi bundles used by the target, including Apache Commons IO, Lang and Gson.
+Gson is an explicit target unit so PDE can resolve the generated `sandbox_common_core` bundle in development launches.
 
 ### Orbit maven-osgi 4.40.0
 

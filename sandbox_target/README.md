@@ -33,13 +33,16 @@ Sandbox is built and tested against Eclipse 2026-06. Compatibility with older Ec
 The target currently resolves:
 
 1. Eclipse 2026-06 SDK, JDT, PDE, executable, AST View, Java Element View, and PDE spies;
-2. the matching Orbit 2026-06 aggregation for Apache Commons bundles;
+2. the matching Orbit 2026-06 aggregation for Apache Commons and Gson bundles;
 3. the Eclipse license feature;
 4. EGit and JGit;
 5. Bouncy Castle 1.84 bundles from the Orbit 4.40 maven-osgi repository;
 6. SWTBot for real-workbench UI tests.
 
 The exact list is declared in `eclipse.target`; this README is explanatory and must not be treated as a substitute for that file.
+
+Gson is explicitly included for the OSGi runtime of `sandbox_common_core`. Its Maven dependency makes compilation work,
+but a PDE development launch also needs the compatible Gson bundle in the active target.
 
 ## Building with the target
 
@@ -64,7 +67,8 @@ The distribution build is intentionally sequential.
 3. Select **Set as Active Target Platform**.
 4. Check the Problems view before importing or editing plug-in projects.
 
-The Oomph setup provisions the IDE and records the same default release, but it does not replace PDE target activation. IDE provisioning and the workspace target are related, separate contracts.
+The official Oomph project provisions the development tools and activates this target after importing the projects.
+IDE provisioning and workspace target resolution remain separate operations.
 
 ## Updating the baseline
 
