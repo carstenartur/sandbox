@@ -40,6 +40,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PatternInstanceofExpression;
 import org.eclipse.jdt.core.dom.PostfixExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.ReturnStatement;
@@ -55,6 +56,9 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite.ImportRewriteContext;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
@@ -318,6 +322,18 @@ public final class StreamForEachConverter {
 		return found[0];
 	}
 
+	private static boolean hasPatternVariable(Expression function) {
+		boolean[] found = { false };
+		function.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(PatternInstanceofExpression node) {
+				found[0] = true;
+				return false;
+			}
+		});
+		return found[0];
+	}
+
 	private static String fresh(String base, Set<String> names) {
 		String name = base;
 		for (int suffix = 1; !names.add(name); suffix++) {
@@ -339,6 +355,7 @@ public final class StreamForEachConverter {
 		private final ImportRewrite imports;
 		private final TextEditGroup group;
 		private final AST ast;
+		private ImportRewriteContext importContext;
 
 		Renderer(ASTRewrite rewrite, ImportRewrite imports, TextEditGroup group) {
 			this.rewrite = rewrite;
@@ -348,6 +365,11 @@ public final class StreamForEachConverter {
 		}
 
 		void render(Plan plan, boolean iteratorTarget) {
+			importContext = new ContextSensitiveImportRewriteContext((CompilationUnit) plan.statement().getRoot(),
+					plan.statement().getStartPosition(), imports);
+			// The cleanup's existing source-range computer honors this property.
+			// Only replace the invocation, leaving its surrounding comments in place.
+			plan.statement().setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);
 			Block replacement = ast.newBlock();
 			for (Stage stage : plan.stages()) {
 				if (stage.functionName() != null) {
@@ -382,7 +404,15 @@ public final class StreamForEachConverter {
 					Block rejected = ast.newBlock();
 					rejected.statements().add(ast.newContinueStatement());
 					guard.setThenStatement(rejected);
-					body.statements().add(guard);
+					if (hasPatternVariable(stage.function())) {
+						// The guard's continue would otherwise extend a pattern variable's
+						// flow scope into later lambdas and could hide a captured field.
+						Block scope = ast.newBlock();
+						scope.statements().add(guard);
+						body.statements().add(scope);
+					} else {
+						body.statements().add(guard);
+					}
 				} else if ("map".equals(stage.operation())) { //$NON-NLS-1$
 					current = fresh("mapped", plan.names()); //$NON-NLS-1$
 					currentType = stage.outputType();
@@ -392,7 +422,7 @@ public final class StreamForEachConverter {
 				}
 			}
 			if (iteratorTarget) {
-				ParameterizedType iteratorType = ast.newParameterizedType(ast.newSimpleType(ast.newName(imports.addImport("java.util.Iterator")))); //$NON-NLS-1$
+				ParameterizedType iteratorType = ast.newParameterizedType(ast.newSimpleType(ast.newName(imports.addImport("java.util.Iterator", importContext)))); //$NON-NLS-1$
 				iteratorType.typeArguments().add(type(plan.elementType()));
 				replacement.statements().add(declaration(iteratorType, plan.iteratorName(), call(copy(plan.source()), "iterator"))); //$NON-NLS-1$
 				body.statements().add(0, declaration(type(plan.elementType()), plan.elementName(), call(ast.newSimpleName(plan.iteratorName()), "next"))); //$NON-NLS-1$
@@ -451,7 +481,7 @@ public final class StreamForEachConverter {
 		}
 
 		private Type type(ITypeBinding binding) {
-			return imports.addImport(binding, ast);
+			return imports.addImport(binding, ast, importContext);
 		}
 
 		private Expression copy(Expression expression) {

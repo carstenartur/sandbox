@@ -85,6 +85,16 @@ class StreamChainToLoopTest {
 				static String select(int value) { return "primitive:" + value; }
 				""",
 				"""
+				static String text = "field";
+				public static String run() {
+					List<String> result = new ArrayList<>();
+					Arrays.<Object>asList("a", 1, "b").stream()
+						.filter(item -> item instanceof String text && !text.isEmpty())
+						.forEach(item -> result.add(text + item));
+					return result.toString();
+				}
+				""",
+				"""
 				static final List<String> trace = new ArrayList<>();
 				static List<String> source() {
 					trace.add("source");
@@ -260,6 +270,31 @@ class StreamChainToLoopTest {
 		assertEquals("[B, after]", execute(converted, "comments"));
 	}
 
+	static String commentBody() {
+		return """
+				public static String run() {
+					List<String> result = new ArrayList<>();
+					// before pipeline
+					Arrays.asList("a", "b").stream().forEach(item -> {
+						// before statement
+						result.add(item); // beside statement
+						// after statement
+					});
+					return result.toString();
+				}
+				""";
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "enhanced_for", "iterator_while" })
+	void preservesAllTerminalBodyComments(String target) throws Exception {
+		String converted = context.convert(source(commentBody()), target);
+		for (String comment : new String[] { "before pipeline", "before statement", "beside statement", "after statement" }) {
+			assertTrue(converted.contains("// " + comment), converted);
+		}
+		assertEquals("[a, b]", execute(converted, "body-comments"));
+	}
+
 	static Stream<Arguments> unsupported() {
 		return Stream.of("enhanced_for", "iterator_while").flatMap(target -> Stream.of(
 				"items.parallelStream().map(String::trim).forEach(item -> sink.add(item));",
@@ -273,6 +308,27 @@ class StreamChainToLoopTest {
 				"items.stream() /* keep pipeline comment */ .filter(item -> true).forEach(item -> sink.add(item));",
 				"java.util.stream.Stream.of(\"a\").forEach(item -> sink.add(item));")
 				.map(statement -> Arguments.of(target, statement)));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "enhanced_for", "iterator_while" })
+	void qualifiesTypesThatClashWithNestedDeclarations(String target) throws Exception {
+		String original = source("""
+				static class Function { }
+				static class Consumer { }
+				static class Iterator { }
+				static List<Integer> result = new ArrayList<>();
+				public static String run() {
+					Arrays.asList("a", "bb").stream().map(String::length).forEach(Example::record);
+					return result.toString();
+				}
+				static void record(Integer value) { result.add(value); }
+				""");
+		String converted = context.convert(original, target);
+		assertFalse(converted.contains(".stream()"));
+		assertTrue(converted.contains("java.util.function.Function"), converted);
+		assertTrue(converted.contains("java.util.function.Consumer"), converted);
+		assertEquals("[1, 2]", execute(converted, "type-conflicts"));
 	}
 
 	@ParameterizedTest(name = "{0}: unsupported chain remains unchanged [{index}]")
