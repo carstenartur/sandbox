@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -123,7 +124,7 @@ class ClosedSourceOverrideFamilyMigrationIntegrationTest {
 
 		undo.perform(new NullProgressMonitor());
 		for (int index= 0; index < units.size(); index++) {
-			assertTrue(units.get(index).getSource().equals(originals.get(index)));
+			assertEquals(originals.get(index), units.get(index).getSource());
 		}
 	}
 

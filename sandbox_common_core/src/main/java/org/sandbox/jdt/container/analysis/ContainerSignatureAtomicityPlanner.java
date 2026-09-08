@@ -16,6 +16,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.sandbox.jdt.container.api.ContainerFlowComponent;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
@@ -196,9 +198,9 @@ public final class ContainerSignatureAtomicityPlanner {
 			return false;
 		}
 		SignatureAtomicityGroup group= groups.get(0);
-		List<String> memberNodeIds= group.members().stream()
+		Set<String> memberNodeIds= group.members().stream()
 				.map(SignatureMember::flowNodeId)
-				.toList();
+				.collect(Collectors.toSet());
 		List<FlowNode> signatureNodes= component.nodes().stream()
 				.filter(node -> node.kind() == NodeKind.PARAMETER
 						|| node.kind() == NodeKind.EXTERNAL_PARAMETER
