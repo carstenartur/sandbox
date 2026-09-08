@@ -235,7 +235,7 @@ public final class GeneratedNameAllocator {
 			@Override
 			public void preVisit(ASTNode node) {
 <span class="fc bfc" id="L237" title="All 4 branches covered.">				if (result[0] == null &amp;&amp; node instanceof AbstractTypeDeclaration type</span>
-<span class="pc bpc" id="L238" title="1 of 2 branches missed.">						&amp;&amp; matchesOwner(root, type, request)) {</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">						&amp;&amp; matchesOwner(root, type, request)) {</span>
 <span class="fc" id="L239">					result[0]= type;</span>
 				}
 <span class="fc" id="L241">			}</span>
@@ -248,12 +248,12 @@ public final class GeneratedNameAllocator {
 <span class="fc" id="L248">		ITypeBinding binding= type.resolveBinding();</span>
 <span class="fc bfc" id="L249" title="All 2 branches covered.">		ITypeBinding declaration= binding == null ? null : binding.getTypeDeclaration();</span>
 <span class="pc bpc" id="L250" title="1 of 4 branches missed.">		if (declaration != null &amp;&amp; !request.ownerTypeBindingKey().isEmpty()</span>
-<span class="pc bpc" id="L251" title="1 of 2 branches missed.">				&amp;&amp; request.ownerTypeBindingKey().equals(declaration.getKey())) {</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">				&amp;&amp; request.ownerTypeBindingKey().equals(declaration.getKey())) {</span>
 <span class="fc" id="L252">			return true;</span>
 		}
-<span class="pc bpc" id="L254" title="1 of 2 branches missed.">		String qualifiedName= declaration == null ? qualifiedName(root, type) : declaration.getQualifiedName();</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">		String qualifiedName= declaration == null ? qualifiedName(root, type) : declaration.getQualifiedName();</span>
 <span class="pc bpc" id="L255" title="1 of 2 branches missed.">		return !request.ownerTypeQualifiedName().isEmpty()</span>
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">				&amp;&amp; request.ownerTypeQualifiedName().equals(qualifiedName);</span>
+<span class="fc bfc" id="L256" title="All 2 branches covered.">				&amp;&amp; request.ownerTypeQualifiedName().equals(qualifiedName);</span>
 	}
 
 	private static void collectImportCollisions(Owner owner, NestedTypeRequest request,
@@ -315,9 +315,9 @@ public final class GeneratedNameAllocator {
 <span class="fc" id="L315">							&quot;parameter or local variable&quot;, variable.getName().getIdentifier(), variable)); //$NON-NLS-1$</span>
 <span class="fc bfc" id="L316" title="All 2 branches covered.">				} else if (node instanceof VariableDeclarationFragment fragment</span>
 <span class="fc bfc" id="L317" title="All 2 branches covered.">						&amp;&amp; !(fragment.getParent() instanceof FieldDeclaration)</span>
-<span class="pc bpc" id="L318" title="1 of 2 branches missed.">						&amp;&amp; requestedName.equals(fragment.getName().getIdentifier())) {</span>
-<span class="nc" id="L319">					collisions.add(collision(Namespace.LOCAL, owner.root(), request,</span>
-<span class="nc" id="L320">							&quot;local variable&quot;, fragment.getName().getIdentifier(), fragment)); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">						&amp;&amp; requestedName.equals(fragment.getName().getIdentifier())) {</span>
+<span class="fc" id="L319">					collisions.add(collision(Namespace.LOCAL, owner.root(), request,</span>
+<span class="fc" id="L320">							&quot;local variable&quot;, fragment.getName().getIdentifier(), fragment)); //$NON-NLS-1$</span>
 				}
 <span class="fc" id="L322">			}</span>
 		});

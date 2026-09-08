@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EnumNameSafety.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_int_to_enum</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">EnumNameSafety.java</span></div><h1>EnumNameSafety.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+
+/** Prevents generated enum names from changing existing name resolution. */
+public final class EnumNameSafety {
+
+	private EnumNameSafety() { }
+
+	/** Conservatively rejects names already declared or referenced inside the owner. */
+	public static boolean conflicts(TypeDeclaration owner, String name) {
+<span class="fc" id="L21">		boolean[] conflict= { false };</span>
+<span class="fc" id="L22">		owner.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SimpleName node) {
+<span class="fc bfc" id="L25" title="All 2 branches covered.">				if (name.equals(node.getIdentifier())) {</span>
+<span class="fc" id="L26">					conflict[0]= true;</span>
+				}
+<span class="fc bfc" id="L28" title="All 2 branches covered.">				return !conflict[0];</span>
+			}
+		});
+<span class="fc" id="L31">		return conflict[0];</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -202,10 +202,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(CharacterLiteral node) {
-<span class="nc bnc" id="L205" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.CharacterLiteral)) {</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.CharacterLiteral)) {</span>
 <span class="nc" id="L206">			return this.helperVisitor.testPredicate(VisitorEnum.CharacterLiteral, node);</span>
 		}
-<span class="nc" id="L208">		return true;</span>
+<span class="fc" id="L208">		return true;</span>
 	}
 
 	@Override
@@ -1345,10 +1345,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(CharacterLiteral node) {
-<span class="nc bnc" id="L1348" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.CharacterLiteral)) {</span>
+<span class="pc bpc" id="L1348" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.CharacterLiteral)) {</span>
 <span class="nc" id="L1349">			this.helperVisitor.acceptConsumer(VisitorEnum.CharacterLiteral, node);</span>
 		}
-<span class="nc" id="L1351">	}</span>
+<span class="fc" id="L1351">	}</span>
 
 	@Override
 	public void endVisit(ClassInstanceCreation node) {

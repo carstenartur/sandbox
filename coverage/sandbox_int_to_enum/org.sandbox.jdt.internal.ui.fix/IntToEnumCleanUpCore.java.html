@@ -57,7 +57,7 @@ import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMultiFilePlanner;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumPackageVisibilityPolicy;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumScopeCandidateDetector;
 
-/** Core cleanup implementation that converts integer constants to enums. */
+/** Core cleanup implementation that converts state constants to enums. */
 public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp&lt;IntEnumMigrationPlan&gt; {
 
 <span class="fc" id="L63">	private final Map&lt;IJavaProject, Set&lt;String&gt;&gt; pendingExpandedScopes= new HashMap&lt;&gt;();</span>
@@ -86,7 +86,7 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp&lt;Int
 <span class="pc bpc" id="L86" title="1 of 4 branches missed.">		if (!isEnabled(INT_TO_ENUM_CLEANUP) || computeFixSet().isEmpty()) {</span>
 <span class="fc" id="L87">			return MultiFileCleanUpPlanResult.noPlan();</span>
 		}
-<span class="pc bpc" id="L89" title="2 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="pc bpc" id="L89" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
 <span class="nc" id="L90">			throw new OperationCanceledException();</span>
 		}
 <span class="fc bfc" id="L92" title="All 2 branches covered.">		if (!isEnabled(PROJECT_WIDE)) {</span>

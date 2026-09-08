@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EnumComparison.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_int_to_enum</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">EnumComparison.java</span></div><h1>EnumComparison.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+
+/** Comparisons preserved verbatim after a closed, non-null domain is proved. */
+public final class EnumComparison {
+
+	public record Operands(Expression left, Expression right) { }
+
+	private EnumComparison() { }
+
+	public static Operands operands(Expression expression) {
+<span class="fc" id="L24">		Expression unwrapped= unwrap(expression);</span>
+<span class="pc bpc" id="L25" title="1 of 4 branches missed.">		if (unwrapped instanceof InfixExpression infix &amp;&amp; infix.extendedOperands().isEmpty()</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">				&amp;&amp; (infix.getOperator() == InfixExpression.Operator.EQUALS</span>
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">						|| infix.getOperator() == InfixExpression.Operator.NOT_EQUALS)) {</span>
+<span class="fc" id="L28">			return new Operands(unwrap(infix.getLeftOperand()), unwrap(infix.getRightOperand()));</span>
+		}
+<span class="fc bfc" id="L30" title="All 2 branches covered.">		if (!(unwrapped instanceof MethodInvocation invocation)) {</span>
+<span class="fc" id="L31">			return null;</span>
+		}
+<span class="fc" id="L33">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L34" title="2 of 6 branches missed.">		if (binding == null || binding.isRecovered() || !&quot;equals&quot;.equals(binding.getName())) { //$NON-NLS-1$</span>
+<span class="fc" id="L35">			return null;</span>
+		}
+<span class="fc" id="L37">		String owner= binding.getMethodDeclaration().getDeclaringClass().getQualifiedName();</span>
+		Expression left;
+		Expression right;
+<span class="pc bpc" id="L40" title="1 of 4 branches missed.">		if (&quot;java.lang.String&quot;.equals(owner) &amp;&amp; invocation.getExpression() != null //$NON-NLS-1$</span>
+<span class="pc bpc" id="L41" title="1 of 2 branches missed.">				&amp;&amp; invocation.arguments().size() == 1) {</span>
+<span class="fc" id="L42">			left= invocation.getExpression();</span>
+<span class="fc" id="L43">			right= (Expression) invocation.arguments().get(0);</span>
+<span class="pc bpc" id="L44" title="2 of 4 branches missed.">		} else if (&quot;java.util.Objects&quot;.equals(owner) &amp;&amp; invocation.arguments().size() == 2) { //$NON-NLS-1$</span>
+<span class="fc" id="L45">			left= (Expression) invocation.arguments().get(0);</span>
+<span class="fc" id="L46">			right= (Expression) invocation.arguments().get(1);</span>
+<span class="fc" id="L47">		} else {</span>
+<span class="nc" id="L48">			return null;</span>
+		}
+<span class="pc bpc" id="L50" title="2 of 4 branches missed.">		if (!isString(left) || !isString(right)) {</span>
+<span class="nc" id="L51">			return null;</span>
+		}
+<span class="fc" id="L53">		return new Operands(unwrap(left), unwrap(right));</span>
+	}
+
+	private static boolean isString(Expression expression) {
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">		return expression.resolveTypeBinding() != null</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">				&amp;&amp; &quot;java.lang.String&quot;.equals(expression.resolveTypeBinding().getQualifiedName()); //$NON-NLS-1$</span>
+	}
+
+	private static Expression unwrap(Expression expression) {
+<span class="fc bfc" id="L62" title="All 2 branches covered.">		while (expression instanceof ParenthesizedExpression parenthesized) {</span>
+<span class="fc" id="L63">			expression= parenthesized.getExpression();</span>
+		}
+<span class="fc" id="L65">		return expression;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
