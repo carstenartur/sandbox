@@ -4,22 +4,15 @@
     xmlns:xmi="http://www.omg.org/XMI"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:setup="http://www.eclipse.org/oomph/setup/1.0"
-    name="sandbox"
     label="Sandbox (IDE + Workspace + Projects)">
-
+  <installation name="sandbox.installation" label="Sandbox installation">
+    <productVersion href="sandbox.setup#//@versions[name='latest']"/>
+  </installation>
+  <workspace name="sandbox.workspace" label="Sandbox workspace">
+    <stream href="sandboxproject.setup#//@streams[name='main']"/>
+  </workspace>
   <description>
-    Installs a ready-to-use Eclipse (Sandbox Profile) and sets up the workspace
-    by cloning and importing the sandbox repository.
+    Optional combined entry point. Sandbox is also available directly in the
+    Eclipse Installer under Github Projects / Sandbox Project / Main.
   </description>
-
-  <!-- Include your Product setup -->
-  <setupTask
-      xsi:type="setup:SetupTask"
-      href="sandbox.setup#/"/>
-
-  <!-- Include your Project setup -->
-  <setupTask
-      xsi:type="setup:SetupTask"
-      href="sandboxproject.setup#/"/>
-
 </setup:Configuration>
