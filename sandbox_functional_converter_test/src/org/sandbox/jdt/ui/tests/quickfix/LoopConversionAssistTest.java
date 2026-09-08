@@ -141,6 +141,10 @@ class LoopConversionAssistTest {
 		assertTrue(new LoopConversionQuickAssistProcessor().hasAssists(invocation(source, source.indexOf("println"), 0)));
 		String broken = source.replace("println(s)", "println(missing)");
 		assertFalse(new LoopConversionQuickAssistProcessor().hasAssists(invocation(broken, broken.indexOf("println"), 0)));
+		String redeclared = source.replace("for (String s", "String s = \"outer\"; for (String s");
+		var invalid = invocation(redeclared, redeclared.indexOf("for ("), 0);
+		assertTrue(Arrays.stream(invalid.getASTRoot().getProblems()).anyMatch(problem -> problem.isError()));
+		assertFalse(new LoopConversionQuickAssistProcessor().hasAssists(invalid));
 	}
 
 	@Test
