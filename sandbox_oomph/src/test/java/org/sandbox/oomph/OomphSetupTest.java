@@ -92,7 +92,7 @@ class OomphSetupTest {
             }
             assertEquals(expected.toLowerCase(java.util.Locale.ROOT), java.util.HexFormat.of().formatHex(digest.digest()),
                     "SDK archive must match the published Eclipse checksum");
-            process(run.resolve("extract.log"), run, List.of("tar", "--no-same-owner", "xzf", archive.toString()));
+            process(run.resolve("extract.log"), run, List.of("tar", "--no-same-owner", "-xzf", archive.toString()));
         }
         List<String> units = new ArrayList<>(List.of("org.eclipse.oomph.setup.sdk.feature.group",
                 "org.eclipse.oomph.setup.maven.feature.group"));
