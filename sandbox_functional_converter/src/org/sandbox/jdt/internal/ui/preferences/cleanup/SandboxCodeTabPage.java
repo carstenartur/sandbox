@@ -38,6 +38,15 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	public static final String ID= "org.eclipse.jdt.ui.cleanup.tabpage.sandbox.functional"; //$NON-NLS-1$
 
 	@Override
+	public void setWorkingValues(Map<String, String> values) {
+		String key = MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT;
+		if (values.containsKey(key)) {
+			values.put(key, LoopTargetFormat.fromId(values.get(key)).getId());
+		}
+		super.setWorkingValues(values);
+	}
+
+	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map<String, String> values) {
 		return new AbstractCleanUp[] {
 				new UseFunctionalCallCleanUp(values)
@@ -55,7 +64,6 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		// Master checkbox to enable loop conversions
 		final CheckboxPreference loopConversionEnabled = createCheckboxPref(loopConversionGroup, numColumns,
 			CleanUpMessages.LoopConversion_Enable, MYCleanUpConstants.LOOP_CONVERSION_ENABLED, FALSE_TRUE);
-		intent(loopConversionGroup);
 
 		// Target format combo box (for string-valued preference)
 		final ComboPreference targetFormatCombo = createComboPref(loopConversionGroup, numColumns,
