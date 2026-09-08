@@ -52,6 +52,8 @@ import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.operation.FilterOp;
 import org.sandbox.functional.core.operation.MapOp;
+import org.sandbox.functional.core.operation.PeekOp;
+import org.sandbox.functional.core.operation.StreamTypeConversionOp;
 import org.sandbox.functional.core.terminal.ForEachTerminal;
 
 /**
@@ -61,6 +63,11 @@ import org.sandbox.functional.core.terminal.ForEachTerminal;
 public final class JdtStreamExtractor {
 	private static final String STREAM = "java.util.stream.Stream"; //$NON-NLS-1$
 	private static final String ITERABLE = "java.lang.Iterable"; //$NON-NLS-1$
+	private static final Set<String> STREAM_TYPES = Set.of(STREAM, "java.util.stream.IntStream", //$NON-NLS-1$
+			"java.util.stream.LongStream", "java.util.stream.DoubleStream"); //$NON-NLS-1$ //$NON-NLS-2$
+	private static final Set<String> FUNCTION_OPERATIONS = Set.of("filter", "peek", "map", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			"mapToInt", "mapToLong", "mapToDouble", "mapToObj"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+	private static final Set<String> TYPE_OPERATIONS = Set.of("boxed", "asLongStream", "asDoubleStream"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	public record ExtractedStream(LoopModel model, JdtStreamContext context) {
 	}
@@ -85,20 +92,44 @@ public final class JdtStreamExtractor {
 		calls.add(terminal);
 		Expression source = terminal.getExpression();
 		ITypeBinding elementType;
-		if (declaredBy(terminal, STREAM)) {
-			while (source instanceof MethodInvocation call && declaredBy(call, STREAM)
-					&& Set.of("filter", "map").contains(call.getName().getIdentifier())) { //$NON-NLS-1$ //$NON-NLS-2$
+		SourceDescriptor.SourceType sourceKind;
+		String streamExpression = null;
+		Expression streamSource = null;
+		if (standardStreamMethod(terminal)) {
+			while (source instanceof MethodInvocation call && standardStreamMethod(call)
+					&& (FUNCTION_OPERATIONS.contains(call.getName().getIdentifier()) || TYPE_OPERATIONS.contains(call.getName().getIdentifier()))) {
 				calls.add(call);
 				source = call.getExpression();
 			}
-			if (!(source instanceof MethodInvocation stream) || !declaredBy(stream, "java.util.Collection") //$NON-NLS-1$
-					|| !"stream".equals(stream.getName().getIdentifier()) || !stream.arguments().isEmpty()) { //$NON-NLS-1$
+			if (!(source instanceof MethodInvocation stream)) {
 				return null;
 			}
-			elementType = elementType(stream.resolveTypeBinding(), STREAM);
-			source = stream.getExpression();
+			elementType = streamElementType(stream);
+			streamSource = stream;
+			if (declaredBy(stream, "java.util.Collection") && "stream".equals(stream.getName().getIdentifier()) //$NON-NLS-1$ //$NON-NLS-2$
+					&& stream.arguments().isEmpty()) {
+				sourceKind = SourceDescriptor.SourceType.COLLECTION;
+				source = stream.getExpression();
+			} else if (declaredBy(stream, "java.util.Arrays") && "stream".equals(stream.getName().getIdentifier())) { //$NON-NLS-1$ //$NON-NLS-2$
+				if (stream.arguments().size() == 1) {
+					streamExpression = sourceText(stream);
+					sourceKind = SourceDescriptor.SourceType.ARRAY;
+					source = (Expression) stream.arguments().get(0);
+				} else {
+					// Retain JDK slice validation and evaluation of array/from/to exactly once.
+					sourceKind = SourceDescriptor.SourceType.STREAM;
+				}
+			} else if (standardStreamMethod(stream) && org.eclipse.jdt.core.dom.Modifier.isStatic(stream.resolveMethodBinding().getModifiers())
+					&& Set.of("of", "empty", "ofNullable", "range", "rangeClosed", "iterate", "generate") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
+							.contains(stream.getName().getIdentifier())) {
+				sourceKind = SourceDescriptor.SourceType.STREAM;
+			} else {
+				return null;
+			}
 		} else if ("forEach".equals(terminalName) && standardForEach(terminal)) { //$NON-NLS-1$
 			elementType = source == null ? null : elementType(source.resolveTypeBinding(), ITERABLE);
+			sourceKind = elementType(source == null ? null : source.resolveTypeBinding(), "java.util.Collection") != null //$NON-NLS-1$
+					? SourceDescriptor.SourceType.COLLECTION : SourceDescriptor.SourceType.ITERABLE;
 		} else {
 			return null;
 		}
@@ -107,13 +138,18 @@ public final class JdtStreamExtractor {
 		}
 		Collections.reverse(calls);
 		LoopModelBuilder builder = new LoopModelBuilder()
-				.source(elementType(source.resolveTypeBinding(), "java.util.Collection") != null //$NON-NLS-1$
-						? SourceDescriptor.SourceType.COLLECTION : SourceDescriptor.SourceType.ITERABLE,
-						sourceText(source), elementType.getQualifiedName())
+				.source(new SourceDescriptor(sourceKind, sourceText(source), elementType.getQualifiedName(), streamExpression))
 				.metadata(false, false, false, false, true);
 		Map<FunctionalExpression, Expression> functions = new IdentityHashMap<>();
 		FunctionalExpression firstFunction = null;
 		for (MethodInvocation call : calls) {
+			String operation = call.getName().getIdentifier();
+			if (TYPE_OPERATIONS.contains(operation)) {
+				ITypeBinding input = streamElementType(call.getExpression());
+				if (!call.arguments().isEmpty() || input == null) return null;
+				builder.operation(new StreamTypeConversionOp(StreamTypeConversionOp.Kind.fromMethod(operation), input.getQualifiedName()));
+				continue;
+			}
 			if (call.arguments().size() != 1 || !(call.arguments().get(0) instanceof Expression function)
 					|| !safeToMove(function)) {
 				return null;
@@ -124,7 +160,6 @@ public final class JdtStreamExtractor {
 					|| !denotable(method.getParameterTypes()[0]) || !denotable(method.getReturnType())) {
 				return null;
 			}
-			String operation = call.getName().getIdentifier();
 			FunctionalExpression descriptor = new FunctionalExpression(sourceText(function),
 					function instanceof LambdaExpression lambda ? parameter(lambda).getName().getIdentifier() : null,
 					method.getParameterTypes()[0].getQualifiedName(), method.getReturnType().getQualifiedName(),
@@ -138,8 +173,11 @@ public final class JdtStreamExtractor {
 			case "filter": //$NON-NLS-1$
 				builder.operation(new FilterOp(expression, descriptor));
 				break;
-			case "map": //$NON-NLS-1$
-				builder.operation(new MapOp(expression, descriptor.outputType(), null, false, descriptor));
+			case "map", "mapToInt", "mapToLong", "mapToDouble", "mapToObj": //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+				builder.operation(new MapOp(expression, descriptor.outputType(), null, false, descriptor, MapOp.Kind.fromMethod(operation)));
+				break;
+			case "peek": //$NON-NLS-1$
+				builder.operation(new PeekOp(expression, descriptor));
 				break;
 			default:
 				builder.terminal(new ForEachTerminal(List.of(expression), "forEachOrdered".equals(operation), descriptor)); //$NON-NLS-1$
@@ -156,8 +194,8 @@ public final class JdtStreamExtractor {
 		Set<String> names = LoopVariableNames.usedNames(unit);
 		String elementName = calls.size() == 1 && firstFunction != null && !firstFunction.requiresInvocation()
 				? firstFunction.parameterName() : fresh("element", names); //$NON-NLS-1$
-		LoopModel model = builder.element(elementName, elementType.getQualifiedName(), false).build();
-		return new ExtractedStream(model, new JdtStreamContext(statement, source, elementType, functions));
+		LoopModel model = builder.element(elementName, elementType.getQualifiedName(), elementType.isPrimitive()).build();
+		return new ExtractedStream(model, new JdtStreamContext(statement, source, elementType, functions, streamSource));
 	}
 
 	private static boolean contains(ASTNode outer, ASTNode inner) {
@@ -186,6 +224,23 @@ public final class JdtStreamExtractor {
 				&& owner.equals(method.getDeclaringClass().getErasure().getQualifiedName());
 	}
 
+	private static boolean standardStreamMethod(MethodInvocation call) {
+		IMethodBinding method = call.resolveMethodBinding();
+		return method != null && !method.isRecovered() && method.getDeclaringClass() != null
+				&& STREAM_TYPES.contains(method.getDeclaringClass().getErasure().getQualifiedName());
+	}
+
+	private static ITypeBinding streamElementType(Expression source) {
+		ITypeBinding type = source.resolveTypeBinding();
+		if (type == null || type.isRecovered()) return null;
+		return switch (type.getErasure().getQualifiedName()) {
+		case "java.util.stream.IntStream" -> source.getAST().resolveWellKnownType("int"); //$NON-NLS-1$ //$NON-NLS-2$
+		case "java.util.stream.LongStream" -> source.getAST().resolveWellKnownType("long"); //$NON-NLS-1$ //$NON-NLS-2$
+		case "java.util.stream.DoubleStream" -> source.getAST().resolveWellKnownType("double"); //$NON-NLS-1$ //$NON-NLS-2$
+		default -> elementType(type, STREAM);
+		};
+	}
+
 	private static boolean standardForEach(MethodInvocation call) {
 		IMethodBinding method = call.resolveMethodBinding();
 		return method != null && !method.isRecovered() && method.getDeclaringClass() != null
@@ -210,7 +265,7 @@ public final class JdtStreamExtractor {
 		return elementType(type.getSuperclass(), owner);
 	}
 
-	private static boolean denotable(ITypeBinding type) {
+	static boolean denotable(ITypeBinding type) {
 		if (type == null || type.isRecovered() || type.isCapture() || type.isWildcardType()
 				|| type.isAnonymous() || type.isIntersectionType() || type.isNullType()) {
 			return false;
@@ -261,7 +316,7 @@ public final class JdtStreamExtractor {
 		// Intermediate blocks and terminal blocks with local returns retain their
 		// functional boundary. Ordinary terminal blocks can be copied verbatim.
 		if (lambda.getBody() instanceof Block && ("filter".equals(operation) //$NON-NLS-1$
-				|| "map".equals(operation) || hasReturn(lambda.getBody()))) { //$NON-NLS-1$
+				|| operation.startsWith("map") || hasReturn(lambda.getBody()))) { //$NON-NLS-1$
 			return false;
 		}
 		IVariableBinding binding = parameter(lambda).resolveBinding();

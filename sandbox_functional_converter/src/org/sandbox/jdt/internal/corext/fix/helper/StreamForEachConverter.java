@@ -42,6 +42,11 @@ public final class StreamForEachConverter {
 				if (extracted == null) {
 					return true;
 				}
+				if (fix == UseFunctionalCallFixCore.STREAM_TO_FOR
+						&& extracted.model().getSource().type() == org.sandbox.functional.core.model.SourceDescriptor.SourceType.STREAM) {
+					// A Stream has no enhanced-for protocol; preserve lazy factories via an iterator target.
+					return true;
+				}
 				ReferenceHolder<ASTNode, Object> data = new ReferenceHolder<>();
 				data.put(node, extracted);
 				operations.add(fix.rewrite(node, data));

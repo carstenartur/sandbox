@@ -120,6 +120,10 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 	}
 
 	private boolean isSafeToSchedule(ASTNode loop, IteratorConversion conversion) {
+		if (!(loop instanceof Statement statement) || IteratorLoopBindings.element(statement,
+				loop instanceof WhileStatement ? findPreviousStatement(statement) : null, conversion.pattern()) == null) {
+			return false;
+		}
 		LoopModel model= conversion.extractedLoop().model;
 		TerminalOperation terminal= model.getTerminal();
 		String liftedAccumulatorName= null;

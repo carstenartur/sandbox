@@ -87,7 +87,8 @@ public class ASTIteratorWhileRenderer {
 		next.setName(ast.newSimpleName("next")); //$NON-NLS-1$
 		element.setInitializer(next);
 		VariableDeclarationStatement declaration = ast.newVariableDeclarationStatement(element);
-		declaration.setType((Type) rewrite.createCopyTarget(parameter.getType()));
+		declaration.setType(parameter.getType().isVar() ? imports.addImport(parameter.resolveBinding().getType(), ast, importContext)
+				: (Type) rewrite.createCopyTarget(parameter.getType()));
 		for (Object modifier : parameter.modifiers()) {
 			declaration.modifiers().add(rewrite.createCopyTarget((ASTNode) modifier));
 		}

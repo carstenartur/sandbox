@@ -13,10 +13,24 @@
  *******************************************************************************/
 package org.sandbox.functional.core.operation;
 
+import java.util.Objects;
+import org.sandbox.functional.core.model.FunctionalExpression;
+
 /**
  * Represents a peek operation in a stream pipeline.
  */
-public record PeekOp(String expression) implements Operation {
+public record PeekOp(String expression, FunctionalExpression function) implements Operation {
+    public PeekOp(String expression) {
+        this(expression, null);
+    }
+
+    public PeekOp {
+        Objects.requireNonNull(expression, "expression must not be null");
+        if (function != null && !"void".equals(function.outputType())) {
+            throw new IllegalArgumentException("A peek action must return void");
+        }
+    }
+
     @Override
     public String operationType() { 
         return "peek"; 

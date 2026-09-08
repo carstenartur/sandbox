@@ -23,6 +23,7 @@ import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.model.FunctionalExpression;
 import org.sandbox.functional.core.operation.FilterOp;
 import org.sandbox.functional.core.operation.MapOp;
+import org.sandbox.functional.core.operation.StreamTypeConversionOp;
 import org.sandbox.functional.core.renderer.ASTAwareRenderer;
 import org.sandbox.functional.core.renderer.StreamPipelineRenderer;
 import org.sandbox.functional.core.terminal.*;
@@ -52,6 +53,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     
     @Override
     public Expression renderSource(SourceDescriptor source) {
+        if (source.streamExpression() != null) return createExpression(source.streamExpression());
         // Create: collection.stream() or Arrays.stream(array)
         switch (source.type()) {
             case COLLECTION:
@@ -112,6 +114,14 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
                 // Already a Stream
                 return createExpression(source.expression());
         }
+    }
+
+    @Override
+    public Expression renderTypeConversion(Expression pipeline, StreamTypeConversionOp conversion) {
+        MethodInvocation call = ast.newMethodInvocation();
+        call.setExpression(pipeline);
+        call.setName(ast.newSimpleName(conversion.operationType()));
+        return call;
     }
     
     @Override

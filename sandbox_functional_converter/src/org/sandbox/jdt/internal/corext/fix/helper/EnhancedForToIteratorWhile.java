@@ -71,6 +71,9 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 						|| visited.getParameter().resolveBinding() == null || LoopConversionService.hasErrors(visited)) {
 					return false;
 				}
+				if (!IteratorLoopBindings.denotableIterator(typeBinding) || !JdtStreamExtractor.denotable(visited.getParameter().resolveBinding().getType())) {
+					return false;
+				}
 				
 				operations.add(fixcore.rewrite(visited, new ReferenceHolder<>()));
 				nodesprocessed.add(visited);
@@ -102,14 +105,15 @@ public class EnhancedForToIteratorWhile extends AbstractFunctionalCall<ASTNode> 
 	 */
 	private LoopModel buildLoopModel(EnhancedForStatement forStmt) {
 		String paramName = forStmt.getParameter().getName().getIdentifier();
-		String paramType = forStmt.getParameter().getType().toString();
+		String paramType = forStmt.getParameter().resolveBinding().getType().getQualifiedName();
 		String collectionExpr = forStmt.getExpression().toString();
 		
 		// Extract body statements as expression strings
 		List<String> bodyStatements = extractBodyStatements(forStmt.getBody());
 		
 		return new LoopModelBuilder()
-			.source(SourceDescriptor.SourceType.ITERABLE, collectionExpr, paramType)
+			.source(SourceDescriptor.SourceType.ITERABLE, collectionExpr,
+					IteratorLoopBindings.sourceElementType(forStmt.getExpression().resolveTypeBinding()))
 			.element(paramName, paramType, forStmt.getParameter().resolveBinding().getType().isPrimitive())
 			.terminal(new ForEachTerminal(bodyStatements, false))
 			.build();

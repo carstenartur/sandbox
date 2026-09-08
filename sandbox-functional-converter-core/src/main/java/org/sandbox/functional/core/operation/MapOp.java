@@ -22,11 +22,27 @@ import org.sandbox.functional.core.model.FunctionalExpression;
  * Represents a map operation in a stream pipeline.
  */
 public final class MapOp implements Operation {
+    /** Preserve reference/primitive stream transitions when a pipeline is re-rendered. */
+    public enum Kind {
+        MAP("map"), TO_INT("mapToInt"), TO_LONG("mapToLong"), TO_DOUBLE("mapToDouble"), TO_OBJECT("mapToObj");
+
+        private final String method;
+        Kind(String method) { this.method = method; }
+        public String method() { return method; }
+        public static Kind fromMethod(String method) {
+            for (Kind kind : values()) {
+                if (kind.method.equals(method)) return kind;
+            }
+            throw new IllegalArgumentException("Unsupported mapping operation: " + method);
+        }
+    }
+
     private final String expression;
     private final String targetType;
     private final String outputVariableName;
     private final boolean sideEffect;
     private final FunctionalExpression function;
+    private final Kind kind;
     private final List<String> associatedComments;
     
     /**
@@ -42,6 +58,11 @@ public final class MapOp implements Operation {
 
     public MapOp(String expression, String targetType, String outputVariableName, boolean sideEffect,
             FunctionalExpression function) {
+        this(expression, targetType, outputVariableName, sideEffect, function, Kind.MAP);
+    }
+
+    public MapOp(String expression, String targetType, String outputVariableName, boolean sideEffect,
+            FunctionalExpression function, Kind kind) {
         this.expression = Objects.requireNonNull(expression, "expression must not be null");
         this.targetType = targetType;
         this.outputVariableName = outputVariableName;
@@ -50,6 +71,19 @@ public final class MapOp implements Operation {
             throw new IllegalArgumentException("Map target type must match the functional result type");
         }
         this.function = function;
+        this.kind = Objects.requireNonNull(kind, "kind must not be null");
+        if (kind != Kind.MAP && (function == null || sideEffect)) {
+            throw new IllegalArgumentException("A stream type transition requires a complete mapping function");
+        }
+        String primitive = switch (kind) {
+            case TO_INT -> "int";
+            case TO_LONG -> "long";
+            case TO_DOUBLE -> "double";
+            default -> null;
+        };
+        if (primitive != null && !primitive.equals(targetType)) {
+            throw new IllegalArgumentException("Mapping result does not match " + kind.method());
+        }
         this.associatedComments = new ArrayList<>();
     }
     
@@ -113,7 +147,7 @@ public final class MapOp implements Operation {
     
     @Override
     public String operationType() { 
-        return "map"; 
+        return kind.method();
     }
     
     /**
@@ -157,7 +191,7 @@ public final class MapOp implements Operation {
         if (this == o) return true;
         if (!(o instanceof MapOp)) return false;
         MapOp mapOp = (MapOp) o;
-        return sideEffect == mapOp.sideEffect &&
+        return sideEffect == mapOp.sideEffect && kind == mapOp.kind &&
                expression.equals(mapOp.expression) && 
                Objects.equals(targetType, mapOp.targetType) &&
                Objects.equals(outputVariableName, mapOp.outputVariableName) &&
@@ -166,13 +200,14 @@ public final class MapOp implements Operation {
     
     @Override
     public int hashCode() {
-        return Objects.hash(expression, targetType, outputVariableName, sideEffect, function);
+        return Objects.hash(expression, targetType, outputVariableName, sideEffect, function, kind);
     }
     
     @Override
     public String toString() {
         return "MapOp[expression=" + expression + 
                ", targetType=" + targetType + 
+               ", kind=" + kind +
                ", function=" + function +
                ", comments=" + associatedComments.size() + "]";
     }

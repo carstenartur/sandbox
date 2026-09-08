@@ -2,6 +2,25 @@
 
 > **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#functional_converter) | [Architecture](ARCHITECTURE.md)
 
+## Current coverage and remaining boundaries
+
+The executable implementation now has shared cleanup/Quick Assist/Quick Fix
+analysis, optional managed style diagnostics, primitive and array stream ULR
+extraction, mixed primitive/reference maps, peek scopes, boxing/widening steps,
+verified sequential factories for iterator targets and binding-checked iterator
+while/for to enhanced-for conversion. The README support matrices and
+`StreamCoverageTest` supersede older completed/pending claims below.
+
+Remaining work requires explicit semantic models before enabling conversions:
+- Reverse terminals beyond forEach (collect/reduce/matches/find).
+- Stateful stream stages and short-circuit evaluation, including argument checks.
+- Arbitrary bound callback receivers/function values with exact eager evaluation.
+- Enhanced-for lowering of lazy stream factories without materialization/boxing.
+- Non-denotable types and custom/parallel traversal protocols.
+
+These cases must stay unchanged until compilation and behavioral comparisons
+cover their evaluation order, scope, exceptions and traversal behavior.
+
 ## V2 Parallel Implementation Roadmap
 
 ### Phase 1: Infrastructure Setup ✅ COMPLETED (January 2026)

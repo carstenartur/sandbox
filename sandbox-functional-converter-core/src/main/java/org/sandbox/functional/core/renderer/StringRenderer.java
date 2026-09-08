@@ -29,6 +29,7 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
     @Override
     public String renderSource(SourceDescriptor source) {
         if (source == null) return "";
+        if (source.streamExpression() != null) return source.streamExpression();
         String expr = source.expression();
         
         return switch (source.type()) {
@@ -101,6 +102,11 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
     @Override
     public String renderPeek(String pipeline, String expression, String variableName) {
         return pipeline + ".peek(" + variableName + " -> " + expression + ")";
+    }
+
+    @Override
+    public String renderTypeConversion(String pipeline, StreamTypeConversionOp conversion) {
+        return pipeline + "." + conversion.operationType() + "()";
     }
     
     @Override
