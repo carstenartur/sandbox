@@ -67,7 +67,7 @@ public record ClosedSourceParameterMigrationPlan(
 
 	/** Returns affected compilation-unit handles in deterministic execution order. */
 	public List<String> affectedCompilationUnitHandles() {
-		Set<String> handles= new LinkedHashSet<>();
+		Set<String> handles= LinkedHashSet.newLinkedHashSet(parameterPlans.size() + 1);
 		handles.add(callerPlan.compilationUnitHandle());
 		for (ContainerParameterRewritePlan parameterPlan : parameterPlans) {
 			handles.add(parameterPlan.compilationUnitHandle());

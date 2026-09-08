@@ -12,6 +12,7 @@ package org.sandbox.jdt.container.analysis;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -26,9 +27,12 @@ import org.sandbox.jdt.container.api.ContainerFlowGraph.ClosureStatus;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.EdgeKind;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.FlowNode;
 import org.sandbox.jdt.container.api.ContainerFlowGraph.NodeKind;
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan;
+import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.ArgumentTransfer;
 import org.sandbox.jdt.container.api.ContainerLocalRewritePlan.EditKind;
 import org.sandbox.jdt.container.api.ContainerMigrationReadiness;
 import org.sandbox.jdt.container.api.ContainerMigrationReadiness.ExecutionStatus;
+import org.sandbox.jdt.container.api.ContainerParameterRewritePlan;
 import org.sandbox.jdt.container.api.ContainerRecommendation;
 import org.sandbox.jdt.container.api.ContainerRecommendation.AutomationLevel;
 import org.sandbox.jdt.container.api.ContainerRecommendation.Confidence;
@@ -62,25 +66,8 @@ class ClosedSourceParameterMigrationPlannerTest {
 
 	@Test
 	void combinesCallerAndCompleteOverrideFamilyIntoOnePlan() {
-		TargetContainerContract target= target();
-		ContainerUsageProfile caller= callerProfile();
-		List<ContainerUsageProfile> parameters= List.of(
-				parameterProfile("interface-binding", 20), //$NON-NLS-1$
-				parameterProfile("first-binding", 40), //$NON-NLS-1$
-				parameterProfile("second-binding", 60)); //$NON-NLS-1$
-		ContainerRecommendation recommendation= recommendation(caller, target);
-		ContainerMigrationReadiness readiness= new ContainerMigrationReadiness(
-				target, ExecutionStatus.AUTOMATIC, List.of());
-		ContainerSignatureMigrationPlan signatures= signaturePlan(target);
+		ClosedSourceParameterMigrationPlan plan= readyPlan();
 
-		List<ContainerUsageProfile> profiles= new ArrayList<>();
-		profiles.add(caller);
-		profiles.addAll(parameters);
-		var result= new ClosedSourceParameterMigrationPlanner().plan(
-				component(), signatures, recommendation, readiness, profiles);
-
-		assertTrue(result.ready());
-		ClosedSourceParameterMigrationPlan plan= result.plan().orElseThrow();
 		assertEquals(List.of(
 				"Caller.java", "Contract.java", "First.java", "Second.java"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 				plan.affectedCompilationUnitHandles());
@@ -88,7 +75,7 @@ class ClosedSourceParameterMigrationPlannerTest {
 		assertEquals(List.of(
 				"contract-method", "first-method", "second-method"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				plan.parameterPlans().stream()
-						.map(parameter -> parameter.methodJavaElementHandle())
+						.map(ContainerParameterRewritePlan::methodJavaElementHandle)
 						.toList());
 		assertEquals(1, plan.callerPlan().edits().stream()
 				.filter(edit -> edit.kind() == EditKind.VERIFY_ARGUMENT_TRANSFER)
@@ -120,6 +107,65 @@ class ClosedSourceParameterMigrationPlannerTest {
 		assertTrue(result.diagnostics().stream().anyMatch(diagnostic ->
 				diagnostic.kind()
 						== ClosedSourceParameterMigrationPlan.DiagnosticKind.PROFILE_NOT_FOUND));
+	}
+
+	@Test
+	void duplicateParameterTargetsAreRejected() {
+		ClosedSourceParameterMigrationPlan plan= readyPlan();
+		ContainerParameterRewritePlan parameter= plan.parameterPlans().get(0);
+
+		assertThrows(IllegalArgumentException.class,
+				() -> new ClosedSourceParameterMigrationPlan(
+						plan.targetContract(),
+						plan.callerPlan(),
+						List.of(parameter, parameter)));
+	}
+
+	@Test
+	void argumentTransferWithoutMatchingParameterIsRejected() {
+		ClosedSourceParameterMigrationPlan plan= readyPlan();
+		ContainerLocalRewritePlan caller= plan.callerPlan();
+		ArgumentTransfer transfer= caller.argumentTransfers().get(0);
+		ContainerLocalRewritePlan mismatchedCaller= new ContainerLocalRewritePlan(
+				caller.compilationUnitHandle(),
+				caller.bindingKey(),
+				caller.targetInterfaceType(),
+				caller.targetImplementationType(),
+				caller.targetContract(),
+				caller.edits(),
+				List.of(new ArgumentTransfer(
+						"missing-method", //$NON-NLS-1$
+						transfer.parameterIndex(),
+						transfer.sourceStart(),
+						transfer.sourceLength())));
+
+		assertThrows(IllegalArgumentException.class,
+				() -> new ClosedSourceParameterMigrationPlan(
+						plan.targetContract(),
+						mismatchedCaller,
+						plan.parameterPlans()));
+	}
+
+	private static ClosedSourceParameterMigrationPlan readyPlan() {
+		TargetContainerContract target= target();
+		ContainerUsageProfile caller= callerProfile();
+		List<ContainerUsageProfile> parameters= List.of(
+				parameterProfile("interface-binding", 20), //$NON-NLS-1$
+				parameterProfile("first-binding", 40), //$NON-NLS-1$
+				parameterProfile("second-binding", 60)); //$NON-NLS-1$
+		ContainerRecommendation recommendation= recommendation(caller, target);
+		ContainerMigrationReadiness readiness= new ContainerMigrationReadiness(
+				target, ExecutionStatus.AUTOMATIC, List.of());
+		ContainerSignatureMigrationPlan signatures= signaturePlan(target);
+
+		List<ContainerUsageProfile> profiles= new ArrayList<>(parameters.size() + 1);
+		profiles.add(caller);
+		profiles.addAll(parameters);
+		var result= new ClosedSourceParameterMigrationPlanner().plan(
+				component(), signatures, recommendation, readiness, profiles);
+
+		assertTrue(result.ready());
+		return result.plan().orElseThrow();
 	}
 
 	private static ContainerFlowComponent component() {

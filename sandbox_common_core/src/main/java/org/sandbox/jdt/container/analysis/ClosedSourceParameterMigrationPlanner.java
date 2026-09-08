@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.sandbox.jdt.container.api.ClosedSourceParameterMigrationPlan;
@@ -107,10 +108,11 @@ public final class ClosedSourceParameterMigrationPlanner {
 		Map<String, SignatureMember> membersByNodeId= signature.group().members().stream()
 				.collect(Collectors.toMap(
 						SignatureMember::flowNodeId,
-						member -> member,
+						Function.identity(),
 						(left, right) -> left,
 						LinkedHashMap::new));
-		List<ArgumentTransfer> transfers= new ArrayList<>();
+		List<ArgumentTransfer> transfers=
+				new ArrayList<>(topology.argumentEdges().size());
 		for (LocatedFlowEdge edge : topology.argumentEdges()) {
 			SignatureMember member= membersByNodeId.get(edge.targetNodeId());
 			if (member == null) {
@@ -137,7 +139,8 @@ public final class ClosedSourceParameterMigrationPlanner {
 					item.kind() + ": " + item.message()))); //$NON-NLS-1$
 		}
 
-		List<ContainerParameterRewritePlan> parameterPlans= new ArrayList<>();
+		List<ContainerParameterRewritePlan> parameterPlans=
+				new ArrayList<>(signature.group().members().size());
 		for (SignatureMember member : signature.group().members()) {
 			FlowNode parameter= component.node(member.flowNodeId()).orElse(null);
 			ContainerUsageProfile parameterProfile= parameter == null
@@ -238,7 +241,7 @@ public final class ClosedSourceParameterMigrationPlanner {
 		Map<String, FlowNode> parametersById= parameters.stream()
 				.collect(Collectors.toMap(
 						FlowNode::stableId,
-						node -> node,
+						Function.identity(),
 						(left, right) -> left,
 						LinkedHashMap::new));
 		for (SignatureMember member : group.members()) {

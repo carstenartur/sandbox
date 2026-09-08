@@ -30,6 +30,7 @@ import org.sandbox.jdt.container.api.ContainerRuleDescriptor.RuleOwnership;
 import org.sandbox.jdt.container.api.ContainerShape;
 import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.DiagnosticKind;
 import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.PlanningStatus;
+import org.sandbox.jdt.container.api.ContainerSignatureMigrationPlan.SignatureMember;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AccessProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
@@ -97,7 +98,7 @@ class ClosedSourceSignatureBoundaryTest {
 		assertEquals(2, plan.groups().get(0).members().size());
 		assertEquals(List.of("first-handle", "second-handle"), //$NON-NLS-1$ //$NON-NLS-2$
 				plan.groups().get(0).members().stream()
-						.map(member -> member.javaElementHandle())
+						.map(SignatureMember::javaElementHandle)
 						.toList());
 	}
 
