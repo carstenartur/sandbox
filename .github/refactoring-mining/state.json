@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "7a7a7b54f02ab46df5eae936f5b63cfb9cc5d8fd",
-      "lastProcessedDate": "2026-09-07T02:26:27.283686610Z",
-      "totalProcessed": 5534,
+      "lastProcessedCommit": "6b94ad09afd349d4a8a1fc03e60acfb3d312948a",
+      "lastProcessedDate": "2026-09-08T02:25:42.024200079Z",
+      "totalProcessed": 5614,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3296,6 +3296,24 @@
           "deferredAt": "2026-09-07T02:25:26.618696088Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "20c463d7a212c4c913f3549bdc61fa97cd43f1d0",
+          "message": "Fixed bug 395835: Consolidate the code which finds the Javadoc for an element.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-08T02:20:06.234602053Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9f5838bea1419b66d88c7e62d7617e995b5aa58e",
+          "message": "Fixed bug 398995: [quick fix] Extract field access to checked local variable",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-08T02:20:57.594539602Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3450,7 +3468,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 5,
-        "API Modernization": 59,
+        "API Modernization": 60,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3507,7 +3525,7 @@
         "Code Modernization": 1,
         "Annotation Addition": 1,
         "String Modernization": 1,
-        "String Manipulation": 3,
+        "String Manipulation": 4,
         "Code Style/Readability": 1,
         "Control Flow Refactoring": 1,
         "Method Extraction/Call Site Refactoring": 1,
@@ -3531,7 +3549,7 @@
         "Logical Condition Simplification": 1,
         "Constructor Argument Addition": 1,
         "Argument Removal": 1,
-        "Robustness": 1,
+        "Robustness": 2,
         "Naming": 1,
         "API Usage Refactoring": 1,
         "Code Cleanup": 1,
@@ -3569,7 +3587,9 @@
         "IDE Feature Implementation": 1,
         "Control Flow Restructuring": 1,
         "Formatting": 1,
-        "API Safety": 1
+        "API Safety": 1,
+        "API Misuse": 1,
+        "Method Call Replacement": 2
       },
       "exhaustedCategories": []
     },
@@ -3610,5 +3630,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 28305
+  "globalTotalProcessed": 28385
 }
