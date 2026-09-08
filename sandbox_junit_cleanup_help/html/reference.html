@@ -61,6 +61,14 @@
    </ul>
 
    <h2>Known limitations</h2>
+   <p>Parameterized source planning recognizes selected local and inherited providers,
+      editable static provider delegates, constructor parameters, and ordered field injection.
+      It rejects incomplete scopes, ambiguous indices and unproven argument conversions.
+      A discovered component is reported as <code>FOUND</code> with reason
+      <code>PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED</code>. This is planning evidence,
+      not an applied migration: the coordinated target still needs a JDT runtime comparison
+      of test identities, multiplicity, display names and results. The existing narrow local
+      Parameterized rewrite has a separate applicability contract.</p>
    <ul>
       <li>Adding or updating the JUnit Jupiter dependency is a build-system task and is not inferred blindly.</li>
       <li>Custom JUnit 4 runners and arbitrary Rules may need dedicated migrations.</li>

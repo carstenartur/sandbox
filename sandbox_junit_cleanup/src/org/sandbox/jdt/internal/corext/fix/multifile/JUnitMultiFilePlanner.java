@@ -56,8 +56,6 @@ import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningLimits;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningMetrics;
 import org.sandbox.jdt.cleanup.multifile.MultiFileScopeDiagnostic;
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
-import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility;
-import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility.Assessment;
 
 /** Builds the source-wide JUnit migration plan before per-file rewrites start. */
 public final class JUnitMultiFilePlanner {
@@ -210,10 +208,10 @@ public final class JUnitMultiFilePlanner {
 		Map<String, CompilationUnit> rootsByHandle= parse(project, selectedUnits, monitor);
 		long parseNanos= System.nanoTime() - parseStarted;
 		RefactoringStatus status= budget.status();
-		List<MultiFileCandidateDiagnostic> parameterizedDiagnostics=
+		JUnit4ParameterizedPlanner.Result parameterizedResult=
 				options.diagnoseParameterizedCandidates()
-						? diagnoseParameterizedCandidates(rootsByHandle, monitor)
-						: List.of();
+						? JUnit4ParameterizedPlanner.discover(rootsByHandle, closedScope, monitor)
+						: new JUnit4ParameterizedPlanner.Result(List.of(), List.of());
 
 		if (!closedScope) {
 			JUnitTestTypeInventory inventory= options.migrateJUnit3Hierarchies()
@@ -223,7 +221,7 @@ public final class JUnitMultiFilePlanner {
 					.withDurations(parseNanos, System.nanoTime() - planningStarted)
 					.withRetainedPlanEntries(0);
 			MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, false,
-					parameterizedDiagnostics);
+					parameterizedResult.diagnostics());
 			JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, List.of(), List.of(), inventory);
 			return MultiFileCleanUpPlanResult.success(plan, status, metrics, diagnostics);
 		}
@@ -236,10 +234,11 @@ public final class JUnitMultiFilePlanner {
 				? JUnit3HierarchyPlanner.create(project, selectedUnits, rootsByHandle, true, monitor)
 				: new JUnit3HierarchyPlanner.Result(List.of(), List.of(), new JUnitTestTypeInventory(List.of()));
 
-		List<MultiFileCandidateDiagnostic> candidateDiagnostics= new ArrayList<>(parameterizedDiagnostics);
+		List<MultiFileCandidateDiagnostic> candidateDiagnostics= new ArrayList<>(parameterizedResult.diagnostics());
 		candidateDiagnostics.addAll(externalResult.diagnostics());
 		candidateDiagnostics.addAll(junit3Result.diagnostics());
-		int retainedEntries= externalResult.migrations().size() + junit3Result.migrations().size();
+		int retainedEntries= externalResult.migrations().size() + junit3Result.migrations().size()
+				+ parameterizedResult.plans().size();
 		MultiFilePlanningMetrics metrics= budget.metrics()
 				.withDurations(parseNanos, System.nanoTime() - planningStarted)
 				.withRetainedPlanEntries(retainedEntries);
@@ -248,7 +247,7 @@ public final class JUnitMultiFilePlanner {
 			return new MultiFileCleanUpPlanResult<>(null, status, metrics, diagnostics);
 		}
 		JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, externalResult.migrations(),
-				junit3Result.migrations(), junit3Result.inventory());
+				junit3Result.migrations(), junit3Result.inventory(), Set.of(), parameterizedResult.plans());
 		return MultiFileCleanUpPlanResult.success(plan, status, metrics, diagnostics);
 	}
 
@@ -270,44 +269,6 @@ public final class JUnitMultiFilePlanner {
 		List<MultiFileCandidateDiagnostic> diagnostics= new ArrayList<>(resourceScope.diagnostics());
 		diagnostics.addAll(result.diagnostics());
 		return new MigrationResult(result.migrations(), diagnostics);
-	}
-
-	private static List<MultiFileCandidateDiagnostic> diagnoseParameterizedCandidates(
-			Map<String, CompilationUnit> rootsByHandle, IProgressMonitor monitor) {
-		List<MultiFileCandidateDiagnostic> diagnostics= new ArrayList<>();
-		for (Map.Entry<String, CompilationUnit> entry : rootsByHandle.entrySet()) {
-			MultiFilePlanningBudget.checkCanceled(monitor);
-			String ownerHandle= entry.getKey();
-			entry.getValue().accept(new ASTVisitor() {
-				@Override
-				public boolean visit(TypeDeclaration node) {
-					MultiFilePlanningBudget.checkCanceled(monitor);
-					if (!ParameterizedMigrationEligibility.hasParameterizedRunner(node)) {
-						return true;
-					}
-					Assessment assessment= ParameterizedMigrationEligibility.assess(node);
-					if (!assessment.eligible()) {
-						String typeName= sourceTypeName(node);
-						String message= "Parameterized test " + typeName //$NON-NLS-1$
-								+ " was left unchanged: " + assessment.explanation(); //$NON-NLS-1$
-						diagnostics.add(MultiFileCandidateDiagnostic.rejected(
-								"parameterized:" + typeName, ownerHandle, //$NON-NLS-1$
-								assessment.reasonCode(), message, List.of(ownerHandle)));
-					}
-					return true;
-				}
-			});
-		}
-		return diagnostics;
-	}
-
-	private static String sourceTypeName(TypeDeclaration type) {
-		ITypeBinding binding= type.resolveBinding();
-		if (binding != null && binding.getQualifiedName() != null
-				&& !binding.getQualifiedName().isBlank()) {
-			return binding.getQualifiedName();
-		}
-		return type.getName().getIdentifier();
 	}
 
 	private static MultiFileCleanUpDiagnostics diagnostics(ICompilationUnit[] selectedUnits, boolean complete,

@@ -13,6 +13,8 @@ package org.sandbox.jdt.triggerpattern.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -27,6 +29,8 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
@@ -38,6 +42,38 @@ import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKind;
 
 /** Contract tests for typed plan facts, graph relations and stable node keys. */
 public class SemanticRewritePlanFactsTest {
+
+	@Test
+	public void parametersHaveDeclarationStableKeysWithoutAuthorSuppliedIndices() {
+		CompilationUnit root= parse("""
+				package test;
+				public class Sample {
+					public Sample(int value) { int local = value; }
+					void other(int value) { }
+				}
+				""");
+		TypeDeclaration type= (TypeDeclaration) root.types().get(0);
+		SingleVariableDeclaration parameter= (SingleVariableDeclaration) type.getMethods()[0].parameters().get(0);
+		SingleVariableDeclaration other= (SingleVariableDeclaration) type.getMethods()[1].parameters().get(0);
+		NodeKey key= NodeKey.from(parameter);
+		assertNotNull(key);
+		assertEquals(NodeKind.PARAMETER, key.kind());
+		assertEquals(key, NodeKey.from(parameter.getName()));
+		assertNotEquals(key, NodeKey.from(other), "Same names in different declarations must not alias");
+		root.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName name) {
+				if ("local".equals(name.getIdentifier())) {
+					assertNull(NodeKey.from(name), "Ordinary locals must not become planned parameters");
+				}
+				return true;
+			}
+		});
+		CompilationUnit reparsed= parse(root.toString());
+		SingleVariableDeclaration stable= (SingleVariableDeclaration)
+				((TypeDeclaration) reparsed.types().get(0)).getMethods()[0].parameters().get(0);
+		assertEquals(key, NodeKey.from(stable));
+	}
 
 	@Test
 	public void typedFactsAndRelationsPreserveOrderAndMultiplicity() {

@@ -78,7 +78,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 						false, null);
 
 		assertFalse(result.diagnostics().scope().complete());
-		assertReason(result, "PARAMETERIZED_PROVIDER_NOT_LOCAL"); //$NON-NLS-1$
+		assertReason(result, "PARAMETERIZED_INCOMPLETE_SCOPE"); //$NON-NLS-1$
 	}
 
 	@Test
@@ -117,11 +117,11 @@ public class ParameterizedMigrationDiagnosticsTest {
 				"""); //$NON-NLS-1$
 
 		assertReason(planClosed(unit),
-				"PARAMETERIZED_MULTIPLE_LOCAL_PROVIDERS"); //$NON-NLS-1$
+				"PARAMETERIZED_PROVIDER_NOT_UNIQUE"); //$NON-NLS-1$
 	}
 
 	@Test
-	public void reportsFieldInjection() throws CoreException {
+	public void fieldInjectionStillRejectsUnprovenProviderConversion() throws CoreException {
 		ICompilationUnit unit= compilationUnit("fieldinjection", //$NON-NLS-1$
 				"FieldInjectionTest", //$NON-NLS-1$
 				"""
@@ -148,7 +148,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 				}
 				"""); //$NON-NLS-1$
 
-		assertReason(planClosed(unit), "PARAMETERIZED_FIELD_INJECTION"); //$NON-NLS-1$
+		assertReason(planClosed(unit), "PARAMETERIZED_PROVIDER_DELEGATE_UNRESOLVED"); //$NON-NLS-1$
 	}
 
 	@Test
@@ -185,7 +185,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 		MultiFileCleanUpPlanResult<JUnitMigrationPlan> result= planClosed(unit);
 
 		assertFalse(result.status().hasFatalError());
-		assertTrue(result.diagnostics().candidates().isEmpty());
+		assertPrepared(result);
 	}
 
 	@Test
@@ -219,7 +219,7 @@ public class ParameterizedMigrationDiagnosticsTest {
 				"""); //$NON-NLS-1$
 
 		assertReason(planClosed(unit),
-				"PARAMETERIZED_PROVIDER_BODY_UNSUPPORTED"); //$NON-NLS-1$
+				"PARAMETERIZED_PROVIDER_DELEGATE_UNRESOLVED"); //$NON-NLS-1$
 	}
 
 	@Test
@@ -257,7 +257,16 @@ public class ParameterizedMigrationDiagnosticsTest {
 		MultiFileCleanUpPlanResult<JUnitMigrationPlan> result= planClosed(unit);
 
 		assertFalse(result.status().hasFatalError());
-		assertTrue(result.diagnostics().candidates().isEmpty());
+		assertPrepared(result);
+	}
+
+	private static void assertPrepared(MultiFileCleanUpPlanResult<JUnitMigrationPlan> result) {
+		assertEquals(1, result.plan().preparedParameterizedPlans().size());
+		assertEquals(1, result.diagnostics().candidates().size());
+		assertEquals(MultiFileCandidateOutcome.FOUND, result.diagnostics().candidates().get(0).outcome());
+		assertEquals("PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED", //$NON-NLS-1$
+				result.diagnostics().candidates().get(0).reasonCode());
+		assertFalse(result.plan().hasCoordinatedChanges(), "Prepared evidence must not enable unverified rewrites"); //$NON-NLS-1$
 	}
 
 	private MultiFileCleanUpPlanResult<JUnitMigrationPlan> planClosed(
@@ -284,6 +293,6 @@ public class ParameterizedMigrationDiagnosticsTest {
 		assertEquals(MultiFileCandidateOutcome.REJECTED,
 				diagnostic.outcome());
 		assertEquals(reasonCode, diagnostic.reasonCode());
-		assertTrue(diagnostic.message().contains("left unchanged")); //$NON-NLS-1$
+		assertTrue(diagnostic.message().contains("No coordinated Parameterized plan")); //$NON-NLS-1$
 	}
 }
