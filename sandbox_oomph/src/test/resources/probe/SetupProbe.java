@@ -11,7 +11,6 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IStatus;
@@ -130,7 +129,9 @@ public class SetupProbe implements IApplication {
         var contents = project.eAllContents();
         while (contents.hasNext()) {
             if (contents.next() instanceof GitCloneTask git) {
+                require("https://github.com/carstenartur/sandbox.git".equals(git.getRemoteURI()), "Public clone URL changed");
                 git.setCheckoutBranch(System.getProperty("sandbox.oomph.ref"));
+                git.setRemoteURI(System.getProperty("sandbox.oomph.repository", git.getRemoteURI()));
             }
         }
         SetupContext context = SetupContext.create(sdk, stream);
@@ -188,7 +189,8 @@ public class SetupProbe implements IApplication {
                 "sandbox_int_to_enum_help", "sandbox_distribution_verify", "sandbox_oomph", "sandbox_target")) {
             require(workspace.getRoot().getProject(name).isOpen(), "Missing imported project: " + name);
         }
-        require(!workspace.getRoot().getProject("cleanup-review-integration-fixture").exists(),
+        require(Arrays.stream(workspace.getRoot().getProjects()).noneMatch(p -> p.getLocation() != null
+                && p.getLocation().toOSString().startsWith(clone.resolve(".github").toString())),
                 "CI fixture must not be imported into the contributor workspace");
         var ee = JavaRuntime.getExecutionEnvironmentsManager().getEnvironment("JavaSE-21");
         require(ee != null && ee.getCompatibleVMs().length > 0, "JavaSE-21 is not configured");
@@ -196,7 +198,7 @@ public class SetupProbe implements IApplication {
         var reference = bundleContext.getServiceReference(ITargetPlatformService.class);
         require(reference != null, "PDE target service is unavailable");
         var service = bundleContext.getService(reference);
-        var target = service.getWorkspaceTargetDefinition().getTargetDefinition();
+        var target = service.getWorkspaceTargetDefinition();
         require("target platform for sandbox".equals(target.getName()), "Wrong active target: " + target.getName());
         require(target.isResolved() && target.getStatus().isOK(), "Unresolved target: " + target.getStatus());
         bundleContext.ungetService(reference);
@@ -206,7 +208,7 @@ public class SetupProbe implements IApplication {
                 .collect(Collectors.toCollection(TreeSet::new));
         require(errors.isEmpty(), "Workspace build errors:\n" + String.join("\n", errors));
         try (var repository = new FileRepositoryBuilder().setGitDir(clone.resolve(".git").toFile()).build()) {
-            require("https://github.com/carstenartur/sandbox.git".equals(repository.getConfig().getString("remote", "origin", "url")),
+            require(System.getProperty("sandbox.oomph.repository", "https://github.com/carstenartur/sandbox.git").equals(repository.getConfig().getString("remote", "origin", "url")),
                     "Unexpected cloned repository");
         }
         var workingSets = PlatformUI.getWorkbench().getWorkingSetManager();

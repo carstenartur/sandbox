@@ -104,7 +104,9 @@ class OomphSetupTest {
                     "-data", workspace.toString(), "-consoleLog", "-vmargs", "-Xmx4g",
                     "-Doomph.setup.skip=true", "-Doomph.setup.questionnaire.skip=true",
                     "-Dsandbox.oomph.root=" + root, "-Dsandbox.oomph.phase=" + phase,
-                    "-Dsandbox.oomph.ref=" + System.getProperty("sandbox.oomph.ref", "main")));
+                    "-Dsandbox.oomph.ref=" + System.getProperty("sandbox.oomph.ref", "main"),
+                    "-Dsandbox.oomph.repository=" + System.getProperty("sandbox.oomph.repository",
+                            "https://github.com/carstenartur/sandbox.git")));
             process(run.resolve(phase + ".log"), run, command);
             Properties result = new Properties();
             try (var in = Files.newInputStream(run.resolve(phase + ".properties"))) {
