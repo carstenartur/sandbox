@@ -182,11 +182,15 @@ public class SetupProbe implements IApplication {
             @Override public OS getOS() { return OS.INSTANCE; }
             @Override public String getVMPath() { return Path.of(System.getProperty("java.home"), "bin/java").toString(); }
             @Override public UserCallback getUserCallback() { return null; }
-            @Override public String getValue(VariableTask variable) { return values.get(variable.getName()); }
+            @Override public String getValue(VariableTask variable) { return null; }
             @Override public boolean promptVariables(List<? extends SetupTaskContext> performers) {
                 var unresolved = performers.stream()
                         .flatMap(p -> ((SetupTaskPerformer) p).getUnresolvedVariables().stream()).toList();
-                require(unresolved.isEmpty(), "Unexpected setup questions: " + unresolved);
+                for (var variable : unresolved) {
+                    String value = values.get(variable.getName());
+                    require(value != null, "Unexpected setup question: " + variable);
+                    variable.setValue(value);
+                }
                 return true;
             }
         }, update ? Trigger.MANUAL : Trigger.STARTUP, context, false);
