@@ -7,7 +7,6 @@ on:
     branches: [ main ]
 
 permissions:
-  actions: read
   contents: write
 
 concurrency:
@@ -77,6 +76,9 @@ jobs:
     name: Build and deploy selected snapshot
     needs: select-snapshot-source
     if: needs.select-snapshot-source.outputs.is_snapshot == 'true'
+    permissions:
+      actions: read
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 150
     env:
