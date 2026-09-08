@@ -21,7 +21,6 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
@@ -30,10 +29,9 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  * 
  * <p>Transformation: {@code collection.forEach(item -> ...)} → {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }}</p>
  * 
- * <p>Uses the ULR pipeline: {@code LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer}.</p>
+ * <p>Uses the shared binding-aware {@link StreamForEachConverter}, including
+ * filter/map chains ending in forEach or forEachOrdered.</p>
  * 
- * @see LoopModel
- * @see ASTIteratorWhileRenderer
  * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453</a>
  * @see <a href="https://github.com/carstenartur/sandbox/issues/549">Issue #549</a>
  */
@@ -42,23 +40,14 @@ public class StreamToIteratorWhile extends AbstractFunctionalCall<ASTNode> {
 	@Override
 	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-		ExpressionHelper.findForEachInvocations(fixcore, compilationUnit, operations, nodesprocessed);
+		StreamForEachConverter.find(fixcore, compilationUnit, operations, nodesprocessed);
 	}
 
 	@Override
 	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
 			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> data)
 			throws CoreException {
-		ExpressionHelper.ForEachRewriteInfo info = ExpressionHelper.extractForEachRewriteInfo(visited, cuRewrite.getAST());
-		if (info == null) {
-			return;
-		}
-		
-		ASTIteratorWhileRenderer renderer = new ASTIteratorWhileRenderer(cuRewrite.getAST(), cuRewrite.getASTRewrite());
-		renderer.renderWithBodyStatements(info.model(), info.forEachStatement(), info.bodyStatements(), group);
-		
-		// Add Iterator import
-		cuRewrite.getImportRewrite().addImport("java.util.Iterator"); //$NON-NLS-1$
+		StreamForEachConverter.rewrite(visited, cuRewrite, group, data, true);
 	}
 
 	@Override
