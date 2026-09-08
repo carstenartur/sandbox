@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import org.eclipse.core.runtime.CoreException;
 
@@ -119,18 +121,20 @@ public class IntToEnumScopeExpansionTest {
 				"An explicit project-wide option must not scan the project without a selected candidate owner");
 	}
 
-	@Test
-	public void selectedCandidateFindsOnlyRequiredCaller() throws CoreException {
+	@ParameterizedTest
+	@CsvSource({ "int,0,1", "long,0L,0x1_0000_0000L", "String,\"pending\",\"approved\"", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			"byte,0,1", "short,0,1", "char,0,1" }) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	public void selectedCandidateFindsOnlyRequiredCaller(String type, String first, String second) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit selected= pack.createCompilationUnit("Selected.java", //$NON-NLS-1$
 				"""
 				package test;
 
 				public class Selected {
-					static final int STATUS_PENDING = 0;
-					static final int STATUS_APPROVED = 1;
+					static final STATE_TYPE STATUS_PENDING = FIRST_VALUE;
+					static final STATE_TYPE STATUS_APPROVED = SECOND_VALUE;
 
-					void process(int status) {
+					void process(STATE_TYPE status) {
 						if (status == STATUS_PENDING) {
 							System.out.println("pending");
 						} else if (status == STATUS_APPROVED) {
@@ -138,7 +142,7 @@ public class IntToEnumScopeExpansionTest {
 						}
 					}
 				}
-				""", false, null);
+				""".replace("STATE_TYPE", type).replace("FIRST_VALUE", first).replace("SECOND_VALUE", second), false, null);
 		ICompilationUnit related= pack.createCompilationUnit("Related.java", //$NON-NLS-1$
 				"""
 				package test;

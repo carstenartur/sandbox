@@ -92,7 +92,7 @@ class OomphSetupTest {
             }
             assertEquals(expected.toLowerCase(java.util.Locale.ROOT), java.util.HexFormat.of().formatHex(digest.digest()),
                     "SDK archive must match the published Eclipse checksum");
-            process(run.resolve("extract.log"), run, List.of("tar", "xzf", archive.toString()));
+            process(run.resolve("extract.log"), run, List.of("tar", "--no-same-owner", "xzf", archive.toString()));
         }
         List<String> units = new ArrayList<>(List.of("org.eclipse.oomph.setup.sdk.feature.group",
                 "org.eclipse.oomph.setup.maven.feature.group"));
@@ -161,6 +161,7 @@ class OomphSetupTest {
         a.putValue("Bundle-RequiredExecutionEnvironment", "JavaSE-21");
         a.putValue("Require-Bundle", String.join(",", List.of("org.eclipse.core.runtime", "org.eclipse.core.resources",
                 "org.eclipse.ui", "org.eclipse.equinox.app", "org.eclipse.equinox.p2.metadata",
+                "org.eclipse.equinox.p2.core", "org.eclipse.equinox.p2.director.app", "org.eclipse.oomph.p2.core",
                 "org.eclipse.emf.common", "org.eclipse.emf.ecore",
                 "org.eclipse.oomph.base", "org.eclipse.oomph.util", "org.eclipse.oomph.ui", "org.eclipse.oomph.setup",
                 "org.eclipse.oomph.setup.core", "org.eclipse.oomph.setup.git", "org.eclipse.oomph.setup.pde",
@@ -194,12 +195,34 @@ class OomphSetupTest {
         Process process = new ProcessBuilder(command).directory(directory.toFile()).redirectErrorStream(true)
                 .redirectOutput(log.toFile()).start();
         try {
-            assertTrue(process.waitFor(35, TimeUnit.MINUTES), () -> "Timed out: " + log + "\n" + tail(log));
+            if (!process.waitFor(35, TimeUnit.MINUTES)) {
+                dumpThreads(process, log);
+                fail("Timed out: " + log + "\n" + tail(log));
+            }
             assertEquals(0, process.exitValue(), () -> "Process failed: " + log + "\n" + tail(log));
         } finally {
             if (process.isAlive()) {
                 process.descendants().forEach(ProcessHandle::destroyForcibly);
                 process.destroyForcibly();
+            }
+        }
+    }
+
+    private static void dumpThreads(Process process, Path log) throws Exception {
+        for (var child : process.descendants().toList()) {
+            if (!child.info().command().map(c -> Path.of(c).getFileName().toString().equals("java")).orElse(false)) {
+                continue;
+            }
+            Path output = log.resolveSibling(log.getFileName() + "-" + child.pid() + "-threads.log");
+            Process diagnostic = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin/jcmd").toString(),
+                    Long.toString(child.pid()), "Thread.print", "-l")
+                    .redirectErrorStream(true).redirectOutput(output.toFile()).start();
+            try {
+                diagnostic.waitFor(10, TimeUnit.SECONDS);
+            } finally {
+                if (diagnostic.isAlive()) {
+                    diagnostic.destroyForcibly();
+                }
             }
         }
     }

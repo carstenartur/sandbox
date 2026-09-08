@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
@@ -27,10 +28,13 @@ import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.Diagnostician;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.equinox.internal.p2.director.app.DirectorApplication.AvoidTrustPromptService;
+import org.eclipse.equinox.p2.core.UIServices;
 import org.eclipse.equinox.p2.metadata.ILicense;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.oomph.internal.setup.SetupPrompter;
+import org.eclipse.oomph.p2.core.P2Util;
 import org.eclipse.oomph.setup.Configuration;
 import org.eclipse.oomph.setup.ProductVersion;
 import org.eclipse.oomph.setup.Project;
@@ -226,7 +230,23 @@ public class SetupProbe implements IApplication {
             @Override public void setTerminating() { }
         });
         System.out.println("Executing Oomph " + (update ? "MANUAL" : "STARTUP") + " tasks");
-        performer.perform(monitor);
+        // A running workbench supplies interactive p2 trust dialogs, independently
+        // of the wizard's license callback. Reuse the director's batch service for
+        // this disposable installation, accepting only signed Eclipse content.
+        var agent = P2Util.getCurrentProvisioningAgent();
+        var previousUI = agent.getService(UIServices.class);
+        var batchUI = new AvoidTrustPromptService(true, true,
+                Set.of(java.net.URI.create("https://download.eclipse.org"),
+                        java.net.URI.create("https://archive.eclipse.org")), null, null);
+        agent.registerService(UIServices.SERVICE_NAME, batchUI);
+        try {
+            performer.perform(monitor);
+        } finally {
+            agent.unregisterService(UIServices.SERVICE_NAME, batchUI);
+            if (previousUI != null) {
+                agent.registerService(UIServices.SERVICE_NAME, previousUI);
+            }
+        }
         // Oomph schedules the final workspace build after restoring auto-building.
         Job.getJobManager().join(ResourcesPlugin.FAMILY_MANUAL_BUILD, monitor);
         Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);

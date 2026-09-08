@@ -52,6 +52,10 @@ working sets and build tasks. It validates the optional configurations with Oomp
 the development launch with PDE's bundle resolver.
 It uses Oomph's standard scope locations and honors requested IDE restarts before asserting workspace completion.
 The disposable batch installation supplies the wizard's license-confirmation callback; the public setup retains normal interactive license confirmation.
+During task execution it also temporarily uses p2's existing director batch UI service for signed content from
+`download.eclipse.org` and `archive.eclipse.org`. This prevents unattended signer/origin dialogs in the test workbench;
+the original service is restored afterward and no persistent trust-all preference is written. A timed-out Eclipse
+process records a JVM thread dump before termination so a future stall retains its blocking call stack.
 
 A second Eclipse process reopens the same workspace and verifies MANUAL setup, recovery of a removed project,
 and preservation of a separately created user project. No replacement Oomph parser, mock importer or Python test framework is used.

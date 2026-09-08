@@ -46,7 +46,7 @@ import org.sandbox.jdt.internal.ui.fix.MultiFixMessages;
  */
 public enum IntToEnumFixCore {
 	/**
-	 * Convert if-else chains using int constants to switch with enum.
+	 * Convert closed constant domains in if-else chains to enums.
 	 */
 	IF_ELSE_TO_SWITCH(new IntToEnumHelper()),
 

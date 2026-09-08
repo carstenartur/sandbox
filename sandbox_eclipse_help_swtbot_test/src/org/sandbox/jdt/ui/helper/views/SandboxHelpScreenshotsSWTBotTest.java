@@ -166,7 +166,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
             "Extract repeated code sequences into a shared method";
     private static final String METHOD_REUSE_INLINE_LABEL =
             "Replace inline code sequences with calls to an existing method";
-    private static final String INT_TO_ENUM_MASTER_LABEL = "Convert int constants to enum/switch";
+    private static final String INT_TO_ENUM_MASTER_LABEL = "Convert state constants to enum";
     private static final String INT_TO_ENUM_PROJECT_WIDE_LABEL =
             "Analyze all project source files for coordinated migrations";
     private static final String INT_TO_ENUM_CANDIDATE_FRAGMENT = "nested enum Status";

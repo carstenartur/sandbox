@@ -77,7 +77,7 @@ public record IntEnumMigrationPlan(SelectedCompilationUnitPlan selectedScope, Li
 			if (allocation == null || allocation.available()) {
 				continue;
 			}
-			String message= "The project-wide int-to-enum plan is stale for " + unit.getElementName() //$NON-NLS-1$
+			String message= "The project-wide constant-to-enum plan is stale for " + unit.getElementName() //$NON-NLS-1$
 					+ ": generated name " + request.requestedName() + " is not available: " //$NON-NLS-1$ //$NON-NLS-2$
 					+ allocation.diagnosticMessage();
 			throw new CoreException(new Status(IStatus.ERROR, "sandbox_int_to_enum", message)); //$NON-NLS-1$
