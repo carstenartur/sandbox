@@ -73,6 +73,8 @@ class OomphSetupTest {
     @EnabledIfSystemProperty(named = "oomph.integration", matches = "true")
     void officialCatalogFreshWorkspaceAndManualUpdate() throws Exception {
         Path run = Files.createDirectories(module.resolve("target/oomph-runtime"));
+        assertFalse(Files.exists(run.resolve("workspace/.metadata")),
+                "Acceptance testing requires a fresh workspace; run Maven clean verify");
         Path eclipse = run.resolve("eclipse");
         if (!Files.isRegularFile(eclipse.resolve("eclipse"))) {
             Path archive = run.resolve("sdk.tar.gz");
@@ -111,21 +113,29 @@ class OomphSetupTest {
         installProbe(eclipse, run);
         Path workspace = run.resolve("workspace");
         for (String phase : List.of("fresh", "update")) {
-            List<String> command = eclipseCommand(eclipse);
-            command.addAll(List.of("-clean", "-nosplash", "-application", "org.sandbox.oomph.probe.run",
-                    "-data", workspace.toString(), "-consoleLog", "-vmargs", "-Xmx4g",
-                    "-Doomph.setup.skip=true", "-Doomph.setup.questionnaire.skip=true",
-                    "-Dsandbox.oomph.root=" + root, "-Dsandbox.oomph.phase=" + phase,
-                    "-Dsandbox.oomph.ref=" + System.getProperty("sandbox.oomph.ref", "main"),
-                    "-Dsandbox.oomph.commit=" + System.getProperty("sandbox.oomph.commit", ""),
-                    "-Dsandbox.oomph.repository=" + System.getProperty("sandbox.oomph.repository",
-                            "https://github.com/carstenartur/sandbox.git")));
-            process(run.resolve(phase + ".log"), run, command);
             Properties result = new Properties();
-            try (var in = Files.newInputStream(run.resolve(phase + ".properties"))) {
-                result.load(in);
+            for (int attempt = 0; attempt < 3; attempt++) {
+                List<String> command = eclipseCommand(eclipse);
+                command.addAll(List.of("-clean", "-nosplash", "-application", "org.sandbox.oomph.probe.run",
+                        "-data", workspace.toString(), "-consoleLog", "-vmargs", "-Xmx4g",
+                        "-Doomph.setup.skip=true", "-Doomph.setup.questionnaire.skip=true",
+                        "-Dsandbox.oomph.root=" + root, "-Dsandbox.oomph.phase=" + phase,
+                        "-Dsandbox.oomph.attempt=" + attempt,
+                        "-Dsandbox.oomph.ref=" + System.getProperty("sandbox.oomph.ref", "main"),
+                        "-Dsandbox.oomph.commit=" + System.getProperty("sandbox.oomph.commit", ""),
+                        "-Dsandbox.oomph.repository=" + System.getProperty("sandbox.oomph.repository",
+                                "https://github.com/carstenartur/sandbox.git")));
+                process(run.resolve(phase + "-" + attempt + ".log"), run, command);
+                result.clear();
+                try (var in = Files.newInputStream(run.resolve(phase + ".properties"))) {
+                    result.load(in);
+                }
+                if ("passed".equals(result.getProperty("result"))) {
+                    break;
+                }
+                assertEquals("restart", result.getProperty("result"), result.toString());
             }
-            assertEquals("passed", result.getProperty("result"));
+            assertEquals("passed", result.getProperty("result"), "Setup must finish after requested IDE restarts: " + result);
             assertTrue(Integer.parseInt(result.getProperty("projects")) >= 70, result.toString());
             assertEquals("target platform for sandbox", result.getProperty("target"));
         }

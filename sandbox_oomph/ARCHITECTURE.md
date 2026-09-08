@@ -27,6 +27,8 @@ Explicit predecessor references enforce the import/target/build order. Maven imp
 Oomph's Maven task skips STARTUP import when any project from a source locator is already in the workspace.
 MANUAL setup runs Maven discovery again and restores missing projects.
 An explicit second Maven source locator imports this standalone verification module because m2e follows root-POM modules.
+Maven discovery excludes the root artifact `central`; Eclipse import keeps its existing project name `sandbox`, avoiding
+two differently named projects at the same repository location.
 The two import tasks exclude `.git`, `.github`, root `target` content and the test installation under `sandbox_oomph/target`.
 
 The repository target remains the source of workspace dependencies. Installing development tools into the host IDE is a
@@ -48,6 +50,7 @@ installs Oomph and the actual project's p2 requirements, and compiles a small te
 The application runs the real SetupTaskPerformer in a workbench, including JGit clone, m2e/PDE imports, target activation,
 working sets and build tasks. It validates the optional configurations with Oomph's registered EMF packages and checks
 the development launch with PDE's bundle resolver.
+It uses Oomph's standard scope locations and honors requested IDE restarts before asserting workspace completion.
 
 A second Eclipse process reopens the same workspace and verifies MANUAL setup, recovery of a removed project,
 and preservation of a separately created user project. No replacement Oomph parser, mock importer or Python test framework is used.

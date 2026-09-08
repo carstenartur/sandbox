@@ -101,6 +101,7 @@ public class SetupProbe implements IApplication {
         Path run = root.resolve("sandbox_oomph/target/oomph-runtime");
         Path clone = run.resolve("checkout");
         boolean update = "update".equals(System.getProperty("sandbox.oomph.phase"));
+        int attempt = Integer.getInteger("sandbox.oomph.attempt", 0);
         var workspace = ResourcesPlugin.getWorkspace();
         var monitor = new NullProgressMonitor() {
             @Override public void subTask(String name) {
@@ -165,19 +166,20 @@ public class SetupProbe implements IApplication {
             task.setValue(value.getValue());
             context.getUser().getSetupTasks().add(task);
         }
-        rs.createResource(URI.createFileURI(run.resolve("installation.setup").toString()))
+        rs.createResource(URI.createFileURI(run.resolve("eclipse/configuration/org.eclipse.oomph.setup/installation.setup").toString()))
                 .getContents().add(context.getInstallation());
-        rs.createResource(URI.createFileURI(run.resolve("workspace.setup").toString()))
+        rs.createResource(URI.createFileURI(run.resolve("workspace/.metadata/.plugins/org.eclipse.oomph.setup/workspace.setup").toString()))
                 .getContents().add(context.getWorkspace());
         rs.createResource(URI.createFileURI(run.resolve("user.setup").toString()))
                 .getContents().add(context.getUser());
         var sentinel = workspace.getRoot().getProject("UserOwnedProject");
-        if (update) {
+        if (update && attempt == 0) {
             require(sentinel.exists(), "User project was not persisted across restart");
             var missing = workspace.getRoot().getProject("sandbox_distribution_verify");
             require(missing.exists(), "Fresh setup did not import distribution verification");
             missing.delete(false, true, monitor);
-        } else {
+        } else if (!sentinel.exists()) {
+            require(!update && attempt == 0, "User project was lost across an IDE restart");
             sentinel.create(monitor);
             sentinel.open(monitor);
             Files.writeString(Path.of(sentinel.getLocation().toOSString(), "keep.txt"), "user content");
@@ -205,6 +207,8 @@ public class SetupProbe implements IApplication {
             }
         }, update ? Trigger.MANUAL : Trigger.STARTUP, context, false);
         require(performer != null, "Setup was cancelled");
+        require(run.resolve("eclipse").equals(performer.getProductLocation().toPath()),
+                "Oomph must configure the actual test installation: " + performer.getProductLocation());
         performer.setProgress(new ProgressLog() {
             @Override public boolean isCanceled() { return monitor.isCanceled(); }
             @Override public void log(String line) { System.out.println(line); }
@@ -218,12 +222,23 @@ public class SetupProbe implements IApplication {
         });
         System.out.println("Executing Oomph " + (update ? "MANUAL" : "STARTUP") + " tasks");
         performer.perform(monitor);
-        System.out.println("Checking imported projects, target and workspace build markers");
+        // Oomph schedules the final workspace build after restoring auto-building.
+        Job.getJobManager().join(ResourcesPlugin.FAMILY_MANUAL_BUILD, monitor);
+        Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
         require(performer.hasSuccessfullyPerformed(), "Setup did not complete");
         workspace.save(true, monitor);
+        if (!performer.getRestartReasons().isEmpty()) {
+            Properties result = new Properties();
+            result.setProperty("result", "restart");
+            result.setProperty("reasons", performer.getRestartReasons().toString());
+            saveResult(run, update, result);
+            return;
+        }
+        System.out.println("Checking imported projects, target and workspace build markers");
         require(Files.readString(Path.of(sentinel.getLocation().toOSString(), "keep.txt")).equals("user content"),
                 "Setup changed user-owned project content");
-        for (String name : List.of("sandbox_common_core", "sandbox-functional-converter-core", "sandbox_common",
+        require(!workspace.getRoot().getProject("central").exists(), "The root Eclipse project must retain its sandbox name");
+        for (String name : List.of("sandbox", "sandbox_common_core", "sandbox-functional-converter-core", "sandbox_common",
                 "sandbox_functional_converter", "sandbox_functional_converter_test", "sandbox_int_to_enum",
                 "sandbox_int_to_enum_help", "sandbox_distribution_verify", "sandbox_oomph", "sandbox_target")) {
             require(workspace.getRoot().getProject(name).isOpen(), "Missing imported project: " + name);
@@ -269,10 +284,15 @@ public class SetupProbe implements IApplication {
         result.setProperty("result", "passed");
         result.setProperty("projects", Integer.toString(workspace.getRoot().getProjects().length));
         result.setProperty("target", target.getName());
+        saveResult(run, update, result);
+        System.out.println("OOMPH VERIFIED: " + result);
+    }
+
+    private static void saveResult(Path run, boolean update, Properties result) throws Exception {
         try (var out = Files.newOutputStream(run.resolve(update ? "update.properties" : "fresh.properties"))) {
             result.store(out, "Real Oomph workspace verification");
         }
-        System.out.println("OOMPH VERIFIED: " + result);
+        System.out.println("Oomph workspace result: " + result);
     }
 
     private static void validate(Resource resource) {

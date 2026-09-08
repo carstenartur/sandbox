@@ -113,6 +113,11 @@
       <excludedPath>.github</excludedPath>
       <excludedPath>target</excludedPath>
       <excludedPath>sandbox_oomph/target</excludedPath>
+      <!-- The root POM is "central", but its existing Eclipse project is
+           "sandbox". Let ProjectsImportTask preserve that public name. -->
+      <predicate xsi:type="predicates:NotPredicate">
+        <operand xsi:type="predicates:NamePredicate" pattern="central"/>
+      </predicate>
     </sourceLocator>
     <!-- m2e follows the root POM's modules. This standalone verification
          module intentionally does not belong to that Tycho reactor. -->

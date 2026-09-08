@@ -71,7 +71,7 @@ Real provisioning and workspace acceptance test on Linux x86_64, with JDK 21 and
 
 ```sh
 xvfb-run --auto-servernum ./mvnw -f sandbox_oomph/pom.xml \
-  -Doomph.integration=true -Dsandbox.oomph.ref=main verify
+  -Doomph.integration=true -Dsandbox.oomph.ref=main clean verify
 ```
 
 Set `sandbox.oomph.ref` to the candidate branch for a setup change. Forks can also set `sandbox.oomph.repository`.
