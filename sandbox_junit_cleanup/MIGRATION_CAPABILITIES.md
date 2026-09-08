@@ -70,7 +70,9 @@ checks stable parameter identities in the shared DSL model.
 | Missing source participants and partial scope | `incompleteSelectionProducesNoPreparedPlan`, `unselectedInheritedAndDelegatedSourcesFailClosed` |
 | Cyclic providers, implicit conversions, field index collisions/gaps, wrong row width | `cyclesAndUnprovenConversionsNeverProducePartialPlans`, `duplicateIndicesGapsAndWrongArityAreRejected` |
 | Unsupported execution hooks and unresolved source | `customHooksAndCompilerErrorsAreVisible` |
+| Malformed JUnit 4 display-name patterns are rejected | `malformedDisplayNamesCannotBeSilentlyChangedToJupiterDefaults` |
 | Provider body changes and added/deleted scope members invalidate evidence | `snapshotsRejectBodyOnlyChangesAndChangedScopeMembership` |
+| Source changes during AST creation cannot attach new fingerprints to old evidence | `rejectsSourceChangesBetweenSnapshotAndAstDiscovery` |
 
 Discovery does not invoke providers, rewrite files, or enable additional local
 cleanup cases. Prepared plans are reported as `FOUND` with

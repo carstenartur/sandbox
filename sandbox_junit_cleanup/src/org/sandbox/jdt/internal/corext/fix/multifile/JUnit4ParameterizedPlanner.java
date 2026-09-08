@@ -12,6 +12,7 @@ package org.sandbox.jdt.internal.corext.fix.multifile;
 
 import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit4ParameterizedPlan.*;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -78,18 +79,25 @@ final class JUnit4ParameterizedPlanner {
 	private final Map<String, MethodDeclaration> methods= new LinkedHashMap<>();
 	private final Map<ASTNode, String> handlesByRoot= new IdentityHashMap<>();
 	private final Map<String, String> fingerprints;
+	private final boolean sourcesStable;
 	private final IProgressMonitor monitor;
 
-	private JUnit4ParameterizedPlanner(Map<String, CompilationUnit> roots, IProgressMonitor monitor)
+	private JUnit4ParameterizedPlanner(Map<String, CompilationUnit> roots, Map<String, String> snapshots,
+			IProgressMonitor monitor)
 			throws CoreException {
 		this.roots= new TreeMap<>(roots);
 		this.monitor= monitor;
-		Map<String, String> snapshots= new LinkedHashMap<>();
+		fingerprints= Map.copyOf(snapshots);
+		boolean stable= snapshots.keySet().equals(roots.keySet());
 		for (Map.Entry<String, CompilationUnit> entry : this.roots.entrySet()) {
 			MultiFilePlanningBudget.checkCanceled(monitor);
 			handlesByRoot.put(entry.getValue(), entry.getKey());
 			if (entry.getValue().getJavaElement() instanceof ICompilationUnit unit) {
-				snapshots.put(entry.getKey(), JUnit4ParameterizedPlan.fingerprint(unit.getSource()));
+				String source= unit.getSource();
+				stable &= source != null
+						&& JUnit4ParameterizedPlan.fingerprint(source).equals(snapshots.get(entry.getKey()));
+			} else {
+				stable= false;
 			}
 			entry.getValue().accept(new ASTVisitor() {
 				@Override
@@ -111,13 +119,27 @@ final class JUnit4ParameterizedPlanner {
 				}
 			});
 		}
-		// Map.copyOf in each retained plan can share this immutable scope snapshot.
-		fingerprints= Map.copyOf(snapshots);
+		sourcesStable= stable;
 	}
 
-	static Result discover(Map<String, CompilationUnit> roots, boolean closedScope, IProgressMonitor monitor)
+	static Result discover(Map<String, CompilationUnit> roots, Map<String, String> sourceFingerprints,
+			boolean closedScope, IProgressMonitor monitor)
 			throws CoreException {
-		return new JUnit4ParameterizedPlanner(roots, monitor).discover(closedScope);
+		return new JUnit4ParameterizedPlanner(roots, sourceFingerprints, monitor).discover(closedScope);
+	}
+
+	/** Capture before parsing so an old AST cannot be paired with a newer source fingerprint. */
+	static Map<String, String> captureSources(ICompilationUnit[] units, IProgressMonitor monitor)
+			throws CoreException {
+		Map<String, String> snapshots= new LinkedHashMap<>();
+		for (ICompilationUnit unit : units) {
+			MultiFilePlanningBudget.checkCanceled(monitor);
+			String source= unit.getPrimary().getSource();
+			if (source != null) {
+				snapshots.put(unit.getPrimary().getHandleIdentifier(), JUnit4ParameterizedPlan.fingerprint(source));
+			}
+		}
+		return Map.copyOf(snapshots);
 	}
 
 	private Result discover(boolean closedScope) {
@@ -138,6 +160,8 @@ final class JUnit4ParameterizedPlanner {
 					try {
 						require(closedScope, "INCOMPLETE_SCOPE", //$NON-NLS-1$
 								"Select the complete editable provider and test hierarchy before planning."); //$NON-NLS-1$
+						require(sourcesStable, "SOURCE_CHANGED", //$NON-NLS-1$
+								"The selected sources changed or were unavailable during AST creation. Retry planning on a stable source scope."); //$NON-NLS-1$
 						JUnit4ParameterizedPlan plan= plan(node);
 						plans.add(plan);
 						diagnostics.add(new MultiFileCandidateDiagnostic(id, entry.getKey(),
@@ -216,6 +240,7 @@ final class JUnit4ParameterizedPlanner {
 		MethodDeclaration provider= providers.get(0);
 		require(Modifier.isPublic(provider.getModifiers()), "PROVIDER_NOT_PUBLIC", //$NON-NLS-1$
 				"JUnit 4 requires a public @Parameters provider."); //$NON-NLS-1$
+		validateDisplayName(provider);
 		NodeKey providerKey= add(builder, owners, provider, PROVIDER);
 		builder.relate(testKey, HAS_PROVIDER, providerKey);
 		MethodDeclaration data= providerData(provider, builder, owners, new HashSet<>());
@@ -226,6 +251,18 @@ final class JUnit4ParameterizedPlanner {
 			builder.relate(testKey, HAS_TEST, add(builder, owners, method, TEST));
 		}
 		return new JUnit4ParameterizedPlan(testKey, builder.build(), owners, fingerprints);
+	}
+
+	private static void validateDisplayName(MethodDeclaration provider) {
+		Object name= value(annotation(provider, PARAMETERS), "name"); //$NON-NLS-1$
+		require(name instanceof String, "DISPLAY_NAME_UNRESOLVED", //$NON-NLS-1$
+				"Resolve the @Parameters display-name pattern before migration."); //$NON-NLS-1$
+		try {
+			new MessageFormat(((String) name).replace("{index}", "0")); //$NON-NLS-1$ //$NON-NLS-2$
+		} catch (IllegalArgumentException e) {
+			throw new Rejected("PARAMETERIZED_DISPLAY_NAME_UNSUPPORTED", //$NON-NLS-1$
+					"The @Parameters name is not a valid JUnit 4 MessageFormat pattern; correct it before migration."); //$NON-NLS-1$
+		}
 	}
 
 	private List<ITypeBinding> injection(TypeDeclaration type, Map<Integer, VariableDeclarationFragment> fields,

@@ -204,13 +204,15 @@ public final class JUnitMultiFilePlanner {
 			return new MultiFileCleanUpPlanResult<>(null, budget.status(), budget.metrics(),
 					diagnostics(selectedUnits, closedScope, List.of()));
 		}
+		Map<String, String> parameterizedSnapshots= options.diagnoseParameterizedCandidates()
+				? JUnit4ParameterizedPlanner.captureSources(selectedUnits, monitor) : Map.of();
 		long parseStarted= System.nanoTime();
 		Map<String, CompilationUnit> rootsByHandle= parse(project, selectedUnits, monitor);
 		long parseNanos= System.nanoTime() - parseStarted;
 		RefactoringStatus status= budget.status();
 		JUnit4ParameterizedPlanner.Result parameterizedResult=
 				options.diagnoseParameterizedCandidates()
-						? JUnit4ParameterizedPlanner.discover(rootsByHandle, closedScope, monitor)
+						? JUnit4ParameterizedPlanner.discover(rootsByHandle, parameterizedSnapshots, closedScope, monitor)
 						: new JUnit4ParameterizedPlanner.Result(List.of(), List.of());
 
 		if (!closedScope) {

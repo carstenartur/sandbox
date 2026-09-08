@@ -27,6 +27,9 @@ import org.eclipse.core.runtime.OperationCanceledException;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.junit.JUnitCore;
 
 import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateOutcome;
@@ -179,6 +182,12 @@ public class JUnit4ParameterizedPlannerTest {
 	}
 
 	@Test
+	public void malformedDisplayNamesCannotBeSilentlyChangedToJupiterDefaults() throws CoreException {
+		ICompilationUnit unit= sample(CONSTRUCTOR + PROVIDER.replace("{index}: {0} / {1}", "{invalid}"));
+		assertRejected(plan(unit), "PARAMETERIZED_DISPLAY_NAME_UNSUPPORTED");
+	}
+
+	@Test
 	public void snapshotsRejectBodyOnlyChangesAndChangedScopeMembership() throws CoreException {
 		ICompilationUnit unit= sample(CONSTRUCTOR + PROVIDER);
 		JUnit4ParameterizedPlan plan= prepared(unit);
@@ -191,6 +200,21 @@ public class JUnit4ParameterizedPlannerTest {
 		snapshot.replaceAll((key, source) -> source.replace("{1, \"one\"}", "{3, \"one\"}"));
 		assertFalse(plan.isCurrent(snapshot), "Binding keys alone cannot detect changed provider contents");
 		assertThrows(UnsupportedOperationException.class, () -> plan.sourceFingerprints().clear());
+	}
+
+	@Test
+	public void rejectsSourceChangesBetweenSnapshotAndAstDiscovery() throws CoreException {
+		ICompilationUnit unit= sample(CONSTRUCTOR + PROVIDER);
+		Map<String, String> snapshot= JUnit4ParameterizedPlanner.captureSources(new ICompilationUnit[] { unit }, null);
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(unit);
+		parser.setResolveBindings(true);
+		CompilationUnit ast= (CompilationUnit) parser.createAST(null);
+		unit.getBuffer().setContents(unit.getSource().replace("{1, \"one\"}", "{3, \"one\"}"));
+		JUnit4ParameterizedPlanner.Result result= JUnit4ParameterizedPlanner.discover(
+				Map.of(unit.getHandleIdentifier(), ast), snapshot, true, null);
+		assertTrue(result.plans().isEmpty());
+		assertEquals("PARAMETERIZED_SOURCE_CHANGED", result.diagnostics().get(0).reasonCode());
 	}
 
 	@Test
