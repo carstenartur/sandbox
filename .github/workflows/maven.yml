@@ -7,6 +7,9 @@ on:
       - 'mvnw'
       - 'mvnw.cmd'
       - '.gitattributes'
+      - '.project'
+      - '.classpath'
+      - '.settings/**'
       - 'pom.xml'
       - '.mvn/**'
       - 'sandbox*/**'
@@ -65,14 +68,14 @@ jobs:
           oomph=false
           while IFS= read -r path; do
             case "$path" in
-              mvnw|mvnw.cmd|.gitattributes|pom.xml|.mvn/*|sandbox*/*|features/*|plugins/*|org/*|*.xml|*.properties|\
+              mvnw|mvnw.cmd|.gitattributes|.project|.classpath|.settings/*|pom.xml|.mvn/*|sandbox*/*|features/*|plugins/*|org/*|*.xml|*.properties|\
               .github/actions/cleanup-action/*|.github/actions/verify-eclipse-desktop-runtime/*|\
               .github/workflows/maven.yml)
                 relevant=true
                 ;;
             esac
             case "$path" in
-              sandbox_oomph/*|sandbox_target/*|sandbox_product/*|*/.project|*/.classpath|*/.settings/*|\
+              sandbox_oomph/*|sandbox_target/*|sandbox_product/*|.project|.classpath|.settings/*|*/.project|*/.classpath|*/.settings/*|\
               */pom.xml|*/build.properties|*/META-INF/MANIFEST.MF|pom.xml|.github/workflows/maven.yml)
                 oomph=true ;;
             esac

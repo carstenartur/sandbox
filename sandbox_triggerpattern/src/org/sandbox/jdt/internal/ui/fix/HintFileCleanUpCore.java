@@ -60,7 +60,7 @@ import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
  *
  * <p>This is the bridge between the {@code .sandbox-hint} DSL file format and the
  * Eclipse CleanUp framework. It reads all registered hint files from
- * the internal {@code HintFileRegistry} in {@code sandbox_common}
+ * {@link org.sandbox.jdt.triggerpattern.internal.HintFileRegistry HintFileRegistry}
  * and applies their transformation rules as cleanup operations.</p>
  *
  * <p>This enables users to define cleanup rules declaratively in
