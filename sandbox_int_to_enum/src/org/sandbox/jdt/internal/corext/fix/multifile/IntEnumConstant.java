@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.multifile;
 
-/** Immutable integer constant identity used by a project-wide enum migration. */
-public record IntEnumConstant(String bindingKey, String sourceName, String enumName, int value) {
+import org.sandbox.jdt.internal.corext.fix.helper.EnumConstantValue;
+
+/** Immutable typed constant identity used by a project-wide enum migration. */
+public record IntEnumConstant(String bindingKey, String sourceName, String enumName, EnumConstantValue value) {
 }
