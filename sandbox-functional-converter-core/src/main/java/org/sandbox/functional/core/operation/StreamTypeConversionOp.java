@@ -12,6 +12,8 @@ import java.util.Set;
 
 /** A Java stream's boxing or primitive widening step, with no callback. */
 public record StreamTypeConversionOp(Kind kind, String inputType) implements Operation {
+    private static final Set<String> PRIMITIVE_INPUTS = Set.of("int", "long", "double");
+
     public enum Kind {
         BOXED("boxed"), AS_LONG("asLongStream"), AS_DOUBLE("asDoubleStream");
         private final String method;
@@ -27,7 +29,7 @@ public record StreamTypeConversionOp(Kind kind, String inputType) implements Ope
     public StreamTypeConversionOp {
         Objects.requireNonNull(kind, "kind must not be null");
         Objects.requireNonNull(inputType, "input type must not be null");
-        if (!Set.of("int", "long", "double").contains(inputType)
+        if (!PRIMITIVE_INPUTS.contains(inputType)
                 || kind == Kind.AS_LONG && !"int".equals(inputType)
                 || kind == Kind.AS_DOUBLE && "double".equals(inputType)) {
             throw new IllegalArgumentException("Invalid " + kind.method + " input: " + inputType);
