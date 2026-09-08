@@ -455,7 +455,7 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 	}
 
 	private static CoreException stale(ICompilationUnit unit, String detail) {
-		String message= "The project-wide int-to-enum plan is stale for " + unit.getElementName() + ": " + detail; //$NON-NLS-1$ //$NON-NLS-2$
+		String message= "The project-wide constant-to-enum plan is stale for " + unit.getElementName() + ": " + detail; //$NON-NLS-1$ //$NON-NLS-2$
 		return new CoreException(new Status(IStatus.ERROR, "sandbox_int_to_enum", message)); //$NON-NLS-1$
 	}
 }
