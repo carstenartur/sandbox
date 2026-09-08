@@ -16,7 +16,7 @@ The supported contributor baseline is **Eclipse 2026-06 / Platform 4.40, Java 21
 
 The project installs JDT, PDE, EGit, m2e including its PDE integration, ASTView, JEView and PDE Spies.
 Maven imports run before the remaining Eclipse project imports; the repository's target definition is then activated
-and the workspace is built. The CI fixture under `.github` and the root build output directory are excluded from import.
+and the workspace is built. The CI fixture under `.github`, root build output and Oomph's test installation are excluded from import.
 The existing Sandbox working set is retained; additional dynamic sets organize Core, Tests, Help and Distribution.
 
 An existing compatible Eclipse installation can use **File → Import → Oomph → Projects into Workspace** and select

@@ -35,6 +35,7 @@ import org.eclipse.oomph.setup.ProductVersion;
 import org.eclipse.oomph.setup.Project;
 import org.eclipse.oomph.setup.ProjectCatalog;
 import org.eclipse.oomph.setup.SetupFactory;
+import org.eclipse.oomph.setup.SetupTask;
 import org.eclipse.oomph.setup.SetupTaskContext;
 import org.eclipse.oomph.setup.Trigger;
 import org.eclipse.oomph.setup.VariableTask;
@@ -42,6 +43,7 @@ import org.eclipse.oomph.setup.git.GitCloneTask;
 import org.eclipse.oomph.setup.internal.core.SetupContext;
 import org.eclipse.oomph.setup.internal.core.SetupTaskPerformer;
 import org.eclipse.oomph.setup.internal.core.util.SetupCoreUtil;
+import org.eclipse.oomph.setup.log.ProgressLog;
 import org.eclipse.oomph.util.OS;
 import org.eclipse.oomph.util.UserCallback;
 import org.eclipse.pde.core.target.ITargetPlatformService;
@@ -195,6 +197,17 @@ public class SetupProbe implements IApplication {
             }
         }, update ? Trigger.MANUAL : Trigger.STARTUP, context, false);
         require(performer != null, "Setup was cancelled");
+        performer.setProgress(new ProgressLog() {
+            @Override public boolean isCanceled() { return monitor.isCanceled(); }
+            @Override public void log(String line) { System.out.println(line); }
+            @Override public void log(String line, Severity severity) { log(severity + ": " + line); }
+            @Override public void log(String line, boolean filter) { log(line); }
+            @Override public void log(String line, boolean filter, Severity severity) { log(line, severity); }
+            @Override public void log(IStatus status) { log(status.toString()); }
+            @Override public void log(Throwable t) { t.printStackTrace(); }
+            @Override public void task(SetupTask task) { log("Oomph task: " + task); }
+            @Override public void setTerminating() { }
+        });
         System.out.println("Executing Oomph " + (update ? "MANUAL" : "STARTUP") + " tasks");
         performer.perform(monitor);
         System.out.println("Checking imported projects, target and workspace build markers");

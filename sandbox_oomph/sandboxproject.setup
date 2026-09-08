@@ -112,6 +112,7 @@
       <excludedPath>.git</excludedPath>
       <excludedPath>.github</excludedPath>
       <excludedPath>target</excludedPath>
+      <excludedPath>sandbox_oomph/target</excludedPath>
     </sourceLocator>
   </setupTask>
   <!-- Import all Eclipse projects from the cloned repository -->
@@ -125,6 +126,7 @@
       <excludedPath>.git</excludedPath>
       <excludedPath>.github</excludedPath>
       <excludedPath>target</excludedPath>
+      <excludedPath>sandbox_oomph/target</excludedPath>
     </sourceLocator>
     <description>Import all Eclipse projects from the cloned sandbox repository</description>
   </setupTask>
