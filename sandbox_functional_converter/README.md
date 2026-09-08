@@ -17,6 +17,95 @@ This Eclipse cleanup plugin automatically converts imperative enhanced for-loops
 - **Continue statements**: `if (condition) continue;` → `.filter(x -> !(condition))`
 - **Comment Preservation**: Comments in loop bodies are automatically preserved in the transformed code ✨
 
+### Stream pipelines back to loops
+
+With **Loop conversion → Enhanced for** or **Iterator while** and **From stream**
+enabled, sequential `Collection.stream()` pipelines ending in `forEach` or
+`forEachOrdered` can be converted back to loops. Supported pipelines include `filter`, `map`, `peek`, primitive mapping operations
+(`mapToInt`, `mapToLong`, `mapToDouble`, `mapToObj`) and the boxing/widening
+steps `boxed`, `asLongStream` and `asDoubleStream`:
+
+```java
+items.stream().filter(item -> !item.isEmpty())
+    .map(item -> item.length()).forEach(length -> consume(length));
+```
+
+```java
+for (String element : items) {
+    if (!(!element.isEmpty())) {
+        continue;
+    }
+    Integer mapped = element.length();
+    consume(mapped);
+}
+```
+
+The converter uses resolved Java types and fresh variable names. Expression
+lambdas are inlined when their parameter is not reassigned. Complex lambda
+blocks retain a typed `Predicate`, `Function` or `Consumer` local, preserving
+local `return`, `finally`, scope and overload behavior. Static/unbound method
+references, constructor references and references bound to `this` use the same
+typed-function path. Each function is created once; each map is evaluated once
+per accepted element, in pipeline order. Ordinary `Iterable.forEach` calls are
+also supported.
+
+These reverse conversions use the shared ULR (`LoopModel`, `FilterOp`, `MapOp`,
+`PeekOp`, `StreamTypeConversionOp`, `ForEachTerminal`). Functional type and scope metadata live in the Core model;
+original AST nodes and bindings remain in a JDT context. Both loop renderers and
+the stream renderers consume this model. See [Architecture](ARCHITECTURE.md) for
+the extraction/rendering contracts.
+
+When several source formats are enabled, overlapping nested loops are converted
+in separate cleanup passes. The handlers share variable-name reservations so
+their generated iterator declarations cannot collide.
+
+The conversion remains conservative: parallel or unverified stream sources,
+stateful operations (`sorted`, `distinct`, `limit`, etc.),
+other terminals (`collect`, `reduce`, matches, etc.), unresolved/non-denotable
+types and explicitly overridden source methods remain unchanged. Arbitrary
+bound method references such as `getSink()::accept` and function-valued arguments
+remain unchanged because their eager evaluation and null checks need a separate
+translation. Comments between pipeline calls also keep the chain unchanged;
+comments in copied lambda bodies are preserved. Each inlined `peek` block has its
+own scope, and a callback that modifies its parameter retains its function boundary.
+
+As with the existing collection-to-loop conversion, this assumes the standard
+collection traversal contract; it does not prove equivalence for runtime
+subclasses that override stream, spliterator or traversal behavior.
+
+### Source and type coverage
+
+| Source | Enhanced for target | Iterator while target |
+|--------|---------------------|-----------------------|
+| Standard `Collection.stream()` / `Iterable.forEach()` | Supported | Supported |
+| `Arrays.stream(array)` for reference, int, long or double arrays | Supported | Supported; primitive iterators avoid boxing |
+| `Arrays.stream(array, from, to)` | Unchanged | Supported; the original factory preserves bounds checks and evaluation order |
+| JDK Stream/IntStream/LongStream/DoubleStream `of`, `empty`, `ofNullable`, `range`, `rangeClosed`, `iterate`, `generate` where provided by the API | Unchanged | Supported as sequential, lazy sources |
+
+Primitive and reference stages may be mixed. Explicit type witnesses, overload
+selection, boxing, widening and callback scopes are preserved in the ULR and
+consumed by both stream renderers and the imperative renderer. Array factories
+retain their original qualification/type arguments; the adapter stores the
+corresponding AST attachment. Inclusive ranges at `Integer.MAX_VALUE` and
+`Long.MAX_VALUE` retain the JDK iterator protocol rather than introducing a
+counter that can overflow.
+
+Iterator while **and classic iterator for** loops can become enhanced for loops
+when the iterator is referenced only by its declaration, condition and initial
+`next()`. The analysis indexes resolved variable bindings once per source AST.
+Uses after the loop, nested uses, lambda captures, `remove()` and extra `next()`
+calls prevent conversion. Imperative targets retain `break`, `continue`, labels,
+returns and mutations of surrounding state; stream targets retain their stricter
+capture/control-flow checks. Element declarations preserve final/annotations,
+array dimensions and resolved types. Non-denotable types remain unchanged.
+
+`StreamCoverageTest` compares compilation and runtime results for the original
+source, portable ULR output, AST stream output, native editor proposals and actual
+cleanup output. It includes overloads, callback-local returns, repeated local
+names, primitive extremes, NaN/signed zero, null arrays, range boundaries and
+array-slice exception/evaluation order. This is regression coverage, not a proof
+for arbitrary custom stream implementations or all Java programs.
+
 ### Comment Preservation ✨
 
 **New in February 2026!** The plugin now automatically preserves comments during transformations:
@@ -85,44 +174,46 @@ For detailed examples and technical information, see [ARCHITECTURE.md](ARCHITECT
   - Bidirectional transformations preserve loop body comments
   - See [ARCHITECTURE.md](ARCHITECTURE.md) and [FAQ.md](FAQ.md#q-was-ist-mit-inline-kommentaren--what-about-inline-comments) for details
 
-## Target Format Selection (New!)
+## Editor assists, style hints and cleanup
 
-**Status**: 🆕 **UI Available** - Transformation logic in progress
+| Entry point | Scope | How to use |
+|-------------|-------|------------|
+| Quick Assist | The innermost loop or pipeline at the caret | Press **Ctrl+1** in Java source and choose a conversion target. |
+| Quick Fix | A reported, currently convertible loop | Enable optional hints under **Java → Loop Conversion (Sandbox)**, then use **Ctrl+1** on a hint. |
+| Cleanup | Supported loops in the selected compilation units | **Source → Clean Up… → Functional Converter (Sandbox)**: enable loop conversion, choose a target and source formats. |
+| Save action | Supported loops in the file being saved | Configure the Functional Converter's existing save-action profile explicitly. |
 
-The cleanup now supports selecting the target loop format through a combo box in the cleanup preferences dialog:
+All entries use the same resolved-AST analysis and ULR transformations. Quick
+Assist works independently of cleanup settings. It offers only applicable
+conversions and never rewrites an adjacent loop because the caret is near it.
+Proposals use JDT's native change preview and LTK undo. Previewing repeatedly
+leaves the source unchanged and produces stable variable names. Stream targets
+require Java 8 or later in the project settings.
 
-### Available Formats
+Style hints are **off by default**. Choose Information or Warning and the desired
+target to enable them. They describe a style choice, not a Java compilation
+error. Hints update during reconciliation and Java builds; the Problems view
+updates on the next build after changing this preference. JDT owns removal of
+managed markers on rebuild and clean. Unsupported code gets no conversion hint.
 
-| Format | Description | Status |
-|--------|-------------|--------|
-| **Stream** (default) | Java 8+ functional style (`forEach`, `map`, `filter`, `reduce`) | ✅ Fully implemented |
-| **Classic for-loop** | Enhanced for-loop (`for (T item : collection)`) | ⏳ UI only - transformation pending |
-| **While-loop** | Iterator-based while loop | ⏳ UI only - transformation pending |
+| Target | Accepted source forms |
+|--------|-----------------------|
+| Stream | Enhanced for, supported iterator while/for patterns, supported classic index loops |
+| Enhanced for | Supported sequential stream/forEach expressions and iterator while/for loops |
+| Iterator while | Enhanced for over `Iterable`, supported sequential stream/forEach expressions |
 
-### How to Use
+The cleanup dialog disables source choices that do not apply to the selected
+target and previews the chosen conversions. An explicit conversion target takes
+precedence over legacy stream-only cleanup flags. Existing `for` and `while`
+profile identifiers are accepted as aliases for `enhanced_for` and
+`iterator_while`.
 
-1. Open **Source** → **Clean Up...** in Eclipse
-2. Navigate to **Sandbox** → **Java 8** section
-3. Enable **"Use functional call"**
-4. Select your preferred **Target format** from the dropdown
-5. Click **OK** to apply
-
-### Current Behavior
-
-- **Stream format**: Converts enhanced for-loops and iterator patterns to functional stream operations (existing behavior)
-- **For-loop format**: Currently skips transformation (implementation pending)
-- **While-loop format**: Currently skips transformation (implementation pending)
-
-### Planned Enhancements
-
-Future versions will support bidirectional transformations:
-- Stream → enhanced for-loop
-- Stream → while-iterator
-- Enhanced for → while-iterator
-- While-iterator → enhanced for
-
-See [TODO.md](TODO.md#phase-9-target-format-selection-in-progress---january-2026) for implementation roadmap.
-
+Enhanced-for to iterator conversion preserves the iterator's generic element
+type separately from the loop variable's type. This covers unboxing and widening,
+wildcards, nested generic types, `var`, raw iterables with an `Object` variable,
+final/annotated variables and array-valued elements. Imports respect local type
+names, and labeled `continue`/`break` still target the generated loop. Array
+sources and unresolved or erroneous loops are left unchanged.
 
 ## Supported Transformations
 

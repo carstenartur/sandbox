@@ -299,15 +299,15 @@ public class LoopBidirectionalTransformationTest {
 	// ===========================================
 
 	/**
-	 * Tests that Stream→for rejects chained stream operations.
+	 * Tests that Stream→for rejects unsupported stateful stream operations.
 	 * 
-	 * <p>{@code list.stream().filter(...).forEach(...)} has an intermediate
-	 * filter operation that would be lost if converted to a plain for-loop.
+	 * <p>{@code list.stream().sorted().forEach(...)} has a sorting
+	 * operation that must not be lost when converting to a for-loop.
 	 * The guard must reject this pattern.</p>
 	 */
 	@Test
-	@DisplayName("Stream → for: chained stream ops (filter) should NOT convert")
-	public void testStreamToFor_chainedFilter_notConverted() throws CoreException {
+	@DisplayName("Stream → for: chained stream ops (sorted) should NOT convert")
+	public void testStreamToFor_chainedSort_notConverted() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
@@ -315,7 +315,7 @@ public class LoopBidirectionalTransformationTest {
 				import java.util.*;
 				public class MyTest {
 					void process(List<String> items) {
-						items.stream().filter(item -> !item.isEmpty()).forEach(item -> System.out.println(item));
+						items.stream().sorted().forEach(item -> System.out.println(item));
 					}
 				}
 				""";
@@ -328,14 +328,14 @@ public class LoopBidirectionalTransformationTest {
 	}
 
 	/**
-	 * Tests that Stream→for rejects chained map operations.
+	 * Tests that Stream→for rejects distinct after map.
 	 * 
-	 * <p>{@code list.stream().map(...).forEach(...)} has an intermediate
-	 * map operation that would be lost if converted to a plain for-loop.</p>
+	 * <p>{@code list.stream().map(...).distinct().forEach(...)} must retain
+	 * its duplicate elimination until that operation is supported.</p>
 	 */
 	@Test
-	@DisplayName("Stream → for: chained stream ops (map) should NOT convert")
-	public void testStreamToFor_chainedMap_notConverted() throws CoreException {
+	@DisplayName("Stream → for: chained stream ops (map/distinct) should NOT convert")
+	public void testStreamToFor_chainedDistinct_notConverted() throws CoreException {
 		IPackageFragment pack = context.getSourceFolder().createPackageFragment("test1", false, null);
 
 		String given = """
@@ -343,7 +343,7 @@ public class LoopBidirectionalTransformationTest {
 				import java.util.*;
 				public class MyTest {
 					void process(List<String> items) {
-						items.stream().map(String::toUpperCase).forEach(item -> System.out.println(item));
+						items.stream().map(String::toUpperCase).distinct().forEach(item -> System.out.println(item));
 					}
 				}
 				""";

@@ -29,6 +29,7 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
     @Override
     public String renderSource(SourceDescriptor source) {
         if (source == null) return "";
+        if (source.streamExpression() != null) return source.streamExpression();
         String expr = source.expression();
         
         return switch (source.type()) {
@@ -57,6 +58,9 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
     
     @Override
     public String renderFilterOp(String pipeline, FilterOp filterOp, String variableName) {
+        if (filterOp.function() != null) {
+            return StreamPipelineRenderer.super.renderFilterOp(pipeline, filterOp, variableName);
+        }
         if (filterOp.hasComments()) {
             return renderBlockLambda(pipeline, "filter", filterOp.getComments(),
                     "return " + filterOp.expression() + ";", variableName);
@@ -71,6 +75,9 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
     
     @Override
     public String renderMapOp(String pipeline, MapOp mapOp, String variableName) {
+        if (mapOp.function() != null) {
+            return StreamPipelineRenderer.super.renderMapOp(pipeline, mapOp, variableName);
+        }
         if (mapOp.isSideEffect()) {
             return pipeline + ".map(" + variableName + " -> { " + mapOp.expression() + "; return " + variableName + "; })";
         }
@@ -85,10 +92,21 @@ public class StringRenderer implements StreamPipelineRenderer<String> {
     public String renderFlatMap(String pipeline, String expression, String variableName) {
         return pipeline + ".flatMap(" + variableName + " -> " + expression + ")";
     }
+
+    @Override
+    public String renderFunction(String pipeline, String operation, FunctionalExpression function) {
+        // Preserve target typing even when the original call used an explicit type witness.
+        return pipeline + "." + operation + "((" + function.functionType() + ") (" + function.expression() + "))";
+    }
     
     @Override
     public String renderPeek(String pipeline, String expression, String variableName) {
         return pipeline + ".peek(" + variableName + " -> " + expression + ")";
+    }
+
+    @Override
+    public String renderTypeConversion(String pipeline, StreamTypeConversionOp conversion) {
+        return pipeline + "." + conversion.operationType() + "()";
     }
     
     @Override

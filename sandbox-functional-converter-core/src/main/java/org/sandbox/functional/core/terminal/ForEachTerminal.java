@@ -14,14 +14,20 @@
 package org.sandbox.functional.core.terminal;
 
 import java.util.List;
+import org.sandbox.functional.core.model.FunctionalExpression;
 
 /**
  * Represents a forEach or forEachOrdered terminal operation.
  */
 public record ForEachTerminal(
     List<String> bodyStatements,
-    boolean ordered
+    boolean ordered,
+    FunctionalExpression function
 ) implements TerminalOperation {
+
+    public ForEachTerminal(List<String> bodyStatements, boolean ordered) {
+        this(bodyStatements, ordered, null);
+    }
     
     /**
      * Creates a ForEachTerminal with unordered forEach.

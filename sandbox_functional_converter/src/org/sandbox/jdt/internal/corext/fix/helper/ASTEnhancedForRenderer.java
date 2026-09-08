@@ -15,7 +15,10 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.LoopModel;
 
@@ -45,6 +48,40 @@ public class ASTEnhancedForRenderer {
 	public ASTEnhancedForRenderer(AST ast, ASTRewrite rewrite) {
 		this.ast = ast;
 		this.rewrite = rewrite;
+	}
+
+	/** Lowers ULR filter/map/forEach operations using their original JDT attachments. */
+	public void renderPipeline(LoopModel model, JdtStreamContext context, ImportRewrite imports, TextEditGroup group) {
+		new ASTImperativeLoopRenderer(rewrite, imports, group).render(model, context, false);
+	}
+
+	/** Preserve the declared element type, modifiers, dimensions and complete body trivia. */
+	@SuppressWarnings("unchecked")
+	public void renderIteratorLoop(LoopModel model, Statement original, Statement iteratorDeclaration,
+			Expression source, VariableDeclarationStatement elementDeclaration, ImportRewrite imports, TextEditGroup group) {
+		VariableDeclarationFragment element = (VariableDeclarationFragment) elementDeclaration.fragments().get(0);
+		SingleVariableDeclaration parameter = ast.newSingleVariableDeclaration();
+		parameter.setName(ast.newSimpleName(model.getElement().variableName()));
+		if (elementDeclaration.getType().isVar()) {
+			var context = new ContextSensitiveImportRewriteContext((CompilationUnit) original.getRoot(), original.getStartPosition(), imports);
+			parameter.setType(imports.addImport(element.resolveBinding().getType(), ast, context));
+		} else {
+			parameter.setType((Type) rewrite.createCopyTarget(elementDeclaration.getType()));
+		}
+		for (Object modifier : elementDeclaration.modifiers()) parameter.modifiers().add(rewrite.createCopyTarget((ASTNode) modifier));
+		for (Object dimension : element.extraDimensions()) parameter.extraDimensions().add(rewrite.createCopyTarget((Dimension) dimension));
+		EnhancedForStatement loop = ast.newEnhancedForStatement();
+		loop.setParameter(parameter);
+		loop.setExpression((Expression) rewrite.createCopyTarget(source));
+		Statement body = original instanceof WhileStatement whileLoop ? whileLoop.getBody() : ((ForStatement) original).getBody();
+		elementDeclaration.setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);
+		rewrite.remove(elementDeclaration, group);
+		loop.setBody((Statement) rewrite.createCopyTarget(body));
+		if (iteratorDeclaration != null) {
+			iteratorDeclaration.setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);
+			rewrite.remove(iteratorDeclaration, group);
+		}
+		rewrite.replace(original, loop, group);
 	}
 
 	/**

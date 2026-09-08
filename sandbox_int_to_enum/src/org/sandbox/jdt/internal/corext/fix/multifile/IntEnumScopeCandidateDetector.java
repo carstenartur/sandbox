@@ -31,13 +31,12 @@ import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Modifier;
-import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
-import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
+import org.sandbox.jdt.internal.corext.fix.helper.EnumConstantValue;
 
 /** Lightweight selected-scope detector for project-wide Int-to-Enum planning. */
 public final class IntEnumScopeCandidateDetector {
@@ -98,8 +97,8 @@ public final class IntEnumScopeCandidateDetector {
 								|| type.getSuperclassType() != null || !type.superInterfaceTypes().isEmpty()) {
 							return false;
 						}
-						List<VariableDeclarationFragment> constants= packagePrivateIntConstants(type);
-						List<MethodDeclaration> methods= packagePrivateIntStateMethods(type);
+						List<VariableDeclarationFragment> constants= packagePrivateConstants(type);
+						List<MethodDeclaration> methods= packagePrivateStateMethods(type);
 						if (constants.size() < 2 || methods.isEmpty()) {
 							return false;
 						}
@@ -121,12 +120,12 @@ public final class IntEnumScopeCandidateDetector {
 		return new SearchSeeds(candidateFound[0], complete[0], new ArrayList<>(elements));
 	}
 
-	private static List<VariableDeclarationFragment> packagePrivateIntConstants(TypeDeclaration type) {
+	private static List<VariableDeclarationFragment> packagePrivateConstants(TypeDeclaration type) {
 		List<VariableDeclarationFragment> result= new ArrayList<>();
 		for (FieldDeclaration field : type.getFields()) {
 			int modifiers= field.getModifiers();
 			if (!isPackagePrivate(modifiers) || !Modifier.isStatic(modifiers) || !Modifier.isFinal(modifiers)
-					|| !isPlainInt(field.getType())) {
+					|| !EnumConstantValue.supports(field.getType())) {
 				continue;
 			}
 			for (Object fragment : field.fragments()) {
@@ -136,7 +135,7 @@ public final class IntEnumScopeCandidateDetector {
 		return result;
 	}
 
-	private static List<MethodDeclaration> packagePrivateIntStateMethods(TypeDeclaration type) {
+	private static List<MethodDeclaration> packagePrivateStateMethods(TypeDeclaration type) {
 		List<MethodDeclaration> result= new ArrayList<>();
 		for (MethodDeclaration method : type.getMethods()) {
 			if (method.isConstructor() || method.getBody() == null || !isPackagePrivate(method.getModifiers())) {
@@ -144,7 +143,8 @@ public final class IntEnumScopeCandidateDetector {
 			}
 			for (Object parameterObject : method.parameters()) {
 				SingleVariableDeclaration parameter= (SingleVariableDeclaration) parameterObject;
-				if (parameter.getExtraDimensions() == 0 && !parameter.isVarargs() && isPlainInt(parameter.getType())) {
+				if (parameter.getExtraDimensions() == 0 && !parameter.isVarargs()
+						&& EnumConstantValue.supports(parameter.getType())) {
 					result.add(method);
 					break;
 				}
@@ -160,11 +160,6 @@ public final class IntEnumScopeCandidateDetector {
 		}
 		elements.add(element);
 		return true;
-	}
-
-	private static boolean isPlainInt(Type type) {
-		return type instanceof PrimitiveType primitive
-				&& primitive.getPrimitiveTypeCode() == PrimitiveType.INT;
 	}
 
 	private static boolean isPackagePrivate(int modifiers) {

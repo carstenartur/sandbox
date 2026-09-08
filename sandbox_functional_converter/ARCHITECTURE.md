@@ -24,16 +24,47 @@ IteratorWhileHandler:  JDT AST → IteratorPatternDetector → LoopModelBuilder 
 TraditionalForHandler: JDT AST → analyzeForLoop() → LoopModelBuilder → LoopModel → LoopModelTransformer → ASTStreamRenderer → JDT AST
 ```
 
-The bidirectional transformers (Phase 9) are all migrated to ULR:
+The bidirectional transformers (Phase 9) all use `LoopModel`:
 
-```
-EnhancedForToIteratorWhile: JDT AST → LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer → JDT AST (ULR)
-IteratorWhileToEnhancedFor: JDT AST → LoopModelBuilder → LoopModel → ASTEnhancedForRenderer  → JDT AST (ULR)
-StreamToEnhancedFor:        JDT AST → LoopModelBuilder → LoopModel → ASTEnhancedForRenderer   → JDT AST (ULR)
-StreamToIteratorWhile:      JDT AST → LoopModelBuilder → LoopModel → ASTIteratorWhileRenderer  → JDT AST (ULR)
-```
+| Handler | Extraction | ULR rendering |
+| --- | --- | --- |
+| `EnhancedForToIteratorWhile` | `LoopModelBuilder` | `ASTIteratorWhileRenderer` |
+| `IteratorWhileToEnhancedFor` | `LoopModelBuilder` | `ASTEnhancedForRenderer` |
+| `StreamToEnhancedFor` | `JdtStreamExtractor` | `ASTEnhancedForRenderer` |
+| `StreamToIteratorWhile` | `JdtStreamExtractor` | `ASTIteratorWhileRenderer` |
 
 All seven transformers (3 loop→stream + 4 bidirectional) now use the ULR pipeline.
+
+For reverse stream pipelines, `JdtStreamExtractor` creates real `FilterOp`,
+`MapOp` and `ForEachTerminal` entries in source evaluation order. Their optional
+`FunctionalExpression` records contain the complete lambda/method reference,
+resolved interface/input/result type names, and the decisions to preserve a
+function boundary or isolate a pattern-variable scope. Existing loop extraction
+can continue to use operations with expression bodies and no functional record.
+
+`JdtStreamContext` accompanies this model with the source AST and resolved JDT
+bindings. Its identity map attaches each functional record to its original source
+site, including repeated identical-looking callbacks. The context has no operation
+sequence or separate transformation plan. It belongs to one cleanup AST snapshot;
+new functional records require corresponding source attachments before JDT loop
+rendering. The Core remains independent of Eclipse and OSGi.
+
+Both imperative renderers use `ASTImperativeLoopRenderer` to lower the ULR
+operations. It reads operation kinds, order and function-boundary decisions from
+the model, uses the attached AST for binding-aware renaming and copy targets, and
+applies edits/imports through the existing JDT cleanup lifecycle. This preserves
+comments, overload selection, parameter mutation and lambda-local return/finally.
+Overlapping nested conversions use separate cleanup passes and share generated
+identifier reservations with the existing loop handlers.
+
+The same extracted model is also consumable by `LoopModelTransformer` with
+`StringRenderer` or `ASTStreamRenderer`. Complete functional arguments retain
+their resolved target type through a cast, so an explicit stream type witness
+such as `<Number>map(...)` does not silently become an `Integer` map. Core tests
+cover the functional metadata contract; integration tests compile and execute
+both stream renderings and both imperative targets, in addition to the original
+61 reverse-conversion cases. The supported/rejected source boundaries are listed
+in the module README.
 
 **`JdtLoopExtractor`** bridges JDT AST to the abstract `LoopModel`, detecting:
 - `if (cond) continue;` → `FilterOp` (negated)
@@ -56,6 +87,7 @@ All seven transformers (3 loop→stream + 4 bidirectional) now use the ULR pipel
 
 **Core Module** (`sandbox-functional-converter-core`):
 - `LoopModel`, `SourceDescriptor`, `ElementDescriptor`, `LoopMetadata` — ULR data model
+- `FunctionalExpression` — Resolved functional types and lambda boundary/scope metadata, without JDT dependencies
 - `FilterOp`, `MapOp`, `CollectTerminal`, `ReduceTerminal`, `MatchTerminal` — Operations/terminals
 - `LoopModelBuilder` — Fluent builder for constructing models
 - `StringRenderer` — Test renderer producing Java code strings (no OSGi needed), supports comment-aware block-lambda rendering
@@ -1890,4 +1922,3 @@ ForStatement → analyzeForLoop() → ForLoopPattern
 
 - **PR**: #666 (based on #665)
 - **Test File**: `sandbox_functional_converter_test/.../AdditionalLoopPatternsTest.java`
-

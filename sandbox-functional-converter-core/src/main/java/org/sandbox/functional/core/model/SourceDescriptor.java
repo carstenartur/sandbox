@@ -19,13 +19,19 @@ package org.sandbox.functional.core.model;
  * @param type the source type
  * @param expression the expression to iterate over
  * @param elementTypeName the element type name
+ * @param streamExpression optional original stream factory, including qualification and type witnesses
  * @since 1.0.0
  */
 public record SourceDescriptor(
     SourceType type,
     String expression,
-    String elementTypeName
+    String elementTypeName,
+    String streamExpression
 ) {
+    public SourceDescriptor(SourceType type, String expression, String elementTypeName) {
+        this(type, expression, elementTypeName, null);
+    }
+
     /**
      * The type of iteration source.
      */

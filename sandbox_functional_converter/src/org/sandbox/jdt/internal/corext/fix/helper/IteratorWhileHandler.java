@@ -60,7 +60,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 	public void find(UseFunctionalCallFixCore fixCore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesProcessed) {
 		ReferenceHolder<ASTNode, Object> data= ReferenceHolder.create();
-		compilationUnit.accept(new ASTVisitor() {
+		LoopConversionService.scanRoot(compilationUnit).accept(new ASTVisitor() {
 			@Override
 			public boolean visit(WhileStatement node) {
 				if (nodesProcessed.contains(node)) {
@@ -120,6 +120,10 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 	}
 
 	private boolean isSafeToSchedule(ASTNode loop, IteratorConversion conversion) {
+		if (!(loop instanceof Statement statement) || IteratorLoopBindings.element(statement,
+				loop instanceof WhileStatement ? findPreviousStatement(statement) : null, conversion.pattern()) == null) {
+			return false;
+		}
 		LoopModel model= conversion.extractedLoop().model;
 		TerminalOperation terminal= model.getTerminal();
 		String liftedAccumulatorName= null;

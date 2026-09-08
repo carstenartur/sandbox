@@ -1,8 +1,8 @@
-# Architecture: Int-to-Enum Refactoring
+# Architecture: Constant-to-Enum Refactoring
 
 ## Purpose
 
-The plugin identifies legacy Java designs in which integers encode a finite state domain and replaces provably safe cases with an enum.
+The plugin identifies legacy Java designs in which integral or String constants encode a finite state domain and replaces provably safe cases with an enum. The historical bundle/profile identifiers remain unchanged.
 
 This is a semantic refactoring rather than a textual pattern replacement. Integer constants may represent states, bit masks, protocol values, persisted identifiers, error codes, array indexes, or arithmetic values. A valid migration must therefore prove how declarations and values flow through the program before changing their type.
 
@@ -81,6 +81,9 @@ A dedicated refactoring remains useful when the operation needs interactive choi
 
 - `AbstractTool<T>` defines detection, rewrite, and preview hooks.
 - `IntToEnumHelper` implements conservative binding-based if/else detection and migration.
+- `EnumConstantValue` holds immutable declared-type/value semantics for byte, short, char, int, long and String domains. Integral values use an exact 64-bit representation, never an int truncation.
+- `EnumComparison` recognizes primitive equality/inequality and resolved JDK String/Objects equality. Discovery and stale-plan checks use the same comparison contract.
+- `EnumNameSafety` conservatively rejects names already used inside the owner, including implicit type references and local variables. Both detectors and stale-plan validation share this guard.
 - `SwitchIntToEnumHelper` implements the existing switch prototype.
 
 ### `org.sandbox.jdt.internal.ui.fix`
@@ -109,21 +112,22 @@ The current detector collects fields that are:
 - `private`;
 - `static`;
 - `final`;
-- primitive `int`;
-- compile-time constants with an `Integer` value.
+- a supported scalar integral or String type;
+- compile-time constants with an exact integral or non-null String value.
 
 Candidate constants must share an underscore-delimited prefix, such as `STATUS_`. The prefix produces the enum type name and the suffix produces each enum constant name.
 
 The detector rejects:
 
 - fewer than two constants;
-- duplicate numeric values;
+- duplicate values, including aliases formed by constant-folded String expressions;
+- mixed declared types, null/runtime values, and receiver expressions whose evaluation would be discarded;
 - invalid generated identifiers;
-- a generated enum name that conflicts with an existing nested type.
+- a generated enum name that hides an existing declaration or type reference.
 
 ### State-carrier discovery
 
-The recognised state carrier is currently a plain `int` parameter of a private method. Every branch condition in the root if/else-if chain must be an equality comparison between the same parameter binding and one of the constant bindings. Operand order may be reversed.
+The recognised local state carrier is a scalar parameter of a private method, with the same resolved type as every constant in the domain. Conditions compare the same parameter binding with constant bindings using `==`, `!=`, or resolved `String.equals`/`Objects.equals`. Operand order may be reversed. Every call must supply a recognized constant, so String parameters remain non-null and identity comparisons see interned compile-time strings.
 
 ```java
 status == STATUS_PENDING
@@ -155,7 +159,7 @@ For an accepted candidate, one `CompilationUnitRewriteOperationWithSourceRange`:
 
 ## Project-wide candidate model
 
-The next step is to extract discovery from `IntToEnumHelper` into an immutable semantic model containing:
+The coordinated planner freezes its source analysis in `IntEnumCandidate` and typed `IntEnumConstant` records. `EnumConstantValue` is shared with the local detector. The retained model contains no AST nodes; rewriting resolves bindings again and rejects changed values, types, unsupported state uses and changed package visibility. Further state-flow expansion would need to enrich this model with:
 
 - constant group and numeric-value semantics;
 - declarations and generated names;

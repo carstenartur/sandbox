@@ -104,7 +104,7 @@ public enum UseFunctionalCallFixCore {
 	}
 
 	public CompilationUnitRewriteOperation rewrite(final ASTNode visited, final org.sandbox.jdt.internal.common.ReferenceHolder<ASTNode, Object> data) {
-		return new CompilationUnitRewriteOperation() {
+		return new LoopConversionOperation(visited) {
 			@Override
 			public void rewriteAST(final CompilationUnitRewrite cuRewrite, final LinkedProposalModelCore linkedModel) throws CoreException {
 				TextEditGroup group= createTextEditGroup(Messages.format(MultiFixMessages.FunctionalCallCleanUp_description,new Object[] {UseFunctionalCallFixCore.this.toString()}), cuRewrite);
@@ -112,6 +112,19 @@ public enum UseFunctionalCallFixCore {
 				functionalcall.rewrite(UseFunctionalCallFixCore.this, visited, cuRewrite, group, data);
 			}
 		};
+	}
+
+	/** The source anchor lets editor assists select the same operations as cleanup. */
+	public abstract static class LoopConversionOperation extends CompilationUnitRewriteOperation {
+		private final ASTNode anchor;
+
+		protected LoopConversionOperation(ASTNode anchor) {
+			this.anchor = anchor.getParent() instanceof org.eclipse.jdt.core.dom.ExpressionStatement statement ? statement : anchor;
+		}
+
+		public final ASTNode getAnchor() {
+			return anchor;
+		}
 	}
 
 	/**
