@@ -14,7 +14,7 @@
       and proven callers. Supported if/else domains are byte, short, char, int, long and String.</p>
    <p>String constants must be non-null. All callers must supply recognized constants, which preserves both
       interned-string identity comparisons and resolved String/Objects equality. Numeric widths are retained exactly.</p>
-   <p>Before applying a coordinated plan, constant values/types, parameter uses and visibility are revalidated.
+   <p>Before generating coordinated edits, constant values/types, parameter uses, visibility and enum-name availability are revalidated.
       An incompatible edit rejects the plan and its pending caller changes. Receiver evaluations are never silently removed.</p>
 
    <h2>Safety model</h2>

@@ -15,7 +15,7 @@
 - [x] Shared local/coordinated support for byte, short, char, int, long and String domains
 - [x] String/Objects equality, inequality and receiver-evaluation safety checks
 - [x] Revalidation of constant values, state uses and package visibility before coordinated rewriting
-- [x] Validation of generated Java identifiers and nested-type name conflicts
+- [x] Validation of generated Java identifiers, declarations and referenced-type name conflicts
 - [x] Whole-compilation-unit reference validation for constants, the state parameter, and the private method
 - [x] Propagation to proven private method call sites
 - [x] Removal of migrated constant fields or individual declaration fragments

@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -72,16 +73,18 @@ public class ConstantToEnumTypeTest {
 			return """
 					package test1;
 					public class Example {
-					    %sstatic final %s STATUS_A = %s;
-					    %sstatic final %s STATUS_B = %s;
-					    %sstatic int process(%s state) {
-					        if (%s) return 17;
-					        else if (%s) return 29;
+					    VISIBILITYstatic final STATE_TYPE STATUS_A = FIRST_VALUE;
+					    VISIBILITYstatic final STATE_TYPE STATUS_B = SECOND_VALUE;
+					    VISIBILITYstatic int process(STATE_TYPE state) {
+					        if (CONDITION_A) return 17;
+					        else if (CONDITION_B) return 29;
 					        return 41;
 					    }
 					    public static String run() { return process(STATUS_A) + ":" + process(STATUS_B); }
 					}
-					""".formatted(visibility, type, first, visibility, type, second, visibility, type, conditionA, conditionB);
+					""".replace("VISIBILITY", visibility).replace("STATE_TYPE", type)
+					.replace("FIRST_VALUE", first).replace("SECOND_VALUE", second)
+					.replace("CONDITION_A", conditionA).replace("CONDITION_B", conditionB);
 		}
 	}
 
@@ -175,7 +178,7 @@ public class ConstantToEnumTypeTest {
 				Change redo= undo.perform(new NullProgressMonitor());
 				if (redo != null) redo.dispose();
 				for (int i= 0; i < units.size(); i++) assertEquals(originals[i], units.get(i).getSource());
-			} finally { if (undo != null) undo.dispose(); }
+			} finally { undo.dispose(); }
 		} finally { changes.dispose(); }
 	}
 
@@ -183,6 +186,9 @@ public class ConstantToEnumTypeTest {
 		Scenario strings= new Scenario("String", "\"a\"", "\"b\"");
 		String source= strings.source(false);
 		return Stream.of(
+				source.replace("public static String run()", "static Status other() { return new Status(); } public static String run()")
+						+ "\nclass Status {}\n",
+				source.replace("if (state == STATUS_A)", "int Status = 0; if (state == STATUS_A)"),
 				source.replace("process(STATUS_A)", "process(null)"),
 				source.replace("\"b\"", "null"),
 				source.replace("process(STATUS_A)", "process(new String(STATUS_A))"),
@@ -230,6 +236,7 @@ public class ConstantToEnumTypeTest {
 		Scenario strings= new Scenario("String", "\"a\"", "\"b\"");
 		Scenario longs= new Scenario("long", "0L", "1L");
 		return Stream.of(
+				new StaleMutation(strings, "public class Example {", "class Status {} public class Example { static Status other = new Status();"),
 				new StaleMutation(longs, "STATUS_B = 1L", "STATUS_B = 2L"),
 				new StaleMutation(longs, "return 41;", "return (int) state;"),
 				new StaleMutation(strings, "STATUS_B = \"b\"", "STATUS_B = \"a\""),
@@ -287,7 +294,7 @@ public class ConstantToEnumTypeTest {
 		List<String> arguments= new ArrayList<>(List.of("--release", "21", "-d", output.toString()));
 		for (int i= 0; i < sources.length; i++) {
 			Path file= output.resolve(i == 0 ? "Example.java" : "Client.java");
-			Files.writeString(file, sources[i]);
+			Files.writeString(file, sources[i], StandardCharsets.UTF_8);
 			arguments.add(file.toString());
 		}
 		var compiler= ToolProvider.getSystemJavaCompiler();

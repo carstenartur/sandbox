@@ -50,10 +50,10 @@ public class MultiFileIntToEnumCleanUpTest {
 				package test;
 
 				public class OrderProcessor {
-					static final %s STATUS_PENDING = %s;
-					static final %s STATUS_APPROVED = %s;
+					static final STATE_TYPE STATUS_PENDING = FIRST_VALUE;
+					static final STATE_TYPE STATUS_APPROVED = SECOND_VALUE;
 
-					void process(%s status) {
+					void process(STATE_TYPE status) {
 						if (status == STATUS_PENDING) {
 							System.out.println("pending");
 						} else if (status == STATUS_APPROVED) {
@@ -61,7 +61,7 @@ public class MultiFileIntToEnumCleanUpTest {
 						}
 					}
 				}
-				""".formatted(type, first, type, second, type), false, null);
+				""".replace("STATE_TYPE", type).replace("FIRST_VALUE", first).replace("SECOND_VALUE", second), false, null);
 		ICompilationUnit client= pack.createCompilationUnit("OrderClient.java", //$NON-NLS-1$
 				"""
 				package test;

@@ -7,7 +7,7 @@ This Eclipse plugin detects legacy Java code in which integral or String constan
 The implementation has three deliberately separated capabilities:
 
 - **Local if/else state detection** — binding-based migration when the complete state flow is contained in one compilation unit.
-- **Complete-project coordinated migration** — a narrow package-scoped method/caller migration that runs only when every project source compilation unit is in scope.
+- **Project-wide coordinated migration** — a narrow package-scoped method/caller migration that requires a proven closed source scope.
 - **Integer switch migration** — the existing experimental prototype for switch statements.
 
 Local cleanup does not automatically request project sources. Complete-project analysis is an explicit, disabled-by-default option because it can inspect and modify additional files and is materially more expensive.
@@ -38,7 +38,7 @@ The local implementation transforms a candidate only when all of the following a
 5. Every use of that parameter is one of the recognised comparisons.
 6. Every call site in the compilation unit passes one of the recognised constants.
 7. The constants have no unsupported remaining references.
-8. The generated enum name and constants are valid and do not conflict with an existing nested type.
+8. The generated enum name and constants are valid; the enum name does not hide an existing declaration or type reference in its owner.
 9. Replacing a reference cannot discard a receiver evaluation, such as `lookup().STATUS_PENDING`.
 
 These restrictions describe the local detector, not a fundamental restriction of the Eclipse cleanup framework. The existing `ICleanUp` lifecycle calls `checkPreConditions(IJavaProject, ICompilationUnit[], ...)` with all target compilation units and then invokes the same cleanup instance once per target unit. A cleanup can therefore prepare an immutable project-wide migration plan and return one local `CompilationUnitChange` for each file. `CleanUpRefactoring` combines those changes into one preview, apply operation, and undo.
@@ -110,18 +110,18 @@ The implemented detectors do not yet migrate:
 
 A rejected candidate is left unchanged.
 
-## Complete-project coordinated migration
+## Project-wide coordinated migration
 
-The coordinated planner currently recognises a deliberately narrow package-scoped state method and proven callers in other files. Before producing any edits it requires every source compilation unit in the Java project to be present in the cleanup target. This closed-world requirement prevents unselected callers or constant references from being missed.
+The coordinated planner recognises a deliberately narrow package-scoped state method and proven callers in other files. Before producing edits, it requires a closed scope containing the declarations and every relevant source use. This prevents unselected callers or constant references from being missed.
 
-There are two ways to provide that scope:
+Enable **Analyze all project source files for coordinated migrations**, then provide that scope in one of two ways:
 
-1. **Select the entire Java project explicitly.** Stock cleanup orchestration passes all selected source units to the shared planner.
-2. **Enable automatic project-wide scope expansion.** In a product containing the patched JDT UI scope-provider integration, enable the child option **Analyze all project source files for coordinated migrations**. The cleanup then requests every project source compilation unit before precondition checking.
+1. **Select the entire Java project explicitly.** Stock cleanup orchestration passes the complete selected source scope to the shared planner.
+2. **Use automatic scope expansion.** In a product containing the patched JDT UI scope-provider integration, binding-based project searches discover the required callers and constant uses before precondition checking. A verified closure can include only the required related units and leave unrelated sources out of the target set.
 
 The project-wide option is disabled by default. Enabling only **Convert state constants to enum** retains the user's initial selection and runs the local detector without scanning unrelated project files.
 
-The immutable plan retains each constant's declared type and value. Before applying a file's edits, it rechecks values, parameter uses and package visibility. An incompatible intervening edit invalidates the coordinated plan, including its pending caller changes.
+The immutable plan retains each constant's declared type and value. Before generating a file's edits, it rechecks values, parameter uses, package visibility and enum-name availability. An incompatible intervening edit invalidates the coordinated plan, including its pending caller changes.
 
 The existing cleanup refactoring still owns parsing, fixpoint processing, overlap handling, preview, validation, apply, and undo. The Sandbox cleanup contributes scope discovery and an immutable semantic plan; it does not bypass the standard LTK transaction.
 
@@ -136,7 +136,7 @@ Local transformation may remain available as a save action. Project-wide scope e
 1. Open **Preferences → Java → Code Style → Clean Up**.
 2. Create or edit a cleanup profile.
 3. On the **Int to Enum (Sandbox)** tab, enable **Convert state constants to enum** for local transformations in the selected cleanup scope.
-4. For the coordinated complete-project migration, additionally enable **Analyze all project source files for coordinated migrations**.
+4. For coordinated migration, additionally enable **Analyze all project source files for coordinated migrations**; on an unpatched Eclipse host, select the complete Java project explicitly.
 5. Review the cleanup preview before applying changes.
 
 ## Requirements

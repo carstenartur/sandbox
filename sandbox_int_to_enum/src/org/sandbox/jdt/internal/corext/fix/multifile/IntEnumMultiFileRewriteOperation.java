@@ -56,6 +56,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.EnumComparison;
 import org.sandbox.jdt.internal.corext.fix.helper.EnumConstantValue;
+import org.sandbox.jdt.internal.corext.fix.helper.EnumNameSafety;
 
 /** Local AST rewrite generated from a project-wide constant-state plan. */
 final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOperationWithSourceRange {
@@ -204,6 +205,9 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 				}
 				SingleVariableDeclaration parameter= (SingleVariableDeclaration) method.parameters()
 						.get(candidate.parameterIndex());
+				if (EnumNameSafety.conflicts(type, candidate.enumTypeName())) {
+					throw stale(unit, "generated enum name is no longer available"); //$NON-NLS-1$
+				}
 				if ((method.getModifiers() & (Modifier.PUBLIC | Modifier.PROTECTED | Modifier.PRIVATE)) != 0) {
 					throw stale(unit, "state method visibility changed"); //$NON-NLS-1$
 				}

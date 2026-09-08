@@ -27,7 +27,6 @@ import javax.lang.model.SourceVersion;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
@@ -67,8 +66,8 @@ import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
  * and the migrated method must be private, every use of the state parameter must
  * be one of the recognised equality comparisons, and every call site must pass
  * one of the recognised constants. This keeps the ordinary single-file cleanup
- * safe while leaving project-wide API migrations to a future multi-file
- * refactoring.</p>
+ * safe while coordinated package-scoped migrations use the separate project-wide
+ * planner.</p>
  */
 public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntToEnumHelper.IntConstantHolder>> {
 
@@ -88,7 +87,7 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 		public Set<ASTNode> nodesProcessed;
 		/** Private method containing the state parameter. */
 		public MethodDeclaration method;
-		/** Parameter whose type is changed from int to the generated enum. */
+		/** Parameter whose scalar type is changed to the generated enum. */
 		public SingleVariableDeclaration parameter;
 		/** Type into which the nested enum is inserted. */
 		public TypeDeclaration enclosingType;
@@ -217,7 +216,7 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 			return null;
 		}
 		String enumName = SwitchIntToEnumHelper.prefixToEnumName(prefix);
-		if (!isValidIdentifier(enumName) || hasNestedTypeNamed(enclosingType, enumName)) {
+		if (!isValidIdentifier(enumName) || EnumNameSafety.conflicts(enclosingType, enumName)) {
 			return null;
 		}
 
@@ -566,19 +565,6 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 			}
 		}
 		return true;
-	}
-
-	private static boolean hasNestedTypeNamed(TypeDeclaration enclosingType, String name) {
-		if (enclosingType.getName().getIdentifier().equals(name)) {
-			return true;
-		}
-		for (Object declaration : enclosingType.bodyDeclarations()) {
-			if (declaration instanceof AbstractTypeDeclaration typeDeclaration
-					&& typeDeclaration.getName().getIdentifier().equals(name)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private static boolean isValidIdentifier(String name) {

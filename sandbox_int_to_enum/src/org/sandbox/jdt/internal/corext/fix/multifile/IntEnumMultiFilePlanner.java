@@ -69,6 +69,7 @@ import org.sandbox.jdt.cleanup.multifile.MultiFileScopeDiagnostic;
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
 import org.sandbox.jdt.internal.corext.fix.helper.EnumComparison;
 import org.sandbox.jdt.internal.corext.fix.helper.EnumConstantValue;
+import org.sandbox.jdt.internal.corext.fix.helper.EnumNameSafety;
 
 /** Builds conservative source-wide constant-state migration plans. */
 public final class IntEnumMultiFilePlanner {
@@ -310,6 +311,10 @@ public final class IntEnumMultiFilePlanner {
 			candidate.parameterIndex= parameterIndex;
 			if (candidate.methodKey == null || candidate.ownerTypeQualifiedName.isEmpty()) {
 				return null;
+			}
+			if (EnumNameSafety.conflicts(type, candidate.enumName)) {
+				candidate.invalidate("GENERATED_NAME_COLLISION", //$NON-NLS-1$
+						"The generated enum name would hide an existing declaration or reference."); //$NON-NLS-1$
 			}
 			return candidate;
 		}
