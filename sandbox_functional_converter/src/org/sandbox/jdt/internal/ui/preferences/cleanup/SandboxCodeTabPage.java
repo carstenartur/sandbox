@@ -94,6 +94,11 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		};
 		loopConversionEnabled.addObserver((source, value) -> updateAvailability.run());
 		targetFormatCombo.addObserver((source, value) -> updateAvailability.run());
+		// Keep JDT's selection/count lifecycle. Observable invokes newer observers first,
+		// so the target-specific availability above runs after the master dependency.
+		registerSlavePreference(loopConversionEnabled, new CheckboxPreference[] {
+			fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor
+		});
 		updateAvailability.run();
 
 		registerPreference(loopConversionEnabled);
