@@ -17,6 +17,60 @@ This Eclipse cleanup plugin automatically converts imperative enhanced for-loops
 - **Continue statements**: `if (condition) continue;` → `.filter(x -> !(condition))`
 - **Comment Preservation**: Comments in loop bodies are automatically preserved in the transformed code ✨
 
+### Stream pipelines back to loops
+
+With **Loop conversion → Enhanced for** or **Iterator while** and **From stream**
+enabled, sequential `Collection.stream()` pipelines ending in `forEach` or
+`forEachOrdered` can be converted back to loops. Any sequence of `filter` and
+`map` is supported, including maps that change the element type:
+
+```java
+items.stream().filter(item -> !item.isEmpty())
+    .map(item -> item.length()).forEach(length -> consume(length));
+```
+
+```java
+for (String element : items) {
+    if (!(!element.isEmpty())) {
+        continue;
+    }
+    Integer mapped = element.length();
+    consume(mapped);
+}
+```
+
+The converter uses resolved Java types and fresh variable names. Expression
+lambdas are inlined when their parameter is not reassigned. Complex lambda
+blocks retain a typed `Predicate`, `Function` or `Consumer` local, preserving
+local `return`, `finally`, scope and overload behavior. Static/unbound method
+references, constructor references and references bound to `this` use the same
+typed-function path. Each function is created once; each map is evaluated once
+per accepted element, in pipeline order. Ordinary `Iterable.forEach` calls are
+also supported.
+
+These reverse conversions use the shared ULR (`LoopModel`, `FilterOp`, `MapOp`,
+`ForEachTerminal`). Functional type and scope metadata live in the Core model;
+original AST nodes and bindings remain in a JDT context. Both loop renderers and
+the stream renderers consume this model. See [Architecture](ARCHITECTURE.md) for
+the extraction/rendering contracts.
+
+When several source formats are enabled, overlapping nested loops are converted
+in separate cleanup passes. The handlers share variable-name reservations so
+their generated iterator declarations cannot collide.
+
+The conversion remains conservative: parallel streams, other stream sources,
+stateful operations (`sorted`, `distinct`, `limit`, etc.), primitive streams,
+other terminals (`collect`, `reduce`, matches, etc.), unresolved/non-denotable
+types and explicitly overridden source methods remain unchanged. Arbitrary
+bound method references such as `getSink()::accept` and function-valued arguments
+remain unchanged because their eager evaluation and null checks need a separate
+translation. Comments between pipeline calls also keep the chain unchanged;
+comments in copied lambda bodies are preserved.
+
+As with the existing collection-to-loop conversion, this assumes the standard
+collection traversal contract; it does not prove equivalence for runtime
+subclasses that override stream, spliterator or traversal behavior.
+
 ### Comment Preservation ✨
 
 **New in February 2026!** The plugin now automatically preserves comments during transformations:

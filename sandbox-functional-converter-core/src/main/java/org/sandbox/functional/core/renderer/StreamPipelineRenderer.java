@@ -52,6 +52,9 @@ public interface StreamPipelineRenderer<T> {
      * @return the pipeline with filter appended
      */
     default T renderFilterOp(T pipeline, FilterOp filterOp, String variableName) {
+        if (filterOp.function() != null) {
+            return renderFunction(pipeline, filterOp.operationType(), filterOp.function());
+        }
         return renderFilter(pipeline, filterOp.expression(), variableName);
     }
     
@@ -70,7 +73,15 @@ public interface StreamPipelineRenderer<T> {
      * @return the pipeline with map appended
      */
     default T renderMapOp(T pipeline, MapOp mapOp, String variableName) {
+        if (mapOp.function() != null) {
+            return renderFunction(pipeline, mapOp.operationType(), mapOp.function());
+        }
         return renderMap(pipeline, mapOp.expression(), variableName, mapOp.targetType());
+    }
+
+    /** Renders a complete functional argument, preserving its own parameter scope. */
+    default T renderFunction(T pipeline, String operation, FunctionalExpression function) {
+        throw new UnsupportedOperationException("Complete functional arguments are not supported");
     }
     
     /**
@@ -107,6 +118,13 @@ public interface StreamPipelineRenderer<T> {
      * Renders a forEach terminal operation.
      */
     T renderForEach(T pipeline, List<String> bodyStatements, String variableName, boolean ordered);
+
+    default T renderForEachTerminal(T pipeline, ForEachTerminal terminal, String variableName) {
+        if (terminal.function() != null) {
+            return renderFunction(pipeline, terminal.operationType(), terminal.function());
+        }
+        return renderForEach(pipeline, terminal.bodyStatements(), variableName, terminal.ordered());
+    }
     
     /**
      * Renders a collect terminal operation.

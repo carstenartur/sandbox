@@ -16,17 +16,28 @@ package org.sandbox.functional.core.operation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.sandbox.functional.core.model.FunctionalExpression;
 
 /**
  * Represents a filter operation in a stream pipeline.
  */
 public final class FilterOp implements Operation {
     private final String expression;
+    private final FunctionalExpression function;
     private final List<String> associatedComments;
     
     public FilterOp(String expression) {
+        this(expression, null);
+    }
+
+    public FilterOp(String expression, FunctionalExpression function) {
         this.expression = Objects.requireNonNull(expression, "expression must not be null");
+        this.function = function;
         this.associatedComments = new ArrayList<>();
+    }
+
+    public FunctionalExpression function() {
+        return function;
     }
     
     @Override
@@ -80,16 +91,16 @@ public final class FilterOp implements Operation {
         if (this == o) return true;
         if (!(o instanceof FilterOp)) return false;
         FilterOp filterOp = (FilterOp) o;
-        return expression.equals(filterOp.expression);
+        return expression.equals(filterOp.expression) && Objects.equals(function, filterOp.function);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(expression);
+        return Objects.hash(expression, function);
     }
     
     @Override
     public String toString() {
-        return "FilterOp[expression=" + expression + ", comments=" + associatedComments.size() + "]";
+        return "FilterOp[expression=" + expression + ", function=" + function + ", comments=" + associatedComments.size() + "]";
     }
 }

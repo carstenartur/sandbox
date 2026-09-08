@@ -16,6 +16,7 @@ package org.sandbox.functional.core.operation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.sandbox.functional.core.model.FunctionalExpression;
 
 /**
  * Represents a map operation in a stream pipeline.
@@ -25,6 +26,7 @@ public final class MapOp implements Operation {
     private final String targetType;
     private final String outputVariableName;
     private final boolean sideEffect;
+    private final FunctionalExpression function;
     private final List<String> associatedComments;
     
     /**
@@ -35,10 +37,19 @@ public final class MapOp implements Operation {
      * @param sideEffect if true, this is a side-effect map: map(var -> { stmt; return var; })
      */
     public MapOp(String expression, String targetType, String outputVariableName, boolean sideEffect) {
+        this(expression, targetType, outputVariableName, sideEffect, null);
+    }
+
+    public MapOp(String expression, String targetType, String outputVariableName, boolean sideEffect,
+            FunctionalExpression function) {
         this.expression = Objects.requireNonNull(expression, "expression must not be null");
         this.targetType = targetType;
         this.outputVariableName = outputVariableName;
         this.sideEffect = sideEffect;
+        if (function != null && !Objects.equals(targetType, function.outputType())) {
+            throw new IllegalArgumentException("Map target type must match the functional result type");
+        }
+        this.function = function;
         this.associatedComments = new ArrayList<>();
     }
     
@@ -76,6 +87,10 @@ public final class MapOp implements Operation {
     
     public String targetType() {
         return targetType;
+    }
+
+    public FunctionalExpression function() {
+        return function;
     }
     
     /**
@@ -145,18 +160,20 @@ public final class MapOp implements Operation {
         return sideEffect == mapOp.sideEffect &&
                expression.equals(mapOp.expression) && 
                Objects.equals(targetType, mapOp.targetType) &&
-               Objects.equals(outputVariableName, mapOp.outputVariableName);
+               Objects.equals(outputVariableName, mapOp.outputVariableName) &&
+               Objects.equals(function, mapOp.function);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(expression, targetType, outputVariableName, sideEffect);
+        return Objects.hash(expression, targetType, outputVariableName, sideEffect, function);
     }
     
     @Override
     public String toString() {
         return "MapOp[expression=" + expression + 
                ", targetType=" + targetType + 
+               ", function=" + function +
                ", comments=" + associatedComments.size() + "]";
     }
 }
