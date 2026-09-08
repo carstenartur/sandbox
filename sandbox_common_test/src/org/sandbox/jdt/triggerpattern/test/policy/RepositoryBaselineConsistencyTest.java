@@ -70,6 +70,9 @@ public class RepositoryBaselineConsistencyTest {
 		assertEquals(Set.of(eclipseRelease), releaseRepositories(target),
 				"The PDE target must resolve only the declared Eclipse release"); //$NON-NLS-1$
 		assertEquals(Set.of(eclipseRelease),
+				releaseRepositories(read(root, "sandbox_oomph/sandboxproject.setup")), //$NON-NLS-1$
+				"The official Oomph project must install tools from the declared Eclipse release"); //$NON-NLS-1$
+		assertEquals(Set.of(eclipseRelease),
 				releaseRepositories(read(root, "sandbox_product/sandbox.product")), //$NON-NLS-1$
 				"The product must provision only the declared Eclipse release"); //$NON-NLS-1$
 		assertEquals(Set.of(eclipseRelease),

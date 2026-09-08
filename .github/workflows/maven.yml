@@ -179,6 +179,8 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-java@v6
         with:
           java-version: '21'
@@ -189,10 +191,12 @@ jobs:
         env:
           CANDIDATE_REF: ${{ github.head_ref || github.ref_name }}
           CANDIDATE_REPOSITORY: ${{ github.event.pull_request.head.repo.clone_url || github.event.repository.clone_url }}
+          CANDIDATE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
         run: >-
           xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress
           -f sandbox_oomph/pom.xml -Doomph.integration=true
-          -Dsandbox.oomph.ref="$CANDIDATE_REF" -Dsandbox.oomph.repository="$CANDIDATE_REPOSITORY" verify
+          -Dsandbox.oomph.ref="$CANDIDATE_REF" -Dsandbox.oomph.repository="$CANDIDATE_REPOSITORY"
+          -Dsandbox.oomph.commit="$CANDIDATE_COMMIT" verify
       - name: Upload Oomph verification evidence
         if: always()
         uses: actions/upload-artifact@v7
@@ -203,6 +207,7 @@ jobs:
             sandbox_oomph/target/oomph-runtime/*.log
             sandbox_oomph/target/oomph-runtime/*.properties
             sandbox_oomph/target/oomph-runtime/workspace/.metadata/.log
+            sandbox_oomph/target/oomph-runtime/eclipse/configuration/**/*.log
           include-hidden-files: true
           retention-days: 14
 

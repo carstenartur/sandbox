@@ -282,7 +282,7 @@ Plain Java core module providing AST-independent representation of loop structur
 ---
 ### Oomph Workspace Setup (`sandbox_oomph`)
 
-Provides Eclipse Oomph setup configurations for automated workspace configuration. Enables one-click setup with pre-configured Eclipse settings, automatic installation of required plugins, Git repository cloning and branch setup, and seamless integration with Eclipse Installer.
+Sandbox is included in the official Eclipse Installer catalog. In Advanced Mode, select Eclipse SDK 4.40 (2026-06) and **Github Projects → Sandbox Project → Main**. Oomph installs the development tools, clones the repository, imports the Maven and Eclipse projects, activates the target platform and builds the workspace. See the [setup guide](sandbox_oomph/README.md) for existing workspaces and development launches.
 
 📖 **Full Documentation**: [Plugin README](sandbox_oomph/README.md) | [Architecture](sandbox_oomph/ARCHITECTURE.md) | [TODO](sandbox_oomph/TODO.md)
 

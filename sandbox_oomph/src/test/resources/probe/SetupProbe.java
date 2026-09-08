@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
@@ -24,7 +25,6 @@ import org.eclipse.emf.ecore.InternalEObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
 import org.eclipse.emf.ecore.util.Diagnostician;
-import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.jdt.launching.JavaRuntime;
@@ -45,6 +45,8 @@ import org.eclipse.oomph.setup.internal.core.util.SetupCoreUtil;
 import org.eclipse.oomph.util.OS;
 import org.eclipse.oomph.util.UserCallback;
 import org.eclipse.pde.core.target.ITargetPlatformService;
+import org.eclipse.pde.internal.launching.launcher.BundleLauncherHelper;
+import org.eclipse.pde.internal.launching.launcher.LaunchValidationOperation;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.application.WorkbenchAdvisor;
@@ -96,21 +98,29 @@ public class SetupProbe implements IApplication {
         Path clone = run.resolve("checkout");
         boolean update = "update".equals(System.getProperty("sandbox.oomph.phase"));
         var workspace = ResourcesPlugin.getWorkspace();
-        var monitor = new NullProgressMonitor();
+        var monitor = new NullProgressMonitor() {
+            @Override public void subTask(String name) {
+                if (name != null && !name.isBlank()) {
+                    System.out.println("Oomph: " + name);
+                }
+            }
+            @Override public void setTaskName(String name) { subTask(name); }
+        };
         ResourceSet rs = SetupCoreUtil.createResourceSet();
+        System.out.println("Loading and validating the official catalog and candidate models");
         rs.getURIConverter().getURIMap().put(URI.createURI(ENTRY),
                 URI.createFileURI(root.resolve("sandbox_oomph/sandboxproject.setup").toString()));
-        ProjectCatalog catalog = (ProjectCatalog) rs.getResource(URI.createURI(
-                "https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/com.github.projects.setup"), true)
-                .getContents().get(0);
+        ProjectCatalog catalog = (ProjectCatalog) rs.getEObject(URI.createURI(
+                "index:/org.eclipse.setup#//@projectCatalogs[name='com.github']"), true);
+        require(catalog != null && !catalog.eIsProxy(), "Official Github Projects catalog is unavailable");
         Project project = null;
         // Resolve only Sandbox; the catalog contains unrelated external repositories.
         var entries = (org.eclipse.emf.ecore.util.InternalEList<Project>) catalog.getProjects();
-        for (var iterator = entries.basicIterator(); iterator.hasNext();) {
-            Project candidate = iterator.next();
+        for (int i = 0; i < entries.size(); i++) {
+            Project candidate = entries.basicGet(i);
             URI proxy = ((InternalEObject) candidate).eProxyURI();
             if (proxy != null && ENTRY.equals(proxy.trimFragment().toString())) {
-                project = (Project) EcoreUtil.resolve(candidate, rs);
+                project = catalog.getProjects().get(i);
                 break;
             }
         }
@@ -174,12 +184,16 @@ public class SetupProbe implements IApplication {
             @Override public UserCallback getUserCallback() { return null; }
             @Override public String getValue(VariableTask variable) { return values.get(variable.getName()); }
             @Override public boolean promptVariables(List<? extends SetupTaskContext> performers) {
-                throw new IllegalStateException("Unexpected setup questions: " + performers.stream()
-                        .map(p -> ((SetupTaskPerformer) p).getUnresolvedVariables().toString()).collect(Collectors.joining("\n")));
+                var unresolved = performers.stream()
+                        .flatMap(p -> ((SetupTaskPerformer) p).getUnresolvedVariables().stream()).toList();
+                require(unresolved.isEmpty(), "Unexpected setup questions: " + unresolved);
+                return true;
             }
         }, update ? Trigger.MANUAL : Trigger.STARTUP, context, false);
         require(performer != null, "Setup was cancelled");
+        System.out.println("Executing Oomph " + (update ? "MANUAL" : "STARTUP") + " tasks");
         performer.perform(monitor);
+        System.out.println("Checking imported projects, target and workspace build markers");
         require(performer.hasSuccessfullyPerformed(), "Setup did not complete");
         workspace.save(true, monitor);
         require(Files.readString(Path.of(sentinel.getLocation().toOSString(), "keep.txt")).equals("user content"),
@@ -207,9 +221,22 @@ public class SetupProbe implements IApplication {
                 .map(m -> m.getResource().getFullPath() + ": " + m.getAttribute(IMarker.MESSAGE, ""))
                 .collect(Collectors.toCollection(TreeSet::new));
         require(errors.isEmpty(), "Workspace build errors:\n" + String.join("\n", errors));
+        var launchFile = workspace.getRoot().getProject("sandbox_product").getFile("sandbox.product.launch");
+        var launch = DebugPlugin.getDefault().getLaunchManager().getLaunchConfiguration(launchFile);
+        var launchModels = BundleLauncherHelper.getMergedBundleMap(launch, false).keySet();
+        require(launchModels.stream().anyMatch(m -> "sandbox_int_to_enum".equals(m.getPluginBase().getId())
+                && m.getUnderlyingResource() != null), "Development launch must include workspace cleanup plug-ins");
+        var validation = new LaunchValidationOperation(launch, launchModels);
+        validation.run(monitor);
+        require(!validation.isEmpty() && !validation.hasErrors(), "Invalid development launch: "
+                + validation.getInput().entrySet().stream()
+                        .map(e -> e.getKey() + ": " + Arrays.toString(e.getValue())).collect(Collectors.joining("\n")));
         try (var repository = new FileRepositoryBuilder().setGitDir(clone.resolve(".git").toFile()).build()) {
             require(System.getProperty("sandbox.oomph.repository", "https://github.com/carstenartur/sandbox.git").equals(repository.getConfig().getString("remote", "origin", "url")),
                     "Unexpected cloned repository");
+            String expectedCommit = System.getProperty("sandbox.oomph.commit", "");
+            require(expectedCommit.isEmpty() || expectedCommit.equals(repository.resolve("HEAD").name()),
+                    "The clone must contain the exact candidate commit: " + expectedCommit);
         }
         var workingSets = PlatformUI.getWorkbench().getWorkingSetManager();
         require(workingSets.getWorkingSet("Sandbox Core") != null, "Missing dynamic working sets");

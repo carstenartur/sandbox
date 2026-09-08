@@ -1,42 +1,18 @@
-# Oomph Setup - TODO
+# Oomph maintenance
 
-> **Navigation**: [Main README](../README.md) | [Plugin README](../README.md#oomph) | [Architecture](ARCHITECTURE.md)
+Baseline: Eclipse 2026-06 / Platform 4.40, Java 21 and Tycho 5.0.4.
 
-## Status Summary
+## Required for setup changes
 
-**Current State**: Oomph setup aligned with Eclipse 2026-06 and Tycho 5.0.4
+- Preserve the official catalog URL, project/stream identity and existing task IDs.
+- Run the Maven setup contract tests and the native provisioning/workspace acceptance test.
+- Test STARTUP import and MANUAL setup after a restart, including missing-project recovery.
+- Keep project tool repositories, the target, product and build baseline aligned.
+- Update [README](README.md) and [Architecture](ARCHITECTURE.md) when behavior changes.
 
-### Completed
-- ✅ Repository clone configuration
-- ✅ Branch selection (main)
-- ✅ P2 repository for Eclipse 2026-06
-- ✅ Basic project import
-- ✅ Configurable Eclipse target version (can be updated after installation)
-- ✅ Configurable Eclipse heap size (can be updated after installation)
+## Further coverage
 
-### Pending
-- [ ] Automated workspace preferences
-- [ ] API baseline configuration
-- [ ] Code style templates
-- [ ] Custom working sets
-- [ ] Build automation setup
-
-## Priority Tasks
-
-### 1. Complete Workspace Configuration
-**Priority**: Medium  
-**Effort**: 4-6 hours
-
-Add comprehensive workspace preference configuration
-
-### 2. API Baseline Setup
-**Priority**: Low  
-**Effort**: 3-4 hours
-
-Configure API baseline for compatibility checking
-
-## Contact
-
-For questions about Oomph setup:
-- Open an issue in the repository
-- Contact: See project contributors
+- Exercise the native acceptance test on Windows and macOS in addition to Linux x86_64.
+- Add a second clean-host scenario starting from the Eclipse Java package.
+- Test an installer-driven upgrade across a future coordinated Eclipse baseline change.
+- Keep upstream JDT migration QA separate and pinned; its corpus execution remains in the existing QA workflow.

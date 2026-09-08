@@ -78,6 +78,18 @@ class OomphSetupTest {
             Path archive = run.resolve("sdk.tar.gz");
             download("https://download.eclipse.org/eclipse/downloads/drops4/R-4.40-202606010713/"
                     + "eclipse-SDK-4.40-linux-gtk-x86_64.tar.gz", archive);
+            Path checksums = run.resolve("sdk-checksums.txt");
+            download("https://download.eclipse.org/eclipse/downloads/drops4/R-4.40-202606010713/eclipse-4.40-checksums",
+                    checksums);
+            String expected = Files.readAllLines(checksums).stream()
+                    .filter(line -> line.endsWith("eclipse-SDK-4.40-linux-gtk-x86_64.tar.gz"))
+                    .findFirst().orElseThrow().split("\\s+")[0];
+            var digest = java.security.MessageDigest.getInstance("SHA-512");
+            try (var in = new java.security.DigestInputStream(Files.newInputStream(archive), digest)) {
+                in.transferTo(java.io.OutputStream.nullOutputStream());
+            }
+            assertEquals(expected.toLowerCase(java.util.Locale.ROOT), java.util.HexFormat.of().formatHex(digest.digest()),
+                    "SDK archive must match the published Eclipse checksum");
             process(run.resolve("extract.log"), run, List.of("tar", "xzf", archive.toString()));
         }
         List<String> units = new ArrayList<>(List.of("org.eclipse.oomph.setup.sdk.feature.group",
@@ -105,6 +117,7 @@ class OomphSetupTest {
                     "-Doomph.setup.skip=true", "-Doomph.setup.questionnaire.skip=true",
                     "-Dsandbox.oomph.root=" + root, "-Dsandbox.oomph.phase=" + phase,
                     "-Dsandbox.oomph.ref=" + System.getProperty("sandbox.oomph.ref", "main"),
+                    "-Dsandbox.oomph.commit=" + System.getProperty("sandbox.oomph.commit", ""),
                     "-Dsandbox.oomph.repository=" + System.getProperty("sandbox.oomph.repository",
                             "https://github.com/carstenartur/sandbox.git")));
             process(run.resolve(phase + ".log"), run, command);
@@ -123,10 +136,11 @@ class OomphSetupTest {
         String classpath;
         try (var files = Files.list(eclipse.resolve("plugins"))) {
             classpath = files.filter(p -> p.toString().endsWith(".jar"))
+                    .filter(p -> !p.getFileName().toString().contains(".source_"))
                     .map(Path::toString).collect(Collectors.joining(File.pathSeparator));
         }
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
-                "--release", "21", "-classpath", classpath, "-d", classes.toString(),
+                "--release", "21", "-sourcepath", "", "-classpath", classpath, "-d", classes.toString(),
                 module.resolve("src/test/resources/probe/SetupProbe.java").toString()));
         Manifest manifest = new Manifest();
         Attributes a = manifest.getMainAttributes();
@@ -140,7 +154,8 @@ class OomphSetupTest {
                 "org.eclipse.oomph.base", "org.eclipse.oomph.util", "org.eclipse.oomph.setup",
                 "org.eclipse.oomph.setup.core", "org.eclipse.oomph.setup.git", "org.eclipse.oomph.setup.pde",
                 "org.eclipse.oomph.setup.maven", "org.eclipse.oomph.setup.workingsets", "org.eclipse.jdt.core",
-                "org.eclipse.jdt.launching", "org.eclipse.pde.core", "org.eclipse.jgit")));
+                "org.eclipse.jdt.launching", "org.eclipse.pde.core", "org.eclipse.pde.launching",
+                "org.eclipse.debug.core", "org.eclipse.jgit")));
         Path dropins = Files.createDirectories(eclipse.resolve("dropins"));
         try (var jar = new JarOutputStream(Files.newOutputStream(dropins.resolve("org.sandbox.oomph.probe.jar")), manifest)) {
             jar.putNextEntry(new JarEntry("plugin.xml"));
@@ -159,7 +174,7 @@ class OomphSetupTest {
     }
 
     private static List<String> eclipseCommand(Path eclipse) {
-        return new ArrayList<>(List.of(eclipse.resolve("eclipse").toString(), "-vm",
+        return new ArrayList<>(List.of(eclipse.resolve("eclipse").toString(), "--launcher.suppressErrors", "-vm",
                 Path.of(System.getProperty("java.home"), "bin/java").toString()));
     }
 
@@ -167,13 +182,15 @@ class OomphSetupTest {
         System.out.println("Executing " + command);
         Process process = new ProcessBuilder(command).directory(directory.toFile()).redirectErrorStream(true)
                 .redirectOutput(log.toFile()).start();
-        boolean completed = process.waitFor(35, TimeUnit.MINUTES);
-        if (!completed) {
-            process.descendants().forEach(ProcessHandle::destroyForcibly);
-            process.destroyForcibly();
+        try {
+            assertTrue(process.waitFor(35, TimeUnit.MINUTES), () -> "Timed out: " + log + "\n" + tail(log));
+            assertEquals(0, process.exitValue(), () -> "Process failed: " + log + "\n" + tail(log));
+        } finally {
+            if (process.isAlive()) {
+                process.descendants().forEach(ProcessHandle::destroyForcibly);
+                process.destroyForcibly();
+            }
         }
-        assertTrue(completed, () -> "Timed out: " + log);
-        assertEquals(0, process.exitValue(), () -> "Process failed: " + log + "\n" + tail(log));
     }
 
     private static String tail(Path log) {
