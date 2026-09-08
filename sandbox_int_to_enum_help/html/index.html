@@ -9,14 +9,14 @@
 </head>
 <body>
    <h1>Int to Enum</h1>
-   <p>Migrates supported integer-constant domains and their usages toward Java enum types.</p>
+   <p>Migrates closed byte, short, char, int, long and String constant domains and their usages to Java enum types.</p>
    <p class="note">This documentation is installed by <code>sandbox_int_to_enum_feature</code>
       together with the runtime plug-in. The runtime plug-in does not depend on this Help bundle.</p>
 
    <h2>What the feature provides</h2>
    <ul>
-      <li>Detects supported groups of related integer constants.</li>
-      <li>Analyzes compatible declarations, assignments, comparisons, and switch usage.</li>
+      <li>Detects supported groups of related integral and String constants.</li>
+      <li>Analyzes compatible declarations, comparisons and proven callers. Integer switch migration remains a separate prototype.</li>
       <li>Introduces or uses an enum representation when the observed data flow is closed over the detected domain.</li>
       <li>Updates supported call sites consistently within the analyzed scope.</li>
    </ul>

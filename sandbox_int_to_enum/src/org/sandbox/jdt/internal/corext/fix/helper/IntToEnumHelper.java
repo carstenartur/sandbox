@@ -38,13 +38,11 @@ import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
-import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
-import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
@@ -61,7 +59,7 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.IntToEnumFixCore;
 
 /**
- * Converts an enum-like group of private integer constants used by a private
+ * Converts an enum-like group of private state constants used by a private
  * method parameter in an if/else chain to a nested enum.
  *
  * <p>The detector deliberately accepts only candidates whose complete data flow
@@ -101,9 +99,9 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 	private static final class ConstantInfo {
 		private final String name;
 		private final FieldDeclaration field;
-		private final int value;
+		private final EnumConstantValue value;
 
-		private ConstantInfo(String name, FieldDeclaration field, int value) {
+		private ConstantInfo(String name, FieldDeclaration field, EnumConstantValue value) {
 			this.name = name;
 			this.field = field;
 			this.value = value;
@@ -166,7 +164,7 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 			return null;
 		}
 
-		Map<String, ConstantInfo> constantsByBinding = collectPrivateIntConstants(enclosingType);
+		Map<String, ConstantInfo> constantsByBinding = collectPrivateConstants(enclosingType);
 		if (constantsByBinding.size() < 2) {
 			return null;
 		}
@@ -199,7 +197,8 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 		}
 
 		SingleVariableDeclaration parameter = findParameter(method, candidate.stateBinding);
-		if (parameter == null || !isPlainInt(parameter)) {
+		if (parameter == null || parameter.isVarargs() || !parameter.extraDimensions().isEmpty()
+				|| !EnumConstantValue.supports(parameter.getType())) {
 			return null;
 		}
 
@@ -225,6 +224,9 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 		Map<String, ConstantInfo> enumConstants = constantsForPrefix(constantsByBinding, prefix);
 		Set<String> enumConstantNames = new LinkedHashSet<>();
 		for (ConstantInfo info : enumConstants.values()) {
+			if (!info.value.matches(candidate.stateBinding.getType())) {
+				return null;
+			}
 			enumConstantNames.add(info.name);
 			String enumConstantName = info.name.substring(prefix.length());
 			if (!isValidIdentifier(enumConstantName)) {
@@ -440,21 +442,21 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 		return candidate.holder.constantFields.get(name.getIdentifier()) == field;
 	}
 
-	private static Map<String, ConstantInfo> collectPrivateIntConstants(TypeDeclaration typeDeclaration) {
+	private static Map<String, ConstantInfo> collectPrivateConstants(TypeDeclaration typeDeclaration) {
 		Map<String, ConstantInfo> result = new LinkedHashMap<>();
 		for (FieldDeclaration field : typeDeclaration.getFields()) {
 			int modifiers = field.getModifiers();
 			if (!Modifier.isPrivate(modifiers) || !Modifier.isStatic(modifiers) || !Modifier.isFinal(modifiers)
-					|| !isInt(field.getType())) {
+					|| !EnumConstantValue.supports(field.getType())) {
 				continue;
 			}
 			for (Object fragmentObject : field.fragments()) {
 				VariableDeclarationFragment fragment = (VariableDeclarationFragment) fragmentObject;
 				IVariableBinding binding = fragment.resolveBinding();
-				Object constantValue = binding == null ? null : binding.getConstantValue();
+				EnumConstantValue constantValue = EnumConstantValue.from(binding);
 				String key = bindingKey(binding);
-				if (key != null && constantValue instanceof Integer value) {
-					result.put(key, new ConstantInfo(fragment.getName().getIdentifier(), field, value.intValue()));
+				if (key != null && constantValue != null) {
+					result.put(key, new ConstantInfo(fragment.getName().getIdentifier(), field, constantValue));
 				}
 			}
 		}
@@ -473,15 +475,13 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 	}
 
 	private static Comparison parseComparison(Expression expression, Map<String, ConstantInfo> constantsByBinding) {
-		Expression unwrapped = unparenthesize(expression);
-		if (!(unwrapped instanceof InfixExpression infix)
-				|| infix.getOperator() != InfixExpression.Operator.EQUALS
-				|| !infix.extendedOperands().isEmpty()) {
+		EnumComparison.Operands operands = EnumComparison.operands(expression);
+		if (operands == null) {
 			return null;
 		}
 
-		Expression left = unparenthesize(infix.getLeftOperand());
-		Expression right = unparenthesize(infix.getRightOperand());
+		Expression left = operands.left();
+		Expression right = operands.right();
 		ConstantInfo leftConstant = resolveConstant(left, constantsByBinding);
 		ConstantInfo rightConstant = resolveConstant(right, constantsByBinding);
 		IVariableBinding leftVariable = resolveVariable(left);
@@ -497,6 +497,9 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 	}
 
 	private static ConstantInfo resolveConstant(Expression expression, Map<String, ConstantInfo> constantsByBinding) {
+		if (!EnumConstantValue.isDirectReference(expression)) {
+			return null;
+		}
 		IVariableBinding binding = resolveVariable(unparenthesize(expression));
 		return binding == null ? null : constantsByBinding.get(bindingKey(binding));
 	}
@@ -555,19 +558,10 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 		return -1;
 	}
 
-	private static boolean isPlainInt(SingleVariableDeclaration parameter) {
-		return !parameter.isVarargs() && parameter.extraDimensions().isEmpty() && isInt(parameter.getType());
-	}
-
-	private static boolean isInt(Type type) {
-		return type.isPrimitiveType()
-				&& ((PrimitiveType) type).getPrimitiveTypeCode() == PrimitiveType.INT;
-	}
-
 	private static boolean hasDistinctValues(Iterable<ConstantInfo> constants) {
-		Set<Integer> values = new HashSet<>();
+		Set<EnumConstantValue> values = new HashSet<>();
 		for (ConstantInfo constant : constants) {
-			if (!values.add(Integer.valueOf(constant.value))) {
+			if (!values.add(constant.value)) {
 				return false;
 			}
 		}
@@ -699,10 +693,10 @@ public class IntToEnumHelper extends AbstractTool<ReferenceHolder<Integer, IntTo
 	public String getPreview(boolean afterRefactoring) {
 		if (!afterRefactoring) {
 			return """
-					private static final int STATUS_PENDING = 0;
-					private static final int STATUS_APPROVED = 1;
+					private static final String STATUS_PENDING = "pending";
+					private static final String STATUS_APPROVED = "approved";
 
-					private void process(int status) {
+					private void process(String status) {
 					    if (status == STATUS_PENDING) {
 					        handlePending();
 					    } else if (status == STATUS_APPROVED) {

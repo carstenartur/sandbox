@@ -7,11 +7,14 @@
 - [x] Eclipse cleanup integration and preference UI
 - [x] Helper-based cleanup architecture using `CompilationUnitRewriteOperationWithSourceRange`
 - [x] Existing integer-switch prototype
-- [x] Binding-based detection of private integer state constants
+- [x] Binding-based detection of private integral and String state constants
 - [x] Detection of if/else-if chains comparing one private method parameter with a constant group
 - [x] Support for equality operands in either order
 - [x] Common-prefix enum naming
-- [x] Validation of distinct compile-time integer values
+- [x] Validation of distinct typed compile-time values, without narrowing long values
+- [x] Shared local/coordinated support for byte, short, char, int, long and String domains
+- [x] String/Objects equality, inequality and receiver-evaluation safety checks
+- [x] Revalidation of constant values, state uses and package visibility before coordinated rewriting
 - [x] Validation of generated Java identifiers and nested-type name conflicts
 - [x] Whole-compilation-unit reference validation for constants, the state parameter, and the private method
 - [x] Propagation to proven private method call sites

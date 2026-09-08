@@ -10,8 +10,13 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java22;
 
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import org.eclipse.core.runtime.CoreException;
 
@@ -30,18 +35,25 @@ public class MultiFileIntToEnumCleanUpTest {
 	@RegisterExtension
 	AbstractEclipseJava context= new EclipseJava22();
 
-	@Test
-	public void completeSelectionMigratesOwnerAndCallerButNotUnrelatedSource() throws CoreException {
+	static Stream<Arguments> stateTypes() {
+		return Stream.of(Arguments.of("int", "0", "1"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				Arguments.of("long", "0L", "0x1_0000_0000L"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				Arguments.of("String", "\"pending\"", "\"approved\"")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	@ParameterizedTest
+	@MethodSource("stateTypes")
+	public void completeSelectionMigratesOwnerAndCallerButNotUnrelatedSource(String type, String first, String second) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit processor= pack.createCompilationUnit("OrderProcessor.java", //$NON-NLS-1$
 				"""
 				package test;
 
 				public class OrderProcessor {
-					static final int STATUS_PENDING = 0;
-					static final int STATUS_APPROVED = 1;
+					static final %s STATUS_PENDING = %s;
+					static final %s STATUS_APPROVED = %s;
 
-					void process(int status) {
+					void process(%s status) {
 						if (status == STATUS_PENDING) {
 							System.out.println("pending");
 						} else if (status == STATUS_APPROVED) {
@@ -49,7 +61,7 @@ public class MultiFileIntToEnumCleanUpTest {
 						}
 					}
 				}
-				""", false, null);
+				""".formatted(type, first, type, second, type), false, null);
 		ICompilationUnit client= pack.createCompilationUnit("OrderClient.java", //$NON-NLS-1$
 				"""
 				package test;

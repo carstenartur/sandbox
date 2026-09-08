@@ -42,17 +42,14 @@ import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.IfStatement;
-import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
-import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
-import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
@@ -70,13 +67,15 @@ import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningLimits;
 import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningMetrics;
 import org.sandbox.jdt.cleanup.multifile.MultiFileScopeDiagnostic;
 import org.sandbox.jdt.cleanup.multifile.SelectedCompilationUnitPlan;
+import org.sandbox.jdt.internal.corext.fix.helper.EnumComparison;
+import org.sandbox.jdt.internal.corext.fix.helper.EnumConstantValue;
 
-/** Builds conservative source-wide integer-state migration plans. */
+/** Builds conservative source-wide constant-state migration plans. */
 public final class IntEnumMultiFilePlanner {
 
 	private static final String CLEANUP_ID= "int-to-enum"; //$NON-NLS-1$
 
-	private record ConstantDecl(String bindingKey, String name, int value) {
+	private record ConstantDecl(String bindingKey, String name, EnumConstantValue value) {
 	}
 
 	private record FreezeResult(List<IntEnumCandidate> candidates,
@@ -194,7 +193,7 @@ public final class IntEnumMultiFilePlanner {
 				.toList();
 		MultiFileScopeDiagnostic scope= complete
 				? new MultiFileScopeDiagnostic(selectedHandles, List.of(), "CLOSED_SOURCE_SCOPE", //$NON-NLS-1$
-						"The selected compilation units form a closed integer-state migration scope.", true) //$NON-NLS-1$
+						"The selected compilation units form a closed constant-state migration scope.", true) //$NON-NLS-1$
 				: new MultiFileScopeDiagnostic(selectedHandles, List.of(), "INCOMPLETE_SOURCE_SCOPE", //$NON-NLS-1$
 						"The selected compilation units do not contain every required declaration and caller.", false); //$NON-NLS-1$
 		return new MultiFileCleanUpDiagnostics(CLEANUP_ID, scope, candidates);
@@ -248,7 +247,8 @@ public final class IntEnumMultiFilePlanner {
 						}
 						for (int parameterIndex= 0; parameterIndex < method.parameters().size(); parameterIndex++) {
 							SingleVariableDeclaration parameter= (SingleVariableDeclaration) method.parameters().get(parameterIndex);
-							if (!isPlainInt(parameter)) {
+							if (parameter.isVarargs() || !parameter.extraDimensions().isEmpty()
+									|| !EnumConstantValue.supports(parameter.getType())) {
 								continue;
 							}
 							CandidateBuilder candidate= discoverMethodCandidate(unitHandle, type, typeBinding, typeKey, method,
@@ -264,7 +264,7 @@ public final class IntEnumMultiFilePlanner {
 							if (candidate.valid && candidate.constants.stream()
 									.anyMatch(constant -> claimedConstants.contains(constant.bindingKey()))) {
 								candidate.invalidate("SHARED_CONSTANT_GROUP", //$NON-NLS-1$
-										"The integer constant group is already claimed by another migration candidate."); //$NON-NLS-1$
+										"The state constant group is already claimed by another migration candidate."); //$NON-NLS-1$
 							}
 							if (candidate.valid) {
 								candidate.constants.forEach(constant -> claimedConstants.add(constant.bindingKey()));
@@ -340,7 +340,8 @@ public final class IntEnumMultiFilePlanner {
 			return null;
 		}
 		List<ConstantDecl> group= constants.values().stream().filter(constant -> constant.name().startsWith(prefix)).toList();
-		if (group.size() != used.size() || !distinctValues(group)) {
+		if (group.size() != used.size() || !distinctValues(group)
+				|| group.stream().anyMatch(constant -> !constant.value().matches(parameter.getType()))) {
 			return null;
 		}
 		String enumName= enumTypeName(prefix);
@@ -363,21 +364,22 @@ public final class IntEnumMultiFilePlanner {
 
 	private static Comparison parseComparison(Expression expression, IVariableBinding parameter,
 			Map<String, ConstantDecl> constants) {
-		Expression unwrapped= unwrap(expression);
-		if (!(unwrapped instanceof InfixExpression infix)
-				|| infix.getOperator() != InfixExpression.Operator.EQUALS || !infix.extendedOperands().isEmpty()) {
+		EnumComparison.Operands operands= EnumComparison.operands(expression);
+		if (operands == null) {
 			return null;
 		}
-		Expression left= unwrap(infix.getLeftOperand());
-		Expression right= unwrap(infix.getRightOperand());
+		Expression left= operands.left();
+		Expression right= operands.right();
 		IVariableBinding leftBinding= resolveVariable(left);
 		IVariableBinding rightBinding= resolveVariable(right);
 		ConstantDecl leftConstant= leftBinding == null ? null : constants.get(leftBinding.getKey());
 		ConstantDecl rightConstant= rightBinding == null ? null : constants.get(rightBinding.getKey());
-		if (leftConstant != null && sameVariable(parameter, rightBinding) && rightConstant == null) {
+		if (leftConstant != null && sameVariable(parameter, rightBinding) && rightConstant == null
+				&& EnumConstantValue.isDirectReference(left)) {
 			return new Comparison(right, leftConstant, left);
 		}
-		if (rightConstant != null && sameVariable(parameter, leftBinding) && leftConstant == null) {
+		if (rightConstant != null && sameVariable(parameter, leftBinding) && leftConstant == null
+				&& EnumConstantValue.isDirectReference(right)) {
 			return new Comparison(left, rightConstant, right);
 		}
 		return null;
@@ -414,15 +416,15 @@ public final class IntEnumMultiFilePlanner {
 					}
 					if (candidate.parameterIndex >= node.arguments().size()) {
 						candidate.invalidate("UNRESOLVED_INVOCATION", //$NON-NLS-1$
-								"A call does not expose the planned integer-state parameter."); //$NON-NLS-1$
+								"A call does not expose the planned constant-state parameter."); //$NON-NLS-1$
 						return false;
 					}
 					Expression argument= unwrap((Expression) node.arguments().get(candidate.parameterIndex));
 					IVariableBinding argumentBinding= resolveVariable(argument);
 					IntEnumConstant constant= frozenConstant(candidate, argumentBinding);
-					if (constant == null) {
+					if (constant == null || !EnumConstantValue.isDirectReference(argument)) {
 						candidate.invalidate("ARBITRARY_INTEGER_ARGUMENT", //$NON-NLS-1$
-								"A call passes an integer expression that is not one of the modeled constants."); //$NON-NLS-1$
+								"A call passes an expression that is not one of the modeled constants."); //$NON-NLS-1$
 						return false;
 					}
 					candidate.recognisedReferences.put(argument, constant.bindingKey());
@@ -440,13 +442,13 @@ public final class IntEnumMultiFilePlanner {
 						if (candidate != null && !isVariableDeclarationName(node)
 								&& !candidate.recognisedReferences.containsKey(containingExpression(node))) {
 							candidate.invalidate("UNSUPPORTED_CONSTANT_REFERENCE", //$NON-NLS-1$
-									"A modeled integer constant is used outside the supported comparisons and call arguments."); //$NON-NLS-1$
+									"A modeled state constant is used outside the supported comparisons and call arguments."); //$NON-NLS-1$
 						}
 						for (CandidateBuilder stateCandidate : candidates) {
 							if (sameVariable(stateCandidate.stateBinding, variable) && !isParameterDeclarationName(node)
 									&& !stateCandidate.stateReferences.contains(containingExpression(node))) {
 								stateCandidate.invalidate("UNSUPPORTED_STATE_REFERENCE", //$NON-NLS-1$
-										"The integer-state parameter is used outside the modeled equality chain."); //$NON-NLS-1$
+										"The constant-state parameter is used outside the modeled equality chain."); //$NON-NLS-1$
 							}
 						}
 					} else if (binding instanceof IMethodBinding methodBinding) {
@@ -534,7 +536,7 @@ public final class IntEnumMultiFilePlanner {
 					builder.ownerTypeQualifiedName, builder.methodKey, builder.parameterIndex, builder.prefix,
 					builder.enumName, constants, referenceCounts, builder.callCountsByUnit));
 			diagnostics.add(MultiFileCandidateDiagnostic.transformed(builder.candidateId(), builder.ownerUnitHandle,
-					"Migrates the closed integer-state flow to nested enum " + builder.enumName + '.', //$NON-NLS-1$
+					"Migrates the closed constant-state flow to nested enum " + builder.enumName + '.', //$NON-NLS-1$
 					builder.relatedUnitHandles()));
 		}
 		return new FreezeResult(result, diagnostics);
@@ -544,16 +546,16 @@ public final class IntEnumMultiFilePlanner {
 		Map<String, ConstantDecl> result= new LinkedHashMap<>();
 		for (FieldDeclaration field : type.getFields()) {
 			if (!isPackagePrivate(field.getModifiers()) || !Modifier.isStatic(field.getModifiers())
-					|| !Modifier.isFinal(field.getModifiers()) || !isInt(field.getType())) {
+					|| !Modifier.isFinal(field.getModifiers()) || !EnumConstantValue.supports(field.getType())) {
 				continue;
 			}
 			for (Object fragmentObject : field.fragments()) {
 				VariableDeclarationFragment fragment= (VariableDeclarationFragment) fragmentObject;
 				IVariableBinding binding= fragment.resolveBinding();
-				Object value= binding == null ? null : binding.getConstantValue();
+				EnumConstantValue value= EnumConstantValue.from(binding);
 				String key= binding == null ? null : binding.getVariableDeclaration().getKey();
-				if (key != null && value instanceof Integer integer) {
-					result.put(key, new ConstantDecl(key, fragment.getName().getIdentifier(), integer.intValue()));
+				if (key != null && value != null) {
+					result.put(key, new ConstantDecl(key, fragment.getName().getIdentifier(), value));
 				}
 			}
 		}
@@ -628,15 +630,6 @@ public final class IntEnumMultiFilePlanner {
 		return !Modifier.isPublic(modifiers) && !Modifier.isProtected(modifiers) && !Modifier.isPrivate(modifiers);
 	}
 
-	private static boolean isPlainInt(SingleVariableDeclaration parameter) {
-		return !parameter.isVarargs() && parameter.extraDimensions().isEmpty() && isInt(parameter.getType());
-	}
-
-	private static boolean isInt(Type type) {
-		return type.isPrimitiveType()
-				&& ((PrimitiveType) type).getPrimitiveTypeCode() == PrimitiveType.INT;
-	}
-
 	private static boolean sameVariable(IVariableBinding first, IVariableBinding second) {
 		return first != null && second != null
 				&& first.getVariableDeclaration().isEqualTo(second.getVariableDeclaration());
@@ -647,8 +640,8 @@ public final class IntEnumMultiFilePlanner {
 	}
 
 	private static boolean distinctValues(Collection<ConstantDecl> constants) {
-		Set<Integer> values= new HashSet<>();
-		return constants.stream().allMatch(constant -> values.add(Integer.valueOf(constant.value())));
+		Set<EnumConstantValue> values= new HashSet<>();
+		return constants.stream().allMatch(constant -> values.add(constant.value()));
 	}
 
 	private static String commonPrefix(List<String> names) {
