@@ -69,7 +69,7 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		final ComboPreference targetFormatCombo = createComboPref(loopConversionGroup, numColumns,
 			CleanUpMessages.LoopConversion_TargetFormat,
 			MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT,
-			new String[] {"stream", "enhanced_for", "iterator_while"},
+			new String[] {LoopTargetFormat.STREAM.getId(), LoopTargetFormat.FOR_LOOP.getId(), LoopTargetFormat.WHILE_LOOP.getId()},
 			new String[] {CleanUpMessages.LoopConversion_TargetFormat_Stream, CleanUpMessages.LoopConversion_TargetFormat_EnhancedFor, CleanUpMessages.LoopConversion_TargetFormat_IteratorWhile});
 
 		// Source format checkboxes
