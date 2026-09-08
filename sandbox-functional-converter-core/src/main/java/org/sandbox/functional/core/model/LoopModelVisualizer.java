@@ -304,6 +304,7 @@ public final class LoopModelVisualizer {
 			return "[no source]"; //$NON-NLS-1$
 		}
 		SourceDescriptor src = model.getSource();
+		if (src.streamExpression() != null) return src.streamExpression();
 		return switch (src.type()) {
 			case COLLECTION -> src.expression() + ".stream()"; //$NON-NLS-1$
 			case ARRAY -> "Arrays.stream(" + src.expression() + ")"; //$NON-NLS-1$ //$NON-NLS-2$
@@ -332,7 +333,7 @@ public final class LoopModelVisualizer {
 
 	private static String renderMapOp(MapOp m) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("map(").append(m.expression()); //$NON-NLS-1$
+		sb.append(m.operationType()).append('(').append(m.expression());
 		if (m.targetType() != null) {
 			sb.append(" -> ").append(m.targetType()); //$NON-NLS-1$
 		}

@@ -20,11 +20,56 @@ import org.junit.jupiter.api.Test;
 import org.sandbox.functional.core.builder.LoopModelBuilder;
 import org.sandbox.functional.core.operation.FilterOp;
 import org.sandbox.functional.core.operation.MapOp;
+import org.sandbox.functional.core.operation.PeekOp;
+import org.sandbox.functional.core.operation.StreamTypeConversionOp;
 import org.sandbox.functional.core.renderer.StringRenderer;
 import org.sandbox.functional.core.terminal.ForEachTerminal;
 import org.sandbox.functional.core.transformer.LoopModelTransformer;
 
 class FunctionalPipelineModelTest {
+
+    @Test
+    void retainsPrimitiveTransitionsPeekScopesAndOriginalArrayFactory() {
+        var action = new FunctionalExpression("v -> { if (v < 0) return; log(v); }", "v",
+                "int", "void", "IntConsumer", true, false);
+        var mapper = new FunctionalExpression("String::length", null,
+                "String", "int", "ToIntFunction<String>", true, false);
+        var consumer = new FunctionalExpression("value -> consume(value)", "value",
+                "java.lang.Double", "void", "Consumer<Double>", false, false);
+        var model = new LoopModelBuilder()
+                .source(new SourceDescriptor(SourceDescriptor.SourceType.ARRAY, "values", "String", "java.util.Arrays.<String>stream(values)"))
+                .element("element", "String", false)
+                .operation(new MapOp("String::length", "int", null, false, mapper, MapOp.Kind.TO_INT))
+                .operation(new PeekOp("log(v)", action))
+                .operation(new StreamTypeConversionOp(StreamTypeConversionOp.Kind.AS_DOUBLE, "int"))
+                .operation(new StreamTypeConversionOp(StreamTypeConversionOp.Kind.BOXED, "double"))
+                .terminal(new ForEachTerminal(List.of("consume(value)"), true, consumer)).build();
+        assertEquals("java.util.Arrays.<String>stream(values).mapToInt((ToIntFunction<String>) (String::length))"
+                + ".peek((IntConsumer) (v -> { if (v < 0) return; log(v); })).asDoubleStream().boxed()"
+                + ".forEachOrdered((Consumer<Double>) (value -> consume(value)))",
+                new LoopModelTransformer<>(new StringRenderer()).transform(model));
+    }
+
+    @Test
+    void rejectsInvalidPrimitiveMappingAndPeekContracts() {
+        var mapper = new FunctionalExpression("String::length", null, "String", "int", "ToIntFunction<String>", true, false);
+        assertThrows(IllegalArgumentException.class, () -> new MapOp("String::length", "int", null, false, mapper, MapOp.Kind.TO_LONG));
+        assertThrows(IllegalArgumentException.class, () -> new MapOp("value", "int", null, false, null, MapOp.Kind.TO_INT));
+        assertThrows(IllegalArgumentException.class, () -> new PeekOp("String::length", mapper));
+        assertThrows(IllegalArgumentException.class, () -> new StreamTypeConversionOp(StreamTypeConversionOp.Kind.AS_LONG, "double"));
+        assertThrows(IllegalArgumentException.class, () -> new StreamTypeConversionOp(StreamTypeConversionOp.Kind.BOXED, "String"));
+    }
+
+    @Test
+    void mapIdentityDistinguishesPrimitiveTransitions() {
+        var mapper = new FunctionalExpression("v -> v", "v", "int", "long", "IntToLongFunction", false, false);
+        var plain = new MapOp("v", "long", null, false, mapper);
+        var widening = new MapOp("v", "long", null, false, mapper, MapOp.Kind.TO_LONG);
+        assertNotEquals(plain, widening);
+        assertEquals("mapToLong", widening.operationType());
+        assertEquals("java.lang.Integer", new StreamTypeConversionOp(StreamTypeConversionOp.Kind.BOXED, "int").outputType());
+        assertEquals("peek", new PeekOp("log(v)").operationType());
+    }
 
     @Test
     void rendersCompleteFunctionsWithIndependentParametersAndTargetTypes() {

@@ -93,6 +93,15 @@ public interface StreamPipelineRenderer<T> {
      * Renders a peek operation.
      */
     T renderPeek(T pipeline, String expression, String variableName);
+
+    default T renderPeekOp(T pipeline, org.sandbox.functional.core.operation.PeekOp peek, String variableName) {
+        return peek.function() == null ? renderPeek(pipeline, peek.expression(), variableName)
+                : renderFunction(pipeline, peek.operationType(), peek.function());
+    }
+
+    default T renderTypeConversion(T pipeline, org.sandbox.functional.core.operation.StreamTypeConversionOp conversion) {
+        throw new UnsupportedOperationException("Stream type conversions are not supported");
+    }
     
     /**
      * Renders a distinct operation.

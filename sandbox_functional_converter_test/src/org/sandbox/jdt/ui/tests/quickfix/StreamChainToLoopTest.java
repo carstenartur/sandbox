@@ -352,11 +352,10 @@ class StreamChainToLoopTest {
 				"items.stream().sorted().forEach(item -> sink.add(item));",
 				"items.stream().map(String::trim).distinct().forEach(item -> sink.add(item));",
 				"items.stream().limit(1).forEach(item -> sink.add(item));",
-				"items.stream().mapToInt(String::length).forEach(item -> sink.add(String.valueOf(item)));",
 				"items.stream().forEach(sink::add);",
 				"items.stream().filter(predicate).forEach(item -> sink.add(item));",
 				"items.stream() /* keep pipeline comment */ .filter(item -> true).forEach(item -> sink.add(item));",
-				"java.util.stream.Stream.of(\"a\").forEach(item -> sink.add(item));")
+				"java.util.stream.Stream.of(\"a\").parallel().forEach(item -> sink.add(item));")
 				.map(statement -> Arguments.of(target, statement)));
 	}
 
@@ -579,7 +578,11 @@ class StreamChainToLoopTest {
 	}
 
 	private String execute(String source, String directory) throws Exception {
-		Path output = Files.createDirectories(temporary.resolve(directory));
+		return executeSource(source, temporary.resolve(directory));
+	}
+
+	static String executeSource(String source, Path directory) throws Exception {
+		Path output = Files.createDirectories(directory);
 		Path file = output.resolve("Example.java");
 		Files.writeString(file, source, StandardCharsets.UTF_8);
 		var compiler = ToolProvider.getSystemJavaCompiler();

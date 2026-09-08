@@ -20,7 +20,7 @@ package org.sandbox.functional.core.operation;
  * like filter, map, flatMap, etc.
  */
 public sealed interface Operation 
-    permits FilterOp, MapOp, FlatMapOp, PeekOp, DistinctOp, SortOp, LimitOp, SkipOp {
+    permits FilterOp, MapOp, FlatMapOp, PeekOp, DistinctOp, SortOp, LimitOp, SkipOp, StreamTypeConversionOp {
     
     /**
      * Returns the expression used in this operation.

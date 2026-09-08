@@ -46,8 +46,11 @@ import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.FunctionalExpression;
 import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.model.SourceDescriptor.SourceType;
 import org.sandbox.functional.core.operation.FilterOp;
 import org.sandbox.functional.core.operation.MapOp;
+import org.sandbox.functional.core.operation.PeekOp;
+import org.sandbox.functional.core.operation.StreamTypeConversionOp;
 import org.sandbox.functional.core.terminal.ForEachTerminal;
 
 /** Shared ULR operation lowering used by both imperative AST renderers. */
@@ -70,11 +73,14 @@ final class ASTImperativeLoopRenderer {
 
 	void render(LoopModel model, JdtStreamContext sourceContext, boolean iteratorTarget) {
 		context = sourceContext;
+		if (!iteratorTarget && model.getSource().type() == SourceType.STREAM) {
+			throw new IllegalArgumentException("A lazy stream source requires an iterator loop target"); //$NON-NLS-1$
+		}
 		// The ULR owns operation order, kinds, function boundaries and scopes.
 		List<Object> operations = new ArrayList<>(model.getOperations());
 		operations.add(model.getTerminal());
 		for (Object operation : operations) {
-			context.expression(function(operation));
+			if (!(operation instanceof StreamTypeConversionOp)) context.expression(function(operation));
 		}
 		Set<String> names = LoopVariableNames.usedNames(context.statement());
 		importContext = new ContextSensitiveImportRewriteContext((CompilationUnit) context.statement().getRoot(),
@@ -82,6 +88,7 @@ final class ASTImperativeLoopRenderer {
 		context.statement().setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);
 		Block replacement = ast.newBlock();
 		for (Object operation : operations) {
+			if (operation instanceof StreamTypeConversionOp) continue;
 			FunctionalExpression function = function(operation);
 			if (function.requiresInvocation()) {
 				String name = LoopVariableNames.fresh("function", names); //$NON-NLS-1$
@@ -93,6 +100,13 @@ final class ASTImperativeLoopRenderer {
 		String current = model.getElement().variableName();
 		ITypeBinding currentType = context.elementType();
 		for (Object operation : operations) {
+			if (operation instanceof StreamTypeConversionOp conversion) {
+				String previous = current;
+				current = LoopVariableNames.fresh("mapped", names); //$NON-NLS-1$
+				currentType = ast.resolveWellKnownType(conversion.outputType());
+				body.statements().add(declaration(type(currentType), current, ast.newSimpleName(previous)));
+				continue;
+			}
 			FunctionalExpression function = function(operation);
 			String input = current;
 			if (!function.requiresInvocation() && !context.inputType(function).isEqualTo(currentType)) {
@@ -101,8 +115,12 @@ final class ASTImperativeLoopRenderer {
 			}
 			if (!function.requiresInvocation() && ((LambdaExpression) context.expression(function)).getBody() instanceof Block block) {
 				renameParameter((LambdaExpression) context.expression(function), input);
+				Block scope = operation instanceof PeekOp ? ast.newBlock() : body;
 				for (Object statement : block.statements()) {
-					body.statements().add(rewrite.createCopyTarget((Statement) statement));
+					scope.statements().add(rewrite.createCopyTarget((Statement) statement));
+				}
+				if (scope != body) {
+					body.statements().add(scope);
 				}
 				continue;
 			}
@@ -136,10 +154,28 @@ final class ASTImperativeLoopRenderer {
 		String elementName = model.getElement().variableName();
 		if (iteratorTarget) {
 			String iteratorName = LoopVariableNames.fresh("it", names); //$NON-NLS-1$
-			ParameterizedType iteratorType = ast.newParameterizedType(ast.newSimpleType(ast.newName(imports.addImport("java.util.Iterator", importContext)))); //$NON-NLS-1$
-			iteratorType.typeArguments().add(type(context.elementType()));
-			replacement.statements().add(declaration(iteratorType, iteratorName, call(copy(context.source()), "iterator"))); //$NON-NLS-1$
-			body.statements().add(0, declaration(type(context.elementType()), elementName, call(ast.newSimpleName(iteratorName), "next"))); //$NON-NLS-1$
+			Type iteratorType;
+			String nextMethod = "next"; //$NON-NLS-1$
+			if (context.elementType().isPrimitive()) {
+				String suffix = switch (context.elementType().getName()) {
+				case "int" -> "Int"; //$NON-NLS-1$ //$NON-NLS-2$
+				case "long" -> "Long"; //$NON-NLS-1$ //$NON-NLS-2$
+				case "double" -> "Double"; //$NON-NLS-1$ //$NON-NLS-2$
+				default -> throw new IllegalArgumentException("Unsupported primitive stream element type"); //$NON-NLS-1$
+				};
+				iteratorType = ast.newSimpleType(ast.newName(imports.addImport("java.util.PrimitiveIterator.Of" + suffix, importContext))); //$NON-NLS-1$
+				nextMethod += suffix;
+			} else {
+				ParameterizedType parameterized = ast.newParameterizedType(ast.newSimpleType(ast.newName(imports.addImport("java.util.Iterator", importContext)))); //$NON-NLS-1$
+				parameterized.typeArguments().add(type(context.elementType()));
+				iteratorType = parameterized;
+			}
+			// Copy only the selected source; unattached copy targets make an invalid edit tree.
+			// The original array factory retains explicit witnesses such as Arrays.<Number>stream(Integer[]).
+			Expression source = copy(model.getSource().type() == SourceType.ARRAY
+					? Objects.requireNonNull(context.streamSource()) : context.source());
+			replacement.statements().add(declaration(iteratorType, iteratorName, call(source, "iterator"))); //$NON-NLS-1$
+			body.statements().add(0, declaration(type(context.elementType()), elementName, call(ast.newSimpleName(iteratorName), nextMethod)));
 			WhileStatement loop = ast.newWhileStatement();
 			loop.setExpression(call(ast.newSimpleName(iteratorName), "hasNext")); //$NON-NLS-1$
 			loop.setBody(body);
@@ -172,6 +208,7 @@ final class ASTImperativeLoopRenderer {
 		FunctionalExpression function = switch (operation) {
 			case FilterOp filter -> filter.function();
 			case MapOp map -> map.function();
+			case PeekOp peek -> peek.function();
 			case ForEachTerminal terminal -> terminal.function();
 			default -> throw new IllegalArgumentException("Unsupported imperative ULR operation: " + operation); //$NON-NLS-1$
 		};
@@ -186,6 +223,9 @@ final class ASTImperativeLoopRenderer {
 			return call;
 		}
 		LambdaExpression lambda = (LambdaExpression) context.expression(function);
+		if (lambda.getBody() instanceof SimpleName name && JdtStreamExtractor.parameter(lambda).resolveBinding().isEqualTo(name.resolveBinding())) {
+			return ast.newSimpleName(input);
+		}
 		renameParameter(lambda, input);
 		return copy((Expression) lambda.getBody());
 	}

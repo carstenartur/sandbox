@@ -13,209 +13,78 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.dom.AST;
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.SimpleName;
-import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
-import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
-import org.eclipse.jdt.core.dom.WhileStatement;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.builder.LoopModelBuilder;
-import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.terminal.ForEachTerminal;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.IteratorPattern;
 
-/**
- * Transformer for converting iterator-based while-loops to enhanced for-loops.
- * 
- * <p>Transformation: {@code Iterator<T> it = c.iterator(); while (it.hasNext()) { T item = it.next(); ... }} → {@code for (T item : collection) { ... }}</p>
- * 
- * <p>Uses the ULR pipeline: {@code LoopModelBuilder → LoopModel → ASTEnhancedForRenderer}.</p>
- * 
- * <p><b>Safety rules (Issue #670):</b></p>
- * <ul>
- *   <li>Rejects conversion when iterator.remove() is used (cannot be expressed in enhanced for)</li>
- *   <li>Rejects conversion when multiple iterator.next() calls are detected</li>
- *   <li>Rejects conversion when break or labeled continue is present</li>
- * </ul>
- * 
- * @see LoopModel
- * @see ASTEnhancedForRenderer
- * @see <a href="https://github.com/carstenartur/sandbox/issues/453">Issue #453</a>
- * @see <a href="https://github.com/carstenartur/sandbox/issues/549">Issue #549</a>
- * @see <a href="https://github.com/carstenartur/sandbox/issues/670">Issue #670</a>
- */
+/** Converts verified iterator while/for protocols to enhanced for through the ULR. */
 public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> {
+	private final IteratorPatternDetector detector = new IteratorPatternDetector();
 
-	private final IteratorPatternDetector patternDetector = new IteratorPatternDetector();
-	private final IteratorLoopAnalyzer loopAnalyzer = new IteratorLoopAnalyzer();
-	
 	@Override
-	public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
-		LoopConversionService.scanRoot(compilationUnit).accept(new ASTVisitor() {
+	public void find(UseFunctionalCallFixCore fix, CompilationUnit unit,
+			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> processed) {
+		LoopConversionService.scanRoot(unit).accept(new ASTVisitor() {
 			@Override
-			public boolean visit(WhileStatement node) {
-				if (ExpressionHelper.overlapsProcessedNode(node, nodesprocessed)) {
-					return false;
-				}
-				
-				// Find previous statement for while-iterator pattern
-				if (!IteratorPatternDetector.isStatementInBlock(node)) {
-					return true;
-				}
-				
-				Block parentBlock = (Block) node.getParent();
-				Statement previousStmt = IteratorPatternDetector.findPreviousStatement(parentBlock, node);
-				
-				IteratorPattern pattern = patternDetector.detectWhilePattern(node, previousStmt);
-				if (pattern == null || elementDeclaration(node, pattern) == null) {
-					return true;
-				}
-				
-				// Issue #670: Safety check - reject conversion if iterator has unsafe usage
-				// (remove(), multiple next(), break, labeled continue)
-				IteratorLoopAnalyzer.SafetyAnalysis analysis = loopAnalyzer.analyze(
-						node.getBody(), pattern.iteratorVariableName());
-				if (!analysis.isSafe()) {
-					return true;
-				}
-				
-				// Mark both the iterator declaration and the while loop as processed
-				nodesprocessed.add(previousStmt);
-				nodesprocessed.add(node);
-				
-				ReferenceHolder<ASTNode, Object> holder = ReferenceHolder.create();
-				holder.put(node, pattern);
-				holder.put(previousStmt, pattern); // Store pattern for both nodes
-				
-				operations.add(fixcore.rewrite(node, holder));
-				
+			public boolean visit(WhileStatement loop) {
+				if (!(loop.getParent() instanceof Block block)) return true;
+				Statement previous = IteratorPatternDetector.findPreviousStatement(block, loop);
+				return schedule(loop, previous, detector.detectWhilePattern(loop, previous));
+			}
+
+			@Override
+			public boolean visit(ForStatement loop) {
+				return schedule(loop, null, detector.detectForLoopPattern(loop));
+			}
+
+			private boolean schedule(Statement loop, Statement previous, IteratorPattern pattern) {
+				if (ExpressionHelper.overlapsProcessedNode(loop, processed)) return false;
+				if (IteratorLoopBindings.element(loop, previous, pattern) == null) return true;
+				ReferenceHolder<ASTNode, Object> data = ReferenceHolder.create();
+				data.put(loop, pattern);
+				operations.add(fix.rewrite(loop, data));
+				processed.add(loop);
+				if (previous != null) processed.add(previous);
 				return false;
 			}
 		});
 	}
 
 	@Override
-	public void rewrite(UseFunctionalCallFixCore useExplicitEncodingFixCore, ASTNode visited,
-			CompilationUnitRewrite cuRewrite, TextEditGroup group, ReferenceHolder<ASTNode, Object> data)
-			throws CoreException {
-		if (!(visited instanceof WhileStatement whileStmt)) {
-			return;
-		}
-		
-		Object patternObj = data.get(visited);
-		if (!(patternObj instanceof IteratorPattern pattern)) {
-			return;
-		}
-		
-		AST ast = cuRewrite.getAST();
-		ASTRewrite rewrite = cuRewrite.getASTRewrite();
-		
-		// Find the iterator declaration statement that should be removed
-		Block parentBlock = (Block) whileStmt.getParent();
-		Statement iteratorDecl = IteratorPatternDetector.findPreviousStatement(parentBlock, whileStmt);
-		
-		// Build LoopModel from the iterator-while pattern using ULR pipeline
-		VariableDeclarationFragment element = elementDeclaration(whileStmt, pattern);
-		if (element == null) {
-			return;
-		}
-		LoopModel model = buildLoopModel(pattern, element);
-		
-		// Extract body statements (skip the first item = it.next() declaration)
-		List<Statement> bodyStatements = extractBodyStatements(whileStmt);
-		
-		// Render enhanced for-loop using ULR-based renderer
-		ASTEnhancedForRenderer renderer = new ASTEnhancedForRenderer(ast, rewrite);
-		renderer.render(model, whileStmt, iteratorDecl, bodyStatements, group);
-	}
-
-	/**
-	 * Builds a LoopModel from an iterator-while pattern using the ULR pipeline.
-	 */
-	private LoopModel buildLoopModel(IteratorPattern pattern, VariableDeclarationFragment element) {
-		String collectionExpr = pattern.collectionExpression().toString();
-		String elementType = ((VariableDeclarationStatement) element.getParent()).getType().toString();
-		String elementName = element.getName().getIdentifier();
-		
-		return new LoopModelBuilder()
-			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr, elementType)
-			.element(elementName, elementType, false)
-			.terminal(new ForEachTerminal(List.of(), false))
-			.build();
-	}
-
-	private static VariableDeclarationFragment elementDeclaration(WhileStatement loop, IteratorPattern pattern) {
-		if (loop.getBody() instanceof Block body && !body.statements().isEmpty()
-				&& body.statements().get(0) instanceof VariableDeclarationStatement declaration
-				&& declaration.fragments().size() == 1) {
-			VariableDeclarationFragment element = (VariableDeclarationFragment) declaration.fragments().get(0);
-			if (element.getInitializer() instanceof MethodInvocation next && next.arguments().isEmpty()
-					&& "next".equals(next.getName().getIdentifier()) //$NON-NLS-1$
-					&& next.getExpression() instanceof SimpleName iterator
-					&& pattern.iteratorVariableName().equals(iterator.getIdentifier())) {
-				return element;
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * Extracts the actual body statements from the while loop, skipping the
-	 * first {@code T item = it.next()} variable declaration.
-	 */
-	private List<Statement> extractBodyStatements(WhileStatement whileStmt) {
-		List<Statement> result = new ArrayList<>();
-		Statement whileBody = whileStmt.getBody();
-		
-		if (whileBody instanceof Block block) {
-			boolean skipFirst = false;
-			
-			// Check if first statement is item = it.next()
-			if (!block.statements().isEmpty()) {
-				Object firstStmt = block.statements().get(0);
-				if (firstStmt instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement) {
-					skipFirst = true;
-				}
-			}
-			
-			int startIdx = skipFirst ? 1 : 0;
-			for (int i = startIdx; i < block.statements().size(); i++) {
-				result.add((Statement) block.statements().get(i));
-			}
-		} else {
-			result.add(whileBody);
-		}
-		return result;
+	public void rewrite(UseFunctionalCallFixCore fix, ASTNode visited, CompilationUnitRewrite rewrite,
+			TextEditGroup group, ReferenceHolder<ASTNode, Object> data) throws CoreException {
+		if (!(visited instanceof Statement loop) || !(data.get(visited) instanceof IteratorPattern pattern)) return;
+		Statement previous = loop instanceof WhileStatement ? IteratorPatternDetector.findPreviousStatement((Block) loop.getParent(), loop) : null;
+		VariableDeclarationFragment element = IteratorLoopBindings.element(loop, previous, pattern);
+		if (element == null) return;
+		ITypeBinding type = element.resolveBinding().getType();
+		List<String> body = ExpressionHelper.bodyStatementsToStrings(pattern.loopBody());
+		var model = new LoopModelBuilder()
+				.source(SourceDescriptor.SourceType.ITERABLE, pattern.collectionExpression().toString(),
+						IteratorLoopBindings.sourceElementType(pattern.collectionExpression().resolveTypeBinding()))
+				.element(element.getName().getIdentifier(), type.getQualifiedName(), type.isPrimitive())
+				.terminal(new ForEachTerminal(body.subList(1, body.size()), false)).build();
+		new ASTEnhancedForRenderer(rewrite.getAST(), rewrite.getASTRewrite()).renderIteratorLoop(model, loop,
+				previous, pattern.collectionExpression(), (VariableDeclarationStatement) element.getParent(), rewrite.getImportRewrite(), group);
 	}
 
 	@Override
-	public String getPreview(boolean afterRefactoring) {
-		if (afterRefactoring) {
-			return """
-					for (String item : items) {
-						System.out.println(item);
-					}
-					""";
-		}
-		return """
+	public String getPreview(boolean after) {
+		return after ? """
+				for (String item : items) {
+					System.out.println(item);
+				}
+				""" : """
 				Iterator<String> it = items.iterator();
 				while (it.hasNext()) {
 					String item = it.next();

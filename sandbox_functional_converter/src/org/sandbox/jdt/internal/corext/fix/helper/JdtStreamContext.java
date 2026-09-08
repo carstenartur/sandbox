@@ -26,7 +26,12 @@ import org.sandbox.functional.core.model.FunctionalExpression;
  * Identity keys distinguish identical-looking functions at different source sites.
  */
 public record JdtStreamContext(ExpressionStatement statement, Expression source,
-        ITypeBinding elementType, Map<FunctionalExpression, Expression> functions) {
+        ITypeBinding elementType, Map<FunctionalExpression, Expression> functions, Expression streamSource) {
+
+    public JdtStreamContext(ExpressionStatement statement, Expression source,
+            ITypeBinding elementType, Map<FunctionalExpression, Expression> functions) {
+        this(statement, source, elementType, functions, null);
+    }
 
     public JdtStreamContext {
         functions = Collections.unmodifiableMap(new IdentityHashMap<>(functions));
