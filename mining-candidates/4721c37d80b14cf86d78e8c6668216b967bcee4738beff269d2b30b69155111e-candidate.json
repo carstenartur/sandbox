@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4721c37d80b14cf86d78e8c6668216b967bcee4738beff269d2b30b69155111e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "createExtendedBracesCombo($group, $numColumns, $message, $key)\n\u003d\u003e\ncreateBracesCombo($group, $numColumns, $message, $key)\n;;",
+  "beforeExample": "import org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Group;\n\n// Minimal classes to simulate the context\nclass ComboPreference {}\nclass FormatterMessages {\n    public static String BracesTabPage_option_class_declaration \u003d \"Class\";\n}\n\nclass BracesTabPage {\n    protected Group createGroup(int numColumns, Composite parent, String title) { return new Group(parent, 0); }\n    // This method is conceptually being removed or renamed\n    private ComboPreference createExtendedBracesCombo(Group group, int numColumns, String message, String key) { \n        System.out.println(\"Calling extended combo for: \" + message);\n        return new ComboPreference(); \n    }\n    protected final ComboPreference createBracesCombo(Composite composite, int numColumns, String message, String key) { \n        System.out.println(\"Calling standard combo for: \" + message);\n        return new ComboPreference(); \n    }\n\n    protected void doCreatePreferences(Composite composite, int numColumns) {\n        final Group group \u003d createGroup(numColumns, composite, \"Group Title\");\n        createExtendedBracesCombo(group, numColumns, FormatterMessages.BracesTabPage_option_class_declaration, \"SOME_KEY\");\n        createExtendedBracesCombo(group, numColumns, \"Anonymous Class\", \"ANON_KEY\");\n    }\n}\n",
+  "afterExample": "import org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Group;\n\n// Minimal classes to simulate the context\nclass ComboPreference {}\nclass FormatterMessages {\n    public static String BracesTabPage_option_class_declaration \u003d \"Class\";\n}\n\nclass BracesTabPage {\n    protected Group createGroup(int numColumns, Composite parent, String title) { return new Group(parent, 0); }\n    // The createExtendedBracesCombo method would be removed from the class after this refactoring\n    protected final ComboPreference createBracesCombo(Composite composite, int numColumns, String message, String key) { \n        System.out.println(\"Calling standard combo for: \" + message);\n        return new ComboPreference(); \n    }\n\n    protected void doCreatePreferences(Composite composite, int numColumns) {\n        final Group group \u003d createGroup(numColumns, composite, \"Group Title\");\n        createBracesCombo(group, numColumns, FormatterMessages.BracesTabPage_option_class_declaration, \"SOME_KEY\");\n        createBracesCombo(group, numColumns, \"Anonymous Class\", \"ANON_KEY\");\n    }\n}\n",
+  "negativeExample": "import org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Group;\n\n// Minimal classes to simulate the context\nclass ComboPreference {}\nclass FormatterMessages {\n    public static String BracesTabPage_option_class_declaration \u003d \"Class\";\n}\n\nclass BracesTabPage {\n    protected Group createGroup(int numColumns, Composite parent, String title) { return new Group(parent, 0); }\n    private ComboPreference createExtendedBracesCombo(Group group, int numColumns, String message, String key) { \n        System.out.println(\"Calling extended combo for: \" + message);\n        return new ComboPreference(); \n    }\n    protected final ComboPreference createBracesCombo(Composite composite, int numColumns, String message, String key) { \n        System.out.println(\"Calling standard combo for: \" + message);\n        return new ComboPreference(); \n    }\n\n    protected void doCreatePreferences(Composite composite, int numColumns) {\n        final Group group \u003d createGroup(numColumns, composite, \"Group Title\");\n        createBracesCombo(group, numColumns, FormatterMessages.BracesTabPage_option_class_declaration, \"SOME_OTHER_KEY\"); // Should not match \u0027createExtendedBracesCombo\u0027\n    }\n}\n",
+  "targetHintFile": "local-method-refactoring.sandbox-hint",
+  "sourceCommit": "ecfdffb1302e2d91b6fc290a006f78834918da60",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Method Call Replacement",
+  "summary": "Replaces calls to `createExtendedBracesCombo` with `createBracesCombo` to use a unified method for creating brace position combo boxes in formatter preferences.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-08T02:25:43.506550984Z",
+  "ruleFingerprint": "sha256:60b75d7096cb4677905c2d2fc27331b2fe9d0e4ff60feddc004061ce3d86f125",
+  "behaviorFingerprint": "sha256:8977581194ec89bb353ef6e6146fc3f5cf7e3bb81729fd3cbce525a52a6a2700",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-09-08T02:25:50.085291689Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
