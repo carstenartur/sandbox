@@ -1,5 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <plugin>
+	<extension point="org.eclipse.jdt.ui.quickAssistProcessors">
+		<quickAssistProcessor id="sandbox.functional.loopAssist" name="Convert loop"
+			class="org.sandbox.jdt.internal.ui.fix.LoopConversionQuickAssistProcessor" />
+	</extension>
+	<extension point="org.eclipse.core.resources.markers" id="loopConversionProblem" name="Loop conversion style">
+		<super type="org.eclipse.jdt.core.problem" />
+		<persistent value="true" />
+	</extension>
+	<extension point="org.eclipse.jdt.core.compilationParticipant">
+		<compilationParticipant id="sandbox.functional.loopInspection" createsProblems="true" modifiesEnvironment="false"
+			class="org.sandbox.jdt.internal.corext.fix.helper.LoopConversionInspection">
+			<managedMarker markerType="sandbox_functional_converter.loopConversionProblem" />
+		</compilationParticipant>
+	</extension>
+	<extension point="org.eclipse.jdt.ui.quickFixProcessors">
+		<quickFixProcessor id="sandbox.functional.loopFix" name="Convert loop"
+			class="org.sandbox.jdt.internal.ui.fix.LoopConversionQuickFixProcessor">
+			<handledMarkerTypes><markerType id="sandbox_functional_converter.loopConversionProblem" /></handledMarkerTypes>
+		</quickFixProcessor>
+	</extension>
+	<extension point="org.eclipse.ui.preferencePages">
+		<page id="sandbox.functional.loopPreferences" name="Loop Conversion (Sandbox)"
+			category="org.eclipse.jdt.ui.preferences.JavaBasePreferencePage"
+			class="org.sandbox.jdt.internal.ui.preferences.cleanup.LoopConversionPreferencePage" />
+	</extension>
 	<extension point="org.eclipse.jdt.ui.cleanUps">
 		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" cleanUpKind="cleanUp" name="Functional Converter (Sandbox)" />
 		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" name="Functional Converter (Sandbox)" cleanUpKind="saveAction" />

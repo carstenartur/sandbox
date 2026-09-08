@@ -1,5 +1,17 @@
 # Functional Loop Converter Plugin Reference
 
+## Current editor and analysis integration
+
+Cleanup, Quick Assist and optional style Quick Fixes share `LoopConversionService`.
+Keep safety decisions in the ULR extractors/handlers; editor processors select
+anchored operations and use native JDT proposals. Inspection hints are off by
+default and use JDT-managed build/reconcile problems. Consult the plugin README's
+entry-point and conversion matrices before relying on older roadmap sections.
+Regression coverage: `LoopConversionAssistTest` exercises native preview/apply/
+undo, source levels, profile precedence, registered extensions and marker removal;
+`StreamChainToLoopTest` compiles and executes both versions, including iterator
+typing, labels, wildcard/generic types and comments.
+
 > **Read this when**: Working on `sandbox_functional_converter`, `sandbox-functional-converter-core`, or their test modules.
 
 ## Purpose

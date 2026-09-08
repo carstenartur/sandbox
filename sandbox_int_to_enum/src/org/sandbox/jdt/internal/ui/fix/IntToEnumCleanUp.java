@@ -27,7 +27,7 @@ import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
 
 import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
 
-/** Cleanup that converts integer state domains to enums. */
+/** Cleanup that converts closed constant state domains to enums. */
 public class IntToEnumCleanUp extends AbstractCleanUpCoreWrapper<IntToEnumCleanUpCore>
 		implements IMultiFileCleanUpScopeProvider {
 	public IntToEnumCleanUp(final Map<String, String> options) {

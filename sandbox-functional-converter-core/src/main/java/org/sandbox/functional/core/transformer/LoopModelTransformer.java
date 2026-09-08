@@ -76,18 +76,18 @@ public class LoopModelTransformer<T> {
             case FilterOp f -> renderer.renderFilterOp(pipeline, f, varName);
             case MapOp m -> renderer.renderMapOp(pipeline, m, varName);
             case FlatMapOp fm -> renderer.renderFlatMap(pipeline, fm.expression(), varName);
-            case PeekOp p -> renderer.renderPeek(pipeline, p.expression(), varName);
+            case PeekOp p -> renderer.renderPeekOp(pipeline, p, varName);
             case DistinctOp d -> renderer.renderDistinct(pipeline);
             case SortOp s -> renderer.renderSorted(pipeline, s.expression());
             case LimitOp l -> renderer.renderLimit(pipeline, l.maxSize());
             case SkipOp sk -> renderer.renderSkip(pipeline, sk.count());
+            case StreamTypeConversionOp conversion -> renderer.renderTypeConversion(pipeline, conversion);
         };
     }
     
     private T applyTerminal(T pipeline, TerminalOperation terminal, String varName) {
         return switch (terminal) {
-            case ForEachTerminal fe -> renderer.renderForEach(
-                pipeline, fe.bodyStatements(), varName, fe.ordered());
+            case ForEachTerminal fe -> renderer.renderForEachTerminal(pipeline, fe, varName);
             case CollectTerminal c -> renderer.renderCollect(pipeline, c, varName);
             case ReduceTerminal r -> renderer.renderReduce(pipeline, r, varName);
             case CountTerminal ct -> renderer.renderCount(pipeline);

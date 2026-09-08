@@ -23,6 +23,7 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUp;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopTargetFormat;
 
 public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 
@@ -35,6 +36,15 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 	};
 
 	public static final String ID= "org.eclipse.jdt.ui.cleanup.tabpage.sandbox.functional"; //$NON-NLS-1$
+
+	@Override
+	public void setWorkingValues(Map<String, String> values) {
+		String key = MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT;
+		if (values.containsKey(key)) {
+			values.put(key, LoopTargetFormat.fromId(values.get(key)).getId());
+		}
+		super.setWorkingValues(values);
+	}
 
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map<String, String> values) {
@@ -54,13 +64,12 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		// Master checkbox to enable loop conversions
 		final CheckboxPreference loopConversionEnabled = createCheckboxPref(loopConversionGroup, numColumns,
 			CleanUpMessages.LoopConversion_Enable, MYCleanUpConstants.LOOP_CONVERSION_ENABLED, FALSE_TRUE);
-		intent(loopConversionGroup);
 
 		// Target format combo box (for string-valued preference)
 		final ComboPreference targetFormatCombo = createComboPref(loopConversionGroup, numColumns,
-			CleanUpMessages.LoopConversion_TargetFormat_Stream, // Use existing label
+			CleanUpMessages.LoopConversion_TargetFormat,
 			MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT,
-			new String[] {"stream", "enhanced_for", "iterator_while"},
+			new String[] {LoopTargetFormat.STREAM.getId(), LoopTargetFormat.FOR_LOOP.getId(), LoopTargetFormat.WHILE_LOOP.getId()},
 			new String[] {CleanUpMessages.LoopConversion_TargetFormat_Stream, CleanUpMessages.LoopConversion_TargetFormat_EnhancedFor, CleanUpMessages.LoopConversion_TargetFormat_IteratorWhile});
 
 		// Source format checkboxes
@@ -73,10 +82,24 @@ public class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 		final CheckboxPreference fromClassicFor = createCheckboxPref(loopConversionGroup, numColumns,
 			CleanUpMessages.LoopConversion_From_ClassicFor, MYCleanUpConstants.LOOP_CONVERSION_FROM_CLASSIC_FOR, FALSE_TRUE);
 
-		// Register dependencies: enable/disable based on master checkbox
+		Runnable updateAvailability = () -> {
+			boolean enabled = loopConversionEnabled.getChecked();
+			LoopTargetFormat target = targetFormatCombo.hasValue(LoopTargetFormat.FOR_LOOP.getId()) ? LoopTargetFormat.FOR_LOOP
+					: targetFormatCombo.hasValue(LoopTargetFormat.WHILE_LOOP.getId()) ? LoopTargetFormat.WHILE_LOOP : LoopTargetFormat.STREAM;
+			targetFormatCombo.setEnabled(enabled);
+			fromEnhancedFor.setEnabled(enabled && target != LoopTargetFormat.FOR_LOOP);
+			fromIteratorWhile.setEnabled(enabled && target != LoopTargetFormat.WHILE_LOOP);
+			fromStream.setEnabled(enabled && target != LoopTargetFormat.STREAM);
+			fromClassicFor.setEnabled(enabled && target == LoopTargetFormat.STREAM);
+		};
+		loopConversionEnabled.addObserver((source, value) -> updateAvailability.run());
+		targetFormatCombo.addObserver((source, value) -> updateAvailability.run());
+		// Keep JDT's selection/count lifecycle. Observable invokes newer observers first,
+		// so the target-specific availability above runs after the master dependency.
 		registerSlavePreference(loopConversionEnabled, new CheckboxPreference[] {
 			fromEnhancedFor, fromIteratorWhile, fromStream, fromClassicFor
 		});
+		updateAvailability.run();
 
 		registerPreference(loopConversionEnabled);
 	}

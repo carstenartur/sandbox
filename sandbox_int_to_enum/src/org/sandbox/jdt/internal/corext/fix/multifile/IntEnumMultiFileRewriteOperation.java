@@ -36,16 +36,14 @@ import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
-import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
-import org.eclipse.jdt.core.dom.PrimitiveType;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
-import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -56,8 +54,11 @@ import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 
 import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.internal.corext.fix.helper.EnumComparison;
+import org.sandbox.jdt.internal.corext.fix.helper.EnumConstantValue;
+import org.sandbox.jdt.internal.corext.fix.helper.EnumNameSafety;
 
-/** Local AST rewrite generated from a project-wide integer-state plan. */
+/** Local AST rewrite generated from a project-wide constant-state plan. */
 final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOperationWithSourceRange {
 
 	record ResolvedOwner(IntEnumCandidate candidate, TypeDeclaration type, MethodDeclaration method,
@@ -130,6 +131,10 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 						String key= binding == null ? null : binding.getVariableDeclaration().getKey();
 						IntEnumCandidate candidate= byConstant.get(key);
 						if (candidate != null && unitHandle.equals(candidate.ownerCompilationUnitHandle())) {
+							if (!candidate.constant(key).value().equals(EnumConstantValue.from(binding))
+									|| (node.getModifiers() & (Modifier.PUBLIC | Modifier.PROTECTED | Modifier.PRIVATE)) != 0) {
+								throw new StalePlanRuntimeException(stale(unit, "constant value or type changed")); //$NON-NLS-1$
+							}
 							ownerFields.computeIfAbsent(candidate, ignored -> new LinkedHashMap<>())
 									.computeIfAbsent(node, ignored -> new LinkedHashSet<>()).add(key);
 							processed.add(node);
@@ -200,8 +205,18 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 				}
 				SingleVariableDeclaration parameter= (SingleVariableDeclaration) method.parameters()
 						.get(candidate.parameterIndex());
-				if (!isInt(parameter.getType())) {
-					throw stale(unit, "state parameter is no longer int"); //$NON-NLS-1$
+				if (EnumNameSafety.conflicts(type, candidate.enumTypeName())) {
+					throw stale(unit, "generated enum name is no longer available"); //$NON-NLS-1$
+				}
+				if ((method.getModifiers() & (Modifier.PUBLIC | Modifier.PROTECTED | Modifier.PRIVATE)) != 0) {
+					throw stale(unit, "state method visibility changed"); //$NON-NLS-1$
+				}
+				if (parameter.isVarargs() || !parameter.extraDimensions().isEmpty()
+						|| !candidate.constants().get(0).value().matches(parameter.getType().resolveBinding())) {
+					throw stale(unit, "state parameter type changed"); //$NON-NLS-1$
+				}
+				if (!hasOnlySupportedStateUses(method, parameter, candidate)) {
+					throw stale(unit, "state parameter has an unsupported use"); //$NON-NLS-1$
 				}
 				owners.add(new ResolvedOwner(candidate, type, method, parameter, fields));
 			}
@@ -221,7 +236,7 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 	@Override
 	public void rewriteASTInternal(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel)
 			throws CoreException {
-		TextEditGroup group= createTextEditGroup("Convert package-scoped integer state domain to enum", cuRewrite); //$NON-NLS-1$
+		TextEditGroup group= createTextEditGroup("Convert package-scoped constant state domain to enum", cuRewrite); //$NON-NLS-1$
 		AST ast= cuRewrite.getRoot().getAST();
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		ImportRewrite imports= cuRewrite.getImportRewrite();
@@ -318,24 +333,30 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 	}
 
 	private static boolean isRecognisedReference(Expression expression, IntEnumCandidate candidate) {
+		if (!EnumConstantValue.isDirectReference(expression)) {
+			return false;
+		}
 		Expression outer= outerExpression(expression);
 		ASTNode parent= outer.getParent();
 		if (parent instanceof MethodInvocation invocation) {
 			IMethodBinding binding= invocation.resolveMethodBinding();
 			String key= binding == null ? null : binding.getMethodDeclaration().getKey();
-			return candidate.methodBindingKey().equals(key) && candidate.parameterIndex() < invocation.arguments().size()
-					&& outerExpression((Expression) invocation.arguments().get(candidate.parameterIndex())) == outer;
+			if (candidate.methodBindingKey().equals(key) && candidate.parameterIndex() < invocation.arguments().size()
+					&& outerExpression((Expression) invocation.arguments().get(candidate.parameterIndex())) == outer) {
+				return true;
+			}
 		}
 		ASTNode current= outer.getParent();
 		while (current != null && !(current instanceof MethodDeclaration)) {
-			if (current instanceof InfixExpression infix && infix.getOperator() == InfixExpression.Operator.EQUALS) {
-				Expression left= outerExpression(infix.getLeftOperand());
-				Expression right= outerExpression(infix.getRightOperand());
+			EnumComparison.Operands operands= current instanceof Expression comparison ? EnumComparison.operands(comparison) : null;
+			if (operands != null) {
+				Expression left= outerExpression(operands.left());
+				Expression right= outerExpression(operands.right());
 				Expression other= left == outer ? right : right == outer ? left : null;
 				IVariableBinding otherBinding= other == null ? null : resolveVariable(other);
-				if (otherBinding != null && candidate.methodBindingKey().equals(enclosingMethodKey(infix))
+				if (otherBinding != null && candidate.methodBindingKey().equals(enclosingMethodKey(current))
 						&& candidate.parameterIndex() >= 0) {
-					MethodDeclaration method= enclosingMethod(infix);
+					MethodDeclaration method= enclosingMethod(current);
 					if (method != null && candidate.parameterIndex() < method.parameters().size()) {
 						SingleVariableDeclaration parameter= (SingleVariableDeclaration) method.parameters()
 								.get(candidate.parameterIndex());
@@ -348,6 +369,32 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 			current= current.getParent();
 		}
 		return false;
+	}
+
+	private static boolean hasOnlySupportedStateUses(MethodDeclaration method, SingleVariableDeclaration parameter,
+			IntEnumCandidate candidate) {
+		IVariableBinding state= parameter.resolveBinding();
+		boolean[] valid= { state != null };
+		method.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(SimpleName node) {
+				if (!valid[0] || node == parameter.getName() || !(node.resolveBinding() instanceof IVariableBinding binding)
+						|| !state.isEqualTo(binding.getVariableDeclaration())) {
+					return valid[0];
+				}
+				Expression outer= outerExpression(containingExpression(node));
+				ASTNode parent= outer.getParent();
+				EnumComparison.Operands operands= parent instanceof Expression comparison ? EnumComparison.operands(comparison) : null;
+				Expression other= operands == null ? null
+						: outerExpression(operands.left()) == outer ? operands.right()
+						: outerExpression(operands.right()) == outer ? operands.left() : null;
+				IVariableBinding constant= other == null ? null : resolveVariable(other);
+				valid[0]= constant != null && candidate.constant(constant.getVariableDeclaration().getKey()) != null
+						&& EnumConstantValue.isDirectReference(other);
+				return valid[0];
+			}
+		});
+		return valid[0];
 	}
 
 	private static MethodDeclaration enclosingMethod(ASTNode node) {
@@ -407,13 +454,8 @@ final class IntEnumMultiFileRewriteOperation extends CompilationUnitRewriteOpera
 		return binding == null ? null : binding.getTypeDeclaration().getKey();
 	}
 
-	private static boolean isInt(Type type) {
-		return type.isPrimitiveType()
-				&& ((PrimitiveType) type).getPrimitiveTypeCode() == PrimitiveType.INT;
-	}
-
 	private static CoreException stale(ICompilationUnit unit, String detail) {
-		String message= "The project-wide int-to-enum plan is stale for " + unit.getElementName() + ": " + detail; //$NON-NLS-1$ //$NON-NLS-2$
+		String message= "The project-wide constant-to-enum plan is stale for " + unit.getElementName() + ": " + detail; //$NON-NLS-1$ //$NON-NLS-2$
 		return new CoreException(new Status(IStatus.ERROR, "sandbox_int_to_enum", message)); //$NON-NLS-1$
 	}
 }

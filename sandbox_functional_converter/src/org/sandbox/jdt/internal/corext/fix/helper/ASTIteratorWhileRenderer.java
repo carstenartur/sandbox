@@ -16,7 +16,10 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.List;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
+import org.eclipse.jdt.internal.corext.dom.Bindings;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.LoopModel;
 import org.sandbox.functional.core.terminal.ForEachTerminal;
@@ -42,7 +45,7 @@ import org.sandbox.functional.core.terminal.ForEachTerminal;
  */
 public class ASTIteratorWhileRenderer {
 
-	private static final String ITERATOR_NAME = "it"; //$NON-NLS-1$
+	private String iteratorName;
 
 	private final AST ast;
 	private final ASTRewrite rewrite;
@@ -50,6 +53,82 @@ public class ASTIteratorWhileRenderer {
 	public ASTIteratorWhileRenderer(AST ast, ASTRewrite rewrite) {
 		this.ast = ast;
 		this.rewrite = rewrite;
+	}
+
+	/** Lowers ULR filter/map/forEach operations using their original JDT attachments. */
+	public void renderPipeline(LoopModel model, JdtStreamContext context, ImportRewrite imports, TextEditGroup group) {
+		new ASTImperativeLoopRenderer(rewrite, imports, group).render(model, context, true);
+	}
+
+	/** Preserve the iterator's actual generic type and the loop variable's conversions. */
+	@SuppressWarnings("unchecked")
+	public void renderEnhancedFor(LoopModel model, EnhancedForStatement original, ImportRewrite imports, TextEditGroup group) {
+		reserveIteratorName(original);
+		var importContext = new ContextSensitiveImportRewriteContext((CompilationUnit) original.getRoot(), original.getStartPosition(), imports);
+		ITypeBinding iterable = Bindings.findTypeInHierarchy(original.getExpression().resolveTypeBinding(), "java.lang.Iterable"); //$NON-NLS-1$
+		ITypeBinding iterator = Bindings.findMethodInHierarchy(iterable, "iterator", new String[0]).getReturnType(); //$NON-NLS-1$
+		VariableDeclarationFragment iteratorFragment = ast.newVariableDeclarationFragment();
+		iteratorFragment.setName(ast.newSimpleName(iteratorName));
+		MethodInvocation iteratorCall = ast.newMethodInvocation();
+		iteratorCall.setExpression((Expression) rewrite.createCopyTarget(original.getExpression()));
+		iteratorCall.setName(ast.newSimpleName("iterator")); //$NON-NLS-1$
+		iteratorFragment.setInitializer(iteratorCall);
+		VariableDeclarationStatement iteratorDeclaration = ast.newVariableDeclarationStatement(iteratorFragment);
+		iteratorDeclaration.setType(imports.addImport(iterator, ast, importContext));
+
+		SingleVariableDeclaration parameter = original.getParameter();
+		VariableDeclarationFragment element = ast.newVariableDeclarationFragment();
+		element.setName(ast.newSimpleName(model.getElement().variableName()));
+		for (Object dimension : parameter.extraDimensions()) {
+			element.extraDimensions().add(rewrite.createCopyTarget((Dimension) dimension));
+		}
+		MethodInvocation next = ast.newMethodInvocation();
+		next.setExpression(ast.newSimpleName(iteratorName));
+		next.setName(ast.newSimpleName("next")); //$NON-NLS-1$
+		element.setInitializer(next);
+		VariableDeclarationStatement declaration = ast.newVariableDeclarationStatement(element);
+		declaration.setType(parameter.getType().isVar() ? imports.addImport(parameter.resolveBinding().getType(), ast, importContext)
+				: (Type) rewrite.createCopyTarget(parameter.getType()));
+		for (Object modifier : parameter.modifiers()) {
+			declaration.modifiers().add(rewrite.createCopyTarget((ASTNode) modifier));
+		}
+		WhileStatement loop = ast.newWhileStatement();
+		MethodInvocation hasNext = ast.newMethodInvocation();
+		hasNext.setExpression(ast.newSimpleName(iteratorName));
+		hasNext.setName(ast.newSimpleName("hasNext")); //$NON-NLS-1$
+		loop.setExpression(hasNext);
+		if (original.getBody() instanceof Block block) {
+			rewrite.getListRewrite(block, Block.STATEMENTS_PROPERTY).insertFirst(declaration, group);
+			loop.setBody((Statement) rewrite.createCopyTarget(block));
+		} else {
+			Block body = ast.newBlock();
+			body.statements().add(declaration);
+			body.statements().add(rewrite.createCopyTarget(original.getBody()));
+			loop.setBody(body);
+		}
+		Statement anchor = original;
+		Statement replacement = loop;
+		while (anchor.getParent() instanceof LabeledStatement label) {
+			LabeledStatement copied = ast.newLabeledStatement();
+			copied.setLabel((SimpleName) rewrite.createCopyTarget(label.getLabel()));
+			copied.setBody(replacement);
+			replacement = copied;
+			anchor = label;
+		}
+		if (anchor.getParent() instanceof Block block) {
+			var list = rewrite.getListRewrite(block, Block.STATEMENTS_PROPERTY);
+			list.insertBefore(iteratorDeclaration, anchor, group);
+			list.replace(anchor, replacement, group);
+		} else {
+			Block block = ast.newBlock();
+			block.statements().add(iteratorDeclaration);
+			block.statements().add(replacement);
+			rewrite.replace(anchor, block, group);
+		}
+	}
+
+	private void reserveIteratorName(Statement originalStatement) {
+		iteratorName = LoopVariableNames.fresh("it", LoopVariableNames.usedNames(originalStatement)); //$NON-NLS-1$
 	}
 
 	/**
@@ -61,6 +140,7 @@ public class ASTIteratorWhileRenderer {
 	 * @param group the text edit group
 	 */
 	public void render(LoopModel model, Statement originalStatement, Statement originalBody, TextEditGroup group) {
+		reserveIteratorName(originalStatement);
 		String elementType = model.getElement().typeName();
 		String elementName = model.getElement().variableName();
 		String collectionExpr = model.getSource().expression();
@@ -84,6 +164,7 @@ public class ASTIteratorWhileRenderer {
 	 * @param group the text edit group
 	 */
 	public void renderFromModel(LoopModel model, Statement originalStatement, TextEditGroup group) {
+		reserveIteratorName(originalStatement);
 		String elementType = model.getElement().typeName();
 		String elementName = model.getElement().variableName();
 		String collectionExpr = model.getSource().expression();
@@ -110,6 +191,7 @@ public class ASTIteratorWhileRenderer {
 	@SuppressWarnings("unchecked")
 	public void renderWithBodyStatements(LoopModel model, Statement originalStatement,
 			java.util.List<Statement> bodyStatements, TextEditGroup group) {
+		reserveIteratorName(originalStatement);
 		String elementType = model.getElement().typeName();
 		String elementName = model.getElement().variableName();
 		String collectionExpr = model.getSource().expression();
@@ -119,7 +201,7 @@ public class ASTIteratorWhileRenderer {
 
 		// Create while statement with body from provided statements
 		MethodInvocation hasNextCall = ast.newMethodInvocation();
-		hasNextCall.setExpression(ast.newSimpleName(ITERATOR_NAME));
+		hasNextCall.setExpression(ast.newSimpleName(iteratorName));
 		hasNextCall.setName(ast.newSimpleName("hasNext")); //$NON-NLS-1$
 
 		WhileStatement whileStmt = ast.newWhileStatement();
@@ -170,7 +252,7 @@ public class ASTIteratorWhileRenderer {
 
 		// it = collection.iterator()
 		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();
-		fragment.setName(ast.newSimpleName(ITERATOR_NAME));
+		fragment.setName(ast.newSimpleName(iteratorName));
 
 		MethodInvocation iteratorCall = ast.newMethodInvocation();
 		iteratorCall.setExpression(createExpression(collectionExpr));
@@ -186,7 +268,7 @@ public class ASTIteratorWhileRenderer {
 	private WhileStatement createWhileStatement(String elementType, String elementName, Statement originalBody) {
 		// while (it.hasNext())
 		MethodInvocation hasNextCall = ast.newMethodInvocation();
-		hasNextCall.setExpression(ast.newSimpleName(ITERATOR_NAME));
+		hasNextCall.setExpression(ast.newSimpleName(iteratorName));
 		hasNextCall.setName(ast.newSimpleName("hasNext")); //$NON-NLS-1$
 
 		WhileStatement whileStmt = ast.newWhileStatement();
@@ -213,7 +295,7 @@ public class ASTIteratorWhileRenderer {
 	private WhileStatement createWhileStatementFromModel(String elementType, String elementName, LoopModel model) {
 		// while (it.hasNext())
 		MethodInvocation hasNextCall = ast.newMethodInvocation();
-		hasNextCall.setExpression(ast.newSimpleName(ITERATOR_NAME));
+		hasNextCall.setExpression(ast.newSimpleName(iteratorName));
 		hasNextCall.setName(ast.newSimpleName("hasNext")); //$NON-NLS-1$
 
 		WhileStatement whileStmt = ast.newWhileStatement();
@@ -240,7 +322,7 @@ public class ASTIteratorWhileRenderer {
 	private VariableDeclarationStatement createItemDeclaration(String elementType, String elementName) {
 		// T item = it.next();
 		MethodInvocation nextCall = ast.newMethodInvocation();
-		nextCall.setExpression(ast.newSimpleName(ITERATOR_NAME));
+		nextCall.setExpression(ast.newSimpleName(iteratorName));
 		nextCall.setName(ast.newSimpleName("next")); //$NON-NLS-1$
 
 		VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();

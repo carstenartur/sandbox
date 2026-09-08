@@ -24,39 +24,29 @@ import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIO
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_FOR;
 import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.USEFUNCTIONALLOOP_FORMAT_WHILE;
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUpFix_refactor;
-import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.FunctionalCallCleanUp_description;
 import static org.sandbox.jdt.internal.ui.preferences.cleanup.CleanUpMessages.LoopConversion_Description;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
-import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
-import org.eclipse.jdt.internal.ui.fix.MapCleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopConversionService;
+import org.sandbox.jdt.internal.corext.fix.helper.LoopTargetFormat;
 
 public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
-	
-	private Map<String, String> optionsMap;
-	
-	public UseFunctionalCallCleanUpCore(final Map<String, String> options) {
+
+	private Map<String, String> optionsMap = Map.of();
+
+	public UseFunctionalCallCleanUpCore(Map<String, String> options) {
 		super(options);
-		this.optionsMap = options;
+		optionsMap = options;
 	}
 
 	public UseFunctionalCallCleanUpCore() {
@@ -65,9 +55,7 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 	@Override
 	public void setOptions(CleanUpOptions options) {
 		super.setOptions(options);
-		if (options instanceof MapCleanUpOptions mapOptions) {
-			this.optionsMap = mapOptions.getMap();
-		}
+		optionsMap = options.getKeys().stream().collect(Collectors.toMap(key -> key, options::getValue));
 	}
 
 	@Override
@@ -80,133 +68,51 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 	}
 
 	@Override
-	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-		CompilationUnit compilationUnit = context.getAST();
-		if (compilationUnit == null) {
+	public ICleanUpFix createFix(CleanUpContext context) throws CoreException {
+		if (context.getAST() == null || !requireAST()) {
 			return null;
 		}
-		EnumSet<UseFunctionalCallFixCore> computeFixSet = computeFixSet();
-		if ((!isEnabled(USEFUNCTIONALLOOP_CLEANUP) && !isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2) && !isEnabled(LOOP_CONVERSION_ENABLED)) || computeFixSet.isEmpty()) {
-			return null;
-		}
-		
-		Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
-		Set<ASTNode> nodesprocessed = new HashSet<>();
-		computeFixSet.forEach(i -> i.findOperations(compilationUnit, operations, nodesprocessed));
-		if (operations.isEmpty()) {
-			return null;
-		}
-		return new CompilationUnitRewriteOperationsFixCore(FunctionalCallCleanUpFix_refactor, compilationUnit,
-				operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]));
+		return LoopConversionService.analyze(context.getAST(), computeFixSet()).createFix(FunctionalCallCleanUpFix_refactor);
 	}
 
 	@Override
 	public String[] getStepDescriptions() {
-		List<String> result = new ArrayList<>();
-		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2)) {
-			result.add(Messages.format(FunctionalCallCleanUp_description, new Object[] { String.join(",", //$NON-NLS-1$
-					computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Collectors.toList())) }));
-		}
-		if (isEnabled(LOOP_CONVERSION_ENABLED)) {
-			result.add(LoopConversion_Description);
-		}
-		return result.toArray(new String[0]);
+		return computeFixSet().isEmpty() ? new String[0] : new String[] { LoopConversion_Description };
 	}
 
 	@Override
 	public String getPreview() {
-		StringBuilder sb = new StringBuilder();
-		EnumSet<UseFunctionalCallFixCore> computeFixSet = computeFixSet();
-		// Always pad preview to max lines for stable preview height
-		EnumSet<UseFunctionalCallFixCore> all = EnumSet.allOf(UseFunctionalCallFixCore.class);
-		int maxLines = 0;
-		String[] previews = new String[all.size()];
-		int idx = 0;
-		for (UseFunctionalCallFixCore e : all) {
-			String preview = e.getPreview(computeFixSet.contains(e));
-			previews[idx++] = preview;
-			int lines = (int) preview.lines().count();
-			if (lines > maxLines) maxLines = lines;
-		}
-		for (String preview : previews) {
-			int lines = (int) preview.lines().count();
-			sb.append(preview);
-			for (int i = lines; i < maxLines; i++) {
-				sb.append(System.lineSeparator());
-			}
-		}
-		return sb.toString();
+		EnumSet<UseFunctionalCallFixCore> selected = computeFixSet();
+		EnumSet<UseFunctionalCallFixCore> shown = selected.isEmpty()
+				? LoopConversionService.handlers(targetFormat()) : selected;
+		return shown.stream().map(handler -> handler.getPreview(selected.contains(handler)))
+				.collect(Collectors.joining(System.lineSeparator()));
+	}
+
+	private LoopTargetFormat targetFormat() {
+		return LoopTargetFormat.fromId(optionsMap.get(LOOP_CONVERSION_TARGET_FORMAT));
 	}
 
 	private EnumSet<UseFunctionalCallFixCore> computeFixSet() {
-		EnumSet<UseFunctionalCallFixCore> fixSet = EnumSet.noneOf(UseFunctionalCallFixCore.class);
-
-		// Functional loop cleanup (handles both V1 and V2 constants for backward compatibility)
-		if (isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2)) {
-			// Check if a non-stream target format is selected
-			// If FOR or WHILE format is explicitly enabled, skip stream conversion
-			boolean isForFormat = isEnabled(USEFUNCTIONALLOOP_FORMAT_FOR);
-			boolean isWhileFormat = isEnabled(USEFUNCTIONALLOOP_FORMAT_WHILE);
-			
-			if (!isForFormat && !isWhileFormat) {
-				// LOOP now uses the unified V2 implementation (ULR + Refactorer fallback)
-				fixSet.add(UseFunctionalCallFixCore.LOOP);
-				fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);
-				fixSet.add(UseFunctionalCallFixCore.TRADITIONAL_FOR_LOOP);
-			}
-			// Note: FOR and WHILE format conversions are not yet implemented
-			// When they are, add the appropriate converters here
-		}
-		
-		// Bidirectional Loop Conversion (Phase 9)
+		// An explicit target takes precedence over legacy stream-only profile flags.
 		if (isEnabled(LOOP_CONVERSION_ENABLED)) {
-			String targetFormat = getTargetFormat();
-			addBidirectionalTransformers(fixSet, targetFormat);
+			EnumSet<UseFunctionalCallFixCore> result = LoopConversionService.handlers(targetFormat());
+			result.removeIf(handler -> !isEnabled(sourceOption(handler)));
+			return result;
 		}
-		
-		return fixSet;
+		if ((isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2))
+				&& !isEnabled(USEFUNCTIONALLOOP_FORMAT_FOR) && !isEnabled(USEFUNCTIONALLOOP_FORMAT_WHILE)) {
+			return LoopConversionService.handlers(LoopTargetFormat.STREAM);
+		}
+		return EnumSet.noneOf(UseFunctionalCallFixCore.class);
 	}
 
-	private String getTargetFormat() {
-		if (optionsMap != null) {
-			String value = optionsMap.get(LOOP_CONVERSION_TARGET_FORMAT);
-			if (value != null) {
-				return value;
-			}
-		}
-		return "stream"; //$NON-NLS-1$
-	}
-
-	private void addBidirectionalTransformers(EnumSet<UseFunctionalCallFixCore> fixSet, String targetFormat) {
-		switch (targetFormat) {
-		case "enhanced_for": //$NON-NLS-1$
-			if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {
-				fixSet.add(UseFunctionalCallFixCore.STREAM_TO_FOR);
-			}
-			if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {
-				fixSet.add(UseFunctionalCallFixCore.ITERATOR_TO_FOR);
-			}
-			break;
-		case "iterator_while": //$NON-NLS-1$
-			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {
-				fixSet.add(UseFunctionalCallFixCore.FOR_TO_ITERATOR);
-			}
-			if (isEnabled(LOOP_CONVERSION_FROM_STREAM)) {
-				fixSet.add(UseFunctionalCallFixCore.STREAM_TO_ITERATOR);
-			}
-			break;
-		case "stream": //$NON-NLS-1$
-		default:
-			if (isEnabled(LOOP_CONVERSION_FROM_ENHANCED_FOR)) {
-				fixSet.add(UseFunctionalCallFixCore.LOOP);
-			}
-			if (isEnabled(LOOP_CONVERSION_FROM_ITERATOR_WHILE)) {
-				fixSet.add(UseFunctionalCallFixCore.ITERATOR_LOOP);
-			}
-			if (isEnabled(LOOP_CONVERSION_FROM_CLASSIC_FOR)) {
-				fixSet.add(UseFunctionalCallFixCore.TRADITIONAL_FOR_LOOP);
-			}
-			break;
-		}
+	public static String sourceOption(UseFunctionalCallFixCore handler) {
+		return switch (handler) {
+		case LOOP, FOR_TO_ITERATOR -> LOOP_CONVERSION_FROM_ENHANCED_FOR;
+		case ITERATOR_LOOP, ITERATOR_TO_FOR -> LOOP_CONVERSION_FROM_ITERATOR_WHILE;
+		case STREAM_TO_FOR, STREAM_TO_ITERATOR -> LOOP_CONVERSION_FROM_STREAM;
+		case TRADITIONAL_FOR_LOOP -> LOOP_CONVERSION_FROM_CLASSIC_FOR;
+		};
 	}
 }

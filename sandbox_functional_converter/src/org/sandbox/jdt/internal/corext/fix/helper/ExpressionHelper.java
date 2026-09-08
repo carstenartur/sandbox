@@ -20,23 +20,11 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.LambdaExpression;
-import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
-import org.eclipse.jdt.core.dom.VariableDeclaration;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
-import org.sandbox.functional.core.builder.LoopModelBuilder;
-import org.sandbox.functional.core.model.LoopModel;
-import org.sandbox.functional.core.model.SourceDescriptor;
-import org.sandbox.functional.core.terminal.ForEachTerminal;
-import org.sandbox.jdt.internal.common.HelperVisitorFactory;
-import org.sandbox.jdt.internal.common.ReferenceHolder;
-import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
 
 /**
  * Shared utility methods for AST expression creation and statement handling
@@ -52,6 +40,25 @@ public final class ExpressionHelper {
 
 	private ExpressionHelper() {
 		// Utility class — not instantiable
+	}
+
+	/** Avoid overlapping replacements when several source formats are enabled. */
+	public static boolean overlapsProcessedNode(ASTNode node, Set<ASTNode> processed) {
+		for (ASTNode selected : processed) {
+			if (isAncestor(node, selected) || isAncestor(selected, node)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean isAncestor(ASTNode ancestor, ASTNode node) {
+		for (ASTNode current = node; current != null; current = current.getParent()) {
+			if (current == ancestor) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -122,22 +129,6 @@ public final class ExpressionHelper {
 	}
 
 	/**
-	 * Extracts the parameter type name from a lambda parameter.
-	 *
-	 * <p>If the parameter has an explicit type annotation, that type name is returned.
-	 * Otherwise {@code "String"} is used as a default.</p>
-	 *
-	 * @param param the variable declaration (lambda parameter)
-	 * @return the type name string
-	 */
-	public static String extractParamType(VariableDeclaration param) {
-		if (param instanceof SingleVariableDeclaration svd && svd.getType() != null) {
-			return svd.getType().toString();
-		}
-		return "String"; //$NON-NLS-1$
-	}
-
-	/**
 	 * Converts an AST {@link Statement} (possibly a {@link Block}) into a list of expression
 	 * strings with trailing semicolons stripped.
 	 *
@@ -174,122 +165,4 @@ public final class ExpressionHelper {
 		return result;
 	}
 
-	/**
-	 * Holds the extracted information from a {@code collection.forEach(item -> ...)} or
-	 * {@code collection.stream().forEach(item -> ...)} call, ready for rendering.
-	 *
-	 * <p>This record eliminates the duplicated extraction logic previously present in both
-	 * {@link StreamToEnhancedFor} and {@link StreamToIteratorWhile}.</p>
-	 *
-	 * @param model the ULR LoopModel built from the forEach call
-	 * @param bodyStatements the lambda body statements as AST nodes
-	 * @param forEachStatement the original ExpressionStatement containing the forEach call
-	 */
-	public record ForEachRewriteInfo(
-			LoopModel model,
-			List<Statement> bodyStatements,
-			ExpressionStatement forEachStatement) {
-	}
-
-	/**
-	 * Extracts rewrite information from a forEach {@link MethodInvocation} AST node.
-	 *
-	 * <p>This consolidates the shared extraction logic used by both
-	 * {@link StreamToEnhancedFor} and {@link StreamToIteratorWhile}:
-	 * extracting the lambda, collection expression, parameter name/type,
-	 * building the LoopModel, and extracting body statements.</p>
-	 *
-	 * @param visited the visited ASTNode (expected to be a MethodInvocation)
-	 * @param ast the AST factory
-	 * @return the extracted info, or {@code null} if the node is not a convertible forEach call
-	 */
-	public static ForEachRewriteInfo extractForEachRewriteInfo(ASTNode visited, AST ast) {
-		if (!(visited instanceof MethodInvocation forEach)) {
-			return null;
-		}
-
-		// Get the lambda expression
-		if (forEach.arguments().isEmpty() || !(forEach.arguments().get(0) instanceof LambdaExpression lambda)) {
-			return null;
-		}
-
-		// Extract collection expression (either collection or collection.stream())
-		Expression collectionExpr = forEach.getExpression();
-		if (collectionExpr instanceof MethodInvocation methodInv) {
-			if (StreamConstants.STREAM_METHOD.equals(methodInv.getName().getIdentifier())) {
-				collectionExpr = methodInv.getExpression();
-			}
-		}
-
-		if (collectionExpr == null) {
-			return null;
-		}
-
-		// Extract parameter name and type from lambda
-		if (lambda.parameters().isEmpty()) {
-			return null;
-		}
-
-		VariableDeclaration param = (VariableDeclaration) lambda.parameters().get(0);
-		String paramName = param.getName().getIdentifier();
-		String paramType = extractParamType(param);
-
-		// Build LoopModel using ULR pipeline
-		LoopModel model = new LoopModelBuilder()
-			.source(SourceDescriptor.SourceType.COLLECTION, collectionExpr.toString(), paramType)
-			.element(paramName, paramType, false)
-			.terminal(new ForEachTerminal(List.of(), false))
-			.build();
-
-		// Extract body statements from lambda
-		List<Statement> bodyStatements = extractLambdaBodyStatements(lambda, ast);
-
-		// Get the parent ExpressionStatement
-		ExpressionStatement forEachStmt = (ExpressionStatement) forEach.getParent();
-
-		return new ForEachRewriteInfo(model, bodyStatements, forEachStmt);
-	}
-
-	/**
-	 * Finds simple {@code forEach} method invocations on collections/streams and registers
-	 * rewrite operations for each.
-	 *
-	 * <p>This method encapsulates the shared detection logic used by both
-	 * {@link StreamToEnhancedFor} and {@link StreamToIteratorWhile}.</p>
-	 *
-	 * @param fixcore the fix core instance
-	 * @param compilationUnit the compilation unit to scan
-	 * @param operations the set to add rewrite operations to
-	 * @param nodesprocessed the set of already processed nodes
-	 */
-	public static void findForEachInvocations(UseFunctionalCallFixCore fixcore,
-			CompilationUnit compilationUnit,
-			Set<CompilationUnitRewriteOperation> operations,
-			Set<ASTNode> nodesprocessed) {
-		ReferenceHolder<Integer, Object> dataHolder = ReferenceHolder.create();
-
-		HelperVisitorFactory.callMethodInvocationVisitor(StreamConstants.FOR_EACH_METHOD, compilationUnit, dataHolder, nodesprocessed,
-			(visited, aholder) -> {
-				if (visited.arguments().size() != 1) {
-					return false;
-				}
-
-				Object arg = visited.arguments().get(0);
-				if (!(arg instanceof LambdaExpression)) {
-					return false;
-				}
-
-				if (!(visited.getParent() instanceof ExpressionStatement)) {
-					return false;
-				}
-
-				if (StreamOperationDetector.hasChainedStreamOperations(visited)) {
-					return false;
-				}
-
-				operations.add(fixcore.rewrite(visited, new ReferenceHolder<>()));
-				nodesprocessed.add(visited);
-				return false;
-			});
-	}
 }

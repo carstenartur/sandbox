@@ -57,7 +57,7 @@ import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumMultiFilePlanner;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumPackageVisibilityPolicy;
 import org.sandbox.jdt.internal.corext.fix.multifile.IntEnumScopeCandidateDetector;
 
-/** Core cleanup implementation that converts integer constants to enums. */
+/** Core cleanup implementation that converts state constants to enums. */
 public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnumMigrationPlan> {
 
 	private final Map<IJavaProject, Set<String>> pendingExpandedScopes= new HashMap<>();

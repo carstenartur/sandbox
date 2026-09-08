@@ -76,6 +76,9 @@ jobs:
     name: Build and deploy selected snapshot
     needs: select-snapshot-source
     if: needs.select-snapshot-source.outputs.is_snapshot == 'true'
+    permissions:
+      actions: read
+      contents: write
     runs-on: ubuntu-latest
     timeout-minutes: 150
     env:
@@ -197,6 +200,40 @@ jobs:
           git -C gh-pages-before fetch origin gh-pages
           echo "sha=$(git -C gh-pages-before rev-parse origin/gh-pages)" >> "$GITHUB_OUTPUT"
 
+      - name: Wait for the selected GitHub Pages deployment
+        id: wait_snapshot_pages
+        uses: actions/github-script@v9
+        env:
+          GH_PAGES_SHA: ${{ steps.gh_pages_after.outputs.sha }}
+        with:
+          script: |
+            const sha = process.env.GH_PAGES_SHA;
+            if (!/^[0-9a-f]{40}$/.test(sha || '')) {
+              throw new Error('The published gh-pages commit was not captured.');
+            }
+            const deadline = Date.now() + 10 * 60 * 1000;
+            while (Date.now() < deadline) {
+              const { data } = await github.rest.actions.listWorkflowRunsForRepo({
+                ...context.repo,
+                branch: 'gh-pages',
+                head_sha: sha,
+                event: 'dynamic',
+                per_page: 100
+              });
+              const run = data.workflow_runs.find(candidate =>
+                candidate.head_sha === sha && candidate.name === 'pages build and deployment');
+              if (run?.status === 'completed') {
+                if (run.conclusion !== 'success') {
+                  throw new Error(`GitHub Pages did not deploy ${sha}: ${run.conclusion} (${run.html_url})`);
+                }
+                core.info(`GitHub Pages deployed ${sha}: ${run.html_url}`);
+                return;
+              }
+              core.info(`Waiting for GitHub Pages to deploy ${sha}; status: ${run?.status || 'not started'}`);
+              await new Promise(resolve => setTimeout(resolve, 10000));
+            }
+            throw new Error(`Timed out waiting for GitHub Pages to deploy ${sha}.`);
+
       - name: Verify advertised snapshot URLs
         id: verify_snapshot_urls
         run: |
@@ -210,7 +247,7 @@ jobs:
             --output target/distribution-verification/snapshot-composite-verification.json
 
       - name: Roll back a failed snapshot-site verification
-        if: ${{ failure() && steps.deploy_snapshot.outcome == 'success' && steps.verify_snapshot_urls.outcome == 'failure' }}
+        if: ${{ failure() && steps.deploy_snapshot.outcome == 'success' && (steps.wait_snapshot_pages.outcome == 'failure' || steps.verify_snapshot_urls.outcome == 'failure') }}
         run: |
           set -euo pipefail
           previous="${{ steps.gh_pages_before.outputs.sha }}"

@@ -87,7 +87,7 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
     public void find(UseFunctionalCallFixCore fixcore, CompilationUnit compilationUnit,
                      Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed) {
         
-        compilationUnit.accept(new ASTVisitor() {
+        LoopConversionService.scanRoot(compilationUnit).accept(new ASTVisitor() {
             @Override
             public boolean visit(ForStatement node) {
                 if (nodesprocessed.contains(node)) {

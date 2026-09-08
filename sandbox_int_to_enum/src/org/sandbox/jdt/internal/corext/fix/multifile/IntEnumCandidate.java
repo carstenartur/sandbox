@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * Immutable identity and expected reference counts for one package-scoped
- * integer state domain.
+ * constant state domain.
  *
  * @param ownerCompilationUnitHandle compilation unit declaring constants and method
  * @param ownerTypeBindingKey declaring type binding key

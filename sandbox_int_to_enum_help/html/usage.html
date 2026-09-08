@@ -11,10 +11,20 @@
    <h1>Using Int to Enum</h1>
    <h2>Entry point and scope</h2>
    <p>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a cleanup profile, select
-      <strong>Int to Enum (Sandbox)</strong>, and enable <strong>Convert int constants to enum/switch</strong>.</p>
+      <strong>Int to Enum (Sandbox)</strong>, and enable <strong>Convert state constants to enum</strong>.</p>
    <p>Leave <strong>Analyze all project source files for coordinated migrations</strong> off for a local conversion.
       Enable it explicitly when a declaration and its callers in other project source files must be planned together.
       This scope choice is separate from the optional host support for atomic preview selection described below.</p>
+
+   <h2>Additional state types</h2>
+   <p>The if/else conversion supports <code>byte</code>, <code>short</code>, <code>char</code>,
+      <code>int</code>, <code>long</code> and <code>String</code>, both locally and in coordinated migrations.
+      A domain uses one declared type and distinct compile-time values. Every caller must pass a domain constant.</p>
+   <p>String conditions may use <code>==</code>, <code>!=</code>, <code>state.equals(STATUS_A)</code>,
+      <code>STATUS_A.equals(state)</code> or <code>java.util.Objects.equals(state, STATUS_A)</code>.
+      The comparisons remain in their original form after the parameter and constant references become enum-typed.</p>
+   <p>Null or runtime String arguments, duplicate values, floating-point/boxed/object domains and evaluated receivers
+      such as <code>lookup().STATUS_A</code> prevent conversion. This extension does not add String/long switch migration.</p>
 
    <h2>Local conversion: constants, signature and calls</h2>
    <p>This closed local example uses a private parameter and private constants. The migration changes their uses
