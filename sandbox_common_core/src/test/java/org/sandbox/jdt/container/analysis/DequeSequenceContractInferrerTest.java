@@ -177,8 +177,8 @@ class DequeSequenceContractInferrerTest {
 
 	@Test
 	void registryKeepsDistinctFifoAndLifoSemanticRules() {
-		assertEquals(ContainerShape.DEQUE, ContainerRuleRegistry.fifoSequenceDeque().targetShape());
-		assertEquals(ContainerShape.DEQUE, ContainerRuleRegistry.lifoSequenceDeque().targetShape());
+		assertEquals(ContainerShape.DEQUE, ContainerRuleRegistry.fifoSequenceDeque().target());
+		assertEquals(ContainerShape.DEQUE, ContainerRuleRegistry.lifoSequenceDeque().target());
 		assertFalse(ContainerRuleRegistry.fifoSequenceDeque().ruleId()
 				.equals(ContainerRuleRegistry.lifoSequenceDeque().ruleId()));
 	}
