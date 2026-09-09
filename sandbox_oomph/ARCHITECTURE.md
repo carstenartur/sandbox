@@ -21,11 +21,16 @@ The separately pinned upstream JDT QA models retain their own product, repositor
 2. MavenImportTask imports Maven projects, including modules without committed Eclipse metadata.
 3. ProjectsImportTask discovers remaining Eclipse projects.
 4. TargetPlatformTask activates `sandbox_target/eclipse.target` by its existing target name.
-5. ProjectsBuildTask builds the workspace.
+5. ProjectsBuildTask explicitly builds newly imported projects.
 
 Explicit predecessor references enforce the import/target/build order. Maven import must precede Eclipse import:
 Oomph's Maven task skips STARTUP import when any project from a source locator is already in the workspace.
 MANUAL setup runs Maven discovery again and restores missing projects.
+The build task uses `onlyNewProjects` so repeated manual setup does not force a full
+rebuild of every existing project. Existing projects retain the workspace's normal
+automatic/incremental build policy. This avoids repeatedly deleting and regenerating
+Maven bundle manifests during one forced workspace build: PDE can retain stale
+unresolved-bundle markers even after its resolver has found the regenerated bundle.
 An explicit second Maven source locator imports this standalone verification module because m2e follows root-POM modules.
 Maven discovery excludes the root artifact `central`; Eclipse import keeps its existing project name `sandbox`, avoiding
 two differently named projects at the same repository location.
@@ -51,6 +56,13 @@ The application runs the real SetupTaskPerformer in a workbench, including JGit 
 working sets and build tasks. It validates the optional configurations with Oomph's registered EMF packages and checks
 the development launch with PDE's bundle resolver.
 It uses Oomph's standard scope locations and honors requested IDE restarts before asserting workspace completion.
+Three consecutive manual passes also cover generated manifests with a warmed PDE
+model; each pass removes and restores the verification project and preserves user content.
+Before checking build markers, it joins PDE's classpath-update job family and the
+workspace builds those updates schedule until both have settled. It repeats that
+barrier after saving the workspace and reading its target, since those operations
+can enqueue another build. Failed checks
+include generated-bundle manifest/model state and pending-job diagnostics.
 The disposable batch installation supplies the wizard's license-confirmation callback; the public setup retains normal interactive license confirmation.
 During task execution it also temporarily uses p2's existing director batch UI service for signed content from
 `download.eclipse.org` and `archive.eclipse.org`. The one unsigned legacy dependency, `jakarta.xml.bind`
