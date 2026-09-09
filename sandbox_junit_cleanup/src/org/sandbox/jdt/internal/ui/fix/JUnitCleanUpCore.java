@@ -108,7 +108,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 				new JUnitMultiFilePlanner.PlanningOptions(
 						migrateExternalResources,
 						fixes.contains(JUnitCleanUpFixCore.TEST3),
-						fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED));
+						fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED), true);
 
 		// Parse and classify the complete project scope before the strict per-file gap
 		// analysis. On a newly imported Eclipse project this first coordinated parse
@@ -127,12 +127,15 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 			planningOptions= new JUnitMultiFilePlanner.PlanningOptions(
 					false,
 					fixes.contains(JUnitCleanUpFixCore.TEST3),
-					fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED));
+					fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED), true);
 			result= closedScope == null
 					? JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions, monitor)
 					: JUnitMultiFilePlanner.createCoordinated(project, compilationUnits, planningOptions,
 							closedScope.booleanValue(), monitor);
 		}
+		analysis= JUnitBestEffortSupport.reconcileParameterized(analysis, result.plan(), result.diagnostics(),
+				fixes.contains(JUnitCleanUpFixCore.PARAMETERIZED)
+						&& project.findType("org.junit.jupiter.params.ParameterizedClass") != null); //$NON-NLS-1$
 		if (!bestEffort && result.plan() != null && !analysis.gaps().isEmpty()) {
 			Set<String> blockedRuleUnits= analysis.gaps().stream()
 					.map(JUnitBestEffortSupport.Gap::ownerCompilationUnitHandle)

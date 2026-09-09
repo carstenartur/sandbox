@@ -42,6 +42,15 @@ public record JUnit4ParameterizedPlan(NodeKey testClass, SemanticRewritePlan sem
 	public static final String HAS_FIELD= "injectedField"; //$NON-NLS-1$
 	public static final String HAS_TEST= "testMethod"; //$NON-NLS-1$
 	public static final String DELEGATES_TO= "delegatesTo"; //$NON-NLS-1$
+	public static final String HIERARCHY_TYPE= "JUNIT4_PARAMETERIZED_HIERARCHY"; //$NON-NLS-1$
+	public static final String TARGET_STRATEGY= "targetStrategy"; //$NON-NLS-1$
+	public static final String PARAMETERIZED_CLASS= "PARAMETERIZED_CLASS"; //$NON-NLS-1$
+
+	/** The coordinated planner selects the runtime-verified class strategy explicitly. */
+	public boolean executable() {
+		return org.sandbox.jdt.triggerpattern.api.SemanticPlanValue.string(PARAMETERIZED_CLASS)
+				.equals(semanticPlan.valuesByNode().getOrDefault(testClass, Map.of()).get(TARGET_STRATEGY));
+	}
 
 	public JUnit4ParameterizedPlan {
 		Objects.requireNonNull(testClass);

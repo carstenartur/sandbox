@@ -1,0 +1,35 @@
+<!id: junit4-parameterized-to-jupiter>
+<!description: Apply the closed ParameterizedClass execution contract>
+<!minJavaVersion: 8>
+<!requires-plan: junit4-parameterized>
+
+@id: parameterized.test
+void $name($params$) :: plannedRole($name, "JUNIT4_PARAMETERIZED_TEST")
+=>! removeAnnotation(annotation="org.junit.Test");
+    addAnnotation(annotation="org.junit.jupiter.api.Test");
+    addAnnotation(annotation="org.junit.jupiter.api.Order", value=planValue($name, "testOrder"))
+;;
+
+@id: parameterized.before
+void $name($params$) :: plannedRole($name, "JUNIT4_PARAMETERIZED_Before")
+=>! removeAnnotation(annotation="org.junit.Before");
+    addAnnotation(annotation="org.junit.jupiter.api.BeforeEach")
+;;
+
+@id: parameterized.after
+void $name($params$) :: plannedRole($name, "JUNIT4_PARAMETERIZED_After")
+=>! removeAnnotation(annotation="org.junit.After");
+    addAnnotation(annotation="org.junit.jupiter.api.AfterEach")
+;;
+
+@id: parameterized.beforeClass
+void $name($params$) :: plannedRole($name, "JUNIT4_PARAMETERIZED_BeforeClass")
+=>! removeAnnotation(annotation="org.junit.BeforeClass");
+    addAnnotation(annotation="org.junit.jupiter.api.BeforeAll")
+;;
+
+@id: parameterized.afterClass
+void $name($params$) :: plannedRole($name, "JUNIT4_PARAMETERIZED_AfterClass")
+=>! removeAnnotation(annotation="org.junit.AfterClass");
+    addAnnotation(annotation="org.junit.jupiter.api.AfterAll")
+;;

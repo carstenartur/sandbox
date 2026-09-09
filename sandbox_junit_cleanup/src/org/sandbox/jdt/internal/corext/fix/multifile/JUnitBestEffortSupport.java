@@ -192,6 +192,46 @@ public final class JUnitBestEffortSupport {
 	private JUnitBestEffortSupport() {
 	}
 
+	/** Replaces local-only gaps with the coordinated contract, keeping blocked files atomic. */
+	public static Analysis reconcileParameterized(Analysis analysis, JUnitMigrationPlan plan,
+			org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics diagnostics, boolean executionAvailable) {
+		if (plan == null || !executionAvailable) {
+			return analysis;
+		}
+		List<JUnit4ParameterizedPlan> executable= plan.preparedParameterizedPlans().stream()
+				.filter(JUnit4ParameterizedPlan::executable).toList();
+		Set<String> authorized= executable.stream().map(item -> item.testClass().bindingKey())
+				.collect(java.util.stream.Collectors.toSet());
+		List<Gap> gaps= new ArrayList<>(analysis.gaps().stream()
+				.filter(gap -> !gap.candidateId().startsWith("parameterized:") //$NON-NLS-1$
+						|| !authorized.contains(gap.targetTypeBindingKey())).toList());
+		for (var diagnostic : diagnostics.candidates()) {
+			if (diagnostic.candidateId().startsWith("parameterized:") //$NON-NLS-1$
+					&& diagnostic.outcome() == org.sandbox.jdt.cleanup.multifile.MultiFileCandidateOutcome.REJECTED) {
+				// A rejected closure can contain unclassified inherited consumers. Keep
+				// the selected migration atomic instead of detaching superclass tests.
+				for (String handle : plan.selectedScope().compilationUnitHandles()) {
+					gaps.add(new Gap(handle, "", diagnostic.candidateId(), 0, diagnostic.candidateId(), //$NON-NLS-1$
+							diagnostic.reasonCode(), diagnostic.message(),
+							"Resolve the coordinated Parameterized diagnostic and rerun the complete selected scope.")); //$NON-NLS-1$
+				}
+			}
+		}
+		Set<String> blocked= gaps.stream().map(Gap::ownerCompilationUnitHandle)
+				.collect(java.util.stream.Collectors.toSet());
+		for (JUnit4ParameterizedPlan component : executable) {
+			if (component.compilationUnits().values().stream().anyMatch(blocked::contains)) {
+				for (String handle : new LinkedHashSet<>(component.compilationUnits().values())) {
+					gaps.add(new Gap(handle, component.testClass().bindingKey(), component.testClass().bindingKey(), 0,
+							"parameterized:" + component.testClass().bindingKey(), "PARAMETERIZED_COMPONENT_BLOCKED", //$NON-NLS-1$ //$NON-NLS-2$
+							"A participating compilation unit has an unresolved migration gap.", //$NON-NLS-1$
+							"Resolve all gaps before changing this provider and test hierarchy.")); //$NON-NLS-1$
+				}
+			}
+		}
+		return new Analysis(gaps, analysis.disableCoordinatedExternalResource());
+	}
+
 	/**
 	 * Returns rewrites that do not change test discovery, lifecycle, runners or
 	 * extension contracts and may therefore proceed beside a quarantined gap.

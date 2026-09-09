@@ -14,6 +14,8 @@ import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit4ParameterizedP
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
@@ -41,6 +43,7 @@ import org.eclipse.jdt.core.dom.IMemberValuePairBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Initializer;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -80,13 +83,15 @@ final class JUnit4ParameterizedPlanner {
 	private final Map<ASTNode, String> handlesByRoot= new IdentityHashMap<>();
 	private final Map<String, String> fingerprints;
 	private final boolean sourcesStable;
+	private final boolean execute;
 	private final IProgressMonitor monitor;
 
 	private JUnit4ParameterizedPlanner(Map<String, CompilationUnit> roots, Map<String, String> snapshots,
-			IProgressMonitor monitor)
+			boolean execute, IProgressMonitor monitor)
 			throws CoreException {
 		this.roots= new TreeMap<>(roots);
 		this.monitor= monitor;
+		this.execute= execute;
 		fingerprints= Map.copyOf(snapshots);
 		boolean stable= snapshots.keySet().equals(roots.keySet());
 		for (Map.Entry<String, CompilationUnit> entry : this.roots.entrySet()) {
@@ -125,7 +130,12 @@ final class JUnit4ParameterizedPlanner {
 	static Result discover(Map<String, CompilationUnit> roots, Map<String, String> sourceFingerprints,
 			boolean closedScope, IProgressMonitor monitor)
 			throws CoreException {
-		return new JUnit4ParameterizedPlanner(roots, sourceFingerprints, monitor).discover(closedScope);
+		return discover(roots, sourceFingerprints, closedScope, false, monitor);
+	}
+
+	static Result discover(Map<String, CompilationUnit> roots, Map<String, String> sourceFingerprints,
+			boolean closedScope, boolean execute, IProgressMonitor monitor) throws CoreException {
+		return new JUnit4ParameterizedPlanner(roots, sourceFingerprints, execute, monitor).discover(closedScope);
 	}
 
 	/** Capture before parsing so an old AST cannot be paired with a newer source fingerprint. */
@@ -153,6 +163,11 @@ final class JUnit4ParameterizedPlanner {
 					if (!candidate(node)) {
 						return true;
 					}
+					if (execute && Arrays.stream(node.getMethods()).anyMatch(method -> annotation(method, "org.junit.jupiter.api.Test") != null) //$NON-NLS-1$
+							&& Arrays.stream(node.getMethods()).noneMatch(method -> annotation(method, JUNIT_TEST) != null)
+							&& ParameterizedMigrationEligibility.assess(node).eligible()) {
+						return true; // Preserve the explicit repair path for already-staged local migrations.
+					}
 					ITypeBinding binding= node.resolveBinding();
 					String identity= resolved(binding) ? binding.getQualifiedName()
 							: entry.getKey() + "#" + node.getName().getIdentifier(); //$NON-NLS-1$
@@ -164,6 +179,13 @@ final class JUnit4ParameterizedPlanner {
 								"The selected sources changed or were unavailable during AST creation. Retry planning on a stable source scope."); //$NON-NLS-1$
 						JUnit4ParameterizedPlan plan= plan(node);
 						plans.add(plan);
+						if (plan.executable()) {
+							diagnostics.add(new MultiFileCandidateDiagnostic(id, entry.getKey(),
+									MultiFileCandidateOutcome.FOUND, "PARAMETERIZED_CLASS_READY", //$NON-NLS-1$
+									"The closed constant-row component can use the runtime-verified ParameterizedClass strategy.", //$NON-NLS-1$
+									new ArrayList<>(plan.compilationUnits().values())));
+							return true;
+						}
 						diagnostics.add(new MultiFileCandidateDiagnostic(id, entry.getKey(),
 								MultiFileCandidateOutcome.FOUND, "PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED", //$NON-NLS-1$
 								"Parameterized source roles and ordered injection relations were discovered. " //$NON-NLS-1$
@@ -192,6 +214,10 @@ final class JUnit4ParameterizedPlanner {
 		SemanticRewritePlan.Builder builder= SemanticRewritePlan.builder(CONTRACT);
 		Map<NodeKey, String> owners= new LinkedHashMap<>();
 		NodeKey testKey= add(builder, owners, testClass, RUNNER_CLASS);
+		if (execute) {
+			validateExecutionHierarchy(testClass, hierarchy, builder, owners);
+			builder.putString(testKey, TARGET_STRATEGY, PARAMETERIZED_CLASS);
+		}
 		List<MethodDeclaration> providers= new ArrayList<>();
 		List<MethodDeclaration> tests= new ArrayList<>();
 		Map<Integer, VariableDeclarationFragment> fields= new TreeMap<>();
@@ -201,12 +227,27 @@ final class JUnit4ParameterizedPlanner {
 			checkAnnotations(type);
 			require(type.typeParameters().isEmpty(), "GENERIC_HIERARCHY", //$NON-NLS-1$
 					"Resolve generic test hierarchy substitutions before migration."); //$NON-NLS-1$
-			for (MethodDeclaration method : type.getMethods()) {
+			// JUnit 4's default MethodSorter orders each declaring class by name hash,
+			// with a lexical tie-breaker. The hierarchy itself is visited leaf first.
+			List<MethodDeclaration> declared= Arrays.asList(type.getMethods());
+			if (execute) {
+				declared.sort(Comparator.comparingInt((MethodDeclaration method) -> method.getName().getIdentifier().hashCode())
+						.thenComparing(method -> method.getName().getIdentifier()));
+			}
+			for (MethodDeclaration method : declared) {
 				checkAnnotations(method);
 				if (annotation(method, PARAMETERS) != null) {
 					providers.add(method);
 				}
 				if (annotation(method, JUNIT_TEST) != null) {
+					if (execute) {
+						Annotation test= annotation(method, JUNIT_TEST);
+						Object expected= value(test, "expected"); //$NON-NLS-1$
+						require(Long.valueOf(0).equals(value(test, "timeout")) //$NON-NLS-1$
+								&& expected instanceof ITypeBinding exception
+								&& "org.junit.Test.None".equals(exception.getQualifiedName()), //$NON-NLS-1$
+								"TEST_CONTRACT_UNSUPPORTED", "Expected exceptions and timeouts require a separate parameterized execution contract."); //$NON-NLS-1$ //$NON-NLS-2$
+					}
 					require(testNames.add(method.getName().getIdentifier()), "TEST_OVERRIDE", //$NON-NLS-1$
 							"Resolve overridden or hidden parameterized test methods before migration."); //$NON-NLS-1$
 					require(Modifier.isPublic(method.getModifiers()) && !Modifier.isStatic(method.getModifiers())
@@ -248,7 +289,11 @@ final class JUnit4ParameterizedPlanner {
 		builder.putString(providerKey, "conversionStrategy", "OBJECT_ARRAY_ROWS"); //$NON-NLS-1$ //$NON-NLS-2$
 		builder.putString(testKey, "displayNameSemantics", "JUNIT4_MESSAGE_FORMAT_ZERO_BASED"); //$NON-NLS-1$ //$NON-NLS-2$
 		for (MethodDeclaration method : tests) {
-			builder.relate(testKey, HAS_TEST, add(builder, owners, method, TEST));
+			NodeKey methodKey= add(builder, owners, method, TEST);
+			builder.relate(testKey, HAS_TEST, methodKey);
+			if (execute) {
+				builder.putInteger(methodKey, "testOrder", tests.indexOf(method)); //$NON-NLS-1$
+			}
 		}
 		return new JUnit4ParameterizedPlan(testKey, builder.build(), owners, fingerprints);
 	}
@@ -322,6 +367,13 @@ final class JUnit4ParameterizedPlanner {
 			Map<NodeKey, String> owners, Set<String> visited) {
 		MultiFilePlanningBudget.checkCanceled(monitor);
 		validateSource(provider);
+		if (execute) {
+			require(provider.getParent() instanceof TypeDeclaration, "PROVIDER_BODY_UNSUPPORTED", //$NON-NLS-1$
+					"Select a provider declared in an editable class."); //$NON-NLS-1$
+			validateInitialization((TypeDeclaration) provider.getParent());
+			require(provider.thrownExceptionTypes().isEmpty(), "PROVIDER_THROWS", //$NON-NLS-1$
+					"Remove the provider's throws clause or migrate its exception contract explicitly."); //$NON-NLS-1$
+		}
 		require(resolved(provider.resolveBinding()) && visited.add(provider.resolveBinding().getKey()),
 				"PROVIDER_CYCLE", "Resolve provider delegation without recursive cycles."); //$NON-NLS-1$ //$NON-NLS-2$
 		require(Modifier.isStatic(provider.getModifiers()) && provider.parameters().isEmpty()
@@ -364,6 +416,10 @@ final class JUnit4ParameterizedPlanner {
 		require(resolved(type) && type.getDimensions() == 2 && OBJECT.equals(type.getElementType().getQualifiedName())
 				&& matrix.getInitializer() != null, "PROVIDER_BODY_UNSUPPORTED", //$NON-NLS-1$
 				"The provider must return an initialized Object[][] matrix."); //$NON-NLS-1$
+		if (execute) {
+			require(!matrix.getInitializer().expressions().isEmpty(), "EMPTY_ROWS", //$NON-NLS-1$
+					"Empty parameter sets have different class-lifecycle semantics; retain the JUnit 4 runner."); //$NON-NLS-1$
+		}
 		for (Object row : matrix.getInitializer().expressions()) {
 			MultiFilePlanningBudget.checkCanceled(monitor);
 			ArrayInitializer values= row instanceof ArrayInitializer initializer ? initializer
@@ -391,6 +447,64 @@ final class JUnit4ParameterizedPlanner {
 		owners.put(key, owner);
 		builder.add(key, role);
 		return key;
+	}
+
+	private void validateExecutionHierarchy(TypeDeclaration leaf, List<TypeDeclaration> hierarchy,
+			SemanticRewritePlan.Builder builder, Map<NodeKey, String> owners) {
+		Set<String> lifecycleNames= new HashSet<>();
+		for (TypeDeclaration type : hierarchy) {
+			add(builder, owners, type, HIERARCHY_TYPE);
+			validateInitialization(type);
+			require(type.superInterfaceTypes().isEmpty(), "INTERFACE_HOOKS", //$NON-NLS-1$
+					"Interface test and lifecycle methods need a dedicated discovery contract."); //$NON-NLS-1$
+			require(type == leaf || Modifier.isAbstract(type.getModifiers())
+					&& annotation(type, "org.junit.runner.RunWith") == null, "SHARED_HIERARCHY", //$NON-NLS-1$ //$NON-NLS-2$
+					"Select an abstract test superclass without its own runner."); //$NON-NLS-1$
+			for (TypeDeclaration other : types.values()) {
+				if (!hierarchy.contains(other) && resolved(other.resolveBinding())) {
+					require(!other.resolveBinding().isSubTypeCompatible(type.resolveBinding()), "SHARED_HIERARCHY", //$NON-NLS-1$
+							"A superclass is shared with another source test type; its annotations must stay on JUnit 4."); //$NON-NLS-1$
+				}
+			}
+			Set<String> lifecycleKinds= new HashSet<>();
+			for (MethodDeclaration method : type.getMethods()) {
+				for (String hook : List.of("Before", "After", "BeforeClass", "AfterClass")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					if (annotation(method, "org.junit." + hook) == null) { //$NON-NLS-1$
+						continue;
+					}
+					require(lifecycleKinds.add(hook) && lifecycleNames.add(method.getName().getIdentifier()),
+							"LIFECYCLE_ORDER", "Multiple or overridden lifecycle methods need an explicit invocation-order contract."); //$NON-NLS-1$ //$NON-NLS-2$
+					require(Modifier.isPublic(method.getModifiers())
+							&& Modifier.isStatic(method.getModifiers()) == hook.endsWith("Class") //$NON-NLS-1$
+							&& method.parameters().isEmpty() && resolved(method.resolveBinding())
+							&& "void".equals(method.resolveBinding().getReturnType().getName()), //$NON-NLS-1$
+							"LIFECYCLE_SIGNATURE", "Resolve a valid public void JUnit 4 lifecycle method."); //$NON-NLS-1$ //$NON-NLS-2$
+					add(builder, owners, method, "JUNIT4_PARAMETERIZED_" + hook); //$NON-NLS-1$
+				}
+			}
+		}
+		// An unannotated override also changes virtual dispatch in JUnit 4.
+		for (String name : lifecycleNames) {
+			long declarations= hierarchy.stream().flatMap(type -> Arrays.stream(type.getMethods()))
+					.filter(method -> method.getName().getIdentifier().equals(name) && method.parameters().isEmpty()).count();
+			require(declarations == 1, "LIFECYCLE_OVERRIDE", //$NON-NLS-1$
+					"Resolve lifecycle overrides before migrating the parameterized hierarchy."); //$NON-NLS-1$
+		}
+	}
+
+	private static void validateInitialization(TypeDeclaration type) {
+		for (Object body : type.bodyDeclarations()) {
+			require(!(body instanceof Initializer initializer && Modifier.isStatic(initializer.getModifiers())),
+					"INITIALIZATION_ORDER", "JUnit 4 initializes providers before class callbacks; executable static initializers are not equivalent in Jupiter."); //$NON-NLS-1$ //$NON-NLS-2$
+			if (body instanceof FieldDeclaration field && Modifier.isStatic(field.getModifiers())) {
+				for (Object item : field.fragments()) {
+					Expression initializer= ((VariableDeclarationFragment) item).getInitializer();
+					require(initializer == null || initializer instanceof NullLiteral
+							|| initializer.resolveConstantExpressionValue() != null,
+							"INITIALIZATION_ORDER", "Keep providers with executable static field initialization on JUnit 4."); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+			}
+		}
 	}
 
 	private static void validateSource(ASTNode node) {

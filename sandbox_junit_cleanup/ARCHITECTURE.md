@@ -6,6 +6,29 @@
 
 The JUnit cleanup plugin provides automated migration from JUnit 3/4 to JUnit 5 (Jupiter). This document describes the architecture after the refactoring that extracted helper classes from the monolithic `AbstractTool` class, the introduction of the declarative `@RewriteRule` annotation framework, and the extraction of generic TriggerPattern infrastructure to `sandbox_common`.
 
+## Coordinated Parameterized execution
+
+`JUnit4ParameterizedPlanner` can promote the `junit4-parameterized` source plan
+to the `ParameterizedClass` strategy when the target classpath supplies that API.
+Plain discovery remains inert. The executor revalidates source fingerprints,
+scope membership and declaration bindings before creating edits.
+
+The supported contract preserves public constructor bodies, indexed fields,
+literal constant rows, local or inherited providers, editable provider delegation,
+and multiple test methods. A generated `Stream<Arguments>` adapter evaluates the
+original provider once and preserves zero-based JUnit 4 `MessageFormat` row names.
+The existing plan-aware hint engine changes test and lifecycle annotations; the
+class strategy fixes per-method instances, sequential execution and JUnit 4 method
+order. Provider methods remain callable and dependencies are retained.
+
+Empty row sets, executable static initialization, shared test superclasses,
+interface hooks, overridden or multiple lifecycle hooks, expected exceptions,
+timeouts and custom execution hooks are rejected. Rejected closures quarantine
+the selected JUnit migration scope to prevent partial superclass migration.
+`ParameterizedCoordinatedExecutionTest` checks the real JDT finder and JUnit 4/5
+loaders, ordered row names and results, constructor/lifecycle counts, undo,
+idempotency, source changes and rejection atomicity.
+
 ## Design Goals
 
 1. **Separation of Concerns**: Each helper class handles a specific aspect of JUnit migration
