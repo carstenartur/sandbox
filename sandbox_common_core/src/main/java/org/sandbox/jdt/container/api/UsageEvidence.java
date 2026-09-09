@@ -58,6 +58,8 @@ public record UsageEvidence(Kind kind, String summary, int sourceStart, int sour
 		ARRAY_IDENTITY,
 		UNCLASSIFIED_USAGE,
 		UNRESOLVED_BINDING,
-		REJECTION_BOUNDARY
+		REJECTION_BOUNDARY,
+		HEAD_REMOVAL,
+		TAIL_REMOVAL
 	}
 }
