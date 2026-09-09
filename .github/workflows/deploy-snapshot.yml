@@ -113,6 +113,15 @@ jobs:
             libxrandr2 libxfixes3 libasound2t64 libnss3 libgbm1
 
       - name: Maven distribution build and verification
+        # The upstream push-to-main Maven gate already checked this reviewed
+        # change. workflow_run has no PR body, just like post-merge push CI.
+        env:
+          REPOSITORY_POLICY_BASE: ${{ env.VALIDATED_SHA }}^
+          REPOSITORY_POLICY_EXCEPTION: >-
+            Post-review main-branch snapshot verification rebuilds the exact commit
+            accepted by the upstream push Maven gate. Review-size approval was
+            handled before merge; tracked-tree and forbidden-automation checks
+            remain active against the commit's first parent.
         run: >-
           xvfb-run --auto-servernum mvn
           -Pdistribution
