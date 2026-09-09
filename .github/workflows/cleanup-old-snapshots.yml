@@ -8,6 +8,11 @@ on:
 permissions:
   contents: write  # Required to push to gh-pages branch
 
+concurrency:
+  group: release-workflow
+  cancel-in-progress: false
+  queue: max
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest

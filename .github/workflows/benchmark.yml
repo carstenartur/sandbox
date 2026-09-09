@@ -22,11 +22,8 @@ on:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    
     permissions:
-      contents: write       # Required: auto-push benchmark results to gh-pages
-      deployments: write    # Required: create deployment status for benchmark
-      pull-requests: write  # Required: post alert comments on PRs
+      contents: read
     
     steps:
       - name: Checkout
@@ -59,6 +56,34 @@ jobs:
         run: |
           java -jar target/benchmarks.jar -rf json -rff target/jmh-result.json
           
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: benchmark-results
+          path: |
+            sandbox-benchmarks/target/jmh-result.json
+            sandbox-benchmarks/target/jmh-result.txt
+
+  store-results:
+    needs: benchmark
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'release-workflow' || format('benchmark-{0}', github.run_id) }}
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: write       # Required: auto-push benchmark results to gh-pages
+      deployments: write    # Required: create deployment status for benchmark
+      pull-requests: write  # Required: post alert comments on PRs
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: benchmark-results
+          path: sandbox-benchmarks/target
       - name: Store Benchmark Results
         uses: benchmark-action/github-action-benchmark@v1
         with:
@@ -72,15 +97,6 @@ jobs:
           fail-on-alert: false
           alert-comment-cc-users: '@carstenartur'
           
-      - name: Upload Benchmark Results
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: benchmark-results
-          path: |
-            sandbox-benchmarks/target/jmh-result.json
-            sandbox-benchmarks/target/jmh-result.txt
-
       - name: Report Deployed URL
         if: always()
         run: |
