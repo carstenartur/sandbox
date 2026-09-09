@@ -51,6 +51,8 @@ The application runs the real SetupTaskPerformer in a workbench, including JGit 
 working sets and build tasks. It validates the optional configurations with Oomph's registered EMF packages and checks
 the development launch with PDE's bundle resolver.
 It uses Oomph's standard scope locations and honors requested IDE restarts before asserting workspace completion.
+Three consecutive manual passes also cover generated manifests with a warmed PDE
+model; each pass removes and restores the verification project and preserves user content.
 Before checking build markers, it joins PDE's classpath-update job family and the
 workspace builds those updates schedule until both have settled. It repeats that
 barrier after saving the workspace and reading its target, since those operations
