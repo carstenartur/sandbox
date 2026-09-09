@@ -54,14 +54,58 @@ public class JUnitScopeExpansionTest {
 		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
 		ICompilationUnit selected= createUnit(pack, "SelectedTest.java"); //$NON-NLS-1$
 		createUnit(pack, "UnrelatedTest.java"); //$NON-NLS-1$
-		JUnitCleanUpCore cleanup= new JUnitCleanUpCore(Map.of(
-				MYCleanUpConstants.JUNIT_CLEANUP, CleanUpOptions.TRUE,
-				MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, CleanUpOptions.TRUE));
+		JUnitCleanUpCore cleanup= assertionCleanup();
 
 		Collection<ICompilationUnit> expanded= cleanup.expandCleanUpScope(selected.getJavaProject(),
 				List.of(selected), null);
 
 		assertTrue(expanded.isEmpty(), "A local assertion migration must retain the user's target scope");
+	}
+
+	@Test
+	public void assertionHelperAddsItsDeclarationAndCompleteSourceCallerClosure() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
+		ICompilationUnit helper= pack.createCompilationUnit("Checks.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				final class Checks {
+					static void equal(String message, int expected, int actual) {
+						org.junit.Assert.assertEquals(message, expected, actual);
+					}
+				}
+				""", false, null);
+		ICompilationUnit selected= pack.createCompilationUnit("SelectedTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class SelectedTest {
+					void selected() { Checks.equal("selected", 1, 1); }
+				}
+				""", false, null);
+		ICompilationUnit secondCaller= pack.createCompilationUnit("SecondTest.java", //$NON-NLS-1$
+				"""
+				package test;
+
+				public class SecondTest {
+					void second() { Checks.equal("second", 2, 2); }
+				}
+				""", false, null);
+		ICompilationUnit unrelated= createUnit(pack, "UnrelatedTest.java"); //$NON-NLS-1$
+		JUnitCleanUpCore cleanup= assertionCleanup();
+
+		Collection<ICompilationUnit> expanded= cleanup.expandCleanUpScope(selected.getJavaProject(),
+				List.of(selected), null);
+		Set<String> expandedHandles= expanded.stream().map(ICompilationUnit::getHandleIdentifier)
+				.collect(Collectors.toSet());
+
+		assertEquals(Set.of(selected.getHandleIdentifier(), helper.getHandleIdentifier(),
+				secondCaller.getHandleIdentifier()), expandedHandles,
+				"A selected helper caller must expand to the helper declaration and every editable source caller");
+		assertTrue(!expanded.contains(unrelated));
+		assertTrue(cleanup.expandCleanUpScope(selected.getJavaProject(),
+				List.of(selected, helper, secondCaller), null).isEmpty(),
+				"The second expansion pass must recognize the complete helper closure");
 	}
 
 	@Test
@@ -113,6 +157,12 @@ public class JUnitScopeExpansionTest {
 		assertEquals(Set.of(selected.getHandleIdentifier(), related.getHandleIdentifier()), expandedHandles,
 				"The exact closure must add the Rule user without broadening to unrelated source");
 		assertTrue(!expanded.contains(unrelated));
+	}
+
+	private static JUnitCleanUpCore assertionCleanup() {
+		return new JUnitCleanUpCore(Map.of(
+				MYCleanUpConstants.JUNIT_CLEANUP, CleanUpOptions.TRUE,
+				MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT, CleanUpOptions.TRUE));
 	}
 
 	private static JUnitCleanUpCore externalResourceCleanup() {
