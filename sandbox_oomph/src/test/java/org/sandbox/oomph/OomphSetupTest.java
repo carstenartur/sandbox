@@ -112,7 +112,11 @@ class OomphSetupTest {
         process(run.resolve("provision.log"), run, director);
         installProbe(eclipse, run);
         Path workspace = run.resolve("workspace");
-        for (String phase : List.of("fresh", "update")) {
+        // Repeated manual setup exercises generated manifests with a warmed
+        // PDE model, where a single fresh/update pair can miss stale markers.
+        for (int pass = 0; pass < 4; pass++) {
+            String phase = pass == 0 ? "fresh" : "update";
+            String logPrefix = pass < 2 ? phase : phase + "-repeat-" + pass;
             Properties result = new Properties();
             for (int attempt = 0; attempt < 3; attempt++) {
                 List<String> command = eclipseCommand(eclipse);
@@ -125,7 +129,7 @@ class OomphSetupTest {
                         "-Dsandbox.oomph.commit=" + System.getProperty("sandbox.oomph.commit", ""),
                         "-Dsandbox.oomph.repository=" + System.getProperty("sandbox.oomph.repository",
                                 "https://github.com/carstenartur/sandbox.git")));
-                process(run.resolve(phase + "-" + attempt + ".log"), run, command);
+                process(run.resolve(logPrefix + "-" + attempt + ".log"), run, command);
                 result.clear();
                 try (var in = Files.newInputStream(run.resolve(phase + ".properties"))) {
                     result.load(in);

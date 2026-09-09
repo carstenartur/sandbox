@@ -8,6 +8,10 @@ on:
       - '.github/workflows/deploy-snapshot.yml'
       - '.github/workflows/mining-core.yml'
       - '.github/workflows/refactoring-mining.yml'
+      - '.github/workflows/coverage.yml'
+      - '.github/workflows/post-merge-provenance.yml'
+      - '.github/workflows/benchmark.yml'
+      - '.github/workflows/cleanup-old-snapshots.yml'
       - '.github/workflows/release-workflow-validation.yml'
       - '.github/scripts/verify_release_identity.py'
       - '.github/scripts/test_verify_release_identity.py'
@@ -49,9 +53,20 @@ jobs:
               Path('.github/workflows/deploy-snapshot.yml'),
               Path('.github/workflows/mining-core.yml'),
               Path('.github/workflows/refactoring-mining.yml'),
+              Path('.github/workflows/coverage.yml'),
+              Path('.github/workflows/post-merge-provenance.yml'),
+              Path('.github/workflows/benchmark.yml'),
+              Path('.github/workflows/cleanup-old-snapshots.yml'),
           ]
-          contract = "concurrency:\n  group: release-workflow\n  cancel-in-progress: false"
-          failures = [str(path) for path in workflows if contract not in path.read_text(encoding='utf-8')]
+          failures = []
+          for path in workflows:
+              group = 'release-workflow'
+              if path.name == 'benchmark.yml':
+                  group = "$" + "{{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'release-workflow' || format('benchmark-{0}', github.run_id) }}"
+              contract = f"concurrency:\ngroup: {group}\ncancel-in-progress: false\nqueue: max"
+              normalized = '\n'.join(line.lstrip() for line in path.read_text(encoding='utf-8').splitlines())
+              if contract not in normalized:
+                  failures.append(str(path))
           if failures:
               raise SystemExit(f"gh-pages publishers must share the release-workflow lock: {failures}")
           PY

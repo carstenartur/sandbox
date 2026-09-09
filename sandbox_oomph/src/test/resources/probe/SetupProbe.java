@@ -62,6 +62,7 @@ import org.eclipse.oomph.util.OS;
 import org.eclipse.oomph.util.Confirmer;
 import org.eclipse.oomph.util.UserCallback;
 import org.eclipse.pde.core.target.ITargetPlatformService;
+import org.eclipse.pde.internal.core.PluginModelManager;
 import org.eclipse.pde.internal.launching.launcher.BundleLauncherHelper;
 import org.eclipse.pde.internal.launching.launcher.LaunchValidationOperation;
 import org.eclipse.swt.widgets.Display;
@@ -252,9 +253,7 @@ public class SetupProbe implements IApplication {
                 agent.registerService(UIServices.SERVICE_NAME, previousUI);
             }
         }
-        // Oomph schedules the final workspace build after restoring auto-building.
-        Job.getJobManager().join(ResourcesPlugin.FAMILY_MANUAL_BUILD, monitor);
-        Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
+        awaitWorkspaceJobs(monitor);
         require(performer.hasSuccessfullyPerformed(), "Setup did not complete");
         workspace.save(true, monitor);
         if (!performer.getRestartReasons().isEmpty()) {
@@ -286,10 +285,43 @@ public class SetupProbe implements IApplication {
         require("target platform for sandbox".equals(target.getName()), "Wrong active target: " + target.getName());
         require(target.isResolved() && target.getStatus().isOK(), "Unresolved target: " + target.getStatus());
         bundleContext.ungetService(reference);
+        // Saving the workspace and reading its target can enqueue more work.
+        // Inspect markers only after those operations have also settled.
+        awaitWorkspaceJobs(monitor);
         var errors = Arrays.stream(workspace.getRoot().findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE))
                 .filter(m -> m.getAttribute(IMarker.SEVERITY, 0) == IMarker.SEVERITY_ERROR)
                 .map(m -> m.getResource().getFullPath() + ": " + m.getAttribute(IMarker.MESSAGE, ""))
                 .collect(Collectors.toCollection(TreeSet::new));
+        if (!errors.isEmpty()) {
+            for (String name : List.of("sandbox-ast-api", "sandbox-functional-converter-core", "sandbox_common_core",
+                    "sandbox_tools", "sandbox_use_general_type")) {
+                var imported = workspace.getRoot().getProject(name);
+                var manifest = org.eclipse.pde.internal.core.project.PDEProject.getManifest(imported);
+                var location = manifest.getLocation();
+                var model = org.eclipse.pde.core.plugin.PluginRegistry.findModel(imported);
+                System.out.println("Generated bundle " + name + ": manifest=" + manifest.getFullPath()
+                        + ", resource=" + manifest.exists() + ", localFile=" + (location != null && location.toFile().isFile())
+                        + ", model=" + (model == null ? null : model.getPluginBase().getId()));
+                if (model != null) {
+                    var description = model.getBundleDescription();
+                    System.out.println("Resolver " + name + ": enabled=" + model.isEnabled()
+                            + ", description=" + description
+                            + ", resolved=" + (description != null && description.isResolved()));
+                    if (description != null) {
+                        var state = description.getContainingState();
+                        System.out.println("Resolver AST suppliers for " + name + ": "
+                                + (state == null ? null : Arrays.toString(state.getBundles("org.sandbox.ast.api"))));
+                        for (var required : description.getRequiredBundles()) {
+                            if ("org.sandbox.ast.api".equals(required.getName())) {
+                                System.out.println("Resolver AST requirement for " + name + ": " + required
+                                        + ", supplier=" + required.getSupplier());
+                            }
+                        }
+                    }
+                }
+            }
+            System.out.println("Pending workspace jobs: " + Arrays.toString(Job.getJobManager().find(null)));
+        }
         require(errors.isEmpty(), "Workspace build errors:\n" + String.join("\n", errors));
         var launchFile = workspace.getRoot().getProject("sandbox_product").getFile("sandbox.product.launch");
         var launch = DebugPlugin.getDefault().getLaunchManager().getLaunchConfiguration(launchFile);
@@ -316,6 +348,19 @@ public class SetupProbe implements IApplication {
         result.setProperty("target", target.getName());
         saveResult(run, update, result);
         System.out.println("OOMPH VERIFIED: " + result);
+    }
+
+    private static void awaitWorkspaceJobs(org.eclipse.core.runtime.IProgressMonitor monitor) throws InterruptedException {
+        // PDE classpath updates and workspace builds can schedule each other.
+        // The enclosing JUnit process timeout bounds the wait and dumps threads.
+        var jobs = Job.getJobManager();
+        var families = List.of(PluginModelManager.class, ResourcesPlugin.FAMILY_MANUAL_BUILD,
+                ResourcesPlugin.FAMILY_AUTO_BUILD);
+        do {
+            for (Object family : families) {
+                jobs.join(family, monitor);
+            }
+        } while (Arrays.stream(jobs.find(null)).anyMatch(job -> families.stream().anyMatch(job::belongsTo)));
     }
 
     static final class BatchTrustService extends AvoidTrustPromptService {
