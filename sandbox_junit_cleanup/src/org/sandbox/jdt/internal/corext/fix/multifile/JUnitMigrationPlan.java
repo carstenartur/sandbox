@@ -62,7 +62,8 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		List<ExternalResourceRuleMigration> externalResourceRules,
 		List<JUnit3HierarchyMigration> junit3Hierarchies,
 		JUnitTestTypeInventory testTypeInventory,
-		Set<String> junit4CompatibleExternalResourceTypes) {
+		Set<String> junit4CompatibleExternalResourceTypes,
+		List<JUnit4ParameterizedPlan> preparedParameterizedPlans) {
 
 	private static final String JUNIT3_HINT_RESOURCE=
 			"org/sandbox/jdt/internal/corext/fix/hints/junit3-hierarchy-to-jupiter.sandbox-hint"; //$NON-NLS-1$
@@ -76,6 +77,16 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		junit3Hierarchies= List.copyOf(junit3Hierarchies);
 		testTypeInventory= Objects.requireNonNull(testTypeInventory);
 		junit4CompatibleExternalResourceTypes= Set.copyOf(junit4CompatibleExternalResourceTypes);
+		preparedParameterizedPlans= List.copyOf(preparedParameterizedPlans);
+	}
+
+	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
+			List<ExternalResourceRuleMigration> externalResourceRules,
+			List<JUnit3HierarchyMigration> junit3Hierarchies,
+			JUnitTestTypeInventory testTypeInventory,
+			Set<String> junit4CompatibleExternalResourceTypes) {
+		this(selectedScope, externalResourceRules, junit3Hierarchies, testTypeInventory,
+				junit4CompatibleExternalResourceTypes, List.of());
 	}
 
 	public JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
@@ -119,7 +130,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			return this;
 		}
 		return new JUnitMigrationPlan(selectedScope, externalResourceRules, junit3Hierarchies,
-				testTypeInventory, compatibleTypes);
+				testTypeInventory, compatibleTypes, preparedParameterizedPlans);
 	}
 
 	public void addOperationsFor(ICompilationUnit unit, CompilationUnit root,

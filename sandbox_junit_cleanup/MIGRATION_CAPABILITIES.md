@@ -15,7 +15,7 @@ JUnit migration uses three layers:
 
 3. **Runtime oracle** — compares JDT JUnit discovery/execution before and after migration where the migration changes test identity or multiplicity.
 
-A missing binding, binary-only participant, stale plan, incomplete project scope or unsupported execution hook prevents the complete migration unit from being produced. Ordinary non-plan hints retain their current compatibility semantics; general tri-state guard diagnostics remain follow-up work.
+A missing binding, binary-only participant, stale plan, incomplete project scope or unsupported execution hook prevents the complete migration unit from being produced. Ordinary non-plan hints retain compatibility behavior by default; `binding-policy: required` uses the implemented `MATCH` / `NO_MATCH` / `UNKNOWN` guard diagnostics. Plan-aware hints continue to use only `requires-plan`.
 
 ## Capability matrix
 
@@ -31,7 +31,8 @@ A missing binding, binary-only participant, stale plan, incomplete project scope
 | simple JUnit 3 `suite()` aggregator | Supported | fail-closed suite model | only plain top-level aggregator types and modeled composition forms |
 | JUnit 4 `@RunWith(Suite.class)` / class selection | Supported for modeled forms | suite cleanup | custom runners and dynamic composition require a dedicated contract |
 | local JUnit 4 Parameterized provider | Narrow support | local plugin | only the provider/body shapes explicitly accepted by the planner |
-| external/inherited Parameterized provider | Not yet supported | planned in #1367 | requires caller/provider/constructor/field relations and runtime multiplicity checks |
+| external/inherited Parameterized provider | Source planning implemented; coordinated execution pending | `JUnit4ParameterizedPlanner` / `junit4-parameterized` | selected source hierarchy and static delegates, constant rectangular `Object[][]` rows; runtime verification still required |
+| Parameterized constructor/field injection | Source planning implemented; coordinated execution pending | ordered `constructorParameter` / `injectedField` relations | stable binding keys, contiguous field indices, proven argument types; no automatic execution from a prepared plan |
 | JUnit 3 custom harness | Not generally supported | dedicated framework migration required | must not be flattened into annotations |
 | shared assertion helper API across projects | Not yet supported | planned in #1367 | requires complete caller/callee closure |
 | automatic JUnit 4/Vintage dependency removal | Not yet supported | planned resource-change phase | allowed only after all source and generated consumers are classified |
@@ -54,6 +55,36 @@ The migration reports actionable reason codes rather than applying a partial rew
 Do not describe the plugin as providing unrestricted “full JUnit 3/4 migration”. The accurate claim is:
 
 > Automated JUnit migration for explicitly modeled local and coordinated source shapes, with fail-closed diagnostics for unsupported execution semantics.
+
+## Executable Parameterized discovery boundary
+
+`JUnit4ParameterizedPlannerTest` and `ParameterizedMigrationDiagnosticsTest` exercise
+the production planning path in `JUnitMultiFilePlanner`. `SemanticRewritePlanFactsTest`
+checks stable parameter identities in the shared DSL model.
+
+| Evidence | Executable test |
+|---|---|
+| Constructor parameters, multiple tests, no duplicated name/type/index facts | `recordsConstructorParametersAndAllTestsWithoutDuplicatedNamesOrTypes` |
+| Inherited provider plus editable external delegation | `discoversInheritedProviderAndEditableExternalDelegateDeterministically` |
+| Field injection in semantic index order | `fieldRelationsFollowInjectionIndicesRatherThanDeclarationOrder` |
+| Missing source participants and partial scope | `incompleteSelectionProducesNoPreparedPlan`, `unselectedInheritedAndDelegatedSourcesFailClosed` |
+| Cyclic providers, implicit conversions, field index collisions/gaps, wrong row width | `cyclesAndUnprovenConversionsNeverProducePartialPlans`, `duplicateIndicesGapsAndWrongArityAreRejected` |
+| Unsupported execution hooks and unresolved source | `customHooksAndCompilerErrorsAreVisible` |
+| Malformed JUnit 4 display-name patterns are rejected | `malformedDisplayNamesCannotBeSilentlyChangedToJupiterDefaults` |
+| Provider body changes and added/deleted scope members invalidate evidence | `snapshotsRejectBodyOnlyChangesAndChangedScopeMembership` |
+| Source changes during AST creation cannot attach new fingerprints to old evidence | `rejectsSourceChangesBetweenSnapshotAndAstDiscovery` |
+
+Discovery does not invoke providers, rewrite files, or enable additional local
+cleanup cases. Prepared plans are reported as `FOUND` with
+`PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED`, never as `TRANSFORMED` or
+`APPLICABLE`. They retain no AST nodes or Java-model handles as objects: only
+binding keys, compilation-unit handle strings and source fingerprints.
+
+The next executor must re-establish the closed editable scope, compare exact
+source fingerprints, resolve the authorized declarations, and prove test
+identity, multiplicity, display-name and result equivalence through JDT's JUnit
+finder/loader adapters. Source discovery alone is not that proof. The existing
+narrow local Parameterized cleanup remains a separate execution path.
 
 ## Roadmap
 

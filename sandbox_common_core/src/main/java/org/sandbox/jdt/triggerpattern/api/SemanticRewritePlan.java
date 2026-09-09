@@ -33,6 +33,7 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -337,6 +338,7 @@ public final class SemanticRewritePlan {
 		TYPE,
 		METHOD,
 		FIELD,
+		PARAMETER,
 		INVOCATION
 	}
 
@@ -357,6 +359,11 @@ public final class SemanticRewritePlan {
 
 		public static NodeKey field(String bindingKey) {
 			return bindingKey == null ? null : new NodeKey(NodeKind.FIELD, bindingKey, -1, -1);
+		}
+
+		/** A declaration binding identifies a parameter without duplicating its name or index. */
+		public static NodeKey parameter(String bindingKey) {
+			return bindingKey == null ? null : new NodeKey(NodeKind.PARAMETER, bindingKey, -1, -1);
 		}
 
 		public static NodeKey invocation(String bindingKey, int sourceStart, int sourceLength) {
@@ -380,6 +387,9 @@ public final class SemanticRewritePlan {
 			}
 			if (node instanceof MethodDeclaration method) {
 				return method(methodKey(method.resolveBinding()));
+			}
+			if (node instanceof SingleVariableDeclaration parameter) {
+				return parameter(parameterKey(parameter.resolveBinding()));
 			}
 			if (node instanceof FieldDeclaration field) {
 				return field.fragments().size() == 1 ? from((ASTNode) field.fragments().get(0)) : null;
@@ -416,7 +426,8 @@ public final class SemanticRewritePlan {
 					return type(typeKey(typeBinding));
 				}
 				if (binding instanceof IVariableBinding variableBinding) {
-					return field(fieldKey(variableBinding));
+					return variableBinding.isParameter()
+							? parameter(parameterKey(variableBinding)) : field(fieldKey(variableBinding));
 				}
 			}
 			return null;
@@ -437,6 +448,13 @@ public final class SemanticRewritePlan {
 
 		private static String fieldKey(IVariableBinding binding) {
 			if (binding == null || !binding.isField()) {
+				return null;
+			}
+			return binding.getVariableDeclaration().getKey();
+		}
+
+		private static String parameterKey(IVariableBinding binding) {
+			if (binding == null || binding.isRecovered() || !binding.isParameter()) {
 				return null;
 			}
 			return binding.getVariableDeclaration().getKey();
