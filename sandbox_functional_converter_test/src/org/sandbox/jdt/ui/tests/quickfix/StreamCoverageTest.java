@@ -22,6 +22,8 @@ import org.eclipse.jdt.internal.ui.text.correction.AssistContext;
 import org.eclipse.jdt.internal.ui.text.correction.proposals.FixCorrectionProposal;
 import org.eclipse.jdt.ui.text.java.IProblemLocation;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.RepetitionInfo;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -97,8 +99,18 @@ class StreamCoverageTest {
 	@MethodSource("pipelines")
 	void cleanupPreservesRuntime(String target, String original) throws Exception {
 		String converted = context.convert(original, target);
-		assertNotEquals(original, converted);
+		assertNotEquals(original, converted, context::cleanupDiagnostics);
 		assertEquals(execute(original, "cleanup-original"), execute(converted, "cleanup-converted"), converted);
+		assertEquals(converted, context.convert(converted, target), "A second cleanup pass is stable");
+	}
+
+	@RepeatedTest(50)
+	void primitiveMethodReferenceSurvivesRepeatedWorkspaceAndProfileSetup(RepetitionInfo repetition) throws Exception {
+		String original = source("Arrays.stream(new double[] {-0.0, Double.NaN, Double.POSITIVE_INFINITY})"
+				+ ".mapToLong(Double::doubleToRawLongBits).forEach(v -> result.add(label(v)));");
+		String target = repetition.getCurrentRepetition() % 2 == 0 ? "iterator_while" : "enhanced_for";
+		String converted = context.convert(original, target);
+		assertNotEquals(original, converted, context::cleanupDiagnostics);
 		assertEquals(converted, context.convert(converted, target), "A second cleanup pass is stable");
 	}
 
