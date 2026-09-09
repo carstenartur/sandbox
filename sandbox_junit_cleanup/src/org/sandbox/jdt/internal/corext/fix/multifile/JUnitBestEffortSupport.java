@@ -36,6 +36,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -190,6 +193,76 @@ public final class JUnitBestEffortSupport {
 	}
 
 	private JUnitBestEffortSupport() {
+	}
+
+	/** Replaces local-only gaps with the coordinated contract, keeping blocked files atomic. */
+	public static Analysis reconcileParameterized(Analysis analysis, JUnitMigrationPlan plan,
+			org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics diagnostics, boolean executionAvailable) throws JavaModelException {
+		if (plan == null || !executionAvailable) {
+			return analysis;
+		}
+		List<JUnit4ParameterizedPlan> executable= plan.preparedParameterizedPlans().stream()
+				.filter(JUnit4ParameterizedPlan::executable).toList();
+		Set<String> authorized= executable.stream().map(item -> item.testClass().bindingKey())
+				.collect(java.util.stream.Collectors.toSet());
+		List<Gap> gaps= new ArrayList<>(analysis.gaps().stream()
+				.filter(gap -> !gap.candidateId().startsWith("parameterized:") //$NON-NLS-1$
+						|| !authorized.contains(gap.targetTypeBindingKey())).toList());
+		for (var diagnostic : diagnostics.candidates()) {
+			if (diagnostic.candidateId().startsWith("parameterized:") //$NON-NLS-1$
+					&& diagnostic.outcome() == org.sandbox.jdt.cleanup.multifile.MultiFileCandidateOutcome.REJECTED) {
+				// Quarantine the test hierarchy while allowing independent resource
+				// compatibility bridges and unrelated test classes to migrate.
+				for (String handle : diagnostic.relatedCompilationUnitHandles()) {
+					if (gaps.stream().anyMatch(gap -> handle.equals(gap.ownerCompilationUnitHandle())
+							&& gap.candidateId().startsWith("parameterized:"))) { //$NON-NLS-1$
+						continue;
+					}
+					gaps.add(parameterizedGap(handle, diagnostic.candidateId().substring("parameterized:".length()), diagnostic.candidateId(), //$NON-NLS-1$
+							diagnostic.reasonCode(), diagnostic.message(),
+							"Resolve the coordinated Parameterized diagnostic and rerun the complete selected scope.")); //$NON-NLS-1$
+				}
+			}
+		}
+		Set<String> blocked= gaps.stream().map(Gap::ownerCompilationUnitHandle)
+				.collect(java.util.stream.Collectors.toSet());
+		for (JUnit4ParameterizedPlan component : executable) {
+			if (component.compilationUnits().values().stream().anyMatch(blocked::contains)) {
+				for (String handle : new LinkedHashSet<>(component.compilationUnits().values())) {
+					gaps.add(parameterizedGap(handle, component.testClass().bindingKey(),
+							"parameterized:" + component.testClass().bindingKey(), "PARAMETERIZED_COMPONENT_BLOCKED", //$NON-NLS-1$ //$NON-NLS-2$
+							"A participating compilation unit has an unresolved migration gap.", //$NON-NLS-1$
+							"Resolve all gaps before changing this provider and test hierarchy.")); //$NON-NLS-1$
+				}
+			}
+		}
+		return new Analysis(gaps, analysis.disableCoordinatedExternalResource());
+	}
+
+	private static Gap parameterizedGap(String handle, String typeIdentity, String candidateId,
+			String reasonCode, String explanation, String remediation) throws JavaModelException {
+		String bindingKey= ""; //$NON-NLS-1$
+		String name= typeIdentity;
+		int start= -1;
+		if (JavaCore.create(handle) instanceof ICompilationUnit unit) {
+			IType[] types= unit.getAllTypes();
+			IType target= unit.findPrimaryType();
+			for (IType type : types) {
+				if (typeIdentity.equals(type.getKey()) || typeIdentity.equals(type.getFullyQualifiedName('.'))) {
+					target= type;
+					break;
+				}
+			}
+			if (target == null && types.length != 0) {
+				target= types[0];
+			}
+			if (target != null) {
+				bindingKey= target.getKey();
+				name= target.getFullyQualifiedName('.');
+				start= target.getSourceRange().getOffset();
+			}
+		}
+		return new Gap(handle, bindingKey, name, start, candidateId, reasonCode, explanation, remediation);
 	}
 
 	/**
@@ -378,7 +451,7 @@ public final class JUnitBestEffortSupport {
 			if (target == null && !types.isEmpty()) {
 				target= types.get(0);
 			}
-			if (target != null) {
+			if (target != null && !hasMarker(target, gap)) {
 				resolved.computeIfAbsent(target, ignored -> new ArrayList<>()).add(gap);
 			}
 		}

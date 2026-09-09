@@ -77,7 +77,7 @@ public class JUnitBestEffortMigrationCleanUpTest {
 
 					@Parameters
 					public static List<Object[]> data() {
-						return Arrays.asList(new Object[][] { { 1 } });
+						return Arrays.asList(new Object[][] { { Integer.getInteger("value", 1) } });
 					}
 
 					@Test
@@ -99,6 +99,8 @@ public class JUnitBestEffortMigrationCleanUpTest {
 	}
 
 	private ICompilationUnit createSource() throws CoreException {
+		// Dynamic rows remain outside the coordinated constant-row contract even
+		// when the target runtime supports ParameterizedClass field injection.
 		IPackageFragment pack= root.createPackageFragment("test", true, null); //$NON-NLS-1$
 		return pack.createCompilationUnit("FieldInjectionTest.java", """
 				package test;
@@ -121,7 +123,7 @@ public class JUnitBestEffortMigrationCleanUpTest {
 
 					@Parameters
 					public static List<Object[]> data() {
-						return Arrays.asList(new Object[][] { { 1 } });
+						return Arrays.asList(new Object[][] { { Integer.getInteger("value", 1) } });
 					}
 
 					@Test

@@ -20,9 +20,10 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlugin;
 
@@ -66,14 +67,18 @@ public class AssertJUnitPlugin extends AbstractMethodMigrationPlugin {
 		Expression assertexpression = node.getExpression();
 
 		// Special handling for assertThat - delegate to Hamcrest
-		if (METHOD_ASSERT_THAT.equals(node.getName().getIdentifier()) && assertexpression instanceof SimpleName
-				&& "Assert".equals(((SimpleName) assertexpression).getIdentifier())) {
+		if (METHOD_ASSERT_THAT.equals(node.getName().getIdentifier()) && assertexpression instanceof Name name
+				&& ("Assert".equals(name.getFullyQualifiedName()) || ORG_JUNIT_ASSERT.equals(name.getFullyQualifiedName()))) { //$NON-NLS-1$
 			rewriter.set(node, MethodInvocation.EXPRESSION_PROPERTY, null, group);
 			importRewriter.addStaticImport(ORG_HAMCREST_MATCHER_ASSERT, METHOD_ASSERT_THAT, false);
 			importRewriter.removeImport(ORG_JUNIT_ASSERT);
 		} else {
 			// Standard assertion handling - use base class behavior
 			super.processMethodInvocation(group, rewriter, ast, importRewriter, node);
+			if (assertexpression instanceof Name name && ORG_JUNIT_ASSERT.equals(name.getFullyQualifiedName())) {
+				ASTNodes.replaceButKeepComment(rewriter, assertexpression,
+						ast.newName(ORG_JUNIT_JUPITER_API_ASSERTIONS), group);
+			}
 		}
 	}
 

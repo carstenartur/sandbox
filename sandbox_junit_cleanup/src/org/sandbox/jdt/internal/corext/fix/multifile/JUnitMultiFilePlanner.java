@@ -65,7 +65,12 @@ public final class JUnitMultiFilePlanner {
 	/** Enabled project-planning contracts for one cleanup run. */
 	public record PlanningOptions(boolean migrateExternalResourceRules,
 			boolean migrateJUnit3Hierarchies,
-			boolean diagnoseParameterizedCandidates) {
+			boolean diagnoseParameterizedCandidates, boolean executeParameterizedPlans) {
+
+		public PlanningOptions(boolean migrateExternalResourceRules, boolean migrateJUnit3Hierarchies,
+				boolean diagnoseParameterizedCandidates) {
+			this(migrateExternalResourceRules, migrateJUnit3Hierarchies, diagnoseParameterizedCandidates, false);
+		}
 
 		boolean hasPlanningWork() {
 			return migrateExternalResourceRules || migrateJUnit3Hierarchies
@@ -212,7 +217,9 @@ public final class JUnitMultiFilePlanner {
 		RefactoringStatus status= budget.status();
 		JUnit4ParameterizedPlanner.Result parameterizedResult=
 				options.diagnoseParameterizedCandidates()
-						? JUnit4ParameterizedPlanner.discover(rootsByHandle, parameterizedSnapshots, closedScope, monitor)
+						? JUnit4ParameterizedPlanner.discover(rootsByHandle, parameterizedSnapshots, closedScope,
+								options.executeParameterizedPlans()
+										&& project.findType("org.junit.jupiter.params.ParameterizedClass") != null, monitor) //$NON-NLS-1$
 						: new JUnit4ParameterizedPlanner.Result(List.of(), List.of());
 
 		if (!closedScope) {

@@ -55,6 +55,7 @@ final class JUnitRuntimeTestTree {
 	/** JDT test kinds used as the authoritative migration oracle. */
 	enum TestKind {
 		JUNIT3("org.eclipse.jdt.junit.loader.junit3"), //$NON-NLS-1$
+		JUNIT4("org.eclipse.jdt.junit.loader.junit4"), //$NON-NLS-1$
 		JUNIT5("org.eclipse.jdt.junit.loader.junit5"); //$NON-NLS-1$
 
 		private final String id;
@@ -77,6 +78,10 @@ final class JUnitRuntimeTestTree {
 	}
 
 	static ExecutionTreeSnapshot capture(IJavaElement launchTarget, TestKind testKind) throws CoreException {
+		return capture(launchTarget, testKind, false);
+	}
+
+	static ExecutionTreeSnapshot capture(IJavaElement launchTarget, TestKind testKind, boolean displayNames) throws CoreException {
 		Objects.requireNonNull(launchTarget);
 		Objects.requireNonNull(testKind);
 		ResourcesPlugin.getWorkspace().build(IncrementalProjectBuilder.FULL_BUILD, null);
@@ -87,7 +92,8 @@ final class JUnitRuntimeTestTree {
 			@Override
 			public void sessionFinished(ITestRunSession session) {
 				try {
-					captured.set(snapshot(session));
+					captured.set(new ExecutionTreeSnapshot(snapshotChildren(session, displayNames),
+							session.getTestResult(true) == Result.OK));
 				} catch (Throwable failure) {
 					callbackFailure.set(failure);
 				} finally {
@@ -131,34 +137,33 @@ final class JUnitRuntimeTestTree {
 		}
 	}
 
-	private static ExecutionTreeSnapshot snapshot(ITestRunSession session) {
-		return new ExecutionTreeSnapshot(snapshotChildren(session),
-				session.getTestResult(true) == Result.OK);
-	}
-
-	private static List<Node> snapshotChildren(ITestElementContainer container) {
+	private static List<Node> snapshotChildren(ITestElementContainer container, boolean displayNames) {
 		List<Node> children= new ArrayList<>();
 		for (ITestElement child : container.getChildren()) {
-			children.add(snapshotNode(child));
+			children.add(snapshotNode(child, displayNames));
 		}
 		return List.copyOf(children);
 	}
 
-	private static Node snapshotNode(ITestElement element) {
+	private static Node snapshotNode(ITestElement element, boolean displayNames) {
 		String identity= identity(element);
+		String display= identity;
+		if (displayNames && element instanceof org.eclipse.jdt.internal.junit.model.TestElement model) {
+			display= model.getDisplayName() == null ? model.getTestName() : model.getDisplayName();
+		}
 		String result= String.valueOf(element.getTestResult(true));
 		if (element instanceof ITestCaseElement testCase) {
-			return new Node(NodeKind.TEST, identity, identity, result,
+			return new Node(NodeKind.TEST, identity, display, result,
 					Map.of("testClass", text(testCase.getTestClassName()), //$NON-NLS-1$
 							"testMethod", text(testCase.getTestMethodName())), List.of()); //$NON-NLS-1$
 		}
 		if (element instanceof ITestSuiteElement suite) {
-			return new Node(NodeKind.CONTAINER, identity, identity, result,
-					Map.of("suiteType", text(suite.getSuiteTypeName())), snapshotChildren(suite)); //$NON-NLS-1$
+			return new Node(NodeKind.CONTAINER, identity, display, result,
+					Map.of("suiteType", text(suite.getSuiteTypeName())), snapshotChildren(suite, displayNames)); //$NON-NLS-1$
 		}
 		List<Node> children= element instanceof ITestElementContainer container
-				? snapshotChildren(container) : List.of();
-		return new Node(NodeKind.OTHER, identity, identity, result,
+				? snapshotChildren(container, displayNames) : List.of();
+		return new Node(NodeKind.OTHER, identity, display, result,
 				Map.of("modelType", element.getClass().getName()), children); //$NON-NLS-1$
 	}
 

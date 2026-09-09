@@ -87,7 +87,7 @@ final class BuiltInStructuredRewriteActions {
 				action.requiredArgument("target")); //$NON-NLS-1$
 		String expected= context.resolveString(action.requiredArgument("annotation")); //$NON-NLS-1$
 		String expectedSimple= simpleName(expected);
-		for (Object modifier : declaration.modifiers()) {
+		for (Object modifier : modifiers(context.cuRewrite().getASTRewrite(), declaration, context).getRewrittenList()) {
 			if (modifier instanceof Annotation annotation) {
 				String actual= annotationName(annotation);
 				if (expected.equals(actual) || expectedSimple.equals(simpleName(actual))) {
@@ -324,7 +324,8 @@ final class BuiltInStructuredRewriteActions {
 	private static void ensureAnnotationMissing(BodyDeclaration declaration, String expected,
 			StructuredRewriteActionContext context) throws CoreException {
 		String expectedSimple= simpleName(expected);
-		for (Object modifier : declaration.modifiers()) {
+		// Earlier actions in this sequence may already have removed or added an annotation.
+		for (Object modifier : modifiers(context.cuRewrite().getASTRewrite(), declaration, context).getRewrittenList()) {
 			if (modifier instanceof Annotation annotation) {
 				String actual= annotationName(annotation);
 				if (expected.equals(actual) || expectedSimple.equals(simpleName(actual))) {

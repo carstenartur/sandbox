@@ -106,7 +106,8 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 	}
 
 	public boolean hasCoordinatedChanges() {
-		return !externalResourceRules.isEmpty() || !junit3Hierarchies.isEmpty();
+		return !externalResourceRules.isEmpty() || !junit3Hierarchies.isEmpty()
+				|| preparedParameterizedPlans.stream().anyMatch(JUnit4ParameterizedPlan::executable);
 	}
 
 	/**
@@ -137,6 +138,9 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 			Set<CompilationUnitRewriteOperationWithSourceRange> operations, Set<ASTNode> nodesProcessed)
 			throws CoreException {
 		String unitHandle= unit.getPrimary().getHandleIdentifier();
+		for (JUnit4ParameterizedPlan parameterized : preparedParameterizedPlans) {
+			JUnit4ParameterizedMigration.addOperations(parameterized, unit, root, operations, nodesProcessed);
+		}
 		addExternalResourceOperations(unit, unitHandle, root, operations, nodesProcessed);
 		addJUnit3HierarchyOperations(unit, unitHandle, root, operations, nodesProcessed);
 	}
