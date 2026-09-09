@@ -28,6 +28,8 @@ public final class ContainerRuleRegistry {
 
 	public static final String ARRAY_APPEND_SEQUENCE= "semantic.array.append.sequence"; //$NON-NLS-1$
 	public static final String UNIQUE_SEQUENCE_SET= "semantic.sequence.unique.set"; //$NON-NLS-1$
+	public static final String FIFO_SEQUENCE_DEQUE= "semantic.sequence.fifo.deque"; //$NON-NLS-1$
+	public static final String LIFO_SEQUENCE_DEQUE= "semantic.sequence.lifo.deque"; //$NON-NLS-1$
 	public static final String COLLECTION_BULK_ADD= "existing.collection.bulk-add"; //$NON-NLS-1$
 	public static final String COLLECTION_COPY_CONSTRUCTOR= "existing.collection.copy-constructor"; //$NON-NLS-1$
 	public static final String ARRAY_FILL= "existing.array.fill"; //$NON-NLS-1$
@@ -57,6 +59,16 @@ public final class ContainerRuleRegistry {
 	/** Returns the descriptor for manually unique sequence to ordered-set migration. */
 	public static ContainerRuleDescriptor uniqueSequenceSet() {
 		return RULES.get(UNIQUE_SEQUENCE_SET);
+	}
+
+	/** Returns the descriptor for FIFO list-to-deque analysis. */
+	public static ContainerRuleDescriptor fifoSequenceDeque() {
+		return RULES.get(FIFO_SEQUENCE_DEQUE);
+	}
+
+	/** Returns the descriptor for LIFO list-to-deque analysis. */
+	public static ContainerRuleDescriptor lifoSequenceDeque() {
+		return RULES.get(LIFO_SEQUENCE_DEQUE);
 	}
 
 	private static Map<String, ContainerRuleDescriptor> createRules() {
@@ -97,6 +109,20 @@ public final class ContainerRuleRegistry {
 				"", //$NON-NLS-1$
 				"The rule changes duplicate semantics in the declared contract " //$NON-NLS-1$
 						+ "and may require coordinated signature migration.")); //$NON-NLS-1$
+		register(rules, new ContainerRuleDescriptor(
+				FIFO_SEQUENCE_DEQUE,
+				ContainerShape.LIST,
+				ContainerShape.DEQUE,
+				RuleOwnership.NOVEL,
+				"", //$NON-NLS-1$
+				"The rule replaces numeric head removal with an explicit FIFO container contract.")); //$NON-NLS-1$
+		register(rules, new ContainerRuleDescriptor(
+				LIFO_SEQUENCE_DEQUE,
+				ContainerShape.LIST,
+				ContainerShape.DEQUE,
+				RuleOwnership.NOVEL,
+				"", //$NON-NLS-1$
+				"The rule replaces size-based tail removal with an explicit LIFO container contract.")); //$NON-NLS-1$
 		register(rules, new ContainerRuleDescriptor(
 				ARRAY_APPEND_SEQUENCE,
 				ContainerShape.ARRAY,
