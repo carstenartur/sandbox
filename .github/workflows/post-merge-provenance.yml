@@ -45,6 +45,7 @@ jobs:
           python3 -m json.tool build-manifest.json > /dev/null
 
   publish-main-provenance:
+    name: Prepare verified main provenance
     if: >-
       github.event_name == 'workflow_run' &&
       github.event.workflow_run.event == 'push' &&
@@ -54,7 +55,7 @@ jobs:
     timeout-minutes: 75
     permissions:
       actions: read
-      contents: write
+      contents: read
     env:
       COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
       GITHUB_TOKEN: ${{ github.token }}
@@ -116,6 +117,33 @@ jobs:
             /tmp/gh-pages/provenance/${{ github.event.workflow_run.head_sha }}/related-workflow-runs.json
           retention-days: 90
           if-no-files-found: error
+      - name: Retain complete dashboard for serialized publication
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-provenance-site-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/gh-pages/provenance
+          retention-days: 7
+          if-no-files-found: error
+
+  publish-dashboard:
+    needs: publish-main-provenance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # Collecting related runs must finish before taking the publication lock:
+    # the snapshot workflow being observed needs the same lock.
+    concurrency:
+      group: release-workflow
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: build-provenance-site-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/gh-pages/provenance
       - name: Publish provenance dashboard
         uses: peaceiris/actions-gh-pages@v4
         with:

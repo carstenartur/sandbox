@@ -38,8 +38,10 @@ jobs:
     name: Build and verify/publish metrics
     runs-on: ubuntu-24.04
     timeout-minutes: 180
+    outputs:
+      publish: ${{ steps.gate.outputs.run == 'true' && github.ref == 'refs/heads/main' }}
     permissions:
-      contents: write
+      contents: read
       checks: write
     env:
       MAVEN_OPTS: -Djava.awt.headless=true
@@ -302,29 +304,14 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Publish reports and badges to GitHub Pages
+      - name: Retain complete site for serialized publication
         if: success() && steps.gate.outputs.run == 'true' && github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v4
+        uses: actions/upload-artifact@v7
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: target/quality-site
-          keep_files: true
-          user_name: 'github-actions[bot]'
-          user_email: '41898282+github-actions[bot]@users.noreply.github.com'
-          commit_message: 'Publish verified test and coverage metrics for ${{ github.sha }}'
-
-      - name: Publish public report links
-        if: success() && steps.gate.outputs.run == 'true' && github.ref == 'refs/heads/main'
-        run: |
-          {
-            echo '## Verified quality evidence'
-            echo
-            echo '[Test totals and module reports](https://carstenartur.github.io/sandbox/tests/)'
-            echo
-            echo '[Aggregate JaCoCo coverage](https://carstenartur.github.io/sandbox/coverage/)'
-            echo
-            echo '[Machine-readable summary](https://carstenartur.github.io/sandbox/quality-summary.json)'
-          } >> "$GITHUB_STEP_SUMMARY"
+          name: quality-site-${{ github.run_id }}-${{ github.run_attempt }}
+          path: target/quality-site
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Publish verification-only summary
         if: always() && steps.gate.outputs.run == 'true' && github.ref != 'refs/heads/main'
@@ -335,4 +322,44 @@ jobs:
             echo 'This branch run verifies the generation path but does not update the public GitHub Pages reports.'
             echo
             echo "[Workflow run and retained evidence](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish-quality:
+    needs: coverage
+    if: needs.coverage.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-workflow
+      cancel-in-progress: false
+      queue: max
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/download-artifact@v8
+        with:
+          name: quality-site-${{ github.run_id }}-${{ github.run_attempt }}
+          path: target/quality-site
+      - name: Publish reports and badges to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: target/quality-site
+          keep_files: true
+          user_name: 'github-actions[bot]'
+          user_email: '41898282+github-actions[bot]@users.noreply.github.com'
+          commit_message: 'Publish verified test and coverage metrics for ${{ github.sha }}'
+
+      - name: Publish public report links
+        run: |
+          {
+            echo '## Verified quality evidence'
+            echo
+            echo '[Test totals and module reports](https://carstenartur.github.io/sandbox/tests/)'
+            echo
+            echo '[Aggregate JaCoCo coverage](https://carstenartur.github.io/sandbox/coverage/)'
+            echo
+            echo '[Machine-readable summary](https://carstenartur.github.io/sandbox/quality-summary.json)'
           } >> "$GITHUB_STEP_SUMMARY"

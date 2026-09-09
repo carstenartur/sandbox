@@ -12,6 +12,7 @@ on:
 concurrency:
   group: release-workflow
   cancel-in-progress: false
+  queue: max
 
 permissions:
   contents: write # publish the report below gh-pages; never write report commits to main
