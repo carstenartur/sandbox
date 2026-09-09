@@ -21,6 +21,9 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.tools.ToolProvider;
@@ -33,8 +36,18 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.MethodReference;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.fix.CleanUpRefactoring;
+import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
+import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
+import org.eclipse.jdt.ui.cleanup.ICleanUp;
+import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,6 +62,8 @@ import org.sandbox.functional.core.terminal.ForEachTerminal;
 import org.sandbox.functional.core.transformer.LoopModelTransformer;
 import org.sandbox.jdt.internal.corext.fix.helper.ASTStreamRenderer;
 import org.sandbox.jdt.internal.corext.fix.helper.JdtStreamExtractor;
+import org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUp;
+import org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 
 /** Exercises the actual cleanup, compilation of both versions and runtime behavior. */
@@ -61,8 +76,75 @@ class StreamChainToLoopTest {
 	Path temporary;
 
 	static final class ConversionContext extends AbstractEclipseJava {
+		private CompilationUnit cleanupAst;
+		private Map<String, String> cleanupOptions = Map.of();
+		private RefactoringStatus cleanupStatus;
+		private boolean cleanupFixCreated;
+
 		ConversionContext() {
 			super("testresources/rtstubs_22.jar", JavaCore.VERSION_22);
+		}
+
+		@Override
+		protected RefactoringStatus performRefactoring(CleanUpRefactoring ref, ICompilationUnit[] units,
+				ICleanUp[] cleanups, Set<String> expectedGroups) throws CoreException {
+			cleanupAst = null;
+			cleanupFixCreated = false;
+			cleanupOptions = Map.of();
+			ICleanUp[] traced = cleanups.clone();
+			for (int index = 0; index < traced.length; index++) {
+				if (traced[index] instanceof UseFunctionalCallCleanUp) {
+					// The production facade only delegates to this core through the same
+					// JDT wrapper. Capture references without resolving bindings early.
+					var core = new UseFunctionalCallCleanUpCore() {
+						@Override
+						public void setOptions(CleanUpOptions options) {
+							super.setOptions(options);
+							cleanupOptions = options.getKeys().stream()
+									.filter(key -> key.startsWith("cleanup.loop_conversion"))
+									.collect(java.util.stream.Collectors.toMap(key -> key, options::getValue));
+						}
+
+						@Override
+						public ICleanUpFix createFix(CleanUpContext context) throws CoreException {
+							cleanupAst = context.getAST();
+							ICleanUpFix fix = super.createFix(context);
+							cleanupFixCreated |= fix != null;
+							return fix;
+						}
+					};
+					traced[index] = new AbstractCleanUpCoreWrapper<UseFunctionalCallCleanUpCore>(Map.of(), core) { };
+				}
+			}
+			cleanupStatus = super.performRefactoring(ref, units, traced, expectedGroups);
+			return cleanupStatus;
+		}
+
+		String cleanupDiagnostics() {
+			StringBuilder diagnostic = new StringBuilder("Cleanup status: ").append(cleanupStatus)
+					.append("\nFix created: ").append(cleanupFixCreated)
+					.append("\nOptions: ").append(cleanupOptions);
+			if (cleanupAst == null) {
+				return diagnostic.append("\nNo AST reached the functional cleanup").toString();
+			}
+			diagnostic.append("\nAST problems: ").append(Arrays.toString(cleanupAst.getProblems()));
+			cleanupAst.accept(new ASTVisitor() {
+				@Override
+				public void preVisit(ASTNode node) {
+					if (node instanceof MethodInvocation invocation) {
+						diagnostic.append("\n").append(invocation.getName()).append(" @").append(node.getStartPosition())
+								.append(": ").append(binding(invocation.resolveMethodBinding()));
+					} else if (node instanceof MethodReference reference) {
+						diagnostic.append("\n").append(reference).append(": ").append(binding(reference.resolveMethodBinding()))
+								.append("; functional type: ").append(binding(reference.resolveTypeBinding()));
+					}
+				}
+			});
+			return diagnostic.toString();
+		}
+
+		private static String binding(IBinding binding) {
+			return binding == null ? "null" : binding.getKey() + " (recovered=" + binding.isRecovered() + ")";
 		}
 
 		String convert(String source, String target) throws CoreException {
