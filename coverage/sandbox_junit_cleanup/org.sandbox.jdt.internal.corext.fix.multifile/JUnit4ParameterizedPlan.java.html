@@ -42,35 +42,44 @@ public record JUnit4ParameterizedPlan(NodeKey testClass, SemanticRewritePlan sem
 	public static final String HAS_FIELD= &quot;injectedField&quot;; //$NON-NLS-1$
 	public static final String HAS_TEST= &quot;testMethod&quot;; //$NON-NLS-1$
 	public static final String DELEGATES_TO= &quot;delegatesTo&quot;; //$NON-NLS-1$
+	public static final String HIERARCHY_TYPE= &quot;JUNIT4_PARAMETERIZED_HIERARCHY&quot;; //$NON-NLS-1$
+	public static final String TARGET_STRATEGY= &quot;targetStrategy&quot;; //$NON-NLS-1$
+	public static final String PARAMETERIZED_CLASS= &quot;PARAMETERIZED_CLASS&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L46">	public JUnit4ParameterizedPlan {</span>
-<span class="fc" id="L47">		Objects.requireNonNull(testClass);</span>
-<span class="fc" id="L48">		Objects.requireNonNull(semanticPlan);</span>
-<span class="pc bpc" id="L49" title="1 of 2 branches missed.">		if (!semanticPlan.satisfiesContract(CONTRACT)) {</span>
-<span class="nc" id="L50">			throw new IllegalArgumentException(&quot;Expected the junit4-parameterized contract&quot;); //$NON-NLS-1$</span>
+	/** The coordinated planner selects the runtime-verified class strategy explicitly. */
+	public boolean executable() {
+<span class="fc" id="L51">		return org.sandbox.jdt.triggerpattern.api.SemanticPlanValue.string(PARAMETERIZED_CLASS)</span>
+<span class="fc" id="L52">				.equals(semanticPlan.valuesByNode().getOrDefault(testClass, Map.of()).get(TARGET_STRATEGY));</span>
+	}
+
+<span class="fc" id="L55">	public JUnit4ParameterizedPlan {</span>
+<span class="fc" id="L56">		Objects.requireNonNull(testClass);</span>
+<span class="fc" id="L57">		Objects.requireNonNull(semanticPlan);</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">		if (!semanticPlan.satisfiesContract(CONTRACT)) {</span>
+<span class="nc" id="L59">			throw new IllegalArgumentException(&quot;Expected the junit4-parameterized contract&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L52">		compilationUnits= Map.copyOf(compilationUnits);</span>
-<span class="fc" id="L53">		sourceFingerprints= Map.copyOf(sourceFingerprints);</span>
-<span class="pc bpc" id="L54" title="1 of 2 branches missed.">		if (!semanticPlan.rolesByNode().getOrDefault(testClass, java.util.Set.of()).contains(RUNNER_CLASS)</span>
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">				|| !compilationUnits.keySet().containsAll(semanticPlan.rolesByNode().keySet())</span>
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">				|| !sourceFingerprints.keySet().containsAll(compilationUnits.values())) {</span>
-<span class="nc" id="L57">			throw new IllegalArgumentException(&quot;Incomplete Parameterized source evidence&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L61">		compilationUnits= Map.copyOf(compilationUnits);</span>
+<span class="fc" id="L62">		sourceFingerprints= Map.copyOf(sourceFingerprints);</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">		if (!semanticPlan.rolesByNode().getOrDefault(testClass, java.util.Set.of()).contains(RUNNER_CLASS)</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">				|| !compilationUnits.keySet().containsAll(semanticPlan.rolesByNode().keySet())</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">				|| !sourceFingerprints.keySet().containsAll(compilationUnits.values())) {</span>
+<span class="nc" id="L66">			throw new IllegalArgumentException(&quot;Incomplete Parameterized source evidence&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L59">	}</span>
+<span class="fc" id="L68">	}</span>
 
 	/** Checks exact source text and scope membership, including additions and deletions. */
 	public boolean isCurrent(Map&lt;String, String&gt; currentSources) {
-<span class="pc bpc" id="L63" title="1 of 4 branches missed.">		return currentSources != null &amp;&amp; currentSources.keySet().equals(sourceFingerprints.keySet())</span>
-<span class="pc bpc" id="L64" title="1 of 2 branches missed.">				&amp;&amp; currentSources.entrySet().stream().allMatch(entry -&gt; entry.getValue() != null</span>
-<span class="fc bfc" id="L65" title="All 4 branches covered.">						&amp;&amp; fingerprint(entry.getValue()).equals(sourceFingerprints.get(entry.getKey())));</span>
+<span class="pc bpc" id="L72" title="1 of 4 branches missed.">		return currentSources != null &amp;&amp; currentSources.keySet().equals(sourceFingerprints.keySet())</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">				&amp;&amp; currentSources.entrySet().stream().allMatch(entry -&gt; entry.getValue() != null</span>
+<span class="fc bfc" id="L74" title="All 4 branches covered.">						&amp;&amp; fingerprint(entry.getValue()).equals(sourceFingerprints.get(entry.getKey())));</span>
 	}
 
 	static String fingerprint(String source) {
 		try {
-<span class="fc" id="L70">			return HexFormat.of().formatHex(MessageDigest.getInstance(&quot;SHA-256&quot;) //$NON-NLS-1$</span>
-<span class="fc" id="L71">					.digest(source.getBytes(StandardCharsets.UTF_8)));</span>
-<span class="nc" id="L72">		} catch (NoSuchAlgorithmException e) {</span>
-<span class="nc" id="L73">			throw new IllegalStateException(&quot;Java must provide SHA-256&quot;, e); //$NON-NLS-1$</span>
+<span class="fc" id="L79">			return HexFormat.of().formatHex(MessageDigest.getInstance(&quot;SHA-256&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L80">					.digest(source.getBytes(StandardCharsets.UTF_8)));</span>
+<span class="nc" id="L81">		} catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L82">			throw new IllegalStateException(&quot;Java must provide SHA-256&quot;, e); //$NON-NLS-1$</span>
 		}
 	}
 }

@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit4ParameterizedMigration.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnit4ParameterizedMigration.java</span></div><h1>JUnit4ParameterizedMigration.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit4ParameterizedPlan.*;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.*;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.cleanup.multifile.JavaProjectCompilationUnits;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
+import org.sandbox.jdt.triggerpattern.cleanup.PlanAwareHintFileFixCore;
+
+/** Applies the closed, constant-row ParameterizedClass execution contract. */
+final class JUnit4ParameterizedMigration {
+
+	private JUnit4ParameterizedMigration() {
+	}
+
+	static void addOperations(JUnit4ParameterizedPlan plan, ICompilationUnit unit, CompilationUnit root,
+			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; processed) throws CoreException {
+<span class="pc bpc" id="L46" title="1 of 4 branches missed.">		if (!plan.executable() || !plan.compilationUnits().containsValue(unit.getPrimary().getHandleIdentifier())) {</span>
+<span class="fc" id="L47">			return;</span>
+		}
+<span class="fc" id="L49">		validateCurrentSources(plan);</span>
+<span class="fc" id="L50">		Map&lt;NodeKey, ASTNode&gt; nodes= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L51">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public void preVisit(ASTNode node) {
+<span class="fc" id="L54">				NodeKey key= NodeKey.from(node);</span>
+<span class="fc bfc" id="L55" title="All 4 branches covered.">				if (key != null &amp;&amp; plan.compilationUnits().containsKey(key)</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">						&amp;&amp; !(node instanceof SimpleName)) {</span>
+<span class="fc" id="L57">					nodes.put(key, node);</span>
+				}
+<span class="fc" id="L59">			}</span>
+		});
+<span class="fc" id="L61">		Set&lt;NodeKey&gt; expected= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L62">		plan.compilationUnits().forEach((key, owner) -&gt; {</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">			if (owner.equals(unit.getPrimary().getHandleIdentifier())) {</span>
+<span class="fc" id="L64">				expected.add(key);</span>
+			}
+<span class="fc" id="L66">		});</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">		if (!nodes.keySet().equals(expected)) {</span>
+<span class="nc" id="L68">			throw failure(&quot;The Parameterized declaration bindings changed; retry the complete migration.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L70">		Set&lt;NodeKey&gt; hintTargets= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">		for (Map.Entry&lt;NodeKey, ASTNode&gt; entry : nodes.entrySet()) {</span>
+<span class="fc" id="L72">			Set&lt;String&gt; roles= plan.semanticPlan().rolesByNode().get(entry.getKey());</span>
+<span class="fc bfc" id="L73" title="All 4 branches covered.">			if (roles.contains(TEST) || roles.stream().anyMatch(role -&gt; role.startsWith(&quot;JUNIT4_PARAMETERIZED_Before&quot;) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L74" title="All 4 branches covered.">					|| role.startsWith(&quot;JUNIT4_PARAMETERIZED_After&quot;))) { //$NON-NLS-1$</span>
+<span class="fc" id="L75">				hintTargets.add(entry.getKey());</span>
+			}
+<span class="fc" id="L77">			ASTNode declaration= entry.getValue();</span>
+<span class="fc" id="L78">			processed.add(declaration);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">			if (declaration instanceof VariableDeclarationFragment) {</span>
+<span class="fc" id="L80">				declaration= declaration.getParent();</span>
+			}
+<span class="fc bfc" id="L82" title="All 2 branches covered.">			if (declaration instanceof BodyDeclaration body) {</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">				for (Object modifier : body.modifiers()) {</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">					if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L85">						processed.add(annotation);</span>
+					}
+				}
+			}
+		}
+<span class="fc" id="L90">		Set&lt;NodeKey&gt; covered= PlanAwareHintFileFixCore.findOperationsFromContent(root, hintProgram(),</span>
+<span class="fc" id="L91">				plan.semanticPlan(), unit.getJavaProject().getOptions(true), operations, processed);</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		if (!covered.equals(hintTargets)) {</span>
+<span class="nc" id="L93">			throw failure(&quot;The Parameterized hint program did not cover every planned test and lifecycle method.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L95">		NodeKey providerKey= plan.semanticPlan().outgoing(plan.testClass(), HAS_PROVIDER).get(0).target();</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">		if (nodes.entrySet().stream().noneMatch(entry -&gt; entry.getKey().equals(providerKey)</span>
+<span class="fc" id="L97">				|| plan.semanticPlan().rolesByNode().get(entry.getKey()).stream()</span>
+<span class="fc bfc" id="L98" title="All 4 branches covered.">						.anyMatch(Set.of(RUNNER_CLASS, FIELD, TEST)::contains))) {</span>
+<span class="fc" id="L99">			return; // Delegated provider sources are validated but have no declaration edits.</span>
+		}
+<span class="fc" id="L101">		operations.add(new CompilationUnitRewriteOperationWithSourceRange() {</span>
+			@Override
+			public void rewriteASTInternal(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel)
+					throws CoreException {
+<span class="fc" id="L105">				TextEditGroup group= createTextEditGroup(&quot;Migrate the coordinated Parameterized class&quot;, cuRewrite); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">				for (Map.Entry&lt;NodeKey, ASTNode&gt; entry : nodes.entrySet()) {</span>
+<span class="fc" id="L107">					Set&lt;String&gt; roles= plan.semanticPlan().rolesByNode().get(entry.getKey());</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">					if (roles.contains(RUNNER_CLASS)) {</span>
+<span class="fc" id="L109">						rewriteClass((TypeDeclaration) entry.getValue(), plan, cuRewrite, group);</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">					} else if (roles.contains(FIELD)) {</span>
+<span class="fc" id="L111">						FieldDeclaration field= (FieldDeclaration) entry.getValue().getParent();</span>
+<span class="fc" id="L112">						int index= plan.semanticPlan().outgoing(plan.testClass(), HAS_FIELD).stream()</span>
+<span class="fc" id="L113">								.map(relation -&gt; relation.target()).toList().indexOf(entry.getKey());</span>
+<span class="fc" id="L114">						removeAnnotation(field, &quot;org.junit.runners.Parameterized.Parameter&quot;, cuRewrite, group); //$NON-NLS-1$</span>
+<span class="fc" id="L115">						addAnnotation(field, &quot;org.junit.jupiter.params.Parameter&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L116">								Map.of(&quot;value&quot;, root.getAST().newNumberLiteral(Integer.toString(index))), cuRewrite, group); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">					} else if (roles.contains(PROVIDER) &amp;&amp; entry.getKey().equals(</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">							plan.semanticPlan().outgoing(plan.testClass(), HAS_PROVIDER).get(0).target())) {</span>
+<span class="fc" id="L119">						removeAnnotation((MethodDeclaration) entry.getValue(), &quot;org.junit.runners.Parameterized.Parameters&quot;, cuRewrite, group); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">					} else if (roles.contains(TEST)) {</span>
+<span class="fc" id="L121">						MethodDeclaration method= (MethodDeclaration) entry.getValue();</span>
+<span class="fc" id="L122">						addAnnotation(method, &quot;org.junit.jupiter.api.DisplayName&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L123">								Map.of(&quot;value&quot;, literal(root.getAST(), method.getName().getIdentifier())), cuRewrite, group); //$NON-NLS-1$</span>
+					}
+				}
+<span class="fc" id="L126">			}</span>
+		});
+<span class="fc" id="L128">	}</span>
+
+	private static void validateCurrentSources(JUnit4ParameterizedPlan plan) throws CoreException {
+<span class="fc" id="L131">		Map&lt;String, String&gt; sources= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L132">		Set&lt;IJavaProject&gt; projects= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">		for (String handle : plan.sourceFingerprints().keySet()) {</span>
+<span class="pc bpc" id="L134" title="3 of 6 branches missed.">			if (!(JavaCore.create(handle) instanceof ICompilationUnit unit) || !unit.exists() || unit.isReadOnly()) {</span>
+<span class="nc" id="L135">				throw failure(&quot;A Parameterized source is missing or read-only; retry with the complete editable scope.&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L137">			projects.add(unit.getJavaProject());</span>
+		}
+<span class="fc bfc" id="L139" title="All 2 branches covered.">		for (IJavaProject project : projects) {</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">			for (ICompilationUnit unit : JavaProjectCompilationUnits.collect(project)) {</span>
+<span class="fc" id="L141">				sources.put(unit.getPrimary().getHandleIdentifier(), unit.getPrimary().getSource());</span>
+			}
+		}
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		if (!plan.isCurrent(sources)) {</span>
+<span class="fc" id="L145">			throw failure(&quot;The Parameterized sources or source-scope membership changed; retry the complete migration.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L147">	}</span>
+
+	private static void rewriteClass(TypeDeclaration type, JUnit4ParameterizedPlan plan,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
+<span class="fc" id="L151">		AST ast= type.getAST();</span>
+<span class="fc" id="L152">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L153">		NodeKey providerKey= plan.semanticPlan().outgoing(plan.testClass(), HAS_PROVIDER).get(0).target();</span>
+<span class="fc" id="L154">		ICompilationUnit providerUnit= (ICompilationUnit) JavaCore.create(plan.compilationUnits().get(providerKey));</span>
+<span class="fc" id="L155">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L156">		parser.setSource(providerUnit);</span>
+<span class="fc" id="L157">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L158">		CompilationUnit providerRoot= (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L159">		List&lt;MethodDeclaration&gt; providers= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L160">		providerRoot.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(MethodDeclaration method) {
+<span class="fc bfc" id="L163" title="All 2 branches covered.">				if (providerKey.equals(NodeKey.from(method))) {</span>
+<span class="fc" id="L164">					providers.add(method);</span>
+				}
+<span class="fc" id="L166">				return true;</span>
+			}
+		});
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">		if (providers.size() != 1) {</span>
+<span class="nc" id="L170">			throw failure(&quot;The Parameterized provider binding changed before rewrite.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L172">		MethodDeclaration provider= providers.get(0);</span>
+<span class="fc" id="L173">		String pattern= parametersName(provider);</span>
+<span class="fc" id="L174">		Set&lt;String&gt; names= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">		for (ITypeBinding binding= type.resolveBinding(); binding != null; binding= binding.getSuperclass()) {</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">			for (IMethodBinding method : binding.getDeclaredMethods()) {</span>
+<span class="fc" id="L177">				names.add(method.getName());</span>
+			}
+		}
+<span class="fc" id="L180">		String adapter= &quot;jupiterArguments&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">		for (int suffix= 2; names.contains(adapter); suffix++) {</span>
+<span class="nc" id="L182">			adapter= &quot;jupiterArguments&quot; + suffix; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L184">		removeAnnotation(type, &quot;org.junit.runner.RunWith&quot;, cuRewrite, group); //$NON-NLS-1$</span>
+<span class="fc" id="L185">		addAnnotation(type, &quot;org.junit.jupiter.params.ParameterizedClass&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L186">				Map.of(&quot;name&quot;, literal(ast, &quot;{argumentSetName}&quot;), &quot;autoCloseArguments&quot;, ast.newBooleanLiteral(false)), cuRewrite, group); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L187">		addAnnotation(type, &quot;org.junit.jupiter.params.provider.MethodSource&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L188">				Map.of(&quot;value&quot;, literal(ast, adapter)), cuRewrite, group); //$NON-NLS-1$</span>
+<span class="fc" id="L189">		TypeLiteral order= ast.newTypeLiteral();</span>
+<span class="fc" id="L190">		order.setType(ast.newSimpleType(ast.newName(&quot;org.junit.jupiter.api.MethodOrderer.OrderAnnotation&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L191">		addAnnotation(type, &quot;org.junit.jupiter.api.TestMethodOrder&quot;, Map.of(&quot;value&quot;, order), cuRewrite, group); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L192">		addAnnotation(type, &quot;org.junit.jupiter.api.TestInstance&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L193">				Map.of(&quot;value&quot;, ast.newName(&quot;org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD&quot;)), cuRewrite, group); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L194">		addAnnotation(type, &quot;org.junit.jupiter.api.parallel.Execution&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L195">				Map.of(&quot;value&quot;, ast.newName(&quot;org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD&quot;)), cuRewrite, group); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		// This fixed adapter preserves JUnit 4's zero-based MessageFormat names and
+		// evaluates the original provider once. Constructor bodies and fields stay intact.
+<span class="fc" id="L198">		String member= &quot;&quot;&quot;</span>
+				static java.util.stream.Stream&lt;org.junit.jupiter.params.provider.Arguments&gt; %s() {
+					java.lang.Object source = %s();
+					java.lang.Iterable&lt;?&gt; rows = source instanceof java.lang.Object[][] ? java.util.Arrays.asList((java.lang.Object[][]) source) : (java.lang.Iterable&lt;?&gt;) source;
+					java.util.List&lt;org.junit.jupiter.params.provider.Arguments&gt; result = new java.util.ArrayList&lt;&gt;();
+					int index = 0;
+					for (java.lang.Object row : rows) {
+						java.lang.Object[] arguments = (java.lang.Object[]) row;
+						java.lang.String name = &quot;[&quot; + java.text.MessageFormat.format(%s.replace(&quot;{index}&quot;, java.lang.Integer.toString(index++)), arguments) + &quot;]&quot;;
+						result.add(org.junit.jupiter.params.provider.Arguments.argumentSet(name, arguments));
+					}
+					return result.stream();
+				}
+<span class="fc" id="L211">				&quot;&quot;&quot;.replace(&quot;\n&quot;, &quot;%n&quot;).formatted(adapter, provider.getName().getIdentifier(), literal(ast, pattern)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L212">		parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L213">		parser.setKind(ASTParser.K_CLASS_BODY_DECLARATIONS);</span>
+<span class="fc" id="L214">		parser.setSource(member.toCharArray());</span>
+<span class="fc" id="L215">		TypeDeclaration parsed= (TypeDeclaration) parser.createAST(null);</span>
+<span class="pc bpc" id="L216" title="2 of 4 branches missed.">		if (parsed.getMethods().length != 1 || (parsed.getFlags() &amp; ASTNode.MALFORMED) != 0) {</span>
+<span class="nc" id="L217">			throw failure(&quot;Cannot materialize the typed Parameterized provider adapter.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L219">		rewrite.getListRewrite(type, TypeDeclaration.BODY_DECLARATIONS_PROPERTY)</span>
+<span class="fc" id="L220">				.insertLast(ASTNode.copySubtree(ast, parsed.getMethods()[0]), group);</span>
+<span class="fc" id="L221">	}</span>
+
+	private static String parametersName(MethodDeclaration provider) throws CoreException {
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">		for (Object item : provider.modifiers()) {</span>
+<span class="pc bpc" id="L225" title="2 of 4 branches missed.">			if (item instanceof Annotation annotation &amp;&amp; annotation.resolveAnnotationBinding() != null</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">					&amp;&amp; &quot;org.junit.runners.Parameterized.Parameters&quot;.equals(annotation.resolveTypeBinding().getQualifiedName())) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">				for (IMemberValuePairBinding pair : annotation.resolveAnnotationBinding().getAllMemberValuePairs()) {</span>
+<span class="pc bpc" id="L228" title="2 of 4 branches missed.">					if (&quot;name&quot;.equals(pair.getName()) &amp;&amp; pair.getValue() instanceof String value) { //$NON-NLS-1$</span>
+<span class="fc" id="L229">						return value;</span>
+					}
+				}
+			}
+		}
+<span class="nc" id="L234">		throw failure(&quot;The Parameterized provider name is unresolved.&quot;); //$NON-NLS-1$</span>
+	}
+
+	private static StringLiteral literal(AST ast, String value) {
+<span class="fc" id="L238">		StringLiteral result= ast.newStringLiteral();</span>
+<span class="fc" id="L239">		result.setLiteralValue(value);</span>
+<span class="fc" id="L240">		return result;</span>
+	}
+
+	@SuppressWarnings(&quot;unchecked&quot;)
+	private static void addAnnotation(BodyDeclaration target, String name, Map&lt;String, Expression&gt; values,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+<span class="fc" id="L246">		AST ast= target.getAST();</span>
+<span class="fc" id="L247">		NormalAnnotation annotation= ast.newNormalAnnotation();</span>
+<span class="fc" id="L248">		annotation.setTypeName(ast.newName(name));</span>
+<span class="fc" id="L249">		values.entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -&gt; {</span>
+<span class="fc" id="L250">			MemberValuePair pair= ast.newMemberValuePair();</span>
+<span class="fc" id="L251">			pair.setName(ast.newSimpleName(entry.getKey()));</span>
+<span class="fc" id="L252">			pair.setValue(entry.getValue());</span>
+<span class="fc" id="L253">			annotation.values().add(pair);</span>
+<span class="fc" id="L254">		});</span>
+<span class="fc" id="L255">		cuRewrite.getASTRewrite().getListRewrite(target, target.getModifiersProperty()).insertFirst(annotation, group);</span>
+<span class="fc" id="L256">	}</span>
+
+	private static void removeAnnotation(BodyDeclaration target, String name,
+			CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+<span class="fc bfc" id="L260" title="All 2 branches covered.">		for (Object item : target.modifiers()) {</span>
+<span class="pc bpc" id="L261" title="1 of 4 branches missed.">			if (item instanceof Annotation annotation &amp;&amp; annotation.resolveTypeBinding() != null</span>
+<span class="pc bpc" id="L262" title="1 of 2 branches missed.">					&amp;&amp; name.equals(annotation.resolveTypeBinding().getQualifiedName())) {</span>
+<span class="fc" id="L263">				cuRewrite.getImportRemover().registerRemovedNode(annotation);</span>
+<span class="fc" id="L264">				cuRewrite.getASTRewrite().remove(annotation, group);</span>
+			}
+		}
+<span class="fc" id="L267">	}</span>
+
+	private static String hintProgram() throws CoreException {
+<span class="fc" id="L270">		String resource= &quot;org/sandbox/jdt/internal/corext/fix/hints/junit4-parameterized-to-jupiter.sandbox-hint&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L271">		try (InputStream stream= JUnit4ParameterizedMigration.class.getClassLoader().getResourceAsStream(resource)) {</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">			if (stream == null) {</span>
+<span class="nc" id="L273">				throw new IOException(resource);</span>
+			}
+<span class="fc" id="L275">			return new String(stream.readAllBytes(), StandardCharsets.UTF_8);</span>
+<span class="nc" id="L276">		} catch (IOException e) {</span>
+<span class="nc" id="L277">			throw new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, &quot;Cannot load Parameterized hints&quot;, e)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+	}
+
+	private static CoreException failure(String message) {
+<span class="fc" id="L282">		return new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, message)); //$NON-NLS-1$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

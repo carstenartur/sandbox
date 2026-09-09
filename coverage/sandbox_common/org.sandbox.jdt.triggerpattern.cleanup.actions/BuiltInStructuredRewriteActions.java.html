@@ -87,7 +87,7 @@ final class BuiltInStructuredRewriteActions {
 <span class="fc" id="L87">				action.requiredArgument(&quot;target&quot;)); //$NON-NLS-1$</span>
 <span class="fc" id="L88">		String expected= context.resolveString(action.requiredArgument(&quot;annotation&quot;)); //$NON-NLS-1$</span>
 <span class="fc" id="L89">		String expectedSimple= simpleName(expected);</span>
-<span class="pc bpc" id="L90" title="1 of 2 branches missed.">		for (Object modifier : declaration.modifiers()) {</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">		for (Object modifier : modifiers(context.cuRewrite().getASTRewrite(), declaration, context).getRewrittenList()) {</span>
 <span class="pc bpc" id="L91" title="1 of 2 branches missed.">			if (modifier instanceof Annotation annotation) {</span>
 <span class="fc" id="L92">				String actual= annotationName(annotation);</span>
 <span class="pc bpc" id="L93" title="3 of 4 branches missed.">				if (expected.equals(actual) || expectedSimple.equals(simpleName(actual))) {</span>
@@ -324,25 +324,26 @@ final class BuiltInStructuredRewriteActions {
 	private static void ensureAnnotationMissing(BodyDeclaration declaration, String expected,
 			StructuredRewriteActionContext context) throws CoreException {
 <span class="fc" id="L326">		String expectedSimple= simpleName(expected);</span>
-<span class="fc bfc" id="L327" title="All 2 branches covered.">		for (Object modifier : declaration.modifiers()) {</span>
-<span class="fc bfc" id="L328" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
-<span class="fc" id="L329">				String actual= annotationName(annotation);</span>
-<span class="pc bpc" id="L330" title="2 of 4 branches missed.">				if (expected.equals(actual) || expectedSimple.equals(simpleName(actual))) {</span>
-<span class="nc" id="L331">					throw context.failure(&quot;Structured action annotation already exists: &quot; + expected); //$NON-NLS-1$</span>
+		// Earlier actions in this sequence may already have removed or added an annotation.
+<span class="fc bfc" id="L328" title="All 2 branches covered.">		for (Object modifier : modifiers(context.cuRewrite().getASTRewrite(), declaration, context).getRewrittenList()) {</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L330">				String actual= annotationName(annotation);</span>
+<span class="pc bpc" id="L331" title="2 of 4 branches missed.">				if (expected.equals(actual) || expectedSimple.equals(simpleName(actual))) {</span>
+<span class="nc" id="L332">					throw context.failure(&quot;Structured action annotation already exists: &quot; + expected); //$NON-NLS-1$</span>
 				}
 			}
 		}
-<span class="fc" id="L335">	}</span>
+<span class="fc" id="L336">	}</span>
 
 	private static String annotationName(Annotation annotation) {
-<span class="fc" id="L338">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L339" title="1 of 2 branches missed.">		return binding == null ? annotation.getTypeName().getFullyQualifiedName()</span>
-<span class="fc" id="L340">				: binding.getQualifiedName();</span>
+<span class="fc" id="L339">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">		return binding == null ? annotation.getTypeName().getFullyQualifiedName()</span>
+<span class="fc" id="L341">				: binding.getQualifiedName();</span>
 	}
 
 	private static String simpleName(String qualifiedName) {
-<span class="fc" id="L344">		int separator= qualifiedName.lastIndexOf('.');</span>
-<span class="pc bpc" id="L345" title="1 of 2 branches missed.">		return separator &lt; 0 ? qualifiedName : qualifiedName.substring(separator + 1);</span>
+<span class="fc" id="L345">		int separator= qualifiedName.lastIndexOf('.');</span>
+<span class="fc bfc" id="L346" title="All 2 branches covered.">		return separator &lt; 0 ? qualifiedName : qualifiedName.substring(separator + 1);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

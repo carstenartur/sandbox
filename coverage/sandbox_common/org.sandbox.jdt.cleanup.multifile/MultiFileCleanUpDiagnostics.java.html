@@ -71,7 +71,7 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 	/** Adds one concise, nonfatal planning summary to the cleanup preview status. */
 	public void appendSummary(RefactoringStatus status) {
 <span class="pc bpc" id="L73" title="2 of 6 branches missed.">		if (status == null || candidates.isEmpty() &amp;&amp; scope.addedCompilationUnitHandles().isEmpty()</span>
-<span class="pc bpc" id="L74" title="1 of 2 branches missed.">				&amp;&amp; scope.complete()) {</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">				&amp;&amp; scope.complete()) {</span>
 <span class="fc" id="L75">			return;</span>
 		}
 <span class="fc" id="L77">		long transformed= candidates.stream()</span>
@@ -89,8 +89,8 @@ public record MultiFileCleanUpDiagnostics(String cleanupId, MultiFileScopeDiagno
 <span class="fc" id="L89">				.append(scope.addedCompilationUnitHandles().size()).append(&quot; added, &quot;) //$NON-NLS-1$</span>
 <span class="fc" id="L90">				.append(affectedCompilationUnitCount()).append(&quot; affected; &quot;) //$NON-NLS-1$</span>
 <span class="fc" id="L91">				.append(transformed).append(&quot; transformed, &quot;).append(rejected).append(&quot; rejected&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		if (!scope.complete()) {</span>
-<span class="nc" id="L93">			summary.append(&quot;; scope incomplete (&quot;).append(scope.reasonCode()).append(')'); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		if (!scope.complete()) {</span>
+<span class="fc" id="L93">			summary.append(&quot;; scope incomplete (&quot;).append(scope.reasonCode()).append(')'); //$NON-NLS-1$</span>
 		}
 <span class="fc bfc" id="L95" title="All 2 branches covered.">		if (!rejectedByReason.isEmpty()) {</span>
 <span class="fc" id="L96">			summary.append(&quot; (&quot;); //$NON-NLS-1$</span>
