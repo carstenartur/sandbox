@@ -92,9 +92,15 @@ public class ParameterizedCoordinatedExecutionTest {
 		List<Observation> baseline= observations(before, false);
 		assertEquals(4, baseline.size(), before.toString());
 		assertTrue(baseline.get(0).displayName().contains("[0:") || shape.equals("duplicate-names"), baseline.toString());
+		if (shape.equals("constructor")) {
+			context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
+		}
 		context.apply(units);
 		assertNotEquals(original, sources(units), "The coordinated migration must execute");
 		assertTrue(test.getSource().contains("ParameterizedClass"), test.getSource());
+		if (shape.equals("constructor")) {
+			assertFalse(test.getSource().contains("org.junit.Assert"), "Selected assertion rewrites must remain independent of annotation planning");
+		}
 		assertEquals(inventory, JUnitTestTypeInventory.capture(context.getJavaProject(), null).typeHandles());
 		ExecutionTreeSnapshot after= JUnitRuntimeTestTree.capture(test.findPrimaryType(), JUnitRuntimeTestTree.TestKind.JUNIT5, true);
 		assertEquals(before.successful(), after.successful(), after.toString());
@@ -109,7 +115,7 @@ public class ParameterizedCoordinatedExecutionTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings= { "static-initializer", "static-field", "empty-rows", "timeout", "shared-base", "rule" })
+	@ValueSource(strings= { "static-initializer", "static-field", "empty-rows", "timeout", "shared-base", "rule", "test-override", "provider-superclass" })
 	void rejectedExecutionContractsLeaveEverySourceUntouched(String reason) throws CoreException {
 		ICompilationUnit[] units= fixture("inherited");
 		ICompilationUnit data= units[0];
@@ -122,6 +128,11 @@ public class ParameterizedCoordinatedExecutionTest {
 		case "timeout" -> base.getBuffer().setContents(base.getSource().replace("@Test public void aa", "@Test(timeout=100) public void aa"));
 		case "shared-base" -> unit("Sibling", "public class Sibling extends Base { }");
 		case "rule" -> test.getBuffer().setContents(test.getSource().replace("extends Base {", "extends Base { @org.junit.Rule public org.junit.rules.TestName name = new org.junit.rules.TestName();"));
+		case "test-override" -> test.getBuffer().setContents(test.getSource().replace("extends Base {", "extends Base { @Override public void aa() { }"));
+		case "provider-superclass" -> {
+			unit("Initializer", "public class Initializer { static { System.setProperty(\"provider\", \"initialized\"); } }");
+			data.getBuffer().setContents(data.getSource().replace("class Data {", "class Data extends Initializer {"));
+		}
 		default -> throw new AssertionError(reason);
 		}
 		ICompilationUnit[] scope= pack.getCompilationUnits();
@@ -150,10 +161,14 @@ public class ParameterizedCoordinatedExecutionTest {
 	@Test
 	void partialSelectionCannotRewriteAnInheritedTest() throws CoreException {
 		ICompilationUnit[] units= fixture("inherited");
-		var result= JUnitMultiFilePlanner.createCoordinated(context.getJavaProject(), new ICompilationUnit[] { units[2] },
-				new JUnitMultiFilePlanner.PlanningOptions(false, false, true, true), false, null);
-		assertFalse(result.plan().hasCoordinatedChanges());
-		assertEquals("PARAMETERIZED_INCOMPLETE_SCOPE", result.diagnostics().candidates().get(0).reasonCode());
+		Map<String, String> original= sources(units);
+		for (ICompilationUnit selected : List.of(units[1], units[2])) {
+			var result= JUnitMultiFilePlanner.createCoordinated(context.getJavaProject(), new ICompilationUnit[] { selected },
+					new JUnitMultiFilePlanner.PlanningOptions(false, false, true, true), false, null);
+			assertFalse(result.plan().hasCoordinatedChanges());
+			assertEquals("PARAMETERIZED_INCOMPLETE_SCOPE", result.diagnostics().candidates().get(0).reasonCode());
+		}
+		assertEquals(original, sources(units));
 	}
 
 	private ICompilationUnit[] fixture(String shape) throws CoreException {
@@ -204,7 +219,7 @@ public class ParameterizedCoordinatedExecutionTest {
 		String currentRow= node.kind() == NodeKind.CONTAINER && node.displayName().startsWith("[") ? node.displayName() : row;
 		if (node.kind() == NodeKind.TEST) {
 			String method= node.attributes().get("testMethod");
-			String name= jupiter ? node.displayName().replaceFirst("\\(\\)$", "") + currentRow : method;
+			String name= jupiter ? node.displayName() + currentRow : method;
 			result.add(new Observation(node.attributes().get("testClass"), name, node.result()));
 		}
 		for (Node child : node.children()) {

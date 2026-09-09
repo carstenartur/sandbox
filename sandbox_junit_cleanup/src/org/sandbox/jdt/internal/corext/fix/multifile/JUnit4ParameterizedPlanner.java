@@ -28,6 +28,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -160,7 +162,7 @@ final class JUnit4ParameterizedPlanner {
 				@Override
 				public boolean visit(TypeDeclaration node) {
 					MultiFilePlanningBudget.checkCanceled(monitor);
-					if (!candidate(node)) {
+					if (!candidate(node) && !(execute && !closedScope && hasJUnit4ExecutionMembers(node))) {
 						return true;
 					}
 					if (execute && Arrays.stream(node.getMethods()).anyMatch(method -> annotation(method, "org.junit.jupiter.api.Test") != null) //$NON-NLS-1$
@@ -279,6 +281,13 @@ final class JUnit4ParameterizedPlanner {
 		require(!tests.isEmpty(), "NO_TESTS", "No supported JUnit 4 test methods were found."); //$NON-NLS-1$ //$NON-NLS-2$
 		List<ITypeBinding> parameterTypes= injection(testClass, fields, builder, owners, testKey);
 		MethodDeclaration provider= providers.get(0);
+		if (execute) {
+			long declarations= hierarchy.stream().flatMap(type -> Arrays.stream(type.getMethods()))
+					.filter(method -> method.getName().getIdentifier().equals(provider.getName().getIdentifier())
+							&& method.parameters().isEmpty()).count();
+			require(declarations == 1, "PROVIDER_OVERRIDE", //$NON-NLS-1$
+					"Resolve hidden or overridden provider methods before selecting a Jupiter method source."); //$NON-NLS-1$
+		}
 		require(Modifier.isPublic(provider.getModifiers()), "PROVIDER_NOT_PUBLIC", //$NON-NLS-1$
 				"JUnit 4 requires a public @Parameters provider."); //$NON-NLS-1$
 		validateDisplayName(provider);
@@ -289,6 +298,13 @@ final class JUnit4ParameterizedPlanner {
 		builder.putString(providerKey, "conversionStrategy", "OBJECT_ARRAY_ROWS"); //$NON-NLS-1$ //$NON-NLS-2$
 		builder.putString(testKey, "displayNameSemantics", "JUNIT4_MESSAGE_FORMAT_ZERO_BASED"); //$NON-NLS-1$ //$NON-NLS-2$
 		for (MethodDeclaration method : tests) {
+			if (execute) {
+				long declarations= hierarchy.stream().flatMap(type -> Arrays.stream(type.getMethods()))
+						.filter(other -> other.getName().getIdentifier().equals(method.getName().getIdentifier())
+								&& other.parameters().isEmpty()).count();
+				require(declarations == 1, "TEST_OVERRIDE", //$NON-NLS-1$
+						"An unannotated override changes JUnit 4 test dispatch; retain the complete hierarchy."); //$NON-NLS-1$
+			}
 			NodeKey methodKey= add(builder, owners, method, TEST);
 			builder.relate(testKey, HAS_TEST, methodKey);
 			if (execute) {
@@ -336,6 +352,7 @@ final class JUnit4ParameterizedPlanner {
 			builder.relate(testKey, HAS_CONSTRUCTOR, constructorKey);
 			for (Object item : constructor.parameters()) {
 				SingleVariableDeclaration parameter= (SingleVariableDeclaration) item;
+				checkAnnotations(parameter.modifiers());
 				IVariableBinding binding= parameter.resolveBinding();
 				require(!parameter.isVarargs() && resolved(binding), "PARAMETER_UNSUPPORTED", //$NON-NLS-1$
 						"Resolve each constructor parameter; varargs require a dedicated conversion strategy."); //$NON-NLS-1$
@@ -370,7 +387,9 @@ final class JUnit4ParameterizedPlanner {
 		if (execute) {
 			require(provider.getParent() instanceof TypeDeclaration, "PROVIDER_BODY_UNSUPPORTED", //$NON-NLS-1$
 					"Select a provider declared in an editable class."); //$NON-NLS-1$
-			validateInitialization((TypeDeclaration) provider.getParent());
+			for (TypeDeclaration type : hierarchy((TypeDeclaration) provider.getParent())) {
+				validateInitialization(type);
+			}
 			require(provider.thrownExceptionTypes().isEmpty(), "PROVIDER_THROWS", //$NON-NLS-1$
 					"Remove the provider's throws clause or migrate its exception contract explicitly."); //$NON-NLS-1$
 		}
@@ -452,9 +471,22 @@ final class JUnit4ParameterizedPlanner {
 	private void validateExecutionHierarchy(TypeDeclaration leaf, List<TypeDeclaration> hierarchy,
 			SemanticRewritePlan.Builder builder, Map<NodeKey, String> owners) {
 		Set<String> lifecycleNames= new HashSet<>();
+		Set<String> allowedTypes= hierarchy.stream().map(type -> type.resolveBinding().getJavaElement().getHandleIdentifier())
+				.collect(java.util.stream.Collectors.toSet());
 		for (TypeDeclaration type : hierarchy) {
 			add(builder, owners, type, HIERARCHY_TYPE);
 			validateInitialization(type);
+			if (type.resolveBinding().getJavaElement() instanceof IType modelType) {
+				try {
+					for (IType subtype : modelType.newTypeHierarchy(monitor).getAllSubtypes(modelType)) {
+						require(allowedTypes.contains(subtype.getHandleIdentifier()), "SHARED_HIERARCHY", //$NON-NLS-1$
+								"A binary, generated or unselected subtype consumes this test hierarchy; keep its JUnit 4 annotations."); //$NON-NLS-1$
+					}
+				} catch (JavaModelException e) {
+					throw new Rejected("PARAMETERIZED_HIERARCHY_UNRESOLVED", //$NON-NLS-1$
+							"The complete JDT subtype hierarchy could not be resolved: " + e.getMessage()); //$NON-NLS-1$
+				}
+			}
 			require(type.superInterfaceTypes().isEmpty(), "INTERFACE_HOOKS", //$NON-NLS-1$
 					"Interface test and lifecycle methods need a dedicated discovery contract."); //$NON-NLS-1$
 			require(type == leaf || Modifier.isAbstract(type.getModifiers())
@@ -472,6 +504,8 @@ final class JUnit4ParameterizedPlanner {
 					if (annotation(method, "org.junit." + hook) == null) { //$NON-NLS-1$
 						continue;
 					}
+					require(annotation(method, JUNIT_TEST) == null, "LIFECYCLE_SIGNATURE", //$NON-NLS-1$
+							"A method cannot be both a parameterized test and a lifecycle callback in this contract."); //$NON-NLS-1$
 					require(lifecycleKinds.add(hook) && lifecycleNames.add(method.getName().getIdentifier()),
 							"LIFECYCLE_ORDER", "Multiple or overridden lifecycle methods need an explicit invocation-order contract."); //$NON-NLS-1$ //$NON-NLS-2$
 					require(Modifier.isPublic(method.getModifiers())
@@ -537,6 +571,18 @@ final class JUnit4ParameterizedPlanner {
 		return false;
 	}
 
+	private static boolean hasJUnit4ExecutionMembers(TypeDeclaration type) {
+		for (MethodDeclaration method : type.getMethods()) {
+			for (String name : List.of(JUNIT_TEST, PARAMETERS, "org.junit.Before", "org.junit.After", //$NON-NLS-1$ //$NON-NLS-2$
+					"org.junit.BeforeClass", "org.junit.AfterClass")) { //$NON-NLS-1$ //$NON-NLS-2$
+				if (annotation(method, name) != null) {
+					return true;
+				}
+			}
+		}
+		return Arrays.stream(type.getFields()).anyMatch(field -> annotation(field, PARAMETER_ANNOTATION) != null);
+	}
+
 	private static Annotation annotation(BodyDeclaration declaration, String name) {
 		for (Object item : declaration.modifiers()) {
 			if (item instanceof Annotation annotation && resolved(annotation.resolveTypeBinding())
@@ -547,14 +593,22 @@ final class JUnit4ParameterizedPlanner {
 		return null;
 	}
 
-	private static void checkAnnotations(BodyDeclaration declaration) {
-		for (Object item : declaration.modifiers()) {
+	private void checkAnnotations(BodyDeclaration declaration) {
+		checkAnnotations(declaration.modifiers());
+	}
+
+	private void checkAnnotations(List<?> modifiers) {
+		for (Object item : modifiers) {
 			if (!(item instanceof Annotation annotation)) {
 				continue;
 			}
 			ITypeBinding binding= annotation.resolveTypeBinding();
 			require(resolved(binding), "BINDING_UNRESOLVED", "Resolve all annotations before classifying execution hooks."); //$NON-NLS-1$ //$NON-NLS-2$
 			String name= binding.getQualifiedName();
+			if (execute) {
+				require(!jupiterMetaAnnotation(binding, new HashSet<>()), "EXECUTION_HOOK_UNSUPPORTED", //$NON-NLS-1$
+						"Composed Jupiter annotations change execution or argument conversion and need a dedicated contract."); //$NON-NLS-1$
+			}
 			if (name.startsWith("org.junit.")) { //$NON-NLS-1$
 				require(Set.of(PARAMETERS, PARAMETER_ANNOTATION, JUNIT_TEST, "org.junit.runner.RunWith", //$NON-NLS-1$
 						"org.junit.Before", "org.junit.After", "org.junit.BeforeClass", "org.junit.AfterClass") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -562,6 +616,19 @@ final class JUnit4ParameterizedPlanner {
 						"Custom runners, rules, parameter hooks and mixed JUnit generations need a dedicated semantic contract."); //$NON-NLS-1$
 			}
 		}
+	}
+
+	private static boolean jupiterMetaAnnotation(ITypeBinding type, Set<String> seen) {
+		if (!resolved(type) || !seen.add(type.getKey()) || type.getQualifiedName().startsWith("java.lang.annotation.")) { //$NON-NLS-1$
+			return false;
+		}
+		for (IAnnotationBinding annotation : type.getAnnotations()) {
+			ITypeBinding meta= annotation.getAnnotationType();
+			if (meta.getQualifiedName().startsWith("org.junit.jupiter.") || jupiterMetaAnnotation(meta, seen)) { //$NON-NLS-1$
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static Object value(Annotation annotation, String member) {

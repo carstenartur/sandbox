@@ -74,12 +74,18 @@ final class JUnit4ParameterizedMigration {
 					|| role.startsWith("JUNIT4_PARAMETERIZED_After"))) { //$NON-NLS-1$
 				hintTargets.add(entry.getKey());
 			}
-			entry.getValue().accept(new ASTVisitor() {
-				@Override
-				public void preVisit(ASTNode node) {
-					processed.add(node);
+			ASTNode declaration= entry.getValue();
+			processed.add(declaration);
+			if (declaration instanceof VariableDeclarationFragment) {
+				declaration= declaration.getParent();
+			}
+			if (declaration instanceof BodyDeclaration body) {
+				for (Object modifier : body.modifiers()) {
+					if (modifier instanceof Annotation annotation) {
+						processed.add(annotation);
+					}
 				}
-			});
+			}
 		}
 		Set<NodeKey> covered= PlanAwareHintFileFixCore.findOperationsFromContent(root, hintProgram(),
 				plan.semanticPlan(), unit.getJavaProject().getOptions(true), operations, processed);
@@ -102,8 +108,13 @@ final class JUnit4ParameterizedMigration {
 						removeAnnotation(field, "org.junit.runners.Parameterized.Parameter", cuRewrite, group); //$NON-NLS-1$
 						addAnnotation(field, "org.junit.jupiter.params.Parameter", //$NON-NLS-1$
 								Map.of("value", root.getAST().newNumberLiteral(Integer.toString(index))), cuRewrite, group); //$NON-NLS-1$
-					} else if (roles.contains(PROVIDER)) {
+					} else if (roles.contains(PROVIDER) && entry.getKey().equals(
+							plan.semanticPlan().outgoing(plan.testClass(), HAS_PROVIDER).get(0).target())) {
 						removeAnnotation((MethodDeclaration) entry.getValue(), "org.junit.runners.Parameterized.Parameters", cuRewrite, group); //$NON-NLS-1$
+					} else if (roles.contains(TEST)) {
+						MethodDeclaration method= (MethodDeclaration) entry.getValue();
+						addAnnotation(method, "org.junit.jupiter.api.DisplayName", //$NON-NLS-1$
+								Map.of("value", literal(root.getAST(), method.getName().getIdentifier())), cuRewrite, group); //$NON-NLS-1$
 					}
 				}
 			}
@@ -180,19 +191,18 @@ final class JUnit4ParameterizedMigration {
 		// evaluates the original provider once. Constructor bodies and fields stay intact.
 		String member= """
 				static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> %s() {
-					Object source = %s();
-					Iterable<?> rows = source instanceof Object[][] ? java.util.Arrays.asList((Object[][]) source) : (Iterable<?>) source;
+					java.lang.Object source = %s();
+					java.lang.Iterable<?> rows = source instanceof java.lang.Object[][] ? java.util.Arrays.asList((java.lang.Object[][]) source) : (java.lang.Iterable<?>) source;
 					java.util.List<org.junit.jupiter.params.provider.Arguments> result = new java.util.ArrayList<>();
 					int index = 0;
-					for (Object row : rows) {
-						Object[] arguments = (Object[]) row;
-						String name = "[" + java.text.MessageFormat.format(%s.replace("{index}", Integer.toString(index++)), arguments) + "]";
+					for (java.lang.Object row : rows) {
+						java.lang.Object[] arguments = (java.lang.Object[]) row;
+						java.lang.String name = "[" + java.text.MessageFormat.format(%s.replace("{index}", java.lang.Integer.toString(index++)), arguments) + "]";
 						result.add(org.junit.jupiter.params.provider.Arguments.argumentSet(name, arguments));
 					}
 					return result.stream();
 				}
-				""".formatted(adapter, provider.resolveBinding().getDeclaringClass().getQualifiedName()
-						+ "." + provider.getName().getIdentifier(), literal(ast, pattern)); //$NON-NLS-1$ //$NON-NLS-2$
+				""".replace("\n", "%n").formatted(adapter, provider.getName().getIdentifier(), literal(ast, pattern)); //$NON-NLS-1$ //$NON-NLS-2$
 		parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_CLASS_BODY_DECLARATIONS);
 		parser.setSource(member.toCharArray());
