@@ -21,10 +21,11 @@ The existing plan-aware hint engine changes test and lifecycle annotations; the
 class strategy fixes per-method instances, sequential execution and JUnit 4 method
 order. Provider methods remain callable and dependencies are retained.
 
-Empty row sets, executable static initialization, shared test superclasses,
-interface hooks, overridden or multiple lifecycle hooks, expected exceptions,
-timeouts and custom execution hooks are rejected. Rejected closures quarantine
-the selected JUnit migration scope to prevent partial superclass migration.
+Empty row sets, duplicate formatted row names, executable static initialization,
+shared test superclasses, interface hooks, overridden or multiple lifecycle hooks,
+expected exceptions, timeouts and custom execution hooks are rejected. Rejected
+closures quarantine their selected hierarchy to prevent partial superclass
+migration while independent selected classes remain eligible.
 `ParameterizedCoordinatedExecutionTest` checks the real JDT finder and JUnit 4/5
 loaders, ordered row names and results, constructor/lifecycle counts, undo,
 idempotency, source changes and rejection atomicity.

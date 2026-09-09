@@ -208,9 +208,13 @@ public final class JUnitBestEffortSupport {
 		for (var diagnostic : diagnostics.candidates()) {
 			if (diagnostic.candidateId().startsWith("parameterized:") //$NON-NLS-1$
 					&& diagnostic.outcome() == org.sandbox.jdt.cleanup.multifile.MultiFileCandidateOutcome.REJECTED) {
-				// A rejected closure can contain unclassified inherited consumers. Keep
-				// the selected migration atomic instead of detaching superclass tests.
-				for (String handle : plan.selectedScope().compilationUnitHandles()) {
+				// Quarantine the test hierarchy while allowing independent resource
+				// compatibility bridges and unrelated test classes to migrate.
+				for (String handle : diagnostic.relatedCompilationUnitHandles()) {
+					if (gaps.stream().anyMatch(gap -> handle.equals(gap.ownerCompilationUnitHandle())
+							&& gap.candidateId().startsWith("parameterized:"))) { //$NON-NLS-1$
+						continue;
+					}
 					gaps.add(new Gap(handle, "", diagnostic.candidateId(), 0, diagnostic.candidateId(), //$NON-NLS-1$
 							diagnostic.reasonCode(), diagnostic.message(),
 							"Resolve the coordinated Parameterized diagnostic and rerun the complete selected scope.")); //$NON-NLS-1$

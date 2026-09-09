@@ -81,7 +81,7 @@ public class ParameterizedCoordinatedExecutionTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings= { "constructor", "fields", "inherited", "failures", "duplicate-names" })
+	@ValueSource(strings= { "constructor", "fields", "inherited", "failures" })
 	void preservesRuntimeDiscoveryRowsNamesResultsAndLifecycle(String shape) throws CoreException {
 		ICompilationUnit[] units= fixture(shape);
 		ICompilationUnit test= units[units.length - 1];
@@ -91,7 +91,7 @@ public class ParameterizedCoordinatedExecutionTest {
 		assertEquals(!shape.equals("failures"), before.successful(), before.toString());
 		List<Observation> baseline= observations(before, false);
 		assertEquals(4, baseline.size(), before.toString());
-		assertTrue(baseline.get(0).displayName().contains("[0:") || shape.equals("duplicate-names"), baseline.toString());
+		assertTrue(baseline.get(0).displayName().contains("[0:"), baseline.toString());
 		if (shape.equals("constructor")) {
 			context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_ASSERT);
 		}
@@ -115,7 +115,7 @@ public class ParameterizedCoordinatedExecutionTest {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings= { "static-initializer", "static-field", "empty-rows", "timeout", "shared-base", "rule", "test-override", "provider-superclass" })
+	@ValueSource(strings= { "static-initializer", "static-field", "empty-rows", "timeout", "shared-base", "rule", "test-override", "provider-superclass", "duplicate-names" })
 	void rejectedExecutionContractsLeaveEverySourceUntouched(String reason) throws CoreException {
 		ICompilationUnit[] units= fixture("inherited");
 		ICompilationUnit data= units[0];
@@ -129,6 +129,7 @@ public class ParameterizedCoordinatedExecutionTest {
 		case "shared-base" -> unit("Sibling", "public class Sibling extends Base { }");
 		case "rule" -> test.getBuffer().setContents(test.getSource().replace("extends Base {", "extends Base { @org.junit.Rule public org.junit.rules.TestName name = new org.junit.rules.TestName();"));
 		case "test-override" -> test.getBuffer().setContents(test.getSource().replace("extends Base {", "extends Base { @Override public void aa() { }"));
+		case "duplicate-names" -> base.getBuffer().setContents(base.getSource().replace("{index}: ''{1}''={0}", "duplicate"));
 		case "provider-superclass" -> {
 			unit("Initializer", "public class Initializer { static { System.setProperty(\"provider\", \"initialized\"); } }");
 			data.getBuffer().setContents(data.getSource().replace("class Data {", "class Data extends Initializer {"));
@@ -171,6 +172,17 @@ public class ParameterizedCoordinatedExecutionTest {
 		assertEquals(original, sources(units));
 	}
 
+	@Test
+	void ordinaryPartialSelectionDoesNotBecomeAParameterizedCandidate() throws CoreException {
+		ICompilationUnit test= unit("Ordinary", "public class Ordinary { @Test public void works() { } }");
+		unit("Unrelated", "public class Unrelated { }");
+		var result= JUnitMultiFilePlanner.createCoordinated(context.getJavaProject(), new ICompilationUnit[] { test },
+				new JUnitMultiFilePlanner.PlanningOptions(false, false, true, true), false, null);
+		assertTrue(result.diagnostics().candidates().isEmpty(), result.diagnostics().toString());
+		context.apply(new ICompilationUnit[] { test });
+		assertTrue(test.getSource().contains("org.junit.jupiter.api.Test"), test.getSource());
+	}
+
 	private ICompilationUnit[] fixture(String shape) throws CoreException {
 		String fields= "@Parameter(1) public String label; @Parameter public int value;";
 		if (shape.equals("inherited")) {
@@ -182,8 +194,10 @@ public class ParameterizedCoordinatedExecutionTest {
 		String injection= shape.equals("fields") ? fields + "public Sample() { constructed++; }"
 				: "private final int value; private final String label; public Sample(int value, String label) { constructed++; this.value = value; this.label = label; }";
 		String methods= shape.equals("failures") ? METHODS.replace("org.junit.Assert.assertTrue(value > 0);", "org.junit.Assert.fail(\"intentional:\" + value);") : METHODS;
-		String provider= shape.equals("duplicate-names") ? PROVIDER.replace("{index}: ''{1}''={0}", "duplicate") : PROVIDER;
-		return new ICompilationUnit[] { unit("Sample", "@RunWith(Parameterized.class) public class Sample {" + injection + provider + methods + "}") };
+		if (shape.equals("constructor")) {
+			methods= methods.replace("@Test public void z() {", "@Test public void z() { org.junit.Assert.assertThat(label, org.hamcrest.CoreMatchers.is(value == 1 ? \"one\" : \"two\"));");
+		}
+		return new ICompilationUnit[] { unit("Sample", "@RunWith(Parameterized.class) public class Sample {" + injection + PROVIDER + methods + "}") };
 	}
 
 	private ICompilationUnit unit(String name, String body) throws CoreException {
@@ -233,8 +247,26 @@ public class ParameterizedCoordinatedExecutionTest {
 		}
 
 		void apply(ICompilationUnit[] units) throws CoreException {
-			var status= performRefactoring(units, null);
-			assertFalse(status.hasError(), status.toString());
+			try {
+				var status= performRefactoring(units, null);
+				assertFalse(status.hasError(), status.toString());
+			} catch (RuntimeException failure) {
+				// JDT's private wrapper retains CoreException outside the cause chain.
+				// Expose its status only on failure, without changing the cleanup path.
+				for (Throwable nested= failure; nested != null; nested= nested.getCause()) {
+					if (nested.getClass().getName().endsWith("CleanUpRefactoring$FixCalculationException")) { //$NON-NLS-1$
+						try {
+							var accessor= nested.getClass().getDeclaredMethod("getException"); //$NON-NLS-1$
+							if (accessor.trySetAccessible() && accessor.invoke(nested) instanceof CoreException detail) {
+								throw new AssertionError(detail.getStatus().toString(), detail);
+							}
+						} catch (ReflectiveOperationException unavailable) {
+							failure.addSuppressed(unavailable);
+						}
+					}
+				}
+				throw failure;
+			}
 			for (ICompilationUnit unit : units) {
 				assertNoCompilationError(unit);
 			}

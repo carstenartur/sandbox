@@ -92,6 +92,12 @@ final class JUnit4ParameterizedMigration {
 		if (!covered.equals(hintTargets)) {
 			throw failure("The Parameterized hint program did not cover every planned test and lifecycle method."); //$NON-NLS-1$
 		}
+		NodeKey providerKey= plan.semanticPlan().outgoing(plan.testClass(), HAS_PROVIDER).get(0).target();
+		if (nodes.entrySet().stream().noneMatch(entry -> entry.getKey().equals(providerKey)
+				|| plan.semanticPlan().rolesByNode().get(entry.getKey()).stream()
+						.anyMatch(Set.of(RUNNER_CLASS, FIELD, TEST)::contains))) {
+			return; // Delegated provider sources are validated but have no declaration edits.
+		}
 		operations.add(new CompilationUnitRewriteOperationWithSourceRange() {
 			@Override
 			public void rewriteASTInternal(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel)

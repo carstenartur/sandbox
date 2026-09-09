@@ -162,7 +162,7 @@ final class JUnit4ParameterizedPlanner {
 				@Override
 				public boolean visit(TypeDeclaration node) {
 					MultiFilePlanningBudget.checkCanceled(monitor);
-					if (!candidate(node) && !(execute && !closedScope && hasJUnit4ExecutionMembers(node))) {
+					if (!candidate(node) && !(execute && !closedScope && hasJUnit4ExecutionConsumers(node))) {
 						return true;
 					}
 					if (execute && Arrays.stream(node.getMethods()).anyMatch(method -> annotation(method, "org.junit.jupiter.api.Test") != null) //$NON-NLS-1$
@@ -197,13 +197,31 @@ final class JUnit4ParameterizedPlanner {
 					} catch (Rejected e) {
 						diagnostics.add(MultiFileCandidateDiagnostic.rejected(id, entry.getKey(), e.code,
 								"No coordinated Parameterized plan was produced: " + e.getMessage(), //$NON-NLS-1$
-								List.of(entry.getKey())));
+								executionClosureHandles(node)));
 					}
 					return true;
 				}
 			});
 		}
 		return new Result(plans, diagnostics);
+	}
+
+	private List<String> executionClosureHandles(TypeDeclaration leaf) {
+		Set<String> handles= new java.util.LinkedHashSet<>();
+		handles.add(handlesByRoot.get(leaf.getRoot()));
+		List<ITypeBinding> hierarchy= new ArrayList<>();
+		Set<String> seen= new HashSet<>();
+		for (ITypeBinding binding= leaf.resolveBinding(); resolved(binding)
+				&& !OBJECT.equals(binding.getQualifiedName()) && seen.add(binding.getKey()); binding= binding.getSuperclass()) {
+			hierarchy.add(binding);
+		}
+		for (TypeDeclaration type : types.values()) {
+			if (hierarchy.isEmpty() ? hasJUnit4ExecutionMembers(type)
+					: hierarchy.stream().anyMatch(base -> type.resolveBinding().isSubTypeCompatible(base))) {
+				handles.add(handlesByRoot.get(type.getRoot()));
+			}
+		}
+		return List.copyOf(handles);
 	}
 
 	private JUnit4ParameterizedPlan plan(TypeDeclaration testClass) {
@@ -290,11 +308,11 @@ final class JUnit4ParameterizedPlanner {
 		}
 		require(Modifier.isPublic(provider.getModifiers()), "PROVIDER_NOT_PUBLIC", //$NON-NLS-1$
 				"JUnit 4 requires a public @Parameters provider."); //$NON-NLS-1$
-		validateDisplayName(provider);
+		String displayPattern= validateDisplayName(provider);
 		NodeKey providerKey= add(builder, owners, provider, PROVIDER);
 		builder.relate(testKey, HAS_PROVIDER, providerKey);
 		MethodDeclaration data= providerData(provider, builder, owners, new HashSet<>());
-		validateRows(data, parameterTypes);
+		validateRows(data, parameterTypes, displayPattern);
 		builder.putString(providerKey, "conversionStrategy", "OBJECT_ARRAY_ROWS"); //$NON-NLS-1$ //$NON-NLS-2$
 		builder.putString(testKey, "displayNameSemantics", "JUNIT4_MESSAGE_FORMAT_ZERO_BASED"); //$NON-NLS-1$ //$NON-NLS-2$
 		for (MethodDeclaration method : tests) {
@@ -314,7 +332,7 @@ final class JUnit4ParameterizedPlanner {
 		return new JUnit4ParameterizedPlan(testKey, builder.build(), owners, fingerprints);
 	}
 
-	private static void validateDisplayName(MethodDeclaration provider) {
+	private static String validateDisplayName(MethodDeclaration provider) {
 		Object name= value(annotation(provider, PARAMETERS), "name"); //$NON-NLS-1$
 		require(name instanceof String, "DISPLAY_NAME_UNRESOLVED", //$NON-NLS-1$
 				"Resolve the @Parameters display-name pattern before migration."); //$NON-NLS-1$
@@ -324,6 +342,7 @@ final class JUnit4ParameterizedPlanner {
 			throw new Rejected("PARAMETERIZED_DISPLAY_NAME_UNSUPPORTED", //$NON-NLS-1$
 					"The @Parameters name is not a valid JUnit 4 MessageFormat pattern; correct it before migration."); //$NON-NLS-1$
 		}
+		return (String) name;
 	}
 
 	private List<ITypeBinding> injection(TypeDeclaration type, Map<Integer, VariableDeclarationFragment> fields,
@@ -421,7 +440,7 @@ final class JUnit4ParameterizedPlanner {
 		return provider;
 	}
 
-	private void validateRows(MethodDeclaration provider, List<ITypeBinding> parameters) {
+	private void validateRows(MethodDeclaration provider, List<ITypeBinding> parameters, String displayPattern) {
 		Expression expression= ((ReturnStatement) provider.getBody().statements().get(0)).getExpression();
 		if (expression instanceof MethodInvocation invocation && arraysAsList(invocation)) {
 			require(invocation.arguments().size() == 1, "PROVIDER_BODY_UNSUPPORTED", //$NON-NLS-1$
@@ -439,6 +458,8 @@ final class JUnit4ParameterizedPlanner {
 			require(!matrix.getInitializer().expressions().isEmpty(), "EMPTY_ROWS", //$NON-NLS-1$
 					"Empty parameter sets have different class-lifecycle semantics; retain the JUnit 4 runner."); //$NON-NLS-1$
 		}
+		Set<String> displayNames= new HashSet<>();
+		int rowIndex= 0;
 		for (Object row : matrix.getInitializer().expressions()) {
 			MultiFilePlanningBudget.checkCanceled(monitor);
 			ArrayInitializer values= row instanceof ArrayInitializer initializer ? initializer
@@ -455,6 +476,20 @@ final class JUnit4ParameterizedPlanner {
 				require(compatible, "CONVERSION_UNPROVEN", //$NON-NLS-1$
 						"Use resolved constant arguments assignable to their injection types; implicit Jupiter conversions are not assumed equivalent."); //$NON-NLS-1$
 			}
+			if (execute) {
+				Object[] arguments= values.expressions().stream()
+						.map(item -> ((Expression) item).resolveConstantExpressionValue()).toArray();
+				String displayName;
+				try {
+					displayName= MessageFormat.format(displayPattern.replace("{index}", Integer.toString(rowIndex)), arguments); //$NON-NLS-1$
+				} catch (IllegalArgumentException e) {
+					throw new Rejected("PARAMETERIZED_DISPLAY_NAME_UNSUPPORTED", //$NON-NLS-1$
+							"The name pattern cannot format every constant row."); //$NON-NLS-1$
+				}
+				require(displayNames.add(displayName), "DISPLAY_NAME_COLLISION", //$NON-NLS-1$
+						"The JDT JUnit 4 loader merges duplicate row identities; use distinct row names before migration."); //$NON-NLS-1$
+			}
+			rowIndex++;
 		}
 	}
 
@@ -569,6 +604,21 @@ final class JUnit4ParameterizedPlanner {
 			}
 		}
 		return false;
+	}
+
+	private boolean hasJUnit4ExecutionConsumers(TypeDeclaration type) {
+		if (!hasJUnit4ExecutionMembers(type)) {
+			return false;
+		}
+		ITypeBinding binding= type.resolveBinding();
+		if (resolved(binding) && binding.getJavaElement() instanceof IType modelType) {
+			try {
+				return modelType.newTypeHierarchy(monitor).getAllSubtypes(modelType).length != 0;
+			} catch (JavaModelException e) {
+				// Without a complete hierarchy, changing inherited execution annotations is unsafe.
+			}
+		}
+		return true;
 	}
 
 	private static boolean hasJUnit4ExecutionMembers(TypeDeclaration type) {
