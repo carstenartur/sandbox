@@ -30,7 +30,9 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.junit.JUnitCore;
 import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMultiFilePlanner;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitTestTypeInventory;
+import org.sandbox.jdt.internal.corext.fix.JUnitMigrationOptions;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.triggerpattern.api.ExecutionTreeSnapshot;
 import org.sandbox.jdt.triggerpattern.api.ExecutionTreeSnapshot.Node;
@@ -157,6 +159,44 @@ public class ParameterizedCoordinatedExecutionTest {
 		unit("Added", "public class Added { }");
 		assertThrows(CoreException.class, () -> plan.addOperationsFor(test, parse(test), new LinkedHashSet<>(), new LinkedHashSet<>()));
 		assertEquals(original, test.getSource());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings= { "@org.junit.jupiter.api.TestInstance(org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS)",
+			"@org.junit.jupiter.params.ParameterizedClass" })
+	void directJupiterAnnotationsAreRejectedByTheJUnitNamespaceAllowlist(String annotation) throws CoreException {
+		ICompilationUnit[] units= fixture("constructor");
+		units[0].getBuffer().setContents(units[0].getSource().replace("@RunWith", annotation + " @RunWith"));
+		Map<String, String> original= sources(units);
+		var result= JUnitMultiFilePlanner.createCoordinated(context.getJavaProject(), units,
+				new JUnitMultiFilePlanner.PlanningOptions(false, false, true, true), true, null);
+		assertEquals("PARAMETERIZED_EXECUTION_HOOK_UNSUPPORTED", result.diagnostics().candidates().get(0).reasonCode());
+		context.apply(units);
+		assertEquals(original, sources(units));
+	}
+
+	@Test
+	void rejectedHierarchyMarkersIdentifyTheirActualSourceTypes() throws CoreException {
+		ICompilationUnit[] units= fixture("inherited");
+		units[1].getBuffer().setContents(units[1].getSource()
+				.replace("public abstract class Base", "class Unrelated { } public abstract class Base")
+				.replace("@Test public void aa", "@Test(timeout=100) public void aa"));
+		units[1].save(null, true);
+		var result= JUnitMultiFilePlanner.createCoordinated(context.getJavaProject(), units,
+				new JUnitMultiFilePlanner.PlanningOptions(false, false, true, true), true, null);
+		var analysis= JUnitBestEffortSupport.reconcileParameterized(JUnitBestEffortSupport.Analysis.empty(),
+				result.plan(), result.diagnostics(), true);
+		assertEquals(List.of("execution.Base", "execution.Sample"), analysis.gaps().stream()
+				.map(JUnitBestEffortSupport.Gap::targetTypeName).sorted().toList());
+		assertTrue(analysis.gaps().stream().allMatch(gap -> !gap.targetTypeBindingKey().isBlank() && gap.targetTypeStart() > 0));
+		context.enable(JUnitMigrationOptions.BEST_EFFORT);
+		context.apply(units);
+		var declarations= parse(units[1]).types();
+		assertFalse(declarations.get(0).toString().contains("sandboxJUnitMigrationTodo"), units[1].getSource());
+		assertTrue(declarations.get(1).toString().contains("sandboxJUnitMigrationTodo"), units[1].getSource());
+		Map<String, String> marked= sources(units);
+		context.apply(units);
+		assertEquals(marked, sources(units), "The correctly placed markers must remain idempotent");
 	}
 
 	@Test

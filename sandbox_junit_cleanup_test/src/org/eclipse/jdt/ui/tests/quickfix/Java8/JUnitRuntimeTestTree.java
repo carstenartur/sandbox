@@ -163,7 +163,7 @@ final class JUnitRuntimeTestTree {
 		}
 		List<Node> children= element instanceof ITestElementContainer container
 				? snapshotChildren(container, displayNames) : List.of();
-		return new Node(NodeKind.OTHER, identity, identity, result,
+		return new Node(NodeKind.OTHER, identity, display, result,
 				Map.of("modelType", element.getClass().getName()), children); //$NON-NLS-1$
 	}
 
