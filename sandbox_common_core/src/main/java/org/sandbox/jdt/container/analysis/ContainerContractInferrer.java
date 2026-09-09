@@ -37,6 +37,8 @@ public final class ContainerContractInferrer {
 
 	private final UniqueSequenceContractInferrer uniqueSequenceInferrer=
 			new UniqueSequenceContractInferrer();
+	private final DequeSequenceContractInferrer dequeSequenceInferrer=
+			new DequeSequenceContractInferrer();
 
 	/**
 	 * Selects the applicable semantic container strategy and returns one explainable
@@ -49,6 +51,11 @@ public final class ContainerContractInferrer {
 				uniqueSequenceInferrer.infer(profile);
 		if (uniqueSequence.isPresent()) {
 			return uniqueSequence;
+		}
+		Optional<ContainerRecommendation> dequeSequence=
+				dequeSequenceInferrer.infer(profile);
+		if (dequeSequence.isPresent()) {
+			return dequeSequence;
 		}
 		return inferAppendArray(profile);
 	}
