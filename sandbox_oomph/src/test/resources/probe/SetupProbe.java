@@ -293,7 +293,8 @@ public class SetupProbe implements IApplication {
                 .map(m -> m.getResource().getFullPath() + ": " + m.getAttribute(IMarker.MESSAGE, ""))
                 .collect(Collectors.toCollection(TreeSet::new));
         if (!errors.isEmpty()) {
-            for (String name : List.of("sandbox-ast-api", "sandbox-functional-converter-core", "sandbox_common_core")) {
+            for (String name : List.of("sandbox-ast-api", "sandbox-functional-converter-core", "sandbox_common_core",
+                    "sandbox_tools", "sandbox_use_general_type")) {
                 var imported = workspace.getRoot().getProject(name);
                 var manifest = org.eclipse.pde.internal.core.project.PDEProject.getManifest(imported);
                 var location = manifest.getLocation();
@@ -301,6 +302,23 @@ public class SetupProbe implements IApplication {
                 System.out.println("Generated bundle " + name + ": manifest=" + manifest.getFullPath()
                         + ", resource=" + manifest.exists() + ", localFile=" + (location != null && location.toFile().isFile())
                         + ", model=" + (model == null ? null : model.getPluginBase().getId()));
+                if (model != null) {
+                    var description = model.getBundleDescription();
+                    System.out.println("Resolver " + name + ": enabled=" + model.isEnabled()
+                            + ", description=" + description
+                            + ", resolved=" + (description != null && description.isResolved()));
+                    if (description != null) {
+                        var state = description.getContainingState();
+                        System.out.println("Resolver AST suppliers for " + name + ": "
+                                + (state == null ? null : Arrays.toString(state.getBundles("org.sandbox.ast.api"))));
+                        for (var required : description.getRequiredBundles()) {
+                            if ("org.sandbox.ast.api".equals(required.getName())) {
+                                System.out.println("Resolver AST requirement for " + name + ": " + required
+                                        + ", supplier=" + required.getSupplier());
+                            }
+                        }
+                    }
+                }
             }
             System.out.println("Pending workspace jobs: " + Arrays.toString(Job.getJobManager().find(null)));
         }
