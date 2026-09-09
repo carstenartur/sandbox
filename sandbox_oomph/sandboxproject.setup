@@ -174,8 +174,9 @@
   <!-- Build imported projects -->
   <setupTask
       xsi:type="projects:ProjectsBuildTask"
+      onlyNewProjects="true"
       predecessors="sandbox.target">
-    <description>Build all imported projects</description>
+    <description>Build newly imported projects</description>
   </setupTask>
   <!-- Stream definition for the main branch -->
   <stream

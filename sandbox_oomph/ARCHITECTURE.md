@@ -21,11 +21,16 @@ The separately pinned upstream JDT QA models retain their own product, repositor
 2. MavenImportTask imports Maven projects, including modules without committed Eclipse metadata.
 3. ProjectsImportTask discovers remaining Eclipse projects.
 4. TargetPlatformTask activates `sandbox_target/eclipse.target` by its existing target name.
-5. ProjectsBuildTask builds the workspace.
+5. ProjectsBuildTask explicitly builds newly imported projects.
 
 Explicit predecessor references enforce the import/target/build order. Maven import must precede Eclipse import:
 Oomph's Maven task skips STARTUP import when any project from a source locator is already in the workspace.
 MANUAL setup runs Maven discovery again and restores missing projects.
+The build task uses `onlyNewProjects` so repeated manual setup does not force a full
+rebuild of every existing project. Existing projects retain the workspace's normal
+automatic/incremental build policy. This avoids repeatedly deleting and regenerating
+Maven bundle manifests during one forced workspace build: PDE can retain stale
+unresolved-bundle markers even after its resolver has found the regenerated bundle.
 An explicit second Maven source locator imports this standalone verification module because m2e follows root-POM modules.
 Maven discovery excludes the root artifact `central`; Eclipse import keeps its existing project name `sandbox`, avoiding
 two differently named projects at the same repository location.
