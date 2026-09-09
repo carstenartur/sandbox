@@ -115,6 +115,14 @@
 			<artifactId>sandbox_product</artifactId>
 			<type>zip</type>
 			<version>${project.version}</version>
+			<!-- The assembled ZIP already contains its features. They are not Java
+			     classpath dependencies of this web application. -->
+			<exclusions>
+				<exclusion>
+					<groupId>org.sandbox</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>

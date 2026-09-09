@@ -3,29 +3,41 @@
   Oomph Project Setup for the "sandbox" repository.
   This setup file allows users to set up a working Eclipse development environment
   for the sandbox project using the Eclipse Installer or "Import > Oomph > Projects".
-  
-  Fixed: GitHub URL, schema locations, project import, working sets, and added JRE task.
+
+  Public entry point in the official Oomph Github Projects catalog.
+  Keep this URL, project name, main stream and existing task IDs stable.
 -->
 <setup:Project
     xmi:version="2.0"
     xmlns:xmi="http://www.omg.org/XMI"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns:git="http://www.eclipse.org/oomph/setup/git/1.0"
+    xmlns:maven="http://www.eclipse.org/oomph/setup/maven/1.0"
+    xmlns:setup.p2="http://www.eclipse.org/oomph/setup/p2/1.0"
     xmlns:jdt="http://www.eclipse.org/oomph/setup/jdt/1.0"
     xmlns:pde="http://www.eclipse.org/oomph/setup/pde/1.0"
     xmlns:predicates="http://www.eclipse.org/oomph/predicates/1.0"
     xmlns:projects="http://www.eclipse.org/oomph/setup/projects/1.0"
     xmlns:setup="http://www.eclipse.org/oomph/setup/1.0"
     xmlns:setup.workingsets="http://www.eclipse.org/oomph/setup/workingsets/1.0"
-    xsi:schemaLocation="
-        http://www.eclipse.org/oomph/setup/git/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/Git.ecore
-        http://www.eclipse.org/oomph/setup/jdt/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/JDT.ecore
-        http://www.eclipse.org/oomph/setup/pde/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/PDE.ecore
-        http://www.eclipse.org/oomph/predicates/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/Predicates.ecore
-        http://www.eclipse.org/oomph/setup/projects/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/Projects.ecore
-        http://www.eclipse.org/oomph/setup/workingsets/1.0 https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/SetupWorkingSets.ecore"
     name="sandbox"
     label="Sandbox Project">
+  <!-- Requirements belong to the project so the official catalog entry works
+       with a standard Eclipse SDK or Java package, too. -->
+  <setupTask xsi:type="setup.p2:P2Task" id="sandbox.development.tools"
+      label="Sandbox development tools">
+    <requirement name="org.eclipse.jdt.feature.group"/>
+    <requirement name="org.eclipse.pde.feature.group"/>
+    <requirement name="org.eclipse.egit.feature.group"/>
+    <requirement name="org.eclipse.m2e.feature.feature.group"/>
+    <requirement name="org.eclipse.m2e.pde.feature.feature.group"/>
+    <requirement name="org.eclipse.jdt.astview.feature.feature.group"/>
+    <requirement name="org.eclipse.jdt.jeview.feature.feature.group"/>
+    <requirement name="org.eclipse.pde.spies.feature.group"/>
+    <repository url="https://download.eclipse.org/releases/2026-06/"/>
+  </setupTask>
+  <setupTask xsi:type="setup:PreferenceTask"
+      key="/instance/org.eclipse.core.resources/encoding" value="UTF-8"/>
   <!-- Main project setup for sandbox development -->
   <setupTask
       xsi:type="setup:CompoundTask"
@@ -76,26 +88,6 @@
       location="${jre.location-21}">
     <description>Define the JRE needed to compile and run the Java projects of ${scope.project.label}</description>
   </setupTask>
-  <!-- Package Explorer initialization: show working sets as root -->
-  <setupTask
-      xsi:type="setup:ResourceCreationTask"
-      excludedTriggers="STARTUP MANUAL"
-      targetURL="${workspace.location|uri}/.metadata/.plugins/org.eclipse.jdt.ui/dialog_settings.xml"
-      encoding="UTF-8">
-    <description>Initialize JDT's package explorer to show working sets as its root objects</description>
-    <content>
-      &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?>
-      &lt;section name=&quot;Workbench&quot;>
-      	&lt;section name=&quot;org.eclipse.jdt.internal.ui.packageview.PackageExplorerPart&quot;>
-      		&lt;item value=&quot;true&quot; key=&quot;group_libraries&quot;/>
-      		&lt;item value=&quot;false&quot; key=&quot;linkWithEditor&quot;/>
-      		&lt;item value=&quot;2&quot; key=&quot;layout&quot;/>
-      		&lt;item value=&quot;2&quot; key=&quot;rootMode&quot;/>
-      		&lt;item value=&quot;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot;?&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;packageExplorer configured=&amp;quot;true&amp;quot; group_libraries=&amp;quot;1&amp;quot; layout=&amp;quot;2&amp;quot; linkWithEditor=&amp;quot;0&amp;quot; rootMode=&amp;quot;2&amp;quot; sortWorkingSets=&amp;quot;false&amp;quot; workingSetName=&amp;quot;&amp;quot;&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;localWorkingSetManager&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;workingSet editPageId=&amp;quot;org.eclipse.jdt.internal.ui.OthersWorkingSet&amp;quot; factoryID=&amp;quot;org.eclipse.ui.internal.WorkingSetFactory&amp;quot; id=&amp;quot;1382792884467_1&amp;quot; label=&amp;quot;Other Projects&amp;quot; name=&amp;quot;Other Projects&amp;quot;/&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;/localWorkingSetManager&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;activeWorkingSet workingSetName=&amp;quot;Other Projects&amp;quot;/&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;allWorkingSets workingSetName=&amp;quot;Other Projects&amp;quot;/&amp;gt;&amp;#x0D;&amp;#x0A;&amp;lt;/packageExplorer&amp;gt;&quot; key=&quot;memento&quot;/>
-      	&lt;/section>
-      &lt;/section>
-    </content>
-  </setupTask>
   <!-- Git clone task: clone the sandbox repository from GitHub -->
   <setupTask
       xsi:type="git:GitCloneTask"
@@ -112,12 +104,38 @@
       vm="true">
     <description>Set an Oomph redirection system property to redirect the logical location of this setup to its physical location in the Git clone.</description>
   </setupTask>
+  <!-- Maven must run before ProjectsImportTask: its STARTUP check skips a
+       source tree if even one of its projects has already been imported. -->
+  <setupTask xsi:type="maven:MavenImportTask" id="sandbox.maven"
+      label="Sandbox Maven projects">
+    <sourceLocator rootFolder="${git.clone.sandbox.location}" locateNestedProjects="true">
+      <excludedPath>.git</excludedPath>
+      <excludedPath>.github</excludedPath>
+      <excludedPath>target</excludedPath>
+      <excludedPath>sandbox_oomph/target</excludedPath>
+      <!-- The root POM is "central", but its existing Eclipse project is
+           "sandbox". Let ProjectsImportTask preserve that public name. -->
+      <predicate xsi:type="predicates:NotPredicate">
+        <operand xsi:type="predicates:NamePredicate" pattern="central"/>
+      </predicate>
+    </sourceLocator>
+    <!-- m2e follows the root POM's modules. This standalone verification
+         module intentionally does not belong to that Tycho reactor. -->
+    <sourceLocator rootFolder="${git.clone.sandbox.location}/sandbox_oomph"/>
+  </setupTask>
   <!-- Import all Eclipse projects from the cloned repository -->
   <setupTask
-      xsi:type="projects:ProjectsImportTask">
+      xsi:type="projects:ProjectsImportTask"
+      id="sandbox.projects"
+      predecessors="sandbox.maven">
     <sourceLocator
         rootFolder="${git.clone.sandbox.location}"
-        locateNestedProjects="true"/>
+        locateNestedProjects="true">
+      <excludedPath>.git</excludedPath>
+      <excludedPath>.github</excludedPath>
+      <excludedPath>target</excludedPath>
+      <excludedPath>sandbox_oomph/target</excludedPath>
+    </sourceLocator>
     <description>Import all Eclipse projects from the cloned sandbox repository</description>
   </setupTask>
   <!-- Working sets configuration: group sandbox projects together -->
@@ -129,18 +147,34 @@
           xsi:type="predicates:NamePredicate"
           pattern="sandbox.*"/>
     </workingSet>
+    <workingSet name="Sandbox Core">
+      <predicate xsi:type="predicates:NamePredicate"
+          pattern="sandbox-(functional-converter-core|ast-api(-jdt)?|jgit-.*)|sandbox_(common(_core)?|mining_(core|cli)|test_commons)"/>
+    </workingSet>
+    <workingSet name="Sandbox Tests">
+      <predicate xsi:type="predicates:NamePredicate" pattern="sandbox.*(_test|-benchmarks)"/>
+    </workingSet>
+    <workingSet name="Sandbox Help">
+      <predicate xsi:type="predicates:NamePredicate" pattern="sandbox_.*_help"/>
+    </workingSet>
+    <workingSet name="Sandbox Distribution">
+      <predicate xsi:type="predicates:NamePredicate"
+          pattern="sandbox_(.*_feature|target|product|updatesite|distribution_verify|coverage|oomph)|sandbox-(maven-plugin|cleanup-cli-dist)"/>
+    </workingSet>
     <description>The dynamic working sets for ${scope.project.label}</description>
   </setupTask>
   <!-- Target platform activation: use the target definition from the sandbox_target module -->
   <setupTask
       xsi:type="pde:TargetPlatformTask"
       id="sandbox.target"
+      predecessors="sandbox.projects"
       name="target platform for sandbox">
     <description>Activate the sandbox target platform so the workspace uses the correct Eclipse version and dependencies.</description>
   </setupTask>
   <!-- Build imported projects -->
   <setupTask
-      xsi:type="projects:ProjectsBuildTask">
+      xsi:type="projects:ProjectsBuildTask"
+      predecessors="sandbox.target">
     <description>Build all imported projects</description>
   </setupTask>
   <!-- Stream definition for the main branch -->

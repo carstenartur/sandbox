@@ -55,19 +55,17 @@ import org.sandbox.jdt.internal.common.VisitorEnum;
  * <p>This class contains integration tests that exercise multiple aspects of the visitor API
  * together. For focused tests and API documentation, see:</p>
  * <ul>
- * <li>{@link BasicVisitorUsageTest} - Basic visitor usage patterns</li>
+ * <li>{@code BasicVisitorUsageTest} in {@code sandbox_common_core} - Basic visitor usage patterns</li>
  * <li>{@link ReferenceHolderTest} - Data collection with ReferenceHolder</li>
  * <li>{@link ASTProcessorTest} - Fluent API and chaining patterns</li>
  * <li>{@link AdvancedVisitorPatternsTest} - Advanced patterns and dynamic behavior</li>
- * <li>{@link VisitorApiDocumentationTest} - Complete API documentation</li>
+ * <li>{@code VisitorApiDocumentationTest} in {@code sandbox_common_core} - Complete API documentation</li>
  * </ul>
  *
  * @author Carsten Hammer
- * @see BasicVisitorUsageTest
  * @see ReferenceHolderTest
  * @see ASTProcessorTest
  * @see AdvancedVisitorPatternsTest
- * @see VisitorApiDocumentationTest
  */
 public class VisitorTest {
 

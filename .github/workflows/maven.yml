@@ -7,6 +7,9 @@ on:
       - 'mvnw'
       - 'mvnw.cmd'
       - '.gitattributes'
+      - '.project'
+      - '.classpath'
+      - '.settings/**'
       - 'pom.xml'
       - '.mvn/**'
       - 'sandbox*/**'
@@ -35,6 +38,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       relevant: ${{ steps.scope.outputs.relevant }}
+      oomph: ${{ steps.scope.outputs.oomph }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -52,6 +56,7 @@ jobs:
 
           if [[ "$EVENT_NAME" != "pull_request" ]]; then
             echo "relevant=true" >> "$GITHUB_OUTPUT"
+            echo "oomph=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           if [[ -z "$BASE_SHA" ]]; then
@@ -60,18 +65,24 @@ jobs:
           fi
 
           relevant=false
+          oomph=false
           while IFS= read -r path; do
             case "$path" in
-              mvnw|mvnw.cmd|.gitattributes|pom.xml|.mvn/*|sandbox*/*|features/*|plugins/*|org/*|*.xml|*.properties|\
+              mvnw|mvnw.cmd|.gitattributes|.project|.classpath|.settings/*|pom.xml|.mvn/*|sandbox*/*|features/*|plugins/*|org/*|*.xml|*.properties|\
               .github/actions/cleanup-action/*|.github/actions/verify-eclipse-desktop-runtime/*|\
               .github/workflows/maven.yml)
                 relevant=true
-                break
                 ;;
             esac
-          done < <(git diff --name-only --diff-filter=ACMRT "$BASE_SHA"...HEAD)
+            case "$path" in
+              sandbox_oomph/*|sandbox_target/*|sandbox_product/*|.project|.classpath|.settings/*|*/.project|*/.classpath|*/.settings/*|\
+              */pom.xml|*/build.properties|*/META-INF/MANIFEST.MF|pom.xml|.github/workflows/maven.yml)
+                oomph=true ;;
+            esac
+          done < <(git diff --name-only --diff-filter=ACDMRT "$BASE_SHA"...HEAD)
 
           echo "relevant=$relevant" >> "$GITHUB_OUTPUT"
+          echo "oomph=$oomph" >> "$GITHUB_OUTPUT"
           if [[ "$relevant" == "true" ]]; then
             echo "Maven-relevant changes detected."
           else
@@ -164,9 +175,49 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
 
+  oomph:
+    name: Official Oomph workspace
+    needs: changes
+    if: needs.changes.outputs.oomph == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-java@v6
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+      - uses: ./.github/actions/verify-eclipse-desktop-runtime
+      - name: Verify fresh provisioning and manual setup after restart
+        env:
+          CANDIDATE_REF: ${{ github.head_ref || github.ref_name }}
+          CANDIDATE_REPOSITORY: ${{ github.event.pull_request.head.repo.clone_url || github.event.repository.clone_url }}
+          CANDIDATE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: >-
+          xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress
+          -f sandbox_oomph/pom.xml -Doomph.integration=true
+          -Dsandbox.oomph.ref="$CANDIDATE_REF" -Dsandbox.oomph.repository="$CANDIDATE_REPOSITORY"
+          -Dsandbox.oomph.commit="$CANDIDATE_COMMIT" verify
+      - name: Upload Oomph verification evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: oomph-verification
+          path: |
+            sandbox_oomph/target/surefire-reports/**
+            sandbox_oomph/target/oomph-runtime/*.log
+            sandbox_oomph/target/oomph-runtime/*.properties
+            sandbox_oomph/target/oomph-runtime/workspace/.metadata/.log
+            sandbox_oomph/target/oomph-runtime/eclipse/configuration/**/*.log
+          include-hidden-files: true
+          retention-days: 14
+
   verification:
     name: Maven verification
-    needs: [ changes, build ]
+    needs: [ changes, build, oomph ]
     if: always()
     runs-on: ubuntu-24.04
     steps:
@@ -176,6 +227,8 @@ jobs:
           CHANGES_RESULT: ${{ needs.changes.result }}
           MAVEN_RELEVANT: ${{ needs.changes.outputs.relevant }}
           BUILD_RESULT: ${{ needs.build.result }}
+          OOMPH_RELEVANT: ${{ needs.changes.outputs.oomph }}
+          OOMPH_RESULT: ${{ needs.oomph.result }}
         run: |
           set -euo pipefail
 
@@ -185,6 +238,10 @@ jobs:
           fi
           if [[ "$MAVEN_RELEVANT" == "true" && "$BUILD_RESULT" != "success" ]]; then
             echo "Maven build did not succeed: $BUILD_RESULT" >&2
+            exit 1
+          fi
+          if [[ "$OOMPH_RELEVANT" == "true" && "$OOMPH_RESULT" != "success" ]]; then
+            echo "Oomph workspace verification did not succeed: $OOMPH_RESULT" >&2
             exit 1
           fi
           if [[ "$MAVEN_RELEVANT" != "true" ]]; then

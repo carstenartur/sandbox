@@ -1,233 +1,85 @@
-# Oomph Setup Plugin
+# Sandbox development with Oomph
 
-> **Navigation**: [Main README](../README.md) | [Architecture](ARCHITECTURE.md) | [TODO](TODO.md)
+Sandbox is included in the official Eclipse Installer under **Github Projects → Sandbox Project → Main**.
+The catalog points directly to [`sandboxproject.setup`](sandboxproject.setup) in this repository.
+No custom catalog or manual setup-file import is required for that route.
 
-## Overview
+The supported contributor baseline is **Eclipse 2026-06 / Platform 4.40, Java 21, and Tycho 5.0.4**.
 
-The **Oomph Setup** plugin provides Eclipse Oomph setup configurations for the Sandbox project. Oomph is Eclipse's automated workspace configuration tool, allowing developers to set up their development environment with a single click.
+## Set up a workspace
 
-The active contributor baseline is Eclipse 2026-06 / Platform 4.40, Java 21, and Tycho 5.0.4. The setup model defaults `eclipse.target.version` to `2026-06`.
+1. Start the [Eclipse Installer](https://www.eclipse.org/downloads/packages/installer) in Advanced Mode.
+2. Select Eclipse Platform SDK 4.40 (2026-06), or the matching Eclipse IDE for Java Developers package, and a JDK 21.
+3. On the Projects page select **Github Projects → Sandbox Project → Main**.
+4. Choose installation, workspace and Git clone locations. Complete installation and let workspace setup finish.
+5. Check the setup log and Problems view before developing. The active target should be **target platform for sandbox**.
 
-## Key Features
+The project installs JDT, PDE, EGit, m2e including its PDE integration, ASTView, JEView and PDE Spies.
+Maven imports run before the remaining Eclipse project imports; the repository's target definition is then activated
+and the workspace is built. The CI fixture under `.github`, root build output and Oomph's test installation are excluded from import.
+The existing Sandbox working set is retained; additional dynamic sets organize Core, Tests, Help and Distribution.
 
-- 🚀 **One-Click Setup** - Automated workspace configuration
-- 🎯 **Project Preferences** - Pre-configured Eclipse settings
-- 📦 **Required Plugins** - Automatic installation of dependencies
-- 🔧 **Git Configuration** - Clones repository and sets up branches
-- 🔌 **Eclipse Integration** - Works with Eclipse Installer
+An existing compatible Eclipse installation can use **File → Import → Oomph → Projects into Workspace** and select
+the same catalog entry. Oomph may request an IDE restart after adding development tools.
 
-## Quick Start
+## Develop and verify
 
-### Using Oomph Setup
+- Open `sandbox_product/sandbox.product.launch` and run or debug it as an Eclipse Application. It selects all features
+  from the versioned product, including the constant-to-enum, container, CSS and general-type cleanups.
+- Run plain Java tests in their Maven modules as JUnit tests. Run plug-in test classes using **JUnit Plug-in Test**.
+- The workspace compiler is useful feedback; Maven remains the release/build authority:
 
-1. **Download Eclipse Installer**
-   - Get from [eclipse.org/downloads](https://www.eclipse.org/downloads/)
+```sh
+./mvnw clean verify
+./mvnw -Pdistribution clean verify
+```
 
-2. **Import Setup File**
-   - Open Eclipse Installer
-   - Switch to Advanced Mode
-   - Add sandbox.setup file from this plugin
+Linux UI tests need a display, for example `xvfb-run --auto-servernum ./mvnw clean verify`.
+The [repository formatter](../eclipse-formatter.xml) can be imported under **Java → Code Style → Formatter**.
+Setup applies UTF-8 and the declared compiler/editor preferences; it does not install a hidden save-action or cleanup profile.
 
-3. **Configure**
-   - Select sandbox project setup
-   - Configure installation location
-   - Review settings
+## Update an existing workspace
 
-4. **Install**
-   - Click Next to start installation
-   - Eclipse will download, configure, and launch
-   - Workspace is ready to use
+Fetch/pull the desired repository changes, then use **Help → Perform Setup Tasks** and include the import and target tasks.
+The setup's existing redirection deliberately reads the project model from the local Git clone after initial installation.
+Consequently, changing `main` on GitHub does not silently replace a contributor's local setup or source checkout.
+Manual setup discovers missing Maven projects again. It preserves unrelated projects and does not replace
+Package Explorer `dialog_settings.xml` or delete the runtime workspace.
 
-## What Gets Configured
-
-### Eclipse Preferences
-- Code formatting rules
-- Save actions
-- Compiler settings
-- Editor preferences
-- Clean up profiles
-
-### Project Setup
-- Import sandbox modules
-- Configure build path
-- Set up working sets
-- Configure launchers
-
-### Git Setup
-- Clone sandbox repository
-- Configure remotes
-- Set up user credentials
-- Initialize branches
-
-### Required Plugins
-- Eclipse JDT (Java Development Tools)
-- Eclipse PDE (Plugin Development Environment)
-- Maven/Tycho integration
-- Git integration (EGit)
-
-## Setup Files
-
-The plugin contains:
+## Entry points
 
 | File | Purpose |
-|------|---------|
-| `sandbox.setup` | Main Oomph setup model |
-| `preferences.epf` | Eclipse preferences export |
-| `launchers/` | Launch configurations |
+| --- | --- |
+| [sandboxproject.setup](sandboxproject.setup) | Public project entry referenced by the official Github Projects catalog |
+| [sandbox.setup](sandbox.setup) | Optional Sandbox SDK product, with its existing configurable heap and provisioning release |
+| [sandbox-installer.setup](sandbox-installer.setup) | Optional combined configuration referencing that product and the same main project stream |
+| [jdt-migration-qa.configuration.setup](jdt-migration-qa.configuration.setup) | Separate pinned upstream JDT migration QA environment |
 
-## Benefits
+The optional combined configuration can be opened in the Installer's Advanced Mode. It uses proper Installation/ProductVersion
+and Workspace/Stream references; it is not involved in the normal official-catalog entry path.
+Keep the public project URL, `sandbox` project name, `main` stream and existing task IDs stable.
 
-### For New Contributors
-- Get started quickly without manual configuration
-- Consistent development environment
-- All required tools pre-installed
+## Setup verification
 
-### For Team
-- Standardized workspace settings
-- Consistent code formatting
-- Reduced setup documentation
+Fast local contract checks:
 
-### For CI/CD
-- Reproducible build environment
-- Known working configuration
-- Version-controlled setup
+```sh
+./mvnw -f sandbox_oomph/pom.xml test
+```
 
-## Customization
+Real provisioning and workspace acceptance test on Linux x86_64, with JDK 21 and an X display:
 
-To customize the setup:
+```sh
+xvfb-run --auto-servernum ./mvnw -f sandbox_oomph/pom.xml \
+  -Doomph.integration=true -Dsandbox.oomph.ref=main clean verify
+```
 
-1. **Edit Setup Model**
-   - Open `sandbox.setup` in Oomph Setup Editor
-   - Modify tasks and preferences
-   - Save changes
+Set `sandbox.oomph.ref` to the candidate branch for a setup change. Forks can also set `sandbox.oomph.repository`.
+The Maven/JUnit test provisions a clean SDK, resolves the development tools with p2, validates the models with EMF/Oomph,
+resolves Sandbox through the live official catalog, and executes real Oomph workspace tasks. It restarts Eclipse and repeats
+manual setup after removing a project from the workspace without deleting its files. Target resolution, project imports,
+Java 21, build errors, PDE launch resolution and preservation of user-owned content are checked. Reports and logs are under `target/`.
+The existing Maven CI workflow includes this gate for setup, target, product and project-metadata changes.
 
-2. **Export Preferences**
-   - Configure Eclipse as desired
-   - File → Export → Preferences
-   - Save as `preferences.epf`
-
-3. **Add Launch Configs**
-   - Create launch configurations
-   - Export to `launchers/` directory
-
-## Documentation
-
-- **[Architecture](ARCHITECTURE.md)** - Setup model structure
-- **[TODO](TODO.md)** - Planned enhancements
-- **[Oomph Documentation](https://wiki.eclipse.org/Eclipse_Oomph_Authoring)** - Official Oomph guide
-
-## Oomph Resources
-
-- **Eclipse Oomph**: [eclipse.org/oomph](https://www.eclipse.org/oomph/)
-- **Setup Authoring Guide**: [Oomph Wiki](https://wiki.eclipse.org/Eclipse_Oomph_Authoring)
-- **Setup Examples**: [Eclipse Projects](https://git.eclipse.org/c/)
-
-## Maintenance
-
-### Updating Eclipse Target Version
-
-The Eclipse version used for IDE provisioning can be changed even after initial installation:
-
-**Method 1: Using Oomph Preferences (Recommended)**
-1. In Eclipse: `Help` → `Perform Setup Tasks...`
-2. In the dialog, find the "Eclipse Release Version" variable
-3. Change the value only as part of a coordinated baseline update (for example, from `2026-06` to a future named release)
-4. Click `OK` to re-trigger setup with the new version
-5. Restart Eclipse when prompted
-6. The Eclipse installation and Oomph provisioning repository will use the new release; the PDE target definition in `sandbox_target/eclipse.target` must still be updated separately if you need a different workspace target platform.
-
-**Method 2: Edit Setup File**
-1. Open `sandbox.setup` in a text editor
-2. Locate the `eclipse.target.version` variable
-3. Change both `value` and `defaultValue` from `2026-06` to the coordinated named release; do not update Oomph independently of the root build, product, p2 category, target, capability inventory, and active documentation
-4. Save and re-import the setup in Eclipse Installer
-5. Update `sandbox_target/eclipse.target` manually to match the new version if needed
-
-### Updating Eclipse Heap Size
-
-The Eclipse heap size can be changed even after initial installation:
-
-**Using Oomph Preferences**
-1. In Eclipse: `Help` → `Perform Setup Tasks...`
-2. In the dialog, find the "Eclipse Heap Size" variable
-3. Change the value (e.g., from "2048m" to "4096m" or "8192m")
-4. Click `OK` to re-trigger setup
-5. Restart Eclipse when prompted
-6. Eclipse will now use the new heap size
-
-**Common Heap Size Values**:
-- `2048m` (2 GB) - Default, suitable for most projects
-- `4096m` (4 GB) - Recommended for large projects
-- `8192m` (8 GB) - For very large projects or workspaces
-
-### Updating Setup
-
-When project structure changes:
-1. Update `sandbox.setup` model
-2. Export new preferences if needed
-3. Test with fresh Eclipse installation
-4. Commit changes
-
-### Testing Setup
-
-Test the setup:
-1. Delete test workspace
-2. Run Eclipse Installer
-3. Import updated setup
-4. Verify all configuration works
-5. Test build and run
-
-## Common Issues
-
-### Setup Fails to Clone Repository
-
-**Cause**: Git credentials not configured
-
-**Solution**: 
-- Configure Git credentials in Eclipse Installer
-- Use SSH instead of HTTPS
-- Set up personal access token
-
-### Missing Plugins
-
-**Cause**: Update site unavailable
-
-**Solution**:
-- Check Eclipse version compatibility
-- Verify update site URLs
-- Update setup with alternative sites
-
-### Preferences Not Applied
-
-**Cause**: Preferences file outdated
-
-**Solution**:
-- Export fresh preferences
-- Update `preferences.epf`
-- Test with clean workspace
-
-## Advanced Usage
-
-### Creating Custom Setups
-
-Create setups for specific use cases:
-- Minimal setup (just source code)
-- Full setup (with all test modules)
-- CI/CD setup (headless build)
-- Documentation-only setup
-
-### Sharing Setups
-
-Share your setup:
-1. Export setup model
-2. Include in repository
-3. Document custom tasks
-4. Test with team members
-
-## License
-
-Eclipse Public License 2.0 (EPL-2.0)
-
----
-
-> **See Also**: [Eclipse Oomph](https://www.eclipse.org/oomph/) - Official Oomph project
+See [Architecture](ARCHITECTURE.md), [Maintenance](TODO.md), and the
+[official catalog](https://github.com/eclipse-oomph/oomph/blob/master/setups/com.github.projects.setup).
