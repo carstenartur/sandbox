@@ -255,12 +255,16 @@ public class SetupProbe implements IApplication {
         }
         // PDE updates classpath containers in a separate job family. Builds can
         // schedule those updates, which can in turn schedule another build.
+        // The enclosing JUnit process timeout also bounds this wait and dumps
+        // Eclipse threads before terminating a stuck process.
         var jobs = Job.getJobManager();
+        var families = List.of(PluginModelManager.class, ResourcesPlugin.FAMILY_MANUAL_BUILD,
+                ResourcesPlugin.FAMILY_AUTO_BUILD);
         do {
-            jobs.join(PluginModelManager.class, monitor);
-            jobs.join(ResourcesPlugin.FAMILY_MANUAL_BUILD, monitor);
-            jobs.join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
-        } while (jobs.find(PluginModelManager.class).length != 0);
+            for (Object family : families) {
+                jobs.join(family, monitor);
+            }
+        } while (Arrays.stream(jobs.find(null)).anyMatch(job -> families.stream().anyMatch(job::belongsTo)));
         require(performer.hasSuccessfullyPerformed(), "Setup did not complete");
         workspace.save(true, monitor);
         if (!performer.getRestartReasons().isEmpty()) {
@@ -300,10 +304,10 @@ public class SetupProbe implements IApplication {
             for (String name : List.of("sandbox-ast-api", "sandbox-functional-converter-core", "sandbox_common_core")) {
                 var imported = workspace.getRoot().getProject(name);
                 var manifest = org.eclipse.pde.internal.core.project.PDEProject.getManifest(imported);
-                var location = manifest.getLocationURI();
+                var location = manifest.getLocation();
                 var model = org.eclipse.pde.core.plugin.PluginRegistry.findModel(imported);
                 System.out.println("Generated bundle " + name + ": manifest=" + manifest.getFullPath()
-                        + ", resource=" + manifest.exists() + ", file=" + (location != null && Files.isRegularFile(Path.of(location)))
+                        + ", resource=" + manifest.exists() + ", localFile=" + (location != null && location.toFile().isFile())
                         + ", model=" + (model == null ? null : model.getPluginBase().getId()));
             }
             System.out.println("Pending workspace jobs: " + Arrays.toString(Job.getJobManager().find(null)));
