@@ -62,6 +62,7 @@ import org.eclipse.oomph.util.OS;
 import org.eclipse.oomph.util.Confirmer;
 import org.eclipse.oomph.util.UserCallback;
 import org.eclipse.pde.core.target.ITargetPlatformService;
+import org.eclipse.pde.internal.core.PluginModelManager;
 import org.eclipse.pde.internal.launching.launcher.BundleLauncherHelper;
 import org.eclipse.pde.internal.launching.launcher.LaunchValidationOperation;
 import org.eclipse.swt.widgets.Display;
@@ -252,9 +253,14 @@ public class SetupProbe implements IApplication {
                 agent.registerService(UIServices.SERVICE_NAME, previousUI);
             }
         }
-        // Oomph schedules the final workspace build after restoring auto-building.
-        Job.getJobManager().join(ResourcesPlugin.FAMILY_MANUAL_BUILD, monitor);
-        Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
+        // PDE updates classpath containers in a separate job family. Builds can
+        // schedule those updates, which can in turn schedule another build.
+        var jobs = Job.getJobManager();
+        do {
+            jobs.join(PluginModelManager.class, monitor);
+            jobs.join(ResourcesPlugin.FAMILY_MANUAL_BUILD, monitor);
+            jobs.join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
+        } while (jobs.find(PluginModelManager.class).length != 0);
         require(performer.hasSuccessfullyPerformed(), "Setup did not complete");
         workspace.save(true, monitor);
         if (!performer.getRestartReasons().isEmpty()) {
@@ -290,6 +296,18 @@ public class SetupProbe implements IApplication {
                 .filter(m -> m.getAttribute(IMarker.SEVERITY, 0) == IMarker.SEVERITY_ERROR)
                 .map(m -> m.getResource().getFullPath() + ": " + m.getAttribute(IMarker.MESSAGE, ""))
                 .collect(Collectors.toCollection(TreeSet::new));
+        if (!errors.isEmpty()) {
+            for (String name : List.of("sandbox-ast-api", "sandbox-functional-converter-core", "sandbox_common_core")) {
+                var imported = workspace.getRoot().getProject(name);
+                var manifest = org.eclipse.pde.internal.core.project.PDEProject.getManifest(imported);
+                var location = manifest.getLocationURI();
+                var model = org.eclipse.pde.core.plugin.PluginRegistry.findModel(imported);
+                System.out.println("Generated bundle " + name + ": manifest=" + manifest.getFullPath()
+                        + ", resource=" + manifest.exists() + ", file=" + (location != null && Files.isRegularFile(Path.of(location)))
+                        + ", model=" + (model == null ? null : model.getPluginBase().getId()));
+            }
+            System.out.println("Pending workspace jobs: " + Arrays.toString(Job.getJobManager().find(null)));
+        }
         require(errors.isEmpty(), "Workspace build errors:\n" + String.join("\n", errors));
         var launchFile = workspace.getRoot().getProject("sandbox_product").getFile("sandbox.product.launch");
         var launch = DebugPlugin.getDefault().getLaunchManager().getLaunchConfiguration(launchFile);

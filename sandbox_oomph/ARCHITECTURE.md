@@ -51,6 +51,9 @@ The application runs the real SetupTaskPerformer in a workbench, including JGit 
 working sets and build tasks. It validates the optional configurations with Oomph's registered EMF packages and checks
 the development launch with PDE's bundle resolver.
 It uses Oomph's standard scope locations and honors requested IDE restarts before asserting workspace completion.
+Before checking build markers, it joins PDE's classpath-update job family and the
+workspace builds those updates schedule until both have settled. Failed checks
+include generated-bundle manifest/model state and pending-job diagnostics.
 The disposable batch installation supplies the wizard's license-confirmation callback; the public setup retains normal interactive license confirmation.
 During task execution it also temporarily uses p2's existing director batch UI service for signed content from
 `download.eclipse.org` and `archive.eclipse.org`. The one unsigned legacy dependency, `jakarta.xml.bind`
