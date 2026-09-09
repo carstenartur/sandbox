@@ -253,18 +253,7 @@ public class SetupProbe implements IApplication {
                 agent.registerService(UIServices.SERVICE_NAME, previousUI);
             }
         }
-        // PDE updates classpath containers in a separate job family. Builds can
-        // schedule those updates, which can in turn schedule another build.
-        // The enclosing JUnit process timeout also bounds this wait and dumps
-        // Eclipse threads before terminating a stuck process.
-        var jobs = Job.getJobManager();
-        var families = List.of(PluginModelManager.class, ResourcesPlugin.FAMILY_MANUAL_BUILD,
-                ResourcesPlugin.FAMILY_AUTO_BUILD);
-        do {
-            for (Object family : families) {
-                jobs.join(family, monitor);
-            }
-        } while (Arrays.stream(jobs.find(null)).anyMatch(job -> families.stream().anyMatch(job::belongsTo)));
+        awaitWorkspaceJobs(monitor);
         require(performer.hasSuccessfullyPerformed(), "Setup did not complete");
         workspace.save(true, monitor);
         if (!performer.getRestartReasons().isEmpty()) {
@@ -296,6 +285,9 @@ public class SetupProbe implements IApplication {
         require("target platform for sandbox".equals(target.getName()), "Wrong active target: " + target.getName());
         require(target.isResolved() && target.getStatus().isOK(), "Unresolved target: " + target.getStatus());
         bundleContext.ungetService(reference);
+        // Saving the workspace and reading its target can enqueue more work.
+        // Inspect markers only after those operations have also settled.
+        awaitWorkspaceJobs(monitor);
         var errors = Arrays.stream(workspace.getRoot().findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_INFINITE))
                 .filter(m -> m.getAttribute(IMarker.SEVERITY, 0) == IMarker.SEVERITY_ERROR)
                 .map(m -> m.getResource().getFullPath() + ": " + m.getAttribute(IMarker.MESSAGE, ""))
@@ -338,6 +330,19 @@ public class SetupProbe implements IApplication {
         result.setProperty("target", target.getName());
         saveResult(run, update, result);
         System.out.println("OOMPH VERIFIED: " + result);
+    }
+
+    private static void awaitWorkspaceJobs(org.eclipse.core.runtime.IProgressMonitor monitor) throws InterruptedException {
+        // PDE classpath updates and workspace builds can schedule each other.
+        // The enclosing JUnit process timeout bounds the wait and dumps threads.
+        var jobs = Job.getJobManager();
+        var families = List.of(PluginModelManager.class, ResourcesPlugin.FAMILY_MANUAL_BUILD,
+                ResourcesPlugin.FAMILY_AUTO_BUILD);
+        do {
+            for (Object family : families) {
+                jobs.join(family, monitor);
+            }
+        } while (Arrays.stream(jobs.find(null)).anyMatch(job -> families.stream().anyMatch(job::belongsTo)));
     }
 
     static final class BatchTrustService extends AvoidTrustPromptService {
