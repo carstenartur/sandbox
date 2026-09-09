@@ -81,9 +81,9 @@ public final class ParameterizedMigrationEligibility {
 <span class="fc" id="L81">			return rejected(&quot;PARAMETERIZED_PROVIDER_NOT_LOCAL&quot;, //$NON-NLS-1$</span>
 <span class="fc" id="L82">					&quot;No local @Parameters provider is declared; inherited or external providers require a coordinated migration.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L84" title="All 2 branches covered.">		if (providers &gt; 1) {</span>
-<span class="fc" id="L85">			return rejected(&quot;PARAMETERIZED_MULTIPLE_LOCAL_PROVIDERS&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L86">					&quot;More than one local @Parameters provider is declared, so a unique MethodSource cannot be selected safely.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">		if (providers &gt; 1) {</span>
+<span class="nc" id="L85">			return rejected(&quot;PARAMETERIZED_MULTIPLE_LOCAL_PROVIDERS&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L86">					&quot;More than one local @Parameters provider is declared, so a unique MethodSource cannot be selected safely.&quot;); //$NON-NLS-1$</span>
 		}
 <span class="fc bfc" id="L88" title="All 2 branches covered.">		if (usesFieldInjection(type)) {</span>
 <span class="fc" id="L89">			return rejected(&quot;PARAMETERIZED_FIELD_INJECTION&quot;, //$NON-NLS-1$</span>

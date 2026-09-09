@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit4ParameterizedPlan.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnit4ParameterizedPlan.java</span></div><h1>JUnit4ParameterizedPlan.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Map;
+import java.util.Objects;
+
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
+
+/**
+ * Immutable source-discovery evidence for one JUnit 4 Parameterized component.
+ * This is a prepared plan, not permission to apply a migration: an executor must
+ * still prove its target strategy with the JDT runtime oracle and revalidate the
+ * complete source scope. No AST or Java-model elements escape discovery.
+ */
+public record JUnit4ParameterizedPlan(NodeKey testClass, SemanticRewritePlan semanticPlan,
+		Map&lt;NodeKey, String&gt; compilationUnits, Map&lt;String, String&gt; sourceFingerprints) {
+
+	public static final String CONTRACT= &quot;junit4-parameterized&quot;; //$NON-NLS-1$
+	public static final String RUNNER_CLASS= &quot;JUNIT4_PARAMETERIZED_CLASS&quot;; //$NON-NLS-1$
+	public static final String PROVIDER= &quot;JUNIT4_PARAMETERIZED_PROVIDER&quot;; //$NON-NLS-1$
+	public static final String CONSTRUCTOR= &quot;JUNIT4_PARAMETERIZED_CONSTRUCTOR&quot;; //$NON-NLS-1$
+	public static final String PARAMETER= &quot;JUNIT4_PARAMETERIZED_PARAMETER&quot;; //$NON-NLS-1$
+	public static final String FIELD= &quot;JUNIT4_PARAMETERIZED_FIELD&quot;; //$NON-NLS-1$
+	public static final String TEST= &quot;JUNIT4_PARAMETERIZED_TEST&quot;; //$NON-NLS-1$
+	public static final String HAS_PROVIDER= &quot;provider&quot;; //$NON-NLS-1$
+	public static final String HAS_CONSTRUCTOR= &quot;constructor&quot;; //$NON-NLS-1$
+	public static final String HAS_PARAMETER= &quot;constructorParameter&quot;; //$NON-NLS-1$
+	public static final String HAS_FIELD= &quot;injectedField&quot;; //$NON-NLS-1$
+	public static final String HAS_TEST= &quot;testMethod&quot;; //$NON-NLS-1$
+	public static final String DELEGATES_TO= &quot;delegatesTo&quot;; //$NON-NLS-1$
+
+<span class="fc" id="L46">	public JUnit4ParameterizedPlan {</span>
+<span class="fc" id="L47">		Objects.requireNonNull(testClass);</span>
+<span class="fc" id="L48">		Objects.requireNonNull(semanticPlan);</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">		if (!semanticPlan.satisfiesContract(CONTRACT)) {</span>
+<span class="nc" id="L50">			throw new IllegalArgumentException(&quot;Expected the junit4-parameterized contract&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L52">		compilationUnits= Map.copyOf(compilationUnits);</span>
+<span class="fc" id="L53">		sourceFingerprints= Map.copyOf(sourceFingerprints);</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">		if (!semanticPlan.rolesByNode().getOrDefault(testClass, java.util.Set.of()).contains(RUNNER_CLASS)</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">				|| !compilationUnits.keySet().containsAll(semanticPlan.rolesByNode().keySet())</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">				|| !sourceFingerprints.keySet().containsAll(compilationUnits.values())) {</span>
+<span class="nc" id="L57">			throw new IllegalArgumentException(&quot;Incomplete Parameterized source evidence&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L59">	}</span>
+
+	/** Checks exact source text and scope membership, including additions and deletions. */
+	public boolean isCurrent(Map&lt;String, String&gt; currentSources) {
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">		return currentSources != null &amp;&amp; currentSources.keySet().equals(sourceFingerprints.keySet())</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">				&amp;&amp; currentSources.entrySet().stream().allMatch(entry -&gt; entry.getValue() != null</span>
+<span class="fc bfc" id="L65" title="All 4 branches covered.">						&amp;&amp; fingerprint(entry.getValue()).equals(sourceFingerprints.get(entry.getKey())));</span>
+	}
+
+	static String fingerprint(String source) {
+		try {
+<span class="fc" id="L70">			return HexFormat.of().formatHex(MessageDigest.getInstance(&quot;SHA-256&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L71">					.digest(source.getBytes(StandardCharsets.UTF_8)));</span>
+<span class="nc" id="L72">		} catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L73">			throw new IllegalStateException(&quot;Java must provide SHA-256&quot;, e); //$NON-NLS-1$</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

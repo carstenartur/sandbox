@@ -33,6 +33,7 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -65,454 +66,471 @@ public final class SemanticRewritePlan {
 	/** Creates a defensive immutable plan. */
 	public SemanticRewritePlan(String contractId, Map&lt;NodeKey, Set&lt;String&gt;&gt; rolesByNode,
 			Map&lt;NodeKey, Map&lt;String, SemanticPlanValue&gt;&gt; valuesByNode,
-<span class="fc" id="L68">			List&lt;SemanticPlanRelation&gt; relations) {</span>
-<span class="pc bpc" id="L69" title="1 of 4 branches missed.">		this.contractId= contractId == null || contractId.isBlank() ? null : contractId.trim();</span>
-<span class="fc" id="L70">		this.rolesByNode= immutableRoles(rolesByNode);</span>
-<span class="fc" id="L71">		this.valuesByNode= immutableValues(valuesByNode);</span>
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		this.relations= List.copyOf(relations == null ? List.of() : relations);</span>
-<span class="fc" id="L73">		validateValueKinds(this.valuesByNode, this.relations);</span>
-<span class="fc" id="L74">		this.outgoingRelations= indexRelations(this.relations, true);</span>
-<span class="fc" id="L75">		this.incomingRelations= indexRelations(this.relations, false);</span>
-<span class="fc" id="L76">	}</span>
+<span class="fc" id="L69">			List&lt;SemanticPlanRelation&gt; relations) {</span>
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">		this.contractId= contractId == null || contractId.isBlank() ? null : contractId.trim();</span>
+<span class="fc" id="L71">		this.rolesByNode= immutableRoles(rolesByNode);</span>
+<span class="fc" id="L72">		this.valuesByNode= immutableValues(valuesByNode);</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">		this.relations= List.copyOf(relations == null ? List.of() : relations);</span>
+<span class="fc" id="L74">		validateValueKinds(this.valuesByNode, this.relations);</span>
+<span class="fc" id="L75">		this.outgoingRelations= indexRelations(this.relations, true);</span>
+<span class="fc" id="L76">		this.incomingRelations= indexRelations(this.relations, false);</span>
+<span class="fc" id="L77">	}</span>
 
 	/** Backward-compatible constructor for role-only contracted plans. */
 	public SemanticRewritePlan(String contractId, Map&lt;NodeKey, Set&lt;String&gt;&gt; rolesByNode) {
-<span class="nc" id="L80">		this(contractId, rolesByNode, Map.of(), List.of());</span>
-<span class="nc" id="L81">	}</span>
+<span class="nc" id="L81">		this(contractId, rolesByNode, Map.of(), List.of());</span>
+<span class="nc" id="L82">	}</span>
 
 	/** Creates a contracted plan with roles and typed values but no relations. */
 	public SemanticRewritePlan(String contractId, Map&lt;NodeKey, Set&lt;String&gt;&gt; rolesByNode,
 			Map&lt;NodeKey, Map&lt;String, SemanticPlanValue&gt;&gt; valuesByNode) {
-<span class="nc" id="L86">		this(contractId, rolesByNode, valuesByNode, List.of());</span>
-<span class="nc" id="L87">	}</span>
+<span class="nc" id="L87">		this(contractId, rolesByNode, valuesByNode, List.of());</span>
+<span class="nc" id="L88">	}</span>
 
 	/** Backward-compatible constructor for uncontracted guard-only plans. */
 	public SemanticRewritePlan(Map&lt;NodeKey, Set&lt;String&gt;&gt; rolesByNode) {
-<span class="nc" id="L91">		this(null, rolesByNode, Map.of(), List.of());</span>
-<span class="nc" id="L92">	}</span>
+<span class="nc" id="L92">		this(null, rolesByNode, Map.of(), List.of());</span>
+<span class="nc" id="L93">	}</span>
 
 	/** Returns an empty, uncontracted plan. */
 	public static SemanticRewritePlan empty() {
-<span class="fc" id="L96">		return new SemanticRewritePlan(null, Map.of(), Map.of(), List.of());</span>
+<span class="fc" id="L97">		return new SemanticRewritePlan(null, Map.of(), Map.of(), List.of());</span>
 	}
 
 	/** Creates a mutable builder without an execution contract. */
 	public static Builder builder() {
-<span class="fc" id="L101">		return new Builder(null);</span>
+<span class="fc" id="L102">		return new Builder(null);</span>
 	}
 
 	/** Creates a mutable builder bound to a plan-aware hint contract. */
 	public static Builder builder(String contractId) {
-<span class="fc" id="L106">		return new Builder(contractId);</span>
+<span class="fc" id="L107">		return new Builder(contractId);</span>
 	}
 
 	public String contractId() {
-<span class="fc" id="L110">		return contractId;</span>
+<span class="fc" id="L111">		return contractId;</span>
 	}
 
 	public Map&lt;NodeKey, Set&lt;String&gt;&gt; rolesByNode() {
-<span class="fc" id="L114">		return rolesByNode;</span>
+<span class="fc" id="L115">		return rolesByNode;</span>
 	}
 
 	public Map&lt;NodeKey, Map&lt;String, SemanticPlanValue&gt;&gt; valuesByNode() {
-<span class="nc" id="L118">		return valuesByNode;</span>
+<span class="fc" id="L119">		return valuesByNode;</span>
 	}
 
 	/** Returns all relation occurrences in planner order, including duplicates. */
 	public List&lt;SemanticPlanRelation&gt; relations() {
-<span class="nc" id="L123">		return relations;</span>
+<span class="fc" id="L124">		return relations;</span>
 	}
 
 	/** Returns whether this plan contains no roles, values or relations. */
 	public boolean isEmpty() {
-<span class="pc bpc" id="L128" title="1 of 6 branches missed.">		return rolesByNode.isEmpty() &amp;&amp; valuesByNode.isEmpty() &amp;&amp; relations.isEmpty();</span>
+<span class="pc bpc" id="L129" title="1 of 6 branches missed.">		return rolesByNode.isEmpty() &amp;&amp; valuesByNode.isEmpty() &amp;&amp; relations.isEmpty();</span>
 	}
 
 	/** Returns whether this plan was produced for the exact named contract. */
 	public boolean satisfiesContract(String requiredContractId) {
-<span class="pc bpc" id="L133" title="1 of 4 branches missed.">		return contractId != null &amp;&amp; requiredContractId != null</span>
-<span class="fc bfc" id="L134" title="All 2 branches covered.">				&amp;&amp; contractId.equals(requiredContractId.trim());</span>
+<span class="pc bpc" id="L134" title="1 of 4 branches missed.">		return contractId != null &amp;&amp; requiredContractId != null</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">				&amp;&amp; contractId.equals(requiredContractId.trim());</span>
 	}
 
 	/** Returns whether the exact AST target has the requested role. */
 	public boolean hasRole(ASTNode node, String role) {
-<span class="fc" id="L139">		NodeKey key= NodeKey.from(node);</span>
-<span class="pc bpc" id="L140" title="1 of 6 branches missed.">		return key != null &amp;&amp; role != null &amp;&amp; rolesByNode.getOrDefault(key, Set.of()).contains(role);</span>
+<span class="fc" id="L140">		NodeKey key= NodeKey.from(node);</span>
+<span class="pc bpc" id="L141" title="1 of 6 branches missed.">		return key != null &amp;&amp; role != null &amp;&amp; rolesByNode.getOrDefault(key, Set.of()).contains(role);</span>
 	}
 
 	/** Returns whether an enclosing semantic declaration has the requested role. */
 	public boolean hasEnclosingRole(ASTNode node, String role) {
-<span class="fc" id="L145">		ASTNode current= node;</span>
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="pc bpc" id="L147" title="1 of 2 branches missed.">			if (hasRole(current, role)) {</span>
-<span class="fc" id="L148">				return true;</span>
+<span class="fc" id="L146">		ASTNode current= node;</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">			if (hasRole(current, role)) {</span>
+<span class="fc" id="L149">				return true;</span>
 			}
-<span class="nc" id="L150">			current= current.getParent();</span>
+<span class="nc" id="L151">			current= current.getParent();</span>
 		}
-<span class="nc" id="L152">		return false;</span>
+<span class="nc" id="L153">		return false;</span>
 	}
 
 	/** Returns one typed value for the exact stable node key. */
 	public Optional&lt;SemanticPlanValue&gt; value(NodeKey key, String name) {
-<span class="pc bpc" id="L157" title="2 of 4 branches missed.">		if (key == null || name == null) {</span>
-<span class="nc" id="L158">			return Optional.empty();</span>
+<span class="pc bpc" id="L158" title="2 of 4 branches missed.">		if (key == null || name == null) {</span>
+<span class="nc" id="L159">			return Optional.empty();</span>
 		}
-<span class="fc" id="L160">		return Optional.ofNullable(valuesByNode.getOrDefault(key, Map.of()).get(name));</span>
+<span class="fc" id="L161">		return Optional.ofNullable(valuesByNode.getOrDefault(key, Map.of()).get(name));</span>
 	}
 
 	/** Returns one typed value for the exact AST target. */
 	public Optional&lt;SemanticPlanValue&gt; value(ASTNode node, String name) {
-<span class="fc" id="L165">		return value(NodeKey.from(node), name);</span>
+<span class="fc" id="L166">		return value(NodeKey.from(node), name);</span>
 	}
 
 	/** Returns the first typed value found on the node or an enclosing declaration. */
 	public Optional&lt;SemanticPlanValue&gt; enclosingValue(ASTNode node, String name) {
-<span class="nc" id="L170">		ASTNode current= node;</span>
-<span class="nc bnc" id="L171" title="All 2 branches missed.">		while (current != null) {</span>
-<span class="nc" id="L172">			Optional&lt;SemanticPlanValue&gt; value= value(current, name);</span>
-<span class="nc bnc" id="L173" title="All 2 branches missed.">			if (value.isPresent()) {</span>
-<span class="nc" id="L174">				return value;</span>
+<span class="nc" id="L171">		ASTNode current= node;</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">		while (current != null) {</span>
+<span class="nc" id="L173">			Optional&lt;SemanticPlanValue&gt; value= value(current, name);</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">			if (value.isPresent()) {</span>
+<span class="nc" id="L175">				return value;</span>
 			}
-<span class="nc" id="L176">			current= current.getParent();</span>
-<span class="nc" id="L177">		}</span>
-<span class="nc" id="L178">		return Optional.empty();</span>
+<span class="nc" id="L177">			current= current.getParent();</span>
+<span class="nc" id="L178">		}</span>
+<span class="nc" id="L179">		return Optional.empty();</span>
 	}
 
 	/** Returns whether the exact AST target has the supplied typed value. */
 	public boolean hasValue(ASTNode node, String name, SemanticPlanValue expected) {
-<span class="pc bpc" id="L183" title="1 of 4 branches missed.">		return expected != null &amp;&amp; value(node, name).filter(expected::equals).isPresent();</span>
+<span class="pc bpc" id="L184" title="1 of 4 branches missed.">		return expected != null &amp;&amp; value(node, name).filter(expected::equals).isPresent();</span>
 	}
 
 	/** Returns whether the node or an enclosing declaration has the supplied value. */
 	public boolean hasEnclosingValue(ASTNode node, String name, SemanticPlanValue expected) {
-<span class="nc bnc" id="L188" title="All 4 branches missed.">		return expected != null &amp;&amp; enclosingValue(node, name).filter(expected::equals).isPresent();</span>
+<span class="nc bnc" id="L189" title="All 4 branches missed.">		return expected != null &amp;&amp; enclosingValue(node, name).filter(expected::equals).isPresent();</span>
 	}
 
 	/** Returns all outgoing relations of the requested kind in declared order. */
 	public List&lt;SemanticPlanRelation&gt; outgoing(NodeKey source, String kind) {
-<span class="pc bpc" id="L193" title="2 of 4 branches missed.">		if (source == null || kind == null) {</span>
-<span class="nc" id="L194">			return List.of();</span>
+<span class="pc bpc" id="L194" title="2 of 4 branches missed.">		if (source == null || kind == null) {</span>
+<span class="nc" id="L195">			return List.of();</span>
 		}
-<span class="fc" id="L196">		return outgoingRelations.getOrDefault(source, Map.of()).getOrDefault(kind, List.of());</span>
+<span class="fc" id="L197">		return outgoingRelations.getOrDefault(source, Map.of()).getOrDefault(kind, List.of());</span>
 	}
 
 	/** Returns all outgoing relations for an AST target in declared order. */
 	public List&lt;SemanticPlanRelation&gt; outgoing(ASTNode source, String kind) {
-<span class="fc" id="L201">		return outgoing(NodeKey.from(source), kind);</span>
+<span class="fc" id="L202">		return outgoing(NodeKey.from(source), kind);</span>
 	}
 
 	/** Returns all incoming relations of the requested kind in declared order. */
 	public List&lt;SemanticPlanRelation&gt; incoming(NodeKey target, String kind) {
-<span class="pc bpc" id="L206" title="2 of 4 branches missed.">		if (target == null || kind == null) {</span>
-<span class="nc" id="L207">			return List.of();</span>
+<span class="pc bpc" id="L207" title="2 of 4 branches missed.">		if (target == null || kind == null) {</span>
+<span class="nc" id="L208">			return List.of();</span>
 		}
-<span class="fc" id="L209">		return incomingRelations.getOrDefault(target, Map.of()).getOrDefault(kind, List.of());</span>
+<span class="fc" id="L210">		return incomingRelations.getOrDefault(target, Map.of()).getOrDefault(kind, List.of());</span>
 	}
 
 	/** Returns all incoming relations for an AST target in declared order. */
 	public List&lt;SemanticPlanRelation&gt; incoming(ASTNode target, String kind) {
-<span class="fc" id="L214">		return incoming(NodeKey.from(target), kind);</span>
+<span class="fc" id="L215">		return incoming(NodeKey.from(target), kind);</span>
 	}
 
 	/** Returns whether an exact directed relation exists. */
 	public boolean hasRelation(ASTNode source, String kind, ASTNode target) {
-<span class="fc" id="L219">		NodeKey sourceKey= NodeKey.from(source);</span>
-<span class="fc" id="L220">		NodeKey targetKey= NodeKey.from(target);</span>
-<span class="pc bpc" id="L221" title="2 of 4 branches missed.">		return sourceKey != null &amp;&amp; targetKey != null &amp;&amp; outgoing(sourceKey, kind).stream()</span>
-<span class="fc bfc" id="L222" title="All 2 branches covered.">				.anyMatch(relation -&gt; targetKey.equals(relation.target()));</span>
+<span class="fc" id="L220">		NodeKey sourceKey= NodeKey.from(source);</span>
+<span class="fc" id="L221">		NodeKey targetKey= NodeKey.from(target);</span>
+<span class="pc bpc" id="L222" title="2 of 4 branches missed.">		return sourceKey != null &amp;&amp; targetKey != null &amp;&amp; outgoing(sourceKey, kind).stream()</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">				.anyMatch(relation -&gt; targetKey.equals(relation.target()));</span>
 	}
 
 	/** Returns whether an exact relation has the supplied typed attribute. */
 	public boolean hasRelationValue(ASTNode source, String kind, ASTNode target, String name,
 			SemanticPlanValue expected) {
-<span class="fc" id="L228">		NodeKey sourceKey= NodeKey.from(source);</span>
-<span class="fc" id="L229">		NodeKey targetKey= NodeKey.from(target);</span>
-<span class="pc bpc" id="L230" title="3 of 6 branches missed.">		return sourceKey != null &amp;&amp; targetKey != null &amp;&amp; expected != null</span>
-<span class="fc" id="L231">				&amp;&amp; outgoing(sourceKey, kind).stream()</span>
-<span class="fc" id="L232">						.filter(relation -&gt; targetKey.equals(relation.target()))</span>
-<span class="pc bpc" id="L233" title="1 of 2 branches missed.">						.anyMatch(relation -&gt; relation.hasAttribute(name, expected));</span>
+<span class="fc" id="L229">		NodeKey sourceKey= NodeKey.from(source);</span>
+<span class="fc" id="L230">		NodeKey targetKey= NodeKey.from(target);</span>
+<span class="pc bpc" id="L231" title="3 of 6 branches missed.">		return sourceKey != null &amp;&amp; targetKey != null &amp;&amp; expected != null</span>
+<span class="fc" id="L232">				&amp;&amp; outgoing(sourceKey, kind).stream()</span>
+<span class="fc" id="L233">						.filter(relation -&gt; targetKey.equals(relation.target()))</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">						.anyMatch(relation -&gt; relation.hasAttribute(name, expected));</span>
 	}
 
 	private static Map&lt;NodeKey, Set&lt;String&gt;&gt; immutableRoles(Map&lt;NodeKey, Set&lt;String&gt;&gt; source) {
-<span class="fc" id="L237">		Map&lt;NodeKey, Set&lt;String&gt;&gt; copy= new LinkedHashMap&lt;&gt;();</span>
-<span class="pc bpc" id="L238" title="1 of 2 branches missed.">		if (source != null) {</span>
-<span class="fc" id="L239">			source.forEach((key, roles) -&gt; copy.put(Objects.requireNonNull(key),</span>
-<span class="pc bpc" id="L240" title="1 of 2 branches missed.">					Set.copyOf(roles == null ? Set.of() : roles)));</span>
+<span class="fc" id="L238">		Map&lt;NodeKey, Set&lt;String&gt;&gt; copy= new LinkedHashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		if (source != null) {</span>
+<span class="fc" id="L240">			source.forEach((key, roles) -&gt; copy.put(Objects.requireNonNull(key),</span>
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">					Set.copyOf(roles == null ? Set.of() : roles)));</span>
 		}
-<span class="fc" id="L242">		return Map.copyOf(copy);</span>
+<span class="fc" id="L243">		return Map.copyOf(copy);</span>
 	}
 
 	private static Map&lt;NodeKey, Map&lt;String, SemanticPlanValue&gt;&gt; immutableValues(
 			Map&lt;NodeKey, Map&lt;String, SemanticPlanValue&gt;&gt; source) {
-<span class="fc" id="L247">		Map&lt;NodeKey, Map&lt;String, SemanticPlanValue&gt;&gt; copy= new LinkedHashMap&lt;&gt;();</span>
-<span class="pc bpc" id="L248" title="1 of 2 branches missed.">		if (source != null) {</span>
-<span class="fc" id="L249">			source.forEach((key, values) -&gt; {</span>
-<span class="fc" id="L250">				Map&lt;String, SemanticPlanValue&gt; nodeValues= new LinkedHashMap&lt;&gt;();</span>
-<span class="pc bpc" id="L251" title="1 of 2 branches missed.">				if (values != null) {</span>
-<span class="fc" id="L252">					values.forEach((name, value) -&gt; nodeValues.put(requireName(name, &quot;Plan value&quot;), //$NON-NLS-1$</span>
-<span class="fc" id="L253">							Objects.requireNonNull(value)));</span>
+<span class="fc" id="L248">		Map&lt;NodeKey, Map&lt;String, SemanticPlanValue&gt;&gt; copy= new LinkedHashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L249" title="1 of 2 branches missed.">		if (source != null) {</span>
+<span class="fc" id="L250">			source.forEach((key, values) -&gt; {</span>
+<span class="fc" id="L251">				Map&lt;String, SemanticPlanValue&gt; nodeValues= new LinkedHashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">				if (values != null) {</span>
+<span class="fc" id="L253">					values.forEach((name, value) -&gt; nodeValues.put(requireName(name, &quot;Plan value&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L254">							Objects.requireNonNull(value)));</span>
 				}
-<span class="fc" id="L255">				copy.put(Objects.requireNonNull(key), Map.copyOf(nodeValues));</span>
-<span class="fc" id="L256">			});</span>
+<span class="fc" id="L256">				copy.put(Objects.requireNonNull(key), Map.copyOf(nodeValues));</span>
+<span class="fc" id="L257">			});</span>
 		}
-<span class="fc" id="L258">		return Map.copyOf(copy);</span>
+<span class="fc" id="L259">		return Map.copyOf(copy);</span>
 	}
 
 	private static Map&lt;NodeKey, Map&lt;String, List&lt;SemanticPlanRelation&gt;&gt;&gt; indexRelations(
 			List&lt;SemanticPlanRelation&gt; relations, boolean outgoing) {
-<span class="fc" id="L263">		Map&lt;NodeKey, Map&lt;String, List&lt;SemanticPlanRelation&gt;&gt;&gt; mutable= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L264" title="All 2 branches covered.">		for (SemanticPlanRelation relation : relations) {</span>
-<span class="fc bfc" id="L265" title="All 2 branches covered.">			NodeKey node= outgoing ? relation.source() : relation.target();</span>
-<span class="fc" id="L266">			mutable.computeIfAbsent(node, ignored -&gt; new LinkedHashMap&lt;&gt;())</span>
-<span class="fc" id="L267">					.computeIfAbsent(relation.kind(), ignored -&gt; new ArrayList&lt;&gt;()).add(relation);</span>
-<span class="fc" id="L268">		}</span>
-<span class="fc" id="L269">		Map&lt;NodeKey, Map&lt;String, List&lt;SemanticPlanRelation&gt;&gt;&gt; result= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L270">		mutable.forEach((node, byKind) -&gt; {</span>
-<span class="fc" id="L271">			Map&lt;String, List&lt;SemanticPlanRelation&gt;&gt; immutableByKind= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L272">			byKind.forEach((kind, indexedRelations) -&gt;</span>
-<span class="fc" id="L273">					immutableByKind.put(kind, List.copyOf(indexedRelations)));</span>
-<span class="fc" id="L274">			result.put(node, Map.copyOf(immutableByKind));</span>
-<span class="fc" id="L275">		});</span>
-<span class="fc" id="L276">		return Map.copyOf(result);</span>
+<span class="fc" id="L264">		Map&lt;NodeKey, Map&lt;String, List&lt;SemanticPlanRelation&gt;&gt;&gt; mutable= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">		for (SemanticPlanRelation relation : relations) {</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">			NodeKey node= outgoing ? relation.source() : relation.target();</span>
+<span class="fc" id="L267">			mutable.computeIfAbsent(node, ignored -&gt; new LinkedHashMap&lt;&gt;())</span>
+<span class="fc" id="L268">					.computeIfAbsent(relation.kind(), ignored -&gt; new ArrayList&lt;&gt;()).add(relation);</span>
+<span class="fc" id="L269">		}</span>
+<span class="fc" id="L270">		Map&lt;NodeKey, Map&lt;String, List&lt;SemanticPlanRelation&gt;&gt;&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L271">		mutable.forEach((node, byKind) -&gt; {</span>
+<span class="fc" id="L272">			Map&lt;String, List&lt;SemanticPlanRelation&gt;&gt; immutableByKind= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L273">			byKind.forEach((kind, indexedRelations) -&gt;</span>
+<span class="fc" id="L274">					immutableByKind.put(kind, List.copyOf(indexedRelations)));</span>
+<span class="fc" id="L275">			result.put(node, Map.copyOf(immutableByKind));</span>
+<span class="fc" id="L276">		});</span>
+<span class="fc" id="L277">		return Map.copyOf(result);</span>
 	}
 
 	private static void validateValueKinds(Map&lt;NodeKey, Map&lt;String, SemanticPlanValue&gt;&gt; values,
 			List&lt;SemanticPlanRelation&gt; relations) {
-<span class="fc" id="L281">		Map&lt;String, String&gt; factKinds= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L282">		values.values().forEach(nodeValues -&gt; nodeValues.forEach((name, value) -&gt;</span>
-<span class="fc" id="L283">				validateKind(factKinds, name, typeSignature(value), &quot;plan value&quot;))); //$NON-NLS-1$</span>
-<span class="fc" id="L284">		Map&lt;String, String&gt; relationKinds= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L285" title="All 2 branches covered.">		for (SemanticPlanRelation relation : relations) {</span>
-<span class="fc" id="L286">			relation.attributes().forEach((name, value) -&gt; validateKind(relationKinds,</span>
-<span class="fc" id="L287">					relation.kind() + &quot;.&quot; + name, typeSignature(value), &quot;relation attribute&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L288">		}</span>
-<span class="fc" id="L289">	}</span>
+<span class="fc" id="L282">		Map&lt;String, String&gt; factKinds= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L283">		values.values().forEach(nodeValues -&gt; nodeValues.forEach((name, value) -&gt;</span>
+<span class="fc" id="L284">				validateKind(factKinds, name, typeSignature(value), &quot;plan value&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L285">		Map&lt;String, String&gt; relationKinds= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">		for (SemanticPlanRelation relation : relations) {</span>
+<span class="fc" id="L287">			relation.attributes().forEach((name, value) -&gt; validateKind(relationKinds,</span>
+<span class="fc" id="L288">					relation.kind() + &quot;.&quot; + name, typeSignature(value), &quot;relation attribute&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L289">		}</span>
+<span class="fc" id="L290">	}</span>
 
 	private static void validateKind(Map&lt;String, String&gt; kinds, String name, String kind, String label) {
-<span class="fc" id="L292">		String previous= kinds.putIfAbsent(name, kind);</span>
-<span class="fc bfc" id="L293" title="All 4 branches covered.">		if (previous != null &amp;&amp; !previous.equals(kind)) {</span>
-<span class="fc" id="L294">			throw new IllegalArgumentException(&quot;Conflicting types for &quot; + label + &quot; &quot; + name //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L293">		String previous= kinds.putIfAbsent(name, kind);</span>
+<span class="fc bfc" id="L294" title="All 4 branches covered.">		if (previous != null &amp;&amp; !previous.equals(kind)) {</span>
+<span class="fc" id="L295">			throw new IllegalArgumentException(&quot;Conflicting types for &quot; + label + &quot; &quot; + name //$NON-NLS-1$ //$NON-NLS-2$</span>
 					+ &quot;: &quot; + previous + &quot; and &quot; + kind); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-<span class="fc" id="L297">	}</span>
+<span class="fc" id="L298">	}</span>
 
 	private static String typeSignature(SemanticPlanValue value) {
-<span class="fc" id="L300">		return value.kind().name();</span>
+<span class="fc" id="L301">		return value.kind().name();</span>
 	}
 
 	private static String requireName(String value, String label) {
-<span class="pc bpc" id="L304" title="2 of 4 branches missed.">		if (value == null || value.isBlank()) {</span>
-<span class="nc" id="L305">			throw new IllegalArgumentException(label + &quot; name must not be blank&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L305" title="2 of 4 branches missed.">		if (value == null || value.isBlank()) {</span>
+<span class="nc" id="L306">			throw new IllegalArgumentException(label + &quot; name must not be blank&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L307">		return value.trim();</span>
+<span class="fc" id="L308">		return value.trim();</span>
 	}
 
 	@Override
 	public boolean equals(Object other) {
-<span class="nc bnc" id="L312" title="All 2 branches missed.">		if (this == other) {</span>
-<span class="nc" id="L313">			return true;</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">		if (this == other) {</span>
+<span class="nc" id="L314">			return true;</span>
 		}
-<span class="nc bnc" id="L315" title="All 2 branches missed.">		if (!(other instanceof SemanticRewritePlan plan)) {</span>
-<span class="nc" id="L316">			return false;</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">		if (!(other instanceof SemanticRewritePlan plan)) {</span>
+<span class="nc" id="L317">			return false;</span>
 		}
-<span class="nc bnc" id="L318" title="All 2 branches missed.">		return Objects.equals(contractId, plan.contractId)</span>
-<span class="nc bnc" id="L319" title="All 2 branches missed.">				&amp;&amp; rolesByNode.equals(plan.rolesByNode)</span>
-<span class="nc bnc" id="L320" title="All 2 branches missed.">				&amp;&amp; valuesByNode.equals(plan.valuesByNode)</span>
-<span class="nc bnc" id="L321" title="All 2 branches missed.">				&amp;&amp; relations.equals(plan.relations);</span>
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		return Objects.equals(contractId, plan.contractId)</span>
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">				&amp;&amp; rolesByNode.equals(plan.rolesByNode)</span>
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">				&amp;&amp; valuesByNode.equals(plan.valuesByNode)</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">				&amp;&amp; relations.equals(plan.relations);</span>
 	}
 
 	@Override
 	public int hashCode() {
-<span class="nc" id="L326">		return Objects.hash(contractId, rolesByNode, valuesByNode, relations);</span>
+<span class="nc" id="L327">		return Objects.hash(contractId, rolesByNode, valuesByNode, relations);</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="nc" id="L331">		return &quot;SemanticRewritePlan[contractId=&quot; + contractId + &quot;, rolesByNode=&quot; + rolesByNode //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L332">		return &quot;SemanticRewritePlan[contractId=&quot; + contractId + &quot;, rolesByNode=&quot; + rolesByNode //$NON-NLS-1$ //$NON-NLS-2$</span>
 				+ &quot;, valuesByNode=&quot; + valuesByNode + &quot;, relations=&quot; + relations + &quot;]&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	/** Stable supported semantic node kinds. */
-<span class="fc" id="L336">	public enum NodeKind {</span>
-<span class="fc" id="L337">		TYPE,</span>
-<span class="fc" id="L338">		METHOD,</span>
-<span class="fc" id="L339">		FIELD,</span>
-<span class="fc" id="L340">		INVOCATION</span>
+<span class="fc" id="L337">	public enum NodeKind {</span>
+<span class="fc" id="L338">		TYPE,</span>
+<span class="fc" id="L339">		METHOD,</span>
+<span class="fc" id="L340">		FIELD,</span>
+<span class="fc" id="L341">		PARAMETER,</span>
+<span class="fc" id="L342">		INVOCATION</span>
 	}
 
 	/** Stable key used to re-identify an authorized AST target. */
 	public record NodeKey(NodeKind kind, String bindingKey, int sourceStart, int sourceLength) {
-<span class="fc" id="L345">		public NodeKey {</span>
-<span class="fc" id="L346">			Objects.requireNonNull(kind);</span>
-<span class="fc" id="L347">			Objects.requireNonNull(bindingKey);</span>
-<span class="fc" id="L348">		}</span>
+<span class="fc" id="L347">		public NodeKey {</span>
+<span class="fc" id="L348">			Objects.requireNonNull(kind);</span>
+<span class="fc" id="L349">			Objects.requireNonNull(bindingKey);</span>
+<span class="fc" id="L350">		}</span>
 
 		public static NodeKey type(String bindingKey) {
-<span class="pc bpc" id="L351" title="1 of 2 branches missed.">			return bindingKey == null ? null : new NodeKey(NodeKind.TYPE, bindingKey, -1, -1);</span>
+<span class="pc bpc" id="L353" title="1 of 2 branches missed.">			return bindingKey == null ? null : new NodeKey(NodeKind.TYPE, bindingKey, -1, -1);</span>
 		}
 
 		public static NodeKey method(String bindingKey) {
-<span class="pc bpc" id="L355" title="1 of 2 branches missed.">			return bindingKey == null ? null : new NodeKey(NodeKind.METHOD, bindingKey, -1, -1);</span>
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">			return bindingKey == null ? null : new NodeKey(NodeKind.METHOD, bindingKey, -1, -1);</span>
 		}
 
 		public static NodeKey field(String bindingKey) {
-<span class="pc bpc" id="L359" title="1 of 2 branches missed.">			return bindingKey == null ? null : new NodeKey(NodeKind.FIELD, bindingKey, -1, -1);</span>
+<span class="fc bfc" id="L361" title="All 2 branches covered.">			return bindingKey == null ? null : new NodeKey(NodeKind.FIELD, bindingKey, -1, -1);</span>
+		}
+
+		/** A declaration binding identifies a parameter without duplicating its name or index. */
+		public static NodeKey parameter(String bindingKey) {
+<span class="pc bpc" id="L366" title="1 of 2 branches missed.">			return bindingKey == null ? null : new NodeKey(NodeKind.PARAMETER, bindingKey, -1, -1);</span>
 		}
 
 		public static NodeKey invocation(String bindingKey, int sourceStart, int sourceLength) {
-<span class="pc bpc" id="L363" title="1 of 2 branches missed.">			return bindingKey == null ? null</span>
-<span class="fc" id="L364">					: new NodeKey(NodeKind.INVOCATION, bindingKey, sourceStart, sourceLength);</span>
+<span class="pc bpc" id="L370" title="1 of 2 branches missed.">			return bindingKey == null ? null</span>
+<span class="fc" id="L371">					: new NodeKey(NodeKind.INVOCATION, bindingKey, sourceStart, sourceLength);</span>
 		}
 
 		/** Resolves the canonical plan key for a supported AST node. */
 		public static NodeKey from(ASTNode node) {
-<span class="fc bfc" id="L369" title="All 2 branches covered.">			if (node instanceof TypeDeclaration type) {</span>
-<span class="fc" id="L370">				return type(typeKey(type.resolveBinding()));</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">			if (node instanceof TypeDeclaration type) {</span>
+<span class="fc" id="L377">				return type(typeKey(type.resolveBinding()));</span>
 			}
-<span class="pc bpc" id="L372" title="1 of 2 branches missed.">			if (node instanceof EnumDeclaration type) {</span>
-<span class="nc" id="L373">				return type(typeKey(type.resolveBinding()));</span>
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">			if (node instanceof EnumDeclaration type) {</span>
+<span class="nc" id="L380">				return type(typeKey(type.resolveBinding()));</span>
 			}
-<span class="pc bpc" id="L375" title="1 of 2 branches missed.">			if (node instanceof AnnotationTypeDeclaration type) {</span>
-<span class="nc" id="L376">				return type(typeKey(type.resolveBinding()));</span>
+<span class="pc bpc" id="L382" title="1 of 2 branches missed.">			if (node instanceof AnnotationTypeDeclaration type) {</span>
+<span class="nc" id="L383">				return type(typeKey(type.resolveBinding()));</span>
 			}
-<span class="pc bpc" id="L378" title="1 of 2 branches missed.">			if (node instanceof RecordDeclaration type) {</span>
-<span class="nc" id="L379">				return type(typeKey(type.resolveBinding()));</span>
+<span class="pc bpc" id="L385" title="1 of 2 branches missed.">			if (node instanceof RecordDeclaration type) {</span>
+<span class="nc" id="L386">				return type(typeKey(type.resolveBinding()));</span>
 			}
-<span class="fc bfc" id="L381" title="All 2 branches covered.">			if (node instanceof MethodDeclaration method) {</span>
-<span class="fc" id="L382">				return method(methodKey(method.resolveBinding()));</span>
+<span class="fc bfc" id="L388" title="All 2 branches covered.">			if (node instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L389">				return method(methodKey(method.resolveBinding()));</span>
 			}
-<span class="fc bfc" id="L384" title="All 2 branches covered.">			if (node instanceof FieldDeclaration field) {</span>
-<span class="pc bpc" id="L385" title="1 of 2 branches missed.">				return field.fragments().size() == 1 ? from((ASTNode) field.fragments().get(0)) : null;</span>
+<span class="fc bfc" id="L391" title="All 2 branches covered.">			if (node instanceof SingleVariableDeclaration parameter) {</span>
+<span class="fc" id="L392">				return parameter(parameterKey(parameter.resolveBinding()));</span>
 			}
-<span class="fc bfc" id="L387" title="All 2 branches covered.">			if (node instanceof VariableDeclarationFragment field) {</span>
-<span class="fc" id="L388">				return field(fieldKey(field.resolveBinding()));</span>
+<span class="fc bfc" id="L394" title="All 2 branches covered.">			if (node instanceof FieldDeclaration field) {</span>
+<span class="pc bpc" id="L395" title="1 of 2 branches missed.">				return field.fragments().size() == 1 ? from((ASTNode) field.fragments().get(0)) : null;</span>
 			}
-<span class="fc bfc" id="L390" title="All 2 branches covered.">			if (node instanceof MethodInvocation invocation) {</span>
-<span class="fc" id="L391">				return invocation(methodKey(invocation.resolveMethodBinding()), invocation.getStartPosition(),</span>
-<span class="fc" id="L392">						invocation.getLength());</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">			if (node instanceof VariableDeclarationFragment field) {</span>
+<span class="fc" id="L398">				return field(fieldKey(field.resolveBinding()));</span>
 			}
-<span class="pc bpc" id="L394" title="1 of 2 branches missed.">			if (node instanceof SuperMethodInvocation invocation) {</span>
-<span class="nc" id="L395">				return invocation(methodKey(invocation.resolveMethodBinding()), invocation.getStartPosition(),</span>
-<span class="nc" id="L396">						invocation.getLength());</span>
+<span class="fc bfc" id="L400" title="All 2 branches covered.">			if (node instanceof MethodInvocation invocation) {</span>
+<span class="fc" id="L401">				return invocation(methodKey(invocation.resolveMethodBinding()), invocation.getStartPosition(),</span>
+<span class="fc" id="L402">						invocation.getLength());</span>
 			}
-<span class="fc bfc" id="L398" title="All 2 branches covered.">			if (node instanceof ClassInstanceCreation invocation) {</span>
-<span class="fc" id="L399">				return invocation(methodKey(invocation.resolveConstructorBinding()), invocation.getStartPosition(),</span>
-<span class="fc" id="L400">						invocation.getLength());</span>
+<span class="pc bpc" id="L404" title="1 of 2 branches missed.">			if (node instanceof SuperMethodInvocation invocation) {</span>
+<span class="nc" id="L405">				return invocation(methodKey(invocation.resolveMethodBinding()), invocation.getStartPosition(),</span>
+<span class="nc" id="L406">						invocation.getLength());</span>
 			}
-<span class="pc bpc" id="L402" title="1 of 2 branches missed.">			if (node instanceof ConstructorInvocation invocation) {</span>
-<span class="nc" id="L403">				return invocation(methodKey(invocation.resolveConstructorBinding()), invocation.getStartPosition(),</span>
-<span class="nc" id="L404">						invocation.getLength());</span>
+<span class="fc bfc" id="L408" title="All 2 branches covered.">			if (node instanceof ClassInstanceCreation invocation) {</span>
+<span class="fc" id="L409">				return invocation(methodKey(invocation.resolveConstructorBinding()), invocation.getStartPosition(),</span>
+<span class="fc" id="L410">						invocation.getLength());</span>
 			}
-<span class="pc bpc" id="L406" title="1 of 2 branches missed.">			if (node instanceof SuperConstructorInvocation invocation) {</span>
-<span class="nc" id="L407">				return invocation(methodKey(invocation.resolveConstructorBinding()), invocation.getStartPosition(),</span>
-<span class="nc" id="L408">						invocation.getLength());</span>
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">			if (node instanceof ConstructorInvocation invocation) {</span>
+<span class="nc" id="L413">				return invocation(methodKey(invocation.resolveConstructorBinding()), invocation.getStartPosition(),</span>
+<span class="nc" id="L414">						invocation.getLength());</span>
 			}
-<span class="fc bfc" id="L410" title="All 2 branches covered.">			if (node instanceof SimpleName name) {</span>
-<span class="fc" id="L411">				IBinding binding= name.resolveBinding();</span>
-<span class="fc bfc" id="L412" title="All 2 branches covered.">				if (binding instanceof IMethodBinding methodBinding) {</span>
-<span class="fc" id="L413">					return method(methodKey(methodBinding));</span>
+<span class="pc bpc" id="L416" title="1 of 2 branches missed.">			if (node instanceof SuperConstructorInvocation invocation) {</span>
+<span class="nc" id="L417">				return invocation(methodKey(invocation.resolveConstructorBinding()), invocation.getStartPosition(),</span>
+<span class="nc" id="L418">						invocation.getLength());</span>
+			}
+<span class="fc bfc" id="L420" title="All 2 branches covered.">			if (node instanceof SimpleName name) {</span>
+<span class="fc" id="L421">				IBinding binding= name.resolveBinding();</span>
+<span class="fc bfc" id="L422" title="All 2 branches covered.">				if (binding instanceof IMethodBinding methodBinding) {</span>
+<span class="fc" id="L423">					return method(methodKey(methodBinding));</span>
 				}
-<span class="fc bfc" id="L415" title="All 2 branches covered.">				if (binding instanceof ITypeBinding typeBinding) {</span>
-<span class="fc" id="L416">					return type(typeKey(typeBinding));</span>
+<span class="fc bfc" id="L425" title="All 2 branches covered.">				if (binding instanceof ITypeBinding typeBinding) {</span>
+<span class="fc" id="L426">					return type(typeKey(typeBinding));</span>
 				}
-<span class="pc bpc" id="L418" title="1 of 2 branches missed.">				if (binding instanceof IVariableBinding variableBinding) {</span>
-<span class="nc" id="L419">					return field(fieldKey(variableBinding));</span>
+<span class="fc bfc" id="L428" title="All 2 branches covered.">				if (binding instanceof IVariableBinding variableBinding) {</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">					return variableBinding.isParameter()</span>
+<span class="fc" id="L430">							? parameter(parameterKey(variableBinding)) : field(fieldKey(variableBinding));</span>
 				}
 			}
-<span class="fc" id="L422">			return null;</span>
+<span class="fc" id="L433">			return null;</span>
 		}
 
 		private static String typeKey(ITypeBinding binding) {
-<span class="pc bpc" id="L426" title="1 of 2 branches missed.">			if (binding == null) {</span>
-<span class="nc" id="L427">				return null;</span>
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">			if (binding == null) {</span>
+<span class="nc" id="L438">				return null;</span>
 			}
-<span class="fc" id="L429">			ITypeBinding erasure= binding.getErasure();</span>
-<span class="pc bpc" id="L430" title="1 of 2 branches missed.">			ITypeBinding declaration= (erasure == null ? binding : erasure).getTypeDeclaration();</span>
-<span class="pc bpc" id="L431" title="1 of 2 branches missed.">			return declaration == null ? null : declaration.getKey();</span>
+<span class="fc" id="L440">			ITypeBinding erasure= binding.getErasure();</span>
+<span class="pc bpc" id="L441" title="1 of 2 branches missed.">			ITypeBinding declaration= (erasure == null ? binding : erasure).getTypeDeclaration();</span>
+<span class="pc bpc" id="L442" title="1 of 2 branches missed.">			return declaration == null ? null : declaration.getKey();</span>
 		}
 
 		private static String methodKey(IMethodBinding binding) {
-<span class="pc bpc" id="L435" title="1 of 2 branches missed.">			return binding == null ? null : binding.getMethodDeclaration().getKey();</span>
+<span class="pc bpc" id="L446" title="1 of 2 branches missed.">			return binding == null ? null : binding.getMethodDeclaration().getKey();</span>
 		}
 
 		private static String fieldKey(IVariableBinding binding) {
-<span class="pc bpc" id="L439" title="2 of 4 branches missed.">			if (binding == null || !binding.isField()) {</span>
-<span class="nc" id="L440">				return null;</span>
+<span class="pc bpc" id="L450" title="1 of 4 branches missed.">			if (binding == null || !binding.isField()) {</span>
+<span class="fc" id="L451">				return null;</span>
 			}
-<span class="fc" id="L442">			return binding.getVariableDeclaration().getKey();</span>
+<span class="fc" id="L453">			return binding.getVariableDeclaration().getKey();</span>
+		}
+
+		private static String parameterKey(IVariableBinding binding) {
+<span class="pc bpc" id="L457" title="3 of 6 branches missed.">			if (binding == null || binding.isRecovered() || !binding.isParameter()) {</span>
+<span class="nc" id="L458">				return null;</span>
+			}
+<span class="fc" id="L460">			return binding.getVariableDeclaration().getKey();</span>
 		}
 	}
 
 	/** Builder used by semantic planners. */
 	public static final class Builder {
 		private final String contractId;
-<span class="fc" id="L449">		private final Map&lt;NodeKey, Set&lt;String&gt;&gt; roles= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L450">		private final Map&lt;NodeKey, Map&lt;String, SemanticPlanValue&gt;&gt; values= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L451">		private final List&lt;SemanticPlanRelation&gt; relations= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L467">		private final Map&lt;NodeKey, Set&lt;String&gt;&gt; roles= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L468">		private final Map&lt;NodeKey, Map&lt;String, SemanticPlanValue&gt;&gt; values= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L469">		private final List&lt;SemanticPlanRelation&gt; relations= new ArrayList&lt;&gt;();</span>
 
-<span class="fc" id="L453">		private Builder(String contractId) {</span>
-<span class="fc" id="L454">			this.contractId= contractId;</span>
-<span class="fc" id="L455">		}</span>
+<span class="fc" id="L471">		private Builder(String contractId) {</span>
+<span class="fc" id="L472">			this.contractId= contractId;</span>
+<span class="fc" id="L473">		}</span>
 
 		/** Adds one authorization role to a stable node. */
 		public Builder add(NodeKey key, String role) {
-<span class="pc bpc" id="L459" title="3 of 6 branches missed.">			if (key != null &amp;&amp; role != null &amp;&amp; !role.isBlank()) {</span>
-<span class="fc" id="L460">				roles.computeIfAbsent(key, ignored -&gt; new LinkedHashSet&lt;&gt;()).add(role);</span>
+<span class="pc bpc" id="L477" title="3 of 6 branches missed.">			if (key != null &amp;&amp; role != null &amp;&amp; !role.isBlank()) {</span>
+<span class="fc" id="L478">				roles.computeIfAbsent(key, ignored -&gt; new LinkedHashSet&lt;&gt;()).add(role);</span>
 			}
-<span class="fc" id="L462">			return this;</span>
+<span class="fc" id="L480">			return this;</span>
 		}
 
 		/** Adds one typed fact and rejects conflicting duplicate definitions. */
 		public Builder put(NodeKey key, String name, SemanticPlanValue value) {
-<span class="pc bpc" id="L467" title="1 of 2 branches missed.">			if (key == null) {</span>
-<span class="nc" id="L468">				return this;</span>
+<span class="pc bpc" id="L485" title="1 of 2 branches missed.">			if (key == null) {</span>
+<span class="nc" id="L486">				return this;</span>
 			}
-<span class="fc" id="L470">			String factName= requireName(name, &quot;Plan value&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L471">			SemanticPlanValue factValue= Objects.requireNonNull(value);</span>
-<span class="fc" id="L472">			Map&lt;String, SemanticPlanValue&gt; nodeValues=</span>
-<span class="fc" id="L473">					values.computeIfAbsent(key, ignored -&gt; new LinkedHashMap&lt;&gt;());</span>
-<span class="fc" id="L474">			SemanticPlanValue previous= nodeValues.putIfAbsent(factName, factValue);</span>
-<span class="pc bpc" id="L475" title="1 of 4 branches missed.">			if (previous != null &amp;&amp; !previous.equals(factValue)) {</span>
-<span class="fc" id="L476">				throw new IllegalArgumentException(&quot;Conflicting values for &quot; + factName + &quot; on &quot; + key); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L488">			String factName= requireName(name, &quot;Plan value&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L489">			SemanticPlanValue factValue= Objects.requireNonNull(value);</span>
+<span class="fc" id="L490">			Map&lt;String, SemanticPlanValue&gt; nodeValues=</span>
+<span class="fc" id="L491">					values.computeIfAbsent(key, ignored -&gt; new LinkedHashMap&lt;&gt;());</span>
+<span class="fc" id="L492">			SemanticPlanValue previous= nodeValues.putIfAbsent(factName, factValue);</span>
+<span class="pc bpc" id="L493" title="1 of 4 branches missed.">			if (previous != null &amp;&amp; !previous.equals(factValue)) {</span>
+<span class="fc" id="L494">				throw new IllegalArgumentException(&quot;Conflicting values for &quot; + factName + &quot; on &quot; + key); //$NON-NLS-1$ //$NON-NLS-2$</span>
 			}
-<span class="fc" id="L478">			return this;</span>
+<span class="fc" id="L496">			return this;</span>
 		}
 
 		public Builder putString(NodeKey key, String name, String value) {
-<span class="fc" id="L482">			return put(key, name, SemanticPlanValue.string(value));</span>
+<span class="fc" id="L500">			return put(key, name, SemanticPlanValue.string(value));</span>
 		}
 
 		public Builder putBoolean(NodeKey key, String name, boolean value) {
-<span class="fc" id="L486">			return put(key, name, SemanticPlanValue.bool(value));</span>
+<span class="fc" id="L504">			return put(key, name, SemanticPlanValue.bool(value));</span>
 		}
 
 		public Builder putInteger(NodeKey key, String name, long value) {
-<span class="fc" id="L490">			return put(key, name, SemanticPlanValue.integer(value));</span>
+<span class="fc" id="L508">			return put(key, name, SemanticPlanValue.integer(value));</span>
 		}
 
 		public Builder putNode(NodeKey key, String name, NodeKey value) {
-<span class="fc" id="L494">			return put(key, name, SemanticPlanValue.node(value));</span>
+<span class="fc" id="L512">			return put(key, name, SemanticPlanValue.node(value));</span>
 		}
 
 		public Builder putList(NodeKey key, String name, SemanticPlanValue... value) {
-<span class="fc" id="L498">			return put(key, name, SemanticPlanValue.list(value));</span>
+<span class="fc" id="L516">			return put(key, name, SemanticPlanValue.list(value));</span>
 		}
 
 		/** Adds one ordered relation occurrence. Duplicate occurrences are preserved. */
 		public Builder relate(NodeKey source, String kind, NodeKey target) {
-<span class="nc" id="L503">			return relate(source, kind, target, Map.of());</span>
+<span class="fc" id="L521">			return relate(source, kind, target, Map.of());</span>
 		}
 
 		/** Adds one ordered relation occurrence with typed attributes. */
 		public Builder relate(NodeKey source, String kind, NodeKey target,
 				Map&lt;String, SemanticPlanValue&gt; attributes) {
-<span class="fc" id="L509">			relations.add(new SemanticPlanRelation(kind, Objects.requireNonNull(source),</span>
-<span class="fc" id="L510">					Objects.requireNonNull(target), attributes));</span>
-<span class="fc" id="L511">			return this;</span>
+<span class="fc" id="L527">			relations.add(new SemanticPlanRelation(kind, Objects.requireNonNull(source),</span>
+<span class="fc" id="L528">					Objects.requireNonNull(target), attributes));</span>
+<span class="fc" id="L529">			return this;</span>
 		}
 
 		public SemanticRewritePlan build() {
-<span class="fc" id="L515">			return new SemanticRewritePlan(contractId, roles, values, relations);</span>
+<span class="fc" id="L533">			return new SemanticRewritePlan(contractId, roles, values, relations);</span>
 		}
 	}
 }

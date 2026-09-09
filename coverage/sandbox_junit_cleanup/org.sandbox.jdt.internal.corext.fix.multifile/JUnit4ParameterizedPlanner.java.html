@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnit4ParameterizedPlanner.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnit4ParameterizedPlanner.java</span></div><h1>JUnit4ParameterizedPlanner.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import static org.sandbox.jdt.internal.corext.fix.multifile.JUnit4ParameterizedPlan.*;
+
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.compiler.IProblem;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.ArrayInitializer;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMemberValuePairBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+
+import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateDiagnostic;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateOutcome;
+import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningBudget;
+import org.sandbox.jdt.internal.corext.fix.helper.ParameterizedMigrationEligibility;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan.NodeKey;
+
+/** Discovers closed source components; never executes a provider or changes source. */
+final class JUnit4ParameterizedPlanner {
+
+	private static final String PARAMETERS= &quot;org.junit.runners.Parameterized.Parameters&quot;; //$NON-NLS-1$
+	private static final String PARAMETER_ANNOTATION= &quot;org.junit.runners.Parameterized.Parameter&quot;; //$NON-NLS-1$
+	private static final String JUNIT_TEST= &quot;org.junit.Test&quot;; //$NON-NLS-1$
+	private static final String OBJECT= &quot;java.lang.Object&quot;; //$NON-NLS-1$
+
+	record Result(List&lt;JUnit4ParameterizedPlan&gt; plans, List&lt;MultiFileCandidateDiagnostic&gt; diagnostics) {
+<span class="fc" id="L71">		Result {</span>
+<span class="fc" id="L72">			plans= List.copyOf(plans);</span>
+<span class="fc" id="L73">			diagnostics= List.copyOf(diagnostics);</span>
+<span class="fc" id="L74">		}</span>
+	}
+
+	private final Map&lt;String, CompilationUnit&gt; roots;
+<span class="fc" id="L78">	private final Map&lt;String, TypeDeclaration&gt; types= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L79">	private final Map&lt;String, MethodDeclaration&gt; methods= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L80">	private final Map&lt;ASTNode, String&gt; handlesByRoot= new IdentityHashMap&lt;&gt;();</span>
+	private final Map&lt;String, String&gt; fingerprints;
+	private final boolean sourcesStable;
+	private final IProgressMonitor monitor;
+
+<span class="fc" id="L85">	private JUnit4ParameterizedPlanner(Map&lt;String, CompilationUnit&gt; roots, Map&lt;String, String&gt; snapshots,</span>
+			IProgressMonitor monitor)
+			throws CoreException {
+<span class="fc" id="L88">		this.roots= new TreeMap&lt;&gt;(roots);</span>
+<span class="fc" id="L89">		this.monitor= monitor;</span>
+<span class="fc" id="L90">		fingerprints= Map.copyOf(snapshots);</span>
+<span class="fc" id="L91">		boolean stable= snapshots.keySet().equals(roots.keySet());</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : this.roots.entrySet()) {</span>
+<span class="fc" id="L93">			MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L94">			handlesByRoot.put(entry.getValue(), entry.getKey());</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">			if (entry.getValue().getJavaElement() instanceof ICompilationUnit unit) {</span>
+<span class="fc" id="L96">				String source= unit.getSource();</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">				stable &amp;= source != null</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">						&amp;&amp; JUnit4ParameterizedPlan.fingerprint(source).equals(snapshots.get(entry.getKey()));</span>
+<span class="fc" id="L99">			} else {</span>
+<span class="nc" id="L100">				stable= false;</span>
+			}
+<span class="fc" id="L102">			entry.getValue().accept(new ASTVisitor() {</span>
+				@Override
+				public boolean visit(TypeDeclaration node) {
+<span class="fc" id="L105">					ITypeBinding binding= node.resolveBinding();</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">					if (resolved(binding)) {</span>
+<span class="fc" id="L107">						types.put(binding.getTypeDeclaration().getKey(), node);</span>
+					}
+<span class="fc" id="L109">					return true;</span>
+				}
+
+				@Override
+				public boolean visit(MethodDeclaration node) {
+<span class="fc" id="L114">					IMethodBinding binding= node.resolveBinding();</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">					if (resolved(binding)) {</span>
+<span class="fc" id="L116">						methods.put(binding.getMethodDeclaration().getKey(), node);</span>
+					}
+<span class="fc" id="L118">					return true;</span>
+				}
+			});
+		}
+<span class="fc" id="L122">		sourcesStable= stable;</span>
+<span class="fc" id="L123">	}</span>
+
+	static Result discover(Map&lt;String, CompilationUnit&gt; roots, Map&lt;String, String&gt; sourceFingerprints,
+			boolean closedScope, IProgressMonitor monitor)
+			throws CoreException {
+<span class="fc" id="L128">		return new JUnit4ParameterizedPlanner(roots, sourceFingerprints, monitor).discover(closedScope);</span>
+	}
+
+	/** Capture before parsing so an old AST cannot be paired with a newer source fingerprint. */
+	static Map&lt;String, String&gt; captureSources(ICompilationUnit[] units, IProgressMonitor monitor)
+			throws CoreException {
+<span class="fc" id="L134">		Map&lt;String, String&gt; snapshots= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="fc" id="L136">			MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L137">			String source= unit.getPrimary().getSource();</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">			if (source != null) {</span>
+<span class="fc" id="L139">				snapshots.put(unit.getPrimary().getHandleIdentifier(), JUnit4ParameterizedPlan.fingerprint(source));</span>
+			}
+		}
+<span class="fc" id="L142">		return Map.copyOf(snapshots);</span>
+	}
+
+	private Result discover(boolean closedScope) {
+<span class="fc" id="L146">		List&lt;JUnit4ParameterizedPlan&gt; plans= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L147">		List&lt;MultiFileCandidateDiagnostic&gt; diagnostics= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : roots.entrySet()) {</span>
+<span class="fc" id="L149">			entry.getValue().accept(new ASTVisitor() {</span>
+				@Override
+				public boolean visit(TypeDeclaration node) {
+<span class="fc" id="L152">					MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">					if (!candidate(node)) {</span>
+<span class="fc" id="L154">						return true;</span>
+					}
+<span class="fc" id="L156">					ITypeBinding binding= node.resolveBinding();</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">					String identity= resolved(binding) ? binding.getQualifiedName()</span>
+<span class="nc" id="L158">							: entry.getKey() + &quot;#&quot; + node.getName().getIdentifier(); //$NON-NLS-1$</span>
+<span class="fc" id="L159">					String id= &quot;parameterized:&quot; + identity; //$NON-NLS-1$</span>
+					try {
+<span class="fc" id="L161">						require(closedScope, &quot;INCOMPLETE_SCOPE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L162">								&quot;Select the complete editable provider and test hierarchy before planning.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L163">						require(sourcesStable, &quot;SOURCE_CHANGED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L164">								&quot;The selected sources changed or were unavailable during AST creation. Retry planning on a stable source scope.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L165">						JUnit4ParameterizedPlan plan= plan(node);</span>
+<span class="fc" id="L166">						plans.add(plan);</span>
+<span class="fc" id="L167">						diagnostics.add(new MultiFileCandidateDiagnostic(id, entry.getKey(),</span>
+<span class="fc" id="L168">								MultiFileCandidateOutcome.FOUND, &quot;PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L169">								&quot;Parameterized source roles and ordered injection relations were discovered. &quot; //$NON-NLS-1$</span>
+										+ &quot;A coordinated executor must verify identity, multiplicity, names and results &quot; //$NON-NLS-1$
+										+ &quot;with the JDT JUnit runtime before this prepared plan can be applied.&quot;, //$NON-NLS-1$
+<span class="fc" id="L172">								new ArrayList&lt;&gt;(plan.compilationUnits().values())));</span>
+<span class="fc" id="L173">					} catch (Rejected e) {</span>
+<span class="fc" id="L174">						diagnostics.add(MultiFileCandidateDiagnostic.rejected(id, entry.getKey(), e.code,</span>
+<span class="fc" id="L175">								&quot;No coordinated Parameterized plan was produced: &quot; + e.getMessage(), //$NON-NLS-1$</span>
+<span class="fc" id="L176">								List.of(entry.getKey())));</span>
+					}
+<span class="fc" id="L178">					return true;</span>
+				}
+			});
+		}
+<span class="fc" id="L182">		return new Result(plans, diagnostics);</span>
+	}
+
+	private JUnit4ParameterizedPlan plan(TypeDeclaration testClass) {
+<span class="fc" id="L186">		require(ParameterizedMigrationEligibility.hasParameterizedRunner(testClass), &quot;RUNNER_UNRESOLVED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L187">				&quot;Resolve @RunWith to the standard JUnit 4 Parameterized runner.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L188" title="2 of 4 branches missed.">		require(testClass.isPackageMemberTypeDeclaration() &amp;&amp; !testClass.isInterface()</span>
+<span class="pc bpc" id="L189" title="2 of 4 branches missed.">				&amp;&amp; Modifier.isPublic(testClass.getModifiers()) &amp;&amp; !Modifier.isAbstract(testClass.getModifiers()),</span>
+<span class="fc" id="L190">				&quot;TEST_CLASS_UNSUPPORTED&quot;, &quot;Select a public concrete top-level Parameterized test class.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L191">		List&lt;TypeDeclaration&gt; hierarchy= hierarchy(testClass);</span>
+<span class="fc" id="L192">		SemanticRewritePlan.Builder builder= SemanticRewritePlan.builder(CONTRACT);</span>
+<span class="fc" id="L193">		Map&lt;NodeKey, String&gt; owners= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L194">		NodeKey testKey= add(builder, owners, testClass, RUNNER_CLASS);</span>
+<span class="fc" id="L195">		List&lt;MethodDeclaration&gt; providers= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L196">		List&lt;MethodDeclaration&gt; tests= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L197">		Map&lt;Integer, VariableDeclarationFragment&gt; fields= new TreeMap&lt;&gt;();</span>
+<span class="fc" id="L198">		Set&lt;String&gt; testNames= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">		for (TypeDeclaration type : hierarchy) {</span>
+<span class="fc" id="L200">			validateSource(type);</span>
+<span class="fc" id="L201">			checkAnnotations(type);</span>
+<span class="fc" id="L202">			require(type.typeParameters().isEmpty(), &quot;GENERIC_HIERARCHY&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L203">					&quot;Resolve generic test hierarchy substitutions before migration.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">			for (MethodDeclaration method : type.getMethods()) {</span>
+<span class="fc" id="L205">				checkAnnotations(method);</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">				if (annotation(method, PARAMETERS) != null) {</span>
+<span class="fc" id="L207">					providers.add(method);</span>
+				}
+<span class="fc bfc" id="L209" title="All 2 branches covered.">				if (annotation(method, JUNIT_TEST) != null) {</span>
+<span class="fc" id="L210">					require(testNames.add(method.getName().getIdentifier()), &quot;TEST_OVERRIDE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L211">							&quot;Resolve overridden or hidden parameterized test methods before migration.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L212" title="2 of 4 branches missed.">					require(Modifier.isPublic(method.getModifiers()) &amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
+<span class="pc bpc" id="L213" title="2 of 4 branches missed.">							&amp;&amp; method.parameters().isEmpty() &amp;&amp; method.getBody() != null</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">							&amp;&amp; resolved(method.resolveBinding())</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">							&amp;&amp; &quot;void&quot;.equals(method.resolveBinding().getReturnType().getName()), //$NON-NLS-1$</span>
+<span class="fc" id="L216">							&quot;TEST_METHOD_UNSUPPORTED&quot;, &quot;JUnit 4 test methods must be public void instance methods without parameters.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L217">					tests.add(method);</span>
+				}
+			}
+<span class="fc bfc" id="L220" title="All 2 branches covered.">			for (FieldDeclaration field : type.getFields()) {</span>
+<span class="fc" id="L221">				checkAnnotations(field);</span>
+<span class="fc" id="L222">				Annotation parameter= annotation(field, PARAMETER_ANNOTATION);</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">				if (parameter == null) {</span>
+<span class="fc" id="L224">					continue;</span>
+				}
+<span class="pc bpc" id="L226" title="2 of 4 branches missed.">				require(field.fragments().size() == 1 &amp;&amp; Modifier.isPublic(field.getModifiers())</span>
+<span class="pc bpc" id="L227" title="2 of 4 branches missed.">						&amp;&amp; !Modifier.isStatic(field.getModifiers()) &amp;&amp; !Modifier.isFinal(field.getModifiers()),</span>
+<span class="fc" id="L228">						&quot;FIELD_UNSUPPORTED&quot;, &quot;Use one public non-final instance field per @Parameter declaration.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L229">				Object index= value(parameter, &quot;value&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L230" title="2 of 4 branches missed.">				require(index instanceof Integer &amp;&amp; ((Integer) index).intValue() &gt;= 0, &quot;FIELD_INDEX&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L231">						&quot;Resolve each @Parameter index to a non-negative integer.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">				require(fields.put((Integer) index, (VariableDeclarationFragment) field.fragments().get(0)) == null,</span>
+<span class="fc" id="L233">						&quot;DUPLICATE_FIELD_INDEX&quot;, &quot;Give each injected field a unique contiguous index starting at zero.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+		}
+<span class="fc bfc" id="L236" title="All 2 branches covered.">		require(providers.size() == 1, &quot;PROVIDER_NOT_UNIQUE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L237">				&quot;Select exactly one unambiguous local or inherited @Parameters provider.&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L238" title="1 of 2 branches missed.">		require(!tests.isEmpty(), &quot;NO_TESTS&quot;, &quot;No supported JUnit 4 test methods were found.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L239">		List&lt;ITypeBinding&gt; parameterTypes= injection(testClass, fields, builder, owners, testKey);</span>
+<span class="fc" id="L240">		MethodDeclaration provider= providers.get(0);</span>
+<span class="fc" id="L241">		require(Modifier.isPublic(provider.getModifiers()), &quot;PROVIDER_NOT_PUBLIC&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L242">				&quot;JUnit 4 requires a public @Parameters provider.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L243">		validateDisplayName(provider);</span>
+<span class="fc" id="L244">		NodeKey providerKey= add(builder, owners, provider, PROVIDER);</span>
+<span class="fc" id="L245">		builder.relate(testKey, HAS_PROVIDER, providerKey);</span>
+<span class="fc" id="L246">		MethodDeclaration data= providerData(provider, builder, owners, new HashSet&lt;&gt;());</span>
+<span class="fc" id="L247">		validateRows(data, parameterTypes);</span>
+<span class="fc" id="L248">		builder.putString(providerKey, &quot;conversionStrategy&quot;, &quot;OBJECT_ARRAY_ROWS&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L249">		builder.putString(testKey, &quot;displayNameSemantics&quot;, &quot;JUNIT4_MESSAGE_FORMAT_ZERO_BASED&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">		for (MethodDeclaration method : tests) {</span>
+<span class="fc" id="L251">			builder.relate(testKey, HAS_TEST, add(builder, owners, method, TEST));</span>
+		}
+<span class="fc" id="L253">		return new JUnit4ParameterizedPlan(testKey, builder.build(), owners, fingerprints);</span>
+	}
+
+	private static void validateDisplayName(MethodDeclaration provider) {
+<span class="fc" id="L257">		Object name= value(annotation(provider, PARAMETERS), &quot;name&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L258">		require(name instanceof String, &quot;DISPLAY_NAME_UNRESOLVED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L259">				&quot;Resolve the @Parameters display-name pattern before migration.&quot;); //$NON-NLS-1$</span>
+		try {
+<span class="fc" id="L261">			new MessageFormat(((String) name).replace(&quot;{index}&quot;, &quot;0&quot;)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L262">		} catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L263">			throw new Rejected(&quot;PARAMETERIZED_DISPLAY_NAME_UNSUPPORTED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L264">					&quot;The @Parameters name is not a valid JUnit 4 MessageFormat pattern; correct it before migration.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L266">	}</span>
+
+	private List&lt;ITypeBinding&gt; injection(TypeDeclaration type, Map&lt;Integer, VariableDeclarationFragment&gt; fields,
+			SemanticRewritePlan.Builder builder, Map&lt;NodeKey, String&gt; owners, NodeKey testKey) {
+<span class="fc" id="L270">		List&lt;MethodDeclaration&gt; constructors= java.util.Arrays.stream(type.getMethods())</span>
+<span class="fc" id="L271">				.filter(MethodDeclaration::isConstructor).toList();</span>
+<span class="fc" id="L272">		List&lt;ITypeBinding&gt; parameterTypes= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L273" title="All 2 branches covered.">		if (!fields.isEmpty()) {</span>
+<span class="pc bpc" id="L274" title="3 of 4 branches missed.">			require(constructors.isEmpty() || constructors.size() == 1</span>
+<span class="pc bnc" id="L275" title="All 4 branches missed.">					&amp;&amp; constructors.get(0).parameters().isEmpty() &amp;&amp; Modifier.isPublic(constructors.get(0).getModifiers()),</span>
+<span class="fc" id="L276">					&quot;MIXED_INJECTION&quot;, &quot;Field injection requires one public zero-argument constructor.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">			for (int index= 0; index &lt; fields.size(); index++) {</span>
+<span class="fc" id="L278">				VariableDeclarationFragment field= fields.get(Integer.valueOf(index));</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">				require(field != null, &quot;FIELD_INDEX_GAP&quot;, &quot;Parameter field indices must be contiguous starting at zero.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L280">				IVariableBinding binding= field.resolveBinding();</span>
+<span class="fc" id="L281">				require(resolved(binding), &quot;BINDING_UNRESOLVED&quot;, &quot;Resolve every injected field binding.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L282">				parameterTypes.add(binding.getType());</span>
+<span class="fc" id="L283">				builder.relate(testKey, HAS_FIELD, add(builder, owners, field, FIELD));</span>
+			}
+<span class="fc" id="L285">		} else {</span>
+<span class="pc bpc" id="L286" title="1 of 4 branches missed.">			require(constructors.size() == 1 &amp;&amp; Modifier.isPublic(constructors.get(0).getModifiers())</span>
+<span class="pc bpc" id="L287" title="1 of 2 branches missed.">					&amp;&amp; !constructors.get(0).parameters().isEmpty(), &quot;CONSTRUCTOR_NOT_UNIQUE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L288">					&quot;Constructor injection requires exactly one public constructor with parameters.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L289">			MethodDeclaration constructor= constructors.get(0);</span>
+<span class="fc" id="L290">			NodeKey constructorKey= add(builder, owners, constructor, CONSTRUCTOR);</span>
+<span class="fc" id="L291">			builder.relate(testKey, HAS_CONSTRUCTOR, constructorKey);</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">			for (Object item : constructor.parameters()) {</span>
+<span class="fc" id="L293">				SingleVariableDeclaration parameter= (SingleVariableDeclaration) item;</span>
+<span class="fc" id="L294">				IVariableBinding binding= parameter.resolveBinding();</span>
+<span class="pc bpc" id="L295" title="2 of 4 branches missed.">				require(!parameter.isVarargs() &amp;&amp; resolved(binding), &quot;PARAMETER_UNSUPPORTED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L296">						&quot;Resolve each constructor parameter; varargs require a dedicated conversion strategy.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L297">				parameterTypes.add(binding.getType());</span>
+<span class="fc" id="L298">				builder.relate(constructorKey, HAS_PARAMETER, add(builder, owners, parameter, PARAMETER));</span>
+			}
+		}
+<span class="fc" id="L301">		return parameterTypes;</span>
+	}
+
+	private List&lt;TypeDeclaration&gt; hierarchy(TypeDeclaration leaf) {
+<span class="fc" id="L305">		List&lt;TypeDeclaration&gt; hierarchy= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L306">		Set&lt;String&gt; seen= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L307">		ITypeBinding binding= leaf.resolveBinding();</span>
+<span class="pc bpc" id="L308" title="1 of 4 branches missed.">		while (binding != null &amp;&amp; !OBJECT.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L309">			MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="pc bpc" id="L310" title="2 of 4 branches missed.">			require(resolved(binding) &amp;&amp; seen.add(binding.getKey()), &quot;HIERARCHY_UNRESOLVED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L311">					&quot;Resolve the complete test superclass chain.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L312">			TypeDeclaration source= types.get(binding.getTypeDeclaration().getKey());</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">			require(source != null, &quot;HIERARCHY_OUTSIDE_SCOPE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L314">					&quot;Include every editable test superclass; binary hierarchies cannot be migrated.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L315">			hierarchy.add(source);</span>
+<span class="fc" id="L316">			binding= binding.getSuperclass();</span>
+		}
+<span class="fc" id="L318">		return hierarchy;</span>
+	}
+
+	private MethodDeclaration providerData(MethodDeclaration provider, SemanticRewritePlan.Builder builder,
+			Map&lt;NodeKey, String&gt; owners, Set&lt;String&gt; visited) {
+<span class="fc" id="L323">		MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="fc" id="L324">		validateSource(provider);</span>
+<span class="pc bpc" id="L325" title="1 of 4 branches missed.">		require(resolved(provider.resolveBinding()) &amp;&amp; visited.add(provider.resolveBinding().getKey()),</span>
+<span class="fc" id="L326">				&quot;PROVIDER_CYCLE&quot;, &quot;Resolve provider delegation without recursive cycles.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L327" title="2 of 4 branches missed.">		require(Modifier.isStatic(provider.getModifiers()) &amp;&amp; provider.parameters().isEmpty()</span>
+<span class="pc bpc" id="L328" title="2 of 4 branches missed.">				&amp;&amp; provider.typeParameters().isEmpty() &amp;&amp; provider.getBody() != null</span>
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">				&amp;&amp; provider.getBody().statements().size() == 1</span>
+<span class="pc bpc" id="L330" title="1 of 2 branches missed.">				&amp;&amp; provider.getBody().statements().get(0) instanceof ReturnStatement,</span>
+<span class="fc" id="L331">				&quot;PROVIDER_BODY_UNSUPPORTED&quot;, &quot;Use a static no-argument provider returning a literal Object[][] matrix or a source provider delegate.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L332">		Expression expression= ((ReturnStatement) provider.getBody().statements().get(0)).getExpression();</span>
+<span class="fc bfc" id="L333" title="All 4 branches covered.">		if (expression instanceof MethodInvocation invocation &amp;&amp; !arraysAsList(invocation)) {</span>
+<span class="fc" id="L334">			IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="fc" id="L335">			Expression receiver= invocation.getExpression();</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">			boolean typeReceiver= receiver == null</span>
+<span class="pc bpc" id="L337" title="1 of 4 branches missed.">					|| receiver instanceof Name name &amp;&amp; name.resolveBinding() instanceof ITypeBinding;</span>
+<span class="fc bfc" id="L338" title="All 4 branches covered.">			require(invocation.arguments().isEmpty() &amp;&amp; typeReceiver</span>
+<span class="pc bpc" id="L339" title="2 of 4 branches missed.">					&amp;&amp; (!resolved(binding) || Modifier.isStatic(binding.getModifiers())),</span>
+<span class="fc" id="L340">					&quot;PROVIDER_BODY_UNSUPPORTED&quot;, &quot;Only static no-argument calls can delegate to a source provider.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L341">			require(resolved(binding),</span>
+<span class="fc" id="L342">					&quot;PROVIDER_DELEGATE_UNRESOLVED&quot;, &quot;Resolve the static no-argument provider delegation.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L343">			MethodDeclaration delegate= methods.get(binding.getMethodDeclaration().getKey());</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">			require(delegate != null, &quot;PROVIDER_OUTSIDE_SCOPE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L345">					&quot;Include the editable delegated provider; binary or unselected providers are rejected.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L346">			NodeKey delegateKey= add(builder, owners, delegate, PROVIDER);</span>
+<span class="fc" id="L347">			builder.relate(NodeKey.from(provider), DELEGATES_TO, delegateKey);</span>
+<span class="fc" id="L348">			return providerData(delegate, builder, owners, visited);</span>
+		}
+<span class="fc" id="L350">		return provider;</span>
+	}
+
+	private void validateRows(MethodDeclaration provider, List&lt;ITypeBinding&gt; parameters) {
+<span class="fc" id="L354">		Expression expression= ((ReturnStatement) provider.getBody().statements().get(0)).getExpression();</span>
+<span class="pc bpc" id="L355" title="1 of 4 branches missed.">		if (expression instanceof MethodInvocation invocation &amp;&amp; arraysAsList(invocation)) {</span>
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">			require(invocation.arguments().size() == 1, &quot;PROVIDER_BODY_UNSUPPORTED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L357">					&quot;Arrays.asList must wrap exactly one Object[][] initializer.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L358">			expression= (Expression) invocation.arguments().get(0);</span>
+		}
+<span class="fc" id="L360">		require(expression instanceof ArrayCreation, &quot;PROVIDER_BODY_UNSUPPORTED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L361">				&quot;Only a literal Object[][] matrix has a proven row conversion in this planner.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L362">		ArrayCreation matrix= (ArrayCreation) expression;</span>
+<span class="fc" id="L363">		ITypeBinding type= matrix.resolveTypeBinding();</span>
+<span class="pc bpc" id="L364" title="3 of 6 branches missed.">		require(resolved(type) &amp;&amp; type.getDimensions() == 2 &amp;&amp; OBJECT.equals(type.getElementType().getQualifiedName())</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">				&amp;&amp; matrix.getInitializer() != null, &quot;PROVIDER_BODY_UNSUPPORTED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L366">				&quot;The provider must return an initialized Object[][] matrix.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L367" title="All 2 branches covered.">		for (Object row : matrix.getInitializer().expressions()) {</span>
+<span class="fc" id="L368">			MultiFilePlanningBudget.checkCanceled(monitor);</span>
+<span class="pc bpc" id="L369" title="1 of 2 branches missed.">			ArrayInitializer values= row instanceof ArrayInitializer initializer ? initializer</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">					: row instanceof ArrayCreation creation ? creation.getInitializer() : null;</span>
+<span class="pc bpc" id="L371" title="1 of 4 branches missed.">			require(values != null &amp;&amp; values.expressions().size() == parameters.size(), &quot;ROW_ARITY&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L372">					&quot;Every parameter row must have exactly one value per injection parameter.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L373" title="All 2 branches covered.">			for (int index= 0; index &lt; parameters.size(); index++) {</span>
+<span class="fc" id="L374">				Expression argument= (Expression) values.expressions().get(index);</span>
+<span class="fc" id="L375">				ITypeBinding target= parameters.get(index);</span>
+<span class="fc" id="L376">				ITypeBinding source= argument.resolveTypeBinding();</span>
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">				boolean compatible= resolved(target) &amp;&amp; (argument instanceof NullLiteral ? !target.isPrimitive()</span>
+<span class="pc bpc" id="L378" title="2 of 4 branches missed.">						: argument.resolveConstantExpressionValue() != null &amp;&amp; resolved(source)</span>
+<span class="pc bpc" id="L379" title="3 of 6 branches missed.">								&amp;&amp; source.isAssignmentCompatible(target));</span>
+<span class="fc" id="L380">				require(compatible, &quot;CONVERSION_UNPROVEN&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L381">						&quot;Use resolved constant arguments assignable to their injection types; implicit Jupiter conversions are not assumed equivalent.&quot;); //$NON-NLS-1$</span>
+			}
+		}
+<span class="fc" id="L384">	}</span>
+
+	private NodeKey add(SemanticRewritePlan.Builder builder, Map&lt;NodeKey, String&gt; owners, ASTNode node, String role) {
+<span class="fc" id="L387">		NodeKey key= NodeKey.from(node);</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">		require(key != null, &quot;BINDING_UNRESOLVED&quot;, &quot;Resolve every planned declaration binding.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L389">		String owner= handlesByRoot.get(node.getRoot());</span>
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">		require(owner != null, &quot;SOURCE_OUTSIDE_SCOPE&quot;, &quot;Include every planned source declaration.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L391">		owners.put(key, owner);</span>
+<span class="fc" id="L392">		builder.add(key, role);</span>
+<span class="fc" id="L393">		return key;</span>
+	}
+
+	private static void validateSource(ASTNode node) {
+<span class="fc" id="L397">		CompilationUnit root= (CompilationUnit) node.getRoot();</span>
+<span class="pc bfc" id="L398" title="All 2 branches covered.">		for (IProblem problem : root.getProblems()) {</span>
+<span class="pc bpc" id="L399" title="1 of 2 branches missed.">			require(!problem.isError(), &quot;SOURCE_ERRORS&quot;, &quot;Resolve compilation errors in every participating source file.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+<span class="fc" id="L401">		require(root.getJavaElement() instanceof ICompilationUnit, &quot;SOURCE_UNAVAILABLE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L402">				&quot;A workspace compilation unit is required for source snapshot validation.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L403">		ICompilationUnit unit= (ICompilationUnit) root.getJavaElement();</span>
+<span class="pc bpc" id="L404" title="2 of 4 branches missed.">		require(!unit.isReadOnly() &amp;&amp; unit.getResource() != null</span>
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">				&amp;&amp; (unit.getResource().getResourceAttributes() == null</span>
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">						|| !unit.getResource().getResourceAttributes().isReadOnly()), &quot;SOURCE_READ_ONLY&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L407">				&quot;Make every participating source file editable before migration.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L408">	}</span>
+
+	private static boolean candidate(TypeDeclaration type) {
+<span class="fc bfc" id="L411" title="All 2 branches covered.">		if (ParameterizedMigrationEligibility.hasParameterizedRunner(type)) {</span>
+<span class="fc" id="L412">			return true;</span>
+		}
+<span class="fc bfc" id="L414" title="All 2 branches covered.">		for (Object item : type.modifiers()) {</span>
+<span class="pc bpc" id="L415" title="1 of 2 branches missed.">			if (item instanceof Annotation annotation) {</span>
+<span class="nc" id="L416">				String name= annotation.getTypeName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L417" title="All 4 branches missed.">				if ((&quot;RunWith&quot;.equals(name) || &quot;org.junit.runner.RunWith&quot;.equals(name)) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">						&amp;&amp; annotation.toString().contains(&quot;Parameterized&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L419">					return true;</span>
+				}
+			}
+		}
+<span class="fc" id="L423">		return false;</span>
+	}
+
+	private static Annotation annotation(BodyDeclaration declaration, String name) {
+<span class="fc bfc" id="L427" title="All 2 branches covered.">		for (Object item : declaration.modifiers()) {</span>
+<span class="pc bpc" id="L428" title="1 of 4 branches missed.">			if (item instanceof Annotation annotation &amp;&amp; resolved(annotation.resolveTypeBinding())</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">					&amp;&amp; name.equals(annotation.resolveTypeBinding().getQualifiedName())) {</span>
+<span class="fc" id="L430">				return annotation;</span>
+			}
+		}
+<span class="fc" id="L433">		return null;</span>
+	}
+
+	private static void checkAnnotations(BodyDeclaration declaration) {
+<span class="fc bfc" id="L437" title="All 2 branches covered.">		for (Object item : declaration.modifiers()) {</span>
+<span class="fc bfc" id="L438" title="All 2 branches covered.">			if (!(item instanceof Annotation annotation)) {</span>
+				continue;
+			}
+<span class="fc" id="L441">			ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="fc" id="L442">			require(resolved(binding), &quot;BINDING_UNRESOLVED&quot;, &quot;Resolve all annotations before classifying execution hooks.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L443">			String name= binding.getQualifiedName();</span>
+<span class="fc bfc" id="L444" title="All 2 branches covered.">			if (name.startsWith(&quot;org.junit.&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L445">				require(Set.of(PARAMETERS, PARAMETER_ANNOTATION, JUNIT_TEST, &quot;org.junit.runner.RunWith&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L446">						&quot;org.junit.Before&quot;, &quot;org.junit.After&quot;, &quot;org.junit.BeforeClass&quot;, &quot;org.junit.AfterClass&quot;) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L447">						.contains(name), &quot;EXECUTION_HOOK_UNSUPPORTED&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L448">						&quot;Custom runners, rules, parameter hooks and mixed JUnit generations need a dedicated semantic contract.&quot;); //$NON-NLS-1$</span>
+			}
+		}
+<span class="fc" id="L451">	}</span>
+
+	private static Object value(Annotation annotation, String member) {
+<span class="fc" id="L454">		IAnnotationBinding binding= annotation.resolveAnnotationBinding();</span>
+<span class="pc bpc" id="L455" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="pc bpc" id="L456" title="1 of 2 branches missed.">			for (IMemberValuePairBinding pair : binding.getAllMemberValuePairs()) {</span>
+<span class="pc bpc" id="L457" title="1 of 2 branches missed.">				if (member.equals(pair.getName())) {</span>
+<span class="fc" id="L458">					return pair.getValue();</span>
+				}
+			}
+		}
+<span class="nc" id="L462">		return null;</span>
+	}
+
+	private static boolean arraysAsList(MethodInvocation invocation) {
+<span class="fc" id="L466">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L467" title="2 of 4 branches missed.">		return resolved(binding) &amp;&amp; resolved(binding.getDeclaringClass())</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">				&amp;&amp; &quot;java.util.Arrays&quot;.equals(binding.getDeclaringClass().getQualifiedName()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L469" title="1 of 2 branches missed.">				&amp;&amp; &quot;asList&quot;.equals(binding.getName()); //$NON-NLS-1$</span>
+	}
+
+	private static boolean resolved(IBinding binding) {
+<span class="pc bpc" id="L473" title="3 of 6 branches missed.">		return binding != null &amp;&amp; !binding.isRecovered() &amp;&amp; binding.getKey() != null;</span>
+	}
+
+	private static void require(boolean condition, String code, String message) {
+<span class="fc bfc" id="L477" title="All 2 branches covered.">		if (!condition) {</span>
+<span class="fc" id="L478">			throw new Rejected(&quot;PARAMETERIZED_&quot; + code, message); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L480">	}</span>
+
+	private static final class Rejected extends RuntimeException {
+		private static final long serialVersionUID= 1L;
+		private final String code;
+
+		Rejected(String code, String message) {
+<span class="fc" id="L487">			super(message);</span>
+<span class="fc" id="L488">			this.code= code;</span>
+<span class="fc" id="L489">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
