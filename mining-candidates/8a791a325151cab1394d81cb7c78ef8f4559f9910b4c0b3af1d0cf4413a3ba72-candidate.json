@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "8a791a325151cab1394d81cb7c78ef8f4559f9910b4c0b3af1d0cf4413a3ba72",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add.semicolon.to.method.args.triggers\u003e\n\u003c!description: Add semicolon as a trigger for method proposals with arguments, updating a static char array initializer literal.\u003e\n\u003c!severity: INFO\u003e\nnew char[] { \u0027(\u0027, \u0027-\u0027, \u0027 \u0027 }\n\u003d\u003e\nnew char[] { \u0027;\u0027, \u0027(\u0027, \u0027-\u0027, \u0027 \u0027 }\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nclass JavaMethodCompletionProposal {\n    protected final static char[] METHOD_TRIGGERS\u003d new char[] { \u0027;\u0027, \u0027,\u0027, \u0027.\u0027, \u0027\\t\u0027, \u0027[\u0027 };\n    protected final static char[] METHOD_WITH_ARGUMENTS_TRIGGERS\u003d new char[] { \u0027(\u0027, \u0027-\u0027, \u0027 \u0027 };\n    protected final static char[] METHOD_NAME_TRIGGERS\u003d new char[] { \u0027;\u0027 };\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nclass JavaMethodCompletionProposal {\n    protected final static char[] METHOD_TRIGGERS\u003d new char[] { \u0027;\u0027, \u0027,\u0027, \u0027.\u0027, \u0027\\t\u0027, \u0027[\u0027 };\n    protected final static char[] METHOD_WITH_ARGUMENTS_TRIGGERS\u003d new char[] { \u0027;\u0027, \u0027(\u0027, \u0027-\u0027, \u0027 \u0027 };\n    protected final static char[] METHOD_NAME_TRIGGERS\u003d new char[] { \u0027;\u0027 };\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\nclass AnotherClass {\n    protected final static char[] OTHER_TRIGGERS \u003d new char[] { \u0027a\u0027, \u0027b\u0027, \u0027c\u0027 };\n}",
+  "targetHintFile": "constants.sandbox-hint",
+  "sourceCommit": "5e31c82b5bb5f1917b0be5a3c6da4b901a6e527d",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant Refactoring",
+  "summary": "Adds the semicolon character to a specific character array literal initializer that defines method argument triggers.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-09T02:38:33.429102212Z",
+  "ruleFingerprint": "sha256:77da2d0c1d9fac16b6d4ff16f2a1b4bb4fe799624ad820dbe3e758c587db0705",
+  "behaviorFingerprint": "sha256:874f007842d9baf163c45f1a501d545b9c4dbc294cf093cb4519b7df75cbe7ef",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-09T02:38:39.087116605Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "cb9cea1c1b86aac5992277a0ff36a63544def05cb70b265fc5103113752e670b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add-null-check-for-completion-requestor\u003e\n\u003c!description: Adds a null check for fCompletionContextRequestor before accessing its methods to prevent NPE. \u003e\n\u003c!severity: ERROR\u003e\n$completionRequestor.getOriginalCu() \u003d\u003d null :: instanceof($completionRequestor, \"org.eclipse.jdt.internal.ui.refactoring.contentassist.ICompletionContextRequestor\")\n\u003d\u003e\n$completionRequestor \u003d\u003d null || $completionRequestor.getOriginalCu() \u003d\u003d null\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.refactoring.contentassist;\nimport org.eclipse.jdt.core.ICompilationUnit;\ninterface ICompletionContextRequestor {\n    ICompilationUnit getOriginalCu();\n}\npublic class CUPositionCompletionProcessor {\n    private ICompletionContextRequestor fCompletionContextRequestor;\n    public Object[] computeCompletionProposals() {\n        if (fCompletionContextRequestor.getOriginalCu() \u003d\u003d null) {\n            return null;\n        }\n        return new Object[0];\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.refactoring.contentassist;\nimport org.eclipse.jdt.core.ICompilationUnit;\ninterface ICompletionContextRequestor {\n    ICompilationUnit getOriginalCu();\n}\npublic class CUPositionCompletionProcessor {\n    private ICompletionContextRequestor fCompletionContextRequestor;\n    public Object[] computeCompletionProposals() {\n        if (fCompletionContextRequestor \u003d\u003d null || fCompletionContextRequestor.getOriginalCu() \u003d\u003d null) {\n            return null;\n        }\n        return new Object[0];\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.refactoring.contentassist;\nimport org.eclipse.jdt.core.ICompilationUnit;\ninterface AnotherTypeWithSameMethod {\n    ICompilationUnit getOriginalCu();\n}\npublic class AnotherProcessor {\n    private AnotherTypeWithSameMethod fCompletionContextRequestor; // Different type\n    public Object[] computeCompletionProposals() {\n        if (fCompletionContextRequestor.getOriginalCu() \u003d\u003d null) { // Should not match due to type guard\n            return null;\n        }\n        return new Object[0];\n    }\n}",
+  "targetHintFile": "nullsafety.sandbox-hint",
+  "sourceCommit": "eaba6982dc2b001ff0b88f52be3aebd19350e66c",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Null Safety",
+  "summary": "Adds a null check for `fCompletionContextRequestor` before dereferencing it to call `getOriginalCu()`, preventing a NullPointerException if the field itself is null.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-09T02:38:33.496439100Z",
+  "ruleFingerprint": "sha256:e711f513723777b032ab19980d2b9c586d4a43aa099045cdffa3e44532e77128",
+  "behaviorFingerprint": "sha256:d80ffaf2811eabae02203b5ecc5d74a339964709d7be9f54c39b7bb46a86dce1",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-09T02:38:39.120221171Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

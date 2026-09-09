@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "49e96e80a755f8c6e332bea068efd8c269220e80b13580e8c02a11aa47a65e86",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n@id: eclipse.jdt.infoviews.GetInputRename\n@description: Renames calls to AbstractInfoView.getInput() to AbstractInfoView.getOrignalInput() for clarity.\n@severity: INFO\n@tags: renaming, api-modernization\n*/\n$obj.getInput() :: subtypeOf($obj, \"org.eclipse.jdt.internal.ui.infoviews.AbstractInfoView\")\n\u003d\u003e $obj.getOrignalInput()\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.infoviews;\nimport org.eclipse.jdt.core.IJavaElement;\npublic class AbstractInfoView {\n    protected IJavaElement fCurrentViewInput;\n    protected IJavaElement getInput() {\n        return fCurrentViewInput;\n    }\n    public void exampleMethod() {\n        IJavaElement element \u003d getInput();\n        System.out.println(element);\n    }\n}\nclass JavadocView extends AbstractInfoView {\n    public void anotherExampleMethod() {\n        IJavaElement element \u003d getInput();\n        System.out.println(element);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.infoviews;\nimport org.eclipse.jdt.core.IJavaElement;\npublic class AbstractInfoView {\n    protected IJavaElement fCurrentViewInput;\n    protected IJavaElement getOrignalInput() {\n        return fCurrentViewInput;\n    }\n    public void exampleMethod() {\n        IJavaElement element \u003d getOrignalInput();\n        System.out.println(element);\n    }\n}\nclass JavadocView extends AbstractInfoView {\n    public void anotherExampleMethod() {\n        IJavaElement element \u003d getOrignalInput();\n        System.out.println(element);\n    }\n}",
+  "negativeExample": "package some.other.package;\npublic class SomeOtherClass {\n    public Object getInput() { return null; }\n    public void unrelatedMethod() {\n        Object o \u003d getInput(); // Should not be matched as SomeOtherClass is not a subtype of AbstractInfoView\n        System.out.println(o);\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui.sandbox-hint",
+  "sourceCommit": "7de40e2480d04f5baf1c504c4261daea04f08447",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "This rule replaces calls to the \u0027getInput()\u0027 method with \u0027getOrignalInput()\u0027 specifically when the receiver object\u0027s type is a subtype of \u0027org.eclipse.jdt.internal.ui.infoviews.AbstractInfoView\u0027. This handles a refactoring where a method was renamed for clarity across its usage in a class hierarchy.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-09T02:38:33.475012546Z",
+  "ruleFingerprint": "sha256:70db32f7c7744a295c70a7e683add2d2b6208b36a06175de119925e233c51715",
+  "behaviorFingerprint": "sha256:95c0f2097a1f14368df13152e8fd9a9e1f09ccff2420797a09c57b56d6e7696f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type AbstractInfoView must be defined in its own file",
+    "verifiedAt": "2026-09-09T02:38:39.107128452Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
