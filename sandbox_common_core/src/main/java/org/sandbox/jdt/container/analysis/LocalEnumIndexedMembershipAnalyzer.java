@@ -273,8 +273,7 @@ public final class LocalEnumIndexedMembershipAnalyzer {
 		if (left == null || right == null) {
 			return false;
 		}
-		return left.getTypeDeclaration().getQualifiedName()
-				.equals(right.getTypeDeclaration().getQualifiedName());
+		return left.getTypeDeclaration().isEqualTo(right.getTypeDeclaration());
 	}
 
 	private static MethodDeclaration enclosingMethod(ASTNode node) {
