@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "6b94ad09afd349d4a8a1fc03e60acfb3d312948a",
-      "lastProcessedDate": "2026-09-08T02:25:42.024200079Z",
-      "totalProcessed": 5614,
+      "lastProcessedCommit": "95a429c87e11d9f532ec6d0ef68c3d442f81a499",
+      "lastProcessedDate": "2026-09-10T02:27:07.646655066Z",
+      "totalProcessed": 5694,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3340,7 +3340,7 @@
         "Performance Optimization": 2,
         "JDT Internal API Evolution": 2,
         "Collection Performance": 1,
-        "Null-Safety": 20,
+        "Null-Safety": 21,
         "Lambda-Simplification": 5,
         "Architectural Refactoring": 4,
         "Collections": 10,
@@ -3457,7 +3457,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 28,
+        "API Migration": 29,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -3468,7 +3468,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 5,
-        "API Modernization": 60,
+        "API Modernization": 61,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3572,7 +3572,7 @@
         "Debug String Enhancement": 1,
         "Method Argument Transformation": 1,
         "Array Comparison": 1,
-        "API Rename": 1,
+        "API Rename": 2,
         "Expression Expansion": 1,
         "Expression Correction": 1,
         "Redundant Code Removal": 1,
@@ -3589,7 +3589,10 @@
         "Formatting": 1,
         "API Safety": 1,
         "API Misuse": 1,
-        "Method Call Replacement": 2
+        "Method Call Replacement": 2,
+        "Array Literal Modification": 1,
+        "Constant Update": 1,
+        "UI/Bidi Fix": 1
       },
       "exhaustedCategories": []
     },
@@ -3630,5 +3633,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 28385
+  "globalTotalProcessed": 28465
 }
