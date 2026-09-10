@@ -153,7 +153,7 @@ final class ContainerAnalysisService {
 	}
 
 	private static CompilationUnit parse(ICompilationUnit unit) {
-		ASTParser parser= ASTParser.newParser(AST.JLS_Latest);
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setSource(unit);
 		parser.setResolveBindings(true);
