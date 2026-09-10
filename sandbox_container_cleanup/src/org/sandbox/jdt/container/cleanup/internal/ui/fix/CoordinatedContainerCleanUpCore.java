@@ -124,7 +124,7 @@ public final class CoordinatedContainerCleanUpCore
 			CleanUpContext context) throws CoreException {
 		ICompilationUnit unit= context.getCompilationUnit();
 		if (unit == null || context.getAST() == null
-				|| !plan.affectedCompilationUnitHandles().contains(unit.getHandleIdentifier())) {
+				|| !plan.affectedCompilationUnitHandles().contains(primaryHandle(unit))) {
 			return null;
 		}
 		return ClosedSourceParameterMigrationFix.create(unit, context.getAST(), plan);
@@ -158,15 +158,20 @@ public final class CoordinatedContainerCleanUpCore
 		Set<String> currentHandles= new HashSet<>();
 		for (ICompilationUnit unit : currentScope) {
 			if (unit != null) {
-				currentHandles.add(unit.getPrimary().getHandleIdentifier());
+				currentHandles.add(primaryHandle(unit));
 			}
 		}
 		for (ICompilationUnit unit : requiredUnits) {
-			if (unit != null && !currentHandles.contains(unit.getPrimary().getHandleIdentifier())) {
+			if (unit != null && !currentHandles.contains(primaryHandle(unit))) {
 				return false;
 			}
 		}
 		return true;
+	}
+
+	private static String primaryHandle(ICompilationUnit unit) {
+		ICompilationUnit primary= unit.getPrimary();
+		return (primary == null ? unit : primary).getHandleIdentifier();
 	}
 
 	private boolean isActive() {
