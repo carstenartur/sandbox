@@ -11,14 +11,18 @@
 package org.sandbox.jdt.ui.helper.views;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaElement;
@@ -39,6 +43,7 @@ import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableColumn;
 import org.eclipse.swt.widgets.Text;
@@ -46,8 +51,10 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
+import org.eclipse.ui.IPartListener2;
 import org.eclipse.ui.ISelectionListener;
 import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.part.IShowInTarget;
 import org.eclipse.ui.part.ShowInContext;
 import org.eclipse.ui.part.ViewPart;
@@ -65,13 +72,18 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 	public static final String VIEW_ID= "org.sandbox.jdt.ui.helper.views.ContainerAnalysisView"; //$NON-NLS-1$
 
 	private final ContainerAnalysisService analysisService= new ContainerAnalysisService();
+	private final AtomicLong analysisGeneration= new AtomicLong();
 	private TableViewer viewer;
 	private Text details;
+	private Display display;
 	private List<ICompilationUnit> currentUnits= List.of();
 	private ISelectionListener workbenchSelectionListener;
+	private IPartListener2 editorPartListener;
+	private volatile Job analysisJob;
 
 	@Override
 	public void createPartControl(Composite parent) {
+		display= parent.getDisplay();
 		parent.setLayout(new GridLayout(1, false));
 		SashForm sash= new SashForm(parent, SWT.VERTICAL);
 		sash.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
@@ -97,6 +109,7 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 		getSite().setSelectionProvider(viewer);
 		contributeActions();
 		installSelectionListener();
+		installEditorPartListener();
 		updateFromActiveEditor();
 	}
 
@@ -139,6 +152,57 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 		getSite().getWorkbenchWindow().getSelectionService().addSelectionListener(workbenchSelectionListener);
 	}
 
+	private void installEditorPartListener() {
+		editorPartListener= new IPartListener2() {
+			@Override
+			public void partActivated(IWorkbenchPartReference partRef) {
+				updateFromEditorPart(partRef);
+			}
+
+			@Override
+			public void partBroughtToTop(IWorkbenchPartReference partRef) {
+				updateFromEditorPart(partRef);
+			}
+
+			@Override
+			public void partOpened(IWorkbenchPartReference partRef) {
+				updateFromEditorPart(partRef);
+			}
+
+			@Override
+			public void partInputChanged(IWorkbenchPartReference partRef) {
+				updateFromEditorPart(partRef);
+			}
+
+			@Override
+			public void partClosed(IWorkbenchPartReference partRef) {
+				// Nothing to do; another activated editor will provide the next input.
+			}
+
+			@Override
+			public void partDeactivated(IWorkbenchPartReference partRef) {
+				// Activation of the next editor is the useful lifecycle event.
+			}
+
+			@Override
+			public void partHidden(IWorkbenchPartReference partRef) {
+				// View input remains useful while an editor is hidden.
+			}
+
+			@Override
+			public void partVisible(IWorkbenchPartReference partRef) {
+				// Visibility alone does not change the active source input.
+			}
+		};
+		getSite().getPage().addPartListener(editorPartListener);
+	}
+
+	private void updateFromEditorPart(IWorkbenchPartReference partRef) {
+		if (partRef.getPart(false) instanceof IEditorPart) {
+			updateFromActiveEditor();
+		}
+	}
+
 	private void updateFromActiveEditor() {
 		IEditorPart editor= getSite().getPage().getActiveEditor();
 		if (editor == null) {
@@ -158,34 +222,112 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 				unique.put(primary.getHandleIdentifier(), primary);
 			}
 		}
-		currentUnits= List.copyOf(unique.values());
+		List<ICompilationUnit> normalized= unique.values().stream()
+				.sorted(Comparator.comparing(ICompilationUnit::getHandleIdentifier))
+				.toList();
+		if (sameInput(currentUnits, normalized)) {
+			return;
+		}
+		currentUnits= normalized;
 		refresh();
+	}
+
+	private static boolean sameInput(List<ICompilationUnit> left, List<ICompilationUnit> right) {
+		if (left.size() != right.size()) {
+			return false;
+		}
+		for (int index= 0; index < left.size(); index++) {
+			if (!left.get(index).getHandleIdentifier().equals(right.get(index).getHandleIdentifier())) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private void refresh() {
 		if (viewer == null || viewer.getControl().isDisposed()) {
 			return;
 		}
-		List<ContainerAnalysisRow> rows= new ArrayList<>();
-		try {
-			for (ICompilationUnit unit : currentUnits) {
-				rows.addAll(analysisService.analyze(unit));
+		long generation= analysisGeneration.incrementAndGet();
+		Job previous= analysisJob;
+		if (previous != null) {
+			previous.cancel();
+		}
+		List<ICompilationUnit> units= currentUnits;
+		if (units.isEmpty()) {
+			analysisJob= null;
+			applyAnalysisResult(generation, List.of(), null);
+			return;
+		}
+
+		details.setText("Analyzing container usage..."); //$NON-NLS-1$
+		Job job= new Job("Analyze semantic container contracts") { //$NON-NLS-1$
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				List<ContainerAnalysisRow> rows= new ArrayList<>();
+				RuntimeException failure= null;
+				try {
+					for (ICompilationUnit unit : units) {
+						if (monitor.isCanceled() || generation != analysisGeneration.get()) {
+							return Status.CANCEL_STATUS;
+						}
+						rows.addAll(analysisService.analyze(unit));
+					}
+				} catch (RuntimeException e) {
+					failure= e;
+					logAnalysisFailure(e);
+				}
+				if (monitor.isCanceled() || generation != analysisGeneration.get()) {
+					return Status.CANCEL_STATUS;
+				}
+				List<ContainerAnalysisRow> result= List.copyOf(rows);
+				RuntimeException resultFailure= failure;
+				Display uiDisplay= display;
+				if (uiDisplay != null && !uiDisplay.isDisposed()) {
+					uiDisplay.asyncExec(() -> applyAnalysisResult(generation, result, resultFailure));
+				}
+				return Status.OK_STATUS;
 			}
-			viewer.setInput(rows);
-			if (rows.isEmpty()) {
-				details.setText(currentUnits.isEmpty()
-						? "Select a Java source element to analyze container usage." //$NON-NLS-1$
-						: "No supported or rejected semantic container candidates were found in the selected source."); //$NON-NLS-1$
-			} else {
-				viewer.getTable().setSelection(0);
-				viewer.setSelection(new org.eclipse.jface.viewers.StructuredSelection(rows.get(0)), true);
-				updateDetails();
-			}
-		} catch (RuntimeException e) {
+		};
+		job.setSystem(true);
+		analysisJob= job;
+		job.schedule();
+	}
+
+	private void applyAnalysisResult(long generation, List<ContainerAnalysisRow> rows,
+			RuntimeException failure) {
+		if (generation != analysisGeneration.get()
+				|| viewer == null || viewer.getControl().isDisposed()
+				|| details == null || details.isDisposed()) {
+			return;
+		}
+		if (failure != null) {
 			viewer.setInput(List.of());
-			details.setText("Container analysis failed: " + e.getMessage()); //$NON-NLS-1$
-			UsageViewPlugin.getDefault().getLog().log(new Status(IStatus.ERROR,
-					UsageViewPlugin.PLUGIN_ID, "Container analysis failed", e)); //$NON-NLS-1$
+			details.setText("Container analysis failed: " + failureSummary(failure)); //$NON-NLS-1$
+			return;
+		}
+		viewer.setInput(rows);
+		if (rows.isEmpty()) {
+			details.setText(currentUnits.isEmpty()
+					? "Select a Java source element to analyze container usage." //$NON-NLS-1$
+					: "No supported or rejected semantic container candidates were found in the selected source."); //$NON-NLS-1$
+		} else {
+			viewer.setSelection(new org.eclipse.jface.viewers.StructuredSelection(rows.get(0)), true);
+			updateDetails();
+		}
+	}
+
+	private static String failureSummary(RuntimeException failure) {
+		String message= failure.getMessage();
+		String type= failure.getClass().getSimpleName();
+		return message == null || message.isBlank() ? type : type + ": " + message; //$NON-NLS-1$
+	}
+
+	private static void logAnalysisFailure(RuntimeException failure) {
+		UsageViewPlugin plugin= UsageViewPlugin.getDefault();
+		if (plugin != null) {
+			plugin.getLog().log(new Status(IStatus.ERROR,
+					UsageViewPlugin.PLUGIN_ID, "Container analysis failed", failure)); //$NON-NLS-1$
 		}
 	}
 
@@ -214,8 +356,11 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 				textEditor.selectAndReveal(row.sourceStart(), row.sourceLength());
 			}
 		} catch (org.eclipse.ui.PartInitException | org.eclipse.jdt.core.JavaModelException e) {
-			UsageViewPlugin.getDefault().getLog().log(new Status(IStatus.ERROR,
-					UsageViewPlugin.PLUGIN_ID, "Could not navigate to container evidence", e)); //$NON-NLS-1$
+			UsageViewPlugin plugin= UsageViewPlugin.getDefault();
+			if (plugin != null) {
+				plugin.getLog().log(new Status(IStatus.ERROR,
+						UsageViewPlugin.PLUGIN_ID, "Could not navigate to container evidence", e)); //$NON-NLS-1$
+			}
 		}
 	}
 
@@ -268,16 +413,25 @@ public final class ContainerAnalysisView extends ViewPart implements IShowInTarg
 
 	@Override
 	public void setFocus() {
-		if (viewer != null) {
+		if (viewer != null && !viewer.getControl().isDisposed()) {
 			viewer.getControl().setFocus();
 		}
 	}
 
 	@Override
 	public void dispose() {
+		analysisGeneration.incrementAndGet();
+		Job job= analysisJob;
+		if (job != null) {
+			job.cancel();
+		}
 		if (workbenchSelectionListener != null && getSite() != null) {
 			getSite().getWorkbenchWindow().getSelectionService().removeSelectionListener(workbenchSelectionListener);
 		}
+		if (editorPartListener != null && getSite() != null) {
+			getSite().getPage().removePartListener(editorPartListener);
+		}
+		display= null;
 		super.dispose();
 	}
 }
