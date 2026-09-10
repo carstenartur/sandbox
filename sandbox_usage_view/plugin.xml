@@ -10,6 +10,13 @@
             class="org.sandbox.jdt.ui.helper.views.JavaHelperView"
             id="org.eclipse.jdt.ui.helper.views.JavaHelperView">
       </view>
+      <view
+            name="Container Analysis"
+            icon="icons/full/obj16/sandbox.png"
+            category="org.eclipse.jdt.ui.java"
+            class="org.sandbox.jdt.ui.helper.views.ContainerAnalysisView"
+            id="org.sandbox.jdt.ui.helper.views.ContainerAnalysisView">
+      </view>
    </extension>
    <extension
          point="org.eclipse.ui.preferencePages">
@@ -42,11 +49,15 @@
         point="org.eclipse.ui.perspectiveExtensions">
       <perspectiveExtension targetID="org.eclipse.jdt.ui.JavaPerspective">
             <viewShortcut id="org.eclipse.jdt.ui.helper.views.JavaHelperView"/>
+            <viewShortcut id="org.sandbox.jdt.ui.helper.views.ContainerAnalysisView"/>
       </perspectiveExtension>
       <perspectiveExtension
             targetID="org.eclipse.jdt.ui.JavaPerspective">
          <showInPart
                id="org.eclipse.jdt.ui.helper.views.JavaHelperView">
+         </showInPart>
+         <showInPart
+               id="org.sandbox.jdt.ui.helper.views.ContainerAnalysisView">
          </showInPart>
       </perspectiveExtension>
       <perspectiveExtension
@@ -54,17 +65,26 @@
          <showInPart
                id="org.eclipse.jdt.ui.helper.views.JavaHelperView">
          </showInPart>
+         <showInPart
+               id="org.sandbox.jdt.ui.helper.views.ContainerAnalysisView">
+         </showInPart>
       </perspectiveExtension>
       <perspectiveExtension
             targetID="org.eclipse.jdt.ui.JavaHierarchyPerspective">
          <showInPart
                id="org.eclipse.jdt.ui.helper.views.JavaHelperView">
          </showInPart>
+         <showInPart
+               id="org.sandbox.jdt.ui.helper.views.ContainerAnalysisView">
+         </showInPart>
       </perspectiveExtension>
       <perspectiveExtension
             targetID="org.eclipse.debug.ui.DebugPerspective">
          <showInPart
                id="org.eclipse.jdt.ui.helper.views.JavaHelperView">
+         </showInPart>
+         <showInPart
+               id="org.sandbox.jdt.ui.helper.views.ContainerAnalysisView">
          </showInPart>
       </perspectiveExtension>
   </extension>
