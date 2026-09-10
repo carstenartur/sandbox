@@ -128,6 +128,7 @@ class UniqueSequenceLocalRewriteIntegrationTest {
 					if (!values.contains(first)) {
 						values.add(second);
 					}
+				}
 			}
 			""");
 		var mismatchedProfile= new LocalUniqueSequenceAnalyzer()
