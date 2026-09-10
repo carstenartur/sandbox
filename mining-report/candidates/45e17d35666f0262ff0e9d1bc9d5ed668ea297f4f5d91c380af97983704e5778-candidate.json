@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "45e17d35666f0262ff0e9d1bc9d5ed668ea297f4f5d91c380af97983704e5778",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.Math.max(-1, $var - 200)\n\u003d\u003e\njava.lang.Math.max(-1, $var - 2000)\n;;",
+  "beforeExample": "public class Example {\n    private int contextPosition \u003d 500;\n    public void someMethod() {\n        int bound \u003d java.lang.Math.max(-1, contextPosition - 200);\n        System.out.println(bound);\n    }\n}",
+  "afterExample": "public class Example {\n    private int contextPosition \u003d 500;\n    public void someMethod() {\n        int bound \u003d java.lang.Math.max(-1, contextPosition - 2000);\n        System.out.println(bound);\n    }\n}",
+  "negativeExample": "public class Example {\n    private int contextPosition \u003d 500;\n    public void someMethod() {\n        int bound \u003d java.lang.Math.max(-1, contextPosition - 100);\n        System.out.println(bound);\n    }\n}",
+  "targetHintFile": "constants.sandbox-hint",
+  "sourceCommit": "361e357223c1cded432c9cc0c7de9ddd0f833c72",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant Update",
+  "summary": "Update the bound constant from 200 to 2000 in Math.max calls.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-10T02:27:09.140997332Z",
+  "ruleFingerprint": "sha256:69309a93595d2cfdbb6d73c73316b4b278ddb63b3c3585439a1a8cd291772d83",
+  "behaviorFingerprint": "sha256:de91ca4329727cbb5cc5944fd7b74643599ff65b9a4a4ac63cee97562a83a74a",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-10T02:27:16.202686722Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

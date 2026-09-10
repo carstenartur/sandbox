@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6d7379b803c185af58d9626603d5eb069b2b9ab1427a6eba3061acf49c9f048c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: jfacedoc.singleToMultiLineRule\u003e\n\u003c!description: Replace SingleLineRule with MultiLineRule for Javadoc link tags to support multi-line highlighting.\u003e\n\u003c!severity: HINT\u003e\n\nnew org.eclipse.jface.text.rules.SingleLineRule($start, $end, $token) :: matchesAny($start, \"{@link\", \"{@value\", \"{@inheritDoc\")\n\u003d\u003e new org.eclipse.jface.text.rules.MultiLineRule($start, $end, $token)\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.List;\nimport org.eclipse.jface.text.rules.IRule;\nimport org.eclipse.jface.text.rules.IToken;\nimport org.eclipse.jface.text.rules.SingleLineRule;\n\npublic class TestClass {\n    public void setupRules(List\u003cIRule\u003e list, IToken token) {\n        list.add(new SingleLineRule(\"{@link\", \"}\", token));\n        list.add(new SingleLineRule(\"{@value\", \"}\", token));\n        list.add(new SingleLineRule(\"{@inheritDoc\", \"}\", token));\n        list.add(new SingleLineRule(\"\u003c!--\", \"--\u003e\", token)); // This should not be changed\n    }\n}\n",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.List;\nimport org.eclipse.jface.text.rules.IRule;\nimport org.eclipse.jface.text.rules.IToken;\nimport org.eclipse.jface.text.rules.MultiLineRule;\nimport org.eclipse.jface.text.rules.SingleLineRule;\n\npublic class TestClass {\n    public void setupRules(List\u003cIRule\u003e list, IToken token) {\n        list.add(new MultiLineRule(\"{@link\", \"}\", token));\n        list.add(new MultiLineRule(\"{@value\", \"}\", token));\n        list.add(new MultiLineRule(\"{@inheritDoc\", \"}\", token));\n        list.add(new SingleLineRule(\"\u003c!--\", \"--\u003e\", token)); // This should not be changed\n    }\n}\n",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.List;\nimport org.eclipse.jface.text.rules.IRule;\nimport org.eclipse.jface.text.rules.IToken;\nimport org.eclipse.jface.text.rules.SingleLineRule;\n\npublic class NegativeTestClass {\n    public void setupRules(List\u003cIRule\u003e list, IToken token) {\n        // These should not be changed as their start patterns are not in the \u0027matchesAny\u0027 list\n        list.add(new SingleLineRule(\"/*\", \"*/\", token));\n        list.add(new SingleLineRule(\"\u003c!--\", \"--\u003e\", token));\n        list.add(new SingleLineRule(\"@deprecated\", \"}\", token));\n    }\n}\n",
+  "targetHintFile": "jfacedoc.sandbox-hint",
+  "sourceCommit": "2d191319dbd3f22e43a2ea50c2bd0c31ffde278a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Replace `SingleLineRule` with `MultiLineRule` for Javadoc link tags to enable multi-line syntax highlighting, ensuring correct rendering of Javadoc comments that span multiple lines.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-09T02:38:33.513739940Z",
+  "ruleFingerprint": "sha256:15fd6ff54b430385d2ad85942e4fced29092414a357b702ce68037d6bf5b8d77",
+  "behaviorFingerprint": "sha256:b10227e611547323fcd343c877722b033bfdc53a82450a0685478bc64a2adf9f",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-10T02:27:16.097795613Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

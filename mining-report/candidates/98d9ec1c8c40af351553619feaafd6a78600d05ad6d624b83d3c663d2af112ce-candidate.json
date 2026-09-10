@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "98d9ec1c8c40af351553619feaafd6a78600d05ad6d624b83d3c663d2af112ce",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add-null-check-before-getOriginalCu\u003e\n\u003c!description: Adds a null check for the receiver expression before calling `getOriginalCu()` within a conditional expression, to prevent NullPointerExceptions. This rule applies when the receiver has no side effects and is of the specified type.\u003e\n\u003c!severity: WARNING\u003e\n$receiver.getOriginalCu() \u003d\u003d null :: hasNoSideEffect($receiver) \u0026\u0026 subtypeOf($receiver, \"org.eclipse.jdt.internal.ui.refactoring.contentassist.CUPositionCompletionProcessor.CompletionContextRequestor\")\n\u003d\u003e $receiver \u003d\u003d null || $receiver.getOriginalCu() \u003d\u003d null\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.refactoring.contentassist;\n\npublic class CUPositionCompletionProcessor {\n    private CompletionContextRequestor fCompletionContextRequestor;\n\n    public ICompletionProposal[] computeCompletionProposals() {\n        if (fCompletionContextRequestor.getOriginalCu() \u003d\u003d null) // Potential NPE here\n            return null;\n        return null;\n    }\n\n    public interface CompletionContextRequestor {\n        Object getOriginalCu();\n    }\n    static class ICompletionProposal {}\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.refactoring.contentassist;\n\npublic class CUPositionCompletionProcessor {\n    private CompletionContextRequestor fCompletionContextRequestor;\n\n    public ICompletionProposal[] computeCompletionProposals() {\n        if (fCompletionContextRequestor \u003d\u003d null || fCompletionContextRequestor.getOriginalCu() \u003d\u003d null)\n            return null;\n        return null;\n    }\n\n    public interface CompletionContextRequestor {\n        Object getOriginalCu();\n    }\n    static class ICompletionProposal {}\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.refactoring.contentassist;\n\npublic class CUPositionCompletionProcessor {\n    private CompletionContextRequestor fCompletionContextRequestor;\n\n    public ICompletionProposal[] computeCompletionProposals() {\n        // This line should not match because it\u0027s already correctly null-checked\n        if (fCompletionContextRequestor \u003d\u003d null || fCompletionContextRequestor.getOriginalCu() \u003d\u003d null)\n            return null;\n        \n        // This call should not match because it\u0027s not part of a \u0027\u003d\u003d null\u0027 comparison\n        Object cu \u003d fCompletionContextRequestor.getOriginalCu();\n            \n        return null;\n    }\n\n    public void otherMethod(String s) {\n        // This should not match, as String does not have getOriginalCu()\n        if (s.length() \u003d\u003d 0) {\n            System.out.println(\"Empty\");\n        }\n    }\n\n    public interface CompletionContextRequestor {\n        Object getOriginalCu();\n    }\n    static class ICompletionProposal {}\n}",
+  "targetHintFile": "null-safety.sandbox-hint",
+  "sourceCommit": "eaba6982dc2b001ff0b88f52be3aebd19350e66c",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Null-Safety",
+  "summary": "Adds a null check for the receiver of the `getOriginalCu()` method call within a conditional expression to prevent NullPointerExceptions, specifically targeting instances of `CUPositionCompletionProcessor.CompletionContextRequestor`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-10T02:27:09.155947871Z",
+  "ruleFingerprint": "sha256:3125acfafed7384fb3cf61d3124d7ad41a5478f0ff0b213422d623944025804b",
+  "behaviorFingerprint": "sha256:a4dde5b168e72f2ca44ea7f061fbfa37fb935ad05a6919e00fd4f3a369871210",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-10T02:27:16.216309106Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

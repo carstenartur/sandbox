@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e5c55f293e13be2b7a27f018512fe23b498ff6b08c8463a1489e0c1902cbc704",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$x.getLine() :: instanceof($x, \"org.eclipse.jdt.internal.ui.search.JavaElementLine\")\n\u003d\u003e $x.getLineNumber()\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.search;\n\npublic class JavaElementLine {\n    private int fLineNumber;\n    public JavaElementLine(Object element, int lineNumber, int lineStartOffset) {\n        this.fLineNumber \u003d lineNumber;\n    }\n    public int getLine() {\n        return fLineNumber;\n    }\n    // Assume getLineNumber() does not exist in \u0027before\u0027 state for this example\n}\n\nclass MyConsumer {\n    void process(JavaElementLine line) {\n        int l \u003d line.getLine();\n        System.out.println(l);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.search;\n\npublic class JavaElementLine {\n    private int fLineNumber;\n    public JavaElementLine(Object element, int lineNumber, int lineStartOffset) {\n        this.fLineNumber \u003d lineNumber;\n    }\n    public int getLineNumber() {\n        return fLineNumber;\n    }\n}\n\nclass MyConsumer {\n    void process(JavaElementLine line) {\n        int l \u003d line.getLineNumber();\n        System.out.println(l);\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.jdt.internal.ui.search.JavaElementLine;\n\n// Minimal definition of JavaElementLine (before rename) to make MyConsumer compile\npackage org.eclipse.jdt.internal.ui.search;\npublic class JavaElementLine {\n    private int fLineNumber;\n    public JavaElementLine(Object element, int lineNumber, int lineStartOffset) { this.fLineNumber \u003d lineNumber; }\n    public int getLine() { return fLineNumber; }\n}\n\npackage com.example;\n\nclass AnotherClass {\n    public int getLine() { return 10; }\n}\n\nclass MyConsumer {\n    void process(JavaElementLine line) {\n        int l1 \u003d line.getLine(); // This call will be transformed by the rule\n        System.out.println(l1);\n    }\n    void processAnother(AnotherClass another) {\n        int l2 \u003d another.getLine(); // This call must NOT be transformed (different type)\n        System.out.println(l2);\n    }\n}",
+  "targetHintFile": "eclipse-jdt-internal-api.sandbox-hint",
+  "sourceCommit": "b5d624f1845fb6bff7f13342aa09670074aa22ed",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Rename \u0027getLine()\u0027 to \u0027getLineNumber()\u0027 on instances of \u0027org.eclipse.jdt.internal.ui.search.JavaElementLine\u0027.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-09T02:38:33.527969222Z",
+  "ruleFingerprint": "sha256:3d6bbcbacc5ab9d09a4684470d8c6289f74e16b9ba1650868643318bfe9c19e0",
+  "behaviorFingerprint": "sha256:8ae5fb61890bece0064bfcbb8286a6c808f3b7bf301fca5e20f7db4d8abd26e4",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type JavaElementLine must be defined in its own file",
+    "verifiedAt": "2026-09-10T02:27:16.122069822Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

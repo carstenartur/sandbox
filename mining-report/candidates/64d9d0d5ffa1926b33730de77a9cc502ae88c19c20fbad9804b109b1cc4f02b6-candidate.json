@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "64d9d0d5ffa1926b33730de77a9cc502ae88c19c20fbad9804b109b1cc4f02b6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.jface.text.rules.SingleLineRule($start, $end, $token)\n\u003d\u003e\nnew org.eclipse.jface.text.rules.MultiLineRule($start, $end, $token)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.javadoc;\n\nimport org.eclipse.jface.text.rules.IRule;\nimport org.eclipse.jface.text.rules.IToken;\nimport org.eclipse.jface.text.rules.SingleLineRule;\n\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class JavaDocScanner {\n    IToken getToken(String constant) { return null; }\n\n    public void configureRules() {\n        List\u003cIRule\u003e list \u003d new ArrayList\u003c\u003e();\n        IToken token \u003d getToken(\"JAVADOC_LINK\");\n        list.add(new SingleLineRule(\"{@link\", \"}\", token));\n        list.add(new SingleLineRule(\"{@value\", \"}\", token));\n        list.add(new SingleLineRule(\"{@inheritDoc\", \"}\", token));\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.javadoc;\n\nimport org.eclipse.jface.text.rules.IRule;\nimport org.eclipse.jface.text.rules.IToken;\nimport org.eclipse.jface.text.rules.MultiLineRule;\n\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class JavaDocScanner {\n    IToken getToken(String constant) { return null; }\n\n    public void configureRules() {\n        List\u003cIRule\u003e list \u003d new ArrayList\u003c\u003e();\n        IToken token \u003d getToken(\"JAVADOC_LINK\");\n        list.add(new MultiLineRule(\"{@link\", \"}\", token));\n        list.add(new MultiLineRule(\"{@value\", \"}\", token));\n        list.add(new MultiLineRule(\"{@inheritDoc\", \"}\", token));\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.javadoc;\n\nimport org.eclipse.jface.text.rules.IRule;\nimport org.eclipse.jface.text.rules.IToken;\nimport org.eclipse.jface.text.rules.SingleLineRule;\nimport org.eclipse.jface.text.rules.ICharacterScanner; // Different import for different constructor\n\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class JavaDocScanner {\n    IToken getToken(String constant) { return null; }\n\n    public void configureOtherRules() {\n        List\u003cIRule\u003e list \u003d new ArrayList\u003c\u003e();\n        IToken otherToken \u003d getToken(\"OTHER_TOKEN\");\n        // This constructor has a different signature and should not be matched\n        list.add(new SingleLineRule(\"start\", \"end\", otherToken, ICharacterScanner.EOF));\n    }\n}",
+  "targetHintFile": "jface-rules.sandbox-hint",
+  "sourceCommit": "2d191319dbd3f22e43a2ea50c2bd0c31ffde278a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-10T02:27:09.185351135Z",
+  "ruleFingerprint": "sha256:4364700fa672adcec80d7e912b8dda9281e236703ec570bd4391b43b58a94cb0",
+  "behaviorFingerprint": "sha256:c98913b3531b77298946d1cc23397d0d5879d1b04b2843e26e887631533f3f8f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 10: The public type JavaDocScanner must be defined in its own file",
+    "verifiedAt": "2026-09-10T02:27:16.246096240Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
