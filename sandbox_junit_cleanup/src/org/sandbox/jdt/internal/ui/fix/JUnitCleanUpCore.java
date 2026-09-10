@@ -62,6 +62,7 @@ import org.sandbox.jdt.internal.corext.fix.multifile.JUnitBestEffortSupport.Anal
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMigrationPlan;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitMultiFilePlanner;
 import org.sandbox.jdt.internal.corext.fix.multifile.JUnitScopeCandidateDetector;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitSharedHelperScopeDetector;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 
 /** Core cleanup implementation for JUnit 3/4 to Jupiter migration. */
@@ -234,8 +235,10 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		boolean migrateJUnit3Hierarchies= fixes.contains(JUnitCleanUpFixCore.TEST3);
 		Set<String> lifecycleAnnotations= lifecycleAnnotations(fixes);
 		boolean migrateLifecycleHierarchies= !lifecycleAnnotations.isEmpty();
+		boolean migrateAssertionHelpers= fixes.contains(JUnitCleanUpFixCore.ASSERT);
+		boolean migrateAssumptionHelpers= fixes.contains(JUnitCleanUpFixCore.ASSUME);
 		if (!migrateExternalResourceRules && !followSuiteMembership && !migrateJUnit3Hierarchies
-				&& !migrateLifecycleHierarchies) {
+				&& !migrateLifecycleHierarchies && !migrateAssertionHelpers && !migrateAssumptionHelpers) {
 			return List.of();
 		}
 		if (monitor != null && monitor.isCanceled()) {
@@ -258,8 +261,11 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 				? JUnitLifecycleScopeDetector.findSearchSeeds(project, currentScope,
 						lifecycleAnnotations, monitor)
 				: new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());
-		JUnitScopeCandidateDetector.SearchSeeds seeds=
-				mergeSeeds(mergeSeeds(standardSeeds, junit3Seeds), lifecycleSeeds);
+		JUnitScopeCandidateDetector.SearchSeeds helperSeeds=
+				JUnitSharedHelperScopeDetector.findSearchSeeds(project, currentScope,
+						migrateAssertionHelpers, migrateAssumptionHelpers, monitor);
+		JUnitScopeCandidateDetector.SearchSeeds seeds= mergeSeeds(
+				mergeSeeds(mergeSeeds(standardSeeds, junit3Seeds), lifecycleSeeds), helperSeeds);
 		if (!seeds.candidateFound()) {
 			clearScopeDecision(project);
 			return List.of();
