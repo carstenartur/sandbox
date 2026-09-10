@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.cleanup.multifile;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,12 +28,14 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 
+import org.sandbox.jdt.container.analysis.ContainerRuleRegistry;
 import org.sandbox.jdt.container.analysis.LocalUniqueSequenceAnalyzer;
 import org.sandbox.jdt.container.analysis.UniqueSequenceContractInferrer;
 import org.sandbox.jdt.container.analysis.UniqueSequenceLocalRewritePlanner;
 import org.sandbox.jdt.container.api.ContainerMigrationReadiness;
 import org.sandbox.jdt.container.api.ContainerMigrationReadiness.ExecutionStatus;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
 import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
@@ -58,6 +61,43 @@ class UniqueSequenceLocalRewriteIntegrationTest {
 		assertTrue(source.contains("values.size()")); //$NON-NLS-1$
 		assertTrue(source.contains("for (String current : values)")); //$NON-NLS-1$
 		assertFalse(source.contains("values.contains(value)")); //$NON-NLS-1$
+	}
+
+	@Test
+	void unorderedContractStillUsesConservativeLinkedHashSetExecution() throws Exception {
+		ICompilationUnit unit= createUnit("""
+			package test;
+			import java.util.ArrayList;
+			import java.util.List;
+			class Sample {
+				int collect(String value) {
+					List<String> values = new ArrayList<>();
+					if (!values.contains(value)) {
+						values.add(value);
+					}
+					return values.size();
+				}
+			}
+			""");
+		CompilationUnit root= parse(unit);
+		var profile= new LocalUniqueSequenceAnalyzer().analyze(root).get(0);
+		var recommendation= new UniqueSequenceContractInferrer().infer(profile).orElseThrow();
+
+		assertEquals(OrderRequirement.NONE, profile.orderRequirement());
+		assertEquals(OrderRequirement.NONE, recommendation.targetContract().orderRequirement());
+		assertEquals(ContainerRuleRegistry.UNORDERED_UNIQUE_SEQUENCE_SET,
+				recommendation.rule().ruleId());
+
+		UniqueSequenceLocalRewritePlan plan= plan(unit, recommendation);
+		assertEquals("java.util.LinkedHashSet", plan.targetImplementationType()); //$NON-NLS-1$
+		UniqueSequenceLocalRewriteFix.create(unit, root, plan)
+				.createChange(null).perform(null);
+
+		String transformed= unit.getSource();
+		assertTrue(transformed.contains("Set<String> values")); //$NON-NLS-1$
+		assertTrue(transformed.contains("new LinkedHashSet<>()")); //$NON-NLS-1$
+		assertFalse(transformed.contains("values.contains(value)")); //$NON-NLS-1$
+		assertTrue(transformed.contains("return values.size();")); //$NON-NLS-1$
 	}
 
 	@Test
@@ -88,7 +128,6 @@ class UniqueSequenceLocalRewriteIntegrationTest {
 					if (!values.contains(first)) {
 						values.add(second);
 					}
-				}
 			}
 			""");
 		var mismatchedProfile= new LocalUniqueSequenceAnalyzer()
@@ -116,6 +155,12 @@ class UniqueSequenceLocalRewriteIntegrationTest {
 		var profile= new LocalUniqueSequenceAnalyzer().analyze(root).get(0);
 		var recommendation= new UniqueSequenceContractInferrer()
 				.infer(profile).orElseThrow();
+		return plan(unit, recommendation);
+	}
+
+	private static UniqueSequenceLocalRewritePlan plan(
+			ICompilationUnit unit,
+			org.sandbox.jdt.container.api.ContainerRecommendation recommendation) {
 		var readiness= new ContainerMigrationReadiness(
 				recommendation.targetContract(),
 				ExecutionStatus.AUTOMATIC,

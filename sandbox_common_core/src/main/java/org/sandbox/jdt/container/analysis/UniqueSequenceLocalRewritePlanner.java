@@ -39,7 +39,7 @@ import org.sandbox.jdt.container.api.UniqueSequenceLocalRewritePlan.PlanningResu
 import org.sandbox.jdt.container.api.UsageEvidence;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 
-/** Plans a strictly local, manually unique sequence to ordered-set rewrite. */
+/** Plans a strictly local, manually unique sequence to set rewrite. */
 public final class UniqueSequenceLocalRewritePlanner {
 
 	private static final String SET_TYPE= "java.util.Set"; //$NON-NLS-1$
@@ -87,16 +87,16 @@ public final class UniqueSequenceLocalRewritePlanner {
 			ContainerRecommendation recommendation,
 			ContainerMigrationReadiness readiness,
 			List<PlanningDiagnostic> diagnostics) {
+		OrderRequirement order= recommendation.targetContract().orderRequirement();
 		if (!recommendation.targetContract().equals(readiness.targetContract())
 				|| recommendation.targetContract().shape() != ContainerShape.SET
 				|| recommendation.targetContract().mutability() != Mutability.MUTABLE
-				|| recommendation.targetContract().orderRequirement()
-						!= OrderRequirement.ENCOUNTER
+				|| order != OrderRequirement.ENCOUNTER && order != OrderRequirement.NONE
 				|| recommendation.targetContract().uniquenessRequirement()
 						!= UniquenessRequirement.REQUIRED) {
 			diagnostics.add(diagnostic(
 					DiagnosticKind.UNSUPPORTED_TARGET,
-					"The first unique-sequence rewrite requires a mutable encounter-ordered set.")); //$NON-NLS-1$
+					"The local unique-sequence rewrite requires a mutable set with either observed encounter order or no observed order requirement.")); //$NON-NLS-1$
 		}
 	}
 
@@ -126,7 +126,7 @@ public final class UniqueSequenceLocalRewritePlanner {
 				|| profile.orderRequirement() == OrderRequirement.POSITIONAL) {
 			diagnostics.add(diagnostic(
 					DiagnosticKind.POSITIONAL_SEMANTICS,
-					"Indexed and positional sequence semantics cannot be represented by the ordered set rewrite.")); //$NON-NLS-1$
+					"Indexed and positional sequence semantics cannot be represented by the set rewrite.")); //$NON-NLS-1$
 		}
 	}
 
@@ -142,6 +142,12 @@ public final class UniqueSequenceLocalRewritePlanner {
 			diagnostics.add(diagnostic(
 					DiagnosticKind.UNSUPPORTED_SOURCE,
 					"The profile does not prove stable equality and hash semantics.")); //$NON-NLS-1$
+		}
+		if (profile.orderRequirement() == OrderRequirement.ENCOUNTER
+				&& count(profile, Kind.ENCOUNTER_ITERATION) == 0) {
+			diagnostics.add(diagnostic(
+					DiagnosticKind.UNSUPPORTED_SOURCE,
+					"Encounter order may be required only when source evidence actually observes it.")); //$NON-NLS-1$
 		}
 		for (UsageEvidence evidence : profile.evidence()) {
 			if (!SUPPORTED_EVIDENCE.contains(evidence.kind())) {
