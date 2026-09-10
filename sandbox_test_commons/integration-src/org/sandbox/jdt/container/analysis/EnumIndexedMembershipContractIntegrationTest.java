@@ -128,6 +128,26 @@ class EnumIndexedMembershipContractIntegrationTest {
 	}
 
 	@Test
+	void ordinalFromDifferentLocalEnumRejectsMembershipInference() throws CoreException {
+		ContainerUsageProfile profile= analyze("""
+			package test;
+			class Sample {
+				boolean update() {
+					enum Flag { A, B }
+					enum Other { A, B }
+					Flag flag = Flag.A;
+					Other other = Other.A;
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[other.ordinal()] = true;
+					return enabled[flag.ordinal()];
+				}
+			}
+			""");
+
+		assertRejected(profile, Kind.REJECTION_BOUNDARY);
+	}
+
+	@Test
 	void arrayLengthObservationRejectsSetContract() throws CoreException {
 		ContainerUsageProfile profile= analyze("""
 			package test;
