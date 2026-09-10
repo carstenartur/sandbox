@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LocalDequeSequenceAnalyzer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">LocalDequeSequenceAnalyzer.java</span></div><h1>LocalDequeSequenceAnalyzer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.EnhancedForStatement;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AccessProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AtomicityRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ConcurrencyProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ContainerIdentity;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.IterationSemantics;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.MutationLifecycle;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.NullContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.SynchronizationKind;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
+import org.sandbox.jdt.container.api.UsageEvidence;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
+
+/**
+ * Extracts a narrow, closed local queue/stack protocol from an empty
+ * {@link java.util.ArrayList}. The source list may only append at the tail,
+ * remove from one end, observe size/emptiness, and iterate in encounter order.
+ * Every other use fails closed.
+ */
+<span class="fc" id="L66">public final class LocalDequeSequenceAnalyzer {</span>
+
+	private static final String ARRAY_LIST= &quot;java.util.ArrayList&quot;; //$NON-NLS-1$
+	private static final String LIST= &quot;java.util.List&quot;; //$NON-NLS-1$
+
+	/** Returns source-ordered complete or rejected queue/stack profiles. */
+	public List&lt;ContainerUsageProfile&gt; analyze(org.eclipse.jdt.core.dom.CompilationUnit unit) {
+<span class="fc" id="L73">		Objects.requireNonNull(unit, &quot;unit&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L74">		List&lt;ContainerUsageProfile&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L75">		unit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(VariableDeclarationFragment fragment) {
+<span class="fc" id="L78">				candidate(fragment).map(LocalDequeSequenceAnalyzer::analyzeCandidate)</span>
+<span class="fc" id="L79">						.ifPresent(result::add);</span>
+<span class="fc" id="L80">				return true;</span>
+			}
+		});
+<span class="pc" id="L83">		result.sort(Comparator.comparingInt(profile -&gt; profile.identity().sourceStart()));</span>
+<span class="fc" id="L84">		return List.copyOf(result);</span>
+	}
+
+	private static Optional&lt;Candidate&gt; candidate(VariableDeclarationFragment fragment) {
+<span class="fc" id="L88">		IVariableBinding binding= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L89" title="3 of 6 branches missed.">		if (binding == null || binding.isField() || binding.isParameter()</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">				|| !(fragment.getParent() instanceof VariableDeclarationStatement declaration)</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">				|| declaration.fragments().size() != 1</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">				|| !(fragment.getInitializer() instanceof ClassInstanceCreation creation)</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">				|| !isEmptyArrayList(creation)) {</span>
+<span class="fc" id="L94">			return Optional.empty();</span>
+		}
+<span class="fc" id="L96">		ITypeBinding declaredType= declaration.getType().resolveBinding();</span>
+<span class="fc" id="L97">		ITypeBinding elementType= elementType(declaredType);</span>
+<span class="pc bpc" id="L98" title="3 of 6 branches missed.">		if (!isListType(declaredType) || elementType == null || elementType.isPrimitive()) {</span>
+<span class="nc" id="L99">			return Optional.empty();</span>
+		}
+<span class="fc" id="L101">		MethodDeclaration method= enclosingMethod(fragment);</span>
+<span class="fc" id="L102">		String key= binding.getVariableDeclaration().getKey();</span>
+<span class="pc bpc" id="L103" title="4 of 8 branches missed.">		if (method == null || method.getBody() == null || key == null || key.isBlank()) {</span>
+<span class="nc" id="L104">			return Optional.empty();</span>
+		}
+<span class="fc" id="L106">		return Optional.of(new Candidate(fragment, declaration, method,</span>
+<span class="fc" id="L107">				binding.getVariableDeclaration(), key, elementType));</span>
+	}
+
+	private static ContainerUsageProfile analyzeCandidate(Candidate candidate) {
+<span class="fc" id="L111">		Observations observations= new Observations(candidate);</span>
+<span class="fc" id="L112">		candidate.method().getBody().accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SimpleName name) {
+<span class="fc bfc" id="L115" title="All 2 branches covered.">				if (hasBinding(name.resolveBinding(), candidate.bindingKey())) {</span>
+<span class="fc" id="L116">					classify(name, candidate, observations);</span>
+				}
+<span class="fc" id="L118">				return true;</span>
+			}
+		});
+<span class="fc" id="L121">		return observations.profile();</span>
+	}
+
+	private static void classify(SimpleName name, Candidate candidate, Observations observations) {
+<span class="fc bfc" id="L125" title="All 2 branches covered.">		if (candidate.fragment().getName() == name) {</span>
+<span class="fc" id="L126">			return;</span>
+		}
+<span class="fc bfc" id="L128" title="All 2 branches covered.">		if (crossesExecutableBoundary(name, candidate.binding())) {</span>
+<span class="fc" id="L129">			observations.reject(Kind.CAPTURED_USAGE,</span>
+					&quot;Sequence is captured across an executable boundary&quot;, name); //$NON-NLS-1$
+<span class="fc" id="L131">			return;</span>
+		}
+<span class="fc" id="L133">		ASTNode parent= name.getParent();</span>
+<span class="pc bpc" id="L134" title="2 of 4 branches missed.">		if (parent instanceof MethodInvocation invocation &amp;&amp; invocation.getExpression() == name) {</span>
+<span class="fc" id="L135">			classifyInvocation(invocation, candidate.bindingKey(), observations);</span>
+<span class="fc" id="L136">			return;</span>
+		}
+<span class="nc bnc" id="L138" title="All 4 branches missed.">		if (parent instanceof EnhancedForStatement enhanced &amp;&amp; enhanced.getExpression() == name) {</span>
+<span class="nc" id="L139">			observations.iteration(name);</span>
+<span class="nc" id="L140">			return;</span>
+		}
+<span class="nc" id="L142">		observations.reject(Kind.UNSAFE_ESCAPE,</span>
+				&quot;Sequence use escapes or observes unsupported positional semantics&quot;, name); //$NON-NLS-1$
+<span class="nc" id="L144">	}</span>
+
+	private static void classifyInvocation(MethodInvocation invocation, String bindingKey,
+			Observations observations) {
+<span class="fc" id="L148">		String method= invocation.getName().getIdentifier();</span>
+<span class="pc bpc" id="L149" title="1 of 4 branches missed.">		if (&quot;add&quot;.equals(method) &amp;&amp; invocation.arguments().size() == 1) { //$NON-NLS-1$</span>
+<span class="fc" id="L150">			observations.append(invocation);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">			if (invocation.arguments().get(0) instanceof NullLiteral) {</span>
+<span class="fc" id="L152">				observations.nullInserted= true;</span>
+			}
+<span class="fc" id="L154">			return;</span>
+		}
+<span class="pc bpc" id="L156" title="1 of 4 branches missed.">		if (&quot;remove&quot;.equals(method) &amp;&amp; invocation.arguments().size() == 1) { //$NON-NLS-1$</span>
+<span class="fc" id="L157">			Object argument= invocation.arguments().get(0);</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">			if (isLiteral(argument, &quot;0&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L159">				observations.headRemoval(invocation);</span>
+<span class="fc" id="L160">				return;</span>
+			}
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">			if (isTailIndex(argument, bindingKey)) {</span>
+<span class="fc" id="L163">				observations.tailRemoval(invocation);</span>
+<span class="fc" id="L164">				return;</span>
+			}
+<span class="nc" id="L166">			observations.reject(Kind.UNCLASSIFIED_USAGE,</span>
+					&quot;Only removal from index 0 or size() - 1 is a proven deque protocol&quot;, invocation); //$NON-NLS-1$
+<span class="nc" id="L168">			return;</span>
+		}
+<span class="pc bpc" id="L170" title="1 of 4 branches missed.">		if ((&quot;size&quot;.equals(method) || &quot;isEmpty&quot;.equals(method)) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">				&amp;&amp; invocation.arguments().isEmpty()) {</span>
+<span class="fc" id="L172">			return;</span>
+		}
+<span class="fc" id="L174">		observations.reject(Kind.UNCLASSIFIED_USAGE,</span>
+				&quot;Only tail append, end removal, size/isEmpty and enhanced-for are supported&quot;, invocation); //$NON-NLS-1$
+<span class="fc" id="L176">	}</span>
+
+	private static boolean isTailIndex(Object expression, String bindingKey) {
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">		if (!(expression instanceof InfixExpression infix)</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">				|| infix.getOperator() != InfixExpression.Operator.MINUS</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">				|| !infix.extendedOperands().isEmpty()</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">				|| !isLiteral(infix.getRightOperand(), &quot;1&quot;) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">				|| !(infix.getLeftOperand() instanceof MethodInvocation size)) {</span>
+<span class="nc" id="L184">			return false;</span>
+		}
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		return &quot;size&quot;.equals(size.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">				&amp;&amp; size.arguments().isEmpty()</span>
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">				&amp;&amp; size.getExpression() instanceof SimpleName receiver</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">				&amp;&amp; hasBinding(receiver.resolveBinding(), bindingKey);</span>
+	}
+
+	private static boolean isLiteral(Object expression, String token) {
+<span class="pc bpc" id="L193" title="1 of 4 branches missed.">		return expression instanceof NumberLiteral literal &amp;&amp; token.equals(literal.getToken());</span>
+	}
+
+	private static boolean isEmptyArrayList(ClassInstanceCreation creation) {
+<span class="fc" id="L197">		ITypeBinding type= creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L198" title="2 of 4 branches missed.">		return type != null &amp;&amp; ARRAY_LIST.equals(type.getErasure().getQualifiedName())</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">				&amp;&amp; creation.arguments().isEmpty()</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">				&amp;&amp; creation.getAnonymousClassDeclaration() == null;</span>
+	}
+
+	private static boolean isListType(ITypeBinding type) {
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc" id="L205">			return false;</span>
+		}
+<span class="fc" id="L207">		String name= type.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L208" title="3 of 4 branches missed.">		return LIST.equals(name) || ARRAY_LIST.equals(name);</span>
+	}
+
+	private static ITypeBinding elementType(ITypeBinding listType) {
+<span class="pc bpc" id="L212" title="2 of 4 branches missed.">		return listType != null &amp;&amp; listType.getTypeArguments().length == 1</span>
+<span class="pc" id="L213">				? listType.getTypeArguments()[0] : null;</span>
+	}
+
+	private static MethodDeclaration enclosingMethod(ASTNode node) {
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">			if (current instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L219">				return method;</span>
+			}
+		}
+<span class="nc" id="L222">		return null;</span>
+	}
+
+	private static boolean crossesExecutableBoundary(ASTNode reference, IVariableBinding declaration) {
+<span class="fc" id="L226">		IMethodBinding declaringMethod= declaration.getDeclaringMethod();</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">		if (declaringMethod == null) {</span>
+<span class="nc" id="L228">			return true;</span>
+		}
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">		for (ASTNode current= reference.getParent(); current != null; current= current.getParent()) {</span>
+<span class="pc bpc" id="L231" title="2 of 6 branches missed.">			if (current instanceof LambdaExpression || current instanceof AnonymousClassDeclaration</span>
+					|| current instanceof AbstractTypeDeclaration) {
+<span class="fc" id="L233">				return true;</span>
+			}
+<span class="fc bfc" id="L235" title="All 2 branches covered.">			if (current instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L236">				IMethodBinding actual= method.resolveBinding();</span>
+<span class="pc bpc" id="L237" title="2 of 4 branches missed.">				return actual == null || !methodKey(declaringMethod).equals(methodKey(actual));</span>
+			}
+		}
+<span class="nc" id="L240">		return true;</span>
+	}
+
+	private static String methodKey(IMethodBinding binding) {
+<span class="fc" id="L244">		String key= binding.getMethodDeclaration().getKey();</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">		return key == null ? &quot;&quot; : key; //$NON-NLS-1$</span>
+	}
+
+	private static boolean hasBinding(IBinding binding, String key) {
+<span class="fc" id="L249">		return binding instanceof IVariableBinding variable</span>
+<span class="fc bfc" id="L250" title="All 4 branches covered.">				&amp;&amp; key.equals(variable.getVariableDeclaration().getKey());</span>
+	}
+
+	private static ElementDomain elementDomain(ITypeBinding type) {
+<span class="pc bpc" id="L254" title="1 of 2 branches missed.">		return type.isEnum() ? ElementDomain.ENUM : ElementDomain.REFERENCE;</span>
+	}
+
+<span class="fc" id="L257">	private record Candidate(VariableDeclarationFragment fragment,</span>
+			VariableDeclarationStatement declaration, MethodDeclaration method,
+			IVariableBinding binding, String bindingKey, ITypeBinding elementType) {
+	}
+
+	private static final class Observations {
+		private final Candidate candidate;
+<span class="fc" id="L264">		private final List&lt;UsageEvidence&gt; evidence= new ArrayList&lt;&gt;();</span>
+		private boolean appendSeen;
+		private boolean headRemovalSeen;
+		private boolean tailRemovalSeen;
+		private boolean rejected;
+		private boolean nullInserted;
+
+<span class="fc" id="L271">		Observations(Candidate candidate) {</span>
+<span class="fc" id="L272">			this.candidate= candidate;</span>
+<span class="fc" id="L273">			add(Kind.REFERENCE_COMPONENT,</span>
+<span class="fc" id="L274">					&quot;The local sequence has a resolved reference element type&quot;, candidate.declaration()); //$NON-NLS-1$</span>
+<span class="fc" id="L275">		}</span>
+
+		void append(ASTNode node) {
+<span class="fc" id="L278">			appendSeen= true;</span>
+<span class="fc" id="L279">			add(Kind.APPEND_WRITE, &quot;Elements are appended at the sequence tail&quot;, node); //$NON-NLS-1$</span>
+<span class="fc" id="L280">		}</span>
+
+		void headRemoval(ASTNode node) {
+<span class="fc" id="L283">			headRemovalSeen= true;</span>
+<span class="fc" id="L284">			add(Kind.HEAD_REMOVAL, &quot;Elements are removed from index 0 in FIFO order&quot;, node); //$NON-NLS-1$</span>
+<span class="fc" id="L285">		}</span>
+
+		void tailRemoval(ASTNode node) {
+<span class="fc" id="L288">			tailRemovalSeen= true;</span>
+<span class="fc" id="L289">			add(Kind.TAIL_REMOVAL, &quot;Elements are removed from size() - 1 in LIFO order&quot;, node); //$NON-NLS-1$</span>
+<span class="fc" id="L290">		}</span>
+
+		void iteration(ASTNode node) {
+<span class="nc" id="L293">			add(Kind.ENCOUNTER_ITERATION, &quot;The sequence is traversed in encounter order&quot;, node); //$NON-NLS-1$</span>
+<span class="nc" id="L294">		}</span>
+
+		void reject(Kind kind, String summary, ASTNode node) {
+<span class="fc" id="L297">			rejected= true;</span>
+<span class="fc" id="L298">			add(kind, summary, node);</span>
+<span class="fc" id="L299">		}</span>
+
+		ContainerUsageProfile profile() {
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">			if (!appendSeen) {</span>
+<span class="nc" id="L303">				reject(Kind.REJECTION_BOUNDARY,</span>
+<span class="nc" id="L304">						&quot;A deque recommendation requires at least one proven tail append&quot;, candidate.fragment()); //$NON-NLS-1$</span>
+			}
+<span class="pc bpc" id="L306" title="1 of 4 branches missed.">			if (!headRemovalSeen &amp;&amp; !tailRemovalSeen) {</span>
+<span class="nc" id="L307">				reject(Kind.REJECTION_BOUNDARY,</span>
+<span class="nc" id="L308">						&quot;A deque recommendation requires removal from one proven end&quot;, candidate.fragment()); //$NON-NLS-1$</span>
+			}
+<span class="fc bfc" id="L310" title="All 4 branches covered.">			if (headRemovalSeen &amp;&amp; tailRemovalSeen) {</span>
+<span class="fc" id="L311">				reject(Kind.REJECTION_BOUNDARY,</span>
+<span class="fc" id="L312">						&quot;Mixed head and tail removal is not a single proven FIFO or LIFO protocol&quot;, candidate.fragment()); //$NON-NLS-1$</span>
+			}
+<span class="fc bfc" id="L314" title="All 2 branches covered.">			boolean complete= !rejected;</span>
+<span class="fc bfc" id="L315" title="All 2 branches covered.">			if (complete) {</span>
+<span class="fc" id="L316">				add(Kind.LOCAL_USAGE_COMPLETE,</span>
+						&quot;Every use of the local sequence binding was classified as one deque protocol&quot;, //$NON-NLS-1$
+<span class="fc" id="L318">						candidate.fragment());</span>
+			}
+<span class="fc" id="L320">			evidence.sort(Comparator.comparingInt(UsageEvidence::sourceStart)</span>
+<span class="pc" id="L321">					.thenComparing(item -&gt; item.kind().ordinal()));</span>
+<span class="fc" id="L322">			return new ContainerUsageProfile(</span>
+<span class="fc" id="L323">					new ContainerIdentity(candidate.bindingKey(),</span>
+<span class="fc" id="L324">							candidate.fragment().getName().getIdentifier(),</span>
+<span class="fc" id="L325">							candidate.fragment().getStartPosition(), candidate.fragment().getLength()),</span>
+<span class="fc" id="L326">					ContainerShape.LIST, elementDomain(candidate.elementType()),</span>
+					new AccessProfile(false, false, true, false, true, false, false),
+					OrderRequirement.ENCOUNTER, UniquenessRequirement.DUPLICATES_ALLOWED,
+					MutationLifecycle.CONTINUOUSLY_MUTABLE,
+<span class="fc bfc" id="L330" title="All 2 branches covered.">					nullInserted ? NullContract.ALLOWED : NullContract.UNKNOWN,</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">					complete ? AliasingContract.NO_OBSERVED_ALIAS : AliasingContract.UNKNOWN,</span>
+					EscapeLevel.LOCAL,
+<span class="fc bfc" id="L333" title="All 2 branches covered.">					complete ? new ConcurrencyProfile(ThreadExposure.THREAD_CONFINED,</span>
+							SynchronizationKind.NONE, IterationSemantics.LIVE,
+							AtomicityRequirement.INDIVIDUAL_OPERATIONS, WorkloadShape.PRODUCER_CONSUMER)
+<span class="fc" id="L336">							: ConcurrencyProfile.unknown(),</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">					complete ? AnalysisCompleteness.LOCAL_USAGE_COMPLETE : AnalysisCompleteness.REJECTED,</span>
+					evidence);
+		}
+
+		private void add(Kind kind, String summary, ASTNode node) {
+<span class="fc" id="L342">			evidence.add(new UsageEvidence(kind, summary, node.getStartPosition(), node.getLength()));</span>
+<span class="fc" id="L343">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

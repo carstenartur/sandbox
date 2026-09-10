@@ -1007,7 +1007,7 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerSign
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,UniqueSequenceLocalRewritePlan.PlanningDiagnostic,0,17,0,0,0,4,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerUsageProfile.MutationLifecycle,0,33,0,0,0,6,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerFlowSearchPlan,8,32,2,2,1,8,2,4,0,4
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,UsageEvidence.Kind,0,111,0,0,0,19,0,1,0,1
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,UsageEvidence.Kind,0,123,0,0,0,21,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ConcurrencyProtocolAssessment.RecommendedMigration,4,45,0,2,1,9,1,2,1,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerUsageProfile.ConcurrencyProfile,0,47,0,0,0,8,0,2,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerFlowSearchPlan.SearchSeed,15,81,3,9,3,13,3,6,0,3
@@ -1277,10 +1277,12 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.git,CommitWa
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.git,RepoCloner,41,0,0,0,16,0,3,0,3,0
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalArrayUsageAnalyzer.Accumulator,15,238,1,19,4,53,2,19,1,10
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerMigrationReadinessPlanner,85,339,20,49,21,90,19,36,0,14
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerContractInferrer,28,286,19,43,3,62,18,25,0,12
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerContractInferrer,28,301,19,45,3,67,18,26,0,12
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalDequeSequenceAnalyzer.Observations,25,184,2,20,6,41,4,16,2,7
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowContinuationDetector.Accumulator,20,197,7,11,6,45,7,8,0,6
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerBridgePolicyPlanner.AssessmentIndex,0,59,1,5,0,13,1,5,0,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalUniqueSequenceAnalyzer.Observations,0,170,1,17,0,41,1,15,0,7
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalDequeSequenceAnalyzer.Candidate,0,21,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerLocalRewritePlanner.SourceRange,0,9,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ClosedFlowArrayUsageRefiner.SourceRange,5,13,2,2,1,3,2,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ClosedSourceParameterMigrationPlanner.Signature,0,6,0,0,0,1,0,1,0,1
@@ -1290,12 +1292,15 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,Containe
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowContinuationLinker,115,465,39,52,19,98,37,33,4,19
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowSearchSeedExtractor,50,106,8,10,17,30,8,7,1,4
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ClosedSourceParameterMigrationPlanner,107,491,37,55,27,117,41,20,4,11
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalDequeSequenceAnalyzer,58,444,53,75,14,87,51,30,1,16
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowComponentAssembler.TextMerge,0,9,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,AppendOnlyArraySeedDetector.GrowthSeed,0,31,0,0,0,6,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerSignatureAtomicityPlanner.GroupKey,0,14,0,0,0,3,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalUniqueSequenceAnalyzer,45,407,40,68,11,83,40,34,1,19
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowComponentAssembler.MutableNode,21,200,15,19,5,41,11,11,0,5
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowIndex.BindingInfo,0,29,0,0,0,11,0,6,0,6
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalDequeSequenceAnalyzer.new ASTVisitor() {...},0,19,0,0,0,4,0,2,0,2
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalDequeSequenceAnalyzer.new ASTVisitor() {...},0,24,0,2,0,4,0,3,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,UniqueSequencePattern.GuardedAdd,0,31,0,0,0,6,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerSignatureAtomicityPlanner,37,443,15,61,8,102,14,37,0,13
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,UniqueSequencePattern,97,301,49,49,15,65,37,20,0,8
@@ -1308,15 +1313,16 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,Containe
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerParameterRewritePlanner,67,359,33,48,11,89,33,20,1,11
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerAstFacts,73,187,23,25,11,39,20,12,1,7
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,UniqueSequenceLocalRewritePlanner,60,266,22,35,11,64,23,17,1,10
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,UniqueSequenceContractInferrer,0,138,11,21,0,32,11,11,0,6
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,UniqueSequenceContractInferrer,0,138,10,22,0,32,10,12,0,6
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowIndex,4,272,7,21,2,61,7,23,0,16
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,DequeSequenceContractInferrer,8,222,11,29,1,54,11,14,0,5
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowContinuationDetector,193,519,36,56,50,136,35,41,7,23
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowContinuationDetector.TargetIndex,0,90,0,4,0,17,0,9,0,7
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalUniqueSequenceAnalyzer.new ASTVisitor() {...},0,19,0,0,0,4,0,2,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,AppendOnlyArraySeedDetector,56,409,40,48,13,89,36,25,0,17
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalUniqueSequenceAnalyzer.new ASTVisitor() {...},0,24,0,2,0,4,0,3,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalArrayUsageAnalyzer,184,613,81,107,34,135,69,49,2,22
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerRuleRegistry,7,106,1,1,1,15,1,7,0,7
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerRuleRegistry,7,138,1,1,1,19,1,9,0,9
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ClosedSourceRecommendationRefiner,195,0,36,0,41,0,26,0,8,0
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.internal.common,AnnotationVisitorBuilder,0,146,2,18,0,37,2,13,0,5
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.internal.common,MethodCallVisitorBuilder,98,100,11,5,20,24,12,11,6,9
