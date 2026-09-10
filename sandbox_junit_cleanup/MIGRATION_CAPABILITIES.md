@@ -23,6 +23,7 @@ A missing binding, binary-only participant, stale plan, incomplete project scope
 |---|---:|---|---|
 | JUnit 4 lifecycle annotations | Supported | local cleanup / declarative rewrite | mixed or custom lifecycle semantics may require coordinated planning |
 | JUnit 4 assertions and assumptions | Supported for classified overloads | local cleanup | message/delta overloads require resolved method/type semantics |
+| closed direct assertion/assumption helper | Supported for private and package-private static wrappers | helper declaration plus workspace-wide source caller closure, then ordinary assertion/assumption rewrite | exactly one direct JUnit 4 `Assert`/`Assume` invocation; public/protected, overridable package-instance and compound/recursive wrappers remain outside this slice |
 | `@Test(expected=...)` | Supported | imperative body rewrite | wraps the proven method body in `assertThrows` |
 | `@Test(timeout=...)` and supported timeout rules | Supported | local structured rewrite | custom timeout wrappers remain unsupported |
 | `TemporaryFolder`, `TestName`, supported `ExternalResource` rules | Supported | local or coordinated rule migration | external/binary resource classes and mixed rule scopes fail closed |
@@ -30,11 +31,11 @@ A missing binding, binary-only participant, stale plan, incomplete project scope
 | ordinary closed JUnit 3 hierarchy | Supported | `junit3-hierarchy` semantic plan plus plan-aware DSL | constructors, name/result hooks, decorators and custom harness references are rejected |
 | simple JUnit 3 `suite()` aggregator | Supported | fail-closed suite model | only plain top-level aggregator types and modeled composition forms |
 | JUnit 4 `@RunWith(Suite.class)` / class selection | Supported for modeled forms | suite cleanup | custom runners and dynamic composition require a dedicated contract |
-| local JUnit 4 Parameterized provider | Narrow support | local plugin | only the provider/body shapes explicitly accepted by the planner |
-| external/inherited Parameterized provider | Source planning implemented; coordinated execution pending | `JUnit4ParameterizedPlanner` / `junit4-parameterized` | selected source hierarchy and static delegates, constant rectangular `Object[][]` rows; runtime verification still required |
-| Parameterized constructor/field injection | Source planning implemented; coordinated execution pending | ordered `constructorParameter` / `injectedField` relations | stable binding keys, contiguous field indices, proven argument types; no automatic execution from a prepared plan |
+| local JUnit 4 Parameterized provider | Supported for modeled forms | local plugin or coordinated `junit4-parameterized` plan | unsupported provider/runtime shapes remain explicit rejection cases |
+| inherited/delegated Parameterized provider | Supported for proven editable source closures | `JUnit4ParameterizedPlanner` plus coordinated `ParameterizedClass` execution | exact source fingerprints, static delegate closure and supported provider rows are required |
+| Parameterized constructor/field injection | Supported for proven closed-source plans | ordered semantic relations plus coordinated `ParameterizedClass` execution | stable binding keys, contiguous field indices and proven argument types; unsupported hooks fail closed |
 | JUnit 3 custom harness | Not generally supported | dedicated framework migration required | must not be flattened into annotations |
-| shared assertion helper API across projects | Not yet supported | planned in #1367 | requires complete caller/callee closure |
+| public/shared helper API or recursive helper chain | Not yet supported | later #1367 Phase-4 slices | requires stronger dispatch/API/signature proof and complete caller/callee closure |
 | automatic JUnit 4/Vintage dependency removal | Not yet supported | planned resource-change phase | allowed only after all source and generated consumers are classified |
 
 ## Stable rejection categories
@@ -50,42 +51,32 @@ The migration reports actionable reason codes rather than applying a partial rew
 - stale semantic plan or missing planned target;
 - missing required semantic binding.
 
+For closed helper discovery, a helper is deliberately not promoted to a coordinated migration seed when it is public/protected, dynamically dispatchable through a package-private instance method, or contains behavior beyond one direct JUnit 4 assertion/assumption call. Once a helper is accepted, the existing workspace-wide related-source search is authoritative for its caller closure: inaccurate, binary, generated, excluded-root or otherwise non-editable references make the closure incomplete rather than permitting a partial migration.
+
 ## Documentation rule
 
 Do not describe the plugin as providing unrestricted “full JUnit 3/4 migration”. The accurate claim is:
 
 > Automated JUnit migration for explicitly modeled local and coordinated source shapes, with fail-closed diagnostics for unsupported execution semantics.
 
-## Executable Parameterized discovery boundary
+## Executable Parameterized boundary
 
-`JUnit4ParameterizedPlannerTest` and `ParameterizedMigrationDiagnosticsTest` exercise
-the production planning path in `JUnitMultiFilePlanner`. `SemanticRewritePlanFactsTest`
-checks stable parameter identities in the shared DSL model.
+`JUnit4ParameterizedPlannerTest`, `ParameterizedMigrationDiagnosticsTest` and the coordinated runtime tests exercise the production `junit4-parameterized` planning and execution path. `SemanticRewritePlanFactsTest` checks stable parameter identities in the shared DSL model.
 
-| Evidence | Executable test |
-|---|---|
-| Constructor parameters, multiple tests, no duplicated name/type/index facts | `recordsConstructorParametersAndAllTestsWithoutDuplicatedNamesOrTypes` |
-| Inherited provider plus editable external delegation | `discoversInheritedProviderAndEditableExternalDelegateDeterministically` |
-| Field injection in semantic index order | `fieldRelationsFollowInjectionIndicesRatherThanDeclarationOrder` |
-| Missing source participants and partial scope | `incompleteSelectionProducesNoPreparedPlan`, `unselectedInheritedAndDelegatedSourcesFailClosed` |
-| Cyclic providers, implicit conversions, field index collisions/gaps, wrong row width | `cyclesAndUnprovenConversionsNeverProducePartialPlans`, `duplicateIndicesGapsAndWrongArityAreRejected` |
-| Unsupported execution hooks and unresolved source | `customHooksAndCompilerErrorsAreVisible` |
-| Malformed JUnit 4 display-name patterns are rejected | `malformedDisplayNamesCannotBeSilentlyChangedToJupiterDefaults` |
-| Provider body changes and added/deleted scope members invalidate evidence | `snapshotsRejectBodyOnlyChangesAndChangedScopeMembership` |
-| Source changes during AST creation cannot attach new fingerprints to old evidence | `rejectsSourceChangesBetweenSnapshotAndAstDiscovery` |
+The implementation re-establishes the closed editable scope, compares source fingerprints, re-resolves authorized declarations and uses JDT's JUnit finder/loader adapters to compare ordered test identity, multiplicity, display names and results. The coordinated executor is enabled only when the selected project provides Jupiter's `ParameterizedClass`; unsupported hooks, malformed/ambiguous identities and stale source remain rejection cases. Plans retain stable keys, handles, relations and fingerprints rather than AST nodes.
 
-Discovery does not invoke providers, rewrite files, or enable additional local
-cleanup cases. Prepared plans are reported as `FOUND` with
-`PARAMETERIZED_RUNTIME_VERIFICATION_REQUIRED`, never as `TRANSFORMED` or
-`APPLICABLE`. They retain no AST nodes or Java-model handles as objects: only
-binding keys, compilation-unit handle strings and source fingerprints.
+## Executable helper boundary
 
-The next executor must re-establish the closed editable scope, compare exact
-source fingerprints, resolve the authorized declarations, and prove test
-identity, multiplicity, display-name and result equivalence through JDT's JUnit
-finder/loader adapters. Source discovery alone is not that proof. The existing
-narrow local Parameterized cleanup remains a separate execution path.
+`JUnitSharedHelperScopeDetectorTest` covers the first Phase-4 vertical slice:
+
+- caller-selected package-private static assertion helpers are discovered through resolved method bindings;
+- a selected private direct wrapper becomes a reverse-reference search seed;
+- assertion and assumption options remain independent;
+- public, protected and overridable package-private instance helpers are not promoted;
+- wrappers with additional behavior are not flattened into the direct-wrapper contract.
+
+The detector does not invent a second call-graph implementation. Accepted helper methods are passed to the shared `RelatedCompilationUnitSearch`, which performs the workspace-wide source reference closure used by other coordinated cleanups. The ordinary `AssertJUnitPlugin` / `AssumeJUnitPlugin` then owns the actual JUnit invocation and import rewrite once the helper compilation unit is part of the closed cleanup scope.
 
 ## Roadmap
 
-The detailed implementation roadmap is tracked in #1367. Existing coordinated migration work remains connected to #1217 and #1334.
+The detailed implementation roadmap is tracked in #1367. Remaining Phase-4 work includes recursive/shared helper chains and API/signature-sensitive wrappers; Phase 5 owns atomic dependency/resource changes. Existing coordinated migration work remains connected to #1217 and #1334.
