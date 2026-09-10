@@ -138,8 +138,9 @@ class CoordinatedContainerCleanUpTest {
 
 		ICompilationUnit workingCopy= unit.getWorkingCopy(null);
 		try {
-			assertFalse(unit.getHandleIdentifier().equals(workingCopy.getHandleIdentifier()),
-					"The regression fixture must exercise a distinct working-copy handle"); //$NON-NLS-1$
+			assertTrue(workingCopy.isWorkingCopy());
+			assertEquals(unit, workingCopy.getPrimary(),
+					"The plan identity must resolve through the JDT primary compilation unit"); //$NON-NLS-1$
 			ICleanUpFix fix= cleanup.createFix(
 					new CleanUpContext(workingCopy, parse(workingCopy)));
 			assertNotNull(fix,
