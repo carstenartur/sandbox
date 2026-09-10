@@ -123,7 +123,7 @@ public final class UniqueSequencePattern {
 
 	private static MethodInvocation singleInvocation(Statement statement) {
 <span class="fc" id="L125">		Statement effective= statement;</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">		if (effective instanceof Block block) {</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		if (effective instanceof Block block) {</span>
 <span class="pc bpc" id="L127" title="1 of 2 branches missed.">			if (block.statements().size() != 1</span>
 <span class="pc bpc" id="L128" title="1 of 2 branches missed.">					|| !(block.statements().get(0) instanceof Statement nested)) {</span>
 <span class="nc" id="L129">				return null;</span>
