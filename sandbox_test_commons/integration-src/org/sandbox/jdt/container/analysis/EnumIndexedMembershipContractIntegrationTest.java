@@ -183,6 +183,43 @@ class EnumIndexedMembershipContractIntegrationTest {
 	}
 
 	@Test
+	void arrayIdentityComparisonRejectsSetContract() throws CoreException {
+		ContainerUsageProfile profile= analyze("""
+			package test;
+			class Sample {
+				enum Flag { A, B }
+				boolean update(Flag flag) {
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[flag.ordinal()] = true;
+					boolean same = enabled == enabled;
+					return same && enabled[flag.ordinal()];
+				}
+			}
+			""");
+
+		assertRejected(profile, Kind.ARRAY_IDENTITY);
+	}
+
+	@Test
+	void synchronizationOnArrayIdentityRejectsSetContract() throws CoreException {
+		ContainerUsageProfile profile= analyze("""
+			package test;
+			class Sample {
+				enum Flag { A, B }
+				boolean update(Flag flag) {
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[flag.ordinal()] = true;
+					synchronized (enabled) {
+						return enabled[flag.ordinal()];
+					}
+				}
+			}
+			""");
+
+		assertRejected(profile, Kind.ARRAY_IDENTITY);
+	}
+
+	@Test
 	void writeOnlyTableIsNotPromotedToMembershipContract() throws CoreException {
 		ContainerUsageProfile profile= analyze("""
 			package test;
