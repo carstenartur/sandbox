@@ -4,7 +4,7 @@
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
+ * https://www.eclipse.org/legal/epl-2.0.
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
@@ -60,6 +60,11 @@ public record UsageEvidence(Kind kind, String summary, int sourceStart, int sour
 		UNRESOLVED_BINDING,
 		REJECTION_BOUNDARY,
 		HEAD_REMOVAL,
-		TAIL_REMOVAL
+		TAIL_REMOVAL,
+		ENUM_CARDINALITY,
+		ENUM_ORDINAL_INDEX,
+		ENUM_MEMBERSHIP_QUERY,
+		ENUM_MEMBERSHIP_ENABLE,
+		ENUM_MEMBERSHIP_DISABLE
 	}
 }
