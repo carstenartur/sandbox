@@ -128,6 +128,29 @@ class CoordinatedContainerCleanUpTest {
 	}
 
 	@Test
+	void plannedLifecycleCreatesFixForWorkingCopy() throws Exception {
+		ICompilationUnit unit= createUnit("WorkingCopy.java", source()); //$NON-NLS-1$
+		NullProgressMonitor monitor= new NullProgressMonitor();
+		CoordinatedContainerCleanUpCore cleanup= cleanup();
+		RefactoringStatus status= cleanup.checkPreConditions(
+				context.getJavaProject(), new ICompilationUnit[] { unit }, monitor);
+		assertFalse(status.hasFatalError(), status.toString());
+
+		ICompilationUnit workingCopy= unit.getWorkingCopy(null);
+		try {
+			assertFalse(unit.getHandleIdentifier().equals(workingCopy.getHandleIdentifier()),
+					"The regression fixture must exercise a distinct working-copy handle"); //$NON-NLS-1$
+			ICleanUpFix fix= cleanup.createFix(
+					new CleanUpContext(workingCopy, parse(workingCopy)));
+			assertNotNull(fix,
+					"A plan keyed by the primary unit must still resolve for its working copy"); //$NON-NLS-1$
+		} finally {
+			workingCopy.discardWorkingCopy();
+			cleanup.checkPostConditions(monitor);
+		}
+	}
+
+	@Test
 	void wrapperExposesMultiFileContractsWithoutSaveActionRegistration() {
 		CoordinatedContainerCleanUp cleanup= new CoordinatedContainerCleanUp(Map.of(
 				CLEANUP, CleanUpOptions.TRUE,
