@@ -197,7 +197,7 @@ class DequeSequenceContractInferrerTest {
 	}
 
 	private static CompilationUnit parse(String source) {
-		ASTParser parser= ASTParser.newParser(AST.JLS_Latest);
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setSource(source.toCharArray());
 		parser.setResolveBindings(true);
