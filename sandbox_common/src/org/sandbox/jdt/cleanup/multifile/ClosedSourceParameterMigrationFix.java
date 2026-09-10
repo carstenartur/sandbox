@@ -47,7 +47,8 @@ public final class ClosedSourceParameterMigrationFix {
 		Objects.requireNonNull(root, "root"); //$NON-NLS-1$
 		Objects.requireNonNull(plan, "plan"); //$NON-NLS-1$
 
-		String handle= unit.getHandleIdentifier();
+		ICompilationUnit primary= unit.getPrimary();
+		String handle= (primary == null ? unit : primary).getHandleIdentifier();
 		List<CompilationUnitRewriteOperationWithSourceRange> operations=
 				new ArrayList<>();
 		if (handle.equals(plan.callerPlan().compilationUnitHandle())) {
