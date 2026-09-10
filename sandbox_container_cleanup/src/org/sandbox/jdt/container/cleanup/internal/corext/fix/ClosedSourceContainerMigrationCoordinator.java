@@ -97,18 +97,26 @@ final class ClosedSourceContainerMigrationCoordinator {
 			return Discovery.none();
 		}
 		Map<String, CompilationUnit> roots= parse(project, scope, monitor);
+		return discoverPrepared(project, scope, roots, monitor).discovery();
+	}
+
+	private PreparedDiscovery discoverPrepared(IJavaProject project,
+			List<ICompilationUnit> scope, Map<String, CompilationUnit> roots,
+			IProgressMonitor monitor) throws CoreException {
 		CandidateSelection selection= selectCandidate(scope, roots);
 		if (!selection.complete()) {
-			return Discovery.rejected(selection.candidateId(), selection.ownerHandle(),
-					selection.reasonCode(), selection.message());
+			return new PreparedDiscovery(
+					Discovery.rejected(selection.candidateId(), selection.ownerHandle(),
+							selection.reasonCode(), selection.message()),
+					selection);
 		}
 		if (selection.candidate().isEmpty()) {
-			return Discovery.none();
+			return new PreparedDiscovery(Discovery.none(), selection);
 		}
 		Candidate candidate= selection.candidate().orElseThrow();
 		ContainerFlowSearchPlan searchPlan= searchSeedExtractor.extract(candidate.localGraph());
 		if (searchPlan.isEmpty()) {
-			return Discovery.none();
+			return new PreparedDiscovery(Discovery.none(), selection);
 		}
 
 		List<ICompilationUnit> allowedUnits= JavaProjectCompilationUnits.collect(
@@ -116,20 +124,30 @@ final class ClosedSourceContainerMigrationCoordinator {
 		ContainerFlowScopeSearch.Result result= ContainerFlowScopeSearch.findRelatedUnits(
 				project, searchPlan, scope, allowedUnits, monitor);
 		if (!result.complete()) {
-			return Discovery.rejected(candidate.candidateId(), candidate.unitHandle(),
-					"SOURCE_CLOSURE_INCOMPLETE", joinReasons(result.rejectionReasons())); //$NON-NLS-1$
+			return new PreparedDiscovery(
+					Discovery.rejected(candidate.candidateId(), candidate.unitHandle(),
+							"SOURCE_CLOSURE_INCOMPLETE", joinReasons(result.rejectionReasons())), //$NON-NLS-1$
+					selection);
 		}
 		Set<ICompilationUnit> required= new LinkedHashSet<>(scope);
 		required.add(candidate.unit());
 		required.addAll(result.compilationUnits());
-		return Discovery.found(candidate.candidateId(), candidate.unitHandle(),
-				new ArrayList<>(required), result.resolvedPlan());
+		return new PreparedDiscovery(
+				Discovery.found(candidate.candidateId(), candidate.unitHandle(),
+						new ArrayList<>(required), result.resolvedPlan()),
+				selection);
 	}
 
 	Planning plan(IJavaProject project, ICompilationUnit[] compilationUnits,
 			IProgressMonitor monitor) throws CoreException {
+		checkCanceled(monitor);
 		List<ICompilationUnit> scope= normalize(project, List.of(compilationUnits));
-		Discovery discovery= discover(project, scope, monitor);
+		if (scope.isEmpty()) {
+			return Planning.none();
+		}
+		Map<String, CompilationUnit> roots= parse(project, scope, monitor);
+		PreparedDiscovery prepared= discoverPrepared(project, scope, roots, monitor);
+		Discovery discovery= prepared.discovery();
 		if (!discovery.candidateFound()) {
 			return Planning.none();
 		}
@@ -145,8 +163,7 @@ final class ClosedSourceContainerMigrationCoordinator {
 					discovery.requiredHandles());
 		}
 
-		Map<String, CompilationUnit> roots= parse(project, scope, monitor);
-		CandidateSelection selection= selectCandidate(scope, roots);
+		CandidateSelection selection= prepared.selection();
 		if (!selection.complete() || selection.candidate().isEmpty()) {
 			return Planning.rejected(discovery.candidateId(), discovery.ownerHandle(),
 					"CANDIDATE_CHANGED", //$NON-NLS-1$
@@ -170,12 +187,13 @@ final class ClosedSourceContainerMigrationCoordinator {
 		Map<String, ContainerUsageProfile> parameterProfilesByKey= new LinkedHashMap<>();
 
 		for (ICompilationUnit unit : scope) {
-			CompilationUnit root= roots.get(unit.getHandleIdentifier());
+			String unitHandle= primaryHandle(unit);
+			CompilationUnit root= roots.get(unitHandle);
 			if (root == null) {
 				continue;
 			}
 			ContainerFlowContinuationPlan continuations= continuationDetector.detect(
-					root, unit.getHandleIdentifier(), resolved);
+					root, unitHandle, resolved);
 			continuationRoots.addAll(continuations.roots());
 			continuationDiagnostics.addAll(continuations.diagnostics());
 			for (ContinuationRoot continuation : continuations.roots()) {
@@ -245,7 +263,7 @@ final class ClosedSourceContainerMigrationCoordinator {
 			Map<String, CompilationUnit> roots) {
 		List<Candidate> candidates= new ArrayList<>();
 		for (ICompilationUnit unit : scope) {
-			CompilationUnit root= roots.get(unit.getHandleIdentifier());
+			CompilationUnit root= roots.get(primaryHandle(unit));
 			if (root == null) {
 				continue;
 			}
@@ -283,7 +301,7 @@ final class ClosedSourceContainerMigrationCoordinator {
 	private static String joinReasons(Collection<String> reasons) {
 		return reasons.stream().filter(reason -> reason != null && !reason.isBlank())
 				.distinct().sorted().reduce((left, right) -> left + "; " + right)
-				.orElse("The coordinated source closure could not be proven."); //$NON-NLS-1$ //$NON-NLS-2$
+				.orElse("The coordinated source closure could not be proven."); //$NON-NLS-1$
 	}
 
 	private static Map<String, CompilationUnit> parse(IJavaProject project,
@@ -298,7 +316,7 @@ final class ClosedSourceContainerMigrationCoordinator {
 		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {
 			@Override
 			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
-				roots.put(source.getPrimary().getHandleIdentifier(), ast);
+				roots.put(primaryHandle(source), ast);
 			}
 		}, monitor);
 		return roots;
@@ -310,7 +328,8 @@ final class ClosedSourceContainerMigrationCoordinator {
 		for (ICompilationUnit unit : units) {
 			if (unit != null && unit.exists() && project.equals(unit.getJavaProject())) {
 				ICompilationUnit primary= unit.getPrimary();
-				unique.put(primary.getHandleIdentifier(), primary);
+				ICompilationUnit canonical= primary == null ? unit : primary;
+				unique.put(canonical.getHandleIdentifier(), canonical);
 			}
 		}
 		return List.copyOf(unique.values());
@@ -319,9 +338,14 @@ final class ClosedSourceContainerMigrationCoordinator {
 	private static Set<String> handles(Collection<ICompilationUnit> units) {
 		Set<String> result= new LinkedHashSet<>();
 		for (ICompilationUnit unit : units) {
-			result.add(unit.getPrimary().getHandleIdentifier());
+			result.add(primaryHandle(unit));
 		}
 		return Set.copyOf(result);
+	}
+
+	private static String primaryHandle(ICompilationUnit unit) {
+		ICompilationUnit primary= unit.getPrimary();
+		return (primary == null ? unit : primary).getHandleIdentifier();
 	}
 
 	private static void checkCanceled(IProgressMonitor monitor) {
@@ -334,12 +358,15 @@ final class ClosedSourceContainerMigrationCoordinator {
 			ContainerUsageProfile seed, ContainerUsageProfile localProfile,
 			ContainerFlowGraph localGraph) {
 		String unitHandle() {
-			return unit.getHandleIdentifier();
+			return primaryHandle(unit);
 		}
 
 		String candidateId() {
 			return unitHandle() + '|' + seed.identity().stableId();
 		}
+	}
+
+	private record PreparedDiscovery(Discovery discovery, CandidateSelection selection) {
 	}
 
 	record Discovery(boolean candidateFound, boolean complete, String candidateId,
@@ -368,7 +395,9 @@ final class ClosedSourceContainerMigrationCoordinator {
 		}
 
 		List<String> requiredHandles() {
-			return requiredUnits.stream().map(ICompilationUnit::getHandleIdentifier).toList();
+			return requiredUnits.stream()
+					.map(ClosedSourceContainerMigrationCoordinator::primaryHandle)
+					.toList();
 		}
 	}
 
