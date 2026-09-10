@@ -4,7 +4,7 @@
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0.
+ * https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
@@ -18,6 +18,7 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -60,7 +61,7 @@ class ContainerFlowResolvedSearchPlanTest {
 	}
 
 	@Test
-	void overrideFamilyRetainsEveryConcreteMember() throws Exception {
+	void overrideFamilyRetainsMembersAndCallerContinuationIntent() throws Exception {
 		IJavaProject project= proxy(IJavaProject.class, "project", null); //$NON-NLS-1$
 		ICompilationUnit unit= unit(project, "Source.java"); //$NON-NLS-1$
 		IMethod root= proxy(IMethod.class, "root", unit); //$NON-NLS-1$
@@ -86,14 +87,19 @@ class ContainerFlowResolvedSearchPlanTest {
 
 		assertTrue(result.complete());
 		assertEquals(List.of(override, root), searchedTargets);
-		assertEquals(List.of("override", "root"), //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(4, result.resolvedPlan().targets().size());
+		assertEquals(Set.of("override", "root"), //$NON-NLS-1$ //$NON-NLS-2$
 				result.resolvedPlan().targets().stream()
 						.map(ResolvedSearchTarget::javaElementHandle)
-						.sorted()
-						.toList());
-		assertTrue(result.resolvedPlan().targets().stream()
-				.allMatch(target -> target.searchKind()
-						== SearchKind.METHOD_OVERRIDE_FAMILY));
+						.collect(java.util.stream.Collectors.toSet()));
+		for (String handle : List.of("override", "root")) { //$NON-NLS-1$ //$NON-NLS-2$
+			assertEquals(
+					Set.of(SearchKind.METHOD_OVERRIDE_FAMILY, SearchKind.METHOD_CALLERS),
+					result.resolvedPlan().targets().stream()
+							.filter(target -> handle.equals(target.javaElementHandle()))
+							.map(ResolvedSearchTarget::searchKind)
+							.collect(java.util.stream.Collectors.toSet()));
+		}
 	}
 
 	private static ContainerFlowScopeSearch search(

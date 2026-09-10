@@ -4,12 +4,13 @@
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0.
+ * https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
 package org.sandbox.jdt.container.api;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -53,6 +54,19 @@ class ContainerFlowContinuationPlanTest {
 		assertTrue(plan.complete());
 		assertThrows(UnsupportedOperationException.class,
 				() -> plan.roots().clear());
+	}
+
+	@Test
+	void sameSourceValueCanContinueToDistinctOverrideTargets() {
+		ContinuationRoot first= callRoot("first-method"); //$NON-NLS-1$
+		ContinuationRoot second= callRoot("second-method"); //$NON-NLS-1$
+
+		ContainerFlowContinuationPlan plan=
+				new ContainerFlowContinuationPlan(List.of(first, second), List.of());
+
+		assertTrue(plan.complete());
+		assertEquals(2, plan.roots().size());
+		assertFalse(first.stableKey().equals(second.stableKey()));
 	}
 
 	@Test
@@ -105,6 +119,17 @@ class ContainerFlowContinuationPlanTest {
 
 		assertThrows(IllegalArgumentException.class,
 				() -> new ContainerFlowContinuationPlan(List.of(root, root), List.of()));
+	}
+
+	private static ContinuationRoot callRoot(String targetHandle) {
+		return new ContinuationRoot(
+				"parameter:method:0", //$NON-NLS-1$
+				ContinuationKind.CALL_ARGUMENT,
+				Relationship.ROOT_TO_BOUNDARY,
+				EdgeKind.ARGUMENT_TO_PARAMETER,
+				"Caller.java", //$NON-NLS-1$
+				targetHandle,
+				profile("values")); //$NON-NLS-1$
 	}
 
 	private static ContainerUsageProfile profile(String name) {

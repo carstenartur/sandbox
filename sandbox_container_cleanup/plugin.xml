@@ -12,5 +12,8 @@
 		<cleanUp
 				class="org.sandbox.jdt.container.cleanup.internal.ui.fix.ContainerCleanUp"
 				id="org.sandbox.jdt.ui.cleanup.container_contracts"/>
+		<cleanUp
+				class="org.sandbox.jdt.container.cleanup.internal.ui.fix.CoordinatedContainerCleanUp"
+				id="org.sandbox.jdt.ui.cleanup.container_contracts.closed_source_parameter_migration"/>
 	</extension>
 </plugin>
