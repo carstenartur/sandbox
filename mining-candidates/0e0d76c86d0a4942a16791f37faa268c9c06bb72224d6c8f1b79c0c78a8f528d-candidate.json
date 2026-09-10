@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0e0d76c86d0a4942a16791f37faa268c9c06bb72224d6c8f1b79c0c78a8f528d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$receiver.getInput() :: instanceof($receiver, \"org.eclipse.jdt.internal.ui.infoviews.AbstractInfoView\")\n\u003d\u003e\n$receiver.getOrignalInput()\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.infoviews;\n\nimport org.eclipse.jdt.core.IJavaElement;\n\npublic class AbstractInfoView {\n    protected IJavaElement fCurrentViewInput;\n    AbstractInfoView fInfoView; // Assume this field is initialized\n\n    protected IJavaElement getInput() {\n        return fCurrentViewInput;\n    }\n\n    public void someMethod() {\n        IJavaElement inputElement \u003d fInfoView.getInput();\n        System.out.println(getInput()); // Implicit \u0027this\u0027\n    }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.infoviews;\n\nimport org.eclipse.jdt.core.IJavaElement;\n\npublic class AbstractInfoView {\n    protected IJavaElement fCurrentViewInput;\n    AbstractInfoView fInfoView; // Assume this field is initialized\n\n    protected IJavaElement getInput() {\n        return fCurrentViewInput;\n    }\n\n    public void someMethod() {\n        IJavaElement inputElement \u003d fInfoView.getOrignalInput();\n        System.out.println(getOrignalInput()); // Implicit \u0027this\u0027\n    }\n}\n",
+  "negativeExample": "package com.example;\n\npublic class AnotherClass {\n    public String getInput() {\n        return \"some string\";\n    }\n\n    public void process() {\n        String data \u003d getInput(); // Should not be changed\n        AnotherClass obj \u003d new AnotherClass();\n        String otherData \u003d obj.getInput(); // Should not be changed\n    }\n}\n",
+  "targetHintFile": "api-rename.sandbox-hint",
+  "sourceCommit": "7de40e2480d04f5baf1c504c4261daea04f08447",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Rename",
+  "summary": "Rename calls to `getInput()` to `getOrignalInput()` for objects whose type is `org.eclipse.jdt.internal.ui.infoviews.AbstractInfoView` or its subtypes.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-10T02:27:09.091626680Z",
+  "ruleFingerprint": "sha256:39a8b1cdb7bba3b993b3ef56439d0135a4262303b7866c019ed63a534bd934ca",
+  "behaviorFingerprint": "sha256:c1e4fd72f0bf6a5f8735860880f9aa28cc48ae24f1f46d7df97a41603d01747e",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type AbstractInfoView must be defined in its own file",
+    "verifiedAt": "2026-09-10T02:27:16.173173939Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

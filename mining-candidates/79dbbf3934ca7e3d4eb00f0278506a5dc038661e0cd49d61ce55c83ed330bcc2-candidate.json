@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "79dbbf3934ca7e3d4eb00f0278506a5dc038661e0cd49d61ce55c83ed330bcc2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jdt.internal.ui.text.correction.NullAnnotationsCorrectionProcessor.addNullAnnotationInSignatureProposal($context, $problem, $proposals, false, $isArgumentProblem)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.text.correction.NullAnnotationsCorrectionProcessor.addNullAnnotationInSignatureProposal($context, $problem, $proposals, org.eclipse.jdt.internal.corext.fix.NullAnnotationsRewriteOperations.ChangeKind.LOCAL, $isArgumentProblem)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jdt.ui.text.java.IInvocationContext;\nimport org.eclipse.jdt.ui.text.java.IProblemLocation;\nimport java.util.Collection;\nimport org.eclipse.jdt.internal.ui.text.correction.NullAnnotationsCorrectionProcessor;\n\npublic class Example {\n    void foo(IInvocationContext context, IProblemLocation problem, Collection proposals, boolean isArgumentProblem) {\n        NullAnnotationsCorrectionProcessor.addNullAnnotationInSignatureProposal(context, problem, proposals, false, isArgumentProblem);\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jdt.ui.text.java.IInvocationContext;\nimport org.eclipse.jdt.ui.text.java.IProblemLocation;\nimport java.util.Collection;\nimport org.eclipse.jdt.internal.corext.fix.NullAnnotationsRewriteOperations.ChangeKind;\nimport org.eclipse.jdt.internal.ui.text.correction.NullAnnotationsCorrectionProcessor;\n\npublic class Example {\n    void foo(IInvocationContext context, IProblemLocation problem, Collection proposals, boolean isArgumentProblem) {\n        NullAnnotationsCorrectionProcessor.addNullAnnotationInSignatureProposal(context, problem, proposals, ChangeKind.LOCAL, isArgumentProblem);\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jdt.ui.text.java.IInvocationContext;\nimport org.eclipse.jdt.ui.text.java.IProblemLocation;\nimport java.util.Collection;\nimport org.eclipse.jdt.internal.corext.fix.NullAnnotationsRewriteOperations.ChangeKind;\nimport org.eclipse.jdt.internal.ui.text.correction.NullAnnotationsCorrectionProcessor;\n\npublic class Example {\n    void foo(IInvocationContext context, IProblemLocation problem, Collection proposals, boolean isArgumentProblem) {\n        NullAnnotationsCorrectionProcessor.addNullAnnotationInSignatureProposal(context, problem, proposals, ChangeKind.LOCAL, isArgumentProblem);\n        NullAnnotationsCorrectionProcessor.addNullAnnotationInSignatureProposal(context, problem, proposals, true, isArgumentProblem);\n    }\n}",
+  "targetHintFile": "api-migration.sandbox-hint",
+  "sourceCommit": "17c7783177bc359beb03a7575237fd347cc3ba49",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Migration",
+  "summary": "Replaced boolean literal \u0027false\u0027 with \u0027ChangeKind.LOCAL\u0027 in addNullAnnotationInSignatureProposal method call, reflecting an API signature change from boolean flag to enum.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-10T02:27:09.119171957Z",
+  "ruleFingerprint": "sha256:891eced4247311ee418e4dbf451d4f0086c0bf79ee1d7f10eea45c7a26a07deb",
+  "behaviorFingerprint": "sha256:2fb7edd27e8ac7c465439c05327a049a7c5230c69ca4f9e9b5029aab9e1cac99",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.jdt.ui cannot be resolved",
+    "verifiedAt": "2026-09-10T02:27:16.187828050Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

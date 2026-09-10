@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 4: The import org.eclipse.jface.text.ITextViewer cannot be resolved",
-    "verifiedAt": "2026-09-09T02:38:38.816137647Z",
+    "verifiedAt": "2026-09-10T02:27:15.732946319Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

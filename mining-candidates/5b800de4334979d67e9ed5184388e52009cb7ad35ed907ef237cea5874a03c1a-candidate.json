@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5b800de4334979d67e9ed5184388e52009cb7ad35ed907ef237cea5874a03c1a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n\u003c!id: java-completion-triggers.add-semicolon-to-method-triggers\u003e\n\u003c!description: Add semicolon as a trigger character for method completion proposals with arguments.\u003e\n\u003c!severity: HINT\u003e\n*/\nchar[] $field \u003d new char[] { \u0027(\u0027, \u0027-\u0027, \u0027 \u0027 };\n\u003d\u003e\nchar[] $field \u003d new char[] { \u0027;\u0027, \u0027(\u0027, \u0027-\u0027, \u0027 \u0027 };\n:: isField($field) \u0026\u0026 matchesAny($field, \"METHOD_WITH_ARGUMENTS_TRIGGERS\")\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\npublic class JavaMethodCompletionProposal {\n    protected final static char[] METHOD_TRIGGERS\u003d new char[] { \u0027;\u0027, \u0027,\u0027, \u0027.\u0027, \u0027\\t\u0027, \u0027[\u0027 };\n    protected final static char[] METHOD_WITH_ARGUMENTS_TRIGGERS\u003d new char[] { \u0027(\u0027, \u0027-\u0027, \u0027 \u0027 };\n    protected final static char[] METHOD_NAME_TRIGGERS\u003d new char[] { \u0027;\u0027 };\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.java;\n\npublic class JavaMethodCompletionProposal {\n    protected final static char[] METHOD_TRIGGERS\u003d new char[] { \u0027;\u0027, \u0027,\u0027, \u0027.\u0027, \u0027\\t\u0027, \u0027[\u0027 };\n    protected final static char[] METHOD_WITH_ARGUMENTS_TRIGGERS\u003d new char[] { \u0027;\u0027, \u0027(\u0027, \u0027-\u0027, \u0027 \u0027 };\n    protected final static char[] METHOD_NAME_TRIGGERS\u003d new char[] { \u0027;\u0027 };\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.java;\n\npublic class JavaMethodCompletionProposal {\n    // Should not match: different content\n    protected final static char[] METHOD_WITH_ARGUMENTS_TRIGGERS\u003d new char[] { \u0027;\u0027, \u0027(\u0027, \u0027-\u0027, \u0027 \u0027 }; \n    // Should not match: different field name, even if content is identical\n    protected final static char[] OTHER_TRIGGERS\u003d new char[] { \u0027(\u0027, \u0027-\u0027, \u0027 \u0027 };\n}",
+  "targetHintFile": "java-completion-triggers.sandbox-hint",
+  "sourceCommit": "5e31c82b5bb5f1917b0be5a3c6da4b901a6e527d",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Array Literal Modification",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-10T02:27:09.034525982Z",
+  "ruleFingerprint": "sha256:8564ff8fb4c134237a2771833453c73fef09afbb3ebe07d2dc70564ff032eb29",
+  "behaviorFingerprint": "sha256:7ff568920f6021976bc5fa2e73510b38320288c10ee75250c1b650542eff8fad",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type JavaMethodCompletionProposal must be defined in its own file",
+    "verifiedAt": "2026-09-10T02:27:16.145314768Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
