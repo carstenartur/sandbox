@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1368,
+        "files": 1399,
         "matches": 75,
         "rules": 11
       }
@@ -949,7 +949,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessContents.java",
-      "line": 626,
+      "line": 687,
       "matchedCode": "entry.getValue().stream().map(QuickAccessElement::getId).collect(Collectors.toList())"
     },
     {
@@ -957,7 +957,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessContents.java",
-      "line": 656,
+      "line": 717,
       "matchedCode": "elementsPerProvider.getValue().stream().map(element -> matcher.match(element,finalFilter,provider)).filter(Objects::nonNull).sorted(BY_RELEVANCE).collect(Collectors.toList())"
     },
     {
@@ -1496,7 +1496,7 @@
       "hintFile": "stream-performance",
       "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
       "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java",
-      "line": 193,
+      "line": 191,
       "matchedCode": "dataholder.entrySet().stream().forEach(entry -> {\n  System.out.println(entry.getKey() + \"\\t\" + ASTNode.nodeClassForType(entry.getKey().getNodeType()));\n  System.out.println(\"===>\" + entry.getValue().get(\"init\"));\n  System.out.println();\n}\n)",
       "suggestedReplacement": "dataholder.entrySet().forEach(entry -> {\n  System.out.println(entry.getKey() + \"\\\\t\" + ASTNode.nodeClassForType(entry.getKey().getNodeType()));\n  System.out.println(\"===>\" + entry.getValue().get(\"init\"));\n  System.out.println();\n}\n)"
     },
@@ -1505,7 +1505,7 @@
       "hintFile": "stream-performance",
       "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
       "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java",
-      "line": 241,
+      "line": 239,
       "matchedCode": "dataholder.entrySet().stream().forEach(entry -> {\n  System.out.println(\"=============\");\n  System.out.println(entry.getKey());\n  System.out.println(\"init ===>\" + entry.getValue().get(\"init\"));\n  System.out.println(\"while ===>\" + entry.getValue().get(\"while\"));\n  System.out.println(\"next ===>\" + entry.getValue().get(\"next\"));\n  System.out.println(\"name ===>\" + entry.getValue().get(\"name\"));\n  System.out.println();\n}\n)",
       "suggestedReplacement": "dataholder.entrySet().forEach(entry -> {\n  System.out.println(\"=============\");\n  System.out.println(entry.getKey());\n  System.out.println(\"init ===>\" + entry.getValue().get(\"init\"));\n  System.out.println(\"while ===>\" + entry.getValue().get(\"while\"));\n  System.out.println(\"next ===>\" + entry.getValue().get(\"next\"));\n  System.out.println(\"name ===>\" + entry.getValue().get(\"name\"));\n  System.out.println();\n}\n)"
     },
@@ -1569,6 +1569,14 @@
       "file": "sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java",
       "line": 205,
       "matchedCode": "group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candidateId.equals(request.requestId())).sorted().collect(Collectors.joining(\", \"))"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/StreamChainToLoopTest.java",
+      "line": 94,
+      "matchedCode": "cleanups.clone()"
     },
     {
       "repository": "sandbox",
@@ -1760,7 +1768,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java",
-      "line": 201,
+      "line": 274,
       "matchedCode": "fixes.clone()"
     },
     {
@@ -1768,7 +1776,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java",
-      "line": 623,
+      "line": 696,
       "matchedCode": "fixes.clone()"
     },
     {
@@ -1960,7 +1968,7 @@
       "hintFile": "string-isblank",
       "rule": "string-isblank1",
       "file": "sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java",
-      "line": 43,
+      "line": 44,
       "matchedCode": "parts[0].trim().isEmpty()",
       "suggestedReplacement": "parts[0].isBlank()"
     },
@@ -1969,7 +1977,7 @@
       "hintFile": "string-isblank",
       "rule": "string-isblank1",
       "file": "sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java",
-      "line": 43,
+      "line": 44,
       "matchedCode": "parts[1].trim().isEmpty()",
       "suggestedReplacement": "parts[1].isBlank()"
     },
@@ -2005,7 +2013,7 @@
       "hintFile": "string-isblank",
       "rule": "string-isblank1",
       "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
-      "line": 101,
+      "line": 104,
       "matchedCode": "parts[0].trim().isEmpty()",
       "suggestedReplacement": "parts[0].isBlank()"
     },
@@ -2014,7 +2022,7 @@
       "hintFile": "string-isblank",
       "rule": "string-isblank1",
       "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
-      "line": 101,
+      "line": 104,
       "matchedCode": "parts[1].trim().isEmpty()",
       "suggestedReplacement": "parts[1].isBlank()"
     },
@@ -2039,7 +2047,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java",
-      "line": 351,
+      "line": 354,
       "matchedCode": "computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collectors.toList())"
     },
     {
@@ -2057,14 +2065,6 @@
       "file": "sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java",
       "line": 87,
       "matchedCode": "computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(Collectors.toList())"
-    },
-    {
-      "repository": "sandbox",
-      "hintFile": "modernize-java9",
-      "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
-      "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/ui/fix/UseFunctionalCallCleanUpCore.java",
-      "line": 108,
-      "matchedCode": "computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Collectors.toList())"
     },
     {
       "repository": "sandbox",

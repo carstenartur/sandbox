@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-09-08
+# Refactoring Mining Report — 2026-09-10
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1368 | 75 | 11 |
+| sandbox | 1399 | 75 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -158,8 +158,8 @@
 #### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CycleViewHandler.java:56` — `modelService.findElements(currentPerspective,null,MPart.class,null,EModelServ...`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CoolBarToTrimManager.java:313` — `workbenchTrimElements.stream().filter(e -> e instanceof MToolBar).map(e -> (M...`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessContents.java:626` — `entry.getValue().stream().map(QuickAccessElement::getId).collect(Collectors.t...`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessContents.java:656` — `elementsPerProvider.getValue().stream().map(element -> matcher.match(element,...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessContents.java:687` — `entry.getValue().stream().map(QuickAccessElement::getId).collect(Collectors.t...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessContents.java:717` — `elementsPerProvider.getValue().stream().map(element -> matcher.match(element,...`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/quickaccess/QuickAccessExtensionManager.java:177` — `Arrays.stream(Platform.getExtensionRegistry().getConfigurationElementsFor(EXT...`
 
 ### eclipse.platform
@@ -240,8 +240,8 @@
 - `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/preferences/LlmSecureCredentialsStoreTest.java:65` — `store.values().isEmpty()` → `store.isEmpty()`
 
 #### Rule: `stream-performance` → `stream-performance.collection-stream-foreach.to-collection-foreach`
-- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:193` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(entry....` → `dataholder.entrySet().forEach(entry -> {   System.out.println(entry.getKey() ...`
-- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:241` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println("=====...` → `dataholder.entrySet().forEach(entry -> {   System.out.println("============="...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:191` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(entry....` → `dataholder.entrySet().forEach(entry -> {   System.out.println(entry.getKey() ...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:239` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println("=====...` → `dataholder.entrySet().forEach(entry -> {   System.out.println("============="...`
 - `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:152` — `VisitorEnum.stream().forEach(ve -> {   hv.add(ve,(node,holder) -> {     holde...` → `VisitorEnum.forEach(ve -> {   hv.add(ve,(node,holder) -> {     holder.merge(V...`
 - `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:188` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(entry....` → `dataholder.entrySet().forEach(entry -> {   System.out.println(entry.getKey()....`
 - `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:230` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println("Posit...` → `dataholder.entrySet().forEach(entry -> {   System.out.println("Position " + e...`
@@ -255,6 +255,7 @@
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java:205` — `group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candi...`
 
 #### Rule: `arrays` → `arrays.clone.review`
+- `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/StreamChainToLoopTest.java:94` — `cleanups.clone()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:343` — `BUNDLED_LIBRARIES.clone()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:352` — `DISABLED_BUNDLED_LIBRARIES.clone()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/Pattern.java:73` — `constraints.clone()`
@@ -271,8 +272,8 @@
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:97` — `transformedBytes.clone()`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:208` — `bom.clone()`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:213` — `bom.clone()`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:201` — `fixes.clone()`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:623` — `fixes.clone()`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:274` — `fixes.clone()`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:696` — `fixes.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:54` — `applicationArguments.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:59` — `applicationArguments.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:70` — `applicationArguments.clone()`
@@ -311,21 +312,20 @@
 - `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:3301` — `Arrays.asList(fieldNames).contains(node.getName().getIdentifier())`
 
 #### Rule: `string-isblank` → `string-isblank1`
-- `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:43` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
-- `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:43` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
+- `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:44` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
+- `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:44` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
 - `sandbox_xml_cleanup_test/src/test/java/org/sandbox/jdt/ui/tests/quickfix/XMLTestUtils.java:120` — `child.getTextContent().trim().isEmpty()` → `child.getTextContent().isBlank()`
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JavaHelperView.java:329` — `newText.trim().isEmpty()` → `newText.isBlank()`
 - `sandbox_triggerpattern/src/org/sandbox/jdt/internal/ui/wizard/NewRuleWizardPage.java:459` — `sourcePatternText.getText().trim().isEmpty()` → `sourcePatternText.getText().isBlank()`
-- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:101` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
-- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:101` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
+- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:104` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
+- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:104` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
 
 #### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
 - `sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java:89` — `computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect...`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/ui/fix/XMLCleanUpCore.java:94` — `computeFixSet().stream().map(XMLCleanUpFixCore::toString).collect(Collectors....`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:351` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:354` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
 - `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:148` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
 - `sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java:87` — `computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(C...`
-- `sandbox_functional_converter/src/org/sandbox/jdt/internal/ui/fix/UseFunctionalCallCleanUpCore.java:108` — `computeFixSet().stream().map(UseFunctionalCallFixCore::toString).collect(Coll...`
 - `sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java:83` — `computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collect...`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:179` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
 
