@@ -48,17 +48,18 @@ public final class ClosedSourceParameterMigrationFix {
 		Objects.requireNonNull(plan, "plan"); //$NON-NLS-1$
 
 		ICompilationUnit primary= unit.getPrimary();
-		String handle= (primary == null ? unit : primary).getHandleIdentifier();
+		ICompilationUnit validationUnit= primary == null ? unit : primary;
+		String handle= validationUnit.getHandleIdentifier();
 		List<CompilationUnitRewriteOperationWithSourceRange> operations=
 				new ArrayList<>();
 		if (handle.equals(plan.callerPlan().compilationUnitHandle())) {
 			operations.add(ContainerLocalRewriteFix.operation(
-					unit, root, plan.callerPlan()));
+					validationUnit, root, plan.callerPlan()));
 		}
 		for (ContainerParameterRewritePlan parameterPlan : plan.parameterPlans()) {
 			if (handle.equals(parameterPlan.compilationUnitHandle())) {
 				operations.add(ContainerParameterRewriteFix.operation(
-						unit, root, parameterPlan));
+						validationUnit, root, parameterPlan));
 			}
 		}
 		if (operations.isEmpty()) {
