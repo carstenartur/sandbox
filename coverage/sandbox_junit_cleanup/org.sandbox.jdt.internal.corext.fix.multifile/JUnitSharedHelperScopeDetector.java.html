@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnitSharedHelperScopeDetector.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.multifile</a> &gt; <span class="el_source">JUnitSharedHelperScopeDetector.java</span></div><h1>JUnitSharedHelperScopeDetector.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.multifile;
+
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_ASSERT;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_ASSUME;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IMethod;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTRequestor;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
+import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
+
+/**
+ * Discovers narrow source-owned assertion and assumption helper wrappers whose
+ * complete caller closure can be delegated to the shared multi-file search.
+ *
+ * &lt;p&gt;The first supported contract is deliberately conservative: one private
+ * helper, or one package-private static helper, with a {@code void} body that
+ * consists of exactly one direct JUnit 4 {@code Assert} or {@code Assume}
+ * invocation. Public/protected helpers and overridable package-private instance
+ * methods remain outside automatic migration. Recursive helper chains and
+ * signature changes are later Phase-4 slices.&lt;/p&gt;
+ */
+public final class JUnitSharedHelperScopeDetector {
+
+	private record HelperCandidate(IMethod method, String bindingKey, ICompilationUnit compilationUnit) {
+	}
+
+	private JUnitSharedHelperScopeDetector() {
+	}
+
+	/**
+	 * Finds direct assertion/assumption wrapper methods reachable from the current
+	 * scope and returns their declarations as reverse-reference search seeds.
+	 */
+	public static JUnitScopeCandidateDetector.SearchSeeds findSearchSeeds(IJavaProject project,
+			Collection&lt;ICompilationUnit&gt; currentScope, boolean migrateAssertions,
+			boolean migrateAssumptions, IProgressMonitor monitor) {
+<span class="pc bpc" id="L70" title="3 of 6 branches missed.">		if (project == null || currentScope == null || currentScope.isEmpty()</span>
+<span class="fc bfc" id="L71" title="All 4 branches covered.">				|| !migrateAssertions &amp;&amp; !migrateAssumptions) {</span>
+<span class="fc" id="L72">			return empty();</span>
+		}
+<span class="fc" id="L74">		checkCanceled(monitor);</span>
+<span class="fc" id="L75">		List&lt;ICompilationUnit&gt; selected= normalize(project, currentScope);</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">		if (selected.isEmpty()) {</span>
+<span class="nc" id="L77">			return empty();</span>
+		}
+
+<span class="fc" id="L80">		Map&lt;String, HelperCandidate&gt; possible= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L81">		Map&lt;String, HelperCandidate&gt; verified= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L82">		Map&lt;String, CompilationUnit&gt; selectedRoots= parse(project, selected, monitor);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		for (Map.Entry&lt;String, CompilationUnit&gt; entry : selectedRoots.entrySet()) {</span>
+<span class="fc" id="L84">			collect(entry.getValue(), project, migrateAssertions, migrateAssumptions, possible, verified);</span>
+		}
+
+<span class="fc" id="L87">		Set&lt;ICompilationUnit&gt; declarationUnits= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">		for (HelperCandidate candidate : possible.values()) {</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">			if (!verified.containsKey(candidate.bindingKey())) {</span>
+<span class="fc" id="L90">				declarationUnits.add(candidate.compilationUnit());</span>
+			}
+		}
+<span class="fc bfc" id="L93" title="All 2 branches covered.">		if (!declarationUnits.isEmpty()) {</span>
+<span class="fc" id="L94">			Map&lt;String, CompilationUnit&gt; declarationRoots= parse(project, new ArrayList&lt;&gt;(declarationUnits), monitor);</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">			for (CompilationUnit root : declarationRoots.values()) {</span>
+<span class="fc" id="L96">				verifyKnownDeclarations(root, project, migrateAssertions, migrateAssumptions, possible, verified);</span>
+			}
+		}
+<span class="fc" id="L99">		checkCanceled(monitor);</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (verified.isEmpty()) {</span>
+<span class="fc" id="L101">			return empty();</span>
+		}
+
+<span class="fc" id="L104">		List&lt;IJavaElement&gt; elements= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L105">		Set&lt;ICompilationUnit&gt; directUnits= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">		for (HelperCandidate helper : verified.values()) {</span>
+<span class="fc" id="L107">			elements.add(helper.method());</span>
+<span class="fc" id="L108">			directUnits.add(helper.compilationUnit());</span>
+		}
+<span class="fc" id="L110">		return new JUnitScopeCandidateDetector.SearchSeeds(true, true, elements,</span>
+<span class="fc" id="L111">				new ArrayList&lt;&gt;(directUnits));</span>
+	}
+
+	private static void collect(CompilationUnit root, IJavaProject project, boolean migrateAssertions,
+			boolean migrateAssumptions, Map&lt;String, HelperCandidate&gt; possible,
+			Map&lt;String, HelperCandidate&gt; verified) {
+<span class="fc" id="L117">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(MethodDeclaration node) {
+<span class="fc" id="L120">				IMethodBinding binding= declaration(node.resolveBinding());</span>
+<span class="fc" id="L121">				HelperCandidate candidate= candidate(binding, project);</span>
+<span class="fc bfc" id="L122" title="All 4 branches covered.">				if (candidate != null &amp;&amp; isDirectWrapper(node, migrateAssertions, migrateAssumptions)) {</span>
+<span class="fc" id="L123">					verified.putIfAbsent(candidate.bindingKey(), candidate);</span>
+				}
+<span class="fc" id="L125">				return true;</span>
+			}
+
+			@Override
+			public boolean visit(MethodInvocation node) {
+<span class="fc" id="L130">				HelperCandidate candidate= candidate(declaration(node.resolveMethodBinding()), project);</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">				if (candidate != null) {</span>
+<span class="fc" id="L132">					possible.putIfAbsent(candidate.bindingKey(), candidate);</span>
+				}
+<span class="fc" id="L134">				return true;</span>
+			}
+		});
+<span class="fc" id="L137">	}</span>
+
+	private static void verifyKnownDeclarations(CompilationUnit root, IJavaProject project,
+			boolean migrateAssertions, boolean migrateAssumptions,
+			Map&lt;String, HelperCandidate&gt; possible, Map&lt;String, HelperCandidate&gt; verified) {
+<span class="fc" id="L142">		root.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(MethodDeclaration node) {
+<span class="fc" id="L145">				IMethodBinding binding= declaration(node.resolveBinding());</span>
+<span class="pc bpc" id="L146" title="2 of 4 branches missed.">				if (binding == null || !possible.containsKey(binding.getKey())) {</span>
+<span class="nc" id="L147">					return true;</span>
+				}
+<span class="fc" id="L149">				HelperCandidate candidate= candidate(binding, project);</span>
+<span class="pc bpc" id="L150" title="2 of 4 branches missed.">				if (candidate != null &amp;&amp; isDirectWrapper(node, migrateAssertions, migrateAssumptions)) {</span>
+<span class="fc" id="L151">					verified.putIfAbsent(candidate.bindingKey(), candidate);</span>
+				}
+<span class="fc" id="L153">				return true;</span>
+			}
+		});
+<span class="fc" id="L156">	}</span>
+
+	private static boolean isDirectWrapper(MethodDeclaration method, boolean migrateAssertions,
+			boolean migrateAssumptions) {
+<span class="fc" id="L160">		IMethodBinding helper= declaration(method.resolveBinding());</span>
+<span class="pc bpc" id="L161" title="3 of 6 branches missed.">		if (helper == null || helper.isConstructor() || method.getBody() == null</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">				|| !&quot;void&quot;.equals(helper.getReturnType().getQualifiedName()) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">				|| method.getBody().statements().size() != 1</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">				|| !(method.getBody().statements().get(0) instanceof ExpressionStatement statement)</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">				|| !(statement.getExpression() instanceof MethodInvocation invocation)) {</span>
+<span class="fc" id="L166">			return false;</span>
+		}
+<span class="fc" id="L168">		IMethodBinding invoked= declaration(invocation.resolveMethodBinding());</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">		ITypeBinding owner= invoked == null ? null : invoked.getDeclaringClass();</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">		String ownerName= owner == null ? null : owner.getErasure().getQualifiedName();</span>
+<span class="fc bfc" id="L171" title="All 4 branches covered.">		return migrateAssertions &amp;&amp; ORG_JUNIT_ASSERT.equals(ownerName)</span>
+<span class="pc bpc" id="L172" title="1 of 4 branches missed.">				|| migrateAssumptions &amp;&amp; ORG_JUNIT_ASSUME.equals(ownerName);</span>
+	}
+
+	private static HelperCandidate candidate(IMethodBinding binding, IJavaProject project) {
+<span class="fc bfc" id="L176" title="All 2 branches covered.">		if (!eligible(binding)) {</span>
+<span class="fc" id="L177">			return null;</span>
+		}
+<span class="fc" id="L179">		IJavaElement javaElement= binding.getJavaElement();</span>
+<span class="pc bpc" id="L180" title="2 of 4 branches missed.">		if (!(javaElement instanceof IMethod method) || !method.exists()</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">				|| !project.equals(method.getJavaProject())) {</span>
+<span class="nc" id="L182">			return null;</span>
+		}
+<span class="fc" id="L184">		IJavaElement ancestor= method.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
+<span class="pc bpc" id="L185" title="2 of 4 branches missed.">		if (!(ancestor instanceof ICompilationUnit unit) || !unit.exists()) {</span>
+<span class="nc" id="L186">			return null;</span>
+		}
+<span class="fc" id="L188">		return new HelperCandidate(method, binding.getKey(), unit.getPrimary());</span>
+	}
+
+	private static boolean eligible(IMethodBinding binding) {
+<span class="pc bpc" id="L192" title="2 of 4 branches missed.">		if (binding == null || binding.isConstructor()) {</span>
+<span class="nc" id="L193">			return false;</span>
+		}
+<span class="fc" id="L195">		int modifiers= binding.getModifiers();</span>
+<span class="fc bfc" id="L196" title="All 4 branches covered.">		if (Modifier.isPublic(modifiers) || Modifier.isProtected(modifiers)) {</span>
+<span class="fc" id="L197">			return false;</span>
+		}
+<span class="fc bfc" id="L199" title="All 4 branches covered.">		return Modifier.isPrivate(modifiers) || Modifier.isStatic(modifiers);</span>
+	}
+
+	private static IMethodBinding declaration(IMethodBinding binding) {
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">		return binding == null ? null : binding.getMethodDeclaration();</span>
+	}
+
+	private static List&lt;ICompilationUnit&gt; normalize(IJavaProject project,
+			Collection&lt;ICompilationUnit&gt; units) {
+<span class="fc" id="L208">		Map&lt;String, ICompilationUnit&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="pc bpc" id="L210" title="3 of 6 branches missed.">			if (unit != null &amp;&amp; unit.exists() &amp;&amp; project.equals(unit.getJavaProject())) {</span>
+<span class="fc" id="L211">				ICompilationUnit primary= unit.getPrimary();</span>
+<span class="fc" id="L212">				result.put(primary.getHandleIdentifier(), primary);</span>
+			}
+		}
+<span class="fc" id="L215">		return new ArrayList&lt;&gt;(result.values());</span>
+	}
+
+	private static Map&lt;String, CompilationUnit&gt; parse(IJavaProject project, List&lt;ICompilationUnit&gt; units,
+			IProgressMonitor monitor) {
+<span class="fc" id="L220">		Map&lt;String, CompilationUnit&gt; roots= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L221">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L222">		parser.setProject(project);</span>
+<span class="fc" id="L223">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L224">		parser.setBindingsRecovery(IASTSharedValues.SHARED_BINDING_RECOVERY);</span>
+<span class="fc" id="L225">		parser.setStatementsRecovery(IASTSharedValues.SHARED_AST_STATEMENT_RECOVERY);</span>
+<span class="fc" id="L226">		parser.setCompilerOptions(RefactoringASTParser.getCompilerOptions(project));</span>
+<span class="fc" id="L227">		parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {</span>
+			@Override
+			public void acceptAST(ICompilationUnit source, CompilationUnit ast) {
+<span class="fc" id="L230">				roots.put(source.getPrimary().getHandleIdentifier(), ast);</span>
+<span class="fc" id="L231">			}</span>
+<span class="fc" id="L232">		}, monitor);</span>
+<span class="fc" id="L233">		return roots;</span>
+	}
+
+	private static JUnitScopeCandidateDetector.SearchSeeds empty() {
+<span class="fc" id="L237">		return new JUnitScopeCandidateDetector.SearchSeeds(false, true, List.of(), List.of());</span>
+	}
+
+	private static void checkCanceled(IProgressMonitor monitor) {
+<span class="pc bpc" id="L241" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="nc" id="L242">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L244">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

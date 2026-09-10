@@ -495,7 +495,7 @@ sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix,Close
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix,JUnit4MigrationPresets,10,255,2,6,2,80,2,9,0,7
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.ui.fix,MultiFixMessages,0,4,0,0,0,2,0,1,0,1
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.ui.fix,JUnitCleanUp,14,17,0,0,2,5,2,3,2,3
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.ui.fix,JUnitCleanUpCore,240,1048,56,122,58,232,48,64,1,22
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.ui.fix,JUnitCleanUpCore,244,1065,60,122,58,237,50,64,1,22
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.ui.fix,ReportingJUnitCleanUpCore,16,48,0,2,3,12,2,3,2,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitScopeCandidateDetector.SearchSeeds,7,21,0,0,2,4,1,1,1,1
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitBestEffortSupport.RuleKind,0,34,0,0,0,4,0,1,0,1
@@ -528,6 +528,9 @@ sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multi
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitMultiFilePlanner.RuleKind,0,34,0,0,0,4,0,1,0,1
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitMultiFilePlanner,174,921,34,94,37,194,30,54,2,18
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitMultiFilePlanner.ResourceChain,0,12,0,0,0,3,0,1,0,1
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitSharedHelperScopeDetector.new ASTRequestor() {...},0,15,0,0,0,3,0,2,0,2
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitSharedHelperScopeDetector.new ASTVisitor() {...},2,53,4,4,1,7,4,2,0,2
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitSharedHelperScopeDetector.new ASTVisitor() {...},0,63,0,6,0,10,0,6,0,3
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnit3HierarchyMigration.InvocationMigration,0,15,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnit4ParameterizedPlanner.Rejected,0,7,0,0,0,3,0,1,0,1
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitMultiFilePlanner.new ASTVisitor() {...},0,50,1,1,0,9,1,2,0,2
@@ -543,6 +546,7 @@ sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multi
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitBestEffortSupport.new ASTRequestor() {...},0,15,0,0,0,3,0,2,0,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitBestEffortSupport.new ASTVisitor() {...},2,126,4,20,0,32,4,10,0,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitBestEffortSupport.new ASTVisitor() {...},20,193,8,32,5,43,7,16,0,3
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitSharedHelperScopeDetector,18,431,26,64,5,79,26,31,0,12
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnit3HarnessSemantics.Rejection,0,17,0,0,0,4,0,1,0,1
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnit4ParameterizedPlan,17,114,6,12,4,17,6,8,0,5
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitMultiFileRewriteOperation.FieldEdit,0,12,0,0,0,1,0,1,0,1
@@ -558,6 +562,7 @@ sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multi
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitScopeCandidateDetector,106,281,37,41,16,58,35,17,4,9
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnit3HierarchyScopeDetector,58,170,24,18,14,36,20,7,1,5
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitMultiFilePlanner.MigrationResult,0,15,0,0,0,4,0,1,0,1
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitSharedHelperScopeDetector.HelperCandidate,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnit4ParameterizedPlanner,98,2214,110,284,13,387,107,129,2,37
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnitLifecycleScopeDetector.1.new ASTVisitor() {...},40,114,10,8,10,16,8,3,0,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.multifile,JUnit3HierarchyScopeDetector.1.new ASTVisitor() {...},102,57,12,4,18,11,8,2,0,2
