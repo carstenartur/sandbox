@@ -12,6 +12,7 @@ package org.sandbox.jdt.container.cleanup.internal.ui.preferences.cleanup;
 
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.APPEND_ARRAY_TO_LIST;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLEANUP;
+import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.CLOSED_SOURCE_PARAMETER_MIGRATION;
 import static org.sandbox.jdt.container.cleanup.internal.corext.fix.ContainerCleanUpOptions.UNIQUE_SEQUENCE_TO_SET;
 
 import java.util.Map;
@@ -24,8 +25,9 @@ import org.eclipse.swt.widgets.Group;
 import org.eclipse.ui.PlatformUI;
 
 import org.sandbox.jdt.container.cleanup.internal.ui.fix.ContainerCleanUp;
+import org.sandbox.jdt.container.cleanup.internal.ui.fix.CoordinatedContainerCleanUp;
 
-/** Preference page for locally executable semantic container migrations. */
+/** Preference page for local and explicitly project-closed semantic container migrations. */
 public final class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 
 	private static final String[] FALSE_TRUE= {
@@ -38,7 +40,10 @@ public final class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 
 	@Override
 	protected AbstractCleanUp[] createPreviewCleanUps(Map<String, String> values) {
-		return new AbstractCleanUp[] { new ContainerCleanUp(values) };
+		return new AbstractCleanUp[] {
+				new ContainerCleanUp(values),
+				new CoordinatedContainerCleanUp(values)
+		};
 	}
 
 	@Override
@@ -69,9 +74,15 @@ public final class SandboxCodeTabPage extends AbstractCleanUpTabPage {
 				ContainerCleanUpMessages.ContainerTabPage_UniqueSequenceToSet,
 				UNIQUE_SEQUENCE_TO_SET,
 				FALSE_TRUE);
+		CheckboxPreference closedSourceParameter= createCheckboxPref(
+				group,
+				numColumns - 1,
+				ContainerCleanUpMessages.ContainerTabPage_ClosedSourceParameterMigration,
+				CLOSED_SOURCE_PARAMETER_MIGRATION,
+				FALSE_TRUE);
 		registerSlavePreference(
 				master,
-				new CheckboxPreference[] { arrayToList, sequenceToSet });
+				new CheckboxPreference[] { arrayToList, sequenceToSet, closedSourceParameter });
 		registerPreference(master);
 	}
 }

@@ -178,7 +178,9 @@ public final class ContainerFlowContinuationLinker {
 			return Optional.of(continuationNode);
 		}
 		FlowNode exactId= nodesById.get(root.boundaryNodeId());
-		if (exactId != null && compatibleBoundary(exactId, target)) {
+		if (exactId != null
+				&& exactId.javaElementHandle().equals(target.javaElementHandle())
+				&& compatibleBoundary(exactId, target)) {
 			return Optional.of(exactId);
 		}
 		List<FlowNode> matches= nodes.stream()

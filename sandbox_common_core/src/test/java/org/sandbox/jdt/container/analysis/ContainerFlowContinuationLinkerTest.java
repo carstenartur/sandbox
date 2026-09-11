@@ -82,6 +82,42 @@ class ContainerFlowContinuationLinkerTest {
 	}
 
 	@Test
+	void linksCallerThroughOverrideMemberToExactOverrideParameter() {
+		FlowNode argument= local("local:argument", "argument-binding", "Caller.java", 10); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		FlowNode rootParameter= parameter(
+				"parameter:root:0", "root-binding", "root-key", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"Contract.java", "root-handle", 0, true, 20); //$NON-NLS-1$ //$NON-NLS-2$
+		FlowNode overrideParameter= parameter(
+				"parameter:override:0", "override-binding", "override-key", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"Implementation.java", "override-handle", 0, true, 30); //$NON-NLS-1$ //$NON-NLS-2$
+		ContainerFlowComponent component= component(
+				rootParameter,
+				List.of(argument, rootParameter, overrideParameter),
+				ClosureStatus.REQUIRES_SCOPE_EXPANSION);
+		ContinuationRoot root= new ContinuationRoot(
+				rootParameter.stableId(),
+				ContinuationKind.CALL_ARGUMENT,
+				Relationship.ROOT_TO_BOUNDARY,
+				EdgeKind.ARGUMENT_TO_PARAMETER,
+				"Caller.java", //$NON-NLS-1$
+				"override-handle", //$NON-NLS-1$
+				profile("argument-binding", "argument", 10)); //$NON-NLS-1$ //$NON-NLS-2$
+		ResolvedSearchTarget target= methodTarget(
+				rootParameter.stableId(), SearchKind.METHOD_CALLERS, 0, "override-handle"); //$NON-NLS-1$
+
+		ContainerFlowComponent linked= linker.link(
+				component,
+				new ContainerFlowContinuationPlan(List.of(root), List.of()),
+				new ResolvedContainerFlowSearchPlan(List.of(target)));
+
+		assertEquals(ClosureStatus.LOCAL_CLOSED, linked.closureStatus());
+		assertEquals(1, linked.edges().size());
+		assertEquals(argument.stableId(), linked.edges().get(0).sourceNodeId());
+		assertEquals(overrideParameter.stableId(), linked.edges().get(0).targetNodeId());
+		assertTrue(linked.diagnostics().isEmpty());
+	}
+
+	@Test
 	void linksReturnBoundaryToResultConsumer() {
 		FlowNode returned= new FlowNode(
 				"return:method-key", NodeKind.RETURN_POSITION, "", "method-key", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -199,13 +235,21 @@ class ContainerFlowContinuationLinkerTest {
 			String sourceNodeId,
 			SearchKind kind,
 			int signatureIndex) {
+		return methodTarget(sourceNodeId, kind, signatureIndex, "method-handle"); //$NON-NLS-1$
+	}
+
+	private static ResolvedSearchTarget methodTarget(
+			String sourceNodeId,
+			SearchKind kind,
+			int signatureIndex,
+			String methodHandle) {
 		return new ResolvedSearchTarget(
 				sourceNodeId,
 				kind,
 				TargetKind.METHOD,
 				"parameter-binding", //$NON-NLS-1$
 				"method-key", //$NON-NLS-1$
-				"method-handle", //$NON-NLS-1$
+				methodHandle,
 				signatureIndex,
 				"Continue method flow"); //$NON-NLS-1$
 	}
