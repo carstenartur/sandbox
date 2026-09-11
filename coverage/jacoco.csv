@@ -45,7 +45,7 @@ sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,ContainerLocal
 sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,CleanUpImpact,0,79,0,0,0,18,0,5,0,5
 sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,ContainerLocalArgumentTransferVerifier.SourceRange,0,9,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,AbstractPlannedMultiFileCleanUp,79,550,17,35,17,115,18,26,2,16
-sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,ClosedSourceParameterMigrationFix,2,73,1,7,1,19,1,5,0,2
+sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,ClosedSourceParameterMigrationFix,4,80,2,8,1,21,2,5,0,2
 sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,ContainerFlowScopeSearch.Result,0,25,0,0,0,5,0,1,0,1
 sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,SourceRootKind,0,74,0,4,0,14,0,4,0,2
 sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,ContainerLocalRewriteFix,0,36,0,0,0,9,0,3,0,3
@@ -73,7 +73,7 @@ sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,UniqueSequence
 sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,ContainerLocalRewriteResolver.AppendPair,0,18,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,ContainerLocalRewriteResolver,143,907,86,116,29,203,78,55,1,31
 sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,ContainerParameterRewriteResolver.SourceRange,0,9,0,0,0,1,0,1,0,1
-sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,ContainerFlowScopeSearch,175,348,36,32,44,115,29,22,3,13
+sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,ContainerFlowScopeSearch,175,363,36,32,44,124,29,23,3,14
 sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,GeneratedNameAllocator.new ASTVisitor() {...},0,36,0,6,0,5,0,5,0,2
 sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,MultiFileCandidateDiagnostic,2,71,1,1,1,13,1,3,0,3
 sandbox_coverage/sandbox_common,org.sandbox.jdt.cleanup.multifile,GeneratedNameAllocator.new ASTVisitor() {...},45,235,5,35,5,34,4,18,0,2
@@ -1096,7 +1096,7 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerPara
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerUsageProfile.AccessProfile,2,46,3,3,0,3,3,3,0,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerUsageProfile.IterationSemantics,0,39,0,0,0,7,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerFlowGraph.FlowDiagnostic,0,26,0,0,0,5,0,1,0,1
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerFlowContinuationPlan.ContinuationRoot,5,88,1,9,1,15,1,6,0,2
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerFlowContinuationPlan.ContinuationRoot,5,90,1,9,1,15,1,6,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerUsageProfile,2,102,1,1,0,16,1,2,0,2
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ContainerParameterRewritePlan.DiagnosticKind,0,57,0,0,0,10,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.api,ResolvedContainerFlowSearchPlan,8,64,2,6,1,15,2,7,0,5
@@ -1289,7 +1289,7 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ClosedSo
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerLocalRewritePlanner,14,559,15,71,3,119,15,47,0,17
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ClosedSourceParameterMigrationPlanner.Topology,0,18,0,0,0,4,0,1,0,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerBridgePolicyPlanner,17,258,6,32,4,63,6,23,0,7
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowContinuationLinker,115,465,39,52,19,98,37,33,4,19
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowContinuationLinker,84,502,38,55,14,105,35,36,2,21
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ContainerFlowSearchSeedExtractor,50,106,8,10,17,30,8,7,1,4
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,ClosedSourceParameterMigrationPlanner,107,491,37,55,27,117,41,20,4,11
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.container.analysis,LocalDequeSequenceAnalyzer,58,444,53,75,14,87,51,30,1,16

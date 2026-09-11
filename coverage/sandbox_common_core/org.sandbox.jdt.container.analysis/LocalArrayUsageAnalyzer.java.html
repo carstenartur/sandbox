@@ -142,7 +142,7 @@ import org.sandbox.jdt.internal.common.ReferenceHolder;
 <span class="fc" id="L142">		Expression reference= completeReferenceExpression(name, targetBindingKey);</span>
 <span class="fc" id="L143">		ASTNode parent= reference.getParent();</span>
 <span class="fc bfc" id="L144" title="All 2 branches covered.">		if (isLengthRead(reference, parent)) {</span>
-<span class="fc" id="L145">			accumulator.lengthRead(reference);</span>
+<span class="fc" id="L145">			accumulator.lengthRead(parent);</span>
 <span class="pc bpc" id="L146" title="1 of 4 branches missed.">		} else if (parent instanceof ArrayAccess access &amp;&amp; access.getArray() == reference) {</span>
 <span class="fc" id="L147">			classifyArrayAccess(access, reference, accumulator);</span>
 <span class="fc bfc" id="L148" title="All 2 branches covered.">		} else if (parent instanceof EnhancedForStatement enhancedFor</span>

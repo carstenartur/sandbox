@@ -4,7 +4,7 @@
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0.
+ * https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
@@ -71,10 +71,15 @@ public record ContainerFlowContinuationPlan(
 			}
 <span class="fc" id="L72">		}</span>
 
-		/** Stable deterministic key used for result de-duplication. */
+		/**
+		 * Stable deterministic key used for result de-duplication. The exact Java-model
+		 * target is part of the identity because one source value may legitimately flow
+		 * to several members of an override family.
+		 */
 		public String stableKey() {
-<span class="fc" id="L76">			return boundaryNodeId + '|' + kind + '|' + relationship + '|'</span>
-<span class="fc" id="L77">					+ compilationUnitHandle + '|' + profile.identity().bindingKey();</span>
+<span class="fc" id="L80">			return boundaryNodeId + '|' + kind + '|' + relationship + '|'</span>
+					+ compilationUnitHandle + '|' + exactTargetHandle + '|'
+<span class="fc" id="L82">					+ profile.identity().bindingKey();</span>
 		}
 	}
 
@@ -87,59 +92,59 @@ public record ContainerFlowContinuationPlan(
 			int sourceStart,
 			int sourceLength) {
 
-<span class="fc" id="L90">		public ContinuationDiagnostic {</span>
-<span class="fc" id="L91">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L92">			compilationUnitHandle= requiredText(</span>
+<span class="fc" id="L95">		public ContinuationDiagnostic {</span>
+<span class="fc" id="L96">			Objects.requireNonNull(kind, &quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L97">			compilationUnitHandle= requiredText(</span>
 					compilationUnitHandle, &quot;compilationUnitHandle&quot;); //$NON-NLS-1$
-<span class="fc" id="L94">			exactTargetHandle= requiredText(exactTargetHandle, &quot;exactTargetHandle&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L95">			message= requiredText(message, &quot;message&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L96" title="2 of 4 branches missed.">			if (sourceStart &lt; 0 || sourceLength &lt; 0) {</span>
-<span class="nc" id="L97">				throw new IllegalArgumentException(&quot;Source range must not be negative&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L99">			exactTargetHandle= requiredText(exactTargetHandle, &quot;exactTargetHandle&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L100">			message= requiredText(message, &quot;message&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L101" title="2 of 4 branches missed.">			if (sourceStart &lt; 0 || sourceLength &lt; 0) {</span>
+<span class="nc" id="L102">				throw new IllegalArgumentException(&quot;Source range must not be negative&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L99">		}</span>
+<span class="fc" id="L104">		}</span>
 	}
 
-<span class="fc" id="L102">	public enum ContinuationKind {</span>
-<span class="fc" id="L103">		FIELD,</span>
-<span class="fc" id="L104">		PARAMETER_DECLARATION,</span>
-<span class="fc" id="L105">		CALL_ARGUMENT,</span>
-<span class="fc" id="L106">		RETURN_EXPRESSION,</span>
-<span class="fc" id="L107">		RETURN_CONSUMER</span>
+<span class="fc" id="L107">	public enum ContinuationKind {</span>
+<span class="fc" id="L108">		FIELD,</span>
+<span class="fc" id="L109">		PARAMETER_DECLARATION,</span>
+<span class="fc" id="L110">		CALL_ARGUMENT,</span>
+<span class="fc" id="L111">		RETURN_EXPRESSION,</span>
+<span class="fc" id="L112">		RETURN_CONSUMER</span>
 	}
 
-<span class="fc" id="L110">	public enum Relationship {</span>
-<span class="fc" id="L111">		SAME_NODE,</span>
-<span class="fc" id="L112">		ROOT_TO_BOUNDARY,</span>
-<span class="fc" id="L113">		BOUNDARY_TO_ROOT</span>
+<span class="fc" id="L115">	public enum Relationship {</span>
+<span class="fc" id="L116">		SAME_NODE,</span>
+<span class="fc" id="L117">		ROOT_TO_BOUNDARY,</span>
+<span class="fc" id="L118">		BOUNDARY_TO_ROOT</span>
 	}
 
-<span class="fc" id="L116">	public enum DiagnosticKind {</span>
-<span class="fc" id="L117">		INVALID_SIGNATURE_INDEX,</span>
-<span class="fc" id="L118">		NON_ARRAY_VALUE,</span>
-<span class="fc" id="L119">		UNRESOLVED_BINDING,</span>
-<span class="fc" id="L120">		UNSUPPORTED_ARGUMENT,</span>
-<span class="fc" id="L121">		UNSUPPORTED_RETURN_EXPRESSION,</span>
-<span class="fc" id="L122">		UNSUPPORTED_RETURN_CONSUMER,</span>
-<span class="fc" id="L123">		METHOD_REFERENCE,</span>
-<span class="fc" id="L124">		TARGET_NOT_FOUND</span>
+<span class="fc" id="L121">	public enum DiagnosticKind {</span>
+<span class="fc" id="L122">		INVALID_SIGNATURE_INDEX,</span>
+<span class="fc" id="L123">		NON_ARRAY_VALUE,</span>
+<span class="fc" id="L124">		UNRESOLVED_BINDING,</span>
+<span class="fc" id="L125">		UNSUPPORTED_ARGUMENT,</span>
+<span class="fc" id="L126">		UNSUPPORTED_RETURN_EXPRESSION,</span>
+<span class="fc" id="L127">		UNSUPPORTED_RETURN_CONSUMER,</span>
+<span class="fc" id="L128">		METHOD_REFERENCE,</span>
+<span class="fc" id="L129">		TARGET_NOT_FOUND</span>
 	}
 
 	private static void validateUniqueRoots(List&lt;ContinuationRoot&gt; roots) {
-<span class="fc" id="L128">		Set&lt;String&gt; keys= new HashSet&lt;&gt;();</span>
-<span class="fc bfc" id="L129" title="All 2 branches covered.">		for (ContinuationRoot root : roots) {</span>
-<span class="fc bfc" id="L130" title="All 2 branches covered.">			if (!keys.add(root.stableKey())) {</span>
-<span class="fc" id="L131">				throw new IllegalArgumentException(</span>
-<span class="fc" id="L132">						&quot;Duplicate container flow continuation root: &quot; + root.stableKey()); //$NON-NLS-1$</span>
+<span class="fc" id="L133">		Set&lt;String&gt; keys= new HashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		for (ContinuationRoot root : roots) {</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">			if (!keys.add(root.stableKey())) {</span>
+<span class="fc" id="L136">				throw new IllegalArgumentException(</span>
+<span class="fc" id="L137">						&quot;Duplicate container flow continuation root: &quot; + root.stableKey()); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L134">		}</span>
-<span class="fc" id="L135">	}</span>
+<span class="fc" id="L139">		}</span>
+<span class="fc" id="L140">	}</span>
 
 	private static String requiredText(String value, String fieldName) {
-<span class="fc" id="L138">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
-<span class="pc bpc" id="L139" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
-<span class="nc" id="L140">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L143">		String text= Objects.requireNonNull(value, fieldName).strip();</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L145">			throw new IllegalArgumentException(fieldName + &quot; must not be empty&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L142">		return text;</span>
+<span class="fc" id="L147">		return text;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

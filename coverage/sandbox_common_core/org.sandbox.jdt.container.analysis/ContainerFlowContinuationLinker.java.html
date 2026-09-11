@@ -178,47 +178,49 @@ import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.ResolvedSea
 <span class="fc" id="L178">			return Optional.of(continuationNode);</span>
 		}
 <span class="fc" id="L180">		FlowNode exactId= nodesById.get(root.boundaryNodeId());</span>
-<span class="pc bpc" id="L181" title="2 of 4 branches missed.">		if (exactId != null &amp;&amp; compatibleBoundary(exactId, target)) {</span>
-<span class="fc" id="L182">			return Optional.of(exactId);</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">		if (exactId != null</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">				&amp;&amp; exactId.javaElementHandle().equals(target.javaElementHandle())</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">				&amp;&amp; compatibleBoundary(exactId, target)) {</span>
+<span class="fc" id="L184">			return Optional.of(exactId);</span>
 		}
-<span class="nc" id="L184">		List&lt;FlowNode&gt; matches= nodes.stream()</span>
-<span class="nc" id="L185">				.filter(node -&gt; node.javaElementHandle().equals(target.javaElementHandle()))</span>
-<span class="nc" id="L186">				.filter(node -&gt; compatibleBoundary(node, target))</span>
-<span class="nc" id="L187">				.toList();</span>
-<span class="nc bnc" id="L188" title="All 2 branches missed.">		return matches.size() == 1 ? Optional.of(matches.get(0)) : Optional.empty();</span>
+<span class="fc" id="L186">		List&lt;FlowNode&gt; matches= nodes.stream()</span>
+<span class="fc" id="L187">				.filter(node -&gt; node.javaElementHandle().equals(target.javaElementHandle()))</span>
+<span class="fc" id="L188">				.filter(node -&gt; compatibleBoundary(node, target))</span>
+<span class="fc" id="L189">				.toList();</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">		return matches.size() == 1 ? Optional.of(matches.get(0)) : Optional.empty();</span>
 	}
 
 	private static boolean compatibleBoundary(
 			FlowNode node,
 			ResolvedSearchTarget target) {
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">		if (target.searchKind() == SearchKind.FIELD_REFERENCES) {</span>
-<span class="nc bnc" id="L195" title="All 2 branches missed.">			return node.kind() == NodeKind.FIELD;</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">		if (target.searchKind() == SearchKind.FIELD_REFERENCES) {</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">			return node.kind() == NodeKind.FIELD;</span>
 		}
-<span class="fc bfc" id="L197" title="All 2 branches covered.">		if (target.signatureIndex() &gt;= 0) {</span>
-<span class="pc bpc" id="L198" title="1 of 2 branches missed.">			return (node.kind() == NodeKind.PARAMETER</span>
-<span class="pc bnc" id="L199" title="All 2 branches missed.">					|| node.kind() == NodeKind.EXTERNAL_PARAMETER)</span>
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">					&amp;&amp; node.signatureIndex() == target.signatureIndex();</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">		if (target.signatureIndex() &gt;= 0) {</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">			return (node.kind() == NodeKind.PARAMETER</span>
+<span class="pc bnc" id="L201" title="All 2 branches missed.">					|| node.kind() == NodeKind.EXTERNAL_PARAMETER)</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">					&amp;&amp; node.signatureIndex() == target.signatureIndex();</span>
 		}
-<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		return node.kind() == NodeKind.RETURN_POSITION;</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		return node.kind() == NodeKind.RETURN_POSITION;</span>
 	}
 
 	private static ClosureStatus closureStatus(
 			ContainerFlowComponent component,
 			ContainerFlowContinuationPlan continuations,
 			boolean rejected) {
-<span class="pc bpc" id="L209" title="1 of 4 branches missed.">		if (component.closureStatus() == ClosureStatus.REJECTED || rejected) {</span>
-<span class="fc" id="L210">			return ClosureStatus.REJECTED;</span>
+<span class="pc bpc" id="L211" title="1 of 4 branches missed.">		if (component.closureStatus() == ClosureStatus.REJECTED || rejected) {</span>
+<span class="fc" id="L212">			return ClosureStatus.REJECTED;</span>
 		}
-<span class="pc bpc" id="L212" title="1 of 2 branches missed.">		if (component.closureStatus() == ClosureStatus.EXTERNAL_BOUNDARY) {</span>
-<span class="nc" id="L213">			return ClosureStatus.EXTERNAL_BOUNDARY;</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">		if (component.closureStatus() == ClosureStatus.EXTERNAL_BOUNDARY) {</span>
+<span class="nc" id="L215">			return ClosureStatus.EXTERNAL_BOUNDARY;</span>
 		}
-<span class="fc" id="L215">		boolean unresolvedSourceBoundary= component.nodes().stream()</span>
-<span class="fc bfc" id="L216" title="All 2 branches covered.">				.anyMatch(node -&gt; (node.kind() == NodeKind.PARAMETER</span>
-<span class="fc bfc" id="L217" title="All 2 branches covered.">						|| node.kind() == NodeKind.RETURN_POSITION)</span>
-<span class="pc bpc" id="L218" title="1 of 2 branches missed.">						&amp;&amp; !node.sourceResolved());</span>
-<span class="pc bpc" id="L219" title="2 of 4 branches missed.">		return unresolvedSourceBoundary || !continuations.complete()</span>
-<span class="nc" id="L220">				? ClosureStatus.REQUIRES_SCOPE_EXPANSION</span>
-<span class="fc" id="L221">				: ClosureStatus.LOCAL_CLOSED;</span>
+<span class="fc" id="L217">		boolean unresolvedSourceBoundary= component.nodes().stream()</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">				.anyMatch(node -&gt; (node.kind() == NodeKind.PARAMETER</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">						|| node.kind() == NodeKind.RETURN_POSITION)</span>
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">						&amp;&amp; !node.sourceResolved());</span>
+<span class="pc bpc" id="L221" title="2 of 4 branches missed.">		return unresolvedSourceBoundary || !continuations.complete()</span>
+<span class="nc" id="L222">				? ClosureStatus.REQUIRES_SCOPE_EXPANSION</span>
+<span class="fc" id="L223">				: ClosureStatus.LOCAL_CLOSED;</span>
 	}
 
 	private static void addDiagnostic(
@@ -226,25 +228,25 @@ import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.ResolvedSea
 			Set&lt;String&gt; keys,
 			ContinuationRoot root,
 			String message) {
-<span class="fc" id="L229">		LocatedFlowDiagnostic diagnostic= new LocatedFlowDiagnostic(</span>
-<span class="fc" id="L230">				root.compilationUnitHandle(),</span>
+<span class="fc" id="L231">		LocatedFlowDiagnostic diagnostic= new LocatedFlowDiagnostic(</span>
+<span class="fc" id="L232">				root.compilationUnitHandle(),</span>
 				DiagnosticKind.UNCLASSIFIED_FLOW,
 				message,
-<span class="fc" id="L233">				root.profile().identity().sourceStart(),</span>
-<span class="fc" id="L234">				root.profile().identity().sourceLength());</span>
-<span class="pc bpc" id="L235" title="1 of 2 branches missed.">		if (keys.add(diagnosticKey(diagnostic))) {</span>
-<span class="fc" id="L236">			diagnostics.add(diagnostic);</span>
+<span class="fc" id="L235">				root.profile().identity().sourceStart(),</span>
+<span class="fc" id="L236">				root.profile().identity().sourceLength());</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">		if (keys.add(diagnosticKey(diagnostic))) {</span>
+<span class="fc" id="L238">			diagnostics.add(diagnostic);</span>
 		}
-<span class="fc" id="L238">	}</span>
+<span class="fc" id="L240">	}</span>
 
 	private static String edgeKey(LocatedFlowEdge edge) {
-<span class="fc" id="L241">		return edge.compilationUnitHandle() + '|' + edge.sourceNodeId() + '|'</span>
-<span class="fc" id="L242">				+ edge.targetNodeId() + '|' + edge.kind() + '|' + edge.sourceStart();</span>
+<span class="fc" id="L243">		return edge.compilationUnitHandle() + '|' + edge.sourceNodeId() + '|'</span>
+<span class="fc" id="L244">				+ edge.targetNodeId() + '|' + edge.kind() + '|' + edge.sourceStart();</span>
 	}
 
 	private static String diagnosticKey(LocatedFlowDiagnostic diagnostic) {
-<span class="fc" id="L246">		return diagnostic.compilationUnitHandle() + '|' + diagnostic.kind() + '|'</span>
-<span class="fc" id="L247">				+ diagnostic.message() + '|' + diagnostic.sourceStart();</span>
+<span class="fc" id="L248">		return diagnostic.compilationUnitHandle() + '|' + diagnostic.kind() + '|'</span>
+<span class="fc" id="L249">				+ diagnostic.message() + '|' + diagnostic.sourceStart();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

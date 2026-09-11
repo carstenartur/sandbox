@@ -47,26 +47,28 @@ public final class ClosedSourceParameterMigrationFix {
 <span class="fc" id="L47">		Objects.requireNonNull(root, &quot;root&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L48">		Objects.requireNonNull(plan, &quot;plan&quot;); //$NON-NLS-1$</span>
 
-<span class="fc" id="L50">		String handle= unit.getHandleIdentifier();</span>
-<span class="fc" id="L51">		List&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations=</span>
-<span class="fc" id="L52">				new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L53" title="All 2 branches covered.">		if (handle.equals(plan.callerPlan().compilationUnitHandle())) {</span>
-<span class="fc" id="L54">			operations.add(ContainerLocalRewriteFix.operation(</span>
-<span class="fc" id="L55">					unit, root, plan.callerPlan()));</span>
+<span class="fc" id="L50">		ICompilationUnit primary= unit.getPrimary();</span>
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">		ICompilationUnit validationUnit= primary == null ? unit : primary;</span>
+<span class="fc" id="L52">		String handle= validationUnit.getHandleIdentifier();</span>
+<span class="fc" id="L53">		List&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations=</span>
+<span class="fc" id="L54">				new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">		if (handle.equals(plan.callerPlan().compilationUnitHandle())) {</span>
+<span class="fc" id="L56">			operations.add(ContainerLocalRewriteFix.operation(</span>
+<span class="fc" id="L57">					validationUnit, root, plan.callerPlan()));</span>
 		}
-<span class="fc bfc" id="L57" title="All 2 branches covered.">		for (ContainerParameterRewritePlan parameterPlan : plan.parameterPlans()) {</span>
-<span class="fc bfc" id="L58" title="All 2 branches covered.">			if (handle.equals(parameterPlan.compilationUnitHandle())) {</span>
-<span class="fc" id="L59">				operations.add(ContainerParameterRewriteFix.operation(</span>
-<span class="fc" id="L60">						unit, root, parameterPlan));</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">		for (ContainerParameterRewritePlan parameterPlan : plan.parameterPlans()) {</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">			if (handle.equals(parameterPlan.compilationUnitHandle())) {</span>
+<span class="fc" id="L61">				operations.add(ContainerParameterRewriteFix.operation(</span>
+<span class="fc" id="L62">						validationUnit, root, parameterPlan));</span>
 			}
 		}
-<span class="pc bpc" id="L63" title="1 of 2 branches missed.">		if (operations.isEmpty()) {</span>
-<span class="nc" id="L64">			return null;</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">		if (operations.isEmpty()) {</span>
+<span class="nc" id="L66">			return null;</span>
 		}
-<span class="fc" id="L66">		return new CompilationUnitRewriteOperationsFixCore(</span>
-<span class="fc" id="L67">				DESCRIPTION,</span>
-<span class="fc" id="L68">				root,</span>
-<span class="fc" id="L69">				operations.toArray(CompilationUnitRewriteOperationWithSourceRange[]::new));</span>
+<span class="fc" id="L68">		return new CompilationUnitRewriteOperationsFixCore(</span>
+<span class="fc" id="L69">				DESCRIPTION,</span>
+<span class="fc" id="L70">				root,</span>
+<span class="fc" id="L71">				operations.toArray(CompilationUnitRewriteOperationWithSourceRange[]::new));</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
