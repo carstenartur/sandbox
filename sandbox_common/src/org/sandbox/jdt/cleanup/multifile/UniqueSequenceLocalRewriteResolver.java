@@ -137,11 +137,12 @@ final class UniqueSequenceLocalRewriteResolver {
 	}
 
 	private static boolean isExpectedTarget(UniqueSequenceLocalRewritePlan plan) {
+		OrderRequirement order= plan.targetContract().orderRequirement();
 		return SET.equals(plan.targetInterfaceType())
 				&& LINKED_HASH_SET.equals(plan.targetImplementationType())
 				&& plan.targetContract().shape() == ContainerShape.SET
 				&& plan.targetContract().mutability() == Mutability.MUTABLE
-				&& plan.targetContract().orderRequirement() == OrderRequirement.ENCOUNTER
+				&& (order == OrderRequirement.ENCOUNTER || order == OrderRequirement.NONE)
 				&& plan.targetContract().uniquenessRequirement()
 						== UniquenessRequirement.REQUIRED;
 	}

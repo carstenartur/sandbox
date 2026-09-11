@@ -28,6 +28,7 @@ public final class ContainerRuleRegistry {
 
 	public static final String ARRAY_APPEND_SEQUENCE= "semantic.array.append.sequence"; //$NON-NLS-1$
 	public static final String UNIQUE_SEQUENCE_SET= "semantic.sequence.unique.set"; //$NON-NLS-1$
+	public static final String UNORDERED_UNIQUE_SEQUENCE_SET= "semantic.sequence.unique.unordered-set"; //$NON-NLS-1$
 	public static final String FIFO_SEQUENCE_DEQUE= "semantic.sequence.fifo.deque"; //$NON-NLS-1$
 	public static final String LIFO_SEQUENCE_DEQUE= "semantic.sequence.lifo.deque"; //$NON-NLS-1$
 	public static final String COLLECTION_BULK_ADD= "existing.collection.bulk-add"; //$NON-NLS-1$
@@ -59,6 +60,11 @@ public final class ContainerRuleRegistry {
 	/** Returns the descriptor for manually unique sequence to ordered-set migration. */
 	public static ContainerRuleDescriptor uniqueSequenceSet() {
 		return RULES.get(UNIQUE_SEQUENCE_SET);
+	}
+
+	/** Returns the descriptor for manually unique sequence with no observed order. */
+	public static ContainerRuleDescriptor unorderedUniqueSequenceSet() {
+		return RULES.get(UNORDERED_UNIQUE_SEQUENCE_SET);
 	}
 
 	/** Returns the descriptor for FIFO list-to-deque analysis. */
@@ -107,8 +113,14 @@ public final class ContainerRuleRegistry {
 				ContainerShape.SET,
 				RuleOwnership.NOVEL,
 				"", //$NON-NLS-1$
-				"The rule changes duplicate semantics in the declared contract " //$NON-NLS-1$
-						+ "and may require coordinated signature migration.")); //$NON-NLS-1$
+				"The rule changes duplicate semantics in the declared contract while preserving observed encounter order.")); //$NON-NLS-1$
+		register(rules, new ContainerRuleDescriptor(
+				UNORDERED_UNIQUE_SEQUENCE_SET,
+				ContainerShape.LIST,
+				ContainerShape.SET,
+				RuleOwnership.NOVEL,
+				"", //$NON-NLS-1$
+				"The complete local flow observes uniqueness but no element order, allowing an unordered set contract without an executable implementation choice.")); //$NON-NLS-1$
 		register(rules, new ContainerRuleDescriptor(
 				FIFO_SEQUENCE_DEQUE,
 				ContainerShape.LIST,

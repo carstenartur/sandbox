@@ -33,7 +33,7 @@ import org.sandbox.jdt.container.api.TargetContainerContract;
 import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 
-/** Infers the first manually-unique sequence to ordered-set contract. */
+/** Infers manually-unique sequence to set contracts without inventing order. */
 public final class UniqueSequenceContractInferrer {
 
 	/** Returns an explainable report-only recommendation for a proven local profile. */
@@ -43,24 +43,30 @@ public final class UniqueSequenceContractInferrer {
 			return Optional.empty();
 		}
 
+		boolean ordered= profile.orderRequirement() == OrderRequirement.ENCOUNTER;
 		TargetContainerContract target= new TargetContainerContract(
 				ContainerShape.SET,
-				OrderRequirement.ENCOUNTER,
+				profile.orderRequirement(),
 				UniquenessRequirement.REQUIRED,
 				Mutability.MUTABLE,
 				profile.nullContract(),
-				"Use an encounter-ordered mutable set for a sequence whose insertions already suppress duplicates."); //$NON-NLS-1$
+				ordered
+						? "Use an encounter-ordered mutable set for a sequence whose insertions already suppress duplicates." //$NON-NLS-1$
+						: "Use an unordered mutable set contract because the complete local flow observes uniqueness but not element order."); //$NON-NLS-1$
 
 		return Optional.of(new ContainerRecommendation(
 				profile,
 				target,
-				ContainerRuleRegistry.uniqueSequenceSet(),
+				ordered ? ContainerRuleRegistry.uniqueSequenceSet()
+						: ContainerRuleRegistry.unorderedUniqueSequenceSet(),
 				Confidence.HIGH,
 				AutomationLevel.REPORT_ONLY,
 				List.of(
 						assessment(
 								ContractProperty.ORDER,
-								"LinkedHashSet preserves the observed encounter order."), //$NON-NLS-1$
+								ordered
+										? "An encounter-ordered set preserves the observed iteration order." //$NON-NLS-1$
+										: "No classified operation observes element order, so the semantic target need not promise one."), //$NON-NLS-1$
 						assessment(
 								ContractProperty.UNIQUENESS,
 								"Every insertion suppresses duplicates and the element type has stable equality and hash semantics."), //$NON-NLS-1$
@@ -69,7 +75,7 @@ public final class UniqueSequenceContractInferrer {
 								"The target remains mutable during the same local use phase."), //$NON-NLS-1$
 						assessment(
 								ContractProperty.NULLS,
-								"ArrayList and LinkedHashSet both permit one null element; an unknown application policy remains unknown."), //$NON-NLS-1$
+								"The semantic target retains the source null contract; concrete implementation selection must preserve it."), //$NON-NLS-1$
 						assessment(
 								ContractProperty.ALIASING,
 								"Every local use was classified and no alias or publication was found."), //$NON-NLS-1$
@@ -89,13 +95,16 @@ public final class UniqueSequenceContractInferrer {
 				&& profile.access().append()
 				&& profile.access().membershipQuery()
 				&& !profile.access().hasPositionalSemantics()
-				&& profile.orderRequirement() == OrderRequirement.ENCOUNTER
+				&& (profile.orderRequirement() == OrderRequirement.ENCOUNTER
+						|| profile.orderRequirement() == OrderRequirement.NONE)
 				&& profile.uniquenessRequirement() == UniquenessRequirement.REQUIRED
 				&& profile.escapeLevel() == EscapeLevel.LOCAL
 				&& profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS
 				&& profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED
 				&& hasEvidence(profile, Kind.DUPLICATE_SUPPRESSION)
-				&& hasEvidence(profile, Kind.HASH_STABLE_COMPONENT);
+				&& hasEvidence(profile, Kind.HASH_STABLE_COMPONENT)
+				&& (profile.orderRequirement() != OrderRequirement.ENCOUNTER
+						|| hasEvidence(profile, Kind.ENCOUNTER_ITERATION));
 	}
 
 	private static boolean hasEvidence(ContainerUsageProfile profile, Kind kind) {
