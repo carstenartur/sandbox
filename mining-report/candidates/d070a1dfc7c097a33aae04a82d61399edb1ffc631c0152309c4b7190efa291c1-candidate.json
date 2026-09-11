@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d070a1dfc7c097a33aae04a82d61399edb1ffc631c0152309c4b7190efa291c1",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n\u003c!id: javaElementLine.getLineToGetLineNumber\u003e\n\u003c!description: Renames `JavaElementLine.getLine()` to `JavaElementLine.getLineNumber()`.\nThis reflects a method rename in Eclipse JDT internal API to clarify 0-based indexing.\n\u003e\n\u003c!severity: INFO\u003e\n\u003c!tags: method-rename, api-modernization\u003e\n*/\n$obj.getLine() :: instanceof($obj, \"org.eclipse.jdt.internal.ui.search.JavaElementLine\")\n\u003d\u003e $obj.getLineNumber()\n;;",
+  "beforeExample": "package test;\n\n// Assume org.eclipse.jdt.internal.ui.search.JavaElementLine is available on classpath.\n// For context, its mock definition might look like:\n/*\npackage org.eclipse.jdt.internal.ui.search;\npublic class JavaElementLine {\n    private int fLineNumber;\n    public JavaElementLine(Object element, int lineNumber, int lineStartOffset) {\n        this.fLineNumber \u003d lineNumber;\n    }\n    public int getLine() { return fLineNumber; }\n}\n*/\n\nimport org.eclipse.jdt.internal.ui.search.JavaElementLine;\n\npublic class MyCode {\n    public void process(JavaElementLine element) {\n        int lineNumber \u003d element.getLine();\n        System.out.println(\"Line: \" + lineNumber);\n    }\n}",
+  "afterExample": "package test;\n\n// Assume org.eclipse.jdt.internal.ui.search.JavaElementLine is available on classpath.\n// For context, its mock definition might look like:\n/*\npackage org.eclipse.jdt.internal.ui.search;\npublic class JavaElementLine {\n    private int fLineNumber;\n    public JavaElementLine(Object element, int lineNumber, int lineStartOffset) {\n        this.fLineNumber \u003d lineNumber;\n    }\n    public int getLineNumber() { return fLineNumber; }\n}\n*/\n\nimport org.eclipse.jdt.internal.ui.search.JavaElementLine;\n\npublic class MyCode {\n    public void process(JavaElementLine element) {\n        int lineNumber \u003d element.getLineNumber();\n        System.out.println(\"Line: \" + lineNumber);\n    }\n}",
+  "negativeExample": "package test;\n\n// A class with a getLine() method but not JavaElementLine\nclass CustomLineInfo {\n    public int getLine() { return 42; }\n}\n\npublic class OtherCode {\n    public void display(CustomLineInfo info) {\n        int line \u003d info.getLine(); // Should not be changed\n        System.out.println(\"Custom Line: \" + line);\n    }\n}",
+  "targetHintFile": "method-rename.sandbox-hint",
+  "sourceCommit": "b5d624f1845fb6bff7f13342aa09670074aa22ed",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Renames `JavaElementLine.getLine()` to `JavaElementLine.getLineNumber()` to reflect API change.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-11T02:27:12.638630101Z",
+  "ruleFingerprint": "sha256:3993dac3400ad11988367194b6f50c76dc281d06dade1a6869da157694f8a804",
+  "behaviorFingerprint": "sha256:840363413b567b5f42b7ef6f1c0d22a8b65abb35d06df24d73c6d32fa94f3d57",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 16: The import org.eclipse.jdt.internal.ui cannot be resolved",
+    "verifiedAt": "2026-09-11T02:27:19.571211520Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
