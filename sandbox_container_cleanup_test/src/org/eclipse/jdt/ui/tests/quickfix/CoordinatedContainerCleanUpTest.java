@@ -152,12 +152,15 @@ class CoordinatedContainerCleanUpTest {
 	}
 
 	@Test
-	void wrapperExposesMultiFileContractsWithoutSaveActionRegistration() {
+	void wrapperExposesMultiFileContractsWithoutSaveActionRegistration() throws Exception {
 		CoordinatedContainerCleanUp cleanup= new CoordinatedContainerCleanUp(Map.of(
 				CLEANUP, CleanUpOptions.TRUE,
 				CLOSED_SOURCE_PARAMETER_MIGRATION, CleanUpOptions.TRUE));
-		assertTrue(cleanup instanceof IMultiFileCleanUpScopeProvider);
-		assertTrue(cleanup instanceof IMultiFileCleanUpDiagnosticsProvider);
+		IMultiFileCleanUpScopeProvider scopeProvider= cleanup;
+		IMultiFileCleanUpDiagnosticsProvider diagnosticsProvider= cleanup;
+		assertTrue(scopeProvider.expandCleanUpScope(
+				context.getJavaProject(), List.of(), new NullProgressMonitor()).isEmpty());
+		assertEquals("", diagnosticsProvider.getLastPlanningDiagnosticsJson(context.getJavaProject())); //$NON-NLS-1$
 
 		var registry= Platform.getExtensionRegistry();
 		assertNotNull(registry);
