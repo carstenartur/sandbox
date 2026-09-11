@@ -278,8 +278,8 @@ public final class LocalEnumIndexedMembershipAnalyzer {
 
 	private static MethodDeclaration enclosingMethod(ASTNode node) {
 		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {
-			if (current instanceof MethodDeclaration method) {
-				return method;
+			if (current instanceof MethodDeclaration) {
+				return (MethodDeclaration) current;
 			}
 		}
 		return null;
