@@ -142,7 +142,7 @@ public final class LocalArrayUsageAnalyzer {
 		Expression reference= completeReferenceExpression(name, targetBindingKey);
 		ASTNode parent= reference.getParent();
 		if (isLengthRead(reference, parent)) {
-			accumulator.lengthRead(reference);
+			accumulator.lengthRead(parent);
 		} else if (parent instanceof ArrayAccess access && access.getArray() == reference) {
 			classifyArrayAccess(access, reference, accumulator);
 		} else if (parent instanceof EnhancedForStatement enhancedFor
