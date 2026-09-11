@@ -35,6 +35,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.JavaModelException;
 
 import org.sandbox.jdt.container.api.ContainerFlowSearchPlan;
+import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchKind;
 import org.sandbox.jdt.container.api.ContainerFlowSearchPlan.SearchSeed;
 import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan;
 import org.sandbox.jdt.container.api.ResolvedContainerFlowSearchPlan.ResolvedSearchTarget;
@@ -265,6 +266,13 @@ public final class ContainerFlowScopeSearch {
 		for (IMethod member : family.methods()) {
 			addTarget(member, targetsByHandle);
 			addResolved(seed, TargetKind.METHOD, member, resolvedByKey);
+			addResolved(
+					seed,
+					SearchKind.METHOD_CALLERS,
+					TargetKind.METHOD,
+					member,
+					"Continue through callers of every source override-family member.", //$NON-NLS-1$
+					resolvedByKey);
 		}
 		if (!family.complete()) {
 			rejectionReasons.addAll(family.rejectionReasons());
@@ -276,6 +284,16 @@ public final class ContainerFlowScopeSearch {
 			TargetKind targetKind,
 			IJavaElement element,
 			Map<String, ResolvedSearchTarget> resolvedByKey) {
+		addResolved(seed, seed.kind(), targetKind, element, seed.reason(), resolvedByKey);
+	}
+
+	private static void addResolved(
+			SearchSeed seed,
+			SearchKind searchKind,
+			TargetKind targetKind,
+			IJavaElement element,
+			String reason,
+			Map<String, ResolvedSearchTarget> resolvedByKey) {
 		if (element == null || !element.exists()) {
 			return;
 		}
@@ -285,13 +303,13 @@ public final class ContainerFlowScopeSearch {
 		}
 		ResolvedSearchTarget target= new ResolvedSearchTarget(
 				seed.sourceNodeId(),
-				seed.kind(),
+				searchKind,
 				targetKind,
 				seed.bindingKey(),
 				seed.ownerKey(),
 				handle,
 				seed.signatureIndex(),
-				seed.reason());
+				reason);
 		resolvedByKey.putIfAbsent(target.stableKey(), target);
 	}
 

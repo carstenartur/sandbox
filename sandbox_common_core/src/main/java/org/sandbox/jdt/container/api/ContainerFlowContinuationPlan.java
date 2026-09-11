@@ -4,7 +4,7 @@
  * This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License 2.0
  * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0.
+ * https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
@@ -71,10 +71,15 @@ public record ContainerFlowContinuationPlan(
 			}
 		}
 
-		/** Stable deterministic key used for result de-duplication. */
+		/**
+		 * Stable deterministic key used for result de-duplication. The exact Java-model
+		 * target is part of the identity because one source value may legitimately flow
+		 * to several members of an override family.
+		 */
 		public String stableKey() {
 			return boundaryNodeId + '|' + kind + '|' + relationship + '|'
-					+ compilationUnitHandle + '|' + profile.identity().bindingKey();
+					+ compilationUnitHandle + '|' + exactTargetHandle + '|'
+					+ profile.identity().bindingKey();
 		}
 	}
 

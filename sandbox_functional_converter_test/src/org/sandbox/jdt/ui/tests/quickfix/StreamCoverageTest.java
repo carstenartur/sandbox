@@ -21,6 +21,8 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.ui.text.correction.AssistContext;
 import org.eclipse.jdt.internal.ui.text.correction.proposals.FixCorrectionProposal;
 import org.eclipse.jdt.ui.text.java.IProblemLocation;
+import org.eclipse.ltk.core.refactoring.RefactoringCore;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.RepetitionInfo;
@@ -41,6 +43,11 @@ class StreamCoverageTest {
 	final StreamChainToLoopTest.ConversionContext context = new StreamChainToLoopTest.ConversionContext();
 	@TempDir
 	Path temporary;
+
+	@AfterEach
+	void flushUndoBeforeWorkspaceTeardown() {
+		RefactoringCore.getUndoManager().flush();
+	}
 
 	static Stream<Arguments> pipelines() {
 		Stream<Arguments> direct = Stream.of("enhanced_for", "iterator_while").flatMap(target -> Stream.of(
