@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "95a429c87e11d9f532ec6d0ef68c3d442f81a499",
-      "lastProcessedDate": "2026-09-10T02:27:07.646655066Z",
-      "totalProcessed": 5694,
+      "lastProcessedCommit": "06d69b4e9a453b31a9617a2d5c681e762376d562",
+      "lastProcessedDate": "2026-09-11T02:27:11.372766150Z",
+      "totalProcessed": 5823,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3314,6 +3314,33 @@
           "deferredAt": "2026-09-08T02:20:57.594539602Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "c34f9c7e211fcf5f1713cdd569cce4fed8a485e2",
+          "message": "Fixed Bug 393098: [extract method] Extracted method should be declared\nstatic if extracted expression is also used in an",
+          "diffLines": 28,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-11T02:24:54.181310594Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1879086c44e8179e125d1c613b6aeb74a0b9acae",
+          "message": "[1.8] Switch ASTs to JLS8",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-11T02:25:17.528487195Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5e64224cce6e1c08533fec6fcf0c3143d1e2a245",
+          "message": "Fixed Bug 241696: [quick fix] quickfix to iterate over a collection",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-11T02:26:13.582346354Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3468,7 +3495,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 5,
-        "API Modernization": 61,
+        "API Modernization": 62,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3534,7 +3561,7 @@
         "Redundant Code": 2,
         "Deprecated API Usage": 2,
         "UI State Management": 1,
-        "Constant Refactoring": 1,
+        "Constant Refactoring": 2,
         "Visibility Refactoring": 2,
         "String/Regex Modernization": 1,
         "Constant Renaming": 1,
@@ -3592,7 +3619,9 @@
         "Method Call Replacement": 2,
         "Array Literal Modification": 1,
         "Constant Update": 1,
-        "UI/Bidi Fix": 1
+        "UI/Bidi Fix": 1,
+        "Dead Code": 1,
+        "API Usage Modernization": 1
       },
       "exhaustedCategories": []
     },
@@ -3633,5 +3662,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 28465
+  "globalTotalProcessed": 28594
 }
