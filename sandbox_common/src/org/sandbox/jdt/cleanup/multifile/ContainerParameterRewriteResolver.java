@@ -120,7 +120,7 @@ final class ContainerParameterRewriteResolver {
 				unit,
 				plan,
 				EditKind.REPLACE_LENGTH_WITH_SIZE,
-				lengths.stream().map(ResolvedLength::expression).toList(),
+				lengths.stream().map(ResolvedLength::arrayExpression).toList(),
 				"array length occurrence count or source ranges changed"); //$NON-NLS-1$
 		verifyEditRanges(
 				unit,
