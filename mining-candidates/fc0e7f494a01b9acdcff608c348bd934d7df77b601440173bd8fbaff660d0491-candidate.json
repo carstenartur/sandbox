@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "fc0e7f494a01b9acdcff608c348bd934d7df77b601440173bd8fbaff660d0491",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "(org.eclipse.jdt.core.dom.MethodDeclaration) org.eclipse.jdt.internal.corext.dom.ASTNodes.getParent($node, org.eclipse.jdt.core.dom.ASTNode.METHOD_DECLARATION)\n\u003d\u003e\norg.eclipse.jdt.internal.ui.text.correction.ASTResolving.findParentMethodDeclaration($node)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.search;\n\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.MethodDeclaration;\nimport org.eclipse.jdt.internal.corext.dom.ASTNodes;\n\npublic class MethodExitsFinder {\n    MethodDeclaration fMethodDeclaration;\n\n    public void findExit(ASTNode node) {\n        fMethodDeclaration \u003d (MethodDeclaration)ASTNodes.getParent(node, ASTNode.METHOD_DECLARATION);\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.search;\n\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.MethodDeclaration;\nimport org.eclipse.jdt.internal.ui.text.correction.ASTResolving;\n\npublic class MethodExitsFinder {\n    MethodDeclaration fMethodDeclaration;\n\n    public void findExit(ASTNode node) {\n        fMethodDeclaration \u003d ASTResolving.findParentMethodDeclaration(node);\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.search;\n\nimport org.eclipse.jdt.core.dom.ASTNode;\nimport org.eclipse.jdt.core.dom.TypeDeclaration;\nimport org.eclipse.jdt.internal.corext.dom.ASTNodes;\n\npublic class MethodExitsFinder {\n    TypeDeclaration fTypeDeclaration;\n\n    public void findType(ASTNode node) {\n        // This should not match, as it\u0027s looking for TYPE_DECLARATION, not METHOD_DECLARATION\n        fTypeDeclaration \u003d (TypeDeclaration)ASTNodes.getParent(node, ASTNode.TYPE_DECLARATION);\n    }\n}",
+  "targetHintFile": "ast-utils-modernization.sandbox-hint",
+  "sourceCommit": "6fc1828cf96f851f50cf86a34854d6b3ad91a2b9",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Usage Modernization",
+  "summary": "Replace direct ASTNodes.getParent for MethodDeclaration with ASTResolving.findParentMethodDeclaration.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-11T02:27:12.732733213Z",
+  "ruleFingerprint": "sha256:3c38d0925fffbd879c9d3f10ae3b2016a1301762269cdbfc0f305385eec804f9",
+  "behaviorFingerprint": "sha256:8e67301843334557942282aeb5bddc5b0647d21f015b6c7ed2ab285de5cb33b7",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The import org.eclipse.jdt.internal.corext cannot be resolved",
+    "verifiedAt": "2026-09-11T02:27:19.600030881Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

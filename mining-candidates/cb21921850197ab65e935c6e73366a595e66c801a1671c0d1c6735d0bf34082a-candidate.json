@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "cb21921850197ab65e935c6e73366a595e66c801a1671c0d1c6735d0bf34082a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jdt.ui.multiFormatActionNameFix\u003e\n\u003c!description: Fixes MultiFormatAction to use its dedicated name constant, correcting a bug where it used a generic format action label.\u003e\n\u003c!severity: HINT\u003e\norg.eclipse.jdt.internal.ui.actions.ActionMessages.FormatAllAction_label :: inClass(\"org.eclipse.jdt.internal.ui.actions.MultiFormatAction\")\n\u003d\u003e org.eclipse.jdt.internal.ui.actions.ActionMessages.MultiFormatAction_name\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.actions;\n\npublic class ActionMessages {\n    public static String FormatAllAction_label \u003d \"Format All\";\n    public static String MultiFormatAction_name \u003d \"Format\";\n}\n\npublic class MultiFormatAction {\n    protected String getActionName() {\n        return ActionMessages.FormatAllAction_label;\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.actions;\n\npublic class ActionMessages {\n    public static String FormatAllAction_label \u003d \"Format All\";\n    public static String MultiFormatAction_name \u003d \"Format\";\n}\n\npublic class MultiFormatAction {\n    protected String getActionName() {\n        return ActionMessages.MultiFormatAction_name;\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.actions;\n\npublic class ActionMessages {\n    public static String FormatAllAction_label \u003d \"Format All\";\n    public static String MultiFormatAction_name \u003d \"Format\";\n}\n\npublic class OtherAction {\n    public String getLabel() {\n        // This usage should correctly refer to \u0027Format All\u0027 and must not be changed.\n        return ActionMessages.FormatAllAction_label;\n    }\n}",
+  "targetHintFile": "eclipse-jdt-ui.sandbox-hint",
+  "sourceCommit": "8a965e0c53075ba4747771493fedd2369639d7eb",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant Refactoring",
+  "summary": "Replaces `ActionMessages.FormatAllAction_label` with `ActionMessages.MultiFormatAction_name` specifically within the `MultiFormatAction` class.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-11T02:27:12.699932133Z",
+  "ruleFingerprint": "sha256:93d9e27b2a3ff75fd3e4ad8d52776e4e1d5bffd9a5d509d350886b350b4d54f9",
+  "behaviorFingerprint": "sha256:7b0ab2e894b1413ec9f6cf281743e53cfe2715b9d2504d3e754ae589a6e283e3",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-11T02:27:19.584107186Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
