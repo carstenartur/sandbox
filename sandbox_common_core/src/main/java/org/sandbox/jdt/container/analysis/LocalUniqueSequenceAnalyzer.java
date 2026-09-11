@@ -267,6 +267,7 @@ public final class LocalUniqueSequenceAnalyzer {
 				java.util.Collections.newSetFromMap(new IdentityHashMap<>());
 		private boolean rejected;
 		private boolean bindingSeen;
+		private boolean encounterOrderObserved;
 
 		Observations(Candidate candidate) {
 			this.candidate= candidate;
@@ -293,6 +294,7 @@ public final class LocalUniqueSequenceAnalyzer {
 		}
 
 		void iteration(ASTNode node) {
+			encounterOrderObserved= true;
 			add(Kind.ENCOUNTER_ITERATION,
 					"The collection is traversed in encounter order", node); //$NON-NLS-1$
 		}
@@ -319,7 +321,8 @@ public final class LocalUniqueSequenceAnalyzer {
 					identity(candidate), ContainerShape.LIST,
 					elementDomain(candidate.elementType()),
 					new AccessProfile(false, false, true, false, false, true, false),
-					OrderRequirement.ENCOUNTER, UniquenessRequirement.REQUIRED,
+					encounterOrderObserved ? OrderRequirement.ENCOUNTER : OrderRequirement.NONE,
+					UniquenessRequirement.REQUIRED,
 					MutationLifecycle.CONTINUOUSLY_MUTABLE, NullContract.UNKNOWN,
 					complete ? AliasingContract.NO_OBSERVED_ALIAS : AliasingContract.UNKNOWN,
 					EscapeLevel.LOCAL, concurrency(complete),

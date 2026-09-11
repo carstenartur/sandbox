@@ -12,10 +12,12 @@ package org.sandbox.jdt.container.analysis;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import org.sandbox.jdt.container.api.ContainerRecommendation.AutomationLevel;
 import org.sandbox.jdt.container.api.ContainerShape;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
 import org.sandbox.jdt.container.api.ContainerUsageProfile.AccessProfile;
@@ -40,21 +42,56 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 class ContainerContractInferrerDispatchTest {
 
 	@Test
-	void dispatchesAUniqueSequenceToTheSetStrategy() {
-		var recommendation= new ContainerContractInferrer().infer(profile()).orElseThrow();
+	void dispatchesAnObservedOrderedUniqueSequenceToTheOrderedSetStrategy() {
+		var recommendation= new ContainerContractInferrer()
+				.infer(profile(OrderRequirement.ENCOUNTER, true)).orElseThrow();
 
 		assertEquals(ContainerShape.SET, recommendation.targetContract().shape());
+		assertEquals(OrderRequirement.ENCOUNTER,
+				recommendation.targetContract().orderRequirement());
 		assertEquals(ContainerRuleRegistry.UNIQUE_SEQUENCE_SET,
 				recommendation.rule().ruleId());
+		assertEquals(AutomationLevel.REPORT_ONLY, recommendation.automationLevel());
 	}
 
-	private static ContainerUsageProfile profile() {
+	@Test
+	void dispatchesACompleteUnorderedUniqueSequenceWithoutInventingEncounterOrder() {
+		var recommendation= new ContainerContractInferrer()
+				.infer(profile(OrderRequirement.NONE, false)).orElseThrow();
+
+		assertEquals(ContainerShape.SET, recommendation.targetContract().shape());
+		assertEquals(OrderRequirement.NONE,
+				recommendation.targetContract().orderRequirement());
+		assertEquals(ContainerRuleRegistry.UNORDERED_UNIQUE_SEQUENCE_SET,
+				recommendation.rule().ruleId());
+		assertEquals(AutomationLevel.REPORT_ONLY, recommendation.automationLevel());
+	}
+
+	private static ContainerUsageProfile profile(OrderRequirement order, boolean encounterEvidence) {
+		List<UsageEvidence> evidence= new ArrayList<>(List.of(
+				new UsageEvidence(
+						Kind.REFERENCE_COMPONENT,
+						"reference element", 10, 6), //$NON-NLS-1$
+				new UsageEvidence(
+						Kind.HASH_STABLE_COMPONENT,
+						"stable equality and hash", 10, 6), //$NON-NLS-1$
+				new UsageEvidence(
+						Kind.DUPLICATE_SUPPRESSION,
+						"guarded insertion", 30, 40))); //$NON-NLS-1$
+		if (encounterEvidence) {
+			evidence.add(new UsageEvidence(
+					Kind.ENCOUNTER_ITERATION,
+					"encounter iteration", 75, 20)); //$NON-NLS-1$
+		}
+		evidence.add(new UsageEvidence(
+				Kind.LOCAL_USAGE_COMPLETE,
+				"complete local proof", 10, 6)); //$NON-NLS-1$
 		return new ContainerUsageProfile(
 				new ContainerIdentity("binding", "values", 10, 6), //$NON-NLS-1$ //$NON-NLS-2$
 				ContainerShape.LIST,
 				ElementDomain.REFERENCE,
 				new AccessProfile(false, false, true, false, false, true, false),
-				OrderRequirement.ENCOUNTER,
+				order,
 				UniquenessRequirement.REQUIRED,
 				MutationLifecycle.CONTINUOUSLY_MUTABLE,
 				NullContract.UNKNOWN,
@@ -67,18 +104,6 @@ class ContainerContractInferrerDispatchTest {
 						AtomicityRequirement.INDIVIDUAL_OPERATIONS,
 						WorkloadShape.BALANCED),
 				AnalysisCompleteness.LOCAL_USAGE_COMPLETE,
-				List.of(
-						new UsageEvidence(
-								Kind.REFERENCE_COMPONENT,
-								"reference element", 10, 6), //$NON-NLS-1$
-						new UsageEvidence(
-								Kind.HASH_STABLE_COMPONENT,
-								"stable equality and hash", 10, 6), //$NON-NLS-1$
-						new UsageEvidence(
-								Kind.DUPLICATE_SUPPRESSION,
-								"guarded insertion", 30, 40), //$NON-NLS-1$
-						new UsageEvidence(
-								Kind.LOCAL_USAGE_COMPLETE,
-								"complete local proof", 10, 6))); //$NON-NLS-1$
+				evidence);
 	}
 }
