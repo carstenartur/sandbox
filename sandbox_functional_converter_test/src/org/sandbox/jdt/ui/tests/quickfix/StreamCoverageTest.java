@@ -55,7 +55,7 @@ class StreamCoverageTest {
 				"Arrays.asList(\"a\", \"bbb\").stream().mapToInt(String::length).mapToLong(v -> v * 10000000000L).mapToDouble(v -> v / 3.0).mapToObj(v -> label(v)).forEach(v -> result.add(v));",
 				"Arrays.stream(new int[] {-1, 0, 2}).filter(v -> v >= 0).map(v -> v + 1).forEachOrdered(v -> result.add(label(v)));",
 				"Arrays.stream(new int[] {1, 2}).<Number>mapToObj(v -> v).forEach(v -> result.add(label(v)));",
-				"Arrays.stream(new int[] {1, 200]).boxed().forEach(v -> result.add(label(v)));",
+				"Arrays.stream(new int[] {1, 200}).boxed().forEach(v -> result.add(label(v)));",
 				"Arrays.stream(new int[] {1, Integer.MAX_VALUE}).asLongStream().asDoubleStream().boxed().forEach(v -> result.add(label(v)));",
 				"Arrays.stream(new long[] {9007199254740993L, Long.MAX_VALUE}).asDoubleStream().forEach(v -> result.add(label(v)));",
 				"Arrays.stream(new long[] {1, 200}).mapToInt(v -> (int) v).mapToObj(v -> label(v)).forEach(v -> result.add(v));",
