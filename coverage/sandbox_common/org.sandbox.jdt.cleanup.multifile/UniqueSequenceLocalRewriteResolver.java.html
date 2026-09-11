@@ -137,94 +137,95 @@ final class UniqueSequenceLocalRewriteResolver {
 	}
 
 	private static boolean isExpectedTarget(UniqueSequenceLocalRewritePlan plan) {
-<span class="pc bpc" id="L140" title="1 of 2 branches missed.">		return SET.equals(plan.targetInterfaceType())</span>
-<span class="pc bpc" id="L141" title="1 of 2 branches missed.">				&amp;&amp; LINKED_HASH_SET.equals(plan.targetImplementationType())</span>
-<span class="pc bpc" id="L142" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().shape() == ContainerShape.SET</span>
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().mutability() == Mutability.MUTABLE</span>
-<span class="pc bpc" id="L144" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().orderRequirement() == OrderRequirement.ENCOUNTER</span>
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().uniquenessRequirement()</span>
-<span class="fc" id="L146">						== UniquenessRequirement.REQUIRED;</span>
+<span class="fc" id="L140">		OrderRequirement order= plan.targetContract().orderRequirement();</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">		return SET.equals(plan.targetInterfaceType())</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">				&amp;&amp; LINKED_HASH_SET.equals(plan.targetImplementationType())</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().shape() == ContainerShape.SET</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().mutability() == Mutability.MUTABLE</span>
+<span class="pc bpc" id="L145" title="1 of 4 branches missed.">				&amp;&amp; (order == OrderRequirement.ENCOUNTER || order == OrderRequirement.NONE)</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">				&amp;&amp; plan.targetContract().uniquenessRequirement()</span>
+<span class="fc" id="L147">						== UniquenessRequirement.REQUIRED;</span>
 	}
 
 	private static CollectedAst collect(
 			org.eclipse.jdt.core.dom.CompilationUnit root,
 			String bindingKey) {
-<span class="fc" id="L152">		List&lt;SimpleName&gt; references= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L153">		List&lt;GuardedAdd&gt; guards= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L154">		VariableDeclarationFragment[] declaration= { null };</span>
-<span class="fc" id="L155">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L153">		List&lt;SimpleName&gt; references= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L154">		List&lt;GuardedAdd&gt; guards= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L155">		VariableDeclarationFragment[] declaration= { null };</span>
+<span class="fc" id="L156">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(SimpleName name) {
-<span class="fc" id="L158">				IVariableBinding binding= variableBinding(name.resolveBinding());</span>
-<span class="fc bfc" id="L159" title="All 2 branches covered.">				if (binding == null</span>
-<span class="fc bfc" id="L160" title="All 2 branches covered.">						|| !bindingKey.equals(binding.getVariableDeclaration().getKey())) {</span>
-<span class="fc" id="L161">					return true;</span>
+<span class="fc" id="L159">				IVariableBinding binding= variableBinding(name.resolveBinding());</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">				if (binding == null</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">						|| !bindingKey.equals(binding.getVariableDeclaration().getKey())) {</span>
+<span class="fc" id="L162">					return true;</span>
 				}
-<span class="fc" id="L163">				references.add(name);</span>
-<span class="fc bfc" id="L164" title="All 2 branches covered.">				if (name.getParent() instanceof VariableDeclarationFragment fragment</span>
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">						&amp;&amp; fragment.getName() == name) {</span>
-<span class="fc" id="L166">					declaration[0]= fragment;</span>
+<span class="fc" id="L164">				references.add(name);</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">				if (name.getParent() instanceof VariableDeclarationFragment fragment</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">						&amp;&amp; fragment.getName() == name) {</span>
+<span class="fc" id="L167">					declaration[0]= fragment;</span>
 				}
-<span class="fc" id="L168">				return true;</span>
+<span class="fc" id="L169">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(IfStatement statement) {
-<span class="fc" id="L173">				UniqueSequencePattern.match(statement, bindingKey).ifPresent(guards::add);</span>
-<span class="fc" id="L174">				return true;</span>
+<span class="fc" id="L174">				UniqueSequencePattern.match(statement, bindingKey).ifPresent(guards::add);</span>
+<span class="fc" id="L175">				return true;</span>
 			}
 		});
-<span class="fc" id="L177">		return new CollectedAst(declaration[0], references, guards);</span>
+<span class="fc" id="L178">		return new CollectedAst(declaration[0], references, guards);</span>
 	}
 
 	private static boolean isSupportedSourceType(ITypeBinding type) {
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">		if (type == null) {</span>
-<span class="nc" id="L182">			return false;</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc" id="L183">			return false;</span>
 		}
-<span class="fc" id="L184">		String name= type.getErasure().getQualifiedName();</span>
-<span class="pc bpc" id="L185" title="3 of 4 branches missed.">		return LIST.equals(name) || ARRAY_LIST.equals(name);</span>
+<span class="fc" id="L185">		String name= type.getErasure().getQualifiedName();</span>
+<span class="pc bpc" id="L186" title="3 of 4 branches missed.">		return LIST.equals(name) || ARRAY_LIST.equals(name);</span>
 	}
 
 	private static boolean hasStableHash(ParameterizedType declarationType) {
-<span class="fc" id="L189">		Type elementType= (Type) declarationType.typeArguments().get(0);</span>
-<span class="fc" id="L190">		ITypeBinding binding= elementType.resolveBinding();</span>
-<span class="pc bpc" id="L191" title="1 of 2 branches missed.">		return binding != null</span>
-<span class="fc bfc" id="L192" title="All 2 branches covered.">				&amp;&amp; (binding.isEnum()</span>
-<span class="pc bpc" id="L193" title="1 of 2 branches missed.">						|| STRING.equals(binding.getErasure().getQualifiedName()));</span>
+<span class="fc" id="L190">		Type elementType= (Type) declarationType.typeArguments().get(0);</span>
+<span class="fc" id="L191">		ITypeBinding binding= elementType.resolveBinding();</span>
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">		return binding != null</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">				&amp;&amp; (binding.isEnum()</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">						|| STRING.equals(binding.getErasure().getQualifiedName()));</span>
 	}
 
 	private static boolean isEmptyArrayList(ClassInstanceCreation creation) {
-<span class="fc" id="L197">		ITypeBinding type= creation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L198" title="1 of 2 branches missed.">		return type != null</span>
-<span class="pc bpc" id="L199" title="1 of 2 branches missed.">				&amp;&amp; ARRAY_LIST.equals(type.getErasure().getQualifiedName())</span>
-<span class="pc bpc" id="L200" title="1 of 2 branches missed.">				&amp;&amp; creation.arguments().isEmpty()</span>
-<span class="pc bpc" id="L201" title="1 of 2 branches missed.">				&amp;&amp; creation.getAnonymousClassDeclaration() == null;</span>
+<span class="fc" id="L198">		ITypeBinding type= creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">		return type != null</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">				&amp;&amp; ARRAY_LIST.equals(type.getErasure().getQualifiedName())</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">				&amp;&amp; creation.arguments().isEmpty()</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">				&amp;&amp; creation.getAnonymousClassDeclaration() == null;</span>
 	}
 
 	private static boolean isReadOnlyCollectionQuery(MethodInvocation invocation) {
-<span class="fc" id="L205">		String method= invocation.getName().getIdentifier();</span>
-<span class="pc bpc" id="L206" title="3 of 4 branches missed.">		return (&quot;size&quot;.equals(method) || &quot;isEmpty&quot;.equals(method)) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L207" title="1 of 2 branches missed.">				&amp;&amp; invocation.arguments().isEmpty();</span>
+<span class="fc" id="L206">		String method= invocation.getName().getIdentifier();</span>
+<span class="pc bpc" id="L207" title="3 of 4 branches missed.">		return (&quot;size&quot;.equals(method) || &quot;isEmpty&quot;.equals(method)) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">				&amp;&amp; invocation.arguments().isEmpty();</span>
 	}
 
 	private static int editCount(
 			UniqueSequenceLocalRewritePlan plan,
 			EditKind kind) {
-<span class="fc" id="L213">		return (int) plan.edits().stream()</span>
-<span class="fc bfc" id="L214" title="All 2 branches covered.">				.filter(edit -&gt; edit.kind() == kind)</span>
-<span class="fc" id="L215">				.count();</span>
+<span class="fc" id="L214">		return (int) plan.edits().stream()</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">				.filter(edit -&gt; edit.kind() == kind)</span>
+<span class="fc" id="L216">				.count();</span>
 	}
 
 	private static IVariableBinding variableBinding(IBinding binding) {
-<span class="fc bfc" id="L219" title="All 2 branches covered.">		return binding instanceof IVariableBinding variable ? variable : null;</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">		return binding instanceof IVariableBinding variable ? variable : null;</span>
 	}
 
 	private static CoreException stale(ICompilationUnit unit, String reason) {
-<span class="fc" id="L223">		return new CoreException(new Status(</span>
-<span class="fc" id="L224">				IStatus.ERROR,</span>
-<span class="fc" id="L225">				PLUGIN_ID,</span>
-<span class="fc" id="L226">				&quot;Stale unique-sequence rewrite plan for &quot; //$NON-NLS-1$</span>
-<span class="fc" id="L227">						+ unit.getElementName() + &quot;: &quot; + reason)); //$NON-NLS-1$</span>
+<span class="fc" id="L224">		return new CoreException(new Status(</span>
+<span class="fc" id="L225">				IStatus.ERROR,</span>
+<span class="fc" id="L226">				PLUGIN_ID,</span>
+<span class="fc" id="L227">				&quot;Stale unique-sequence rewrite plan for &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L228">						+ unit.getElementName() + &quot;: &quot; + reason)); //$NON-NLS-1$</span>
 	}
 
 	static record ResolvedPlan(
@@ -235,9 +236,9 @@ final class UniqueSequenceLocalRewriteResolver {
 			ClassInstanceCreation initializer,
 			List&lt;GuardedAdd&gt; guards) {
 
-<span class="fc" id="L238">		ResolvedPlan {</span>
-<span class="fc" id="L239">			guards= List.copyOf(guards);</span>
-<span class="fc" id="L240">		}</span>
+<span class="fc" id="L239">		ResolvedPlan {</span>
+<span class="fc" id="L240">			guards= List.copyOf(guards);</span>
+<span class="fc" id="L241">		}</span>
 	}
 
 	private record CollectedAst(
@@ -245,10 +246,10 @@ final class UniqueSequenceLocalRewriteResolver {
 			List&lt;SimpleName&gt; references,
 			List&lt;GuardedAdd&gt; guards) {
 
-<span class="fc" id="L248">		CollectedAst {</span>
-<span class="fc" id="L249">			references= List.copyOf(references);</span>
-<span class="fc" id="L250">			guards= List.copyOf(guards);</span>
-<span class="fc" id="L251">		}</span>
+<span class="fc" id="L249">		CollectedAst {</span>
+<span class="fc" id="L250">			references= List.copyOf(references);</span>
+<span class="fc" id="L251">			guards= List.copyOf(guards);</span>
+<span class="fc" id="L252">		}</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

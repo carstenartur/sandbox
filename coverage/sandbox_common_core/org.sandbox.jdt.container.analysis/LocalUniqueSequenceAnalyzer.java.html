@@ -267,86 +267,89 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 <span class="fc" id="L267">				java.util.Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
 		private boolean rejected;
 		private boolean bindingSeen;
+		private boolean encounterOrderObserved;
 
-<span class="fc" id="L271">		Observations(Candidate candidate) {</span>
-<span class="fc" id="L272">			this.candidate= candidate;</span>
-<span class="fc" id="L273">			add(Kind.REFERENCE_COMPONENT,</span>
+<span class="fc" id="L272">		Observations(Candidate candidate) {</span>
+<span class="fc" id="L273">			this.candidate= candidate;</span>
+<span class="fc" id="L274">			add(Kind.REFERENCE_COMPONENT,</span>
 					&quot;The local sequence has a reference element type&quot;, //$NON-NLS-1$
-<span class="fc" id="L275">					candidate.declaration());</span>
-<span class="fc bfc" id="L276" title="All 2 branches covered.">			if (hasStableHash(candidate.elementType())) {</span>
-<span class="fc" id="L277">				add(Kind.HASH_STABLE_COMPONENT,</span>
+<span class="fc" id="L276">					candidate.declaration());</span>
+<span class="fc bfc" id="L277" title="All 2 branches covered.">			if (hasStableHash(candidate.elementType())) {</span>
+<span class="fc" id="L278">				add(Kind.HASH_STABLE_COMPONENT,</span>
 						&quot;The element type has stable equality and hash semantics&quot;, //$NON-NLS-1$
-<span class="fc" id="L279">						candidate.declaration());</span>
+<span class="fc" id="L280">						candidate.declaration());</span>
 			} else {
-<span class="fc" id="L281">				reject(Kind.REJECTION_BOUNDARY,</span>
+<span class="fc" id="L282">				reject(Kind.REJECTION_BOUNDARY,</span>
 						&quot;Automatic set migration requires a proven hash-stable element type&quot;, //$NON-NLS-1$
-<span class="fc" id="L283">						candidate.declaration());</span>
+<span class="fc" id="L284">						candidate.declaration());</span>
 			}
-<span class="fc" id="L285">		}</span>
+<span class="fc" id="L286">		}</span>
 
 		void guard(GuardedAdd guard) {
-<span class="fc bfc" id="L288" title="All 2 branches covered.">			if (guards.add(guard.statement())) {</span>
-<span class="fc" id="L289">				add(Kind.DUPLICATE_SUPPRESSION,</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">			if (guards.add(guard.statement())) {</span>
+<span class="fc" id="L290">				add(Kind.DUPLICATE_SUPPRESSION,</span>
 						&quot;Membership is tested before the same stable value is inserted&quot;, //$NON-NLS-1$
-<span class="fc" id="L291">						guard.statement());</span>
+<span class="fc" id="L292">						guard.statement());</span>
 			}
-<span class="fc" id="L293">		}</span>
+<span class="fc" id="L294">		}</span>
 
 		void iteration(ASTNode node) {
-<span class="fc" id="L296">			add(Kind.ENCOUNTER_ITERATION,</span>
+<span class="fc" id="L297">			encounterOrderObserved= true;</span>
+<span class="fc" id="L298">			add(Kind.ENCOUNTER_ITERATION,</span>
 					&quot;The collection is traversed in encounter order&quot;, node); //$NON-NLS-1$
-<span class="fc" id="L298">		}</span>
+<span class="fc" id="L300">		}</span>
 
 		void reject(Kind kind, String summary, ASTNode node) {
-<span class="fc" id="L301">			rejected= true;</span>
-<span class="fc" id="L302">			add(kind, summary, node);</span>
-<span class="fc" id="L303">		}</span>
+<span class="fc" id="L303">			rejected= true;</span>
+<span class="fc" id="L304">			add(kind, summary, node);</span>
+<span class="fc" id="L305">		}</span>
 
 		ContainerUsageProfile profile() {
-<span class="pc bpc" id="L306" title="1 of 6 branches missed.">			boolean complete= bindingSeen &amp;&amp; !guards.isEmpty() &amp;&amp; !rejected;</span>
-<span class="fc bfc" id="L307" title="All 2 branches covered.">			if (complete) {</span>
-<span class="fc" id="L308">				add(Kind.LOCAL_USAGE_COMPLETE,</span>
+<span class="pc bpc" id="L308" title="1 of 6 branches missed.">			boolean complete= bindingSeen &amp;&amp; !guards.isEmpty() &amp;&amp; !rejected;</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">			if (complete) {</span>
+<span class="fc" id="L310">				add(Kind.LOCAL_USAGE_COMPLETE,</span>
 						&quot;Every use of the local collection binding was classified&quot;, //$NON-NLS-1$
-<span class="fc" id="L310">						candidate.fragment());</span>
-<span class="fc bfc" id="L311" title="All 2 branches covered.">			} else if (guards.isEmpty()) {</span>
-<span class="fc" id="L312">				reject(Kind.REJECTION_BOUNDARY,</span>
+<span class="fc" id="L312">						candidate.fragment());</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">			} else if (guards.isEmpty()) {</span>
+<span class="fc" id="L314">				reject(Kind.REJECTION_BOUNDARY,</span>
 						&quot;No complete contains-before-add insertion was found&quot;, //$NON-NLS-1$
-<span class="fc" id="L314">						candidate.fragment());</span>
+<span class="fc" id="L316">						candidate.fragment());</span>
 			}
-<span class="fc" id="L316">			evidence.sort(Comparator.comparingInt(UsageEvidence::sourceStart)</span>
-<span class="fc" id="L317">					.thenComparing(item -&gt; item.kind().ordinal()));</span>
-<span class="fc" id="L318">			return new ContainerUsageProfile(</span>
-<span class="fc" id="L319">					identity(candidate), ContainerShape.LIST,</span>
-<span class="fc" id="L320">					elementDomain(candidate.elementType()),</span>
+<span class="fc" id="L318">			evidence.sort(Comparator.comparingInt(UsageEvidence::sourceStart)</span>
+<span class="fc" id="L319">					.thenComparing(item -&gt; item.kind().ordinal()));</span>
+<span class="fc" id="L320">			return new ContainerUsageProfile(</span>
+<span class="fc" id="L321">					identity(candidate), ContainerShape.LIST,</span>
+<span class="fc" id="L322">					elementDomain(candidate.elementType()),</span>
 					new AccessProfile(false, false, true, false, false, true, false),
-					OrderRequirement.ENCOUNTER, UniquenessRequirement.REQUIRED,
+<span class="fc bfc" id="L324" title="All 2 branches covered.">					encounterOrderObserved ? OrderRequirement.ENCOUNTER : OrderRequirement.NONE,</span>
+					UniquenessRequirement.REQUIRED,
 					MutationLifecycle.CONTINUOUSLY_MUTABLE, NullContract.UNKNOWN,
-<span class="fc bfc" id="L324" title="All 2 branches covered.">					complete ? AliasingContract.NO_OBSERVED_ALIAS : AliasingContract.UNKNOWN,</span>
-<span class="fc" id="L325">					EscapeLevel.LOCAL, concurrency(complete),</span>
-<span class="fc bfc" id="L326" title="All 2 branches covered.">					complete ? AnalysisCompleteness.LOCAL_USAGE_COMPLETE</span>
-<span class="fc" id="L327">							: AnalysisCompleteness.REJECTED,</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">					complete ? AliasingContract.NO_OBSERVED_ALIAS : AliasingContract.UNKNOWN,</span>
+<span class="fc" id="L328">					EscapeLevel.LOCAL, concurrency(complete),</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">					complete ? AnalysisCompleteness.LOCAL_USAGE_COMPLETE</span>
+<span class="fc" id="L330">							: AnalysisCompleteness.REJECTED,</span>
 					evidence);
 		}
 
 		private void add(Kind kind, String summary, ASTNode node) {
-<span class="fc" id="L332">			evidence.add(new UsageEvidence(</span>
-<span class="fc" id="L333">					kind, summary, node.getStartPosition(), node.getLength()));</span>
-<span class="fc" id="L334">		}</span>
+<span class="fc" id="L335">			evidence.add(new UsageEvidence(</span>
+<span class="fc" id="L336">					kind, summary, node.getStartPosition(), node.getLength()));</span>
+<span class="fc" id="L337">		}</span>
 	}
 
 	private static ContainerIdentity identity(Candidate candidate) {
-<span class="fc" id="L338">		return new ContainerIdentity(</span>
-<span class="fc" id="L339">				candidate.bindingKey(), candidate.fragment().getName().getIdentifier(),</span>
-<span class="fc" id="L340">				candidate.fragment().getStartPosition(), candidate.fragment().getLength());</span>
+<span class="fc" id="L341">		return new ContainerIdentity(</span>
+<span class="fc" id="L342">				candidate.bindingKey(), candidate.fragment().getName().getIdentifier(),</span>
+<span class="fc" id="L343">				candidate.fragment().getStartPosition(), candidate.fragment().getLength());</span>
 	}
 
 	private static ConcurrencyProfile concurrency(boolean complete) {
-<span class="fc bfc" id="L344" title="All 2 branches covered.">		return complete</span>
-<span class="fc" id="L345">				? new ConcurrencyProfile(</span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">		return complete</span>
+<span class="fc" id="L348">				? new ConcurrencyProfile(</span>
 						ThreadExposure.THREAD_CONFINED, SynchronizationKind.NONE,
 						IterationSemantics.LIVE, AtomicityRequirement.INDIVIDUAL_OPERATIONS,
 						WorkloadShape.BALANCED)
-<span class="fc" id="L349">				: ConcurrencyProfile.unknown();</span>
+<span class="fc" id="L352">				: ConcurrencyProfile.unknown();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

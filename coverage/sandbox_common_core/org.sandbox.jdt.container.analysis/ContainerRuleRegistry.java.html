@@ -28,6 +28,7 @@ public final class ContainerRuleRegistry {
 
 	public static final String ARRAY_APPEND_SEQUENCE= &quot;semantic.array.append.sequence&quot;; //$NON-NLS-1$
 	public static final String UNIQUE_SEQUENCE_SET= &quot;semantic.sequence.unique.set&quot;; //$NON-NLS-1$
+	public static final String UNORDERED_UNIQUE_SEQUENCE_SET= &quot;semantic.sequence.unique.unordered-set&quot;; //$NON-NLS-1$
 	public static final String FIFO_SEQUENCE_DEQUE= &quot;semantic.sequence.fifo.deque&quot;; //$NON-NLS-1$
 	public static final String LIFO_SEQUENCE_DEQUE= &quot;semantic.sequence.lifo.deque&quot;; //$NON-NLS-1$
 	public static final String COLLECTION_BULK_ADD= &quot;existing.collection.bulk-add&quot;; //$NON-NLS-1$
@@ -35,7 +36,7 @@ public final class ContainerRuleRegistry {
 	public static final String ARRAY_FILL= &quot;existing.array.fill&quot;; //$NON-NLS-1$
 	public static final String TYPE_GENERALIZATION= &quot;existing.type.generalization&quot;; //$NON-NLS-1$
 
-<span class="fc" id="L38">	private static final Map&lt;String, ContainerRuleDescriptor&gt; RULES= createRules();</span>
+<span class="fc" id="L39">	private static final Map&lt;String, ContainerRuleDescriptor&gt; RULES= createRules();</span>
 
 	private ContainerRuleRegistry() {
 		// Static registry.
@@ -43,102 +44,113 @@ public final class ContainerRuleRegistry {
 
 	/** Returns one descriptor by stable identifier. */
 	public static Optional&lt;ContainerRuleDescriptor&gt; find(String ruleId) {
-<span class="fc" id="L46">		return Optional.ofNullable(RULES.get(ruleId));</span>
+<span class="fc" id="L47">		return Optional.ofNullable(RULES.get(ruleId));</span>
 	}
 
 	/** Returns descriptors in deterministic registration order. */
 	public static List&lt;ContainerRuleDescriptor&gt; all() {
-<span class="fc" id="L51">		return List.copyOf(RULES.values());</span>
+<span class="fc" id="L52">		return List.copyOf(RULES.values());</span>
 	}
 
 	/** Returns the descriptor for append-array to sequence migration. */
 	public static ContainerRuleDescriptor arrayAppendSequence() {
-<span class="fc" id="L56">		return RULES.get(ARRAY_APPEND_SEQUENCE);</span>
+<span class="fc" id="L57">		return RULES.get(ARRAY_APPEND_SEQUENCE);</span>
 	}
 
 	/** Returns the descriptor for manually unique sequence to ordered-set migration. */
 	public static ContainerRuleDescriptor uniqueSequenceSet() {
-<span class="fc" id="L61">		return RULES.get(UNIQUE_SEQUENCE_SET);</span>
+<span class="fc" id="L62">		return RULES.get(UNIQUE_SEQUENCE_SET);</span>
+	}
+
+	/** Returns the descriptor for manually unique sequence with no observed order. */
+	public static ContainerRuleDescriptor unorderedUniqueSequenceSet() {
+<span class="fc" id="L67">		return RULES.get(UNORDERED_UNIQUE_SEQUENCE_SET);</span>
 	}
 
 	/** Returns the descriptor for FIFO list-to-deque analysis. */
 	public static ContainerRuleDescriptor fifoSequenceDeque() {
-<span class="fc" id="L66">		return RULES.get(FIFO_SEQUENCE_DEQUE);</span>
+<span class="fc" id="L72">		return RULES.get(FIFO_SEQUENCE_DEQUE);</span>
 	}
 
 	/** Returns the descriptor for LIFO list-to-deque analysis. */
 	public static ContainerRuleDescriptor lifoSequenceDeque() {
-<span class="fc" id="L71">		return RULES.get(LIFO_SEQUENCE_DEQUE);</span>
+<span class="fc" id="L77">		return RULES.get(LIFO_SEQUENCE_DEQUE);</span>
 	}
 
 	private static Map&lt;String, ContainerRuleDescriptor&gt; createRules() {
-<span class="fc" id="L75">		Map&lt;String, ContainerRuleDescriptor&gt; rules= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L76">		register(rules, new ContainerRuleDescriptor(</span>
+<span class="fc" id="L81">		Map&lt;String, ContainerRuleDescriptor&gt; rules= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L82">		register(rules, new ContainerRuleDescriptor(</span>
 				COLLECTION_BULK_ADD,
 				ContainerShape.LIST,
 				ContainerShape.LIST,
 				RuleOwnership.DUPLICATE,
 				&quot;Eclipse collection bulk-add cleanup&quot;, //$NON-NLS-1$
 				&quot;Local loop-to-bulk-add syntax is already owned by an existing cleanup.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L83">		register(rules, new ContainerRuleDescriptor(</span>
+<span class="fc" id="L89">		register(rules, new ContainerRuleDescriptor(</span>
 				COLLECTION_COPY_CONSTRUCTOR,
 				ContainerShape.LIST,
 				ContainerShape.LIST,
 				RuleOwnership.DUPLICATE,
 				&quot;Eclipse collection copy-constructor cleanup&quot;, //$NON-NLS-1$
 				&quot;Local construction followed by copying is already normalized elsewhere.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L90">		register(rules, new ContainerRuleDescriptor(</span>
+<span class="fc" id="L96">		register(rules, new ContainerRuleDescriptor(</span>
 				ARRAY_FILL,
 				ContainerShape.ARRAY,
 				ContainerShape.ARRAY,
 				RuleOwnership.DUPLICATE,
 				&quot;Eclipse array-fill cleanup&quot;, //$NON-NLS-1$
 				&quot;Replacing a uniform assignment loop with array fill is a local syntax cleanup.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L97">		register(rules, new ContainerRuleDescriptor(</span>
+<span class="fc" id="L103">		register(rules, new ContainerRuleDescriptor(</span>
 				TYPE_GENERALIZATION,
 				ContainerShape.LIST,
 				ContainerShape.LIST,
 				RuleOwnership.DUPLICATE,
 				&quot;Eclipse Change Type and Sandbox Use General Type&quot;, //$NON-NLS-1$
 				&quot;Changing only the declared supertype is already covered by type-generalization tools.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L104">		register(rules, new ContainerRuleDescriptor(</span>
+<span class="fc" id="L110">		register(rules, new ContainerRuleDescriptor(</span>
 				UNIQUE_SEQUENCE_SET,
 				ContainerShape.LIST,
 				ContainerShape.SET,
 				RuleOwnership.NOVEL,
 				&quot;&quot;, //$NON-NLS-1$
-				&quot;The rule changes duplicate semantics in the declared contract &quot; //$NON-NLS-1$
-						+ &quot;and may require coordinated signature migration.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L112">		register(rules, new ContainerRuleDescriptor(</span>
+				&quot;The rule changes duplicate semantics in the declared contract while preserving observed encounter order.&quot;)); //$NON-NLS-1$
+<span class="fc" id="L117">		register(rules, new ContainerRuleDescriptor(</span>
+				UNORDERED_UNIQUE_SEQUENCE_SET,
+				ContainerShape.LIST,
+				ContainerShape.SET,
+				RuleOwnership.NOVEL,
+				&quot;&quot;, //$NON-NLS-1$
+				&quot;The complete local flow observes uniqueness but no element order, allowing an unordered set contract without an executable implementation choice.&quot;)); //$NON-NLS-1$
+<span class="fc" id="L124">		register(rules, new ContainerRuleDescriptor(</span>
 				FIFO_SEQUENCE_DEQUE,
 				ContainerShape.LIST,
 				ContainerShape.DEQUE,
 				RuleOwnership.NOVEL,
 				&quot;&quot;, //$NON-NLS-1$
 				&quot;The rule replaces numeric head removal with an explicit FIFO container contract.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L119">		register(rules, new ContainerRuleDescriptor(</span>
+<span class="fc" id="L131">		register(rules, new ContainerRuleDescriptor(</span>
 				LIFO_SEQUENCE_DEQUE,
 				ContainerShape.LIST,
 				ContainerShape.DEQUE,
 				RuleOwnership.NOVEL,
 				&quot;&quot;, //$NON-NLS-1$
 				&quot;The rule replaces size-based tail removal with an explicit LIFO container contract.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L126">		register(rules, new ContainerRuleDescriptor(</span>
+<span class="fc" id="L138">		register(rules, new ContainerRuleDescriptor(</span>
 				ARRAY_APPEND_SEQUENCE,
 				ContainerShape.ARRAY,
 				ContainerShape.LIST,
 				RuleOwnership.NOVEL,
 				&quot;&quot;, //$NON-NLS-1$
 				&quot;The rule changes representation and may propagate through fields, signatures and callers.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L133">		return Collections.unmodifiableMap(new LinkedHashMap&lt;&gt;(rules));</span>
+<span class="fc" id="L145">		return Collections.unmodifiableMap(new LinkedHashMap&lt;&gt;(rules));</span>
 	}
 
 	private static void register(
 			Map&lt;String, ContainerRuleDescriptor&gt; rules,
 			ContainerRuleDescriptor descriptor) {
-<span class="pc bpc" id="L139" title="1 of 2 branches missed.">		if (rules.putIfAbsent(descriptor.ruleId(), descriptor) != null) {</span>
-<span class="nc" id="L140">			throw new IllegalStateException(&quot;Duplicate container rule id: &quot; + descriptor.ruleId()); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">		if (rules.putIfAbsent(descriptor.ruleId(), descriptor) != null) {</span>
+<span class="nc" id="L152">			throw new IllegalStateException(&quot;Duplicate container rule id: &quot; + descriptor.ruleId()); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L142">	}</span>
+<span class="fc" id="L154">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
