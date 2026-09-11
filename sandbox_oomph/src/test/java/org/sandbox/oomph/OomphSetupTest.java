@@ -78,13 +78,13 @@ class OomphSetupTest {
         Path eclipse = run.resolve("eclipse");
         if (!Files.isRegularFile(eclipse.resolve("eclipse"))) {
             Path archive = run.resolve("sdk.tar.gz");
-            download("https://download.eclipse.org/eclipse/downloads/drops4/R-4.40-202606010713/"
-                    + "eclipse-SDK-4.40-linux-gtk-x86_64.tar.gz", archive);
+            download("https://download.eclipse.org/eclipse/downloads/drops4/R-4.41-202608281142/"
+                    + "eclipse-SDK-4.41-linux-gtk-x86_64.tar.gz", archive);
             Path checksums = run.resolve("sdk-checksums.txt");
-            download("https://download.eclipse.org/eclipse/downloads/drops4/R-4.40-202606010713/eclipse-4.40-checksums",
+            download("https://download.eclipse.org/eclipse/downloads/drops4/R-4.41-202608281142/eclipse-4.41-checksums",
                     checksums);
             String expected = Files.readAllLines(checksums).stream()
-                    .filter(line -> line.endsWith("eclipse-SDK-4.40-linux-gtk-x86_64.tar.gz"))
+                    .filter(line -> line.endsWith("eclipse-SDK-4.41-linux-gtk-x86_64.tar.gz"))
                     .findFirst().orElseThrow().split("\\s+")[0];
             var digest = java.security.MessageDigest.getInstance("SHA-512");
             try (var in = new java.security.DigestInputStream(Files.newInputStream(archive), digest)) {
