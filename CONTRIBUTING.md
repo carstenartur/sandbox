@@ -9,7 +9,7 @@ Sandbox is an experimental Java modernization toolkit built on Eclipse JDT. Cont
 | Component | Current baseline |
 |---|---|
 | Java | 21 |
-| Eclipse target | Eclipse 2026-06 / Platform 4.40 |
+| Eclipse target | Eclipse 2026-09 / Platform 4.41 |
 | Build system | Maven Wrapper 3.3.4, Maven 3.9.16, Tycho 5.0.4 |
 | Default branch | `main` |
 
@@ -80,12 +80,12 @@ A baseline update is one coordinated change, not only a version-property edit. V
 - root `pom.xml` and Java-enforcer diagnostics;
 - `sandbox_target/eclipse.target` and Orbit/Bouncy Castle repositories;
 - `sandbox_product/sandbox.product` and `sandbox_product/category.xml`;
-- `sandbox_oomph/sandbox.setup`;
+- the contributor Oomph models and their real-SDK acceptance test;
 - `README.md`, this guide, build references, and distribution documentation;
 - `docs/capabilities.json` and generated `docs/capabilities.md`;
 - the repository baseline consistency test.
 
-Dated QA records describe their historical baseline and must not be rewritten as though an older review had used a later toolchain.
+Dated QA records describe their historical baseline and must not be rewritten as though an older review had used a later toolchain. The frozen R4_40 migration corpus and its dedicated Oomph QA configuration are separate test inputs; updating them requires a coordinated corpus and evidence change, not a runtime-baseline search-and-replace.
 
 ## Release process
 
