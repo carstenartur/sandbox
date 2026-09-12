@@ -119,7 +119,7 @@ public final class CoordinatedCleanUpPreviewViewer implements IChangePreviewView
 				return element instanceof FilePreview preview ? preview.label() : super.getText(element);
 			}
 		});
-		GridData filesData= new GridData(SWT.FILL, SWT.FILL, true, true);
+		GridData filesData= new GridData(SWT.FILL, SWT.FILL, true, false);
 		filesData.heightHint= 110;
 		files.getControl().setLayoutData(filesData);
 		files.addSelectionChangedListener(event -> {
@@ -165,7 +165,7 @@ public final class CoordinatedCleanUpPreviewViewer implements IChangePreviewView
 					? ATOMIC_SELECTION
 					: candidate.description() + System.lineSeparator() + ATOMIC_SELECTION);
 			details.setText(String.join(System.lineSeparator(), candidate.details()));
-			files.setInput(candidate.files());
+			setFileInput(candidate.files());
 			if (candidate.files().isEmpty()) {
 				showFile(null);
 			} else {
@@ -232,6 +232,13 @@ public final class CoordinatedCleanUpPreviewViewer implements IChangePreviewView
 		return null;
 	}
 
+	private void setFileInput(List<FilePreview> input) {
+		files.setInput(input);
+		// Keep a short file list compact so the safety evidence gets the remaining height.
+		GridData data= (GridData) files.getControl().getLayoutData();
+		data.heightHint= files.getTable().getItemHeight() * Math.max(1, Math.min(5, input.size()));
+	}
+
 	private void showFile(FilePreview preview) {
 		if (comparePreviewer != null && !comparePreviewer.isDisposed()) {
 			comparePreviewer.setPreview(preview);
@@ -249,7 +256,7 @@ public final class CoordinatedCleanUpPreviewViewer implements IChangePreviewView
 			details.setText(ATOMIC_SELECTION);
 		}
 		if (files != null && files.getControl() != null && !files.getControl().isDisposed()) {
-			files.setInput(List.of());
+			setFileInput(List.of());
 		}
 		showFile(null);
 	}
