@@ -90,8 +90,19 @@ class OomphSetupTest {
             try (var in = new java.security.DigestInputStream(Files.newInputStream(archive), digest)) {
                 in.transferTo(java.io.OutputStream.nullOutputStream());
             }
-            assertEquals(expected.toLowerCase(java.util.Locale.ROOT), java.util.HexFormat.of().formatHex(digest.digest()),
+            String actual = java.util.HexFormat.of().formatHex(digest.digest());
+            assertEquals(expected.toLowerCase(java.util.Locale.ROOT), actual,
                     "SDK archive must match the published Eclipse checksum");
+            // Retain the verified archive identity in the existing Oomph evidence artifact.
+            Properties sdk = new Properties();
+            sdk.setProperty("archive", "eclipse-SDK-4.41-linux-gtk-x86_64.tar.gz");
+            sdk.setProperty("release", "R-4.41-202608281142");
+            sdk.setProperty("algorithm", "SHA-512");
+            sdk.setProperty("archiveDigest", actual);
+            sdk.setProperty("publisherDigest", expected.toLowerCase(java.util.Locale.ROOT));
+            try (var out = Files.newOutputStream(run.resolve("sdk.properties"))) {
+                sdk.store(out, "Verified download identity; not a checked-in SDK pin");
+            }
             process(run.resolve("extract.log"), run, List.of("tar", "--no-same-owner", "-xzf", archive.toString()));
         }
         List<String> units = new ArrayList<>(List.of("org.eclipse.oomph.setup.sdk.feature.group",
