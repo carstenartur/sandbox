@@ -48,7 +48,6 @@ jobs:
       GDK_BACKEND: x11
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
-      SANDBOX_LTK_PATCH_EVIDENCE: ${{ runner.temp }}/patched-ltk/runtime.properties
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -144,6 +143,8 @@ jobs:
           done
 
       - name: Reproduce the atomic Cleanup previews
+        env:
+          SANDBOX_LTK_PATCH_EVIDENCE: ${{ runner.temp }}/patched-ltk/runtime.properties
         run: >-
           timeout
           --signal=TERM
