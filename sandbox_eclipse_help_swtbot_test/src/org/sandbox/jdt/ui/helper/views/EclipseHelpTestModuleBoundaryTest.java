@@ -28,6 +28,14 @@ import org.junit.jupiter.api.Test;
 public class EclipseHelpTestModuleBoundaryTest {
 
 	private static final Set<String> HELP_TEST_SOURCES= Set.of(
+			"CleanupScenarioRunner.java", //$NON-NLS-1$
+			"CleanupScenarioRunnerTest.java", //$NON-NLS-1$
+			"CleanupScreenshotScenario.java", //$NON-NLS-1$
+			"CleanupScreenshotScenarioTest.java", //$NON-NLS-1$
+			"CleanupScreenshotScenarios.java", //$NON-NLS-1$
+			"CleanupSourceSnapshot.java", //$NON-NLS-1$
+			"CleanupSourceSnapshotTest.java", //$NON-NLS-1$
+			"CleanupWorkbenchDriver.java", //$NON-NLS-1$
 			"CodePatternsConfigurationScreenshot.java", //$NON-NLS-1$
 			"CodePatternsScreenshotVisibility.java", //$NON-NLS-1$
 			"CodePatternsScreenshotVisibilityTest.java", //$NON-NLS-1$
@@ -38,6 +46,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 			"FocusedCleanupConfigurationScreenshots.java", //$NON-NLS-1$
 			"JUnitBestEffortCleanupDialogSWTBotTest.java", //$NON-NLS-1$
 			"PdeXmlQuickFixScreenshot.java", //$NON-NLS-1$
+			"PreviewContract.java", //$NON-NLS-1$
 			"SandboxAtomicPreviewPatchedJdtSWTBotTest.java", //$NON-NLS-1$
 			"SandboxCheckout.java", //$NON-NLS-1$
 			"SandboxHelpScreenshotsMergeGateSWTBotTest.java", //$NON-NLS-1$
