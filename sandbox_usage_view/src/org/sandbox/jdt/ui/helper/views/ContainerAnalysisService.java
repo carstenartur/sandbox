@@ -26,11 +26,14 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.sandbox.jdt.container.analysis.AppendOnlyArraySeedDetector;
 import org.sandbox.jdt.container.analysis.ContainerContractInferrer;
 import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
+import org.sandbox.jdt.container.analysis.LocalDequeSequenceAnalyzer;
+import org.sandbox.jdt.container.analysis.LocalEnumIndexedMembershipAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalUniqueSequenceAnalyzer;
 import org.sandbox.jdt.container.api.ContainerRecommendation;
 import org.sandbox.jdt.container.api.ContainerRecommendation.ContractAssessment;
 import org.sandbox.jdt.container.api.ContainerRecommendation.Preservation;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
 import org.sandbox.jdt.container.api.TargetContainerContract;
 import org.sandbox.jdt.container.api.UsageEvidence;
 
@@ -44,6 +47,9 @@ final class ContainerAnalysisService {
 	private final AppendOnlyArraySeedDetector arraySeedDetector= new AppendOnlyArraySeedDetector();
 	private final LocalArrayUsageAnalyzer arrayUsageAnalyzer= new LocalArrayUsageAnalyzer();
 	private final LocalUniqueSequenceAnalyzer uniqueSequenceAnalyzer= new LocalUniqueSequenceAnalyzer();
+	private final LocalDequeSequenceAnalyzer dequeSequenceAnalyzer= new LocalDequeSequenceAnalyzer();
+	private final LocalEnumIndexedMembershipAnalyzer enumMembershipAnalyzer=
+			new LocalEnumIndexedMembershipAnalyzer();
 	private final ContainerContractInferrer contractInferrer= new ContainerContractInferrer();
 
 	List<ContainerAnalysisRow> analyze(ICompilationUnit unit) {
@@ -59,12 +65,11 @@ final class ContainerAnalysisService {
 		}
 		Map<String, ContainerUsageProfile> profiles= new LinkedHashMap<>();
 		for (ContainerUsageProfile seed : arraySeedDetector.findSeeds(root)) {
-			ContainerUsageProfile profile= arrayUsageAnalyzer.analyze(root, seed);
-			profiles.putIfAbsent(profile.identity().stableId(), profile);
+			addProfile(profiles, arrayUsageAnalyzer.analyze(root, seed));
 		}
-		for (ContainerUsageProfile profile : uniqueSequenceAnalyzer.analyze(root)) {
-			profiles.putIfAbsent(profile.identity().stableId(), profile);
-		}
+		uniqueSequenceAnalyzer.analyze(root).forEach(profile -> addProfile(profiles, profile));
+		dequeSequenceAnalyzer.analyze(root).forEach(profile -> addProfile(profiles, profile));
+		enumMembershipAnalyzer.analyze(root).forEach(profile -> addProfile(profiles, profile));
 
 		List<ContainerAnalysisRow> rows= new ArrayList<>();
 		for (ContainerUsageProfile profile : profiles.values()) {
@@ -81,6 +86,30 @@ final class ContainerAnalysisService {
 				.thenComparing(ContainerAnalysisRow::candidate)
 				.thenComparing(ContainerAnalysisRow::evidenceKind));
 		return List.copyOf(rows);
+	}
+
+	private static void addProfile(Map<String, ContainerUsageProfile> profiles,
+			ContainerUsageProfile profile) {
+		profiles.merge(profile.identity().stableId(), profile, ContainerAnalysisService::preferProfile);
+	}
+
+	private static ContainerUsageProfile preferProfile(
+			ContainerUsageProfile existing, ContainerUsageProfile candidate) {
+		int existingRank= completenessRank(existing.completeness());
+		int candidateRank= completenessRank(candidate.completeness());
+		if (candidateRank != existingRank) {
+			return candidateRank > existingRank ? candidate : existing;
+		}
+		return candidate.evidence().size() > existing.evidence().size() ? candidate : existing;
+	}
+
+	private static int completenessRank(AnalysisCompleteness completeness) {
+		return switch (completeness) {
+			case FLOW_COMPLETE -> 4;
+			case LOCAL_USAGE_COMPLETE -> 3;
+			case LOCAL_SEED -> 2;
+			case REJECTED -> 1;
+		};
 	}
 
 	private static ContainerAnalysisRow row(String compilationUnitHandle,
@@ -146,7 +175,10 @@ final class ContainerAnalysisService {
 						|| evidence.kind() == UsageEvidence.Kind.UNSAFE_ESCAPE
 						|| evidence.kind() == UsageEvidence.Kind.UNRESOLVED_BINDING
 						|| evidence.kind() == UsageEvidence.Kind.UNCLASSIFIED_USAGE
-						|| evidence.kind() == UsageEvidence.Kind.UNSUPPORTED_CONTINUATION)
+						|| evidence.kind() == UsageEvidence.Kind.UNSUPPORTED_CONTINUATION
+						|| evidence.kind() == UsageEvidence.Kind.CAPTURED_USAGE
+						|| evidence.kind() == UsageEvidence.Kind.ARRAY_IDENTITY
+						|| evidence.kind() == UsageEvidence.Kind.ARRAY_LENGTH_READ)
 				.map(UsageEvidence::summary)
 				.distinct()
 				.collect(Collectors.joining(System.lineSeparator()));

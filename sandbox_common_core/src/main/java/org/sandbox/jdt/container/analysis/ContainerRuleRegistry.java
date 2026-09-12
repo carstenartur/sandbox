@@ -31,6 +31,8 @@ public final class ContainerRuleRegistry {
 	public static final String UNORDERED_UNIQUE_SEQUENCE_SET= "semantic.sequence.unique.unordered-set"; //$NON-NLS-1$
 	public static final String FIFO_SEQUENCE_DEQUE= "semantic.sequence.fifo.deque"; //$NON-NLS-1$
 	public static final String LIFO_SEQUENCE_DEQUE= "semantic.sequence.lifo.deque"; //$NON-NLS-1$
+	public static final String ENUM_INDEXED_MEMBERSHIP_SET=
+			"semantic.array.enum-indexed-membership.set"; //$NON-NLS-1$
 	public static final String COLLECTION_BULK_ADD= "existing.collection.bulk-add"; //$NON-NLS-1$
 	public static final String COLLECTION_COPY_CONSTRUCTOR= "existing.collection.copy-constructor"; //$NON-NLS-1$
 	public static final String ARRAY_FILL= "existing.array.fill"; //$NON-NLS-1$
@@ -75,6 +77,11 @@ public final class ContainerRuleRegistry {
 	/** Returns the descriptor for LIFO list-to-deque analysis. */
 	public static ContainerRuleDescriptor lifoSequenceDeque() {
 		return RULES.get(LIFO_SEQUENCE_DEQUE);
+	}
+
+	/** Returns the descriptor for enum-ordinal boolean membership to set analysis. */
+	public static ContainerRuleDescriptor enumIndexedMembershipSet() {
+		return RULES.get(ENUM_INDEXED_MEMBERSHIP_SET);
 	}
 
 	private static Map<String, ContainerRuleDescriptor> createRules() {
@@ -135,6 +142,13 @@ public final class ContainerRuleRegistry {
 				RuleOwnership.NOVEL,
 				"", //$NON-NLS-1$
 				"The rule replaces size-based tail removal with an explicit LIFO container contract.")); //$NON-NLS-1$
+		register(rules, new ContainerRuleDescriptor(
+				ENUM_INDEXED_MEMBERSHIP_SET,
+				ContainerShape.ARRAY,
+				ContainerShape.SET,
+				RuleOwnership.NOVEL,
+				"", //$NON-NLS-1$
+				"The rule replaces an internal enum-ordinal boolean table with an explicit enum membership contract; automatic primitive-array rewriting remains excluded.")); //$NON-NLS-1$
 		register(rules, new ContainerRuleDescriptor(
 				ARRAY_APPEND_SEQUENCE,
 				ContainerShape.ARRAY,

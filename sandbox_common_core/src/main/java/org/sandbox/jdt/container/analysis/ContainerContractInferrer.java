@@ -39,6 +39,8 @@ public final class ContainerContractInferrer {
 			new UniqueSequenceContractInferrer();
 	private final DequeSequenceContractInferrer dequeSequenceInferrer=
 			new DequeSequenceContractInferrer();
+	private final EnumIndexedMembershipContractInferrer enumMembershipInferrer=
+			new EnumIndexedMembershipContractInferrer();
 
 	/**
 	 * Selects the applicable semantic container strategy and returns one explainable
@@ -56,6 +58,11 @@ public final class ContainerContractInferrer {
 				dequeSequenceInferrer.infer(profile);
 		if (dequeSequence.isPresent()) {
 			return dequeSequence;
+		}
+		Optional<ContainerRecommendation> enumMembership=
+				enumMembershipInferrer.infer(profile);
+		if (enumMembership.isPresent()) {
+			return enumMembership;
 		}
 		return inferAppendArray(profile);
 	}
