@@ -2,27 +2,30 @@
 
 ## Purpose
 
-The normal Sandbox target and product use the stock Eclipse 2026-06 / Platform 4.40 JDT UI bundle. Automatic multi-file cleanup scope expansion is an optional product capability that requires a reviewed replacement of the singleton `org.eclipse.jdt.ui` bundle.
+The normal Sandbox target and product use the stock Eclipse 2026-09 / Platform 4.41 JDT UI bundle. Automatic multi-file cleanup scope expansion is an optional product capability that requires a reviewed replacement of the singleton `org.eclipse.jdt.ui` bundle.
 
 This delivery path is separate from the ordinary update site. It proves source provenance, target compatibility, exact p2 publication, installation into the materialized Linux product, product startup, and a real preview/apply/undo cleanup lifecycle before any public patch channel is considered.
 
-## Immutable 4.40 source coordinates
+## Immutable 4.41 source coordinates
 
 `.github/patched-jdt-ui.env` pins:
 
 - repository: `https://github.com/carstenartur/eclipse.jdt.ui.git`;
-- commit: `c9a174e62c32be00bd14c368524d36de75e9fd0f`;
-- parent commit: `c922f757b27b7e2b6215db383cec5f8aafd13227`;
+- commit: `3ad88260994f8410e2c2e055d2eafc26b9ff689b`;
+- parent commit: `54bd63e6453a7eb5db0bfc1d60f17e9568095619`;
 - bundle: `org.eclipse.jdt.ui`;
-- expected base version: `3.38.0`.
+- expected base version: `3.39.0`;
+- target JDT feature: `org.eclipse.jdt` version `3.20.700.v20260828-1142`.
 
-The commit has the official Eclipse 4.40/JDT UI 3.38.0 commit as its sole parent. It contains the two reviewed PR #94 patch files plus a provenance-only synchronization manifest:
+The commit has the official Eclipse 4.41/JDT UI release commit as its sole parent. The build verifies this parent directly from the immutable Git commit object, including in the depth-one checkout, and records the verified `sourceParent` in `provenance.json`.
+
+The retained patch includes scope expansion and coordinated-preview support. The synchronization manifest preserves the fork-specific files. Before compilation, the build checks the scope-expansion source and test against that manifest:
 
 - `CleanUpRefactoring.java`;
 - `MultiFileCleanUpScopeExpansionTest.java`;
-- `.github/fork-specific-files.txt`, listing exactly those two retained patch files.
+- `.github/fork-specific-files.txt`.
 
-It contains no 4.41 history or unrelated product changes. The build verifies both patch paths against the manifest before compiling the bundle.
+The runtime baseline must not be confused with the historical R4_40 source corpus used by the before/after migration tests. That corpus retains its original commit and provenance.
 
 ## Local stages
 
@@ -32,7 +35,7 @@ It contains no 4.41 history or unrelated product changes. The build verifies bot
 bash .github/scripts/build_patched_jdt_ui.sh target/patched-jdt-ui
 ```
 
-The script checks out only the immutable commit, verifies the productive source, PDE test and synchronization manifest, builds the single JDT UI bundle, validates singleton identity and the `3.38.0.*` version, and writes SHA-256 provenance.
+The script checks out only the immutable commit, verifies its sole parent, productive source, PDE test and synchronization manifest, builds the single JDT UI bundle, validates singleton identity and the `3.39.0.*` version, and writes SHA-256 provenance.
 
 ### 2. Compare against the resolved Sandbox target
 
@@ -42,7 +45,7 @@ bash .github/scripts/compare_patched_jdt_ui_with_target.sh \
   target/patched-jdt-ui-compatibility
 ```
 
-The gate resolves the checked-in Eclipse 2026-06 target and compares execution environment, required bundles, imports, exports, versions and checksums. A difference is rejected rather than assumed compatible.
+The gate resolves the checked-in Eclipse 2026-09 target and compares execution environment, required bundles, imports, exports, versions and checksums. A difference is rejected rather than assumed compatible.
 
 ### 3. Publish an exact-version p2 repository
 
@@ -83,4 +86,4 @@ The wrapper first proves that the supplied p2 repository and installation eviden
 
 ## Claim boundary
 
-A green workflow proves the Linux GTK x86_64 product path with Java 21 and the checked-in Eclipse 2026-06 target. It does not claim Windows or macOS runtime execution and does not automatically publish a persistent public patch repository.
+A green workflow proves the Linux GTK x86_64 product path with Java 21 and the checked-in Eclipse 2026-09 target. It does not claim Windows or macOS runtime execution and does not automatically publish a persistent public patch repository.

@@ -33,6 +33,11 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 class OomphSetupTest {
+    // SHA-512 of the actual SDK archive, independently matched against Eclipse's publisher checksum.
+    // Retained in Oomph artifact 10305489103 from run 34719406318, commit 16ce31b1.
+    private static final String SDK_SHA512 =
+            "503f757a096256f719139db67e2537478542585844876e0d68f702ca51dbc1a0282d3a5fa5023d77c1013c1b35a90525cc02aeed1af17ced26bde293da46d2cf";
+
     private final Path module = Path.of("").toAbsolutePath();
     private final Path root = module.getParent();
 
@@ -70,6 +75,27 @@ class OomphSetupTest {
     }
 
     @Test
+    void sdkPinRejectsReplacingArchiveAndPublisherTogether() {
+        String replacement = "0".repeat(128);
+        assertThrows(AssertionError.class, () -> verifySdkDigest(replacement, replacement));
+    }
+
+    @Test
+    void sdkPinAcceptsOnlyTheVerifiedReleaseAndMatchingPublisher() {
+        assertTrue(SDK_SHA512.matches("[0-9a-f]{128}"), "The release pin must be a complete SHA-512 digest");
+        assertDoesNotThrow(() -> verifySdkDigest(SDK_SHA512, SDK_SHA512));
+        for (String invalid : List.of("0".repeat(128), "", SDK_SHA512.substring(1))) {
+            assertThrows(AssertionError.class, () -> verifySdkDigest(invalid, SDK_SHA512));
+            assertThrows(AssertionError.class, () -> verifySdkDigest(SDK_SHA512, invalid));
+        }
+    }
+
+    private static void verifySdkDigest(String actual, String publisher) {
+        assertEquals(SDK_SHA512, actual, "SDK archive must match the checked-in Eclipse 4.41 pin");
+        assertEquals(SDK_SHA512, publisher, "Publisher checksum must match the checked-in Eclipse 4.41 pin");
+    }
+
+    @Test
     @EnabledIfSystemProperty(named = "oomph.integration", matches = "true")
     void officialCatalogFreshWorkspaceAndManualUpdate() throws Exception {
         Path run = Files.createDirectories(module.resolve("target/oomph-runtime"));
@@ -90,8 +116,19 @@ class OomphSetupTest {
             try (var in = new java.security.DigestInputStream(Files.newInputStream(archive), digest)) {
                 in.transferTo(java.io.OutputStream.nullOutputStream());
             }
-            assertEquals(expected.toLowerCase(java.util.Locale.ROOT), java.util.HexFormat.of().formatHex(digest.digest()),
-                    "SDK archive must match the published Eclipse checksum");
+            String actual = java.util.HexFormat.of().formatHex(digest.digest());
+            verifySdkDigest(actual, expected.toLowerCase(java.util.Locale.ROOT));
+            // Retain the verified archive identity in the existing Oomph evidence artifact.
+            Properties sdk = new Properties();
+            sdk.setProperty("archive", "eclipse-SDK-4.41-linux-gtk-x86_64.tar.gz");
+            sdk.setProperty("release", "R-4.41-202608281142");
+            sdk.setProperty("algorithm", "SHA-512");
+            sdk.setProperty("archiveDigest", actual);
+            sdk.setProperty("pinnedDigest", SDK_SHA512);
+            sdk.setProperty("publisherDigest", expected.toLowerCase(java.util.Locale.ROOT));
+            try (var out = Files.newOutputStream(run.resolve("sdk.properties"))) {
+                sdk.store(out, "Archive and publisher verified against the checked-in SDK pin");
+            }
             process(run.resolve("extract.log"), run, List.of("tar", "--no-same-owner", "-xzf", archive.toString()));
         }
         List<String> units = new ArrayList<>(List.of("org.eclipse.oomph.setup.sdk.feature.group",
