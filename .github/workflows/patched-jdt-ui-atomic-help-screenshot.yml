@@ -124,7 +124,7 @@ jobs:
             -Dsandbox.ltk.root="$GITHUB_WORKSPACE" \
             -Dsandbox.ltk.output="$RUNNER_TEMP/patched-ltk" \
             -Dsandbox.ltk.resolvedJars="$RUNNER_TEMP/patched-jdt-ui-compatibility/resolved-jars.txt" \
-            -Dsandbox.ltk.maven="$(command -v mvn)" test
+            -Dsandbox.ltk.maven="$(command -v mvn)" package
 
       - name: Preserve committed atomic preview baselines
         shell: bash

@@ -42,9 +42,13 @@ mvn -B -ntp -Dsandbox.tycho.linux-only=true \
   -Dsandbox.ltk.root="$PWD" \
   -Dsandbox.ltk.output="$PWD/target/ltk-runtime-patch" \
   -Dsandbox.ltk.resolvedJars="$PWD/target/patched-jdt-ui-compatibility/resolved-jars.txt" \
-  -Dsandbox.ltk.maven="$(command -v mvn)" test
+  -Dsandbox.ltk.maven="$(command -v mvn)" package
 export SANDBOX_LTK_PATCH_EVIDENCE="$PWD/target/ltk-runtime-patch/runtime.properties"
 ```
+
+The `package` phase is required: Tycho must consume the packaged OSGi JAR of
+`sandbox_common_core`, not its plain `target/classes` reactor output. Tests run
+before packaging; this does not skip the selected JUnit gates.
 
 Use a disposable checkout: this command intentionally modifies its target file.
 The output directory must not already exist. The IT is explicitly selected;

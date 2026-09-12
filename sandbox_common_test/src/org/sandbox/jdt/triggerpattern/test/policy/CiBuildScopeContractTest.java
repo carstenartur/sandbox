@@ -23,9 +23,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.Manifest;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -122,6 +124,29 @@ public class CiBuildScopeContractTest {
 		}
 	}
 
+	@Test
+	public void atomicProvisioningCannotStopBeforeBundlePackaging() throws IOException {
+		String workflow = Files.readString(repositoryRoot().resolve(ATOMIC_WORKFLOW), StandardCharsets.UTF_8);
+		assertAtomicMavenScopes(workflow);
+		String provision = workflowStep(workflow, LTK_STEP);
+		for (String phase : List.of("compile", "test")) { //$NON-NLS-1$ //$NON-NLS-2$
+			String premature = workflow.replace(provision, provision.replace(" package", " " + phase)); //$NON-NLS-1$ //$NON-NLS-2$
+			assertThrows(AssertionError.class, () -> assertAtomicMavenScopes(premature), phase);
+		}
+	}
+
+	@Test
+	public void atomicLayoutDeclaresItsLtkUiDependency() throws IOException {
+		Path manifest = repositoryRoot().resolve("sandbox_eclipse_help_swtbot_test/META-INF/MANIFEST.MF"); //$NON-NLS-1$
+		try (var input = Files.newInputStream(manifest)) {
+			String required = new Manifest(input).getMainAttributes().getValue("Require-Bundle"); //$NON-NLS-1$
+			assertTrue(Arrays.stream(required.split(",")) //$NON-NLS-1$
+					.map(clause -> clause.split(";", 2)[0].strip()) //$NON-NLS-1$
+					.anyMatch("org.eclipse.ltk.ui.refactoring"::equals), //$NON-NLS-1$
+					"The preview API must be a direct PDE dependency, not an access-rule workaround"); //$NON-NLS-1$
+		}
+	}
+
 	private static void assertAtomicMavenScopes(String workflow) {
 		assertEquals(2, occurrences(workflow, LINUX_ONLY), ATOMIC_WORKFLOW);
 		for (String name : List.of(LTK_STEP, ATOMIC_STEP)) {
@@ -130,7 +155,7 @@ public class CiBuildScopeContractTest {
 		String provision = workflowStep(workflow, LTK_STEP);
 		assertTrue(provision.contains("mvn "), LTK_STEP); //$NON-NLS-1$
 		assertTrue(provision.contains("-Dtest=LtkRuntimePatchTest,LtkRuntimeMetadataTest,PinnedLtkRuntimeIT"), LTK_STEP); //$NON-NLS-1$
-		assertTrue(provision.stripTrailing().endsWith(" test"), LTK_STEP); //$NON-NLS-1$
+		assertTrue(provision.stripTrailing().endsWith(" package"), LTK_STEP); //$NON-NLS-1$
 		assertFalse(provision.contains("-DskipTests"), LTK_STEP); //$NON-NLS-1$
 		assertFalse(provision.contains("-Dmaven.test.skip"), LTK_STEP); //$NON-NLS-1$
 		String preview = workflowStep(workflow, ATOMIC_STEP);
