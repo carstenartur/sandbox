@@ -8,20 +8,20 @@ This roadmap tracks work that remains after establishing the current Sandbox tar
 
 | Component | Value |
 |---|---|
-| Eclipse simultaneous release | Eclipse 2026-06 |
-| Eclipse Platform | 4.40 |
+| Eclipse simultaneous release | Eclipse 2026-09 |
+| Eclipse Platform | 4.41 |
 | Java execution environment | Java 21 |
 | Tycho | 5.0.4 |
-| Orbit aggregation | 2026-06 |
-| Bouncy Castle | 1.84 from Orbit maven-osgi release 4.40.0 |
+| Orbit aggregation | 2026-09 |
+| Bouncy Castle | 1.85 family (bcprov 1.85.2) from Orbit maven-osgi release 4.41.0 |
 
-`main` builds and tests one active target platform. Compatibility with older Eclipse releases is not currently claimed.
+`main` builds and tests one active target platform. Compatibility with older Eclipse releases is not currently claimed. Every baseline change needs fresh results from the gates below; the version table is not runtime evidence.
 
 ## Completed foundation
 
-- [x] Use a named Eclipse 2026-06 repository instead of a floating Eclipse release URL.
-- [x] Align the Orbit aggregation with Eclipse 2026-06.
-- [x] Pin the four Bouncy Castle bundles to one 1.84 version set.
+- [x] Use a named Eclipse 2026-09 repository instead of a floating Eclipse release URL.
+- [x] Align the Orbit aggregation with Eclipse 2026-09.
+- [x] Pin the four Bouncy Castle bundles to Orbit's explicit 1.85.0/1.85.2 version map.
 - [x] Include JDT, PDE, the Eclipse SDK, EGit/JGit, license information, and SWTBot.
 - [x] Validate the target through Tycho before compiling dependent plug-ins.
 - [x] Keep product, p2 category, Oomph, capability inventory, and active documentation on the same baseline through `RepositoryBaselineConsistencyTest`.
@@ -31,7 +31,7 @@ This roadmap tracks work that remains after establishing the current Sandbox tar
 
 ### 1. Make dependency resolution fully immutable
 
-The named 2026-06 repositories constrain the release line, but installable units declared with `version="0.0.0"` may still resolve to newer qualifier builds published inside that line.
+The named 2026-09 repositories constrain the release line, but installable units declared with `version="0.0.0"` may still resolve to newer qualifier builds published inside that line.
 
 Planned work:
 
@@ -82,11 +82,13 @@ When the active Eclipse or Tycho baseline changes:
 1. update the root `pom.xml` and Java-enforcer diagnostic;
 2. update `eclipse.target`, including matching Orbit and Bouncy Castle sources;
 3. update `sandbox_product/sandbox.product` and `sandbox_product/category.xml`;
-4. update `sandbox_oomph/sandbox.setup`;
+4. update the contributor Oomph setup and its real-SDK acceptance test;
 5. update `docs/capabilities.json` and regenerate `docs/capabilities.md`;
 6. update the contributor, build, distribution, target, product, and Oomph documentation;
 7. extend `RepositoryBaselineConsistencyTest` when another active contract is introduced;
 8. run the complete required CI set before merging.
+
+Keep frozen migration corpora, their dedicated QA configurations and historical evidence separate from this active runtime update. A source-corpus upgrade needs its own coordinated pins, inventories and evidence.
 
 ## Required verification
 
