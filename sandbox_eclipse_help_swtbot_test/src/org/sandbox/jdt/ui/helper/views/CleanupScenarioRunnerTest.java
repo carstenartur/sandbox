@@ -55,6 +55,38 @@ class CleanupScenarioRunnerTest {
 	}
 
 	@Test
+	void rejectsPendingUndoWhenTheCallbackRestoredItsSources() {
+		var workspace= new TestWorkspace();
+		AssertionError failure= assertThrows(AssertionError.class, () -> CleanupScenarioRunner.run(
+				scenario(Set.of()), PreviewContract.FILE_COMBINED_DIFF, workspace, () -> {
+				workspace.files.put(SOURCE, new byte[] { 9 });
+				workspace.files.put(SOURCE, new byte[] { 1 });
+				workspace.canUndo= true;
+			}));
+		assertTrue(failure.getMessage().contains("unexpected Undo history")); //$NON-NLS-1$
+		assertEquals(0, workspace.undos);
+		assertEquals(2, workspace.historyClears);
+		assertEquals(2, workspace.snapshots);
+		assertFalse(workspace.canUndo);
+	}
+
+	@Test
+	void rejectsRemainingUndoAfterTheAggregateUndo() {
+		var workspace= new TestWorkspace();
+		workspace.leaveUndoEntryAfterUndo= true;
+		AssertionError failure= assertThrows(AssertionError.class, () -> CleanupScenarioRunner.run(
+				scenario(Set.of(SOURCE)), PreviewContract.FILE_COMBINED_DIFF, workspace, () -> {
+				workspace.files.put(SOURCE, new byte[] { 9 });
+				workspace.canUndo= true;
+			}));
+		assertTrue(failure.getMessage().contains("unexpected Undo history")); //$NON-NLS-1$
+		assertEquals(1, workspace.undos);
+		assertEquals(2, workspace.historyClears);
+		assertEquals(3, workspace.snapshots);
+		assertFalse(workspace.canUndo);
+	}
+
+	@Test
 	void rejectsTheWrongPreviewContractBeforeTouchingTheWorkspace() {
 		var workspace= new TestWorkspace();
 		assertThrows(IllegalArgumentException.class, () -> CleanupScenarioRunner.run(
@@ -162,6 +194,7 @@ class CleanupScenarioRunnerTest {
 		private boolean canUndo;
 		private boolean ran;
 		private boolean restoreOnUndo= true;
+		private boolean leaveUndoEntryAfterUndo;
 
 		@Override
 		public CleanupSourceSnapshot snapshot() {
@@ -186,7 +219,7 @@ class CleanupScenarioRunnerTest {
 			if (restoreOnUndo) {
 				files.put(SOURCE, new byte[] { 1 });
 			}
-			canUndo= false;
+			canUndo= leaveUndoEntryAfterUndo;
 		}
 	}
 }

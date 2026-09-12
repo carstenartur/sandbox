@@ -64,6 +64,9 @@ final class CleanupScenarioRunner {
 				workspace.undo();
 				assertChangedPaths(scenario, before, workspace.snapshot(), Set.of(), "after aggregate Undo"); //$NON-NLS-1$
 			}
+			if (workspace.canUndo()) {
+				throw new AssertionError(scenario.id() + ": unexpected Undo history after source restoration"); //$NON-NLS-1$
+			}
 		} finally {
 			workspace.clearUndoHistory();
 		}
