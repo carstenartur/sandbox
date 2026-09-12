@@ -1,0 +1,460 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LocalEnumIndexedMembershipAnalyzer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">LocalEnumIndexedMembershipAnalyzer.java</span></div><h1>LocalEnumIndexedMembershipAnalyzer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SynchronizedStatement;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AccessProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AtomicityRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ConcurrencyProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ContainerIdentity;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.IterationSemantics;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.MutationLifecycle;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.NullContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.SynchronizationKind;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.WorkloadShape;
+import org.sandbox.jdt.container.api.UsageEvidence;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
+
+/**
+ * Proves a narrow local enum-membership table encoded as {@code boolean[]}.
+ *
+ * &lt;p&gt;The array must be created with exactly {@code SomeEnum.values().length} slots,
+ * and every element access must use {@code value.ordinal()} for that same enum type.
+ * Reads represent membership queries; literal {@code true}/{@code false} writes
+ * represent enable/disable operations. Array length, numeric indexing, aliases,
+ * escapes, captures and computed writes reject the profile.&lt;/p&gt;
+ *
+ * &lt;p&gt;The source profile deliberately remains physically accurate: the current
+ * container is a primitive {@code boolean[]} with indexed reads/writes. The fact
+ * that those positions encode enum membership is retained as explicit evidence and
+ * consumed only by the specialized contract inferrer.&lt;/p&gt;
+ */
+<span class="fc" id="L81">public final class LocalEnumIndexedMembershipAnalyzer {</span>
+
+	/** Returns source-ordered complete or rejected local enum-membership profiles. */
+	public List&lt;ContainerUsageProfile&gt; analyze(CompilationUnit unit) {
+<span class="fc" id="L85">		Objects.requireNonNull(unit, &quot;unit&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L86">		List&lt;ContainerUsageProfile&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L87">		unit.accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(VariableDeclarationFragment fragment) {
+<span class="fc" id="L90">				candidate(fragment).map(LocalEnumIndexedMembershipAnalyzer::analyzeCandidate)</span>
+<span class="fc" id="L91">						.ifPresent(result::add);</span>
+<span class="fc" id="L92">				return true;</span>
+			}
+		});
+<span class="pc" id="L95">		result.sort(Comparator.comparingInt(profile -&gt; profile.identity().sourceStart()));</span>
+<span class="fc" id="L96">		return List.copyOf(result);</span>
+	}
+
+	private static Optional&lt;Candidate&gt; candidate(VariableDeclarationFragment fragment) {
+<span class="fc" id="L100">		IVariableBinding binding= fragment.resolveBinding();</span>
+<span class="pc bpc" id="L101" title="3 of 6 branches missed.">		if (binding == null || binding.isField() || binding.isParameter()</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">				|| !(fragment.getParent() instanceof VariableDeclarationStatement declaration)</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">				|| declaration.fragments().size() != 1</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">				|| !(fragment.getInitializer() instanceof ArrayCreation creation)</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">				|| creation.getInitializer() != null</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">				|| creation.dimensions().size() != 1</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">				|| !isBooleanArray(declaration.getType().resolveBinding())</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">				|| !isBooleanArray(creation.getType().resolveBinding())) {</span>
+<span class="fc" id="L109">			return Optional.empty();</span>
+		}
+<span class="fc" id="L111">		Expression dimension= (Expression) creation.dimensions().get(0);</span>
+<span class="fc" id="L112">		ITypeBinding enumType= enumTypeFromValuesLength(dimension);</span>
+<span class="fc" id="L113">		MethodDeclaration method= enclosingMethod(fragment);</span>
+<span class="fc" id="L114">		String bindingKey= binding.getVariableDeclaration().getKey();</span>
+<span class="pc bpc" id="L115" title="4 of 8 branches missed.">		if (enumType == null || method == null || method.getBody() == null</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">				|| bindingKey == null || bindingKey.isBlank()) {</span>
+<span class="nc" id="L117">			return Optional.empty();</span>
+		}
+<span class="fc" id="L119">		return Optional.of(new Candidate(</span>
+<span class="fc" id="L120">				fragment, method, binding.getVariableDeclaration(), bindingKey,</span>
+<span class="fc" id="L121">				enumType.getTypeDeclaration(), dimension));</span>
+	}
+
+	private static ContainerUsageProfile analyzeCandidate(Candidate candidate) {
+<span class="fc" id="L125">		Observations observations= new Observations(candidate);</span>
+<span class="fc" id="L126">		candidate.method().getBody().accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(SimpleName name) {
+<span class="fc bfc" id="L129" title="All 2 branches covered.">				if (hasBinding(name.resolveBinding(), candidate.bindingKey())) {</span>
+<span class="fc" id="L130">					classify(name, candidate, observations);</span>
+				}
+<span class="fc" id="L132">				return true;</span>
+			}
+		});
+<span class="fc" id="L135">		return observations.profile();</span>
+	}
+
+	private static void classify(
+			SimpleName name,
+			Candidate candidate,
+			Observations observations) {
+<span class="fc" id="L142">		observations.bindingSeen= true;</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">		if (candidate.fragment().getName() == name) {</span>
+<span class="fc" id="L144">			return;</span>
+		}
+<span class="fc bfc" id="L146" title="All 2 branches covered.">		if (crossesExecutableBoundary(name, candidate.binding())) {</span>
+<span class="fc" id="L147">			observations.reject(Kind.CAPTURED_USAGE,</span>
+					&quot;Enum membership table is captured across an executable boundary&quot;, name); //$NON-NLS-1$
+<span class="fc" id="L149">			return;</span>
+		}
+
+<span class="fc" id="L152">		Expression reference= completeReferenceExpression(name, candidate.bindingKey());</span>
+<span class="fc" id="L153">		ASTNode parent= reference.getParent();</span>
+<span class="pc bpc" id="L154" title="1 of 4 branches missed.">		if (parent instanceof ArrayAccess access &amp;&amp; access.getArray() == reference) {</span>
+<span class="fc" id="L155">			classifyArrayAccess(access, candidate, observations);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">		} else if (isLengthRead(reference, parent)) {</span>
+<span class="fc" id="L157">			observations.reject(Kind.ARRAY_LENGTH_READ,</span>
+					&quot;Array cardinality is observed; set size would represent enabled members instead&quot;, //$NON-NLS-1$
+					reference);
+<span class="fc bfc" id="L160" title="All 2 branches covered.">		} else if (parent instanceof VariableDeclarationFragment fragment</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">				&amp;&amp; fragment.getInitializer() == reference) {</span>
+<span class="fc" id="L162">			observations.reject(Kind.UNSAFE_ESCAPE,</span>
+					&quot;Enum membership table is aliased to another local variable&quot;, reference); //$NON-NLS-1$
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">		} else if (parent instanceof Assignment assignment</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">				&amp;&amp; assignment.getRightHandSide() == reference) {</span>
+<span class="nc" id="L166">			observations.reject(Kind.UNSAFE_ESCAPE,</span>
+					&quot;Enum membership table is assigned to another variable or field&quot;, reference); //$NON-NLS-1$
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">		} else if (parent instanceof ReturnStatement) {</span>
+<span class="nc" id="L169">			observations.reject(Kind.UNSAFE_ESCAPE,</span>
+					&quot;Enum membership table escapes through a return statement&quot;, reference); //$NON-NLS-1$
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">		} else if (parent instanceof MethodInvocation invocation</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">				&amp;&amp; invocation.arguments().contains(reference)) {</span>
+<span class="nc" id="L173">			observations.reject(Kind.UNSAFE_ESCAPE,</span>
+					&quot;Enum membership table is passed to another method&quot;, reference); //$NON-NLS-1$
+<span class="pc bpc" id="L175" title="1 of 4 branches missed.">		} else if (parent instanceof InfixExpression infix &amp;&amp; isIdentityComparison(infix)) {</span>
+<span class="fc" id="L176">			observations.reject(Kind.ARRAY_IDENTITY,</span>
+					&quot;Array identity is observed by a reference comparison&quot;, reference); //$NON-NLS-1$
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">		} else if (parent instanceof SynchronizedStatement synchronizedStatement</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">				&amp;&amp; synchronizedStatement.getExpression() == reference) {</span>
+<span class="fc" id="L180">			observations.reject(Kind.ARRAY_IDENTITY,</span>
+					&quot;Array identity is used as a synchronization monitor&quot;, reference); //$NON-NLS-1$
+		} else {
+<span class="nc" id="L183">			observations.reject(Kind.UNCLASSIFIED_USAGE,</span>
+					&quot;Array use is outside the enum-membership contract&quot;, reference); //$NON-NLS-1$
+		}
+<span class="fc" id="L186">	}</span>
+
+	private static void classifyArrayAccess(
+			ArrayAccess access,
+			Candidate candidate,
+			Observations observations) {
+<span class="fc bfc" id="L192" title="All 2 branches covered.">		if (!isOrdinalIndex(access.getIndex(), candidate.enumType())) {</span>
+<span class="fc" id="L193">			observations.reject(Kind.REJECTION_BOUNDARY,</span>
+					&quot;Array index is not ordinal() of the enum that defines table cardinality&quot;, //$NON-NLS-1$
+<span class="fc" id="L195">					access.getIndex());</span>
+<span class="fc" id="L196">			return;</span>
+		}
+<span class="fc" id="L198">		observations.add(Kind.ENUM_ORDINAL_INDEX,</span>
+				&quot;Membership slot is selected by ordinal() of &quot; //$NON-NLS-1$
+<span class="fc" id="L200">						+ candidate.enumType().getQualifiedName(),</span>
+<span class="fc" id="L201">				access.getIndex());</span>
+
+<span class="fc" id="L203">		ASTNode parent= access.getParent();</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">		if (parent instanceof Assignment assignment</span>
+<span class="pc bpc" id="L205" title="1 of 2 branches missed.">				&amp;&amp; assignment.getLeftHandSide() == access) {</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">			if (assignment.getOperator() != Assignment.Operator.ASSIGN</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">					|| !(unwrap(assignment.getRightHandSide()) instanceof BooleanLiteral literal)) {</span>
+<span class="fc" id="L208">				observations.reject(Kind.REJECTION_BOUNDARY,</span>
+						&quot;Membership writes must assign literal true or false&quot;, assignment); //$NON-NLS-1$
+<span class="fc" id="L210">				return;</span>
+			}
+<span class="fc" id="L212">			observations.write(literal.booleanValue(), assignment);</span>
+<span class="fc" id="L213">			return;</span>
+		}
+<span class="fc" id="L215">		observations.read(access);</span>
+<span class="fc" id="L216">	}</span>
+
+	private static ITypeBinding enumTypeFromValuesLength(Expression expression) {
+<span class="fc" id="L219">		Expression unwrapped= unwrap(expression);</span>
+		Expression receiver;
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		if (unwrapped instanceof FieldAccess field</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">				&amp;&amp; &quot;length&quot;.equals(field.getName().getIdentifier())) { //$NON-NLS-1$</span>
+<span class="fc" id="L223">			receiver= field.getExpression();</span>
+		} else {
+<span class="nc" id="L225">			return null;</span>
+		}
+<span class="fc" id="L227">		Expression valuesExpression= unwrap(receiver);</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">		if (!(valuesExpression instanceof MethodInvocation values)</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">				|| !&quot;values&quot;.equals(values.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">				|| !values.arguments().isEmpty()) {</span>
+<span class="nc" id="L231">			return null;</span>
+		}
+<span class="fc" id="L233">		IMethodBinding method= values.resolveMethodBinding();</span>
+<span class="pc bpc" id="L234" title="2 of 4 branches missed.">		if (method == null || method.getDeclaringClass() == null</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">				|| !method.getDeclaringClass().isEnum()) {</span>
+<span class="nc" id="L236">			return null;</span>
+		}
+<span class="fc" id="L238">		ITypeBinding returnType= method.getReturnType();</span>
+<span class="pc bpc" id="L239" title="2 of 4 branches missed.">		if (returnType == null || !returnType.isArray()) {</span>
+<span class="nc" id="L240">			return null;</span>
+		}
+<span class="fc" id="L242">		ITypeBinding component= returnType.getComponentType();</span>
+<span class="pc bpc" id="L243" title="2 of 4 branches missed.">		return component != null &amp;&amp; sameType(component, method.getDeclaringClass())</span>
+<span class="pc" id="L244">				? component.getTypeDeclaration() : null;</span>
+	}
+
+	private static boolean isOrdinalIndex(Expression expression, ITypeBinding enumType) {
+<span class="fc" id="L248">		Expression unwrapped= unwrap(expression);</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">		if (!(unwrapped instanceof MethodInvocation ordinal)</span>
+<span class="pc bpc" id="L250" title="1 of 2 branches missed.">				|| !&quot;ordinal&quot;.equals(ordinal.getName().getIdentifier()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">				|| !ordinal.arguments().isEmpty()</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">				|| ordinal.getExpression() == null) {</span>
+<span class="fc" id="L253">			return false;</span>
+		}
+<span class="fc" id="L255">		ITypeBinding receiverType= ordinal.getExpression().resolveTypeBinding();</span>
+<span class="fc" id="L256">		IMethodBinding method= ordinal.resolveMethodBinding();</span>
+<span class="pc bpc" id="L257" title="2 of 6 branches missed.">		return receiverType != null &amp;&amp; sameType(receiverType, enumType)</span>
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">				&amp;&amp; method != null &amp;&amp; method.getDeclaringClass() != null</span>
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">				&amp;&amp; &quot;java.lang.Enum&quot;.equals( //$NON-NLS-1$</span>
+<span class="fc" id="L260">						method.getDeclaringClass().getErasure().getQualifiedName());</span>
+	}
+
+	private static boolean isBooleanArray(ITypeBinding type) {
+<span class="pc bpc" id="L264" title="3 of 6 branches missed.">		if (type == null || !type.isArray() || type.getDimensions() != 1) {</span>
+<span class="nc" id="L265">			return false;</span>
+		}
+<span class="fc" id="L267">		ITypeBinding component= type.getComponentType();</span>
+<span class="pc bpc" id="L268" title="1 of 4 branches missed.">		return component != null &amp;&amp; component.isPrimitive()</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">				&amp;&amp; &quot;boolean&quot;.equals(component.getName()); //$NON-NLS-1$</span>
+	}
+
+	private static boolean sameType(ITypeBinding left, ITypeBinding right) {
+<span class="pc bpc" id="L273" title="2 of 4 branches missed.">		if (left == null || right == null) {</span>
+<span class="nc" id="L274">			return false;</span>
+		}
+<span class="fc" id="L276">		return left.getTypeDeclaration().isEqualTo(right.getTypeDeclaration());</span>
+	}
+
+	private static MethodDeclaration enclosingMethod(ASTNode node) {
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">		for (ASTNode current= node.getParent(); current != null; current= current.getParent()) {</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">			if (current instanceof MethodDeclaration) {</span>
+<span class="fc" id="L282">				return (MethodDeclaration) current;</span>
+			}
+		}
+<span class="nc" id="L285">		return null;</span>
+	}
+
+	private static boolean crossesExecutableBoundary(
+			ASTNode reference,
+			IVariableBinding declaration) {
+<span class="fc" id="L291">		IMethodBinding declaringMethod= declaration.getDeclaringMethod();</span>
+<span class="pc bpc" id="L292" title="1 of 2 branches missed.">		if (declaringMethod == null) {</span>
+<span class="nc" id="L293">			return true;</span>
+		}
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">		for (ASTNode current= reference.getParent(); current != null; current= current.getParent()) {</span>
+<span class="pc bpc" id="L296" title="2 of 6 branches missed.">			if (current instanceof LambdaExpression</span>
+					|| current instanceof AnonymousClassDeclaration
+					|| current instanceof AbstractTypeDeclaration) {
+<span class="fc" id="L299">				return true;</span>
+			}
+<span class="fc bfc" id="L301" title="All 2 branches covered.">			if (current instanceof MethodDeclaration method) {</span>
+<span class="pc bpc" id="L302" title="1 of 2 branches missed.">				return !sameMethod(declaringMethod, method.resolveBinding());</span>
+			}
+		}
+<span class="nc" id="L305">		return true;</span>
+	}
+
+	private static boolean sameMethod(IMethodBinding left, IMethodBinding right) {
+<span class="pc bpc" id="L309" title="2 of 4 branches missed.">		if (left == null || right == null) {</span>
+<span class="nc" id="L310">			return false;</span>
+		}
+<span class="fc" id="L312">		String leftKey= left.getMethodDeclaration().getKey();</span>
+<span class="fc" id="L313">		String rightKey= right.getMethodDeclaration().getKey();</span>
+<span class="pc bpc" id="L314" title="2 of 4 branches missed.">		return leftKey != null &amp;&amp; leftKey.equals(rightKey);</span>
+	}
+
+	private static boolean hasBinding(IBinding binding, String key) {
+<span class="fc" id="L318">		return binding instanceof IVariableBinding variable</span>
+<span class="fc bfc" id="L319" title="All 4 branches covered.">				&amp;&amp; key.equals(variable.getVariableDeclaration().getKey());</span>
+	}
+
+	private static Expression completeReferenceExpression(SimpleName name, String bindingKey) {
+<span class="fc" id="L323">		Expression reference= name;</span>
+<span class="fc" id="L324">		ASTNode parent= reference.getParent();</span>
+<span class="fc bfc" id="L325" title="All 2 branches covered.">		if (parent instanceof QualifiedName qualified</span>
+<span class="pc bpc" id="L326" title="1 of 2 branches missed.">				&amp;&amp; qualified.getName() == reference</span>
+<span class="nc bnc" id="L327" title="All 2 branches missed.">				&amp;&amp; hasBinding(qualified.resolveBinding(), bindingKey)) {</span>
+<span class="nc" id="L328">			reference= qualified;</span>
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">		} else if (parent instanceof FieldAccess field</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">				&amp;&amp; field.getName() == reference</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">				&amp;&amp; hasBinding(field.resolveFieldBinding(), bindingKey)) {</span>
+<span class="nc" id="L332">			reference= field;</span>
+		}
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">		while (reference.getParent() instanceof ParenthesizedExpression parenthesized) {</span>
+<span class="nc" id="L335">			reference= parenthesized;</span>
+		}
+<span class="fc" id="L337">		return reference;</span>
+	}
+
+	private static boolean isLengthRead(Expression reference, ASTNode parent) {
+<span class="fc bfc" id="L341" title="All 2 branches covered.">		if (parent instanceof QualifiedName qualified) {</span>
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">			return qualified.getQualifier() == reference</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">					&amp;&amp; &quot;length&quot;.equals(qualified.getName().getIdentifier()); //$NON-NLS-1$</span>
+		}
+<span class="pc" id="L345">		return parent instanceof FieldAccess field</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">				&amp;&amp; field.getExpression() == reference</span>
+<span class="pc bpc" id="L347" title="3 of 4 branches missed.">				&amp;&amp; &quot;length&quot;.equals(field.getName().getIdentifier()); //$NON-NLS-1$</span>
+	}
+
+	private static boolean isIdentityComparison(InfixExpression expression) {
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">		return expression.getOperator() == InfixExpression.Operator.EQUALS</span>
+<span class="pc bnc" id="L352" title="All 2 branches missed.">				|| expression.getOperator() == InfixExpression.Operator.NOT_EQUALS;</span>
+	}
+
+	private static Expression unwrap(Expression expression) {
+<span class="fc" id="L356">		Expression current= expression;</span>
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">		while (current instanceof ParenthesizedExpression parenthesized) {</span>
+<span class="nc" id="L358">			current= parenthesized.getExpression();</span>
+		}
+<span class="fc" id="L360">		return current;</span>
+	}
+
+<span class="fc" id="L363">	private record Candidate(</span>
+			VariableDeclarationFragment fragment,
+			MethodDeclaration method,
+			IVariableBinding binding,
+			String bindingKey,
+			ITypeBinding enumType,
+			Expression cardinalityExpression) {
+	}
+
+	private static final class Observations {
+		private final Candidate candidate;
+<span class="fc" id="L374">		private final List&lt;UsageEvidence&gt; evidence= new ArrayList&lt;&gt;();</span>
+		private boolean rejected;
+		private boolean bindingSeen;
+		private int reads;
+		private int writes;
+
+<span class="fc" id="L380">		Observations(Candidate candidate) {</span>
+<span class="fc" id="L381">			this.candidate= candidate;</span>
+<span class="fc" id="L382">			add(Kind.ENUM_CARDINALITY,</span>
+					&quot;Boolean table cardinality is defined by &quot; //$NON-NLS-1$
+<span class="fc" id="L384">							+ candidate.enumType().getQualifiedName() + &quot;.values().length&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L385">					candidate.cardinalityExpression());</span>
+<span class="fc" id="L386">		}</span>
+
+		void read(ASTNode node) {
+<span class="fc" id="L389">			reads++;</span>
+<span class="fc" id="L390">			add(Kind.ENUM_MEMBERSHIP_QUERY,</span>
+					&quot;Boolean table lookup observes membership of one enum constant&quot;, node); //$NON-NLS-1$
+<span class="fc" id="L392">		}</span>
+
+		void write(boolean enabled, ASTNode node) {
+<span class="fc" id="L395">			writes++;</span>
+<span class="fc bfc" id="L396" title="All 2 branches covered.">			add(enabled ? Kind.ENUM_MEMBERSHIP_ENABLE : Kind.ENUM_MEMBERSHIP_DISABLE,</span>
+<span class="fc bfc" id="L397" title="All 2 branches covered.">					enabled</span>
+<span class="fc" id="L398">						? &quot;Literal true enables membership of one enum constant&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L399">						: &quot;Literal false disables membership of one enum constant&quot;, //$NON-NLS-1$</span>
+					node);
+<span class="fc" id="L401">		}</span>
+
+		void reject(Kind kind, String summary, ASTNode node) {
+<span class="fc" id="L404">			rejected= true;</span>
+<span class="fc" id="L405">			add(kind, summary, node);</span>
+<span class="fc" id="L406">		}</span>
+
+		void add(Kind kind, String summary, ASTNode node) {
+<span class="fc" id="L409">			evidence.add(new UsageEvidence(kind, summary, node.getStartPosition(), node.getLength()));</span>
+<span class="fc" id="L410">		}</span>
+
+		ContainerUsageProfile profile() {
+<span class="pc bpc" id="L413" title="1 of 8 branches missed.">			boolean complete= bindingSeen &amp;&amp; reads &gt; 0 &amp;&amp; writes &gt; 0 &amp;&amp; !rejected;</span>
+<span class="fc bfc" id="L414" title="All 2 branches covered.">			if (reads == 0) {</span>
+<span class="fc" id="L415">				reject(Kind.REJECTION_BOUNDARY,</span>
+<span class="fc" id="L416">						&quot;No enum membership query was observed&quot;, candidate.fragment()); //$NON-NLS-1$</span>
+<span class="fc" id="L417">				complete= false;</span>
+			}
+<span class="fc bfc" id="L419" title="All 2 branches covered.">			if (writes == 0) {</span>
+<span class="fc" id="L420">				reject(Kind.REJECTION_BOUNDARY,</span>
+<span class="fc" id="L421">						&quot;No enum membership state write was observed&quot;, candidate.fragment()); //$NON-NLS-1$</span>
+<span class="fc" id="L422">				complete= false;</span>
+			}
+<span class="fc bfc" id="L424" title="All 2 branches covered.">			if (complete) {</span>
+<span class="fc" id="L425">				add(Kind.LOCAL_USAGE_COMPLETE,</span>
+						&quot;Every use of the enum-indexed membership table was classified&quot;, //$NON-NLS-1$
+<span class="fc" id="L427">						candidate.fragment());</span>
+			}
+<span class="fc" id="L429">			evidence.sort(Comparator.comparingInt(UsageEvidence::sourceStart)</span>
+<span class="pc" id="L430">					.thenComparing(item -&gt; item.kind().ordinal()));</span>
+<span class="fc" id="L431">			return new ContainerUsageProfile(</span>
+					new ContainerIdentity(
+<span class="fc" id="L433">							candidate.bindingKey(), candidate.fragment().getName().getIdentifier(),</span>
+<span class="fc bfc" id="L434" title="All 6 branches covered.">							candidate.fragment().getStartPosition(), candidate.fragment().getLength()),</span>
+					ContainerShape.ARRAY,
+					ElementDomain.PRIMITIVE,
+					new AccessProfile(reads &gt; 0, writes &gt; 0, false, false, false, reads &gt; 0, false),
+					OrderRequirement.NONE,
+					UniquenessRequirement.REQUIRED,
+					MutationLifecycle.CONTINUOUSLY_MUTABLE,
+					NullContract.NOT_APPLICABLE,
+<span class="fc bfc" id="L442" title="All 2 branches covered.">					complete ? AliasingContract.NO_OBSERVED_ALIAS : AliasingContract.UNKNOWN,</span>
+					EscapeLevel.LOCAL,
+<span class="fc bfc" id="L444" title="All 2 branches covered.">					complete ? threadConfined() : ConcurrencyProfile.unknown(),</span>
+<span class="fc bfc" id="L445" title="All 2 branches covered.">					complete ? AnalysisCompleteness.LOCAL_USAGE_COMPLETE</span>
+<span class="fc" id="L446">							: AnalysisCompleteness.REJECTED,</span>
+					evidence);
+		}
+	}
+
+	private static ConcurrencyProfile threadConfined() {
+<span class="fc" id="L452">		return new ConcurrencyProfile(</span>
+				ThreadExposure.THREAD_CONFINED,
+				SynchronizationKind.NONE,
+				IterationSemantics.UNKNOWN,
+				AtomicityRequirement.INDIVIDUAL_OPERATIONS,
+				WorkloadShape.UNKNOWN);
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

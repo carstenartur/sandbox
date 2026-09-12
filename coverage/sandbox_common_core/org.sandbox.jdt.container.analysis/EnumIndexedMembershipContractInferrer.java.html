@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EnumIndexedMembershipContractInferrer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">EnumIndexedMembershipContractInferrer.java</span></div><h1>EnumIndexedMembershipContractInferrer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.sandbox.jdt.container.api.ContainerRecommendation;
+import org.sandbox.jdt.container.api.ContainerRecommendation.AutomationLevel;
+import org.sandbox.jdt.container.api.ContainerRecommendation.Confidence;
+import org.sandbox.jdt.container.api.ContainerRecommendation.ContractAssessment;
+import org.sandbox.jdt.container.api.ContainerRecommendation.ContractProperty;
+import org.sandbox.jdt.container.api.ContainerRecommendation.Preservation;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AliasingContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.EscapeLevel;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.NullContract;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.OrderRequirement;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ThreadExposure;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.UniquenessRequirement;
+import org.sandbox.jdt.container.api.TargetContainerContract;
+import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
+
+/** Infers an explicit enum-membership set contract from a proven ordinal table. */
+<span class="fc" id="L38">public final class EnumIndexedMembershipContractInferrer {</span>
+
+	/** Returns a report-only semantic set recommendation for a complete local table. */
+	public Optional&lt;ContainerRecommendation&gt; infer(ContainerUsageProfile profile) {
+<span class="fc" id="L42">		Objects.requireNonNull(profile, &quot;profile&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">		if (!eligible(profile)) {</span>
+<span class="fc" id="L44">			return Optional.empty();</span>
+		}
+
+<span class="fc" id="L47">		TargetContainerContract target= new TargetContainerContract(</span>
+				ContainerShape.SET,
+				OrderRequirement.NONE,
+				UniquenessRequirement.REQUIRED,
+				Mutability.MUTABLE,
+				NullContract.REJECTED,
+				&quot;Represent enum membership explicitly instead of coupling storage to ordinal positions.&quot;); //$NON-NLS-1$
+
+<span class="fc" id="L55">		return Optional.of(new ContainerRecommendation(</span>
+				profile,
+				target,
+<span class="fc" id="L58">				ContainerRuleRegistry.enumIndexedMembershipSet(),</span>
+				Confidence.HIGH,
+				AutomationLevel.REPORT_ONLY,
+<span class="fc" id="L61">				List.of(</span>
+<span class="fc" id="L62">						assessment(ContractProperty.ORDER, Preservation.PRESERVED,</span>
+								&quot;Only membership is observed; neither numeric position nor encounter order is part of the proven contract.&quot;), //$NON-NLS-1$
+<span class="fc" id="L64">						assessment(ContractProperty.UNIQUENESS, Preservation.PRESERVED,</span>
+								&quot;Each enum constant owns exactly one boolean slot, which is equivalent to unique set membership.&quot;), //$NON-NLS-1$
+<span class="fc" id="L66">						assessment(ContractProperty.MUTABILITY, Preservation.PRESERVED,</span>
+								&quot;Literal true/false writes map to adding or removing the same enum member.&quot;), //$NON-NLS-1$
+<span class="fc" id="L68">						assessment(ContractProperty.NULLS, Preservation.REQUIRES_PROOF,</span>
+								&quot;A future rewrite must preserve the original null-key exception behavior of ordinal() for every membership query and update.&quot;), //$NON-NLS-1$
+<span class="fc" id="L70">						assessment(ContractProperty.ALIASING, Preservation.PRESERVED,</span>
+								&quot;The complete local proof found no alias, escape, identity observation or array publication.&quot;), //$NON-NLS-1$
+<span class="fc" id="L72">						assessment(ContractProperty.SIGNATURES, Preservation.PRESERVED,</span>
+								&quot;The membership table is a local variable, so no external declaration or signature changes are required.&quot;), //$NON-NLS-1$
+<span class="fc" id="L74">						assessment(ContractProperty.CONCURRENCY, Preservation.PRESERVED,</span>
+								&quot;The local table is proven thread-confined and is not captured.&quot;)))); //$NON-NLS-1$
+	}
+
+	private static boolean eligible(ContainerUsageProfile profile) {
+<span class="fc bfc" id="L79" title="All 2 branches covered.">		return profile.completeness() == AnalysisCompleteness.LOCAL_USAGE_COMPLETE</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">				&amp;&amp; profile.currentShape() == ContainerShape.ARRAY</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">				&amp;&amp; profile.elementDomain() == ElementDomain.PRIMITIVE</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">				&amp;&amp; profile.access().indexedRead()</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">				&amp;&amp; profile.access().indexedWrite()</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">				&amp;&amp; profile.access().membershipQuery()</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">				&amp;&amp; profile.orderRequirement() == OrderRequirement.NONE</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">				&amp;&amp; profile.uniquenessRequirement() == UniquenessRequirement.REQUIRED</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">				&amp;&amp; profile.escapeLevel() == EscapeLevel.LOCAL</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">				&amp;&amp; profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">				&amp;&amp; profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">				&amp;&amp; hasEvidence(profile, Kind.ENUM_CARDINALITY)</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">				&amp;&amp; hasEvidence(profile, Kind.ENUM_ORDINAL_INDEX)</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">				&amp;&amp; hasEvidence(profile, Kind.ENUM_MEMBERSHIP_QUERY)</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">				&amp;&amp; (hasEvidence(profile, Kind.ENUM_MEMBERSHIP_ENABLE)</span>
+<span class="pc bnc" id="L94" title="All 2 branches missed.">						|| hasEvidence(profile, Kind.ENUM_MEMBERSHIP_DISABLE));</span>
+	}
+
+	private static boolean hasEvidence(ContainerUsageProfile profile, Kind kind) {
+<span class="fc bfc" id="L98" title="All 2 branches covered.">		return profile.evidence().stream().anyMatch(evidence -&gt; evidence.kind() == kind);</span>
+	}
+
+	private static ContractAssessment assessment(
+			ContractProperty property,
+			Preservation preservation,
+			String explanation) {
+<span class="fc" id="L105">		return new ContractAssessment(property, preservation, explanation);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

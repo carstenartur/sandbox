@@ -39,6 +39,8 @@ import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 			new UniqueSequenceContractInferrer();
 <span class="fc" id="L40">	private final DequeSequenceContractInferrer dequeSequenceInferrer=</span>
 			new DequeSequenceContractInferrer();
+<span class="fc" id="L42">	private final EnumIndexedMembershipContractInferrer enumMembershipInferrer=</span>
+			new EnumIndexedMembershipContractInferrer();
 
 	/**
 	 * Selects the applicable semantic container strategy and returns one explainable
@@ -46,170 +48,175 @@ import org.sandbox.jdt.container.api.TargetContainerContract.Mutability;
 	 * use this common entry point.
 	 */
 	public Optional&lt;ContainerRecommendation&gt; infer(ContainerUsageProfile profile) {
-<span class="fc" id="L49">		Objects.requireNonNull(profile, &quot;profile&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L50">		Optional&lt;ContainerRecommendation&gt; uniqueSequence=</span>
-<span class="fc" id="L51">				uniqueSequenceInferrer.infer(profile);</span>
-<span class="fc bfc" id="L52" title="All 2 branches covered.">		if (uniqueSequence.isPresent()) {</span>
-<span class="fc" id="L53">			return uniqueSequence;</span>
+<span class="fc" id="L51">		Objects.requireNonNull(profile, &quot;profile&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L52">		Optional&lt;ContainerRecommendation&gt; uniqueSequence=</span>
+<span class="fc" id="L53">				uniqueSequenceInferrer.infer(profile);</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">		if (uniqueSequence.isPresent()) {</span>
+<span class="fc" id="L55">			return uniqueSequence;</span>
 		}
-<span class="fc" id="L55">		Optional&lt;ContainerRecommendation&gt; dequeSequence=</span>
-<span class="fc" id="L56">				dequeSequenceInferrer.infer(profile);</span>
-<span class="fc bfc" id="L57" title="All 2 branches covered.">		if (dequeSequence.isPresent()) {</span>
-<span class="fc" id="L58">			return dequeSequence;</span>
+<span class="fc" id="L57">		Optional&lt;ContainerRecommendation&gt; dequeSequence=</span>
+<span class="fc" id="L58">				dequeSequenceInferrer.infer(profile);</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">		if (dequeSequence.isPresent()) {</span>
+<span class="fc" id="L60">			return dequeSequence;</span>
 		}
-<span class="fc" id="L60">		return inferAppendArray(profile);</span>
+<span class="fc" id="L62">		Optional&lt;ContainerRecommendation&gt; enumMembership=</span>
+<span class="fc" id="L63">				enumMembershipInferrer.infer(profile);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">		if (enumMembership.isPresent()) {</span>
+<span class="fc" id="L65">			return enumMembership;</span>
+		}
+<span class="fc" id="L67">		return inferAppendArray(profile);</span>
 	}
 
 	private static Optional&lt;ContainerRecommendation&gt; inferAppendArray(
 			ContainerUsageProfile profile) {
-<span class="fc bfc" id="L65" title="All 2 branches covered.">		if (!eligibleAppendArray(profile)) {</span>
-<span class="fc" id="L66">			return Optional.empty();</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		if (!eligibleAppendArray(profile)) {</span>
+<span class="fc" id="L73">			return Optional.empty();</span>
 		}
 
-<span class="fc" id="L69">		OrderRequirement orderRequirement= inferredOrderRequirement(profile);</span>
-<span class="fc" id="L70">		TargetContainerContract target= new TargetContainerContract(</span>
+<span class="fc" id="L76">		OrderRequirement orderRequirement= inferredOrderRequirement(profile);</span>
+<span class="fc" id="L77">		TargetContainerContract target= new TargetContainerContract(</span>
 				ContainerShape.LIST,
 				orderRequirement,
-<span class="fc" id="L73">				profile.uniquenessRequirement(),</span>
+<span class="fc" id="L80">				profile.uniquenessRequirement(),</span>
 				Mutability.MUTABLE,
-<span class="fc" id="L75">				profile.nullContract(),</span>
+<span class="fc" id="L82">				profile.nullContract(),</span>
 				&quot;Use a dynamically growing mutable sequence instead of repeatedly copying an array.&quot;); //$NON-NLS-1$
 
-<span class="fc" id="L78">		List&lt;ContractAssessment&gt; assessments= new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L79">		assessments.add(orderAssessment(orderRequirement));</span>
-<span class="fc" id="L80">		assessments.add(new ContractAssessment(</span>
+<span class="fc" id="L85">		List&lt;ContractAssessment&gt; assessments= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L86">		assessments.add(orderAssessment(orderRequirement));</span>
+<span class="fc" id="L87">		assessments.add(new ContractAssessment(</span>
 				ContractProperty.UNIQUENESS,
 				Preservation.PRESERVED,
 				&quot;An array and a list both retain duplicate elements; any existing uniqueness guard remains in the surrounding code.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L84">		assessments.add(new ContractAssessment(</span>
+<span class="fc" id="L91">		assessments.add(new ContractAssessment(</span>
 				ContractProperty.MUTABILITY,
 				Preservation.PRESERVED,
 				&quot;The proposed list remains mutable during the same local construction and use phase.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L88">		assessments.add(new ContractAssessment(</span>
+<span class="fc" id="L95">		assessments.add(new ContractAssessment(</span>
 				ContractProperty.NULLS,
 				Preservation.PRESERVED,
 				&quot;Reference arrays and ArrayList have the same null capability; an unknown application-level null policy remains unknown.&quot;)); //$NON-NLS-1$
-<span class="fc" id="L92">		assessments.add(aliasingAssessment(profile));</span>
-<span class="fc" id="L93">		assessments.add(concurrencyAssessment(profile));</span>
-<span class="fc" id="L94">		assessments.add(signatureAssessment(profile));</span>
+<span class="fc" id="L99">		assessments.add(aliasingAssessment(profile));</span>
+<span class="fc" id="L100">		assessments.add(concurrencyAssessment(profile));</span>
+<span class="fc" id="L101">		assessments.add(signatureAssessment(profile));</span>
 
-<span class="pc bpc" id="L96" title="1 of 2 branches missed.">		Confidence confidence= completeProof(profile)</span>
-<span class="pc" id="L97">				? Confidence.HIGH : Confidence.MEDIUM;</span>
-<span class="fc" id="L98">		return Optional.of(new ContainerRecommendation(</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">		Confidence confidence= completeProof(profile)</span>
+<span class="pc" id="L104">				? Confidence.HIGH : Confidence.MEDIUM;</span>
+<span class="fc" id="L105">		return Optional.of(new ContainerRecommendation(</span>
 				profile,
 				target,
-<span class="fc" id="L101">				ContainerRuleRegistry.arrayAppendSequence(),</span>
+<span class="fc" id="L108">				ContainerRuleRegistry.arrayAppendSequence(),</span>
 				confidence,
 				AutomationLevel.REPORT_ONLY,
 				assessments));
 	}
 
 	private static boolean eligibleAppendArray(ContainerUsageProfile profile) {
-<span class="fc bfc" id="L108" title="All 2 branches covered.">		if (!completeProfile(profile)</span>
-<span class="pc bpc" id="L109" title="1 of 2 branches missed.">				|| profile.currentShape() != ContainerShape.ARRAY</span>
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">				|| !referenceDomain(profile.elementDomain())</span>
-<span class="pc bpc" id="L111" title="1 of 2 branches missed.">				|| !profile.access().append()</span>
-<span class="pc bpc" id="L112" title="1 of 2 branches missed.">				|| profile.access().positionalInsert()</span>
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">				|| profile.access().positionalRemove()) {</span>
-<span class="fc" id="L114">			return false;</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">		if (!completeProfile(profile)</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">				|| profile.currentShape() != ContainerShape.ARRAY</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">				|| !referenceDomain(profile.elementDomain())</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">				|| !profile.access().append()</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">				|| profile.access().positionalInsert()</span>
+<span class="pc bpc" id="L120" title="1 of 2 branches missed.">				|| profile.access().positionalRemove()) {</span>
+<span class="fc" id="L121">			return false;</span>
 		}
-<span class="fc" id="L116">		OrderRequirement orderRequirement= inferredOrderRequirement(profile);</span>
-<span class="pc bpc" id="L117" title="1 of 6 branches missed.">		return orderRequirement == OrderRequirement.NONE</span>
+<span class="fc" id="L123">		OrderRequirement orderRequirement= inferredOrderRequirement(profile);</span>
+<span class="pc bpc" id="L124" title="1 of 6 branches missed.">		return orderRequirement == OrderRequirement.NONE</span>
 				|| orderRequirement == OrderRequirement.ENCOUNTER
 				|| orderRequirement == OrderRequirement.POSITIONAL;
 	}
 
 	private static OrderRequirement inferredOrderRequirement(
 			ContainerUsageProfile profile) {
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">		if (completeProfile(profile)</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">				&amp;&amp; profile.orderRequirement() == OrderRequirement.UNKNOWN) {</span>
-<span class="fc" id="L126">			return OrderRequirement.NONE;</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		if (completeProfile(profile)</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">				&amp;&amp; profile.orderRequirement() == OrderRequirement.UNKNOWN) {</span>
+<span class="fc" id="L133">			return OrderRequirement.NONE;</span>
 		}
-<span class="fc" id="L128">		return profile.orderRequirement();</span>
+<span class="fc" id="L135">		return profile.orderRequirement();</span>
 	}
 
 	private static boolean completeProfile(ContainerUsageProfile profile) {
-<span class="fc bfc" id="L132" title="All 2 branches covered.">		return profile.completeness() == AnalysisCompleteness.LOCAL_USAGE_COMPLETE</span>
-<span class="fc bfc" id="L133" title="All 2 branches covered.">				|| profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">		return profile.completeness() == AnalysisCompleteness.LOCAL_USAGE_COMPLETE</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">				|| profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE;</span>
 	}
 
 	private static boolean referenceDomain(ElementDomain domain) {
-<span class="pc bpc" id="L137" title="3 of 4 branches missed.">		return domain == ElementDomain.REFERENCE || domain == ElementDomain.ENUM;</span>
+<span class="pc bpc" id="L144" title="3 of 4 branches missed.">		return domain == ElementDomain.REFERENCE || domain == ElementDomain.ENUM;</span>
 	}
 
 	private static ContractAssessment orderAssessment(
 			OrderRequirement orderRequirement) {
-<span class="fc bfc" id="L142" title="All 2 branches covered.">		if (orderRequirement == OrderRequirement.POSITIONAL) {</span>
-<span class="fc" id="L143">			return new ContractAssessment(</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">		if (orderRequirement == OrderRequirement.POSITIONAL) {</span>
+<span class="fc" id="L150">			return new ContractAssessment(</span>
 					ContractProperty.ORDER,
 					Preservation.PRESERVED,
 					&quot;A list retains the observed positional and encounter-order contract.&quot;); //$NON-NLS-1$
 		}
-<span class="fc bfc" id="L148" title="All 2 branches covered.">		if (orderRequirement == OrderRequirement.ENCOUNTER) {</span>
-<span class="fc" id="L149">			return new ContractAssessment(</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		if (orderRequirement == OrderRequirement.ENCOUNTER) {</span>
+<span class="fc" id="L156">			return new ContractAssessment(</span>
 					ContractProperty.ORDER,
 					Preservation.PRESERVED,
 					&quot;A list preserves the observed encounter order of appended elements.&quot;); //$NON-NLS-1$
 		}
-<span class="fc" id="L154">		return new ContractAssessment(</span>
+<span class="fc" id="L161">		return new ContractAssessment(</span>
 				ContractProperty.ORDER,
 				Preservation.PRESERVED,
 				&quot;No observed operation depends on element order; a list does not remove an existing order guarantee.&quot;); //$NON-NLS-1$
 	}
 
 	private static ContractAssessment aliasingAssessment(ContainerUsageProfile profile) {
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">		if (profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS</span>
-<span class="fc bfc" id="L162" title="All 2 branches covered.">				&amp;&amp; (profile.escapeLevel() == EscapeLevel.LOCAL</span>
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">						|| profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE)) {</span>
-<span class="fc" id="L164">			return new ContractAssessment(</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">		if (profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">				&amp;&amp; (profile.escapeLevel() == EscapeLevel.LOCAL</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">						|| profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE)) {</span>
+<span class="fc" id="L171">			return new ContractAssessment(</span>
 					ContractProperty.ALIASING,
 					Preservation.PRESERVED,
 					&quot;Every local use and closed-flow transfer was classified; no identity observation, external publication or unmatched alias remains.&quot;); //$NON-NLS-1$
 		}
-<span class="nc" id="L169">		return new ContractAssessment(</span>
+<span class="nc" id="L176">		return new ContractAssessment(</span>
 				ContractProperty.ALIASING,
 				Preservation.REQUIRES_PROOF,
 				&quot;Project-wide flow must prove that replacing the array object does not change observable alias or identity behavior.&quot;); //$NON-NLS-1$
 	}
 
 	private static ContractAssessment concurrencyAssessment(ContainerUsageProfile profile) {
-<span class="pc bpc" id="L176" title="1 of 2 branches missed.">		if (profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED</span>
-<span class="fc bfc" id="L177" title="All 2 branches covered.">				&amp;&amp; (profile.escapeLevel() == EscapeLevel.LOCAL</span>
-<span class="pc bpc" id="L178" title="1 of 2 branches missed.">						|| profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE)) {</span>
-<span class="fc" id="L179">			return new ContractAssessment(</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">		if (profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">				&amp;&amp; (profile.escapeLevel() == EscapeLevel.LOCAL</span>
+<span class="pc bpc" id="L185" title="1 of 2 branches missed.">						|| profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE)) {</span>
+<span class="fc" id="L186">			return new ContractAssessment(</span>
 					ContractProperty.CONCURRENCY,
 					Preservation.PRESERVED,
 					&quot;The complete source flow contains only synchronous local and parameter transfers and no capture or publication path.&quot;); //$NON-NLS-1$
 		}
-<span class="nc" id="L184">		return new ContractAssessment(</span>
+<span class="nc" id="L191">		return new ContractAssessment(</span>
 				ContractProperty.CONCURRENCY,
 				Preservation.REQUIRES_PROOF,
 				&quot;Thread exposure, synchronization and publication semantics must be closed before selecting a concrete collection implementation.&quot;); //$NON-NLS-1$
 	}
 
 	private static ContractAssessment signatureAssessment(ContainerUsageProfile profile) {
-<span class="fc bfc" id="L191" title="All 2 branches covered.">		if (profile.escapeLevel() == EscapeLevel.LOCAL) {</span>
-<span class="fc" id="L192">			return new ContractAssessment(</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">		if (profile.escapeLevel() == EscapeLevel.LOCAL) {</span>
+<span class="fc" id="L199">			return new ContractAssessment(</span>
 					ContractProperty.SIGNATURES,
 					Preservation.PRESERVED,
 					&quot;The represented value is a local variable and no method, constructor, field, or override signature changes are required.&quot;); //$NON-NLS-1$
 		}
-<span class="pc bpc" id="L197" title="1 of 2 branches missed.">		if (profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE) {</span>
-<span class="fc" id="L198">			return new ContractAssessment(</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		if (profile.completeness() == AnalysisCompleteness.FLOW_COMPLETE) {</span>
+<span class="fc" id="L205">			return new ContractAssessment(</span>
 					ContractProperty.SIGNATURES,
 					Preservation.PRESERVED,
 					&quot;The closed flow identifies every participating source signature; the atomic signature planner must still approve the exact executable group.&quot;); //$NON-NLS-1$
 		}
-<span class="nc" id="L203">		return new ContractAssessment(</span>
+<span class="nc" id="L210">		return new ContractAssessment(</span>
 				ContractProperty.SIGNATURES,
 				Preservation.REQUIRES_PROOF,
 				&quot;Fields, parameters, return values, callers and override families must be migrated atomically before execution.&quot;); //$NON-NLS-1$
 	}
 
 	private static boolean completeProof(ContainerUsageProfile profile) {
-<span class="pc bpc" id="L210" title="1 of 2 branches missed.">		return completeProfile(profile)</span>
-<span class="pc bpc" id="L211" title="1 of 2 branches missed.">				&amp;&amp; profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS</span>
-<span class="pc bpc" id="L212" title="1 of 2 branches missed.">				&amp;&amp; profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED;</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">		return completeProfile(profile)</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">				&amp;&amp; profile.aliasingContract() == AliasingContract.NO_OBSERVED_ALIAS</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">				&amp;&amp; profile.concurrency().exposure() == ThreadExposure.THREAD_CONFINED;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

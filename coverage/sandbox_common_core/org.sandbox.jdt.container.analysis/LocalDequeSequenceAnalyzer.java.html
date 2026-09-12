@@ -131,13 +131,13 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 <span class="fc" id="L131">			return;</span>
 		}
 <span class="fc" id="L133">		ASTNode parent= name.getParent();</span>
-<span class="pc bpc" id="L134" title="2 of 4 branches missed.">		if (parent instanceof MethodInvocation invocation &amp;&amp; invocation.getExpression() == name) {</span>
+<span class="pc bpc" id="L134" title="1 of 4 branches missed.">		if (parent instanceof MethodInvocation invocation &amp;&amp; invocation.getExpression() == name) {</span>
 <span class="fc" id="L135">			classifyInvocation(invocation, candidate.bindingKey(), observations);</span>
 <span class="fc" id="L136">			return;</span>
 		}
-<span class="nc bnc" id="L138" title="All 4 branches missed.">		if (parent instanceof EnhancedForStatement enhanced &amp;&amp; enhanced.getExpression() == name) {</span>
-<span class="nc" id="L139">			observations.iteration(name);</span>
-<span class="nc" id="L140">			return;</span>
+<span class="pc bpc" id="L138" title="2 of 4 branches missed.">		if (parent instanceof EnhancedForStatement enhanced &amp;&amp; enhanced.getExpression() == name) {</span>
+<span class="fc" id="L139">			observations.iteration(name);</span>
+<span class="fc" id="L140">			return;</span>
 		}
 <span class="nc" id="L142">		observations.reject(Kind.UNSAFE_ESCAPE,</span>
 				&quot;Sequence use escapes or observes unsupported positional semantics&quot;, name); //$NON-NLS-1$
@@ -290,8 +290,8 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 <span class="fc" id="L290">		}</span>
 
 		void iteration(ASTNode node) {
-<span class="nc" id="L293">			add(Kind.ENCOUNTER_ITERATION, &quot;The sequence is traversed in encounter order&quot;, node); //$NON-NLS-1$</span>
-<span class="nc" id="L294">		}</span>
+<span class="fc" id="L293">			add(Kind.ENCOUNTER_ITERATION, &quot;The sequence is traversed in encounter order&quot;, node); //$NON-NLS-1$</span>
+<span class="fc" id="L294">		}</span>
 
 		void reject(Kind kind, String summary, ASTNode node) {
 <span class="fc" id="L297">			rejected= true;</span>
@@ -303,9 +303,9 @@ import org.sandbox.jdt.container.api.UsageEvidence.Kind;
 <span class="nc" id="L303">				reject(Kind.REJECTION_BOUNDARY,</span>
 <span class="nc" id="L304">						&quot;A deque recommendation requires at least one proven tail append&quot;, candidate.fragment()); //$NON-NLS-1$</span>
 			}
-<span class="pc bpc" id="L306" title="1 of 4 branches missed.">			if (!headRemovalSeen &amp;&amp; !tailRemovalSeen) {</span>
-<span class="nc" id="L307">				reject(Kind.REJECTION_BOUNDARY,</span>
-<span class="nc" id="L308">						&quot;A deque recommendation requires removal from one proven end&quot;, candidate.fragment()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L306" title="All 4 branches covered.">			if (!headRemovalSeen &amp;&amp; !tailRemovalSeen) {</span>
+<span class="fc" id="L307">				reject(Kind.REJECTION_BOUNDARY,</span>
+<span class="fc" id="L308">						&quot;A deque recommendation requires removal from one proven end&quot;, candidate.fragment()); //$NON-NLS-1$</span>
 			}
 <span class="fc bfc" id="L310" title="All 4 branches covered.">			if (headRemovalSeen &amp;&amp; tailRemovalSeen) {</span>
 <span class="fc" id="L311">				reject(Kind.REJECTION_BOUNDARY,</span>

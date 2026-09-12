@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EnumIndexedMembershipContractIntegrationTest.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_test_commons</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.container.analysis</a> &gt; <span class="el_source">EnumIndexedMembershipContractIntegrationTest.java</span></div><h1>EnumIndexedMembershipContractIntegrationTest.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.container.analysis;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+
+import org.sandbox.jdt.container.api.ContainerRecommendation;
+import org.sandbox.jdt.container.api.ContainerRecommendation.AutomationLevel;
+import org.sandbox.jdt.container.api.ContainerRecommendation.Confidence;
+import org.sandbox.jdt.container.api.ContainerRecommendation.ContractProperty;
+import org.sandbox.jdt.container.api.ContainerRecommendation.Preservation;
+import org.sandbox.jdt.container.api.ContainerShape;
+import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.ElementDomain;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.NullContract;
+import org.sandbox.jdt.container.api.UsageEvidence.Kind;
+import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
+
+<span class="fc" id="L44">class EnumIndexedMembershipContractIntegrationTest {</span>
+
+	@RegisterExtension
+<span class="fc" id="L47">	final AbstractEclipseJava context= new EclipseJava22();</span>
+
+<span class="fc" id="L49">	private final LocalEnumIndexedMembershipAnalyzer analyzer=</span>
+<span class="fc" id="L50">			new LocalEnumIndexedMembershipAnalyzer();</span>
+<span class="fc" id="L51">	private final ContainerContractInferrer inferrer= new ContainerContractInferrer();</span>
+
+	@Test
+	void infersReportOnlySetFromEnumIndexedBooleanTable() throws CoreException {
+<span class="fc" id="L55">		ContainerUsageProfile profile= analyze(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				enum Flag { A, B, C }
+				boolean update(Flag flag) {
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[flag.ordinal()] = true;
+					boolean present = enabled[flag.ordinal()];
+					enabled[flag.ordinal()] = false;
+					return present;
+				}
+			}
+			&quot;&quot;&quot;);
+
+<span class="fc" id="L69">		assertEquals(AnalysisCompleteness.LOCAL_USAGE_COMPLETE, profile.completeness());</span>
+<span class="fc" id="L70">		assertEquals(ContainerShape.ARRAY, profile.currentShape());</span>
+<span class="fc" id="L71">		assertEquals(ElementDomain.PRIMITIVE, profile.elementDomain());</span>
+<span class="fc" id="L72">		assertEquals(NullContract.NOT_APPLICABLE, profile.nullContract());</span>
+<span class="fc" id="L73">		assertTrue(profile.access().indexedRead());</span>
+<span class="fc" id="L74">		assertTrue(profile.access().indexedWrite());</span>
+<span class="fc" id="L75">		assertTrue(profile.access().membershipQuery());</span>
+<span class="fc" id="L76">		assertTrue(hasEvidence(profile, Kind.ENUM_CARDINALITY));</span>
+<span class="fc" id="L77">		assertTrue(hasEvidence(profile, Kind.ENUM_ORDINAL_INDEX));</span>
+<span class="fc" id="L78">		assertTrue(hasEvidence(profile, Kind.ENUM_MEMBERSHIP_QUERY));</span>
+<span class="fc" id="L79">		assertTrue(hasEvidence(profile, Kind.ENUM_MEMBERSHIP_ENABLE));</span>
+<span class="fc" id="L80">		assertTrue(hasEvidence(profile, Kind.ENUM_MEMBERSHIP_DISABLE));</span>
+<span class="fc" id="L81">		assertTrue(hasEvidence(profile, Kind.LOCAL_USAGE_COMPLETE));</span>
+
+<span class="fc" id="L83">		ContainerRecommendation recommendation= inferrer.infer(profile).orElseThrow();</span>
+<span class="fc" id="L84">		assertEquals(ContainerShape.SET, recommendation.targetContract().shape());</span>
+<span class="fc" id="L85">		assertEquals(AutomationLevel.REPORT_ONLY, recommendation.automationLevel());</span>
+<span class="fc" id="L86">		assertEquals(Confidence.HIGH, recommendation.confidence());</span>
+<span class="fc" id="L87">		assertEquals(ContainerRuleRegistry.ENUM_INDEXED_MEMBERSHIP_SET,</span>
+<span class="fc" id="L88">				recommendation.rule().ruleId());</span>
+<span class="fc" id="L89">		assertEquals(Preservation.REQUIRES_PROOF,</span>
+<span class="fc" id="L90">				recommendation.assessments().stream()</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">						.filter(assessment -&gt; assessment.property() == ContractProperty.NULLS)</span>
+<span class="fc" id="L92">						.findFirst().orElseThrow().preservation());</span>
+<span class="fc" id="L93">	}</span>
+
+	@Test
+	void numericIndexRejectsOrdinalMembershipInference() throws CoreException {
+<span class="fc" id="L97">		ContainerUsageProfile profile= analyze(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				enum Flag { A, B }
+				boolean update(Flag flag) {
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[0] = true;
+					return enabled[flag.ordinal()];
+				}
+			}
+			&quot;&quot;&quot;);
+
+<span class="fc" id="L109">		assertRejected(profile, Kind.REJECTION_BOUNDARY);</span>
+<span class="fc" id="L110">	}</span>
+
+	@Test
+	void ordinalFromDifferentEnumRejectsMembershipInference() throws CoreException {
+<span class="fc" id="L114">		ContainerUsageProfile profile= analyze(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				enum Flag { A, B }
+				enum Other { A, B }
+				boolean update(Flag flag, Other other) {
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[other.ordinal()] = true;
+					return enabled[flag.ordinal()];
+				}
+			}
+			&quot;&quot;&quot;);
+
+<span class="fc" id="L127">		assertRejected(profile, Kind.REJECTION_BOUNDARY);</span>
+<span class="fc" id="L128">	}</span>
+
+	@Test
+	void ordinalFromDifferentLocalEnumRejectsMembershipInference() throws CoreException {
+<span class="fc" id="L132">		ContainerUsageProfile profile= analyze(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				boolean update() {
+					enum Flag { A, B }
+					enum Other { A, B }
+					Flag flag = Flag.A;
+					Other other = Other.A;
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[other.ordinal()] = true;
+					return enabled[flag.ordinal()];
+				}
+			}
+			&quot;&quot;&quot;);
+
+<span class="fc" id="L147">		assertRejected(profile, Kind.REJECTION_BOUNDARY);</span>
+<span class="fc" id="L148">	}</span>
+
+	@Test
+	void arrayLengthObservationRejectsSetContract() throws CoreException {
+<span class="fc" id="L152">		ContainerUsageProfile profile= analyze(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				enum Flag { A, B }
+				boolean update(Flag flag) {
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[flag.ordinal()] = true;
+					int capacity = enabled.length;
+					return enabled[flag.ordinal()] &amp;&amp; capacity &gt; 0;
+				}
+			}
+			&quot;&quot;&quot;);
+
+<span class="fc" id="L165">		assertRejected(profile, Kind.ARRAY_LENGTH_READ);</span>
+<span class="fc" id="L166">	}</span>
+
+	@Test
+	void localAliasRejectsSetContract() throws CoreException {
+<span class="fc" id="L170">		ContainerUsageProfile profile= analyze(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				enum Flag { A, B }
+				boolean update(Flag flag) {
+					boolean[] enabled = new boolean[Flag.values().length];
+					boolean[] alias = enabled;
+					enabled[flag.ordinal()] = true;
+					return alias[flag.ordinal()];
+				}
+			}
+			&quot;&quot;&quot;);
+
+<span class="fc" id="L183">		assertRejected(profile, Kind.UNSAFE_ESCAPE);</span>
+<span class="fc" id="L184">	}</span>
+
+	@Test
+	void lambdaCaptureRejectsSetContract() throws CoreException {
+<span class="fc" id="L188">		ContainerUsageProfile profile= analyze(&quot;&quot;&quot;</span>
+			package test;
+			import java.util.function.BooleanSupplier;
+			class Sample {
+				enum Flag { A, B }
+				boolean update(Flag flag) {
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[flag.ordinal()] = true;
+					BooleanSupplier reader = () -&gt; enabled[flag.ordinal()];
+					return reader.getAsBoolean();
+				}
+			}
+			&quot;&quot;&quot;);
+
+<span class="fc" id="L202">		assertRejected(profile, Kind.CAPTURED_USAGE);</span>
+<span class="fc" id="L203">	}</span>
+
+	@Test
+	void arrayIdentityComparisonRejectsSetContract() throws CoreException {
+<span class="fc" id="L207">		ContainerUsageProfile profile= analyze(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				enum Flag { A, B }
+				boolean update(Flag flag) {
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[flag.ordinal()] = true;
+					boolean same = enabled == enabled;
+					return same &amp;&amp; enabled[flag.ordinal()];
+				}
+			}
+			&quot;&quot;&quot;);
+
+<span class="fc" id="L220">		assertRejected(profile, Kind.ARRAY_IDENTITY);</span>
+<span class="fc" id="L221">	}</span>
+
+	@Test
+	void synchronizationOnArrayIdentityRejectsSetContract() throws CoreException {
+<span class="fc" id="L225">		ContainerUsageProfile profile= analyze(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				enum Flag { A, B }
+				boolean update(Flag flag) {
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[flag.ordinal()] = true;
+					synchronized (enabled) {
+						return enabled[flag.ordinal()];
+					}
+				}
+			}
+			&quot;&quot;&quot;);
+
+<span class="fc" id="L239">		assertRejected(profile, Kind.ARRAY_IDENTITY);</span>
+<span class="fc" id="L240">	}</span>
+
+	@Test
+	void writeOnlyTableIsNotPromotedToMembershipContract() throws CoreException {
+<span class="fc" id="L244">		ContainerUsageProfile profile= analyze(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				enum Flag { A, B }
+				void update(Flag flag) {
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[flag.ordinal()] = true;
+				}
+			}
+			&quot;&quot;&quot;);
+
+<span class="fc" id="L255">		assertRejected(profile, Kind.REJECTION_BOUNDARY);</span>
+<span class="fc" id="L256">		assertTrue(profile.evidence().stream()</span>
+<span class="fc" id="L257">				.anyMatch(evidence -&gt; evidence.summary().contains(&quot;No enum membership query&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L258">	}</span>
+
+	@Test
+	void computedMembershipWriteIsRejected() throws CoreException {
+<span class="fc" id="L262">		ContainerUsageProfile profile= analyze(&quot;&quot;&quot;</span>
+			package test;
+			class Sample {
+				enum Flag { A, B }
+				boolean update(Flag flag, boolean state) {
+					boolean[] enabled = new boolean[Flag.values().length];
+					enabled[flag.ordinal()] = state;
+					return enabled[flag.ordinal()];
+				}
+			}
+			&quot;&quot;&quot;);
+
+<span class="fc" id="L274">		assertRejected(profile, Kind.REJECTION_BOUNDARY);</span>
+<span class="fc" id="L275">	}</span>
+
+	private ContainerUsageProfile analyze(String source) throws CoreException {
+<span class="fc" id="L278">		ICompilationUnit unit= createUnit(source);</span>
+<span class="fc" id="L279">		List&lt;ContainerUsageProfile&gt; profiles= analyzer.analyze(parse(unit));</span>
+<span class="fc" id="L280">		assertEquals(1, profiles.size());</span>
+<span class="fc" id="L281">		return profiles.get(0);</span>
+	}
+
+	private void assertRejected(ContainerUsageProfile profile, Kind expectedEvidence) {
+<span class="fc" id="L285">		assertEquals(AnalysisCompleteness.REJECTED, profile.completeness());</span>
+<span class="fc" id="L286">		assertTrue(hasEvidence(profile, expectedEvidence));</span>
+<span class="fc" id="L287">		assertFalse(inferrer.infer(profile).isPresent());</span>
+<span class="fc" id="L288">	}</span>
+
+	private static boolean hasEvidence(ContainerUsageProfile profile, Kind kind) {
+<span class="fc bfc" id="L291" title="All 2 branches covered.">		return profile.evidence().stream().anyMatch(evidence -&gt; evidence.kind() == kind);</span>
+	}
+
+	private ICompilationUnit createUnit(String source) throws CoreException {
+<span class="fc" id="L295">		IPackageFragment fragment= context.getSourceFolder()</span>
+<span class="fc" id="L296">				.createPackageFragment(&quot;test&quot;, false, null); //$NON-NLS-1$</span>
+<span class="fc" id="L297">		return fragment.createCompilationUnit(&quot;Sample.java&quot;, source, true, null); //$NON-NLS-1$</span>
+	}
+
+	private CompilationUnit parse(ICompilationUnit unit) {
+<span class="fc" id="L301">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L302">		parser.setProject(context.getJavaProject());</span>
+<span class="fc" id="L303">		parser.setSource(unit);</span>
+<span class="fc" id="L304">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L305">		parser.setBindingsRecovery(true);</span>
+<span class="fc" id="L306">		parser.setStatementsRecovery(true);</span>
+<span class="fc" id="L307">		return (CompilationUnit) parser.createAST(null);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

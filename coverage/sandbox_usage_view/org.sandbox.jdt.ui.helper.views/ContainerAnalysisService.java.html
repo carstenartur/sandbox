@@ -26,11 +26,14 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.sandbox.jdt.container.analysis.AppendOnlyArraySeedDetector;
 import org.sandbox.jdt.container.analysis.ContainerContractInferrer;
 import org.sandbox.jdt.container.analysis.LocalArrayUsageAnalyzer;
+import org.sandbox.jdt.container.analysis.LocalDequeSequenceAnalyzer;
+import org.sandbox.jdt.container.analysis.LocalEnumIndexedMembershipAnalyzer;
 import org.sandbox.jdt.container.analysis.LocalUniqueSequenceAnalyzer;
 import org.sandbox.jdt.container.api.ContainerRecommendation;
 import org.sandbox.jdt.container.api.ContainerRecommendation.ContractAssessment;
 import org.sandbox.jdt.container.api.ContainerRecommendation.Preservation;
 import org.sandbox.jdt.container.api.ContainerUsageProfile;
+import org.sandbox.jdt.container.api.ContainerUsageProfile.AnalysisCompleteness;
 import org.sandbox.jdt.container.api.TargetContainerContract;
 import org.sandbox.jdt.container.api.UsageEvidence;
 
@@ -39,128 +42,157 @@ import org.sandbox.jdt.container.api.UsageEvidence;
  * presentation rows. It deliberately owns no rewrite, readiness or migration
  * policy.
  */
-<span class="fc" id="L42">final class ContainerAnalysisService {</span>
+<span class="fc" id="L45">final class ContainerAnalysisService {</span>
 
-<span class="fc" id="L44">	private final AppendOnlyArraySeedDetector arraySeedDetector= new AppendOnlyArraySeedDetector();</span>
-<span class="fc" id="L45">	private final LocalArrayUsageAnalyzer arrayUsageAnalyzer= new LocalArrayUsageAnalyzer();</span>
-<span class="fc" id="L46">	private final LocalUniqueSequenceAnalyzer uniqueSequenceAnalyzer= new LocalUniqueSequenceAnalyzer();</span>
-<span class="fc" id="L47">	private final ContainerContractInferrer contractInferrer= new ContainerContractInferrer();</span>
+<span class="fc" id="L47">	private final AppendOnlyArraySeedDetector arraySeedDetector= new AppendOnlyArraySeedDetector();</span>
+<span class="fc" id="L48">	private final LocalArrayUsageAnalyzer arrayUsageAnalyzer= new LocalArrayUsageAnalyzer();</span>
+<span class="fc" id="L49">	private final LocalUniqueSequenceAnalyzer uniqueSequenceAnalyzer= new LocalUniqueSequenceAnalyzer();</span>
+<span class="fc" id="L50">	private final LocalDequeSequenceAnalyzer dequeSequenceAnalyzer= new LocalDequeSequenceAnalyzer();</span>
+<span class="fc" id="L51">	private final LocalEnumIndexedMembershipAnalyzer enumMembershipAnalyzer=</span>
+<span class="fc" id="L52">			new LocalEnumIndexedMembershipAnalyzer();</span>
+<span class="fc" id="L53">	private final ContainerContractInferrer contractInferrer= new ContainerContractInferrer();</span>
 
 	List&lt;ContainerAnalysisRow&gt; analyze(ICompilationUnit unit) {
-<span class="nc bnc" id="L50" title="All 4 branches missed.">		if (unit == null || !unit.exists()) {</span>
-<span class="nc" id="L51">			return List.of();</span>
+<span class="nc bnc" id="L56" title="All 4 branches missed.">		if (unit == null || !unit.exists()) {</span>
+<span class="nc" id="L57">			return List.of();</span>
 		}
-<span class="nc" id="L53">		return analyze(parse(unit), unit.getPrimary().getHandleIdentifier());</span>
+<span class="nc" id="L59">		return analyze(parse(unit), unit.getPrimary().getHandleIdentifier());</span>
 	}
 
 	List&lt;ContainerAnalysisRow&gt; analyze(CompilationUnit root, String compilationUnitHandle) {
-<span class="pc bpc" id="L57" title="3 of 6 branches missed.">		if (root == null || compilationUnitHandle == null || compilationUnitHandle.isBlank()) {</span>
-<span class="nc" id="L58">			return List.of();</span>
+<span class="pc bpc" id="L63" title="3 of 6 branches missed.">		if (root == null || compilationUnitHandle == null || compilationUnitHandle.isBlank()) {</span>
+<span class="nc" id="L64">			return List.of();</span>
 		}
-<span class="fc" id="L60">		Map&lt;String, ContainerUsageProfile&gt; profiles= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L61" title="All 2 branches covered.">		for (ContainerUsageProfile seed : arraySeedDetector.findSeeds(root)) {</span>
-<span class="fc" id="L62">			ContainerUsageProfile profile= arrayUsageAnalyzer.analyze(root, seed);</span>
-<span class="fc" id="L63">			profiles.putIfAbsent(profile.identity().stableId(), profile);</span>
+<span class="fc" id="L66">		Map&lt;String, ContainerUsageProfile&gt; profiles= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		for (ContainerUsageProfile seed : arraySeedDetector.findSeeds(root)) {</span>
+<span class="fc" id="L68">			addProfile(profiles, arrayUsageAnalyzer.analyze(root, seed));</span>
 		}
-<span class="fc bfc" id="L65" title="All 2 branches covered.">		for (ContainerUsageProfile profile : uniqueSequenceAnalyzer.analyze(root)) {</span>
-<span class="fc" id="L66">			profiles.putIfAbsent(profile.identity().stableId(), profile);</span>
-		}
+<span class="fc" id="L70">		uniqueSequenceAnalyzer.analyze(root).forEach(profile -&gt; addProfile(profiles, profile));</span>
+<span class="fc" id="L71">		dequeSequenceAnalyzer.analyze(root).forEach(profile -&gt; addProfile(profiles, profile));</span>
+<span class="fc" id="L72">		enumMembershipAnalyzer.analyze(root).forEach(profile -&gt; addProfile(profiles, profile));</span>
 
-<span class="fc" id="L69">		List&lt;ContainerAnalysisRow&gt; rows= new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L70" title="All 2 branches covered.">		for (ContainerUsageProfile profile : profiles.values()) {</span>
-<span class="fc" id="L71">			Optional&lt;ContainerRecommendation&gt; recommendation= contractInferrer.infer(profile);</span>
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">			if (profile.evidence().isEmpty()) {</span>
-<span class="nc" id="L73">				rows.add(row(compilationUnitHandle, profile, recommendation, null));</span>
-<span class="nc" id="L74">				continue;</span>
+<span class="fc" id="L74">		List&lt;ContainerAnalysisRow&gt; rows= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">		for (ContainerUsageProfile profile : profiles.values()) {</span>
+<span class="fc" id="L76">			Optional&lt;ContainerRecommendation&gt; recommendation= contractInferrer.infer(profile);</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">			if (profile.evidence().isEmpty()) {</span>
+<span class="nc" id="L78">				rows.add(row(compilationUnitHandle, profile, recommendation, null));</span>
+<span class="nc" id="L79">				continue;</span>
 			}
-<span class="fc bfc" id="L76" title="All 2 branches covered.">			for (UsageEvidence evidence : profile.evidence()) {</span>
-<span class="fc" id="L77">				rows.add(row(compilationUnitHandle, profile, recommendation, evidence));</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">			for (UsageEvidence evidence : profile.evidence()) {</span>
+<span class="fc" id="L82">				rows.add(row(compilationUnitHandle, profile, recommendation, evidence));</span>
 			}
 		}
-<span class="fc" id="L80">		rows.sort(Comparator.comparingInt(ContainerAnalysisRow::sourceStart)</span>
-<span class="fc" id="L81">				.thenComparing(ContainerAnalysisRow::candidate)</span>
-<span class="fc" id="L82">				.thenComparing(ContainerAnalysisRow::evidenceKind));</span>
-<span class="fc" id="L83">		return List.copyOf(rows);</span>
+<span class="fc" id="L85">		rows.sort(Comparator.comparingInt(ContainerAnalysisRow::sourceStart)</span>
+<span class="fc" id="L86">				.thenComparing(ContainerAnalysisRow::candidate)</span>
+<span class="fc" id="L87">				.thenComparing(ContainerAnalysisRow::evidenceKind));</span>
+<span class="fc" id="L88">		return List.copyOf(rows);</span>
+	}
+
+	private static void addProfile(Map&lt;String, ContainerUsageProfile&gt; profiles,
+			ContainerUsageProfile profile) {
+<span class="fc" id="L93">		profiles.merge(profile.identity().stableId(), profile, ContainerAnalysisService::preferProfile);</span>
+<span class="fc" id="L94">	}</span>
+
+	private static ContainerUsageProfile preferProfile(
+			ContainerUsageProfile existing, ContainerUsageProfile candidate) {
+<span class="fc" id="L98">		int existingRank= completenessRank(existing.completeness());</span>
+<span class="fc" id="L99">		int candidateRank= completenessRank(candidate.completeness());</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		if (candidateRank != existingRank) {</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">			return candidateRank &gt; existingRank ? candidate : existing;</span>
+		}
+<span class="nc bnc" id="L103" title="All 2 branches missed.">		return candidate.evidence().size() &gt; existing.evidence().size() ? candidate : existing;</span>
+	}
+
+	private static int completenessRank(AnalysisCompleteness completeness) {
+<span class="pc bpc" id="L107" title="2 of 4 branches missed.">		return switch (completeness) {</span>
+<span class="nc" id="L108">			case FLOW_COMPLETE -&gt; 4;</span>
+<span class="fc" id="L109">			case LOCAL_USAGE_COMPLETE -&gt; 3;</span>
+<span class="nc" id="L110">			case LOCAL_SEED -&gt; 2;</span>
+<span class="fc" id="L111">			case REJECTED -&gt; 1;</span>
+		};
 	}
 
 	private static ContainerAnalysisRow row(String compilationUnitHandle,
 			ContainerUsageProfile profile, Optional&lt;ContainerRecommendation&gt; recommendation,
 			UsageEvidence evidence) {
-<span class="fc" id="L89">		String target= recommendation.map(ContainerAnalysisService::targetSummary)</span>
-<span class="fc" id="L90">				.orElse(&quot;No proven target&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L91">		String confidence= recommendation.map(value -&gt; value.confidence().name())</span>
-<span class="fc" id="L92">				.orElse(&quot;N/A&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L93">		String status= recommendation.map(value -&gt; value.automationLevel().name())</span>
-<span class="fc" id="L94">				.orElseGet(() -&gt; profile.completeness().name());</span>
-<span class="fc" id="L95">		String semanticSummary= recommendation.map(ContainerAnalysisService::semanticSummary)</span>
-<span class="fc" id="L96">				.orElseGet(() -&gt; rejectionSummary(profile));</span>
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">		int sourceStart= evidence == null ? profile.identity().sourceStart() : evidence.sourceStart();</span>
-<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		int sourceLength= evidence == null ? profile.identity().sourceLength() : evidence.sourceLength();</span>
-<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		String evidenceKind= evidence == null ? &quot;CANDIDATE&quot; : evidence.kind().name(); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		String evidenceSummary= evidence == null</span>
-<span class="nc" id="L101">				? &quot;Container candidate has no additional evidence rows&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L102">				: evidence.summary();</span>
-<span class="fc" id="L103">		return new ContainerAnalysisRow(</span>
-<span class="fc" id="L104">				compilationUnitHandle,</span>
-<span class="fc" id="L105">				profile.identity().displayName(),</span>
-<span class="fc" id="L106">				profile.currentShape().name(),</span>
-<span class="fc" id="L107">				target,</span>
-<span class="fc" id="L108">				confidence,</span>
-<span class="fc" id="L109">				status,</span>
-<span class="fc" id="L110">				evidenceKind,</span>
-<span class="fc" id="L111">				evidenceSummary,</span>
-<span class="fc" id="L112">				semanticSummary,</span>
-<span class="fc" id="L113">				sourceStart,</span>
-<span class="fc" id="L114">				sourceLength);</span>
+<span class="fc" id="L118">		String target= recommendation.map(ContainerAnalysisService::targetSummary)</span>
+<span class="fc" id="L119">				.orElse(&quot;No proven target&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L120">		String confidence= recommendation.map(value -&gt; value.confidence().name())</span>
+<span class="fc" id="L121">				.orElse(&quot;N/A&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L122">		String status= recommendation.map(value -&gt; value.automationLevel().name())</span>
+<span class="fc" id="L123">				.orElseGet(() -&gt; profile.completeness().name());</span>
+<span class="fc" id="L124">		String semanticSummary= recommendation.map(ContainerAnalysisService::semanticSummary)</span>
+<span class="fc" id="L125">				.orElseGet(() -&gt; rejectionSummary(profile));</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">		int sourceStart= evidence == null ? profile.identity().sourceStart() : evidence.sourceStart();</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">		int sourceLength= evidence == null ? profile.identity().sourceLength() : evidence.sourceLength();</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">		String evidenceKind= evidence == null ? &quot;CANDIDATE&quot; : evidence.kind().name(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">		String evidenceSummary= evidence == null</span>
+<span class="nc" id="L130">				? &quot;Container candidate has no additional evidence rows&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L131">				: evidence.summary();</span>
+<span class="fc" id="L132">		return new ContainerAnalysisRow(</span>
+<span class="fc" id="L133">				compilationUnitHandle,</span>
+<span class="fc" id="L134">				profile.identity().displayName(),</span>
+<span class="fc" id="L135">				profile.currentShape().name(),</span>
+<span class="fc" id="L136">				target,</span>
+<span class="fc" id="L137">				confidence,</span>
+<span class="fc" id="L138">				status,</span>
+<span class="fc" id="L139">				evidenceKind,</span>
+<span class="fc" id="L140">				evidenceSummary,</span>
+<span class="fc" id="L141">				semanticSummary,</span>
+<span class="fc" id="L142">				sourceStart,</span>
+<span class="fc" id="L143">				sourceLength);</span>
 	}
 
 	private static String targetSummary(ContainerRecommendation recommendation) {
-<span class="fc" id="L118">		TargetContainerContract target= recommendation.targetContract();</span>
-<span class="fc" id="L119">		return &quot;%s; order=%s; uniqueness=%s; mutability=%s; nulls=%s&quot;.formatted( //$NON-NLS-1$</span>
-<span class="fc" id="L120">				target.shape(), target.orderRequirement(), target.uniquenessRequirement(),</span>
-<span class="fc" id="L121">				target.mutability(), target.nullContract());</span>
+<span class="fc" id="L147">		TargetContainerContract target= recommendation.targetContract();</span>
+<span class="fc" id="L148">		return &quot;%s; order=%s; uniqueness=%s; mutability=%s; nulls=%s&quot;.formatted( //$NON-NLS-1$</span>
+<span class="fc" id="L149">				target.shape(), target.orderRequirement(), target.uniquenessRequirement(),</span>
+<span class="fc" id="L150">				target.mutability(), target.nullContract());</span>
 	}
 
 	private static String semanticSummary(ContainerRecommendation recommendation) {
-<span class="fc" id="L125">		String assessments= recommendation.assessments().stream()</span>
-<span class="pc bpc" id="L126" title="1 of 2 branches missed.">				.filter(assessment -&gt; assessment.preservation() != Preservation.PRESERVED)</span>
-<span class="fc" id="L127">				.map(ContainerAnalysisService::assessmentSummary)</span>
-<span class="fc" id="L128">				.collect(Collectors.joining(System.lineSeparator()));</span>
-<span class="pc bpc" id="L129" title="1 of 2 branches missed.">		if (assessments.isBlank()) {</span>
-<span class="fc" id="L130">			assessments= recommendation.assessments().stream()</span>
-<span class="fc" id="L131">					.map(ContainerAnalysisService::assessmentSummary)</span>
-<span class="fc" id="L132">					.collect(Collectors.joining(System.lineSeparator()));</span>
+<span class="fc" id="L154">		String assessments= recommendation.assessments().stream()</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">				.filter(assessment -&gt; assessment.preservation() != Preservation.PRESERVED)</span>
+<span class="fc" id="L156">				.map(ContainerAnalysisService::assessmentSummary)</span>
+<span class="fc" id="L157">				.collect(Collectors.joining(System.lineSeparator()));</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">		if (assessments.isBlank()) {</span>
+<span class="fc" id="L159">			assessments= recommendation.assessments().stream()</span>
+<span class="fc" id="L160">					.map(ContainerAnalysisService::assessmentSummary)</span>
+<span class="fc" id="L161">					.collect(Collectors.joining(System.lineSeparator()));</span>
 		}
-<span class="fc" id="L134">		return recommendation.targetContract().rationale()</span>
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">				+ (assessments.isBlank() ? &quot;&quot; : System.lineSeparator() + assessments); //$NON-NLS-1$</span>
+<span class="fc" id="L163">		return recommendation.targetContract().rationale()</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">				+ (assessments.isBlank() ? &quot;&quot; : System.lineSeparator() + assessments); //$NON-NLS-1$</span>
 	}
 
 	private static String assessmentSummary(ContractAssessment assessment) {
-<span class="fc" id="L139">		return &quot;%s: %s — %s&quot;.formatted(assessment.property(), assessment.preservation(), //$NON-NLS-1$</span>
-<span class="fc" id="L140">				assessment.explanation());</span>
+<span class="fc" id="L168">		return &quot;%s: %s — %s&quot;.formatted(assessment.property(), assessment.preservation(), //$NON-NLS-1$</span>
+<span class="fc" id="L169">				assessment.explanation());</span>
 	}
 
 	private static String rejectionSummary(ContainerUsageProfile profile) {
-<span class="fc" id="L144">		return profile.evidence().stream()</span>
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">				.filter(evidence -&gt; evidence.kind() == UsageEvidence.Kind.REJECTION_BOUNDARY</span>
-<span class="fc bfc" id="L146" title="All 2 branches covered.">						|| evidence.kind() == UsageEvidence.Kind.UNSAFE_ESCAPE</span>
-<span class="pc bpc" id="L147" title="1 of 2 branches missed.">						|| evidence.kind() == UsageEvidence.Kind.UNRESOLVED_BINDING</span>
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">						|| evidence.kind() == UsageEvidence.Kind.UNCLASSIFIED_USAGE</span>
-<span class="pc bpc" id="L149" title="1 of 2 branches missed.">						|| evidence.kind() == UsageEvidence.Kind.UNSUPPORTED_CONTINUATION)</span>
-<span class="fc" id="L150">				.map(UsageEvidence::summary)</span>
-<span class="fc" id="L151">				.distinct()</span>
-<span class="fc" id="L152">				.collect(Collectors.joining(System.lineSeparator()));</span>
+<span class="fc" id="L173">		return profile.evidence().stream()</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">				.filter(evidence -&gt; evidence.kind() == UsageEvidence.Kind.REJECTION_BOUNDARY</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">						|| evidence.kind() == UsageEvidence.Kind.UNSAFE_ESCAPE</span>
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">						|| evidence.kind() == UsageEvidence.Kind.UNRESOLVED_BINDING</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">						|| evidence.kind() == UsageEvidence.Kind.UNCLASSIFIED_USAGE</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">						|| evidence.kind() == UsageEvidence.Kind.UNSUPPORTED_CONTINUATION</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">						|| evidence.kind() == UsageEvidence.Kind.CAPTURED_USAGE</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">						|| evidence.kind() == UsageEvidence.Kind.ARRAY_IDENTITY</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">						|| evidence.kind() == UsageEvidence.Kind.ARRAY_LENGTH_READ)</span>
+<span class="fc" id="L182">				.map(UsageEvidence::summary)</span>
+<span class="fc" id="L183">				.distinct()</span>
+<span class="fc" id="L184">				.collect(Collectors.joining(System.lineSeparator()));</span>
 	}
 
 	private static CompilationUnit parse(ICompilationUnit unit) {
-<span class="nc" id="L156">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="nc" id="L157">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
-<span class="nc" id="L158">		parser.setSource(unit);</span>
-<span class="nc" id="L159">		parser.setResolveBindings(true);</span>
-<span class="nc" id="L160">		parser.setBindingsRecovery(true);</span>
-<span class="nc" id="L161">		parser.setStatementsRecovery(true);</span>
-<span class="nc" id="L162">		parser.setCompilerOptions(unit.getJavaProject().getOptions(true));</span>
-<span class="nc" id="L163">		return (CompilationUnit) parser.createAST(null);</span>
+<span class="nc" id="L188">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="nc" id="L189">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="nc" id="L190">		parser.setSource(unit);</span>
+<span class="nc" id="L191">		parser.setResolveBindings(true);</span>
+<span class="nc" id="L192">		parser.setBindingsRecovery(true);</span>
+<span class="nc" id="L193">		parser.setStatementsRecovery(true);</span>
+<span class="nc" id="L194">		parser.setCompilerOptions(unit.getJavaProject().getOptions(true));</span>
+<span class="nc" id="L195">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 
 	record ContainerAnalysisRow(
@@ -177,9 +209,9 @@ import org.sandbox.jdt.container.api.UsageEvidence;
 			int sourceLength) {
 
 		String details() {
-<span class="fc" id="L180">			return &quot;Candidate: %s%nCurrent: %s%nTarget: %s%nConfidence: %s%nStatus: %s%nEvidence: %s — %s%n%n%s&quot; //$NON-NLS-1$</span>
-<span class="fc" id="L181">					.formatted(candidate, currentShape, targetContract, confidence, status,</span>
-<span class="fc" id="L182">							evidenceKind, evidenceSummary, semanticSummary);</span>
+<span class="fc" id="L212">			return &quot;Candidate: %s%nCurrent: %s%nTarget: %s%nConfidence: %s%nStatus: %s%nEvidence: %s — %s%n%n%s&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L213">					.formatted(candidate, currentShape, targetContract, confidence, status,</span>
+<span class="fc" id="L214">							evidenceKind, evidenceSummary, semanticSummary);</span>
 		}
 	}
 }
