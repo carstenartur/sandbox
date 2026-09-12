@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "06d69b4e9a453b31a9617a2d5c681e762376d562",
-      "lastProcessedDate": "2026-09-11T02:27:11.372766150Z",
-      "totalProcessed": 5823,
+      "lastProcessedCommit": "f7f5ff38485ff2cf32c4f989ec83f81dc98e6c44",
+      "lastProcessedDate": "2026-09-12T02:36:34.017177469Z",
+      "totalProcessed": 5916,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3341,6 +3341,33 @@
           "deferredAt": "2026-09-11T02:26:13.582346354Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "cc7ec3ca161dd4c3f442073ee8426cf1b5fe5f4e",
+          "message": "Bug 426868: [1.8][quick fix] Type use annotation not preserved in add\nthrows and try-catch quick fixes\n",
+          "diffLines": 30,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-12T02:36:01.939949253Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b119a29fa393e16e5c068d6ec8a155c4a7f9df11",
+          "message": "Fixed bug 427169: [1.8][quick assist] lambda body: convert expression to\nblock",
+          "diffLines": 218,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-12T02:36:01.940358024Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "23dfea26642d6307c698c3c91e53a0dfaa50baae",
+          "message": "Bug 427169: [1.8][quick assist] lambda body: convert expression to block",
+          "diffLines": 91,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-12T02:36:01.940421502Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3404,7 +3431,7 @@
         "Algorithm/Sorting Logic": 1,
         "Exception Handling": 1,
         "UI Feature Implementation": 1,
-        "Refactoring": 5,
+        "Refactoring": 6,
         "Concurrency / Thread-Safety": 2,
         "JDT UI Feature": 2,
         "JDT UI Internal Refactoring": 1,
@@ -3484,7 +3511,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 29,
+        "API Migration": 30,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -3662,5 +3689,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 28594
+  "globalTotalProcessed": 28687
 }
