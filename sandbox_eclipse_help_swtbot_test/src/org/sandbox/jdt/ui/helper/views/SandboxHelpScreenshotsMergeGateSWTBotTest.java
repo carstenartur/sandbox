@@ -1,11 +1,8 @@
 package org.sandbox.jdt.ui.helper.views;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -21,8 +18,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.core.IJavaModelMarker;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.ltk.core.refactoring.IUndoManager;
-import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
 import org.eclipse.swtbot.swt.finder.finders.UIThreadRunnable;
@@ -116,16 +111,9 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 	@Test
 	@Order(4)
 	public void captureRealCleanupPreviewAndVerifyIndependentSelection() throws Exception {
-		IUndoManager undoManager= RefactoringCore.getUndoManager();
-		undoManager.flush();
-		try {
-			IProject previewProject= ResourcesPlugin.getWorkspace().getRoot().getProject(CLEANUP_PREVIEW_PROJECT);
-			useRealTargetPlatformBindings(previewProject);
-
-			IFile singleFile= previewProject.getFile("src/demo/single/SingleFileCleanup.java"); //$NON-NLS-1$
-			assertTrue(singleFile.exists(), "The deterministic single-file preview fixture must exist"); //$NON-NLS-1$
-			String before= readFile(singleFile);
-
+		IProject previewProject= ResourcesPlugin.getWorkspace().getRoot().getProject(CLEANUP_PREVIEW_PROJECT);
+		useRealTargetPlatformBindings(previewProject);
+		CleanupWorkbenchDriver.run(CleanupScreenshotScenarios.JFACE, PreviewContract.FILE_COMBINED_DIFF, () -> {
 			try {
 				screenshots.captureRealCleanupPreviewAndVerifyIndependentSelection();
 			} catch (AssertionError failure) {
@@ -134,15 +122,7 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 				throw new AssertionError(failure.getMessage() + "\nReal Cleanup preview tree:\n" + previewTree, //$NON-NLS-1$
 						failure);
 			}
-
-			assertTrue(undoManager.anythingToUndo(),
-					"The single-file Cleanup operation must remain available for aggregate undo verification"); //$NON-NLS-1$
-			undoManager.performUndo(null, new NullProgressMonitor());
-			assertEquals(before, readFile(singleFile),
-					"Undo must restore the single-file preview fixture byte-for-byte"); //$NON-NLS-1$
-		} finally {
-			undoManager.flush();
-		}
+		});
 	}
 
 	@Test
@@ -155,13 +135,8 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 	@Test
 	@Order(8)
 	public void verifyRealMethodReuseCleanupPreviewApplyAndUndo() throws Exception {
-		IUndoManager undoManager= RefactoringCore.getUndoManager();
-		undoManager.flush();
-		try {
-			screenshots.verifyRealMethodReuseCleanupPreviewApplyAndUndo();
-		} finally {
-			undoManager.flush();
-		}
+		CleanupWorkbenchDriver.run(CleanupScreenshotScenarios.METHOD_REUSE, PreviewContract.FILE_COMBINED_DIFF,
+				screenshots::verifyRealMethodReuseCleanupPreviewApplyAndUndo);
 	}
 
 	private static void showView(String viewId) {
@@ -260,11 +235,5 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 			.collect(Collectors.joining("\n")); //$NON-NLS-1$
 		assertTrue(errors.isEmpty(),
 				"The real target-platform Cleanup preview fixture must compile before SWTBot QA:\n\t" + errors); //$NON-NLS-1$
-	}
-
-	private static String readFile(IFile file) throws Exception {
-		try (InputStream input= file.getContents()) {
-			return new String(input.readAllBytes(), StandardCharsets.UTF_8);
-		}
 	}
 }

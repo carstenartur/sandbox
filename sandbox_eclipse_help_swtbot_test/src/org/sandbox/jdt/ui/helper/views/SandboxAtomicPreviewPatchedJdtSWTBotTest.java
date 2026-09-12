@@ -73,7 +73,8 @@ public class SandboxAtomicPreviewPatchedJdtSWTBotTest {
     @Test
     public void coordinatedIntToEnumPreviewIsAtomic() throws Exception {
         try {
-            screenshots.coordinatedIntToEnumPreviewIsAtomic();
+            CleanupWorkbenchDriver.run(CleanupScreenshotScenarios.INT_TO_ENUM, PreviewContract.ATOMIC_CANDIDATE,
+                    screenshots::coordinatedIntToEnumPreviewIsAtomic);
         } catch (AssertionError | RuntimeException failure) {
             printWorkspaceLog();
             throw failure;
