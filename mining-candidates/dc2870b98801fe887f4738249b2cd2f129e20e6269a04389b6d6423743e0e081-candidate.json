@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 7: The public type ProblemsLabelDecorator must be defined in its own file",
-    "verifiedAt": "2026-09-11T02:27:16.720693057Z",
+    "verifiedAt": "2026-09-12T02:36:39.523767291Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

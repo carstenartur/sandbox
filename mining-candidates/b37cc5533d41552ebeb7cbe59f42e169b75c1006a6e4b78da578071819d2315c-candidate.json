@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b37cc5533d41552ebeb7cbe59f42e169b75c1006a6e4b78da578071819d2315c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: method.rename.updatePreserveToUpdateStore\u003e\n\u003c!description: Renames calls to `updatePreserveMethodParamNamesEnableState()` to `updateStoreMethodParamNamesEnableState()`.\nThis reflects a method rename for storing method parameter names rather than just preserving them.\u003e \n\u003c!severity: HINT\u003e\n\u003c!tags: refactoring, method-rename\u003e\n\nupdatePreserveMethodParamNamesEnableState()\n\u003d\u003e\nupdateStoreMethodParamNamesEnableState()\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nclass ComplianceConfigurationBlock {\n    // Dummy fields and methods for context\n    private String PREF_CODEGEN_TARGET_PLATFORM \u003d \"target\";\n    private String PREF_CODEGEN_METHOD_PARAMETERS_ATTR \u003d \"params\";\n\n    // Dummy inner class for compilation\n    static class MyButton {\n        void setEnabled(boolean e) {}\n    }\n\n    private MyButton getCheckBox(String key) { return new MyButton(); }\n    private String getValue(String key) { return \"1.8\"; }\n\n    private void updateControls() {\n        System.out.println(\"Updating controls.\");\n        updatePreserveMethodParamNamesEnableState(); // BEFORE\n    }\n    \n    // The method declaration itself (not matched by this rule, but for context)\n    private void updatePreserveMethodParamNamesEnableState() {\n        String target\u003d getValue(PREF_CODEGEN_TARGET_PLATFORM);\n        boolean enabled\u003d true; \n        MyButton checkBox\u003d getCheckBox(PREF_CODEGEN_METHOD_PARAMETERS_ATTR);\n        checkBox.setEnabled(enabled);\n        System.out.println(\"Preserve method param names state updated.\");\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nclass ComplianceConfigurationBlock {\n    // Dummy fields and methods for context\n    private String PREF_CODEGEN_TARGET_PLATFORM \u003d \"target\";\n    private String PREF_CODEGEN_METHOD_PARAMETERS_ATTR \u003d \"params\";\n\n    // Dummy inner class for compilation\n    static class MyButton {\n        void setEnabled(boolean e) {}\n    }\n\n    private MyButton getCheckBox(String key) { return new MyButton(); }\n    private String getValue(String key) { return \"1.8\"; }\n\n    private void updateControls() {\n        System.out.println(\"Updating controls.\");\n        updateStoreMethodParamNamesEnableState(); // AFTER\n    }\n    \n    // The method declaration itself (not matched by this rule, but for context)\n    private void updateStoreMethodParamNamesEnableState() { // Renamed declaration\n        String target\u003d getValue(PREF_CODEGEN_TARGET_PLATFORM);\n        boolean enabled\u003d true; \n        MyButton checkBox\u003d getCheckBox(PREF_CODEGEN_METHOD_PARAMETERS_ATTR);\n        checkBox.setEnabled(enabled);\n        System.out.println(\"Store method param names state updated.\");\n    }\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.preferences;\n\nclass OtherClass {\n    void someOtherMethodCall() {\n        System.out.println(\"This method call should not be matched.\");\n    }\n\n    void preserveMethodParameters() { // A similar but different method name\n        System.out.println(\"A different method, not matched by the rule.\");\n    }\n}",
+  "targetHintFile": "refactoring.sandbox-hint",
+  "sourceCommit": "466143081ae1cae12c4b4dbb9bd90e6db3bfee55",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Refactoring",
+  "summary": "Renames method call `updatePreserveMethodParamNamesEnableState()` to `updateStoreMethodParamNamesEnableState()`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-12T02:36:35.433849866Z",
+  "ruleFingerprint": "sha256:8452c240636b97b6f92a6060f9827505ffab060e0d56c6fdf6ed90fb18b3fc15",
+  "behaviorFingerprint": "sha256:7820f308b70859c9c64c43c7e43d3b754cc77a12e5331600ad33591f05f530e2",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-12T02:36:42.543140901Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
