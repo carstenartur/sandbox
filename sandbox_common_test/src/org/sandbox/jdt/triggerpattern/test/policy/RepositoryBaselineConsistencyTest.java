@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -40,12 +41,13 @@ import com.google.gson.JsonParser;
  */
 public class RepositoryBaselineConsistencyTest {
 
+	private static final Set<String> BOUNCY_CASTLE_IDS = Set.of("bcutil", "bcprov", "bcpkix", "bcpg"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	private static final Pattern TYCHO_PROPERTY =
 			Pattern.compile("<tycho-version>([^<]+)</tycho-version>"); //$NON-NLS-1$
 	private static final Pattern ECLIPSE_RELEASE_REPOSITORY = Pattern.compile(
 			"https://download\\.eclipse\\.org/releases/([^/]+)/"); //$NON-NLS-1$
 	private static final Pattern BOUNCY_CASTLE_UNIT = Pattern.compile(
-			"<unit id=\"(?:bcutil|bcprov|bcpkix|bcpg)\" version=\"([^\"]+)\"/>"); //$NON-NLS-1$
+			"<unit id=\"(bcutil|bcprov|bcpkix|bcpg)\" version=\"([^\"]+)\"/>"); //$NON-NLS-1$
 	private static final Pattern OOMPH_RELEASE_VARIABLE = Pattern.compile(
 			"(?s)<setupTask\\b(?=[^>]*name=\"eclipse\\.target\\.version\")[^>]*>"); //$NON-NLS-1$
 
@@ -78,7 +80,7 @@ public class RepositoryBaselineConsistencyTest {
 		assertEquals(Set.of(eclipseRelease),
 				releaseRepositories(read(root, "sandbox_product/category.xml")), //$NON-NLS-1$
 				"The published p2 category must refer clients to the declared Eclipse release"); //$NON-NLS-1$
-		bouncyCastleVersion(target);
+		bouncyCastleVersions(target);
 
 		String oomph = read(root, "sandbox_oomph/sandbox.setup"); //$NON-NLS-1$
 		String variableTag = firstMatch(OOMPH_RELEASE_VARIABLE, oomph,
@@ -109,7 +111,7 @@ public class RepositoryBaselineConsistencyTest {
 		JsonObject repository = JsonParser.parseString(read(root, "docs/capabilities.json")) //$NON-NLS-1$
 				.getAsJsonObject().getAsJsonObject("repository"); //$NON-NLS-1$
 		String eclipseRelease = repository.get("eclipseRelease").getAsString(); //$NON-NLS-1$
-		String bouncyCastleVersion = displayVersion(bouncyCastleVersion(target));
+		String bouncyCastleVersion = displayBouncyCastleVersions(bouncyCastleVersions(target));
 
 		Map<String, List<String>> expectedClaims = Map.ofEntries(
 				Map.entry("README.md", List.of("Maven/Tycho " + tychoVersion, //$NON-NLS-1$ //$NON-NLS-2$
@@ -151,6 +153,16 @@ public class RepositoryBaselineConsistencyTest {
 		}
 	}
 
+	@Test
+	public void bouncyCastleVersionDisplayMakesIntentionalProviderPatchVisible() {
+		Map<String, String> versions = Map.of(
+				"bcutil", "1.85.0", //$NON-NLS-1$ //$NON-NLS-2$
+				"bcprov", "1.85.2", //$NON-NLS-1$ //$NON-NLS-2$
+				"bcpkix", "1.85.0", //$NON-NLS-1$ //$NON-NLS-2$
+				"bcpg", "1.85.0"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals("1.85 family (bcprov 1.85.2)", displayBouncyCastleVersions(versions)); //$NON-NLS-1$
+	}
+
 	private static Path repositoryRoot() {
 		Path candidate = Path.of("").toAbsolutePath().normalize(); //$NON-NLS-1$
 		while (candidate != null) {
@@ -179,24 +191,35 @@ public class RepositoryBaselineConsistencyTest {
 		return matcher.group();
 	}
 
-	private static String bouncyCastleVersion(String target) {
-		List<String> versions = groups(BOUNCY_CASTLE_UNIT, target);
-		assertEquals(4, versions.size(),
+	private static Map<String, String> bouncyCastleVersions(String target) {
+		Map<String, String> versions = new LinkedHashMap<>();
+		Matcher matcher = BOUNCY_CASTLE_UNIT.matcher(target);
+		while (matcher.find()) {
+			versions.put(matcher.group(1), matcher.group(2));
+		}
+		assertEquals(BOUNCY_CASTLE_IDS, versions.keySet(),
 				"The target must declare the complete four-bundle Bouncy Castle set"); //$NON-NLS-1$
-		Set<String> distinctVersions = Set.copyOf(versions);
-		assertEquals(1, distinctVersions.size(),
-				"Every Bouncy Castle target unit must use one aligned version"); //$NON-NLS-1$
-		return distinctVersions.iterator().next();
+		return Map.copyOf(versions);
+	}
+
+	private static String displayBouncyCastleVersions(Map<String, String> versions) {
+		String base = displayVersion(versions.get("bcutil")); //$NON-NLS-1$
+		String provider = displayVersion(versions.get("bcprov")); //$NON-NLS-1$
+		if (versions.values().stream().distinct().count() == 1) {
+			return base;
+		}
+		assertEquals(Set.of(versions.get("bcutil"), versions.get("bcprov")), //$NON-NLS-1$ //$NON-NLS-2$
+				Set.copyOf(versions.values()),
+				"Only the explicitly documented bcprov patch-level divergence is supported"); //$NON-NLS-1$
+		assertEquals(versions.get("bcutil"), versions.get("bcpkix")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(versions.get("bcutil"), versions.get("bcpg")); //$NON-NLS-1$ //$NON-NLS-2$
+		return base + " family (bcprov " + provider + ")"; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private static String displayVersion(String version) {
 		return version.endsWith(".0") //$NON-NLS-1$
 				? version.substring(0, version.length() - 2)
 				: version;
-	}
-
-	private static List<String> groups(Pattern pattern, String content) {
-		return pattern.matcher(content).results().map(result -> result.group(1)).toList();
 	}
 
 	private static Set<String> releaseRepositories(String content) {

@@ -132,7 +132,14 @@ public final class DistributionVerifier {
                 "Orbit repositories are inconsistent: pom.xml=" + pomOrbit + ", target=" + targetOrbit);
 
         String mavenBc = requiredFirstText(pom, "bouncycastle.version");
+        String mavenBcprov = requiredFirstText(pom, "bouncycastle.bcprov.version");
         String osgiBc = normalizeOsgiVersion(mavenBc);
+        String osgiBcprov = normalizeOsgiVersion(mavenBcprov);
+        Map<String, String> expectedBc = Map.of(
+                "bcutil", osgiBc,
+                "bcprov", osgiBcprov,
+                "bcpkix", osgiBc,
+                "bcpg", osgiBc);
         Map<String, String> targetBc = new LinkedHashMap<>();
         for (Element unit : elements(target, "unit")) {
             String id = unit.getAttribute("id");
@@ -142,8 +149,9 @@ public final class DistributionVerifier {
         }
         require(targetBc.keySet().equals(BOUNCY_CASTLE_IDS),
                 "Target Bouncy Castle units are incomplete: " + targetBc);
-        require(new HashSet<>(targetBc.values()).equals(Set.of(osgiBc)),
-                "Bouncy Castle Maven version " + mavenBc + " does not match target units " + targetBc);
+        require(targetBc.equals(expectedBc),
+                "Declared Bouncy Castle Maven versions do not match target units: expected "
+                        + expectedBc + ", found " + targetBc);
 
         Map<String, String> pomBc = new LinkedHashMap<>();
         for (Element requirement : elements(pom, "requirement")) {
@@ -204,7 +212,7 @@ public final class DistributionVerifier {
         return new Model(
                 pomRelease,
                 pomOrbit,
-                mavenBc,
+                mavenBc + " family (bcprov " + mavenBcprov + ")",
                 List.copyOf(publishedFeatures),
                 targetRepositories);
     }
