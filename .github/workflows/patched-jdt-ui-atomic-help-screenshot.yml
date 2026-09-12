@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - '.github/patched-jdt-ui.env'
+      - '.github/patched-ltk.properties'
       - '.github/actions/use-runner-maven/**'
       - '.github/actions/verify-eclipse-desktop-runtime/**'
       - '.github/scripts/add_p2_sha256_checksums.py'
@@ -20,6 +21,7 @@ on:
       - 'sandbox_target/**'
       - 'sandbox_common/**'
       - 'sandbox_common_core/**'
+      - 'sandbox_common_test/**'
       - 'sandbox_test_commons/**'
       - 'sandbox_int_to_enum/**'
       - 'sandbox_int_to_enum_help/**'
@@ -46,6 +48,7 @@ jobs:
       GDK_BACKEND: x11
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
+      SANDBOX_LTK_PATCH_EVIDENCE: ${{ runner.temp }}/patched-ltk/runtime.properties
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -110,6 +113,19 @@ jobs:
           mv "$temporary" "$target"
           grep -Fq 'sandbox_patched_jdt_ui_feature.feature.group' "$target"
           grep -Fq "$repository" "$target"
+
+      - name: Build, verify and provision the pinned LTK runtime through Maven
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -ntp -Dsandbox.tycho.linux-only=true \
+            -pl sandbox_target,sandbox_common_core,sandbox_common,sandbox_common_test -am \
+            -Dtest=LtkRuntimePatchTest,LtkRuntimeMetadataTest,PinnedLtkRuntimeIT \
+            -Dsurefire.failIfNoSpecifiedTests=false -DfailIfNoTests=false \
+            -Dsandbox.ltk.root="$GITHUB_WORKSPACE" \
+            -Dsandbox.ltk.output="$RUNNER_TEMP/patched-ltk" \
+            -Dsandbox.ltk.resolvedJars="$RUNNER_TEMP/patched-jdt-ui-compatibility/resolved-jars.txt" \
+            -Dsandbox.ltk.maven="$(command -v mvn)" test
 
       - name: Preserve committed atomic preview baselines
         shell: bash
@@ -199,6 +215,11 @@ jobs:
             ${{ runner.temp }}/patched-jdt-ui/provenance.json
             ${{ runner.temp }}/patched-jdt-ui-compatibility/compatibility.json
             ${{ runner.temp }}/patched-jdt-ui-p2/evidence/repository-provenance.json
+            ${{ runner.temp }}/patched-ltk/provenance.json
+            ${{ runner.temp }}/patched-ltk/runtime.properties
+            ${{ runner.temp }}/patched-ltk/*.log
+            ${{ runner.temp }}/patched-ltk/surefire-reports/**
+            ${{ runner.temp }}/patched-ltk/repository/**
           retention-days: 14
           if-no-files-found: warn
 
@@ -210,6 +231,7 @@ jobs:
           path: |
             sandbox_eclipse_help_swtbot_test/target/work/data/.metadata/.log
             sandbox_eclipse_help_swtbot_test/target/surefire-reports/**
+            sandbox_common_test/target/surefire-reports/**
           retention-days: 14
           if-no-files-found: warn
           include-hidden-files: true
