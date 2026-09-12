@@ -10,12 +10,15 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.helper.views;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -177,8 +180,111 @@ class CleanupScenarioRunnerTest {
 		Exception failure= assertThrows(IllegalStateException.class, () -> CleanupScenarioRunner.run(
 				scenario(Set.of()), PreviewContract.FILE_COMBINED_DIFF, workspace, () -> { throw original; }));
 		assertSame(original, failure);
+		assertEquals(0, failure.getSuppressed().length);
 		assertEquals(2, workspace.historyClears);
 		assertEquals(1, workspace.snapshots);
+	}
+
+	@Test
+	void reportsPendingUndoAlongsideACheckedCallbackFailureWithoutRestoringSources() {
+		var workspace= new TestWorkspace();
+		var original= new IOException("callback failed after Apply"); //$NON-NLS-1$
+		Exception failure= assertThrows(IOException.class, () -> CleanupScenarioRunner.run(
+				scenario(Set.of()), PreviewContract.FILE_COMBINED_DIFF, workspace, () -> {
+				workspace.files.put(SOURCE, new byte[] { 9 });
+				workspace.canUndo= true;
+				throw original;
+			}));
+		assertSame(original, failure);
+		assertEquals(1, failure.getSuppressed().length);
+		assertInstanceOf(AssertionError.class, failure.getSuppressed()[0]);
+		assertTrue(failure.getSuppressed()[0].getMessage().contains("unexpected Undo history")); //$NON-NLS-1$
+		assertEquals(2, workspace.historyClears);
+		assertEquals(1, workspace.snapshots);
+		assertEquals(0, workspace.undos);
+		assertArrayEquals(new byte[] { 9 }, workspace.files.get(SOURCE));
+		assertFalse(workspace.canUndo);
+	}
+
+	@Test
+	void reportsPendingUndoAlongsideACallbackAssertionFailure() {
+		var workspace= new TestWorkspace();
+		var original= new AssertionError("semantic preview assertion"); //$NON-NLS-1$
+		AssertionError failure= assertThrows(AssertionError.class, () -> CleanupScenarioRunner.run(
+				scenario(Set.of()), PreviewContract.FILE_COMBINED_DIFF, workspace, () -> {
+				workspace.canUndo= true;
+				throw original;
+			}));
+		assertSame(original, failure);
+		assertEquals(1, failure.getSuppressed().length);
+		assertInstanceOf(AssertionError.class, failure.getSuppressed()[0]);
+		assertEquals(2, workspace.historyClears);
+		assertEquals(0, workspace.undos);
+		assertFalse(workspace.canUndo);
+	}
+
+	@Test
+	void preservesTheCallbackFailureWhenClearingHistoryAlsoFails() {
+		var workspace= new TestWorkspace();
+		var original= new IOException("callback failure"); //$NON-NLS-1$
+		workspace.historyClearFailure= new IllegalStateException("history flush failure"); //$NON-NLS-1$
+		Exception failure= assertThrows(IOException.class, () -> CleanupScenarioRunner.run(
+				scenario(Set.of()), PreviewContract.FILE_COMBINED_DIFF, workspace, () -> { throw original; }));
+		assertSame(original, failure);
+		assertArrayEquals(new Throwable[] { workspace.historyClearFailure }, failure.getSuppressed());
+		assertEquals(2, workspace.historyClears);
+	}
+
+	@Test
+	void retainsBothHistoryQueryAndCleanupFailuresAlongsideTheCallbackFailure() {
+		var workspace= new TestWorkspace();
+		var original= new IOException("callback failure"); //$NON-NLS-1$
+		workspace.historyQueryFailure= new IllegalStateException("history query failure"); //$NON-NLS-1$
+		workspace.historyClearFailure= new IllegalStateException("history flush failure"); //$NON-NLS-1$
+		Exception failure= assertThrows(IOException.class, () -> CleanupScenarioRunner.run(
+				scenario(Set.of()), PreviewContract.FILE_COMBINED_DIFF, workspace, () -> { throw original; }));
+		assertSame(original, failure);
+		assertArrayEquals(new Throwable[] { workspace.historyQueryFailure, workspace.historyClearFailure },
+				failure.getSuppressed());
+		assertEquals(2, workspace.historyClears);
+		assertEquals(1, workspace.snapshots);
+		assertEquals(0, workspace.undos);
+	}
+
+	@Test
+	void avoidsSelfSuppressionWhenTheWorkspaceRethrowsTheOriginalFailure() {
+		var workspace= new TestWorkspace();
+		var original= new IllegalStateException("shared failure"); //$NON-NLS-1$
+		workspace.historyQueryFailure= original;
+		workspace.historyClearFailure= original;
+		Exception failure= assertThrows(IllegalStateException.class, () -> CleanupScenarioRunner.run(
+				scenario(Set.of()), PreviewContract.FILE_COMBINED_DIFF, workspace, () -> { throw original; }));
+		assertSame(original, failure);
+		assertEquals(0, failure.getSuppressed().length);
+		assertEquals(2, workspace.historyClears);
+	}
+
+	@Test
+	void preservesTheSurplusUndoAssertionWhenClearingHistoryAlsoFails() {
+		var workspace= new TestWorkspace();
+		workspace.historyClearFailure= new IllegalStateException("history flush failure"); //$NON-NLS-1$
+		AssertionError failure= assertThrows(AssertionError.class, () -> CleanupScenarioRunner.run(
+				scenario(Set.of()), PreviewContract.FILE_COMBINED_DIFF, workspace, () -> workspace.canUndo= true));
+		assertTrue(failure.getMessage().contains("unexpected Undo history")); //$NON-NLS-1$
+		assertArrayEquals(new Throwable[] { workspace.historyClearFailure }, failure.getSuppressed());
+		assertEquals(2, workspace.historyClears);
+	}
+
+	@Test
+	void propagatesTheHistoryCleanupFailureWhenTheScenarioSucceeded() {
+		var workspace= new TestWorkspace();
+		workspace.historyClearFailure= new IllegalStateException("history flush failure"); //$NON-NLS-1$
+		Exception failure= assertThrows(IllegalStateException.class, () -> CleanupScenarioRunner.run(
+				scenario(Set.of()), PreviewContract.FILE_COMBINED_DIFF, workspace, () -> workspace.ran= true));
+		assertSame(workspace.historyClearFailure, failure);
+		assertTrue(workspace.ran);
+		assertEquals(2, workspace.historyClears);
+		assertEquals(2, workspace.snapshots);
 	}
 
 	private static CleanupScreenshotScenario scenario(Set<String> pendingUndo) {
@@ -195,6 +301,8 @@ class CleanupScenarioRunnerTest {
 		private boolean ran;
 		private boolean restoreOnUndo= true;
 		private boolean leaveUndoEntryAfterUndo;
+		private RuntimeException historyQueryFailure;
+		private RuntimeException historyClearFailure;
 
 		@Override
 		public CleanupSourceSnapshot snapshot() {
@@ -205,11 +313,17 @@ class CleanupScenarioRunnerTest {
 		@Override
 		public void clearUndoHistory() {
 			historyClears++;
+			if (historyClears > 1 && historyClearFailure != null) {
+				throw historyClearFailure;
+			}
 			canUndo= false;
 		}
 
 		@Override
 		public boolean canUndo() {
+			if (historyQueryFailure != null) {
+				throw historyQueryFailure;
+			}
 			return canUndo;
 		}
 

@@ -53,6 +53,7 @@ final class CleanupScenarioRunner {
 		}
 
 		workspace.clearUndoHistory();
+		Throwable failure= null;
 		try {
 			action.run();
 			assertChangedPaths(scenario, before, workspace.snapshot(), scenario.pendingUndoFiles(),
@@ -64,12 +65,48 @@ final class CleanupScenarioRunner {
 				workspace.undo();
 				assertChangedPaths(scenario, before, workspace.snapshot(), Set.of(), "after aggregate Undo"); //$NON-NLS-1$
 			}
-			if (workspace.canUndo()) {
-				throw new AssertionError(scenario.id() + ": unexpected Undo history after source restoration"); //$NON-NLS-1$
-			}
+		} catch (Exception | Error exception) {
+			failure= exception;
+			throw exception;
 		} finally {
-			workspace.clearUndoHistory();
+			finishUndoHistory(scenario, workspace, failure);
 		}
+	}
+
+	/** Report remaining history before flushing it without masking the scenario failure. */
+	private static void finishUndoHistory(CleanupScreenshotScenario scenario, Workspace workspace,
+			Throwable scenarioFailure) {
+		Throwable failure= scenarioFailure;
+		try {
+			if (workspace.canUndo()) {
+				throw new AssertionError(scenario.id() + ": unexpected Undo history at scenario exit"); //$NON-NLS-1$
+			}
+		} catch (RuntimeException | Error exception) {
+			failure= retainFailure(failure, exception);
+		}
+		try {
+			workspace.clearUndoHistory();
+		} catch (RuntimeException | Error exception) {
+			failure= retainFailure(failure, exception);
+		}
+		if (scenarioFailure == null) {
+			if (failure instanceof RuntimeException exception) {
+				throw exception;
+			}
+			if (failure instanceof Error error) {
+				throw error;
+			}
+		}
+	}
+
+	private static Throwable retainFailure(Throwable primary, Throwable additional) {
+		if (primary == null) {
+			return additional;
+		}
+		if (primary != additional) {
+			primary.addSuppressed(additional);
+		}
+		return primary;
 	}
 
 	private static void assertChangedPaths(CleanupScreenshotScenario scenario, CleanupSourceSnapshot before,
