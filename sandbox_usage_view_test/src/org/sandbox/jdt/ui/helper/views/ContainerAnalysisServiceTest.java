@@ -109,6 +109,55 @@ public class ContainerAnalysisServiceTest {
 	}
 
 	@Test
+	public void dequeRecommendationWinsOverRejectedGenericListProfile() {
+		String source= """
+				import java.util.ArrayList;
+				import java.util.List;
+				class Sample {
+					void consume(String value) {
+						List<String> queue = new ArrayList<>();
+						queue.add(value);
+						String next = queue.remove(0);
+						System.out.println(next + queue.size());
+					}
+				}
+				""";
+
+		List<ContainerAnalysisRow> rows= service.analyze(parse(source), "=Test/Handle"); //$NON-NLS-1$
+
+		assertFalse(rows.isEmpty());
+		assertTrue(rows.stream().allMatch(row -> "queue".equals(row.candidate()))); //$NON-NLS-1$
+		assertTrue(rows.stream().allMatch(row -> row.targetContract().startsWith("DEQUE;"))); //$NON-NLS-1$
+		assertTrue(rows.stream().anyMatch(row -> "HEAD_REMOVAL".equals(row.evidenceKind()))); //$NON-NLS-1$
+		assertTrue(rows.stream().allMatch(row -> "REPORT_ONLY".equals(row.status()))); //$NON-NLS-1$
+	}
+
+	@Test
+	public void enumIndexedMembershipIsVisibleAsReportOnlySetContract() {
+		String source= """
+				class Sample {
+					enum Flag { A, B }
+					boolean contains(Flag flag) {
+						boolean[] enabled = new boolean[Flag.values().length];
+						enabled[flag.ordinal()] = true;
+						return enabled[flag.ordinal()];
+					}
+				}
+				""";
+
+		List<ContainerAnalysisRow> rows= service.analyze(parse(source), "=Test/Handle"); //$NON-NLS-1$
+
+		assertFalse(rows.isEmpty());
+		assertTrue(rows.stream().allMatch(row -> "enabled".equals(row.candidate()))); //$NON-NLS-1$
+		assertTrue(rows.stream().allMatch(row -> "ARRAY".equals(row.currentShape()))); //$NON-NLS-1$
+		assertTrue(rows.stream().allMatch(row -> row.targetContract().startsWith("SET;"))); //$NON-NLS-1$
+		assertTrue(rows.stream().allMatch(row -> "REPORT_ONLY".equals(row.status()))); //$NON-NLS-1$
+		assertTrue(rows.stream().anyMatch(row -> "ENUM_CARDINALITY".equals(row.evidenceKind()))); //$NON-NLS-1$
+		assertTrue(rows.stream().anyMatch(row -> "ENUM_MEMBERSHIP_QUERY".equals(row.evidenceKind()))); //$NON-NLS-1$
+		assertTrue(rows.stream().anyMatch(row -> row.semanticSummary().contains("ordinal positions"))); //$NON-NLS-1$
+	}
+
+	@Test
 	public void rowDetailsExposeRecommendationAndEvidenceWithoutHoldingAstNodes() {
 		String source= """
 				import java.util.Arrays;
@@ -133,7 +182,7 @@ public class ContainerAnalysisServiceTest {
 	}
 
 	private static CompilationUnit parse(String source) {
-		ASTParser parser= ASTParser.newParser(AST.JLS_Latest);
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setSource(source.toCharArray());
 		parser.setResolveBindings(true);
