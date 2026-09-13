@@ -274,8 +274,11 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			ASTNode[] inlined= new ASTNode[bodyStatements.size()];
 			for (int index= 0; index < bodyStatements.size(); index++) {
 				ASTNode bodyStatement= (ASTNode) bodyStatements.get(index);
-				inlined[index]= rewrite.createStringPlaceholder(
-						EncodingSourceRewrite.source(cuRewrite, bodyStatement), bodyStatement.getNodeType());
+				String source= EncodingSourceRewrite.source(cuRewrite, bodyStatement);
+				// A copy target retains pending child rewrites from other cleanup operations.
+				// Unlike a move target, it may be discarded when this group is rebuilt.
+				inlined[index]= source == null ? rewrite.createCopyTarget(bodyStatement)
+						: rewrite.createStringPlaceholder(source, bodyStatement.getNodeType());
 			}
 
 			CatchClause removedCatch= (CatchClause) tryStatement.catchClauses().get(0);

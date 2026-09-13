@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
@@ -29,6 +30,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -246,6 +248,29 @@ public class EncodingNlsPreservationTest {
 				"The validation parser must not suppress NLS diagnostics"); //$NON-NLS-1$
 	}
 
+	@Test
+	void unwrappingRetainsAnotherStatementsPendingRewrite() throws CoreException {
+		String before= source("""
+				try {
+				    String value= new String(bytes, "UTF-8"); //$NON-NLS-1$
+				    System.out.println("before"); //$NON-NLS-1$
+				} catch (java.io.UnsupportedEncodingException exception) {
+				    throw new IllegalStateException(exception);
+				}
+				""");
+		String expected= source("""
+				String value= new String(bytes, StandardCharsets.UTF_8);
+				System.out.println("after"); //$NON-NLS-1$
+				""");
+		assertRewrite(before, expected, "\"UTF-8\"", cuRewrite -> { //$NON-NLS-1$
+			String original= "\"before\""; //$NON-NLS-1$
+			ASTNode otherArgument= NodeFinder.perform(cuRewrite.getRoot(), before.indexOf(original), original.length());
+			StringLiteral replacement= cuRewrite.getRoot().getAST().newStringLiteral();
+			replacement.setLiteralValue("after"); //$NON-NLS-1$
+			cuRewrite.getASTRewrite().replace(otherArgument, replacement, new TextEditGroup("other cleanup")); //$NON-NLS-1$
+		}, 1);
+	}
+
 	private static String source(String body) {
 		return """
 				package test1;
@@ -263,6 +288,11 @@ public class EncodingNlsPreservationTest {
 	}
 
 	private void assertRewrite(String before, String expected, String selected, int... occurrences) throws CoreException {
+		assertRewrite(before, expected, selected, rewrite -> { }, occurrences);
+	}
+
+	private void assertRewrite(String before, String expected, String selected,
+			Consumer<CompilationUnitRewrite> additionalEdits, int... occurrences) throws CoreException {
 		ICompilationUnit cu= createUnit(before);
 		CompilationUnit root= parse(cu);
 		CompilationUnitRewrite cuRewrite= new CompilationUnitRewrite(cu, root);
@@ -280,6 +310,7 @@ public class EncodingNlsPreservationTest {
 					root.getAST().newName("StandardCharsets.UTF_8"), //$NON-NLS-1$
 					new TextEditGroup("encoding"), cuRewrite); //$NON-NLS-1$
 		}
+		additionalEdits.accept(cuRewrite);
 		CompilationUnitChange change= cuRewrite.createChange(true, null);
 		String actual;
 		try {

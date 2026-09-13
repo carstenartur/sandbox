@@ -48,57 +48,59 @@ final class EncodingSourceRewrite {
 		replacements(cuRewrite, statement).put(argument, replacement.toString());
 	}
 
+	/** Returns edited source, or null when this statement has no encoding replacements. */
 	static String source(CompilationUnitRewrite cuRewrite, ASTNode statement) throws JavaModelException {
+		Map<ASTNode, String> replacements= replacements(cuRewrite, statement);
+		if (replacements.isEmpty()) {
+			return null;
+		}
 		String buffer= cuRewrite.getCu().getBuffer().getContents();
 		CompilationUnit root= cuRewrite.getRoot();
 		int start= root.getExtendedStartPosition(statement);
 		int length= root.getExtendedLength(statement);
-		Map<ASTNode, String> replacements= replacements(cuRewrite, statement);
 		List<Edit> edits= new ArrayList<>();
 		replacements.forEach((node, text) -> edits.add(new Edit(node.getStartPosition(), node.getLength(), text)));
 
-		if (!replacements.isEmpty()) {
-			Map<LineComment, List<Edit>> commentEdits= new LinkedHashMap<>();
-			for (NLSLine line : scan(cuRewrite, buffer)) {
-				int removed= 0;
-				NLSElement[] elements= line.getElements();
-				for (int index= 0; index < elements.length; index++) {
-					NLSElement element= elements[index];
-					boolean deleted= isRemoved(element.getPosition().getOffset(), element.getPosition().getLength(), replacements);
-					if (deleted) {
-						removed++;
-					}
-					if (!element.hasTag() || (!deleted && removed == 0)) {
-						continue;
-					}
-					int tagStart= element.getTagPosition().getOffset();
-					int tagLength= element.getTagPosition().getLength();
-					if (isRemoved(tagStart, tagLength, replacements)) {
-						continue;
-					}
-					LineComment comment= containingComment(root, tagStart, tagLength);
-					String tag= deleted ? "" : NLSElement.createTagText(index + 1 - removed); //$NON-NLS-1$
-					commentEdits.computeIfAbsent(comment, key -> new ArrayList<>())
-							.add(new Edit(tagStart - comment.getStartPosition(), tagLength, tag));
+		Map<LineComment, List<Edit>> commentEdits= new LinkedHashMap<>();
+		for (NLSLine line : scan(cuRewrite, buffer)) {
+			int removed= 0;
+			NLSElement[] elements= line.getElements();
+			for (int index= 0; index < elements.length; index++) {
+				NLSElement element= elements[index];
+				boolean deleted= isRemoved(element.getPosition().getOffset(), element.getPosition().getLength(), replacements);
+				if (deleted) {
+					removed++;
+				}
+				if (!element.hasTag() || (!deleted && removed == 0)) {
+					continue;
+				}
+				int tagStart= element.getTagPosition().getOffset();
+				int tagLength= element.getTagPosition().getLength();
+				if (isRemoved(tagStart, tagLength, replacements)) {
+					continue;
+				}
+				LineComment comment= containingComment(root, tagStart, tagLength);
+				String tag= deleted ? "" : NLSElement.createTagText(index + 1 - removed); //$NON-NLS-1$
+				commentEdits.computeIfAbsent(comment, key -> new ArrayList<>())
+						.add(new Edit(tagStart - comment.getStartPosition(), tagLength, tag));
+			}
+		}
+		commentEdits.forEach((comment, tags) -> {
+			int commentStart= comment.getStartPosition();
+			int commentEnd= commentStart + comment.getLength();
+			// Keep the original line separator even when the comment becomes empty.
+			while (commentEnd > commentStart && (buffer.charAt(commentEnd - 1) == '\n'
+					|| buffer.charAt(commentEnd - 1) == '\r')) {
+				commentEnd--;
+			}
+			String text= EncodingSourceEdits.rewriteComment(buffer.substring(commentStart, commentEnd), tags);
+			if (text.isEmpty()) {
+				while (commentStart > start && EncodingSourceEdits.isHorizontalSpace(buffer.charAt(commentStart - 1))) {
+					commentStart--;
 				}
 			}
-			commentEdits.forEach((comment, tags) -> {
-				int commentStart= comment.getStartPosition();
-				int commentEnd= commentStart + comment.getLength();
-				// Keep the original line separator even when the comment becomes empty.
-				while (commentEnd > commentStart && (buffer.charAt(commentEnd - 1) == '\n'
-						|| buffer.charAt(commentEnd - 1) == '\r')) {
-					commentEnd--;
-				}
-				String text= EncodingSourceEdits.rewriteComment(buffer.substring(commentStart, commentEnd), tags);
-				if (text.isEmpty()) {
-					while (commentStart > start && EncodingSourceEdits.isHorizontalSpace(buffer.charAt(commentStart - 1))) {
-						commentStart--;
-					}
-				}
-				edits.add(new Edit(commentStart, commentEnd - commentStart, text));
-			});
-		}
+			edits.add(new Edit(commentStart, commentEnd - commentStart, text));
+		});
 		String source= EncodingSourceEdits.apply(buffer, start, length, edits);
 		return EncodingSourceEdits.relativeIndent(buffer, start, source);
 	}
