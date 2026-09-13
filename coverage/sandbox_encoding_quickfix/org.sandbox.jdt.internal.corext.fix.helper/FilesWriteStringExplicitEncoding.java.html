@@ -79,7 +79,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 		// The charset is the third parameter
 <span class="fc bfc" id="L80" title="All 2 branches covered.">		if (arguments.size() &gt;= 3) {</span>
 <span class="fc" id="L81">			ASTNode encodingArg = arguments.get(2);</span>
-<span class="fc" id="L82">			String encodingValue = getEncodingValue(encodingArg, visited);</span>
+<span class="fc" id="L82">			String encodingValue = getEncodingValue(encodingArg, visited, cb);</span>
 			
 <span class="pc bpc" id="L84" title="2 of 4 branches missed.">			if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
 <span class="fc" id="L85">				NodeData nd = new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>

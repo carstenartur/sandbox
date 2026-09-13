@@ -53,18 +53,18 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">		if (!JavaModelUtil.is18OrHigher(compilationUnit.getJavaElement().getJavaProject())) {</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">		if (!JavaModelUtil.is18OrHigher(compilationUnit.getJavaElement().getJavaProject())) {</span>
 			/**
 			 * For Java 17 and older just do nothing
 			 */
 <span class="fc" id="L60">			return;</span>
 		}
-<span class="nc" id="L62">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
-<span class="nc" id="L63">		HelperVisitorFactory.forMethodCall(Charset.class, METHOD_FOR_NAME)</span>
-<span class="nc" id="L64">			.in(compilationUnit)</span>
-<span class="nc" id="L65">			.excluding(nodesprocessed)</span>
-<span class="nc" id="L66">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
-<span class="nc" id="L67">	}</span>
+<span class="fc" id="L62">		ReferenceHolder&lt;ASTNode, Object&gt; datah= ReferenceHolder.createForNodes();</span>
+<span class="fc" id="L63">		HelperVisitorFactory.forMethodCall(Charset.class, METHOD_FOR_NAME)</span>
+<span class="fc" id="L64">			.in(compilationUnit)</span>
+<span class="fc" id="L65">			.excluding(nodesprocessed)</span>
+<span class="pc" id="L66">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L67">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, ChangeBehavior cb,

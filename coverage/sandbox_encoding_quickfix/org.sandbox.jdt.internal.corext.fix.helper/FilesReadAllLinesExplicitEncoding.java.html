@@ -71,7 +71,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 		// Handle Files.readAllLines(Path, Charset) - replace charset if it's a known encoding
 <span class="fc bfc" id="L72" title="All 2 branches covered.">		if (arguments.size() == 2) {</span>
 <span class="fc" id="L73">			ASTNode encodingArg = arguments.get(1);</span>
-<span class="fc" id="L74">			String encodingValue = getEncodingValue(encodingArg, visited);</span>
+<span class="fc" id="L74">			String encodingValue = getEncodingValue(encodingArg, visited, cb);</span>
 			
 <span class="pc bpc" id="L76" title="2 of 4 branches missed.">			if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
 <span class="fc" id="L77">				NodeData nd = new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>

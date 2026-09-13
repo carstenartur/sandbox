@@ -112,7 +112,7 @@ import org.osgi.framework.BundleContext;
 <span class="fc" id="L112">		HintFileRegistry registry= HintFileRegistry.getInstance();</span>
 <span class="fc" id="L113">		String projectPrefix= &quot;project:&quot; + project.getName() + &quot;:&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc bfc" id="L114" title="All 2 branches covered.">		for (String id : registry.getRegisteredIds()) {</span>
-<span class="pc bpc" id="L115" title="1 of 2 branches missed.">			if (id.startsWith(projectPrefix)) {</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">			if (id.startsWith(projectPrefix)) {</span>
 <span class="fc" id="L116">				registry.unregister(id);</span>
 <span class="fc" id="L117">				EmbeddedGuardRegistrar.unregisterGuards(id);</span>
 <span class="fc" id="L118">				EmbeddedFixExecutor.unregisterFixes(id);</span>

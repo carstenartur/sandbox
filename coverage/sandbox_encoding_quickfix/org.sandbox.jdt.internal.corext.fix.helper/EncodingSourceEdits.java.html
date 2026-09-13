@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EncodingSourceEdits.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_encoding_quickfix</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">EncodingSourceEdits.java</span></div><h1>EncodingSourceEdits.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.Comparator;
+import java.util.List;
+
+/** Scanner-positioned NLS tag edits that retain explanatory comment text. */
+final class EncodingSourceEdits {
+
+	record Edit(int offset, int length, String text) {
+	}
+
+	private EncodingSourceEdits() {
+	}
+
+	/** Edits are relative to a real line comment and refer only to scanner-proven NLS tags. */
+	static String rewriteComment(String comment, List&lt;Edit&gt; edits) {
+<span class="fc" id="L27">		StringBuilder result= new StringBuilder();</span>
+<span class="fc" id="L28">		int cursor= 0;</span>
+<span class="fc bfc" id="L29" title="All 2 branches covered.">		for (Edit edit : edits.stream().sorted(Comparator.comparingInt(Edit::offset)).toList()) {</span>
+<span class="pc bpc" id="L30" title="3 of 6 branches missed.">			if (edit.offset() &lt; cursor || edit.length() &lt; 0 || edit.offset() + edit.length() &gt; comment.length()) {</span>
+<span class="nc" id="L31">				throw new IllegalArgumentException(&quot;Overlapping or out-of-range NLS tag edit&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L33">			result.append(comment, cursor, edit.offset());</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">			if (edit.text().isEmpty()) {</span>
+<span class="fc bfc" id="L35" title="All 4 branches covered.">				while (!result.isEmpty() &amp;&amp; isHorizontalSpace(result.charAt(result.length() - 1))) {</span>
+<span class="fc" id="L36">					result.setLength(result.length() - 1);</span>
+				}
+<span class="fc" id="L38">			} else {</span>
+<span class="fc" id="L39">				result.append(edit.text());</span>
+			}
+<span class="fc" id="L41">			cursor= edit.offset() + edit.length();</span>
+		}
+<span class="fc" id="L43">		result.append(comment, cursor, comment.length());</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">		if (result.toString().isBlank()) {</span>
+<span class="fc" id="L45">			return &quot;&quot;; //$NON-NLS-1$</span>
+		}
+		// Removing the first tag must not turn remaining explanatory text into Java code.
+<span class="fc" id="L48">		int first= 0;</span>
+<span class="pc bpc" id="L49" title="1 of 4 branches missed.">		while (first &lt; result.length() &amp;&amp; isHorizontalSpace(result.charAt(first))) {</span>
+<span class="fc" id="L50">			first++;</span>
+		}
+<span class="fc" id="L52">		String text= result.substring(first);</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">		return text.startsWith(&quot;//&quot;) ? text : &quot;// &quot; + text; //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	static boolean isHorizontalSpace(char ch) {
+<span class="pc bpc" id="L57" title="1 of 4 branches missed.">		return ch == ' ' || ch == '\t';</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

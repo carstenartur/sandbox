@@ -20,9 +20,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -47,7 +45,6 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -63,36 +60,37 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
  *
  * @param &lt;T&gt; AST node handled by the concrete cleanup
  */
-<span class="fc" id="L66">public abstract class AbstractExplicitEncoding&lt;T extends ASTNode&gt; {</span>
+<span class="fc" id="L63">public abstract class AbstractExplicitEncoding&lt;T extends ASTNode&gt; {</span>
 
 	private static final String JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION = &quot;java.io.UnsupportedEncodingException&quot;; //$NON-NLS-1$
 	private static final String UNSUPPORTED_ENCODING_EXCEPTION = &quot;UnsupportedEncodingException&quot;; //$NON-NLS-1$
-<span class="fc" id="L70">	private static final String REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY =</span>
-<span class="fc" id="L71">			AbstractExplicitEncoding.class.getName() + &quot;.removedUnsupportedEncodingCatches&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L67">	private static final String UNWRAPPED_TRY = AbstractExplicitEncoding.class.getName() + &quot;.unwrappedTry&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L68">	private static final String REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY =</span>
+<span class="fc" id="L69">			AbstractExplicitEncoding.class.getName() + &quot;.removedUnsupportedEncodingCatches&quot;; //$NON-NLS-1$</span>
 
-<span class="fc" id="L73">	public static final Map&lt;String, String&gt; ENCODING_MAP = Map.of(</span>
-<span class="fc" id="L74">			&quot;UTF-8&quot;, &quot;UTF_8&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L75">			&quot;UTF-16&quot;, &quot;UTF_16&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L76">			&quot;UTF-16BE&quot;, &quot;UTF_16BE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L77">			&quot;UTF-16LE&quot;, &quot;UTF_16LE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L78">			&quot;ISO-8859-1&quot;, &quot;ISO_8859_1&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L79">			&quot;US-ASCII&quot;, &quot;US_ASCII&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L71">	public static final Map&lt;String, String&gt; ENCODING_MAP = Map.of(</span>
+<span class="fc" id="L72">			&quot;UTF-8&quot;, &quot;UTF_8&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L73">			&quot;UTF-16&quot;, &quot;UTF_16&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L74">			&quot;UTF-16BE&quot;, &quot;UTF_16BE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L75">			&quot;UTF-16LE&quot;, &quot;UTF_16LE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L76">			&quot;ISO-8859-1&quot;, &quot;ISO_8859_1&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L77">			&quot;US-ASCII&quot;, &quot;US_ASCII&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 
-<span class="fc" id="L81">	public static final Set&lt;String&gt; ENCODINGS = ENCODING_MAP.keySet();</span>
-
-	@Deprecated
-<span class="fc" id="L84">	static final Map&lt;String, String&gt; encodingmap = ENCODING_MAP;</span>
+<span class="fc" id="L79">	public static final Set&lt;String&gt; ENCODINGS = ENCODING_MAP.keySet();</span>
 
 	@Deprecated
-<span class="fc" id="L87">	static final Set&lt;String&gt; encodings = ENCODINGS;</span>
+<span class="fc" id="L82">	static final Map&lt;String, String&gt; encodingmap = ENCODING_MAP;</span>
+
+	@Deprecated
+<span class="fc" id="L85">	static final Set&lt;String&gt; encodings = ENCODINGS;</span>
 
 	protected static record NodeData(boolean replace, ASTNode visited, String encoding) {
 	}
 
-<span class="fc" id="L92">	private static final Map&lt;String, QualifiedName&gt; CHARSET_CONSTANTS = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L90">	private static final Map&lt;String, QualifiedName&gt; CHARSET_CONSTANTS = new ConcurrentHashMap&lt;&gt;();</span>
 
 	protected static Map&lt;String, QualifiedName&gt; getCharsetConstants() {
-<span class="fc" id="L95">		return CHARSET_CONSTANTS;</span>
+<span class="fc" id="L93">		return CHARSET_CONSTANTS;</span>
 	}
 
 	protected static final String KEY_ENCODING = &quot;encoding&quot;; //$NON-NLS-1$
@@ -102,7 +100,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	protected static final String ENCODING = KEY_ENCODING;
 
 	@Deprecated(forRemoval = true)
-	protected static final String REPLACE = KEY_REPLACE;
+<span class="fc" id="L103">	protected static final String REPLACE = KEY_REPLACE;</span>
 
 	public abstract void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb);
@@ -114,270 +112,247 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	public abstract String getPreview(boolean afterRefactoring, ChangeBehavior cb);
 
 	protected static Name addImport(String typeName, CompilationUnitRewrite cuRewrite, AST ast) {
-<span class="fc" id="L117">		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);</span>
+<span class="fc" id="L115">		return ImportUtils.addImport(typeName, cuRewrite.getImportRewrite(), ast);</span>
 	}
 
 	protected static boolean isKnownEncoding(StringLiteral literal) {
-<span class="nc bnc" id="L121" title="All 4 branches missed.">		return literal != null &amp;&amp; ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
+<span class="nc bnc" id="L119" title="All 4 branches missed.">		return literal != null &amp;&amp; ENCODINGS.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
 	}
 
 	protected static String getEncodingConstantName(StringLiteral literal) {
-<span class="nc bnc" id="L125" title="All 2 branches missed.">		return literal == null ? null : ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">		return literal == null ? null : ENCODING_MAP.get(literal.getLiteralValue().toUpperCase(Locale.ROOT));</span>
+	}
+
+	/** Skip only unchanged charset spellings; keep FQN shortening and aggregation available. */
+	protected static String getEncodingValue(ASTNode encodingArg, MethodInvocation context, ChangeBehavior behavior) {
+<span class="fc" id="L128">		String value= getEncodingValue(encodingArg, context);</span>
+<span class="pc bpc" id="L129" title="1 of 4 branches missed.">		if (value != null &amp;&amp; behavior != ChangeBehavior.ENFORCE_UTF8_AGGREGATE</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">				&amp;&amp; encodingArg.toString().equals(&quot;StandardCharsets.&quot; + ENCODING_MAP.get(value))) { //$NON-NLS-1$</span>
+<span class="fc" id="L131">			return null;</span>
+		}
+<span class="fc" id="L133">		return value;</span>
 	}
 
 	protected static String getEncodingValue(ASTNode encodingArg, MethodInvocation context) {
-<span class="pc bpc" id="L129" title="1 of 2 branches missed.">		if (encodingArg instanceof StringLiteral literal) {</span>
-<span class="nc" id="L130">			return literal.getLiteralValue().toUpperCase(Locale.ROOT);</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">		if (encodingArg instanceof StringLiteral literal) {</span>
+<span class="nc" id="L138">			return literal.getLiteralValue().toUpperCase(Locale.ROOT);</span>
 		}
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">		if (encodingArg instanceof SimpleName simpleName) {</span>
-<span class="nc" id="L133">			return findVariableValue(simpleName, context);</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">		if (encodingArg instanceof SimpleName simpleName) {</span>
+<span class="nc" id="L141">			return findVariableValue(simpleName, context);</span>
 		}
-<span class="pc bpc" id="L135" title="1 of 2 branches missed.">		if (encodingArg instanceof QualifiedName qualifiedName) {</span>
-<span class="fc" id="L136">			return extractStandardCharsetName(qualifiedName);</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">		if (encodingArg instanceof QualifiedName qualifiedName) {</span>
+<span class="fc" id="L144">			return extractStandardCharsetName(qualifiedName);</span>
 		}
-<span class="nc bnc" id="L138" title="All 2 branches missed.">		if (encodingArg instanceof FieldAccess fieldAccess) {</span>
-<span class="nc" id="L139">			return extractStandardCharsetName(fieldAccess);</span>
-		}
-<span class="nc" id="L141">		return null;</span>
-	}
-
-	protected static String extractStandardCharsetName(QualifiedName qualifiedName) {
-<span class="fc" id="L145">		String qualifier = qualifiedName.getQualifier().toString();</span>
-<span class="pc bpc" id="L146" title="2 of 4 branches missed.">		if (&quot;StandardCharsets&quot;.equals(qualifier) || qualifier.endsWith(&quot;.StandardCharsets&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L147">			return qualifiedName.getName().getIdentifier().replace('_', '-');</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">		if (encodingArg instanceof FieldAccess fieldAccess) {</span>
+<span class="nc" id="L147">			return extractStandardCharsetName(fieldAccess);</span>
 		}
 <span class="nc" id="L149">		return null;</span>
 	}
 
-	protected static String extractStandardCharsetName(FieldAccess fieldAccess) {
-<span class="nc" id="L153">		String expression = fieldAccess.getExpression().toString();</span>
-<span class="nc bnc" id="L154" title="All 4 branches missed.">		if (&quot;StandardCharsets&quot;.equals(expression) || expression.endsWith(&quot;.StandardCharsets&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L155">			return fieldAccess.getName().getIdentifier().replace('_', '-');</span>
+	protected static String extractStandardCharsetName(QualifiedName qualifiedName) {
+<span class="fc" id="L153">		String qualifier = qualifiedName.getQualifier().toString();</span>
+<span class="pc bpc" id="L154" title="1 of 4 branches missed.">		if (&quot;StandardCharsets&quot;.equals(qualifier) || qualifier.endsWith(&quot;.StandardCharsets&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L155">			return qualifiedName.getName().getIdentifier().replace('_', '-');</span>
 		}
 <span class="nc" id="L157">		return null;</span>
 	}
 
-	private static ASTNode findEnclosingMethodOrType(ASTNode node) {
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L162">			return null;</span>
+	protected static String extractStandardCharsetName(FieldAccess fieldAccess) {
+<span class="nc" id="L161">		String expression = fieldAccess.getExpression().toString();</span>
+<span class="nc bnc" id="L162" title="All 4 branches missed.">		if (&quot;StandardCharsets&quot;.equals(expression) || expression.endsWith(&quot;.StandardCharsets&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L163">			return fieldAccess.getName().getIdentifier().replace('_', '-');</span>
 		}
-<span class="fc" id="L164">		MethodDeclaration method = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);</span>
-<span class="pc bpc" id="L165" title="1 of 2 branches missed.">		return method != null ? method : ASTNodes.getFirstAncestorOrNull(node, TypeDeclaration.class);</span>
+<span class="nc" id="L165">		return null;</span>
+	}
+
+	private static ASTNode findEnclosingMethodOrType(ASTNode node) {
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L170">			return null;</span>
+		}
+<span class="fc" id="L172">		MethodDeclaration method = ASTNodes.getFirstAncestorOrNull(node, MethodDeclaration.class);</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">		return method != null ? method : ASTNodes.getFirstAncestorOrNull(node, TypeDeclaration.class);</span>
 	}
 
 	private static String extractStringLiteralValue(VariableDeclarationFragment fragment,
 			String variableIdentifier) {
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">		if (!fragment.getName().getIdentifier().equals(variableIdentifier)) {</span>
-<span class="fc" id="L171">			return null;</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">		if (!fragment.getName().getIdentifier().equals(variableIdentifier)) {</span>
+<span class="fc" id="L179">			return null;</span>
 		}
-<span class="nc" id="L173">		Expression initializer = fragment.getInitializer();</span>
-<span class="nc bnc" id="L174" title="All 2 branches missed.">		return initializer instanceof StringLiteral literal</span>
-<span class="nc" id="L175">				? literal.getLiteralValue().toUpperCase(Locale.ROOT)</span>
-<span class="nc" id="L176">				: null;</span>
+<span class="nc" id="L181">		Expression initializer = fragment.getInitializer();</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">		return initializer instanceof StringLiteral literal</span>
+<span class="nc" id="L183">				? literal.getLiteralValue().toUpperCase(Locale.ROOT)</span>
+<span class="nc" id="L184">				: null;</span>
 	}
 
 	private static String findValueInFragments(List&lt;?&gt; fragments, String variableIdentifier) {
-<span class="fc bfc" id="L180" title="All 2 branches covered.">		for (Object fragmentObject : fragments) {</span>
-<span class="fc" id="L181">			String value = extractStringLiteralValue((VariableDeclarationFragment) fragmentObject,</span>
-<span class="fc" id="L182">					variableIdentifier);</span>
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">			if (value != null) {</span>
-<span class="nc" id="L184">				return value;</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">		for (Object fragmentObject : fragments) {</span>
+<span class="fc" id="L189">			String value = extractStringLiteralValue((VariableDeclarationFragment) fragmentObject,</span>
+<span class="fc" id="L190">					variableIdentifier);</span>
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">			if (value != null) {</span>
+<span class="nc" id="L192">				return value;</span>
 			}
 		}
-<span class="fc" id="L187">		return null;</span>
+<span class="fc" id="L195">		return null;</span>
 	}
 
 	private static String findVariableValueInMethod(MethodDeclaration method, String variableIdentifier) {
-<span class="fc" id="L191">		Block body = method.getBody();</span>
-<span class="pc bpc" id="L192" title="1 of 2 branches missed.">		if (body == null) {</span>
-<span class="nc" id="L193">			return null;</span>
+<span class="fc" id="L199">		Block body = method.getBody();</span>
+<span class="pc bpc" id="L200" title="1 of 2 branches missed.">		if (body == null) {</span>
+<span class="nc" id="L201">			return null;</span>
 		}
-<span class="fc bfc" id="L195" title="All 2 branches covered.">		for (Object statement : body.statements()) {</span>
-<span class="pc bpc" id="L196" title="1 of 2 branches missed.">			if (statement instanceof VariableDeclarationStatement declaration) {</span>
-<span class="fc" id="L197">				String value = findValueInFragments(declaration.fragments(), variableIdentifier);</span>
-<span class="pc bpc" id="L198" title="1 of 2 branches missed.">				if (value != null) {</span>
-<span class="nc" id="L199">					return value;</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">		for (Object statement : body.statements()) {</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">			if (statement instanceof VariableDeclarationStatement declaration) {</span>
+<span class="fc" id="L205">				String value = findValueInFragments(declaration.fragments(), variableIdentifier);</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">				if (value != null) {</span>
+<span class="nc" id="L207">					return value;</span>
 				}
 			}
 		}
-<span class="fc" id="L203">		return null;</span>
+<span class="fc" id="L211">		return null;</span>
 	}
 
 	private static String findVariableValueInType(TypeDeclaration type, String variableIdentifier) {
-<span class="nc bnc" id="L207" title="All 2 branches missed.">		for (FieldDeclaration field : type.getFields()) {</span>
-<span class="nc" id="L208">			String value = findValueInFragments(field.fragments(), variableIdentifier);</span>
-<span class="nc bnc" id="L209" title="All 2 branches missed.">			if (value != null) {</span>
-<span class="nc" id="L210">				return value;</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">		for (FieldDeclaration field : type.getFields()) {</span>
+<span class="nc" id="L216">			String value = findValueInFragments(field.fragments(), variableIdentifier);</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">			if (value != null) {</span>
+<span class="nc" id="L218">				return value;</span>
 			}
 		}
-<span class="nc" id="L213">		return null;</span>
+<span class="nc" id="L221">		return null;</span>
 	}
 
 	protected static String findVariableValue(SimpleName variable, ASTNode context) {
-<span class="pc bpc" id="L217" title="2 of 4 branches missed.">		if (variable == null || context == null) {</span>
-<span class="nc" id="L218">			return null;</span>
+<span class="pc bpc" id="L225" title="2 of 4 branches missed.">		if (variable == null || context == null) {</span>
+<span class="nc" id="L226">			return null;</span>
 		}
-<span class="fc" id="L220">		ASTNode enclosing = findEnclosingMethodOrType(context);</span>
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		if (enclosing instanceof MethodDeclaration method) {</span>
-<span class="fc" id="L222">			return findVariableValueInMethod(method, variable.getIdentifier());</span>
+<span class="fc" id="L228">		ASTNode enclosing = findEnclosingMethodOrType(context);</span>
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">		if (enclosing instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L230">			return findVariableValueInMethod(method, variable.getIdentifier());</span>
 		}
-<span class="nc bnc" id="L224" title="All 2 branches missed.">		if (enclosing instanceof TypeDeclaration type) {</span>
-<span class="nc" id="L225">			return findVariableValueInType(type, variable.getIdentifier());</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">		if (enclosing instanceof TypeDeclaration type) {</span>
+<span class="nc" id="L233">			return findVariableValueInType(type, variable.getIdentifier());</span>
 		}
-<span class="nc" id="L227">		return null;</span>
+<span class="nc" id="L235">		return null;</span>
 	}
-
-<span class="fc" id="L230">	private static final Pattern LAST_NLS_COMMENT = Pattern.compile(</span>
-<span class="fc" id="L231">			&quot;[ ]*\\/\\/\\$NON-NLS-[0-9]+\\$(?!.*\\/\\/\\$NON-NLS-)&quot;); //$NON-NLS-1$</span>
 
 	protected static boolean replaceArgumentAndRemoveNLS(ASTRewrite rewrite, ASTNode visited,
 			ASTNode replacement, TextEditGroup group, CompilationUnitRewrite cuRewrite) {
-<span class="fc" id="L235">		ASTNode statement = ASTNodes.getFirstAncestorOrNull(visited, Statement.class, FieldDeclaration.class);</span>
-<span class="pc bpc" id="L236" title="1 of 4 branches missed.">		if (statement != null &amp;&amp; isInsideTryBodyWithOnlyUnsupportedEncodingCatch(statement)) {</span>
-<span class="fc" id="L237">			return replaceTryBodyAndUnwrap(rewrite, visited, replacement, statement, group, cuRewrite);</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">		if (visited.toString().equals(replacement.toString())) {</span>
+<span class="fc" id="L241">			return false;</span>
 		}
-<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		if (statement == null) {</span>
-<span class="nc" id="L240">			rewrite.replace(visited, replacement, group);</span>
-<span class="nc" id="L241">			return false;</span>
+<span class="fc" id="L243">		ASTNode statement= ASTNodes.getFirstAncestorOrNull(visited, Statement.class, FieldDeclaration.class);</span>
+<span class="pc bpc" id="L244" title="1 of 4 branches missed.">		if (statement != null &amp;&amp; isInsideTryBodyWithOnlyUnsupportedEncodingCatch(statement)) {</span>
+<span class="fc" id="L245">			return replaceTryBodyAndUnwrap(rewrite, visited, replacement, statement, group, cuRewrite);</span>
 		}
-		try {
-<span class="fc" id="L244">			String buffer = cuRewrite.getCu().getBuffer().getContents();</span>
-<span class="fc" id="L245">			CompilationUnit root = (CompilationUnit) statement.getRoot();</span>
-<span class="fc" id="L246">			int start = root.getExtendedStartPosition(statement);</span>
-<span class="fc" id="L247">			String source = buffer.substring(start, start + root.getExtendedLength(statement));</span>
-<span class="fc" id="L248">			source = normalizeReplacementSource(source);</span>
-<span class="fc" id="L249">			String visitedSource = buffer.substring(visited.getStartPosition(),</span>
-<span class="fc" id="L250">					visited.getStartPosition() + visited.getLength());</span>
-<span class="fc" id="L251">			String replacementSource = replacement.toString().replaceAll(&quot;,&quot;, &quot;, &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L252">			ASTNode placeholder = rewrite.createStringPlaceholder(</span>
-<span class="fc" id="L253">					source.replace(visitedSource, replacementSource), statement.getNodeType());</span>
-<span class="fc" id="L254">			rewrite.replace(statement, placeholder, group);</span>
-<span class="pc" id="L255">		} catch (JavaModelException exception) {</span>
-<span class="nc" id="L256">			rewrite.replace(visited, replacement, group);</span>
-		}
-<span class="fc" id="L258">		return false;</span>
+<span class="fc" id="L247">		EncodingSourceRewrite.record(cuRewrite, visited);</span>
+<span class="fc" id="L248">		rewrite.replace(visited, replacement, group);</span>
+<span class="fc" id="L249">		return false;</span>
 	}
 
 	private static boolean replaceTryBodyAndUnwrap(ASTRewrite rewrite, ASTNode visited,
 			ASTNode replacement, ASTNode statement, TextEditGroup group, CompilationUnitRewrite cuRewrite) {
-<span class="fc" id="L263">		Block tryBody = (Block) statement.getParent();</span>
-<span class="fc" id="L264">		TryStatement tryStatement = (TryStatement) tryBody.getParent();</span>
-<span class="pc bpc" id="L265" title="1 of 2 branches missed.">		if (!(tryStatement.getParent() instanceof Block parentBlock)) {</span>
-<span class="nc" id="L266">			rewrite.replace(visited, replacement, group);</span>
-<span class="nc" id="L267">			return false;</span>
+<span class="fc" id="L254">		Block tryBody= (Block) statement.getParent();</span>
+<span class="fc" id="L255">		TryStatement tryStatement= (TryStatement) tryBody.getParent();</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">		if (!(tryStatement.getParent() instanceof Block)</span>
+<span class="fc" id="L257">				|| !ExceptionCleanupHelper.canRemoveException(tryStatement, visited,</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">						JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION, rewrite)) {</span>
+<span class="fc" id="L259">			EncodingSourceRewrite.record(cuRewrite, visited);</span>
+<span class="fc" id="L260">			rewrite.replace(visited, replacement, group);</span>
+<span class="fc" id="L261">			return false;</span>
 		}
-		try {
-<span class="fc" id="L270">			String buffer = cuRewrite.getCu().getBuffer().getContents();</span>
-<span class="fc" id="L271">			CompilationUnit root = (CompilationUnit) statement.getRoot();</span>
-<span class="fc" id="L272">			String visitedSource = buffer.substring(visited.getStartPosition(),</span>
-<span class="fc" id="L273">					visited.getStartPosition() + visited.getLength());</span>
-<span class="fc" id="L274">			String replacementSource = replacement.toString().replaceAll(&quot;,&quot;, &quot;, &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L275">			ListRewrite parentStatements = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);</span>
-<span class="fc" id="L276">			List&lt;?&gt; bodyStatements = tryBody.statements();</span>
-
-<span class="fc bfc" id="L278" title="All 2 branches covered.">			for (int index = bodyStatements.size() - 1; index &gt;= 0; index--) {</span>
-<span class="fc" id="L279">				ASTNode bodyStatement = (ASTNode) bodyStatements.get(index);</span>
-				ASTNode inlinedStatement;
-<span class="pc bpc" id="L281" title="1 of 2 branches missed.">				if (bodyStatement == statement) {</span>
-<span class="fc" id="L282">					int start = root.getExtendedStartPosition(bodyStatement);</span>
-<span class="fc" id="L283">					String source = buffer.substring(start, start + root.getExtendedLength(bodyStatement));</span>
-<span class="fc" id="L284">					source = normalizeReplacementSource(source).replace(visitedSource, replacementSource);</span>
-<span class="fc" id="L285">					inlinedStatement = rewrite.createStringPlaceholder(source, bodyStatement.getNodeType());</span>
-<span class="fc" id="L286">				} else {</span>
-<span class="nc" id="L287">					inlinedStatement = rewrite.createMoveTarget(bodyStatement);</span>
-				}
-<span class="fc" id="L289">				parentStatements.insertAfter(inlinedStatement, tryStatement, group);</span>
-			}
-
-<span class="fc" id="L292">			CatchClause removedCatch = (CatchClause) tryStatement.catchClauses().get(0);</span>
-<span class="fc" id="L293">			Set&lt;CatchClause&gt; removedCatches = removedUnsupportedEncodingCatches(root);</span>
-<span class="fc" id="L294">			removedCatches.add(removedCatch);</span>
-<span class="fc" id="L295">			cuRewrite.getImportRemover().registerRemovedNode(removedCatch);</span>
-<span class="pc bpc" id="L296" title="1 of 2 branches missed.">			if (!hasSurvivingUnsupportedEncodingExceptionReference(root, removedCatches)) {</span>
-<span class="nc" id="L297">				cuRewrite.getImportRewrite().removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);</span>
-			}
-<span class="fc" id="L299">			rewrite.remove(tryStatement, group);</span>
-<span class="fc" id="L300">			return true;</span>
-<span class="nc" id="L301">		} catch (JavaModelException exception) {</span>
-<span class="nc" id="L302">			rewrite.replace(visited, replacement, group);</span>
-<span class="nc" id="L303">			return false;</span>
+<span class="fc" id="L263">		CompilationUnit root= (CompilationUnit) statement.getRoot();</span>
+<span class="fc" id="L264">		EncodingSourceRewrite.record(cuRewrite, visited);</span>
+<span class="fc" id="L265">		rewrite.replace(visited, replacement, group);</span>
+		// Register child edits before moving the original statements, and move each
+		// body only once. Rebuilding copy targets leaves orphaned source edits.
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">		if (tryStatement.getProperty(UNWRAPPED_TRY) == rewrite) {</span>
+<span class="nc" id="L269">			return true;</span>
 		}
-	}
-
-	private static String normalizeReplacementSource(String source) {
-<span class="fc" id="L308">		String normalized = LAST_NLS_COMMENT.matcher(source).replaceFirst(&quot;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L309">		normalized = Pattern.compile(&quot;^[ \\t]*&quot;).matcher(normalized).replaceAll(&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L310">		return Pattern.compile(&quot;\n[ \\t]*&quot;).matcher(normalized).replaceAll(&quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L271">		tryStatement.setProperty(UNWRAPPED_TRY, rewrite);</span>
+<span class="fc" id="L272">		List&lt;?&gt; bodyStatements= tryBody.statements();</span>
+		// Move one contiguous source range, retaining same-line statements and their
+		// line-based NLS numbering instead of formatting each statement separately.
+<span class="fc" id="L275">		ASTNode inlined= rewrite.getListRewrite(tryBody, Block.STATEMENTS_PROPERTY).createMoveTarget(</span>
+<span class="fc" id="L276">				(ASTNode) bodyStatements.get(0), (ASTNode) bodyStatements.get(bodyStatements.size() - 1));</span>
+<span class="fc" id="L277">		CatchClause removedCatch= (CatchClause) tryStatement.catchClauses().get(0);</span>
+<span class="fc" id="L278">		Set&lt;CatchClause&gt; removedCatches= removedUnsupportedEncodingCatches(root);</span>
+<span class="fc" id="L279">		removedCatches.add(removedCatch);</span>
+<span class="fc" id="L280">		cuRewrite.getImportRemover().registerRemovedNode(removedCatch);</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">		if (!hasSurvivingUnsupportedEncodingExceptionReference(root, removedCatches)) {</span>
+<span class="fc" id="L282">			cuRewrite.getImportRewrite().removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);</span>
+		}
+<span class="fc" id="L284">		rewrite.replace(tryStatement, inlined, group);</span>
+<span class="fc" id="L285">		return true;</span>
 	}
 
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static Set&lt;CatchClause&gt; removedUnsupportedEncodingCatches(CompilationUnit root) {
-<span class="fc" id="L315">		Object stored = root.getProperty(REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY);</span>
-<span class="pc bpc" id="L316" title="1 of 2 branches missed.">		if (stored instanceof Set&lt;?&gt;) {</span>
-<span class="nc" id="L317">			return (Set&lt;CatchClause&gt;) stored;</span>
+<span class="fc" id="L290">		Object stored = root.getProperty(REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY);</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">		if (stored instanceof Set&lt;?&gt;) {</span>
+<span class="fc" id="L292">			return (Set&lt;CatchClause&gt;) stored;</span>
 		}
-<span class="fc" id="L319">		Set&lt;CatchClause&gt; removedCatches = Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
-<span class="fc" id="L320">		root.setProperty(REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY, removedCatches);</span>
-<span class="fc" id="L321">		return removedCatches;</span>
+<span class="fc" id="L294">		Set&lt;CatchClause&gt; removedCatches = Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
+<span class="fc" id="L295">		root.setProperty(REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY, removedCatches);</span>
+<span class="fc" id="L296">		return removedCatches;</span>
 	}
 
 	private static boolean hasSurvivingUnsupportedEncodingExceptionReference(CompilationUnit root,
 			Set&lt;CatchClause&gt; removedCatches) {
-<span class="fc" id="L326">		boolean[] found = { false };</span>
-<span class="fc" id="L327">		root.accept(new ASTVisitor() {</span>
+<span class="fc" id="L301">		boolean[] found = { false };</span>
+<span class="fc" id="L302">		root.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(SimpleType node) {
-<span class="fc bfc" id="L330" title="All 2 branches covered.">				if (!isDescendantOfAny(node, removedCatches)</span>
-<span class="pc bpc" id="L331" title="1 of 2 branches missed.">						&amp;&amp; node.getName() instanceof SimpleName simpleName</span>
-<span class="fc bfc" id="L332" title="All 2 branches covered.">						&amp;&amp; UNSUPPORTED_ENCODING_EXCEPTION.equals(simpleName.getIdentifier())) {</span>
-<span class="fc" id="L333">					found[0] = true;</span>
-<span class="fc" id="L334">					return false;</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">				if (!isDescendantOfAny(node, removedCatches)</span>
+<span class="fc bfc" id="L306" title="All 2 branches covered.">						&amp;&amp; node.getName() instanceof SimpleName simpleName</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">						&amp;&amp; UNSUPPORTED_ENCODING_EXCEPTION.equals(simpleName.getIdentifier())) {</span>
+<span class="fc" id="L308">					found[0] = true;</span>
+<span class="fc" id="L309">					return false;</span>
 				}
-<span class="fc bfc" id="L336" title="All 2 branches covered.">				return !found[0];</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">				return !found[0];</span>
 			}
 		});
-<span class="fc" id="L339">		return found[0];</span>
+<span class="fc" id="L314">		return found[0];</span>
 	}
 
 	private static boolean isDescendantOfAny(ASTNode node, Set&lt;CatchClause&gt; ancestors) {
-<span class="fc bfc" id="L343" title="All 2 branches covered.">		for (ASTNode current = node; current != null; current = current.getParent()) {</span>
-<span class="fc bfc" id="L344" title="All 2 branches covered.">			if (ancestors.contains(current)) {</span>
-<span class="fc" id="L345">				return true;</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">		for (ASTNode current = node; current != null; current = current.getParent()) {</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">			if (ancestors.contains(current)) {</span>
+<span class="fc" id="L320">				return true;</span>
 			}
 		}
-<span class="fc" id="L348">		return false;</span>
+<span class="fc" id="L323">		return false;</span>
 	}
 
 	private static boolean isInsideTryBodyWithOnlyUnsupportedEncodingCatch(ASTNode statement) {
-<span class="pc bpc" id="L352" title="1 of 2 branches missed.">		if (!(statement.getParent() instanceof Block block)</span>
-<span class="fc bfc" id="L353" title="All 2 branches covered.">				|| !(block.getParent() instanceof TryStatement tryStatement)</span>
-<span class="pc bpc" id="L354" title="1 of 2 branches missed.">				|| tryStatement.getBody() != block</span>
-<span class="fc bfc" id="L355" title="All 2 branches covered.">				|| !tryStatement.resources().isEmpty()</span>
-<span class="fc bfc" id="L356" title="All 2 branches covered.">				|| tryStatement.getFinally() != null) {</span>
-<span class="fc" id="L357">			return false;</span>
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">		if (!(statement.getParent() instanceof Block block)</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">				|| !(block.getParent() instanceof TryStatement tryStatement)</span>
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">				|| tryStatement.getBody() != block</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">				|| !tryStatement.resources().isEmpty()</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">				|| tryStatement.getFinally() != null) {</span>
+<span class="fc" id="L332">			return false;</span>
 		}
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L360">		List&lt;CatchClause&gt; catchClauses = tryStatement.catchClauses();</span>
-<span class="fc bfc" id="L361" title="All 2 branches covered.">		if (catchClauses.size() != 1) {</span>
-<span class="fc" id="L362">			return false;</span>
+<span class="fc" id="L335">		List&lt;CatchClause&gt; catchClauses = tryStatement.catchClauses();</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">		if (catchClauses.size() != 1) {</span>
+<span class="fc" id="L337">			return false;</span>
 		}
-<span class="fc" id="L364">		Type exceptionType = catchClauses.get(0).getException().getType();</span>
-<span class="fc" id="L365">		ITypeBinding binding = exceptionType.resolveBinding();</span>
-<span class="pc bpc" id="L366" title="1 of 2 branches missed.">		if (binding != null) {</span>
-<span class="fc" id="L367">			return JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(binding.getErasure().getQualifiedName());</span>
+<span class="fc" id="L339">		Type exceptionType = catchClauses.get(0).getException().getType();</span>
+<span class="fc" id="L340">		ITypeBinding binding = exceptionType.resolveBinding();</span>
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="fc" id="L342">			return JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(binding.getErasure().getQualifiedName());</span>
 		}
-<span class="nc" id="L369">		String source = exceptionType.toString();</span>
-<span class="nc bnc" id="L370" title="All 2 branches missed.">		return UNSUPPORTED_ENCODING_EXCEPTION.equals(source)</span>
-<span class="nc bnc" id="L371" title="All 2 branches missed.">				|| JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(source)</span>
-<span class="nc bnc" id="L372" title="All 2 branches missed.">				|| source.endsWith(&quot;.&quot; + UNSUPPORTED_ENCODING_EXCEPTION); //$NON-NLS-1$</span>
+<span class="nc" id="L344">		String source = exceptionType.toString();</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">		return UNSUPPORTED_ENCODING_EXCEPTION.equals(source)</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">				|| JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION.equals(source)</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">				|| source.endsWith(&quot;.&quot; + UNSUPPORTED_ENCODING_EXCEPTION); //$NON-NLS-1$</span>
 	}
 
 	protected void removeUnsupportedEncodingException(ASTNode visited, TextEditGroup group,
 			ASTRewrite rewrite, ImportRemover importRemover) {
-<span class="fc" id="L377">		ExceptionCleanupHelper.removeCheckedException(visited,</span>
-<span class="fc" id="L378">				JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION,</span>
-<span class="fc" id="L379">				UNSUPPORTED_ENCODING_EXCEPTION,</span>
-<span class="fc" id="L380">				group, rewrite, importRemover);</span>
-<span class="fc" id="L381">	}</span>
+<span class="fc" id="L352">		ExceptionCleanupHelper.removeCheckedException(visited,</span>
+<span class="fc" id="L353">				JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION,</span>
+<span class="fc" id="L354">				UNSUPPORTED_ENCODING_EXCEPTION,</span>
+<span class="fc" id="L355">				group, rewrite, importRemover);</span>
+<span class="fc" id="L356">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

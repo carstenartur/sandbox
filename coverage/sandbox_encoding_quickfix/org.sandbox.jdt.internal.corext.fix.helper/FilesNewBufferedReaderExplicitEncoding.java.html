@@ -70,9 +70,9 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 		// Handle Files.newBufferedReader(Path, Charset) - replace charset if it's a known encoding
 <span class="fc bfc" id="L71" title="All 2 branches covered.">		if (arguments.size() == 2) {</span>
 <span class="fc" id="L72">			ASTNode encodingArg = arguments.get(1);</span>
-<span class="fc" id="L73">			String encodingValue = getEncodingValue(encodingArg, visited);</span>
+<span class="fc" id="L73">			String encodingValue = getEncodingValue(encodingArg, visited, cb);</span>
 			
-<span class="pc bpc" id="L75" title="2 of 4 branches missed.">			if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
+<span class="pc bpc" id="L75" title="1 of 4 branches missed.">			if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
 <span class="fc" id="L76">				NodeData nd = new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>
 <span class="fc" id="L77">				holder.put(visited, nd);</span>
 <span class="fc" id="L78">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
@@ -80,7 +80,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 			}
 			// If we have a charset argument but it's not a recognized string literal,
 			// don't add another charset parameter
-<span class="nc" id="L83">			return false;</span>
+<span class="fc" id="L83">			return false;</span>
 		}
 		
 		// Handle Files.newBufferedReader(Path) - add charset parameter

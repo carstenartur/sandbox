@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CheckedExceptionAnalysis.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.cleanup</a> &gt; <span class="el_source">CheckedExceptionAnalysis.java</span></div><h1>CheckedExceptionAnalysis.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0 which accompanies this distribution, and is
+ * available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.cleanup;
+
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CatchClause;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.ConstructorInvocation;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.RecordDeclaration;
+import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.eclipse.jdt.core.dom.ThrowStatement;
+import org.eclipse.jdt.core.dom.TryStatement;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.UnionType;
+import org.eclipse.jdt.core.dom.VariableDeclarationExpression;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.dom.Bindings;
+import org.eclipse.jdt.internal.corext.refactoring.util.AbstractExceptionAnalyzer;
+
+/** Remaining exception flow, excluding only the converted invocation's own effect. */
+final class CheckedExceptionAnalysis extends AbstractExceptionAnalyzer {
+    private final Set&lt;ASTNode&gt; converted;
+    private final ITypeBinding target;
+    private final ASTRewrite rewrite;
+    private boolean uncertain;
+
+<span class="fc" id="L45">    private CheckedExceptionAnalysis(Set&lt;ASTNode&gt; converted, ITypeBinding target, ASTRewrite rewrite) {</span>
+<span class="fc" id="L46">        this.converted= converted;</span>
+<span class="fc" id="L47">        this.target= target;</span>
+<span class="fc" id="L48">        this.rewrite= rewrite;</span>
+<span class="fc" id="L49">    }</span>
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    static boolean canRemove(ASTNode scope, ASTNode visited, String exceptionFQN, ASTRewrite rewrite) {
+<span class="fc" id="L53">        String key= CheckedExceptionAnalysis.class.getName() + ':' + exceptionFQN;</span>
+<span class="fc" id="L54">        Set&lt;ASTNode&gt; converted= (Set&lt;ASTNode&gt;) rewrite.getProperty(key);</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (converted == null) {</span>
+<span class="fc" id="L56">            converted= Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
+<span class="fc" id="L57">            rewrite.setProperty(key, converted);</span>
+        }
+<span class="fc" id="L59">        ASTNode invocation= visited;</span>
+<span class="pc bpc" id="L60" title="1 of 4 branches missed.">        while (invocation != null &amp;&amp; !(invocation instanceof MethodInvocation)</span>
+<span class="pc bpc" id="L61" title="1 of 4 branches missed.">                &amp;&amp; !(invocation instanceof ClassInstanceCreation) &amp;&amp; !(invocation instanceof SuperMethodInvocation)</span>
+<span class="pc bpc" id="L62" title="2 of 4 branches missed.">                &amp;&amp; !(invocation instanceof ConstructorInvocation) &amp;&amp; !(invocation instanceof SuperConstructorInvocation)) {</span>
+<span class="fc" id="L63">            invocation= invocation.getParent();</span>
+        }
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        if (invocation == null) return false;</span>
+<span class="fc" id="L66">        converted.add(invocation);</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        List&lt;Type&gt; types= scope instanceof MethodDeclaration method ? method.thrownExceptionTypes()</span>
+<span class="fc" id="L68">                : ((List&lt;CatchClause&gt;) ((TryStatement) scope).catchClauses()).stream()</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">                        .flatMap(c -&gt; c.getException().getType() instanceof UnionType union</span>
+<span class="fc" id="L70">                                ? ((List&lt;Type&gt;) union.types()).stream() : java.util.stream.Stream.of(c.getException().getType()))</span>
+<span class="fc" id="L71">                        .toList();</span>
+<span class="fc" id="L72">        ITypeBinding target= types.stream().map(Type::resolveBinding)</span>
+<span class="pc bpc" id="L73" title="2 of 6 branches missed.">                .filter(t -&gt; t != null &amp;&amp; !t.isRecovered() &amp;&amp; exceptionFQN.equals(t.getErasure().getQualifiedName()))</span>
+<span class="fc" id="L74">                .findFirst().orElse(null);</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        if (target == null) return false;</span>
+<span class="fc" id="L76">        CheckedExceptionAnalysis analysis= new CheckedExceptionAnalysis(converted, target, rewrite);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (scope instanceof TryStatement statement) {</span>
+<span class="fc" id="L78">            statement.getBody().accept(analysis);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            for (Object resource : statement.resources()) ((ASTNode) resource).accept(analysis);</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        } else if (((MethodDeclaration) scope).getBody() != null) {</span>
+<span class="fc" id="L81">            ((MethodDeclaration) scope).getBody().accept(analysis);</span>
+        }
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        return !analysis.uncertain &amp;&amp; analysis.getCurrentExceptions().stream()</span>
+<span class="fc bfc" id="L84" title="All 6 branches covered.">                .noneMatch(t -&gt; t.isAssignmentCompatible(target) || target.isAssignmentCompatible(t));</span>
+    }
+
+    @Override
+    public boolean preVisit2(ASTNode node) {
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (node instanceof CatchClause clause &amp;&amp; !rewrite.getListRewrite(clause.getParent(),</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">                TryStatement.CATCH_CLAUSES_PROPERTY).getRewrittenList().contains(clause)) return false;</span>
+<span class="fc bfc" id="L91" title="All 4 branches covered.">        if (node instanceof Expression resource &amp;&amp; node.getParent() instanceof TryStatement statement</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">                &amp;&amp; statement.resources().contains(resource)) {</span>
+<span class="fc" id="L93">            ITypeBinding type= resource.resolveTypeBinding();</span>
+<span class="pc bpc" id="L94" title="2 of 4 branches missed.">            check(null, type == null || type.isRecovered() ? null</span>
+<span class="fc" id="L95">                    : Bindings.findMethodInHierarchy(type, &quot;close&quot;, new ITypeBinding[0])); //$NON-NLS-1$</span>
+        }
+<span class="fc" id="L97">        return true;</span>
+    }
+
+    // The resource's implicit close is checked for both declarations and Java 9 resource references above.
+    @Override
+<span class="fc" id="L102">    public boolean visit(VariableDeclarationExpression node) { return true; }</span>
+
+    @Override
+<span class="nc" id="L105">    public boolean visit(RecordDeclaration node) { return false; }</span>
+
+    @Override
+<span class="fc" id="L108">    public boolean visit(MethodInvocation node) { check(node, node.resolveMethodBinding()); return true; }</span>
+
+    @Override
+<span class="nc" id="L111">    public boolean visit(SuperMethodInvocation node) { check(node, node.resolveMethodBinding()); return true; }</span>
+
+    @Override
+<span class="fc" id="L114">    public boolean visit(ClassInstanceCreation node) { check(node, node.resolveConstructorBinding()); return true; }</span>
+
+    @Override
+<span class="nc" id="L117">    public boolean visit(ConstructorInvocation node) { check(node, node.resolveConstructorBinding()); return true; }</span>
+
+    @Override
+<span class="nc" id="L120">    public boolean visit(SuperConstructorInvocation node) { check(node, node.resolveConstructorBinding()); return true; }</span>
+
+    @Override
+    public boolean visit(ThrowStatement node) {
+<span class="fc" id="L124">        ITypeBinding type= node.getExpression().resolveTypeBinding();</span>
+<span class="pc bpc" id="L125" title="2 of 4 branches missed.">        if (type == null || type.isRecovered()) uncertain= true;</span>
+<span class="fc" id="L126">        else addException(type, node.getAST());</span>
+<span class="fc" id="L127">        return true;</span>
+    }
+
+    private void check(ASTNode node, IMethodBinding binding) {
+<span class="pc bpc" id="L131" title="1 of 4 branches missed.">        if (binding == null || binding.isRecovered()) {</span>
+<span class="fc" id="L132">            uncertain= true;</span>
+<span class="fc" id="L133">            return;</span>
+        }
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        for (ITypeBinding exception : binding.getExceptionTypes()) {</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">            if (exception.isRecovered()) uncertain= true;</span>
+            // Receiver and argument expressions are still visited even for a converted call.
+<span class="fc bfc" id="L138" title="All 6 branches covered.">            else if (node == null || !converted.contains(node) || !exception.isEqualTo(target))</span>
+<span class="fc" id="L139">                addException(exception, rewrite.getAST());</span>
+        }
+<span class="fc" id="L141">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
