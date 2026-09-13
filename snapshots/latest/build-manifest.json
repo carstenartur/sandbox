@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-12T17:49:42.439547+00:00",
+  "generated_at": "2026-09-13T18:26:26.836177+00:00",
   "repository": "carstenartur/sandbox",
-  "commit_sha": "ca7dec8870b07c8480cbcfec3a02dce424dcfa05",
-  "commit_url": "https://github.com/carstenartur/sandbox/commit/ca7dec8870b07c8480cbcfec3a02dce424dcfa05",
+  "commit_sha": "bd20830449e284182f117ab892d5da9bab04eae7",
+  "commit_url": "https://github.com/carstenartur/sandbox/commit/bd20830449e284182f117ab892d5da9bab04eae7",
   "ref": "refs/heads/main",
   "event_name": "workflow_run",
   "provenance_workflow": {
     "name": "Deploy Snapshot to GitHub Pages",
-    "run_id": "34707454186",
-    "run_number": "703",
+    "run_id": "34772532625",
+    "run_number": "704",
     "run_attempt": "1",
-    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/34707454186",
-    "source_java_ci_run_id": "34705503579",
-    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/34705503579"
+    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/34772532625",
+    "source_java_ci_run_id": "34770548925",
+    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/34770548925"
   },
   "toolchain": {
     "project_version": "1.3.5-SNAPSHOT",
@@ -21,10 +21,10 @@
     "java_execution_environment": "JavaSE-21",
     "tycho_version": "5.0.4",
     "spotbugs_maven_plugin_version": "4.10.4.0",
-    "eclipse_release": "2026-06",
+    "eclipse_release": "2026-09",
     "p2_repositories": [
-      "https://download.eclipse.org/releases/2026-06/",
-      "https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-06/",
+      "https://download.eclipse.org/releases/2026-09/",
+      "https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-09/",
       "https://download.eclipse.org/cbi/updates/license/",
       "https://download.eclipse.org/egit/updates/",
       "https://download.eclipse.org/justj/jres/21/updates/release/latest/",
@@ -36,24 +36,24 @@
     "target_definitions": [
       {
         "path": "sandbox_target/eclipse.target",
-        "size_bytes": 3573,
-        "sha256": "2931a6196d0dcf0062ed2f911b8e18cd418094c014fff574159e33bd7bef9315"
+        "size_bytes": 3577,
+        "sha256": "b4a0c184304c53eb474b7c186236dad5fc60020977da784fc94e449e475011b0"
       }
     ]
   },
   "tests": {
     "inventory": {
       "total_modules": 17,
-      "total_tests": 2716,
-      "enabled_tests": 2686,
+      "total_tests": 2733,
+      "enabled_tests": 2703,
       "disabled_tests": 30
     },
     "executed": {
-      "tests": 4067,
+      "tests": 4127,
       "failures": 0,
       "errors": 0,
       "skipped": 11,
-      "report_files": 462
+      "report_files": 466
     }
   },
   "artifacts": {
@@ -61,51 +61,51 @@
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/eclipse.exe",
         "size_bytes": 548520,
-        "sha256": "7d3525919e8b32f2366de93fd0f020c6828bd9334c6788c308ea16b6a3f0f78d"
+        "sha256": "f110356c0288a04ddf2b03dda322a57202bdb5ccb9bef7581504ab90d443246c"
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/eclipsec.exe",
         "size_bytes": 253608,
-        "sha256": "9794fa26f74fe5e04435f7111a853a415fd97476c85fe24b1da3ad65cae955e8"
+        "sha256": "01b8ce638a591e97aa42f65e76b269b6ae05bbb7dc5bb7d9af4c455508bee853"
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-linux.gtk.x86_64.tar.gz",
-        "size_bytes": 196165750,
-        "sha256": "bdf973b8ef5454d34485be3733104f4aee7e5175c8cc39bf91526ae606695ed6"
+        "size_bytes": 180710785,
+        "sha256": "31374da544711c20efe394ff7eadcd4b7785e2bb6c2f80c21fcd72a27490ae5c"
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-macosx.cocoa.x86_64.tar.gz",
-        "size_bytes": 196965479,
-        "sha256": "d7575a6b693137b7f9ffb5e03eccdea1913ff00ec1ea7936bd7fce28556a596b"
+        "size_bytes": 181494832,
+        "sha256": "15a57aafd7cf8a41f18c31fc1e34004c342babb6abc6c503b08e234170421a17"
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-win32.win32.x86_64.zip",
-        "size_bytes": 197723908,
-        "sha256": "4be257de623b10568a4533c0fa5b90de9a6a02ddb6347ad69d318481fb76dfec"
+        "size_bytes": 182320500,
+        "sha256": "d85c777fa38508dcb35a4d16d830841db97fa194fa8704701255aaaf24bf3d06"
       }
     ],
     "product_tree": {
       "path": "sandbox_product/target/products",
-      "file_count": 3993,
-      "total_bytes": 1254406568,
-      "sha256_tree": "32eb636132811e5296c05139fa0efa8be2e1fbd26b86bfe61f020f7651ba3e4a"
+      "file_count": 4431,
+      "total_bytes": 1169073242,
+      "sha256_tree": "977b9cc83447d1bb388029d2ee2f9743e90a0c9add1536ba094ae5d20ae132e5"
     },
     "product_status": "built",
     "update_site": {
       "path": "sandbox_updatesite/target/repository",
       "file_count": 54,
-      "total_bytes": 5219392,
-      "sha256_tree": "4773ad6a58471f1314b0611278d8ec605cfaa23ad00c32bff3d6b9bc1cf526e4",
+      "total_bytes": 5218357,
+      "sha256_tree": "4142b1a39545f5a5467dcb8197f38144d85cb280d94b5f61ab3713c89c0b56ce",
       "metadata": [
         {
           "path": "sandbox_updatesite/target/repository/artifacts.jar",
-          "size_bytes": 8550,
-          "sha256": "e013dfe8078c4a6cb56a2b13284c2e7e5b56cdebcc6354874e77b3203f0c5815"
+          "size_bytes": 8560,
+          "sha256": "00b9f00e44dec8a87f2337249b37743981bab43be0c5c03e7e7aab561826906d"
         },
         {
           "path": "sandbox_updatesite/target/repository/content.jar",
-          "size_bytes": 38006,
-          "sha256": "6f3a3669d513dabb21799180ed0f5876763c49721858ba622abc66e54ec88f2e"
+          "size_bytes": 36653,
+          "sha256": "5ba1c8e9f3a88bdddab58f81320734b72fb5dce1038dbc632fa105a06ef58dd5"
         }
       ]
     },
