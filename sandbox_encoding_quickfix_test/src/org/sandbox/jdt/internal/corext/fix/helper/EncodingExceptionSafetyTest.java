@@ -31,6 +31,7 @@ import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
+import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,8 @@ public class EncodingExceptionSafetyTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        // ImportRewrite needs the preference node installed by the JDT UI activator.
+        assertNotNull(JavaPlugin.getDefault());
         project= ResourcesPlugin.getWorkspace().getRoot().getProject("EncodingExceptionSafety"); //$NON-NLS-1$
         assertFalse(project.exists());
         project.create(null);
