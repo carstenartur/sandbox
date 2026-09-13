@@ -170,7 +170,7 @@ public class IntToEnumSourceSnapshotTest {
 
 	@ParameterizedTest
 	@EnumSource(Shape.class)
-	void saveParticipantReanalysesTheCachedAstWithoutTouchingAnotherDirtyEditor(Shape shape) throws Exception {
+	void editorSaveReanalysesTheCachedAstWithoutTouchingAnotherDirtyEditor(Shape shape) throws Exception {
 		prepare(shape);
 		String otherSource= "package test; class Other {}\n"; //$NON-NLS-1$
 		ICompilationUnit other= pack.createCompilationUnit("Other.java", otherSource, false, null); //$NON-NLS-1$
@@ -192,16 +192,19 @@ public class IntToEnumSourceSnapshotTest {
 			options.put(IntToEnumCleanUpOptions.PROJECT_WIDE, CleanUpOptions.FALSE);
 			options.put(CleanUpConstants.CLEANUP_ON_SAVE_ADDITIONAL_OPTIONS, CleanUpOptions.TRUE);
 			CleanUpPreferenceUtil.saveSaveParticipantOptions(new ProjectScope(project), options);
+			var preferences= new ProjectScope(project).getNode(JavaUI.ID_PLUGIN);
+			preferences.putBoolean("editor_save_participant_" + CleanUpPostSaveListener.POSTSAVELISTENER_ID, true); //$NON-NLS-1$
+			preferences.flush();
 
 			// Reproduce the exact handoff explicitly, independent of background reconciliation timing.
 			CoreASTProvider provider= CoreASTProvider.getInstance();
 			provider.setActiveJavaElement(unit);
 			provider.cache(old, unit);
 			assertSame(old, SharedASTProviderCore.getAST(unit, SharedASTProviderCore.WAIT_NO, null));
-			new CleanUpPostSaveListener().saved(unit, null, new NullProgressMonitor());
 			editor.doSave(new NullProgressMonitor());
 			String saved= Files.readString(unit.getResource().getLocation().toFile().toPath(), StandardCharsets.UTF_8);
 			assertEquals(saved, unit.getSource());
+			assertFalse(editor.isDirty(), "The saved editor must be clean"); //$NON-NLS-1$
 			assertMigratedSource(saved);
 			assertTrue(saved.contains("// inserted before save"), saved); //$NON-NLS-1$
 			assertCompiles();
@@ -236,7 +239,7 @@ public class IntToEnumSourceSnapshotTest {
 				        %s
 				    }
 				}
-				""".formatted(body);
+				""".replace("%s", body); //$NON-NLS-1$
 		if (shape == Shape.SWITCH) {
 			source= source.replace("process(STATUS_PENDING);", "/* no external caller */"); //$NON-NLS-1$ //$NON-NLS-2$
 		}

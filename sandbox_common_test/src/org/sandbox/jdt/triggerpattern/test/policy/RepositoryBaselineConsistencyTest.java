@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.test.policy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -178,6 +179,18 @@ public class RepositoryBaselineConsistencyTest {
 		}
 	}
 
+	@Test
+	public void bouncyCastleTargetRejectsDuplicateIdsBeforeCollectingVersions() {
+		String valid = bouncyCastleUnits(BOUNCY_CASTLE_VERSIONS);
+		for (String id : BOUNCY_CASTLE_IDS) {
+			for (String version : List.of(BOUNCY_CASTLE_VERSIONS.get(id), "0.0.0")) { //$NON-NLS-1$
+				String duplicate = bouncyCastleUnits(Map.of(id, version));
+				assertThrows(AssertionError.class, () -> bouncyCastleVersions(duplicate + valid), id);
+				assertThrows(AssertionError.class, () -> bouncyCastleVersions(valid + duplicate), id);
+			}
+		}
+	}
+
 	private static String bouncyCastleUnits(Map<String, String> versions) {
 		return versions.entrySet().stream()
 				.map(entry -> "<unit id=\"" + entry.getKey() + "\" version=\"" + entry.getValue() + "\"/>") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -240,7 +253,8 @@ public class RepositoryBaselineConsistencyTest {
 		Map<String, String> versions = new LinkedHashMap<>();
 		Matcher matcher = BOUNCY_CASTLE_UNIT.matcher(target);
 		while (matcher.find()) {
-			versions.put(matcher.group(1), matcher.group(2));
+			assertNull(versions.put(matcher.group(1), matcher.group(2)),
+					"Duplicate Bouncy Castle unit: " + matcher.group(1)); //$NON-NLS-1$
 		}
 		assertEquals(BOUNCY_CASTLE_IDS, versions.keySet(),
 				"The target must declare the complete four-bundle Bouncy Castle set"); //$NON-NLS-1$

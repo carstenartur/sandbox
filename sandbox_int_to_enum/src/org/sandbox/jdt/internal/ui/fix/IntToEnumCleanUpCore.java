@@ -140,6 +140,10 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 		CompilationUnitRewriteOperationWithSourceRange[] array= operations.toArray(
 				new CompilationUnitRewriteOperationWithSourceRange[0]);
 		ICleanUpFix delegate= new CompilationUnitRewriteOperationsFixCore(IntToEnumCleanUpFix_refactor, compilationUnit, array);
+		return withSourceSnapshot(unit, source, delegate);
+	}
+
+	static ICleanUpFix withSourceSnapshot(ICompilationUnit unit, String source, ICleanUpFix delegate) {
 		return monitor -> {
 			requireUnchangedSource(unit, source);
 			var change= delegate.createChange(monitor);
