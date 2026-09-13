@@ -139,7 +139,7 @@ Want to build and run the Eclipse product with bundled plugins? See the [Buildin
 
 | Branch          | Java Version | Tycho Version |
 |-----------------|--------------|---------------|
-| `main` (2026-06)| Java 21      | 5.0.4         |
+| `main` (2026-09)| Java 21      | 5.0.4         |
 
 **Legacy branches**: Older branches (`2022-06`, `2022-09`, `2022-12`) use Java 11-17 with Tycho 3.x-4.x.
 
@@ -282,7 +282,7 @@ Plain Java core module providing AST-independent representation of loop structur
 ---
 ### Oomph Workspace Setup (`sandbox_oomph`)
 
-Sandbox is included in the official Eclipse Installer catalog. In Advanced Mode, select Eclipse SDK 4.40 (2026-06) and **Github Projects → Sandbox Project → Main**. Oomph installs the development tools, clones the repository, imports the Maven and Eclipse projects, activates the target platform and builds the workspace. See the [setup guide](sandbox_oomph/README.md) for existing workspaces and development launches.
+Sandbox is included in the official Eclipse Installer catalog. In Advanced Mode, select Eclipse SDK 4.41 (2026-09) and **Github Projects → Sandbox Project → Main**. Oomph installs the development tools, clones the repository, imports the Maven and Eclipse projects, activates the target platform and builds the workspace. See the [setup guide](sandbox_oomph/README.md) for existing workspaces and development launches.
 
 📖 **Full Documentation**: [Plugin README](sandbox_oomph/README.md) | [Architecture](sandbox_oomph/ARCHITECTURE.md) | [TODO](sandbox_oomph/TODO.md)
 

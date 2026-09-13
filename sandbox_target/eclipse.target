@@ -3,9 +3,9 @@
 <target includeMode="Feature" name="target platform for sandbox">
 	<locations>
 
-        <!-- 1. Main update site for Eclipse 2026-06 / Platform 4.40 -->
+        <!-- 1. Main update site for Eclipse 2026-09 / Platform 4.41 -->
         <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
-            <repository location="https://download.eclipse.org/releases/2026-06/"/>
+            <repository location="https://download.eclipse.org/releases/2026-09/"/>
             <unit id="org.eclipse.jdt.feature.group" version="0.0.0"/>
             <unit id="org.eclipse.jdt.astview.feature.feature.group" version="0.0.0"/>
             <unit id="org.eclipse.jdt.jeview.feature.feature.group" version="0.0.0"/>
@@ -15,9 +15,9 @@
             <unit id="org.eclipse.equinox.executable.feature.group" version="0.0.0"/>
         </location>
 
-        <!-- 2. Orbit dependencies aligned with Eclipse 2026-06 / Platform 4.40 -->
+        <!-- 2. Orbit dependencies aligned with Eclipse 2026-09 / Platform 4.41 -->
         <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
-            <repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-06/"/>
+            <repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-09/"/>
             <unit id="org.apache.commons.commons-io" version="0.0.0"/>
             <unit id="org.apache.commons.lang3" version="0.0.0"/>
             <!-- Maven supplies Gson when compiling common_core; PDE launches
@@ -38,13 +38,13 @@
             <unit id="org.eclipse.jgit.feature.group" version="0.0.0"/>
         </location>
 
-        <!-- 5. Bouncy Castle versions supplied by the Orbit 4.40 release -->
+        <!-- 5. Explicit Bouncy Castle set supplied by the Orbit 4.41 release -->
         <location includeAllPlatforms="false" includeConfigurePhase="false" includeMode="planner" includeSource="true" type="InstallableUnit">
-            <repository location="https://download.eclipse.org/tools/orbit/simrel/maven-osgi/release/4.40.0"/>
-            <unit id="bcutil" version="1.84.0"/>
-            <unit id="bcprov" version="1.84.0"/>
-            <unit id="bcpkix" version="1.84.0"/>
-            <unit id="bcpg" version="1.84.0"/>
+            <repository location="https://download.eclipse.org/tools/orbit/simrel/maven-osgi/release/4.41.0"/>
+            <unit id="bcutil" version="1.85.0"/>
+            <unit id="bcprov" version="1.85.2"/>
+            <unit id="bcpkix" version="1.85.0"/>
+            <unit id="bcpg" version="1.85.0"/>
         </location>
 
         <!-- 6. SWTBot Testing Framework -->

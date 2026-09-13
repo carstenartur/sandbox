@@ -4,12 +4,12 @@ Sandbox is included in the official Eclipse Installer under **Github Projects �
 The catalog points directly to [`sandboxproject.setup`](sandboxproject.setup) in this repository.
 No custom catalog or manual setup-file import is required for that route.
 
-The supported contributor baseline is **Eclipse 2026-06 / Platform 4.40, Java 21, and Tycho 5.0.4**.
+The contributor baseline is **Eclipse 2026-09 / Platform 4.41, Java 21, and Tycho 5.0.4**.
 
 ## Set up a workspace
 
 1. Start the [Eclipse Installer](https://www.eclipse.org/downloads/packages/installer) in Advanced Mode.
-2. Select Eclipse Platform SDK 4.40 (2026-06), or the matching Eclipse IDE for Java Developers package, and a JDK 21.
+2. Select Eclipse Platform SDK 4.41 (2026-09), or the matching Eclipse IDE for Java Developers package, and a JDK 21.
 3. On the Projects page select **Github Projects → Sandbox Project → Main**.
 4. Choose installation, workspace and Git clone locations. Complete installation and let workspace setup finish.
 5. Check the setup log and Problems view before developing. The active target should be **target platform for sandbox**.
@@ -53,7 +53,7 @@ Package Explorer `dialog_settings.xml` or delete the runtime workspace.
 | [sandboxproject.setup](sandboxproject.setup) | Public project entry referenced by the official Github Projects catalog |
 | [sandbox.setup](sandbox.setup) | Optional Sandbox SDK product, with its existing configurable heap and provisioning release |
 | [sandbox-installer.setup](sandbox-installer.setup) | Optional combined configuration referencing that product and the same main project stream |
-| [jdt-migration-qa.configuration.setup](jdt-migration-qa.configuration.setup) | Separate pinned upstream JDT migration QA environment |
+| [jdt-migration-qa.configuration.setup](jdt-migration-qa.configuration.setup) | Separate upstream JDT migration QA environment frozen at Eclipse 4.40 / R4_40 |
 
 The optional combined configuration can be opened in the Installer's Advanced Mode. It uses proper Installation/ProductVersion
 and Workspace/Stream references; it is not involved in the normal official-catalog entry path.
@@ -75,7 +75,7 @@ xvfb-run --auto-servernum ./mvnw -f sandbox_oomph/pom.xml \
 ```
 
 Set `sandbox.oomph.ref` to the candidate branch for a setup change. Forks can also set `sandbox.oomph.repository`.
-The Maven/JUnit test provisions a clean SDK, resolves the development tools with p2, validates the models with EMF/Oomph,
+The Maven/JUnit test provisions a clean SDK 4.41, resolves the development tools with p2, validates the models with EMF/Oomph,
 resolves Sandbox through the live official catalog, and executes real Oomph workspace tasks. It restarts Eclipse and repeats
 manual setup after removing a project from the workspace without deleting its files. Target resolution, project imports,
 Java 21, build errors, PDE launch resolution and preservation of user-owned content are checked. Reports and logs are under `target/`.

@@ -151,8 +151,8 @@ public class SetupProbe implements IApplication {
         }
         ProductVersion sdk = (ProductVersion) rs.getEObject(URI.createURI("index:/org.eclipse.setup"
                 + "#//@productCatalogs[name='org.eclipse.applications']/@products[name='eclipse.platform.sdk']"
-                + "/@versions[name='4.40']"), true);
-        require(sdk != null && !sdk.eIsProxy(), "Official SDK 4.40 product is unavailable");
+                + "/@versions[name='4.41']"), true);
+        require(sdk != null && !sdk.eIsProxy(), "Official SDK 4.41 product is unavailable");
         var stream = project.getStreams().stream().filter(s -> "main".equals(s.getName())).findFirst().orElseThrow();
         // Exercise the candidate branch through the real GitCloneTask; public setup still tracks main.
         var contents = project.eAllContents();

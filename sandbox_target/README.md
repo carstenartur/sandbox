@@ -8,16 +8,16 @@
 
 | Component | Value |
 |---|---|
-| Eclipse simultaneous release | Eclipse 2026-06 |
-| Eclipse Platform | 4.40 |
+| Eclipse simultaneous release | Eclipse 2026-09 |
+| Eclipse Platform | 4.41 |
 | Java execution environment | Java 21 |
 | Tycho | 5.0.4, from the root `pom.xml` |
-| Orbit aggregation | 2026-06 |
-| Bouncy Castle | 1.84 from Orbit maven-osgi release 4.40.0 |
+| Orbit aggregation | 2026-09 |
+| Bouncy Castle | 1.85 family (bcprov 1.85.2) from Orbit maven-osgi release 4.41.0 |
 
 This is a named, pinned release line rather than a floating `latest` Eclipse repository. Installable units with version `0.0.0` select the newest matching IU currently published inside those named repositories, so a completely immutable build would additionally require a mirrored or qualifier-pinned repository snapshot.
 
-Sandbox is built and tested against Eclipse 2026-06. Compatibility with older Eclipse releases is not claimed by the current automated gates.
+The active Sandbox target is Eclipse 2026-09. Compatibility must be established by the exact-revision automated gates, not by this version declaration alone. Compatibility with older Eclipse releases is not claimed by the current automated gates.
 
 ## Authoritative files
 
@@ -32,11 +32,11 @@ Sandbox is built and tested against Eclipse 2026-06. Compatibility with older Ec
 
 The target currently resolves:
 
-1. Eclipse 2026-06 SDK, JDT, PDE, executable, AST View, Java Element View, and PDE spies;
-2. the matching Orbit 2026-06 aggregation for Apache Commons and Gson bundles;
+1. Eclipse 2026-09 SDK, JDT, PDE, executable, AST View, Java Element View, and PDE spies;
+2. the matching Orbit 2026-09 aggregation for Apache Commons and Gson bundles;
 3. the Eclipse license feature;
 4. EGit and JGit;
-5. Bouncy Castle 1.84 bundles from the Orbit 4.40 maven-osgi repository;
+5. Bouncy Castle 1.85.0 (`bcutil`, `bcpkix`, `bcpg`) and 1.85.2 (`bcprov`) from the Orbit 4.41 maven-osgi repository;
 6. SWTBot for real-workbench UI tests.
 
 The exact list is declared in `eclipse.target`; this README is explanatory and must not be treated as a substitute for that file.
@@ -77,12 +77,12 @@ Treat an Eclipse baseline update as one coordinated transaction:
 1. update `eclipse.target`, including matching Orbit and Bouncy Castle sources;
 2. update root `pom.xml` repositories and any API version pins;
 3. update `sandbox_product/sandbox.product` and `sandbox_product/category.xml`;
-4. update `sandbox_oomph/sandbox.setup`;
+4. update the contributor Oomph setup and its real-SDK acceptance test;
 5. update `docs/capabilities.json` and regenerate `docs/capabilities.md`;
 6. update active build, contribution, target, product, and Oomph documentation;
 7. run Maven, capability, distribution, Help/SWTBot, and security gates.
 
-Do not rewrite dated QA records to make an earlier review appear to have used the new baseline.
+Do not rewrite dated QA records to make an earlier review appear to have used the new baseline. The frozen JDT migration corpus in `qa/upstream-jdt/pins.env` and its dedicated Oomph QA configuration retain R4_40 independently of the active contributor/runtime target. Changing that corpus requires a separate, coordinated evidence update.
 
 ## Troubleshooting
 
@@ -92,7 +92,7 @@ Verify the named release and Orbit URLs, then clear only the relevant local p2/T
 
 ### Bundle version conflict
 
-Compare the target IU list with the root `target-platform-configuration` extra requirements. Bouncy Castle is intentionally aligned as a four-bundle 1.84 set.
+Compare the target IU list with the root `target-platform-configuration` extra requirements. The Bouncy Castle versions intentionally match Orbit 4.41 per bundle: `bcutil`, `bcpkix` and `bcpg` use 1.85.0, while `bcprov` uses 1.85.2. Do not force the provider back to 1.85.0 merely to make all four version strings equal.
 
 ### IDE and Maven disagree
 
