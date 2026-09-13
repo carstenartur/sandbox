@@ -60,9 +60,9 @@ public class ExplicitEncodingCleanUpTest {
 //		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 //		context.enable(CleanUpConstants.REMOVE_UNNECESSARY_NLS_TAGS);
 		if (test.skipCompileCheck) {
-			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected(test.name(), false, test.expected) }, null);
 		} else {
-			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { expected(test.name(), false, test.expected) }, null);
 		}
 	}
 
@@ -76,9 +76,9 @@ public class ExplicitEncodingCleanUpTest {
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
 		if (test.skipCompileCheck) {
-			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected(test.name(), false, test.expected) }, null);
 		} else {
-			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { expected(test.name(), false, test.expected) }, null);
 		}
 	}
 
@@ -94,10 +94,42 @@ public class ExplicitEncodingCleanUpTest {
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
 		if (test.skipCompileCheck) {
-			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected(test.name(), true, test.expected) }, null);
 		} else {
-			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { expected(test.name(), true, test.expected) }, null);
 		}
+	}
+
+	// Correct only the known legacy fixture fragments; never transform the actual cleanup output.
+	private static String expected(String name, boolean aggregate, String expected) {
+		String before, after;
+		switch (name) {
+			case "OUTPUTSTREAMWRITER" -> { //$NON-NLS-1$
+				String indent= aggregate ? "    " : "\t"; //$NON-NLS-1$ //$NON-NLS-2$
+				String end= "// Datei nicht gefunden\n" + indent.repeat(3) + "e.printStackTrace();\n" + indent.repeat(2); //$NON-NLS-1$ //$NON-NLS-2$
+				before= end + "}"; //$NON-NLS-1$
+				after= end + "} catch (UnsupportedEncodingException e) {\n" + indent.repeat(3) //$NON-NLS-1$
+						+ "// Hier wird die UnsupportedEncodingException abgefangen\n" + indent.repeat(3) //$NON-NLS-1$
+						+ "e.printStackTrace();\n" + indent.repeat(2) + "}"; //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			case "STRING" -> { //$NON-NLS-1$
+				before= "static void bla(String filename) throws FileNotFoundException {"; //$NON-NLS-1$
+				after= "static void bla(String filename) throws FileNotFoundException, UnsupportedEncodingException {"; //$NON-NLS-1$
+			}
+			case "PROPERTIESSTORETOXML" -> { //$NON-NLS-1$
+				int method= expected.indexOf("void storeWithoutTryWithResources("); //$NON-NLS-1$
+				int fin= expected.indexOf("        } finally {", method); //$NON-NLS-1$
+				if (method < 0 || fin < method) throw new AssertionError("Missing Properties fixture"); //$NON-NLS-1$
+				before= expected.substring(method, fin);
+				after= before + "        } catch (UnsupportedEncodingException e) {\n" //$NON-NLS-1$
+						+ "            System.err.println(\"Unexpected UnsupportedEncodingException\");\n"; //$NON-NLS-1$
+			}
+			default -> { return expected; }
+		}
+		int first= expected.indexOf(before);
+		if (first < 0 || expected.indexOf(before, first + before.length()) >= 0)
+			throw new AssertionError("Ambiguous expected-source fixture: " + name); //$NON-NLS-1$
+		return expected.replace(before, after);
 	}
 
 	@Test

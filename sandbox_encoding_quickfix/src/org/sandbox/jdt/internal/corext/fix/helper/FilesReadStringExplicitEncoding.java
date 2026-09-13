@@ -75,7 +75,7 @@ public class FilesReadStringExplicitEncoding extends AbstractExplicitEncoding<Me
 		// Handle Files.readString(Path, Charset) - replace charset if it's a known encoding
 		if (arguments.size() == 2) {
 			ASTNode encodingArg = arguments.get(1);
-			String encodingValue = getEncodingValue(encodingArg, visited);
+			String encodingValue = getEncodingValue(encodingArg, visited, cb);
 			
 			if (encodingValue != null && ENCODINGS.contains(encodingValue)) {
 				NodeData nd = new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));
