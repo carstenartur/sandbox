@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f949cab172da25b23d40afb3cda30fbbbeb429a2af9d90cf8b1db3758d828960",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$Modifiers$ $ReturnType $methodName$($params$) { $body$ } :: hasModifier($methodName, \"ABSTRACT\")\n\u003d\u003e\nabstract $ReturnType $methodName$($params$);\n;;",
+  "beforeExample": "public abstract class MyClass {\n    public abstract void doSomething() {\n        System.out.println(\"This body is illegal for an abstract method.\");\n    }\n}",
+  "afterExample": "public abstract class MyClass {\n    public abstract void doSomething();\n}",
+  "negativeExample": "public class MyConcreteClass {\n    public void doSomething() {\n        System.out.println(\"This is a regular method.\");\n    }\n}\n---\npublic abstract class MyAbstractClass {\n    public abstract void doAnotherThing(); // Already correct\n}",
+  "targetHintFile": "modifiers.sandbox-hint",
+  "sourceCommit": "ca371620e0f1b5ed39c5d47afe00e11db3f3eaea",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Modifiers",
+  "summary": "Removes the body from an abstract method declaration, fixing a compilation error where an abstract method incorrectly specifies an implementation.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-13T02:25:24.043518249Z",
+  "ruleFingerprint": "sha256:19b4576c320df4bf464da332441076654e7cb352b84482c924654380fefcc5ce",
+  "behaviorFingerprint": "sha256:002bd20907bc0f50c964536dd41815b87027e24e4dd97c8cc8373abc0f5e0822",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-09-13T02:25:31.493184327Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
