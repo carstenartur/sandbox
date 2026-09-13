@@ -1,6 +1,6 @@
 # Oomph maintenance
 
-Baseline: Eclipse 2026-06 / Platform 4.40, Java 21 and Tycho 5.0.4.
+Baseline: Eclipse 2026-09 / Platform 4.41, Java 21 and Tycho 5.0.4.
 
 ## Required for setup changes
 

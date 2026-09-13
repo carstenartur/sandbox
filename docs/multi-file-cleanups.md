@@ -18,9 +18,10 @@ Candidate-level atomic preview selection is an **optional host capability**, not
 
 ```text
 repository: https://github.com/carstenartur/eclipse.jdt.ui.git
-commit: 11268d554d484fb7cc8c73054694d33153aa239c
-expected parent: 9965d9c97d21ad61f28e03b9d7e28b7040f7a8d9
-bundle: org.eclipse.jdt.ui 3.38.0.*
+commit: 3ad88260994f8410e2c2e055d2eafc26b9ff689b
+expected parent: 54bd63e6453a7eb5db0bfc1d60f17e9568095619
+bundle: org.eclipse.jdt.ui 3.39.0.*
+runtime: Eclipse 2026-09 / Platform 4.41
 ```
 
 The ordinary Sandbox target and ordinary Help screenshot workflow deliberately remain on stock Eclipse. A separate read-only workflow builds the exact replacement bundle, verifies its compatibility with the stock target, publishes a local feature patch, installs it into the test target, and runs the real Workbench scenarios. Documentation and screenshots must identify this boundary instead of implying that every Eclipse installation enforces atomic candidates.

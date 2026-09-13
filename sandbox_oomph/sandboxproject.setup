@@ -34,7 +34,7 @@
     <requirement name="org.eclipse.jdt.astview.feature.feature.group"/>
     <requirement name="org.eclipse.jdt.jeview.feature.feature.group"/>
     <requirement name="org.eclipse.pde.spies.feature.group"/>
-    <repository url="https://download.eclipse.org/releases/2026-06/"/>
+    <repository url="https://download.eclipse.org/releases/2026-09/"/>
   </setupTask>
   <setupTask xsi:type="setup:PreferenceTask"
       key="/instance/org.eclipse.core.resources/encoding" value="UTF-8"/>

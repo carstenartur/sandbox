@@ -7,7 +7,7 @@ export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
 export PATH=$JAVA_HOME/bin:$PATH
 ```
 
-The executable baseline is Java 21, Tycho 5.0.4, and Eclipse 2026-06 / Platform 4.40.
+The executable baseline is Java 21, Tycho 5.0.4, and Eclipse 2026-09 / Platform 4.41.
 
 ## Running tests
 

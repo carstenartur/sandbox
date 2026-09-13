@@ -8,7 +8,7 @@
 |---|---|
 | Java | 21 |
 | Tycho | 5.0.4 |
-| Eclipse target | Eclipse 2026-06 / Platform 4.40 |
+| Eclipse target | Eclipse 2026-09 / Platform 4.41 |
 | Target definition | `sandbox_target/eclipse.target` |
 
 ```bash
@@ -78,9 +78,9 @@ A green lightweight inventory gate does not replace Maven, distribution, or SWTB
 
 ## Target platform
 
-`sandbox_target/eclipse.target` resolves the named Eclipse 2026-06 release, the matching Orbit aggregation, EGit, SWTBot, and the pinned Bouncy Castle 1.84 bundles from the Orbit 4.40 repository. The project intentionally uses named release repositories rather than a floating Eclipse `latest` URL.
+`sandbox_target/eclipse.target` resolves the named Eclipse 2026-09 release, the matching Orbit aggregation, EGit, SWTBot, and the pinned Bouncy Castle bundles from the Orbit 4.41 repository. The 1.85 family uses 1.85.0 for `bcutil`, `bcpkix` and `bcpg`, and 1.85.2 for `bcprov`. The project intentionally uses named release repositories rather than a floating Eclipse `latest` URL.
 
-When the Eclipse or Tycho baseline changes, update all active build, product, Oomph, capability, and documentation references in the same reviewed change. `RepositoryBaselineConsistencyTest` rejects contradictory active values.
+When the Eclipse or Tycho baseline changes, update all active build, product, contributor Oomph, capability, and documentation references in the same reviewed change. `RepositoryBaselineConsistencyTest` rejects contradictory active values. Frozen migration corpora and their separate QA configurations retain their own exact pins; historical screenshot provenance must not be relabelled.
 
 ## Troubleshooting
 

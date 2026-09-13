@@ -84,7 +84,6 @@
 		<dependency>
 			<groupId>org.eclipse.jdt</groupId>
 			<artifactId>ecj</artifactId>
-			<version>${eclipse-jdt-core.version}</version>
 		</dependency>
 
 		<!-- Eclipse JDT Core for AST parsing (optional) -->

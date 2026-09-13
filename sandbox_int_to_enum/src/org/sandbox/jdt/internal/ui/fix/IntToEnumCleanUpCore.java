@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Status;
 
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
@@ -40,6 +41,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
+import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
@@ -105,8 +107,7 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 		if (!plan.contains(context.getCompilationUnit())) {
 			return null;
 		}
-		CompilationUnit compilationUnit= context.getAST();
-		if (compilationUnit == null) {
+		if (context.getAST() == null) {
 			return null;
 		}
 
@@ -114,6 +115,18 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 		if (!isEnabled(INT_TO_ENUM_CLEANUP) || computeFixSet.isEmpty()) {
 			return null;
 		}
+
+		ICompilationUnit unit= context.getCompilationUnit();
+		String source= unit.getSource();
+		if (source == null) {
+			return null;
+		}
+		// A save participant may supply the editor's cached AST from before an edit.
+		// Offsets alone cannot detect equal-length edits. Analyse the current buffer
+		// with bindings, then bind edit generation to that exact source revision.
+		CompilationUnit compilationUnit= new RefactoringASTParser(context.getAST().getAST().apiLevel())
+				.parse(unit, unit.getOwner(), true, null);
+		requireUnchangedSource(unit, source);
 
 		Set<CompilationUnitRewriteOperationWithSourceRange> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesProcessed= new HashSet<>();
@@ -126,7 +139,24 @@ public class IntToEnumCleanUpCore extends AbstractPlannedMultiFileCleanUp<IntEnu
 
 		CompilationUnitRewriteOperationWithSourceRange[] array= operations.toArray(
 				new CompilationUnitRewriteOperationWithSourceRange[0]);
-		return new CompilationUnitRewriteOperationsFixCore(IntToEnumCleanUpFix_refactor, compilationUnit, array);
+		ICleanUpFix delegate= new CompilationUnitRewriteOperationsFixCore(IntToEnumCleanUpFix_refactor, compilationUnit, array);
+		return monitor -> {
+			requireUnchangedSource(unit, source);
+			var change= delegate.createChange(monitor);
+			try {
+				requireUnchangedSource(unit, source);
+				return change;
+			} catch (CoreException exception) {
+				change.dispose();
+				throw exception;
+			}
+		};
+	}
+
+	private static void requireUnchangedSource(ICompilationUnit unit, String source) throws CoreException {
+		if (!source.equals(unit.getSource())) {
+			throw new CoreException(Status.error(MultiFixMessages.IntToEnumCleanUp_source_changed));
+		}
 	}
 
 	@Override

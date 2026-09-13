@@ -141,7 +141,7 @@ Local transformation may remain available as a save action. Project-wide scope e
 
 ## Requirements
 
-- Tested baseline: Eclipse 2026-06 / Platform 4.40
+- Build baseline: Eclipse 2026-09 / Platform 4.41
 - Java 21 or later
 - The patched JDT UI scope-provider integration for automatic target expansion; otherwise select the complete Java project manually
 

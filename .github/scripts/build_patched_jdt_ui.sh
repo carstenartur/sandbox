@@ -15,11 +15,16 @@ source "$CONFIG_FILE"
 
 : "${PATCHED_JDT_UI_REPOSITORY:?missing PATCHED_JDT_UI_REPOSITORY}"
 : "${PATCHED_JDT_UI_COMMIT:?missing PATCHED_JDT_UI_COMMIT}"
+: "${PATCHED_JDT_UI_EXPECTED_PARENT:?missing PATCHED_JDT_UI_EXPECTED_PARENT}"
 : "${PATCHED_JDT_UI_BUNDLE:?missing PATCHED_JDT_UI_BUNDLE}"
 : "${PATCHED_JDT_UI_EXPECTED_BASE_VERSION:?missing PATCHED_JDT_UI_EXPECTED_BASE_VERSION}"
 
 if [[ ! "$PATCHED_JDT_UI_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
   echo "PATCHED_JDT_UI_COMMIT must be an immutable 40-character SHA" >&2
+  exit 1
+fi
+if [[ ! "$PATCHED_JDT_UI_EXPECTED_PARENT" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "PATCHED_JDT_UI_EXPECTED_PARENT must be an immutable 40-character SHA" >&2
   exit 1
 fi
 
@@ -37,6 +42,13 @@ git -C "$WORK_DIR" checkout --detach -q FETCH_HEAD
 ACTUAL_COMMIT=$(git -C "$WORK_DIR" rev-parse HEAD)
 if [[ "$ACTUAL_COMMIT" != "$PATCHED_JDT_UI_COMMIT" ]]; then
   echo "Checked out $ACTUAL_COMMIT instead of $PATCHED_JDT_UI_COMMIT" >&2
+  exit 1
+fi
+# Read the immutable commit object: HEAD^ is unavailable in a depth-one clone.
+# More than one parent produces multiple lines and also fails this exact check.
+ACTUAL_PARENT=$(git -C "$WORK_DIR" cat-file -p HEAD | sed -n 's/^parent //p')
+if [[ "$ACTUAL_PARENT" != "$PATCHED_JDT_UI_EXPECTED_PARENT" ]]; then
+  echo "Unexpected patch parent(s): $ACTUAL_PARENT; expected $PATCHED_JDT_UI_EXPECTED_PARENT" >&2
   exit 1
 fi
 
@@ -126,7 +138,7 @@ MAVEN_VERSION=$(mvn --version | head -n 1)
 
 export OUTPUT_DIR PATCHED_JDT_UI_REPOSITORY PATCHED_JDT_UI_COMMIT PATCHED_JDT_UI_BUNDLE
 export SYMBOLIC_NAME BUNDLE_VERSION BUNDLE_SHA256 JAVA_VERSION MAVEN_VERSION
-export PRODUCTION_SOURCE SCOPE_TEST
+export PRODUCTION_SOURCE SCOPE_TEST ACTUAL_PARENT
 python3 <<'PY'
 import json
 import os
@@ -138,6 +150,7 @@ payload = {
     'schemaVersion': 1,
     'sourceRepository': os.environ['PATCHED_JDT_UI_REPOSITORY'],
     'sourceCommit': os.environ['PATCHED_JDT_UI_COMMIT'],
+    'sourceParent': os.environ['ACTUAL_PARENT'],
     'bundleSymbolicName': os.environ['SYMBOLIC_NAME'],
     'bundleVersion': version,
     'bundleFile': f'plugins/{bundle}_{version}.jar',
