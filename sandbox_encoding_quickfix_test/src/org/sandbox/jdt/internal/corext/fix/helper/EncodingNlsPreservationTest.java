@@ -25,13 +25,13 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.testplugin.TestOptions;
 import org.eclipse.text.edits.TextEditGroup;
@@ -235,6 +235,17 @@ public class EncodingNlsPreservationTest {
 				ChangeBehavior.ENFORCE_UTF8_AGGREGATE));
 	}
 
+	@Test
+	void nlsValidationReportsAnUnmarkedLiteral() throws CoreException {
+		ICompilationUnit cu= createUnit(source("""
+				System.out.println("missing marker");
+				"""));
+		cu.getJavaProject().setOption(JavaCore.COMPILER_PB_NON_NLS_STRING_LITERAL, JavaCore.ERROR);
+		assertTrue(Arrays.stream(parse(cu).getProblems()).anyMatch(problem -> problem.isError()
+				&& problem.getID() == IProblem.NonExternalizedStringLiteral),
+				"The validation parser must not suppress NLS diagnostics"); //$NON-NLS-1$
+	}
+
 	private static String source(String body) {
 		return """
 				package test1;
@@ -291,6 +302,11 @@ public class EncodingNlsPreservationTest {
 	}
 
 	private static CompilationUnit parse(ICompilationUnit cu) {
-		return new RefactoringASTParser(AST.getJLSLatest()).parse(cu, true, null);
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(cu);
+		parser.setResolveBindings(true);
+		// RefactoringASTParser suppresses optional errors, including NLS diagnostics.
+		parser.setCompilerOptions(cu.getJavaProject().getOptions(true));
+		return (CompilationUnit) parser.createAST(null);
 	}
 }
