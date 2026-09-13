@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -65,6 +64,7 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 
 	private static final String JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION = "java.io.UnsupportedEncodingException"; //$NON-NLS-1$
 	private static final String UNSUPPORTED_ENCODING_EXCEPTION = "UnsupportedEncodingException"; //$NON-NLS-1$
+	private static final String UNWRAPPED_TRY = AbstractExplicitEncoding.class.getName() + ".unwrappedTry"; //$NON-NLS-1$
 	private static final String REMOVED_UNSUPPORTED_ENCODING_CATCHES_PROPERTY =
 			AbstractExplicitEncoding.class.getName() + ".removedUnsupportedEncodingCatches"; //$NON-NLS-1$
 
@@ -244,18 +244,8 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		if (statement != null && isInsideTryBodyWithOnlyUnsupportedEncodingCatch(statement)) {
 			return replaceTryBodyAndUnwrap(rewrite, visited, replacement, statement, group, cuRewrite);
 		}
-		if (statement == null) {
-			rewrite.replace(visited, replacement, group);
-			return false;
-		}
-		try {
-			EncodingSourceRewrite.record(cuRewrite, statement, visited, replacement);
-			ASTNode placeholder= rewrite.createStringPlaceholder(
-					EncodingSourceRewrite.source(cuRewrite, statement), statement.getNodeType());
-			rewrite.replace(statement, placeholder, group);
-		} catch (JavaModelException exception) {
-			rewrite.replace(visited, replacement, group);
-		}
+		EncodingSourceRewrite.record(cuRewrite, visited);
+		rewrite.replace(visited, replacement, group);
 		return false;
 	}
 
@@ -264,38 +254,33 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 		Block tryBody= (Block) statement.getParent();
 		TryStatement tryStatement= (TryStatement) tryBody.getParent();
 		if (!(tryStatement.getParent() instanceof Block)) {
+			EncodingSourceRewrite.record(cuRewrite, visited);
 			rewrite.replace(visited, replacement, group);
 			return false;
 		}
-		try {
-			CompilationUnit root= (CompilationUnit) statement.getRoot();
-			EncodingSourceRewrite.record(cuRewrite, statement, visited, replacement);
-			List<?> bodyStatements= tryBody.statements();
-			ASTNode[] inlined= new ASTNode[bodyStatements.size()];
-			for (int index= 0; index < bodyStatements.size(); index++) {
-				ASTNode bodyStatement= (ASTNode) bodyStatements.get(index);
-				String source= EncodingSourceRewrite.source(cuRewrite, bodyStatement);
-				// A copy target retains pending child rewrites from other cleanup operations.
-				// Unlike a move target, it may be discarded when this group is rebuilt.
-				inlined[index]= source == null ? rewrite.createCopyTarget(bodyStatement)
-						: rewrite.createStringPlaceholder(source, bodyStatement.getNodeType());
-			}
-
-			CatchClause removedCatch= (CatchClause) tryStatement.catchClauses().get(0);
-			Set<CatchClause> removedCatches= removedUnsupportedEncodingCatches(root);
-			removedCatches.add(removedCatch);
-			cuRewrite.getImportRemover().registerRemovedNode(removedCatch);
-			if (!hasSurvivingUnsupportedEncodingExceptionReference(root, removedCatches)) {
-				cuRewrite.getImportRewrite().removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
-			}
-			// Replace the group atomically so another encoding in this try can update it
-			// without moving stale source or inserting the body a second time.
-			rewrite.replace(tryStatement, rewrite.createGroupNode(inlined), group);
+		CompilationUnit root= (CompilationUnit) statement.getRoot();
+		EncodingSourceRewrite.record(cuRewrite, visited);
+		rewrite.replace(visited, replacement, group);
+		// Register child edits before moving the original statements, and move each
+		// body only once. Rebuilding copy targets leaves orphaned source edits.
+		if (tryStatement.getProperty(UNWRAPPED_TRY) == rewrite) {
 			return true;
-		} catch (JavaModelException exception) {
-			rewrite.replace(visited, replacement, group);
-			return false;
 		}
+		tryStatement.setProperty(UNWRAPPED_TRY, rewrite);
+		List<?> bodyStatements= tryBody.statements();
+		// Move one contiguous source range, retaining same-line statements and their
+		// line-based NLS numbering instead of formatting each statement separately.
+		ASTNode inlined= rewrite.getListRewrite(tryBody, Block.STATEMENTS_PROPERTY).createMoveTarget(
+				(ASTNode) bodyStatements.get(0), (ASTNode) bodyStatements.get(bodyStatements.size() - 1));
+		CatchClause removedCatch= (CatchClause) tryStatement.catchClauses().get(0);
+		Set<CatchClause> removedCatches= removedUnsupportedEncodingCatches(root);
+		removedCatches.add(removedCatch);
+		cuRewrite.getImportRemover().registerRemovedNode(removedCatch);
+		if (!hasSurvivingUnsupportedEncodingExceptionReference(root, removedCatches)) {
+			cuRewrite.getImportRewrite().removeImport(JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION);
+		}
+		rewrite.replace(tryStatement, inlined, group);
+		return true;
 	}
 
 	@SuppressWarnings("unchecked")

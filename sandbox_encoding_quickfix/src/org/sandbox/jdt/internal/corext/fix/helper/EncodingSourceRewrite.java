@@ -11,63 +11,69 @@
 package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.compiler.InvalidInputException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.LineComment;
-import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
 import org.eclipse.jdt.internal.corext.refactoring.nls.NLSElement;
 import org.eclipse.jdt.internal.corext.refactoring.nls.NLSLine;
 import org.eclipse.jdt.internal.corext.refactoring.nls.NLSScanner;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.util.TextEditUtil;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.text.edits.ReplaceEdit;
+import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.fix.helper.EncodingSourceEdits.Edit;
 
-/** Preserves statement source while updating tags for exactly the removed literals. */
+/** Adds NLS edits to the completed AST edit tree, including moved source ranges. */
 final class EncodingSourceRewrite {
 
 	private static final String REPLACEMENTS= EncodingSourceRewrite.class.getName() + ".replacements"; //$NON-NLS-1$
-	private static final String SCAN= EncodingSourceRewrite.class.getName() + ".scan"; //$NON-NLS-1$
 
-	private record Replacements(ASTRewrite rewrite, Map<ASTNode, String> values) {
-	}
-
-	private record Scan(ASTRewrite rewrite, String source, NLSLine[] lines) {
+	private record Replacements(CompilationUnitRewrite rewrite, Set<ASTNode> nodes) {
 	}
 
 	private EncodingSourceRewrite() {
 	}
 
-	static void record(CompilationUnitRewrite cuRewrite, ASTNode statement, ASTNode argument, ASTNode replacement) {
-		replacements(cuRewrite, statement).put(argument, replacement.toString());
+	static void clear(CompilationUnit root) {
+		root.setProperty(REPLACEMENTS, null);
 	}
 
-	/** Returns edited source, or null when this statement has no encoding replacements. */
-	static String source(CompilationUnitRewrite cuRewrite, ASTNode statement) throws JavaModelException {
-		Map<ASTNode, String> replacements= replacements(cuRewrite, statement);
-		if (replacements.isEmpty()) {
-			return null;
+	static void record(CompilationUnitRewrite cuRewrite, ASTNode argument) {
+		Object stored= cuRewrite.getRoot().getProperty(REPLACEMENTS);
+		Replacements replacements;
+		if (stored instanceof Replacements previous && previous.rewrite() == cuRewrite) {
+			replacements= previous;
+		} else {
+			replacements= new Replacements(cuRewrite, Collections.newSetFromMap(new IdentityHashMap<>()));
+			cuRewrite.getRoot().setProperty(REPLACEMENTS, replacements);
 		}
-		String buffer= cuRewrite.getCu().getBuffer().getContents();
-		CompilationUnit root= cuRewrite.getRoot();
-		int start= root.getExtendedStartPosition(statement);
-		int length= root.getExtendedLength(statement);
-		List<Edit> edits= new ArrayList<>();
-		replacements.forEach((node, text) -> edits.add(new Edit(node.getStartPosition(), node.getLength(), text)));
+		replacements.nodes().add(argument);
+	}
 
+	static void complete(CompilationUnit root, CompilationUnitChange change) throws JavaModelException {
+		if (!(root.getProperty(REPLACEMENTS) instanceof Replacements replacements)) {
+			return;
+		}
+		CompilationUnitRewrite cuRewrite= replacements.rewrite();
+		String buffer= cuRewrite.getCu().getBuffer().getContents();
 		Map<LineComment, List<Edit>> commentEdits= new LinkedHashMap<>();
 		for (NLSLine line : scan(cuRewrite, buffer)) {
 			int removed= 0;
 			NLSElement[] elements= line.getElements();
 			for (int index= 0; index < elements.length; index++) {
 				NLSElement element= elements[index];
-				boolean deleted= isRemoved(element.getPosition().getOffset(), element.getPosition().getLength(), replacements);
+				boolean deleted= isRemoved(element.getPosition().getOffset(), element.getPosition().getLength(), replacements.nodes());
 				if (deleted) {
 					removed++;
 				}
@@ -76,7 +82,7 @@ final class EncodingSourceRewrite {
 				}
 				int tagStart= element.getTagPosition().getOffset();
 				int tagLength= element.getTagPosition().getLength();
-				if (isRemoved(tagStart, tagLength, replacements)) {
+				if (isRemoved(tagStart, tagLength, replacements.nodes())) {
 					continue;
 				}
 				LineComment comment= containingComment(root, tagStart, tagLength);
@@ -86,54 +92,39 @@ final class EncodingSourceRewrite {
 			}
 		}
 		commentEdits.forEach((comment, tags) -> {
-			int commentStart= comment.getStartPosition();
-			int commentEnd= commentStart + comment.getLength();
-			// Keep the original line separator even when the comment becomes empty.
-			while (commentEnd > commentStart && (buffer.charAt(commentEnd - 1) == '\n'
-					|| buffer.charAt(commentEnd - 1) == '\r')) {
-				commentEnd--;
+			int start= comment.getStartPosition();
+			int end= start + comment.getLength();
+			while (end > start && (buffer.charAt(end - 1) == '\n' || buffer.charAt(end - 1) == '\r')) {
+				end--;
 			}
-			String text= EncodingSourceEdits.rewriteComment(buffer.substring(commentStart, commentEnd), tags);
+			String text= EncodingSourceEdits.rewriteComment(buffer.substring(start, end), tags);
 			if (text.isEmpty()) {
-				while (commentStart > start && EncodingSourceEdits.isHorizontalSpace(buffer.charAt(commentStart - 1))) {
-					commentStart--;
+				while (start > 0 && EncodingSourceEdits.isHorizontalSpace(buffer.charAt(start - 1))) {
+					start--;
 				}
 			}
-			edits.add(new Edit(commentStart, commentEnd - commentStart, text));
+			ReplaceEdit edit= new ReplaceEdit(start, end - start, text);
+			// Inserting into the enclosing MoveSourceEdit applies the tag change to
+			// the moved text too. Adding it only at the root would lose that change.
+			TextEditUtil.insert(change.getEdit(), edit);
+			change.addTextEditGroup(new TextEditGroup(change.getName(), edit));
 		});
-		String source= EncodingSourceEdits.apply(buffer, start, length, edits);
-		return EncodingSourceEdits.relativeIndent(buffer, start, source);
-	}
-
-	private static Map<ASTNode, String> replacements(CompilationUnitRewrite cuRewrite, ASTNode statement) {
-		Object stored= statement.getProperty(REPLACEMENTS);
-		if (stored instanceof Replacements replacements && replacements.rewrite() == cuRewrite.getASTRewrite()) {
-			return replacements.values();
-		}
-		Map<ASTNode, String> values= new IdentityHashMap<>();
-		statement.setProperty(REPLACEMENTS, new Replacements(cuRewrite.getASTRewrite(), values));
-		return values;
 	}
 
 	private static NLSLine[] scan(CompilationUnitRewrite cuRewrite, String buffer) throws JavaModelException {
-		Object stored= cuRewrite.getRoot().getProperty(SCAN);
-		if (stored instanceof Scan scan && scan.rewrite() == cuRewrite.getASTRewrite() && scan.source().equals(buffer)) {
-			return scan.lines();
-		}
 		try {
 			NLSLine[] lines= NLSScanner.scan(cuRewrite.getCu());
 			if (!buffer.equals(cuRewrite.getCu().getBuffer().getContents())) {
 				throw new IllegalArgumentException("Source changed while scanning encoding NLS tags"); //$NON-NLS-1$
 			}
-			cuRewrite.getRoot().setProperty(SCAN, new Scan(cuRewrite.getASTRewrite(), buffer, lines));
 			return lines;
 		} catch (InvalidInputException | BadLocationException exception) {
 			throw new IllegalArgumentException("Cannot safely determine encoding NLS tag positions", exception); //$NON-NLS-1$
 		}
 	}
 
-	private static boolean isRemoved(int offset, int length, Map<ASTNode, String> replacements) {
-		return replacements.keySet().stream().anyMatch(node -> offset >= node.getStartPosition()
+	private static boolean isRemoved(int offset, int length, Set<ASTNode> replacements) {
+		return replacements.stream().anyMatch(node -> offset >= node.getStartPosition()
 				&& offset + length <= node.getStartPosition() + node.getLength());
 	}
 

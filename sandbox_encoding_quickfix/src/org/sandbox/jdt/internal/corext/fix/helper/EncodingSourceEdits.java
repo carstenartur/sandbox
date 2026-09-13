@@ -13,26 +13,13 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.Comparator;
 import java.util.List;
 
-/** Offset-based source edits; never searches Java source for matching literal text. */
+/** Scanner-positioned NLS tag edits that retain explanatory comment text. */
 final class EncodingSourceEdits {
 
 	record Edit(int offset, int length, String text) {
 	}
 
 	private EncodingSourceEdits() {
-	}
-
-	static String apply(String buffer, int start, int length, List<Edit> edits) {
-		StringBuilder result= new StringBuilder(buffer.substring(start, start + length));
-		int previousStart= start + length;
-		for (Edit edit : edits.stream().sorted(Comparator.comparingInt(Edit::offset).reversed()).toList()) {
-			if (edit.offset() < start || edit.length() < 0 || edit.offset() + edit.length() > previousStart) {
-				throw new IllegalArgumentException("Overlapping or out-of-range encoding edit"); //$NON-NLS-1$
-			}
-			result.replace(edit.offset() - start, edit.offset() - start + edit.length(), edit.text());
-			previousStart= edit.offset();
-		}
-		return result.toString();
 	}
 
 	/** Edits are relative to a real line comment and refer only to scanner-proven NLS tags. */
@@ -64,30 +51,6 @@ final class EncodingSourceEdits {
 		}
 		String text= result.substring(first);
 		return text.startsWith("//") ? text : "// " + text; //$NON-NLS-1$ //$NON-NLS-2$
-	}
-
-	/** Remove only the source node's common indentation, retaining continuation indentation. */
-	static String relativeIndent(String buffer, int start, String source) {
-		int lineStart= start;
-		while (lineStart > 0 && buffer.charAt(lineStart - 1) != '\n' && buffer.charAt(lineStart - 1) != '\r') {
-			lineStart--;
-		}
-		String indent= buffer.substring(lineStart, start);
-		if (indent.isEmpty() || !indent.chars().allMatch(ch -> ch == ' ' || ch == '\t')) {
-			return source;
-		}
-		StringBuilder result= new StringBuilder();
-		for (int i= 0; i < source.length(); i++) {
-			char ch= source.charAt(i);
-			result.append(ch);
-			if (ch == '\r' && i + 1 < source.length() && source.charAt(i + 1) == '\n') {
-				result.append(source.charAt(++i));
-			}
-			if ((ch == '\n' || ch == '\r') && source.startsWith(indent, i + 1)) {
-				i+= indent.length();
-			}
-		}
-		return result.toString();
 	}
 
 	static boolean isHorizontalSpace(char ch) {

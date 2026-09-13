@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -26,21 +27,28 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TextBlock;
 import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.testplugin.TestOptions;
+import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.text.edits.TextEditGroup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.internal.ui.fix.UseExplicitEncodingCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava10;
 
@@ -271,6 +279,167 @@ public class EncodingNlsPreservationTest {
 		}, 1);
 	}
 
+	@Test
+	void renumbersTagsOnAnotherStatementInTheSameLine() throws CoreException {
+		assertRewrite(source("""
+				String first= new String(bytes, "UTF-8"); String second= "suffix"; //$NON-NLS-1$ //$NON-NLS-2$
+				"""), source("""
+				String first= new String(bytes, StandardCharsets.UTF_8); String second= "suffix"; //$NON-NLS-1$
+				"""), "\"UTF-8\"", 1); //$NON-NLS-1$
+	}
+
+	@Test
+	void retainsAnotherRewriteInTheSameStatement() throws CoreException {
+		String before= source("""
+				String value= "before" + new String(bytes, "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
+				""");
+		String expected= source("""
+				String value= "after" + new String(bytes, StandardCharsets.UTF_8); //$NON-NLS-1$
+				""");
+		assertRewrite(before, expected, "\"UTF-8\"", cuRewrite -> { //$NON-NLS-1$
+			String original= "\"before\""; //$NON-NLS-1$
+			ASTNode otherArgument= NodeFinder.perform(cuRewrite.getRoot(), before.indexOf(original), original.length());
+			StringLiteral replacement= cuRewrite.getRoot().getAST().newStringLiteral();
+			replacement.setLiteralValue("after"); //$NON-NLS-1$
+			cuRewrite.getASTRewrite().replace(otherArgument, replacement, new TextEditGroup("other cleanup")); //$NON-NLS-1$
+		}, 1);
+	}
+
+	@Test
+	void unwrappingPreservesSameLineStatementsAndTags() throws CoreException {
+		assertRewrite(source("""
+				try {
+				    String first= "prefix" + new String(bytes, "UTF-8"); String second= "suffix"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				} catch (java.io.UnsupportedEncodingException exception) {
+				    throw new IllegalStateException(exception);
+				}
+				"""), source("""
+				String first= "prefix" + new String(bytes, StandardCharsets.UTF_8); String second= "suffix"; //$NON-NLS-1$ //$NON-NLS-2$
+				"""), "\"UTF-8\"", 1); //$NON-NLS-1$
+	}
+
+	@Test
+	void regularCleanupShortensCharsetAndIsRepeatable() throws CoreException {
+		String before= source("""
+				try (var reader= java.nio.file.Files.newBufferedReader(java.nio.file.Paths.get("data"), //$NON-NLS-1$
+				        java.nio.charset.StandardCharsets.UTF_8)) {
+				    System.out.println("loaded"); //$NON-NLS-1$
+				}
+				""");
+		String expected= before.replace("java.nio.charset.StandardCharsets.UTF_8", "StandardCharsets.UTF_8"); //$NON-NLS-1$ //$NON-NLS-2$
+		ICompilationUnit cu= createUnit(before);
+		var cleanup= new UseExplicitEncodingCleanUpCore(Map.of(
+				MYCleanUpConstants.EXPLICITENCODING_CLEANUP, "true", //$NON-NLS-1$
+				MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR, "true")); //$NON-NLS-1$
+		var fix= cleanup.createFix(new CleanUpContext(cu, parse(cu)));
+		assertTrue(fix instanceof EncodingCleanUpFix);
+		for (int attempt= 0; attempt < 2; attempt++) {
+			CompilationUnitChange change= fix.createChange(null);
+			try {
+				assertEquals(expected, change.getPreviewContent(null));
+			} finally {
+				change.dispose();
+			}
+		}
+		assertEquals(before, cu.getSource());
+		cu.getBuffer().setContents(expected);
+		assertCompilesWithoutNlsProblems(cu);
+		assertNull(cleanup.createFix(new CleanUpContext(cu, parse(cu))));
+	}
+
+	@Test
+	void multipleEncodingChangesSupportPreviewApplyAndUndo() throws CoreException {
+		String before= source("""
+				try {
+				    String first= new String(bytes, "UTF-8"); //$NON-NLS-1$
+				    String second= new String(bytes, "UTF-8"); //$NON-NLS-1$
+				} catch (java.io.UnsupportedEncodingException exception) {
+				    throw new IllegalStateException(exception);
+				}
+				""");
+		String expected= source("""
+				String first= new String(bytes, StandardCharsets.UTF_8);
+				String second= new String(bytes, StandardCharsets.UTF_8);
+				""");
+		ICompilationUnit cu= createUnit(before);
+		CompilationUnit root= parse(cu);
+		CompilationUnitRewriteOperation operation= new CompilationUnitRewriteOperation() {
+			@Override
+			public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+				String selected= "\"UTF-8\""; //$NON-NLS-1$
+				for (int offset= before.indexOf(selected); offset >= 0; offset= before.indexOf(selected, offset + 1)) {
+					ASTNode argument= NodeFinder.perform(root, offset, selected.length());
+					AbstractExplicitEncoding.replaceArgumentAndRemoveNLS(cuRewrite.getASTRewrite(), argument,
+							root.getAST().newName("StandardCharsets.UTF_8"), //$NON-NLS-1$
+							new TextEditGroup("encoding"), cuRewrite); //$NON-NLS-1$
+				}
+			}
+		};
+		var fix= new EncodingCleanUpFix("encoding", root, new CompilationUnitRewriteOperation[] { operation }); //$NON-NLS-1$
+		for (int attempt= 0; attempt < 2; attempt++) {
+			CompilationUnitChange change= fix.createChange(null);
+			try {
+				assertEquals(expected, change.getPreviewContent(null));
+			} finally {
+				change.dispose();
+			}
+		}
+		CompilationUnitChange change= fix.createChange(null);
+		Change undo= null;
+		try {
+			change.initializeValidationData(null);
+			undo= change.perform(null);
+			assertEquals(expected, cu.getSource());
+			assertCompilesWithoutNlsProblems(cu);
+			assertNotNull(undo);
+			Change redo= undo.perform(null);
+			if (redo != null) {
+				redo.dispose();
+			}
+			assertEquals(before, cu.getSource());
+		} finally {
+			if (undo != null) {
+				undo.dispose();
+			}
+			change.dispose();
+		}
+	}
+
+	@Test
+	void unwrappingPreservesTextBlockValue() throws CoreException {
+		var project= context.getSourceFolder().getJavaProject();
+		Map<String, String> options= project.getOptions(false);
+		JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
+		project.setOptions(options);
+		String literal= "\"\"\"\n        alpha\n          beta\n        \"\"\""; //$NON-NLS-1$
+		String before= source("try {\n    String message= " + literal.replace("\n", "\n    ") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				+ "; //$NON-NLS-1$\n    String value= new String(bytes, \"UTF-8\"); //$NON-NLS-1$\n" //$NON-NLS-1$
+				+ "} catch (java.io.UnsupportedEncodingException exception) {\n    throw new IllegalStateException(exception);\n}\n"); //$NON-NLS-1$
+		String expected= source("String message= " + literal //$NON-NLS-1$
+				+ "; //$NON-NLS-1$\nString value= new String(bytes, StandardCharsets.UTF_8);\n"); //$NON-NLS-1$
+		assertEquals("alpha\n  beta\n", textBlockValue(before)); //$NON-NLS-1$
+		assertRewrite(before, expected, "\"UTF-8\"", 1); //$NON-NLS-1$
+		assertEquals(textBlockValue(before), textBlockValue(expected));
+	}
+
+	private static String textBlockValue(String source) {
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		Map<String, String> options= JavaCore.getOptions();
+		JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
+		parser.setCompilerOptions(options);
+		parser.setSource(source.toCharArray());
+		String[] value= { null };
+		((CompilationUnit) parser.createAST(null)).accept(new ASTVisitor() {
+			@Override
+			public boolean visit(TextBlock node) {
+				value[0]= node.getLiteralValue();
+				return false;
+			}
+		});
+		assertNotNull(value[0]);
+		return value[0];
+	}
+
 	private static String source(String body) {
 		return """
 				package test1;
@@ -314,6 +483,9 @@ public class EncodingNlsPreservationTest {
 		CompilationUnitChange change= cuRewrite.createChange(true, null);
 		String actual;
 		try {
+			if (change != null) {
+				EncodingSourceRewrite.complete(root, change);
+			}
 			actual= change == null ? cu.getSource() : change.getPreviewContent(null);
 		} finally {
 			if (change != null) {

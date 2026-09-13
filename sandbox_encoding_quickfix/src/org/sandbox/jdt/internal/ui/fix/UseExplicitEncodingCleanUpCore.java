@@ -40,6 +40,7 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ChangeBehavior;
+import org.sandbox.jdt.internal.corext.fix.helper.EncodingCleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.helper.EncodingDslRemovedCatchImportCleanup;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
@@ -122,7 +123,7 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		}
 
 		CompilationUnitRewriteOperation[] array= operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);
-		return new CompilationUnitRewriteOperationsFixCore(ExplicitEncodingCleanUpFix_refactor,
+		return new EncodingCleanUpFix(ExplicitEncodingCleanUpFix_refactor,
 				compilationUnit, array);
 	}
 
