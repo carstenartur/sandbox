@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "f7f5ff38485ff2cf32c4f989ec83f81dc98e6c44",
-      "lastProcessedDate": "2026-09-12T02:36:34.017177469Z",
-      "totalProcessed": 5916,
+      "lastProcessedCommit": "21769c794d05e5bf0fb988319ab98c49bcc919bf",
+      "lastProcessedDate": "2026-09-13T02:25:22.673555005Z",
+      "totalProcessed": 6008,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3511,7 +3511,7 @@
         "Bug Fix / Null-Safety": 1,
         "Bug Fix / UI Logic Refactoring": 1,
         "Bug Fix / UI Logic": 1,
-        "API Migration": 30,
+        "API Migration": 31,
         "Deprecation Cleanup": 1,
         "Class Refactoring": 1,
         "String Literal Transformation": 1,
@@ -3648,7 +3648,8 @@
         "Constant Update": 1,
         "UI/Bidi Fix": 1,
         "Dead Code": 1,
-        "API Usage Modernization": 1
+        "API Usage Modernization": 1,
+        "Modifiers": 1
       },
       "exhaustedCategories": []
     },
@@ -3689,5 +3690,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 28687
+  "globalTotalProcessed": 28779
 }
