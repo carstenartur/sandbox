@@ -22,7 +22,9 @@
 		<maven.compiler.target>${java-version}</maven.compiler.target>
 		<maven.compiler.release>${java-version}</maven.compiler.release>
 		<license.licenseName>epl_v1</license.licenseName>
-		<bouncycastle.version>1.84</bouncycastle.version>
+		<!-- Orbit 4.41 ships the 1.85 family with bcprov at patch level 1.85.2. -->
+		<bouncycastle.version>1.85</bouncycastle.version>
+		<bouncycastle.bcprov.version>1.85.2</bouncycastle.bcprov.version>
 		<assertj.version>3.27.7</assertj.version>
 		<bnd.version>7.3.0</bnd.version>
 		<caffeine.version>3.2.4</caffeine.version>
@@ -30,7 +32,9 @@
 		<!-- Pin ONNX Runtime native version: 1.21.1 (from DJL 0.36.0) fails
 		     DLL init on Windows; 1.19.0 (from DJL 0.31.1) works. -->
 		<onnxruntime.version>1.29.0</onnxruntime.version>
-		<eclipse-jdt-core.version>3.46.0</eclipse-jdt-core.version>
+		<!-- JDT Core 3.47.0 depends on ECJ 3.46.100; their versions are independent. -->
+		<eclipse-jdt-core.version>3.47.0</eclipse-jdt-core.version>
+		<eclipse-ecj.version>3.46.100</eclipse-ecj.version>
 		<gson.version>2.13.2</gson.version>
 		<hibernate.version>6.6.13.Final</hibernate.version>
 		<hibernate-search.version>7.2.0.Final</hibernate-search.version>
@@ -124,12 +128,11 @@
 		profiles below -->
 	</modules>
 	<repositories>
-		<!-- 1. Eclipse SimRel Release Repository - upgraded to 2026-06 to
-		resolve Bouncy Castle import conflicts -->
+		<!-- 1. Eclipse SimRel Release Repository - stable 2026-09 baseline -->
 		<repository>
-			<id>eclipse-2026-06</id>
+			<id>eclipse-2026-09</id>
 			<layout>p2</layout>
-			<url>https://download.eclipse.org/releases/2026-06/</url>
+			<url>https://download.eclipse.org/releases/2026-09/</url>
 		</repository>
 
 		<!-- 2. Eclipse Orbit (externe Abhängigkeiten wie Apache Commons) -->
@@ -137,7 +140,7 @@
 			<id>orbit</id>
 			<layout>p2</layout>
 			<url>
-				https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-06/</url>
+				https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-09/</url>
 		</repository>
 
 		<!-- 3. Eclipse Lizenzinformationen -->
@@ -285,22 +288,22 @@
 							<requirement>
 								<type>eclipse-plugin</type>
 								<id>bcutil</id>
-								<versionRange>1.84.0</versionRange>
+								<versionRange>1.85.0</versionRange>
 							</requirement>
 							<requirement>
 								<type>eclipse-plugin</type>
 								<id>bcprov</id>
-								<versionRange>1.84.0</versionRange>
+								<versionRange>1.85.2</versionRange>
 							</requirement>
 							<requirement>
 								<type>eclipse-plugin</type>
 								<id>bcpkix</id>
-								<versionRange>1.84.0</versionRange>
+								<versionRange>1.85.0</versionRange>
 							</requirement>
 							<requirement>
 								<type>eclipse-plugin</type>
 								<id>bcpg</id>
-								<versionRange>1.84.0</versionRange>
+								<versionRange>1.85.0</versionRange>
 							</requirement>
 						</extraRequirements>
 					</dependency-resolution>
@@ -738,7 +741,7 @@
 			<dependency>
 				<groupId>org.bouncycastle</groupId>
 				<artifactId>bcprov-jdk18on</artifactId>
-				<version>${bouncycastle.version}</version>
+				<version>${bouncycastle.bcprov.version}</version>
 			</dependency>
 
 			<!-- Third-party dependencies (shared across modules) -->
@@ -760,7 +763,7 @@
 			<dependency>
 				<groupId>org.eclipse.jdt</groupId>
 				<artifactId>ecj</artifactId>
-				<version>${eclipse-jdt-core.version}</version>
+				<version>${eclipse-ecj.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.google.code.gson</groupId>

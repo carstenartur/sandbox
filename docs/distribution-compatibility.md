@@ -4,14 +4,14 @@ Sandbox is an experimental Eclipse JDT cleanup distribution. The statements belo
 
 ## Runtime baseline
 
-| Component | Verified baseline |
+| Component | Configured baseline |
 |---|---|
 | Java runtime | Java 21 |
-| Eclipse target | Eclipse 2026-06 / Platform 4.40 |
+| Eclipse target | Eclipse 2026-09 / Platform 4.41 |
 | Build system | Maven with Tycho 5.0.4 |
 | Plug-in status | Experimental; evaluate in a disposable installation or development workspace |
 
-The target platform is resolved from `sandbox_target/eclipse.target`. Sandbox does not currently claim compatibility with older Eclipse releases merely because individual bundles may happen to resolve there.
+The target platform is resolved from `sandbox_target/eclipse.target`. Runtime verification is established by the successful distribution gate for the exact revision under test, not by the version table alone. Sandbox does not currently claim compatibility with older Eclipse releases merely because individual bundles may happen to resolve there.
 
 ## Reproducing the distribution gate
 
@@ -50,7 +50,7 @@ The required pull-request gate is **Distribution Smoke Test**. On Linux GTK x86-
 6. imports an isolated Java project through the installed cleanup application;
 7. applies a deterministic cleanup, validates the report and source change, and compiles the transformed source with Java 21.
 
-Windows and macOS archives are assembled by the same reactor but do not yet receive equivalent native launch-and-transform verification. They are build-verified, not runtime-verified.
+Windows and macOS archives are assembled by the same reactor but do not yet receive equivalent native launch-and-transform verification. A successful distribution build establishes assembly coverage for those platforms, not native runtime coverage.
 
 ## Publication channels
 
@@ -84,4 +84,4 @@ Use a separate Eclipse installation or disposable workspace for initial evaluati
 
 ## Baseline consistency
 
-`RepositoryBaselineConsistencyTest` checks that `pom.xml`, the capability inventory, PDE target, product, p2 category, Oomph setup, and active build documentation agree on the same Eclipse and Tycho baseline. Dated QA reports remain historical records and are intentionally excluded from this current-baseline contract.
+`RepositoryBaselineConsistencyTest` checks that `pom.xml`, the capability inventory, PDE target, product, p2 category, contributor Oomph setup, and active build documentation agree on the same Eclipse and Tycho baseline. Dated QA reports remain historical records and are intentionally excluded from this current-baseline contract. The frozen R4_40 migration corpus and its dedicated QA installation are separate test inputs, not an alternative supported Sandbox runtime.

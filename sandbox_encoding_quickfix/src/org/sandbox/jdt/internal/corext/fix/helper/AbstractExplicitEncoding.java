@@ -253,7 +253,9 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 			ASTNode replacement, ASTNode statement, TextEditGroup group, CompilationUnitRewrite cuRewrite) {
 		Block tryBody= (Block) statement.getParent();
 		TryStatement tryStatement= (TryStatement) tryBody.getParent();
-		if (!(tryStatement.getParent() instanceof Block)) {
+		if (!(tryStatement.getParent() instanceof Block)
+				|| !ExceptionCleanupHelper.canRemoveException(tryStatement, visited,
+						JAVA_IO_UNSUPPORTED_ENCODING_EXCEPTION, rewrite)) {
 			EncodingSourceRewrite.record(cuRewrite, visited);
 			rewrite.replace(visited, replacement, group);
 			return false;

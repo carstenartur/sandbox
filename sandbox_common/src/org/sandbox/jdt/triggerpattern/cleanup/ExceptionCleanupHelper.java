@@ -68,7 +68,7 @@ public class ExceptionCleanupHelper {
 			ImportRemover importRemover) {
 
 		ASTNode parent = findEnclosingMethodOrTry(visited);
-		if (parent == null) {
+		if (parent == null || !canRemoveException(parent, visited, exceptionFQN, rewrite)) {
 			return;
 		}
 
@@ -78,6 +78,11 @@ public class ExceptionCleanupHelper {
 			int removedCount = removeExceptionFromTryCatch(tryStatement, exceptionFQN, exceptionSimple, rewrite, group, importRemover);
 			simplifyEmptyTryStatement(tryStatement, rewrite, group, removedCount);
 		}
+	}
+
+	/** Records the converted invocation and proves that no surviving expression needs the handler. */
+	public static boolean canRemoveException(ASTNode scope, ASTNode visited, String exceptionFQN, ASTRewrite rewrite) {
+		return CheckedExceptionAnalysis.canRemove(scope, visited, exceptionFQN, rewrite);
 	}
 
 	// ------------------------------------------------------------------
@@ -96,8 +101,10 @@ public class ExceptionCleanupHelper {
 		return methodDecl;
 	}
 
-	static boolean isTargetException(Type type, String exceptionSimple) {
-		return type.toString().equals(exceptionSimple);
+	static boolean isTargetException(Type type, String exceptionFQN) {
+		var binding = type.resolveBinding();
+		return binding != null && !binding.isRecovered()
+				&& exceptionFQN.equals(binding.getErasure().getQualifiedName());
 	}
 
 	static void removeExceptionFromMethodThrows(
@@ -112,7 +119,7 @@ public class ExceptionCleanupHelper {
 				MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);
 		List<Type> thrownExceptions = method.thrownExceptionTypes();
 		for (Type exceptionType : thrownExceptions) {
-			if (isTargetException(exceptionType, exceptionSimple)) {
+			if (isTargetException(exceptionType, exceptionFQN)) {
 				throwsRewrite.remove(exceptionType, group);
 				importRemover.registerRemovedNode(exceptionType);
 			}
@@ -122,7 +129,7 @@ public class ExceptionCleanupHelper {
 	static boolean removeExceptionFromUnionType(
 			UnionType unionType,
 			CatchClause catchClause,
-			String exceptionSimple,
+			String exceptionFQN,
 			ASTRewrite rewrite,
 			TextEditGroup group) {
 
@@ -130,7 +137,7 @@ public class ExceptionCleanupHelper {
 		List<Type> types = unionType.types();
 
 		List<Type> typesToRemove = types.stream()
-				.filter(t -> isTargetException(t, exceptionSimple))
+				.filter(t -> isTargetException(t, exceptionFQN))
 				.toList();
 
 		typesToRemove.forEach(type -> unionRewrite.remove(type, group));
@@ -166,10 +173,10 @@ public class ExceptionCleanupHelper {
 			Type exceptionType = exception.getType();
 
 			if (exceptionType instanceof UnionType unionType) {
-				if (removeExceptionFromUnionType(unionType, catchClause, exceptionSimple, rewrite, group)) {
+				if (removeExceptionFromUnionType(unionType, catchClause, exceptionFQN, rewrite, group)) {
 					removedCount++;
 				}
-			} else if (isTargetException(exceptionType, exceptionSimple)) {
+			} else if (isTargetException(exceptionType, exceptionFQN)) {
 				rewrite.remove(catchClause, group);
 				importRemover.registerRemovedNode(catchClause);
 				removedCount++;
@@ -190,7 +197,7 @@ public class ExceptionCleanupHelper {
 
 		if (!hasResources && !hasStatements) {
 			rewrite.remove(tryStatement, group);
-		} else if (!hasResources && tryStatement.getParent() instanceof Block parentBlock) {
+		} else if (!hasResources && tryStatement.getParent() instanceof Block) {
 			// Inline statements from try body into the parent block,
 			// replacing the try statement with its individual statements
 			// to avoid producing an orphaned { ... } block.
@@ -198,14 +205,13 @@ public class ExceptionCleanupHelper {
 			// BEFORE invoking removeUnsupportedEncodingException (which triggers
 			// this method). createMoveTarget marks nodes as moved, and
 			// replaceAndRemoveNLS fails silently on already-moved nodes.
-			ListRewrite parentListRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
-			List<?> tryStatements = tryBlock.statements();
-			for (int i = tryStatements.size() - 1; i >= 0; i--) {
-				ASTNode stmt = (ASTNode) tryStatements.get(i);
-				ASTNode moved = rewrite.createMoveTarget(stmt);
-				parentListRewrite.insertAfter(moved, tryStatement, group);
+			List<?> statements = rewrite.getListRewrite(tryBlock, Block.STATEMENTS_PROPERTY).getRewrittenList();
+			ASTNode[] moved = new ASTNode[statements.size()];
+			for (int i = 0; i < statements.size(); i++) {
+				ASTNode statement = (ASTNode) statements.get(i);
+				moved[i] = statement.getParent() == null ? statement : rewrite.createMoveTarget(statement);
 			}
-			rewrite.remove(tryStatement, group);
+			rewrite.replace(tryStatement, rewrite.createGroupNode(moved), group);
 		}
 	}
 }

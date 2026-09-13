@@ -1,6 +1,6 @@
 # Oomph setup architecture
 
-The contributor baseline is Eclipse 2026-06 / Platform 4.40, Java 21 and Tycho 5.0.4.
+The contributor baseline is Eclipse 2026-09 / Platform 4.41, Java 21 and Tycho 5.0.4.
 This directory contains Oomph models and a standalone Maven/JUnit acceptance test, not an Eclipse cleanup plug-in.
 
 ## Public integration contract
@@ -13,7 +13,7 @@ Existing workspaces also refer to these objects. The custom Product and combined
 The Project owns development-tool requirements because an official catalog user may choose a standard Eclipse product.
 The optional Product supplies an SDK and personal installation preferences. Both routes use the same Project.
 The combined Configuration references a ProductVersion through its Installation and a Stream through its Workspace.
-The separately pinned upstream JDT QA models retain their own product, repositories and stream.
+The separately pinned upstream JDT QA models retain their own Eclipse 4.40 product, repositories and R4_40 stream. Those corpus inputs are independent of the active contributor/runtime baseline and must not be silently relabelled.
 
 ## Workspace task ordering
 
@@ -50,7 +50,7 @@ Formatter import is documented using the repository's existing formatter file.
 ## Acceptance tests
 
 `sandbox_oomph/pom.xml` is independent of the Tycho reactor so a setup check does not first require a built Sandbox IDE.
-JUnit owns the assertions and child-process lifecycle. The integration test downloads a fixed Eclipse SDK 4.40,
+JUnit owns the assertions and child-process lifecycle. The integration test downloads a fixed Eclipse SDK 4.41,
 installs Oomph and the actual project's p2 requirements, and compiles a small test-only Eclipse application.
 The application runs the real SetupTaskPerformer in a workbench, including JGit clone, m2e/PDE imports, target activation,
 working sets and build tasks. It validates the optional configurations with Oomph's registered EMF packages and checks

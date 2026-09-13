@@ -62,14 +62,13 @@
 		<dependency>
 			<groupId>org.eclipse.jdt</groupId>
 			<artifactId>org.eclipse.jdt.core</artifactId>
-			<version>3.46.0</version>
 		</dependency>
 		
 		<!-- Eclipse JDT UI for helper classes like ASTNodes, ScopeAnalyzer -->
 		<dependency>
 			<groupId>org.eclipse.jdt</groupId>
 			<artifactId>org.eclipse.jdt.ui</artifactId>
-			<version>3.38.0</version>
+			<version>3.39.0</version>
 		</dependency>
 		
 		<!-- We don't need Eclipse Platform dependencies for standalone ASTParser tests -->
