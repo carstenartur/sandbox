@@ -13,9 +13,11 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -250,10 +252,33 @@ public class EncodingNlsPreservationTest {
 		ICompilationUnit cu= createUnit(source("""
 				System.out.println("missing marker");
 				"""));
-		cu.getJavaProject().setOption(JavaCore.COMPILER_PB_NON_NLS_STRING_LITERAL, JavaCore.ERROR);
-		assertTrue(Arrays.stream(parse(cu).getProblems()).anyMatch(problem -> problem.isError()
+		assertTrue(Arrays.stream(parse(cu, true).getProblems()).anyMatch(problem -> problem.isError()
 				&& problem.getID() == IProblem.NonExternalizedStringLiteral),
 				"The validation parser must not suppress NLS diagnostics"); //$NON-NLS-1$
+	}
+
+	@Test
+	void successfulNlsValidationDoesNotChangeCompilerOptions() throws CoreException {
+		ICompilationUnit cu= createUnit(source("""
+				System.out.println("marked"); //$NON-NLS-1$
+				"""));
+		Map<String, String> projectOptions= cu.getJavaProject().getOptions(false);
+		Map<String, String> workspaceOptions= JavaCore.getOptions();
+		assertCompilesWithoutNlsProblems(cu);
+		assertEquals(projectOptions, cu.getJavaProject().getOptions(false));
+		assertEquals(workspaceOptions, JavaCore.getOptions());
+	}
+
+	@Test
+	void failingNlsValidationDoesNotChangeCompilerOptions() throws CoreException {
+		ICompilationUnit cu= createUnit(source("""
+				System.out.println("missing marker");
+				"""));
+		Map<String, String> projectOptions= cu.getJavaProject().getOptions(false);
+		Map<String, String> workspaceOptions= JavaCore.getOptions();
+		assertThrows(AssertionError.class, () -> assertCompilesWithoutNlsProblems(cu));
+		assertEquals(projectOptions, cu.getJavaProject().getOptions(false));
+		assertEquals(workspaceOptions, JavaCore.getOptions());
 	}
 
 	@Test
@@ -498,18 +523,26 @@ public class EncodingNlsPreservationTest {
 	}
 
 	private static void assertCompilesWithoutNlsProblems(ICompilationUnit cu) {
-		cu.getJavaProject().setOption(JavaCore.COMPILER_PB_NON_NLS_STRING_LITERAL, JavaCore.ERROR);
-		String errors= Arrays.stream(parse(cu).getProblems()).filter(IProblem::isError)
+		String errors= Arrays.stream(parse(cu, true).getProblems()).filter(IProblem::isError)
 				.map(IProblem::getMessage).collect(Collectors.joining("\n")); //$NON-NLS-1$
 		assertEquals("", errors); //$NON-NLS-1$
 	}
 
 	private static CompilationUnit parse(ICompilationUnit cu) {
+		return parse(cu, false);
+	}
+
+	private static CompilationUnit parse(ICompilationUnit cu, boolean reportNlsErrors) {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(cu);
 		parser.setResolveBindings(true);
 		// RefactoringASTParser suppresses optional errors, including NLS diagnostics.
-		parser.setCompilerOptions(cu.getJavaProject().getOptions(true));
+		Map<String, String> options= new HashMap<>(cu.getJavaProject().getOptions(true));
+		if (reportNlsErrors) {
+			// The extension reuses its project. Strict validation must not change its preferences.
+			options.put(JavaCore.COMPILER_PB_NON_NLS_STRING_LITERAL, JavaCore.ERROR);
+		}
+		parser.setCompilerOptions(options);
 		return (CompilationUnit) parser.createAST(null);
 	}
 }
