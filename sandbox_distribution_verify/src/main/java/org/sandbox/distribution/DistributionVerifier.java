@@ -144,6 +144,7 @@ public final class DistributionVerifier {
         for (Element unit : elements(target, "unit")) {
             String id = unit.getAttribute("id");
             if (BOUNCY_CASTLE_IDS.contains(id)) {
+                require(!targetBc.containsKey(id), "Duplicate Bouncy Castle target unit: " + id);
                 targetBc.put(id, unit.getAttribute("version"));
             }
         }
@@ -157,6 +158,7 @@ public final class DistributionVerifier {
         for (Element requirement : elements(pom, "requirement")) {
             String id = directChildText(requirement, "id").orElse("");
             if (BOUNCY_CASTLE_IDS.contains(id)) {
+                require(!pomBc.containsKey(id), "Duplicate Bouncy Castle Maven extra requirement: " + id);
                 pomBc.put(id, directChildText(requirement, "versionRange")
                         .orElseThrow(() -> new VerificationException("Missing Bouncy Castle versionRange for " + id)));
             }

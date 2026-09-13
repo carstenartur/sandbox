@@ -17,6 +17,13 @@
 		<!-- This is a normal Maven/Java module, not an OSGi bundle. -->
 		<tycho.mode>maven</tycho.mode>
 	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 	<build>
 		<plugins>
 			<plugin>
@@ -45,7 +52,7 @@
 							<classpathScope>runtime</classpathScope>
 							<cleanupDaemonThreads>false</cleanupDaemonThreads>
 						</configuration>
-					</execution>
+						</execution>
 				</executions>
 			</plugin>
 		</plugins>
