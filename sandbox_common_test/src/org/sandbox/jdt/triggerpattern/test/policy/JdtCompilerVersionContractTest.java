@@ -12,9 +12,14 @@ package org.sandbox.jdt.triggerpattern.test.policy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Properties;
+import java.util.jar.Manifest;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -47,6 +52,34 @@ public class JdtCompilerVersionContractTest {
 	@Test
 	public void standaloneTestsInheritTheRuntimeJdtCoreVersion() throws Exception {
 		assertInheritsVersion("sandbox_common_test/pom.xml", "org.eclipse.jdt.core"); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void standaloneTestsUseTheActiveJdtUiVersion() throws Exception {
+		Properties pins= new Properties();
+		try (var reader= Files.newBufferedReader(repositoryRoot().resolve(".github/patched-jdt-ui.env"), //$NON-NLS-1$
+				StandardCharsets.UTF_8)) {
+			pins.load(reader);
+		}
+		String expected= pins.getProperty("PATCHED_JDT_UI_EXPECTED_BASE_VERSION", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		assertFalse(expected.isBlank(), "The active JDT UI version must be declared"); //$NON-NLS-1$
+		Document module= pom("sandbox_common_test/pom.xml"); //$NON-NLS-1$
+		String dependency= "/project/dependencies/" + JDT_DEPENDENCY.formatted("org.eclipse.jdt.ui"); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals("1", value(module, "count(" + dependency + ")")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		assertEquals(expected, value(module, dependency + "/version"), //$NON-NLS-1$
+				"Standalone cleanup tests must use the active host API, not a historical UI version"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void sourceSnapshotTestDeclaresItsSourceViewerDependency() throws Exception {
+		Path manifest= repositoryRoot().resolve("sandbox_int_to_enum_test/META-INF/MANIFEST.MF"); //$NON-NLS-1$
+		try (var input= Files.newInputStream(manifest)) {
+			String required= new Manifest(input).getMainAttributes().getValue("Require-Bundle"); //$NON-NLS-1$
+			assertTrue(Arrays.stream(required.split(",")) //$NON-NLS-1$
+					.map(clause -> clause.split(";", 2)[0].strip()) //$NON-NLS-1$
+					.anyMatch("org.eclipse.jface.text"::equals), //$NON-NLS-1$
+					"The native snapshot regression must directly depend on the public source-viewer API"); //$NON-NLS-1$
+		}
 	}
 
 	private static void assertInheritsVersion(String path, String artifactId) throws Exception {
