@@ -14,6 +14,7 @@
 package org.sandbox.jdt.triggerpattern.test.policy;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -23,6 +24,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,6 +44,9 @@ import com.google.gson.JsonParser;
 public class RepositoryBaselineConsistencyTest {
 
 	private static final Set<String> BOUNCY_CASTLE_IDS = Set.of("bcutil", "bcprov", "bcpkix", "bcpg"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+	private static final Map<String, String> BOUNCY_CASTLE_VERSIONS = Map.of(
+			"bcutil", "1.85.0", "bcprov", "1.85.2", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			"bcpkix", "1.85.0", "bcpg", "1.85.0"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	private static final Pattern TYCHO_PROPERTY =
 			Pattern.compile("<tycho-version>([^<]+)</tycho-version>"); //$NON-NLS-1$
 	private static final Pattern ECLIPSE_RELEASE_REPOSITORY = Pattern.compile(
@@ -163,6 +168,46 @@ public class RepositoryBaselineConsistencyTest {
 		assertEquals("1.85 family (bcprov 1.85.2)", displayBouncyCastleVersions(versions)); //$NON-NLS-1$
 	}
 
+	@Test
+	public void bouncyCastleTargetRejectsInvertedOrUniformProviderVersions() {
+		assertEquals(BOUNCY_CASTLE_VERSIONS, bouncyCastleVersions(bouncyCastleUnits(BOUNCY_CASTLE_VERSIONS)));
+		for (Map<String, String> invalid : List.of(
+				Map.of("bcutil", "1.85.2", "bcprov", "1.85.0", "bcpkix", "1.85.2", "bcpg", "1.85.2"), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
+				Map.of("bcutil", "1.85.0", "bcprov", "1.85.0", "bcpkix", "1.85.0", "bcpg", "1.85.0"))) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
+			assertThrows(AssertionError.class, () -> bouncyCastleVersions(bouncyCastleUnits(invalid)));
+		}
+	}
+
+	private static String bouncyCastleUnits(Map<String, String> versions) {
+		return versions.entrySet().stream()
+				.map(entry -> "<unit id=\"" + entry.getKey() + "\" version=\"" + entry.getValue() + "\"/>") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				.collect(Collectors.joining());
+	}
+
+	@Test
+	public void activePatchedHostDocumentationMatchesThePins() throws Exception {
+		Path root = repositoryRoot();
+		Properties pins = new Properties();
+		try (var reader = Files.newBufferedReader(root.resolve(".github/patched-jdt-ui.env"), StandardCharsets.UTF_8)) { //$NON-NLS-1$
+			pins.load(reader);
+		}
+		String eclipseRelease = JsonParser.parseString(read(root, "docs/capabilities.json")).getAsJsonObject() //$NON-NLS-1$
+				.getAsJsonObject("repository").get("eclipseRelease").getAsString(); //$NON-NLS-1$ //$NON-NLS-2$
+		for (String path : List.of("docs/patched-jdt-ui-delivery.md", "docs/multi-file-cleanups.md", //$NON-NLS-1$ //$NON-NLS-2$
+				"sandbox_int_to_enum/README.md")) { //$NON-NLS-1$
+			String document = read(root, path);
+			assertTrue(document.contains("Eclipse " + eclipseRelease), path); //$NON-NLS-1$
+			if (path.startsWith("docs/")) { //$NON-NLS-1$
+				for (String key : List.of("PATCHED_JDT_UI_COMMIT", "PATCHED_JDT_UI_EXPECTED_PARENT", //$NON-NLS-1$ //$NON-NLS-2$
+						"PATCHED_JDT_UI_EXPECTED_BASE_VERSION")) { //$NON-NLS-1$
+					String expected = pins.getProperty(key);
+					assertTrue(expected != null && !expected.isBlank(), key);
+					assertTrue(document.contains(expected), path + " must document " + key); //$NON-NLS-1$
+				}
+			}
+		}
+	}
+
 	private static Path repositoryRoot() {
 		Path candidate = Path.of("").toAbsolutePath().normalize(); //$NON-NLS-1$
 		while (candidate != null) {
@@ -199,6 +244,8 @@ public class RepositoryBaselineConsistencyTest {
 		}
 		assertEquals(BOUNCY_CASTLE_IDS, versions.keySet(),
 				"The target must declare the complete four-bundle Bouncy Castle set"); //$NON-NLS-1$
+		assertEquals(BOUNCY_CASTLE_VERSIONS, versions,
+				"The target must retain the release-specific provider/base version mapping"); //$NON-NLS-1$
 		return Map.copyOf(versions);
 	}
 
