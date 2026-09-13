@@ -12,6 +12,7 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -25,11 +26,12 @@ import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
-import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
 import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.testplugin.TestOptions;
 import org.eclipse.text.edits.TextEditGroup;
@@ -61,7 +63,7 @@ public class EncodingNlsPreservationTest {
 	@Test
 	void alreadyExplicitTryResourceProducesNoCleanupChange() throws CoreException {
 		String before= source("""
-				try (var reader= java.nio.file.Files.newBufferedReader(java.nio.file.Path.of(".github/patched-jdt-ui.env"), //$NON-NLS-1$
+				try (var reader= java.nio.file.Files.newBufferedReader(java.nio.file.Paths.get(".github/patched-jdt-ui.env"), //$NON-NLS-1$
 				        StandardCharsets.UTF_8)) {
 				    new java.util.Properties().load(reader);
 				}
@@ -73,12 +75,13 @@ public class EncodingNlsPreservationTest {
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		assertEquals(before, cu.getSource());
+		assertCompilesWithoutNlsProblems(cu);
 	}
 
 	@Test
 	void identicalArgumentDoesNotTouchCommentsOrIndentation() throws CoreException {
 		String before= source("""
-				try (var reader= java.nio.file.Files.newBufferedReader(java.nio.file.Path.of("data"), //$NON-NLS-1$
+				try (var reader= java.nio.file.Files.newBufferedReader(java.nio.file.Paths.get("data"), //$NON-NLS-1$
 				        StandardCharsets.UTF_8)) {
 				    System.out.println("loaded"); //$NON-NLS-1$
 				}
@@ -89,12 +92,12 @@ public class EncodingNlsPreservationTest {
 	@Test
 	void shorteningCharsetRetainsUnrelatedPathTag() throws CoreException {
 		assertRewrite(source("""
-				try (var reader= java.nio.file.Files.newBufferedReader(java.nio.file.Path.of("data"), //$NON-NLS-1$
+				try (var reader= java.nio.file.Files.newBufferedReader(java.nio.file.Paths.get("data"), //$NON-NLS-1$
 				        java.nio.charset.StandardCharsets.UTF_8)) {
 				    System.out.println("loaded"); //$NON-NLS-1$
 				}
 				"""), source("""
-				try (var reader= java.nio.file.Files.newBufferedReader(java.nio.file.Path.of("data"), //$NON-NLS-1$
+				try (var reader= java.nio.file.Files.newBufferedReader(java.nio.file.Paths.get("data"), //$NON-NLS-1$
 				        StandardCharsets.UTF_8)) {
 				    System.out.println("loaded"); //$NON-NLS-1$
 				}
@@ -182,6 +185,56 @@ public class EncodingNlsPreservationTest {
 		assertRewrite(before, after, "\"UTF-8\"", 1); //$NON-NLS-1$
 	}
 
+	@Test
+	void multipleArgumentsInOneStatementAreBothReplaced() throws CoreException {
+		assertRewrite(source("""
+				String value= new String(bytes, "UTF-8") + new String(bytes, "UTF-8") + "suffix"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"""), source("""
+				String value= new String(bytes, StandardCharsets.UTF_8) + new String(bytes, StandardCharsets.UTF_8) + "suffix"; //$NON-NLS-1$
+				"""), "\"UTF-8\"", 1, 2); //$NON-NLS-1$
+	}
+
+	@Test
+	void multipleStatementsInOneTryAreUnwrappedExactlyOnce() throws CoreException {
+		assertRewrite(source("""
+				try {
+				    String first= new String(bytes, "UTF-8"); //$NON-NLS-1$
+				    String second= new String(bytes, "UTF-8"); //$NON-NLS-1$
+				    System.out.println(first + second + "done"); //$NON-NLS-1$
+				} catch (java.io.UnsupportedEncodingException exception) {
+				    throw new IllegalStateException(exception);
+				}
+				"""), source("""
+				String first= new String(bytes, StandardCharsets.UTF_8);
+				String second= new String(bytes, StandardCharsets.UTF_8);
+				System.out.println(first + second + "done"); //$NON-NLS-1$
+				"""), "\"UTF-8\"", 1, 2); //$NON-NLS-1$
+	}
+
+	@Test
+	void nlsLookingTextInsideAnotherLiteralIsNotAComment() throws CoreException {
+		assertRewrite(source("""
+				String value= "//$NON-NLS-1$" + new String(bytes, "UTF-8"); //$NON-NLS-1$ //$NON-NLS-2$
+				"""), source("""
+				String value= "//$NON-NLS-1$" + new String(bytes, StandardCharsets.UTF_8); //$NON-NLS-1$
+				"""), "\"UTF-8\"", 1); //$NON-NLS-1$
+	}
+
+	@Test
+	void canonicalCharsetIsSkippedExceptInAggregationMode() throws CoreException {
+		ICompilationUnit cu= createUnit(source("""
+				java.nio.file.Files.readAllLines(java.nio.file.Paths.get("data"), StandardCharsets.UTF_8); //$NON-NLS-1$
+				"""));
+		String text= cu.getSource();
+		String selected= "StandardCharsets.UTF_8"; //$NON-NLS-1$
+		ASTNode argument= NodeFinder.perform(parse(cu), text.indexOf(selected), selected.length());
+		MethodInvocation invocation= (MethodInvocation) argument.getParent();
+		assertNull(AbstractExplicitEncoding.getEncodingValue(argument, invocation, ChangeBehavior.KEEP_BEHAVIOR));
+		assertNull(AbstractExplicitEncoding.getEncodingValue(argument, invocation, ChangeBehavior.ENFORCE_UTF8));
+		assertEquals("UTF-8", AbstractExplicitEncoding.getEncodingValue(argument, invocation, //$NON-NLS-1$
+				ChangeBehavior.ENFORCE_UTF8_AGGREGATE));
+	}
+
 	private static String source(String body) {
 		return """
 				package test1;
@@ -198,22 +251,24 @@ public class EncodingNlsPreservationTest {
 				.createCompilationUnit("E1.java", source, false, null); //$NON-NLS-1$
 	}
 
-	private void assertRewrite(String before, String expected, String selected, int occurrence) throws CoreException {
+	private void assertRewrite(String before, String expected, String selected, int... occurrences) throws CoreException {
 		ICompilationUnit cu= createUnit(before);
 		CompilationUnit root= parse(cu);
-		int offset= -1;
-		for (int i= 0; i < occurrence; i++) {
-			offset= before.indexOf(selected, offset + 1);
-			assertTrue(offset >= 0, "Selected argument must exist"); //$NON-NLS-1$
-		}
-		ASTNode argument= NodeFinder.perform(root, offset, selected.length());
-		assertNotNull(argument);
-		assertEquals(offset, argument.getStartPosition());
-		assertEquals(selected.length(), argument.getLength());
 		CompilationUnitRewrite cuRewrite= new CompilationUnitRewrite(cu, root);
-		AbstractExplicitEncoding.replaceArgumentAndRemoveNLS(cuRewrite.getASTRewrite(), argument,
-				root.getAST().newName("StandardCharsets.UTF_8"), //$NON-NLS-1$
-				new TextEditGroup("encoding"), cuRewrite); //$NON-NLS-1$
+		for (int occurrence : occurrences) {
+			int offset= -1;
+			for (int i= 0; i < occurrence; i++) {
+				offset= before.indexOf(selected, offset + 1);
+				assertTrue(offset >= 0, "Selected argument must exist"); //$NON-NLS-1$
+			}
+			ASTNode argument= NodeFinder.perform(root, offset, selected.length());
+			assertNotNull(argument);
+			assertEquals(offset, argument.getStartPosition());
+			assertEquals(selected.length(), argument.getLength());
+			AbstractExplicitEncoding.replaceArgumentAndRemoveNLS(cuRewrite.getASTRewrite(), argument,
+					root.getAST().newName("StandardCharsets.UTF_8"), //$NON-NLS-1$
+					new TextEditGroup("encoding"), cuRewrite); //$NON-NLS-1$
+		}
 		CompilationUnitChange change= cuRewrite.createChange(true, null);
 		String actual;
 		try {
@@ -225,6 +280,11 @@ public class EncodingNlsPreservationTest {
 		}
 		assertEquals(expected, actual);
 		cu.getBuffer().setContents(actual);
+		assertCompilesWithoutNlsProblems(cu);
+	}
+
+	private static void assertCompilesWithoutNlsProblems(ICompilationUnit cu) {
+		cu.getJavaProject().setOption(JavaCore.COMPILER_PB_NON_NLS_STRING_LITERAL, JavaCore.ERROR);
 		String errors= Arrays.stream(parse(cu).getProblems()).filter(IProblem::isError)
 				.map(IProblem::getMessage).collect(Collectors.joining("\n")); //$NON-NLS-1$
 		assertEquals("", errors); //$NON-NLS-1$
