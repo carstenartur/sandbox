@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 251,
+    "totalMatches": 252,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1408,
-        "matches": 75,
+        "files": 1435,
+        "matches": 76,
         "rules": 11
       }
     }
@@ -1677,6 +1677,14 @@
     {
       "repository": "sandbox",
       "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/CleanupSourceSnapshot.java",
+      "line": 29,
+      "matchedCode": "Objects.requireNonNull(bytes).clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
       "rule": "arrays.aslist-stream.to-arrays-stream",
       "file": "sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java",
       "line": 103,
@@ -2055,7 +2063,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java",
-      "line": 148,
+      "line": 149,
       "matchedCode": "computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Collectors.toList())"
     },
     {
@@ -2079,7 +2087,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java",
-      "line": 179,
+      "line": 213,
       "matchedCode": "computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.toList())"
     }
   ],

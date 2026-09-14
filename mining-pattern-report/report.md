@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-09-11
+# Refactoring Mining Report — 2026-09-14
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1408 | 75 | 11 |
+| sandbox | 1435 | 76 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -264,6 +264,7 @@
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:79` — `byteOrderMark.clone()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:210` — `bytes.clone()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:215` — `bytes.clone()`
+- `sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/CleanupSourceSnapshot.java:29` — `Objects.requireNonNull(bytes).clone()`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:73` — `originalBytes.clone()`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:74` — `bom.clone()`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:79` — `originalBytes.clone()`
@@ -324,8 +325,8 @@
 - `sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java:89` — `computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect...`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/ui/fix/XMLCleanUpCore.java:94` — `computeFixSet().stream().map(XMLCleanUpFixCore::toString).collect(Collectors....`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:360` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
-- `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:148` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
+- `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:149` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
 - `sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java:87` — `computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(C...`
 - `sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java:83` — `computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collect...`
-- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:179` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
+- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:213` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
 
