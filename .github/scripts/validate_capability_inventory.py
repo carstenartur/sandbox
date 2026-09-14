@@ -245,13 +245,26 @@ def validate_capabilities(inventory: dict[str, Any], modules: set[str]) -> list[
             fail(f"{identifier}.knownLimitations must contain GitHub issue numbers such as #1210")
         validate_status_language(capability)
 
-    if update_site != seen_features:
-        fail(f"Inventory/update-site feature mismatch: inventory-only={sorted(seen_features - update_site)}, "
-             f"update-site-only={sorted(update_site - seen_features)}")
-    if product.intersection({name for name in product if name.startswith('sandbox_')}) != seen_features:
+    aggregates = inventory.get("aggregateFeatures", [])
+    if not isinstance(aggregates, list):
+        fail("aggregateFeatures must be an array")
+    delivered_features = set(seen_features)
+    for aggregate in aggregates:
+        if not isinstance(aggregate, str) or aggregate in delivered_features or aggregate not in modules:
+            fail(f"Invalid or duplicate aggregate feature: {aggregate!r}")
+        validate_feature(aggregate, aggregate)
+        included = feature_ids(ROOT / aggregate / "feature.xml", "includes")
+        if included != seen_features:
+            fail(f"Aggregate {aggregate} must include every component capability exactly: {sorted(included)}")
+        delivered_features.add(aggregate)
+
+    if update_site != delivered_features:
+        fail(f"Inventory/update-site feature mismatch: inventory-only={sorted(delivered_features - update_site)}, "
+             f"update-site-only={sorted(update_site - delivered_features)}")
+    if product.intersection({name for name in product if name.startswith('sandbox_')}) != delivered_features:
         sandbox_product = {name for name in product if name.startswith("sandbox_")}
-        fail(f"Inventory/product feature mismatch: inventory-only={sorted(seen_features - sandbox_product)}, "
-             f"product-only={sorted(sandbox_product - seen_features)}")
+        fail(f"Inventory/product feature mismatch: inventory-only={sorted(delivered_features - sandbox_product)}, "
+             f"product-only={sorted(sandbox_product - delivered_features)}")
     return capabilities
 
 
@@ -285,6 +298,8 @@ def markdown(inventory: dict[str, Any], capabilities: list[dict[str, Any]]) -> s
             f"{', '.join(delivery_parts) or 'none'} | {item['automaticSupport']} / {item['saveActionSupport']} | "
             f"{item['safetyLevel']} | {item['status']} | {limitations or '—'} |"
         )
+    for aggregate in inventory.get("aggregateFeatures", []):
+        lines.extend(["", f"Installation aggregate: `{aggregate}.feature.group` includes all component features above; it is not an additional cleanup capability. See [{aggregate}/README.md](../{aggregate}/README.md)."])
     lines.extend([
         "",
         "Test counts are the last explicitly reviewed Test Report snapshot. The validator checks their internal consistency and referenced test modules; the Test Report workflow remains the source of current execution totals.",

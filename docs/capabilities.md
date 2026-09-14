@@ -25,4 +25,6 @@ All status and support fields are explicit. `not-assessed` means that the reposi
 | `container-cleanup` | cleanup | local | `sandbox_container_cleanup` / `sandbox_container_cleanup_feature` | 4/4 enabled | product, update site | yes / no | conservative | experimental | — |
 | `use-general-type` | cleanup | local | `sandbox_use_general_type` / `sandbox_use_general_type_feature` | 29/29 enabled | product, update site | not-assessed / not-assessed | conservative | experimental | — |
 
+Installation aggregate: `sandbox_feature.feature.group` includes all component features above; it is not an additional cleanup capability. See [sandbox_feature/README.md](../sandbox_feature/README.md).
+
 Test counts are the last explicitly reviewed Test Report snapshot. The validator checks their internal consistency and referenced test modules; the Test Report workflow remains the source of current execution totals.
