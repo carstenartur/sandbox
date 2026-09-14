@@ -7,7 +7,9 @@ package org.sandbox.distribution;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -16,6 +18,9 @@ import java.util.zip.GZIPOutputStream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.xml.sax.SAXParseException;
 
 class AggregateInstallationEvidenceTest {
     @TempDir Path temporary;
@@ -85,6 +90,17 @@ class AggregateInstallationEvidenceTest {
     void rejectsTestBundlesInTheEndUserInstallation() throws Exception {
         var profile = read(units() + unit("sandbox_tools_test", "1.3.5"), properties(AGGREGATE, "true"));
         assertThrows(IOException.class, () -> AggregateInstallationEvidence.requireFeatures(profile, expected(), Set.of(AGGREGATE)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "<!DOCTYPE profile>",
+            "<!DOCTYPE profile [<!ENTITY value 'expanded'>]>",
+            "<!DOCTYPE profile [<!ENTITY % definitions \"<!ELEMENT profile ANY>\">%definitions;]>" })
+    void rejectsDoctypeBeforeProcessingRepositoryEntities(String declaration) throws Exception {
+        byte[] input = (declaration + "<profile/>").getBytes(StandardCharsets.UTF_8);
+        try (var stream = new ByteArrayInputStream(input)) {
+            assertThrows(SAXParseException.class, () -> AggregateInstallationEvidence.xml(stream));
+        }
     }
 
     private AggregateInstallationEvidence.Profile read(String units, String roots) throws Exception {
