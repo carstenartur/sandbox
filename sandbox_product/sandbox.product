@@ -190,6 +190,7 @@ United States, other countries, or both.
    </plugins>
 
    <features>
+      <feature id="sandbox_feature"/>
       <feature id="org.eclipse.emf.ecore"/>
       <feature id="org.eclipse.emf.common"/>
       <feature id="org.eclipse.help"/>
