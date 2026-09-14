@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "95bde7033f67a7189f6a046dc883b248733aa9c03cab4e87b6797827fe6b6bfb",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!description: Update IProposalRelevance constant values.\u003e\n\u003c!severity: INFO\u003e\n\u003c!id: update-proposal-relevance-constants\u003e\n\u003c!map RELEVANCE_UPDATE: \"CHANGE_LAMBDA_BODY_TO_BLOCK\" \u003d\u003e \"3\", \"CHANGE_LAMBDA_BODY_TO_EXPRESSION\" \u003d\u003e \"3\", \"CONVERT_TO_ANONYMOUS_CLASS_CREATION\" \u003d\u003e \"2\", \"MAKE_VARIABLE_DECLARATION_FINAL\" \u003d\u003e \"-1\"\u003e\n\npublic static final int #{RELEVANCE_UPDATE} \u003d $value; :: inClass(\"org.eclipse.jdt.internal.ui.text.correction.IProposalRelevance\")\n\u003d\u003e\npublic static final int #{RELEVANCE_UPDATE} \u003d #{RELEVANCE_UPDATE_VALUE};\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\npublic interface IProposalRelevance {\n    public static final int CHANGE_LAMBDA_BODY_TO_BLOCK \u003d 7;\n    public static final int CHANGE_LAMBDA_BODY_TO_EXPRESSION \u003d 7;\n    public static final int CONVERT_TO_ANONYMOUS_CLASS_CREATION \u003d 6;\n    public static final int MAKE_VARIABLE_DECLARATION_FINAL \u003d 5;\n    public static final int CREATE_LOCAL \u003d 7; // This one should not change\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\npublic interface IProposalRelevance {\n    public static final int CHANGE_LAMBDA_BODY_TO_BLOCK \u003d 3;\n    public static final int CHANGE_LAMBDA_BODY_TO_EXPRESSION \u003d 3;\n    public static final int CONVERT_TO_ANONYMOUS_CLASS_CREATION \u003d 2;\n    public static final int MAKE_VARIABLE_DECLARATION_FINAL \u003d -1;\n    public static final int CREATE_LOCAL \u003d 7; // This one should not change\n}",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.correction;\n\npublic interface IProposalRelevance {\n    public static final int CREATE_LOCAL \u003d 7;\n    public static final int REMOVE_SEMICOLON \u003d 6;\n    public static final int CHANGE_LAMBDA_BODY_TO_BLOCK \u003d 3; // Already correct value, should not change\n}",
+  "targetHintFile": "constant-updates.sandbox-hint",
+  "sourceCommit": "8ad64dbff63bc36c10f21e264d724b6a52f3b5f3",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Constant Value Update",
+  "summary": "Updates specific \u0027public static final int\u0027 constant values within the IProposalRelevance interface to new integer values using a map-based rule expansion.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-14T02:29:55.316765286Z",
+  "ruleFingerprint": "sha256:bbb77ecc8fbc7b16c8ca4d22de558164ff76ab37dcd22736d04a2f44ebbfcbf1",
+  "behaviorFingerprint": "sha256:034c5c49a33636875c5c637b51209f886a76f7241f81c6cde7b140f2a4f05303",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-14T02:30:02.277677515Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
