@@ -248,6 +248,8 @@ def validate_capabilities(inventory: dict[str, Any], modules: set[str]) -> list[
     aggregates = inventory.get("aggregateFeatures", [])
     if not isinstance(aggregates, list):
         fail("aggregateFeatures must be an array")
+    if len(aggregates) != 1:
+        fail("aggregateFeatures must contain exactly one aggregate feature")
     delivered_features = set(seen_features)
     for aggregate in aggregates:
         if not isinstance(aggregate, str) or aggregate in delivered_features or aggregate not in modules:
