@@ -1195,9 +1195,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "21769c794d05e5bf0fb988319ab98c49bcc919bf",
-      "lastProcessedDate": "2026-09-13T02:25:22.673555005Z",
-      "totalProcessed": 6008,
+      "lastProcessedCommit": "5b301745c7685ceba258e9a30d4566be657a6063",
+      "lastProcessedDate": "2026-09-14T02:29:53.902636988Z",
+      "totalProcessed": 6096,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3480,7 +3480,7 @@
         "Internal Logic Refactoring": 1,
         "Internal API Modernization": 1,
         "API-Migration": 1,
-        "Error Handling": 9,
+        "Error Handling": 10,
         "Eclipse API Removal": 1,
         "Java API Deprecation": 1,
         "Editor Functionality": 1,
@@ -3522,7 +3522,7 @@
         "Unnecessary Call Removal": 1,
         "String Literal Replacement": 3,
         "API Replacement": 5,
-        "API Modernization": 62,
+        "API Modernization": 63,
         "Rename Constant": 2,
         "Structural Refactoring": 3,
         "Extract Method Refactoring": 1,
@@ -3547,7 +3547,7 @@
         "Method call argument replacement": 1,
         "API Constant Renaming": 1,
         "API Renaming": 1,
-        "API Usage": 5,
+        "API Usage": 6,
         "String Comparison": 1,
         "Method Call Update": 1,
         "Return Value Refactoring": 1,
@@ -3649,7 +3649,9 @@
         "UI/Bidi Fix": 1,
         "Dead Code": 1,
         "API Usage Modernization": 1,
-        "Modifiers": 1
+        "Modifiers": 1,
+        "Constant Value Update": 1,
+        "Error Correction": 1
       },
       "exhaustedCategories": []
     },
@@ -3690,5 +3692,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 28779
+  "globalTotalProcessed": 28867
 }
