@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "31a3440ff2db285dc299e7f000890b12155830b0c109abe8cf3c7b3bbed1790d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: eclipse.refactoring.getIntermediaryTypeName*/\n/*!description: Replace getIntermediaryClassName() with getIntermediaryTypeName() in IntroduceIndirectionRefactoring.\nThis reflects a renaming from \u0027class\u0027 to \u0027type\u0027 in the refactoring\u0027s API.*/\n/*!severity: HINT*/\n$refactoring.getIntermediaryClassName() :: instanceof($refactoring, \"org.eclipse.jdt.internal.corext.refactoring.code.IntroduceIndirectionRefactoring\")\n\u003d\u003e $refactoring.getIntermediaryTypeName()\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.refactoring;\n\nimport org.eclipse.jdt.internal.corext.refactoring.code.IntroduceIndirectionRefactoring;\nimport org.eclipse.swt.widgets.Text;\n\npublic class IntroduceIndirectionInputPage {\n    private IntroduceIndirectionRefactoring getIntroduceIndirectionRefactoring() {\n        // Dummy implementation\n        return new IntroduceIndirectionRefactoring(null, null, null);\n    }\n    private Text fIntermediaryTypeName \u003d new Text(null, 0);\n\n    public void someMethod() {\n        fIntermediaryTypeName.setText(getIntroduceIndirectionRefactoring().getIntermediaryClassName());\n    }\n}\n\n// Dummy classes for compilation\nclass ASTRewrite {}\nclass RefactoringStatus { public boolean hasError() { return false; } }\nclass IProgressMonitor {}\n\npackage org.eclipse.jdt.internal.corext.refactoring.code;\n\nimport org.eclipse.jdt.core.IType;\n\n// Simplified for example\npublic class IntroduceIndirectionRefactoring {\n    public IntroduceIndirectionRefactoring(IType type, String methodName, String className) {}\n    public String getIntermediaryClassName() { return \"OldClassName\"; }\n    public String getIntermediaryTypeName() { return \"NewTypeName\"; }\n    public void setIntermediaryClassName(String name) {}\n    public void setIntermediaryTypeName(String name) {}\n    public boolean isEnabled() { return true; }\n    public RefactoringStatus checkInitialConditions(IProgressMonitor pm) { return new RefactoringStatus(); }\n    public RefactoringStatus checkFinalConditions(IProgressMonitor pm) { return new RefactoringStatus(); }\n    public ASTRewrite createChange(IProgressMonitor pm) { return null; }\n}\n\npackage org.eclipse.swt.widgets;\n// Minimal Text class for example compilation\npublic class Text {\n    public Text(Object parent, int style) {}\n    public void setText(String text) {}\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.refactoring;\n\nimport org.eclipse.jdt.internal.corext.refactoring.code.IntroduceIndirectionRefactoring;\nimport org.eclipse.swt.widgets.Text;\n\npublic class IntroduceIndirectionInputPage {\n    private IntroduceIndirectionRefactoring getIntroduceIndirectionRefactoring() {\n        // Dummy implementation\n        return new IntroduceIndirectionRefactoring(null, null, null);\n    }\n    private Text fIntermediaryTypeName \u003d new Text(null, 0);\n\n    public void someMethod() {\n        fIntermediaryTypeName.setText(getIntroduceIndirectionRefactoring().getIntermediaryTypeName());\n    }\n}\n\n// Dummy classes for compilation\nclass ASTRewrite {}\nclass RefactoringStatus { public boolean hasError() { return false; } }\nclass IProgressMonitor {}\n\npackage org.eclipse.jdt.internal.corext.refactoring.code;\n\nimport org.eclipse.jdt.core.IType;\n\n// Simplified for example\npublic class IntroduceIndirectionRefactoring {\n    public IntroduceIndirectionRefactoring(IType type, String methodName, String className) {}\n    public String getIntermediaryClassName() { return \"OldClassName\"; }\n    public String getIntermediaryTypeName() { return \"NewTypeName\"; }\n    public void setIntermediaryClassName(String name) {}\n    public void setIntermediaryTypeName(String name) {}\n    public boolean isEnabled() { return true; }\n    public RefactoringStatus checkInitialConditions(IProgressMonitor pm) { return new RefactoringStatus(); }\n    public RefactoringStatus checkFinalConditions(IProgressMonitor pm) { return new RefactoringStatus(); }\n    public ASTRewrite createChange(IProgressMonitor pm) { return null; }\n}\n\npackage org.eclipse.swt.widgets;\n// Minimal Text class for example compilation\npublic class Text {\n    public Text(Object parent, int style) {}\n    public void setText(String text) {}\n}\n",
+  "negativeExample": "package some.other.package;\n\nclass SomeOtherClass {\n    public String getIntermediaryClassName() {\n        return \"NotARefactoringClass\";\n    }\n\n    public void anotherMethod() {\n        SomeOtherClass instance \u003d new SomeOtherClass();\n        String name \u003d instance.getIntermediaryClassName(); // Should not match\n    }\n}\n",
+  "targetHintFile": "eclipse-refactoring.sandbox-hint",
+  "sourceCommit": "e01fd4fbc98253da7f6289cae92721071c39a317",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "API Modernization",
+  "summary": "Renames a getter method `getIntermediaryClassName()` to `getIntermediaryTypeName()` on instances of `IntroduceIndirectionRefactoring`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-14T02:29:55.289535962Z",
+  "ruleFingerprint": "sha256:b47c0b36201bebbd9b07f59c1d1717b4cf10da9df64b0517283196d630e498e1",
+  "behaviorFingerprint": "sha256:5e6e5dcea17b25c65687819ca5f08ca2b18925aa08d371fd9bf4d273267443dc",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
+    "verifiedAt": "2026-09-14T02:30:02.264488084Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

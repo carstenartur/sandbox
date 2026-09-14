@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0e38babbac0ff44f1eb431406e4e4d4b83fdaecb4740e6f013d1773c7a7ebcc2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jface.dialogs.MessageDialog.openError($shell, $title, $exception.getMessage())\n\u003d\u003e\norg.eclipse.jface.dialogs.MessageDialog.openError($shell, $title, $exception.getMessage() \u003d\u003d null ? $exception.toString() : $exception.getMessage())\n;;",
+  "beforeExample": "import org.eclipse.jface.dialogs.MessageDialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class Example {\n    public void handleError(Shell shell, String title, Exception e) {\n        MessageDialog.openError(shell, title, e.getMessage());\n    }\n}",
+  "afterExample": "import org.eclipse.jface.dialogs.MessageDialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class Example {\n    public void handleError(Shell shell, String title, Exception e) {\n        MessageDialog.openError(shell, title, e.getMessage() \u003d\u003d null ? e.toString() : e.getMessage());\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.dialogs.MessageDialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class Example {\n    public void handleOtherError(Shell shell, String title, Exception e) {\n        // This should not be changed as it provides a custom message\n        MessageDialog.openError(shell, title, \"An error occurred: \" + e.getLocalizedMessage());\n\n        // This should not be changed as it uses a different method\n        MessageDialog.openError(shell, title, e.getLocalizedMessage());\n\n        // This should not be changed if the third argument is not e.getMessage()\n        String customMsg \u003d \"Some info\";\n        MessageDialog.openError(shell, title, customMsg);\n    }\n}",
+  "targetHintFile": "exception-handling.sandbox-hint",
+  "sourceCommit": "9a40e9b46b8c83c3b667b958b53dcd2b58fec92a",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Error Handling",
+  "summary": "Replaces direct usage of `e.getMessage()` in `MessageDialog.openError` with a null-safe expression that falls back to `e.toString()` if `getMessage()` returns `null`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-14T02:29:55.231310066Z",
+  "ruleFingerprint": "sha256:73b1ae1ac573e51830353b37b8b0aba4532b5d39f4cf65a967aaa5599c37c4f4",
+  "behaviorFingerprint": "sha256:9a4d282a2d10480750f92a40cbb7dd12f71d073152ab26d9e46f29b05734e6d1",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.jface.dialogs cannot be resolved",
+    "verifiedAt": "2026-09-14T02:30:02.242423254Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

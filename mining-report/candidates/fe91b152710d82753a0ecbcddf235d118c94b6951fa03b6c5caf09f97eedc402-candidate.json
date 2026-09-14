@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "fe91b152710d82753a0ecbcddf235d118c94b6951fa03b6c5caf09f97eedc402",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: enum.unqualified.constant.switchcase\u003e\n\u003c!description: Replace qualified enum constant with unqualified constant in switch-case labels, where it is typically a compiler error (e.g., EnumClass.CONSTANT becomes CONSTANT).\u003e\n\u003c!severity: ERROR\u003e\n$qualifier.$constant :: parentMatches(\"case $labelExpression:\") \u0026\u0026 subtypeOf($qualifier, \"java.lang.Enum\") \u0026\u0026 elementKindMatches($constant, \"ENUM_CONSTANT\")\n\u003d\u003e $constant\n;;",
+  "beforeExample": "package com.example;\n\npublic class MyClass {\n    enum MyEnum { VALUE1, VALUE2, VALUE3 }\n\n    public void processEnum(MyEnum e) {\n        switch (e) {\n            case MyEnum.VALUE1: // This should match and be fixed\n                System.out.println(\"Value 1\");\n                break;\n            case VALUE2: // This should not match\n                System.out.println(\"Value 2\");\n                break;\n            default:\n                System.out.println(\"Other value\");\n        }\n        // This is a valid qualified access outside a case label and should NOT match\n        MyEnum val \u003d MyEnum.VALUE3;\n        System.out.println(val);\n    }\n    \n    public void otherMethod() {\n        // This is not an enum constant and should NOT match\n        String s \u003d System.out.toString();\n    }\n}",
+  "afterExample": "package com.example;\n\npublic class MyClass {\n    enum MyEnum { VALUE1, VALUE2, VALUE3 }\n\n    public void processEnum(MyEnum e) {\n        switch (e) {\n            case VALUE1: // Fixed by the rule\n                System.out.println(\"Value 1\");\n                break;\n            case VALUE2: // No change\n                System.out.println(\"Value 2\");\n                break;\n            default:\n                System.out.println(\"Other value\");\n        }\n        // No change\n        MyEnum val \u003d MyEnum.VALUE3;\n        System.out.println(val);\n    }\n    \n    public void otherMethod() {\n        // No change\n        String s \u003d System.out.toString();\n    }\n}",
+  "negativeExample": "package com.example;\n\npublic class MyClass {\n    enum MyEnum { VALUE1, VALUE2, VALUE3 }\n\n    public void processEnum(MyEnum e) {\n        switch (e) {\n            case VALUE1: // Already unqualified\n                System.out.println(\"Value 1\");\n                break;\n            case VALUE2: // Already unqualified\n                System.out.println(\"Value 2\");\n                break;\n            default:\n                System.out.println(\"Other value\");\n        }\n        // Valid qualified access outside switch-case, should not be touched\n        MyEnum val \u003d MyEnum.VALUE3;\n        System.out.println(val);\n    }\n    \n    public void otherMethod() {\n        // Not an enum constant access, should not be touched\n        System.out.println(\"Hello\");\n        String s \u003d System.out.toString();\n    }\n}",
+  "targetHintFile": "api-usage.sandbox-hint",
+  "sourceCommit": "5d8489cc77b5b4a988146501b33c35b84a263f76",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Error Correction",
+  "summary": "Replaces qualified enum constants (e.g., `MyEnum.VALUE`) with their unqualified simple names (`VALUE`) when used as case labels in a switch statement, addressing a common compiler error.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-14T02:29:55.340214567Z",
+  "ruleFingerprint": "sha256:a19b5dbd03467391f1d680654249f538cc56739c062426516cc9bb4034cc70b4",
+  "behaviorFingerprint": "sha256:7b7263ba55700e23ab487af4659e2e2fc1c3c61c21de501444fe1ef86f56b66b",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-14T02:30:02.289645160Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
