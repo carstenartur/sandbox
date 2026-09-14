@@ -76,11 +76,7 @@ public final class AggregateInstallationVerifier {
         Files.deleteIfExists(evidence.resolve("verification.properties"));
         Map<String, String> current = featureVersions(repository);
         require(current.containsKey(AGGREGATE), "The built repository has no aggregate IU");
-        for (Element repositories : children(read(root.resolve("pom.xml")), "repositories")) {
-            for (Element item : children(repositories, "repository")) {
-                if (text(item, "layout").equals("p2")) baseRepositories.add(text(item, "url"));
-            }
-        }
+        baseRepositories.addAll(provisioningRepositories(root));
         require(!baseRepositories.isEmpty(), "Missing target repositories");
         inventory = inventory();
         probe = compileProbe();
@@ -130,6 +126,15 @@ public final class AggregateInstallationVerifier {
         System.out.println("Aggregate installation, legacy migration and aggregate update: PASS");
     }
 
+    static List<String> provisioningRepositories(Path root) throws Exception {
+        return DistributionVerifier.targetRepositories(root.resolve("sandbox_target/eclipse.target"));
+    }
+
+    static List<String> platformArguments(String osName, String archName) throws Exception {
+        var platform = DistributionVerifier.Platform.from(osName, archName);
+        return List.of("-p2.os", platform.osgiOs(), "-p2.ws", platform.osgiWs(), "-p2.arch", platform.osgiArch());
+    }
+
     private void provisionStock(Path destination, String stage) throws Exception {
         var bootstrap = AggregateInstallationEvidence.read(latestProfile(builder));
         List<String> roots = new ArrayList<>();
@@ -149,10 +154,7 @@ public final class AggregateInstallationVerifier {
         List<String> arguments = new ArrayList<>(List.of("-repository", String.join(",", repositories),
                 "-destination", destination.toString(), "-bundlepool", destination.toString(),
                 "-profile", "SandboxAggregate", "-profileProperties", "org.eclipse.update.install.features=true", "-roaming"));
-        String os = System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT);
-        arguments.addAll(List.of("-p2.os", os.contains("win") ? "win32" : os.contains("mac") ? "macosx" : "linux",
-                "-p2.ws", os.contains("win") ? "win32" : os.contains("mac") ? "cocoa" : "gtk",
-                "-p2.arch", System.getProperty("os.arch").equals("aarch64") ? "aarch64" : "x86_64"));
+        arguments.addAll(platformArguments(System.getProperty("os.name", ""), System.getProperty("os.arch", "")));
         if (!uninstall.isEmpty()) arguments.addAll(List.of("-uninstallIU", String.join(",", uninstall)));
         if (!install.isEmpty()) arguments.addAll(List.of("-installIU", String.join(",", install)));
         run(builder, stage, DIRECTOR, arguments, Duration.ofMinutes(15));
@@ -433,9 +435,5 @@ public final class AggregateInstallationVerifier {
 
     private static Element read(Path file) throws Exception {
         try (InputStream input = Files.newInputStream(file)) { return xml(input); }
-    }
-
-    private static String text(Element parent, String name) {
-        return children(parent, name).stream().findFirst().map(element -> element.getTextContent().strip()).orElse("");
     }
 }
