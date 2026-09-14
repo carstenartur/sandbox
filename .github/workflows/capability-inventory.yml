@@ -12,6 +12,7 @@ on:
       - 'README.md'
       - 'sandbox_*/META-INF/MANIFEST.MF'
       - 'sandbox_*_feature/feature.xml'
+      - 'sandbox_feature/feature.xml'
       - 'sandbox_product/sandbox.product'
       - 'sandbox_updatesite/category.xml'
   push:
@@ -25,6 +26,7 @@ on:
       - 'README.md'
       - 'sandbox_*/META-INF/MANIFEST.MF'
       - 'sandbox_*_feature/feature.xml'
+      - 'sandbox_feature/feature.xml'
       - 'sandbox_product/sandbox.product'
       - 'sandbox_updatesite/category.xml'
 
