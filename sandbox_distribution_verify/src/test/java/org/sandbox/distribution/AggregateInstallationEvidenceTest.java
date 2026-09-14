@@ -64,6 +64,13 @@ class AggregateInstallationEvidenceTest {
     }
 
     @Test
+    void preservesLegacyRootsOnlyWhenExplicitlyExpected() throws Exception {
+        var profile = read(units(), properties(AGGREGATE, "true") + properties(COMPONENT, "true"));
+        AggregateInstallationEvidence.requireFeatures(profile, expected(), Set.of(AGGREGATE, COMPONENT));
+        assertThrows(IOException.class, () -> AggregateInstallationEvidence.requireFeatures(profile, expected(), Set.of(AGGREGATE)));
+    }
+
+    @Test
     void rejectsRootMarkerForAnUninstalledVersion() {
         assertThrows(IOException.class, () -> read(units(), properties(AGGREGATE, "true").replace("1.3.5", "1.3.4")));
     }

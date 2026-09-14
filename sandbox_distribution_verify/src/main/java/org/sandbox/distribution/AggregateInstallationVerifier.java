@@ -88,7 +88,7 @@ public final class AggregateInstallationVerifier {
         provisionStock(fresh, "fresh-stock");
         Map<String, String> stock = hostDigests(fresh);
         provision(fresh, "fresh-aggregate", List.of(repository.toString()), List.of(AGGREGATE + '/' + current.get(AGGREGATE)), List.of());
-        verifyStage(fresh, "fresh", current, stock);
+        verifyStage(fresh, "fresh", current, stock, Set.of(AGGREGATE));
 
         String next = nextFixtureVersion(current.get(AGGREGATE));
         URI nextRepository = publishNextAggregate(current.get(AGGREGATE), next);
@@ -96,7 +96,7 @@ public final class AggregateInstallationVerifier {
                 List.of(AGGREGATE + '/' + next), List.of(AGGREGATE + '/' + current.get(AGGREGATE)));
         Map<String, String> updated = new TreeMap<>(current);
         updated.put(AGGREGATE, next);
-        verifyStage(fresh, "updated", updated, stock);
+        verifyStage(fresh, "updated", updated, stock, Set.of(AGGREGATE));
 
         URI previousRepository = URI.create(System.getProperty("sandbox.aggregate.previousRepository", PREVIOUS_REPOSITORY));
         Map<String, String> previous = featureVersions(previousRepository);
@@ -108,10 +108,12 @@ public final class AggregateInstallationVerifier {
         List<String> previousRoots = previous.entrySet().stream().map(entry -> entry.getKey() + '/' + entry.getValue()).toList();
         provision(legacy, "legacy-components", List.of(previousRepository.toString()), previousRoots, List.of());
         AggregateInstallationEvidence.requireFeatures(profile(legacy, "legacy-components"), previous, previous.keySet());
-        // One planner/engine transaction: replace roots, never uninstall in a separate run.
+        // One planner/engine transaction: update versions, never uninstall in a separate run.
         provision(legacy, "legacy-to-aggregate", List.of(repository.toString()),
                 List.of(AGGREGATE + '/' + current.get(AGGREGATE)), previousRoots);
-        verifyStage(legacy, "migrated", current, legacyStock);
+        Set<String> legacyRoots = new TreeSet<>(previous.keySet());
+        legacyRoots.add(AGGREGATE);
+        verifyStage(legacy, "migrated", current, legacyStock, legacyRoots);
 
         records.put("previousRepository", previousRepository.toString());
         records.put("previousFeatureCount", Integer.toString(previous.size()));
@@ -156,9 +158,11 @@ public final class AggregateInstallationVerifier {
         run(builder, stage, DIRECTOR, arguments, Duration.ofMinutes(15));
     }
 
-    private void verifyStage(Path installation, String stage, Map<String, String> versions, Map<String, String> stock) throws Exception {
+    private void verifyStage(Path installation, String stage, Map<String, String> versions,
+            Map<String, String> stock, Set<String> expectedRoots) throws Exception {
         Path home = home(installation);
-        AggregateInstallationEvidence.requireFeatures(profile(installation, stage), versions, Set.of(AGGREGATE));
+        AggregateInstallationEvidence.requireFeatures(profile(installation, stage), versions, expectedRoots);
+        records.put(stage + ".sandboxRoots", String.join(",", new TreeSet<>(expectedRoots)));
         Map<String, String> actualHosts = hostDigests(installation);
         require(actualHosts.equals(stock), "Aggregate replaced a stock JDT/LTK host in " + stage);
         actualHosts.forEach((id, hash) -> records.put(stage + ".host." + id + ".sha256", hash));

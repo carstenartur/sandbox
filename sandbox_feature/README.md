@@ -60,12 +60,20 @@ an XML-cleanup test fixture is not an end-user feature.
 ## Existing individual installations
 
 A previous individual-feature installation has several explicit p2 roots.
-Installing the aggregate should not be confused with automatically removing those
-old roots. The automated migration check replaces the previous Sandbox component
-roots with the aggregate in **one p2 director transaction**, using `-uninstallIU`
-for the old root/version pairs and `-installIU` for the new aggregate/version.
-Never split that operation into uninstall and install runs. Other installed
-software and workspace data are not removed by the test.
+Installing the aggregate does not erase the user's previous component selections.
+The automated migration check updates the previous component versions and adds
+the aggregate in **one p2 director transaction**, using `-uninstallIU` for the old
+root/version pairs and `-installIU` for the new aggregate/version. Never split
+that operation into separate uninstall and install runs. p2 preserves the old
+component root flags while upgrading their versions; the verifier expects those
+exact historical roots plus the aggregate. It still rejects missing, duplicate,
+stale or unexpected component versions. No profile metadata is forcibly edited.
+
+A fresh installation and its aggregate update have only one Sandbox root. An
+upgraded legacy installation can retain individual entries in Installed Software;
+this does not require additional Marketplace listing entries. The single-entry
+maintenance requirement concerns the Marketplace catalog, not rewriting the
+installation history of existing users.
 
 The regression uses the published **1.3.4** component repository and the currently
 supported stock Eclipse baseline. Older Eclipse hosts still need to meet the new
@@ -93,11 +101,13 @@ Java verification then performs:
    migration, with no missing, duplicated or stale component feature versions.
 
 Each resulting installation is checked through its actual current p2 profile,
-not cached feature folders. The stock JDT/LTK host hashes must stay unchanged.
-A temporary Equinox probe resolves the expected bundles, instantiates registered
-cleanups and checks Help TOC content against the source inventory. The probe is
-not published and its configuration insertion is reverted byte-for-byte. A real
-packaged cleanup is executed and its output is compiled in all three scenarios.
+not cached feature folders. Root expectations distinguish fresh installations
+from preserved legacy selections. The stock JDT/LTK host hashes must stay
+unchanged. A temporary Equinox probe resolves the expected bundles, instantiates
+registered cleanups and checks Help TOC content against the source inventory.
+The probe is not published and its configuration insertion is reverted
+byte-for-byte. A real packaged cleanup is executed and its output is compiled
+in all three scenarios.
 
 Evidence is retained under `target/distribution-verification/aggregate/`, including
 profiles, commands, logs, runtime JSON and `verification.properties`. Acceptance
@@ -107,7 +117,7 @@ is not sufficient if the subsequent aggregate gate fails.
 
 Source membership/version/delivery checks are in `SandboxAggregateFeatureTest`.
 `AggregateInstallationEvidenceTest` covers profile parsing and negative cases
-including missing/stale components, duplicates and extra roots.
+including missing/stale components, duplicates and incorrect roots.
 
 ## Eclipse references
 
