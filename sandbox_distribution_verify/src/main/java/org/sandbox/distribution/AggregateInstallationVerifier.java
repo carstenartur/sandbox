@@ -5,6 +5,8 @@
 package org.sandbox.distribution;
 
 import static org.sandbox.distribution.AggregateInstallationEvidence.children;
+import static org.sandbox.distribution.AggregateInstallationEvidence.createParentDirectories;
+import static org.sandbox.distribution.AggregateInstallationEvidence.fileName;
 import static org.sandbox.distribution.AggregateInstallationEvidence.require;
 import static org.sandbox.distribution.AggregateInstallationEvidence.xml;
 
@@ -194,7 +196,7 @@ public final class AggregateInstallationVerifier {
     private void cleanupSmoke(Path home, String stage) throws Exception {
         Path project = work.resolve(stage + "-input/SmokeProject");
         Path source = project.resolve("src/smoke/Smoke.java");
-        Files.createDirectories(source.getParent());
+        createParentDirectories(source);
         String before = "package smoke;public class Smoke{void run(){System.out.println(\"smoke\");}}";
         Files.writeString(source, before);
         Files.writeString(project.resolve(".project"), """
@@ -240,7 +242,7 @@ public final class AggregateInstallationVerifier {
                 require(output.startsWith(feature), "Unsafe feature entry");
                 if (entry.isDirectory()) Files.createDirectories(output);
                 else {
-                    Files.createDirectories(output.getParent());
+                    createParentDirectories(output);
                     try (InputStream stream = archive.getInputStream(entry)) { Files.copy(stream, output); }
                 }
             }
@@ -346,7 +348,7 @@ public final class AggregateInstallationVerifier {
         Path registry = home.resolve("p2/org.eclipse.equinox.p2.engine/profileRegistry");
         try (var files = Files.walk(registry, 2)) {
             return files.filter(Files::isRegularFile).filter(path -> path.toString().endsWith(".profile") || path.toString().endsWith(".profile.gz"))
-                    .max(Comparator.comparingLong(path -> Long.parseLong(path.getFileName().toString().split("\\.")[0])))
+                    .max(Comparator.comparingLong(path -> Long.parseLong(fileName(path).split("\\.")[0])))
                     .orElseThrow(() -> new IOException("No p2 profile in " + registry));
         }
     }
@@ -356,7 +358,7 @@ public final class AggregateInstallationVerifier {
         Path home = home(installation);
         for (String id : List.of("org.eclipse.jdt.ui", "org.eclipse.ltk.core.refactoring", "org.eclipse.ltk.ui.refactoring")) {
             try (var files = Files.list(home.resolve("plugins"))) {
-                List<Path> matches = files.filter(path -> path.getFileName().toString().startsWith(id + '_')).toList();
+                List<Path> matches = files.filter(path -> fileName(path).startsWith(id + '_')).toList();
                 require(matches.size() == 1, "Ambiguous stock host " + id);
                 result.put(id, digest(matches.getFirst()));
             }
@@ -388,7 +390,7 @@ public final class AggregateInstallationVerifier {
         if (System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT).contains("mac")) command.add("-XstartOnFirstThread");
         Path launcher;
         try (var files = Files.list(home.resolve("plugins"))) {
-            List<Path> candidates = files.filter(path -> path.getFileName().toString().startsWith("org.eclipse.equinox.launcher_") && path.toString().endsWith(".jar")).toList();
+            List<Path> candidates = files.filter(path -> fileName(path).startsWith("org.eclipse.equinox.launcher_") && path.toString().endsWith(".jar")).toList();
             require(candidates.size() == 1, "Ambiguous Eclipse launcher");
             launcher = candidates.getFirst();
         }

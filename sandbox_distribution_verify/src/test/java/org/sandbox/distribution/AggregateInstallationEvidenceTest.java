@@ -5,7 +5,9 @@
 package org.sandbox.distribution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -101,6 +103,44 @@ class AggregateInstallationEvidenceTest {
         try (var stream = new ByteArrayInputStream(input)) {
             assertThrows(SAXParseException.class, () -> AggregateInstallationEvidence.xml(stream));
         }
+    }
+
+    @Test
+    void readsFileNamesFromAbsoluteAndRelativeEvidencePaths() {
+        assertEquals("metadata.jar", AggregateInstallationEvidence.fileName(temporary.resolve("metadata.jar")));
+        assertEquals("metadata.jar", AggregateInstallationEvidence.fileName(Path.of("metadata.jar")));
+    }
+
+    @Test
+    void rejectsRootWithoutAFileName() {
+        Path root = temporary.toAbsolutePath().getRoot();
+        var failure = assertThrows(IllegalArgumentException.class, () -> AggregateInstallationEvidence.fileName(root));
+        assertEquals("Expected a file name: " + root, failure.getMessage());
+    }
+
+    @Test
+    void createsOnlyParentDirectoriesAndAllowsExistingParents() throws Exception {
+        Path file = temporary.resolve("nested/evidence/feature.xml");
+        AggregateInstallationEvidence.createParentDirectories(file);
+        AggregateInstallationEvidence.createParentDirectories(file);
+        assertTrue(Files.isDirectory(temporary.resolve("nested/evidence")));
+        assertFalse(Files.exists(file));
+    }
+
+    @Test
+    void rejectsEvidencePathsWithoutParentDirectories() {
+        for (Path file : new Path[] { Path.of("feature.xml"), temporary.toAbsolutePath().getRoot() }) {
+            var failure = assertThrows(IOException.class, () -> AggregateInstallationEvidence.createParentDirectories(file));
+            assertEquals("Expected a parent directory: " + file, failure.getMessage());
+        }
+    }
+
+    @Test
+    void parentCreationErrorsRemainFailuresWithoutChangingExistingFiles() throws Exception {
+        Path existing = temporary.resolve("not-a-directory");
+        Files.writeString(existing, "preserve");
+        assertThrows(IOException.class, () -> AggregateInstallationEvidence.createParentDirectories(existing.resolve("feature.xml")));
+        assertEquals("preserve", Files.readString(existing));
     }
 
     private AggregateInstallationEvidence.Profile read(String units, String roots) throws Exception {

@@ -98,6 +98,18 @@ final class AggregateInstallationEvidence {
         return result;
     }
 
+    static String fileName(Path file) {
+        Path name = file.getFileName();
+        if (name == null) throw new IllegalArgumentException("Expected a file name: " + file);
+        return name.toString();
+    }
+
+    static void createParentDirectories(Path file) throws IOException {
+        Path parent = file.getParent();
+        if (parent == null) throw new IOException("Expected a parent directory: " + file);
+        Files.createDirectories(parent);
+    }
+
     static Element xml(InputStream stream) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
