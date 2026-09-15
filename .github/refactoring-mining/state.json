@@ -1,9 +1,9 @@
 {
   "repositories": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "lastProcessedCommit": "3b7d70e8f9596d238f32f79c2481303a5cc11bb9",
-      "lastProcessedDate": "2026-08-18T04:26:42.127818179Z",
-      "totalProcessed": 10109,
+      "lastProcessedCommit": "50c2ad63d56d3ff9ef37562642eb3e89c5fc8d0e",
+      "lastProcessedDate": "2026-09-15T02:27:31.775950888Z",
+      "totalProcessed": 10141,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -158,6 +158,15 @@
           "deferredAt": "2026-02-25T04:27:03.794684674Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "96b5ffb4e3dc308d677e07d2de6f445a638ea0c0",
+          "message": "Remove long deprecated and unused keybinding API",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-15T02:27:19.213600507Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -167,7 +176,9 @@
       "completedEpochs": [],
       "categoryHitCounts": {
         "Resource Management": 1,
-        "Code Simplification": 1
+        "Code Simplification": 1,
+        "String Modernization": 1,
+        "API Modernization": 2
       },
       "exhaustedCategories": []
     },
@@ -1195,9 +1206,8 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-jdt/eclipse.jdt.ui": {
-      "lastProcessedCommit": "5b301745c7685ceba258e9a30d4566be657a6063",
-      "lastProcessedDate": "2026-09-14T02:29:53.902636988Z",
-      "totalProcessed": 6096,
+      "lastProcessedDate": "2026-09-15T02:25:05.727603771Z",
+      "totalProcessed": 6179,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3368,15 +3378,43 @@
           "deferredAt": "2026-09-12T02:36:01.940421502Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "fd1973006b8d69c372d0b6fa2cbd79fe8d6cc3fe",
+          "message": "Bug 428741: [1.8][quick assist] convert method reference expression to lambda Bug 439601: [1.8][quick assist] convert la",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-15T02:23:11.827254007Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1b13ce6e2dc460ae0f013e8f4bce09d80c82a836",
+          "message": "Bug 452134 - Add org.eclipse.jdt.ui plugin to General \u003e Tracing preference page",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-15T02:24:22.620567031Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0d974018ed578a4e9b21cc31f3028688732f99da",
+          "message": "Bug 91104: [hovering] Javadoc hover does not show Javadoc of (type) parameters",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-15T02:24:22.625283460Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 2,
+      "currentEpoch": 3,
       "completedEpochs": [
         "2020-01-01 to 2026-01-01",
-        "2015-01-01 to 2020-01-01"
+        "2015-01-01 to 2020-01-01",
+        "2010-01-01 to 2015-01-01"
       ],
       "categoryHitCounts": {
         "Eclipse Specific": 1,
@@ -3431,7 +3469,7 @@
         "Algorithm/Sorting Logic": 1,
         "Exception Handling": 1,
         "UI Feature Implementation": 1,
-        "Refactoring": 6,
+        "Refactoring": 7,
         "Concurrency / Thread-Safety": 2,
         "JDT UI Feature": 2,
         "JDT UI Internal Refactoring": 1,
@@ -3540,7 +3578,7 @@
         "Type Mismatch Cleanup": 1,
         "API usage": 2,
         "UI Color Management": 1,
-        "Expression Simplification": 2,
+        "Expression Simplification": 3,
         "API Fix": 1,
         "API Misuse Correction": 2,
         "readability": 1,
@@ -3651,7 +3689,11 @@
         "API Usage Modernization": 1,
         "Modifiers": 1,
         "Constant Value Update": 1,
-        "Error Correction": 1
+        "Error Correction": 1,
+        "Redundant Cast": 1,
+        "Visibility Change": 1,
+        "Modifier Cleanup": 1,
+        "Code Safety": 1
       },
       "exhaustedCategories": []
     },
@@ -3692,5 +3734,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 28867
+  "globalTotalProcessed": 28982
 }
