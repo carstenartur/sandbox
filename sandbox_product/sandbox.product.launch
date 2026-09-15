@@ -34,6 +34,7 @@
     <booleanAttribute key="useDefaultConfigArea" value="true" />
     <booleanAttribute key="useProduct" value="true" />
     <setAttribute key="selected_features">
+        <setEntry value="sandbox_feature:default" />
         <setEntry value="org.eclipse.emf.ecore:default" />
         <setEntry value="org.eclipse.emf.common:default" />
         <setEntry value="org.eclipse.help:default" />
@@ -66,6 +67,7 @@
         <setEntry value="org.eclipse.platform:default" />
     </setAttribute>
     <setAttribute key="root_features">
+        <setEntry value="sandbox_feature" />
         <setEntry value="org.eclipse.emf.ecore" />
         <setEntry value="org.eclipse.emf.common" />
         <setEntry value="org.eclipse.help" />

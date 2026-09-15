@@ -103,7 +103,7 @@ public final class DistributionVerifier {
         List<String> pomRepositories = childTexts(pom, "repository", "url").stream()
                 .filter(url -> "p2".equals(repositoryLayout(pom, url)))
                 .toList();
-        List<String> targetRepositories = attributeValues(target, "repository", "location");
+        List<String> targetRepositories = targetRepositories(target);
         List<String> productRepositories = directChildAttributeValues(
                 product.getDocumentElement(), "repositories", "repository", "location");
 
@@ -767,13 +767,21 @@ public final class DistributionVerifier {
         return properties;
     }
 
-    private Document parseXml(Path path) throws Exception {
+    static List<String> targetRepositories(Path targetFile) throws Exception {
+        return targetRepositories(parseXml(targetFile));
+    }
+
+    private static List<String> targetRepositories(Document target) {
+        return attributeValues(target, "repository", "location");
+    }
+
+    private static Document parseXml(Path path) throws Exception {
         try (InputStream stream = Files.newInputStream(path)) {
             return parseXml(stream);
         }
     }
 
-    private Document parseXml(InputStream stream) throws Exception {
+    private static Document parseXml(InputStream stream) throws Exception {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
@@ -784,7 +792,7 @@ public final class DistributionVerifier {
         return factory.newDocumentBuilder().parse(stream);
     }
 
-    private List<Element> elements(Document document, String localName) {
+    private static List<Element> elements(Document document, String localName) {
         NodeList nodes = document.getElementsByTagNameNS("*", localName);
         List<Element> result = new ArrayList<>(nodes.getLength());
         for (int index = 0; index < nodes.getLength(); index++) {
@@ -853,7 +861,7 @@ public final class DistributionVerifier {
         return result;
     }
 
-    private List<String> attributeValues(Document document, String elementName, String attribute) {
+    private static List<String> attributeValues(Document document, String elementName, String attribute) {
         return elements(document, elementName).stream()
                 .map(element -> element.getAttribute(attribute))
                 .filter(value -> !value.isBlank())
@@ -1013,10 +1021,14 @@ public final class DistributionVerifier {
     private record ProcessResult(int exitCode, boolean timedOut) {
     }
 
-    private record Platform(String osgiOs, String osgiWs, String osgiArch) {
+    record Platform(String osgiOs, String osgiWs, String osgiArch) {
         static Platform current() throws VerificationException {
-            String osName = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
-            String archName = System.getProperty("os.arch", "").toLowerCase(Locale.ROOT);
+            return from(System.getProperty("os.name", ""), System.getProperty("os.arch", ""));
+        }
+
+        static Platform from(String osName, String archName) throws VerificationException {
+            osName = osName.toLowerCase(Locale.ROOT);
+            archName = archName.toLowerCase(Locale.ROOT);
             String arch = switch (archName) {
                 case "amd64", "x86_64" -> "x86_64";
                 case "aarch64", "arm64" -> "aarch64";

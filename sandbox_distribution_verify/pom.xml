@@ -53,6 +53,21 @@
 							<cleanupDaemonThreads>false</cleanupDaemonThreads>
 						</configuration>
 						</execution>
+					<execution>
+						<id>verify-aggregate-installation</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>java</goal>
+						</goals>
+						<configuration>
+							<mainClass>org.sandbox.distribution.AggregateInstallationVerifier</mainClass>
+							<arguments>
+								<argument>${maven.multiModuleProjectDirectory}</argument>
+							</arguments>
+							<classpathScope>runtime</classpathScope>
+							<cleanupDaemonThreads>false</cleanupDaemonThreads>
+						</configuration>
+					</execution>
 				</executions>
 			</plugin>
 		</plugins>
