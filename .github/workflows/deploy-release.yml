@@ -189,6 +189,8 @@ jobs:
             -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
           mvn -f sandbox-maven-plugin/pom.xml versions:set \
             -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
+          mvn -f sandbox_oomph/pom.xml versions:set \
+            -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
 
           actual=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version | tail -n 1)
           if [[ "$actual" != "$RELEASE_VERSION" ]]; then
@@ -511,6 +513,8 @@ jobs:
           mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set \
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
           mvn -f sandbox-maven-plugin/pom.xml versions:set \
+            -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
+          mvn -f sandbox_oomph/pom.xml versions:set \
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
           sed -i "s/next.release.version=.*/next.release.version=${NEXT_RELEASE}/" release.properties
 
