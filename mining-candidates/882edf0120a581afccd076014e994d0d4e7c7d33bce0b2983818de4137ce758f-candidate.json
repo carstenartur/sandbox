@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "882edf0120a581afccd076014e994d0d4e7c7d33bce0b2983818de4137ce758f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n@id: change.method.visibility.privateToProtected\n@description: Changes a method\u0027s visibility from private to protected.\n@tags: visibility, access-modifier\n*/\nprivate $ReturnType $methodName($params$)\n\u003d\u003e\nprotected $ReturnType $methodName($params$)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.text.template.contentassist;\n\nimport java.util.ArrayList;\nimport org.eclipse.jdt.internal.ui.JavaPluginImages;\nimport org.eclipse.jdt.internal.ui.text.template.JavaContextType;\nimport org.eclipse.jdt.internal.ui.text.template.SWTContextType;\nimport org.eclipse.jface.text.templates.TemplateContextType;\nimport org.eclipse.jface.text.templates.TemplateProposal;\nimport org.eclipse.swt.graphics.Image;\n\npublic class TemplateEngine {\n    private TemplateContextType fContextType;\n    private ArrayList\u003cTemplateProposal\u003e fProposals;\n\n    private TemplateContextType getContextType() {\n        return fContextType;\n    }\n\n    private ArrayList\u003cTemplateProposal\u003e getProposals() {\n        return fProposals;\n    }\n\n    private Image getImage() {\n        if (fContextType instanceof SWTContextType)\n            return JavaPluginImages.get(JavaPluginImages.IMG_OBJS_SWT_TEMPLATE);\n        else\n            return JavaPluginImages.get(JavaPluginImages.IMG_OBJS_TEMPLATE);\n    }\n\n    public void someOtherMethod() { }\n}\n",
+  "afterExample": "package org.eclipse.jdt.internal.ui.text.template.contentassist;\n\nimport java.util.ArrayList;\nimport org.eclipse.jdt.internal.ui.JavaPluginImages;\nimport org.eclipse.jdt.internal.ui.text.template.JavaContextType;\nimport org.eclipse.jdt.internal.ui.text.template.SWTContextType;\nimport org.eclipse.jface.text.templates.TemplateContextType;\nimport org.eclipse.jface.text.templates.TemplateProposal;\nimport org.eclipse.swt.graphics.Image;\n\npublic class TemplateEngine {\n    private TemplateContextType fContextType;\n    private ArrayList\u003cTemplateProposal\u003e fProposals;\n\n    protected TemplateContextType getContextType() {\n        return fContextType;\n    }\n\n    protected ArrayList\u003cTemplateProposal\u003e getProposals() {\n        return fProposals;\n    }\n\n    protected Image getImage() {\n        if (fContextType instanceof SWTContextType)\n            return JavaPluginImages.get(JavaPluginImages.IMG_OBJS_SWT_TEMPLATE);\n        else\n            return JavaPluginImages.get(JavaPluginImages.IMG_OBJS_TEMPLATE);\n    }\n\n    public void someOtherMethod() { }\n}\n",
+  "negativeExample": "package org.eclipse.jdt.internal.ui.text.template.contentassist;\n\nimport java.util.ArrayList;\nimport org.eclipse.jface.text.templates.TemplateProposal;\n\npublic class AnotherClass {\n\n    // Should not match public method\n    public String getPublicString() {\n        return \"hello\";\n    }\n\n    // Should not match static private method\n    private static int calculateValue() {\n        return 10;\n    }\n\n    // Should not match a protected method (already protected)\n    protected ArrayList\u003cTemplateProposal\u003e getProtectedProposals() {\n        return new ArrayList\u003c\u003e();\n    }\n\n    // Should not match a method with a different modifier (e.g., package-private)\n    String getPackagePrivateString() {\n        return \"package\";\n    }\n}\n",
+  "targetHintFile": "visibility.sandbox-hint",
+  "sourceCommit": "2a4886c69e3ac30b76571020a4c1e87694106c8b",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Visibility Change",
+  "summary": "Changes the visibility of a private instance method to protected.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-15T02:27:33.286294140Z",
+  "ruleFingerprint": "sha256:4672376cd7ada943591e17557ec92d274e9785c2b599e1d6b4534606961f3f15",
+  "behaviorFingerprint": "sha256:a2790aaba5a31f5a1a341427c1e074f8c194f507d614075af6aa52c7cf2eb63b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui.JavaPluginImages cannot be resolved",
+    "verifiedAt": "2026-09-15T02:27:39.417630360Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

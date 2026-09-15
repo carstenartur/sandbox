@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "14a451bbb79a81e0f779a772c68eeab74c28f80ba3a7e6e9b2a6866052563c06",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "getHeaderFlags($member)\n:: inClass(\"org.eclipse.jdt.internal.ui.infoviews.JavadocView\")\n\u003d\u003e org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover.getHeaderFlags($member)\n;;",
+  "beforeExample": "package org.eclipse.jdt.internal.ui.infoviews;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.internal.ui.JavaElementLabels;\nimport org.eclipse.jdt.internal.ui.javaeditor.JavaElementLinks;\n\npublic class JavadocView {\n    // Original internal constants that JavadocHover would eventually encapsulate\n    private static final long LABEL_FLAGS \u003d JavaElementLabels.ALL_FULLY_QUALIFIED;\n    private static final long LOCAL_VARIABLE_FLAGS \u003d LABEL_FLAGS;\n    private static final long TYPE_PARAMETER_FLAGS \u003d LABEL_FLAGS;\n    private static final long PACKAGE_FLAGS \u003d LABEL_FLAGS;\n\n    public String getInfoText(IJavaElement member) {\n        // This is the line we want to match\n        return JavaElementLinks.getElementLabel(member, getHeaderFlags(member));\n    }\n\n    // The method being refactored out of this class\n    private long getHeaderFlags(IJavaElement element) {\n        switch (element.getElementType()) {\n            case IJavaElement.LOCAL_VARIABLE:\n                return LOCAL_VARIABLE_FLAGS;\n            case IJavaElement.TYPE_PARAMETER:\n                return TYPE_PARAMETER_FLAGS;\n            case IJavaElement.PACKAGE_FRAGMENT:\n                return PACKAGE_FLAGS;\n            default:\n                return LABEL_FLAGS;\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.jdt.internal.ui.infoviews;\n\nimport org.eclipse.jdt.core.IJavaElement;\nimport org.eclipse.jdt.internal.ui.javaeditor.JavaElementLinks;\nimport org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover; // New import automatically added\n\npublic class JavadocView {\n    // Original constants and the private getHeaderFlags method are removed from here\n\n    public String getInfoText(IJavaElement member) {\n        // After transformation, calling the static method\n        return JavaElementLinks.getElementLabel(member, JavadocHover.getHeaderFlags(member));\n    }\n}\n\n// Assumed external context: JavadocHover now contains the static method\n// package org.eclipse.jdt.internal.ui.text.java.hover;\n// public class JavadocHover {\n//     public static long getHeaderFlags(IJavaElement element) { /* ... logic ... */ return 0L; }\n// }",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.jdt.core.IJavaElement;\n\npublic class AnotherClass {\n    public long getHeaderFlags(IJavaElement element) {\n        // This is a different method with the same name in another class\n        return 0L;\n    }\n\n    public String someMethod(IJavaElement member) {\n        // This call should not be matched by the rule due to the inClass guard\n        return \"Label: \" + getHeaderFlags(member);\n    }\n}",
+  "targetHintFile": "javadoc.sandbox-hint",
+  "sourceCommit": "64e811de299e3f52922f686dff8e1398e8c6e6c3",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Refactoring",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-15T02:27:33.321423261Z",
+  "ruleFingerprint": "sha256:77d3777da37152a252032964c230c81ecc067a4cf7902edd647f4268281d4ffd",
+  "behaviorFingerprint": "sha256:6b186f7ec882e5b8e0b5f7170a29762f4356744623d33fa9ec6417ffcb9ff1ea",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui.JavaElementLabels cannot be resolved",
+    "verifiedAt": "2026-09-15T02:27:39.444401522Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

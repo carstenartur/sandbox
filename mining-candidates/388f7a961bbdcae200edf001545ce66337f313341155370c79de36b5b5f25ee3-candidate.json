@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "388f7a961bbdcae200edf001545ce66337f313341155370c79de36b5b5f25ee3",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: java.lang.Thread.getId-to-threadId\u003e\n\u003c!description: Replaces java.lang.Thread.getId() with java.lang.Thread.threadId() as getId() is deprecated for removal since Java 19 and threadId() provides the same functionality. This cleanup is only applied if the target expression is explicitly of type java.lang.Thread.\n\u003e\n\u003c!severity: WARNING\u003e\n\u003c!minJavaVersion: 19\u003e\n\n$x.getId() :: sourceVersionGE(19) \u0026\u0026 instanceof($x, \"java.lang.Thread\")\n\u003d\u003e $x.threadId()\n;;",
+  "beforeExample": "import java.lang.Thread;\n\nclass MyDisplay {\n    private Thread thread;\n    public MyDisplay(Thread t) { this.thread \u003d t; }\n    public Thread getThread() { return thread; }\n    public static MyDisplay getDefault() { return new MyDisplay(Thread.currentThread()); }\n}\n\npublic class TestClass {\n    public void method() {\n        Thread nonUiThread \u003d Thread.currentThread();\n        MyDisplay display \u003d MyDisplay.getDefault();\n        \n        long id1 \u003d nonUiThread.getId();\n        long id2 \u003d display.getThread().getId();\n        \n        if (id1 \u003d\u003d id2) {\n            System.out.println(\"IDs match\");\n        }\n    }\n}",
+  "afterExample": "import java.lang.Thread;\n\nclass MyDisplay {\n    private Thread thread;\n    public MyDisplay(Thread t) { this.thread \u003d t; }\n    public Thread getThread() { return thread; }\n    public static MyDisplay getDefault() { return new MyDisplay(Thread.currentThread()); }\n}\n\npublic class TestClass {\n    public void method() {\n        Thread nonUiThread \u003d Thread.currentThread();\n        MyDisplay display \u003d MyDisplay.getDefault();\n        \n        long id1 \u003d nonUiThread.threadId();\n        long id2 \u003d display.getThread().threadId();\n        \n        if (id1 \u003d\u003d id2) {\n            System.out.println(\"IDs match\");\n        }\n    }\n}",
+  "negativeExample": "import java.lang.Thread;\n\nclass MyObject {\n    private long id;\n    public MyObject(long id) { this.id \u003d id; }\n    public long getId() { return id; } // This getId() method should not be replaced\n}\n\npublic class NegativeTestClass {\n    public void method() {\n        MyObject obj \u003d new MyObject(123L);\n        long someId \u003d obj.getId(); \n        System.out.println(\"MyObject ID: \" + someId);\n    }\n}",
+  "targetHintFile": "modernize-java19+.sandbox-hint",
+  "sourceCommit": "aede34103616f47826e12d09a2e03d03540c2a6e",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.ui",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-15T02:27:33.355323867Z",
+  "ruleFingerprint": "sha256:c794101a26767588d1591169174600858204a41a21e581fe5ee7a6ce1013f5c8",
+  "behaviorFingerprint": "sha256:7a83c60ec5b2b825644d80f638f2fda5cc5ce79041dae00da02e86141dc1cdfd",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-15T02:27:39.481407283Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
