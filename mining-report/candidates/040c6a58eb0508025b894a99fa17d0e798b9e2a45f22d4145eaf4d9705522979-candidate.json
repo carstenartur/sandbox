@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 6: The public type Example0 must be defined in its own file",
-    "verifiedAt": "2026-09-14T02:30:00.490268838Z",
+    "verifiedAt": "2026-09-15T02:27:37.909020025Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e7b0be676fed5252cbeb68c27372459b4cb791c44199e4ee990de79025fca452",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.core.runtime.Platform.run($arg$)\n\u003d\u003e\norg.eclipse.core.runtime.SafeRunner.run($arg$)\n;;",
+  "beforeExample": "package org.eclipse.myplugin;\n\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.jface.util.SafeRunnable;\n\n// Dummy classes/interfaces for compilation context\ninterface CoreException {}\ninterface IConfigurationElement {}\ninterface IBaseLabelProvider {}\ninterface ILabelDecorator {}\nclass NLS { public static String bind(String message, Object... args) { return message; } }\nclass WorkbenchMessages { public static String DecoratorManager_ErrorActivatingDecorator \u003d \"Error activating decorator {0}\"; }\n\npublic class MyClass {\n    private String name \u003d \"Test\";\n\n    public String getName() { return name; }\n\n    public ILabelDecorator getDecorator() throws CoreException {\n        ILabelDecorator decorator \u003d null;\n        if (decorator \u003d\u003d null) {\n            Platform.run(\n                    new SafeRunnable(NLS.bind(WorkbenchMessages.DecoratorManager_ErrorActivatingDecorator, getName())) {\n                        @Override\n                        public void run() {\n                            System.out.println(\"Running Platform.run\");\n                        }\n                    });\n        }\n        return decorator;\n    }\n}\n\n// Minimal dummy Platform class for compilation\nclass Platform {\n    public static void run(java.lang.Runnable runnable) { /* simulates old Platform.run */ }\n}",
+  "afterExample": "package org.eclipse.myplugin;\n\nimport org.eclipse.core.runtime.SafeRunner;\nimport org.eclipse.jface.util.SafeRunnable;\n\n// Dummy classes/interfaces for compilation context\ninterface CoreException {}\ninterface IConfigurationElement {}\ninterface IBaseLabelProvider {}\ninterface ILabelDecorator {}\nclass NLS { public static String bind(String message, Object... args) { return message; } }\nclass WorkbenchMessages { public static String DecoratorManager_ErrorActivatingDecorator \u003d \"Error activating decorator {0}\"; }\n\npublic class MyClass {\n    private String name \u003d \"Test\";\n\n    public String getName() { return name; }\n\n    public ILabelDecorator getDecorator() throws CoreException {\n        ILabelDecorator decorator \u003d null;\n        if (decorator \u003d\u003d null) {\n            SafeRunner.run(\n                    new SafeRunnable(NLS.bind(WorkbenchMessages.DecoratorManager_ErrorActivatingDecorator, getName())) {\n                        @Override\n                        public void run() {\n                            System.out.println(\"Running SafeRunner.run\");\n                        }\n                    });\n        }\n        return decorator;\n    }\n}\n\n// Minimal dummy SafeRunner class for compilation\nclass SafeRunner {\n    public static void run(java.lang.Runnable runnable) { /* simulates new SafeRunner.run */ }\n}",
+  "negativeExample": "package org.eclipse.myplugin;\n\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.jface.util.SafeRunnable;\n\n// Dummy classes/interfaces for compilation context\ninterface CoreException {}\ninterface IConfigurationElement {}\ninterface IBaseLabelProvider {}\ninterface ILabelDecorator {}\nclass NLS { public static String bind(String message, Object... args) { return message; } }\nclass WorkbenchMessages { public static String DecoratorManager_ErrorActivatingDecorator \u003d \"Error activating decorator {0}\"; }\n\n// Dummy for a class that also has a \u0027run\u0027 method but is not Platform\nclass SomeOtherClass {\n    public static void run(java.lang.Runnable runnable) { /* some other run method */ }\n}\n\npublic class MyClass {\n    private String name \u003d \"Test\";\n\n    public String getName() { return name; }\n\n    public ILabelDecorator getDecorator() throws CoreException {\n        ILabelDecorator decorator \u003d null;\n        if (decorator \u003d\u003d null) {\n            // This should NOT be matched because it\u0027s SomeOtherClass.run()\n            SomeOtherClass.run(\n                    new SafeRunnable(NLS.bind(WorkbenchMessages.DecoratorManager_ErrorActivatingDecorator, getName())) {\n                        @Override\n                        public void run() {\n                            System.out.println(\"Running SomeOtherClass.run\");\n                        }\n                    });\n        }\n        return decorator;\n    }\n}\n\n// Minimal dummy Platform class for compilation (not used in this negative example, but might be needed for a real project)\nclass Platform {\n    public static void run(java.lang.Runnable runnable) { /* dummy */ }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "b4b98c6eabbd40a29bbeec1375fa862a04b8ad14",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.ui",
+  "category": "API Modernization",
+  "summary": "Replaces calls to `org.eclipse.core.runtime.Platform.run()` with `org.eclipse.core.runtime.SafeRunner.run()`, updating a deprecated API usage.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-15T02:27:33.365786622Z",
+  "ruleFingerprint": "sha256:f53ed2ea046abb6e839a5b2f942ce7e37517865dd40348028450a4a51c9a10f6",
+  "behaviorFingerprint": "sha256:34f65eacd11d31b51828b2caa1173028f2ad0f543c74d40cc624c11cdc2959de",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.core.runtime.Platform conflicts with a type defined in the same file",
+    "verifiedAt": "2026-09-15T02:27:39.497481496Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

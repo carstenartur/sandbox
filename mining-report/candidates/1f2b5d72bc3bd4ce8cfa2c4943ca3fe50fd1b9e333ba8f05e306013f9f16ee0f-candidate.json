@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1f2b5d72bc3bd4ce8cfa2c4943ca3fe50fd1b9e333ba8f05e306013f9f16ee0f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "strictfp $ReturnType $methodName($params$) :: parentMatches(\"interface $interfaceName { $members$ }\") \u0026\u0026 !isStatic($methodName) \u0026\u0026 !hasModifier($methodName, \"DEFAULT\")\n\u003d\u003e\n$ReturnType $methodName($params$)\n;;",
+  "beforeExample": "public interface MyInterface {\n    strictfp void myAbstractMethod(); // Illegal: abstract interface method with strictfp\n    \n    // Legal cases that should not be matched:\n    strictfp default void myDefaultMethod() {}\n    strictfp static void myStaticMethod() {}\n}\n\npublic class MyClass {\n    strictfp void myClassMethod() {}\n}",
+  "afterExample": "public interface MyInterface {\n    void myAbstractMethod(); // Fixed: strictfp removed\n    \n    // Legal cases remain unchanged:\n    strictfp default void myDefaultMethod() {}\n    strictfp static void myStaticMethod() {}\n}\n\npublic class MyClass {\n    strictfp void myClassMethod() {}\n}",
+  "negativeExample": "public interface MyInterface {\n    // These strictfp usages are legal and should not be matched\n    strictfp default void myDefaultMethod() {}\n    strictfp static void myStaticMethod() {}\n}\n\npublic class MyClass {\n    // This strictfp usage is legal on a class method and should not be matched\n    strictfp void myClassMethod() {}\n}",
+  "targetHintFile": "modifiers.sandbox-hint",
+  "sourceCommit": "1b8b8b2b8bd4156084471e2498f8d3bec7b3445f",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Modifier Cleanup",
+  "summary": "Removes the \u0027strictfp\u0027 modifier from abstract interface methods, as it is illegal for them in Java 8 and later.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-15T02:27:33.303210994Z",
+  "ruleFingerprint": "sha256:1e4a9aef9fcfa6e4461bcb60eee3365dbc60955a29f16a44f86f1378a93ba730",
+  "behaviorFingerprint": "sha256:5199145945c61b8487c05f47d0c6ed5bfef701a4b8107c43281318dc26caf6ea",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type MyInterface must be defined in its own file",
+    "verifiedAt": "2026-09-15T02:27:39.430741557Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

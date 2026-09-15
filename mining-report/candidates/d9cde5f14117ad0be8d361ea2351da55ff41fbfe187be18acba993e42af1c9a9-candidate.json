@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d9cde5f14117ad0be8d361ea2351da55ff41fbfe187be18acba993e42af1c9a9",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "($type) $receiver.getService($type.class)\n\u003d\u003e\n$receiver.getService($type.class)\n;;",
+  "beforeExample": "import org.eclipse.ui.IWorkbenchSite;\nimport org.eclipse.ui.services.IServiceLocator;\nimport org.eclipse.e4.core.contexts.IHandlerService;\nimport org.eclipse.core.commands.IContextService;\n\nclass Test {\n    public void activateHandlers(IWorkbenchSite site) {\n        // Example 1: from JavaBrowsingPart.java\n        activateHandlers((IHandlerService) site.getService(IHandlerService.class));\n    }\n\n    public void setupContext(IWorkbenchSite site) {\n        // Example 2: from JavaMergeViewer.java\n        IContextService service \u003d (IContextService) site.getService(IContextService.class);\n    }\n\n    private void activateHandlers(IHandlerService handlerService) {}\n}\n",
+  "afterExample": "import org.eclipse.ui.IWorkbenchSite;\nimport org.eclipse.ui.services.IServiceLocator;\nimport org.eclipse.e4.core.contexts.IHandlerService;\nimport org.eclipse.core.commands.IContextService;\n\nclass Test {\n    public void activateHandlers(IWorkbenchSite site) {\n        // Example 1: from JavaBrowsingPart.java\n        activateHandlers(site.getService(IHandlerService.class));\n    }\n\n    public void setupContext(IWorkbenchSite site) {\n        // Example 2: from JavaMergeViewer.java\n        IContextService service \u003d site.getService(IContextService.class);\n    }\n\n    private void activateHandlers(IHandlerService handlerService) {}\n}\n",
+  "negativeExample": "import org.eclipse.ui.IWorkbenchSite;\nimport org.eclipse.ui.services.IServiceLocator;\nimport org.eclipse.e4.core.contexts.IHandlerService;\n\nclass Test {\n    public void someMethod(IWorkbenchSite site) {\n        IServiceLocator locator \u003d site;\n        // Should not match: method is not \u0027getService\u0027\n        Object obj \u003d (Object) locator.someOtherMethod(IHandlerService.class);\n        // Should not match: argument is not a class literal\n        Object anotherObj \u003d (IHandlerService) locator.getService(\"IHandlerService\");\n        // Should not match: cast type (Object) does not match class literal type (IHandlerService)\n        Object obj2 \u003d (Object) locator.getService(IHandlerService.class);\n        // This *would* match, as cast type and class argument type are both Object. This is a valid application.\n        Object obj3 \u003d (Object) locator.getService(Object.class);\n    }\n}\n",
+  "targetHintFile": "redundant-casts.sandbox-hint",
+  "sourceCommit": "43694523659b75458697bda5137bac1789ed0db3",
+  "sourceRepo": "https://github.com/eclipse-jdt/eclipse.jdt.ui",
+  "category": "Redundant Cast",
+  "summary": "Removes redundant casts from the result of `IServiceLocator.getService(Class\u003cT\u003e)` when the explicit cast type matches the generic type argument `T`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-15T02:27:33.264209292Z",
+  "ruleFingerprint": "sha256:f2e6f654e0bdbcf39a813ec4f70a02d7f8c4fa916c4e8beba12e37a420d7530c",
+  "behaviorFingerprint": "sha256:aa725754baa378f469794750d8fe7ef0a12fdb015f32489a757193b1bdaca699",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.ui cannot be resolved",
+    "verifiedAt": "2026-09-15T02:27:39.404245340Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6ea36bba6f1bbd2307d642c62ab512d5f9922a953a6a243150baacb1a624e236",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "@id: string.isnull.or.isblank\n@severity: INFO\n$str \u003d\u003d null :: instanceof($str, \"java.lang.String\") \u0026\u0026 sourceVersionGE(11)\n\u003d\u003e\n$str \u003d\u003d null || $str.isBlank()\n;;",
+  "beforeExample": "class Example {\n    String s;\n    void foo() {\n        if (s \u003d\u003d null) {\n            System.out.println(\"String is null\");\n        }\n    }\n    void bar(String text) {\n        if (text \u003d\u003d null) {\n            System.out.println(\"Text is null\");\n        }\n    }\n}",
+  "afterExample": "class Example {\n    String s;\n    void foo() {\n        if (s \u003d\u003d null || s.isBlank()) {\n            System.out.println(\"String is null\");\n        }\n    }\n    void bar(String text) {\n        if (text \u003d\u003d null || text.isBlank()) {\n            System.out.println(\"Text is null\");\n        }\n    }\n}",
+  "negativeExample": "class Example {\n    Integer i;\n    void baz(Object o) {\n        if (i \u003d\u003d null) { // Should not match due to type (Integer)\n            System.out.println(\"Integer is null\");\n        }\n        if (o \u003d\u003d null) { // Should not match due to type (Object)\n            System.out.println(\"Object is null\");\n        }\n    }\n    // This method would not be matched if the project source version was \u003c 11\n    // as required by the sourceVersionGE(11) guard.\n    void legacyMethod(String oldStr) {\n        if (oldStr \u003d\u003d null) { // Would not match if sourceVersionLE(10) was true\n             System.out.println(\"Old string is null\");\n        }\n    }\n}",
+  "targetHintFile": "java-11-strings.sandbox-hint",
+  "sourceCommit": "02fc196db18a8da1baf34bfb6a4b255d1a18e19c",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.ui",
+  "category": "String Modernization",
+  "summary": "Replaces a null check for a String with a combined null or blank check, leveraging String.isBlank() for Java 11+.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-15T02:27:33.335892098Z",
+  "ruleFingerprint": "sha256:d73cfb05cd9fe2bfb12f170dd59bcde1ee8b2dfc8bc0de8d88fe20daf3b697c5",
+  "behaviorFingerprint": "sha256:f8816d810b2bbc830ff357ddfe50d04c429b8d083817b88c98f0066cec03f006",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example is ambiguous: expected one replacement but got 2",
+    "verifiedAt": "2026-09-15T02:27:39.468736115Z",
+    "verifierVersion": "7",
+    "matches": 2,
+    "replacements": 2
+  },
+  "transitions": []
+}
