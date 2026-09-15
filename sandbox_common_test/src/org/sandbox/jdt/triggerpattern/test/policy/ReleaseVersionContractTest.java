@@ -31,6 +31,9 @@ import org.junit.jupiter.api.Test;
 public class ReleaseVersionContractTest {
 
 	private static final String WORKFLOW = ".github/workflows/deploy-release.yml";
+	private static final String RECOVERY_WORKFLOW = ".github/workflows/recover-release-handoff.yml";
+	private static final List<Transition> RECOVERY_TRANSITIONS = List.of(
+			new Transition("Create protected-main handoff pull requests", "NEXT_SNAPSHOT"));
 	private static final List<String> STANDALONE_POMS = List.of(
 			"sandbox_cleanup_cli_dist/pom.xml", "sandbox-maven-plugin/pom.xml", "sandbox_oomph/pom.xml");
 	private static final List<Transition> TRANSITIONS = List.of(
@@ -52,8 +55,11 @@ public class ReleaseVersionContractTest {
 
 	@Test
 	public void omissionFromEitherTransitionCannotBeHiddenByTheOther() throws IOException {
-		String workflow = workflow();
-		for (Transition transition : TRANSITIONS) {
+		assertMissingCommands(workflow(), TRANSITIONS);
+	}
+
+	private static void assertMissingCommands(String workflow, List<Transition> transitions) {
+		for (Transition transition : transitions) {
 			String step = workflowStep(workflow, transition.step());
 			for (String pom : STANDALONE_POMS) {
 				Matcher command = versionCommand(pom, transition.variable()).matcher(step);
@@ -66,8 +72,11 @@ public class ReleaseVersionContractTest {
 
 	@Test
 	public void commentedOrWrongVersionCommandsDoNotCount() throws IOException {
-		String workflow = workflow();
-		for (Transition transition : TRANSITIONS) {
+		assertInvalidCommands(workflow(), TRANSITIONS);
+	}
+
+	private static void assertInvalidCommands(String workflow, List<Transition> transitions) {
+		for (Transition transition : transitions) {
 			String step = workflowStep(workflow, transition.step());
 			for (String pom : STANDALONE_POMS) {
 				Matcher command = versionCommand(pom, transition.variable()).matcher(step);
@@ -80,6 +89,21 @@ public class ReleaseVersionContractTest {
 				}
 			}
 		}
+	}
+
+	@Test
+	public void recoveryHandoffUpdatesEveryStandalonePom() throws IOException {
+		assertTransition(workflow(RECOVERY_WORKFLOW), RECOVERY_TRANSITIONS.getFirst());
+	}
+
+	@Test
+	public void recoveryCannotOmitAnyStandaloneUpdate() throws IOException {
+		assertMissingCommands(workflow(RECOVERY_WORKFLOW), RECOVERY_TRANSITIONS);
+	}
+
+	@Test
+	public void recoveryRejectsCommentedOrWrongVersionUpdates() throws IOException {
+		assertInvalidCommands(workflow(RECOVERY_WORKFLOW), RECOVERY_TRANSITIONS);
 	}
 
 	private static void assertTransition(String workflow, Transition transition) {
@@ -118,11 +142,15 @@ public class ReleaseVersionContractTest {
 	}
 
 	private static String workflow() throws IOException {
+		return workflow(WORKFLOW);
+	}
+
+	private static String workflow(String workflowPath) throws IOException {
 		Path current = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
 		while (current != null) {
 			if (Files.isRegularFile(current.resolve("pom.xml"))
-					&& Files.isRegularFile(current.resolve(WORKFLOW))) {
-				return Files.readString(current.resolve(WORKFLOW), StandardCharsets.UTF_8);
+					&& Files.isRegularFile(current.resolve(workflowPath))) {
+				return Files.readString(current.resolve(workflowPath), StandardCharsets.UTF_8);
 			}
 			current = current.getParent();
 		}
