@@ -13,11 +13,17 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.cleanup;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.StringLiteral;
 
 /**
@@ -25,9 +31,11 @@ import org.eclipse.jdt.core.dom.StringLiteral;
  * charset literal (e.g.&nbsp;{@code "UTF-8"}) to a {@code Charset}-typed
  * expression (e.g.&nbsp;{@code StandardCharsets.UTF_8}).
  *
- * <p>The detection is deliberately conservative — pure syntactic checks,
- * no binding resolution. If it cannot determine the type change it returns
- * {@code null} (no false positives).</p>
+ * <p>Only a direct argument replacement by a known StandardCharsets field is
+ * recognized. Calls such as {@code StandardCharsets.UTF_8.name()}, string content
+ * and nested expressions do not authorize exception removal. This syntactic
+ * check is used with type-checked encoding rules; it does not establish the
+ * exception contract of an arbitrary method or constructor.</p>
  *
  * @since 1.3.5
  */
@@ -59,42 +67,45 @@ public class TypeChangeDetector {
 	 * @return info about the type change, or {@code null} if no type change detected
 	 */
 	public static TypeChangeInfo detectCharsetTypeChange(ASTNode matchedNode, String replacement) {
-		if (matchedNode == null || replacement == null) {
+		if (matchedNode == null || replacement == null || !replacement.contains(STANDARD_CHARSETS_PREFIX)) {
 			return null;
 		}
-
-		// 1. Does the replacement contain "StandardCharsets."?
-		if (!replacement.contains(STANDARD_CHARSETS_PREFIX)) {
-			return null;
-		}
-
-		// 2. Does the matched node contain a StringLiteral whose value is a known charset?
-		if (!containsCharsetStringLiteral(matchedNode)) {
-			return null;
-		}
-
-		return new TypeChangeInfo(UNSUPPORTED_ENCODING_EXCEPTION_FQN, UNSUPPORTED_ENCODING_EXCEPTION_SIMPLE);
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setKind(ASTParser.K_EXPRESSION);
+		parser.setSource(replacement.toCharArray());
+		return detectCharsetArgumentChange(matchedNode, parser.createAST(null));
 	}
 
-	/**
-	 * Walks the matched node's children looking for a {@link StringLiteral}
-	 * whose value (upper-cased) is in {@link #CHARSET_STRINGS}.
-	 */
-	static boolean containsCharsetStringLiteral(ASTNode node) {
-		if (node instanceof StringLiteral literal) {
-			return isCharsetString(literal.getLiteralValue());
+	/** Uses the already parsed replacement; only a direct changed argument authorizes cleanup. */
+	private static TypeChangeInfo detectCharsetArgumentChange(ASTNode matchedNode, ASTNode replacement) {
+		if (replacement == null || (replacement.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {
+			return null;
 		}
-		boolean[] found = { false };
-		node.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(StringLiteral literal) {
-				if (isCharsetString(literal.getLiteralValue())) {
-					found[0] = true;
+		List<?> original= arguments(matchedNode);
+		List<?> rewritten= arguments(replacement);
+		for (int i= 0; i < Math.min(original.size(), rewritten.size()); i++) {
+			if (unparenthesized((ASTNode) original.get(i)) instanceof StringLiteral literal
+					&& isCharsetString(literal.getLiteralValue())
+					&& unparenthesized((ASTNode) rewritten.get(i)) instanceof QualifiedName name) {
+				String owner= name.getQualifier().getFullyQualifiedName();
+				if (("StandardCharsets".equals(owner) || "java.nio.charset.StandardCharsets".equals(owner)) //$NON-NLS-1$ //$NON-NLS-2$
+						&& CHARSET_STRINGS.contains(name.getName().getIdentifier().replace('_', '-'))) {
+					return new TypeChangeInfo(UNSUPPORTED_ENCODING_EXCEPTION_FQN, UNSUPPORTED_ENCODING_EXCEPTION_SIMPLE);
 				}
-				return !found[0];
 			}
-		});
-		return found[0];
+		}
+		return null;
+	}
+
+	private static List<?> arguments(ASTNode node) {
+		if (node instanceof ClassInstanceCreation creation) return creation.arguments();
+		if (node instanceof MethodInvocation invocation) return invocation.arguments();
+		return List.of();
+	}
+
+	private static ASTNode unparenthesized(ASTNode node) {
+		while (node instanceof ParenthesizedExpression expression) node= expression.getExpression();
+		return node;
 	}
 
 	private static boolean isCharsetString(String value) {
