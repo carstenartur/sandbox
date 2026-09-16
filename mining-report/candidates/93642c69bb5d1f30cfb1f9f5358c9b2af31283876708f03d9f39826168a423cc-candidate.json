@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "93642c69bb5d1f30cfb1f9f5358c9b2af31283876708f03d9f39826168a423cc",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.platform.getSystemCharset.fromFileEncoding\u003e\n\u003c!description: Replace System.getProperty(\"file.encoding\") with Platform.getSystemCharset().name() for robust system encoding detection after JEP 400 (Java 18+).\nNote: This cleanup is only relevant for Eclipse applications and assumes org.eclipse.core.runtime is available and updated to 3.26+ where Platform.getSystemCharset() was introduced.\u003e\n\u003c!severity: WARNING\u003e\n\njava.lang.System.getProperty(\"file.encoding\") :: sourceVersionGE(18)\n\u003d\u003e org.eclipse.core.runtime.Platform.getSystemCharset().name()\n;;",
+  "beforeExample": "public class EncodingUser {\n    public void someMethod() {\n        String defaultEncoding \u003d System.getProperty(\"file.encoding\");\n        System.out.println(\"Default encoding: \" + defaultEncoding);\n    }\n}",
+  "afterExample": "import org.eclipse.core.runtime.Platform;\n\npublic class EncodingUser {\n    public void someMethod() {\n        String defaultEncoding \u003d Platform.getSystemCharset().name();\n        System.out.println(\"Default encoding: \" + defaultEncoding);\n    }\n}",
+  "negativeExample": "public class OtherPropertyUser {\n    public void anotherMethod() {\n        String userHome \u003d System.getProperty(\"user.home\"); // Different property, should not match\n        System.out.println(\"User home: \" + userHome);\n    }\n}",
+  "targetHintFile": "platform-encoding.sandbox-hint",
+  "sourceCommit": "2a98c94825b83cfa9f3294ece815dfe34c7e6e2d",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-16T02:26:48.558508955Z",
+  "ruleFingerprint": "sha256:db8c617b37cf29ceea9f5a0a7968b9386df27aeac44ef043104a046e19369c90",
+  "behaviorFingerprint": "sha256:d7b18aaf02ad226b3dad3d0e4e5fda3b54cdab92e81b1d9b5d869b4c4db8738d",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-16T02:26:56.091512763Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

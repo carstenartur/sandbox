@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d39b3a02d88796eb96820ec46472534deeb56be3b70548521f273b61a492efa2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: deltadatatree.getrootdata.migration\u003e\n\u003c!description: Replaces DeltaDataTree.getData(rootKey()) with the dedicated DeltaDataTree.getRootData() method after its introduction, improving clarity and encapsulation.\u003e\n\u003c!severity: HINT\u003e\n\n$tree.getData($tree.rootKey());\n\u003d\u003e\n$tree.getRootData();\n;;",
+  "beforeExample": "package org.eclipse.core.internal.dtree;\n\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.Path;\n\n// A simplified representation of the classes involved for the example\nabstract class AbstractDataTree {\n    public IPath rootKey() { return Path.ROOT; }\n    public Object getData(IPath key) { return null; }\n}\n\npublic class DeltaDataTree extends AbstractDataTree {\n    // Original method from AbstractDataTree\n    @Override\n    public Object getData(IPath key) { return super.getData(key); }\n    \n    // Assume getRootData() is not yet present, or is not used for this pattern\n    public void processRootData() {\n        DeltaDataTree parentTree \u003d new DeltaDataTree();\n        Object rootDataObject \u003d parentTree.getData(rootKey());\n        System.out.println(rootDataObject);\n    }\n\n    public void processOtherData(IPath somePath) {\n        DeltaDataTree parentTree \u003d new DeltaDataTree();\n        Object someDataObject \u003d parentTree.getData(somePath);\n        System.out.println(someDataObject);\n    }\n}",
+  "afterExample": "package org.eclipse.core.internal.dtree;\n\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.Path;\n\n// A simplified representation of the classes involved for the example\nabstract class AbstractDataTree {\n    public static final IPath rootKey() { return Path.ROOT; }\n    public Object getData(IPath key) { return null; }\n}\n\npublic class DeltaDataTree extends AbstractDataTree {\n    // Original method from AbstractDataTree\n    @Override\n    public Object getData(IPath key) { return super.getData(key); }\n    \n    // The new method that the transformation leverages\n    public Object getRootData() { return getData(AbstractDataTree.rootKey()); } // Simplified implementation\n\n    public void processRootData() {\n        DeltaDataTree parentTree \u003d new DeltaDataTree();\n        Object rootDataObject \u003d parentTree.getRootData(); // Transformed line\n        System.out.println(rootDataObject);\n    }\n\n    public void processOtherData(IPath somePath) {\n        DeltaDataTree parentTree \u003d new DeltaDataTree();\n        Object someDataObject \u003d parentTree.getData(somePath);\n        System.out.println(someDataObject);\n    }\n}",
+  "negativeExample": "package org.eclipse.core.internal.dtree;\n\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.Path;\n\nabstract class AbstractDataTree {\n    public IPath rootKey() { return Path.ROOT; }\n    public Object getData(IPath key) { return null; }\n}\n\npublic class DeltaDataTree extends AbstractDataTree {\n    @Override\n    public Object getData(IPath key) { return super.getData(key); }\n    public Object getRootData() { return getData(rootKey()); }\n\n    public void processNonRootData(IPath nonRootPath) {\n        DeltaDataTree tree \u003d new DeltaDataTree();\n        // This should not be matched because the argument is not tree.rootKey()\n        Object data \u003d tree.getData(nonRootPath);\n        System.out.println(data);\n    }\n\n    public void someOtherMethodCall() {\n        // This should not be matched as it\u0027s not a getData call\n        rootKey();\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "1442073aa18af630f863d0eecaaf1394c9143eb3",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "API Modernization",
+  "summary": "Replaces calls to `getData(rootKey())` with `getRootData()` for `DeltaDataTree`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-16T02:26:48.626116218Z",
+  "ruleFingerprint": "sha256:75563a1ef1fb3d5f63743e4e7238930b5292e21061b32c026d7c5874d990595d",
+  "behaviorFingerprint": "sha256:0c52fa5dba865f89ccd3b2126d0f002ad1c13935c6cd5f4a678d8dfeb77cf389",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-16T02:26:56.104203330Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

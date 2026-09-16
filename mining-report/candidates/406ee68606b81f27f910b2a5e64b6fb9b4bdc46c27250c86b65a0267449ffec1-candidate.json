@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "406ee68606b81f27f910b2a5e64b6fb9b4bdc46c27250c86b65a0267449ffec1",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: io.exception.message.prefix.trees\u003e\n\u003c!description: Prefixes a specific IOException message related to ambiguous ElementTree order with \u0027Unable to save workspace - \u0027 for improved clarity and consistency with other workspace save errors.\u003e\n\u003c!severity: INFO\u003e\n\nnew java.io.IOException(\"Trees in ambiguous order (Bug 352867)\")\n\u003d\u003e\nnew java.io.IOException(\"Unable to save workspace - Trees in ambiguous order (Bug 352867)\")\n;;",
+  "beforeExample": "import java.io.IOException;\n\npublic class MyClass {\n    public void someMethod() throws IOException {\n        // some code...\n        throw new IOException(\"Trees in ambiguous order (Bug 352867)\");\n    }\n}",
+  "afterExample": "import java.io.IOException;\n\npublic class MyClass {\n    public void someMethod() throws IOException {\n        // some code...\n        throw new IOException(\"Unable to save workspace - Trees in ambiguous order (Bug 352867)\");\n    }\n}",
+  "negativeExample": "import java.io.IOException;\n\npublic class MyClass {\n    public void anotherMethod() throws IOException {\n        // some other code...\n        throw new IOException(\"Some other generic error\"); // Should not match\n    }\n}",
+  "targetHintFile": "messages.sandbox-hint",
+  "sourceCommit": "13be96e00aaf76b84a3cafeb7a98fee036111a91",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Error Message Standardization",
+  "summary": "Prefixes a specific IOException message for consistency with other workspace saving errors.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-16T02:26:48.665673436Z",
+  "ruleFingerprint": "sha256:4d2c8b36406fef81a53b67a0129fe9fd21f12bc8b366cac5e899ce20770455b0",
+  "behaviorFingerprint": "sha256:eac1da0fab49c33cbfe3d1c713633ce0271ec7d8f43a9660667951c9ed183136",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-16T02:26:56.116488008Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
