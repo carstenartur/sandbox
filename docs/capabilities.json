@@ -7,6 +7,7 @@
     "defaultStatus": "experimental",
     "testCountsSource": "GitHub Test Report workflow snapshot"
   },
+  "aggregateFeatures": ["sandbox_feature"],
   "capabilities": [
     {
       "id": "cleanup-application",
