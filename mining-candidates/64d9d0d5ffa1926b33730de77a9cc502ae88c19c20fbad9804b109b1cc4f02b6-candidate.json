@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 10: The public type JavaDocScanner must be defined in its own file",
-    "verifiedAt": "2026-09-15T02:27:39.229537731Z",
+    "verifiedAt": "2026-09-16T02:26:55.683889797Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

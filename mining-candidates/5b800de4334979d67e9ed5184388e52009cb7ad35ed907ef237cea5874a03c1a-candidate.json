@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The public type JavaMethodCompletionProposal must be defined in its own file",
-    "verifiedAt": "2026-09-15T02:27:39.153997957Z",
+    "verifiedAt": "2026-09-16T02:26:55.559545248Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

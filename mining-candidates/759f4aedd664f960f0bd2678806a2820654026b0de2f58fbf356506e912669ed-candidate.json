@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "759f4aedd664f960f0bd2678806a2820654026b0de2f58fbf356506e912669ed",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.util.Collections.singletonMap($k, $v) :: sourceVersionGE(9) \u0026\u0026 isNonNull($k) \u0026\u0026 isNonNull($v)\n\u003d\u003e\njava.util.Map.of($k, $v)\n;;",
+  "beforeExample": "import java.util.Collections;\nimport java.util.Map;\n\nclass Example {\n    // Assuming key and value are guaranteed non-null in context\n    Map\u003cString, String\u003e createMap(String key, String value) {\n        return Collections.singletonMap(key, value);\n    }\n    \n    // Example where key or value might be null - rule should not apply\n    Map\u003cString, String\u003e createMapWithNulls(String key, String nullableValue) {\n        return Collections.singletonMap(key, nullableValue);\n    }\n}",
+  "afterExample": "import java.util.Map;\n\nclass Example {\n    // Assuming key and value are guaranteed non-null in context\n    Map\u003cString, String\u003e createMap(String key, String value) {\n        return Map.of(key, value);\n    }\n    \n    // Example where key or value might be null - rule should not apply\n    Map\u003cString, String\u003e createMapWithNulls(String key, String nullableValue) {\n        return Collections.singletonMap(key, nullableValue);\n    }\n}",
+  "negativeExample": "import java.util.Collections;\nimport java.util.List;\n\nclass Example {\n    // This uses Collections.singletonList, which should not match the rule\n    List\u003cString\u003e createList(String value) {\n        return Collections.singletonList(value);\n    }\n\n    // This uses Collections.singletonMap, but with a potentially null value\n    // (the rule\u0027s isNonNull guard should prevent a match)\n    Map\u003cString, String\u003e createMapWithNullValue(String key) {\n        return Collections.singletonMap(key, null);\n    }\n}",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "f643b22316a0adca5e28d502928118e835e96282",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Collections API Modernization",
+  "summary": "Replace `Collections.singletonMap($k, $v)` with `Map.of($k, $v)` for Java 9+ when both key and value are guaranteed non-null. This is a common idiom for creating immutable, single-entry maps.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-16T02:26:48.693855639Z",
+  "ruleFingerprint": "sha256:b1282e87db3f0f04f988535ed1b9eefbe3cbc476460dfa4a21df2520d833b18f",
+  "behaviorFingerprint": "sha256:bf1f0eca0fbf55d9a0e5367c44f38d1255823e59dc76ef634b6bb815f68b9adb",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_PARSE",
+    "message": "Java compile error at line 11: Collections cannot be resolved",
+    "verifiedAt": "2026-09-16T02:26:56.139206344Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
