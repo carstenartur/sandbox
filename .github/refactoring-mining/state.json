@@ -1,10 +1,9 @@
 {
   "repositories": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "lastProcessedCommit": "50c2ad63d56d3ff9ef37562642eb3e89c5fc8d0e",
-      "lastProcessedDate": "2026-09-15T02:27:31.775950888Z",
-      "totalProcessed": 10141,
-      "status": "CATCHING_UP",
+      "lastProcessedDate": "2026-09-16T02:21:18.378576294Z",
+      "totalProcessed": 10150,
+      "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
           "hash": "6c459ccbb59d9b18bd9e2df71a9fcfbcd9ba2374",
@@ -172,13 +171,16 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 0,
-      "completedEpochs": [],
+      "currentEpoch": 1,
+      "completedEpochs": [
+        "2020-01-01 to 2026-01-01"
+      ],
       "categoryHitCounts": {
         "Resource Management": 1,
         "Code Simplification": 1,
         "String Modernization": 1,
-        "API Modernization": 2
+        "API Modernization": 2,
+        "API Removal": 1
       },
       "exhaustedCategories": []
     },
@@ -3698,7 +3700,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform": {
-      "totalProcessed": 0,
+      "lastProcessedCommit": "3caa3ab52fb6f8592ca71cff14dc619507dcc14f",
+      "lastProcessedDate": "2026-09-16T02:26:46.339999915Z",
+      "totalProcessed": 1728,
       "status": "CATCHING_UP",
       "deferredCommits": [],
       "permanentlySkipped": [],
@@ -3706,7 +3710,11 @@
       "lastModelUsed": "gemini-2.5-flash",
       "currentEpoch": 0,
       "completedEpochs": [],
-      "categoryHitCounts": {},
+      "categoryHitCounts": {
+        "API Modernization": 2,
+        "Error Message Standardization": 1,
+        "Collections API Modernization": 1
+      },
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
@@ -3734,5 +3742,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 28982
+  "globalTotalProcessed": 30719
 }
