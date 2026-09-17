@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7eee9f57533e9b3e03bd9aaeeb36478e25164b3cdf23206d2c55ff6fa8773a25",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: remove-redundant-type-arguments\u003e\n\u003c!description: Remove redundant type arguments from constructor calls using the diamond operator (\u003c\u003e).\u003e\n\u003c!severity: HINT\u003e\n\u003c!minJavaVersion: 8\u003e\n\nnew $CollectionType$\u003c$GenericTypeArgs$\u003e($args$)\n\u003d\u003e\nnew $CollectionType$\u003c\u003e($args$)\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.HashMap;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Set;\n\nclass MyClass {\n    void foo() {\n        List\u003cString\u003e list \u003d new ArrayList\u003cString\u003e();\n        Map\u003cString, Integer\u003e map \u003d new HashMap\u003cString, Integer\u003e();\n        Set\u003cNumber\u003e set \u003d new HashSet\u003cNumber\u003e(10);\n    }\n}\n",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.HashMap;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Set;\n\nclass MyClass {\n    void foo() {\n        List\u003cString\u003e list \u003d new ArrayList\u003c\u003e();\n        Map\u003cString, Integer\u003e map \u003d new HashMap\u003c\u003e();\n        Set\u003cNumber\u003e set \u003d new HashSet\u003c\u003e(10);\n    }\n}\n",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.List;\n\nclass NegativeExample {\n    void bar() {\n        // Already uses diamond operator, should not match\n        List\u003cString\u003e list1 \u003d new ArrayList\u003c\u003e();\n\n        // No generics, should not match\n        StringBuilder sb \u003d new StringBuilder(\"hello\");\n\n        // Array creation, not constructor call, should not match\n        String[] arr \u003d new String[10];\n    }\n}\n",
+  "targetHintFile": "generics.sandbox-hint",
+  "sourceCommit": "ff0a12536a144ba6cef9637339a07bb34ab18763",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Generics",
+  "summary": "Replaces explicit generic type arguments in constructor calls with the diamond operator (`\u003c\u003e`) for type inference, applicable to any constructor signature.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-17T02:26:30.181412725Z",
+  "ruleFingerprint": "sha256:8f694e74ef7c212e7559872e74b50e2cde55cab517b2e7ab64bcdc563f78a828",
+  "behaviorFingerprint": "sha256:d30ed9e00fb9eb0bb508cfd47aa8e05a2f1fd456b1af869f004056ff4f9788b8",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-17T02:26:37.270123007Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

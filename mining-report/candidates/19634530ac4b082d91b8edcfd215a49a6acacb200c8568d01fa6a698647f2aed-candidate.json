@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "19634530ac4b082d91b8edcfd215a49a6acacb200c8568d01fa6a698647f2aed",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$x.set(null) :: instanceof($x, \"java.lang.ThreadLocal\")\n\u003d\u003e\n$x.remove()\n;;",
+  "beforeExample": "import java.lang.ThreadLocal;\n\npublic class MyClass {\n    private ThreadLocal\u003cString\u003e myThreadLocal \u003d new ThreadLocal\u003c\u003e();\n\n    public void doSomething() {\n        myThreadLocal.set(\"value\");\n        // ... some logic\n        if (true) { // some condition\n            myThreadLocal.set(null); // Target for transformation\n        }\n    }\n}",
+  "afterExample": "import java.lang.ThreadLocal;\n\npublic class MyClass {\n    private ThreadLocal\u003cString\u003e myThreadLocal \u003d new ThreadLocal\u003c\u003e();\n\n    public void doSomething() {\n        myThreadLocal.set(\"value\");\n        // ... some logic\n        if (true) { // some condition\n            myThreadLocal.remove(); // Transformed code\n        }\n    }\n}",
+  "negativeExample": "import java.util.HashMap;\n\npublic class OtherClass {\n    public void doSomethingElse() {\n        HashMap\u003cString, String\u003e map \u003d new HashMap\u003c\u003e();\n        map.put(\"key\", \"value\");\n        map.put(\"otherKey\", null); // Should not match, map is not ThreadLocal\n    }\n}",
+  "targetHintFile": "threadlocal.sandbox-hint",
+  "sourceCommit": "28d4794d0b127f3b1c8818a65c08f214384afd69",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "ThreadLocal Cleanup",
+  "summary": "Replaces calls to ThreadLocal.set(null) with ThreadLocal.remove() when clearing a ThreadLocal variable, preventing potential memory leaks and ensuring proper state management.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-17T02:26:30.214288883Z",
+  "ruleFingerprint": "sha256:b3715759de996e4edd5d090d2f1f9751220d278787d2ecf18e0d78f6e60b7d18",
+  "behaviorFingerprint": "sha256:d3f8b234e10c1bd6298abf3ccf6b6329e60227f43ce1b81798dd4e0497272c2d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-09-17T02:26:37.290666723Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
