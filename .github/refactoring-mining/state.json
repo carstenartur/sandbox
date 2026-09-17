@@ -1,8 +1,8 @@
 {
   "repositories": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "lastProcessedDate": "2026-09-16T02:21:18.378576294Z",
-      "totalProcessed": 10150,
+      "lastProcessedDate": "2026-09-17T02:20:48.902053579Z",
+      "totalProcessed": 15936,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -171,9 +171,10 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 1,
+      "currentEpoch": 2,
       "completedEpochs": [
-        "2020-01-01 to 2026-01-01"
+        "2020-01-01 to 2026-01-01",
+        "2015-01-01 to 2020-01-01"
       ],
       "categoryHitCounts": {
         "Resource Management": 1,
@@ -3700,9 +3701,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform": {
-      "lastProcessedCommit": "3caa3ab52fb6f8592ca71cff14dc619507dcc14f",
-      "lastProcessedDate": "2026-09-16T02:26:46.339999915Z",
-      "totalProcessed": 1728,
+      "lastProcessedCommit": "bb59b5aef29313c5134a99948e30e4d83cbb68ba",
+      "lastProcessedDate": "2026-09-17T02:26:28.938791613Z",
+      "totalProcessed": 1944,
       "status": "CATCHING_UP",
       "deferredCommits": [],
       "permanentlySkipped": [],
@@ -3713,7 +3714,10 @@
       "categoryHitCounts": {
         "API Modernization": 2,
         "Error Message Standardization": 1,
-        "Collections API Modernization": 1
+        "Collections API Modernization": 1,
+        "Error Handling Modernization": 1,
+        "Generics": 1,
+        "ThreadLocal Cleanup": 1
       },
       "exhaustedCategories": []
     },
@@ -3742,5 +3746,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 30719
+  "globalTotalProcessed": 36721
 }
