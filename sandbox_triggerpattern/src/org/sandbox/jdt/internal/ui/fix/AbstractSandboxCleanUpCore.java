@@ -13,12 +13,13 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
+import org.sandbox.jdt.triggerpattern.cleanup.NlsAwareCleanUpFix;
+
 import java.util.Map;
 
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
@@ -45,7 +46,7 @@ import org.sandbox.jdt.triggerpattern.eclipse.HintMarkerReporter;
  * operations. This supports three modes transparently:</p>
  * <ul>
  *   <li><b>Rewriting</b> — {@code detect()} adds operations →
- *       returns {@code CompilationUnitRewriteOperationsFixCore}</li>
+ *       returns {@code NlsAwareCleanUpFix}</li>
  *   <li><b>Hint-only</b> — {@code detect()} adds findings →
  *       creates markers, returns {@code null}</li>
  *   <li><b>Mixed</b> — {@code detect()} adds both →
@@ -71,47 +72,20 @@ public abstract class AbstractSandboxCleanUpCore extends AbstractCleanUp {
 	protected AbstractSandboxCleanUpCore() {
 	}
 
-	/**
-	 * The {@code MYCleanUpConstants} key that enables/disables this cleanup.
-	 *
-	 * @return the constant key string
-	 */
+	/** The {@code MYCleanUpConstants} key that enables/disables this cleanup. */
 	protected abstract String getCleanUpKey();
 
-	/**
-	 * Runs detection on the compilation unit. Implementations add rewrite
-	 * operations and/or hint findings to {@code result}.
-	 *
-	 * @param cu     the compilation unit to analyze
-	 * @param result collects operations and findings
-	 */
+	/** Runs detection on the compilation unit. */
 	protected abstract void detect(CompilationUnit cu, CleanUpResult result);
 
-	/**
-	 * Label shown in the refactoring preview for rewrite operations.
-	 * May return {@code null} for hint-only cleanups (never used).
-	 *
-	 * @return the fix label, or {@code null}
-	 */
+	/** Label shown in the refactoring preview for rewrite operations. */
 	protected abstract String getFixLabel();
 
-	/**
-	 * Description shown in the cleanup step list.
-	 *
-	 * @return the step description
-	 */
+	/** Description shown in the cleanup step list. */
 	protected abstract String getDescription();
 
-	/**
-	 * Returns the preview text shown in the cleanup configuration dialog.
-	 * Subclasses must override to provide cleanup-specific before/after examples.
-	 *
-	 * @return the preview text
-	 */
 	@Override
 	public abstract String getPreview();
-
-	// ── Template method implementations ──
 
 	@Override
 	public final CleanUpRequirements getRequirements() {
@@ -128,7 +102,6 @@ public abstract class AbstractSandboxCleanUpCore extends AbstractCleanUp {
 		CleanUpResult result = new CleanUpResult();
 		detect(cu, result);
 
-		// Always clear stale markers, then report any new findings
 		if (cu.getJavaElement() != null) {
 			IResource resource = cu.getJavaElement().getResource();
 			if (resource != null) {
@@ -139,11 +112,10 @@ public abstract class AbstractSandboxCleanUpCore extends AbstractCleanUp {
 			}
 		}
 
-		// Build fix for rewrite operations (if any)
 		if (!result.hasOperations()) {
 			return null;
 		}
-		return new CompilationUnitRewriteOperationsFixCore(
+		return new NlsAwareCleanUpFix(
 				getFixLabel(), cu,
 				result.getOperations().toArray(new CompilationUnitRewriteOperation[0]));
 	}
