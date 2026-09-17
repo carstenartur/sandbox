@@ -25,6 +25,7 @@ import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 
 /**
  * Detects whether a DSL replacement changed an argument from a {@code String}
@@ -73,11 +74,11 @@ public class TypeChangeDetector {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setKind(ASTParser.K_EXPRESSION);
 		parser.setSource(replacement.toCharArray());
-		return detectCharsetArgumentChange(matchedNode, parser.createAST(null));
+		return detectCharsetTypeChange(matchedNode, parser.createAST(null));
 	}
 
-	/** Uses the already parsed replacement; only a direct changed argument authorizes cleanup. */
-	private static TypeChangeInfo detectCharsetArgumentChange(ASTNode matchedNode, ASTNode replacement) {
+	/** Uses an already parsed replacement; only a direct changed argument authorizes cleanup. */
+	static TypeChangeInfo detectCharsetTypeChange(ASTNode matchedNode, ASTNode replacement) {
 		if (replacement == null || (replacement.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {
 			return null;
 		}
@@ -100,6 +101,7 @@ public class TypeChangeDetector {
 	private static List<?> arguments(ASTNode node) {
 		if (node instanceof ClassInstanceCreation creation) return creation.arguments();
 		if (node instanceof MethodInvocation invocation) return invocation.arguments();
+		if (node instanceof SuperMethodInvocation invocation) return invocation.arguments();
 		return List.of();
 	}
 
