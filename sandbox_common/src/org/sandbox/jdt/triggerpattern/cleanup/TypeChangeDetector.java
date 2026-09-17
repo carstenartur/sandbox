@@ -48,8 +48,6 @@ public class TypeChangeDetector {
 			"US-ASCII", "ISO-8859-1" //$NON-NLS-1$ //$NON-NLS-2$
 	);
 
-	private static final String STANDARD_CHARSETS_PREFIX = "StandardCharsets."; //$NON-NLS-1$
-
 	private static final String UNSUPPORTED_ENCODING_EXCEPTION_FQN =
 			"java.io.UnsupportedEncodingException"; //$NON-NLS-1$
 	private static final String UNSUPPORTED_ENCODING_EXCEPTION_SIMPLE =
@@ -68,7 +66,7 @@ public class TypeChangeDetector {
 	 * @return info about the type change, or {@code null} if no type change detected
 	 */
 	public static TypeChangeInfo detectCharsetTypeChange(ASTNode matchedNode, String replacement) {
-		if (matchedNode == null || replacement == null || !replacement.contains(STANDARD_CHARSETS_PREFIX)) {
+		if (matchedNode == null || replacement == null) {
 			return null;
 		}
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
