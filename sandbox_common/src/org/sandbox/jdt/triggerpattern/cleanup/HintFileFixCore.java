@@ -481,7 +481,7 @@ public class HintFileFixCore {
 
 					// Auto-detect: did we change a String charset argument to a Charset type?
 					TypeChangeInfo typeChange = TypeChangeDetector.detectCharsetTypeChange(
-							matchedNode, replacement);
+							matchedNode, newNode);
 
 					// Check if the matched node is inside a try body that will be unwrapped
 					// after removing the checked exception. If so, we must handle the
