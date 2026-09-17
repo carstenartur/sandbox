@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e7258df61281e72d9c552eee8f75669532dd3a6ef75e6bb603803bb5e091f5a9",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.core.runtime.ResourceStatus($severity$, $path$, $message$)\n\u003d\u003e\nnew org.eclipse.core.runtime.ResourceStatus($severity$, $path$, $message$, new java.lang.IllegalStateException())\n;;",
+  "beforeExample": "package org.eclipse.core.internal.resources;\n\nimport org.eclipse.core.internal.resources.MarkerInfo;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.IResourceStatus;\nimport org.eclipse.core.runtime.ResourceStatus;\n\npublic class Marker {\n    private long id;\n    private IPath resource; // Simplified for example\n\n    private void checkInfo(MarkerInfo info) throws CoreException {\n        if (info \u003d\u003d null) {\n            String message \u003d \"Marker not found: \" + Long.toString(id);\n            throw new ResourceException(new ResourceStatus(IResourceStatus.MARKER_NOT_FOUND, resource.getFullPath(), message));\n        }\n    }\n\n    // Dummy classes for compilation\n    static class ResourceException extends CoreException {\n        public ResourceException(ResourceStatus status) {\n            super(status);\n        }\n    }\n    static class MarkerInfo {}\n}\n",
+  "afterExample": "package org.eclipse.core.internal.resources;\n\nimport org.eclipse.core.internal.resources.MarkerInfo;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.IResourceStatus;\nimport org.eclipse.core.runtime.ResourceStatus;\n\npublic class Marker {\n    private long id;\n    private IPath resource; // Simplified for example\n\n    private void checkInfo(MarkerInfo info) throws CoreException {\n        if (info \u003d\u003d null) {\n            String message \u003d \"Marker not found: \" + Long.toString(id);\n            throw new ResourceException(new ResourceStatus(IResourceStatus.MARKER_NOT_FOUND, resource.getFullPath(), message, new IllegalStateException()));\n        }\n    }\n\n    // Dummy classes for compilation\n    static class ResourceException extends CoreException {\n        public ResourceException(ResourceStatus status) {\n            super(status);\n        }\n    }\n    static class MarkerInfo {}\n}\n",
+  "negativeExample": "package org.eclipse.core.internal.resources;\n\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IPath;\nimport org.eclipse.core.runtime.IResourceStatus;\nimport org.eclipse.core.runtime.ResourceStatus;\n\npublic class AnotherClass {\n    private IPath somePath;\n\n    public void method() throws CoreException {\n        String msg \u003d \"Error message\";\n        Throwable cause \u003d new IllegalArgumentException(\"Invalid arg\");\n        // This should not be matched as it already has a cause\n        throw new ResourceException(new ResourceStatus(IResourceStatus.ERROR, somePath, msg, cause));\n    }\n\n    // Dummy classes for compilation\n    static class ResourceException extends CoreException {\n        public ResourceException(ResourceStatus status) {\n            super(status);\n        }\n    }\n}\n",
+  "targetHintFile": "eclipse.sandbox-hint",
+  "sourceCommit": "11dd318569da6f0155fd5487c1aacf9c96ce1e25",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Error Handling Modernization",
+  "summary": "Adds a new `IllegalStateException()` as the cause to `ResourceStatus` constructor for improved logging and debugging context, without changing behavior.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-17T02:26:30.126190683Z",
+  "ruleFingerprint": "sha256:39962647b3f18bb3dfc4317db370cf4f16a1687fc5df3581b566b695cb92480a",
+  "behaviorFingerprint": "sha256:e0b14a181b6dd6b07d562093c59e1b21f781995b34cb1cfeb80527a12e2e9804",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The import org.eclipse.core.runtime.IResourceStatus cannot be resolved",
+    "verifiedAt": "2026-09-17T02:26:37.258549430Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
