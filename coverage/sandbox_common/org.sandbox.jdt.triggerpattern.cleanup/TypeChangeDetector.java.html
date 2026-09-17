@@ -13,38 +13,45 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.cleanup;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 
 /**
  * Detects whether a DSL replacement changed an argument from a {@code String}
  * charset literal (e.g.&amp;nbsp;{@code &quot;UTF-8&quot;}) to a {@code Charset}-typed
  * expression (e.g.&amp;nbsp;{@code StandardCharsets.UTF_8}).
  *
- * &lt;p&gt;The detection is deliberately conservative — pure syntactic checks,
- * no binding resolution. If it cannot determine the type change it returns
- * {@code null} (no false positives).&lt;/p&gt;
+ * &lt;p&gt;Only a direct argument replacement by a known StandardCharsets field is
+ * recognized. Calls such as {@code StandardCharsets.UTF_8.name()}, string content
+ * and nested expressions do not authorize exception removal. This syntactic
+ * check is used with type-checked encoding rules; it does not establish the
+ * exception contract of an arbitrary method or constructor.&lt;/p&gt;
  *
  * @since 1.3.5
  */
 public class TypeChangeDetector {
 
 	/** Known charset string values that map to StandardCharsets constants. */
-<span class="fc" id="L37">	private static final Set&lt;String&gt; CHARSET_STRINGS = Set.of(</span>
-<span class="fc" id="L38">			&quot;UTF-8&quot;, &quot;UTF-16&quot;, &quot;UTF-16BE&quot;, &quot;UTF-16LE&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
-<span class="fc" id="L39">			&quot;US-ASCII&quot;, &quot;ISO-8859-1&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L46">	private static final Set&lt;String&gt; CHARSET_STRINGS = Set.of(</span>
+<span class="fc" id="L47">			&quot;UTF-8&quot;, &quot;UTF-16&quot;, &quot;UTF-16BE&quot;, &quot;UTF-16LE&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L48">			&quot;US-ASCII&quot;, &quot;ISO-8859-1&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
 	);
-
-	private static final String STANDARD_CHARSETS_PREFIX = &quot;StandardCharsets.&quot;; //$NON-NLS-1$
 
 	private static final String UNSUPPORTED_ENCODING_EXCEPTION_FQN =
 			&quot;java.io.UnsupportedEncodingException&quot;; //$NON-NLS-1$
 	private static final String UNSUPPORTED_ENCODING_EXCEPTION_SIMPLE =
-<span class="fc" id="L47">			&quot;UnsupportedEncodingException&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L54">			&quot;UnsupportedEncodingException&quot;; //$NON-NLS-1$</span>
 
 	private TypeChangeDetector() {
 		// utility class – not instantiable
@@ -59,46 +66,50 @@ public class TypeChangeDetector {
 	 * @return info about the type change, or {@code null} if no type change detected
 	 */
 	public static TypeChangeInfo detectCharsetTypeChange(ASTNode matchedNode, String replacement) {
-<span class="fc bfc" id="L62" title="All 4 branches covered.">		if (matchedNode == null || replacement == null) {</span>
-<span class="fc" id="L63">			return null;</span>
+<span class="fc bfc" id="L69" title="All 4 branches covered.">		if (matchedNode == null || replacement == null) {</span>
+<span class="fc" id="L70">			return null;</span>
 		}
-
-		// 1. Does the replacement contain &quot;StandardCharsets.&quot;?
-<span class="fc bfc" id="L67" title="All 2 branches covered.">		if (!replacement.contains(STANDARD_CHARSETS_PREFIX)) {</span>
-<span class="fc" id="L68">			return null;</span>
-		}
-
-		// 2. Does the matched node contain a StringLiteral whose value is a known charset?
-<span class="fc bfc" id="L72" title="All 2 branches covered.">		if (!containsCharsetStringLiteral(matchedNode)) {</span>
-<span class="fc" id="L73">			return null;</span>
-		}
-
-<span class="fc" id="L76">		return new TypeChangeInfo(UNSUPPORTED_ENCODING_EXCEPTION_FQN, UNSUPPORTED_ENCODING_EXCEPTION_SIMPLE);</span>
+<span class="fc" id="L72">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L73">		parser.setKind(ASTParser.K_EXPRESSION);</span>
+<span class="fc" id="L74">		parser.setSource(replacement.toCharArray());</span>
+<span class="fc" id="L75">		return detectCharsetTypeChange(matchedNode, parser.createAST(null));</span>
 	}
 
-	/**
-	 * Walks the matched node's children looking for a {@link StringLiteral}
-	 * whose value (upper-cased) is in {@link #CHARSET_STRINGS}.
-	 */
-	static boolean containsCharsetStringLiteral(ASTNode node) {
-<span class="pc bpc" id="L84" title="1 of 2 branches missed.">		if (node instanceof StringLiteral literal) {</span>
-<span class="nc" id="L85">			return isCharsetString(literal.getLiteralValue());</span>
+	/** Uses an already parsed replacement; only a direct changed argument authorizes cleanup. */
+	static TypeChangeInfo detectCharsetTypeChange(ASTNode matchedNode, ASTNode replacement) {
+<span class="pc bpc" id="L80" title="2 of 4 branches missed.">		if (replacement == null || (replacement.getFlags() &amp; (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {</span>
+<span class="nc" id="L81">			return null;</span>
 		}
-<span class="fc" id="L87">		boolean[] found = { false };</span>
-<span class="fc" id="L88">		node.accept(new ASTVisitor() {</span>
-			@Override
-			public boolean visit(StringLiteral literal) {
-<span class="fc bfc" id="L91" title="All 2 branches covered.">				if (isCharsetString(literal.getLiteralValue())) {</span>
-<span class="fc" id="L92">					found[0] = true;</span>
+<span class="fc" id="L83">		List&lt;?&gt; original= arguments(matchedNode);</span>
+<span class="fc" id="L84">		List&lt;?&gt; rewritten= arguments(replacement);</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">		for (int i= 0; i &lt; Math.min(original.size(), rewritten.size()); i++) {</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">			if (unparenthesized((ASTNode) original.get(i)) instanceof StringLiteral literal</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">					&amp;&amp; isCharsetString(literal.getLiteralValue())</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">					&amp;&amp; unparenthesized((ASTNode) rewritten.get(i)) instanceof QualifiedName name) {</span>
+<span class="fc" id="L89">				String owner= name.getQualifier().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L90" title="1 of 4 branches missed.">				if ((&quot;StandardCharsets&quot;.equals(owner) || &quot;java.nio.charset.StandardCharsets&quot;.equals(owner)) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">						&amp;&amp; CHARSET_STRINGS.contains(name.getName().getIdentifier().replace('_', '-'))) {</span>
+<span class="fc" id="L92">					return new TypeChangeInfo(UNSUPPORTED_ENCODING_EXCEPTION_FQN, UNSUPPORTED_ENCODING_EXCEPTION_SIMPLE);</span>
 				}
-<span class="fc bfc" id="L94" title="All 2 branches covered.">				return !found[0];</span>
 			}
-		});
-<span class="fc" id="L97">		return found[0];</span>
+		}
+<span class="fc" id="L96">		return null;</span>
+	}
+
+	private static List&lt;?&gt; arguments(ASTNode node) {
+<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (node instanceof ClassInstanceCreation creation) return creation.arguments();</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">		if (node instanceof MethodInvocation invocation) return invocation.arguments();</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">		if (node instanceof SuperMethodInvocation invocation) return invocation.arguments();</span>
+<span class="fc" id="L103">		return List.of();</span>
+	}
+
+	private static ASTNode unparenthesized(ASTNode node) {
+<span class="fc bfc" id="L107" title="All 2 branches covered.">		while (node instanceof ParenthesizedExpression expression) node= expression.getExpression();</span>
+<span class="fc" id="L108">		return node;</span>
 	}
 
 	private static boolean isCharsetString(String value) {
-<span class="fc" id="L101">		return CHARSET_STRINGS.contains(value.toUpperCase(Locale.ROOT));</span>
+<span class="fc" id="L112">		return CHARSET_STRINGS.contains(value.toUpperCase(Locale.ROOT));</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

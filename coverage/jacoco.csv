@@ -26,8 +26,7 @@ sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,HintFileF
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,HintFileFixCore.HintFileRewriteOperation.new ASTVisitor() {...},0,16,0,0,0,3,0,2,0,2
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,PlanAwareHintFileFixCore.DelegatingHintOperation,4,12,0,0,1,5,1,2,1,2
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,PatternCleanupHelper,42,93,6,10,8,22,6,10,1,7
-sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,TypeChangeDetector.new ASTVisitor() {...},0,24,0,4,0,4,0,4,0,2
-sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,TypeChangeDetector,7,54,1,9,1,16,1,8,0,4
+sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup,TypeChangeDetector,2,159,4,26,1,29,4,17,0,6
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup.actions,StructuredRewriteActionOperation,7,58,1,3,1,14,2,3,1,2
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup.actions,SignatureStructuredRewriteActions,554,21,80,0,107,6,53,1,13,1
 sandbox_coverage/sandbox_common,org.sandbox.jdt.triggerpattern.cleanup.actions,StructuredRewriteActionContext,406,190,72,20,75,44,52,12,8,10
