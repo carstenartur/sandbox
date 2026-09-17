@@ -76,6 +76,23 @@ public class PinnedGitRepositoryTest {
 		assertFalse(Files.exists(checkout), "Failed identity verification must remove the checkout"); //$NON-NLS-1$
 	}
 
+	@Test
+	public void testFetchMaintenanceCompletesBeforeFixtureCleanup() throws Exception {
+		Path source = temporaryDirectory.resolve("maintenance-source"); //$NON-NLS-1$
+		Path checkout = temporaryDirectory.resolve("maintenance-checkout"); //$NON-NLS-1$
+		try (Git sourceGit = Git.init().setDirectory(source.toFile()).call()) {
+			RevCommit pinnedCommit = commit(sourceGit, source, "fixture.txt", "pinned\n", "Pinned fixture"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			sourceGit.branchCreate().setName("fixture").setStartPoint(pinnedCommit.name()).call(); //$NON-NLS-1$
+			try (PinnedGitRepository fixture = PinnedGitRepository.cloneAt(checkout, source.toUri(),
+					"fixture", pinnedCommit.name()); Git inspected = Git.open(fixture.directory().toFile())) { //$NON-NLS-1$
+				assertFalse(inspected.getRepository().getConfig().getBoolean("gc", "autoDetach", true), //$NON-NLS-1$ //$NON-NLS-2$
+						"Fetch maintenance must not outlive the temporary checkout"); //$NON-NLS-1$
+				assertEquals(pinnedCommit.name(), fixture.headCommit());
+			}
+		}
+		assertFalse(Files.exists(checkout), "Closing the fixture must remove the checkout"); //$NON-NLS-1$
+	}
+
 	private static RevCommit commit(Git git, Path repository, String relativePath, String contents,
 			String message) throws Exception {
 		Path file = repository.resolve(relativePath);
