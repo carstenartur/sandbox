@@ -18,8 +18,12 @@ import java.util.List;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CatchClause;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.Javadoc;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.TagElement;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.UnionType;
@@ -85,10 +89,6 @@ public class ExceptionCleanupHelper {
 		return CheckedExceptionAnalysis.canRemove(scope, visited, exceptionFQN, rewrite);
 	}
 
-	// ------------------------------------------------------------------
-	// package-private helpers (visible for testing inside the same package)
-	// ------------------------------------------------------------------
-
 	static ASTNode findEnclosingMethodOrTry(ASTNode node) {
 		if (node == null) {
 			return null;
@@ -122,8 +122,31 @@ public class ExceptionCleanupHelper {
 			if (isTargetException(exceptionType, exceptionFQN)) {
 				throwsRewrite.remove(exceptionType, group);
 				importRemover.registerRemovedNode(exceptionType);
+				updateThrowsJavadoc(method, exceptionFQN, null, rewrite, group, importRemover);
 			}
 		}
+	}
+
+	/** Returns whether a matching documented exception was found. */
+	static boolean updateThrowsJavadoc(MethodDeclaration method, String oldType, String replacement,
+			ASTRewrite rewrite, TextEditGroup group, ImportRemover imports) {
+		Javadoc javadoc= method.getJavadoc();
+		if (javadoc == null) return false;
+		boolean found= false;
+		ListRewrite tags= rewrite.getListRewrite(javadoc, Javadoc.TAGS_PROPERTY);
+		for (Object item : List.copyOf(tags.getRewrittenList())) {
+			TagElement tag= (TagElement) item;
+			if ((TagElement.TAG_THROWS.equals(tag.getTagName()) || TagElement.TAG_EXCEPTION.equals(tag.getTagName()))
+					&& !tag.fragments().isEmpty() && tag.fragments().get(0) instanceof Name name
+					&& name.resolveBinding() instanceof ITypeBinding type && oldType.equals(type.getErasure().getQualifiedName())) {
+				if (replacement == null) {
+					tags.remove(tag, group);
+					imports.registerRemovedNode(tag);
+				} else rewrite.replace(name, method.getAST().newName(replacement), group);
+				found= true;
+			}
+		}
+		return found;
 	}
 
 	static boolean removeExceptionFromUnionType(
@@ -198,13 +221,6 @@ public class ExceptionCleanupHelper {
 		if (!hasResources && !hasStatements) {
 			rewrite.remove(tryStatement, group);
 		} else if (!hasResources && tryStatement.getParent() instanceof Block) {
-			// Inline statements from try body into the parent block,
-			// replacing the try statement with its individual statements
-			// to avoid producing an orphaned { ... } block.
-			// NOTE: Callers must register child rewrites (e.g., replaceAndRemoveNLS)
-			// BEFORE invoking removeUnsupportedEncodingException (which triggers
-			// this method). createMoveTarget marks nodes as moved, and
-			// replaceAndRemoveNLS fails silently on already-moved nodes.
 			List<?> statements = rewrite.getListRewrite(tryBlock, Block.STATEMENTS_PROPERTY).getRewrittenList();
 			ASTNode[] moved = new ASTNode[statements.size()];
 			for (int i = 0; i < statements.size(); i++) {
