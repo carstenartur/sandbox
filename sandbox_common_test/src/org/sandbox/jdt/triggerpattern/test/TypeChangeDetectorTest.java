@@ -152,6 +152,13 @@ public class TypeChangeDetectorTest {
 				"new String(bytes, (java.nio.charset.StandardCharsets.UTF_8))")); //$NON-NLS-1$
 	}
 
+	@Test
+	void detectsDirectSuperMethodInvocationArgumentChange() {
+		ASTNode node= parseExpression("super.foo(\"UTF-8\")"); //$NON-NLS-1$
+		assertNotNull(TypeChangeDetector.detectCharsetTypeChange(node,
+				"super.foo(java.nio.charset.StandardCharsets.UTF_8)")); //$NON-NLS-1$
+	}
+
 	/**
 	 * Parses the given source as an expression wrapped inside a method body
 	 * and returns the first expression statement's expression.
