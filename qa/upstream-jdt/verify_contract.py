@@ -178,6 +178,8 @@ def validate_oomph(root: Path, pins: dict[str, str]) -> None:
     ):
         if f'name="{requirement}"' not in setup_text:
             fail(f"Missing Oomph targlet requirement {requirement}")
+    if 'rootFolder="${github.clone.jdt.debug.qa.location}"' not in setup_text:
+        fail("Oomph setup does not expose the pinned JDT Debug clone as a source locator")
     if "ProjectsBuildTask" not in setup_text:
         fail("Oomph setup does not build the imported workspace")
 
