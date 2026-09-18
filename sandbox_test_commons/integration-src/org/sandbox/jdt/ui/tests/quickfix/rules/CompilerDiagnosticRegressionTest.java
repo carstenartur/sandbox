@@ -3,7 +3,7 @@
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which accompanies this distribution,
- * and is available at https://www.eclipse.org/legal/epl-2.0/.
+ * and is available at https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
@@ -88,6 +88,21 @@ class CompilerDiagnosticRegressionTest {
 	}
 
 	@Test
+	void diagnosticsAreComparedPerCompilationUnit() throws Exception {
+		String broken= source("missing();"); //$NON-NLS-1$
+		String clean= source("System.out.println(1);"); //$NON-NLS-1$
+		ICompilationUnit first= createUnit("First.java", broken); //$NON-NLS-1$
+		ICompilationUnit second= createUnit("Second.java", clean); //$NON-NLS-1$
+		context.output(clean, broken);
+
+		AssertionError failure= assertThrows(AssertionError.class, () ->
+				context.assertRefactoringResultAsExpected(
+						new ICompilationUnit[] { first, second }, new String[] { clean, broken }, null));
+
+		assertTrue(failure.getMessage().contains("Second.java"), failure.getMessage()); //$NON-NLS-1$
+	}
+
+	@Test
 	void lineMovementOfTheSameExistingErrorIsAllowed() throws Exception {
 		String before= """
 				package test;
@@ -126,8 +141,12 @@ class CompilerDiagnosticRegressionTest {
 	}
 
 	private ICompilationUnit createUnit(String source) throws CoreException {
+		return createUnit("Sample.java", source); //$NON-NLS-1$
+	}
+
+	private ICompilationUnit createUnit(String name, String source) throws CoreException {
 		return context.getSourceFolder().createPackageFragment("test", false, null) //$NON-NLS-1$
-				.createCompilationUnit("Sample.java", source, true, null); //$NON-NLS-1$
+				.createCompilationUnit(name, source, true, null);
 	}
 
 	private static String source(String statement) {
