@@ -77,6 +77,22 @@
 
   <setupTask
       xsi:type="setup:VariableTask"
+      name="sandbox.qa.jdt.debug.repository"
+      value="https://github.com/eclipse-jdt/eclipse.jdt.debug.git"
+      storageURI="scope://Workspace"/>
+  <setupTask
+      xsi:type="setup:VariableTask"
+      name="sandbox.qa.jdt.debug.ref"
+      value="R4_40"
+      storageURI="scope://Workspace"/>
+  <setupTask
+      xsi:type="setup:VariableTask"
+      name="sandbox.qa.jdt.debug.commit"
+      value="a00898c5a3ed31e696f78457f706d2a50ad98b4a"
+      storageURI="scope://Workspace"/>
+
+  <setupTask
+      xsi:type="setup:VariableTask"
       name="sandbox.qa.jdt.core.binaries.repository"
       value="https://github.com/eclipse-jdt/eclipse.jdt.core.binaries.git"
       storageURI="scope://Workspace"/>
@@ -130,6 +146,13 @@
   </setupTask>
   <setupTask
       xsi:type="git:GitCloneTask"
+      id="github.clone.jdt.debug.qa"
+      remoteURI="${sandbox.qa.jdt.debug.repository}"
+      checkoutBranch="${sandbox.qa.jdt.debug.ref}">
+    <description>JDT Debug R4_40 source corpus for debugger and launch-related cleanup scenarios.</description>
+  </setupTask>
+  <setupTask
+      xsi:type="git:GitCloneTask"
       id="github.clone.jdt.core.binaries.qa"
       remoteURI="${sandbox.qa.jdt.core.binaries.repository}"
       checkoutBranch="${sandbox.qa.jdt.core.binaries.ref}">
@@ -176,6 +199,8 @@
           rootFolder="${github.clone.jdt.core.binaries.qa.location}"/>
       <sourceLocator
           rootFolder="${github.clone.jdt.ui.qa.location}"/>
+      <sourceLocator
+          rootFolder="${github.clone.jdt.debug.qa.location}"/>
       <repositoryList
           name="Eclipse 2026-06">
         <repository
@@ -225,6 +250,9 @@
       PIN_JDT_UI_REPOSITORY=${sandbox.qa.jdt.ui.repository}
       PIN_JDT_UI_REF=${sandbox.qa.jdt.ui.ref}
       PIN_JDT_UI_COMMIT=${sandbox.qa.jdt.ui.commit}
+      PIN_JDT_DEBUG_REPOSITORY=${sandbox.qa.jdt.debug.repository}
+      PIN_JDT_DEBUG_REF=${sandbox.qa.jdt.debug.ref}
+      PIN_JDT_DEBUG_COMMIT=${sandbox.qa.jdt.debug.commit}
       PIN_JDT_CORE_BINARIES_REPOSITORY=${sandbox.qa.jdt.core.binaries.repository}
       PIN_JDT_CORE_BINARIES_REF=${sandbox.qa.jdt.core.binaries.ref}
       PIN_JDT_CORE_BINARIES_COMMIT=${sandbox.qa.jdt.core.binaries.commit}
@@ -243,7 +271,7 @@
       name="r4_40"
       label="Eclipse 4.40 / JDT R4_40"/>
   <description>
-    Provisions the exact Eclipse 2026-06/JDT R4_40 source and test environment
+    Provisions the exact Eclipse 2026-06/JDT Core, UI and Debug R4_40 source and test environment
     used by the Sandbox before-and-after migration documentation QA.
   </description>
 </setup:Project>
