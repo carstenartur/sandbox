@@ -17,16 +17,16 @@
 // ============================================================================
 
 // === String(byte[], String) constructor ===
-// Requires Java 10+: String(byte[], Charset) constructor needs Java 10
+// Charset overload exists since Java 6; StandardCharsets makes this available from Java 7.
 
-new java.lang.String($bytes, "${CHARSET}") :: sourceVersionGE(10)
+new java.lang.String($bytes, "${CHARSET}") :: sourceVersionGE(7)
 => new java.lang.String($bytes, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
 ;;
 
 // === String(byte[], int, int, String) — 4-arg form ===
-// Requires Java 10+: String(byte[], int, int, Charset) constructor needs Java 10
+// Charset overload exists since Java 6; StandardCharsets makes this available from Java 7.
 
-new java.lang.String($bytes, $off, $len, "${CHARSET}") :: sourceVersionGE(10)
+new java.lang.String($bytes, $off, $len, "${CHARSET}") :: sourceVersionGE(7)
 => new java.lang.String($bytes, $off, $len, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
 ;;
 
@@ -143,13 +143,13 @@ $s.getBytes() :: sourceVersionGE(7), mode(KEEP_BEHAVIOR)
 ;;
 
 // === new String(byte[]) — 1-arg constructor ===
-// Requires Java 10+: String(byte[], Charset) constructor needs Java 10
+// Charset overload exists since Java 6; StandardCharsets makes this available from Java 7.
 
-new java.lang.String($bytes) :: sourceVersionGE(10), mode(ENFORCE_UTF8)
+new java.lang.String($bytes) :: sourceVersionGE(7), mode(ENFORCE_UTF8)
 => new java.lang.String($bytes, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new java.lang.String($bytes) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR)
+new java.lang.String($bytes) :: sourceVersionGE(7), mode(KEEP_BEHAVIOR)
 => new java.lang.String($bytes, java.nio.charset.Charset.defaultCharset())
 ;;
 
