@@ -734,10 +734,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		return assertRefactoringResultAsExpected(cus, expected, null);
 	}
 
-	private record CompilerProblemKey(boolean error, int id, List<String> arguments) {
+	private record CompilerProblemKey(boolean error, int id, String arguments) {
 		static CompilerProblemKey of(IProblem problem) {
 			return new CompilerProblemKey(problem.isError(), problem.getID(),
-					List.copyOf(Arrays.asList(problem.getArguments())));
+					Arrays.toString(problem.getArguments()));
 		}
 
 		String severity() {
