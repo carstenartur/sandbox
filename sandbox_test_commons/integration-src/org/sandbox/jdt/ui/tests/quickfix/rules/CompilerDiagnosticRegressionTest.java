@@ -63,6 +63,19 @@ class CompilerDiagnosticRegressionTest {
 	}
 
 	@Test
+	void rejectsAnAdditionalOccurrenceOfTheSameError() throws Exception {
+		String before= source("missing();"); //$NON-NLS-1$
+		String after= source("missing(); missing();"); //$NON-NLS-1$
+		ICompilationUnit unit= createUnit(before);
+		context.output(after);
+
+		AssertionError failure= assertThrows(AssertionError.class, () ->
+				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));
+
+		assertTrue(failure.getMessage().contains("before=1 after=2"), failure.getMessage()); //$NON-NLS-1$
+	}
+
+	@Test
 	void changingTheDiagnosticArgumentsIsARegression() throws Exception {
 		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);
 		String before= source("int first= 1;"); //$NON-NLS-1$
