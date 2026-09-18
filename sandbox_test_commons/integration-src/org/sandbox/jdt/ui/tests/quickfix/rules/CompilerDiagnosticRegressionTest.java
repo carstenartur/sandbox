@@ -50,6 +50,19 @@ class CompilerDiagnosticRegressionTest {
 	}
 
 	@Test
+	void whitespaceNormalizingAssertionAlsoRejectsANewWarning() throws Exception {
+		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);
+		String before= source("int value= 1; System.out.println(value);"); //$NON-NLS-1$
+		String after= source("int value= 1;"); //$NON-NLS-1$
+		ICompilationUnit unit= createUnit(before);
+		context.output(after);
+
+		assertThrows(AssertionError.class, () ->
+				context.assertRefactoringResultAsExpectedNormalizingWhitespace(
+						new ICompilationUnit[] { unit }, new String[] { after }, null));
+	}
+
+	@Test
 	void rejectsANewCompilerError() throws Exception {
 		String before= source("int value= 1; System.out.println(value);"); //$NON-NLS-1$
 		String after= source("int value= missing; System.out.println(value);"); //$NON-NLS-1$
