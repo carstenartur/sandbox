@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -619,11 +620,17 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	/**
 	 * Executes the configured refactoring and asserts the result matches expectations.
 	 * <p>
-	 * This method does NOT validate compilation errors in the input code.
-	 * Use {@link #assertRefactoringResultAsExpectedWithCompileCheck} when test fixtures
-	 * should be validated for compilation errors before refactoring.
+	 * Existing compiler errors and warnings in deliberately incomplete fixtures are
+	 * tolerated, but the refactoring must not introduce a new diagnostic signature or
+	 * an additional occurrence of an existing one. Diagnostic identity uses severity,
+	 * problem ID and compiler arguments; source positions are deliberately ignored so
+	 * harmless line movement does not fail a test.
 	 * </p>
-	 * 
+	 * <p>
+	 * Use {@link #assertRefactoringResultAsExpectedWithCompileCheck} when the input
+	 * itself must additionally be free of compilation errors.
+	 * </p>
+	 *
 	 * @param cus the compilation units to refactor
 	 * @param expected the expected source code after refactoring (one per CU)
 	 * @param setOfExpectedGroupCategories expected group category names, or null to skip validation
@@ -632,7 +639,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpected(final ICompilationUnit[] cus, final String[] expected,
 			final Set<String> setOfExpectedGroupCategories) throws CoreException {
+		final Map<ICompilationUnit, Map<CompilerProblemKey, Long>> diagnosticsBefore = captureCompilerDiagnostics(cus);
 		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);
+		assertNoNewCompilerDiagnostics(cus, diagnosticsBefore);
 		final String[] previews = new String[cus.length];
 		for (int i = 0; i < cus.length; i++) {
 			final ICompilationUnit cu = cus[i];
@@ -725,6 +734,56 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		return assertRefactoringResultAsExpected(cus, expected, null);
 	}
 
+	private record CompilerProblemKey(boolean error, int id, List<String> arguments) {
+		static CompilerProblemKey of(IProblem problem) {
+			return new CompilerProblemKey(problem.isError(), problem.getID(),
+					List.copyOf(Arrays.asList(problem.getArguments())));
+		}
+
+		String severity() {
+			return error ? "ERROR" : "WARNING"; //$NON-NLS-1$ //$NON-NLS-2$
+		}
+	}
+
+	private static Map<ICompilationUnit, Map<CompilerProblemKey, Long>> captureCompilerDiagnostics(
+			ICompilationUnit[] units) {
+		Map<ICompilationUnit, Map<CompilerProblemKey, Long>> result= new LinkedHashMap<>();
+		for (ICompilationUnit unit : units) {
+			result.put(unit, compilerDiagnostics(unit));
+		}
+		return result;
+	}
+
+	private static Map<CompilerProblemKey, Long> compilerDiagnostics(ICompilationUnit unit) {
+		CompilationUnit root= parseCompilationUnit(unit);
+		return Arrays.stream(root.getProblems())
+				.filter(problem -> problem.isError() || problem.isWarning())
+				.collect(Collectors.groupingBy(CompilerProblemKey::of, LinkedHashMap::new, Collectors.counting()));
+	}
+
+	private static void assertNoNewCompilerDiagnostics(ICompilationUnit[] units,
+			Map<ICompilationUnit, Map<CompilerProblemKey, Long>> before) {
+		for (ICompilationUnit unit : units) {
+			Map<CompilerProblemKey, Long> baseline= before.getOrDefault(unit, Map.of());
+			for (Map.Entry<CompilerProblemKey, Long> entry : compilerDiagnostics(unit).entrySet()) {
+				long previous= baseline.getOrDefault(entry.getKey(), 0L);
+				if (entry.getValue() > previous) {
+					CompilerProblemKey problem= entry.getKey();
+					fail(unit.getElementName() + " gained compiler diagnostic: " + problem.severity() //$NON-NLS-1$
+							+ " id=" + problem.id() + " arguments=" + problem.arguments() //$NON-NLS-1$ //$NON-NLS-2$
+							+ " before=" + previous + " after=" + entry.getValue()); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+			}
+		}
+	}
+
+	private static CompilationUnit parseCompilationUnit(ICompilationUnit unit) {
+		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
+		parser.setSource(unit);
+		parser.setResolveBindings(true);
+		return (CompilationUnit) parser.createAST(null);
+	}
+
 	/**
 	 * Parses and validates a compilation unit for compilation errors.
 	 * 
@@ -737,10 +796,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws AssertionError if compilation errors (non-warnings) are found
 	 */
 	protected CompilationUnit assertNoCompilationError(final ICompilationUnit cu) {
-		final ASTParser parser = ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);
-		parser.setSource(cu);
-		parser.setResolveBindings(true);
-		final CompilationUnit root = (CompilationUnit) parser.createAST(null);
+		final CompilationUnit root = parseCompilationUnit(cu);
 		final IProblem[] problems = root.getProblems();
 		boolean hasProblems = false;
 		for (final IProblem prob : problems) {
