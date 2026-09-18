@@ -650,7 +650,6 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		assertEqualStringsIgnoreOrder(previews, expected);
 		return status;
 	}
-
 	/**
 	 * Executes the configured refactoring and asserts the result matches expectations,
 	 * after validating that the input compilation units have no compilation errors.
@@ -733,7 +732,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		}
 		return assertRefactoringResultAsExpected(cus, expected, null);
 	}
-
+
 	private record CompilerProblemKey(boolean error, int id, String arguments) {
 		static CompilerProblemKey of(IProblem problem) {
 			return new CompilerProblemKey(problem.isError(), problem.getID(),
