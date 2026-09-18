@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a160687ebbfb2cc9aa68a0ed838b2a30ccde37b22d3f4cc7d81158f6de49616d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "javax.xml.parsers.SAXParserFactory.newInstance().setNamespaceAware(true)\n\u003d\u003e\norg.eclipse.core.internal.runtime.XmlProcessorFactory.createSAXFactoryWithErrorOnDOCTYPE(true)\n;;",
+  "beforeExample": "import javax.xml.parsers.SAXParserFactory;\nimport javax.xml.parsers.ParserConfigurationException;\nimport org.xml.sax.SAXException; // Required for the catch block\n\npublic class Example {\n    private static SAXParserFactory factory;\n\n    public void init() throws ParserConfigurationException {\n        factory \u003d SAXParserFactory.newInstance();\n        factory.setNamespaceAware(true);\n        try {\n            factory.setFeature(\"http://xml.org/sax/features/string-interning\", true);\n        } catch (SAXException e) {\n            // handle exception\n        }\n    }\n}",
+  "afterExample": "import javax.xml.parsers.SAXParserFactory;\nimport javax.xml.parsers.ParserConfigurationException;\nimport org.xml.sax.SAXException;\nimport org.eclipse.core.internal.runtime.XmlProcessorFactory; // New import for the replacement API\n\npublic class Example {\n    private static SAXParserFactory factory;\n\n    public void init() throws ParserConfigurationException {\n        factory \u003d XmlProcessorFactory.createSAXFactoryWithErrorOnDOCTYPE(true);\n        try {\n            factory.setFeature(\"http://xml.org/sax/features/string-interning\", true);\n        } catch (SAXException e) {\n            // handle exception\n        }\n    }\n}",
+  "negativeExample": "import javax.xml.parsers.SAXParserFactory;\nimport javax.xml.parsers.ParserConfigurationException;\nimport org.xml.sax.SAXException;\n\npublic class NegativeExample {\n    private static SAXParserFactory factory;\n\n    public void init() throws ParserConfigurationException {\n        // Case 1: setNamespaceAware(false) - should not match the specific \u0027true\u0027 argument\n        SAXParserFactory factory1 \u003d SAXParserFactory.newInstance();\n        factory1.setNamespaceAware(false);\n\n        // Case 2: No setNamespaceAware call - should not match the chained method call\n        SAXParserFactory factory2 \u003d SAXParserFactory.newInstance();\n\n        // Case 3: Chained differently (intermediate calls) - should not match the direct chain\n        SAXParserFactory factory3 \u003d SAXParserFactory.newInstance();\n        factory3.setFeature(\"some.feature\", true);\n        factory3.setNamespaceAware(true);\n\n        try {\n            factory1.setFeature(\"http://xml.org/sax/features/string-interning\", true);\n            factory2.setFeature(\"http://xml.org/sax/features/string-interning\", true);\n            factory3.setFeature(\"http://xml.org/sax/features/string-interning\", true);\n        } catch (SAXException e) {\n            // handle exception\n        }\n    }\n}",
+  "targetHintFile": "xml-security.sandbox-hint",
+  "sourceCommit": "5dc372a0c5002b7f22e5d49eaa1cbf0916455daf",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "XML Security",
+  "summary": "Replaces the direct instantiation and configuration of SAXParserFactory for namespace awareness with a call to a project-specific secure XML factory method, ensuring consistent XML parsing setup.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-18T02:26:22.621211337Z",
+  "ruleFingerprint": "sha256:6ff9f1d8bab20f160f2af1f557fffd9cbf561058e481ce38d0492ad9af3517e7",
+  "behaviorFingerprint": "sha256:6bdbb1c558baa4502ff966593adeeb5e746053f5c29151fe1c6175387d213907",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-18T02:26:30.196364169Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
