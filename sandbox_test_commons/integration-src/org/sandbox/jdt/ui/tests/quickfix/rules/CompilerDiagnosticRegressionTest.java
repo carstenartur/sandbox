@@ -102,8 +102,8 @@ class CompilerDiagnosticRegressionTest {
 
 	@Test
 	void diagnosticsAreComparedPerCompilationUnit() throws Exception {
-		String broken= source("missing();"); //$NON-NLS-1$
-		String clean= source("System.out.println(1);"); //$NON-NLS-1$
+		String broken= source("First", "missing();"); //$NON-NLS-1$ //$NON-NLS-2$
+		String clean= source("Second", "System.out.println(1);"); //$NON-NLS-1$ //$NON-NLS-2$
 		ICompilationUnit first= createUnit("First.java", broken); //$NON-NLS-1$
 		ICompilationUnit second= createUnit("Second.java", clean); //$NON-NLS-1$
 		context.output(clean, broken);
@@ -163,14 +163,18 @@ class CompilerDiagnosticRegressionTest {
 	}
 
 	private static String source(String statement) {
+		return source("Sample", statement); //$NON-NLS-1$
+	}
+
+	private static String source(String typeName, String statement) {
 		return """
 				package test;
-				class Sample {
+				class TYPE {
 					void run() {
 						STATEMENT
 					}
 				}
-				""".replace("STATEMENT", statement); //$NON-NLS-1$
+				""".replace("TYPE", typeName).replace("STATEMENT", statement); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private static final class DiagnosticHarness extends AbstractEclipseJava {
