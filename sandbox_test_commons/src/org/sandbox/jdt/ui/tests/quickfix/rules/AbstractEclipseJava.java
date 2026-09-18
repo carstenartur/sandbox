@@ -639,9 +639,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpected(final ICompilationUnit[] cus, final String[] expected,
 			final Set<String> setOfExpectedGroupCategories) throws CoreException {
-		final Map<ICompilationUnit, Map<CompilerProblemKey, Long>> diagnosticsBefore = captureCompilerDiagnostics(cus);
-		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);
-		assertNoNewCompilerDiagnostics(cus, diagnosticsBefore);
+		final RefactoringStatus status = performRefactoringCheckingDiagnostics(cus, setOfExpectedGroupCategories);
 		final String[] previews = new String[cus.length];
 		for (int i = 0; i < cus.length; i++) {
 			final ICompilationUnit cu = cus[i];
@@ -743,6 +741,14 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 		String severity() {
 			return error ? "ERROR" : "WARNING"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
+	}
+
+	private RefactoringStatus performRefactoringCheckingDiagnostics(ICompilationUnit[] units,
+			Set<String> expectedGroups) throws CoreException {
+		Map<ICompilationUnit, Map<CompilerProblemKey, Long>> before= captureCompilerDiagnostics(units);
+		RefactoringStatus status= performRefactoring(units, expectedGroups);
+		assertNoNewCompilerDiagnostics(units, before);
+		return status;
 	}
 
 	private static Map<ICompilationUnit, Map<CompilerProblemKey, Long>> captureCompilerDiagnostics(
@@ -1005,7 +1011,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpectedNormalizingWhitespace(final ICompilationUnit[] cus,
 			final String[] expected, final Set<String> setOfExpectedGroupCategories) throws CoreException {
-		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);
+		final RefactoringStatus status = performRefactoringCheckingDiagnostics(cus, setOfExpectedGroupCategories);
 		final String[] previews = new String[cus.length];
 		for (int i = 0; i < cus.length; i++) {
 			final ICompilationUnit cu = cus[i];
