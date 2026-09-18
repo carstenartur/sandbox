@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e8d0187eca2f951e8ac669d0ef009fbd7bb51601549e7091e6f441285d2ca1f7",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n@id: math.abs-min-value-fix\n@description: Apply Math.abs() twice for modulo operations on potentially negative values to prevent negative array indices, fixing Integer.MIN_VALUE edge cases. Replaces Math.abs(expr) % divisor with Math.abs(Math.abs(expr) % divisor).\n@severity: ERROR\n*/\njava.lang.Math.abs($expr) % $divisor\n\u003d\u003e\njava.lang.Math.abs(java.lang.Math.abs($expr) % $divisor)\n;;",
+  "beforeExample": "public class MyClass {\n    private static final int SEGMENT_QUOTA \u003d 10;\n    private static final char[][] HEX_STRINGS \u003d new char[10][]; // Dummy array\n\n    private char[] translateSegment(String segment) {\n        // String.hashCode() can produce Integer.MIN_VALUE.\n        // Math.abs(Integer.MIN_VALUE) is still Integer.MIN_VALUE.\n        // Integer.MIN_VALUE % SEGMENT_QUOTA can be negative, leading to ArrayIndexOutOfBoundsException.\n        return HEX_STRINGS[Math.abs(segment.hashCode()) % SEGMENT_QUOTA];\n    }\n\n    public void testMethod() {\n        int val \u003d Integer.MIN_VALUE;\n        int result \u003d Math.abs(val) % 10; // result is -8\n        System.out.println(result);\n\n        int a \u003d 10;\n        int b \u003d 3;\n        int c \u003d Math.abs(a * b - 50) % 7; // Matches the pattern\n        System.out.println(c);\n    }\n}",
+  "afterExample": "public class MyClass {\n    private static final int SEGMENT_QUOTA \u003d 10;\n    private static final char[][] HEX_STRINGS \u003d new char[10][]; // Dummy array\n\n    private char[] translateSegment(String segment) {\n        // The nested Math.abs ensures the final index is always non-negative.\n        return HEX_STRINGS[java.lang.Math.abs(java.lang.Math.abs(segment.hashCode()) % SEGMENT_QUOTA)];\n    }\n\n    public void testMethod() {\n        int val \u003d Integer.MIN_VALUE;\n        int result \u003d java.lang.Math.abs(java.lang.Math.abs(val) % 10); // result is 8\n        System.out.println(result);\n\n        int a \u003d 10;\n        int b \u003d 3;\n        int c \u003d java.lang.Math.abs(java.lang.Math.abs(a * b - 50) % 7); // Replacement applied\n        System.out.println(c);\n    }\n}",
+  "negativeExample": "public class MyClass {\n    private static final int SEGMENT_QUOTA \u003d 10;\n    private static final char[][] HEX_STRINGS \u003d new char[10][];\n\n    // Does not match: no modulo operation\n    private int getAbsHashCode(String segment) {\n        return Math.abs(segment.hashCode());\n    }\n\n    // Does not match: no initial Math.abs\n    private int getModuloHashCode(String segment) {\n        return segment.hashCode() % SEGMENT_QUOTA;\n    }\n\n    // Does not match: different structure (addition instead of modulo)\n    private int calculate(int x, int y) {\n        return Math.abs(x) + y;\n    }\n}",
+  "targetHintFile": "numeric.sandbox-hint",
+  "sourceCommit": "39d33eaf7e4cec7def32333f8ab879164da49932",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Numeric Safety",
+  "summary": "Wraps `Math.abs(expr) % divisor` with another `Math.abs()` to ensure a non-negative result, fixing potential `ArrayIndexOutOfBoundsException` when `expr` evaluates to `Integer.MIN_VALUE`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-18T02:26:22.396669220Z",
+  "ruleFingerprint": "sha256:d50073f89c97f708a3b43cbd9c52f411ecd64076aa4988fa94b43c76286df4b3",
+  "behaviorFingerprint": "sha256:9298eed3b8d48371b78f5e985daa3e67892a18fb486ba0ff669925fa5659dc74",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-09-18T02:26:30.062447175Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

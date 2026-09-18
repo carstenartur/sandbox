@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "09acf21fbb262043129dbf4655ec51962c81429ccf1d747d362bea9083af6645",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: string.trim.length.equals.zero.to.isblank\u003e\n\u003c!description: Replace $string.trim().length() \u003d\u003d 0 with $string.isBlank() when checking for blank strings (Java 11+).\u003e\n\u003c!severity: HINT\u003e\n\u003c!minJavaVersion: 11\u003e\n\n$newCharset.trim().length() \u003d\u003d 0 :: sourceVersionGE(11) \u0026\u0026 instanceof($newCharset, \"java.lang.String\")\n\u003d\u003e $newCharset.isBlank()\n;;",
+  "beforeExample": "class MyClass {\n    void check(String newCharset) {\n        if (newCharset \u003d\u003d null || newCharset.trim().length() \u003d\u003d 0) {\n            System.out.println(\"Empty or blank\");\n        }\n    }\n}",
+  "afterExample": "class MyClass {\n    void check(String newCharset) {\n        if (newCharset \u003d\u003d null || newCharset.isBlank()) {\n            System.out.println(\"Empty or blank\");\n        }\n    }\n}",
+  "negativeExample": "class MyClass {\n    void check(String newCharset) {\n        // Does not match: uses isEmpty() instead of trim().length() \u003d\u003d 0\n        if (newCharset \u003d\u003d null || newCharset.isEmpty()) {\n            System.out.println(\"Empty or null\");\n        }\n        // Does not match: compares to 1, not 0\n        if (newCharset !\u003d null \u0026\u0026 newCharset.trim().length() \u003d\u003d 1) {\n            System.out.println(\"Single char after trim\");\n        }\n        // Would not match if compiled with Java 10 or earlier due to sourceVersionGE(11) guard\n    }\n}",
+  "targetHintFile": "modernize-java11.sandbox-hint",
+  "sourceCommit": "18f4a48a705c090982acd2a92438d704ccdc1f18",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "String API Modernization",
+  "summary": "Replace `String.trim().length() \u003d\u003d 0` with `String.isBlank()` for Java 11+.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-18T02:26:22.596520142Z",
+  "ruleFingerprint": "sha256:84d6ac8f5e8b9ae3506988811d41776e3695d3d11dd318e336e75da94183ea73",
+  "behaviorFingerprint": "sha256:c07cd0cc72cac7f19dc412f62b4a79ee3ae5235b0f5ae168494fa2da4d81b99c",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-18T02:26:30.178536715Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

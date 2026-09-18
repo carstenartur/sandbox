@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d5d939874a4da7d66457ba3a10817dbab18605e5746987f09a155b4e311ea48a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.core.runtime.Platform.getLog($bundle)\n\u003d\u003e\norg.eclipse.core.runtime.ILog.of($bundle)\n;;",
+  "beforeExample": "package com.example;\n\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.ILog;\nimport org.osgi.framework.Bundle;\nimport org.osgi.framework.FrameworkUtil;\n\npublic class MyClass {\n    public void logSomething(Class\u003c?\u003e clazz) {\n        Bundle bundle \u003d FrameworkUtil.getBundle(clazz);\n        // This call will be replaced\n        ILog log \u003d Platform.getLog(bundle);\n        log.info(\"Hello from \" + clazz.getName());\n    }\n\n    public void anotherMethod(Bundle someBundle) {\n        ILog log \u003d Platform.getLog(someBundle);\n        log.warn(\"Another log message.\");\n    }\n}",
+  "afterExample": "package com.example;\n\nimport org.eclipse.core.runtime.ILog;\nimport org.osgi.framework.Bundle;\nimport org.osgi.framework.FrameworkUtil;\n\npublic class MyClass {\n    public void logSomething(Class\u003c?\u003e clazz) {\n        Bundle bundle \u003d FrameworkUtil.getBundle(clazz);\n        // This call has been replaced with the new ILog.of method\n        ILog log \u003d ILog.of(bundle);\n        log.info(\"Hello from \" + clazz.getName());\n    }\n\n    public void anotherMethod(Bundle someBundle) {\n        ILog log \u003d ILog.of(someBundle);\n        log.warn(\"Another log message.\");\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.ILog;\nimport org.osgi.framework.Bundle;\nimport org.osgi.framework.FrameworkUtil;\n\npublic class MyOtherClass {\n    public void logSomethingElse(Class\u003c?\u003e clazz) {\n        // This method signature (getLog(Class\u003c?\u003e)) should not match the rule\n        ILog log1 \u003d Platform.getLog(clazz);\n        log1.warn(\"Using Platform.getLog(Class\u003c?\u003e)\");\n\n        // This is a different new API and should not match\n        ILog log2 \u003d ILog.get();\n        log2.error(\"Using ILog.get()\");\n\n        // This is the new API, but with Class\u003c?\u003e param, so it should not match this rule\n        ILog log3 \u003d ILog.of(clazz);\n        log3.info(\"Using ILog.of(Class)\");\n    }\n}",
+  "targetHintFile": "modernize-eclipse.sandbox-hint",
+  "sourceCommit": "160e6ecdf648cab3b766d01fc281758fc8b8305e",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-18T02:26:22.521559311Z",
+  "ruleFingerprint": "sha256:e84ca50db613a40420fdb1490958d92d6a23f7cdb99662e3dfecb1de1d2824e2",
+  "behaviorFingerprint": "sha256:ab9fcd97d3cc9fc467267807d125ddc4076ca692b6d4401b96b2a2dcd6f6b2e1",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 8: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-09-18T02:26:30.128146007Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

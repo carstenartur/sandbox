@@ -1,32 +1,32 @@
 {
-  "totalProcessed": 21,
-  "relevant": 3,
-  "irrelevant": 18,
+  "totalProcessed": 22,
+  "relevant": 8,
+  "irrelevant": 14,
   "duplicates": 0,
-  "green": 3,
+  "green": 8,
   "yellow": 0,
   "red": 0,
   "irrelevantReasons": {},
   "perRepository": {
     "https://github.com/eclipse-platform/eclipse.platform": {
-      "totalProcessed": 21,
-      "relevant": 3,
-      "green": 3,
+      "totalProcessed": 22,
+      "relevant": 8,
+      "green": 8,
       "yellow": 0,
       "red": 0
     }
   },
   "dailyProgress": [
     {
-      "date": "2026-09-17",
-      "processed": 21,
-      "relevant": 3
+      "date": "2026-09-18",
+      "processed": 22,
+      "relevant": 8
     }
   ],
   "runMetadata": {
-    "startedAt": "2026-09-17T02:18:32.494Z",
-    "completedAt": "2026-09-17T02:26:30.079328142Z",
-    "durationSeconds": 477,
+    "startedAt": "2026-09-18T02:18:17.588Z",
+    "completedAt": "2026-09-18T02:26:22.347495072Z",
+    "durationSeconds": 484,
     "llmProvider": "GeminiClient",
     "llmModel": "gemini-2.5-flash",
     "batchSize": 200,
@@ -36,9 +36,9 @@
     "permanentlySkipped": 0
   },
   "timeWindow": {
-    "earliestEvaluation": "2026-09-17T02:21:33.197341230Z",
-    "latestEvaluation": "2026-09-17T02:26:28.938377069Z",
-    "earliestCommitDate": "2022-09-08T16:05:30Z",
-    "latestCommitDate": "2023-06-12T12:40:42Z"
+    "earliestEvaluation": "2026-09-18T02:21:17.677317381Z",
+    "latestEvaluation": "2026-09-18T02:26:20.208673296Z",
+    "earliestCommitDate": "2023-05-16T07:09:26Z",
+    "latestCommitDate": "2023-09-04T13:02:41Z"
   }
 }

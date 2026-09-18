@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5d3c42b16420d76cc788a02e3daf1352312f2a770e2765b206793fecf69d26e6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$x.toLowerCase().equals($y)\n\u003d\u003e\n$x.equalsIgnoreCase($y)\n;;",
+  "beforeExample": "class MyClass {\n    public void myMethod(String next, String trigger) {\n        String result \u003d next.toLowerCase().equals(trigger) ? \"TRUE\" : \"FALSE\";\n        System.out.println(result);\n    }\n}",
+  "afterExample": "class MyClass {\n    public void myMethod(String next, String trigger) {\n        String result \u003d next.equalsIgnoreCase(trigger) ? \"TRUE\" : \"FALSE\";\n        System.out.println(result);\n    }\n}",
+  "negativeExample": "class MyClass {\n    public void myMethod(String next, String trigger) {\n        // Not replaced: toLowerCase() is on the argument of equals()\n        String result1 \u003d next.equals(trigger.toLowerCase()) ? \"TRUE\" : \"FALSE\";\n        System.out.println(result1);\n\n        // Not replaced: toLowerCase() is not followed by equals()\n        String result2 \u003d next.toLowerCase().startsWith(trigger) ? \"TRUE\" : \"FALSE\";\n        System.out.println(result2);\n    }\n}",
+  "targetHintFile": "string.sandbox-hint",
+  "sourceCommit": "97c4cd0203d4cbfe7770399a39052f6ee46941d0",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "String API Usage",
+  "summary": "Replaces String.toLowerCase().equals(String) with String.equalsIgnoreCase(String) for improved readability, efficiency, and to avoid unnecessary intermediate String allocation.",
+  "sourceVersion": "21",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-09-18T02:26:22.494407157Z",
+  "ruleFingerprint": "sha256:4cfcd7b4dcba9c1f0bc4316737a3ace69bc15922120c77dedac9b063a151d8f1",
+  "behaviorFingerprint": "sha256:efbe73369c468f6c7d5128fc73247b082e3ce24974b2ed51c4c24e60c9a83603",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Candidate behavior verified",
+    "verifiedAt": "2026-09-18T02:26:30.107264747Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-09-18T02:26:30.107462776Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-09-18T02:26:30.107489506Z"
+    }
+  ]
+}

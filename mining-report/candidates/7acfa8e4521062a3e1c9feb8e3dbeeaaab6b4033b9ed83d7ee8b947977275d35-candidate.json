@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7acfa8e4521062a3e1c9feb8e3dbeeaaab6b4033b9ed83d7ee8b947977275d35",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.core.runtime.Preferences $preferences.addPropertyChangeListener($listener)\n\u003d\u003e\norg.eclipse.core.runtime.preferences.InstanceScope.INSTANCE.getNode(org.eclipse.core.resources.ResourcesPlugin.PI_RESOURCES).addPreferenceChangeListener($listener)\n;;",
+  "beforeExample": "package example;\n\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.Preferences;\nimport org.eclipse.core.runtime.Preferences.IPropertyChangeListener;\n\npublic class MyClass implements IPropertyChangeListener {\n    private Preferences preferences \u003d ResourcesPlugin.getPlugin().getPluginPreferences();\n\n    public MyClass() {\n        // Original deprecated API usage\n        this.preferences.addPropertyChangeListener(this);\n    }\n\n    @Override\n    public void propertyChange(Preferences.PropertyChangeEvent event) {\n        System.out.println(\"Property changed: \" + event.getProperty() + \" -\u003e \" + event.getNewValue());\n    }\n\n    public void anotherMethod() {\n        // Other method calls on \u0027preferences\u0027 should not be affected by this rule\n        preferences.setValue(\"test\", true);\n    }\n}\n",
+  "afterExample": "package example;\n\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.Preferences;\nimport org.eclipse.core.runtime.Preferences.IPropertyChangeListener;\nimport org.eclipse.core.runtime.preferences.InstanceScope;\nimport org.eclipse.core.runtime.preferences.IEclipsePreferences; // Although IPropertyChangeListener is replaced by IEclipsePreferences.IPreferenceChangeListener in the commit, this specific rule only targets the method call, so the interface remains unchanged in this rule\u0027s output example.\n\npublic class MyClass implements IPropertyChangeListener {\n    private Preferences preferences \u003d ResourcesPlugin.getPlugin().getPluginPreferences();\n\n    public MyClass() {\n        // Replaced with new Equinox Preferences API\n        InstanceScope.INSTANCE.getNode(ResourcesPlugin.PI_RESOURCES).addPreferenceChangeListener(this);\n    }\n\n    @Override\n    public void propertyChange(Preferences.PropertyChangeEvent event) {\n        System.out.println(\"Property changed: \" + event.getProperty() + \" -\u003e \" + event.getNewValue());\n    }\n\n    public void anotherMethod() {\n        preferences.setValue(\"test\", true);\n    }\n}\n",
+  "negativeExample": "package example;\n\nimport java.beans.PropertyChangeListener;\nimport java.beans.PropertyChangeSupport;\nimport java.beans.PropertyChangeEvent;\n\npublic class OtherClass {\n    private PropertyChangeSupport support \u003d new PropertyChangeSupport(this);\n\n    public OtherClass(PropertyChangeListener listener) {\n        // This call should NOT match, as \u0027support\u0027 is of type PropertyChangeSupport, not Preferences\n        support.addPropertyChangeListener(listener);\n    }\n\n    public void firePropertyChange() {\n        support.firePropertyChange(new PropertyChangeEvent(this, \"someProperty\", \"oldValue\", \"newValue\"));\n    }\n}\n",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "8b87e40bb7ae59c3a7b50a03e6cf6a089339f05e",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "API Migration",
+  "summary": "Replaces the deprecated `Preferences.addPropertyChangeListener()` method call with its equivalent using the Equinox Preferences API via `InstanceScope.INSTANCE.getNode(ResourcesPlugin.PI_RESOURCES).addPreferenceChangeListener()`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-18T02:26:22.547521537Z",
+  "ruleFingerprint": "sha256:4e64fe7301a1480169ab0b6feef6f3911f532e9dd79d44aea78b7fa41a40b65f",
+  "behaviorFingerprint": "sha256:726f8b2e7d527994d314c170e44f695b3a796d4c68eb157ea0f054ccc503c20c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-09-18T02:26:30.147552007Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

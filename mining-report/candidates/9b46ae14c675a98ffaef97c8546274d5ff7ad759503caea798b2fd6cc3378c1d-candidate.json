@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9b46ae14c675a98ffaef97c8546274d5ff7ad759503caea798b2fd6cc3378c1d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add.volatile.to.private.boolean.field.initialized.false\u003e\n\u003c!description: Adds \u0027volatile\u0027 modifier to a private boolean field initialized to \u0027false\u0027, removing the redundant initialization as \u0027false\u0027 is the default for booleans. This improves visibility in multi-threaded contexts.\nRequires manual review to confirm thread-safety implications.\u003e\n\u003c!severity: WARNING\u003e\nprivate boolean $name \u003d false;\n\u003d\u003e\nprivate volatile boolean $name;\n;;",
+  "beforeExample": "class Example {\n    /**\n     * Some description\n     */\n    private boolean immutable \u003d false;\n\n    public void setImmutable() {\n        immutable \u003d true;\n    }\n\n    public boolean isImmutable() {\n        return immutable;\n    }\n}",
+  "afterExample": "class Example {\n    /**\n     * Some description\n     */\n    private volatile boolean immutable;\n\n    public void setImmutable() {\n        immutable \u003d true;\n    }\n\n    public boolean isImmutable() {\n        return immutable;\n    }\n}",
+  "negativeExample": "class Example {\n    // Should not match: already volatile\n    private volatile boolean immutable \u003d false;\n\n    // Should not match: not boolean\n    private int counter \u003d 0;\n\n    // Should not match: not initialized to false\n    private boolean enabled;\n\n    // Should not match: not private\n    protected boolean accessible \u003d false;\n}",
+  "targetHintFile": "concurrency.sandbox-hint",
+  "sourceCommit": "45c23ccdea643a33dad04b81ccdc2185183ca359",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Concurrency",
+  "summary": "Adds \u0027volatile\u0027 to private boolean fields initialized to false and removes the redundant initializer.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-18T02:26:22.459069266Z",
+  "ruleFingerprint": "sha256:0e81082d9aba3dc4c9ca1aebb744c53a9aa33299bec8ecce212de48f62a7e4e2",
+  "behaviorFingerprint": "sha256:634fd085abd449c318bb5ffd29ed97e45eebb401bed99cb4e93a59f03dba42ad",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-18T02:26:30.075909507Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

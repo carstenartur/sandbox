@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f252bd8e146721f312558d97a49c5484f899c3369d6975fa96e22950f7b0fb26",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.core.runtime.Platform.getLog($bundle)\n\u003d\u003e\norg.eclipse.core.runtime.ILog.of($bundle)\n;;",
+  "beforeExample": "package test;\n\nimport org.osgi.framework.Bundle;\nimport org.eclipse.core.runtime.ILog;\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.IStatus;\nimport org.eclipse.core.runtime.Status;\n\npublic class MyClass {\n    public void myMethod(Bundle bundle) {\n        if (bundle \u003d\u003d null) return;\n        IStatus status \u003d new Status(IStatus.INFO, bundle.getSymbolicName(), \"Test message\");\n        Platform.getLog(bundle).log(status);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.osgi.framework.Bundle;\nimport org.eclipse.core.runtime.ILog;\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.IStatus;\nimport org.eclipse.core.runtime.Status;\n\npublic class MyClass {\n    public void myMethod(Bundle bundle) {\n        if (bundle \u003d\u003d null) return;\n        IStatus status \u003d new Status(IStatus.INFO, bundle.getSymbolicName(), \"Test message\");\n        ILog.of(bundle).log(status);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.osgi.framework.Bundle;\nimport org.eclipse.core.runtime.ILog;\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.IStatus;\nimport org.eclipse.core.runtime.Status;\n\nclass AnotherLogHolder {\n    public ILog getLog(Bundle b) { return null; }\n}\n\npublic class MyClass {\n    public void myMethod(Bundle bundle) {\n        if (bundle \u003d\u003d null) return;\n        IStatus status \u003d new Status(IStatus.INFO, bundle.getSymbolicName(), \"Test message\");\n        // Should not match as it\u0027s not Platform.getLog\n        new AnotherLogHolder().getLog(bundle).log(status);\n        // Already using the new method, should not be changed\n        ILog myLog \u003d ILog.of(bundle);\n        myLog.log(status);\n    }\n}",
+  "targetHintFile": "modernize-eclipse.sandbox-hint",
+  "sourceCommit": "b85b3cd34d507cc4a77b4c09206a67d1f8f0ecab",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "API Modernization",
+  "summary": "Replaces the deprecated Platform.getLog(Bundle) with the modern ILog.of(Bundle) factory method, preserving the argument and subsequent method calls.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-18T02:26:22.572483658Z",
+  "ruleFingerprint": "sha256:e84ca50db613a40420fdb1490958d92d6a23f7cdb99662e3dfecb1de1d2824e2",
+  "behaviorFingerprint": "sha256:9ede91f25c7e090a0352f2ce166b531311980ead80482cf2b26d3b005a527960",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 9: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-09-18T02:26:30.165806298Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
