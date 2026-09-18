@@ -374,7 +374,7 @@ public class HintFileFixCore {
 		}
 
 		@Override
-		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) throws CoreException {
 			ASTRewrite rewrite = cuRewrite.getASTRewrite();
 			AST ast = cuRewrite.getRoot().getAST();
 			String description = result.description() != null
@@ -478,6 +478,14 @@ public class HintFileFixCore {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
 					int oldCount = countStringLiterals(matchedNode);
 					int newCount = countStringLiterals(copy);
+                    if (CharsetConstructorMigration.rewriteExpression(matchedNode, copy, replacement, cuRewrite, group)) {
+                        TypeChangeInfo change= TypeChangeDetector.detectCharsetTypeChange(matchedNode, newNode);
+                        if (change != null) ExceptionCleanupHelper.removeCheckedException(matchedNode,
+                                change.exceptionFQN(), change.exceptionSimpleName(), group, rewrite, cuRewrite.getImportRemover());
+                        CharsetConstructorMigration.adapt(matchedNode, copy, replacement, cuRewrite, group);
+                        return;
+                    }
+
 
 					// Auto-detect: did we change a String charset argument to a Charset type?
 					TypeChangeInfo typeChange = TypeChangeDetector.detectCharsetTypeChange(
@@ -515,6 +523,7 @@ public class HintFileFixCore {
 									group, rewrite, cuRewrite.getImportRemover());
 						}
 					}
+					CharsetConstructorMigration.adapt(matchedNode, copy, replacement, cuRewrite, group);
 				}
 			} else if (matchedNode instanceof Annotation) {
 				// Handle annotation replacement (e.g., @Before → @BeforeEach)
