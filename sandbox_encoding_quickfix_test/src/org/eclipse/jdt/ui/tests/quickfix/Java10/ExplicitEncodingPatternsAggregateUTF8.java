@@ -896,6 +896,7 @@ public class E1 {
 
     static void bla(String filename) throws FileNotFoundException, UnsupportedEncodingException {
         byte[] b = {(byte) 59};
+        String defaultEncoded = new String(b); // implizites Plattform-Encoding
 
         // Fälle mit String Encoding als "UTF-8" (soll durch StandardCharsets.UTF_8 ersetzt werden)
         String s1 = new String(b, "UTF-8"); // "UTF-8" als String-Literal
@@ -992,6 +993,7 @@ public class E1 {
 
 	static void bla(String filename) throws FileNotFoundException {
         byte[] b = {(byte) 59};
+        String defaultEncoded = new String(b, E1.UTF_8); // implizites Plattform-Encoding
 
         // Fälle mit String Encoding als "UTF-8" (soll durch StandardCharsets.UTF_8 ersetzt werden)
         String s1 = new String(b, E1.UTF_8); // "UTF-8" als String-Literal
