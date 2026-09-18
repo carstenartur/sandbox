@@ -1,8 +1,8 @@
 {
   "repositories": {
     "https://github.com/eclipse-platform/eclipse.platform.ui": {
-      "lastProcessedDate": "2026-09-17T02:20:48.902053579Z",
-      "totalProcessed": 15936,
+      "lastProcessedDate": "2026-09-18T02:20:36.650102716Z",
+      "totalProcessed": 23414,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -171,10 +171,11 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 2,
+      "currentEpoch": 3,
       "completedEpochs": [
         "2020-01-01 to 2026-01-01",
-        "2015-01-01 to 2020-01-01"
+        "2015-01-01 to 2020-01-01",
+        "2010-01-01 to 2015-01-01"
       ],
       "categoryHitCounts": {
         "Resource Management": 1,
@@ -3701,9 +3702,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform": {
-      "lastProcessedCommit": "bb59b5aef29313c5134a99948e30e4d83cbb68ba",
-      "lastProcessedDate": "2026-09-17T02:26:28.938791613Z",
-      "totalProcessed": 1944,
+      "lastProcessedCommit": "c4bfea97a3bbec796f7bb8a343f7654be58f3c16",
+      "lastProcessedDate": "2026-09-18T02:26:20.208986460Z",
+      "totalProcessed": 2064,
       "status": "CATCHING_UP",
       "deferredCommits": [],
       "permanentlySkipped": [],
@@ -3712,12 +3713,18 @@
       "currentEpoch": 0,
       "completedEpochs": [],
       "categoryHitCounts": {
-        "API Modernization": 2,
+        "API Modernization": 4,
         "Error Message Standardization": 1,
         "Collections API Modernization": 1,
         "Error Handling Modernization": 1,
         "Generics": 1,
-        "ThreadLocal Cleanup": 1
+        "ThreadLocal Cleanup": 1,
+        "Numeric Safety": 1,
+        "Concurrency": 1,
+        "String API Usage": 1,
+        "API Migration": 1,
+        "String API Modernization": 1,
+        "XML Security": 1
       },
       "exhaustedCategories": []
     },
@@ -3746,5 +3753,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 36721
+  "globalTotalProcessed": 44319
 }
