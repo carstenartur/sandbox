@@ -1,141 +1,36 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EncodingSourceRewrite.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_encoding_quickfix</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">EncodingSourceRewrite.java</span></div><h1>EncodingSourceRewrite.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EncodingSourceRewrite.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_encoding_quickfix</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">EncodingSourceRewrite.java</span></div><h1>EncodingSourceRewrite.java</h1><pre class="source lang-java linenums">/*******************************************************************************
  * Copyright (c) 2026 Carsten Hammer and others.
  *
- * This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License 2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0 which accompanies this distribution, and is
+ * available at https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.eclipse.jdt.core.JavaModelException;
-import org.eclipse.jdt.core.compiler.InvalidInputException;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.LineComment;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
-import org.eclipse.jdt.internal.corext.refactoring.nls.NLSElement;
-import org.eclipse.jdt.internal.corext.refactoring.nls.NLSLine;
-import org.eclipse.jdt.internal.corext.refactoring.nls.NLSScanner;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.eclipse.jdt.internal.corext.refactoring.util.TextEditUtil;
-import org.eclipse.jface.text.BadLocationException;
-import org.eclipse.text.edits.ReplaceEdit;
-import org.eclipse.text.edits.TextEditGroup;
-import org.sandbox.jdt.internal.corext.fix.helper.EncodingSourceEdits.Edit;
 
-/** Adds NLS edits to the completed AST edit tree, including moved source ranges. */
+/** Compatibility facade over the shared source-preserving NLS rewrite. */
 final class EncodingSourceRewrite {
-
-<span class="fc" id="L40">	private static final String REPLACEMENTS= EncodingSourceRewrite.class.getName() + &quot;.replacements&quot;; //$NON-NLS-1$</span>
-
-	private record Replacements(CompilationUnitRewrite rewrite, Set&lt;ASTNode&gt; nodes) {
-	}
 
 	private EncodingSourceRewrite() {
 	}
 
 	static void clear(CompilationUnit root) {
-<span class="fc" id="L49">		root.setProperty(REPLACEMENTS, null);</span>
-<span class="fc" id="L50">	}</span>
+<span class="nc" id="L25">		org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceRewrite.clear(root);</span>
+<span class="nc" id="L26">	}</span>
 
 	static void record(CompilationUnitRewrite cuRewrite, ASTNode argument) {
-<span class="fc" id="L53">		Object stored= cuRewrite.getRoot().getProperty(REPLACEMENTS);</span>
-		Replacements replacements;
-<span class="pc bpc" id="L55" title="1 of 4 branches missed.">		if (stored instanceof Replacements previous &amp;&amp; previous.rewrite() == cuRewrite) {</span>
-<span class="fc" id="L56">			replacements= previous;</span>
-<span class="fc" id="L57">		} else {</span>
-<span class="fc" id="L58">			replacements= new Replacements(cuRewrite, Collections.newSetFromMap(new IdentityHashMap&lt;&gt;()));</span>
-<span class="fc" id="L59">			cuRewrite.getRoot().setProperty(REPLACEMENTS, replacements);</span>
-		}
-<span class="fc" id="L61">		replacements.nodes().add(argument);</span>
-<span class="fc" id="L62">	}</span>
+<span class="fc" id="L29">		org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceRewrite.record(cuRewrite, argument);</span>
+<span class="fc" id="L30">	}</span>
 
 	static void complete(CompilationUnit root, CompilationUnitChange change) throws JavaModelException {
-<span class="fc bfc" id="L65" title="All 2 branches covered.">		if (!(root.getProperty(REPLACEMENTS) instanceof Replacements replacements)) {</span>
-<span class="fc" id="L66">			return;</span>
-		}
-<span class="fc" id="L68">		CompilationUnitRewrite cuRewrite= replacements.rewrite();</span>
-<span class="fc" id="L69">		String buffer= cuRewrite.getCu().getBuffer().getContents();</span>
-<span class="fc" id="L70">		Map&lt;LineComment, List&lt;Edit&gt;&gt; commentEdits= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">		for (NLSLine line : scan(cuRewrite, buffer)) {</span>
-<span class="fc" id="L72">			int removed= 0;</span>
-<span class="fc" id="L73">			NLSElement[] elements= line.getElements();</span>
-<span class="fc bfc" id="L74" title="All 2 branches covered.">			for (int index= 0; index &lt; elements.length; index++) {</span>
-<span class="fc" id="L75">				NLSElement element= elements[index];</span>
-<span class="fc" id="L76">				boolean deleted= isRemoved(element.getPosition().getOffset(), element.getPosition().getLength(), replacements.nodes());</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">				if (deleted) {</span>
-<span class="fc" id="L78">					removed++;</span>
-				}
-<span class="fc bfc" id="L80" title="All 6 branches covered.">				if (!element.hasTag() || (!deleted &amp;&amp; removed == 0)) {</span>
-<span class="fc" id="L81">					continue;</span>
-				}
-<span class="fc" id="L83">				int tagStart= element.getTagPosition().getOffset();</span>
-<span class="fc" id="L84">				int tagLength= element.getTagPosition().getLength();</span>
-<span class="pc bpc" id="L85" title="1 of 2 branches missed.">				if (isRemoved(tagStart, tagLength, replacements.nodes())) {</span>
-<span class="nc" id="L86">					continue;</span>
-				}
-<span class="fc" id="L88">				LineComment comment= containingComment(root, tagStart, tagLength);</span>
-<span class="fc bfc" id="L89" title="All 2 branches covered.">				String tag= deleted ? &quot;&quot; : NLSElement.createTagText(index + 1 - removed); //$NON-NLS-1$</span>
-<span class="fc" id="L90">				commentEdits.computeIfAbsent(comment, key -&gt; new ArrayList&lt;&gt;())</span>
-<span class="fc" id="L91">						.add(new Edit(tagStart - comment.getStartPosition(), tagLength, tag));</span>
-			}
-		}
-<span class="fc" id="L94">		commentEdits.forEach((comment, tags) -&gt; {</span>
-<span class="fc" id="L95">			int start= comment.getStartPosition();</span>
-<span class="fc" id="L96">			int end= start + comment.getLength();</span>
-<span class="pc bpc" id="L97" title="3 of 6 branches missed.">			while (end &gt; start &amp;&amp; (buffer.charAt(end - 1) == '\n' || buffer.charAt(end - 1) == '\r')) {</span>
-<span class="nc" id="L98">				end--;</span>
-			}
-<span class="fc" id="L100">			String text= EncodingSourceEdits.rewriteComment(buffer.substring(start, end), tags);</span>
-<span class="fc bfc" id="L101" title="All 2 branches covered.">			if (text.isEmpty()) {</span>
-<span class="pc bpc" id="L102" title="1 of 4 branches missed.">				while (start &gt; 0 &amp;&amp; EncodingSourceEdits.isHorizontalSpace(buffer.charAt(start - 1))) {</span>
-<span class="fc" id="L103">					start--;</span>
-				}
-			}
-<span class="fc" id="L106">			ReplaceEdit edit= new ReplaceEdit(start, end - start, text);</span>
-			// Inserting into the enclosing MoveSourceEdit applies the tag change to
-			// the moved text too. Adding it only at the root would lose that change.
-<span class="fc" id="L109">			TextEditUtil.insert(change.getEdit(), edit);</span>
-<span class="fc" id="L110">			change.addTextEditGroup(new TextEditGroup(change.getName(), edit));</span>
-<span class="fc" id="L111">		});</span>
-<span class="fc" id="L112">	}</span>
-
-	private static NLSLine[] scan(CompilationUnitRewrite cuRewrite, String buffer) throws JavaModelException {
-		try {
-<span class="fc" id="L116">			NLSLine[] lines= NLSScanner.scan(cuRewrite.getCu());</span>
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">			if (!buffer.equals(cuRewrite.getCu().getBuffer().getContents())) {</span>
-<span class="nc" id="L118">				throw new IllegalArgumentException(&quot;Source changed while scanning encoding NLS tags&quot;); //$NON-NLS-1$</span>
-			}
-<span class="fc" id="L120">			return lines;</span>
-<span class="nc" id="L121">		} catch (InvalidInputException | BadLocationException exception) {</span>
-<span class="nc" id="L122">			throw new IllegalArgumentException(&quot;Cannot safely determine encoding NLS tag positions&quot;, exception); //$NON-NLS-1$</span>
-		}
-	}
-
-	private static boolean isRemoved(int offset, int length, Set&lt;ASTNode&gt; replacements) {
-<span class="fc bfc" id="L127" title="All 2 branches covered.">		return replacements.stream().anyMatch(node -&gt; offset &gt;= node.getStartPosition()</span>
-<span class="fc bfc" id="L128" title="All 2 branches covered.">				&amp;&amp; offset + length &lt;= node.getStartPosition() + node.getLength());</span>
-	}
-
-	private static LineComment containingComment(CompilationUnit root, int offset, int length) {
-<span class="pc bpc" id="L132" title="1 of 2 branches missed.">		for (Object candidate : root.getCommentList()) {</span>
-<span class="pc bpc" id="L133" title="2 of 4 branches missed.">			if (candidate instanceof LineComment comment &amp;&amp; offset &gt;= comment.getStartPosition()</span>
-<span class="fc bfc" id="L134" title="All 2 branches covered.">					&amp;&amp; offset + length &lt;= comment.getStartPosition() + comment.getLength()) {</span>
-<span class="fc" id="L135">				return comment;</span>
-			}
-		}
-<span class="nc" id="L138">		throw new IllegalArgumentException(&quot;NLS tag is not inside a source line comment&quot;); //$NON-NLS-1$</span>
-	}
+<span class="fc" id="L33">		org.sandbox.jdt.triggerpattern.cleanup.EncodingSourceRewrite.complete(root, change);</span>
+<span class="fc" id="L34">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
