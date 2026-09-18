@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-09-17
+# Refactoring Mining Report — 2026-09-18
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -71,8 +71,8 @@
 - `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/proposals/NewInterfaceImplementationProposal.java:46` — `Arrays.asList(actions).stream()` → `java.util.Arrays.stream(actions)`
 
 #### Rule: `string-isblank` → `string-isblank1`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/formatter/ModifyDialog.java:1014` — `filterText.trim().isEmpty()` → `filterText.isBlank()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/formatter/ModifyDialog.java:1530` — `previewCode.trim().isEmpty()` → `previewCode.isBlank()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/formatter/ModifyDialog.java:1015` — `filterText.trim().isEmpty()` → `filterText.isBlank()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/formatter/ModifyDialog.java:1532` — `previewCode.trim().isEmpty()` → `previewCode.isBlank()`
 - `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/OverrideMethodDialog.java:450` — `searchText.trim().isEmpty()` → `searchText.isBlank()`
 - `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/IndentAction.java:936` — `prevLineString.trim().isEmpty()` → `prevLineString.isBlank()`
 - `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackagerfat/FatJarManifestProvider.java:105` — `manifestClasspath.trim().isEmpty()` → `manifestClasspath.isBlank()`
