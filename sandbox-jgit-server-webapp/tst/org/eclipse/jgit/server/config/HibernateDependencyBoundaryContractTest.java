@@ -144,6 +144,8 @@ public class HibernateDependencyBoundaryContractTest {
 		DocumentBuilderFactory factory= DocumentBuilderFactory.newInstance();
 		factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
 		factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true); //$NON-NLS-1$
+		factory.setXIncludeAware(false);
+		factory.setExpandEntityReferences(false);
 		factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, ""); //$NON-NLS-1$
 		factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, ""); //$NON-NLS-1$
 		return factory.newDocumentBuilder().parse(repositoryRoot().resolve(relativePath).toFile());
