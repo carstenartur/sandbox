@@ -63,6 +63,42 @@ public class ExplicitEncodingCleanUpTest {
 	}
 
 	@Test
+	public void testStringCharsetOverloadsAreAvailableBeforeJava10() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("E1.java", //$NON-NLS-1$
+				"""
+						package test1;
+
+						import java.io.UnsupportedEncodingException;
+
+						public class E1 {
+						    String decode(byte[] bytes) throws UnsupportedEncodingException {
+						        String first = new String(bytes, "UTF-8");
+						        return first + new String(bytes, 0, bytes.length, "UTF-8");
+						    }
+						}
+						""",
+				false, null);
+		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
+		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
+
+		context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] {
+				"""
+						package test1;
+
+						import java.nio.charset.StandardCharsets;
+
+						public class E1 {
+						    String decode(byte[] bytes) {
+						        String first = new String(bytes, StandardCharsets.UTF_8);
+						        return first + new String(bytes, 0, bytes.length, StandardCharsets.UTF_8);
+						    }
+						}
+						"""
+		}, null);
+	}
+
+	@Test
 	public void testExplicitEncodingdonttouch() throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null);
 		ICompilationUnit cu= pack.createCompilationUnit("E2.java",

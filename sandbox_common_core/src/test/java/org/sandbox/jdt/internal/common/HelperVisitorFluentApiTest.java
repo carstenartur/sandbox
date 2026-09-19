@@ -60,6 +60,33 @@ public class HelperVisitorFluentApiTest {
         return (CompilationUnit) parser.createAST(null);
     }
 
+    @Test
+    void constructorExclusionSkipsOnlyTheSelectedNodeNotItsChildren() {
+        cu = parseSource("class Test { Object text = new String(new String()); }"); //$NON-NLS-1$
+        var nodes = new java.util.ArrayList<org.eclipse.jdt.core.dom.ClassInstanceCreation>();
+        cu.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
+            @Override public boolean visit(org.eclipse.jdt.core.dom.ClassInstanceCreation node) {
+                nodes.add(node); return true;
+            }
+        });
+        assertEquals(2, nodes.size());
+        nodesprocessed.add(nodes.get(0));
+        var actual = HelperVisitorFactory.forClassInstanceCreation(String.class).in(cu).excluding(nodesprocessed).collect();
+        assertEquals(java.util.List.of(nodes.get(1)), actual);
+    }
+
+    @Test
+    void constructorFilterDoesNotMatchAnUnrelatedClassWithTheSameSimpleName() {
+        cu = parseSource("class String { } class Test { Object text = new String(); }"); //$NON-NLS-1$
+        assertTrue(HelperVisitorFactory.forClassInstanceCreation(String.class).in(cu).collect().isEmpty());
+    }
+
+    @Test
+    void constructorFilterRetainsTheActualJdkConstructor() {
+        cu = parseSource("class Test { Object text = new String(); }"); //$NON-NLS-1$
+        assertEquals(1, HelperVisitorFactory.forClassInstanceCreation(String.class).in(cu).collect().size());
+    }
+
     @Nested
     @DisplayName("forAnnotation() Tests")
     class ForAnnotationTests {

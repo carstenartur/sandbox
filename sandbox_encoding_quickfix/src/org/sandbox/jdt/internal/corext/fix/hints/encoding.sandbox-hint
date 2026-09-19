@@ -17,16 +17,16 @@
 // ============================================================================
 
 // === String(byte[], String) constructor ===
-// Requires Java 10+: String(byte[], Charset) constructor needs Java 10
+// Charset overload exists since Java 6; StandardCharsets makes this available from Java 7.
 
-new java.lang.String($bytes, "${CHARSET}") :: sourceVersionGE(10)
+new java.lang.String($bytes, "${CHARSET}") :: sourceVersionGE(7)
 => new java.lang.String($bytes, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
 ;;
 
 // === String(byte[], int, int, String) — 4-arg form ===
-// Requires Java 10+: String(byte[], int, int, Charset) constructor needs Java 10
+// Charset overload exists since Java 6; StandardCharsets makes this available from Java 7.
 
-new java.lang.String($bytes, $off, $len, "${CHARSET}") :: sourceVersionGE(10)
+new java.lang.String($bytes, $off, $len, "${CHARSET}") :: sourceVersionGE(7)
 => new java.lang.String($bytes, $off, $len, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT})
 ;;
 
@@ -65,13 +65,39 @@ new java.util.Scanner($src, "${CHARSET}") :: sourceVersionGE(10)
 // === Formatter(file, String) ===
 
 new java.util.Formatter($f, "${CHARSET}") :: sourceVersionGE(10)
-=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT}, java.util.Locale.getDefault())
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT}, java.util.Locale.getDefault(java.util.Locale.Category.FORMAT))
 ;;
 
 // === Formatter(file, String, Locale) — 3-arg form ===
 
 new java.util.Formatter($f, "${CHARSET}", $locale) :: sourceVersionGE(10)
 => new java.util.Formatter($f, java.nio.charset.StandardCharsets.${CHARSET_CONSTANT}, $locale)
+;;
+
+// === Formatter with implicit encoding — real Charset overload, FORMAT locale ===
+
+new java.util.Formatter($f) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), subtypeOf($f, "java.io.File")
+=> new java.util.Formatter($f, java.nio.charset.Charset.defaultCharset(), java.util.Locale.getDefault(java.util.Locale.Category.FORMAT))
+;;
+
+new java.util.Formatter($f) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), subtypeOf($f, "java.lang.String")
+=> new java.util.Formatter($f, java.nio.charset.Charset.defaultCharset(), java.util.Locale.getDefault(java.util.Locale.Category.FORMAT))
+;;
+
+new java.util.Formatter($f) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), subtypeOf($f, "java.io.OutputStream"), !subtypeOf($f, "java.io.PrintStream")
+=> new java.util.Formatter($f, java.nio.charset.Charset.defaultCharset(), java.util.Locale.getDefault(java.util.Locale.Category.FORMAT))
+;;
+
+new java.util.Formatter($f) :: sourceVersionGE(10), mode(ENFORCE_UTF8), subtypeOf($f, "java.io.File")
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.UTF_8, java.util.Locale.getDefault(java.util.Locale.Category.FORMAT))
+;;
+
+new java.util.Formatter($f) :: sourceVersionGE(10), mode(ENFORCE_UTF8), subtypeOf($f, "java.lang.String")
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.UTF_8, java.util.Locale.getDefault(java.util.Locale.Category.FORMAT))
+;;
+
+new java.util.Formatter($f) :: sourceVersionGE(10), mode(ENFORCE_UTF8), subtypeOf($f, "java.io.OutputStream"), !subtypeOf($f, "java.io.PrintStream")
+=> new java.util.Formatter($f, java.nio.charset.StandardCharsets.UTF_8, java.util.Locale.getDefault(java.util.Locale.Category.FORMAT))
 ;;
 
 // === PrintStream(file, String) ===
@@ -117,13 +143,13 @@ $s.getBytes() :: sourceVersionGE(7), mode(KEEP_BEHAVIOR)
 ;;
 
 // === new String(byte[]) — 1-arg constructor ===
-// Requires Java 10+: String(byte[], Charset) constructor needs Java 10
+// Charset overload exists since Java 6; StandardCharsets makes this available from Java 7.
 
-new java.lang.String($bytes) :: sourceVersionGE(10), mode(ENFORCE_UTF8)
+new java.lang.String($bytes) :: sourceVersionGE(7), mode(ENFORCE_UTF8), subtypeOf($bytes, "byte[]")
 => new java.lang.String($bytes, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new java.lang.String($bytes) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR)
+new java.lang.String($bytes) :: sourceVersionGE(7), mode(KEEP_BEHAVIOR), subtypeOf($bytes, "byte[]")
 => new java.lang.String($bytes, java.nio.charset.Charset.defaultCharset())
 ;;
 
@@ -172,35 +198,35 @@ java.net.URLEncoder.encode($s) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR)
 // Scanner(String) and Scanner(Readable) do NOT — must be excluded.
 // See: https://download.java.net/java/early_access/panama/docs/api/java.base/java/util/Scanner.html
 
-new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8), $src instanceof java.io.File
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8), subtypeOf($src, "java.io.File")
 => new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8), $src instanceof java.io.InputStream
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8), subtypeOf($src, "java.io.InputStream")
 => new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8), $src instanceof java.nio.file.Path
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8), subtypeOf($src, "java.nio.file.Path")
 => new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8), $src instanceof java.nio.channels.ReadableByteChannel
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(ENFORCE_UTF8), subtypeOf($src, "java.nio.channels.ReadableByteChannel")
 => new java.util.Scanner($src, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), $src instanceof java.io.File
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), subtypeOf($src, "java.io.File")
 => new java.util.Scanner($src, java.nio.charset.Charset.defaultCharset())
 ;;
 
-new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), $src instanceof java.io.InputStream
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), subtypeOf($src, "java.io.InputStream")
 => new java.util.Scanner($src, java.nio.charset.Charset.defaultCharset())
 ;;
 
-new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), $src instanceof java.nio.file.Path
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), subtypeOf($src, "java.nio.file.Path")
 => new java.util.Scanner($src, java.nio.charset.Charset.defaultCharset())
 ;;
 
-new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), $src instanceof java.nio.channels.ReadableByteChannel
+new java.util.Scanner($src) :: sourceVersionGE(10), mode(KEEP_BEHAVIOR), subtypeOf($src, "java.nio.channels.ReadableByteChannel")
 => new java.util.Scanner($src, java.nio.charset.Charset.defaultCharset())
 ;;
 
