@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "197ec88061d013cc0e23536e640e5d44fde6da49967e7f4d134a5cba1f83a545",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.platform.os.isWindows\u003e\n\u003c!description: Replace Platform.getOS().equals(Platform.OS_WIN32) with Platform.OS.isWindows() for idiomatic OS check.\u003e\n\u003c!severity: HINT\u003e\n\u003c!minJavaVersion: 8\u003e\n\norg.eclipse.core.runtime.Platform.getOS().equals(org.eclipse.core.runtime.Platform.OS_WIN32)\n\u003d\u003e\norg.eclipse.core.runtime.Platform.OS.isWindows()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.runtime.Platform;\n\npublic class MyClass {\n    public boolean checkWindows() {\n        return Platform.getOS().equals(Platform.OS_WIN32);\n    }\n\n    public void otherMethod() {\n        String os \u003d Platform.getOS(); // Should not be affected\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.core.runtime.Platform;\n\npublic class MyClass {\n    public boolean checkWindows() {\n        return Platform.OS.isWindows();\n    }\n\n    public void otherMethod() {\n        String os \u003d Platform.getOS(); // Should not be affected\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.runtime.Platform;\n\npublic class MyClass {\n    public boolean checkOtherOS(String osName) {\n        // This should not match, as it uses a variable for comparison\n        return Platform.getOS().equals(osName);\n    }\n\n    public boolean checkLinux() {\n        // This should not match, as it\u0027s a different OS constant\n        return Platform.getOS().equals(Platform.OS_LINUX);\n    }\n\n    public String getOsName() {\n        // This should not match, as it\u0027s not an equals call\n        return Platform.getOS();\n    }\n}\n",
+  "targetHintFile": "eclipse-platform.sandbox-hint",
+  "sourceCommit": "6b9f8a02a40fa1f1e9d916a6d5cfa8285a61b360",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "API Modernization",
+  "summary": "Replace direct Platform.getOS().equals(Platform.OS_WIN32) call with the new idiomatic Platform.OS.isWindows() helper method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-19T02:26:25.114584868Z",
+  "ruleFingerprint": "sha256:10c6b7f918b24dd03975ff778626dc762abac27159732dab01785f13a5cae655",
+  "behaviorFingerprint": "sha256:9b9c98a27f4580cddb4827d4b6ba7bc710573e16946bac30497e6f572861da9a",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-19T02:26:32.281195652Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

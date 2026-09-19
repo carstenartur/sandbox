@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6c7500118ef6ee2204af87f617f721091e3c2c3fd586f0ca78d102404ab7325f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.util.Collections.synchronizedSet(new java.util.HashSet\u003c\u003e())\n\u003d\u003e\njava.util.concurrent.ConcurrentHashMap.newKeySet()\n;;",
+  "beforeExample": "import java.util.Collections;\nimport java.util.HashSet;\nimport java.util.Set;\n\npublic class MyClass {\n    protected static Set\u003cString\u003e loadedNodes \u003d Collections.synchronizedSet(new HashSet\u003c\u003e());\n\n    public void addNode(String node) {\n        loadedNodes.add(node);\n    }\n\n    public boolean containsNode(String node) {\n        return loadedNodes.contains(node);\n    }\n}",
+  "afterExample": "import java.util.Set;\nimport java.util.concurrent.ConcurrentHashMap;\n\npublic class MyClass {\n    protected static Set\u003cString\u003e loadedNodes \u003d ConcurrentHashMap.newKeySet();\n\n    public void addNode(String node) {\n        loadedNodes.add(node);\n    }\n\n    public boolean containsNode(String node) {\n        return loadedNodes.contains(node);\n    }\n}",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Set;\nimport java.util.concurrent.ConcurrentHashMap;\n\npublic class AnotherClass {\n    // Should not match: different collection type for synchronized set\n    protected static Set\u003cInteger\u003e otherSyncSet \u003d Collections.synchronizedSet(new TreeSet\u003c\u003e());\n    // Should not match: synchronizedList\n    protected static List\u003cString\u003e syncList \u003d Collections.synchronizedList(new ArrayList\u003c\u003e());\n    // Should not match: plain HashSet\n    protected static Set\u003cString\u003e plainSet \u003d new HashSet\u003c\u003e();\n    // Should not match: already using ConcurrentHashMap.newKeySet()\n    protected static Set\u003cString\u003e modernSet \u003d ConcurrentHashMap.newKeySet();\n}",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "d97ecdbab8b80ff03fd9ea58a943f2fd98ee2ec6",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Collections",
+  "summary": "Replaces `Collections.synchronizedSet(new HashSet\u003c\u003e())` with `ConcurrentHashMap.newKeySet()` for better concurrency performance.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-19T02:26:25.170369058Z",
+  "ruleFingerprint": "sha256:a15330489171fe68b4ad082e0c8aa103d5dfead6d630e675f0003b415c00d9dc",
+  "behaviorFingerprint": "sha256:73f7c684773bffac460ef12fb5aaa2492d24d8dad9986cb84119830c28531431",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-09-19T02:26:32.299197397Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
