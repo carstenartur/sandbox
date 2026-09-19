@@ -52,7 +52,13 @@ public class ClassInstanceCreationVisitorBuilder extends HelperVisitorBuilder&lt
     protected &lt;V, H&gt; void executeVisitors(ReferenceHolder&lt;V, H&gt; holder, 
             BiPredicate&lt;ClassInstanceCreation, ReferenceHolder&lt;V, H&gt;&gt; processor) {
 <span class="fc" id="L54">        HelperVisitorFactory.callClassInstanceCreationVisitor(targetClass, compilationUnit,</span>
-                holder, nodesprocessed, processor);
-<span class="fc" id="L56">    }</span>
+                holder, nodesprocessed, (node, data) -&gt; {
+<span class="fc bfc" id="L56" title="All 4 branches covered.">                    if (nodesprocessed != null &amp;&amp; nodesprocessed.contains(node)) return true;</span>
+<span class="fc" id="L57">                    var binding = node.resolveConstructorBinding();</span>
+<span class="pc bpc" id="L58" title="2 of 4 branches missed.">                    if (binding == null || binding.isRecovered()</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">                            || !targetClass.getCanonicalName().equals(binding.getDeclaringClass().getErasure().getQualifiedName())) return true;</span>
+<span class="fc" id="L60">                    return processor.test(node, data);</span>
+                });
+<span class="fc" id="L62">    }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -112,7 +112,7 @@ public abstract class AbstractSimplifyPlatformStatus {
 <span class="fc" id="L112">				.in(compilationUnit)</span>
 <span class="fc" id="L113">				.excluding(nodesProcessed)</span>
 <span class="fc" id="L114">				.processEach(holder, (visited, data) -&gt; {</span>
-<span class="fc bfc" id="L115" title="All 4 branches covered.">					if (nodesProcessed.contains(visited) || visited.arguments().size() != 5) {</span>
+<span class="pc bpc" id="L115" title="1 of 4 branches missed.">					if (nodesProcessed.contains(visited) || visited.arguments().size() != 5) {</span>
 <span class="fc" id="L116">						return false;</span>
 					}
 

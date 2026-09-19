@@ -38,13 +38,18 @@ public final class AstProcessing {
 <span class="fc" id="L38">		return new IndependentAstProcessorBuilder&lt;&gt;(Objects.requireNonNull(holder, &quot;holder&quot;)); //$NON-NLS-1$</span>
 	}
 
+	/** Creates independent visitors when callbacks need no shared reference holder. */
+	public static IndependentAstProcessorBuilder&lt;Void, Void&gt; independent() {
+<span class="fc" id="L43">		return independent(ReferenceHolder.create());</span>
+	}
+
 	static VisitorEnum visitorType(Class&lt;? extends ASTNode&gt; nodeType) {
-<span class="fc" id="L42">		Objects.requireNonNull(nodeType, &quot;nodeType&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L47">		Objects.requireNonNull(nodeType, &quot;nodeType&quot;); //$NON-NLS-1$</span>
 		try {
-<span class="fc" id="L44">			return VisitorEnum.valueOf(nodeType.getSimpleName());</span>
-<span class="nc" id="L45">		} catch (IllegalArgumentException exception) {</span>
-<span class="nc" id="L46">			throw new IllegalArgumentException(</span>
-<span class="nc" id="L47">					&quot;No HelperVisitor dispatch is available for &quot; + nodeType.getName(), exception); //$NON-NLS-1$</span>
+<span class="fc" id="L49">			return VisitorEnum.valueOf(nodeType.getSimpleName());</span>
+<span class="nc" id="L50">		} catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L51">			throw new IllegalArgumentException(</span>
+<span class="nc" id="L52">					&quot;No HelperVisitor dispatch is available for &quot; + nodeType.getName(), exception); //$NON-NLS-1$</span>
 		}
 	}
 }
