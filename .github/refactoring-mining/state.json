@@ -3702,18 +3702,55 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform": {
-      "lastProcessedCommit": "c4bfea97a3bbec796f7bb8a343f7654be58f3c16",
-      "lastProcessedDate": "2026-09-18T02:26:20.208986460Z",
-      "totalProcessed": 2064,
+      "lastProcessedCommit": "78612e2c9e688006a281a10cccf9db1a4918dfbb",
+      "lastProcessedDate": "2026-09-19T02:26:22.797062060Z",
+      "totalProcessed": 2344,
       "status": "CATCHING_UP",
-      "deferredCommits": [],
+      "deferredCommits": [
+        {
+          "hash": "9d569a1b2eba6ededd365c1abc1ef16beb426469",
+          "message": "Fixes #671 - Move some platform-ui undo utility classes into a core location",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-19T02:20:26.660656562Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "26702b2c66d3d2dca211d524b73471519972cbe9",
+          "message": "Add generics to new org.eclipse.core.resource.undo.snapshots",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-19T02:20:40.408671751Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "229beeac63ed66d85bef3aeb18d0a623149781bb",
+          "message": "Clean up new o.e.core.resources.undo.snapshot API to make it more usable\n\nSigned-off-by: Rob Stryker \u003cstryker@redhat.com",
+          "diffLines": 147,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-19T02:21:50.591394741Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e64f7423f27408863e8d0062a17d0c513de0e1aa",
+          "message": "Use equinox preferences APIs in RefreshManager class #497\n\nReplacing deprecated Preferences API usage with modern Equino",
+          "diffLines": 89,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-19T02:21:50.591440910Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
       "currentEpoch": 0,
       "completedEpochs": [],
       "categoryHitCounts": {
-        "API Modernization": 4,
+        "API Modernization": 5,
         "Error Message Standardization": 1,
         "Collections API Modernization": 1,
         "Error Handling Modernization": 1,
@@ -3724,7 +3761,12 @@
         "String API Usage": 1,
         "API Migration": 1,
         "String API Modernization": 1,
-        "XML Security": 1
+        "XML Security": 1,
+        "performance": 1,
+        "Collections": 1,
+        "Code Style": 1,
+        "Performance": 1,
+        "Simplification": 1
       },
       "exhaustedCategories": []
     },
@@ -3753,5 +3795,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 44319
+  "globalTotalProcessed": 44599
 }
