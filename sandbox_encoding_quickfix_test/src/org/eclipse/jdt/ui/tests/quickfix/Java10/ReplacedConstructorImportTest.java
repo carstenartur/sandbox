@@ -60,12 +60,14 @@ class ReplacedConstructorImportTest {
 		String importLine= "import java.io." + type + ";"; //$NON-NLS-1$ //$NON-NLS-2$
 		String original= """
 				package test1;
-				%s
+				IMPORT_LINE
 				class E1 {
-				    %s
-				    %s open(String file) throws java.io.IOException { return new %s(file); }
+				    RETAINED_FIELD
+				    RESULT_TYPE open(String file) throws java.io.IOException { return new CONSTRUCTOR_TYPE(file); }
 				}
-				""".formatted(importLine, retained ? type + " retained;" : "", resultType, type); //$NON-NLS-1$ //$NON-NLS-2$
+				""".replace("IMPORT_LINE", importLine) //$NON-NLS-1$
+				.replace("RETAINED_FIELD", retained ? type + " retained;" : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				.replace("RESULT_TYPE", resultType).replace("CONSTRUCTOR_TYPE", type); //$NON-NLS-1$ //$NON-NLS-2$
 		ICompilationUnit unit= context.getSourceFolder().createPackageFragment("test1", false, null) //$NON-NLS-1$
 				.createCompilationUnit("E1.java", original, false, null); //$NON-NLS-1$
 		assertNoDiagnostics(unit);
