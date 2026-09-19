@@ -1,0 +1,534 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CheckedExceptionMigration.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.cleanup</a> &gt; <span class="el_source">CheckedExceptionMigration.java</span></div><h1>CheckedExceptionMigration.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0 which accompanies this distribution, and is
+ * available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.cleanup;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IMethod;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnnotatableType;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.CatchClause;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ConstructorInvocation;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.Initializer;
+import org.eclipse.jdt.core.dom.InstanceofExpression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.MethodReference;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.eclipse.jdt.core.dom.ThrowStatement;
+import org.eclipse.jdt.core.dom.TryStatement;
+import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.Javadoc;
+import org.eclipse.jdt.core.dom.TagElement;
+import org.eclipse.jdt.core.dom.TextElement;
+import org.eclipse.jdt.core.dom.UnionType;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.core.search.IJavaSearchConstants;
+import org.eclipse.jdt.core.search.SearchEngine;
+import org.eclipse.jdt.core.search.SearchMatch;
+import org.eclipse.jdt.core.search.SearchParticipant;
+import org.eclipse.jdt.core.search.SearchPattern;
+import org.eclipse.jdt.core.search.SearchRequestor;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+
+/**
+ * Plans a newly required checked exception through handlers and source-owned
+ * callable contracts. The plan retains binding keys/source identities, not ASTs.
+ * No source is changed during planning. Unresolved or out-of-scope contracts are
+ * reported rather than replaced by an unchecked wrapper or a String overload.
+ */
+public final class CheckedExceptionMigration {
+    private CheckedExceptionMigration() { }
+
+<span class="fc" id="L92">    private static final class AppliedChanges {</span>
+<span class="fc" id="L93">        final Set&lt;String&gt; targets= new HashSet&lt;&gt;();</span>
+    }
+
+    private record UnitPlan(String source, Set&lt;String&gt; methods, Set&lt;Integer&gt; catches) {
+<span class="fc" id="L97">        UnitPlan {</span>
+<span class="fc" id="L98">            methods= Set.copyOf(methods);</span>
+<span class="fc" id="L99">            catches= Set.copyOf(catches);</span>
+<span class="fc" id="L100">        }</span>
+    }
+
+    /** Immutable local parts of one checked-exception propagation. */
+    public static final class Plan {
+        private final Map&lt;String, UnitPlan&gt; units;
+        private final String addedType;
+        private final String oldHandlerType;
+        private final Set&lt;String&gt; requiredHandles;
+        private final List&lt;String&gt; conflicts;
+        private final Set&lt;String&gt; affected;
+
+<span class="fc" id="L112">        private Plan(Map&lt;String, UnitPlan&gt; units, String addedType, String oldHandlerType,</span>
+                Set&lt;String&gt; requiredHandles, List&lt;String&gt; conflicts, Set&lt;String&gt; affected) {
+<span class="fc" id="L114">            this.units= Map.copyOf(units);</span>
+<span class="fc" id="L115">            this.addedType= addedType;</span>
+<span class="fc" id="L116">            this.oldHandlerType= oldHandlerType;</span>
+<span class="fc" id="L117">            this.requiredHandles= Set.copyOf(requiredHandles);</span>
+<span class="fc" id="L118">            this.conflicts= List.copyOf(conflicts);</span>
+<span class="fc" id="L119">            this.affected= Set.copyOf(affected);</span>
+<span class="fc" id="L120">        }</span>
+
+<span class="fc" id="L122">        public Set&lt;String&gt; affectedCompilationUnits() { return affected; }</span>
+<span class="fc" id="L123">        public Set&lt;String&gt; requiredCompilationUnits() { return requiredHandles; }</span>
+<span class="nc" id="L124">        public List&lt;String&gt; conflicts() { return conflicts; }</span>
+        public boolean hasChanges(String handle) {
+<span class="fc" id="L126">            UnitPlan unit= units.get(handle);</span>
+<span class="pc bpc" id="L127" title="1 of 6 branches missed.">            return unit != null &amp;&amp; (!unit.methods().isEmpty() || !unit.catches().isEmpty());</span>
+        }
+
+        public void requireComplete() throws CoreException {
+<span class="fc bfc" id="L131" title="All 4 branches covered.">            if (!conflicts.isEmpty() || !requiredHandles.isEmpty()) {</span>
+<span class="fc" id="L132">                throw new CoreException(Status.error(&quot;Cannot complete checked-exception migration: &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L133">                        + String.join(&quot;; &quot;, conflicts) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                        + (requiredHandles.isEmpty() ? &quot;&quot; : &quot;; additional source units required: &quot; + requiredHandles))); //$NON-NLS-1$ //$NON-NLS-2$</span>
+            }
+<span class="fc" id="L136">        }</span>
+
+        /** Apply after expression rewrites and removal of obsolete exception handlers. */
+        public void apply(CompilationUnitRewrite cuRewrite, TextEditGroup group) throws CoreException {
+<span class="fc" id="L140">            requireComplete();</span>
+<span class="fc" id="L141">            CompilationUnit root= cuRewrite.getRoot();</span>
+<span class="fc" id="L142">            ICompilationUnit unit= (ICompilationUnit) root.getJavaElement();</span>
+<span class="fc" id="L143">            UnitPlan local= units.get(unit.getHandleIdentifier());</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">            if (local == null) {</span>
+<span class="nc" id="L145">                throw new CoreException(Status.error(&quot;Compilation unit is outside the planned source scope&quot;)); //$NON-NLS-1$</span>
+            }
+<span class="fc bfc" id="L147" title="All 2 branches covered.">            if (!local.source().equals(unit.getSource())) {</span>
+<span class="fc" id="L148">                throw new CoreException(Status.error(&quot;Source changed after checked-exception planning: &quot; + unit.getElementName())); //$NON-NLS-1$</span>
+            }
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            if (!hasChanges(unit.getHandleIdentifier())) return;</span>
+<span class="fc" id="L151">            ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L152">            String property= CheckedExceptionMigration.class.getName();</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">            if (!(rewrite.getProperty(property) instanceof AppliedChanges)) rewrite.setProperty(property, new AppliedChanges());</span>
+<span class="fc" id="L154">            AppliedChanges applied= (AppliedChanges) rewrite.getProperty(property);</span>
+<span class="fc" id="L155">            Set&lt;String&gt; foundMethods= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L156">            Set&lt;Integer&gt; foundCatches= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L157">            root.accept(new ASTVisitor() {</span>
+                @Override public boolean visit(MethodDeclaration method) {
+<span class="fc" id="L159">                    IMethodBinding binding= method.resolveBinding();</span>
+<span class="pc bpc" id="L160" title="1 of 4 branches missed.">                    if (binding != null &amp;&amp; local.methods().contains(key(binding))) {</span>
+<span class="fc" id="L161">                        foundMethods.add(key(binding));</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">                        if (!applied.targets.add(addedType + &quot;:method:&quot; + key(binding))) return true; //$NON-NLS-1$</span>
+<span class="fc" id="L163">                        ListRewrite list= rewrite.getListRewrite(method, MethodDeclaration.THROWN_EXCEPTION_TYPES_PROPERTY);</span>
+<span class="fc" id="L164">                        boolean covered= false;</span>
+<span class="fc" id="L165">                        boolean documented= false;</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">                        for (Object item : new ArrayList&lt;&gt;(list.getRewrittenList())) {</span>
+<span class="fc" id="L167">                            Type type= (Type) item;</span>
+<span class="fc" id="L168">                            ITypeBinding declared= type.resolveBinding();</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">                            if (declared == null) continue;</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">                            if (addedType.equals(declared.getQualifiedName())) covered= true;</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">                            else if (isSubtype(declared, addedType)) {</span>
+<span class="fc" id="L172">                                list.remove(type, group);</span>
+<span class="fc" id="L173">                                cuRewrite.getImportRemover().registerRemovedNode(type);</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">                                if (!documented) documented= ExceptionCleanupHelper.updateThrowsJavadoc(method,</span>
+<span class="fc" id="L175">                                        declared.getQualifiedName(), cuRewrite.getImportRewrite().addImport(addedType),</span>
+<span class="fc" id="L176">                                        rewrite, group, cuRewrite.getImportRemover());</span>
+                            }
+                        }
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">                        if (!covered) {</span>
+<span class="fc" id="L180">                            list.insertLast(newType(cuRewrite), group);</span>
+<span class="pc bpc" id="L181" title="1 of 4 branches missed.">                            if (!documented &amp;&amp; method.getJavadoc() != null) {</span>
+<span class="nc" id="L182">                                TagElement tag= root.getAST().newTagElement();</span>
+<span class="nc" id="L183">                                tag.setTagName(TagElement.TAG_THROWS);</span>
+<span class="nc" id="L184">                                tag.fragments().add(root.getAST().newName(cuRewrite.getImportRewrite().addImport(addedType)));</span>
+<span class="nc" id="L185">                                TextElement description= root.getAST().newTextElement();</span>
+<span class="nc" id="L186">                                description.setText(&quot; if the migrated operation fails&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L187">                                tag.fragments().add(description);</span>
+<span class="nc" id="L188">                                rewrite.getListRewrite(method.getJavadoc(), Javadoc.TAGS_PROPERTY).insertLast(tag, group);</span>
+                            }
+                        }
+                    }
+<span class="fc" id="L192">                    return true;</span>
+                }
+                @Override public boolean visit(CatchClause clause) {
+<span class="fc bfc" id="L195" title="All 2 branches covered.">                    if (!local.catches().contains(clause.getStartPosition())) return true;</span>
+<span class="fc" id="L196">                    foundCatches.add(clause.getStartPosition());</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">                    if (!applied.targets.add(addedType + &quot;:catch:&quot; + clause.getStartPosition())) return true; //$NON-NLS-1$</span>
+<span class="fc" id="L198">                    if (!rewrite.getListRewrite(clause.getParent(), TryStatement.CATCH_CLAUSES_PROPERTY)</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">                            .getRewrittenList().contains(clause)) return true;</span>
+<span class="fc" id="L200">                    SingleVariableDeclaration parameter= clause.getException();</span>
+<span class="fc" id="L201">                    Type effective= (Type) rewrite.get(parameter, SingleVariableDeclaration.TYPE_PROPERTY);</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">                    List&lt;?&gt; alternatives= effective instanceof UnionType union</span>
+<span class="fc" id="L203">                            ? rewrite.getListRewrite(union, UnionType.TYPES_PROPERTY).getRewrittenList()</span>
+<span class="fc" id="L204">                            : List.of(effective);</span>
+<span class="fc" id="L205">                    List&lt;Type&gt; updated= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">                    for (Object value : alternatives) {</span>
+<span class="fc" id="L207">                        Type type= (Type) value;</span>
+<span class="fc" id="L208">                        ITypeBinding binding= type.resolveBinding();</span>
+<span class="pc bpc" id="L209" title="1 of 4 branches missed.">                        if (binding != null &amp;&amp; oldHandlerType.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L210">                            Type replacement= newType(cuRewrite);</span>
+<span class="pc bpc" id="L211" title="2 of 4 branches missed.">                            if (type instanceof AnnotatableType old &amp;&amp; replacement instanceof AnnotatableType target)</span>
+<span class="fc" id="L212">                                target.annotations().addAll(ASTNode.copySubtrees(root.getAST(), old.annotations()));</span>
+<span class="fc" id="L213">                            updated.add(replacement);</span>
+<span class="fc" id="L214">                            cuRewrite.getImportRemover().registerRemovedNode(type);</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">                        } else if (isSubtype(binding, addedType)) {</span>
+<span class="fc" id="L216">                            cuRewrite.getImportRemover().registerRemovedNode(type);</span>
+<span class="pc" id="L217">                        } else updated.add((Type) ASTNode.copySubtree(root.getAST(), type));</span>
+                    }
+                    Type replacement;
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">                    if (updated.size() == 1) replacement= updated.get(0);</span>
+                    else {
+<span class="nc" id="L222">                        UnionType union= root.getAST().newUnionType();</span>
+<span class="nc" id="L223">                        union.types().addAll(updated);</span>
+<span class="nc" id="L224">                        replacement= union;</span>
+                    }
+<span class="fc" id="L226">                    rewrite.set(parameter, SingleVariableDeclaration.TYPE_PROPERTY, replacement, group);</span>
+<span class="fc" id="L227">                    return true;</span>
+                }
+            });
+<span class="pc bpc" id="L230" title="2 of 4 branches missed.">            if (!foundMethods.equals(local.methods()) || !foundCatches.equals(local.catches())) {</span>
+<span class="nc" id="L231">                throw new CoreException(Status.error(&quot;A checked-exception plan target could not be resolved&quot;)); //$NON-NLS-1$</span>
+            }
+<span class="fc" id="L233">        }</span>
+
+        private Type newType(CompilationUnitRewrite rewrite) {
+<span class="fc" id="L236">            AST ast= rewrite.getRoot().getAST();</span>
+<span class="fc" id="L237">            return ast.newSimpleType(ast.newName(rewrite.getImportRewrite().addImport(addedType)));</span>
+        }
+    }
+
+    /**
+     * Plan one additional checked type for the supplied changed invocations.
+     * Only the specified former handler type may be widened, and only when its
+     * parameter uses remain valid without selecting different narrow overloads.
+     */
+    public static Plan plan(Collection&lt;CompilationUnit&gt; scope, Collection&lt;? extends ASTNode&gt; changes,
+            ITypeBinding additionalException, String oldHandlerType) throws CoreException {
+<span class="fc" id="L248">        return plan(scope, changes, additionalException, oldHandlerType, new NullProgressMonitor());</span>
+    }
+
+    public static Plan plan(Collection&lt;CompilationUnit&gt; scope, Collection&lt;? extends ASTNode&gt; changes,
+            ITypeBinding additionalException, String oldHandlerType, IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L253">        Analysis analysis= new Analysis(scope, changes, additionalException, oldHandlerType, monitor);</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        for (ASTNode changed : changes) {</span>
+<span class="fc" id="L255">            analysis.affected.add(((ICompilationUnit) ((CompilationUnit) changed.getRoot()).getJavaElement()).getHandleIdentifier());</span>
+<span class="fc" id="L256">            analysis.requireHandling(changed);</span>
+        }
+<span class="fc" id="L258">        analysis.findOutsideReferences();</span>
+<span class="fc" id="L259">        return analysis.finish();</span>
+    }
+
+    private static final class Analysis {
+        private final List&lt;CompilationUnit&gt; roots;
+        private final ITypeBinding added;
+        private final String oldHandler;
+        private final Set&lt;String&gt; addedSupertypes;
+<span class="fc" id="L267">        private final Map&lt;String, MethodDeclaration&gt; declarations= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L268">        private final Map&lt;String, List&lt;ASTNode&gt;&gt; references= new HashMap&lt;&gt;();</span>
+<span class="fc" id="L269">        private final Set&lt;MethodDeclaration&gt; methods= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L270">        private final Set&lt;CatchClause&gt; catches= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L271">        private final Set&lt;String&gt; required= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L272">        private final Set&lt;String&gt; projects= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L273">        private final List&lt;String&gt; conflicts= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L274">        private final Set&lt;String&gt; affected= new LinkedHashSet&lt;&gt;();</span>
+        private final IProgressMonitor monitor;
+        private final Collection&lt;? extends ASTNode&gt; changedCalls;
+
+<span class="fc" id="L278">        Analysis(Collection&lt;CompilationUnit&gt; scope, Collection&lt;? extends ASTNode&gt; changes, ITypeBinding added, String oldHandler, IProgressMonitor monitor) {</span>
+<span class="fc" id="L279">            this.changedCalls= List.copyOf(changes);</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">            this.monitor= monitor == null ? new NullProgressMonitor() : monitor;</span>
+<span class="fc" id="L281">            this.roots= List.copyOf(scope);</span>
+<span class="fc" id="L282">            this.added= added;</span>
+<span class="fc" id="L283">            this.oldHandler= oldHandler;</span>
+<span class="fc" id="L284">            this.addedSupertypes= supertypes(added);</span>
+<span class="fc bfc" id="L285" title="All 2 branches covered.">            for (CompilationUnit root : roots) {</span>
+<span class="pc bpc" id="L286" title="1 of 2 branches missed.">                if (root.getJavaElement() instanceof ICompilationUnit unit) projects.add(unit.getJavaProject().getHandleIdentifier());</span>
+<span class="fc" id="L287">                root.accept(new ASTVisitor() {</span>
+                    @Override public boolean visit(MethodDeclaration node) {
+<span class="fc" id="L289">                        IMethodBinding method= node.resolveBinding();</span>
+<span class="pc bpc" id="L290" title="1 of 4 branches missed.">                        if (method != null &amp;&amp; !method.isRecovered()) declarations.put(key(method), node);</span>
+<span class="fc" id="L291">                        return true;</span>
+                    }
+                    @Override public void preVisit(ASTNode node) {
+<span class="fc" id="L294">                        IMethodBinding method= invocationBinding(node);</span>
+<span class="pc bpc" id="L295" title="1 of 4 branches missed.">                        if (method != null &amp;&amp; !method.isRecovered()) references.computeIfAbsent(key(method), k -&gt; new ArrayList&lt;&gt;()).add(node);</span>
+<span class="fc" id="L296">                    }</span>
+                });
+            }
+<span class="fc" id="L299">        }</span>
+        private boolean covered(ITypeBinding type) {
+<span class="pc bpc" id="L301" title="3 of 6 branches missed.">            return type != null &amp;&amp; !type.isRecovered() &amp;&amp; !type.isTypeVariable()</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">                    &amp;&amp; addedSupertypes.contains(type.getErasure().getQualifiedName());</span>
+        }
+
+        void requireHandling(ASTNode invocation) {
+<span class="pc bpc" id="L306" title="1 of 2 branches missed.">            if (monitor.isCanceled()) throw new OperationCanceledException();</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">            if (invocation instanceof MethodReference reference) {</span>
+<span class="fc" id="L308">                ITypeBinding functionalType= reference.resolveTypeBinding();</span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">                requireContract(functionalType == null ? null : functionalType.getFunctionalInterfaceMethod());</span>
+<span class="fc" id="L310">                return;</span>
+            }
+<span class="fc" id="L312">            ASTNode child= invocation;</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">            for (ASTNode parent= invocation.getParent(); parent != null; child= parent, parent= parent.getParent()) {</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">                if (parent instanceof TryStatement statement</span>
+<span class="fc bfc" id="L315" title="All 4 branches covered.">                        &amp;&amp; (child == statement.getBody() || statement.resources().contains(child))) {</span>
+<span class="fc" id="L316">                    List&lt;CatchClause&gt; clauses= statement.catchClauses();</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">                    for (CatchClause clause : clauses) {</span>
+<span class="pc bpc" id="L318" title="2 of 4 branches missed.">                        if (catches.contains(clause) || types(clause).stream().anyMatch(t -&gt; covered(t.resolveBinding()))) return;</span>
+                    }
+<span class="fc" id="L320">                    List&lt;CatchClause&gt; narrow= clauses.stream()</span>
+<span class="fc" id="L321">                            .filter(c -&gt; types(c).stream().anyMatch(t -&gt; isSubtype(t.resolveBinding(), added.getQualifiedName())))</span>
+<span class="fc" id="L322">                            .toList();</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">                    if (narrow.size() == 1) {</span>
+<span class="fc" id="L324">                        CatchClause clause= narrow.get(0);</span>
+<span class="pc bpc" id="L325" title="1 of 2 branches missed.">                        if (types(clause).stream().anyMatch(t -&gt; t.resolveBinding() != null</span>
+<span class="fc bfc" id="L326" title="All 6 branches covered.">                                &amp;&amp; oldHandler.equals(t.resolveBinding().getQualifiedName())) &amp;&amp; canWiden(clause)</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">                                &amp;&amp; CheckedExceptionAnalysis.canWidenCatch(statement, clause, changedCalls, added)) {</span>
+<span class="fc" id="L328">                            catches.add(clause);</span>
+                            // Precise rethrow must be propagated beyond, not back into, this try.
+<span class="fc" id="L330">                            clause.getBody().accept(new ASTVisitor() {</span>
+                                @Override public boolean visit(ThrowStatement node) {
+<span class="fc" id="L332">                                    Expression expression= node.getExpression();</span>
+<span class="fc bfc" id="L333" title="All 2 branches covered.">                                    while (expression instanceof ParenthesizedExpression nested) expression= nested.getExpression();</span>
+<span class="pc bpc" id="L334" title="1 of 4 branches missed.">                                    if (expression instanceof Name name &amp;&amp; sameVariable(name.resolveBinding(), clause.getException().resolveBinding()))</span>
+<span class="fc" id="L335">                                        requireHandling(node);</span>
+<span class="fc" id="L336">                                    return true;</span>
+                                }
+                            });
+<span class="fc" id="L339">                            return;</span>
+                        }
+                    }
+                }
+<span class="fc bfc" id="L343" title="All 2 branches covered.">                if (parent instanceof LambdaExpression lambda) {</span>
+<span class="fc" id="L344">                    requireContract(lambda.resolveMethodBinding());</span>
+<span class="fc" id="L345">                    return;</span>
+                }
+<span class="fc bfc" id="L347" title="All 2 branches covered.">                if (parent instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L348">                    requireContract(method.resolveBinding());</span>
+<span class="fc" id="L349">                    return;</span>
+                }
+<span class="pc bpc" id="L351" title="1 of 4 branches missed.">                if (parent instanceof Initializer || parent instanceof FieldDeclaration) {</span>
+                    // A caught exception returns above. An uncaught instance initializer
+                    // belongs to every constructor, never to an enclosing method.
+<span class="pc bpc" id="L354" title="1 of 2 branches missed.">                    if (Modifier.isStatic(((BodyDeclaration) parent).getModifiers())) {</span>
+<span class="nc" id="L355">                        conflicts.add(&quot;A static initializer has no checked-exception contract&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L356">                        return;</span>
+                    }
+<span class="fc" id="L358">                    ASTNode owner= parent.getParent();</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">                    ITypeBinding type= owner instanceof AbstractTypeDeclaration declaration ? declaration.resolveBinding()</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">                            : owner instanceof AnonymousClassDeclaration anonymous ? anonymous.resolveBinding() : null;</span>
+<span class="pc bpc" id="L361" title="2 of 4 branches missed.">                    if (type == null || type.isAnonymous()) {</span>
+<span class="nc" id="L362">                        conflicts.add(&quot;Cannot update an implicit/anonymous constructor contract&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L363">                        return;</span>
+                    }
+<span class="fc bfc" id="L365" title="All 4 branches covered.">                    for (IMethodBinding method : type.getDeclaredMethods()) if (method.isConstructor()) requireContract(method);</span>
+<span class="fc" id="L366">                    return;</span>
+                }
+            }
+<span class="nc" id="L369">            conflicts.add(&quot;No callable contract for changed invocation at &quot; + invocation.getStartPosition()); //$NON-NLS-1$</span>
+<span class="nc" id="L370">        }</span>
+        private void requireContract(IMethodBinding binding) {
+<span class="pc bpc" id="L372" title="2 of 4 branches missed.">            if (binding == null || binding.isRecovered()) {</span>
+<span class="nc" id="L373">                conflicts.add(&quot;Unresolved callable contract&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L374">                return;</span>
+            }
+<span class="fc bfc" id="L376" title="All 4 branches covered.">            for (ITypeBinding exception : binding.getExceptionTypes()) if (covered(exception)) return;</span>
+<span class="fc" id="L377">            MethodDeclaration declaration= declarations.get(key(binding));</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">            if (declaration == null) {</span>
+<span class="fc" id="L379">                IJavaElement element= binding.getMethodDeclaration().getJavaElement();</span>
+<span class="pc bpc" id="L380" title="1 of 2 branches missed.">                ICompilationUnit unit= element == null ? null : (ICompilationUnit) element.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
+<span class="fc bfc" id="L381" title="All 4 branches covered.">                if (unit != null &amp;&amp; projects.contains(unit.getJavaProject().getHandleIdentifier())) required.add(unit.getHandleIdentifier());</span>
+<span class="fc bfc" id="L382" title="All 2 branches covered.">                else if (unit != null) conflicts.add(&quot;Callable contract outside selected Java project scope: &quot; + unit.getHandleIdentifier()); //$NON-NLS-1$</span>
+<span class="fc" id="L383">                else conflicts.add(&quot;Fixed external contract: &quot; + binding.getDeclaringClass().getQualifiedName() + '.' + binding.getName()); //$NON-NLS-1$</span>
+<span class="fc" id="L384">                return;</span>
+            }
+<span class="pc bpc" id="L386" title="1 of 2 branches missed.">            if (!methods.add(declaration)) return;</span>
+            // All inherited contracts constrain an override, not just the first one.
+<span class="fc" id="L388">            Set&lt;String&gt; seen= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L389">            List&lt;ITypeBinding&gt; hierarchy= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L390">            ITypeBinding owner= binding.getDeclaringClass();</span>
+<span class="fc bfc" id="L391" title="All 2 branches covered.">            if (owner.getSuperclass() != null) hierarchy.add(owner.getSuperclass());</span>
+<span class="fc" id="L392">            hierarchy.addAll(List.of(owner.getInterfaces()));</span>
+<span class="fc bfc" id="L393" title="All 2 branches covered.">            for (int i= 0; i &lt; hierarchy.size(); i++) {</span>
+<span class="fc" id="L394">                ITypeBinding type= hierarchy.get(i);</span>
+<span class="pc bpc" id="L395" title="1 of 2 branches missed.">                if (!seen.add(type.getKey())) continue;</span>
+<span class="fc bfc" id="L396" title="All 4 branches covered.">                for (IMethodBinding inherited : type.getDeclaredMethods()) if (binding.overrides(inherited)) requireContract(inherited);</span>
+<span class="pc bpc" id="L397" title="1 of 2 branches missed.">                if (type.getSuperclass() != null) hierarchy.add(type.getSuperclass());</span>
+<span class="fc" id="L398">                hierarchy.addAll(List.of(type.getInterfaces()));</span>
+            }
+<span class="fc bfc" id="L400" title="All 2 branches covered.">            for (ASTNode reference : references.getOrDefault(key(binding), List.of())) requireHandling(reference);</span>
+<span class="fc" id="L401">        }</span>
+        private boolean canWiden(CatchClause clause) {
+<span class="fc" id="L403">            IVariableBinding variable= clause.getException().resolveBinding();</span>
+<span class="pc bpc" id="L404" title="1 of 2 branches missed.">            if (variable == null) return false;</span>
+<span class="fc" id="L405">            boolean[] safe= { true };</span>
+<span class="fc" id="L406">            clause.getBody().accept(new ASTVisitor() {</span>
+                @Override public boolean visit(SimpleName node) {
+<span class="fc bfc" id="L408" title="All 2 branches covered.">                    if (!sameVariable(node.resolveBinding(), variable)) return true;</span>
+<span class="fc" id="L409">                    ASTNode value= node;</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">                    while (value.getParent() instanceof ParenthesizedExpression) value= value.getParent();</span>
+<span class="fc" id="L411">                    ASTNode parent= value.getParent();</span>
+<span class="fc" id="L412">                    boolean accepted= false;</span>
+<span class="fc bfc" id="L413" title="All 2 branches covered.">                    if (parent instanceof MethodInvocation call) {</span>
+<span class="fc" id="L414">                        IMethodBinding method= call.resolveMethodBinding();</span>
+<span class="pc bpc" id="L415" title="2 of 4 branches missed.">                        if (method != null &amp;&amp; method.getTypeArguments().length == 0) {</span>
+<span class="pc bpc" id="L416" title="1 of 4 branches missed.">                            if (call.getExpression() == value) accepted= addedSupertypes.contains(method.getDeclaringClass().getErasure().getQualifiedName())</span>
+<span class="pc bpc" id="L417" title="1 of 2 branches missed.">                                    &amp;&amp; !&quot;getClass&quot;.equals(method.getName()); //$NON-NLS-1$</span>
+<span class="fc" id="L418">                            else accepted= acceptsArgument(method, call.arguments().indexOf(value));</span>
+                        }
+<span class="fc bfc" id="L420" title="All 2 branches covered.">                    } else if (parent instanceof ClassInstanceCreation call) {</span>
+<span class="fc" id="L421">                        accepted= acceptsArgument(call.resolveConstructorBinding(), call.arguments().indexOf(value));</span>
+<span class="pc bpc" id="L422" title="1 of 2 branches missed.">                    } else if (parent instanceof ThrowStatement) accepted= true;</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">                    else if (parent instanceof ReturnStatement) {</span>
+<span class="nc" id="L424">                        ASTNode enclosing= parent.getParent();</span>
+<span class="nc bnc" id="L425" title="All 6 branches missed.">                        while (enclosing != null &amp;&amp; !(enclosing instanceof MethodDeclaration) &amp;&amp; !(enclosing instanceof LambdaExpression)) enclosing= enclosing.getParent();</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">                        IMethodBinding method= enclosing instanceof MethodDeclaration m ? m.resolveBinding()</span>
+<span class="nc bnc" id="L427" title="All 2 branches missed.">                                : enclosing instanceof LambdaExpression l ? l.resolveMethodBinding() : null;</span>
+<span class="nc bnc" id="L428" title="All 4 branches missed.">                        accepted= method != null &amp;&amp; covered(method.getReturnType());</span>
+<span class="nc bnc" id="L429" title="All 4 branches missed.">                    } else if (parent instanceof Assignment assignment &amp;&amp; assignment.getRightHandSide() == value) {</span>
+<span class="nc" id="L430">                        accepted= covered(assignment.getLeftHandSide().resolveTypeBinding());</span>
+<span class="nc bnc" id="L431" title="All 4 branches missed.">                    } else if (parent instanceof VariableDeclarationFragment fragment &amp;&amp; fragment.getInitializer() == value) {</span>
+<span class="nc" id="L432">                        IVariableBinding target= fragment.resolveBinding();</span>
+<span class="nc" id="L433">                        ASTNode declaration= fragment.getParent();</span>
+<span class="nc bnc" id="L434" title="All 4 branches missed.">                        boolean inferred= declaration instanceof VariableDeclarationStatement statement &amp;&amp; statement.getType().isVar();</span>
+<span class="nc bnc" id="L435" title="All 6 branches missed.">                        accepted= !inferred &amp;&amp; target != null &amp;&amp; covered(target.getType());</span>
+<span class="nc bnc" id="L436" title="All 4 branches missed.">                    } else if (parent instanceof InstanceofExpression || parent instanceof InfixExpression) {</span>
+<span class="nc" id="L437">                        accepted= true;</span>
+                    }
+<span class="fc bfc" id="L439" title="All 2 branches covered.">                    if (!accepted) safe[0]= false;</span>
+<span class="fc" id="L440">                    return true;</span>
+                }
+            });
+<span class="fc" id="L443">            return safe[0];</span>
+        }
+        private boolean acceptsArgument(IMethodBinding method, int index) {
+<span class="pc bpc" id="L446" title="4 of 8 branches missed.">            if (method == null || method.isRecovered() || index &lt; 0 || method.getTypeArguments().length != 0) return false;</span>
+<span class="fc" id="L447">            ITypeBinding[] parameters= method.getParameterTypes();</span>
+<span class="pc bpc" id="L448" title="1 of 2 branches missed.">            if (index &gt;= parameters.length) return false;</span>
+            // Do not infer a new varargs/overload selection while changing a handler.
+<span class="pc bpc" id="L450" title="1 of 4 branches missed.">            return !method.isVarargs() &amp;&amp; covered(parameters[index]);</span>
+        }
+        void findOutsideReferences() throws CoreException {
+<span class="fc" id="L453">            Set&lt;String&gt; selected= new HashSet&lt;&gt;();</span>
+            // Search workspace-wide for safety; only projects represented by the planned roots may expand.
+<span class="fc" id="L455">            List&lt;ICompilationUnit&gt; working= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L456" title="1 of 4 branches missed.">            for (CompilationUnit root : roots) if (root.getJavaElement() instanceof ICompilationUnit unit) {</span>
+<span class="fc" id="L457">                selected.add(unit.getHandleIdentifier()); working.add(unit);</span>
+            }
+<span class="fc" id="L459">            SearchEngine engine= new SearchEngine(working.toArray(ICompilationUnit[]::new));</span>
+<span class="fc bfc" id="L460" title="All 2 branches covered.">            for (MethodDeclaration declaration : methods) {</span>
+<span class="fc" id="L461">                IMethodBinding binding= declaration.resolveBinding();</span>
+<span class="pc bpc" id="L462" title="1 of 2 branches missed.">                if (!(binding.getJavaElement() instanceof IMethod method)) {</span>
+<span class="nc" id="L463">                    conflicts.add(&quot;Source method has no Java model handle: &quot; + binding.getName()); //$NON-NLS-1$</span>
+<span class="nc" id="L464">                    continue;</span>
+                }
+<span class="fc" id="L466">                SearchPattern pattern= SearchPattern.createPattern(method, IJavaSearchConstants.REFERENCES,</span>
+<span class="fc" id="L467">                        SearchPattern.R_EXACT_MATCH | SearchPattern.R_CASE_SENSITIVE | SearchPattern.R_ERASURE_MATCH);</span>
+<span class="pc bpc" id="L468" title="1 of 2 branches missed.">                if (pattern == null) { conflicts.add(&quot;Cannot search callers of &quot; + method.getElementName()); continue; } //$NON-NLS-1$</span>
+<span class="fc" id="L469">                engine.search(pattern, new SearchParticipant[] { SearchEngine.getDefaultSearchParticipant() },</span>
+<span class="fc" id="L470">                        SearchEngine.createWorkspaceScope(), new SearchRequestor() {</span>
+                            @Override public void acceptSearchMatch(SearchMatch match) {
+<span class="pc bpc" id="L472" title="1 of 2 branches missed.">                                if (match.isInsideDocComment()) return;</span>
+<span class="pc bpc" id="L473" title="1 of 2 branches missed.">                                if (match.getAccuracy() != SearchMatch.A_ACCURATE) {</span>
+<span class="nc" id="L474">                                    conflicts.add(&quot;Unresolved caller of &quot; + method.getElementName()); return; //$NON-NLS-1$</span>
+                                }
+<span class="pc bpc" id="L476" title="1 of 2 branches missed.">                                IJavaElement element= match.getElement() instanceof IJavaElement e ? e : null;</span>
+<span class="pc bpc" id="L477" title="1 of 2 branches missed.">                                ICompilationUnit unit= element == null ? null : (ICompilationUnit) element.getAncestor(IJavaElement.COMPILATION_UNIT);</span>
+<span class="pc bpc" id="L478" title="1 of 4 branches missed.">                                if (unit != null &amp;&amp; !selected.contains(unit.getHandleIdentifier())) {</span>
+<span class="fc bfc" id="L479" title="All 2 branches covered.">                                    if (projects.contains(unit.getJavaProject().getHandleIdentifier())) required.add(unit.getHandleIdentifier());</span>
+<span class="fc" id="L480">                                    else conflicts.add(&quot;Caller outside selected Java project scope: &quot; + unit.getHandleIdentifier()); //$NON-NLS-1$</span>
+                                }
+<span class="fc" id="L482">                            }</span>
+<span class="fc" id="L483">                        }, monitor);</span>
+            }
+<span class="fc" id="L485">        }</span>
+        Plan finish() throws CoreException {
+<span class="fc" id="L487">            Map&lt;String, UnitPlan&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L488" title="All 2 branches covered.">            for (CompilationUnit root : roots) {</span>
+<span class="pc bpc" id="L489" title="1 of 2 branches missed.">                if (!(root.getJavaElement() instanceof ICompilationUnit unit)) continue;</span>
+<span class="fc" id="L490">                Set&lt;String&gt; methodKeys= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L491">                Set&lt;Integer&gt; catchOffsets= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L492" title="All 4 branches covered.">                for (MethodDeclaration method : methods) if (method.getRoot() == root) methodKeys.add(key(method.resolveBinding()));</span>
+<span class="fc bfc" id="L493" title="All 4 branches covered.">                for (CatchClause clause : catches) if (clause.getRoot() == root) catchOffsets.add(clause.getStartPosition());</span>
+<span class="fc bfc" id="L494" title="All 4 branches covered.">                if (!methodKeys.isEmpty() || !catchOffsets.isEmpty()) affected.add(unit.getHandleIdentifier());</span>
+<span class="fc" id="L495">                result.put(unit.getHandleIdentifier(), new UnitPlan(unit.getSource(), methodKeys, catchOffsets));</span>
+            }
+<span class="fc" id="L497">            return new Plan(result, added.getQualifiedName(), oldHandler, required, conflicts, affected);</span>
+        }
+    }
+    private static boolean sameVariable(IBinding first, IVariableBinding second) {
+<span class="pc bpc" id="L501" title="1 of 4 branches missed.">        return first instanceof IVariableBinding variable &amp;&amp; second != null</span>
+<span class="pc bpc" id="L502" title="1 of 2 branches missed.">                &amp;&amp; variable.getVariableDeclaration().isEqualTo(second.getVariableDeclaration());</span>
+    }
+<span class="fc" id="L504">    private static String key(IMethodBinding method) { return method.getMethodDeclaration().getKey(); }</span>
+    private static List&lt;Type&gt; types(CatchClause clause) {
+<span class="fc" id="L506">        Type type= clause.getException().getType();</span>
+<span class="fc bfc" id="L507" title="All 2 branches covered.">        return type instanceof UnionType union ? union.types() : List.of(type);</span>
+    }
+    private static boolean isSubtype(ITypeBinding type, String parent) {
+<span class="pc bpc" id="L510" title="4 of 8 branches missed.">        return type != null &amp;&amp; !type.isRecovered() &amp;&amp; !type.isTypeVariable() &amp;&amp; supertypes(type).contains(parent);</span>
+    }
+    private static Set&lt;String&gt; supertypes(ITypeBinding type) {
+<span class="fc" id="L513">        Set&lt;String&gt; names= new HashSet&lt;&gt;();</span>
+<span class="fc" id="L514">        List&lt;ITypeBinding&gt; pending= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L515">        pending.add(type);</span>
+<span class="fc bfc" id="L516" title="All 2 branches covered.">        for (int i= 0; i &lt; pending.size(); i++) {</span>
+<span class="fc" id="L517">            ITypeBinding next= pending.get(i);</span>
+<span class="pc bpc" id="L518" title="3 of 6 branches missed.">            if (next == null || next.isRecovered() || !names.add(next.getErasure().getQualifiedName())) continue;</span>
+<span class="fc bfc" id="L519" title="All 2 branches covered.">            if (next.getSuperclass() != null) pending.add(next.getSuperclass());</span>
+<span class="fc" id="L520">            pending.addAll(List.of(next.getInterfaces()));</span>
+        }
+<span class="fc" id="L522">        return names;</span>
+    }
+    private static IMethodBinding invocationBinding(ASTNode node) {
+<span class="fc bfc" id="L525" title="All 2 branches covered.">        if (node instanceof MethodInvocation call) return call.resolveMethodBinding();</span>
+<span class="pc bpc" id="L526" title="1 of 2 branches missed.">        if (node instanceof SuperMethodInvocation call) return call.resolveMethodBinding();</span>
+<span class="fc bfc" id="L527" title="All 2 branches covered.">        if (node instanceof ClassInstanceCreation call) return call.resolveConstructorBinding();</span>
+<span class="pc bpc" id="L528" title="1 of 2 branches missed.">        if (node instanceof ConstructorInvocation call) return call.resolveConstructorBinding();</span>
+<span class="fc bfc" id="L529" title="All 2 branches covered.">        if (node instanceof SuperConstructorInvocation call) return call.resolveConstructorBinding();</span>
+<span class="fc bfc" id="L530" title="All 2 branches covered.">        if (node instanceof MethodReference reference) return reference.resolveMethodBinding();</span>
+<span class="fc" id="L531">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

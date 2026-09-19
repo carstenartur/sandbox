@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CharsetCleanUpCoordinator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_encoding_quickfix</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.fix</a> &gt; <span class="el_source">CharsetCleanUpCoordinator.java</span></div><h1>CharsetCleanUpCoordinator.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0 which accompanies this distribution, and is
+ * available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.fix;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTRequestor;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.ui.cleanup.CleanUpContext;
+import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+import org.sandbox.jdt.cleanup.multifile.AbstractPlannedMultiFileCleanUp;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateDiagnostic;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpPlanResult;
+import org.sandbox.jdt.cleanup.multifile.MultiFilePlanningMetrics;
+import org.sandbox.jdt.cleanup.multifile.MultiFileScopeDiagnostic;
+import org.sandbox.jdt.triggerpattern.cleanup.CharsetConstructorMigration;
+import org.sandbox.jdt.triggerpattern.cleanup.CheckedExceptionMigration;
+
+/** Reuses the common lifecycle; only explicitly selected/discovered files can be changed. */
+final class CharsetCleanUpCoordinator extends AbstractPlannedMultiFileCleanUp&lt;CharsetCleanUpCoordinator.Run&gt; {
+    record Run(CheckedExceptionMigration.Plan exceptions) { }
+    private final UseExplicitEncodingCleanUpCore owner;
+
+<span class="fc" id="L45">    CharsetCleanUpCoordinator(UseExplicitEncodingCleanUpCore owner) {</span>
+<span class="fc" id="L46">        this.owner= owner;</span>
+<span class="fc" id="L47">    }</span>
+
+<span class="fc bfc" id="L49" title="All 2 branches covered.">    boolean isPrepared(IJavaProject project) { return getPlan(project) != null; }</span>
+
+    @Override protected MultiFileCleanUpPlanResult&lt;Run&gt; createPlan(IJavaProject project,
+            ICompilationUnit[] units, IProgressMonitor monitor) throws CoreException {
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        CheckedExceptionMigration.Plan plan= owner.requireAST() ? parseAndPlan(project, List.of(units), monitor) : null;</span>
+<span class="fc" id="L54">        RefactoringStatus status= new RefactoringStatus();</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (plan == null) return MultiFileCleanUpPlanResult.success(new Run(null));</span>
+        try {
+<span class="fc" id="L57">            plan.requireComplete();</span>
+<span class="fc" id="L58">        } catch (CoreException conflict) {</span>
+<span class="fc" id="L59">            status.addFatalError(conflict.getStatus().getMessage());</span>
+<span class="fc" id="L60">            return new MultiFileCleanUpPlanResult&lt;&gt;(null, status);</span>
+        }
+<span class="fc" id="L62">        List&lt;String&gt; affected= plan.affectedCompilationUnits().stream().sorted().toList();</span>
+<span class="fc" id="L63">        var scope= new MultiFileScopeDiagnostic(List.of(units).stream().map(ICompilationUnit::getHandleIdentifier).toList(),</span>
+<span class="fc" id="L64">                List.of(), &quot;EXPLICIT_SELECTED_SCOPE&quot;, &quot;Charset calls and their source exception contracts are changed together.&quot;, true); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L65">        var candidate= MultiFileCandidateDiagnostic.transformed(&quot;charset-exceptions&quot;, affected.get(0), //$NON-NLS-1$</span>
+<span class="fc" id="L66">                &quot;Use typed Charset constructors and adapt checked exceptions&quot;, affected.subList(1, affected.size())); //$NON-NLS-1$</span>
+<span class="fc" id="L67">        return MultiFileCleanUpPlanResult.success(new Run(plan), status, MultiFilePlanningMetrics.empty(),</span>
+<span class="fc" id="L68">                new MultiFileCleanUpDiagnostics(&quot;sandbox.encoding&quot;, scope, List.of(candidate))); //$NON-NLS-1$</span>
+    }
+
+    @Override protected ICleanUpFix createFixForPlan(Run plan, CleanUpContext context) throws CoreException {
+<span class="fc" id="L72">        return owner.createEncodingFix(context, plan.exceptions());</span>
+    }
+
+    @Override protected Collection&lt;ICompilationUnit&gt; discoverAdditionalCompilationUnits(IJavaProject project,
+            Collection&lt;ICompilationUnit&gt; selected, IProgressMonitor monitor) throws CoreException {
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (!owner.requireAST()) return List.of();</span>
+<span class="fc" id="L78">        var plan= parseAndPlan(project, selected, monitor);</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (plan == null) return List.of();</span>
+<span class="fc" id="L80">        List&lt;ICompilationUnit&gt; additions= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        for (String handle : plan.requiredCompilationUnits()) {</span>
+<span class="pc bpc" id="L82" title="2 of 4 branches missed.">            if (JavaCore.create(handle) instanceof ICompilationUnit unit &amp;&amp; unit.exists()</span>
+<span class="pc bpc" id="L83" title="2 of 4 branches missed.">                    &amp;&amp; project.equals(unit.getJavaProject()) &amp;&amp; !selected.contains(unit)) additions.add(unit);</span>
+        }
+<span class="fc" id="L85">        additions.sort(Comparator.comparing(ICompilationUnit::getHandleIdentifier));</span>
+<span class="fc" id="L86">        return additions;</span>
+    }
+
+    private static CheckedExceptionMigration.Plan parseAndPlan(IJavaProject project,
+            Collection&lt;ICompilationUnit&gt; units, IProgressMonitor monitor) throws CoreException {
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (units.isEmpty()) return null;</span>
+<span class="fc" id="L92">        List&lt;CompilationUnit&gt; roots= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L93">        ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L94">        parser.setProject(project);</span>
+<span class="fc" id="L95">        parser.setResolveBindings(true);</span>
+<span class="fc" id="L96">        parser.createASTs(units.toArray(ICompilationUnit[]::new), new String[0], new ASTRequestor() {</span>
+<span class="fc" id="L97">            @Override public void acceptAST(ICompilationUnit unit, CompilationUnit root) { roots.add(root); }</span>
+<span class="fc" id="L98">        }, monitor);</span>
+<span class="pc bpc" id="L99" title="1 of 4 branches missed.">        if (monitor != null &amp;&amp; monitor.isCanceled()) throw new OperationCanceledException();</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">        if (roots.size() != units.size()) {</span>
+<span class="nc" id="L101">            throw new CoreException(Status.error(&quot;Not all selected compilation units could be parsed&quot;)); //$NON-NLS-1$</span>
+        }
+<span class="fc" id="L103">        return CharsetConstructorMigration.plan(roots, monitor);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

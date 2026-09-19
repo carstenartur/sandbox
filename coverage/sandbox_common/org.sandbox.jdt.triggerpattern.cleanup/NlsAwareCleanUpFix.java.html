@@ -33,11 +33,11 @@ public class NlsAwareCleanUpFix extends CompilationUnitRewriteOperationsFixCore 
 <span class="fc" id="L33">			change= super.createChange(monitor);</span>
 <span class="fc" id="L34">			EncodingSourceRewrite.complete(root, change);</span>
 <span class="fc" id="L35">			return change;</span>
-<span class="nc" id="L36">		} catch (CoreException | RuntimeException exception) {</span>
-<span class="nc bnc" id="L37" title="All 2 branches missed.">			if (change != null) {</span>
+<span class="fc" id="L36">		} catch (CoreException | RuntimeException exception) {</span>
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">			if (change != null) {</span>
 <span class="nc" id="L38">				change.dispose();</span>
 			}
-<span class="nc" id="L40">			throw exception;</span>
+<span class="fc" id="L40">			throw exception;</span>
 		} finally {
 <span class="fc" id="L42">			EncodingSourceRewrite.clear(root);</span>
 		}

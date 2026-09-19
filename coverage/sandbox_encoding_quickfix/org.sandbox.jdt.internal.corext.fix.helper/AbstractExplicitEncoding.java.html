@@ -324,7 +324,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.ExceptionCleanupHelper;
 	}
 
 	private static boolean isInsideTryBodyWithOnlyUnsupportedEncodingCatch(ASTNode statement) {
-<span class="pc bpc" id="L327" title="1 of 2 branches missed.">		if (!(statement.getParent() instanceof Block block)</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">		if (!(statement.getParent() instanceof Block block)</span>
 <span class="fc bfc" id="L328" title="All 2 branches covered.">				|| !(block.getParent() instanceof TryStatement tryStatement)</span>
 <span class="pc bpc" id="L329" title="1 of 2 branches missed.">				|| tryStatement.getBody() != block</span>
 <span class="fc bfc" id="L330" title="All 2 branches covered.">				|| !tryStatement.resources().isEmpty()</span>

@@ -101,7 +101,7 @@ public final class EncodingDslRemovedCatchImportCleanup extends CompilationUnitR
 
 	private static CatchClause removedCatch(ASTNode node) {
 <span class="fc" id="L103">		Statement statement = ASTNodes.getFirstAncestorOrNull(node, Statement.class);</span>
-<span class="pc bpc" id="L104" title="2 of 4 branches missed.">		if (statement == null || !(statement.getParent() instanceof Block body)</span>
+<span class="pc bpc" id="L104" title="1 of 4 branches missed.">		if (statement == null || !(statement.getParent() instanceof Block body)</span>
 <span class="fc bfc" id="L105" title="All 2 branches covered.">				|| !(body.getParent() instanceof TryStatement tryStatement)</span>
 <span class="pc bpc" id="L106" title="2 of 4 branches missed.">				|| tryStatement.getBody() != body || !(tryStatement.getParent() instanceof Block)</span>
 <span class="fc bfc" id="L107" title="All 4 branches covered.">				|| !tryStatement.resources().isEmpty() || tryStatement.getFinally() != null) {</span>

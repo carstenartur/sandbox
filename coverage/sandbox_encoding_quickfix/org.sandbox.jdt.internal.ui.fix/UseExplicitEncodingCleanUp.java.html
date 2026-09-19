@@ -13,23 +13,44 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUpCoreWrapper;
+
+import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
 /**
  * Until
  * https://openjdk.java.net/jeps/400
  * is active platform encoding might be different than UTF-8.
  * So it can be dangerous not to use explicit encoding.
  */
-public class UseExplicitEncodingCleanUp extends AbstractCleanUpCoreWrapper&lt;UseExplicitEncodingCleanUpCore&gt; {
+public class UseExplicitEncodingCleanUp extends AbstractCleanUpCoreWrapper&lt;UseExplicitEncodingCleanUpCore&gt;
+		implements IMultiFileCleanUpScopeProvider {
 	public UseExplicitEncodingCleanUp(final Map&lt;String, String&gt; options) {
-<span class="fc" id="L28">		super(options, new UseExplicitEncodingCleanUpCore());</span>
-<span class="fc" id="L29">	}</span>
+<span class="fc" id="L38">		super(options, new UseExplicitEncodingCleanUpCore());</span>
+<span class="fc" id="L39">	}</span>
 
 	public UseExplicitEncodingCleanUp() {
-<span class="fc" id="L32">		this(Collections.emptyMap());</span>
-<span class="fc" id="L33">	}</span>
+<span class="fc" id="L42">		this(Collections.emptyMap());</span>
+<span class="fc" id="L43">	}</span>
+
+	@Override
+	public Collection&lt;ICompilationUnit&gt; expandCleanUpScope(IJavaProject project,
+			Collection&lt;ICompilationUnit&gt; currentScope, IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L48">		return cleanUpCore.expandCleanUpScope(project, currentScope, monitor);</span>
+	}
+
+	public Collection&lt;Map&lt;String, Object&gt;&gt; getCoordinatedCleanUpPreview(IJavaProject project)
+			throws CoreException {
+<span class="fc" id="L53">		return cleanUpCore.getCoordinatedCleanUpPreview(project);</span>
+	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

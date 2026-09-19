@@ -200,26 +200,26 @@ public final class BuiltInGuardRegistration {
 	}
 
 	private static boolean evaluateSubtypeOf(GuardContext context, Object... args) {
-<span class="nc bnc" id="L203" title="All 2 branches missed.">		if (args.length &lt; 2) {</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
 <span class="nc" id="L204">			return false;</span>
 		}
-<span class="nc" id="L206">		ASTNode node= context.getBinding(argument(args, 0));</span>
-<span class="nc bnc" id="L207" title="All 2 branches missed.">		if (node == null) {</span>
+<span class="fc" id="L206">		ASTNode node= context.getBinding(argument(args, 0));</span>
+<span class="pc bpc" id="L207" title="1 of 2 branches missed.">		if (node == null) {</span>
 <span class="nc" id="L208">			return false;</span>
 		}
-<span class="nc" id="L210">		ITypeBinding binding= resolveTypeBinding(node);</span>
-<span class="nc bnc" id="L211" title="All 2 branches missed.">		if (binding == null) {</span>
+<span class="fc" id="L210">		ITypeBinding binding= resolveTypeBinding(node);</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">		if (binding == null) {</span>
 <span class="nc" id="L212">			context.markUnknown(&quot;subtypeOf&quot;, //$NON-NLS-1$</span>
 <span class="nc" id="L213">					&quot;Cannot resolve the type hierarchy of &quot; + argument(args, 0)); //$NON-NLS-1$</span>
 <span class="nc" id="L214">			return true;</span>
 		}
-<span class="nc" id="L216">		HierarchyMatch match= subtypeMatch(binding, stripQuotes(argument(args, 1)), new HashSet&lt;&gt;());</span>
-<span class="nc bnc" id="L217" title="All 2 branches missed.">		if (match == HierarchyMatch.UNKNOWN) {</span>
+<span class="fc" id="L216">		HierarchyMatch match= subtypeMatch(binding, stripQuotes(argument(args, 1)), new HashSet&lt;&gt;());</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">		if (match == HierarchyMatch.UNKNOWN) {</span>
 <span class="nc" id="L218">			context.markUnknown(&quot;subtypeOf&quot;, //$NON-NLS-1$</span>
 <span class="nc" id="L219">					&quot;Cannot resolve the complete type hierarchy of &quot; + argument(args, 0)); //$NON-NLS-1$</span>
 <span class="nc" id="L220">			return true;</span>
 		}
-<span class="nc bnc" id="L222" title="All 2 branches missed.">		return match == HierarchyMatch.MATCH;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">		return match == HierarchyMatch.MATCH;</span>
 	}
 
 	static HierarchyMatch subtypeMatch(ITypeBinding binding, String expectedType, Set&lt;String&gt; visited) {
@@ -235,16 +235,16 @@ public final class BuiltInGuardRegistration {
 		}
 <span class="fc" id="L236">		String key= declaration.getKey();</span>
 <span class="pc bpc" id="L237" title="2 of 4 branches missed.">		String identity= key == null || key.isBlank() ? declaration.getQualifiedName() : key;</span>
-<span class="pc bpc" id="L238" title="3 of 6 branches missed.">		if (identity != null &amp;&amp; !identity.isBlank() &amp;&amp; !visited.add(identity)) {</span>
-<span class="nc" id="L239">			return HierarchyMatch.NO_MATCH;</span>
+<span class="pc bpc" id="L238" title="2 of 6 branches missed.">		if (identity != null &amp;&amp; !identity.isBlank() &amp;&amp; !visited.add(identity)) {</span>
+<span class="fc" id="L239">			return HierarchyMatch.NO_MATCH;</span>
 		}
 <span class="fc bfc" id="L241" title="All 2 branches covered.">		if (matchesTypeName(declaration, expectedType)) {</span>
 <span class="fc" id="L242">			return HierarchyMatch.MATCH;</span>
 		}
 <span class="fc" id="L244">		boolean unknown= false;</span>
 <span class="fc" id="L245">		HierarchyMatch superclassMatch= subtypeMatch(declaration.getSuperclass(), expectedType, visited);</span>
-<span class="pc bpc" id="L246" title="1 of 2 branches missed.">		if (superclassMatch == HierarchyMatch.MATCH) {</span>
-<span class="nc" id="L247">			return HierarchyMatch.MATCH;</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">		if (superclassMatch == HierarchyMatch.MATCH) {</span>
+<span class="fc" id="L247">			return HierarchyMatch.MATCH;</span>
 		}
 <span class="fc bfc" id="L249" title="All 2 branches covered.">		unknown= superclassMatch == HierarchyMatch.UNKNOWN;</span>
 <span class="fc bfc" id="L250" title="All 2 branches covered.">		for (ITypeBinding iface : declaration.getInterfaces()) {</span>
@@ -252,7 +252,7 @@ public final class BuiltInGuardRegistration {
 <span class="fc bfc" id="L252" title="All 2 branches covered.">			if (interfaceMatch == HierarchyMatch.MATCH) {</span>
 <span class="fc" id="L253">				return HierarchyMatch.MATCH;</span>
 			}
-<span class="pc bpc" id="L255" title="1 of 2 branches missed.">			unknown|= interfaceMatch == HierarchyMatch.UNKNOWN;</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">			unknown|= interfaceMatch == HierarchyMatch.UNKNOWN;</span>
 		}
 <span class="fc bfc" id="L257" title="All 2 branches covered.">		return unknown ? HierarchyMatch.UNKNOWN : HierarchyMatch.NO_MATCH;</span>
 	}

@@ -94,17 +94,17 @@ public abstract class AbstractPlannedMultiFileCleanUp&lt;P&gt; extends AbstractC
 <span class="fc" id="L94">		}</span>
 
 		MultiFileScopeDiagnostic merge(MultiFileScopeDiagnostic existing) {
-<span class="nc bnc" id="L97" title="All 2 branches missed.">			if (addedHandles.isEmpty()) {</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			if (addedHandles.isEmpty()) {</span>
 <span class="nc" id="L98">				return new MultiFileScopeDiagnostic(List.copyOf(selectedHandles),</span>
 <span class="nc" id="L99">						existing.addedCompilationUnitHandles(), existing.reasonCode(), existing.explanation(),</span>
 <span class="nc" id="L100">						existing.complete());</span>
 			}
-<span class="nc" id="L102">			Set&lt;String&gt; allAdded= new LinkedHashSet&lt;&gt;(existing.addedCompilationUnitHandles());</span>
-<span class="nc" id="L103">			allAdded.addAll(addedHandles);</span>
-<span class="nc" id="L104">			return new MultiFileScopeDiagnostic(List.copyOf(selectedHandles), List.copyOf(allAdded),</span>
-<span class="nc" id="L105">					&quot;RELATED_SOURCE_CLOSURE&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L106">					&quot;Related source compilation units were added to close coordinated cleanup references.&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L107">					existing.complete());</span>
+<span class="fc" id="L102">			Set&lt;String&gt; allAdded= new LinkedHashSet&lt;&gt;(existing.addedCompilationUnitHandles());</span>
+<span class="fc" id="L103">			allAdded.addAll(addedHandles);</span>
+<span class="fc" id="L104">			return new MultiFileScopeDiagnostic(List.copyOf(selectedHandles), List.copyOf(allAdded),</span>
+<span class="fc" id="L105">					&quot;RELATED_SOURCE_CLOSURE&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L106">					&quot;Related source compilation units were added to close coordinated cleanup references.&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L107">					existing.complete());</span>
 		}
 
 		private static void addHandles(Set&lt;String&gt; target, Collection&lt;ICompilationUnit&gt; units) {
@@ -178,12 +178,12 @@ public abstract class AbstractPlannedMultiFileCleanUp&lt;P&gt; extends AbstractC
 			}
 <span class="fc" id="L179">			MultiFileCleanUpDiagnostics diagnostics= result.diagnostics();</span>
 <span class="fc" id="L180">			ScopeAccumulator scope= scopesByProject.remove(project);</span>
-<span class="pc bpc" id="L181" title="1 of 2 branches missed.">			if (scope != null) {</span>
-<span class="nc" id="L182">				MultiFileScopeDiagnostic mergedScope= scope.merge(diagnostics.scope());</span>
-<span class="nc bnc" id="L183" title="All 2 branches missed.">				String cleanupId= UNKNOWN_CLEANUP_ID.equals(diagnostics.cleanupId())</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">			if (scope != null) {</span>
+<span class="fc" id="L182">				MultiFileScopeDiagnostic mergedScope= scope.merge(diagnostics.scope());</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">				String cleanupId= UNKNOWN_CLEANUP_ID.equals(diagnostics.cleanupId())</span>
 <span class="nc" id="L184">						? getClass().getSimpleName()</span>
-<span class="nc" id="L185">						: diagnostics.cleanupId();</span>
-<span class="nc" id="L186">				diagnostics= new MultiFileCleanUpDiagnostics(cleanupId, mergedScope, diagnostics.candidates());</span>
+<span class="fc" id="L185">						: diagnostics.cleanupId();</span>
+<span class="fc" id="L186">				diagnostics= new MultiFileCleanUpDiagnostics(cleanupId, mergedScope, diagnostics.candidates());</span>
 			}
 <span class="fc" id="L188">			metricsByProject.put(project, result.metrics());</span>
 <span class="fc" id="L189">			diagnosticsByProject.put(project, diagnostics);</span>
