@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b364fcd6abc9463dbc859c758a428945d65e2cc244ea2a76c9ebe31cbaad4648",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: boolean.value.comparison.true\u003e\n\u003c!description: Replace \u0027boolean \u003d\u003d true\u0027 with \u0027boolean\u0027 for clarity and brevity.\u003e\n\u003c!severity: HINT\u003e\n$x \u003d\u003d true :: (instanceof($x, \"boolean\") || instanceof($x, \"java.lang.Boolean\")) \u0026\u0026 hasNoSideEffect($x)\n\u003d\u003e\n$x\n;;\n\n\u003c!id: boolean.value.comparison.false\u003e\n\u003c!description: Replace \u0027boolean \u003d\u003d false\u0027 with \u0027!boolean\u0027 for clarity and brevity.\u003e\n\u003c!severity: HINT\u003e\n$x \u003d\u003d false :: (instanceof($x, \"boolean\") || instanceof($x, \"java.lang.Boolean\")) \u0026\u0026 hasNoSideEffect($x)\n\u003d\u003e\n!$x\n;;",
+  "beforeExample": "class MyClass {\n    boolean myPrimitiveBool \u003d true;\n    Boolean myWrapperBool \u003d Boolean.TRUE;\n\n    void testMethod() {\n        if (myPrimitiveBool \u003d\u003d true) {\n            System.out.println(\"Primitive boolean is true.\");\n        }\n        if (myWrapperBool \u003d\u003d true) {\n            System.out.println(\"Wrapper boolean is true.\");\n        }\n\n        if (myPrimitiveBool \u003d\u003d false) {\n            System.out.println(\"Primitive boolean is false.\");\n        }\n        if (myWrapperBool \u003d\u003d false) {\n            System.out.println(\"Wrapper boolean is false.\");\n        }\n    }\n\n    boolean methodWithSideEffect() {\n        System.out.println(\"Executing side effect...\");\n        return true;\n    }\n\n    void anotherTestMethod() {\n        // These should NOT be transformed due to hasNoSideEffect guard\n        if (methodWithSideEffect() \u003d\u003d true) {\n            System.out.println(\"Side effect evaluation for true.\");\n        }\n        if (methodWithSideEffect() \u003d\u003d false) {\n            System.out.println(\"Side effect evaluation for false.\");\n        }\n    }\n}",
+  "afterExample": "class MyClass {\n    boolean myPrimitiveBool \u003d true;\n    Boolean myWrapperBool \u003d Boolean.TRUE;\n\n    void testMethod() {\n        if (myPrimitiveBool) {\n            System.out.println(\"Primitive boolean is true.\");\n        }\n        if (myWrapperBool) {\n            System.out.println(\"Wrapper boolean is true.\");\n        }\n\n        if (!myPrimitiveBool) {\n            System.out.println(\"Primitive boolean is false.\");\n        }\n        if (!myWrapperBool) {\n            System.out.println(\"Wrapper boolean is false.\");\n        }\n    }\n\n    boolean methodWithSideEffect() {\n        System.out.println(\"Executing side effect...\");\n        return true;\n    }\n\n    void anotherTestMethod() {\n        // These should NOT be transformed due to hasNoSideEffect guard\n        if (methodWithSideEffect() \u003d\u003d true) {\n            System.out.println(\"Side effect evaluation for true.\");\n        }\n        if (methodWithSideEffect() \u003d\u003d false) {\n            System.out.println(\"Side effect evaluation for false.\");\n        }\n    }\n}",
+  "negativeExample": "class MyClass {\n    String myString \u003d \"true\";\n    int myInt \u003d 1;\n\n    void noMatchMethod() {\n        // This is a String comparison, not boolean. Should not match.\n        if (myString \u003d\u003d \"true\") {\n            System.out.println(\"String equality check.\");\n        }\n        // This is an int comparison, not boolean. Should not match.\n        if (myInt \u003d\u003d 1) {\n            System.out.println(\"Integer equality check.\");\n        }\n    }\n\n    boolean methodWithSideEffect() {\n        System.out.println(\"Executing side effect...\");\n        return true;\n    }\n\n    void sideEffectMethod() {\n        // This has a side effect, so the rule with hasNoSideEffect() guard\n        // should explicitly NOT match this even though it\u0027s boolean \u003d\u003d true.\n        if (methodWithSideEffect() \u003d\u003d true) {\n            System.out.println(\"This should NOT be simplified to \u0027if (methodWithSideEffect())\u0027.\");\n        }\n        // Similarly for \u0027\u003d\u003d false\u0027\n        if (methodWithSideEffect() \u003d\u003d false) {\n            System.out.println(\"This should NOT be simplified to \u0027if (!methodWithSideEffect())\u0027.\");\n        }\n    }\n}",
+  "targetHintFile": "simplification.sandbox-hint",
+  "sourceCommit": "5c071d399a438b14110b40d5332a3150b00d83df",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Simplification",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-19T02:26:25.194462166Z",
+  "ruleFingerprint": "sha256:6520ce85527a86737f5f227292b583ddb9e1c5dcbbd45b5bae19380726ef901f",
+  "behaviorFingerprint": "sha256:9b5a9148ac9cc1aa94bd74d54bba4777ae9bdaff856508da47bca46a2f187b41",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-19T02:26:32.309804947Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
