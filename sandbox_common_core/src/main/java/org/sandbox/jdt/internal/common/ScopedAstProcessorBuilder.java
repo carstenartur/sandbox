@@ -195,7 +195,8 @@ public final class ScopedAstProcessorBuilder<V, T> {
 		HelperVisitor<ReferenceHolder<V, T>, V, T> visitor=
 				new HelperVisitor<>(new HashSet<>(excludedNodes), holder);
 		visitor.add(stage.visitorType(), (node, data) -> {
-			if (!stage.nodeType().isInstance(node) || !stage.matcher().test(node, data)) {
+			if (excludedNodes.contains(node) || !stage.nodeType().isInstance(node)
+					|| !stage.matcher().test(node, data)) {
 				return true;
 			}
 

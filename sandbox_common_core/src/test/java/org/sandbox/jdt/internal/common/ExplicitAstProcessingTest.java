@@ -11,8 +11,12 @@
 package org.sandbox.jdt.internal.common;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jdt.core.dom.AST;
@@ -221,6 +225,78 @@ class ExplicitAstProcessingTest {
 
 		assertEquals(2, firstVisitor.get());
 		assertEquals(2, secondVisitor.get());
+	}
+
+	@Test
+	void statelessConsumerVisitsNestedInvocationsInOrder() {
+		CompilationUnit unit= parse("class Sample { void run() { outer(inner()); } }"); //$NON-NLS-1$
+		List<String> visited= new ArrayList<>();
+		AstProcessing.independent()
+				.visit(MethodInvocation.class, call -> visited.add(call.getName().getIdentifier()))
+				.build(unit);
+		assertEquals(List.of("outer", "inner"), visited); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	void consumerStagesRemainIndependentAndCanBeReused() {
+		CompilationUnit unit= parse("class Sample { int value; }"); //$NON-NLS-1$
+		List<String> visited= new ArrayList<>();
+		var visitor= AstProcessing.independent()
+				.visit(FieldDeclaration.class, field -> visited.add("field")) //$NON-NLS-1$
+				.visit(TypeDeclaration.class, type -> visited.add(type.getName().getIdentifier()));
+		visitor.build(unit);
+		visitor.build(unit);
+		assertEquals(List.of("field", "Sample", "field", "Sample"), visited); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+	}
+
+	@Test
+	void consumerRespectsExcludedNodes() {
+		CompilationUnit unit= parse("class Sample { int value; }"); //$NON-NLS-1$
+		SimpleName excluded= ((TypeDeclaration) unit.types().get(0)).getName();
+		List<String> visited= new ArrayList<>();
+		AstProcessing.independent().excluding(Set.of(excluded))
+				.visit(SimpleName.class, name -> visited.add(name.getIdentifier())).build(unit);
+		assertEquals(List.of("value"), visited); //$NON-NLS-1$
+	}
+
+	@Test
+	void excludedNodeSkipsItsCallbackButNotItsDescendants() {
+		CompilationUnit unit= parse("class Sample { void run() { outer(inner()); } }"); //$NON-NLS-1$
+		List<MethodInvocation> calls= new ArrayList<>();
+		AstProcessing.independent().visit(MethodInvocation.class, calls::add).build(unit);
+		List<String> visited= new ArrayList<>();
+		AstProcessing.independent().excluding(Set.of(calls.get(0)))
+				.on(MethodInvocation.class, (call, data) -> {
+					visited.add(call.getName().getIdentifier());
+					return true;
+				}).build(unit);
+		assertEquals(List.of("inner"), visited); //$NON-NLS-1$
+	}
+
+	@Test
+	void scopedProcessingAlsoHonorsExcludedNodes() {
+		CompilationUnit unit= parse("class Sample { int value; }"); //$NON-NLS-1$
+		SimpleName excluded= ((TypeDeclaration) unit.types().get(0)).getName();
+		List<String> visited= new ArrayList<>();
+		AstProcessing.scoped(ReferenceHolder.<String, Object>create()).excluding(Set.of(excluded))
+				.find(SimpleName.class, name -> true,
+						(name, data) -> visited.add(name.getIdentifier()), java.util.function.Function.identity()).build(unit);
+		assertEquals(List.of("value"), visited); //$NON-NLS-1$
+	}
+
+	@Test
+	void consumerPropagatesFailureAndRejectsNullCallback() {
+		var visitor= AstProcessing.independent();
+		assertNullCallbackRejected(visitor, null);
+		IllegalStateException expected= new IllegalStateException("stop"); //$NON-NLS-1$
+		visitor.visit(SimpleName.class, name -> { throw expected; });
+		assertSame(expected, assertThrows(IllegalStateException.class,
+				() -> visitor.build(parse("class Sample {}")))); //$NON-NLS-1$
+	}
+
+	private static void assertNullCallbackRejected(IndependentAstProcessorBuilder<?, ?> visitor,
+			java.util.function.Consumer<? super SimpleName> callback) {
+		assertThrows(NullPointerException.class, () -> visitor.visit(SimpleName.class, callback));
 	}
 
 	private static boolean hasLeftHandName(Assignment assignment, String expectedName) {
