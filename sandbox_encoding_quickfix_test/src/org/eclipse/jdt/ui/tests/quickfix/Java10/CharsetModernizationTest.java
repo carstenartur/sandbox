@@ -11,7 +11,6 @@ package org.eclipse.jdt.ui.tests.quickfix.Java10;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -415,13 +414,10 @@ public class CharsetModernizationTest {
                     }
                 }
                 """;
-        var unit= context.getSourceFolder().createPackageFragment("test1", false, null).createCompilationUnit("E1.java", before, false, null);
-        var cleanup= new UseExplicitEncodingCleanUpCore(CharsetScopeTest.options(mode));
-        var status= cleanup.checkPreConditions(unit.getJavaProject(), new ICompilationUnit[] { unit }, null);
-        assertTrue(status.hasFatalError(), status.toString());
-        assertTrue(status.toString().contains("Cannot safely widen"), status.toString());
-        assertEquals(before, unit.getSource());
-        cleanup.checkPostConditions(null);
+        String after= verifySource(mode, before, 1, null);
+        String expected= compileAndRun(before, runtimeDirectory.resolve("before"));
+        assertEquals("argument", expected);
+        assertEquals(expected, compileAndRun(after, runtimeDirectory.resolve("after")));
     }
 
     @ParameterizedTest
@@ -496,11 +492,11 @@ public class CharsetModernizationTest {
     private static String compileAndRun(String source, java.nio.file.Path directory) throws Exception {
         java.nio.file.Files.createDirectories(directory);
         var file= directory.resolve("E1.java");
-        java.nio.file.Files.writeString(file, source, StandardCharsets.UTF_8);
+        java.nio.file.Files.writeString(file, source, java.nio.charset.StandardCharsets.UTF_8);
         var compiler= javax.tools.ToolProvider.getSystemJavaCompiler();
         assertNotNull(compiler);
         var diagnostics= new javax.tools.DiagnosticCollector<javax.tools.JavaFileObject>();
-        try (var manager= compiler.getStandardFileManager(diagnostics, java.util.Locale.ROOT, StandardCharsets.UTF_8)) {
+        try (var manager= compiler.getStandardFileManager(diagnostics, java.util.Locale.ROOT, java.nio.charset.StandardCharsets.UTF_8)) {
             assertTrue(compiler.getTask(null, manager, diagnostics,
                     List.of("--release", "10", "-Xlint:all", "-d", directory.toString()), null,
                     manager.getJavaFileObjects(file)).call(), diagnostics.getDiagnostics().toString());

@@ -52,6 +52,12 @@ public class ClassInstanceCreationVisitorBuilder extends HelperVisitorBuilder<Cl
     protected <V, H> void executeVisitors(ReferenceHolder<V, H> holder, 
             BiPredicate<ClassInstanceCreation, ReferenceHolder<V, H>> processor) {
         HelperVisitorFactory.callClassInstanceCreationVisitor(targetClass, compilationUnit,
-                holder, nodesprocessed, processor);
+                holder, nodesprocessed, (node, data) -> {
+                    if (nodesprocessed != null && nodesprocessed.contains(node)) return true;
+                    var binding = node.resolveConstructorBinding();
+                    if (binding == null || binding.isRecovered()
+                            || !targetClass.getCanonicalName().equals(binding.getDeclaringClass().getErasure().getQualifiedName())) return true;
+                    return processor.test(node, data);
+                });
     }
 }

@@ -145,11 +145,11 @@ $s.getBytes() :: sourceVersionGE(7), mode(KEEP_BEHAVIOR)
 // === new String(byte[]) — 1-arg constructor ===
 // Charset overload exists since Java 6; StandardCharsets makes this available from Java 7.
 
-new java.lang.String($bytes) :: sourceVersionGE(7), mode(ENFORCE_UTF8)
+new java.lang.String($bytes) :: sourceVersionGE(7), mode(ENFORCE_UTF8), subtypeOf($bytes, "byte[]")
 => new java.lang.String($bytes, java.nio.charset.StandardCharsets.UTF_8)
 ;;
 
-new java.lang.String($bytes) :: sourceVersionGE(7), mode(KEEP_BEHAVIOR)
+new java.lang.String($bytes) :: sourceVersionGE(7), mode(KEEP_BEHAVIOR), subtypeOf($bytes, "byte[]")
 => new java.lang.String($bytes, java.nio.charset.Charset.defaultCharset())
 ;;
 

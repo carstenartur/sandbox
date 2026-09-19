@@ -339,11 +339,6 @@ public final class CheckedExceptionMigration {
                             return;
                         }
                     }
-                    if (narrow.stream().anyMatch(c -> types(c).stream().anyMatch(t -> t.resolveBinding() != null
-                            && oldHandler.equals(t.resolveBinding().getQualifiedName())))) {
-                        conflicts.add("Cannot safely widen the existing " + oldHandler + " handler to " + added.getQualifiedName()); //$NON-NLS-1$ //$NON-NLS-2$
-                        return;
-                    }
                 }
                 if (parent instanceof LambdaExpression lambda) {
                     requireContract(lambda.resolveMethodBinding());

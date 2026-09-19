@@ -16,11 +16,12 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
@@ -64,6 +65,14 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,
 			ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
+		IMethodBinding constructor= visited.resolveConstructorBinding();
+		if (constructor == null || constructor.isRecovered()
+				|| !String.class.getCanonicalName().equals(constructor.getDeclaringClass().getQualifiedName())
+				|| constructor.getParameterTypes().length == 0
+				|| !"byte[]".equals(constructor.getParameterTypes()[0].getQualifiedName())) { //$NON-NLS-1$
+			// A copy/character constructor can still contain a byte-decoding constructor.
+			return true;
+		}
 		List<ASTNode> arguments= visited.arguments();
 		switch (arguments.size()) {
 			case 4:

@@ -92,11 +92,37 @@ public final class CharsetConstructorMigration {
     static boolean rewriteExpression(ASTNode original, ASTNode replacement, String text,
             CompilationUnitRewrite rewrite, TextEditGroup group) {
         if (!(original instanceof ClassInstanceCreation creation) || !(replacement instanceof ClassInstanceCreation copy)) return false;
+        if (rewriteStringConstructor(creation, copy, rewrite, group)) return true;
         IMethodBinding target= target(creation);
         if (target == null || !usesTargetOverload(creation, target, text)) return false;
         if (creation.arguments().size() > 1 && creation.arguments().get(1) instanceof StringLiteral literal)
             EncodingSourceRewrite.record(rewrite, literal);
         copy.arguments().set(0, rewrite.getASTRewrite().createMoveTarget((ASTNode) creation.arguments().get(0)));
+        rewrite.getASTRewrite().replace(original, copy, group);
+        return true;
+    }
+
+    /** Preserve sibling and nested edits instead of replacing their entire statement for NLS. */
+    private static boolean rewriteStringConstructor(ClassInstanceCreation original, ClassInstanceCreation copy,
+            CompilationUnitRewrite rewrite, TextEditGroup group) {
+        IMethodBinding binding= original.resolveConstructorBinding();
+        if (binding == null || binding.isRecovered()
+                || !"java.lang.String".equals(binding.getDeclaringClass().getQualifiedName())) return false; //$NON-NLS-1$
+        ITypeBinding[] parameters= binding.getParameterTypes();
+        int count= parameters.length;
+        if ((count != 2 && count != 4) || copy.arguments().size() != count
+                || !"byte[]".equals(parameters[0].getQualifiedName()) //$NON-NLS-1$
+                || !"java.lang.String".equals(parameters[count - 1].getQualifiedName()) //$NON-NLS-1$
+                || TypeChangeDetector.detectCharsetTypeChange(original, copy) == null) return false;
+        String type= copy.getType().toString();
+        if (!type.equals(original.getType().toString()) && !"java.lang.String".equals(type)) return false; //$NON-NLS-1$
+        for (int index= 0; index < count - 1; index++) {
+            if (!((ASTNode) original.arguments().get(index)).subtreeMatch(new ASTMatcher(), copy.arguments().get(index))) return false;
+        }
+        EncodingSourceRewrite.record(rewrite, (ASTNode) original.arguments().get(count - 1));
+        for (int index= 0; index < count - 1; index++) {
+            copy.arguments().set(index, rewrite.getASTRewrite().createMoveTarget((ASTNode) original.arguments().get(index)));
+        }
         rewrite.getASTRewrite().replace(original, copy, group);
         return true;
     }
