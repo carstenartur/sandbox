@@ -15,6 +15,17 @@
    <h2>Safety model</h2>
    <p>Binding-aware matching is used so methods with similar names are not rewritten accidentally. Review behavior-changing policies before applying them to a large code base.</p>
 
+   <h2>Typed constructors and related sources</h2>
+   <p>Supported Java 10+ Scanner and Formatter calls use Charset overloads, not
+      charset-name strings. Obsolete encoding-exception handling is removed when
+      no surviving operation needs it. File constructors can additionally require
+      IOException; catch and throws changes are planned with source contracts and callers.</p>
+   <p>Select all affected source files for one cleanup preview, apply and undo.
+      A missing source or fixed external contract is a reported conflict. A
+      handler is not widened when that would intercept unrelated I/O failures.
+      Formatter retains the default FORMAT locale. Save actions do not silently
+      expand their source scope.</p>
+
    <h2>Known limitations</h2>
    <ul>
       <li>Dynamic charset names and application-specific fallback behavior are not guessed.</li>

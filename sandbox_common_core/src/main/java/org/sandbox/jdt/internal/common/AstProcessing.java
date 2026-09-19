@@ -38,6 +38,11 @@ public final class AstProcessing {
 		return new IndependentAstProcessorBuilder<>(Objects.requireNonNull(holder, "holder")); //$NON-NLS-1$
 	}
 
+	/** Creates independent visitors when callbacks need no shared reference holder. */
+	public static IndependentAstProcessorBuilder<Void, Void> independent() {
+		return independent(ReferenceHolder.create());
+	}
+
 	static VisitorEnum visitorType(Class<? extends ASTNode> nodeType) {
 		Objects.requireNonNull(nodeType, "nodeType"); //$NON-NLS-1$
 		try {

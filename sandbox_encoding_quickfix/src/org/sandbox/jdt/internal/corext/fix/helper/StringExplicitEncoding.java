@@ -16,16 +16,17 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
@@ -33,7 +34,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 
 /**
  *
- * Java 10
+ * Java 7+
  *
  * Change
  *
@@ -50,10 +51,8 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
-		if (!JavaModelUtil.is10OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
-			/**
-			 * For Java 9 and older just do nothing
-			 */
+		String sourceVersion= compilationUnit.getJavaElement().getJavaProject().getOption(JavaCore.COMPILER_SOURCE, true);
+		if (JavaCore.compareJavaVersions(sourceVersion, JavaCore.VERSION_1_7) < 0) {
 			return;
 		}
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
@@ -66,6 +65,14 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore, Set<CompilationUnitRewriteOperation> operations,
 			ChangeBehavior cb, ClassInstanceCreation visited,
 			ReferenceHolder<ASTNode, Object> holder) {
+		IMethodBinding constructor= visited.resolveConstructorBinding();
+		if (constructor == null || constructor.isRecovered()
+				|| !String.class.getCanonicalName().equals(constructor.getDeclaringClass().getQualifiedName())
+				|| constructor.getParameterTypes().length == 0
+				|| !"byte[]".equals(constructor.getParameterTypes()[0].getQualifiedName())) { //$NON-NLS-1$
+			// A copy/character constructor can still contain a byte-decoding constructor.
+			return true;
+		}
 		List<ASTNode> arguments= visited.arguments();
 		switch (arguments.size()) {
 			case 4:
@@ -93,6 +100,10 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 				operations.add(fixcore.rewrite(visited, cb, holder));
 				break;
 			case 1:
+				NodeData nd1= new NodeData(false, visited, null);
+				holder.put(visited, nd1);
+				operations.add(fixcore.rewrite(visited, cb, holder));
+				break;
 			default:
 				break;
 		}

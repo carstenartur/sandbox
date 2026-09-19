@@ -14,8 +14,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.sandbox.jdt.internal.common.AstProcessing;
 
 /** Reserves identifiers across loop handlers sharing one cleanup AST. */
 final class LoopVariableNames {
@@ -24,13 +24,9 @@ final class LoopVariableNames {
 	private final Set<String> names = new HashSet<>();
 
 	private LoopVariableNames(ASTNode root) {
-		root.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(SimpleName name) {
-				names.add(name.getIdentifier());
-				return true;
-			}
-		});
+		AstProcessing.independent()
+				.visit(SimpleName.class, name -> names.add(name.getIdentifier()))
+				.build(root);
 	}
 
 	static Set<String> usedNames(ASTNode node) {

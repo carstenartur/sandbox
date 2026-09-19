@@ -77,8 +77,9 @@
 
    <h2>Applicability and Java version</h2>
    <p>The cleanup requires resolved bindings and a supported encoding-sensitive API. It adapts replacements to the
-      project's Java level. Dynamic charset expressions, unsupported overloads, ambiguous constants, and cases where
-      checked-exception or resource-lifetime behavior cannot be preserved are left unchanged.</p>
+      project's Java level. Dynamic charset expressions and unsupported overloads remain unchanged. Related
+      source contracts must be included in the cleanup selection; unresolved checked-exception
+      contracts are reported as conflicts. See the <a href="reference.html">reference</a>.</p>
 
    <h2>Review the real execution preview</h2>
    <ol>

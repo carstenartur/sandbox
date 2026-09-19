@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 
@@ -59,7 +60,26 @@ public final class IndependentAstProcessorBuilder<V, T> {
 		return this;
 	}
 
-	/** Applies one shared exclusion set to every independent visitor traversal. */
+	/**
+	 * Registers a typed action and always visits descendants of matching nodes.
+	 * Use {@link #on(Class, BiPredicate)} when child traversal must be conditional
+	 * or callbacks need access to the shared reference holder.
+	 *
+	 * @param <N> AST node type
+	 * @param nodeType node class to visit
+	 * @param action action performed for each matching node
+	 * @return this builder
+	 */
+	public <N extends ASTNode> IndependentAstProcessorBuilder<V, T> visit(
+			Class<N> nodeType, Consumer<? super N> action) {
+		Objects.requireNonNull(action, "action"); //$NON-NLS-1$
+		return on(nodeType, (node, data) -> {
+			action.accept(node);
+			return true;
+		});
+	}
+
+	/** Skips callbacks for these nodes; their descendants are still visited. */
 	public IndependentAstProcessorBuilder<V, T> excluding(Set<? extends ASTNode> nodes) {
 		excludedNodes= Set.copyOf(Objects.requireNonNull(nodes, "nodes")); //$NON-NLS-1$
 		return this;
@@ -71,7 +91,8 @@ public final class IndependentAstProcessorBuilder<V, T> {
 		for (Stage<V, T> stage : stages) {
 			HelperVisitor<ReferenceHolder<V, T>, V, T> visitor=
 					new HelperVisitor<>(new HashSet<>(excludedNodes), holder);
-			visitor.add(stage.visitorType(), stage.handler());
+			visitor.add(stage.visitorType(), (node, data) ->
+					excludedNodes.contains(node) || stage.handler().test(node, data));
 			visitor.build(root);
 		}
 	}

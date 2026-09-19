@@ -19,6 +19,10 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.Javadoc;
+import org.eclipse.jdt.core.dom.TagElement;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.TryStatement;
 import org.eclipse.jdt.core.dom.Type;
@@ -122,9 +126,32 @@ public class ExceptionCleanupHelper {
 			if (isTargetException(exceptionType, exceptionFQN)) {
 				throwsRewrite.remove(exceptionType, group);
 				importRemover.registerRemovedNode(exceptionType);
+                updateThrowsJavadoc(method, exceptionFQN, null, rewrite, group, importRemover);
 			}
 		}
 	}
+
+    /** Returns whether a matching documented exception was found. */
+    static boolean updateThrowsJavadoc(MethodDeclaration method, String oldType, String replacement,
+            ASTRewrite rewrite, TextEditGroup group, ImportRemover imports) {
+        Javadoc javadoc= method.getJavadoc();
+        if (javadoc == null) return false;
+        boolean found= false;
+        ListRewrite tags= rewrite.getListRewrite(javadoc, Javadoc.TAGS_PROPERTY);
+        for (Object item : List.copyOf(tags.getRewrittenList())) {
+            TagElement tag= (TagElement) item;
+            if ((TagElement.TAG_THROWS.equals(tag.getTagName()) || TagElement.TAG_EXCEPTION.equals(tag.getTagName()))
+                    && !tag.fragments().isEmpty() && tag.fragments().get(0) instanceof Name name
+                    && name.resolveBinding() instanceof ITypeBinding type && oldType.equals(type.getErasure().getQualifiedName())) {
+                if (replacement == null) {
+                    tags.remove(tag, group);
+                    imports.registerRemovedNode(tag);
+                } else rewrite.replace(name, method.getAST().newName(replacement), group);
+                found= true;
+            }
+        }
+        return found;
+    }
 
 	static boolean removeExceptionFromUnionType(
 			UnionType unionType,
