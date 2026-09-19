@@ -19,12 +19,13 @@ The following values are fixed in both `pins.env` and the Oomph model:
 | Eclipse SDK | 4.40 / 2026-06 | release repository `R-4.40-202606010713` |
 | JDT Core | `R4_40` | `ef3d6f2115df89d7964bc13aa363ab8d6bd21256` |
 | JDT UI | `R4_40` | `c922f757b27b7e2b6215db383cec5f8aafd13227` |
+| JDT Debug | `R4_40` | `a00898c5a3ed31e696f78457f706d2a50ad98b4a` |
 | JDT Core test binaries | `R4_40` | `0b8255ae33fc91724774ab2b550276191f9db416` |
 
 The runner rejects a different remote, tag resolution or `HEAD`. It also
 requires a clean JDT Core checkout before it starts.
 
-The Oomph project setup writes the complete 14-entry `PIN_*` map to
+The Oomph project setup writes the complete 17-entry `PIN_*` map to
 `.sandbox-jdt-migration-qa-pins.env` in the workspace. The runner parses that
 file and requires exact equality with `qa/upstream-jdt/pins.env` before any
 source is changed. This prevents a partially generated or stale Advanced-Mode
@@ -41,12 +42,19 @@ sandbox_oomph/jdt-migration-qa.configuration.setup
 The configuration uses Eclipse SDK 4.40 and the accompanying project setup to:
 
 - clone Sandbox;
-- clone JDT Core, JDT UI and JDT Core test binaries at `R4_40`;
+- clone JDT Core, JDT UI, JDT Debug and JDT Core test binaries at `R4_40`;
 - resolve the official PDE/JDT target through Oomph Targlets;
 - import the real JDT test projects;
 - import the Sandbox projects;
 - build the workspace; and
 - record the complete pin contract in the workspace.
+
+The JDT Debug checkout is part of the same exact-pin workspace contract even though
+the current JUnit 3 migration mutates only JDT Core. Keeping Core, UI and Debug
+available in one reproducible workspace lets later cleanup inventories and
+documentation scenarios inspect real debugger/launch code without introducing
+another checkout mechanism. The runner verifies the Debug repository identity
+when that clone is supplied; the Oomph workspace pin map always records it.
 
 ## 2. Build the Sandbox product under test
 
@@ -76,6 +84,7 @@ IDE process is still active.
 bash qa/upstream-jdt/run-before-after.sh \
   --jdt-core /path/to/eclipse.jdt.core \
   --jdt-ui /path/to/eclipse.jdt.ui \
+  --jdt-debug /path/to/eclipse.jdt.debug \
   --jdt-core-binaries /path/to/eclipse.jdt.core.binaries \
   --workspace /path/to/sandbox-jdt-migration-qa-ws \
   --sandbox-eclipse /path/to/sandbox-product/eclipse \
