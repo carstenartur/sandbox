@@ -676,7 +676,6 @@ public class E1 {
 """, """
 package test1;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
@@ -686,13 +685,13 @@ import java.util.Locale;
 public class E1 {
 
 	static void bla() throws IOException {
-		Formatter s=new Formatter(new File("asdf"), StandardCharsets.UTF_8, Locale.getDefault());
+		Formatter s=new Formatter(new File("asdf"), StandardCharsets.UTF_8, Locale.getDefault(Locale.Category.FORMAT));
 	}
 
 	static void bli() throws IOException {
 		try {
-			Formatter s=new Formatter(new File("asdf"), StandardCharsets.UTF_8, Locale.getDefault());
-		} catch (FileNotFoundException e) {
+			Formatter s=new Formatter(new File("asdf"), StandardCharsets.UTF_8, Locale.getDefault(Locale.Category.FORMAT));
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

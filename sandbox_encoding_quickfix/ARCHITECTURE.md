@@ -292,3 +292,27 @@ The hint file contains rules for replacing string-based charset specifications w
 Each rule includes `sourceVersionGE()` guards matching the imperative handler requirements (e.g., `sourceVersionGE(10)` for `String` constructors, `sourceVersionGE(8)` for `Charset.forName`) and `addImport java.nio.charset.StandardCharsets` directives. A `<!foreach CHARSET:...>` macro expands rules across all six standard charsets.
 
 This file was moved from `sandbox_common` to this plugin to prevent duplication of functionality with the imperative cleanup implementation, keeping domain-specific rules together with their domain-specific plugin.
+
+## Coordinated Charset exception migration
+
+`CharsetConstructorMigration` resolves the actual target constructors and their
+exception declarations. It is shared by the encoding cleanup and standalone
+`HintFileFixCore` execution; it does not replace `ExceptionCleanupHelper`.
+`CheckedExceptionMigration` creates immutable per-unit source identities, method
+binding keys and catch locations. The existing `CheckedExceptionAnalysis` checks
+surviving effects, including argument evaluation and resource closing, before a
+handler may be widened. No source is edited during planning.
+
+`CharsetCleanUpCoordinator` reuses `AbstractPlannedMultiFileCleanUp`. Selected
+units are parsed together; source contract and caller dependencies are reported
+or discovered through the existing scope extension. Expression and obsolete
+handler rewrites run before the planned additions, within JDT's normal composite
+change. Missing sources, fixed external contracts and stale plans fail before
+source application. Postconditions release retained plans. No cross-file work is
+silently introduced into a save action and no unchecked wrapper is synthesized.
+
+The existing scanner-positioned NLS implementation now lives in `sandbox_common`.
+`NlsAwareCleanUpFix` completes its edits for both encoding and declarative cleanups.
+File-constructor replacements no longer replace an enclosing try as raw text;
+coordinated catch changes and unrelated NLS tags remain in the same AST change.
+Low-level clients collecting hint operations should use this fix to finish NLS edits.
