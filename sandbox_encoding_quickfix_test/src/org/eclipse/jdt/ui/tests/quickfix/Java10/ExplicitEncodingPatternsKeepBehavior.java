@@ -1499,6 +1499,7 @@ package test1;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
@@ -1508,7 +1509,7 @@ import java.util.Scanner;
 public class E1 {
 
 	// Methode mit File und explizitem "UTF-8" (wird durch StandardCharsets.UTF_8 ersetzt)
-	static void bla3(File file) throws FileNotFoundException {
+	static void bla3(File file) throws IOException {
 		// Konstruktor mit String-Encoding, sollte durch StandardCharsets.UTF_8 ersetzt werden
 		Scanner s = new Scanner(file, StandardCharsets.UTF_8);
 	}
@@ -1649,6 +1650,7 @@ package test1;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Formatter;
@@ -1657,14 +1659,14 @@ import java.util.Locale;
 public class E1 {
 
     // Methode mit explizitem UTF-8, sollte durch StandardCharsets.UTF_8 ersetzt werden
-    static void bla() throws FileNotFoundException {
-        Formatter s = new Formatter(new File("asdf"), StandardCharsets.UTF_8, Locale.getDefault()); // 'UTF-8' wird zu StandardCharsets.UTF_8
+    static void bla() throws IOException {
+        Formatter s = new Formatter(new File("asdf"), StandardCharsets.UTF_8, Locale.getDefault(Locale.Category.FORMAT)); // 'UTF-8' wird zu StandardCharsets.UTF_8
     }
 
     // Methode mit try-catch, die eine Kodierung verwendet und Fehler wirft
-    static void bli() throws FileNotFoundException {
+    static void bli() throws IOException {
         try {
-            Formatter s = new Formatter(new File("asdf"), StandardCharsets.UTF_8, Locale.getDefault()); // 'UTF-8' wird zu StandardCharsets.UTF_8
+            Formatter s = new Formatter(new File("asdf"), StandardCharsets.UTF_8, Locale.getDefault(Locale.Category.FORMAT)); // 'UTF-8' wird zu StandardCharsets.UTF_8
         } catch (FileNotFoundException e) {
             // Der Catch-Block für UnsupportedEncodingException sollte im Cleanup entfernt werden
             e.printStackTrace();
