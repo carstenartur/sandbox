@@ -225,7 +225,7 @@ public class E1 {
 						            e.printStackTrace();
 						            }
 						       }
-						}
+					}
 						""",
 
 				"""
@@ -248,7 +248,7 @@ public class E1 {
 						            e.printStackTrace();
 						            }
 						       }
-						}
+					}
 						"""),
 	OUTPUTSTREAMWRITER(
 				"""
