@@ -16,6 +16,33 @@ It supports multiple strategies and is Java-version-aware, adapting transformati
 - 🧪 **Comprehensive Test Coverage** - Tested against extensive test suites
 - 🔌 **Eclipse Integration** - Works seamlessly with Eclipse Clean Up framework
 
+## Typed constructors and checked exceptions
+
+For Java 10 and later, supported `Scanner` and `Formatter` calls use actual
+`Charset` overloads. A charset string is not replaced by a `.name()` expression.
+The shared exception cleanup removes obsolete `UnsupportedEncodingException`
+handling only when surviving expressions no longer require it.
+
+Some file-based Charset constructors declare `IOException` rather than only
+`FileNotFoundException`. The cleanup plans the required catch/throws changes,
+source-owned interface contracts and callers together. A narrow handler is
+widened only when its uses stay valid and it will not intercept unrelated I/O
+failures. Otherwise the new exception is propagated through source contracts.
+`Formatter` preserves the default **FORMAT** locale when adding its locale argument.
+
+Select all required source files for **Source → Clean Up…**. The standard JDT
+cleanup lifecycle combines their changes in one preview, apply and undo. An
+incomplete selection or a fixed external contract is a reported conflict, not
+a String-overload fallback. Integrations supporting Sandbox's existing scope
+extension can discover the required same-project source closure. Save actions
+must not silently expand their scope. Dynamic charset names remain unchanged.
+
+`CharsetModernizationTest` verifies resolved constructor bindings, errors and new
+warnings before/after, preview, idempotence and undo. It also compiles and executes
+original and rewritten programs with `javac --release 10 -Xlint:all`.
+`CharsetScopeTest` exercises the actual JDT multi-file cleanup lifecycle, source
+interfaces, callers, scope conflicts, cancellation and stale-source rejection.
+
 ## Test Coverage
 
 The cleanup logic is tested and verified by the following test files:
@@ -34,7 +61,7 @@ The cleanup logic is tested and verified by the following test files:
 2. Navigate to the **Encoding** category
 3. Select one of the strategies:
    - **Prefer UTF-8** - Replace all encodings with UTF-8
-   - **Keep Behavior** - Only replace explicit "UTF-8" strings
+   - **Keep Behavior** - Make the runtime default explicit and preserve explicitly selected charsets
    - **Aggregate UTF-8** - Create a shared constant for UTF-8
 
 ### Via JDT Batch Tooling
@@ -51,7 +78,7 @@ The cleanup supports three different strategies to handle encoding transformatio
 | Strategy | Description | Platform Default Handling | Replaces `"UTF-8"` | Aggregates Constant |
 |----------|-------------|---------------------------|--------------------|---------------------|
 | **Prefer UTF-8** | Replace all implicit/platform encodings with UTF-8 | Yes | Yes | No |
-| **Keep Behavior** | Only replace explicit "UTF-8" string literals | No | Yes (only explicit) | No |
+| **Keep Behavior** | Preserve explicit charsets; make implicit defaults explicit | Uses `Charset.defaultCharset()` | Yes | No |
 | **Aggregate UTF-8** | Create class-level `UTF_8` constant, reference it everywhere | Yes | Yes | Yes (`UTF_8`) |
 
 ### Strategy: Prefer UTF-8
@@ -75,7 +102,7 @@ StandardCharsets.UTF_8;
 
 ### Strategy: Keep Behavior
 
-Only transforms code if `"UTF-8"` is explicitly used – avoids changing platform-default behaviors.
+Uses standard constants for supported explicit charset names and `Charset.defaultCharset()` for supported implicit-default calls. The runtime default is not frozen to the machine running the cleanup.
 
 **Use Case**: Conservative approach, preserve platform defaults where they exist
 
@@ -87,7 +114,7 @@ new InputStreamReader(in);  // No explicit UTF-8
 
 // After
 Charset charset = StandardCharsets.UTF_8;
-new InputStreamReader(in);  // Left unchanged
+new InputStreamReader(in, Charset.defaultCharset());
 ```
 
 ### Strategy: Aggregate UTF-8

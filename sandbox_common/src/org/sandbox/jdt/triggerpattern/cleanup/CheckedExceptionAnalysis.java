@@ -9,6 +9,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.cleanup;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -84,6 +85,23 @@ final class CheckedExceptionAnalysis extends AbstractExceptionAnalyzer {
                 .noneMatch(t -> t.isAssignmentCompatible(target) || target.isAssignmentCompatible(t));
     }
 
+    /** A wider handler must not intercept effects from unrelated surviving expressions. */
+    static boolean canWidenCatch(TryStatement statement, CatchClause clause,
+            Collection<? extends ASTNode> changedCalls, ITypeBinding added) {
+        Set<ASTNode> converted= Collections.newSetFromMap(new IdentityHashMap<>());
+        converted.addAll(changedCalls);
+        CheckedExceptionAnalysis analysis= new CheckedExceptionAnalysis(converted, null,
+                ASTRewrite.create(statement.getAST()));
+        statement.getBody().accept(analysis);
+        for (Object resource : statement.resources()) ((ASTNode) resource).accept(analysis);
+        Type caught= clause.getException().getType();
+        List<?> alternatives= caught instanceof UnionType union ? union.types() : List.of(caught);
+        return !analysis.uncertain && analysis.getCurrentExceptions().stream().noneMatch(exception ->
+                (exception.isAssignmentCompatible(added) || added.isAssignmentCompatible(exception))
+                && alternatives.stream().map(Type.class::cast).map(Type::resolveBinding)
+                        .noneMatch(type -> type != null && exception.isAssignmentCompatible(type)));
+    }
+
     @Override
     public boolean preVisit2(ASTNode node) {
         if (node instanceof CatchClause clause && !rewrite.getListRewrite(clause.getParent(),
@@ -135,7 +153,7 @@ final class CheckedExceptionAnalysis extends AbstractExceptionAnalyzer {
         for (ITypeBinding exception : binding.getExceptionTypes()) {
             if (exception.isRecovered()) uncertain= true;
             // Receiver and argument expressions are still visited even for a converted call.
-            else if (node == null || !converted.contains(node) || !exception.isEqualTo(target))
+            else if (node == null || !converted.contains(node) || target != null && !exception.isEqualTo(target))
                 addException(exception, rewrite.getAST());
         }
     }

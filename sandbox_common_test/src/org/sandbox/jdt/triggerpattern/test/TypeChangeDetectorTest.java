@@ -124,6 +124,48 @@ public class TypeChangeDetectorTest {
 		assertNull(info);
 	}
 
+	@Test
+	void charsetNameRetainsStringOverload() {
+		ASTNode node= parseExpression("new java.util.Formatter(file, \"UTF-8\")"); //$NON-NLS-1$
+		assertNull(TypeChangeDetector.detectCharsetTypeChange(node,
+				"new java.util.Formatter(file, java.nio.charset.StandardCharsets.UTF_8.name())")); //$NON-NLS-1$
+	}
+
+	@Test
+	void unrelatedNestedCharsetDoesNotAuthorizeCatchRemoval() {
+		ASTNode node= parseExpression("new java.util.Formatter(new java.io.File(\"UTF-8\"), encoding)"); //$NON-NLS-1$
+		assertNull(TypeChangeDetector.detectCharsetTypeChange(node,
+				"new java.util.Formatter(new java.io.File(StandardCharsets.UTF_8.name()), encoding)")); //$NON-NLS-1$
+	}
+
+	@Test
+	void charsetMentionInStringDoesNotAuthorizeCatchRemoval() {
+		ASTNode node= parseExpression("new String(bytes, \"UTF-8\")"); //$NON-NLS-1$
+		assertNull(TypeChangeDetector.detectCharsetTypeChange(node,
+				"new String(bytes, \"StandardCharsets.UTF_8\")")); //$NON-NLS-1$
+	}
+
+	@Test
+	void parenthesizedConstantIsStillACharsetArgument() {
+		ASTNode node= parseExpression("new String(bytes, \"UTF-8\")"); //$NON-NLS-1$
+		assertNotNull(TypeChangeDetector.detectCharsetTypeChange(node,
+				"new String(bytes, (java.nio.charset.StandardCharsets.UTF_8))")); //$NON-NLS-1$
+	}
+
+	@Test
+	void detectsDirectSuperMethodInvocationArgumentChange() {
+		ASTNode node= parseExpression("super.foo(\"UTF-8\")"); //$NON-NLS-1$
+		assertNotNull(TypeChangeDetector.detectCharsetTypeChange(node,
+				"super.foo(java.nio.charset.StandardCharsets.UTF_8)")); //$NON-NLS-1$
+	}
+
+	@Test
+	void whitespaceAroundStandardCharsetsMemberAccessIsAccepted() {
+		ASTNode node= parseExpression("new String(bytes, \"UTF-8\")"); //$NON-NLS-1$
+		assertNotNull(TypeChangeDetector.detectCharsetTypeChange(node,
+				"new String(bytes, java.nio.charset.StandardCharsets . UTF_8)")); //$NON-NLS-1$
+	}
+
 	/**
 	 * Parses the given source as an expression wrapped inside a method body
 	 * and returns the first expression statement's expression.

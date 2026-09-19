@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
-package org.sandbox.jdt.internal.corext.fix.helper;
+package org.sandbox.jdt.triggerpattern.cleanup;
 
 import java.util.Comparator;
 import java.util.List;
