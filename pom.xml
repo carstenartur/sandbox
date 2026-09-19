@@ -36,7 +36,7 @@
 		<eclipse-jdt-core.version>3.47.0</eclipse-jdt-core.version>
 		<eclipse-ecj.version>3.46.100</eclipse-ecj.version>
 		<gson.version>2.13.2</gson.version>
-		<hibernate.version>7.4.8.Final</hibernate.version>
+		<hibernate.version>6.6.13.Final</hibernate.version>
 		<hibernate-search.version>7.2.0.Final</hibernate-search.version>
 		<jetty.version>12.1.12</jetty.version>
 		<jgit.version>7.7.1.202607240634-r</jgit.version>
