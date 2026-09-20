@@ -288,7 +288,10 @@ class JavaApplication1 {
 		List<String> strs = new ArrayList<String>();
 		int i = 0;
 		int j = 0;
-		strs.stream().map(str -> "foo").map(s -> s.toString()).forEachOrdered(s -> System.out.println(s));
+		strs.stream().map(str -> {
+			String.valueOf(str);
+			return "foo";
+		}).map(s -> s.toString()).forEachOrdered(s -> System.out.println(s));
 		return false;
 
 	}
@@ -395,7 +398,13 @@ class JavaApplication1 {
 		List<String> strs = new ArrayList<String>();
 		int i = 0;
 		int j = 0;
-		strs.stream().map(str -> "foo").map(s -> s.toString()).forEachOrdered(s -> System.out.println());
+		strs.stream().map(str -> {
+			String.valueOf(str);
+			return "foo";
+		}).map(s -> s.toString()).forEachOrdered(s -> {
+			String.valueOf(s);
+			System.out.println();
+		});
 		return false;
 
 	}

@@ -112,7 +112,8 @@ public class FunctionalLoopComplexPatternTest {
 				}
 
 				public Boolean test(List<Integer> ls) {
-					ls.stream().map(a -> new Integer(a.intValue())).map(l -> {
+					ls.forEach(a -> {
+						Integer l = new Integer(a.intValue());
 						if (l == null) {
 							String s = l.toString();
 							if (s != null) {
@@ -120,8 +121,8 @@ public class FunctionalLoopComplexPatternTest {
 							}
 							System.out.println("cucu");
 						}
-						return l;
-					}).forEachOrdered(l -> System.out.println());
+						System.out.println();
+					});
 
 					return true;
 				}
@@ -195,6 +196,7 @@ class MyTest {
 	public Boolean test(List<Integer> ls) throws Exception {
 		Integer i=0;
 		ls.forEach(l -> {
+			String.valueOf(l);
 			System.out.println();
 			System.out.println("");
 		});

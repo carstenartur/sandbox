@@ -319,11 +319,15 @@ public class FunctionalLoopFilterMapTest {
 				}
 
 				public void test(List<Integer> ls) {
-					ls.stream().map(a -> new Integer(a.intValue())).filter(l -> (l != null)).map(l -> l.toString()).map(s -> {
-						if (s != null)
-							System.out.println(s);
-						return s;
-					}).forEachOrdered(s -> System.out.println("cucu"));
+					ls.forEach(a -> {
+						Integer l = new Integer(a.intValue());
+						if (l != null) {
+							String s = l.toString();
+							if (s != null)
+								System.out.println(s);
+							System.out.println("cucu");
+						}
+					});
 				}
 				}""";
 

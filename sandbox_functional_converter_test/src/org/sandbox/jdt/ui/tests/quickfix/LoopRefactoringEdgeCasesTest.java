@@ -216,11 +216,14 @@ class MyTest {
 		String expected = """
 package test1;
 import java.util.*;
-import java.util.stream.Collectors;
 class MyTest {
 	public void process(List<String> items) {
-		List<String> upper = items.stream().filter(item -> (item != null)).map(item -> item.toUpperCase())
-				.collect(Collectors.toList());
+		List<String> upper = new ArrayList<>();
+		items.forEach(item -> {
+			if (item != null) {
+				upper.add(item.toUpperCase());
+			}
+		});
 	}
 }
 """;
@@ -385,10 +388,10 @@ class MyTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<String> items) {
-						List<String> processed = items.stream().map(item -> item.trim().toUpperCase()).collect(Collectors.toList());
+						List<String> processed = new ArrayList<>();
+						items.forEach(item -> processed.add(item.trim().toUpperCase()));
 					}
 				}
 				""";

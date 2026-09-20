@@ -24,6 +24,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.model.LoopMetadata;
 import org.sandbox.functional.core.model.LoopModel;
+import org.sandbox.functional.core.operation.MapOp;
 import org.sandbox.functional.core.model.SourceDescriptor;
 import org.sandbox.functional.core.terminal.CollectTerminal;
 import org.sandbox.functional.core.terminal.ForEachTerminal;
@@ -312,6 +313,21 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
                 return;
             }
         }
+        if (shouldUseOriginalForEach(extracted.model)) {
+            ForEachTerminal terminal = (ForEachTerminal) extracted.model.getTerminal();
+            String varName = extracted.model.getElement() != null
+                    ? extracted.model.getElement().variableName()
+                    : "x"; //$NON-NLS-1$
+            Expression streamExpression = renderer.renderDirectForEach(
+                    extracted.model.getSource(), java.util.List.of(), varName, terminal.ordered());
+            if (streamExpression != null) {
+                rewrite.replace(visited, ast.newExpressionStatement(streamExpression), group);
+                if (extracted.model.getSource().type() == SourceDescriptor.SourceType.ARRAY) {
+                    cuRewrite.getImportRewrite().addImport("java.util.Arrays"); //$NON-NLS-1$
+                }
+                return;
+            }
+        }
         
         // Use LoopModelTransformer for ALL patterns (filter, map, collect, reduce, match, forEach with ops)
         LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
@@ -325,7 +341,7 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
                 // For COLLECT: merge a fresh accumulator or preserve an existing target with forEach
                 if (extracted.model.getTerminal() instanceof CollectTerminal collectTerminal) {
                     Statement merged = tryMergeWithPrecedingDeclaration(
-                        ast, rewrite, group, visited, streamExpression, collectTerminal.targetVariable());
+                        ast, rewrite, cuRewrite, group, visited, streamExpression, collectTerminal.targetVariable());
                     if (merged == null) {
                         String variableName = extracted.model.getElement() != null
                                 ? extracted.model.getElement().variableName() : "item"; //$NON-NLS-1$
@@ -467,7 +483,8 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
      * @return merged VariableDeclarationStatement, or null if merge not possible
      */
     @SuppressWarnings("unchecked") //$NON-NLS-1$
-    private Statement tryMergeWithPrecedingDeclaration(AST ast, ASTRewrite rewrite, TextEditGroup group,
+    private Statement tryMergeWithPrecedingDeclaration(AST ast, ASTRewrite rewrite,
+                                                        CompilationUnitRewrite cuRewrite, TextEditGroup group,
                                                         EnhancedForStatement forLoop, 
                                                         Expression streamExpression, 
                                                         String targetVariable) {
@@ -506,6 +523,11 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
         
         // Merge: create List<X> result = stream.collect(...)
         VariableDeclarationStatement originalDecl = (VariableDeclarationStatement) precedingStmt;
+        VariableDeclarationFragment originalFragment =
+                (VariableDeclarationFragment) originalDecl.fragments().get(0);
+        if (!isVariableReferencedAfter(block, forLoopIndex, originalFragment)) {
+            return null;
+        }
         
         VariableDeclarationFragment newFragment = ast.newVariableDeclarationFragment();
         newFragment.setName(ast.newSimpleName(targetVariable));
@@ -517,8 +539,61 @@ public class EnhancedForHandler extends AbstractFunctionalCall<EnhancedForStatem
         
         // Remove the preceding empty declaration
         rewrite.remove(precedingStmt, group);
+        cuRewrite.getImportRemover().registerRemovedNode(precedingStmt);
+        cuRewrite.getImportRemover().applyRemoves(cuRewrite.getImportRewrite());
         
         return newDecl;
+    }
+
+    private boolean isVariableReferencedAfter(Block block, int loopIndex, VariableDeclarationFragment fragment) {
+        IVariableBinding binding = fragment.resolveBinding();
+        for (int i = loopIndex + 1; i < block.statements().size(); i++) {
+            if (referencesVariable((Statement) block.statements().get(i), fragment.getName().getIdentifier(), binding)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean referencesVariable(ASTNode node, String variableName, IVariableBinding binding) {
+        final boolean[] referenced = { false };
+        node.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SimpleName name) {
+                if (!variableName.equals(name.getIdentifier())) {
+                    return true;
+                }
+                if (binding == null || binding.equals(name.resolveBinding())) {
+                    referenced[0] = true;
+                    return false;
+                }
+                return true;
+            }
+        });
+        return referenced[0];
+    }
+
+    private boolean shouldUseOriginalForEach(LoopModel model) {
+        if (!(model.getTerminal() instanceof ForEachTerminal terminal) || model.getElement() == null) {
+            return false;
+        }
+        if (referencesVariable(terminal.bodyStatements(), model.getElement().variableName())) {
+            return false;
+        }
+        return model.getOperations().stream()
+                .filter(MapOp.class::isInstance)
+                .map(MapOp.class::cast)
+                .anyMatch(MapOp::isSideEffect);
+    }
+
+    private boolean referencesVariable(List<String> statements, String variableName) {
+        String pattern = "(?s).*\\b" + java.util.regex.Pattern.quote(variableName) + "\\b.*"; //$NON-NLS-1$ //$NON-NLS-2$
+        for (String statement : statements) {
+            if (statement != null && statement.matches(pattern)) {
+                return true;
+            }
+        }
+        return false;
     }
     
     /**

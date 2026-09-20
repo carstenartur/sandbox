@@ -306,13 +306,13 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // to filter/map operations, causing duplication)
         if (bodyStatements.size() == 1) {
             Expression bodyExpr = createExpression(bodyStatements.get(0));
-            lambda.setBody(bodyExpr);
+            setLambdaBody(lambda, variableName, bodyExpr, false);
         } else {
             Block lambdaBlock = ast.newBlock();
             for (String stmt : bodyStatements) {
                 lambdaBlock.statements().add(createStatement(stmt));
             }
-            lambda.setBody(lambdaBlock);
+            setLambdaBody(lambda, variableName, lambdaBlock, false);
         }
         
         forEachCall.arguments().add(lambda);
@@ -336,11 +336,11 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // Get the body from the supplier (AST-aware)
         Expression body = bodySupplier.get();
         if (body != null) {
-            lambda.setBody((Expression) ASTNode.copySubtree(ast, body));
+            setLambdaBody(lambda, variableName, (Expression) ASTNode.copySubtree(ast, body), false);
         } else {
             // Fallback to an empty block (no-op) if no body is provided
             Block emptyBody = ast.newBlock();
-            lambda.setBody(emptyBody);
+            setLambdaBody(lambda, variableName, emptyBody, false);
         }
         
         forEachCall.arguments().add(lambda);
@@ -403,12 +403,13 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
                     Statement stmt = (Statement) block.statements().get(0);
                     if (stmt instanceof ExpressionStatement) {
                         ExpressionStatement exprStmt = (ExpressionStatement) stmt;
-                        lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
+                        setLambdaBody(lambda, variableName,
+                                (Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()), false);
                     } else {
                         // Not an expression statement, copy the whole statement as block
                         Block lambdaBlock = ast.newBlock();
                         lambdaBlock.statements().add(ASTNode.copySubtree(ast, stmt));
-                        lambda.setBody(lambdaBlock);
+                        setLambdaBody(lambda, variableName, lambdaBlock, false);
                     }
                 } else {
                     // Multiple statements - copy all into a block
@@ -416,31 +417,32 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
                     for (Object stmt : block.statements()) {
                         lambdaBlock.statements().add(ASTNode.copySubtree(ast, (Statement) stmt));
                     }
-                    lambda.setBody(lambdaBlock);
+                    setLambdaBody(lambda, variableName, lambdaBlock, false);
                 }
             } else {
                 // Body is a single statement (not a block)
                 if (originalBody instanceof ExpressionStatement) {
                     ExpressionStatement exprStmt = (ExpressionStatement) originalBody;
-                    lambda.setBody((Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()));
+                    setLambdaBody(lambda, variableName,
+                            (Expression) ASTNode.copySubtree(ast, exprStmt.getExpression()), false);
                 } else {
                     // Not an expression statement, wrap in block
                     Block lambdaBlock = ast.newBlock();
                     lambdaBlock.statements().add(ASTNode.copySubtree(ast, originalBody));
-                    lambda.setBody(lambdaBlock);
+                    setLambdaBody(lambda, variableName, lambdaBlock, false);
                 }
             }
         } else {
             // Test/fallback path: Use bodyStatements strings (for unit tests)
             if (bodyStatements.size() == 1) {
                 Expression bodyExpr = createExpression(bodyStatements.get(0));
-                lambda.setBody(bodyExpr);
+                setLambdaBody(lambda, variableName, bodyExpr, false);
             } else {
                 Block lambdaBlock = ast.newBlock();
                 for (String stmt : bodyStatements) {
                     lambdaBlock.statements().add(createStatement(stmt));
                 }
-                lambda.setBody(lambdaBlock);
+                setLambdaBody(lambda, variableName, lambdaBlock, false);
             }
         }
         
@@ -492,7 +494,7 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         // Get the mapper from the supplier (AST-aware)
         Expression mapper = mapperSupplier.get();
         if (mapper != null) {
-            lambda.setBody((Expression) ASTNode.copySubtree(ast, mapper));
+            setLambdaBody(lambda, variableName, (Expression) ASTNode.copySubtree(ast, mapper), true);
         } else {
             // Fallback to the variable itself (identity mapper)
             lambda.setBody(ast.newSimpleName(variableName));
@@ -604,8 +606,54 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
         lambda.parameters().add(param);
         // For single parameter without type annotation, don't use parentheses
         lambda.setParentheses(false);
-        lambda.setBody(createExpression(bodyExpression));
+        setLambdaBody(lambda, paramName, createExpression(bodyExpression), true);
         return lambda;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setLambdaBody(LambdaExpression lambda, String paramName, ASTNode body, boolean returnsValue) {
+        if (referencesVariable(body, paramName)) {
+            lambda.setBody(body);
+            return;
+        }
+        Block block = ast.newBlock();
+        block.statements().add(createParameterUsageStatement(paramName));
+        if (returnsValue) {
+            ReturnStatement returnStatement = ast.newReturnStatement();
+            returnStatement.setExpression((Expression) body);
+            block.statements().add(returnStatement);
+        } else if (body instanceof Expression expression) {
+            block.statements().add(ast.newExpressionStatement(expression));
+        } else if (body instanceof Block bodyBlock) {
+            block.statements().addAll(ASTNode.copySubtrees(ast, bodyBlock.statements()));
+        } else if (body instanceof Statement statement) {
+            block.statements().add(ASTNode.copySubtree(ast, statement));
+        } else {
+            throw new IllegalArgumentException("Unsupported lambda body: " + body.getClass().getName()); //$NON-NLS-1$
+        }
+        lambda.setBody(block);
+    }
+
+    private boolean referencesVariable(ASTNode node, String variableName) {
+        final boolean[] referenced = { false };
+        node.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SimpleName name) {
+                if (variableName.equals(name.getIdentifier())) {
+                    referenced[0] = true;
+                }
+                return !referenced[0];
+            }
+        });
+        return referenced[0];
+    }
+
+    private ExpressionStatement createParameterUsageStatement(String paramName) {
+        MethodInvocation valueOf = ast.newMethodInvocation();
+        valueOf.setExpression(ast.newSimpleName("String")); //$NON-NLS-1$
+        valueOf.setName(ast.newSimpleName("valueOf")); //$NON-NLS-1$
+        valueOf.arguments().add(ast.newSimpleName(paramName));
+        return ast.newExpressionStatement(valueOf);
     }
     
     private Expression createExpression(String expressionText) {

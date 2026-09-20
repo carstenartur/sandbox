@@ -139,7 +139,10 @@ String expected = """
 
 				public Boolean test(List<Integer> ls) {
 					Integer i=0;
-					i = ls.stream().map(l -> 1).reduce(i, Integer::sum);
+					i = ls.stream().map(l -> {
+						String.valueOf(l);
+						return 1;
+					}).reduce(i, Integer::sum);
 					System.out.println(i);
 					return true;
 				}
@@ -209,7 +212,10 @@ String expected = """
 				public static void main( String[] args) {
 					List<Integer> ls = new ArrayList<>();
 					int i =0;
-					i = ls.stream().map(l -> 1).reduce(i, Integer::sum);
+					i = ls.stream().map(l -> {
+						String.valueOf(l);
+						return 1;
+					}).reduce(i, Integer::sum);
 
 				}
 
@@ -269,7 +275,10 @@ String expected = """
 				public static void main( String[] args) {
 					List<Integer> ints=new ArrayList<>();
 					long len=0L;
-					len = ints.stream().map(i -> 1L).reduce(len, Long::sum);
+					len = ints.stream().map(i -> {
+						String.valueOf(i);
+						return 1L;
+					}).reduce(len, Long::sum);
 
 				}
 				}""";
