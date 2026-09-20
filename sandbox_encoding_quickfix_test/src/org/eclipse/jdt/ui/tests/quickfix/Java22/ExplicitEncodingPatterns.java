@@ -235,9 +235,9 @@ public class E1 {
 						import java.io.FileInputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
-						import java.io.FileNotFoundException;
 					import java.nio.charset.Charset;
 					import java.nio.charset.StandardCharsets;
+						import java.io.FileNotFoundException;
 
 						public class E1 {
 						    void method(String filename) {
@@ -286,9 +286,9 @@ public class E1 {
 					import java.io.FileReader;
 					import java.io.OutputStreamWriter;
 					import java.io.Reader;
-					import java.io.FileNotFoundException;
 					import java.nio.charset.Charset;
 					import java.nio.charset.StandardCharsets;
+					import java.io.FileNotFoundException;
 
 					public class E1 {
 					    void method(String filename) {
@@ -817,9 +817,9 @@ public class E1 {
 						import java.io.FileOutputStream;
 						import java.io.OutputStreamWriter;
 						import java.io.Reader;
-						import java.io.FileNotFoundException;
 						import java.nio.charset.Charset;
 						import java.nio.charset.StandardCharsets;
+						import java.io.FileNotFoundException;
 
 						public class E1 {
 						    void method(String filename) {
