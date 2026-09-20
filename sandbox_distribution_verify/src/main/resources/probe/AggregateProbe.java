@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
@@ -69,9 +70,17 @@ public final class AggregateProbe implements IApplication {
         registrations.removeIf(line -> line.startsWith("bundle\t"));
         require(actual.equals(registrations), "Runtime registrations differ; expected " + registrations + ", actual " + actual);
         require(cleanups > 0 && tocs > 0, "Empty runtime coverage");
+        String resolvedBundles = bundles.stream()
+                .map(bundle -> '"' + escape(bundle.getSymbolicName() + '/' + bundle.getVersion()) + '"')
+                .collect(Collectors.joining(",", "[", "]"));
         Files.writeString(Path.of(arguments[1]), "{\"status\":\"PASS\",\"bundles\":" + bundles.size()
-                + ",\"cleanups\":" + cleanups + ",\"helpTocs\":" + tocs + "}\n");
+                + ",\"cleanups\":" + cleanups + ",\"helpTocs\":" + tocs
+                + ",\"resolvedBundles\":" + resolvedBundles + "}\n");
         return EXIT_OK;
+    }
+
+    private static String escape(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private static void require(boolean condition, String message) {

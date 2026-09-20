@@ -138,4 +138,20 @@ class AggregateInstallationVerifierTest {
                 () -> AggregateInstallationVerifier.requireCleanupReport("apply", report, "apply", 1, Set.of(source), 0));
         assertTrue(failure.getMessage().startsWith("apply recorded wrong changedFiles array"), failure.getMessage());
     }
+
+    @Test
+    void rejectsRuntimeProbeWhenResolvedBundlesDoNotMatchExpectedInventory() throws Exception {
+        String report = """
+                {
+                  "status": "PASS",
+                  "bundles": 1,
+                  "cleanups": 2,
+                  "helpTocs": 1,
+                  "resolvedBundles": ["sandbox_other/1.3.6.qualifier"]
+                }
+                """;
+        IOException failure = assertThrows(IOException.class,
+                () -> AggregateInstallationVerifier.requireRuntimeProbe("runtime", report, Set.of("sandbox_feature")));
+        assertTrue(failure.getMessage().startsWith("runtime recorded wrong resolvedBundles ids"), failure.getMessage());
+    }
 }

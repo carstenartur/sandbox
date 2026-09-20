@@ -86,7 +86,8 @@ public final class AggregateInstallationVerifier {
     private Path probe;
     private Path inventory;
 
-    private record CleanupRun(int exitCode, String report, Map<Path, String> sources) { }
+    private record CleanupRun(int exitCode, Path reportFile, Path patchFile, String report, Map<Path, String> sources) { }
+    record RuntimeProbe(String status, int bundles, int cleanups, int helpTocs, List<String> resolvedBundles) { }
     record SourceAnalysis(Map<Path, List<String>> invocations, Map<Path, List<String>> fields, List<String> diagnostics) {
         SourceAnalysis {
             invocations = immutableLines(invocations);
@@ -234,6 +235,11 @@ public final class AggregateInstallationVerifier {
             Files.write(configuration, original);
         }
         require(java.util.Arrays.equals(original, Files.readAllBytes(configuration)), "Probe changed installation configuration");
+        RuntimeProbe runtime = requireRuntimeProbe(stage, Files.readString(result), expectedBundleIdentities());
+        records.put(stage + ".runtime.sha256", digest(result));
+        records.put(stage + ".runtime.bundleCount", Integer.toString(runtime.bundles()));
+        records.put(stage + ".runtime.cleanupCount", Integer.toString(runtime.cleanups()));
+        records.put(stage + ".runtime.helpTocCount", Integer.toString(runtime.helpTocs()));
         formatterSmoke(home, stage);
     }
 
@@ -365,6 +371,7 @@ public final class AggregateInstallationVerifier {
         Path report = evidence.resolve(stage + ".json");
         Path patch = evidence.resolve(stage + ".patch");
         FileSnapshot previous = snapshot(report);
+        FileSnapshot previousPatch = snapshot(patch);
         Files.deleteIfExists(report);
         Files.deleteIfExists(patch);
         List<String> arguments = new ArrayList<>(List.of("--import-project", project.toString(), "--mode", mode,
@@ -374,7 +381,10 @@ public final class AggregateInstallationVerifier {
         int exitCode = run(home, stage, "org.sandbox.jdt.core.JavaCleanup", arguments, Duration.ofMinutes(3),
                 expectedExitCodes);
         requireFreshFile(report, previous, "Cleanup report");
-        return new CleanupRun(exitCode, Files.readString(report), captureSources(trackedSources));
+        requireFreshFile(patch, previousPatch, "Cleanup patch");
+        records.put(stage + ".report.sha256", digest(report));
+        records.put(stage + ".patch.sha256", digest(patch));
+        return new CleanupRun(exitCode, report, patch, Files.readString(report), captureSources(trackedSources));
     }
 
     static void requireCandidateUpgradeSource(URI releasedRepository, Map<String, String> released,
@@ -502,6 +512,35 @@ public final class AggregateInstallationVerifier {
         return value.getAsJsonArray();
     }
 
+    static RuntimeProbe requireRuntimeProbe(String label, String report, Set<String> expectedBundles) throws IOException {
+        JsonObject parsed = jsonObject(label, report);
+        String status = jsonString(parsed, "status");
+        require("PASS".equals(status), label + " reported wrong status: " + report);
+        int bundles = jsonInt(parsed, "bundles");
+        int cleanups = jsonInt(parsed, "cleanups");
+        int helpTocs = jsonInt(parsed, "helpTocs");
+        require(bundles > 0, label + " reported zero bundles: " + report);
+        require(cleanups > 0, label + " reported zero cleanups: " + report);
+        require(helpTocs > 0, label + " reported zero helpTocs: " + report);
+        List<String> actualBundles = new ArrayList<>();
+        for (JsonElement element : jsonArray(parsed, "resolvedBundles")) {
+            require(element.isJsonPrimitive() && element.getAsJsonPrimitive().isString(),
+                    label + " recorded non-string resolvedBundles entry: " + report);
+            actualBundles.add(element.getAsString());
+        }
+        require(actualBundles.size() == bundles, label + " recorded wrong resolvedBundles count: " + report);
+        Set<String> actualBundleIds = new TreeSet<>();
+        for (String identity : actualBundles) {
+            int separator = identity.indexOf('/');
+            require(separator > 0 && separator < identity.length() - 1,
+                    label + " recorded malformed bundle identity " + identity + ": " + report);
+            actualBundleIds.add(identity.substring(0, separator));
+        }
+        require(actualBundleIds.equals(new TreeSet<>(expectedBundles)),
+                label + " recorded wrong resolvedBundles ids; expected " + new TreeSet<>(expectedBundles) + ", actual " + actualBundleIds + ": " + report);
+        return new RuntimeProbe(status, bundles, cleanups, helpTocs, List.copyOf(actualBundles));
+    }
+
     private static Map<Path, String> captureSources(List<Path> files) throws IOException {
         Map<Path, String> result = new LinkedHashMap<>();
         for (Path file : files) result.put(file, Files.readString(file));
@@ -512,6 +551,16 @@ public final class AggregateInstallationVerifier {
         try (var files = Files.walk(project)) {
             return files.filter(path -> path.toString().endsWith(".java")).sorted().toList();
         }
+    }
+
+    private Set<String> expectedBundleIdentities() throws IOException {
+        Set<String> bundles = new TreeSet<>();
+        for (String line : Files.readAllLines(inventory)) {
+            String[] fields = line.split("\t", -1);
+            if (fields.length == 2 && "bundle".equals(fields[0])) bundles.add(fields[1]);
+        }
+        require(!bundles.isEmpty(), "Empty bundle inventory");
+        return bundles;
     }
 
     Path writeCharsetProject(String stage, String behavior) throws IOException {
