@@ -168,7 +168,7 @@ public class ScannerExplicitEncoding extends AbstractExplicitEncoding<ClassInsta
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		NodeData nodedata= (NodeData) data.get(visited);
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants(cuRewrite));
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, nodedata.encoding(),getCharsetConstants(cuRewrite));
 		/**
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */

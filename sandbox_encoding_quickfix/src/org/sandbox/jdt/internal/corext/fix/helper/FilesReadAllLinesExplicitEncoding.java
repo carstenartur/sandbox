@@ -103,7 +103,7 @@ public class FilesReadAllLinesExplicitEncoding extends AbstractExplicitEncoding<
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
 		NodeData nodedata = (NodeData) data.get(visited);
-		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),
+		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, ast, visited, nodedata.encoding(),
 				getCharsetConstants(cuRewrite));
 
 		/**

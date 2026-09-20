@@ -88,7 +88,11 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	}
 
 	private static final class CharsetConstantsHolder {
-		private final Map<String, QualifiedName> constants = new HashMap<>();
+		private final Map<ASTRewrite, Map<String, QualifiedName>> constantsByRewrite = new IdentityHashMap<>();
+
+		private Map<String, QualifiedName> forRewrite(ASTRewrite rewrite) {
+			return constantsByRewrite.computeIfAbsent(rewrite, key -> new HashMap<>());
+		}
 	}
 
 	private static final String CHARSET_CONSTANTS_PROPERTY =
@@ -97,11 +101,11 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	protected static Map<String, QualifiedName> getCharsetConstants(CompilationUnitRewrite cuRewrite) {
 		Object stored = cuRewrite.getRoot().getProperty(CHARSET_CONSTANTS_PROPERTY);
 		if (stored instanceof CharsetConstantsHolder holder) {
-			return holder.constants;
+			return holder.forRewrite(cuRewrite.getASTRewrite());
 		}
 		CharsetConstantsHolder holder = new CharsetConstantsHolder();
 		cuRewrite.getRoot().setProperty(CHARSET_CONSTANTS_PROPERTY, holder);
-		return holder.constants;
+		return holder.forRewrite(cuRewrite.getASTRewrite());
 	}
 
 	protected static final String KEY_ENCODING = "encoding"; //$NON-NLS-1$

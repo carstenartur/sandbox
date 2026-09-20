@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -45,6 +46,9 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava10;
 /** Uses the actual JDT cleanup lifecycle and one composite apply/undo. */
 class CharsetScopeTest {
     @RegisterExtension EclipseJava10 context= new EclipseJava10();
+
+    @org.junit.jupiter.api.io.TempDir
+    java.nio.file.Path runtimeDirectory;
 
     @BeforeEach void setUp() throws Exception {
         JavaCore.setOptions(TestOptions.getDefaultOptions());
@@ -217,6 +221,147 @@ class CharsetScopeTest {
         }
     }
 
+    @Test void aggregateCharsetFieldsStayScopedPerTopLevelOwnerWithinCompilationUnit() throws Exception {
+        String before= """
+                package probe;
+                import java.nio.charset.Charset;
+                public class FirstEncoding {
+                    public static String value() { return Charset.forName("UTF-8").name(); }
+                }
+                class SecondaryEncoding {
+                    static String value() { return Charset.forName("UTF-8").name(); }
+                }
+                """;
+        String after= runSingleUnitAggregateCleanup("probe", "FirstEncoding.java", before); //$NON-NLS-1$ //$NON-NLS-2$
+        assertEquals(2, countOccurrences(after, "private static final Charset UTF_8 = StandardCharsets.UTF_8;"), after); //$NON-NLS-1$
+        assertTrue(after.contains("return FirstEncoding.UTF_8.name();"), after); //$NON-NLS-1$
+        assertTrue(after.contains("return SecondaryEncoding.UTF_8.name();"), after); //$NON-NLS-1$
+    }
+
+    @Test void aggregateCharsetReusesCompatibleExistingField() throws Exception {
+        String before= """
+                package probe;
+                import java.nio.charset.Charset;
+                import java.nio.charset.StandardCharsets;
+                public class ReuseProbe {
+                    private static final Charset UTF_8 = StandardCharsets.UTF_8;
+                    public static String value() {
+                        return Charset.forName("UTF-8").name() + ":" + UTF_8.name();
+                    }
+                    public static void main(String[] args) { System.out.print(value()); }
+                }
+                """;
+        String after= runSingleUnitAggregateCleanup("probe", "ReuseProbe.java", before); //$NON-NLS-1$ //$NON-NLS-2$
+        assertEquals(1, countOccurrences(after, "private static final Charset UTF_8 = StandardCharsets.UTF_8;"), after); //$NON-NLS-1$
+        assertTrue(after.contains("return ReuseProbe.UTF_8.name() + \":\" + UTF_8.name();"), after); //$NON-NLS-1$
+        assertEquals(compileAndRun(before, "probe.ReuseProbe", runtimeDirectory.resolve("reuse-before")), //$NON-NLS-1$ //$NON-NLS-2$
+                compileAndRun(after, "probe.ReuseProbe", runtimeDirectory.resolve("reuse-after"))); //$NON-NLS-1$ //$NON-NLS-2$
+    }
+
+    @Test void aggregateCharsetCollisionGetsFreshCompatibleFieldName() throws Exception {
+        String before= """
+                package probe;
+                import java.nio.charset.Charset;
+                import java.nio.charset.StandardCharsets;
+                public class CollisionProbe {
+                    private static final Charset UTF_8 = StandardCharsets.ISO_8859_1;
+                    public static String value() {
+                        return Charset.forName("UTF-8").name() + ":" + UTF_8.name();
+                    }
+                    public static void main(String[] args) { System.out.print(value()); }
+                }
+                """;
+        String after= runSingleUnitAggregateCleanup("probe", "CollisionProbe.java", before); //$NON-NLS-1$ //$NON-NLS-2$
+        assertTrue(after.contains("private static final Charset UTF_8_1 = StandardCharsets.UTF_8;"), after); //$NON-NLS-1$
+        assertTrue(after.contains("return CollisionProbe.UTF_8_1.name() + \":\" + UTF_8.name();"), after); //$NON-NLS-1$
+        assertEquals(compileAndRun(before, "probe.CollisionProbe", runtimeDirectory.resolve("collision-before")), //$NON-NLS-1$ //$NON-NLS-2$
+                compileAndRun(after, "probe.CollisionProbe", runtimeDirectory.resolve("collision-after"))); //$NON-NLS-1$ //$NON-NLS-2$
+    }
+
+    @Test void aggregateCharsetNonCharsetCollisionGetsFreshCompatibleFieldName() throws Exception {
+        String before= """
+                package probe;
+                import java.nio.charset.Charset;
+                public class NonCharsetCollision {
+                    private static final String UTF_8 = "existing";
+                    static String value() {
+                        return Charset.forName("UTF-8").name() + ":" + UTF_8;
+                    }
+                }
+                """;
+        String after= runSingleUnitAggregateCleanup("probe", "NonCharsetCollision.java", before); //$NON-NLS-1$ //$NON-NLS-2$
+        assertTrue(after.contains("private static final String UTF_8 = \"existing\";"), after); //$NON-NLS-1$
+        assertTrue(after.contains("private static final Charset UTF_8_1 = StandardCharsets.UTF_8;"), after); //$NON-NLS-1$
+        assertTrue(after.contains("return NonCharsetCollision.UTF_8_1.name() + \":\" + UTF_8;"), after); //$NON-NLS-1$
+    }
+
+    @Test void aggregateCharsetFieldsStayScopedPerNestedOwner() throws Exception {
+        String before= """
+                package probe;
+                import java.nio.charset.Charset;
+                public class OuterEncoding {
+                    static String value() { return Charset.forName("UTF-8").name(); }
+                    static class InnerEncoding {
+                        static String value() { return Charset.forName("UTF-8").name(); }
+                    }
+                }
+                """;
+        String after= runSingleUnitAggregateCleanup("probe", "OuterEncoding.java", before); //$NON-NLS-1$ //$NON-NLS-2$
+        assertEquals(2, countOccurrences(after, "private static final Charset UTF_8 = StandardCharsets.UTF_8;"), after); //$NON-NLS-1$
+        assertTrue(after.contains("return OuterEncoding.UTF_8.name();"), after); //$NON-NLS-1$
+        assertTrue(after.contains("return InnerEncoding.UTF_8.name();"), after); //$NON-NLS-1$
+    }
+
+    @Test void aggregateCharsetReservationsStayScopedPerRewriteOnSameRoot() throws Exception {
+        String before= """
+                package probe;
+                import java.nio.charset.Charset;
+                public class ReplayProbe {
+                    static String value() { return Charset.forName("UTF-8").name(); }
+                }
+                """;
+        var unit= context.getSourceFolder().createPackageFragment("probe", false, null) //$NON-NLS-1$
+                .createCompilationUnit("ReplayProbe.java", before, false, null); //$NON-NLS-1$
+        Map<String, Long> warnings= CharsetModernizationTest.diagnostics(unit);
+        var cleanup= new UseExplicitEncodingCleanUpCore(options(ChangeBehavior.ENFORCE_UTF8_AGGREGATE));
+        var root= CharsetModernizationTest.parse(unit);
+        var firstFix= cleanup.createFix(new CleanUpContext(unit, root));
+        assertNotNull(firstFix);
+        var firstChange= firstFix.createChange(null);
+        assertNotNull(firstChange);
+        String firstPreview;
+        try {
+            firstPreview= firstChange.getPreviewContent(null);
+        } finally {
+            firstChange.dispose();
+        }
+        var secondFix= cleanup.createFix(new CleanUpContext(unit, root));
+        assertNotNull(secondFix);
+        var secondChange= secondFix.createChange(null);
+        assertNotNull(secondChange);
+        try {
+            String secondPreview= secondChange.getPreviewContent(null);
+            assertEquals(firstPreview, secondPreview);
+            var undo= secondChange.perform(null);
+            assertNotNull(undo);
+            try {
+                assertEquals(secondPreview, unit.getSource());
+                CharsetModernizationTest.diagnostics(unit).forEach((key, count) ->
+                        assertTrue(count <= warnings.getOrDefault(key, 0L), key));
+                assertNull(cleanup.createFix(new CleanUpContext(unit, CharsetModernizationTest.parse(unit))));
+            } finally {
+                var redo= undo.perform(null);
+                if (redo != null) {
+                    redo.dispose();
+                }
+            }
+        } finally {
+            secondChange.dispose();
+        }
+        assertEquals(before, unit.getSource());
+        assertEquals(warnings, CharsetModernizationTest.diagnostics(unit));
+    }
+
     private ICompilationUnit[] fixture() throws Exception {
         var pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
         String[] names= { "Open", "Factory", "Client" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -250,21 +395,42 @@ class CharsetScopeTest {
         var pack= context.getSourceFolder().createPackageFragment(packageName, false, null);
         Map<String, ICompilationUnit> unitsByName= new LinkedHashMap<>();
         for (String typeName : new String[] { "E1", "E2" }) { //$NON-NLS-1$ //$NON-NLS-2$
-            String source= """
-                    package %s;
-                    public class %s {
-                        java.util.Scanner open(java.io.File file) throws java.io.FileNotFoundException {
-                            return new java.util.Scanner(file, "UTF-8");
-                        }
-                    }
-                    """.formatted(packageName, typeName);
+            String source= "package " + packageName + ";\n" //$NON-NLS-1$ //$NON-NLS-2$
+                    + "public class " + typeName + " {\n" //$NON-NLS-1$ //$NON-NLS-2$
+                    + "    java.util.Scanner open(java.io.File file) throws java.io.FileNotFoundException {\n" //$NON-NLS-1$
+                    + "        return new java.util.Scanner(file, \"UTF-8\");\n" //$NON-NLS-1$
+                    + "    }\n" //$NON-NLS-1$
+                    + "}\n"; //$NON-NLS-1$
             unitsByName.put(typeName + ".java", pack.createCompilationUnit(typeName + ".java", source, false, null)); //$NON-NLS-1$
         }
+        Map<String, String> after= runCleanup(unitsByName, options(ChangeBehavior.ENFORCE_UTF8_AGGREGATE), unitOrder);
+        for (Map.Entry<String, String> entry : after.entrySet()) {
+            String typeName= entry.getKey().replace(".java", ""); //$NON-NLS-1$ //$NON-NLS-2$
+            String source= entry.getValue();
+            assertTrue(source.contains("private static final Charset UTF_8 = StandardCharsets.UTF_8;"), source); //$NON-NLS-1$
+            assertEquals(1, countOccurrences(source, "private static final Charset UTF_8 = StandardCharsets.UTF_8;"), source); //$NON-NLS-1$
+            assertTrue(source.contains(typeName + ".UTF_8"), source); //$NON-NLS-1$
+            assertFalse(source.contains(("E1".equals(typeName) ? "E2" : "E1") + ".UTF_8"), source); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        }
+        return after;
+    }
+
+    private String runSingleUnitAggregateCleanup(String packageName, String unitName, String before) throws Exception {
+        var pack= context.getSourceFolder().createPackageFragment(packageName, false, null);
+        ICompilationUnit unit= pack.createCompilationUnit(unitName, before, false, null);
+        return runCleanup(Map.of(unitName, unit), options(ChangeBehavior.ENFORCE_UTF8_AGGREGATE), unitName).get(unitName);
+    }
+
+    private Map<String, String> runCleanup(Map<String, ICompilationUnit> unitsByName, Map<String, String> cleanupOptions,
+            String... unitOrder) throws Exception {
+        Map<String, String> before= unitsByName.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> source(entry.getValue()), (left, right) -> left,
+                        LinkedHashMap::new));
         Map<String, Map<String, Long>> warnings= new LinkedHashMap<>();
         for (ICompilationUnit unit : unitsByName.values()) {
             warnings.put(unit.getElementName(), CharsetModernizationTest.diagnostics(unit));
         }
-        var cleanup= new org.sandbox.jdt.internal.ui.fix.UseExplicitEncodingCleanUp(options(ChangeBehavior.ENFORCE_UTF8_AGGREGATE));
+        var cleanup= new org.sandbox.jdt.internal.ui.fix.UseExplicitEncodingCleanUp(cleanupOptions);
         var refactoring= new CleanUpRefactoring();
         for (String unitName : unitOrder) {
             refactoring.addCompilationUnit(unitsByName.get(unitName));
@@ -278,26 +444,70 @@ class CharsetScopeTest {
         assertNotNull(change);
         try {
             previews(change);
+            assertEquals(before, unitsByName.entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, entry -> source(entry.getValue()), (left, right) -> left,
+                            LinkedHashMap::new)));
+            Map<String, String> previewMap= previewContents(change);
+            var manager= RefactoringCore.getUndoManager();
+            manager.flush();
             var perform= new PerformChangeOperation(change);
+            perform.setUndoManager(manager, refactoring.getName());
             ResourcesPlugin.getWorkspace().run(perform, new NullProgressMonitor());
             assertTrue(perform.changeExecuted());
             Map<String, String> after= new LinkedHashMap<>();
             for (Map.Entry<String, ICompilationUnit> entry : unitsByName.entrySet()) {
                 ICompilationUnit unit= entry.getValue();
-                String typeName= entry.getKey().replace(".java", ""); //$NON-NLS-1$ //$NON-NLS-2$
                 String source= unit.getSource();
+                if (previewMap.containsKey(entry.getKey())) {
+                    assertEquals(previewMap.get(entry.getKey()), source, entry.getKey());
+                }
                 CharsetModernizationTest.diagnostics(unit).forEach((key, count) ->
                         assertTrue(count <= warnings.get(unit.getElementName()).getOrDefault(key, 0L), key));
-                assertTrue(source.contains("private static final Charset UTF_8 = StandardCharsets.UTF_8;"), source); //$NON-NLS-1$
-                assertEquals(1, countOccurrences(source, "private static final Charset UTF_8 = StandardCharsets.UTF_8;"), source); //$NON-NLS-1$
-                assertTrue(source.contains(typeName + ".UTF_8"), source); //$NON-NLS-1$
-                assertFalse(source.contains(("E1".equals(typeName) ? "E2" : "E1") + ".UTF_8"), source); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-                assertNull(new UseExplicitEncodingCleanUpCore(options(ChangeBehavior.ENFORCE_UTF8_AGGREGATE))
+                assertNull(new UseExplicitEncodingCleanUpCore(cleanupOptions)
                         .createFix(new CleanUpContext(unit, CharsetModernizationTest.parse(unit))));
                 after.put(entry.getKey(), source);
             }
+            assertTrue(manager.anythingToUndo());
+            manager.performUndo(null, new NullProgressMonitor());
+            assertEquals(before, unitsByName.entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, entry -> source(entry.getValue()), (left, right) -> left,
+                            LinkedHashMap::new)));
+            for (ICompilationUnit unit : unitsByName.values()) {
+                assertEquals(warnings.get(unit.getElementName()), CharsetModernizationTest.diagnostics(unit));
+            }
+            manager.flush();
             return after;
         } finally { change.dispose(); }
+    }
+
+    private static Map<String, String> previewContents(Change change) {
+        Map<String, String> previews= new LinkedHashMap<>();
+        collectPreviews(change, previews);
+        return previews;
+    }
+
+    private static void collectPreviews(Change change, Map<String, String> previews) {
+        if (change instanceof CompositeChange composite) {
+            for (Change child : composite.getChildren()) {
+                collectPreviews(child, previews);
+            }
+            return;
+        }
+        if (change instanceof TextChange text && text.getModifiedElement() instanceof ICompilationUnit unit) {
+            try {
+                previews.put(unit.getElementName(), text.getPreviewContent(null));
+            } catch (Exception exception) {
+                throw new AssertionError(exception);
+            }
+        }
+    }
+
+    private static String source(ICompilationUnit unit) {
+        try {
+            return unit.getSource();
+        } catch (Exception exception) {
+            throw new AssertionError(exception);
+        }
     }
 
     private static int countOccurrences(String source, String text) {
@@ -310,5 +520,32 @@ class CharsetScopeTest {
 
     private static String normalizeAggregatePackage(String source, String packageName) {
         return source.replace("package " + packageName + ";", "package aggregate;"); //$NON-NLS-1$ //$NON-NLS-2$
+    }
+
+    private static String compileAndRun(String source, String className, java.nio.file.Path directory) throws Exception {
+        java.nio.file.Files.createDirectories(directory);
+        String simpleName= className.substring(className.lastIndexOf('.') + 1);
+        var file= directory.resolve(simpleName + ".java"); //$NON-NLS-1$
+        java.nio.file.Files.writeString(file, source, java.nio.charset.StandardCharsets.UTF_8);
+        var compiler= javax.tools.ToolProvider.getSystemJavaCompiler();
+        assertNotNull(compiler);
+        var diagnostics= new javax.tools.DiagnosticCollector<javax.tools.JavaFileObject>();
+        try (var manager= compiler.getStandardFileManager(diagnostics, java.util.Locale.ROOT, java.nio.charset.StandardCharsets.UTF_8)) {
+            assertTrue(compiler.getTask(null, manager, diagnostics,
+                    java.util.List.of("--release", "21", "-Xlint:all", "-Werror", "-d", directory.toString()), null, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                    manager.getJavaFileObjects(file)).call(), diagnostics.getDiagnostics().toString());
+            assertTrue(diagnostics.getDiagnostics().isEmpty(), diagnostics.getDiagnostics().toString());
+        }
+        try (var loader= new java.net.URLClassLoader(new java.net.URL[] { directory.toUri().toURL() }, null)) {
+            var buffer= new java.io.ByteArrayOutputStream();
+            var originalOut= System.out;
+            try (var stream= new java.io.PrintStream(buffer, true, java.nio.charset.StandardCharsets.UTF_8)) {
+                System.setOut(stream);
+                loader.loadClass(className).getMethod("main", String[].class).invoke(null, (Object) new String[0]);
+            } finally {
+                System.setOut(originalOut);
+            }
+            return buffer.toString(java.nio.charset.StandardCharsets.UTF_8);
+        }
     }
 }
