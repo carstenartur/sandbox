@@ -85,4 +85,57 @@ class AggregateInstallationVerifierTest {
                 () -> AggregateInstallationVerifier.requireCompilation(List.of(source), temporary.resolve("classes")));
         assertTrue(failure.getMessage().startsWith("Invalid Java output: "), failure.getMessage());
     }
+
+    @Test
+    void createsFixturePackageDirectoriesBeforeWritingSources() throws Exception {
+        Path root = temporary.resolve("repo");
+        Files.createDirectories(root.resolve("target"));
+        AggregateInstallationVerifier verifier = new AggregateInstallationVerifier(root);
+        Path charset = verifier.writeCharsetProject("stage", "keep");
+        Path functional = verifier.writeFunctionalProject("stage");
+        assertTrue(Files.isRegularFile(charset.resolve("src/main/java/probe/charset/Alpha.java")));
+        assertTrue(Files.isRegularFile(charset.resolve("src/test/java/probe/charset/Skip.java")));
+        assertTrue(Files.isRegularFile(functional.resolve("src/main/java/probe/functional/LoopSample.java")));
+    }
+
+    @Test
+    void reportsStringOverloadWhenUtf8IsConvertedToString() throws Exception {
+        Path source = temporary.resolve("probe/charset/Fallback.java");
+        AggregateInstallationEvidence.createParentDirectories(source);
+        Files.writeString(source, """
+                package probe.charset;
+                class Fallback {
+                    byte[] bytes(String text) throws Exception {
+                        return text.getBytes(java.nio.charset.StandardCharsets.UTF_8.toString());
+                    }
+                    String decode(byte[] bytes) throws Exception {
+                        return new String(bytes, java.nio.charset.StandardCharsets.UTF_8.toString());
+                    }
+                }
+                """);
+        AggregateInstallationVerifier.SourceAnalysis analysis = AggregateInstallationVerifier.analyzeCharsetSources(List.of(source));
+        assertEquals(List.of(
+                "bytes -> java.lang.String.getBytes(java.lang.String)",
+                "decode -> java.lang.String.<init>(byte[],java.lang.String)"),
+                analysis.invocations().get(source));
+    }
+
+    @Test
+    void rejectsCleanupReportWhenChangedFileOnlyAppearsOutsideChangedFilesArray() throws Exception {
+        Path source = temporary.resolve("Sample.java");
+        String report = """
+                {
+                  "mode": "apply",
+                  "filesProcessed": 1,
+                  "filesChanged": 1,
+                  "errorCount": 0,
+                  "changedFiles": [],
+                  "errors": [],
+                  "debug": "%s"
+                }
+                """.formatted(source.toString().replace("\\", "\\\\"));
+        IOException failure = assertThrows(IOException.class,
+                () -> AggregateInstallationVerifier.requireCleanupReport("apply", report, "apply", 1, Set.of(source), 0));
+        assertTrue(failure.getMessage().startsWith("apply recorded wrong changedFiles array"), failure.getMessage());
+    }
 }

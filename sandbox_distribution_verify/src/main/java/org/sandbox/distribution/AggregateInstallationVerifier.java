@@ -11,7 +11,6 @@ import static org.sandbox.distribution.AggregateInstallationEvidence.require;
 import static org.sandbox.distribution.AggregateInstallationEvidence.xml;
 
 import java.io.InputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -36,12 +35,17 @@ import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
+import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
 import javax.tools.JavaCompiler;
+import javax.tools.Diagnostic;
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaFileObject;
+import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 import javax.xml.XMLConstants;
 import javax.xml.transform.TransformerFactory;
@@ -49,6 +53,19 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Element;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+import com.sun.source.tree.CompilationUnitTree;
+import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.VariableTree;
+import com.sun.source.util.JavacTask;
+import com.sun.source.util.TreePathScanner;
+import com.sun.source.util.Trees;
 
 /** Additional end-to-end gate in the existing distribution Maven reactor. */
 public final class AggregateInstallationVerifier {
@@ -59,9 +76,6 @@ public final class AggregateInstallationVerifier {
     private static final String PROBE = "org.sandbox.distribution.aggregate.probe";
     private static final String LEGACY_COMPONENT_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/1.3.4/";
     private static final String STABLE_AGGREGATE_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/1.3.5/";
-    private static final Pattern JSON_STRING = Pattern.compile("\"([^\"]+)\"\\s*:\\s*\"((?:\\\\.|[^\"\\\\])*)\"");
-    private static final Pattern JSON_NUMBER = Pattern.compile("\"([^\"]+)\"\\s*:\\s*(-?\\d+)");
-    private static final Pattern AGGREGATE_UTF8_CONSTANT = Pattern.compile("\\bUTF_8\\s*=\\s*(?:java\\.nio\\.charset\\.)?StandardCharsets\\.UTF_8\\s*;");
     private final Path root;
     private final Path evidence;
     private final Path work;
@@ -73,9 +87,16 @@ public final class AggregateInstallationVerifier {
     private Path inventory;
 
     private record CleanupRun(int exitCode, String report, Map<Path, String> sources) { }
+    record SourceAnalysis(Map<Path, List<String>> invocations, Map<Path, List<String>> fields, List<String> diagnostics) {
+        SourceAnalysis {
+            invocations = immutableLines(invocations);
+            fields = immutableLines(fields);
+            diagnostics = List.copyOf(diagnostics);
+        }
+    }
     record FileSnapshot(Object fileKey, FileTime lastModified) { }
 
-    private AggregateInstallationVerifier(Path root) throws IOException {
+    AggregateInstallationVerifier(Path root) throws IOException {
         this.root = root.toAbsolutePath().normalize();
         evidence = this.root.resolve("target/distribution-verification/aggregate");
         Files.createDirectories(evidence);
@@ -278,8 +299,14 @@ public final class AggregateInstallationVerifier {
         Path skipped = project.resolve("src/test/java/probe/charset/Skip.java");
         List<Path> tracked = List.of(alpha, beta, runner, skipped);
         Map<Path, String> original = captureSources(tracked);
+        writeSourceEvidence(stage + "-charset-" + behavior, "before", project, original);
         Path config = evidence.resolve(stage + "-charset-" + behavior + ".properties");
         Files.writeString(config, "cleanup.explicit_encoding=true\n" + option + "=true\n");
+        Path originalClasses = work.resolve(stage + "-charset-" + behavior + "-original-classes");
+        List<String> originalDiagnostics = compileSources(allJavaSources(project), originalClasses);
+        SourceAnalysis originalAnalysis = analyzeCharsetSources(allJavaSources(project));
+        writeAnalysisEvidence(stage + "-charset-" + behavior, "before", project, originalAnalysis);
+        requireJavaMain(originalClasses, CHARSET_MAIN, "PASS", stage + "-charset-" + behavior + "-before");
 
         CleanupRun check = runCleanup(home, stage + "-charset-" + behavior + "-check", "check", project, "main",
                 config, List.of(project), tracked, Set.of(2));
@@ -292,10 +319,14 @@ public final class AggregateInstallationVerifier {
         requireCleanupReport(stage + " charset " + behavior + " apply", apply.report(), "apply", 3,
                 Set.of(alpha, beta), 0);
         requireChangedSources(stage + " charset " + behavior + " apply", original, apply.sources(), Set.of(alpha, beta));
-        requireCharsetSources(behavior, apply.sources().get(alpha), apply.sources().get(beta), apply.sources().get(runner),
-                apply.sources().get(skipped));
+        writeSourceEvidence(stage + "-charset-" + behavior, "after", project, apply.sources());
         Path classes = work.resolve(stage + "-charset-" + behavior + "-classes");
-        requireCompilation(allJavaSources(project), classes);
+        List<String> changedDiagnostics = compileSources(allJavaSources(project), classes);
+        require(originalDiagnostics.equals(changedDiagnostics),
+                stage + " charset " + behavior + " diagnostics differ; expected " + originalDiagnostics + ", actual " + changedDiagnostics);
+        SourceAnalysis changedAnalysis = analyzeCharsetSources(allJavaSources(project));
+        writeAnalysisEvidence(stage + "-charset-" + behavior, "after", project, changedAnalysis);
+        requireCharsetSources(behavior, changedAnalysis, alpha, beta, apply.sources().get(runner), apply.sources().get(skipped));
         requireJavaMain(classes, CHARSET_MAIN, "PASS", stage + "-charset-" + behavior);
 
         CleanupRun idempotent = runCleanup(home, stage + "-charset-" + behavior + "-idempotent", "check", project,
@@ -311,14 +342,19 @@ public final class AggregateInstallationVerifier {
         Path runner = project.resolve("src/main/java/probe/functional/Runner.java");
         List<Path> tracked = List.of(sample, runner);
         Map<Path, String> original = captureSources(tracked);
+        writeSourceEvidence(stage + "-functional", "before", project, original);
         Path config = evidence.resolve(stage + "-functional.properties");
         Files.writeString(config, "cleanup.functionalloop=true\n");
+        Path originalClasses = work.resolve(stage + "-functional-before-classes");
+        requireCompilation(allJavaSources(project), originalClasses);
+        requireJavaMain(originalClasses, FUNCTIONAL_MAIN, "ab", stage + "-functional-before");
 
         CleanupRun apply = runCleanup(home, stage + "-functional-apply", "apply", project, "main", config,
                 List.of(project), tracked, Set.of(0));
         requireCleanupReport(stage + " functional apply", apply.report(), "apply", 2, Set.of(sample), 0);
         requireChangedSources(stage + " functional apply", original, apply.sources(), Set.of(sample));
         require(apply.sources().get(sample).contains(".forEach("), "Functional cleanup did not produce a deterministic forEach rewrite");
+        writeSourceEvidence(stage + "-functional", "after", project, apply.sources());
         Path classes = work.resolve(stage + "-functional-classes");
         requireCompilation(allJavaSources(project), classes);
         requireJavaMain(classes, FUNCTIONAL_MAIN, "ab", stage + "-functional");
@@ -390,14 +426,7 @@ public final class AggregateInstallationVerifier {
     }
 
     static void requireCompilation(List<Path> sources, Path classes) throws IOException {
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        require(compiler != null, "A full JDK is required to compile the transformed source");
-        Files.createDirectories(classes);
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        List<String> arguments = new ArrayList<>(List.of("--release", "21", "-d", classes.toString()));
-        sources.stream().map(Path::toString).forEach(arguments::add);
-        int status = compiler.run(null, output, output, arguments.toArray(String[]::new));
-        require(status == 0, "Invalid Java output: " + output.toString(StandardCharsets.UTF_8).trim());
+        compileSources(sources, classes);
     }
 
     static void requireChangedSources(String label, Map<Path, String> before, Map<Path, String> after,
@@ -417,70 +446,60 @@ public final class AggregateInstallationVerifier {
 
     static void requireCleanupReport(String label, String report, String mode, int filesProcessed, Set<Path> changed,
             int errorCount) throws IOException {
-        require(mode.equals(jsonString(report, "mode")), label + " recorded wrong mode: " + report);
-        require(filesProcessed == jsonInt(report, "filesProcessed"),
+        JsonObject parsed = jsonObject(label, report);
+        require(mode.equals(jsonString(parsed, "mode")), label + " recorded wrong mode: " + report);
+        require(filesProcessed == jsonInt(parsed, "filesProcessed"),
                 label + " recorded wrong filesProcessed count: " + report);
-        require(changed.size() == jsonInt(report, "filesChanged"),
+        require(changed.size() == jsonInt(parsed, "filesChanged"),
                 label + " recorded wrong filesChanged count: " + report);
-        require(errorCount == jsonInt(report, "errorCount"),
+        require(errorCount == jsonInt(parsed, "errorCount"),
                 label + " recorded wrong errorCount: " + report);
-        for (Path path : changed) {
-            require(report.contains('"' + escapeJson(path.toString()) + '"'),
-                    label + " omitted changed file " + path + ": " + report);
+        List<String> expectedChanged = changed.stream().map(Path::toString).sorted().toList();
+        List<String> actualChanged = new ArrayList<>();
+        for (JsonElement element : jsonArray(parsed, "changedFiles")) {
+            require(element.isJsonPrimitive() && element.getAsJsonPrimitive().isString(),
+                    label + " recorded non-string changedFiles entry: " + report);
+            actualChanged.add(element.getAsString());
+        }
+        actualChanged.sort(String::compareTo);
+        require(expectedChanged.equals(actualChanged),
+                label + " recorded wrong changedFiles array; expected " + expectedChanged + ", actual " + actualChanged + ": " + report);
+        JsonArray errors = jsonArray(parsed, "errors");
+        require(errorCount == errors.size(),
+                label + " recorded wrong errors array size: " + report);
+    }
+
+    private static JsonObject jsonObject(String label, String json) throws IOException {
+        try {
+            JsonElement parsed = JsonParser.parseString(json);
+            require(parsed.isJsonObject(), label + " did not produce a JSON object: " + json);
+            return parsed.getAsJsonObject();
+        } catch (JsonParseException | IllegalStateException exception) {
+            throw new IOException(label + " did not produce parseable JSON", exception);
         }
     }
 
-    private static String jsonString(String json, String field) throws IOException {
-        Matcher matcher = JSON_STRING.matcher(json);
-        while (matcher.find()) {
-            if (field.equals(matcher.group(1))) return unescapeJson(matcher.group(2));
-        }
-        throw new IOException("Missing JSON string field " + field);
+    private static String jsonString(JsonObject object, String field) throws IOException {
+        JsonElement value = object.get(field);
+        require(value != null, "Missing JSON string field " + field);
+        require(value.isJsonPrimitive() && value.getAsJsonPrimitive().isString(),
+                "JSON field is not a string: " + field);
+        return value.getAsString();
     }
 
-    private static int jsonInt(String json, String field) throws IOException {
-        Matcher matcher = JSON_NUMBER.matcher(json);
-        while (matcher.find()) {
-            if (field.equals(matcher.group(1))) return Integer.parseInt(matcher.group(2));
-        }
-        throw new IOException("Missing JSON number field " + field);
+    private static int jsonInt(JsonObject object, String field) throws IOException {
+        JsonElement value = object.get(field);
+        require(value != null, "Missing JSON number field " + field);
+        require(value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber(),
+                "JSON field is not a number: " + field);
+        return value.getAsInt();
     }
 
-    private static String escapeJson(String value) {
-        return value.replace("\\", "\\\\").replace("\"", "\\\"");
-    }
-
-    private static String unescapeJson(String value) {
-        StringBuilder result = new StringBuilder(value.length());
-        for (int index = 0; index < value.length(); index++) {
-            char current = value.charAt(index);
-            if (current != '\\') {
-                result.append(current);
-                continue;
-            }
-            require(index + 1 < value.length(), "Invalid JSON escape in " + value);
-            char escaped = value.charAt(++index);
-            switch (escaped) {
-            case '"', '\\', '/' -> result.append(escaped);
-            case 'b' -> result.append('\b');
-            case 'f' -> result.append('\f');
-            case 'n' -> result.append('\n');
-            case 'r' -> result.append('\r');
-            case 't' -> result.append('\t');
-            case 'u' -> {
-                require(index + 4 < value.length(), "Invalid JSON unicode escape in " + value);
-                String hex = value.substring(index + 1, index + 5);
-                try {
-                    result.append((char) Integer.parseInt(hex, 16));
-                } catch (NumberFormatException exception) {
-                    throw new IOException("Invalid JSON unicode escape in " + value, exception);
-                }
-                index += 4;
-            }
-            default -> throw new IOException("Invalid JSON escape in " + value);
-            }
-        }
-        return result.toString();
+    private static JsonArray jsonArray(JsonObject object, String field) throws IOException {
+        JsonElement value = object.get(field);
+        require(value != null, "Missing JSON array field " + field);
+        require(value.isJsonArray(), "JSON field is not an array: " + field);
+        return value.getAsJsonArray();
     }
 
     private static Map<Path, String> captureSources(List<Path> files) throws IOException {
@@ -495,10 +514,10 @@ public final class AggregateInstallationVerifier {
         }
     }
 
-    private Path writeCharsetProject(String stage, String behavior) throws IOException {
+    Path writeCharsetProject(String stage, String behavior) throws IOException {
         Path project = work.resolve(stage + "-charset-" + behavior + "/CharsetProject");
         writeProjectMetadata(project, "CharsetProject");
-        Files.writeString(project.resolve("src/main/java/probe/charset/Alpha.java"), """
+        writeJavaFile(project.resolve("src/main/java/probe/charset/Alpha.java"), """
                 package probe.charset;
                 public class Alpha {
                     public static byte[] bytes(String text) throws Exception {
@@ -509,7 +528,7 @@ public final class AggregateInstallationVerifier {
                     }
                 }
                 """);
-        Files.writeString(project.resolve("src/main/java/probe/charset/Beta.java"), """
+        writeJavaFile(project.resolve("src/main/java/probe/charset/Beta.java"), """
                 package probe.charset;
                 import java.nio.charset.Charset;
                 public class Beta {
@@ -521,7 +540,7 @@ public final class AggregateInstallationVerifier {
                     }
                 }
                 """);
-        Files.writeString(project.resolve("src/main/java/probe/charset/Runner.java"), """
+        writeJavaFile(project.resolve("src/main/java/probe/charset/Runner.java"), """
                 package probe.charset;
                 public class Runner {
                     public static void main(String[] args) throws Exception {
@@ -533,7 +552,7 @@ public final class AggregateInstallationVerifier {
                     }
                 }
                 """);
-        Files.writeString(project.resolve("src/test/java/probe/charset/Skip.java"), """
+        writeJavaFile(project.resolve("src/test/java/probe/charset/Skip.java"), """
                 package probe.charset;
                 class Skip {
                     static String untouched(byte[] bytes) throws Exception {
@@ -544,33 +563,28 @@ public final class AggregateInstallationVerifier {
         return project;
     }
 
-    private static void requireCharsetSources(String behavior, String alpha, String beta, String runner, String skipped)
+    private static void requireCharsetSources(String behavior, SourceAnalysis analysis, Path alpha, Path beta, String runner, String skipped)
             throws IOException {
-        for (String changed : List.of(alpha, beta)) {
-            require(!changed.contains("\"UTF-8\""), "Charset modernization retained string-literal encoding");
-            require(!changed.contains(".name()"), "Charset modernization fell back to String .name()");
-        }
+        requireResolvedInvocations(alpha, analysis, Set.of(
+                "bytes -> java.lang.String.getBytes(java.nio.charset.Charset)",
+                "decode -> java.lang.String.<init>(byte[],java.nio.charset.Charset)"));
+        requireResolvedInvocations(beta, analysis, Set.of(
+                "roundTrip -> java.lang.String.getBytes(java.nio.charset.Charset)",
+                "roundTrip -> java.lang.String.<init>(byte[],java.nio.charset.Charset)"));
         require(runner.contains("Beta.charset().equals(java.nio.charset.StandardCharsets.UTF_8)"),
                 "Charset runtime probe runner changed unexpectedly");
         require(skipped.contains("new String(bytes, \"UTF-8\")"),
                 "Main-scope cleanup touched the explicit negative-scope source");
         if ("aggregate".equals(behavior)) {
-            for (String changed : List.of(alpha, beta)) {
-                require(AGGREGATE_UTF8_CONSTANT.matcher(changed).find(),
-                        "Aggregate cleanup did not create a per-unit UTF_8 field");
-                require(countMatches(changed, AGGREGATE_UTF8_CONSTANT) == 1,
-                        "Aggregate cleanup created multiple per-unit UTF_8 fields");
-            }
-        } else {
-            require(alpha.contains("StandardCharsets.UTF_8"), "Charset cleanup did not target Charset overloads in Alpha");
-            require(beta.contains("StandardCharsets.UTF_8"), "Charset cleanup did not target Charset overloads in Beta");
+            requireResolvedUtf8Field(alpha, analysis);
+            requireResolvedUtf8Field(beta, analysis);
         }
     }
 
-    private Path writeFunctionalProject(String stage) throws IOException {
+    Path writeFunctionalProject(String stage) throws IOException {
         Path project = work.resolve(stage + "-functional/FunctionalProject");
         writeProjectMetadata(project, "FunctionalProject");
-        Files.writeString(project.resolve("src/main/java/probe/functional/LoopSample.java"), """
+        writeJavaFile(project.resolve("src/main/java/probe/functional/LoopSample.java"), """
                 package probe.functional;
                 import java.util.List;
                 class LoopSample {
@@ -581,7 +595,7 @@ public final class AggregateInstallationVerifier {
                     }
                 }
                 """);
-        Files.writeString(project.resolve("src/main/java/probe/functional/Runner.java"), """
+        writeJavaFile(project.resolve("src/main/java/probe/functional/Runner.java"), """
                 package probe.functional;
                 import java.util.List;
                 public class Runner {
@@ -610,6 +624,11 @@ public final class AggregateInstallationVerifier {
                 """);
     }
 
+    private static void writeJavaFile(Path file, String source) throws IOException {
+        createParentDirectories(file);
+        Files.writeString(file, source);
+    }
+
     private void requireJavaMain(Path classes, String mainClass, String expectedOutput, String stage) throws Exception {
         Path log = evidence.resolve(stage + "-java.log");
         Process process = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", "java").toString(),
@@ -627,17 +646,170 @@ public final class AggregateInstallationVerifier {
         require(expectedOutput.equals(Files.readString(log)), "Unexpected Java runtime result for " + stage);
     }
 
-    private static int countMatches(String text, Pattern pattern) {
-        int count = 0;
-        Matcher matcher = pattern.matcher(text);
-        while (matcher.find()) count++;
-        return count;
-    }
-
     static FileSnapshot snapshot(Path file) throws IOException {
         if (!Files.exists(file)) return null;
         BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class);
         return new FileSnapshot(attributes.fileKey(), attributes.lastModifiedTime());
+    }
+
+    static SourceAnalysis analyzeCharsetSources(List<Path> sources) throws IOException {
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        require(compiler != null, "A full JDK is required to analyze the transformed source");
+        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+        Map<Path, List<String>> invocations = new TreeMap<>(Comparator.comparing(Path::toString));
+        Map<Path, List<String>> fields = new TreeMap<>(Comparator.comparing(Path::toString));
+        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8)) {
+            Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjectsFromPaths(sources);
+            JavacTask task = (JavacTask) compiler.getTask(null, fileManager, diagnostics, List.of("--release", "21", "-proc:none"),
+                    null, units);
+            Iterable<? extends CompilationUnitTree> trees = task.parse();
+            task.analyze();
+            Trees analysis = Trees.instance(task);
+            for (CompilationUnitTree unit : trees) {
+                Path source = Path.of(unit.getSourceFile().toUri());
+                new TreePathScanner<Void, Void>() {
+                    private String enclosing = "<initializer>";
+
+                    @Override
+                    public Void visitMethod(MethodTree node, Void unused) {
+                        String previous = enclosing;
+                        enclosing = node.getName().toString();
+                        try {
+                            return super.visitMethod(node, unused);
+                        } finally {
+                            enclosing = previous;
+                        }
+                    }
+
+                    @Override
+                    public Void visitNewClass(NewClassTree node, Void unused) {
+                        if (analysis.getElement(getCurrentPath()) instanceof ExecutableElement executable
+                                && executable.getKind() == ElementKind.CONSTRUCTOR
+                                && "java.lang.String".equals(executable.getEnclosingElement().toString())) {
+                            invocations.computeIfAbsent(source, key -> new ArrayList<>())
+                                    .add(enclosing + " -> java.lang.String.<init>" + descriptor(executable));
+                        }
+                        return super.visitNewClass(node, unused);
+                    }
+
+                    @Override
+                    public Void visitVariable(VariableTree node, Void unused) {
+                        if (analysis.getElement(getCurrentPath()) instanceof VariableElement variable
+                                && "UTF_8".contentEquals(variable.getSimpleName())
+                                && variable.getEnclosingElement() != null
+                                && variable.getEnclosingElement().getKind().isClass()) {
+                            fields.computeIfAbsent(source, key -> new ArrayList<>()).add(variable.getEnclosingElement()
+                                    + "." + variable.getSimpleName() + ':' + variable.asType() + '=' + node.getInitializer());
+                        }
+                        return super.visitVariable(node, unused);
+                    }
+
+                    @Override
+                    public Void visitMethodInvocation(com.sun.source.tree.MethodInvocationTree node, Void unused) {
+                        if (analysis.getElement(getCurrentPath()) instanceof ExecutableElement executable
+                                && "getBytes".contentEquals(executable.getSimpleName())
+                                && "java.lang.String".equals(executable.getEnclosingElement().toString())) {
+                            invocations.computeIfAbsent(source, key -> new ArrayList<>())
+                                    .add(enclosing + " -> java.lang.String.getBytes" + descriptor(executable));
+                        }
+                        return super.visitMethodInvocation(node, unused);
+                    }
+                }.scan(unit, null);
+            }
+        } catch (IOException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new IOException("Failed to analyze charset sources", exception);
+        }
+        invocations.values().forEach(lines -> lines.sort(String::compareTo));
+        fields.values().forEach(lines -> lines.sort(String::compareTo));
+        return new SourceAnalysis(invocations, fields, diagnostics(diagnostics));
+    }
+
+    private static List<String> compileSources(List<Path> sources, Path classes) throws IOException {
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        require(compiler != null, "A full JDK is required to compile the transformed source");
+        Files.createDirectories(classes);
+        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8)) {
+            Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjectsFromPaths(sources);
+            List<String> arguments = List.of("--release", "21", "-d", classes.toString());
+            Boolean success = compiler.getTask(null, fileManager, diagnostics, arguments, null, units).call();
+            List<String> normalized = diagnostics(diagnostics);
+            require(Boolean.TRUE.equals(success), "Invalid Java output: " + String.join(System.lineSeparator(), normalized));
+            return normalized;
+        }
+    }
+
+    private static String descriptor(ExecutableElement executable) {
+        return executable.getParameters().stream().map(parameter -> parameter.asType().toString())
+                .collect(java.util.stream.Collectors.joining(",", "(", ")"));
+    }
+
+    private static List<String> diagnostics(DiagnosticCollector<JavaFileObject> diagnostics) {
+        return diagnostics.getDiagnostics().stream()
+                .map(diagnostic -> diagnostic.getKind() + ":" + diagnostic.getCode() + ':' + diagnostic.getLineNumber() + ':'
+                        + diagnostic.getColumnNumber() + ':' + diagnostic.getMessage(java.util.Locale.ROOT))
+                .toList();
+    }
+
+    private static void requireResolvedInvocations(Path source, SourceAnalysis analysis, Set<String> expected) throws IOException {
+        List<String> actual = analysis.invocations().getOrDefault(source, List.of());
+        List<String> sortedExpected = expected.stream().sorted().toList();
+        require(sortedExpected.equals(actual),
+                "Resolved encoding invocations differ for " + source + "; expected " + sortedExpected + ", actual " + actual);
+    }
+
+    private static void requireResolvedUtf8Field(Path source, SourceAnalysis analysis) throws IOException {
+        List<String> fields = analysis.fields().getOrDefault(source, List.of());
+        require(fields.size() == 1, "Aggregate cleanup created wrong UTF_8 field count for " + source + ": " + fields);
+        require(fields.getFirst().endsWith(":java.nio.charset.Charset=java.nio.charset.StandardCharsets.UTF_8"),
+                "Aggregate cleanup created the wrong UTF_8 field for " + source + ": " + fields.getFirst());
+    }
+
+    private void writeSourceEvidence(String stage, String label, Path project, Map<Path, String> sources) throws Exception {
+        Path directory = evidence.resolve(stage + '-' + label + "-sources");
+        recreateDirectory(directory);
+        List<String> digests = new ArrayList<>();
+        for (var entry : sources.entrySet()) {
+            Path relative = project.relativize(entry.getKey());
+            Path target = directory.resolve(relative.toString());
+            createParentDirectories(target);
+            Files.writeString(target, entry.getValue());
+            digests.add(digest(target) + "  " + relative.toString().replace('\\', '/'));
+        }
+        Files.write(evidence.resolve(stage + '-' + label + "-sources.sha256"), digests);
+    }
+
+    private void writeAnalysisEvidence(String stage, String label, Path project, SourceAnalysis analysis) throws IOException {
+        List<String> invocations = new ArrayList<>();
+        for (var entry : analysis.invocations().entrySet()) {
+            String relative = project.relativize(entry.getKey()).toString().replace('\\', '/');
+            entry.getValue().forEach(line -> invocations.add(relative + '\t' + line));
+        }
+        Files.write(evidence.resolve(stage + '-' + label + "-overloads.txt"), invocations);
+        List<String> fields = new ArrayList<>();
+        for (var entry : analysis.fields().entrySet()) {
+            String relative = project.relativize(entry.getKey()).toString().replace('\\', '/');
+            entry.getValue().forEach(line -> fields.add(relative + '\t' + line));
+        }
+        Files.write(evidence.resolve(stage + '-' + label + "-fields.txt"), fields);
+        Files.write(evidence.resolve(stage + '-' + label + "-diagnostics.txt"), analysis.diagnostics());
+    }
+
+    private static Map<Path, List<String>> immutableLines(Map<Path, List<String>> values) {
+        Map<Path, List<String>> copy = new LinkedHashMap<>();
+        values.forEach((path, lines) -> copy.put(path, List.copyOf(lines)));
+        return Map.copyOf(copy);
+    }
+
+    private static void recreateDirectory(Path directory) throws IOException {
+        if (Files.exists(directory)) {
+            try (var files = Files.walk(directory)) {
+                for (Path file : files.sorted(Comparator.reverseOrder()).toList()) Files.delete(file);
+            }
+        }
+        Files.createDirectories(directory);
     }
 
     private URI publishNextAggregate(String current, String next) throws Exception {
