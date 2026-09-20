@@ -91,6 +91,7 @@ package test1;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.io.FileNotFoundException;
@@ -129,7 +130,6 @@ package test1;
 
 import java.io.InputStreamReader;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.io.FileNotFoundException;
