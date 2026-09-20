@@ -12,7 +12,7 @@ It checks:
 - normal startup of the Eclipse IDE workbench;
 - installation of the update site into a fresh Eclipse destination;
 - startup of the fresh installation;
-- execution of the cleanup application and compilation of its transformed Java source.
+- execution of the cleanup application for formatter, charset-modernization and functional-converter probes, including a published 1.3.5-to-candidate aggregate upgrade, and compilation of the transformed Java sources.
 
 Run the complete build on Windows, Linux or macOS with:
 

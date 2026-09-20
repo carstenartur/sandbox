@@ -11,6 +11,7 @@ import static org.sandbox.distribution.AggregateInstallationEvidence.require;
 import static org.sandbox.distribution.AggregateInstallationEvidence.xml;
 
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -18,10 +19,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,6 +38,7 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
+import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
 import javax.xml.XMLConstants;
 import javax.xml.transform.TransformerFactory;
@@ -46,9 +50,12 @@ import org.w3c.dom.Element;
 /** Additional end-to-end gate in the existing distribution Maven reactor. */
 public final class AggregateInstallationVerifier {
     private static final String AGGREGATE = "sandbox_feature.feature.group";
+    private static final String CHARSET_MAIN = "probe.charset.Runner";
+    private static final String FUNCTIONAL_MAIN = "probe.functional.Runner";
     private static final String DIRECTOR = "org.eclipse.equinox.p2.director";
     private static final String PROBE = "org.sandbox.distribution.aggregate.probe";
-    private static final String PREVIOUS_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/1.3.4/";
+    private static final String LEGACY_COMPONENT_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/1.3.4/";
+    private static final String STABLE_AGGREGATE_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/1.3.5/";
     private final Path root;
     private final Path evidence;
     private final Path work;
@@ -58,6 +65,8 @@ public final class AggregateInstallationVerifier {
     private final Map<String, String> records = new TreeMap<>();
     private Path probe;
     private Path inventory;
+
+    private record CleanupRun(int exitCode, String report, Map<Path, String> sources) { }
 
     private AggregateInstallationVerifier(Path root) throws IOException {
         this.root = root.toAbsolutePath().normalize();
@@ -87,6 +96,7 @@ public final class AggregateInstallationVerifier {
         Map<String, String> stock = hostDigests(fresh);
         provision(fresh, "fresh-aggregate", List.of(repository.toString()), List.of(AGGREGATE + '/' + current.get(AGGREGATE)), List.of());
         verifyStage(fresh, "fresh", current, stock, Set.of(AGGREGATE));
+        verifyInstalledSandboxFunctionality(home(fresh), "fresh");
 
         String next = nextFixtureVersion(current.get(AGGREGATE));
         URI nextRepository = publishNextAggregate(current.get(AGGREGATE), next);
@@ -96,7 +106,21 @@ public final class AggregateInstallationVerifier {
         updated.put(AGGREGATE, next);
         verifyStage(fresh, "updated", updated, stock, Set.of(AGGREGATE));
 
-        URI previousRepository = URI.create(System.getProperty("sandbox.aggregate.previousRepository", PREVIOUS_REPOSITORY));
+        URI releasedRepository = URI.create(System.getProperty("sandbox.aggregate.stableRepository", STABLE_AGGREGATE_REPOSITORY));
+        Map<String, String> released = featureVersions(releasedRepository);
+        requireCandidateUpgradeSource(releasedRepository, released, current);
+        Path upgraded = installation("upgraded");
+        provisionStock(upgraded, "upgraded-stock");
+        Map<String, String> upgradedStock = hostDigests(upgraded);
+        provision(upgraded, "released-aggregate", List.of(releasedRepository.toString()),
+                List.of(AGGREGATE + '/' + released.get(AGGREGATE)), List.of());
+        verifyInstalledFeatures(upgraded, "released", released, upgradedStock, Set.of(AGGREGATE));
+        provision(upgraded, "released-to-candidate", List.of(repository.toString()),
+                List.of(AGGREGATE + '/' + current.get(AGGREGATE)), List.of(AGGREGATE + '/' + released.get(AGGREGATE)));
+        verifyStage(upgraded, "upgraded", current, upgradedStock, Set.of(AGGREGATE));
+        verifyInstalledSandboxFunctionality(home(upgraded), "upgraded");
+
+        URI previousRepository = URI.create(System.getProperty("sandbox.aggregate.previousRepository", LEGACY_COMPONENT_REPOSITORY));
         Map<String, String> previous = featureVersions(previousRepository);
         require(!previous.isEmpty() && !previous.containsKey(AGGREGATE), "The legacy fixture must have individual features, not an aggregate");
         require(current.keySet().containsAll(previous.keySet()), "The aggregate loses previously published components");
@@ -114,6 +138,8 @@ public final class AggregateInstallationVerifier {
         verifyStage(legacy, "migrated", current, legacyStock, legacyRoots);
 
         records.put("previousRepository", previousRepository.toString());
+        records.put("releasedRepository", releasedRepository.toString());
+        records.put("releasedAggregateVersion", released.get(AGGREGATE));
         records.put("previousFeatureCount", Integer.toString(previous.size()));
         records.put("aggregateIU", AGGREGATE);
         records.put("aggregateVersion", current.get(AGGREGATE));
@@ -164,6 +190,27 @@ public final class AggregateInstallationVerifier {
 
     private void verifyStage(Path installation, String stage, Map<String, String> versions,
             Map<String, String> stock, Set<String> expectedRoots) throws Exception {
+        verifyInstalledFeatures(installation, stage, versions, stock, expectedRoots);
+        Path home = home(installation);
+        Path result = evidence.resolve(stage + "-runtime.json");
+        Files.deleteIfExists(result);
+        Instant started = Instant.now();
+        Path configuration = home.resolve("configuration/org.eclipse.equinox.simpleconfigurator/bundles.info");
+        byte[] original = Files.readAllBytes(configuration);
+        try {
+            Files.writeString(configuration, new String(original, StandardCharsets.UTF_8) + '\n'
+                    + PROBE + ",1.0.0," + probe.toUri() + ",4,false\n");
+            run(home, stage + "-runtime", PROBE + ".verify", List.of(inventory.toString(), result.toString()), Duration.ofMinutes(3));
+            requireFreshFile(result, started, "Runtime probe result");
+        } finally {
+            Files.write(configuration, original);
+        }
+        require(java.util.Arrays.equals(original, Files.readAllBytes(configuration)), "Probe changed installation configuration");
+        formatterSmoke(home, stage);
+    }
+
+    private void verifyInstalledFeatures(Path installation, String stage, Map<String, String> versions,
+            Map<String, String> stock, Set<String> expectedRoots) throws Exception {
         Path home = home(installation);
         AggregateInstallationEvidence.requireFeatures(profile(installation, stage), versions, expectedRoots);
         records.put(stage + ".sandboxRoots", String.join(",", new TreeSet<>(expectedRoots)));
@@ -177,23 +224,9 @@ public final class AggregateInstallationVerifier {
             require(id.equals(feature.getAttribute("id")) && entry.getValue().equals(feature.getAttribute("version")), "Installed feature identity mismatch: " + file);
             records.put(stage + '.' + id, entry.getValue());
         }
-        Path configuration = home.resolve("configuration/org.eclipse.equinox.simpleconfigurator/bundles.info");
-        byte[] original = Files.readAllBytes(configuration);
-        Path result = evidence.resolve(stage + "-runtime.json");
-        Files.deleteIfExists(result);
-        try {
-            Files.writeString(configuration, new String(original, StandardCharsets.UTF_8) + '\n'
-                    + PROBE + ",1.0.0," + probe.toUri() + ",4,false\n");
-            run(home, stage + "-runtime", PROBE + ".verify", List.of(inventory.toString(), result.toString()), Duration.ofMinutes(3));
-            require(Files.isRegularFile(result), "Runtime probe produced no result");
-        } finally {
-            Files.write(configuration, original);
-        }
-        require(java.util.Arrays.equals(original, Files.readAllBytes(configuration)), "Probe changed installation configuration");
-        cleanupSmoke(home, stage);
     }
 
-    private void cleanupSmoke(Path home, String stage) throws Exception {
+    private void formatterSmoke(Path home, String stage) throws Exception {
         Path project = work.resolve(stage + "-input/SmokeProject");
         Path source = project.resolve("src/smoke/Smoke.java");
         createParentDirectories(source);
@@ -214,19 +247,349 @@ public final class AggregateInstallationVerifier {
                 """);
         Path config = evidence.resolve("cleanup.properties");
         Files.writeString(config, "cleanup.format_source_code=true\ncleanup.format_source_code_changes_only=false\n");
-        Path report = evidence.resolve(stage + "-cleanup.json");
-        run(home, stage + "-cleanup", "org.sandbox.jdt.core.JavaCleanup", List.of("--import-project", project.toString(),
-                "--mode", "apply", "--report", report.toString(), "--config", config.toString(), source.toString()), Duration.ofMinutes(3));
-        String result = Files.readString(report);
-        for (String field : List.of("filesProcessed", "filesChanged", "errorCount")) {
-            int expected = field.equals("errorCount") ? 0 : 1;
-            require(java.util.regex.Pattern.compile("\"" + field + "\"\\s*:\\s*" + expected + "\\s*[,}]").matcher(result).find(), "Bad cleanup result: " + result);
-        }
-        require(!Files.readString(source).equals(before), "Cleanup did not change source");
+        Map<Path, String> original = captureSources(List.of(source));
+        CleanupRun apply = runCleanup(home, stage + "-cleanup", "apply", project, "both", config, List.of(source), List.of(source), Set.of(0));
+        requireCleanupReport(stage + " formatter", apply.report(), "apply", 1, Set.of(source), 0);
+        requireChangedSources(stage + " formatter", original, apply.sources(), Set.of(source));
         Path classes = work.resolve(stage + "-classes");
-        Files.createDirectories(classes);
-        require(ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "21", "-d", classes.toString(), source.toString()) == 0, "Cleaned source does not compile");
+        requireCompilation(List.of(source), classes);
         Files.copy(source, evidence.resolve(stage + "-Smoke.java"), StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    private void verifyInstalledSandboxFunctionality(Path home, String stage) throws Exception {
+        verifyCharsetCleanup(home, stage, "keep", "cleanup.explicit_encoding_keep_behavior"); //$NON-NLS-1$ //$NON-NLS-2$
+        verifyCharsetCleanup(home, stage, "utf8", "cleanup.explicit_encoding_insert_utf8"); //$NON-NLS-1$ //$NON-NLS-2$
+        verifyCharsetCleanup(home, stage, "aggregate", "cleanup.explicit_encoding_aggregate_to_utf8"); //$NON-NLS-1$ //$NON-NLS-2$
+        verifyFunctionalCleanup(home, stage);
+    }
+
+    private void verifyCharsetCleanup(Path home, String stage, String behavior, String option) throws Exception {
+        Path project = writeCharsetProject(stage, behavior);
+        Path alpha = project.resolve("src/main/java/probe/charset/Alpha.java");
+        Path beta = project.resolve("src/main/java/probe/charset/Beta.java");
+        Path runner = project.resolve("src/main/java/probe/charset/Runner.java");
+        Path skipped = project.resolve("src/test/java/probe/charset/Skip.java");
+        List<Path> tracked = List.of(alpha, beta, runner, skipped);
+        Map<Path, String> original = captureSources(tracked);
+        Path config = evidence.resolve(stage + "-charset-" + behavior + ".properties");
+        Files.writeString(config, "cleanup.explicit_encoding=true\n" + option + "=true\n");
+
+        CleanupRun check = runCleanup(home, stage + "-charset-" + behavior + "-check", "check", project, "main",
+                config, List.of(project), tracked, Set.of(2));
+        requireCleanupReport(stage + " charset " + behavior + " check", check.report(), "check", 3,
+                Set.of(alpha, beta), 0);
+        requireUnchangedSources(stage + " charset " + behavior + " check", original, check.sources());
+
+        CleanupRun apply = runCleanup(home, stage + "-charset-" + behavior + "-apply", "apply", project, "main",
+                config, List.of(project), tracked, Set.of(0));
+        requireCleanupReport(stage + " charset " + behavior + " apply", apply.report(), "apply", 3,
+                Set.of(alpha, beta), 0);
+        requireChangedSources(stage + " charset " + behavior + " apply", original, apply.sources(), Set.of(alpha, beta));
+        requireCharsetSources(behavior, apply.sources().get(alpha), apply.sources().get(beta), apply.sources().get(runner),
+                apply.sources().get(skipped));
+        Path classes = work.resolve(stage + "-charset-" + behavior + "-classes");
+        requireCompilation(allJavaSources(project), classes);
+        requireJavaMain(classes, CHARSET_MAIN, "PASS", stage + "-charset-" + behavior);
+
+        CleanupRun idempotent = runCleanup(home, stage + "-charset-" + behavior + "-idempotent", "check", project,
+                "main", config, List.of(project), tracked, Set.of(0));
+        requireCleanupReport(stage + " charset " + behavior + " idempotent", idempotent.report(), "check", 3,
+                Set.of(), 0);
+        requireUnchangedSources(stage + " charset " + behavior + " idempotent", apply.sources(), idempotent.sources());
+    }
+
+    private void verifyFunctionalCleanup(Path home, String stage) throws Exception {
+        Path project = writeFunctionalProject(stage);
+        Path sample = project.resolve("src/main/java/probe/functional/LoopSample.java");
+        Path runner = project.resolve("src/main/java/probe/functional/Runner.java");
+        List<Path> tracked = List.of(sample, runner);
+        Map<Path, String> original = captureSources(tracked);
+        Path config = evidence.resolve(stage + "-functional.properties");
+        Files.writeString(config, "cleanup.functionalloop=true\n");
+
+        CleanupRun apply = runCleanup(home, stage + "-functional-apply", "apply", project, "main", config,
+                List.of(project), tracked, Set.of(0));
+        requireCleanupReport(stage + " functional apply", apply.report(), "apply", 2, Set.of(sample), 0);
+        requireChangedSources(stage + " functional apply", original, apply.sources(), Set.of(sample));
+        require(apply.sources().get(sample).contains(".forEach("), "Functional cleanup did not produce a deterministic forEach rewrite");
+        Path classes = work.resolve(stage + "-functional-classes");
+        requireCompilation(allJavaSources(project), classes);
+        requireJavaMain(classes, FUNCTIONAL_MAIN, "ab", stage + "-functional");
+    }
+
+    private CleanupRun runCleanup(Path home, String stage, String mode, Path project, String scope, Path config,
+            List<Path> inputs, List<Path> trackedSources, Set<Integer> expectedExitCodes) throws Exception {
+        Path report = evidence.resolve(stage + ".json");
+        Path patch = evidence.resolve(stage + ".patch");
+        Files.deleteIfExists(report);
+        Files.deleteIfExists(patch);
+        Instant started = Instant.now();
+        List<String> arguments = new ArrayList<>(List.of("--import-project", project.toString(), "--mode", mode,
+                "--scope", scope, "--patch", patch.toString(), "--report", report.toString(), "--config",
+                config.toString()));
+        inputs.stream().map(Path::toString).forEach(arguments::add);
+        int exitCode = run(home, stage, "org.sandbox.jdt.core.JavaCleanup", arguments, Duration.ofMinutes(3),
+                expectedExitCodes);
+        requireFreshFile(report, started, "Cleanup report");
+        return new CleanupRun(exitCode, Files.readString(report), captureSources(trackedSources));
+    }
+
+    static void requireCandidateUpgradeSource(URI releasedRepository, Map<String, String> released,
+            Map<String, String> current) throws IOException {
+        String oldVersion = released.get(AGGREGATE);
+        require(oldVersion != null, "The published 1.3.5 repository has no aggregate IU: " + releasedRepository);
+        require("1.3.5".equals(baseVersion(oldVersion)), "Expected published aggregate 1.3.5, found " + oldVersion);
+        for (var entry : released.entrySet()) {
+            require("1.3.5".equals(baseVersion(entry.getValue())),
+                    "Expected published 1.3.5 component version for " + entry.getKey() + ", found " + entry.getValue());
+            String candidate = current.get(entry.getKey());
+            require(candidate != null, "Candidate repository misses published component " + entry.getKey());
+            require(compareBaseVersions(candidate, entry.getValue()) > 0,
+                    "Candidate version is not newer for " + entry.getKey() + ": old=" + entry.getValue() + ", new=" + candidate);
+        }
+    }
+
+    static int compareBaseVersions(String left, String right) throws IOException {
+        int[] leftParts = baseVersionParts(left);
+        int[] rightParts = baseVersionParts(right);
+        for (int index = 0; index < leftParts.length; index++) {
+            if (leftParts[index] != rightParts[index]) return Integer.compare(leftParts[index], rightParts[index]);
+        }
+        return 0;
+    }
+
+    static String baseVersion(String version) throws IOException {
+        int[] parts = baseVersionParts(version);
+        return parts[0] + "." + parts[1] + "." + parts[2];
+    }
+
+    private static int[] baseVersionParts(String version) throws IOException {
+        String[] parts = version.split("\\.", 4);
+        require(parts.length >= 3, "Invalid OSGi version: " + version);
+        try {
+            return new int[] { Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), Integer.parseInt(parts[2]) };
+        } catch (NumberFormatException exception) {
+            throw new IOException("Invalid OSGi version: " + version, exception);
+        }
+    }
+
+    static void requireFreshFile(Path file, Instant started, String label) throws IOException {
+        require(Files.isRegularFile(file), label + " produced no result");
+        require(!Files.getLastModifiedTime(file).toInstant().isBefore(started), label + " is stale: " + file);
+    }
+
+    static void requireCompilation(List<Path> sources, Path classes) throws IOException {
+        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        require(compiler != null, "A full JDK is required to compile the transformed source");
+        Files.createDirectories(classes);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        List<String> arguments = new ArrayList<>(List.of("--release", "21", "-d", classes.toString()));
+        sources.stream().map(Path::toString).forEach(arguments::add);
+        int status = compiler.run(null, output, output, arguments.toArray(String[]::new));
+        require(status == 0, "Invalid Java output: " + output.toString(StandardCharsets.UTF_8).trim());
+    }
+
+    static void requireChangedSources(String label, Map<Path, String> before, Map<Path, String> after,
+            Set<Path> expectedChanged) throws IOException {
+        Set<Path> actualChanged = new TreeSet<>(Comparator.comparing(Path::toString));
+        for (var entry : before.entrySet()) {
+            if (!entry.getValue().equals(after.get(entry.getKey()))) actualChanged.add(entry.getKey());
+        }
+        require(actualChanged.equals(expectedChanged), label + " changed sources differ; expected "
+                + expectedChanged + ", actual " + actualChanged);
+    }
+
+    static void requireUnchangedSources(String label, Map<Path, String> before, Map<Path, String> after)
+            throws IOException {
+        require(before.equals(after), label + " changed input during check mode");
+    }
+
+    static void requireCleanupReport(String label, String report, String mode, int filesProcessed, Set<Path> changed,
+            int errorCount) throws IOException {
+        require(mode.equals(jsonString(report, "mode")), label + " recorded wrong mode: " + report);
+        require(filesProcessed == jsonInt(report, "filesProcessed"),
+                label + " recorded wrong filesProcessed count: " + report);
+        require(changed.size() == jsonInt(report, "filesChanged"),
+                label + " recorded wrong filesChanged count: " + report);
+        require(errorCount == jsonInt(report, "errorCount"),
+                label + " recorded wrong errorCount: " + report);
+        for (Path path : changed) {
+            require(report.contains('"' + escapeJson(path.toString()) + '"'),
+                    label + " omitted changed file " + path + ": " + report);
+        }
+    }
+
+    private static String jsonString(String json, String field) throws IOException {
+        String marker = '"' + field + "\": \"";
+        int start = json.indexOf(marker);
+        require(start >= 0, "Missing JSON string field " + field);
+        int end = json.indexOf('"', start + marker.length());
+        require(end >= 0, "Unterminated JSON string field " + field);
+        return json.substring(start + marker.length(), end);
+    }
+
+    private static int jsonInt(String json, String field) throws IOException {
+        String marker = '"' + field + "\": ";
+        int start = json.indexOf(marker);
+        require(start >= 0, "Missing JSON number field " + field);
+        int end = start + marker.length();
+        while (end < json.length() && Character.isDigit(json.charAt(end))) end++;
+        require(end > start + marker.length(), "Invalid JSON number field " + field);
+        return Integer.parseInt(json.substring(start + marker.length(), end));
+    }
+
+    private static String escapeJson(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static Map<Path, String> captureSources(List<Path> files) throws IOException {
+        Map<Path, String> result = new LinkedHashMap<>();
+        for (Path file : files) result.put(file, Files.readString(file));
+        return result;
+    }
+
+    private static List<Path> allJavaSources(Path project) throws IOException {
+        try (var files = Files.walk(project)) {
+            return files.filter(path -> path.toString().endsWith(".java")).sorted().toList();
+        }
+    }
+
+    private Path writeCharsetProject(String stage, String behavior) throws IOException {
+        Path project = work.resolve(stage + "-charset-" + behavior + "/CharsetProject");
+        writeProjectMetadata(project, "CharsetProject");
+        Files.writeString(project.resolve("src/main/java/probe/charset/Alpha.java"), """
+                package probe.charset;
+                public class Alpha {
+                    public static byte[] bytes(String text) throws Exception {
+                        return text.getBytes("UTF-8");
+                    }
+                    public static String decode(byte[] bytes) throws Exception {
+                        return new String(bytes, "UTF-8");
+                    }
+                }
+                """);
+        Files.writeString(project.resolve("src/main/java/probe/charset/Beta.java"), """
+                package probe.charset;
+                import java.nio.charset.Charset;
+                public class Beta {
+                    public static Charset charset() throws Exception {
+                        return Charset.forName("UTF-8");
+                    }
+                    public static String roundTrip(String text) throws Exception {
+                        return new String(text.getBytes("UTF-8"), charset());
+                    }
+                }
+                """);
+        Files.writeString(project.resolve("src/main/java/probe/charset/Runner.java"), """
+                package probe.charset;
+                public class Runner {
+                    public static void main(String[] args) throws Exception {
+                        String text = "Grüße";
+                        boolean pass = Alpha.decode(Alpha.bytes(text)).equals(text)
+                                && Beta.roundTrip(text).equals(text)
+                                && Beta.charset().equals(java.nio.charset.StandardCharsets.UTF_8);
+                        System.out.print(pass ? "PASS" : "FAIL");
+                    }
+                }
+                """);
+        Files.writeString(project.resolve("src/test/java/probe/charset/Skip.java"), """
+                package probe.charset;
+                class Skip {
+                    static String untouched(byte[] bytes) throws Exception {
+                        return new String(bytes, "UTF-8");
+                    }
+                }
+                """);
+        return project;
+    }
+
+    private static void requireCharsetSources(String behavior, String alpha, String beta, String runner, String skipped)
+            throws IOException {
+        for (String changed : List.of(alpha, beta)) {
+            require(!changed.contains("\"UTF-8\""), "Charset modernization retained string-literal encoding");
+            require(!changed.contains(".name()"), "Charset modernization fell back to String .name()");
+        }
+        require(runner.contains("Beta.charset().equals(java.nio.charset.StandardCharsets.UTF_8)"),
+                "Charset runtime probe runner changed unexpectedly");
+        require(skipped.contains("new String(bytes, \"UTF-8\")"),
+                "Main-scope cleanup touched the explicit negative-scope source");
+        if ("aggregate".equals(behavior)) {
+            for (String changed : List.of(alpha, beta)) {
+                require(changed.contains("private static final Charset UTF_8 = StandardCharsets.UTF_8;"),
+                        "Aggregate cleanup did not create a per-unit UTF_8 field");
+                require(countOccurrences(changed, "private static final Charset UTF_8 = StandardCharsets.UTF_8;") == 1,
+                        "Aggregate cleanup created multiple per-unit UTF_8 fields");
+            }
+        } else {
+            require(alpha.contains("StandardCharsets.UTF_8"), "Charset cleanup did not target Charset overloads in Alpha");
+            require(beta.contains("StandardCharsets.UTF_8"), "Charset cleanup did not target Charset overloads in Beta");
+        }
+    }
+
+    private Path writeFunctionalProject(String stage) throws IOException {
+        Path project = work.resolve(stage + "-functional/FunctionalProject");
+        writeProjectMetadata(project, "FunctionalProject");
+        Files.writeString(project.resolve("src/main/java/probe/functional/LoopSample.java"), """
+                package probe.functional;
+                import java.util.List;
+                class LoopSample {
+                    static void print(List<String> items) {
+                        for (String item : items) {
+                            System.out.print(item.trim());
+                        }
+                    }
+                }
+                """);
+        Files.writeString(project.resolve("src/main/java/probe/functional/Runner.java"), """
+                package probe.functional;
+                import java.util.List;
+                public class Runner {
+                    public static void main(String[] args) {
+                        LoopSample.print(List.of(" a ", "b"));
+                    }
+                }
+                """);
+        return project;
+    }
+
+    private static void writeProjectMetadata(Path project, String name) throws IOException {
+        Files.createDirectories(project.resolve("src/main/java"));
+        Files.createDirectories(project.resolve("src/test/java"));
+        Files.writeString(project.resolve(".project"), "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                + "<projectDescription><name>" + name + "</name><projects/>\n"
+                + "<buildSpec><buildCommand><name>org.eclipse.jdt.core.javabuilder</name><arguments/></buildCommand></buildSpec>\n"
+                + "<natures><nature>org.eclipse.jdt.core.javanature</nature></natures>\n"
+                + "</projectDescription>\n");
+        Files.writeString(project.resolve(".classpath"), """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <classpath><classpathentry kind="src" path="src/main/java"/>
+                <classpathentry kind="src" path="src/test/java"/>
+                <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+                <classpathentry kind="output" path="bin"/></classpath>
+                """);
+    }
+
+    private void requireJavaMain(Path classes, String mainClass, String expectedOutput, String stage) throws Exception {
+        Path log = evidence.resolve(stage + "-java.log");
+        Process process = new ProcessBuilder(Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                "-cp", classes.toString(), mainClass).redirectErrorStream(true).redirectOutput(log.toFile()).start();
+        try {
+            require(process.waitFor(60, TimeUnit.SECONDS), "Timed out: " + stage + "; see " + log);
+            require(process.exitValue() == 0, "Failed: " + stage + "; see " + log);
+        } finally {
+            if (process.isAlive()) {
+                process.descendants().forEach(ProcessHandle::destroyForcibly);
+                process.destroyForcibly();
+                process.waitFor(10, TimeUnit.SECONDS);
+            }
+        }
+        require(expectedOutput.equals(Files.readString(log)), "Unexpected Java runtime result for " + stage);
+    }
+
+    private static int countOccurrences(String text, String token) {
+        int count = 0;
+        for (int index = text.indexOf(token); index >= 0; index = text.indexOf(token, index + token.length())) count++;
+        return count;
     }
 
     private URI publishNextAggregate(String current, String next) throws Exception {
@@ -385,6 +748,11 @@ public final class AggregateInstallationVerifier {
     }
 
     private void run(Path home, String stage, String application, List<String> arguments, Duration timeout) throws Exception {
+        run(home, stage, application, arguments, timeout, Set.of(0));
+    }
+
+    private int run(Path home, String stage, String application, List<String> arguments, Duration timeout,
+            Set<Integer> expectedExitCodes) throws Exception {
         List<String> command = new ArrayList<>();
         command.add(Path.of(System.getProperty("java.home"), "bin", "java").toString());
         if (System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT).contains("mac")) command.add("-XstartOnFirstThread");
@@ -403,7 +771,8 @@ public final class AggregateInstallationVerifier {
         Process process = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(log.toFile()).start();
         try {
             require(process.waitFor(timeout.toSeconds(), TimeUnit.SECONDS), "Timed out: " + stage + "; see " + log);
-            require(process.exitValue() == 0, "Failed: " + stage + "; see " + log);
+            require(expectedExitCodes.contains(process.exitValue()), "Failed: " + stage + "; see " + log);
+            return process.exitValue();
         } finally {
             if (process.isAlive()) {
                 process.descendants().forEach(ProcessHandle::destroyForcibly);
