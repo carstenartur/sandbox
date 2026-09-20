@@ -58,6 +58,7 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.Version;
+import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 
 public class CodeCleanupApplication implements IApplication {
 	private static final File[] FILES = new File[0];
@@ -226,14 +227,13 @@ public class CodeCleanupApplication implements IApplication {
 
 					if (changed) {
 						this.changedFiles.add(file.getAbsolutePath());
-						String origStr = new String(originalContent, StandardCharsets.UTF_8);
-						String newStr = new String(newContent, StandardCharsets.UTF_8);
+						String patchPath = iFile.getProjectRelativePath().toPortableString();
 
 						if (this.cleanupMode == CleanupMode.DIFF && !this.quiet) {
-							printUnifiedDiff(file.getAbsolutePath(), origStr, newStr);
+							printUnifiedDiff(patchPath, originalContent, newContent);
 						}
 						if (this.patchFile != null) {
-							appendUnifiedDiff(file.getAbsolutePath(), origStr, newStr);
+							appendUnifiedDiff(patchPath, originalContent, newContent);
 						}
 					}
 				} finally {
@@ -531,8 +531,8 @@ public class CodeCleanupApplication implements IApplication {
 
 		Instant endTime = Instant.now();
 
-		if (this.patchFile != null && !this.changedFiles.isEmpty()) {
-			writePatchFile(filesToCleanup);
+		if (this.patchFile != null) {
+			writePatchFile();
 		}
 		if (this.reportFile != null) {
 			writeJsonReport(startTime, endTime);
@@ -617,79 +617,15 @@ public class CodeCleanupApplication implements IApplication {
 		}
 	}
 
-	private static void printUnifiedDiff(String filePath, String original, String modified) {
-		System.out.println("--- a/" + filePath); //$NON-NLS-1$
-		System.out.println("+++ b/" + filePath); //$NON-NLS-1$
-		String[] origLines = original.split("\n", -1); //$NON-NLS-1$
-		String[] newLines = modified.split("\n", -1); //$NON-NLS-1$
-		int maxLen = Math.max(origLines.length, newLines.length);
-		int hunkStart = -1;
-		List<String> hunkLines = new ArrayList<>();
-		for (int i = 0; i < maxLen; i++) {
-			String origLine = i < origLines.length ? origLines[i] : ""; //$NON-NLS-1$
-			String newLine = i < newLines.length ? newLines[i] : ""; //$NON-NLS-1$
-			if (!origLine.equals(newLine)) {
-				if (hunkStart == -1) {
-					hunkStart = i + 1;
-				}
-				if (i < origLines.length) {
-					hunkLines.add("-" + origLine); //$NON-NLS-1$
-				}
-				if (i < newLines.length) {
-					hunkLines.add("+" + newLine); //$NON-NLS-1$
-				}
-			} else if (!hunkLines.isEmpty()) {
-				System.out.println("@@ -" + hunkStart + " @@"); //$NON-NLS-1$ //$NON-NLS-2$
-				hunkLines.forEach(System.out::println);
-				hunkLines.clear();
-				hunkStart = -1;
-			}
-		}
-		if (!hunkLines.isEmpty()) {
-			System.out.println("@@ -" + hunkStart + " @@"); //$NON-NLS-1$ //$NON-NLS-2$
-			hunkLines.forEach(System.out::println);
-		}
+	private static void printUnifiedDiff(String filePath, byte[] original, byte[] modified) {
+		System.out.print(UnifiedDiffFormatter.format(filePath, original, modified));
 	}
 
-	private void appendUnifiedDiff(String filePath, String original, String modified) {
-		this.patchContent.append("--- a/").append(filePath).append('\n'); //$NON-NLS-1$
-		this.patchContent.append("+++ b/").append(filePath).append('\n'); //$NON-NLS-1$
-		String[] origLines = original.split("\n", -1); //$NON-NLS-1$
-		String[] newLines = modified.split("\n", -1); //$NON-NLS-1$
-		int maxLen = Math.max(origLines.length, newLines.length);
-		int hunkStart = -1;
-		List<String> hunkLines = new ArrayList<>();
-		for (int i = 0; i < maxLen; i++) {
-			String origLine = i < origLines.length ? origLines[i] : ""; //$NON-NLS-1$
-			String newLine = i < newLines.length ? newLines[i] : ""; //$NON-NLS-1$
-			if (!origLine.equals(newLine)) {
-				if (hunkStart == -1) {
-					hunkStart = i + 1;
-				}
-				if (i < origLines.length) {
-					hunkLines.add("-" + origLine); //$NON-NLS-1$
-				}
-				if (i < newLines.length) {
-					hunkLines.add("+" + newLine); //$NON-NLS-1$
-				}
-			} else if (!hunkLines.isEmpty()) {
-				this.patchContent.append("@@ -").append(hunkStart).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$
-				for (String line : hunkLines) {
-					this.patchContent.append(line).append('\n');
-				}
-				hunkLines.clear();
-				hunkStart = -1;
-			}
-		}
-		if (!hunkLines.isEmpty()) {
-			this.patchContent.append("@@ -").append(hunkStart).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$
-			for (String line : hunkLines) {
-				this.patchContent.append(line).append('\n');
-			}
-		}
+	private void appendUnifiedDiff(String filePath, byte[] original, byte[] modified) {
+		this.patchContent.append(UnifiedDiffFormatter.format(filePath, original, modified));
 	}
 
-	private void writePatchFile(final File[] sourceRoots) {
+	private void writePatchFile() {
 		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
 				Files.newOutputStream(new File(this.patchFile).toPath()), StandardCharsets.UTF_8))) {
 			writer.print(this.patchContent.toString());

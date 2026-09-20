@@ -55,6 +55,7 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatusEntry;
 
 import org.sandbox.jdt.cleanup.multifile.api.LineDelimiterPreserver;
 import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvider;
+import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 
 /**
  * Executes one cleanup refactoring over every source compilation unit of one
@@ -189,7 +190,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 			e.printStackTrace(System.err);
 		}
 
-		if (arguments.patch() != null && !changed.isEmpty()) {
+		if (arguments.patch() != null) {
 			try {
 				writePatch(arguments.patch(), changed);
 			} catch (IOException e) {
@@ -449,21 +450,7 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 		createParent(path);
 		StringBuilder patch= new StringBuilder();
 		for (ChangedFile source : changed) {
-			String relative= source.relativePath();
-			String before= new String(source.before(), StandardCharsets.UTF_8);
-			String after= new String(source.after(), StandardCharsets.UTF_8);
-			patch.append("--- a/").append(relative).append('\n'); //$NON-NLS-1$
-			patch.append("+++ b/").append(relative).append('\n'); //$NON-NLS-1$
-			String[] beforeLines= before.split("\\R", -1); //$NON-NLS-1$
-			String[] afterLines= after.split("\\R", -1); //$NON-NLS-1$
-			patch.append("@@ -1,").append(beforeLines.length).append(" +1,") //$NON-NLS-1$ //$NON-NLS-2$
-					.append(afterLines.length).append(" @@\n"); //$NON-NLS-1$
-			for (String line : beforeLines) {
-				patch.append('-').append(line).append('\n');
-			}
-			for (String line : afterLines) {
-				patch.append('+').append(line).append('\n');
-			}
+			patch.append(UnifiedDiffFormatter.format(source.relativePath(), source.before(), source.after()));
 		}
 		Files.writeString(path, patch.toString(), StandardCharsets.UTF_8);
 	}
