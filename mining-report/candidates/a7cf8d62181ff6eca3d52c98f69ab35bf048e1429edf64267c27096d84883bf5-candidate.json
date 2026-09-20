@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a7cf8d62181ff6eca3d52c98f69ab35bf048e1429edf64267c27096d84883bf5",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "@java.lang.Deprecated :: sourceVersionGE(9)\n\u003d\u003e @java.lang.Deprecated(forRemoval \u003d true, since \u003d \"2024-03\")\n;;",
+  "beforeExample": "package com.example;\n\nimport java.net.URL;\nimport org.eclipse.core.runtime.CoreException;\n\npublic class MyClass {\n    /**\n     * Deprecated method without attributes.\n     */\n    @Deprecated\n    public static void oldMethod(URL resourceUrl, String realm) throws CoreException {\n        // Placeholder for original logic\n        System.out.println(\"Old method called.\");\n    }\n\n    public void anotherMethod() {\n        // Some other code\n    }\n}",
+  "afterExample": "package com.example;\n\nimport java.net.URL;\nimport org.eclipse.core.runtime.CoreException;\n\npublic class MyClass {\n    /**\n     * Deprecated method with attributes added.\n     */\n    @Deprecated(forRemoval \u003d true, since \u003d \"2024-03\")\n    public static void oldMethod(URL resourceUrl, String realm) throws CoreException {\n        // Placeholder for original logic\n        System.out.println(\"Old method called.\");\n    }\n\n    public void anotherMethod() {\n        // Some other code\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport java.net.URL;\nimport org.eclipse.core.runtime.CoreException;\n\npublic class MyClass {\n    /**\n     * Deprecated method with existing attributes, should not be matched by this rule\n     * as the pattern is for a plain @Deprecated annotation.\n     */\n    @Deprecated(since \u003d \"9\", forRemoval \u003d false)\n    public static void oldMethodWithExistingAttributes(URL resourceUrl, String realm) throws CoreException {\n        System.out.println(\"Method with existing attributes called.\");\n    }\n\n    /**\n     * A different annotation, should not be affected.\n     */\n    @Override\n    public String toString() {\n        return \"MyClass\";\n    }\n\n    /**\n     * A non-deprecated method, should not be affected.\n     */\n    public void nonDeprecatedMethod() {\n        System.out.println(\"Non-deprecated method.\");\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "343d01015d752fa6d4a79f4aaa69b3b03658ce6f",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Deprecation Improvement",
+  "summary": "Adds \u0027forRemoval \u003d true, since \u003d \"2024-03\"\u0027 attributes to a plain @Deprecated annotation.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-20T02:26:49.123030495Z",
+  "ruleFingerprint": "sha256:6f777089536aaffcc439e2e8763eea3a762e69eacabe021b2751e3b325f3e5be",
+  "behaviorFingerprint": "sha256:f9746048308fe69f9976f9fd32fea16c4d35f384a8e93eeb791afad716510371",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-09-20T02:26:55.442025085Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

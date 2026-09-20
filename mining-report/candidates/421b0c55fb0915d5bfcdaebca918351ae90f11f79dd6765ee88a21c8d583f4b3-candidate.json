@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "421b0c55fb0915d5bfcdaebca918351ae90f11f79dd6765ee88a21c8d583f4b3",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "($expr \u003d\u003d false)\n\u003d\u003e\n!$expr\n;;",
+  "beforeExample": "class Example {\n    boolean isUnderVirtual() { return false; }\n    void foo(Example dest) {\n        if (dest.isUnderVirtual() \u003d\u003d false) {\n            System.out.println(\"Not virtual\");\n        }\n        boolean myFlag \u003d true;\n        if (myFlag \u003d\u003d false) {\n            System.out.println(\"Flag is false\");\n        }\n    }\n}",
+  "afterExample": "class Example {\n    boolean isUnderVirtual() { return false; }\n    void foo(Example dest) {\n        if (!dest.isUnderVirtual()) {\n            System.out.println(\"Not virtual\");\n        }\n        boolean myFlag \u003d true;\n        if (!myFlag) {\n            System.out.println(\"Flag is false\");\n        }\n    }\n}",
+  "negativeExample": "class NegativeExample {\n    boolean isEnabled() { return true; }\n    void bar(NegativeExample obj) {\n        if (obj.isEnabled() \u003d\u003d true) { // Should not match: \u0027\u003d\u003d true\u0027 is a different idiom\n            System.out.println(\"Enabled\");\n        }\n        if (obj \u003d\u003d null) { // Should not match: Not a boolean comparison to \u0027false\u0027\n            System.out.println(\"Object is null\");\n        }\n    }\n}",
+  "targetHintFile": "simplification.sandbox-hint",
+  "sourceCommit": "3164170642415ce7da3293fcb96fb72629eedc9b",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Idiom",
+  "summary": "Replaces \u0027booleanExpression \u003d\u003d false\u0027 with \u0027!booleanExpression\u0027 for cleaner boolean logic, where \u0027booleanExpression\u0027 is a boolean-typed value or method call.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-20T02:26:49.063272867Z",
+  "ruleFingerprint": "sha256:5bbdbecccd6a2b8a4f445f4bf1ec83a370cb2bee108d7a09bd4dee05b1be598c",
+  "behaviorFingerprint": "sha256:2e1368061e587371fe1e80246c7dccec23a36e8fb0877b2d88bf64a8fd14eefb",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-09-20T02:26:55.409212592Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

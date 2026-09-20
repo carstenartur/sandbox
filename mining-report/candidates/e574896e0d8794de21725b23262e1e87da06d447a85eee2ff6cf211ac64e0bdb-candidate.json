@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e574896e0d8794de21725b23262e1e87da06d447a85eee2ff6cf211ac64e0bdb",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.core.internal.localstore.SafeFileInputStream($targetPath$, $tempPath$, $bufferSize$)\n\u003d\u003e\norg.eclipse.core.internal.localstore.SafeFileInputStream.of($targetPath$, $tempPath$)\n;;",
+  "beforeExample": "package org.eclipse.core.internal.resources;\n\nimport java.io.DataInputStream;\nimport java.io.IOException;\n\n// Dummy interface to simulate Eclipse IPath\ninterface IPath {\n    String toOSString();\n}\n\n// Dummy class to simulate old SafeFileInputStream with 3-arg constructor\nclass SafeFileInputStream {\n    public SafeFileInputStream(String targetPath, String tempPath, int bufferSize) throws IOException { /* dummy constructor */ }\n}\n\npublic class TestClass {\n    private static final int TREE_BUFFER_SIZE \u003d 1024 * 64; // 64KB\n\n    public void readData(IPath treeLocation, IPath tempLocation) throws IOException {\n        try (DataInputStream input \u003d new DataInputStream(new SafeFileInputStream(treeLocation.toOSString(), tempLocation.toOSString(), TREE_BUFFER_SIZE))) {\n            input.readInt(); // Dummy usage\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.core.internal.resources;\n\nimport java.io.DataInputStream;\nimport java.io.IOException;\nimport java.io.ByteArrayInputStream;\nimport java.io.File;\nimport java.io.FileNotFoundException;\nimport java.io.InputStream;\nimport java.nio.file.Files;\nimport java.nio.file.Paths;\n\n// Dummy interface to simulate Eclipse IPath\ninterface IPath {\n    String toOSString();\n}\n\n// Dummy class to simulate new SafeFileInputStream with static factory method\nclass SafeFileInputStream {\n    protected static final String EXTENSION \u003d \".bak\";\n\n    // The old constructor might still exist or be removed, but the important part is the \u0027of\u0027 method is now used.\n    public SafeFileInputStream(String targetPath, String tempPath, int bufferSize) throws IOException { /* dummy constructor */ }\n\n    public static InputStream of(String targetPath, String tempPath) throws IOException {\n        File target \u003d new File(targetPath);\n        try {\n            return new ByteArrayInputStream(Files.readAllBytes(Paths.get(target.getAbsolutePath())));\n        } catch (FileNotFoundException e) {\n            if (tempPath \u003d\u003d null) tempPath \u003d target.getAbsolutePath() + EXTENSION;\n            target \u003d new File(tempPath);\n            return new ByteArrayInputStream(Files.readAllBytes(Paths.get(target.getAbsolutePath())));\n        }\n    }\n}\n\npublic class TestClass {\n    // TREE_BUFFER_SIZE constant is now effectively unused or removed in actual code\n    private static final int TREE_BUFFER_SIZE \u003d 1024 * 64;\n\n    public void readData(IPath treeLocation, IPath tempLocation) throws IOException {\n        try (DataInputStream input \u003d new DataInputStream(SafeFileInputStream.of(treeLocation.toOSString(), tempLocation.toOSString()))) {\n            input.readInt(); // Dummy usage\n        }\n    }\n}",
+  "negativeExample": "package org.eclipse.core.internal.resources;\n\nimport java.io.DataInputStream;\nimport java.io.IOException;\n\n// Dummy interface to simulate Eclipse IPath\ninterface IPath {\n    String toOSString();\n}\n\n// Dummy class to simulate old SafeFileInputStream with 2-arg constructor (should not match 3-arg rule)\nclass SafeFileInputStream {\n    public SafeFileInputStream(String targetPath, String tempPath) throws IOException { /* dummy constructor */ }\n    public SafeFileInputStream(String targetPath, String tempPath, int bufferSize) throws IOException { /* dummy constructor */ }\n}\n\npublic class NegativeTestClass {\n    public void readOtherData(IPath sourceLocation, IPath tempLocation) throws IOException {\n        // This 2-argument constructor call should NOT be matched by the rule for the 3-argument constructor\n        try (DataInputStream input \u003d new DataInputStream(new SafeFileInputStream(sourceLocation.toOSString(), tempLocation.toOSString()))) {\n            input.readInt(); // Dummy usage\n        }\n    }\n}",
+  "targetHintFile": "modernize-eclipse-io.sandbox-hint",
+  "sourceCommit": "9bac4117943933b5f4319e43a94f791d49051fb4",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "API Modernization",
+  "summary": "Replaces the 3-argument constructor `new SafeFileInputStream(String, String, int)` with the new static factory method `SafeFileInputStream.of(String, String)`, removing the buffer size argument as it\u0027s no longer relevant in the refactored `SafeFileInputStream`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-20T02:26:49.148873318Z",
+  "ruleFingerprint": "sha256:0b01b2ec8af0e7a0278cd51026cba43d8d3e583118ffefead3d202fcf6bfbf1d",
+  "behaviorFingerprint": "sha256:486f4d79462114ccbf5249c929c498a8066bb50871cff244771200729339ccb4",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 16: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-09-20T02:26:55.468482274Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

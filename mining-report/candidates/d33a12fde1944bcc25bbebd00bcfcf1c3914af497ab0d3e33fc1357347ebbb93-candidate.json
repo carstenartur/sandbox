@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d33a12fde1944bcc25bbebd00bcfcf1c3914af497ab0d3e33fc1357347ebbb93",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "@java.lang.Deprecated :: sourceVersionGE(9)\n\u003d\u003e @java.lang.Deprecated(forRemoval \u003d true)\n;;",
+  "beforeExample": "public class Example {\n    @Deprecated\n    public static void oldMethod() {\n        System.out.println(\"This method is deprecated.\");\n    }\n    public void modernMethod() {\n        // ...\n    }\n}",
+  "afterExample": "public class Example {\n    @Deprecated(forRemoval \u003d true)\n    public static void oldMethod() {\n        System.out.println(\"This method is deprecated.\");\n    }\n    public void modernMethod() {\n        // ...\n    }\n}",
+  "negativeExample": "public class NegativeExample {\n    // Should not apply if source version is less than 9\n    // Or if the annotation already has (forRemoval \u003d true)\n    @Deprecated(forRemoval \u003d true)\n    public static void alreadyForRemovalMethod() {\n        System.out.println(\"This method is already marked for removal.\");\n    }\n    @SuppressWarnings(\"unused\")\n    public void anotherMethod() {}\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "92bcac4e4a8dee4647fbf4d2984564cfbf3428da",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Annotation Transformation",
+  "summary": "Adds `(forRemoval \u003d true)` to `@Deprecated` annotations where applicable in Java 9+.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-20T02:26:49.105646797Z",
+  "ruleFingerprint": "sha256:fa15f8fb3c86fa58fd2d6b4ec04caa246fe8df13683f9107f05ada0ac22e5313",
+  "behaviorFingerprint": "sha256:a5938e4562f2cfe497a5916f930aa656abcd8a32c9c9c31578402974c77eecba",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-20T02:26:55.423093748Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

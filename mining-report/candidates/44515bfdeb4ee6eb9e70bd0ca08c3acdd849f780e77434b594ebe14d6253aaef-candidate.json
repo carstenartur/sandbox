@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "44515bfdeb4ee6eb9e70bd0ca08c3acdd849f780e77434b594ebe14d6253aaef",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: project.internal.set_normalized_description\u003e\n\u003c!description: Optimize internal project description setting by signaling pre-normalized location. Avoids redundant URI normalization when the location is known to be already normalized, typically when loaded from persistence. This improves startup performance.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: performance, internal\u003e\n\n$project.internalSetDescription($description, false)\n\u003d\u003e\n$project.internalSetDescription($description, false, true)\n;;",
+  "beforeExample": "package org.eclipse.core.internal.resources;\n\nimport org.eclipse.core.resources.IProjectDescription;\nimport java.net.URI;\n\n// Dummy classes for compilation\ninterface IProjectDescription {\n    URI getLocationURI();\n}\n\npublic class Project {\n    public void internalSetDescription(IProjectDescription value, boolean incrementContentId) {\n        // Original implementation\n        System.out.println(\"internalSetDescription(description, \" + incrementContentId + \")\");\n    }\n    public void internalSetDescription(IProjectDescription value, boolean incrementContentId, boolean locationAlreadyNormalized) {\n        // New overloaded implementation\n        System.out.println(\"internalSetDescription(description, \" + incrementContentId + \", \" + locationAlreadyNormalized + \")\");\n    }\n}\n\nclass SaveManager {\n    public void restore(Project project, IProjectDescription description) {\n        // Simulate loading a description where the location is already normalized\n        project.internalSetDescription(description, false);\n    }\n}\n",
+  "afterExample": "package org.eclipse.core.internal.resources;\n\nimport org.eclipse.core.resources.IProjectDescription;\nimport java.net.URI;\n\n// Dummy classes for compilation\ninterface IProjectDescription {\n    URI getLocationURI();\n}\n\npublic class Project {\n    public void internalSetDescription(IProjectDescription value, boolean incrementContentId) {\n        // Original implementation\n        System.out.println(\"internalSetDescription(description, \" + incrementContentId + \")\");\n    }\n    public void internalSetDescription(IProjectDescription value, boolean incrementContentId, boolean locationAlreadyNormalized) {\n        // New overloaded implementation\n        System.out.println(\"internalSetDescription(description, \" + incrementContentId + \", \" + locationAlreadyNormalized + \")\");\n    }\n}\n\nclass SaveManager {\n    public void restore(Project project, IProjectDescription description) {\n        // Simulate loading a description where the location is already normalized\n        project.internalSetDescription(description, false, true);\n    }\n}\n",
+  "negativeExample": "package org.eclipse.core.internal.resources;\n\nimport org.eclipse.core.resources.IProjectDescription;\nimport java.net.URI;\n\n// Dummy classes for compilation\ninterface IProjectDescription {\n    URI getLocationURI();\n}\n\npublic class Project {\n    public void internalSetDescription(IProjectDescription value, boolean incrementContentId) {\n        // Original implementation\n        System.out.println(\"internalSetDescription(description, \" + incrementContentId + \")\");\n    }\n    public void internalSetDescription(IProjectDescription value, boolean incrementContentId, boolean locationAlreadyNormalized) {\n        // New overloaded implementation\n        System.out.println(\"internalSetDescription(description, \" + incrementContentId + \", \" + locationAlreadyNormalized + \")\");\n    }\n}\n\nclass SomeOtherManager {\n    public void updateProject(Project project, IProjectDescription description) {\n        // This call is not for restoring from a normalized source, so it should not be changed.\n        // The rule should only match the specific arguments from the commit diff, specifically \u0027false\u0027.\n        project.internalSetDescription(description, true);\n    }\n}\n",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "a9889fa757c2aee62a551e616fea0e64b13cdd08",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Performance",
+  "summary": "Optimize internal project description setting by signaling pre-normalized location.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-20T02:26:49.138313987Z",
+  "ruleFingerprint": "sha256:aab468d888a30e8348c8e8309bda85eb5b5269d957703ebcf4ea10e8d6963e21",
+  "behaviorFingerprint": "sha256:9f743ad72e3ca01abe350e205342a33901a3848c6c884e94f067b75e09c961c8",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-20T02:26:55.453195916Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
