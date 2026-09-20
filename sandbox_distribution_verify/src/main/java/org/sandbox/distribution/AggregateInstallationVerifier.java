@@ -64,6 +64,7 @@ import com.sun.source.tree.MethodTree;
 import com.sun.source.tree.NewClassTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.JavacTask;
+import com.sun.source.util.TreePath;
 import com.sun.source.util.TreePathScanner;
 import com.sun.source.util.Trees;
 
@@ -88,10 +89,12 @@ public final class AggregateInstallationVerifier {
 
     private record CleanupRun(int exitCode, Path reportFile, Path patchFile, String report, Map<Path, String> sources) { }
     record RuntimeProbe(String status, int bundles, int cleanups, int helpTocs, List<String> resolvedBundles) { }
-    record SourceAnalysis(Map<Path, List<String>> invocations, Map<Path, List<String>> fields, List<String> diagnostics) {
+    record FieldEvidence(String owner, String name, String type, String modifiers,
+            String initializerOwner, String initializerName, String initializerType, String initializerModifiers) { }
+    record SourceAnalysis(Map<Path, List<String>> invocations, Map<Path, List<FieldEvidence>> fields, List<String> diagnostics) {
         SourceAnalysis {
             invocations = immutableLines(invocations);
-            fields = immutableLines(fields);
+            fields = immutableFields(fields);
             diagnostics = List.copyOf(diagnostics);
         }
     }
@@ -706,7 +709,7 @@ public final class AggregateInstallationVerifier {
         require(compiler != null, "A full JDK is required to analyze the transformed source");
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         Map<Path, List<String>> invocations = new TreeMap<>(Comparator.comparing(Path::toString));
-        Map<Path, List<String>> fields = new TreeMap<>(Comparator.comparing(Path::toString));
+        Map<Path, List<FieldEvidence>> fields = new TreeMap<>(Comparator.comparing(Path::toString));
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8)) {
             Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjectsFromPaths(sources);
             JavacTask task = (JavacTask) compiler.getTask(null, fileManager, diagnostics, List.of("--release", "21", "-proc:none"),
@@ -744,11 +747,27 @@ public final class AggregateInstallationVerifier {
                     @Override
                     public Void visitVariable(VariableTree node, Void unused) {
                         if (analysis.getElement(getCurrentPath()) instanceof VariableElement variable
-                                && "UTF_8".contentEquals(variable.getSimpleName())
                                 && variable.getEnclosingElement() != null
                                 && variable.getEnclosingElement().getKind().isClass()) {
-                            fields.computeIfAbsent(source, key -> new ArrayList<>()).add(variable.getEnclosingElement()
-                                    + "." + variable.getSimpleName() + ':' + variable.asType() + '=' + node.getInitializer());
+                            TreePath initializerPath = node.getInitializer() == null ? null : new TreePath(getCurrentPath(), node.getInitializer());
+                            var initializer = initializerPath == null ? null : analysis.getElement(initializerPath);
+                            fields.computeIfAbsent(source, key -> new ArrayList<>()).add(new FieldEvidence(
+                                    variable.getEnclosingElement().toString(),
+                                    variable.getSimpleName().toString(),
+                                    variable.asType().toString(),
+                                    modifiers(variable),
+                                    initializer instanceof VariableElement initializerVariable
+                                            ? initializerVariable.getEnclosingElement().toString()
+                                            : "<unresolved>",
+                                    initializer instanceof VariableElement initializerVariable
+                                            ? initializerVariable.getSimpleName().toString()
+                                            : "<unresolved>",
+                                    initializer instanceof VariableElement initializerVariable
+                                            ? initializerVariable.asType().toString()
+                                            : "<unresolved>",
+                                    initializer instanceof VariableElement initializerVariable
+                                            ? modifiers(initializerVariable)
+                                            : "<unresolved>"));
                         }
                         return super.visitVariable(node, unused);
                     }
@@ -771,7 +790,7 @@ public final class AggregateInstallationVerifier {
             throw new IOException("Failed to analyze charset sources", exception);
         }
         invocations.values().forEach(lines -> lines.sort(String::compareTo));
-        fields.values().forEach(lines -> lines.sort(String::compareTo));
+        fields.values().forEach(lines -> lines.sort(Comparator.comparing(FieldEvidence::toString)));
         return new SourceAnalysis(invocations, fields, diagnostics(diagnostics));
     }
 
@@ -802,18 +821,44 @@ public final class AggregateInstallationVerifier {
                 .toList();
     }
 
-    private static void requireResolvedInvocations(Path source, SourceAnalysis analysis, Set<String> expected) throws IOException {
+    static void requireResolvedInvocations(Path source, SourceAnalysis analysis, Set<String> expected) throws IOException {
+        requireAnalysisWithoutDiagnostics(source.toString(), analysis);
         List<String> actual = analysis.invocations().getOrDefault(source, List.of());
         List<String> sortedExpected = expected.stream().sorted().toList();
         require(sortedExpected.equals(actual),
                 "Resolved encoding invocations differ for " + source + "; expected " + sortedExpected + ", actual " + actual);
     }
 
-    private static void requireResolvedUtf8Field(Path source, SourceAnalysis analysis) throws IOException {
-        List<String> fields = analysis.fields().getOrDefault(source, List.of());
+    static void requireResolvedUtf8Field(Path source, SourceAnalysis analysis) throws IOException {
+        FieldEvidence field = requireSingleField(source, analysis);
+        require("UTF_8".equals(field.name()), "Aggregate cleanup created the wrong UTF_8 field name for " + source + ": " + field);
+        require("java.nio.charset.Charset".equals(field.type()),
+                "Aggregate cleanup created the wrong UTF_8 field type for " + source + ": " + field);
+        require(hasModifiers(field.modifiers(), Set.of("static", "final")),
+                "Aggregate cleanup created the wrong UTF_8 field modifiers for " + source + ": " + field);
+        requireResolvesToJdkUtf8(source.toString(), field);
+    }
+
+    static FieldEvidence requireSingleField(Path source, SourceAnalysis analysis) throws IOException {
+        requireAnalysisWithoutDiagnostics(source.toString(), analysis);
+        List<FieldEvidence> fields = analysis.fields().getOrDefault(source, List.of());
         require(fields.size() == 1, "Aggregate cleanup created wrong UTF_8 field count for " + source + ": " + fields);
-        require(fields.getFirst().endsWith(":java.nio.charset.Charset=java.nio.charset.StandardCharsets.UTF_8"),
-                "Aggregate cleanup created the wrong UTF_8 field for " + source + ": " + fields.getFirst());
+        return fields.getFirst();
+    }
+
+    private static void requireAnalysisWithoutDiagnostics(String label, SourceAnalysis analysis) throws IOException {
+        require(analysis.diagnostics().isEmpty(), label + " analysis produced diagnostics: " + analysis.diagnostics());
+    }
+
+    static void requireResolvesToJdkUtf8(String label, FieldEvidence field) throws IOException {
+        require("java.nio.charset.StandardCharsets".equals(field.initializerOwner()),
+                label + " resolved the UTF_8 initializer to the wrong declaring type: " + field);
+        require("UTF_8".equals(field.initializerName()),
+                label + " resolved the UTF_8 initializer to the wrong field name: " + field);
+        require("java.nio.charset.Charset".equals(field.initializerType()),
+                label + " resolved the UTF_8 initializer to the wrong field type: " + field);
+        require(hasModifiers(field.initializerModifiers(), Set.of("public", "static", "final")),
+                label + " resolved the UTF_8 initializer to the wrong field modifiers: " + field);
     }
 
     private void writeSourceEvidence(String stage, String label, Path project, Map<Path, String> sources) throws Exception {
@@ -850,6 +895,22 @@ public final class AggregateInstallationVerifier {
         Map<Path, List<String>> copy = new LinkedHashMap<>();
         values.forEach((path, lines) -> copy.put(path, List.copyOf(lines)));
         return Map.copyOf(copy);
+    }
+
+    private static Map<Path, List<FieldEvidence>> immutableFields(Map<Path, List<FieldEvidence>> values) {
+        Map<Path, List<FieldEvidence>> copy = new LinkedHashMap<>();
+        values.forEach((path, lines) -> copy.put(path, List.copyOf(lines)));
+        return Map.copyOf(copy);
+    }
+
+    private static String modifiers(VariableElement variable) {
+        return variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(java.util.Locale.ROOT))
+                .sorted().collect(java.util.stream.Collectors.joining(" "));
+    }
+
+    private static boolean hasModifiers(String modifiers, Set<String> expected) {
+        Set<String> actual = modifiers.isBlank() ? Set.of() : Set.of(modifiers.split(" "));
+        return actual.containsAll(expected);
     }
 
     private static void recreateDirectory(Path directory) throws IOException {

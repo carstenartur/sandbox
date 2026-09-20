@@ -114,10 +114,32 @@ class AggregateInstallationVerifierTest {
                 }
                 """);
         AggregateInstallationVerifier.SourceAnalysis analysis = AggregateInstallationVerifier.analyzeCharsetSources(List.of(source));
-        assertEquals(List.of(
-                "bytes -> java.lang.String.getBytes(java.lang.String)",
-                "decode -> java.lang.String.<init>(byte[],java.lang.String)"),
-                analysis.invocations().get(source));
+        IOException failure = assertThrows(IOException.class, () -> AggregateInstallationVerifier.requireResolvedInvocations(source,
+                analysis, Set.of(
+                        "bytes -> java.lang.String.getBytes(java.nio.charset.Charset)",
+                        "decode -> java.lang.String.<init>(byte[],java.nio.charset.Charset)")));
+        assertTrue(failure.getMessage().startsWith("Resolved encoding invocations differ for " + source), failure.getMessage());
+    }
+
+    @Test
+    void acceptsCharsetOverloadsByResolvedIdentity() throws Exception {
+        Path source = temporary.resolve("probe/charset/Accepted.java");
+        AggregateInstallationEvidence.createParentDirectories(source);
+        Files.writeString(source, """
+                package probe.charset;
+                class Accepted {
+                    byte[] bytes(String text) throws Exception {
+                        return text.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    }
+                    String decode(byte[] bytes) throws Exception {
+                        return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+                    }
+                }
+                """);
+        AggregateInstallationVerifier.SourceAnalysis analysis = AggregateInstallationVerifier.analyzeCharsetSources(List.of(source));
+        AggregateInstallationVerifier.requireResolvedInvocations(source, analysis, Set.of(
+                "bytes -> java.lang.String.getBytes(java.nio.charset.Charset)",
+                "decode -> java.lang.String.<init>(byte[],java.nio.charset.Charset)"));
     }
 
     @Test
@@ -153,5 +175,82 @@ class AggregateInstallationVerifierTest {
         IOException failure = assertThrows(IOException.class,
                 () -> AggregateInstallationVerifier.requireRuntimeProbe("runtime", report, Set.of("sandbox_feature")));
         assertTrue(failure.getMessage().startsWith("runtime recorded wrong resolvedBundles ids"), failure.getMessage());
+    }
+
+    @Test
+    void acceptsImportedQualifiedAndStaticImportJdkUtf8FieldsByResolvedIdentity() throws Exception {
+        Path imported = writeJava("Imported.java", """
+                import java.nio.charset.Charset;
+                import java.nio.charset.StandardCharsets;
+                class Imported {
+                    static final Charset UTF_8 = StandardCharsets.UTF_8;
+                }
+                """);
+        AggregateInstallationVerifier.requireResolvedUtf8Field(imported,
+                AggregateInstallationVerifier.analyzeCharsetSources(List.of(imported)));
+
+        Path qualified = writeJava("Qualified.java", """
+                import java.nio.charset.Charset;
+                class Qualified {
+                    static final Charset UTF_8 = java.nio.charset.StandardCharsets.UTF_8;
+                }
+                """);
+        AggregateInstallationVerifier.requireResolvedUtf8Field(qualified,
+                AggregateInstallationVerifier.analyzeCharsetSources(List.of(qualified)));
+
+        Path staticImport = writeJava("StaticImport.java", """
+                import java.nio.charset.Charset;
+                import static java.nio.charset.StandardCharsets.UTF_8;
+                class StaticImport {
+                    static final Charset VALUE = UTF_8;
+                }
+                """);
+        AggregateInstallationVerifier.SourceAnalysis staticImportAnalysis = AggregateInstallationVerifier.analyzeCharsetSources(List.of(staticImport));
+        AggregateInstallationVerifier.requireResolvesToJdkUtf8("static import",
+                AggregateInstallationVerifier.requireSingleField(staticImport, staticImportAnalysis));
+    }
+
+    @Test
+    void rejectsInheritedShadowUtf8FieldByResolvedIdentity() throws Exception {
+        Path evil = writeJava("Evil.java", """
+                import java.nio.charset.Charset;
+                class Evil {
+                    static final Charset UTF_8 = Charset.forName("ISO-8859-1");
+                }
+                """);
+        Path subject = writeJava("Subject.java", """
+                import java.nio.charset.Charset;
+                class Subject {
+                    static final Charset UTF_8 = java.nio.charset.StandardCharsets.UTF_8;
+                    static class java { static class nio { static class charset {
+                        static class StandardCharsets extends Evil { }
+                    } } }
+                }
+                """);
+        AggregateInstallationVerifier.SourceAnalysis analysis = AggregateInstallationVerifier.analyzeCharsetSources(List.of(subject, evil));
+        IOException failure = assertThrows(IOException.class,
+                () -> AggregateInstallationVerifier.requireResolvedUtf8Field(subject, analysis));
+        assertTrue(failure.getMessage().contains("wrong declaring type"), failure.getMessage());
+    }
+
+    @Test
+    void rejectsFieldEvidenceWhenAnalysisHasDiagnostics() throws Exception {
+        Path source = writeJava("Broken.java", """
+                import java.nio.charset.Charset;
+                class Broken {
+                    static final Charset UTF_8 = Missing.UTF_8;
+                }
+                """);
+        AggregateInstallationVerifier.SourceAnalysis analysis = AggregateInstallationVerifier.analyzeCharsetSources(List.of(source));
+        IOException failure = assertThrows(IOException.class,
+                () -> AggregateInstallationVerifier.requireResolvedUtf8Field(source, analysis));
+        assertTrue(failure.getMessage().contains("analysis produced diagnostics"), failure.getMessage());
+    }
+
+    private Path writeJava(String fileName, String source) throws Exception {
+        Path file = temporary.resolve(fileName);
+        AggregateInstallationEvidence.createParentDirectories(file);
+        Files.writeString(file, source);
+        return file;
     }
 }
