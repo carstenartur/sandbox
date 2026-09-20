@@ -79,7 +79,7 @@ public class FilesWriteStringExplicitEncoding extends AbstractExplicitEncoding<M
 		// The charset is the third parameter
 		if (arguments.size() >= 3) {
 			ASTNode encodingArg = arguments.get(2);
-			String encodingValue = getEncodingValue(encodingArg, visited);
+			String encodingValue = getEncodingValue(encodingArg, visited, cb);
 			
 			if (encodingValue != null && ENCODINGS.contains(encodingValue)) {
 				NodeData nd = new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));

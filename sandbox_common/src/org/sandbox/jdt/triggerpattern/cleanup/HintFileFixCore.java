@@ -16,11 +16,9 @@ package org.sandbox.jdt.triggerpattern.cleanup;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.CoreException;
 
-import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
@@ -99,7 +97,7 @@ public class HintFileFixCore {
 	}
 
 	/**
-	 * Finds all hint-file-based cleanup operations for the given compilation unit,
+	 * Finds hint-file-based cleanup operations for the given compilation unit,
 	 * collecting hint-only results into the provided findings list.
 	 *
 	 * <p>Rules with a replacement produce rewrite operations. Rules without a
@@ -376,7 +374,7 @@ public class HintFileFixCore {
 		}
 
 		@Override
-		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {
+		public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) throws CoreException {
 			ASTRewrite rewrite = cuRewrite.getASTRewrite();
 			AST ast = cuRewrite.getRoot().getAST();
 			String description = result.description() != null
@@ -480,10 +478,18 @@ public class HintFileFixCore {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
 					int oldCount = countStringLiterals(matchedNode);
 					int newCount = countStringLiterals(copy);
+                    if (CharsetConstructorMigration.rewriteExpression(matchedNode, copy, replacement, cuRewrite, group)) {
+                        TypeChangeInfo change= TypeChangeDetector.detectCharsetTypeChange(matchedNode, newNode);
+                        if (change != null) ExceptionCleanupHelper.removeCheckedException(matchedNode,
+                                change.exceptionFQN(), change.exceptionSimpleName(), group, rewrite, cuRewrite.getImportRemover());
+                        CharsetConstructorMigration.adapt(matchedNode, copy, replacement, cuRewrite, group);
+                        return;
+                    }
+
 
 					// Auto-detect: did we change a String charset argument to a Charset type?
 					TypeChangeInfo typeChange = TypeChangeDetector.detectCharsetTypeChange(
-							matchedNode, replacement);
+							matchedNode, newNode);
 
 					// Check if the matched node is inside a try body that will be unwrapped
 					// after removing the checked exception. If so, we must handle the
@@ -517,6 +523,7 @@ public class HintFileFixCore {
 									group, rewrite, cuRewrite.getImportRemover());
 						}
 					}
+					CharsetConstructorMigration.adapt(matchedNode, copy, replacement, cuRewrite, group);
 				}
 			} else if (matchedNode instanceof Annotation) {
 				// Handle annotation replacement (e.g., @Before → @BeforeEach)
@@ -609,7 +616,7 @@ public class HintFileFixCore {
 				return;
 			}
 
-			// Add import for the new type and get the simple name
+			// Add import for the FQN if available
 			String simpleName = cuRewrite.getImportRewrite().addImport(fqn);
 
 			// Create the new type node
@@ -891,12 +898,6 @@ public class HintFileFixCore {
 		}
 
 		/**
-		 * Pattern matching the LAST NLS comment on a line.
-		 * Adapted from {@code AbstractExplicitEncoding}.
-		 */
-		private static final Pattern LAST_NLS_COMMENT = Pattern.compile("[ ]*\\/\\/\\$NON-NLS-[0-9]+\\$(?!.*\\/\\/\\$NON-NLS-)"); //$NON-NLS-1$
-
-		/**
 		 * Checks whether the given statement is directly inside the body of a try statement
 		 * that will be fully unwrapped after removing the target exception. This happens when:
 		 * <ul>
@@ -939,9 +940,8 @@ public class HintFileFixCore {
 
 		/**
 		 * If the matched node is inside a try body that will be unwrapped after exception
-		 * removal, handles BOTH the replacement AND the try-catch unwrapping in a single
-		 * text-based operation to avoid conflicts between {@code rewrite.replace()} on
-		 * child nodes and {@code createMoveTarget()} on parent statements.
+		 * removal, registers the replacement before simplifying the proven obsolete handler.
+		 * The shared helper retains pending statement edits during unwrapping.
 		 *
 		 * @return {@code true} if the combined operation was performed (caller should skip
 		 *         separate replacement and exception removal), {@code false} if not applicable
@@ -957,41 +957,21 @@ public class HintFileFixCore {
 			Block block = (Block) st.getParent();
 			TryStatement tryStatement = (TryStatement) block.getParent();
 			ASTNode tryParent = tryStatement.getParent();
-			if (!(tryParent instanceof Block parentBlock)) {
+			if (!(tryParent instanceof Block)) {
+				return false;
+			}
+			if (!ExceptionCleanupHelper.canRemoveException(tryStatement, matchedNode,
+					typeChange.exceptionFQN(), rewrite)) {
 				return false;
 			}
 			try {
-				String buffer = cuRewrite.getCu().getBuffer().getContents();
-				CompilationUnit cu = (CompilationUnit) st.getRoot();
-				String matchedSource = buffer.substring(matchedNode.getStartPosition(),
-						matchedNode.getStartPosition() + matchedNode.getLength());
-
-				ListRewrite parentListRewrite = rewrite.getListRewrite(parentBlock, Block.STATEMENTS_PROPERTY);
-				List<?> tryStatements = block.statements();
-				for (int i = tryStatements.size() - 1; i >= 0; i--) {
-					ASTNode stmt = (ASTNode) tryStatements.get(i);
-					int stmtStart = cu.getExtendedStartPosition(stmt);
-					int stmtLength = cu.getExtendedLength(stmt);
-					String stmtSource = buffer.substring(stmtStart, stmtStart + stmtLength);
-					// Remove leading whitespace
-					stmtSource = Pattern.compile("^[ \\t]*").matcher(stmtSource).replaceAll(""); //$NON-NLS-1$ //$NON-NLS-2$
-					stmtSource = Pattern.compile("\n[ \\t]*").matcher(stmtSource).replaceAll("\n"); //$NON-NLS-1$ //$NON-NLS-2$
-					if (stmt == st) {
-						// Remove last NLS comment and apply the replacement
-						stmtSource = LAST_NLS_COMMENT.matcher(stmtSource).replaceFirst(""); //$NON-NLS-1$
-						stmtSource = stmtSource.replace(matchedSource, shortenedReplacement);
-					}
-					ASTNode placeholder = rewrite.createStringPlaceholder(stmtSource, stmt.getNodeType());
-					parentListRewrite.insertAfter(placeholder, tryStatement, group);
-				}
-				rewrite.remove(tryStatement, group);
-				// Register removed nodes for import removal
-				cuRewrite.getImportRemover().registerRemovedNode(matchedNode);
-				return true;
-			} catch (JavaModelException e) {
-				// Fall back to separate handling
-				return false;
+				ASTNodes.replaceAndRemoveNLS(rewrite, matchedNode, copy, group, cuRewrite);
+			} catch (CoreException exception) {
+				rewrite.replace(matchedNode, copy, group);
 			}
+			ExceptionCleanupHelper.removeCheckedException(matchedNode, typeChange.exceptionFQN(),
+					typeChange.exceptionSimpleName(), group, rewrite, cuRewrite.getImportRemover());
+			return true;
 		}
 	}
 }

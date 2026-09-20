@@ -50,7 +50,7 @@ import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
  *
  * Find: new java.util.Formatter(new File(), String cs) throws UnsupportedEncodingException
  *
- * Rewrite: new java.util.Formatter(new File(), Charset cs, Locale.getDefault())
+ * Rewrite: new java.util.Formatter(new File(), Charset cs, Locale.getDefault(Locale.Category.FORMAT))
  *
  * Find: new java.util.Formatter(new File(), String cs, new java.util.Locale())
  *
@@ -58,7 +58,7 @@ import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
  *
  * Find: new java.util.Formatter(new java.io.OutputStream(), String cs)
  *
- * Rewrite: new java.util.Formatter(new java.io.OutputStream(), Charset cs, Locale.getDefault())
+ * Rewrite: new java.util.Formatter(new java.io.OutputStream(), Charset cs, Locale.getDefault(Locale.Category.FORMAT))
  *
  * Find: new java.util.Formatter(new java.io.OutputStream(), String cs, new java.util.Locale())
  *
@@ -66,7 +66,7 @@ import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
  *
  * Find: new java.util.Formatter(new String(), String cs)
  *
- * Rewrite: new java.util.Formatter(new String(), Charset cs, Locale.getDefault())
+ * Rewrite: new java.util.Formatter(new String(), Charset cs, Locale.getDefault(Locale.Category.FORMAT))
  *
  * Find: new java.util.Formatter(new String(), String cs, new java.util.Locale())
  *
@@ -74,15 +74,15 @@ import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
  *
  * Find: new java.util.Formatter(new File())
  *
- * Rewrite: new java.util.Formatter(new File(), Charset.defaultCharset(), Locale.getDefault())
+ * Rewrite: new java.util.Formatter(new File(), Charset.defaultCharset(), Locale.getDefault(Locale.Category.FORMAT))
  *
  * Find: new java.util.Formatter(fileName)
  *
- * Rewrite: new java.util.Formatter(fileName, Charset.defaultCharset(), Locale.getDefault())
+ * Rewrite: new java.util.Formatter(fileName, Charset.defaultCharset(), Locale.getDefault(Locale.Category.FORMAT))
  *
  * Find: new java.util.Formatter(outputStream)
  *
- * Rewrite: new java.util.Formatter(outputStream, Charset.defaultCharset(), Locale.getDefault())
+ * Rewrite: new java.util.Formatter(outputStream, Charset.defaultCharset(), Locale.getDefault(Locale.Category.FORMAT))
  *
  * Note: The Formatter constructors accepting Charset are all 3-argument constructors
  * (File/String/OutputStream, Charset, Locale) and were introduced in Java 10.
@@ -199,7 +199,7 @@ public class FormatterExplicitEncoding extends AbstractExplicitEncoding<ClassIns
 		if (nodedata.replace()) {
 			if (visited.arguments().size() == 2) {
 				/**
-				 * 2-arg case: Formatter(X, String) -> Formatter(X, Charset, Locale.getDefault())
+				 * 2-arg case: Formatter(X, String) -> Formatter(X, Charset, Locale.getDefault(Locale.Category.FORMAT))
 				 * There is no Formatter(X, Charset) 2-arg constructor.
 				 * All Charset constructors are 3-arg: Formatter(X, Charset, Locale).
 				 *
@@ -219,7 +219,7 @@ public class FormatterExplicitEncoding extends AbstractExplicitEncoding<ClassIns
 			}
 		} else {
 			/**
-			 * 1-arg case: Formatter(X) -> Formatter(X, Charset.defaultCharset(), Locale.getDefault())
+			 * 1-arg case: Formatter(X) -> Formatter(X, Charset.defaultCharset(), Locale.getDefault(Locale.Category.FORMAT))
 			 * There is no Formatter(X, Charset) 2-arg constructor.
 			 */
 			listRewrite.insertLast(callToCharsetDefaultCharset, group);
@@ -231,25 +231,26 @@ public class FormatterExplicitEncoding extends AbstractExplicitEncoding<ClassIns
 	}
 
 	/**
-	 * Create call to Locale.getDefault()
+	 * Create call to Locale.getDefault(Locale.Category.FORMAT)
 	 *
 	 * @param cuRewrite CompilationUnitRewrite
 	 * @param ast AST
-	 * @return MethodInvocation that returns Locale.getDefault()
+	 * @return MethodInvocation that returns Locale.getDefault(Locale.Category.FORMAT)
 	 */
 	private static MethodInvocation createLocaleGetDefault(final CompilationUnitRewrite cuRewrite, AST ast) {
 		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
-		importRewrite.addImport(Locale.class.getCanonicalName());
+		String localeName= importRewrite.addImport(Locale.class.getCanonicalName());
 		MethodInvocation localeCall= ast.newMethodInvocation();
-		localeCall.setExpression(ASTNodeFactory.newName(ast, Locale.class.getSimpleName()));
+		localeCall.setExpression(ASTNodeFactory.newName(ast, localeName));
 		localeCall.setName(ast.newSimpleName("getDefault")); //$NON-NLS-1$
+		localeCall.arguments().add(ast.newName(localeName + ".Category.FORMAT")); //$NON-NLS-1$
 		return localeCall;
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
 		if (afterRefactoring) {
-			return "Formatter r=new java.util.Formatter(out, " + cb.computeCharsetforPreview() + ", Locale.getDefault());\n"; //$NON-NLS-1$ //$NON-NLS-2$
+			return "Formatter r=new java.util.Formatter(out, " + cb.computeCharsetforPreview() + ", Locale.getDefault(Locale.Category.FORMAT));\n"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return "Formatter r=new java.util.Formatter(out);\n"; //$NON-NLS-1$
 	}

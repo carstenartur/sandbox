@@ -6,7 +6,7 @@
   <!-- Standalone verification: setting up an IDE must not require building it. -->
   <groupId>org.sandbox</groupId>
   <artifactId>sandbox_oomph</artifactId>
-  <version>1.3.5-SNAPSHOT</version>
+  <version>1.3.6-SNAPSHOT</version>
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

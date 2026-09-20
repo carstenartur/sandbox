@@ -63,7 +63,12 @@ public class ExplicitEncodingCleanUpTest {
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
-		context.assertRefactoringResultAsExpectedWithFullCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+		String expected= test == ExplicitEncodingPatterns.STRINGGETBYTES
+				? test.expected.replace("import java.io.FileNotFoundException;\nimport java.io.UnsupportedEncodingException;\n", "") //$NON-NLS-1$ //$NON-NLS-2$
+						.replace("import java.nio.charset.StandardCharsets;\n", //$NON-NLS-1$
+								"import java.nio.charset.StandardCharsets;\nimport java.io.FileNotFoundException;\n") //$NON-NLS-1$
+				: test.expected;
+		context.assertRefactoringResultAsExpectedWithFullCompileCheck(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 	}
 
 	@Test

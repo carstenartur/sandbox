@@ -21,6 +21,7 @@ import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ExplicitEncodingC
 import static org.sandbox.jdt.internal.ui.fix.MultiFixMessages.ExplicitEncodingCleanUp_description;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,6 +32,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
 
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -40,6 +46,7 @@ import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCo
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 import org.sandbox.jdt.internal.corext.fix.helper.ChangeBehavior;
+import org.sandbox.jdt.internal.corext.fix.helper.EncodingCleanUpFix;
 import org.sandbox.jdt.internal.corext.fix.helper.EncodingDslRemovedCatchImportCleanup;
 import org.eclipse.jdt.internal.corext.util.Messages;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
@@ -47,8 +54,14 @@ import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpRequirements;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.sandbox.jdt.triggerpattern.cleanup.HintFileFixCore;
+import org.sandbox.jdt.triggerpattern.cleanup.CharsetConstructorMigration;
+import org.sandbox.jdt.triggerpattern.cleanup.CheckedExceptionMigration;
+import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
 
-public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
+public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp implements IMultiFileCleanUpScopeProvider {
+	private final CharsetCleanUpCoordinator coordinator= new CharsetCleanUpCoordinator(this);
 	public UseExplicitEncodingCleanUpCore(final Map<String, String> options) {
 		super(options);
 	}
@@ -65,6 +78,31 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 	}
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
+		if (context.getCompilationUnit() == null || context.getAST() == null || !requireAST()) return null;
+		if (coordinator.isPrepared(context.getCompilationUnit().getJavaProject())) return coordinator.createFix(context);
+		return createEncodingFix(context, CharsetConstructorMigration.plan(List.of(context.getAST())));
+	}
+
+	@Override
+	public RefactoringStatus checkPreConditions(IJavaProject project, ICompilationUnit[] units, IProgressMonitor monitor) throws CoreException {
+		return coordinator.checkPreConditions(project, units, monitor);
+	}
+
+	@Override
+	public RefactoringStatus checkPostConditions(IProgressMonitor monitor) throws CoreException {
+		return coordinator.checkPostConditions(monitor);
+	}
+
+	@Override
+	public Collection<ICompilationUnit> expandCleanUpScope(IJavaProject project, Collection<ICompilationUnit> selected, IProgressMonitor monitor) throws CoreException {
+		return coordinator.expandCleanUpScope(project, selected, monitor);
+	}
+
+	public Collection<Map<String, Object>> getCoordinatedCleanUpPreview(IJavaProject project) throws CoreException {
+		return coordinator.getCoordinatedCleanUpPreview(project);
+	}
+
+	ICleanUpFix createEncodingFix(CleanUpContext context, CheckedExceptionMigration.Plan exceptionPlan) throws CoreException {
 		CompilationUnit compilationUnit= context.getAST();
 		if (compilationUnit == null) {
 			return null;
@@ -77,6 +115,15 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 		ChangeBehavior cb= computeRefactorDeepth();
 		Set<CompilationUnitRewriteOperation> operations= new LinkedHashSet<>();
 		Set<ASTNode> nodesprocessed= new HashSet<>();
+
+		if (exceptionPlan != null) {
+			exceptionPlan.requireComplete();
+			operations.add(new CompilationUnitRewriteOperation() {
+				@Override public void rewriteAST(CompilationUnitRewrite rewrite, LinkedProposalModelCore model) {
+					CharsetConstructorMigration.install(rewrite, exceptionPlan);
+				}
+			});
+		}
 
 		// DSL-first architecture: DSL rules run first from encoding.sandbox-hint.
 		// Long-term goal: DSL should progressively replace imperative Java helpers
@@ -117,12 +164,21 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp {
 			}
 		}
 
-		if (operations.isEmpty()) {
+		if (exceptionPlan != null) {
+			operations.add(new CompilationUnitRewriteOperation() {
+				@Override public void rewriteAST(CompilationUnitRewrite rewrite, LinkedProposalModelCore model) throws CoreException {
+					exceptionPlan.apply(rewrite, new TextEditGroup("Adapt checked exceptions to Charset constructors")); //$NON-NLS-1$
+				}
+			});
+		}
+
+		if (operations.isEmpty() || (exceptionPlan != null && operations.size() == 2
+                && !exceptionPlan.hasChanges(context.getCompilationUnit().getHandleIdentifier()))) {
 			return null;
 		}
 
 		CompilationUnitRewriteOperation[] array= operations.toArray(new CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation[0]);
-		return new CompilationUnitRewriteOperationsFixCore(ExplicitEncodingCleanUpFix_refactor,
+		return new EncodingCleanUpFix(ExplicitEncodingCleanUpFix_refactor,
 				compilationUnit, array);
 	}
 

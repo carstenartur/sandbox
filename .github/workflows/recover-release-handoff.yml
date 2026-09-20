@@ -181,6 +181,8 @@ jobs:
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
           mvn -f sandbox-maven-plugin/pom.xml versions:set \
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
+          mvn -f sandbox_oomph/pom.xml versions:set \
+            -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
           sed -i "s/next.release.version=.*/next.release.version=${NEXT_RELEASE}/" \
             release.properties
 

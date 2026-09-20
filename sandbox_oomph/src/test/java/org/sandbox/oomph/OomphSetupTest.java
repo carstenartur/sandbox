@@ -29,6 +29,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.api.io.TempDir;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -98,9 +99,7 @@ class OomphSetupTest {
     @Test
     @EnabledIfSystemProperty(named = "oomph.integration", matches = "true")
     void officialCatalogFreshWorkspaceAndManualUpdate() throws Exception {
-        Path run = Files.createDirectories(module.resolve("target/oomph-runtime"));
-        assertFalse(Files.exists(run.resolve("workspace/.metadata")),
-                "Acceptance testing requires a fresh workspace; run Maven clean verify");
+        Path run = createFreshRuntime(module.resolve("target/oomph-runtime"));
         Path eclipse = run.resolve("eclipse");
         if (!Files.isRegularFile(eclipse.resolve("eclipse"))) {
             Path archive = run.resolve("sdk.tar.gz");
@@ -180,6 +179,31 @@ class OomphSetupTest {
             assertTrue(Integer.parseInt(result.getProperty("projects")) >= 70, result.toString());
             assertEquals("target platform for sandbox", result.getProperty("target"));
         }
+    }
+
+    @Test
+    void rejectsLeftoverInstallationWithoutWorkspace(@TempDir Path temporary) throws Exception {
+        Path run = temporary.resolve("runtime");
+        Path installation = Files.createDirectories(run.resolve("eclipse"));
+        Path executable = Files.writeString(installation.resolve("eclipse"), "old runtime");
+        assertFalse(Files.exists(run.resolve("workspace/.metadata")));
+        assertThrows(AssertionError.class, () -> createFreshRuntime(run));
+        assertEquals("old runtime", Files.readString(executable), "Do not delete the retained failure evidence");
+    }
+
+    @Test
+    void freshRuntimeIsCreatedOnceAndRejectsReuse(@TempDir Path temporary) throws Exception {
+        Path run = temporary.resolve("runtime");
+        assertEquals(run, createFreshRuntime(run));
+        assertTrue(Files.isDirectory(run));
+        assertThrows(AssertionError.class, () -> createFreshRuntime(run));
+    }
+
+    private static Path createFreshRuntime(Path run) throws Exception {
+        assertFalse(Files.exists(run, java.nio.file.LinkOption.NOFOLLOW_LINKS),
+                "Acceptance testing requires a fresh runtime and workspace; run Maven clean verify");
+        Files.createDirectories(run.getParent());
+        return Files.createDirectory(run);
     }
 
     private void installProbe(Path eclipse, Path run) throws Exception {

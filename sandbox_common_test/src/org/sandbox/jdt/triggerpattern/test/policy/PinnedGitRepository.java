@@ -89,6 +89,8 @@ public final class PinnedGitRepository implements AutoCloseable {
 			Repository repository = git.getRepository();
 			StoredConfig config = repository.getConfig();
 			config.setString("remote", Constants.DEFAULT_REMOTE_NAME, "url", remote.toString()); //$NON-NLS-1$ //$NON-NLS-2$
+			// Fetch maintenance must finish before this disposable checkout can be deleted.
+			config.setBoolean("gc", null, "autoDetach", false); //$NON-NLS-1$ //$NON-NLS-2$
 			config.save();
 
 			RefSpec pinnedRefSpec = new RefSpec()
