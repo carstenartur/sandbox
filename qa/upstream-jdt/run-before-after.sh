@@ -15,6 +15,7 @@ CORPUS_VERIFIER="$SCRIPT_DIR/verify_corpus_result.py"
 
 JDT_CORE=""
 JDT_UI=""
+JDT_DEBUG=""
 JDT_CORE_BINARIES=""
 OOMPH_WORKSPACE=""
 SANDBOX_ECLIPSE=""
@@ -30,6 +31,7 @@ Usage: run-before-after.sh \
   --workspace <closed Oomph workspace> \
   --sandbox-eclipse <Sandbox product launcher> \
   [--jdt-ui <Oomph clone>] \
+  [--jdt-debug <Oomph clone>] \
   [--jdt-core-binaries <Oomph clone>] \
   [--output <evidence directory>] \
   [--maven <mvn executable>] \
@@ -57,6 +59,7 @@ while (($#)); do
   case "$1" in
     --jdt-core) JDT_CORE=${2:?missing value}; shift 2 ;;
     --jdt-ui) JDT_UI=${2:?missing value}; shift 2 ;;
+    --jdt-debug) JDT_DEBUG=${2:?missing value}; shift 2 ;;
     --jdt-core-binaries) JDT_CORE_BINARIES=${2:?missing value}; shift 2 ;;
     --workspace) OOMPH_WORKSPACE=${2:?missing value}; shift 2 ;;
     --sandbox-eclipse) SANDBOX_ECLIPSE=${2:?missing value}; shift 2 ;;
@@ -128,6 +131,10 @@ verify_repository "JDT Core" "$JDT_CORE" "$PIN_JDT_CORE_REPOSITORY" "$PIN_JDT_CO
 if [[ -n "$JDT_UI" ]]; then
   JDT_UI=$(canonical_dir "$JDT_UI")
   verify_repository "JDT UI" "$JDT_UI" "$PIN_JDT_UI_REPOSITORY" "$PIN_JDT_UI_REF" "$PIN_JDT_UI_COMMIT"
+fi
+if [[ -n "$JDT_DEBUG" ]]; then
+  JDT_DEBUG=$(canonical_dir "$JDT_DEBUG")
+  verify_repository "JDT Debug" "$JDT_DEBUG" "$PIN_JDT_DEBUG_REPOSITORY" "$PIN_JDT_DEBUG_REF" "$PIN_JDT_DEBUG_COMMIT"
 fi
 if [[ -n "$JDT_CORE_BINARIES" ]]; then
   JDT_CORE_BINARIES=$(canonical_dir "$JDT_CORE_BINARIES")
@@ -358,9 +365,9 @@ python3 "$COMPARATOR" \
   --output "$OUTPUT/test-inventory-comparison.json" \
   > "$OUTPUT/logs/test-inventory-comparison.log"
 
-export OUTPUT ORIGINAL_HEAD OVERLAY_COMMIT JAVA_CHANGE_COUNT JDT_CORE JDT_UI JDT_CORE_BINARIES OOMPH_WORKSPACE
+export OUTPUT ORIGINAL_HEAD OVERLAY_COMMIT JAVA_CHANGE_COUNT JDT_CORE JDT_UI JDT_DEBUG JDT_CORE_BINARIES OOMPH_WORKSPACE
 export PIN_ECLIPSE_RELEASE PIN_ECLIPSE_PLATFORM_VERSION PIN_JDT_CORE_REF PIN_JDT_CORE_COMMIT
-export PIN_JDT_UI_REF PIN_JDT_UI_COMMIT PIN_JDT_CORE_BINARIES_REF PIN_JDT_CORE_BINARIES_COMMIT
+export PIN_JDT_UI_REF PIN_JDT_UI_COMMIT PIN_JDT_DEBUG_REF PIN_JDT_DEBUG_COMMIT PIN_JDT_CORE_BINARIES_REF PIN_JDT_CORE_BINARIES_COMMIT
 export ALLOW_CLEAN_WORKSPACE
 python3 - <<'PY'
 import hashlib
@@ -395,6 +402,11 @@ provenance = {
         "path": os.environ.get("JDT_UI", ""),
         "ref": os.environ["PIN_JDT_UI_REF"],
         "commit": os.environ["PIN_JDT_UI_COMMIT"],
+    },
+    "jdtDebug": {
+        "path": os.environ.get("JDT_DEBUG", ""),
+        "ref": os.environ["PIN_JDT_DEBUG_REF"],
+        "commit": os.environ["PIN_JDT_DEBUG_COMMIT"],
     },
     "jdtCoreBinaries": {
         "path": os.environ.get("JDT_CORE_BINARIES", ""),

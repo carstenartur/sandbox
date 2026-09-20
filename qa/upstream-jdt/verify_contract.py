@@ -51,6 +51,9 @@ def load_pins(path: Path) -> dict[str, str]:
         "PIN_JDT_UI_REPOSITORY",
         "PIN_JDT_UI_REF",
         "PIN_JDT_UI_COMMIT",
+        "PIN_JDT_DEBUG_REPOSITORY",
+        "PIN_JDT_DEBUG_REF",
+        "PIN_JDT_DEBUG_COMMIT",
         "PIN_JDT_CORE_BINARIES_REPOSITORY",
         "PIN_JDT_CORE_BINARIES_REF",
         "PIN_JDT_CORE_BINARIES_COMMIT",
@@ -62,7 +65,7 @@ def load_pins(path: Path) -> dict[str, str]:
     extra = sorted(pins.keys() - required)
     if missing or extra:
         fail(f"pins.env contract mismatch: missing={missing}, extra={extra}")
-    for key in ("PIN_JDT_CORE_COMMIT", "PIN_JDT_UI_COMMIT", "PIN_JDT_CORE_BINARIES_COMMIT"):
+    for key in ("PIN_JDT_CORE_COMMIT", "PIN_JDT_UI_COMMIT", "PIN_JDT_DEBUG_COMMIT", "PIN_JDT_CORE_BINARIES_COMMIT"):
         value = pins[key]
         if len(value) != 40 or any(character not in "0123456789abcdef" for character in value):
             fail(f"{key} is not a full lowercase Git commit id")
@@ -128,6 +131,9 @@ def validate_oomph(root: Path, pins: dict[str, str]) -> None:
         "sandbox.qa.jdt.ui.repository": pins["PIN_JDT_UI_REPOSITORY"],
         "sandbox.qa.jdt.ui.ref": pins["PIN_JDT_UI_REF"],
         "sandbox.qa.jdt.ui.commit": pins["PIN_JDT_UI_COMMIT"],
+        "sandbox.qa.jdt.debug.repository": pins["PIN_JDT_DEBUG_REPOSITORY"],
+        "sandbox.qa.jdt.debug.ref": pins["PIN_JDT_DEBUG_REF"],
+        "sandbox.qa.jdt.debug.commit": pins["PIN_JDT_DEBUG_COMMIT"],
         "sandbox.qa.jdt.core.binaries.repository": pins["PIN_JDT_CORE_BINARIES_REPOSITORY"],
         "sandbox.qa.jdt.core.binaries.ref": pins["PIN_JDT_CORE_BINARIES_REF"],
         "sandbox.qa.jdt.core.binaries.commit": pins["PIN_JDT_CORE_BINARIES_COMMIT"],
@@ -142,6 +148,7 @@ def validate_oomph(root: Path, pins: dict[str, str]) -> None:
     clone_contract = {
         pins["PIN_JDT_CORE_REPOSITORY"]: pins["PIN_JDT_CORE_REF"],
         pins["PIN_JDT_UI_REPOSITORY"]: pins["PIN_JDT_UI_REF"],
+        pins["PIN_JDT_DEBUG_REPOSITORY"]: pins["PIN_JDT_DEBUG_REF"],
         pins["PIN_JDT_CORE_BINARIES_REPOSITORY"]: pins["PIN_JDT_CORE_BINARIES_REF"],
     }
     observed: dict[str, str] = {}
@@ -171,6 +178,8 @@ def validate_oomph(root: Path, pins: dict[str, str]) -> None:
     ):
         if f'name="{requirement}"' not in setup_text:
             fail(f"Missing Oomph targlet requirement {requirement}")
+    if 'rootFolder="${github.clone.jdt.debug.qa.location}"' not in setup_text:
+        fail("Oomph setup does not expose the pinned JDT Debug clone as a source locator")
     if "ProjectsBuildTask" not in setup_text:
         fail("Oomph setup does not build the imported workspace")
 
@@ -416,6 +425,7 @@ def validate_runner(root: Path, pins: dict[str, str]) -> None:
         'git -C "$JDT_CORE" reset --hard',
         ".sandbox-jdt-migration-qa-pins.env",
         "--allow-clean-workspace",
+        "--jdt-debug",
         "test-inventory-comparison.json",
     ):
         if required not in text:
@@ -444,6 +454,8 @@ def validate_workflow(root: Path) -> None:
         "workflow_dispatch:",
         "run_full_migration:",
         "run-before-after.sh",
+        "eclipse-jdt/eclipse.jdt.debug",
+        "--jdt-debug",
         "--allow-clean-workspace",
         "upstream-jdt-migration-evidence",
         "actions/upload-artifact",
@@ -482,6 +494,7 @@ def main() -> int:
         "eclipsePlatformVersion": pins["PIN_ECLIPSE_PLATFORM_VERSION"],
         "jdtCoreCommit": pins["PIN_JDT_CORE_COMMIT"],
         "jdtUiCommit": pins["PIN_JDT_UI_COMMIT"],
+        "jdtDebugCommit": pins["PIN_JDT_DEBUG_COMMIT"],
         "jdtCoreBinariesCommit": pins["PIN_JDT_CORE_BINARIES_COMMIT"],
         "primaryProject": pins["PIN_PRIMARY_PROJECT"],
         "namedCorpusFiles": 2,
