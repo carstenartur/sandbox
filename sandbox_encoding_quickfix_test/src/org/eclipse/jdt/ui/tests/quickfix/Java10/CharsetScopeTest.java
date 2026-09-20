@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -204,6 +205,18 @@ class CharsetScopeTest {
         assertEquals(before, unit.getSource());
         cleanup.checkPostConditions(null);
     }
+
+    @Test void aggregateCharsetFieldsStayScopedPerCompilationUnit() throws Exception {
+        Map<String, String> forward= runAggregateCharsetCleanup("aggregateforward", "E1.java", "E2.java"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        Map<String, String> reversed= runAggregateCharsetCleanup("aggregatereverse", "E2.java", "E1.java"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+        assertEquals(forward.keySet(), reversed.keySet());
+        for (String unitName : forward.keySet()) {
+            assertEquals(normalizeAggregatePackage(forward.get(unitName), "aggregateforward"), //$NON-NLS-1$
+                    normalizeAggregatePackage(reversed.get(unitName), "aggregatereverse"), unitName); //$NON-NLS-1$
+        }
+    }
+
     private ICompilationUnit[] fixture() throws Exception {
         var pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
         String[] names= { "Open", "Factory", "Client" }; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -231,5 +244,71 @@ class CharsetScopeTest {
             case ENFORCE_UTF8 -> MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8;
             case ENFORCE_UTF8_AGGREGATE -> MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8;
         }, "true"); //$NON-NLS-1$
+    }
+
+    private Map<String, String> runAggregateCharsetCleanup(String packageName, String... unitOrder) throws Exception {
+        var pack= context.getSourceFolder().createPackageFragment(packageName, false, null);
+        Map<String, ICompilationUnit> unitsByName= new LinkedHashMap<>();
+        for (String typeName : new String[] { "E1", "E2" }) { //$NON-NLS-1$ //$NON-NLS-2$
+            String source= """
+                    package %s;
+                    public class %s {
+                        java.util.Scanner open(java.io.File file) throws java.io.FileNotFoundException {
+                            return new java.util.Scanner(file, "UTF-8");
+                        }
+                    }
+                    """.formatted(packageName, typeName);
+            unitsByName.put(typeName + ".java", pack.createCompilationUnit(typeName + ".java", source, false, null)); //$NON-NLS-1$
+        }
+        Map<String, Map<String, Long>> warnings= new LinkedHashMap<>();
+        for (ICompilationUnit unit : unitsByName.values()) {
+            warnings.put(unit.getElementName(), CharsetModernizationTest.diagnostics(unit));
+        }
+        var cleanup= new org.sandbox.jdt.internal.ui.fix.UseExplicitEncodingCleanUp(options(ChangeBehavior.ENFORCE_UTF8_AGGREGATE));
+        var refactoring= new CleanUpRefactoring();
+        for (String unitName : unitOrder) {
+            refactoring.addCompilationUnit(unitsByName.get(unitName));
+        }
+        refactoring.addCleanUp(cleanup);
+        var create= new CreateChangeOperation(new CheckConditionsOperation(refactoring,
+                CheckConditionsOperation.ALL_CONDITIONS), RefactoringStatus.FATAL);
+        create.run(new NullProgressMonitor());
+        assertFalse(create.getConditionCheckingStatus().hasError(), create.getConditionCheckingStatus().toString());
+        Change change= create.getChange();
+        assertNotNull(change);
+        try {
+            previews(change);
+            var perform= new PerformChangeOperation(change);
+            ResourcesPlugin.getWorkspace().run(perform, new NullProgressMonitor());
+            assertTrue(perform.changeExecuted());
+            Map<String, String> after= new LinkedHashMap<>();
+            for (Map.Entry<String, ICompilationUnit> entry : unitsByName.entrySet()) {
+                ICompilationUnit unit= entry.getValue();
+                String typeName= entry.getKey().replace(".java", ""); //$NON-NLS-1$ //$NON-NLS-2$
+                String source= unit.getSource();
+                CharsetModernizationTest.diagnostics(unit).forEach((key, count) ->
+                        assertTrue(count <= warnings.get(unit.getElementName()).getOrDefault(key, 0L), key));
+                assertTrue(source.contains("private static final Charset UTF_8 = StandardCharsets.UTF_8;"), source); //$NON-NLS-1$
+                assertEquals(1, countOccurrences(source, "private static final Charset UTF_8 = StandardCharsets.UTF_8;"), source); //$NON-NLS-1$
+                assertTrue(source.contains(typeName + ".UTF_8"), source); //$NON-NLS-1$
+                assertFalse(source.contains(("E1".equals(typeName) ? "E2" : "E1") + ".UTF_8"), source); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+                assertNull(new UseExplicitEncodingCleanUpCore(options(ChangeBehavior.ENFORCE_UTF8_AGGREGATE))
+                        .createFix(new CleanUpContext(unit, CharsetModernizationTest.parse(unit))));
+                after.put(entry.getKey(), source);
+            }
+            return after;
+        } finally { change.dispose(); }
+    }
+
+    private static int countOccurrences(String source, String text) {
+        int count= 0;
+        for (int index= source.indexOf(text); index >= 0; index= source.indexOf(text, index + text.length())) {
+            count++;
+        }
+        return count;
+    }
+
+    private static String normalizeAggregatePackage(String source, String packageName) {
+        return source.replace("package " + packageName + ";", "package aggregate;"); //$NON-NLS-1$ //$NON-NLS-2$
     }
 }

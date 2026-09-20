@@ -90,7 +90,7 @@ public class InputStreamReaderExplicitEncoding extends AbstractExplicitEncoding<
 		NodeData nodedata = (NodeData) data.get(visited);
 
 		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, cuRewrite.getRoot().getAST(),
-				nodedata.encoding(), getCharsetConstants());
+				nodedata.encoding(), getCharsetConstants(cuRewrite));
 
 		/**
 		 * Register encoding replacement BEFORE removing exception handling.

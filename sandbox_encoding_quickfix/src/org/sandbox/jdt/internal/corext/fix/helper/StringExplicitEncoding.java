@@ -117,7 +117,7 @@ public class StringExplicitEncoding extends AbstractExplicitEncoding<ClassInstan
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		NodeData nodedata= (NodeData) data.get(visited);
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants(cuRewrite));
 		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);
 		boolean tryAlreadyUnwrapped= false;
 		if (nodedata.replace()) {
