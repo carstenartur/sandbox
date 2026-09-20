@@ -3702,9 +3702,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform": {
-      "lastProcessedCommit": "78612e2c9e688006a281a10cccf9db1a4918dfbb",
-      "lastProcessedDate": "2026-09-19T02:26:22.797062060Z",
-      "totalProcessed": 2344,
+      "lastProcessedCommit": "0aa429c496b02591c80bd501737403df886a7e10",
+      "lastProcessedDate": "2026-09-20T02:26:47.250460996Z",
+      "totalProcessed": 2620,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -3742,6 +3742,51 @@
           "deferredAt": "2026-09-19T02:21:50.591440910Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "3ec9f496b1a31bec24f54f701243078e7d5c0323",
+          "message": "fix Potential resource leak warnings",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-20T02:21:16.304256874Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8911e2dafaf1044fb28b671bcf2d9b931cdcbc45",
+          "message": "SafeFileOutputStream: remember the hash of content\n\nto avoid read on save when content hash did not change (~50ms slower",
+          "diffLines": 126,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-20T02:25:11.954953486Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d0c6961cd8f3740abefda73e155c25299113bd39",
+          "message": "SaveManager: extract forEachProjectInParallel\n\nSo that it can later be used by related loops too.",
+          "diffLines": 79,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-20T02:25:11.955008078Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a42a161e4a91c284f671b5b0cb384546f0d628cc",
+          "message": "Revert \"SafeFileOutputStream: remember the hash of content\"\n\nThis reverts commit 8911e2dafaf1044fb28b671bcf2d9b931cdcbc4",
+          "diffLines": 126,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-20T02:25:11.955020557Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b5e353432655ae119c3b1294862df17ef0d56c21",
+          "message": "Revert \"Simplify SafeFileInputStream: avoid streaming/wrapping\"\n\nThis reverts commit 9bac4117943933b5f4319e43a94f791d490",
+          "diffLines": 213,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-20T02:25:11.955030842Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3750,7 +3795,7 @@
       "currentEpoch": 0,
       "completedEpochs": [],
       "categoryHitCounts": {
-        "API Modernization": 5,
+        "API Modernization": 6,
         "Error Message Standardization": 1,
         "Collections API Modernization": 1,
         "Error Handling Modernization": 1,
@@ -3764,9 +3809,13 @@
         "XML Security": 1,
         "performance": 1,
         "Collections": 1,
-        "Code Style": 1,
-        "Performance": 1,
-        "Simplification": 1
+        "Code Style": 2,
+        "Performance": 2,
+        "Simplification": 1,
+        "Idiom": 1,
+        "Annotation Transformation": 1,
+        "Redundant Code": 1,
+        "Deprecation Improvement": 1
       },
       "exhaustedCategories": []
     },
@@ -3795,5 +3844,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 44599
+  "globalTotalProcessed": 44875
 }
