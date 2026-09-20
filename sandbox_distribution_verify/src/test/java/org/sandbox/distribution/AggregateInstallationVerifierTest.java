@@ -2,6 +2,7 @@
 package org.sandbox.distribution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
@@ -9,14 +10,12 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AggregateInstallationVerifierTest {
     private static final String AGGREGATE = "sandbox_feature.feature.group";
@@ -53,10 +52,10 @@ class AggregateInstallationVerifierTest {
     @Test
     void rejectsStaleEvidenceFile() throws Exception {
         Path file = Files.writeString(temporary.resolve("runtime.json"), "{}");
-        Instant started = Instant.now();
-        Files.setLastModifiedTime(file, FileTime.from(started.minusSeconds(5)));
+        Files.setLastModifiedTime(file, FileTime.fromMillis(1_000));
+        AggregateInstallationVerifier.FileSnapshot snapshot = AggregateInstallationVerifier.snapshot(file);
         IOException failure = assertThrows(IOException.class,
-                () -> AggregateInstallationVerifier.requireFreshFile(file, started, "Runtime probe result"));
+                () -> AggregateInstallationVerifier.requireFreshFile(file, snapshot, "Runtime probe result"));
         assertEquals("Runtime probe result is stale: " + file, failure.getMessage());
     }
 

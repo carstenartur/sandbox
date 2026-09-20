@@ -18,8 +18,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
-import java.time.Instant;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -35,6 +36,8 @@ import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
@@ -56,6 +59,9 @@ public final class AggregateInstallationVerifier {
     private static final String PROBE = "org.sandbox.distribution.aggregate.probe";
     private static final String LEGACY_COMPONENT_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/1.3.4/";
     private static final String STABLE_AGGREGATE_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/1.3.5/";
+    private static final Pattern JSON_STRING = Pattern.compile("\"([^\"]+)\"\\s*:\\s*\"((?:\\\\.|[^\"\\\\])*)\"");
+    private static final Pattern JSON_NUMBER = Pattern.compile("\"([^\"]+)\"\\s*:\\s*(-?\\d+)");
+    private static final Pattern AGGREGATE_UTF8_CONSTANT = Pattern.compile("\\bUTF_8\\s*=\\s*(?:java\\.nio\\.charset\\.)?StandardCharsets\\.UTF_8\\s*;");
     private final Path root;
     private final Path evidence;
     private final Path work;
@@ -67,6 +73,7 @@ public final class AggregateInstallationVerifier {
     private Path inventory;
 
     private record CleanupRun(int exitCode, String report, Map<Path, String> sources) { }
+    record FileSnapshot(Object fileKey, FileTime lastModified) { }
 
     private AggregateInstallationVerifier(Path root) throws IOException {
         this.root = root.toAbsolutePath().normalize();
@@ -193,15 +200,15 @@ public final class AggregateInstallationVerifier {
         verifyInstalledFeatures(installation, stage, versions, stock, expectedRoots);
         Path home = home(installation);
         Path result = evidence.resolve(stage + "-runtime.json");
+        FileSnapshot previous = snapshot(result);
         Files.deleteIfExists(result);
-        Instant started = Instant.now();
         Path configuration = home.resolve("configuration/org.eclipse.equinox.simpleconfigurator/bundles.info");
         byte[] original = Files.readAllBytes(configuration);
         try {
             Files.writeString(configuration, new String(original, StandardCharsets.UTF_8) + '\n'
                     + PROBE + ",1.0.0," + probe.toUri() + ",4,false\n");
             run(home, stage + "-runtime", PROBE + ".verify", List.of(inventory.toString(), result.toString()), Duration.ofMinutes(3));
-            requireFreshFile(result, started, "Runtime probe result");
+            requireFreshFile(result, previous, "Runtime probe result");
         } finally {
             Files.write(configuration, original);
         }
@@ -321,16 +328,16 @@ public final class AggregateInstallationVerifier {
             List<Path> inputs, List<Path> trackedSources, Set<Integer> expectedExitCodes) throws Exception {
         Path report = evidence.resolve(stage + ".json");
         Path patch = evidence.resolve(stage + ".patch");
+        FileSnapshot previous = snapshot(report);
         Files.deleteIfExists(report);
         Files.deleteIfExists(patch);
-        Instant started = Instant.now();
         List<String> arguments = new ArrayList<>(List.of("--import-project", project.toString(), "--mode", mode,
                 "--scope", scope, "--patch", patch.toString(), "--report", report.toString(), "--config",
                 config.toString()));
         inputs.stream().map(Path::toString).forEach(arguments::add);
         int exitCode = run(home, stage, "org.sandbox.jdt.core.JavaCleanup", arguments, Duration.ofMinutes(3),
                 expectedExitCodes);
-        requireFreshFile(report, started, "Cleanup report");
+        requireFreshFile(report, previous, "Cleanup report");
         return new CleanupRun(exitCode, Files.readString(report), captureSources(trackedSources));
     }
 
@@ -373,9 +380,13 @@ public final class AggregateInstallationVerifier {
         }
     }
 
-    static void requireFreshFile(Path file, Instant started, String label) throws IOException {
+    static void requireFreshFile(Path file, FileSnapshot previous, String label) throws IOException {
         require(Files.isRegularFile(file), label + " produced no result");
-        require(!Files.getLastModifiedTime(file).toInstant().isBefore(started), label + " is stale: " + file);
+        if (previous == null) return;
+        BasicFileAttributes current = Files.readAttributes(file, BasicFileAttributes.class);
+        boolean sameKey = previous.fileKey() != null && previous.fileKey().equals(current.fileKey());
+        boolean notNewer = !current.lastModifiedTime().toInstant().isAfter(previous.lastModified().toInstant());
+        require(!sameKey || !notNewer, label + " is stale: " + file);
     }
 
     static void requireCompilation(List<Path> sources, Path classes) throws IOException {
@@ -420,26 +431,56 @@ public final class AggregateInstallationVerifier {
     }
 
     private static String jsonString(String json, String field) throws IOException {
-        String marker = '"' + field + "\": \"";
-        int start = json.indexOf(marker);
-        require(start >= 0, "Missing JSON string field " + field);
-        int end = json.indexOf('"', start + marker.length());
-        require(end >= 0, "Unterminated JSON string field " + field);
-        return json.substring(start + marker.length(), end);
+        Matcher matcher = JSON_STRING.matcher(json);
+        while (matcher.find()) {
+            if (field.equals(matcher.group(1))) return unescapeJson(matcher.group(2));
+        }
+        throw new IOException("Missing JSON string field " + field);
     }
 
     private static int jsonInt(String json, String field) throws IOException {
-        String marker = '"' + field + "\": ";
-        int start = json.indexOf(marker);
-        require(start >= 0, "Missing JSON number field " + field);
-        int end = start + marker.length();
-        while (end < json.length() && Character.isDigit(json.charAt(end))) end++;
-        require(end > start + marker.length(), "Invalid JSON number field " + field);
-        return Integer.parseInt(json.substring(start + marker.length(), end));
+        Matcher matcher = JSON_NUMBER.matcher(json);
+        while (matcher.find()) {
+            if (field.equals(matcher.group(1))) return Integer.parseInt(matcher.group(2));
+        }
+        throw new IOException("Missing JSON number field " + field);
     }
 
     private static String escapeJson(String value) {
         return value.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static String unescapeJson(String value) {
+        StringBuilder result = new StringBuilder(value.length());
+        for (int index = 0; index < value.length(); index++) {
+            char current = value.charAt(index);
+            if (current != '\\') {
+                result.append(current);
+                continue;
+            }
+            require(index + 1 < value.length(), "Invalid JSON escape in " + value);
+            char escaped = value.charAt(++index);
+            switch (escaped) {
+            case '"', '\\', '/' -> result.append(escaped);
+            case 'b' -> result.append('\b');
+            case 'f' -> result.append('\f');
+            case 'n' -> result.append('\n');
+            case 'r' -> result.append('\r');
+            case 't' -> result.append('\t');
+            case 'u' -> {
+                require(index + 4 < value.length(), "Invalid JSON unicode escape in " + value);
+                String hex = value.substring(index + 1, index + 5);
+                try {
+                    result.append((char) Integer.parseInt(hex, 16));
+                } catch (NumberFormatException exception) {
+                    throw new IOException("Invalid JSON unicode escape in " + value, exception);
+                }
+                index += 4;
+            }
+            default -> throw new IOException("Invalid JSON escape in " + value);
+            }
+        }
+        return result.toString();
     }
 
     private static Map<Path, String> captureSources(List<Path> files) throws IOException {
@@ -515,9 +556,9 @@ public final class AggregateInstallationVerifier {
                 "Main-scope cleanup touched the explicit negative-scope source");
         if ("aggregate".equals(behavior)) {
             for (String changed : List.of(alpha, beta)) {
-                require(changed.contains("private static final Charset UTF_8 = StandardCharsets.UTF_8;"),
+                require(AGGREGATE_UTF8_CONSTANT.matcher(changed).find(),
                         "Aggregate cleanup did not create a per-unit UTF_8 field");
-                require(countOccurrences(changed, "private static final Charset UTF_8 = StandardCharsets.UTF_8;") == 1,
+                require(countMatches(changed, AGGREGATE_UTF8_CONSTANT) == 1,
                         "Aggregate cleanup created multiple per-unit UTF_8 fields");
             }
         } else {
@@ -586,10 +627,17 @@ public final class AggregateInstallationVerifier {
         require(expectedOutput.equals(Files.readString(log)), "Unexpected Java runtime result for " + stage);
     }
 
-    private static int countOccurrences(String text, String token) {
+    private static int countMatches(String text, Pattern pattern) {
         int count = 0;
-        for (int index = text.indexOf(token); index >= 0; index = text.indexOf(token, index + token.length())) count++;
+        Matcher matcher = pattern.matcher(text);
+        while (matcher.find()) count++;
         return count;
+    }
+
+    static FileSnapshot snapshot(Path file) throws IOException {
+        if (!Files.exists(file)) return null;
+        BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class);
+        return new FileSnapshot(attributes.fileKey(), attributes.lastModifiedTime());
     }
 
     private URI publishNextAggregate(String current, String next) throws Exception {
