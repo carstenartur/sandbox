@@ -30,8 +30,10 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -196,7 +198,7 @@ public enum ChangeBehavior {
 		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
 		importRewrite.addImport(Charset.class.getCanonicalName());
 		/**
-		 * Add call to Charset.defaultCharset() - this is available since Java 1.5
+		 * Create call to Charset.defaultCharset() - this is available since Java 1.5
 		 */
 		MethodInvocation firstCall= ast.newMethodInvocation();
 		firstCall.setExpression(ASTNodeFactory.newName(ast, Charset.class.getSimpleName()));
@@ -305,11 +307,20 @@ public enum ChangeBehavior {
 
 	private static String resolveCharsetInitializer(Expression initializer) {
 		Expression expression= ASTNodes.getUnparenthesedExpression(initializer);
-		if (expression instanceof QualifiedName qualifiedName) {
-			return AbstractExplicitEncoding.extractStandardCharsetName(qualifiedName);
+		IVariableBinding field= null;
+		if (expression instanceof Name name && name.resolveBinding() instanceof IVariableBinding variable) {
+			field= variable;
+		} else if (expression instanceof FieldAccess fieldAccess) {
+			field= fieldAccess.resolveFieldBinding();
 		}
-		if (expression instanceof FieldAccess fieldAccess) {
-			return AbstractExplicitEncoding.extractStandardCharsetName(fieldAccess);
+		if (field != null && !field.isRecovered()) {
+			ITypeBinding declaringClass= field.getDeclaringClass();
+			if (declaringClass != null && !declaringClass.isRecovered()
+					&& StandardCharsets.class.getCanonicalName().equals(declaringClass.getErasure().getQualifiedName())
+					&& Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())) {
+				return field.getName().replace('_', '-');
+			}
+			return null;
 		}
 		if (expression instanceof MethodInvocation methodInvocation
 				&& ASTNodes.usesGivenSignature(methodInvocation, Charset.class.getCanonicalName(), "forName", //$NON-NLS-1$
