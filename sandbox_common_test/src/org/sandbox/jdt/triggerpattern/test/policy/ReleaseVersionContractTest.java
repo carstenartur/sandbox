@@ -24,8 +24,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 /** Guards explicit version changes for POMs without the central Tycho parent. */
 public class ReleaseVersionContractTest {
@@ -39,6 +41,8 @@ public class ReleaseVersionContractTest {
 	private static final List<Transition> TRANSITIONS = List.of(
 			new Transition("Set and verify stable project version", "RELEASE_VERSION"),
 			new Transition("Prepare next development iteration pull request", "NEXT_SNAPSHOT"));
+	private static final Pattern HANDOFF_DIFF_CHECK_COMMAND = Pattern.compile(
+			"(?m)^[ \\t]*(git -c core\\.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check)[ \\t]*$");
 
 	private record Transition(String step, String variable) {
 	}
@@ -51,6 +55,11 @@ public class ReleaseVersionContractTest {
 	@Test
 	public void nextDevelopmentVersionUpdatesEveryStandalonePom() throws IOException {
 		assertTransition(workflow(), TRANSITIONS.getLast());
+	}
+
+	@Test
+	public void nextDevelopmentStepUsesCrAtEolWhitespacePolicy() throws IOException {
+		handoffDiffCheckCommand(workflowStep(workflow(), TRANSITIONS.getLast().step()));
 	}
 
 	@Test
@@ -116,6 +125,83 @@ public class ReleaseVersionContractTest {
 			assertTrue(command.end() < verification, pom + " must be updated before version verification");
 			assertTrue(!command.find(), "Duplicate version update for " + pom);
 		}
+	}
+
+	@Test
+	public void handoffWhitespaceCheckAcceptsCleanLfAndCrLfButRejectsWhitespaceRegressions(@TempDir Path temporaryDirectory)
+			throws Exception {
+		String command = handoffDiffCheckCommand(workflowStep(workflow(), TRANSITIONS.getLast().step()));
+		assertEquals(0, runVersionTransitionScenario(temporaryDirectory, "lf-clean", command, "\n", "", false).exitCode());
+		assertEquals(0, runVersionTransitionScenario(temporaryDirectory, "crlf-clean", command, "\r\n", "", false).exitCode());
+
+		CommandResult crlfSpace = runVersionTransitionScenario(temporaryDirectory, "crlf-space", command, "\r\n", " ",
+				false);
+		assertTrue(crlfSpace.exitCode() != 0, crlfSpace.output());
+		assertTrue(crlfSpace.output().contains("trailing whitespace"), crlfSpace.output());
+
+		CommandResult crlfTab = runVersionTransitionScenario(temporaryDirectory, "crlf-tab", command, "\r\n", "\t", false);
+		assertTrue(crlfTab.exitCode() != 0, crlfTab.output());
+		assertTrue(crlfTab.output().contains("trailing whitespace"), crlfTab.output());
+
+		CommandResult lfSpace = runVersionTransitionScenario(temporaryDirectory, "lf-space", command, "\n", " ", false);
+		assertTrue(lfSpace.exitCode() != 0, lfSpace.output());
+		assertTrue(lfSpace.output().contains("trailing whitespace"), lfSpace.output());
+
+		CommandResult lfBlankAtEof = runVersionTransitionScenario(temporaryDirectory, "lf-blank-at-eof", command, "\n",
+				"", true);
+		assertTrue(lfBlankAtEof.exitCode() != 0, lfBlankAtEof.output());
+		assertTrue(lfBlankAtEof.output().contains("new blank line at EOF"), lfBlankAtEof.output());
+	}
+
+	private static String handoffDiffCheckCommand(String step) {
+		Matcher command = HANDOFF_DIFF_CHECK_COMMAND.matcher(step);
+		assertTrue(command.find(), "Missing executable handoff whitespace check command");
+		String executable = command.group(1);
+		assertTrue(!command.find(), "Duplicate handoff whitespace check command");
+		return executable;
+	}
+
+	private static CommandResult runVersionTransitionScenario(Path temporaryDirectory, String name, String command,
+			String lineEnding, String versionLineSuffix, boolean appendBlankLineAtEof) throws Exception {
+		Path repository = Files.createDirectory(temporaryDirectory.resolve(name));
+		runSuccessful(repository, List.of("git", "init"));
+		runSuccessful(repository, List.of("git", "config", "user.name", "Sandbox Test"));
+		runSuccessful(repository, List.of("git", "config", "user.email", "sandbox@example.invalid"));
+		runSuccessful(repository, List.of("git", "config", "core.autocrlf", "false"));
+		Path pom = repository.resolve("pom.xml");
+		writePom(pom, "1.3.5", lineEnding, "", false);
+		runSuccessful(repository, List.of("git", "add", "pom.xml"));
+		runSuccessful(repository, List.of("git", "commit", "-m", "initial"));
+		writePom(pom, "1.3.6-SNAPSHOT", lineEnding, versionLineSuffix, appendBlankLineAtEof);
+		return run(repository, List.of("bash", "-lc", command));
+	}
+
+	private static void writePom(Path pom, String version, String lineEnding, String versionLineSuffix,
+			boolean appendBlankLineAtEof) throws IOException {
+		String content = "<project>" + lineEnding + "  <modelVersion>4.0.0</modelVersion>" + lineEnding
+				+ "  <groupId>org.sandbox</groupId>" + lineEnding
+				+ "  <artifactId>sandbox-release-whitespace-fixture</artifactId>" + lineEnding + "  <version>" + version
+				+ "</version>" + versionLineSuffix + lineEnding + "</project>" + lineEnding;
+		Files.writeString(pom, appendBlankLineAtEof ? content + lineEnding : content, StandardCharsets.UTF_8);
+	}
+
+	private static CommandResult run(Path directory, List<String> command) throws Exception {
+		Process process = new ProcessBuilder(command).directory(directory.toFile()).redirectErrorStream(true).start();
+		try {
+			assertTrue(process.waitFor(30, TimeUnit.SECONDS), String.join(" ", command));
+			return new CommandResult(process.exitValue(),
+					new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
+		} finally {
+			process.destroyForcibly();
+		}
+	}
+
+	private static void runSuccessful(Path directory, List<String> command) throws Exception {
+		CommandResult result = run(directory, command);
+		assertEquals(0, result.exitCode(), result.output());
+	}
+
+	private record CommandResult(int exitCode, String output) {
 	}
 
 	private static Pattern versionCommand(String pom, String variable) {
