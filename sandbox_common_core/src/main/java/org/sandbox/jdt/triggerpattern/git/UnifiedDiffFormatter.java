@@ -12,7 +12,6 @@ package org.sandbox.jdt.triggerpattern.git;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
@@ -22,6 +21,7 @@ import org.eclipse.jgit.diff.EditList;
 import org.eclipse.jgit.diff.HistogramDiff;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
+import org.eclipse.jgit.util.QuotedString;
 
 /**
  * Formats text changes as a unified diff.
@@ -40,9 +40,10 @@ public final class UnifiedDiffFormatter {
 	 * @param relativePath the project-relative file path
 	 * @param before the original file bytes
 	 * @param after the updated file bytes
-	 * @return the unified diff, or an empty string when the content is unchanged
+	 * @return the unified diff bytes, or an empty array when the content is unchanged
+	 * @throws IOException if formatting fails
 	 */
-	public static String format(String relativePath, byte[] before, byte[] after) {
+	public static byte[] format(String relativePath, byte[] before, byte[] after) throws IOException {
 		Objects.requireNonNull(relativePath, "relativePath"); //$NON-NLS-1$
 		if (relativePath.isBlank()) {
 			throw new IllegalArgumentException("relativePath must not be blank"); //$NON-NLS-1$
@@ -50,13 +51,13 @@ public final class UnifiedDiffFormatter {
 		byte[] original= before == null ? new byte[0] : before.clone();
 		byte[] updated= after == null ? new byte[0] : after.clone();
 		if (Arrays.equals(original, updated)) {
-			return ""; //$NON-NLS-1$
+			return new byte[0];
 		}
 		RawText beforeText= new RawText(original);
 		RawText afterText= new RawText(updated);
 		EditList edits= new HistogramDiff().diff(RawTextComparator.DEFAULT, beforeText, afterText);
 		if (edits.isEmpty()) {
-			return ""; //$NON-NLS-1$
+			return new byte[0];
 		}
 		ByteArrayOutputStream output= new ByteArrayOutputStream();
 		writeHeader(output, relativePath);
@@ -64,14 +65,14 @@ public final class UnifiedDiffFormatter {
 			formatter.setContext(CONTEXT_LINES);
 			formatter.format(edits, beforeText, afterText);
 			formatter.flush();
-		} catch (IOException e) {
-			throw new UncheckedIOException("Cannot format unified diff for " + relativePath, e); //$NON-NLS-1$
 		}
-		return output.toString(StandardCharsets.UTF_8);
+		return output.toByteArray();
 	}
 
 	private static void writeHeader(ByteArrayOutputStream output, String relativePath) {
-		output.writeBytes(("--- a/" + relativePath + '\n').getBytes(StandardCharsets.UTF_8)); //$NON-NLS-1$
-		output.writeBytes(("+++ b/" + relativePath + '\n').getBytes(StandardCharsets.UTF_8)); //$NON-NLS-1$
+		output.writeBytes(("--- " + QuotedString.GIT_PATH.quote("a/" + relativePath) + '\n') //$NON-NLS-1$ //$NON-NLS-2$
+				.getBytes(StandardCharsets.UTF_8));
+		output.writeBytes(("+++ " + QuotedString.GIT_PATH.quote("b/" + relativePath) + '\n') //$NON-NLS-1$ //$NON-NLS-2$
+				.getBytes(StandardCharsets.UTF_8));
 	}
 }

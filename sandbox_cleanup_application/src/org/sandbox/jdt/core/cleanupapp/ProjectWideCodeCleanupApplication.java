@@ -11,6 +11,7 @@
 package org.sandbox.jdt.core.cleanupapp;
 
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -448,11 +449,11 @@ public final class ProjectWideCodeCleanupApplication implements IApplication {
 
 	private static void writePatch(Path path, List<ChangedFile> changed) throws IOException {
 		createParent(path);
-		StringBuilder patch= new StringBuilder();
+		ByteArrayOutputStream patch= new ByteArrayOutputStream();
 		for (ChangedFile source : changed) {
-			patch.append(UnifiedDiffFormatter.format(source.relativePath(), source.before(), source.after()));
+			patch.writeBytes(UnifiedDiffFormatter.format(source.relativePath(), source.before(), source.after()));
 		}
-		Files.writeString(path, patch.toString(), StandardCharsets.UTF_8);
+		Files.write(path, patch.toByteArray());
 	}
 
 	private static void writeReport(Path path, Arguments arguments, Instant started, Instant ended,

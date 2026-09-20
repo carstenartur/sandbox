@@ -21,6 +21,7 @@ package org.sandbox.jdt.core.cleanupapp;
  */
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -149,7 +150,7 @@ public class CodeCleanupApplication implements IApplication {
 
 	private final List<String> errors = new ArrayList<>();
 
-	private final StringBuilder patchContent = new StringBuilder();
+	private final ByteArrayOutputStream patchContent = new ByteArrayOutputStream();
 
 	private int filesProcessed = 0;
 
@@ -249,6 +250,10 @@ public class CodeCleanupApplication implements IApplication {
 				byte[] afterContent = Files.readAllBytes(file.toPath());
 				if (!MessageDigest.isEqual(computeHash(beforeContent), computeHash(afterContent))) {
 					this.changedFiles.add(file.getAbsolutePath());
+					if (this.patchFile != null) {
+						String patchPath = iFile.getProjectRelativePath().toPortableString();
+						appendUnifiedDiff(patchPath, beforeContent, afterContent);
+					}
 				}
 			}
 		} catch (CoreException e) {
@@ -431,7 +436,7 @@ public class CodeCleanupApplication implements IApplication {
 		this.reportFile = null;
 		this.changedFiles.clear();
 		this.errors.clear();
-		this.patchContent.setLength(0);
+		this.patchContent.reset();
 		this.filesProcessed = 0;
 	}
 
@@ -618,17 +623,24 @@ public class CodeCleanupApplication implements IApplication {
 	}
 
 	private static void printUnifiedDiff(String filePath, byte[] original, byte[] modified) {
-		System.out.print(UnifiedDiffFormatter.format(filePath, original, modified));
+		try {
+			System.out.write(UnifiedDiffFormatter.format(filePath, original, modified));
+		} catch (IOException e) {
+			throw new IllegalStateException("Cannot print unified diff for " + filePath, e); //$NON-NLS-1$
+		}
 	}
 
 	private void appendUnifiedDiff(String filePath, byte[] original, byte[] modified) {
-		this.patchContent.append(UnifiedDiffFormatter.format(filePath, original, modified));
+		try {
+			this.patchContent.writeBytes(UnifiedDiffFormatter.format(filePath, original, modified));
+		} catch (IOException e) {
+			throw new IllegalStateException("Cannot append unified diff for " + filePath, e); //$NON-NLS-1$
+		}
 	}
 
 	private void writePatchFile() {
-		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
-				Files.newOutputStream(new File(this.patchFile).toPath()), StandardCharsets.UTF_8))) {
-			writer.print(this.patchContent.toString());
+		try (var output = Files.newOutputStream(new File(this.patchFile).toPath())) {
+			this.patchContent.writeTo(output);
 			if (this.verbose) {
 				System.out.println(Messages.bind(Messages.CommandLinePatchWritten, this.patchFile));
 			}
