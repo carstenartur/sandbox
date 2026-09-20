@@ -110,6 +110,14 @@ jobs:
           fetch-depth: 0
           path: upstream/eclipse.jdt.ui
 
+      - name: Checkout JDT Debug R4_40
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-jdt/eclipse.jdt.debug
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.debug
+
       - name: Checkout JDT Core test binaries R4_40
         uses: actions/checkout@v7
         with:
@@ -139,6 +147,7 @@ jobs:
           source sandbox/qa/upstream-jdt/pins.env
           test "$(git -C upstream/eclipse.jdt.core rev-parse 'HEAD^{commit}')" = "$PIN_JDT_CORE_COMMIT"
           test "$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')" = "$PIN_JDT_UI_COMMIT"
+          test "$(git -C upstream/eclipse.jdt.debug rev-parse 'HEAD^{commit}')" = "$PIN_JDT_DEBUG_COMMIT"
           test "$(git -C upstream/eclipse.jdt.core.binaries rev-parse 'HEAD^{commit}')" = "$PIN_JDT_CORE_BINARIES_COMMIT"
           git -C upstream/eclipse.jdt.core apply --check \
             "$GITHUB_WORKSPACE/sandbox/qa/upstream-jdt/overlays/jdt-core-r4_40-jupiter.patch"
@@ -151,6 +160,8 @@ jobs:
             "jdtCoreCommit": "$PIN_JDT_CORE_COMMIT",
             "jdtUiRef": "$PIN_JDT_UI_REF",
             "jdtUiCommit": "$PIN_JDT_UI_COMMIT",
+            "jdtDebugRef": "$PIN_JDT_DEBUG_REF",
+            "jdtDebugCommit": "$PIN_JDT_DEBUG_COMMIT",
             "jdtCoreBinariesRef": "$PIN_JDT_CORE_BINARIES_REF",
             "jdtCoreBinariesCommit": "$PIN_JDT_CORE_BINARIES_COMMIT"
           }
@@ -227,6 +238,14 @@ jobs:
           fetch-depth: 0
           path: upstream/eclipse.jdt.ui
 
+      - name: Checkout JDT Debug R4_40
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-jdt/eclipse.jdt.debug
+          ref: R4_40
+          fetch-depth: 0
+          path: upstream/eclipse.jdt.debug
+
       - name: Checkout JDT Core test binaries R4_40
         uses: actions/checkout@v7
         with:
@@ -262,6 +281,7 @@ jobs:
           source sandbox/qa/upstream-jdt/pins.env
           test "$(git -C upstream/eclipse.jdt.core rev-parse 'HEAD^{commit}')" = "$PIN_JDT_CORE_COMMIT"
           test "$(git -C upstream/eclipse.jdt.ui rev-parse 'HEAD^{commit}')" = "$PIN_JDT_UI_COMMIT"
+          test "$(git -C upstream/eclipse.jdt.debug rev-parse 'HEAD^{commit}')" = "$PIN_JDT_DEBUG_COMMIT"
           test "$(git -C upstream/eclipse.jdt.core.binaries rev-parse 'HEAD^{commit}')" = "$PIN_JDT_CORE_BINARIES_COMMIT"
 
       - name: Build and test the Sandbox product under test
@@ -302,6 +322,7 @@ jobs:
           bash sandbox/qa/upstream-jdt/run-before-after.sh \
             --jdt-core "$GITHUB_WORKSPACE/upstream/eclipse.jdt.core" \
             --jdt-ui "$GITHUB_WORKSPACE/upstream/eclipse.jdt.ui" \
+            --jdt-debug "$GITHUB_WORKSPACE/upstream/eclipse.jdt.debug" \
             --jdt-core-binaries "$GITHUB_WORKSPACE/upstream/eclipse.jdt.core.binaries" \
             --workspace "$RUNNER_TEMP/upstream-jdt-workspace" \
             --sandbox-eclipse "${{ steps.product.outputs.launcher }}" \
