@@ -26,12 +26,12 @@
 	</properties>
 
 	<!--
-		The parent reactor deliberately manages its unrelated application stack at
-		Hibernate ORM 6.6 / Search 7.2. Maven dependency management also rewrites
-		transitive versions, so the server must override every managed artifact it
-		consumes through the independent JGit ORM 7.4 / Search 8.4 bridge. Without
-		this local boundary, hibernate-core 7.4 is combined with 6.6 Hikari/JCache
-		modules and Search 7.2 at runtime.
+		The parent reactor now manages a general ORM 7.4 / Search 8.4 default, but
+		the executable server must stay aligned with the published JGit storage bridge
+		at ORM 7.4.7 / Search 8.4. Maven dependency management rewrites transitive
+		versions, so the server still overrides every managed ORM/Search artifact it
+		consumes to preserve that exact module boundary instead of inheriting later
+		parent defaults.
 	-->
 	<dependencyManagement>
 		<dependencies>
