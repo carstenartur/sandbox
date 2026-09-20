@@ -12,6 +12,7 @@ package org.eclipse.jgit.server.config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.nio.charset.StandardCharsets;
@@ -23,6 +24,8 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPathFactory;
 
+import org.hibernate.Version;
+import org.hibernate.search.mapper.orm.Search;
 import org.junit.Test;
 import org.w3c.dom.Document;
 
@@ -108,6 +111,22 @@ public class HibernateDependencyBoundaryContractTest {
 				managedVersion(server, "org.hibernate.search", "hibernate-search-mapper-orm")); //$NON-NLS-1$ //$NON-NLS-2$
 		assertEquals("${jgit.hibernate-search.version}", //$NON-NLS-1$
 				managedVersion(server, "org.hibernate.search", "hibernate-search-backend-lucene")); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void loadedHibernateArtifactsMatchTheIsolatedRuntimeBoundary()
+			throws Exception {
+		Document server= pom("sandbox-jgit-server-webapp/pom.xml"); //$NON-NLS-1$
+		String ormVersion= value(server,
+				"/project/properties/jgit.hibernate-orm.version"); //$NON-NLS-1$
+		String searchVersion= value(server,
+				"/project/properties/jgit.hibernate-search.version"); //$NON-NLS-1$
+		Package searchPackage= Search.class.getPackage();
+
+		assertEquals(ormVersion, Version.getVersionString());
+		assertNotNull("Hibernate Search must expose runtime package metadata", //$NON-NLS-1$
+				searchPackage);
+		assertEquals(searchVersion, searchPackage.getImplementationVersion());
 	}
 
 	private static void assertCompatiblePair(String label, String ormVersion,
