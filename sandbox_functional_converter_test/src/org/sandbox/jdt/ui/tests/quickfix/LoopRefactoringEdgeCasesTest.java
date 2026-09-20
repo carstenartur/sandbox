@@ -630,7 +630,7 @@ class MyTest {
 	 * <p><b>Note:</b> Currently disabled - pattern not converting in V1. Needs investigation.</p>
 	 */
 	@Test
-	@DisplayName("Unused element: lambda with unused parameter")
+	@DisplayName("Unused element: unnamed lambda parameter")
 	void testUnusedElement() throws CoreException {
 		String input = """
 				package test1;
@@ -657,7 +657,7 @@ class MyTest {
 						new MyTest().process(new ArrayList<>());
 					}
 					public void process(List<String> items) {
-						items.forEach(item -> counter++);
+						items.forEach(_ -> counter++);
 					}
 				}
 				""";

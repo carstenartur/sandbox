@@ -55,9 +55,9 @@ public class FunctionalLoopComplexPatternTest {
 	 * Tests mixed operations without needed variable tracking.
 	 * 
 	 * <p>
-	 * <b>Conversion Rule:</b> When loop operations create variables that are not
-	 * used in subsequent statements, the cleanup uses {@code _item} as the lambda
-	 * parameter name and wraps operations in map blocks.
+	 * <b>Conversion Rule:</b> When the downstream terminal no longer needs the
+	 * mapped value, the cleanup keeps the original imperative flow inside a direct
+	 * forEach rewrite rather than splitting the null-flow facts across map lambdas.
 	 * </p>
 	 */
 	@Test
@@ -195,8 +195,7 @@ class MyTest {
 
 	public Boolean test(List<Integer> ls) throws Exception {
 		Integer i=0;
-		ls.forEach(l -> {
-			String.valueOf(l);
+		ls.forEach(_ -> {
 			System.out.println();
 			System.out.println("");
 		});

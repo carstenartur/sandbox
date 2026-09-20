@@ -266,10 +266,7 @@ String expected = """
 					count = items.stream().map(item -> {
 						System.out.println(item);
 						return item;
-					}).map(item -> {
-						String.valueOf(item);
-						return 1;
-					}).reduce(count, Integer::sum);
+					}).map(_ -> 1).reduce(count, Integer::sum);
 					System.out.println(count);
 				}
 					}""";

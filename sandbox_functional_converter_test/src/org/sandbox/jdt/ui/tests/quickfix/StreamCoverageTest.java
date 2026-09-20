@@ -163,6 +163,35 @@ class StreamCoverageTest {
 		assertEquals(execute(original, "bounds-original"), execute(converted, "bounds-loop"));
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "stream", "enhanced_for", "iterator_while" })
+	void elementIndependentBodiesDoNotCallToString(String target) throws Exception {
+		String original = """
+				package test1;
+				import java.util.*;
+				public class Example {
+					static int toStringCalls;
+					static final class Bomb {
+						@Override public String toString() {
+							toStringCalls++;
+							throw new IllegalStateException("boom");
+						}
+					}
+					public static String run() {
+						List<String> result = new ArrayList<>();
+						for (Bomb item : List.of(new Bomb(), new Bomb())) {
+							result.add("tick");
+						}
+						return result + ":" + toStringCalls;
+					}
+				}
+				""";
+		String converted = context.convert(original, target, true);
+		assertNotEquals(original, converted, context::cleanupDiagnostics);
+		assertEquals("[tick, tick]:0", execute(original, "unused-original"));
+		assertEquals("[tick, tick]:0", execute(converted, "unused-converted"), converted);
+	}
+
 	private String execute(String source, String directory) throws Exception {
 		return StreamChainToLoopTest.executeSource(source, temporary.resolve(directory));
 	}
