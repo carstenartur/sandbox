@@ -17,20 +17,28 @@ import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_DEFAULT_CH
 import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_DISPLAY_NAME;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Initializer;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
@@ -94,16 +102,21 @@ public enum ChangeBehavior {
 			String ownerKey= aggregateCharsetOwnerKey(cuRewrite.getRoot(), enclosingType);
 			String normalizedCharset= normalizeCharsetFieldName(charset);
 			String reservationKey= ownerKey + '\u0000' + normalizedCharset;
-			QualifiedName cached= charsetConstants.get(reservationKey);
-			if (cached != null) {
-				return copyQualifiedName(ast, cached);
-			}
 
 			ImportRewrite importRewrite= cuRewrite.getImportRewrite();
 			importRewrite.addImport(StandardCharsets.class.getCanonicalName());
 			importRewrite.addImport(Charset.class.getCanonicalName());
 
 			VariableDeclarationFragment existingField= findCompatibleCharsetField(enclosingType, normalizedCharset);
+			if (existingField != null && !isSafeToReadField(enclosingType, existingField, visited)) {
+				return addCharsetUTF8(cuRewrite, ast, normalizedCharset);
+			}
+
+			QualifiedName cached= charsetConstants.get(reservationKey);
+			if (cached != null) {
+				return copyQualifiedName(ast, cached);
+			}
+
 			String fieldName= existingField != null
 					? existingField.getName().getIdentifier()
 					: generateCharsetFieldName(enclosingType, ownerKey, normalizedCharset, charsetConstants);
@@ -328,6 +341,143 @@ public enum ChangeBehavior {
 				&& methodInvocation.arguments().size() == 1
 				&& methodInvocation.arguments().get(0) instanceof StringLiteral literal) {
 			return literal.getLiteralValue().toUpperCase(Locale.ROOT);
+		}
+		return null;
+	}
+
+	private static boolean isSafeToReadField(TypeDeclaration owner, VariableDeclarationFragment targetField, ASTNode visited) {
+		if (!(targetField.getParent() instanceof FieldDeclaration targetDeclaration)
+				|| !Modifier.isStatic(targetDeclaration.getModifiers())) {
+			return true;
+		}
+		BodyDeclaration enclosingDeclaration= findEnclosingBodyDeclaration(owner, visited);
+		if (enclosingDeclaration == null) {
+			return true;
+		}
+		if (enclosingDeclaration instanceof FieldDeclaration fieldDeclaration) {
+			if (!Modifier.isStatic(fieldDeclaration.getModifiers())) {
+				return true;
+			}
+			return isSafeFromStaticFieldInitializer(owner, fieldDeclaration, targetField, visited);
+		}
+		if (enclosingDeclaration instanceof Initializer initializer) {
+			return !Modifier.isStatic(initializer.getModifiers())
+					|| bodyDeclarationIndex(owner, enclosingDeclaration) >= bodyDeclarationIndex(owner, targetDeclaration);
+		}
+		if (enclosingDeclaration instanceof MethodDeclaration methodDeclaration) {
+			return !Modifier.isStatic(methodDeclaration.getModifiers())
+					|| !isMethodReachedDuringEarlierStaticInitialization(owner, methodDeclaration,
+							bodyDeclarationIndex(owner, targetDeclaration));
+		}
+		return true;
+	}
+
+	private static boolean isSafeFromStaticFieldInitializer(TypeDeclaration owner, FieldDeclaration enclosingDeclaration,
+			VariableDeclarationFragment targetField, ASTNode visited) {
+		FieldDeclaration targetDeclaration= (FieldDeclaration) targetField.getParent();
+		if (enclosingDeclaration != targetDeclaration) {
+			return bodyDeclarationIndex(owner, enclosingDeclaration) >= bodyDeclarationIndex(owner, targetDeclaration);
+		}
+		VariableDeclarationFragment enclosingFragment= findEnclosingFragment(enclosingDeclaration, visited);
+		if (enclosingFragment == null) {
+			return false;
+		}
+		return fragmentIndex(enclosingDeclaration, enclosingFragment) > fragmentIndex(enclosingDeclaration, targetField);
+	}
+
+	private static BodyDeclaration findEnclosingBodyDeclaration(TypeDeclaration owner, ASTNode visited) {
+		for (ASTNode current= visited; current != null && current != owner; current= current.getParent()) {
+			if (current instanceof BodyDeclaration declaration && current.getParent() == owner) {
+				return declaration;
+			}
+		}
+		return null;
+	}
+
+	private static VariableDeclarationFragment findEnclosingFragment(FieldDeclaration declaration, ASTNode visited) {
+		for (ASTNode current= visited; current != null && current != declaration; current= current.getParent()) {
+			if (current instanceof VariableDeclarationFragment fragment && current.getParent() == declaration) {
+				return fragment;
+			}
+		}
+		return null;
+	}
+
+	private static int bodyDeclarationIndex(TypeDeclaration owner, BodyDeclaration declaration) {
+		return owner.bodyDeclarations().indexOf(declaration);
+	}
+
+	private static int fragmentIndex(FieldDeclaration declaration, VariableDeclarationFragment fragment) {
+		return declaration.fragments().indexOf(fragment);
+	}
+
+	private static boolean isMethodReachedDuringEarlierStaticInitialization(TypeDeclaration owner,
+			MethodDeclaration targetMethod, int targetFieldIndex) {
+		Set<MethodDeclaration> reachable= new HashSet<>();
+		for (Object declaration : owner.bodyDeclarations()) {
+			if (!(declaration instanceof BodyDeclaration bodyDeclaration)
+					|| bodyDeclarationIndex(owner, bodyDeclaration) >= targetFieldIndex) {
+				break;
+			}
+			if (bodyDeclaration instanceof FieldDeclaration fieldDeclaration) {
+				if (!Modifier.isStatic(fieldDeclaration.getModifiers())) {
+					continue;
+				}
+				for (Object fragment : fieldDeclaration.fragments()) {
+					if (fragment instanceof VariableDeclarationFragment variable && variable.getInitializer() != null) {
+						collectReachedStaticMethods(owner, variable.getInitializer(), reachable, new HashSet<>());
+					}
+				}
+			} else if (bodyDeclaration instanceof Initializer initializer && Modifier.isStatic(initializer.getModifiers())) {
+				collectReachedStaticMethods(owner, initializer, reachable, new HashSet<>());
+			}
+		}
+		return reachable.contains(targetMethod);
+	}
+
+	private static void collectReachedStaticMethods(TypeDeclaration owner, ASTNode start, Set<MethodDeclaration> reachable,
+			Set<MethodDeclaration> exploring) {
+		start.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(AnonymousClassDeclaration node) {
+				return false;
+			}
+
+			@Override
+			public boolean visit(TypeDeclaration node) {
+				return node == owner;
+			}
+
+			@Override
+			public boolean visit(MethodInvocation node) {
+				MethodDeclaration declaration= resolveStaticMethodDeclaration(owner, node);
+				if (declaration != null && reachable.add(declaration) && exploring.add(declaration)) {
+					collectReachedStaticMethods(owner, declaration, reachable, exploring);
+					exploring.remove(declaration);
+				}
+				return true;
+			}
+		});
+	}
+
+	private static MethodDeclaration resolveStaticMethodDeclaration(TypeDeclaration owner, MethodInvocation invocation) {
+		IMethodBinding binding= invocation.resolveMethodBinding();
+		if (binding == null || binding.isRecovered() || !Modifier.isStatic(binding.getModifiers())) {
+			return null;
+		}
+		ITypeBinding declaringClass= binding.getDeclaringClass();
+		ITypeBinding ownerBinding= owner.resolveBinding();
+		if (declaringClass == null || ownerBinding == null || declaringClass.isRecovered() || ownerBinding.isRecovered()
+				|| !ownerBinding.getTypeDeclaration().isEqualTo(declaringClass.getTypeDeclaration())) {
+			return null;
+		}
+		IMethodBinding declarationBinding= binding.getMethodDeclaration();
+		for (MethodDeclaration candidate : owner.getMethods()) {
+			IMethodBinding candidateBinding= candidate.resolveBinding();
+			if (candidateBinding != null && !candidateBinding.isRecovered()
+					&& candidateBinding.getMethodDeclaration().isEqualTo(declarationBinding)) {
+				return candidate;
+			}
 		}
 		return null;
 	}

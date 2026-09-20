@@ -258,6 +258,41 @@ class CharsetScopeTest {
                 compileAndRun(after, "probe.ReuseProbe", runtimeDirectory.resolve("reuse-after"))); //$NON-NLS-1$ //$NON-NLS-2$
     }
 
+    @Test void aggregateCharsetAvoidsSelfReferentialFieldReuseDuringInitialization() throws Exception {
+        String before= """
+                package probe;
+                import java.nio.charset.Charset;
+                public class SelfProbe {
+                    private static final Charset ENCODING = Charset.forName("UTF-8");
+                    public static void main(String[] args) { System.out.print(ENCODING.name()); }
+                }
+                """;
+        String after= runSingleUnitAggregateCleanup("probe", "SelfProbe.java", before); //$NON-NLS-1$ //$NON-NLS-2$
+        assertTrue(after.contains("private static final Charset ENCODING = StandardCharsets.UTF_8;"), after); //$NON-NLS-1$
+        assertFalse(after.contains("SelfProbe.ENCODING"), after); //$NON-NLS-1$
+        assertEquals(compileAndRun(before, "probe.SelfProbe", runtimeDirectory.resolve("self-before")), //$NON-NLS-1$ //$NON-NLS-2$
+                compileAndRun(after, "probe.SelfProbe", runtimeDirectory.resolve("self-after"))); //$NON-NLS-1$ //$NON-NLS-2$
+    }
+
+    @Test void aggregateCharsetAvoidsPrematureFieldReadsDuringStaticInitialization() throws Exception {
+        String before= """
+                package probe;
+                import java.nio.charset.Charset;
+                import java.nio.charset.StandardCharsets;
+                public class ForwardProbe {
+                    private static final String INITIAL = value();
+                    private static final Charset UTF_8 = StandardCharsets.UTF_8;
+                    public static void main(String[] args) { System.out.print(INITIAL + ":" + UTF_8.name()); }
+                    static String value() { return Charset.forName("UTF-8").name(); }
+                }
+                """;
+        String after= runSingleUnitAggregateCleanup("probe", "ForwardProbe.java", before); //$NON-NLS-1$ //$NON-NLS-2$
+        assertTrue(after.contains("return StandardCharsets.UTF_8.name();"), after); //$NON-NLS-1$
+        assertFalse(after.contains("return ForwardProbe.UTF_8.name();"), after); //$NON-NLS-1$
+        assertEquals(compileAndRun(before, "probe.ForwardProbe", runtimeDirectory.resolve("forward-before")), //$NON-NLS-1$ //$NON-NLS-2$
+                compileAndRun(after, "probe.ForwardProbe", runtimeDirectory.resolve("forward-after"))); //$NON-NLS-1$ //$NON-NLS-2$
+    }
+
     @Test void aggregateCharsetCollisionGetsFreshCompatibleFieldName() throws Exception {
         String before= """
                 package probe;
