@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "89459f2cb9a07d797608f2898f0e047298d6e75c584b8cfe4e830277be94eda5",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: lambda.simplify.singleParamParens\u003e\n\u003c!description: Remove unnecessary parentheses around a single lambda input argument.\nThis is a stylistic change that does not alter semantics.\u003e\n\u003c!severity: HINT\u003e\n\u003c!minJavaVersion: 8\u003e\n\n($param$) -\u003e $body\n\u003d\u003e $param -\u003e $body\n;;",
+  "beforeExample": "import java.util.function.Consumer;\n\npublic class Example {\n    void acceptConsumer(Consumer\u003cString\u003e consumer) {\n        consumer.accept(\"Hello\");\n    }\n\n    void foo() {\n        acceptConsumer((s) -\u003e { System.out.println(s); });\n    }\n}\n",
+  "afterExample": "import java.util.function.Consumer;\n\npublic class Example {\n    void acceptConsumer(Consumer\u003cString\u003e consumer) {\n        consumer.accept(\"Hello\");\n    }\n\n    void foo() {\n        acceptConsumer(s -\u003e { System.out.println(s); });\n    }\n}\n",
+  "negativeExample": "import java.util.function.BiConsumer;\nimport java.util.function.Runnable;\n\npublic class Example {\n    void acceptBiConsumer(BiConsumer\u003cString, String\u003e consumer) {\n        consumer.accept(\"Hello\", \"World\");\n    }\n\n    void acceptRunnable(Runnable runnable) {\n        runnable.run();\n    }\n\n    void foo() {\n        acceptBiConsumer((s, t) -\u003e { System.out.println(s + t); }); // Multiple parameters, should not match\n        acceptRunnable(() -\u003e { System.out.println(\"No parameters\"); }); // No parameters, should not match\n    }\n}\n",
+  "targetHintFile": "lambda.sandbox-hint",
+  "sourceCommit": "04146a6415a5a61caa6bac5838f1e7b5636c887a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Code Style",
+  "summary": "Simplifies single-parameter lambda expressions by removing redundant parentheses around the argument.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-20T02:26:49.158872767Z",
+  "ruleFingerprint": "sha256:52c36528146e316ab55eb80d1064947b11299cbf2c40dd9b7cad1e4d86c34e1b",
+  "behaviorFingerprint": "sha256:e52e0d60da5392e3b6ab28398f9629f66fe2b4c3a98c707d64fe635d4dc3bbfe",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-20T02:26:55.480556694Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
