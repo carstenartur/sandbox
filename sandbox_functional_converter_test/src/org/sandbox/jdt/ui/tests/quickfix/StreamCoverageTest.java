@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -55,8 +56,8 @@ class StreamCoverageTest {
 				"Arrays.asList(\"a\", \"bbb\").stream().mapToInt(String::length).mapToLong(v -> v * 10000000000L).mapToDouble(v -> v / 3.0).mapToObj(v -> label(v)).forEach(v -> result.add(v));",
 				"Arrays.stream(new int[] {-1, 0, 2}).filter(v -> v >= 0).map(v -> v + 1).forEachOrdered(v -> result.add(label(v)));",
 				"Arrays.stream(new int[] {1, 2}).<Number>mapToObj(v -> v).forEach(v -> result.add(label(v)));",
-				"Arrays.stream(new int[] {1, 200}).boxed().forEach(v -> result.add(label(v)));",
 				"Arrays.stream(new int[] {1, Integer.MAX_VALUE}).asLongStream().asDoubleStream().boxed().forEach(v -> result.add(label(v)));",
+				"Arrays.stream(new int[] {1, 200}).boxed().forEach(v -> result.add(label(v)));",
 				"Arrays.stream(new long[] {9007199254740993L, Long.MAX_VALUE}).asDoubleStream().forEach(v -> result.add(label(v)));",
 				"Arrays.stream(new long[] {1, 200}).mapToInt(v -> (int) v).mapToObj(v -> label(v)).forEach(v -> result.add(v));",
 				"Arrays.stream(new double[] {-0.0, Double.NaN, Double.POSITIVE_INFINITY}).mapToLong(Double::doubleToRawLongBits).forEach(v -> result.add(label(v)));",
@@ -166,7 +167,44 @@ class StreamCoverageTest {
 	@ParameterizedTest
 	@ValueSource(strings = { "stream", "enhanced_for", "iterator_while" })
 	void elementIndependentBodiesDoNotCallToString(String target) throws Exception {
-		String original = """
+		// The test VM is Java 21; keep runtime evidence separate from Java 22 syntax coverage.
+		var project = context.getSourceFolder().getJavaProject();
+		var options = project.getOptions(false);
+		JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
+		project.setOptions(options);
+		String original = elementIndependentSource(target);
+		String converted = context.convert(original, target, true);
+		assertNotEquals(original, converted, context::cleanupDiagnostics);
+		assertEquals("[tick, tick]:0", execute(original, "unused-original"));
+		assertEquals("[tick, tick]:0", execute(converted, "unused-converted"), converted);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "stream", "enhanced_for", "iterator_while" })
+	void elementIndependentBodiesCompileAndRemainStableAtJava22(String target) throws Exception {
+		String original = elementIndependentSource(target);
+		// convert checks the original and generated units using the real Java 22 JDT project.
+		String converted = context.convert(original, target, true);
+		assertNotEquals(original, converted, context::cleanupDiagnostics);
+		if ("stream".equals(target)) {
+			assertTrue(converted.contains("_ -> \"tick\""), converted);
+		}
+		assertEquals(converted, context.convert(converted, target, true), "A second cleanup pass is stable");
+	}
+
+	private static String elementIndependentSource(String target) {
+		String loop = "enhanced_for".equals(target) ? """
+				Iterator<Bomb> iterator = List.of(new Bomb(), new Bomb()).iterator();
+				while (iterator.hasNext()) {
+					Bomb item = iterator.next();
+					result.add("tick");
+				}
+				""" : """
+				for (Bomb item : List.of(new Bomb(), new Bomb())) {
+					result.add("tick");
+				}
+				""";
+		return """
 				package test1;
 				import java.util.*;
 				public class Example {
@@ -179,17 +217,11 @@ class StreamCoverageTest {
 					}
 					public static String run() {
 						List<String> result = new ArrayList<>();
-						for (Bomb item : List.of(new Bomb(), new Bomb())) {
-							result.add("tick");
-						}
+						LOOP
 						return result + ":" + toStringCalls;
 					}
 				}
-				""";
-		String converted = context.convert(original, target, true);
-		assertNotEquals(original, converted, context::cleanupDiagnostics);
-		assertEquals("[tick, tick]:0", execute(original, "unused-original"));
-		assertEquals("[tick, tick]:0", execute(converted, "unused-converted"), converted);
+				""".replace("LOOP", loop);
 	}
 
 	private String execute(String source, String directory) throws Exception {
