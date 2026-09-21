@@ -58,14 +58,14 @@ public final class LineDelimiterPreserver {
 <span class="fc" id="L58">					foundLf= true;</span>
 				}
 			}
-<span class="pc bpc" id="L61" title="2 of 6 branches missed.">			int styleCount= (foundLf ? 1 : 0) + (foundCrLf ? 1 : 0) + (foundCr ? 1 : 0);</span>
+<span class="pc bpc" id="L61" title="1 of 6 branches missed.">			int styleCount= (foundLf ? 1 : 0) + (foundCrLf ? 1 : 0) + (foundCr ? 1 : 0);</span>
 <span class="fc bfc" id="L62" title="All 2 branches covered.">			if (styleCount != 1) {</span>
 <span class="fc" id="L63">				return null;</span>
 			}
-<span class="pc bpc" id="L65" title="1 of 2 branches missed.">			if (foundCrLf) {</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">			if (foundCrLf) {</span>
 <span class="fc" id="L66">				return CRLF;</span>
 			}
-<span class="nc bnc" id="L68" title="All 2 branches missed.">			return foundLf ? LF : CR;</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">			return foundLf ? LF : CR;</span>
 		}
 	}
 
@@ -115,7 +115,7 @@ public final class LineDelimiterPreserver {
 <span class="fc" id="L115">		String rewrittenText= decode(rewritten, encoding, &quot;rewritten&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L116">		String normalized= normalize(rewrittenText, delimiter.text);</span>
 <span class="fc" id="L117">		byte[] encoded= encode(normalized, encoding);</span>
-<span class="pc bpc" id="L118" title="1 of 2 branches missed.">		return Arrays.equals(encoded, rewritten) ? rewritten : encoded;</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">		return Arrays.equals(encoded, rewritten) ? rewritten : encoded;</span>
 	}
 
 	private static Encoding encodingOf(byte[] content, Charset declared) throws IOException {

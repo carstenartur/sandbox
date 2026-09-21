@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UnifiedDiffFormatter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.git</a> &gt; <span class="el_source">UnifiedDiffFormatter.java</span></div><h1>UnifiedDiffFormatter.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.git;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Objects;
+
+import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.diff.EditList;
+import org.eclipse.jgit.diff.HistogramDiff;
+import org.eclipse.jgit.diff.RawText;
+import org.eclipse.jgit.diff.RawTextComparator;
+import org.eclipse.jgit.util.QuotedString;
+
+/**
+ * Formats text changes as a unified diff.
+ */
+public final class UnifiedDiffFormatter {
+
+	private static final int CONTEXT_LINES= 3;
+
+	private UnifiedDiffFormatter() {
+		// Utility class.
+	}
+
+	/**
+	 * Formats the given file content change as a unified diff.
+	 *
+	 * @param relativePath the project-relative file path
+	 * @param before the original file bytes
+	 * @param after the updated file bytes
+	 * @return the unified diff bytes, or an empty array when the content is unchanged
+	 * @throws IOException if formatting fails
+	 */
+	public static byte[] format(String relativePath, byte[] before, byte[] after) throws IOException {
+<span class="fc" id="L47">		Objects.requireNonNull(relativePath, &quot;relativePath&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">		if (relativePath.isBlank()) {</span>
+<span class="nc" id="L49">			throw new IllegalArgumentException(&quot;relativePath must not be blank&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">		byte[] original= before == null ? new byte[0] : before.clone();</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">		byte[] updated= after == null ? new byte[0] : after.clone();</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">		if (Arrays.equals(original, updated)) {</span>
+<span class="fc" id="L54">			return new byte[0];</span>
+		}
+<span class="fc" id="L56">		RawText beforeText= new RawText(original);</span>
+<span class="fc" id="L57">		RawText afterText= new RawText(updated);</span>
+<span class="fc" id="L58">		EditList edits= new HistogramDiff().diff(RawTextComparator.DEFAULT, beforeText, afterText);</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">		if (edits.isEmpty()) {</span>
+<span class="nc" id="L60">			return new byte[0];</span>
+		}
+<span class="fc" id="L62">		ByteArrayOutputStream output= new ByteArrayOutputStream();</span>
+<span class="fc" id="L63">		writeHeader(output, relativePath);</span>
+<span class="fc" id="L64">		try (DiffFormatter formatter= new DiffFormatter(output)) {</span>
+<span class="fc" id="L65">			formatter.setContext(CONTEXT_LINES);</span>
+<span class="fc" id="L66">			formatter.format(edits, beforeText, afterText);</span>
+<span class="fc" id="L67">			formatter.flush();</span>
+		}
+<span class="fc" id="L69">		return output.toByteArray();</span>
+	}
+
+	private static void writeHeader(ByteArrayOutputStream output, String relativePath) {
+<span class="fc" id="L73">		output.writeBytes((&quot;--- &quot; + QuotedString.GIT_PATH.quote(&quot;a/&quot; + relativePath) + '\n') //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L74">				.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L75">		output.writeBytes((&quot;+++ &quot; + QuotedString.GIT_PATH.quote(&quot;b/&quot; + relativePath) + '\n') //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L76">				.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L77">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
