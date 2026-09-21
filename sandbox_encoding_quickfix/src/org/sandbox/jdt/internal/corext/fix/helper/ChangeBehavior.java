@@ -16,29 +16,23 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_DEFAULT_CHARSET;
 import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_DISPLAY_NAME;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
-import org.eclipse.jdt.core.dom.BodyDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.Initializer;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
@@ -103,12 +97,9 @@ public enum ChangeBehavior {
 			String normalizedCharset= normalizeCharsetFieldName(charset);
 			String reservationKey= ownerKey + '\u0000' + normalizedCharset;
 
-			ImportRewrite importRewrite= cuRewrite.getImportRewrite();
-			importRewrite.addImport(StandardCharsets.class.getCanonicalName());
-			importRewrite.addImport(Charset.class.getCanonicalName());
-
 			VariableDeclarationFragment existingField= findCompatibleCharsetField(enclosingType, normalizedCharset);
-			if (existingField != null && !isSafeToReadField(enclosingType, existingField, visited)) {
+			if (existingField != null ? !isSafeToReadField(enclosingType, existingField, visited)
+					: !canInitializeOwnFieldsFirst(enclosingType)) {
 				return addCharsetUTF8(cuRewrite, ast, normalizedCharset);
 			}
 
@@ -125,12 +116,18 @@ public enum ChangeBehavior {
 					ast.newSimpleName(enclosingType.getName().getIdentifier()),
 					ast.newSimpleName(fieldName));
 			if (existingField == null) {
+				ImportRewrite importRewrite= cuRewrite.getImportRewrite();
+				String standardCharsetsType= importRewrite.addImport(StandardCharsets.class.getCanonicalName());
+				String charsetType= importRewrite.addImport(Charset.class.getCanonicalName());
+				FieldAccess initializer= ast.newFieldAccess();
+				initializer.setExpression(ast.newName(standardCharsetsType));
+				initializer.setName(ast.newSimpleName(normalizedCharset));
 				VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();
 				fragment.setName(ast.newSimpleName(fieldName));
-				fragment.setInitializer(createCharsetAccessExpression(ast, normalizedCharset));
+				fragment.setInitializer(initializer);
 
 				FieldDeclaration fieldDeclaration= ast.newFieldDeclaration(fragment);
-				fieldDeclaration.setType(ast.newSimpleType(ast.newName("Charset"))); //$NON-NLS-1$
+				fieldDeclaration.setType(ast.newSimpleType(ast.newName(charsetType)));
 				fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));
 				fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));
 				fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.FINAL_KEYWORD));
@@ -186,12 +183,12 @@ public enum ChangeBehavior {
 		 * Add import java.nio.charset.StandardCharsets - available since Java 1.7
 		 */
 		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
-		importRewrite.addImport(StandardCharsets.class.getCanonicalName());
+		String standardCharsetsType= importRewrite.addImport(StandardCharsets.class.getCanonicalName());
 		/**
 		 * Add field access to StandardCharsets.UTF_8
 		 */
 		FieldAccess fieldaccess= ast.newFieldAccess();
-		fieldaccess.setExpression(ASTNodeFactory.newName(ast, StandardCharsets.class.getSimpleName()));
+		fieldaccess.setExpression(ASTNodeFactory.newName(ast, standardCharsetsType));
 
 		fieldaccess.setName(ast.newSimpleName(charset));
 		return fieldaccess;
@@ -347,36 +344,72 @@ public enum ChangeBehavior {
 
 	private static boolean isSafeToReadField(TypeDeclaration owner, VariableDeclarationFragment targetField, ASTNode visited) {
 		if (!(targetField.getParent() instanceof FieldDeclaration targetDeclaration)
-				|| !Modifier.isStatic(targetDeclaration.getModifiers())) {
-			return true;
+				|| targetDeclaration.getParent() != owner || !Modifier.isStatic(targetDeclaration.getModifiers())) {
+			return false;
 		}
 		BodyDeclaration enclosingDeclaration= findEnclosingBodyDeclaration(owner, visited);
 		if (enclosingDeclaration == null) {
-			return true;
+			return false;
 		}
-		if (enclosingDeclaration instanceof FieldDeclaration fieldDeclaration) {
-			if (!Modifier.isStatic(fieldDeclaration.getModifiers())) {
-				return true;
-			}
+		if (enclosingDeclaration instanceof FieldDeclaration fieldDeclaration
+				&& Modifier.isStatic(fieldDeclaration.getModifiers())) {
 			return isSafeFromStaticFieldInitializer(owner, fieldDeclaration, targetField, visited);
 		}
-		if (enclosingDeclaration instanceof Initializer initializer) {
-			return !Modifier.isStatic(initializer.getModifiers())
-					|| bodyDeclarationIndex(owner, enclosingDeclaration) >= bodyDeclarationIndex(owner, targetDeclaration);
+		if (enclosingDeclaration instanceof Initializer initializer && Modifier.isStatic(initializer.getModifiers())) {
+			return bodyDeclarationIndex(owner, initializer) > bodyDeclarationIndex(owner, targetDeclaration);
 		}
-		if (enclosingDeclaration instanceof MethodDeclaration methodDeclaration) {
-			return !Modifier.isStatic(methodDeclaration.getModifiers())
-					|| !isMethodReachedDuringEarlierStaticInitialization(owner, methodDeclaration,
-							bodyDeclarationIndex(owner, targetDeclaration));
+		// Methods (including constructors), instance initializers and nested types may
+		// be reached through callbacks while this class is still being initialized.
+		// A same-owner static-call graph cannot establish that those reads are safe.
+		return canInitializeOwnFieldsFirst(owner) && isFirstExecutingStaticInitializer(owner, targetField);
+	}
+
+	/**
+	 * Even a newly inserted first field runs after superclass and default-method
+	 * interface initialization. Without a proof about that hierarchy, keep direct
+	 * typed JDK constants instead of introducing an initialization dependency.
+	 * Local and non-static member classes also cannot host this field on older
+	 * supported source levels, and an interface cannot contain a private field.
+	 */
+	private static boolean canInitializeOwnFieldsFirst(TypeDeclaration owner) {
+		ITypeBinding binding= owner.resolveBinding();
+		if (binding == null || binding.isRecovered() || owner.isInterface() || binding.isLocal()
+				|| binding.isAnonymous() || binding.isMember() && !Modifier.isStatic(binding.getModifiers())
+				|| binding.getInterfaces().length != 0) {
+			return false;
 		}
-		return true;
+		ITypeBinding superclass= binding.getSuperclass();
+		return superclass != null && !superclass.isRecovered()
+				&& Object.class.getCanonicalName().equals(superclass.getErasure().getQualifiedName());
+	}
+
+	private static boolean isFirstExecutingStaticInitializer(TypeDeclaration owner,
+			VariableDeclarationFragment targetField) {
+		for (Object declaration : owner.bodyDeclarations()) {
+			if (declaration instanceof Initializer initializer && Modifier.isStatic(initializer.getModifiers())) {
+				return false;
+			}
+			if (declaration instanceof FieldDeclaration field && Modifier.isStatic(field.getModifiers())) {
+				for (Object candidate : field.fragments()) {
+					if (candidate == targetField) {
+						return true;
+					}
+					if (candidate instanceof VariableDeclarationFragment fragment
+							&& fragment.getInitializer() != null
+							&& fragment.getInitializer().resolveConstantExpressionValue() == null) {
+						return false;
+					}
+				}
+			}
+		}
+		return false;
 	}
 
 	private static boolean isSafeFromStaticFieldInitializer(TypeDeclaration owner, FieldDeclaration enclosingDeclaration,
 			VariableDeclarationFragment targetField, ASTNode visited) {
 		FieldDeclaration targetDeclaration= (FieldDeclaration) targetField.getParent();
 		if (enclosingDeclaration != targetDeclaration) {
-			return bodyDeclarationIndex(owner, enclosingDeclaration) >= bodyDeclarationIndex(owner, targetDeclaration);
+			return bodyDeclarationIndex(owner, enclosingDeclaration) > bodyDeclarationIndex(owner, targetDeclaration);
 		}
 		VariableDeclarationFragment enclosingFragment= findEnclosingFragment(enclosingDeclaration, visited);
 		if (enclosingFragment == null) {
@@ -409,77 +442,6 @@ public enum ChangeBehavior {
 
 	private static int fragmentIndex(FieldDeclaration declaration, VariableDeclarationFragment fragment) {
 		return declaration.fragments().indexOf(fragment);
-	}
-
-	private static boolean isMethodReachedDuringEarlierStaticInitialization(TypeDeclaration owner,
-			MethodDeclaration targetMethod, int targetFieldIndex) {
-		Set<MethodDeclaration> reachable= new HashSet<>();
-		for (Object declaration : owner.bodyDeclarations()) {
-			if (!(declaration instanceof BodyDeclaration bodyDeclaration)
-					|| bodyDeclarationIndex(owner, bodyDeclaration) >= targetFieldIndex) {
-				break;
-			}
-			if (bodyDeclaration instanceof FieldDeclaration fieldDeclaration) {
-				if (!Modifier.isStatic(fieldDeclaration.getModifiers())) {
-					continue;
-				}
-				for (Object fragment : fieldDeclaration.fragments()) {
-					if (fragment instanceof VariableDeclarationFragment variable && variable.getInitializer() != null) {
-						collectReachedStaticMethods(owner, variable.getInitializer(), reachable, new HashSet<>());
-					}
-				}
-			} else if (bodyDeclaration instanceof Initializer initializer && Modifier.isStatic(initializer.getModifiers())) {
-				collectReachedStaticMethods(owner, initializer, reachable, new HashSet<>());
-			}
-		}
-		return reachable.contains(targetMethod);
-	}
-
-	private static void collectReachedStaticMethods(TypeDeclaration owner, ASTNode start, Set<MethodDeclaration> reachable,
-			Set<MethodDeclaration> exploring) {
-		start.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(AnonymousClassDeclaration node) {
-				return false;
-			}
-
-			@Override
-			public boolean visit(TypeDeclaration node) {
-				return node == owner;
-			}
-
-			@Override
-			public boolean visit(MethodInvocation node) {
-				MethodDeclaration declaration= resolveStaticMethodDeclaration(owner, node);
-				if (declaration != null && reachable.add(declaration) && exploring.add(declaration)) {
-					collectReachedStaticMethods(owner, declaration, reachable, exploring);
-					exploring.remove(declaration);
-				}
-				return true;
-			}
-		});
-	}
-
-	private static MethodDeclaration resolveStaticMethodDeclaration(TypeDeclaration owner, MethodInvocation invocation) {
-		IMethodBinding binding= invocation.resolveMethodBinding();
-		if (binding == null || binding.isRecovered() || !Modifier.isStatic(binding.getModifiers())) {
-			return null;
-		}
-		ITypeBinding declaringClass= binding.getDeclaringClass();
-		ITypeBinding ownerBinding= owner.resolveBinding();
-		if (declaringClass == null || ownerBinding == null || declaringClass.isRecovered() || ownerBinding.isRecovered()
-				|| !ownerBinding.getTypeDeclaration().isEqualTo(declaringClass.getTypeDeclaration())) {
-			return null;
-		}
-		IMethodBinding declarationBinding= binding.getMethodDeclaration();
-		for (MethodDeclaration candidate : owner.getMethods()) {
-			IMethodBinding candidateBinding= candidate.resolveBinding();
-			if (candidateBinding != null && !candidateBinding.isRecovered()
-					&& candidateBinding.getMethodDeclaration().isEqualTo(declarationBinding)) {
-				return candidate;
-			}
-		}
-		return null;
 	}
 
 	private static String generateCharsetFieldName(TypeDeclaration owner, String ownerKey, String requestedFieldName,
