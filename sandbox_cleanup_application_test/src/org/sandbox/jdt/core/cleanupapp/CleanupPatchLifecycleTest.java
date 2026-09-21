@@ -21,10 +21,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.equinox.app.IApplication;
@@ -94,6 +96,7 @@ class CleanupPatchLifecycleTest {
 		assertTrue(new String(firstPatch, StandardCharsets.ISO_8859_1).contains("--- a/src/test/LocalPatch.java")); //$NON-NLS-1$
 		assertNotEquals(new String(original, StandardCharsets.UTF_8),
 				new String(read(source), StandardCharsets.UTF_8));
+		assertPatchRoundTrip(source, original, patch);
 
 		Object secondResult= new CodeCleanupApplication().start(new TestApplicationContext(
 				"-config", config.toString(), "--mode", "apply", "--patch", patch.toString(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -130,6 +133,7 @@ class CleanupPatchLifecycleTest {
 				.contains("--- a/src/test/ProjectWidePatch.java")); //$NON-NLS-1$
 		assertNotEquals(new String(original, StandardCharsets.UTF_8),
 				new String(read(source), StandardCharsets.UTF_8));
+		assertPatchRoundTrip(source, original, patch);
 
 		Object secondResult= new ProjectWideCodeCleanupApplication().start(new TestApplicationContext(
 				"--project", project.getName(), "--config", config.toString(), "--report", report.toString(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -137,6 +141,37 @@ class CleanupPatchLifecycleTest {
 
 		assertEquals(Integer.valueOf(CodeCleanupApplication.EXIT_OK), secondResult);
 		assertArrayEquals(new byte[0], Files.readAllBytes(patch));
+	}
+
+	private void assertPatchRoundTrip(IFile source, byte[] original, Path patch) throws Exception {
+		byte[] cleaned= read(source);
+		try (var input= new ByteArrayInputStream(original)) {
+			source.setContents(input, true, false, monitor);
+		}
+		runGitApply(patch, true);
+		assertArrayEquals(original, read(source), "git apply --check must be read-only"); //$NON-NLS-1$
+		runGitApply(patch, false);
+		source.refreshLocal(IResource.DEPTH_ZERO, monitor);
+		assertArrayEquals(cleaned, read(source), "patch must reproduce the actual CLI cleanup bytes"); //$NON-NLS-1$
+	}
+
+	private void runGitApply(Path patch, boolean checkOnly) throws Exception {
+		ProcessBuilder builder= checkOnly
+				? new ProcessBuilder("git", "apply", "--check", "--", patch.toString()) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				: new ProcessBuilder("git", "apply", "--", patch.toString()); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		Path log= temporaryDirectory.resolve(checkOnly ? "git-check.log" : "git-apply.log"); //$NON-NLS-1$ //$NON-NLS-2$
+		builder.directory(project.getLocation().toFile());
+		builder.redirectErrorStream(true);
+		builder.redirectOutput(log.toFile());
+		Process process= builder.start();
+		try {
+			assertTrue(process.waitFor(30, TimeUnit.SECONDS), "git apply did not terminate"); //$NON-NLS-1$
+			assertEquals(0, process.exitValue(), Files.readString(log, StandardCharsets.UTF_8));
+		} finally {
+			if (process.isAlive()) {
+				process.destroyForcibly();
+			}
+		}
 	}
 
 	private Path writeConfig(String content) throws Exception {
