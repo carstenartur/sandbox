@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7c8b343d62f9ddec7e40f19ae521a3d1de0b9012726210d5783d77b1b166218b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.util.Collections.EMPTY_LIST.iterator()\n\u003d\u003e\njava.util.Collections.emptyIterator()\n;;",
+  "beforeExample": "package test;\n\nimport java.util.Collections;\nimport java.util.Iterator;\nimport java.util.List;\n\npublic class Example {\n    public Iterator\u003cString\u003e getEmptyIteratorOld() {\n        List\u003cString\u003e emptyList \u003d Collections.emptyList(); // Not directly part of the rule, but typical context\n        return Collections.EMPTY_LIST.iterator();\n    }\n\n    public Iterator\u003cInteger\u003e getAnotherEmptyIterator() {\n        return Collections.EMPTY_LIST.iterator();\n    }\n}",
+  "afterExample": "package test;\n\nimport java.util.Collections;\nimport java.util.Iterator;\nimport java.util.List;\n\npublic class Example {\n    public Iterator\u003cString\u003e getEmptyIteratorOld() {\n        List\u003cString\u003e emptyList \u003d Collections.emptyList();\n        return Collections.emptyIterator();\n    }\n\n    public Iterator\u003cInteger\u003e getAnotherEmptyIterator() {\n        return Collections.emptyIterator();\n    }\n}",
+  "negativeExample": "package test;\n\nimport java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.Iterator;\nimport java.util.List;\n\npublic class NegativeExample {\n    public Iterator\u003cString\u003e getNonEmptyIterator() {\n        List\u003cString\u003e list \u003d new ArrayList\u003c\u003e();\n        list.add(\"hello\");\n        return list.iterator(); // Should not match\n    }\n\n    public List\u003cString\u003e getEmptyList() {\n        return Collections.EMPTY_LIST; // Should not match, as it doesn\u0027t call .iterator()\n    }\n\n    public void doSomethingWithIterator(Iterator\u003c?\u003e it) {\n        if (it !\u003d null) {\n            // Some other iterator usage\n        }\n    }\n}",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "73319a5317a7e731dace6b23440e8ea4e4798e80",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-21T02:29:55.295611836Z",
+  "ruleFingerprint": "sha256:932d12571d647df0838f7f5227ec4d663e235cb62b71226304066746c2c20ce2",
+  "behaviorFingerprint": "sha256:4fa99435cec1e69cf113f3e1fa27e071f04b4246c9edd3d0e658d25fb5a78a12",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-21T02:30:00.866684416Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "302edb3f2834f04c46096375075946f6fe5639c26bb02dd675ea6dd1ad03bdf7",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: remove.byteArrayInputStream.from.filesystemresourcemanager.write\u003e\n\u003c!description: Replace FileSystemResourceManager.write(..., new ByteArrayInputStream(bytes), ...) with FileSystemResourceManager.write(..., bytes, ...).\u003e\n\u003c!severity: INFO\u003e\norg.eclipse.core.internal.localstore.FileSystemResourceManager.write($file, new java.io.ByteArrayInputStream($bytes$), $fileInfo, $updateFlags, $append, $monitor)\n\u003d\u003e\norg.eclipse.core.internal.localstore.FileSystemResourceManager.write($file, $bytes$, $fileInfo, $updateFlags, $append, $monitor)\n;;",
+  "beforeExample": "import java.io.ByteArrayInputStream;\nimport java.io.InputStream;\n\n// Mock interfaces/classes to make the example self-contained and compile\ninterface IFile {}\ninterface IFileInfo {}\ninterface IProgressMonitor {}\ninterface IFileStore {\n    void write(InputStream content, int options, IProgressMonitor monitor);\n    void write(byte[] content, int options, IProgressMonitor monitor); // Must exist for the \u0027after\u0027 state to compile\n}\nclass Resource {} // Unused in this specific snippet but for context\n\nclass FileSystemResourceManager {\n    // These methods represent the overloaded \u0027write\u0027 methods available\n    public void write(IFile target, InputStream content, IFileInfo fileInfo, int updateFlags, boolean append, IProgressMonitor monitor) {\n        System.out.println(\"Writing InputStream content to \" + target);\n        // ... actual implementation would call store.write(content, ...)\n    }\n    public void write(IFile target, byte[] content, IFileInfo fileInfo, int updateFlags, boolean append, IProgressMonitor monitor) {\n        System.out.println(\"Writing byte[] content to \" + target);\n        // ... actual implementation would call store.write(content, ...)\n    }\n\n    // This method demonstrates the \u0027before\u0027 state of the call site\n    public void someMethodUsingWrite(IFile target, byte[] newContents, IFileInfo fileInfo, int updateFlags, boolean append, IProgressMonitor monitor) {\n        // The pattern to match: creating ByteArrayInputStream and passing it\n        write(target, new ByteArrayInputStream(newContents), fileInfo, updateFlags, append, monitor);\n    }\n}",
+  "afterExample": "import java.io.InputStream; // ByteArrayInputStream import may be removed if not used elsewhere\n\n// Mock interfaces/classes to make the example self-contained and compile\ninterface IFile {}\ninterface IFileInfo {}\ninterface IProgressMonitor {}\ninterface IFileStore {\n    void write(InputStream content, int options, IProgressMonitor monitor);\n    void write(byte[] content, int options, IProgressMonitor monitor); // Must exist for the \u0027after\u0027 state to compile\n}\nclass Resource {}\n\nclass FileSystemResourceManager {\n    public void write(IFile target, InputStream content, IFileInfo fileInfo, int updateFlags, boolean append, IProgressMonitor monitor) {\n        System.out.println(\"Writing InputStream content to \" + target);\n    }\n    public void write(IFile target, byte[] content, IFileInfo fileInfo, int updateFlags, boolean append, IProgressMonitor monitor) {\n        System.out.println(\"Writing byte[] content to \" + target);\n    }\n\n    // This method demonstrates the \u0027after\u0027 state of the call site\n    public void someMethodUsingWrite(IFile target, byte[] newContents, IFileInfo fileInfo, int updateFlags, boolean append, IProgressMonitor monitor) {\n        // The replacement: directly passing byte[]\n        write(target, newContents, fileInfo, updateFlags, append, monitor);\n    }\n}",
+  "negativeExample": "import java.io.ByteArrayInputStream;\nimport java.io.InputStream;\n\n// Mock classes\ninterface IFile {}\ninterface IFileInfo {}\ninterface IProgressMonitor {}\n\nclass MyLegacyFileWriter {\n    // This method ONLY has an InputStream overload and is not \u0027FileSystemResourceManager.write\u0027\n    public void writeDataToLegacyFile(IFile file, InputStream data, IProgressMonitor monitor) {\n        System.out.println(\"Writing data with legacy writer to \" + file);\n    }\n}\n\nclass AnotherComponent {\n    public void processFile(IFile targetFile, byte[] rawData, IProgressMonitor monitor) {\n        // This should NOT be matched by the rule because the method call is different\n        new MyLegacyFileWriter().writeDataToLegacyFile(targetFile, new ByteArrayInputStream(rawData), monitor);\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "a8a1c494a70fd61edf9880d6483557c1564cba32",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Performance",
+  "summary": "Commit 1: Replace ByteArrayInputStream creation with direct byte[] argument for a specific method call to \u0027FileSystemResourceManager.write\u0027.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-21T02:29:55.251912358Z",
+  "ruleFingerprint": "sha256:d30fc75dc0149f9d43f978ddc1d7ad2d8d9f5dbaadaf57e509cd279de59c5a70",
+  "behaviorFingerprint": "sha256:488501e8a228de0f37cf7e864cbf30ecbf91802e37bf81e0e42af6099ab568b2",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-21T02:30:00.825642049Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

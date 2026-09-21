@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1fedae2bce4104c30f050c6772f9f74bc03b7a51490a01e339f0850e205186bf",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: ifile.create.bytearrayinputstream.to.bytearray\u003e\n\u003c!description: Replace IFile.create(new ByteArrayInputStream(bytes), ...) with IFile.create(bytes, ...) when content is already a byte array, improving performance.\nAs IFile.create(...) with byte[] is a default method on an interface, this transformation is implicitly safe for Java 8 and later.\n\u003e\n\u003c!severity: HINT\u003e\n\n$file.create(new java.io.ByteArrayInputStream($content$), $flags$, $monitor$)\n\u003d\u003e\n$file.create($content$, $flags$, $monitor$)\n;;",
+  "beforeExample": "import java.io.ByteArrayInputStream;\nimport org.eclipse.core.resources.IFile;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.NullProgressMonitor;\n\npublic class Example {\n    public void createFile(IFile file, byte[] content) throws CoreException {\n        IProgressMonitor monitor \u003d new NullProgressMonitor();\n        // Old API usage with ByteArrayInputStream\n        file.create(new ByteArrayInputStream(content), IResource.FORCE | IResource.DERIVED, monitor);\n    }\n}\n",
+  "afterExample": "import java.io.ByteArrayInputStream; // Retained as DSL doesn\u0027t remove unused imports\nimport org.eclipse.core.resources.IFile;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.NullProgressMonitor;\n\npublic class Example {\n    public void createFile(IFile file, byte[] content) throws CoreException {\n        IProgressMonitor monitor \u003d new NullProgressMonitor();\n        // New API usage with direct byte array\n        file.create(content, IResource.FORCE | IResource.DERIVED, monitor);\n    }\n}\n",
+  "negativeExample": "import java.io.FileInputStream;\nimport java.io.InputStream;\nimport java.io.File;\nimport org.eclipse.core.resources.IFile;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.NullProgressMonitor;\n\npublic class Example {\n    public void createFileFromPath(IFile file, File sourceFile) throws CoreException {\n        IProgressMonitor monitor \u003d new NullProgressMonitor();\n        // Should not match: using FileInputStream, not ByteArrayInputStream\n        try (InputStream stream \u003d new FileInputStream(sourceFile)) {\n            file.create(stream, IResource.FORCE, monitor);\n        } catch (java.io.IOException e) {\n            // handle exception\n        }\n    }\n}\n",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "a59ce1e1d1dfe1155362de630a06c2c14468662e",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "API Modernization",
+  "summary": "Replaces `IFile.create(new ByteArrayInputStream(content), ...)` with the direct `IFile.create(content, ...)` API.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-21T02:29:55.195102426Z",
+  "ruleFingerprint": "sha256:9de2276b46693bd6495622371ab33ab283f160db86b3de5507c051211305038f",
+  "behaviorFingerprint": "sha256:65303ff3771716d7bd2450fece713326bf16c0a2cf2c93ba50b7faea097cd6ca",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-21T02:30:00.797990357Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

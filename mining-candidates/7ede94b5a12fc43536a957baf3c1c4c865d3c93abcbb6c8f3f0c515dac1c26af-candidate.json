@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7ede94b5a12fc43536a957baf3c1c4c865d3c93abcbb6c8f3f0c515dac1c26af",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.net.URLDecoder.decode($path, \"UTF-8\")\n\u003d\u003e\njava.net.URLDecoder.decode($path, java.nio.charset.StandardCharsets.UTF_8)\n;;",
+  "beforeExample": "import java.io.UnsupportedEncodingException;\nimport java.net.URLDecoder;\n\npublic class Example {\n    public String decodeUrl(String path) throws UnsupportedEncodingException {\n        // This is the pattern to match\n        return URLDecoder.decode(path, \"UTF-8\");\n    }\n\n    public String anotherDecode(String input) {\n        try {\n            return URLDecoder.decode(input, \"UTF-8\");\n        } catch (UnsupportedEncodingException e) {\n            throw new RuntimeException(e);\n        }\n    }\n}",
+  "afterExample": "import java.io.UnsupportedEncodingException;\nimport java.net.URLDecoder;\nimport java.nio.charset.StandardCharsets;\n\npublic class Example {\n    // The \u0027throws UnsupportedEncodingException\u0027 should be removed as the new API doesn\u0027t throw it\n    public String decodeUrl(String path) {\n        // Expected replacement\n        return URLDecoder.decode(path, StandardCharsets.UTF_8);\n    }\n\n    public String anotherDecode(String input) {\n        // The try-catch block becomes redundant\n        return URLDecoder.decode(input, StandardCharsets.UTF_8);\n    }\n}",
+  "negativeExample": "import java.io.UnsupportedEncodingException;\nimport java.net.URLDecoder;\n\npublic class NegativeExample {\n    public String decodeUrlIso(String path) throws UnsupportedEncodingException {\n        // Should not match other charsets\n        return URLDecoder.decode(path, \"ISO-8859-1\");\n    }\n\n    public String encodeUrl(String path) throws UnsupportedEncodingException {\n        // Should not match URLEncoder\n        return java.net.URLEncoder.encode(path, \"UTF-8\");\n    }\n\n    public byte[] getBytes(String text) throws UnsupportedEncodingException {\n        // Should not match String.getBytes()\n        return text.getBytes(\"UTF-8\");\n    }\n}",
+  "targetHintFile": "charsets.sandbox-hint",
+  "sourceCommit": "4f85198eca6f504f1d3c8c24ef3cf74e01a8713a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-21T02:29:55.269628167Z",
+  "ruleFingerprint": "sha256:810d552deae122520f99ffb4e3f8c0c9e6ca2ec7399a33b23864bf7f9ced78ea",
+  "behaviorFingerprint": "sha256:ac3d6df38a14bda09b26797253c7988cd66c68a814df1947a639820be1d97fdb",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-21T02:30:00.838389071Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

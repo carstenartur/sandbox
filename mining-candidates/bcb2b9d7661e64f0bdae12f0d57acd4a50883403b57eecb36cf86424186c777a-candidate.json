@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "bcb2b9d7661e64f0bdae12f0d57acd4a50883403b57eecb36cf86424186c777a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$file.createOrReplace($content, $force, $derived, $keepHistory, $monitor) :: instanceof($file, \"org.eclipse.core.resources.IFile\")\n\u003d\u003e\n$file.write($content, $force, $derived, $keepHistory, $monitor)\n;;",
+  "beforeExample": "import org.eclipse.core.resources.IFile;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.NullProgressMonitor;\n\npublic class TestClass {\n    public void testMethod(IFile file) throws CoreException {\n        byte[] content \u003d \"test\".getBytes();\n        boolean force \u003d true;\n        boolean derived \u003d false;\n        boolean keepHistory \u003d true;\n        IProgressMonitor monitor \u003d new NullProgressMonitor();\n\n        file.createOrReplace(content, force, derived, keepHistory, monitor);\n    }\n}",
+  "afterExample": "import org.eclipse.core.resources.IFile;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.NullProgressMonitor;\n\npublic class TestClass {\n    public void testMethod(IFile file) throws CoreException {\n        byte[] content \u003d \"test\".getBytes();\n        boolean force \u003d true;\n        boolean derived \u003d false;\n        boolean keepHistory \u003d true;\n        IProgressMonitor monitor \u003d new NullProgressMonitor();\n\n        file.write(content, force, derived, keepHistory, monitor);\n    }\n}",
+  "negativeExample": "import org.eclipse.core.resources.IFile;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.NullProgressMonitor;\nimport java.io.ByteArrayInputStream;\n\npublic class NegativeTestClass {\n    public void testOtherMethod(IFile file) throws CoreException {\n        byte[] content \u003d \"test\".getBytes();\n        IProgressMonitor monitor \u003d new NullProgressMonitor();\n\n        // This should not be matched as it\u0027s a different method\n        file.create(new ByteArrayInputStream(content), IFile.FORCE, monitor);\n\n        // This should not be matched as it\u0027s a different method with different arguments\n        file.append(new ByteArrayInputStream(content), IFile.FORCE, monitor);\n    }\n}",
+  "targetHintFile": "eclipse-resources.sandbox-hint",
+  "sourceCommit": "3bdd14c6808ecb3dde0a0c00c5309c915f18ebb7",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Method Rename",
+  "summary": "Rename `IFile.createOrReplace` method calls to `IFile.write`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-21T02:29:55.233154471Z",
+  "ruleFingerprint": "sha256:a05a10f7115af35211dc3d7956abe90ecf78b81c4466a0dd58ce77558cae3618",
+  "behaviorFingerprint": "sha256:e0e268e0675debef173ac749415825d6d4d4abb711951e9e6123a5d5a6fbf7c2",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-09-21T02:30:00.816741046Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
