@@ -3702,9 +3702,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform": {
-      "lastProcessedCommit": "0aa429c496b02591c80bd501737403df886a7e10",
-      "lastProcessedDate": "2026-09-20T02:26:47.250460996Z",
-      "totalProcessed": 2620,
+      "lastProcessedCommit": "9d9bf70808c2410e55da9e8cd56d18f5227ad41d",
+      "lastProcessedDate": "2026-09-21T02:29:53.254277814Z",
+      "totalProcessed": 2748,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -3787,6 +3787,33 @@
           "deferredAt": "2026-09-20T02:25:11.955030842Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "2d9238e189d52ad6083f6ac06aafd6275026648a",
+          "message": "Provide API for IFile Bulk read/write of all bytes/String/chars",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-21T02:24:49.178683175Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a52d6dcbe4dbff44f4c95b30167528fedb9e8767",
+          "message": "Rework org.eclipse.core.internal.utils.Cache with standard java",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-21T02:25:14.345340693Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ad89d5cdd27b93f69642bc47b8b6fa3f367f3205",
+          "message": "Migrate the Windows native file-system refresh monitor to JNA",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-21T02:25:14.358616306Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3795,7 +3822,7 @@
       "currentEpoch": 0,
       "completedEpochs": [],
       "categoryHitCounts": {
-        "API Modernization": 6,
+        "API Modernization": 12,
         "Error Message Standardization": 1,
         "Collections API Modernization": 1,
         "Error Handling Modernization": 1,
@@ -3810,12 +3837,13 @@
         "performance": 1,
         "Collections": 1,
         "Code Style": 2,
-        "Performance": 2,
+        "Performance": 3,
         "Simplification": 1,
         "Idiom": 1,
         "Annotation Transformation": 1,
         "Redundant Code": 1,
-        "Deprecation Improvement": 1
+        "Deprecation Improvement": 1,
+        "Method Rename": 1
       },
       "exhaustedCategories": []
     },
@@ -3844,5 +3872,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 44875
+  "globalTotalProcessed": 45003
 }
