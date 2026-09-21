@@ -8,12 +8,12 @@
         "rules": 0
       },
       "eclipse.jdt.ui": {
-        "files": 1476,
+        "files": 1478,
         "matches": 52,
         "rules": 9
       },
       "eclipse.platform.ui": {
-        "files": 1139,
+        "files": 1140,
         "matches": 62,
         "rules": 8
       },
@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1444,
+        "files": 1454,
         "matches": 76,
         "rules": 11
       }
@@ -743,7 +743,7 @@
       "hintFile": "arrays",
       "rule": "arrays.aslist-contains.review",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
-      "line": 3801,
+      "line": 3805,
       "matchedCode": "Arrays.asList(models).contains(model)"
     },
     {
@@ -751,7 +751,7 @@
       "hintFile": "arrays",
       "rule": "arrays.aslist-contains.review",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java",
-      "line": 3811,
+      "line": 3815,
       "matchedCode": "Arrays.asList(models).contains(model)"
     },
     {
@@ -2063,7 +2063,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java16.stream-collect-tolist.consider-stream-tolist",
       "file": "sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java",
-      "line": 149,
+      "line": 204,
       "matchedCode": "computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Collectors.toList())"
     },
     {

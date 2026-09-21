@@ -1,15 +1,15 @@
-# Refactoring Mining Report — 2026-09-18
+# Refactoring Mining Report — 2026-09-21
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
 |----------------|-------|---------|-------|
 | eclipse.jdt.core | 227 | 0 | 0 |
-| eclipse.jdt.ui | 1476 | 52 | 9 |
-| eclipse.platform.ui | 1139 | 62 | 8 |
+| eclipse.jdt.ui | 1478 | 52 | 9 |
+| eclipse.platform.ui | 1140 | 62 | 8 |
 | eclipse.platform | 311 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1444 | 76 | 11 |
+| sandbox | 1454 | 76 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -140,8 +140,8 @@
 
 #### Rule: `arrays` → `arrays.aslist-contains.review`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/e4/migration/MementoReader.java:56` — `Arrays.asList(memento.getAttributeKeys()).contains(attribute)`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:3801` — `Arrays.asList(models).contains(model)`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:3811` — `Arrays.asList(models).contains(model)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:3805` — `Arrays.asList(models).contains(model)`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:3815` — `Arrays.asList(models).contains(model)`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/LargeFileLimitsPreferenceHandler.java:417` — `Arrays.asList(disabled).contains(fileExtension)`
 
 #### Rule: `string-isblank` → `string-isblank1`
@@ -325,7 +325,7 @@
 - `sandbox_platform_helper/src/org/sandbox/jdt/internal/ui/fix/SimplifyPlatformStatusCleanUpCore.java:89` — `computeFixSet().stream().map(SimplifyPlatformStatusFixCore::toString).collect...`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/ui/fix/XMLCleanUpCore.java:94` — `computeFixSet().stream().map(XMLCleanUpFixCore::toString).collect(Collectors....`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:360` — `computeFixSet().stream().map(JUnitCleanUpFixCore::toString).collect(Collector...`
-- `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:149` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
+- `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:204` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
 - `sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java:87` — `computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(C...`
 - `sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java:83` — `computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collect...`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:213` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
