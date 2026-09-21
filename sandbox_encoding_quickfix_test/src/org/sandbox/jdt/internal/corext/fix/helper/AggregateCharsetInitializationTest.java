@@ -147,7 +147,7 @@ class AggregateCharsetInitializationTest {
         CompilationUnit unit = (CompilationUnit) parser.createAST(null);
         assertEquals(0, Arrays.stream(unit.getProblems()).filter(problem -> problem.isError()).count(),
                 Arrays.toString(unit.getProblems()));
-        TypeDeclaration owner = (TypeDeclaration) unit.types().getLast();
+        TypeDeclaration owner = (TypeDeclaration) unit.types().get(unit.types().size() - 1);
         VariableDeclarationFragment target = null;
         for (var field : owner.getFields()) {
             for (Object candidate : field.fragments()) {
