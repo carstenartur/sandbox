@@ -215,8 +215,9 @@ class CharsetScopeTest {
         Map<String, String> reversed= runAggregateCharsetCleanup("aggregatereverse", "E2.java", "E1.java"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
         assertEquals(forward.keySet(), reversed.keySet());
-        for (String unitName : forward.keySet()) {
-            assertEquals(normalizeAggregatePackage(forward.get(unitName), "aggregateforward"), //$NON-NLS-1$
+        for (Map.Entry<String, String> entry : forward.entrySet()) {
+            String unitName= entry.getKey();
+            assertEquals(normalizeAggregatePackage(entry.getValue(), "aggregateforward"), //$NON-NLS-1$
                     normalizeAggregatePackage(reversed.get(unitName), "aggregatereverse"), unitName); //$NON-NLS-1$
         }
     }
