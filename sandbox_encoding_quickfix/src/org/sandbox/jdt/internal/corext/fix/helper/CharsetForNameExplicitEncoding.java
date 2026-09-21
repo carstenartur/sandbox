@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.eclipse.text.edits.TextEditGroup;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -39,7 +40,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 
 /**
- * Java 18
+ * Java 7 (the introduction of StandardCharsets)
  *
  * Find: Charset.forName("UTF-8")
  *
@@ -53,10 +54,8 @@ public class CharsetForNameExplicitEncoding extends AbstractExplicitEncoding<Met
 
 	@Override
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit, Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
-		if (!JavaModelUtil.is18OrHigher(compilationUnit.getJavaElement().getJavaProject())) {
-			/**
-			 * For Java 17 and older just do nothing
-			 */
+		if (JavaModelUtil.isVersionLessThan(compilationUnit.getJavaElement().getJavaProject()
+				.getOption(JavaCore.COMPILER_COMPLIANCE, true), JavaCore.VERSION_1_7)) {
 			return;
 		}
 		ReferenceHolder<ASTNode, Object> datah= ReferenceHolder.createForNodes();
