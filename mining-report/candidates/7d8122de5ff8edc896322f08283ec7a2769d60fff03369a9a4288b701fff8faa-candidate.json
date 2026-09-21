@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7d8122de5ff8edc896322f08283ec7a2769d60fff03369a9a4288b701fff8faa",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.core.runtime.Status(org.eclipse.core.runtime.IStatus.ERROR, org.eclipse.core.resources.ResourcesPlugin.PI_RESOURCES, $e.getMessage(), $e)\n\u003d\u003e\norg.eclipse.core.runtime.Status.error($e.getMessage(), $e)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IStatus;\nimport org.eclipse.core.runtime.ILog;\nimport org.eclipse.core.runtime.Status;\n\npublic class Example {\n    private ILog log;\n\n    public Example(ILog log) {\n        this.log \u003d log;\n    }\n\n    public void foo() {\n        try {\n            // Simulate an operation that might throw CoreException\n            throw new CoreException(new Status(IStatus.ERROR, ResourcesPlugin.PI_RESOURCES, \"Simulated error\"));\n        } catch (CoreException e) {\n            log.log(new Status(IStatus.ERROR, ResourcesPlugin.PI_RESOURCES, e.getMessage(), e));\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IStatus;\nimport org.eclipse.core.runtime.ILog;\nimport org.eclipse.core.runtime.Status;\n\npublic class Example {\n    private ILog log;\n\n    public Example(ILog log) {\n        this.log \u003d log;\n    }\n\n    public void foo() {\n        try {\n            // Simulate an operation that might throw CoreException\n            throw new CoreException(new Status(IStatus.ERROR, ResourcesPlugin.PI_RESOURCES, \"Simulated error\"));\n        } catch (CoreException e) {\n            log.log(Status.error(e.getMessage(), e));\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.runtime.IStatus;\nimport org.eclipse.core.runtime.Status;\nimport org.eclipse.core.runtime.ILog;\nimport org.eclipse.core.resources.ResourcesPlugin;\n\npublic class NegativeExample {\n    private ILog log;\n\n    public NegativeExample(ILog log) {\n        this.log \u003d log;\n    }\n\n    public void bar() {\n        // Different Status constructor usage, should not match\n        Status customStatus \u003d new Status(IStatus.WARNING, \"my.plugin.id\", \"Custom warning message\");\n        log.log(customStatus);\n\n        // Not a Status constructor, should not match\n        String errorMessage \u003d \"Error: \" + System.currentTimeMillis();\n        System.err.println(errorMessage);\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "824a1634d3010d093614ccb74b86170697b9f0e4",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-21T02:29:55.282753749Z",
+  "ruleFingerprint": "sha256:db9f569cb7b7791de519b29332b38dee57df323d823486a307c77a7d7f1d8b8f",
+  "behaviorFingerprint": "sha256:e83b82822b365643244c5ede7a4376a07f66dcaa7b4efe33bfd0cacd2f900b18",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 9: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-21T02:30:00.853036333Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
