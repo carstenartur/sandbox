@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -348,18 +349,16 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 
 	private boolean referencesVariable(ASTNode node, String variableName, IVariableBinding binding) {
 		final boolean[] referenced= { false };
-		node.accept(new ASTVisitor() {
-			@Override
-			public boolean visit(SimpleName name) {
-				if (!variableName.equals(name.getIdentifier())) {
-					return true;
-				}
-				if (binding == null || binding.equals(name.resolveBinding())) {
-					referenced[0]= true;
-					return false;
-				}
+		ReferenceHolder<ASTNode, Object> data= ReferenceHolder.create();
+		HelperVisitorFactory.callSimpleNameVisitor(node, data, new HashSet<>(), (name, holder) -> {
+			if (!variableName.equals(name.getIdentifier())) {
 				return true;
 			}
+			if (binding == null || binding.equals(name.resolveBinding())) {
+				referenced[0]= true;
+				return false;
+			}
+			return true;
 		});
 		return referenced[0];
 	}
