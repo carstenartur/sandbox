@@ -73,13 +73,13 @@ class UnifiedDiffFormatterTest {
 				"}", //$NON-NLS-1$
 				"").getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
 
-		String tabPath= "src/File\tWithTab.java"; //$NON-NLS-1$
+		String tabPath= "src/FileWithTab.java"; //$NON-NLS-1$
 		byte[] tabBefore= "class FileWithTab {\n\tString value() {\n\t\treturn \"before\";\n\t}\n}\n" //$NON-NLS-1$
 				.getBytes(StandardCharsets.UTF_8);
 		byte[] tabAfter= "class FileWithTab {\n\tString value() {\n\t\treturn \"after\";\n\t}\n}\n" //$NON-NLS-1$
 				.getBytes(StandardCharsets.UTF_8);
 
-		String newlinePath= "src/File\nWithNewline.java"; //$NON-NLS-1$
+		String newlinePath= "src/FileWithNewline.java"; //$NON-NLS-1$
 		byte[] newlineBefore= "class FileWithNewline {\n\tint value() {\n\t\treturn 1;\n\t}\n}\n" //$NON-NLS-1$
 				.getBytes(StandardCharsets.UTF_8);
 		byte[] newlineAfter= "class FileWithNewline {\n\tint value() {\n\t\treturn 2;\n\t}\n}\n" //$NON-NLS-1$
@@ -134,8 +134,6 @@ class UnifiedDiffFormatterTest {
 		byte[] patchBytes= patch.toByteArray();
 		String patchText= new String(patchBytes, StandardCharsets.ISO_8859_1);
 		assertTrue(patchText.contains("\\ No newline at end of file")); //$NON-NLS-1$
-		assertTrue(patchText.contains("\\tWithTab.java")); //$NON-NLS-1$
-		assertTrue(patchText.contains("\\nWithNewline.java")); //$NON-NLS-1$
 
 		Path patchFile= repoDir.resolve("cleanup.patch"); //$NON-NLS-1$
 		Files.write(patchFile, patchBytes);
@@ -158,6 +156,23 @@ class UnifiedDiffFormatterTest {
 		assertArrayEquals(deletionAfter, Files.readAllBytes(repoDir.resolve(deletionPath)));
 		assertArrayEquals(crlfAfter, Files.readAllBytes(repoDir.resolve(crlfPath)));
 		assertArrayEquals(noNewlineAfter, Files.readAllBytes(repoDir.resolve(noNewlinePath)));
+	}
+
+	@Test
+	void quotesPathsWithoutRequiringHostFilesystemSupport() throws IOException {
+		byte[] before= "before\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
+		byte[] after= "after\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
+		String[][] paths= {
+				{ "src/File\tWithTab.java", "src/File\\tWithTab.java" }, //$NON-NLS-1$ //$NON-NLS-2$
+				{ "src/File\nWithNewline.java", "src/File\\nWithNewline.java" }, //$NON-NLS-1$ //$NON-NLS-2$
+				{ "src/File\"WithQuote.java", "src/File\\\"WithQuote.java" } //$NON-NLS-1$ //$NON-NLS-2$
+		};
+		for (String[] path : paths) {
+			String patch= new String(UnifiedDiffFormatter.format(path[0], before, after), StandardCharsets.UTF_8);
+			String headers= "--- \"a/" + path[1] + "\"\n+++ \"b/" + path[1] + "\"\n"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			assertTrue(patch.startsWith(headers), patch);
+			assertTrue(patch.contains("@@ -1 +1 @@\n-before\n+after\n"), patch); //$NON-NLS-1$
+		}
 	}
 
 	@Test
