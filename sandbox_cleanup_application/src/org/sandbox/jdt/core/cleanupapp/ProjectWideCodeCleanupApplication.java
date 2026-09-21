@@ -10,8 +10,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.core.cleanupapp;
 
-import java.io.IOException;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,8 +54,8 @@ import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.RefactoringStatusEntry;
 
-import org.sandbox.jdt.cleanup.multifile.api.LineDelimiterPreserver;
 import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpDiagnosticsProvider;
+import org.sandbox.jdt.cleanup.multifile.api.LineDelimiterPreserver;
 import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 
 /**
