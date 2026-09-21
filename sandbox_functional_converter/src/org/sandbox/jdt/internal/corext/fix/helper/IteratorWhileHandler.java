@@ -232,6 +232,7 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 			}
 		}
 		cuRewrite.getImportRemover().applyRemoves(cuRewrite.getImportRewrite());
+		IteratorImportCleanup.removeUnusedPackageImports(cuRewrite);
 		addRequiredImports(cuRewrite, model);
 	}
 
