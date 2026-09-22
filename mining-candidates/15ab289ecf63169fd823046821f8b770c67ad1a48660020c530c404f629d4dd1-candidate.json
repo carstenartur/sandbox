@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "15ab289ecf63169fd823046821f8b770c67ad1a48660020c530c404f629d4dd1",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\"Warn about usage of deprecated Platform.ARCH_X86 constant\":\norg.eclipse.core.runtime.Platform.ARCH_X86\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.runtime.Platform;\n\npublic class Example {\n    public void checkArchitecture() {\n        String currentArch \u003d Platform.ARCH_X86;\n        System.out.println(\"Running on \" + currentArch);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.runtime.Platform;\n\npublic class Example {\n    public void checkArchitecture() {\n        String currentArch \u003d Platform.ARCH_X86; // This line would display a warning.\n        System.out.println(\"Running on \" + currentArch);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.runtime.Platform;\n\npublic class Example {\n    public void checkArchitecture() {\n        String currentArch \u003d Platform.ARCH_X86_64;\n        System.out.println(\"Running on \" + currentArch);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "1524ff162cf8094670a182eff000a22a402d96e9",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Deprecation",
+  "summary": "Propose a hint-only rule to warn about the usage of the deprecated constant `org.eclipse.core.runtime.Platform.ARCH_X86`. There is no direct, universally safe semantic replacement, so a warning is appropriate.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-22T02:27:14.312402895Z",
+  "ruleFingerprint": "sha256:b889096e737efabfadf17a195eaadefc82fc8f734413851e4b7584e86ec057f5",
+  "behaviorFingerprint": "sha256:b21678c7f23d40367d2b2b809aeb5aaa315892b890bfda05b7406fa95178f807",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-22T02:27:23.042013477Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

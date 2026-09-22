@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4d80f5d12021177dd0ac4d25b69a57ac4efda05042084596a100f32a1d203f0e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n@id: eclipse.api.mark_deprecated_for_removal\n@description: Add forRemoval\u003dtrue and specific since attribute to existing @Deprecated annotations (Java 9+).\n@severity: WARNING\n*/\n@java.lang.Deprecated :: sourceVersionGE(9)\n\u003d\u003e @java.lang.Deprecated(forRemoval \u003d true, since \u003d \"2025-06 (removal in 2027-06 or later)\")\n;;",
+  "beforeExample": "package com.example;\n\nimport java.net.URL;\nimport java.util.Map;\n\n// Minimal dummy interfaces/classes for compilation\ninterface IPath {}\nclass FileLocator { static URL find(Object b, IPath p, Map m) { return null; } }\nclass Bundle {}\nclass CoreException extends Exception {}\n\npublic class MyPlugin {\n    @Deprecated\n    public URL findResource(IPath path) {\n        return FileLocator.find(new Bundle(), path, null);\n    }\n\n    @Deprecated\n    public void initializeDefaults() throws CoreException {\n        // ...\n    }\n\n    // This method already has the desired attributes, should not be changed.\n    @Deprecated(forRemoval \u003d true, since \u003d \"2025-06 (removal in 2027-06 or later)\")\n    public void alreadyMarkedMethod() {}\n\n    // This method has a different @Deprecated attribute, will be overwritten.\n    @Deprecated(forRemoval \u003d false)\n    public void specificDeprecatedMethod() {}\n}",
+  "afterExample": "package com.example;\n\nimport java.net.URL;\nimport java.util.Map;\n\n// Minimal dummy interfaces/classes for compilation\ninterface IPath {}\nclass FileLocator { static URL find(Object b, IPath p, Map m) { return null; } }\nclass Bundle {}\nclass CoreException extends Exception {}\n\npublic class MyPlugin {\n    @Deprecated(forRemoval \u003d true, since \u003d \"2025-06 (removal in 2027-06 or later)\")\n    public URL findResource(IPath path) {\n        return FileLocator.find(new Bundle(), path, null);\n    }\n\n    @Deprecated(forRemoval \u003d true, since \u003d \"2025-06 (removal in 2027-06 or later)\")\n    public void initializeDefaults() throws CoreException {\n        // ...\n    }\n\n    // This method already has the desired attributes, should not be changed.\n    @Deprecated(forRemoval \u003d true, since \u003d \"2025-06 (removal in 2027-06 or later)\")\n    public void alreadyMarkedMethod() {}\n\n    // This method has a different @Deprecated attribute, will be overwritten.\n    @Deprecated(forRemoval \u003d true, since \u003d \"2025-06 (removal in 2027-06 or later)\")\n    public void specificDeprecatedMethod() {}\n}",
+  "negativeExample": "package com.example;\n\npublic class AnotherClass {\n    // This method is not @Deprecated, so it should not be affected.\n    public void normalMethod() {\n        System.out.println(\"This method is fine.\");\n    }\n\n    // This method uses a different annotation, so it should not be affected.\n    @Override\n    public String toString() {\n        return \"AnotherClass instance\";\n    }\n\n    // If the project source version is below 9, this @Deprecated should not be affected by the rule.\n    // (This is implicitly handled by the sourceVersionGE(9) guard during analysis).\n    @Deprecated\n    public void legacyMethodInOldProject() {}\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "57815654148aeac962b8baa729f6fd29e1469533",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "API Deprecation",
+  "summary": "Adds `forRemoval \u003d true` and `since \u003d \"2025-06 (removal in 2027-06 or later)\"` attributes to `@Deprecated` annotations, aligning with Java 9+ deprecation practices.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-22T02:27:14.375569887Z",
+  "ruleFingerprint": "sha256:cf1e9fe6944e5ab64122b7165c386fb300f54908a1c128ff45a74755a78fcbe7",
+  "behaviorFingerprint": "sha256:eb9c5e0c63d34b15625216e50fa5b601a54503e3ccf81df21467689723eed5ef",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 12: The public type MyPlugin must be defined in its own file",
+    "verifiedAt": "2026-09-22T02:27:23.062129020Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
