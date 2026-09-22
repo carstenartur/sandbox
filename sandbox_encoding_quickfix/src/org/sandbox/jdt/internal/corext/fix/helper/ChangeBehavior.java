@@ -30,20 +30,24 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.Initializer;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeParameter;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 
 import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 
 public enum ChangeBehavior {
@@ -103,9 +107,15 @@ public enum ChangeBehavior {
 				return addCharsetUTF8(cuRewrite, ast, normalizedCharset);
 			}
 
+			String ownerName= aggregateOwnerName(cuRewrite.getRoot(), enclosingType, visited);
+			if (ownerName == null) {
+				return addCharsetUTF8(cuRewrite, ast, normalizedCharset);
+			}
 			QualifiedName cached= charsetConstants.get(reservationKey);
 			if (cached != null) {
-				return copyQualifiedName(ast, cached);
+				// Reservations are owner-local; expression qualifiers are occurrence-local.
+				return ast.newQualifiedName(ast.newName(ownerName),
+						ast.newSimpleName(cached.getName().getIdentifier()));
 			}
 
 			String fieldName= existingField != null
@@ -113,8 +123,7 @@ public enum ChangeBehavior {
 					: generateCharsetFieldName(enclosingType, ownerKey, normalizedCharset, charsetConstants);
 
 			QualifiedName fieldReference= ast.newQualifiedName(
-					ast.newSimpleName(enclosingType.getName().getIdentifier()),
-					ast.newSimpleName(fieldName));
+					ast.newName(ownerName), ast.newSimpleName(fieldName));
 			if (existingField == null) {
 				ImportRewrite importRewrite= cuRewrite.getImportRewrite();
 				String standardCharsetsType= importRewrite.addImport(StandardCharsets.class.getCanonicalName());
@@ -238,8 +247,72 @@ public enum ChangeBehavior {
 	}
 
 	private static QualifiedName copyQualifiedName(AST ast, QualifiedName qualifiedName) {
-		return ast.newQualifiedName(ast.newSimpleName(qualifiedName.getQualifier().getFullyQualifiedName()),
+		return ast.newQualifiedName(ast.newName(qualifiedName.getQualifier().getFullyQualifiedName()),
 				ast.newSimpleName(qualifiedName.getName().getIdentifier()));
+	}
+
+	/** Resolve expression-name obscuring for this occurrence, not for the cached field. */
+	private static String aggregateOwnerName(CompilationUnit root, TypeDeclaration owner, ASTNode visited) {
+		ITypeBinding type= owner.resolveBinding();
+		if (type == null || type.isRecovered()) {
+			return null;
+		}
+		IBinding[] scope= new ScopeAnalyzer(root).getDeclarationsInScope(visited.getStartPosition(),
+				ScopeAnalyzer.VARIABLES | ScopeAnalyzer.TYPES | ScopeAnalyzer.CHECK_VISIBILITY);
+		String simple= owner.getName().getIdentifier();
+		boolean obscured= hasEnclosingTypeParameter(visited, simple);
+		for (IBinding binding : scope) {
+			if (simple.equals(binding.getName()) && !binding.isEqualTo(type)) {
+				obscured= true;
+				break;
+			}
+		}
+		if (!obscured) {
+			return simple;
+		}
+		String qualified= type.getTypeDeclaration().getQualifiedName();
+		int dot= qualified.indexOf('.');
+		if (dot < 0) {
+			return null; // A shadowed default-package type has no qualified alternative.
+		}
+		String first= qualified.substring(0, dot);
+		if (hasEnclosingTypeParameter(visited, first)) {
+			return null;
+		}
+		for (IBinding binding : scope) {
+			if (first.equals(binding.getName())) {
+				return null; // Qualification must not turn a package name into a variable/type.
+			}
+		}
+		for (ITypeBinding member= type; member.getDeclaringClass() != null; member= member.getDeclaringClass()) {
+			for (ITypeBinding declaring= member.getDeclaringClass(); declaring != null; declaring= declaring.getSuperclass()) {
+				for (IVariableBinding field : declaring.getDeclaredFields()) {
+					if (member.getName().equals(field.getName())) {
+						return null; // An intermediate member name may also denote a field.
+					}
+				}
+			}
+		}
+		return qualified;
+	}
+
+	private static boolean hasEnclosingTypeParameter(ASTNode visited, String name) {
+		for (ASTNode current= visited; current != null; current= current.getParent()) {
+			List<?> parameters;
+			if (current instanceof MethodDeclaration method) {
+				parameters= method.typeParameters();
+			} else if (current instanceof TypeDeclaration type) {
+				parameters= type.typeParameters();
+			} else {
+				continue;
+			}
+			for (Object parameter : parameters) {
+				if (name.equals(((TypeParameter) parameter).getName().getIdentifier())) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	private static TypeDeclaration findAggregateCharsetOwner(CompilationUnitRewrite cuRewrite, ASTNode visited) {
