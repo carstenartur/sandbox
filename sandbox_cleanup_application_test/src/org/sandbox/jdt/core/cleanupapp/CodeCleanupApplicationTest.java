@@ -26,7 +26,9 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -456,6 +458,19 @@ public class CodeCleanupApplicationTest {
 	}
 
 	/**
+	 * Test that writing a patch truncates stale output when no changes were recorded.
+	 */
+	@Test
+	public void testPatchWriteClearsStaleContentOnNoOp() throws Exception {
+		File patchFile = new File(tempDir, "changes.patch");
+		Files.writeString(patchFile.toPath(), "stale patch\n", StandardCharsets.UTF_8); //$NON-NLS-1$
+		app.patchFile = patchFile.getAbsolutePath();
+		invokeWritePatchFile();
+
+		assertEquals("", Files.readString(patchFile.toPath(), StandardCharsets.UTF_8)); //$NON-NLS-1$
+	}
+
+	/**
 	 * Test --report argument parsing
 	 */
 	@Test
@@ -661,6 +676,12 @@ public class CodeCleanupApplicationTest {
 		Field field = CodeCleanupApplication.class.getDeclaredField("quiet");
 		field.setAccessible(true);
 		return field.getBoolean(app);
+	}
+
+	private void invokeWritePatchFile() throws Exception {
+		Method method = CodeCleanupApplication.class.getDeclaredMethod("writePatchFile");
+		method.setAccessible(true);
+		method.invoke(app);
 	}
 
 	private File createTempConfigFile() throws IOException {
