@@ -629,6 +629,9 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     }
 
     private boolean referencesVariable(ASTNode node, String variableName) {
+        if (node == null) {
+            return false;
+        }
         final boolean[] referenced = { false };
         node.accept(new ASTVisitor() {
             @Override
@@ -657,9 +660,8 @@ public class ASTStreamRenderer implements ASTAwareRenderer<Expression, Statement
     }
 
     private boolean referencesVariable(List<String> bodyStatements, String variableName) {
-        String pattern = "(?s).*\\b" + java.util.regex.Pattern.quote(variableName) + "\\b.*"; //$NON-NLS-1$ //$NON-NLS-2$
         for (String bodyStatement : bodyStatements) {
-            if (bodyStatement != null && bodyStatement.matches(pattern)) {
+            if (bodyStatement != null && referencesVariable(createStatement(bodyStatement), variableName)) {
                 return true;
             }
         }
