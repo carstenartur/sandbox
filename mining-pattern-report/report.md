@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-09-21
+# Refactoring Mining Report — 2026-09-22
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1454 | 76 | 11 |
+| sandbox | 1458 | 81 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -185,8 +185,8 @@
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildContext.java:68` — `requestedBuilt.clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/InternalBuilder.java:108` — `((BuildCommand)command).clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/BuildManager.java:1157` — `prereqs.clone()`
-- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java:324` — `((ProjectDescription)description).clone()`
-- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java:451` — `description.clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java:322` — `((ProjectDescription)description).clone()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java:449` — `description.clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceDescription.java:68` — `buildOrder.clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/WorkspaceDescription.java:160` — `value.clone()`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/NatureManager.java:189` — `oldNatures.clone()`
@@ -239,6 +239,10 @@
 - `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/preferences/LlmSecureCredentialsStoreTest.java:54` — `store.values().isEmpty()` → `store.isEmpty()`
 - `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/preferences/LlmSecureCredentialsStoreTest.java:65` — `store.values().isEmpty()` → `store.isEmpty()`
 
+#### Rule: `stream-performance` → `stream-performance.sorted-before-collect.review`
+- `sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java:907` — `variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(...`
+- `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java:205` — `group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candi...`
+
 #### Rule: `stream-performance` → `stream-performance.collection-stream-foreach.to-collection-foreach`
 - `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:191` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(entry....` → `dataholder.entrySet().forEach(entry -> {   System.out.println(entry.getKey() ...`
 - `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:239` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println("=====...` → `dataholder.entrySet().forEach(entry -> {   System.out.println("============="...`
@@ -251,11 +255,10 @@
 #### Rule: `stream-performance` → `stream-performance.nested-flatmap.review`
 - `sandbox_tools/src/org/sandbox/jdt/internal/corext/fix/helper/WhileToForEach.java:258` — `miExpr.receiver().flatMap(receiver -> receiver.asSimpleName()).flatMap(Simple...`
 
-#### Rule: `stream-performance` → `stream-performance.sorted-before-collect.review`
-- `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java:205` — `group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candi...`
-
 #### Rule: `arrays` → `arrays.clone.review`
 - `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/StreamChainToLoopTest.java:94` — `cleanups.clone()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/git/UnifiedDiffFormatter.java:51` — `before.clone()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/git/UnifiedDiffFormatter.java:52` — `after.clone()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:343` — `BUNDLED_LIBRARIES.clone()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:352` — `DISABLED_BUNDLED_LIBRARIES.clone()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/Pattern.java:73` — `constraints.clone()`
@@ -286,6 +289,8 @@
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java:164` — `arguments.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectSnapshot.java:38` — `content.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectSnapshot.java:44` — `content.clone()`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:209` — `arguments.clone()`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:216` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:108` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:115` — `arguments.clone()`
 - `sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintTemplateStore.java:75` — `TEMPLATES.clone()`

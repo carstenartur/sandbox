@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 252,
+    "totalMatches": 257,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1454,
-        "matches": 76,
+        "files": 1458,
+        "matches": 81,
         "rules": 11
       }
     }
@@ -1085,7 +1085,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java",
-      "line": 324,
+      "line": 322,
       "matchedCode": "((ProjectDescription)description).clone()"
     },
     {
@@ -1093,7 +1093,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/Project.java",
-      "line": 451,
+      "line": 449,
       "matchedCode": "description.clone()"
     },
     {
@@ -1494,6 +1494,14 @@
     {
       "repository": "sandbox",
       "hintFile": "stream-performance",
+      "rule": "stream-performance.sorted-before-collect.review",
+      "file": "sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java",
+      "line": 907,
+      "matchedCode": "variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(java.util.Locale.ROOT)).sorted().collect(java.util.stream.Collectors.joining(\" \"))"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "stream-performance",
       "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
       "file": "sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java",
       "line": 191,
@@ -1577,6 +1585,22 @@
       "file": "sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/StreamChainToLoopTest.java",
       "line": 94,
       "matchedCode": "cleanups.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/git/UnifiedDiffFormatter.java",
+      "line": 51,
+      "matchedCode": "before.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/git/UnifiedDiffFormatter.java",
+      "line": 52,
+      "matchedCode": "after.clone()"
     },
     {
       "repository": "sandbox",
@@ -1906,6 +1930,22 @@
       "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java",
       "line": 144,
       "matchedCode": "Arrays.asList(values).contains(unexpected.toFile().getPath())"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java",
+      "line": 209,
+      "matchedCode": "arguments.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java",
+      "line": 216,
+      "matchedCode": "arguments.clone()"
     },
     {
       "repository": "sandbox",
