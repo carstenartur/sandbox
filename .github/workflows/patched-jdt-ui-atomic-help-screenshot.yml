@@ -145,6 +145,8 @@ jobs:
       - name: Reproduce the atomic Cleanup previews
         env:
           SANDBOX_LTK_PATCH_EVIDENCE: ${{ runner.temp }}/patched-ltk/runtime.properties
+        # Native measurement exceeded 1600 pixels with unchanged source/fonts.
+        # Geometry preparation still validates the smallest fitting shell bounds.
         run: >-
           timeout
           --signal=TERM
@@ -152,7 +154,7 @@ jobs:
           100m
           xvfb-run
           --auto-servernum
-          --server-args="-screen 0 1600x1200x24"
+          --server-args="-screen 0 3200x1800x24"
           mvn
           --no-transfer-progress
           -e
