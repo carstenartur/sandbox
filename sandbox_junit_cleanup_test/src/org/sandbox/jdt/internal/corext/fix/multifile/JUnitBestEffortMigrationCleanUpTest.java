@@ -70,6 +70,14 @@ public class JUnitBestEffortMigrationCleanUpTest {
 				import org.junit.runners.Parameterized.Parameter;
 				import org.junit.runners.Parameterized.Parameters;
 
+				/**
+				 * @todo Sandbox JUnit migration gap parameterized:test.FieldInjectionTest (PARAMETERIZED_FIELD_INJECTION): @Parameterized.Parameter field injection is not represented by the constructor-based local rewrite. Manual completion: Replace field injection or the custom provider with explicit Jupiter method arguments/Arguments sources, then remove the Parameterized runner and constructor coupling.  <pre>
+				 * private static void sandboxJUnitMigrationTodoParameterizedFieldInjection(){
+				 *   throw new UnsupportedOperationException("Manual JUnit migration required: PARAMETERIZED_FIELD_INJECTION");
+				 * }
+				 *
+				 * </pre>
+				 */
 				@RunWith(Parameterized.class)
 				public class FieldInjectionTest {
 					@Parameter
@@ -83,13 +91,6 @@ public class JUnitBestEffortMigrationCleanUpTest {
 					@Test
 					public void verifiesValue() {
 						assertEquals(1, value);
-					}
-
-					/**
-					 * @todo Sandbox JUnit migration gap parameterized:test.FieldInjectionTest (PARAMETERIZED_FIELD_INJECTION): @Parameterized.Parameter field injection is not represented by the constructor-based local rewrite. Manual completion: Replace field injection or the custom provider with explicit Jupiter method arguments/Arguments sources, then remove the Parameterized runner and constructor coupling.
-					 */
-					private static void sandboxJUnitMigrationTodoParameterizedFieldInjection() {
-						throw new UnsupportedOperationException("Manual JUnit migration required: PARAMETERIZED_FIELD_INJECTION");
 					}
 				}
 				"""; //$NON-NLS-1$
