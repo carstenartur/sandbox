@@ -13,15 +13,24 @@
  *******************************************************************************/
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Arrays;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
+import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseBundleClasspath;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava8;
 
 /**
@@ -53,9 +62,19 @@ public class Java8CleanUpTest {
 
 	@BeforeEach
 	public void setup() throws CoreException {
-		// SWT classes (Image, ImageData, Device, etc.) need to be on the test project classpath
-		// for the ImageDataProvider cleanup tests to compile
-		context.addBundleToClasspath("org.eclipse.swt"); //$NON-NLS-1$
+		// The temporary Java project needs the APIs referenced by both the original
+		// and modernized source, independently of this test bundle's dependencies.
+		EclipseBundleClasspath.addBundles(context.getJavaProject(),
+				"org.eclipse.swt", "org.eclipse.equinox.common", "org.eclipse.jface", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"org.eclipse.ui.navigator", "org.eclipse.jdt.ui", "org.eclipse.osgi", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"org.eclipse.core.commands"); //$NON-NLS-1$
+		for (String type : new String[] { "org.eclipse.core.runtime.SubMonitor", //$NON-NLS-1$
+				"org.eclipse.core.runtime.SubProgressMonitor", "org.eclipse.core.runtime.IProgressMonitor", //$NON-NLS-1$ //$NON-NLS-2$
+				"org.eclipse.jface.viewers.ViewerSorter", "org.eclipse.jface.viewers.ViewerComparator", //$NON-NLS-1$ //$NON-NLS-2$
+				"org.eclipse.jface.viewers.TreePathViewerSorter", "org.eclipse.jface.viewers.TreePathViewerComparator", //$NON-NLS-1$ //$NON-NLS-2$
+				"org.eclipse.ui.navigator.CommonViewerSorter", "org.eclipse.ui.navigator.CommonViewerComparator" }) { //$NON-NLS-1$ //$NON-NLS-2$
+			assertNotNull(context.getJavaProject().findType(type), type);
+		}
 	}
 
 	enum JFaceCleanupCases{
@@ -508,7 +527,7 @@ public class Test {
 		sub.worked(10);
 	}
 	public void doWork(IProgressMonitor monitor) {
-		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
+		monitor.beginTask("Task", 100);
 		processMonitor(subMonitor.split(50));
 	}
 }
@@ -620,7 +639,7 @@ public class Test {
 		IProgressMonitor sub = SubMonitor.convert(getMonitor()).split(computeTicks());
 	}
 }
-"""); //$NON-NLS-1$
+""" ); //$NON-NLS-1$
 
 		String given;
 		String expected;
@@ -637,6 +656,7 @@ public class Test {
 	public void testJFaceCleanupParametrized(JFaceCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		assertCompiles(cu);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP_MONITOR);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
@@ -676,6 +696,7 @@ public class Test {
 	public void testJFaceCleanupdonttouch(NOJFaceCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java",test.given,false, null); //$NON-NLS-1$
+		assertCompiles(cu);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP_MONITOR);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
@@ -698,7 +719,7 @@ public class Test extends ViewerComparator {
 		TreePathViewerSorter(
 """
 package test;
-import org.eclipse.ui.navigator.TreePathViewerSorter;
+import org.eclipse.jface.viewers.TreePathViewerSorter;
 public class Test extends TreePathViewerSorter {
 }
 """,
@@ -708,17 +729,24 @@ import org.eclipse.jface.viewers.TreePathViewerComparator;
 public class Test extends TreePathViewerComparator {
 }
 """),
+		// Both CommonViewer classes are final: test legal construction, not inheritance.
 		CommonViewerSorter(
 """
 package test;
 import org.eclipse.ui.navigator.CommonViewerSorter;
-public class Test extends CommonViewerSorter {
+public class Test {
+	public CommonViewerSorter createSorter() {
+		return new CommonViewerSorter();
+	}
 }
 """,
 """
 package test;
 import org.eclipse.ui.navigator.CommonViewerComparator;
-public class Test extends CommonViewerComparator {
+public class Test {
+	public CommonViewerComparator createSorter() {
+		return new CommonViewerComparator();
+	}
 }
 """),
 		FieldDeclaration(
@@ -855,7 +883,7 @@ public class Test {
 		ViewerComparator s = (ViewerComparator) viewer.getComparator();
 	}
 }
-""");
+""" );
 
 		String given;
 		String expected;
@@ -871,6 +899,7 @@ public class Test {
 	public void testViewerSorterCleanup(ViewerSorterCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		assertCompiles(cu);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP_VIEWER_SORTER);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
@@ -911,7 +940,7 @@ public class Test {
 		return image;
 	}
 }
-""");
+""" );
 
 		String given;
 		String expected;
@@ -927,6 +956,7 @@ public class Test {
 	public void testImageDataProviderCleanup(ImageDataProviderCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		assertCompiles(cu);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP_IMAGE_DPI);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
@@ -978,7 +1008,7 @@ public class Test {
 		return image;
 	}
 }
-""");
+""" );
 
 		String given;
 
@@ -992,6 +1022,7 @@ public class Test {
 	public void testImageDataProviderCleanupDoNotTouch(NOImageDataProviderCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		assertCompiles(cu);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP_IMAGE_DPI);
 		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
@@ -1039,7 +1070,7 @@ public class Test {
 		});
 	}
 }
-""");
+""" );
 
 		String given;
 		String expected;
@@ -1055,8 +1086,18 @@ public class Test {
 	public void testImageDataProviderMultipleCleanup(ImageDataProviderMultipleCleanupCases test) throws CoreException {
 		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test", false, null); //$NON-NLS-1$
 		ICompilationUnit cu= pack.createCompilationUnit("Test.java", test.given, false, null); //$NON-NLS-1$
+		assertCompiles(cu);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP);
 		context.enable(MYCleanUpConstants.JFACE_CLEANUP_IMAGE_DPI);
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] {cu}, new String[] {test.expected}, null);
+	}
+
+	private static void assertCompiles(ICompilationUnit unit) {
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(unit);
+		parser.setResolveBindings(true);
+		CompilationUnit root= (CompilationUnit) parser.createAST(null);
+		assertTrue(Arrays.stream(root.getProblems()).noneMatch(problem -> problem.isError()),
+				() -> Arrays.toString(root.getProblems()));
 	}
 }
