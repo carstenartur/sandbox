@@ -41,29 +41,37 @@ public enum ExplicitEncodingPatternsAggregateUTF8 {
 				}
 				""",
 				"""
-						package test1;
+package test1;
 
-						import java.io.ByteArrayOutputStream;
-						import java.io.InputStreamReader;
-						import java.io.FileInputStream;
-						import java.io.FileReader;
-						import java.io.Reader;
-						import java.nio.charset.Charset;
-						import java.io.FileNotFoundException;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStreamReader;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.Reader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.io.FileNotFoundException;
 
-						public class E1 {
-						    void method(String filename) {
-						        Charset cs1= Charset.forName("UTF-8");
-						        Charset cs1b= Charset.forName("Utf-8");
-						        Charset cs2= Charset.forName("UTF-16");
-						        Charset cs3= Charset.forName("UTF-16BE");
-						        Charset cs4= Charset.forName("UTF-16LE");
-						        Charset cs5= Charset.forName("ISO-8859-1");
-						        Charset cs6= Charset.forName("US-ASCII");
-						        String result= cs1.toString();
-						       }
-						    }
-						}
+public class E1 {
+    private static final Charset US_ASCII = StandardCharsets.US_ASCII;
+	private static final Charset ISO_8859_1 = StandardCharsets.ISO_8859_1;
+	private static final Charset UTF_16LE = StandardCharsets.UTF_16LE;
+	private static final Charset UTF_16BE = StandardCharsets.UTF_16BE;
+	private static final Charset UTF_16 = StandardCharsets.UTF_16;
+	private static final Charset UTF_8 = StandardCharsets.UTF_8;
+
+	void method(String filename) {
+        Charset cs1= E1.UTF_8;
+        Charset cs1b= E1.UTF_8;
+        Charset cs2= E1.UTF_16;
+        Charset cs3= E1.UTF_16BE;
+        Charset cs4= E1.UTF_16LE;
+        Charset cs5= E1.ISO_8859_1;
+        Charset cs6= E1.US_ASCII;
+        String result= cs1.toString();
+       }
+    }
+}
 						"""),
 		BYTEARRAYOUTSTREAM("""
 				package test1;
@@ -424,7 +432,7 @@ public class E1 {
         try {
             OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(filename), "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
         } catch (UnsupportedEncodingException e) {
-            // Hier wird die UnsupportedEncodingException abgefangen
+            // UnsupportedEncodingException wird hier abgefangen
             e.printStackTrace();
         }
     }
@@ -524,7 +532,7 @@ public class E1 {
         try {
             OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(filename), "non-existing-encoding"); // könnte UnsupportedEncodingException werfen
         } catch (UnsupportedEncodingException e) {
-            // Hier wird die UnsupportedEncodingException abgefangen
+            // UnsupportedEncodingException wird hier abgefangen
             e.printStackTrace();
         }
     }
@@ -983,10 +991,10 @@ import java.nio.charset.StandardCharsets;
 
 public class E1 {
 
-    private static final Charset UTF_16 = StandardCharsets.UTF_16;
-	private static final Charset US_ASCII = StandardCharsets.US_ASCII;
+    private static final Charset US_ASCII = StandardCharsets.US_ASCII;
 	private static final Charset ISO_8859_1 = StandardCharsets.ISO_8859_1;
 	private static final Charset UTF_8 = StandardCharsets.UTF_8;
+	private static final Charset UTF_16 = StandardCharsets.UTF_16;
 
 	static void bla(String filename) throws FileNotFoundException {
         byte[] b = {(byte) 59};
@@ -1019,7 +1027,7 @@ public class E1 {
         String s14 = new String(b, 0, 1, "Shift_JIS"); // bleibt unverändert
 
         // Fall mit Charset.forName() (wird unverändert bleiben, keine Ersetzung möglich)
-        Charset charset = Charset.forName("UTF-16");
+        Charset charset = E1.UTF_16;
         String s15 = new String(b, charset); // bleibt unverändert
         String s16 = new String(b, 0, 1, charset); // bleibt unverändert
 
