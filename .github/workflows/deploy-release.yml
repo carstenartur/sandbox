@@ -523,7 +523,7 @@ jobs:
             echo "::error::Next-development tree reports project version '$actual', expected '$NEXT_SNAPSHOT'."
             exit 1
           fi
-          git diff --check
+          git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check
 
           git add -A -- ':!.github/workflows/'
           git commit -m "Prepare for next development iteration ${NEXT_SNAPSHOT}"

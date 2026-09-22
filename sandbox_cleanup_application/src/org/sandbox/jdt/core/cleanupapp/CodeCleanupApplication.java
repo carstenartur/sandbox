@@ -21,6 +21,7 @@ package org.sandbox.jdt.core.cleanupapp;
  */
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -58,6 +59,7 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.Version;
+import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 
 public class CodeCleanupApplication implements IApplication {
 	private static final File[] FILES = new File[0];
@@ -148,7 +150,7 @@ public class CodeCleanupApplication implements IApplication {
 
 	private final List<String> errors = new ArrayList<>();
 
-	private final StringBuilder patchContent = new StringBuilder();
+	private final ByteArrayOutputStream patchContent = new ByteArrayOutputStream();
 
 	private int filesProcessed = 0;
 
@@ -226,14 +228,13 @@ public class CodeCleanupApplication implements IApplication {
 
 					if (changed) {
 						this.changedFiles.add(file.getAbsolutePath());
-						String origStr = new String(originalContent, StandardCharsets.UTF_8);
-						String newStr = new String(newContent, StandardCharsets.UTF_8);
+						String patchPath = iFile.getProjectRelativePath().toPortableString();
 
 						if (this.cleanupMode == CleanupMode.DIFF && !this.quiet) {
-							printUnifiedDiff(file.getAbsolutePath(), origStr, newStr);
+							printUnifiedDiff(patchPath, originalContent, newContent);
 						}
 						if (this.patchFile != null) {
-							appendUnifiedDiff(file.getAbsolutePath(), origStr, newStr);
+							appendUnifiedDiff(patchPath, originalContent, newContent);
 						}
 					}
 				} finally {
@@ -249,6 +250,10 @@ public class CodeCleanupApplication implements IApplication {
 				byte[] afterContent = Files.readAllBytes(file.toPath());
 				if (!MessageDigest.isEqual(computeHash(beforeContent), computeHash(afterContent))) {
 					this.changedFiles.add(file.getAbsolutePath());
+					if (this.patchFile != null) {
+						String patchPath = iFile.getProjectRelativePath().toPortableString();
+						appendUnifiedDiff(patchPath, beforeContent, afterContent);
+					}
 				}
 			}
 		} catch (CoreException e) {
@@ -431,7 +436,7 @@ public class CodeCleanupApplication implements IApplication {
 		this.reportFile = null;
 		this.changedFiles.clear();
 		this.errors.clear();
-		this.patchContent.setLength(0);
+		this.patchContent.reset();
 		this.filesProcessed = 0;
 	}
 
@@ -531,8 +536,8 @@ public class CodeCleanupApplication implements IApplication {
 
 		Instant endTime = Instant.now();
 
-		if (this.patchFile != null && !this.changedFiles.isEmpty()) {
-			writePatchFile(filesToCleanup);
+		if (this.patchFile != null) {
+			writePatchFile();
 		}
 		if (this.reportFile != null) {
 			writeJsonReport(startTime, endTime);
@@ -617,82 +622,25 @@ public class CodeCleanupApplication implements IApplication {
 		}
 	}
 
-	private static void printUnifiedDiff(String filePath, String original, String modified) {
-		System.out.println("--- a/" + filePath); //$NON-NLS-1$
-		System.out.println("+++ b/" + filePath); //$NON-NLS-1$
-		String[] origLines = original.split("\n", -1); //$NON-NLS-1$
-		String[] newLines = modified.split("\n", -1); //$NON-NLS-1$
-		int maxLen = Math.max(origLines.length, newLines.length);
-		int hunkStart = -1;
-		List<String> hunkLines = new ArrayList<>();
-		for (int i = 0; i < maxLen; i++) {
-			String origLine = i < origLines.length ? origLines[i] : ""; //$NON-NLS-1$
-			String newLine = i < newLines.length ? newLines[i] : ""; //$NON-NLS-1$
-			if (!origLine.equals(newLine)) {
-				if (hunkStart == -1) {
-					hunkStart = i + 1;
-				}
-				if (i < origLines.length) {
-					hunkLines.add("-" + origLine); //$NON-NLS-1$
-				}
-				if (i < newLines.length) {
-					hunkLines.add("+" + newLine); //$NON-NLS-1$
-				}
-			} else if (!hunkLines.isEmpty()) {
-				System.out.println("@@ -" + hunkStart + " @@"); //$NON-NLS-1$ //$NON-NLS-2$
-				hunkLines.forEach(System.out::println);
-				hunkLines.clear();
-				hunkStart = -1;
-			}
-		}
-		if (!hunkLines.isEmpty()) {
-			System.out.println("@@ -" + hunkStart + " @@"); //$NON-NLS-1$ //$NON-NLS-2$
-			hunkLines.forEach(System.out::println);
+	private static void printUnifiedDiff(String filePath, byte[] original, byte[] modified) {
+		try {
+			System.out.write(UnifiedDiffFormatter.format(filePath, original, modified));
+		} catch (IOException e) {
+			throw new IllegalStateException("Cannot print unified diff for " + filePath, e); //$NON-NLS-1$
 		}
 	}
 
-	private void appendUnifiedDiff(String filePath, String original, String modified) {
-		this.patchContent.append("--- a/").append(filePath).append('\n'); //$NON-NLS-1$
-		this.patchContent.append("+++ b/").append(filePath).append('\n'); //$NON-NLS-1$
-		String[] origLines = original.split("\n", -1); //$NON-NLS-1$
-		String[] newLines = modified.split("\n", -1); //$NON-NLS-1$
-		int maxLen = Math.max(origLines.length, newLines.length);
-		int hunkStart = -1;
-		List<String> hunkLines = new ArrayList<>();
-		for (int i = 0; i < maxLen; i++) {
-			String origLine = i < origLines.length ? origLines[i] : ""; //$NON-NLS-1$
-			String newLine = i < newLines.length ? newLines[i] : ""; //$NON-NLS-1$
-			if (!origLine.equals(newLine)) {
-				if (hunkStart == -1) {
-					hunkStart = i + 1;
-				}
-				if (i < origLines.length) {
-					hunkLines.add("-" + origLine); //$NON-NLS-1$
-				}
-				if (i < newLines.length) {
-					hunkLines.add("+" + newLine); //$NON-NLS-1$
-				}
-			} else if (!hunkLines.isEmpty()) {
-				this.patchContent.append("@@ -").append(hunkStart).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$
-				for (String line : hunkLines) {
-					this.patchContent.append(line).append('\n');
-				}
-				hunkLines.clear();
-				hunkStart = -1;
-			}
-		}
-		if (!hunkLines.isEmpty()) {
-			this.patchContent.append("@@ -").append(hunkStart).append(" @@\n"); //$NON-NLS-1$ //$NON-NLS-2$
-			for (String line : hunkLines) {
-				this.patchContent.append(line).append('\n');
-			}
+	private void appendUnifiedDiff(String filePath, byte[] original, byte[] modified) {
+		try {
+			this.patchContent.writeBytes(UnifiedDiffFormatter.format(filePath, original, modified));
+		} catch (IOException e) {
+			throw new IllegalStateException("Cannot append unified diff for " + filePath, e); //$NON-NLS-1$
 		}
 	}
 
-	private void writePatchFile(final File[] sourceRoots) {
-		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
-				Files.newOutputStream(new File(this.patchFile).toPath()), StandardCharsets.UTF_8))) {
-			writer.print(this.patchContent.toString());
+	private void writePatchFile() {
+		try (var output = Files.newOutputStream(new File(this.patchFile).toPath())) {
+			this.patchContent.writeTo(output);
 			if (this.verbose) {
 				System.out.println(Messages.bind(Messages.CommandLinePatchWritten, this.patchFile));
 			}
