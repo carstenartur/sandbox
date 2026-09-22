@@ -117,7 +117,7 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 <span class="fc" id="L117">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
 <span class="fc" id="L118">		AST ast= cuRewrite.getRoot().getAST();</span>
 <span class="fc" id="L119">		NodeData nodedata= (NodeData) data.get(visited);</span>
-<span class="fc" id="L120">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
+<span class="fc" id="L120">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, nodedata.encoding(),getCharsetConstants(cuRewrite));</span>
 <span class="fc" id="L121">		ListRewrite listRewrite= rewrite.getListRewrite(visited, ClassInstanceCreation.ARGUMENTS_PROPERTY);</span>
 <span class="fc" id="L122">		boolean tryAlreadyUnwrapped= false;</span>
 <span class="fc bfc" id="L123" title="All 2 branches covered.">		if (nodedata.replace()) {</span>

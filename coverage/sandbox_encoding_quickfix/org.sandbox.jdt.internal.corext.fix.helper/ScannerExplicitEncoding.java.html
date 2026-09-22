@@ -168,7 +168,7 @@ import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
 <span class="fc" id="L168">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
 <span class="fc" id="L169">		AST ast= cuRewrite.getRoot().getAST();</span>
 <span class="fc" id="L170">		NodeData nodedata= (NodeData) data.get(visited);</span>
-<span class="fc" id="L171">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
+<span class="fc" id="L171">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, nodedata.encoding(),getCharsetConstants(cuRewrite));</span>
 		/**
 		 * Add Charset.defaultCharset() as second (last) parameter
 		 */

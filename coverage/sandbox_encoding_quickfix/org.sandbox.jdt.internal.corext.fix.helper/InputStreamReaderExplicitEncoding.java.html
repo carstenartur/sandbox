@@ -90,7 +90,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 <span class="fc" id="L90">		NodeData nodedata = (NodeData) data.get(visited);</span>
 
 <span class="fc" id="L92">		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, cuRewrite.getRoot().getAST(),</span>
-<span class="fc" id="L93">				nodedata.encoding(), getCharsetConstants());</span>
+<span class="fc" id="L93">				visited, nodedata.encoding(), getCharsetConstants(cuRewrite));</span>
 
 		/**
 		 * Register encoding replacement BEFORE removing exception handling.

@@ -58,57 +58,56 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, Set&lt;ASTNode&gt; nodesprocessed, ChangeBehavior cb) {
 <span class="fc" id="L60">		ReferenceHolder&lt;ASTNode, Object&gt; datah = ReferenceHolder.createForNodes();</span>
-<span class="fc" id="L61">		getCharsetConstants().clear();</span>
-<span class="fc" id="L62">		HelperVisitorFactory.forMethodCall(Files.class, METHOD_NEW_BUFFERED_WRITER)</span>
-<span class="fc" id="L63">			.in(compilationUnit)</span>
-<span class="fc" id="L64">			.excluding(nodesprocessed)</span>
-<span class="fc" id="L65">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
-<span class="fc" id="L66">	}</span>
+<span class="fc" id="L61">		HelperVisitorFactory.forMethodCall(Files.class, METHOD_NEW_BUFFERED_WRITER)</span>
+<span class="fc" id="L62">			.in(compilationUnit)</span>
+<span class="fc" id="L63">			.excluding(nodesprocessed)</span>
+<span class="fc" id="L64">			.processEach(datah, (visited, holder) -&gt; processFoundNode(fixcore, operations, cb, visited, holder));</span>
+<span class="fc" id="L65">	}</span>
 
 	private static boolean processFoundNode(UseExplicitEncodingFixCore fixcore,
 			Set&lt;CompilationUnitRewriteOperation&gt; operations, ChangeBehavior cb, MethodInvocation visited,
 			ReferenceHolder&lt;ASTNode, Object&gt; holder) {
-<span class="fc" id="L71">		List&lt;ASTNode&gt; arguments = visited.arguments();</span>
+<span class="fc" id="L70">		List&lt;ASTNode&gt; arguments = visited.arguments();</span>
 		
 		// Handle Files.newBufferedWriter(Path, Charset, OpenOption...) - replace charset if it's a known encoding
 		// The charset is the second parameter
-<span class="fc bfc" id="L75" title="All 2 branches covered.">		if (arguments.size() &gt;= 2) {</span>
-<span class="fc" id="L76">			ASTNode encodingArg = arguments.get(1);</span>
-<span class="fc" id="L77">			String encodingValue = getEncodingValue(encodingArg, visited, cb);</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">		if (arguments.size() &gt;= 2) {</span>
+<span class="fc" id="L75">			ASTNode encodingArg = arguments.get(1);</span>
+<span class="fc" id="L76">			String encodingValue = getEncodingValue(encodingArg, visited, cb);</span>
 			
-<span class="pc bpc" id="L79" title="2 of 4 branches missed.">			if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
-<span class="fc" id="L80">				NodeData nd = new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>
-<span class="fc" id="L81">				holder.put(visited, nd);</span>
-<span class="fc" id="L82">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L83">				return false;</span>
+<span class="pc bpc" id="L78" title="2 of 4 branches missed.">			if (encodingValue != null &amp;&amp; ENCODINGS.contains(encodingValue)) {</span>
+<span class="fc" id="L79">				NodeData nd = new NodeData(true, encodingArg, ENCODING_MAP.get(encodingValue));</span>
+<span class="fc" id="L80">				holder.put(visited, nd);</span>
+<span class="fc" id="L81">				operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L82">				return false;</span>
 			}
 			// If we have 2+ arguments and second is a charset (even if not recognized), don't add another
-<span class="nc" id="L86">			return false;</span>
+<span class="nc" id="L85">			return false;</span>
 		}
 		
 		// Handle Files.newBufferedWriter(Path) - only 1 argument, add charset parameter
 		// We need to insert the charset as the second parameter
-<span class="pc bpc" id="L91" title="1 of 2 branches missed.">		if (arguments.size() == 1) {</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">		if (arguments.size() == 1) {</span>
 			// Files.newBufferedWriter(Path) uses UTF-8 by default since Java 8
 			// In all modes, we should use UTF-8 to preserve the original behavior
-<span class="fc" id="L94">			String encoding = &quot;UTF_8&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L95">			NodeData nd = new NodeData(false, visited, encoding);</span>
-<span class="fc" id="L96">			holder.put(visited, nd);</span>
-<span class="fc" id="L97">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
-<span class="fc" id="L98">			return false;</span>
+<span class="fc" id="L93">			String encoding = &quot;UTF_8&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L94">			NodeData nd = new NodeData(false, visited, encoding);</span>
+<span class="fc" id="L95">			holder.put(visited, nd);</span>
+<span class="fc" id="L96">			operations.add(fixcore.rewrite(visited, cb, holder));</span>
+<span class="fc" id="L97">			return false;</span>
 		}
 		
-<span class="nc" id="L101">		return false;</span>
+<span class="nc" id="L100">		return false;</span>
 	}
 
 	@Override
 	public void rewrite(UseExplicitEncodingFixCore upp, MethodInvocation visited, CompilationUnitRewrite cuRewrite,
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
-<span class="fc" id="L107">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L108">		AST ast = cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L109">		NodeData nodedata = (NodeData) data.get(visited);</span>
-<span class="fc" id="L110">		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),</span>
-<span class="fc" id="L111">				getCharsetConstants());</span>
+<span class="fc" id="L106">		ASTRewrite rewrite = cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L107">		AST ast = cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L108">		NodeData nodedata = (NodeData) data.get(visited);</span>
+<span class="fc" id="L109">		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, ast, visited, nodedata.encoding(),</span>
+<span class="fc" id="L110">				getCharsetConstants(cuRewrite));</span>
 
 		/**
 		 * Register encoding replacement BEFORE removing exception handling.
@@ -117,36 +116,36 @@ import org.sandbox.jdt.internal.corext.fix.UseExplicitEncodingFixCore;
 		 * replaceAndRemoveNLS fails silently on nodes that have already been
 		 * marked as move targets, so the replacement must be registered first.
 		 */
-<span class="fc" id="L120">		ListRewrite listRewrite = rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);</span>
-<span class="fc" id="L121">		boolean tryAlreadyUnwrapped= false;</span>
-<span class="fc bfc" id="L122" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
-<span class="fc" id="L123">			tryAlreadyUnwrapped= replaceArgumentAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);</span>
-<span class="fc" id="L124">		} else {</span>
+<span class="fc" id="L119">		ListRewrite listRewrite = rewrite.getListRewrite(visited, MethodInvocation.ARGUMENTS_PROPERTY);</span>
+<span class="fc" id="L120">		boolean tryAlreadyUnwrapped= false;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">		if (nodedata.replace()) {</span>
+<span class="fc" id="L122">			tryAlreadyUnwrapped= replaceArgumentAndRemoveNLS(rewrite, nodedata.visited(), callToCharsetDefaultCharset, group, cuRewrite);</span>
+<span class="fc" id="L123">		} else {</span>
 			// Insert as second parameter (after Path, before any OpenOptions)
-<span class="fc" id="L126">			List&lt;ASTNode&gt; arguments = visited.arguments();</span>
-<span class="pc bpc" id="L127" title="1 of 2 branches missed.">			if (arguments.size() == 1) {</span>
-<span class="fc" id="L128">				listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
-<span class="fc" id="L129">			} else {</span>
+<span class="fc" id="L125">			List&lt;ASTNode&gt; arguments = visited.arguments();</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">			if (arguments.size() == 1) {</span>
+<span class="fc" id="L127">				listRewrite.insertLast(callToCharsetDefaultCharset, group);</span>
+<span class="fc" id="L128">			} else {</span>
 				// Insert after first parameter
-<span class="nc" id="L131">				listRewrite.insertAfter(callToCharsetDefaultCharset, arguments.get(0), group);</span>
+<span class="nc" id="L130">				listRewrite.insertAfter(callToCharsetDefaultCharset, arguments.get(0), group);</span>
 			}
 		}
-<span class="pc bpc" id="L134" title="1 of 2 branches missed.">		if (!tryAlreadyUnwrapped) {</span>
-<span class="fc" id="L135">			removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRemover());</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">		if (!tryAlreadyUnwrapped) {</span>
+<span class="fc" id="L134">			removeUnsupportedEncodingException(visited, group, rewrite, cuRewrite.getImportRemover());</span>
 		}
-<span class="fc" id="L137">	}</span>
+<span class="fc" id="L136">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
-<span class="nc bnc" id="L141" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L142">			return &quot;Files.newBufferedWriter(path, &quot; + cb.computeCharsetforPreview() + &quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L141">			return &quot;Files.newBufferedWriter(path, &quot; + cb.computeCharsetforPreview() + &quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="nc" id="L144">		return &quot;Files.newBufferedWriter(path);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L143">		return &quot;Files.newBufferedWriter(path);\n&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L149">		return &quot;Files.newBufferedWriter(path)&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L148">		return &quot;Files.newBufferedWriter(path)&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

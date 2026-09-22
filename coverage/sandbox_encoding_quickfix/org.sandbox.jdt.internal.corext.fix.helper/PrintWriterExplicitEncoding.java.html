@@ -84,7 +84,7 @@ import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
 <span class="fc" id="L85">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
 <span class="fc" id="L86">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L87">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),getCharsetConstants());</span>
+<span class="fc" id="L87">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, (String) data.get(visited),getCharsetConstants(cuRewrite));</span>
 		/**
 		 * new FileOutputStream(&lt;filename&gt;)
 		 */

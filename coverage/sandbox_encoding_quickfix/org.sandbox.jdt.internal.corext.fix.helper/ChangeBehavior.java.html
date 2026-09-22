@@ -18,149 +18,165 @@ import static org.sandbox.jdt.internal.common.LibStandardNames.METHOD_DISPLAY_NA
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.BodyDeclaration;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldAccess;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Initializer;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeParameter;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 
 import org.eclipse.jdt.internal.corext.dom.ASTNodeFactory;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 
-<span class="fc" id="L38">public enum ChangeBehavior {</span>
-<span class="fc" id="L39">	KEEP_BEHAVIOR() {</span>
+<span class="fc" id="L53">public enum ChangeBehavior {</span>
+<span class="fc" id="L54">	KEEP_BEHAVIOR() {</span>
 		@Override
-		protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, AST ast, String charset, Map&lt;String, QualifiedName&gt; charsetConstants) {
-<span class="fc" id="L42">			Expression callToCharsetDefaultCharset= null;</span>
+		protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, AST ast, ASTNode visited,
+				String charset, Map&lt;String, QualifiedName&gt; charsetConstants) {
+<span class="fc" id="L58">			Expression callToCharsetDefaultCharset= null;</span>
 
-<span class="fc bfc" id="L44" title="All 2 branches covered.">			if (charset != null) {</span>
-<span class="fc" id="L45">				callToCharsetDefaultCharset= addCharsetUTF8(cuRewrite, ast, charset);</span>
-<span class="fc" id="L46">			} else {</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">			if (charset != null) {</span>
+<span class="fc" id="L61">				callToCharsetDefaultCharset= addCharsetUTF8(cuRewrite, ast, charset);</span>
+<span class="fc" id="L62">			} else {</span>
 				// needs Java 1.5
-<span class="fc" id="L48">				callToCharsetDefaultCharset= addCharsetComputation(cuRewrite, ast);</span>
+<span class="fc" id="L64">				callToCharsetDefaultCharset= addCharsetComputation(cuRewrite, ast);</span>
 			}
 
-<span class="fc" id="L51">			return callToCharsetDefaultCharset;</span>
+<span class="fc" id="L67">			return callToCharsetDefaultCharset;</span>
 		}
 
 		@Override
 		protected String computeCharsetforPreview() {
-<span class="nc" id="L56">			String insert= &quot;Charset.defaultCharset()&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L57">			return insert;</span>
+<span class="nc" id="L72">			String insert= &quot;Charset.defaultCharset()&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L73">			return insert;</span>
 		}
 	},
-<span class="fc" id="L60">	ENFORCE_UTF8() {</span>
+<span class="fc" id="L76">	ENFORCE_UTF8() {</span>
 		@Override
-		protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, AST ast, String charset, Map&lt;String, QualifiedName&gt; charsetConstants) {
-<span class="fc bfc" id="L63" title="All 2 branches covered.">			String charset2= charset == null ? &quot;UTF_8&quot; : charset; //$NON-NLS-1$</span>
-<span class="fc" id="L64">			Expression callToCharsetDefaultCharset= addCharsetUTF8(cuRewrite, ast, charset2);</span>
-<span class="fc" id="L65">			return callToCharsetDefaultCharset;</span>
+		protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, AST ast, ASTNode visited,
+				String charset, Map&lt;String, QualifiedName&gt; charsetConstants) {
+<span class="fc bfc" id="L80" title="All 2 branches covered.">			String charset2= charset == null ? &quot;UTF_8&quot; : charset; //$NON-NLS-1$</span>
+<span class="fc" id="L81">			Expression callToCharsetDefaultCharset= addCharsetUTF8(cuRewrite, ast, charset2);</span>
+<span class="fc" id="L82">			return callToCharsetDefaultCharset;</span>
 		}
 
 		@Override
 		protected String computeCharsetforPreview() {
-<span class="nc" id="L70">			String insert= &quot;StandardCharsets.UTF_8&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L71">			return insert;</span>
+<span class="nc" id="L87">			String insert= &quot;StandardCharsets.UTF_8&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L88">			return insert;</span>
 		}
 	},
-<span class="fc" id="L74">	ENFORCE_UTF8_AGGREGATE() {</span>
+<span class="fc" id="L91">	ENFORCE_UTF8_AGGREGATE() {</span>
 		@Override
-		protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, AST ast, String charset2, Map&lt;String, QualifiedName&gt; charsetConstants) {
-<span class="fc bfc" id="L77" title="All 2 branches covered.">			String charset= charset2 == null ? &quot;UTF_8&quot; : charset2; //$NON-NLS-1$</span>
-			// Generate a valid Java identifier for the charset name (e.g., UTF_8)
-<span class="fc" id="L79">		    String fieldName = charset.toUpperCase(Locale.ROOT).replace('-', '_');</span>
+		protected Expression computeCharsetASTNode(final CompilationUnitRewrite cuRewrite, AST ast, ASTNode visited,
+				String charset2, Map&lt;String, QualifiedName&gt; charsetConstants) {
+<span class="fc bfc" id="L95" title="All 2 branches covered.">			String charset= charset2 == null ? &quot;UTF_8&quot; : charset2; //$NON-NLS-1$</span>
+<span class="fc" id="L96">			TypeDeclaration enclosingType= findAggregateCharsetOwner(cuRewrite, visited);</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			if (enclosingType == null) {</span>
+<span class="nc" id="L98">				return addCharsetUTF8(cuRewrite, ast, normalizeCharsetFieldName(charset));</span>
+			}
+<span class="fc" id="L100">			String ownerKey= aggregateCharsetOwnerKey(cuRewrite.getRoot(), enclosingType);</span>
+<span class="fc" id="L101">			String normalizedCharset= normalizeCharsetFieldName(charset);</span>
+<span class="fc" id="L102">			String reservationKey= ownerKey + '\u0000' + normalizedCharset;</span>
 
-		    // Check if this charset constant is already stored in the map
-<span class="fc bfc" id="L82" title="All 2 branches covered.">		    if (charsetConstants.containsKey(fieldName)) {</span>
-<span class="fc" id="L83">		        QualifiedName cached = charsetConstants.get(fieldName);</span>
-<span class="fc" id="L84">		        return ast.newQualifiedName(</span>
-<span class="fc" id="L85">		            ast.newSimpleName(cached.getQualifier().toString()),</span>
-<span class="fc" id="L86">		            ast.newSimpleName(cached.getName().getIdentifier())</span>
-		        );
-		    }
+<span class="fc" id="L104">			VariableDeclarationFragment existingField= findCompatibleCharsetField(enclosingType, normalizedCharset);</span>
+<span class="fc bfc" id="L105" title="All 4 branches covered.">			if (existingField != null ? !isSafeToReadField(enclosingType, existingField, visited)</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">					: !canInitializeOwnFieldsFirst(enclosingType)) {</span>
+<span class="fc" id="L107">				return addCharsetUTF8(cuRewrite, ast, normalizedCharset);</span>
+			}
 
-		    // Add import for StandardCharsets
-<span class="fc" id="L91">		    ImportRewrite importRewrite = cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L92">		    importRewrite.addImport(StandardCharsets.class.getCanonicalName());</span>
-<span class="fc" id="L93">		    importRewrite.addImport(Charset.class.getCanonicalName());</span>
+<span class="fc" id="L110">			String ownerName= aggregateOwnerName(cuRewrite.getRoot(), enclosingType, visited);</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">			if (ownerName == null) {</span>
+<span class="fc" id="L112">				return addCharsetUTF8(cuRewrite, ast, normalizedCharset);</span>
+			}
+<span class="fc" id="L114">			QualifiedName cached= charsetConstants.get(reservationKey);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">			if (cached != null) {</span>
+				// Reservations are owner-local; expression qualifiers are occurrence-local.
+<span class="fc" id="L117">				return ast.newQualifiedName(ast.newName(ownerName),</span>
+<span class="fc" id="L118">						ast.newSimpleName(cached.getName().getIdentifier()));</span>
+			}
 
-		    // Check if the static field already exists in the class
-<span class="fc" id="L96">		    TypeDeclaration enclosingType = (TypeDeclaration) cuRewrite.getRoot().types().get(0);</span>
-<span class="fc" id="L97">		    FieldDeclaration existingField = findStaticCharsetField(enclosingType, fieldName);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">			String fieldName= existingField != null</span>
+<span class="fc" id="L122">					? existingField.getName().getIdentifier()</span>
+<span class="fc" id="L123">					: generateCharsetFieldName(enclosingType, ownerKey, normalizedCharset, charsetConstants);</span>
 
-		    QualifiedName fieldReference;
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">		    if (existingField == null) {</span>
-		        // Create a new static field if it doesn't exist
-<span class="fc" id="L102">		        VariableDeclarationFragment fragment = ast.newVariableDeclarationFragment();</span>
-<span class="fc" id="L103">		        fragment.setName(ast.newSimpleName(fieldName));</span>
-<span class="fc" id="L104">		        fragment.setInitializer(createCharsetAccessExpression(ast, charset));</span>
+<span class="fc" id="L125">			QualifiedName fieldReference= ast.newQualifiedName(</span>
+<span class="fc" id="L126">					ast.newName(ownerName), ast.newSimpleName(fieldName));</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">			if (existingField == null) {</span>
+<span class="fc" id="L128">				ImportRewrite importRewrite= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L129">				String standardCharsetsType= importRewrite.addImport(StandardCharsets.class.getCanonicalName());</span>
+<span class="fc" id="L130">				String charsetType= importRewrite.addImport(Charset.class.getCanonicalName());</span>
+<span class="fc" id="L131">				FieldAccess initializer= ast.newFieldAccess();</span>
+<span class="fc" id="L132">				initializer.setExpression(ast.newName(standardCharsetsType));</span>
+<span class="fc" id="L133">				initializer.setName(ast.newSimpleName(normalizedCharset));</span>
+<span class="fc" id="L134">				VariableDeclarationFragment fragment= ast.newVariableDeclarationFragment();</span>
+<span class="fc" id="L135">				fragment.setName(ast.newSimpleName(fieldName));</span>
+<span class="fc" id="L136">				fragment.setInitializer(initializer);</span>
 
-<span class="fc" id="L106">		        FieldDeclaration fieldDeclaration = ast.newFieldDeclaration(fragment);</span>
-<span class="fc" id="L107">		        fieldDeclaration.setType(ast.newSimpleType(ast.newName(&quot;Charset&quot;))); //$NON-NLS-1$</span>
-<span class="fc" id="L108">		        fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
-<span class="fc" id="L109">		        fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));</span>
-<span class="fc" id="L110">		        fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.FINAL_KEYWORD));</span>
+<span class="fc" id="L138">				FieldDeclaration fieldDeclaration= ast.newFieldDeclaration(fragment);</span>
+<span class="fc" id="L139">				fieldDeclaration.setType(ast.newSimpleType(ast.newName(charsetType)));</span>
+<span class="fc" id="L140">				fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.PRIVATE_KEYWORD));</span>
+<span class="fc" id="L141">				fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.STATIC_KEYWORD));</span>
+<span class="fc" id="L142">				fieldDeclaration.modifiers().add(ast.newModifier(Modifier.ModifierKeyword.FINAL_KEYWORD));</span>
 
-		        // Add the new field to the class
-<span class="fc" id="L113">		        cuRewrite.getASTRewrite().getListRewrite(enclosingType, TypeDeclaration.BODY_DECLARATIONS_PROPERTY)</span>
-<span class="fc" id="L114">		            .insertFirst(fieldDeclaration, null);</span>
+<span class="fc" id="L144">				cuRewrite.getASTRewrite().getListRewrite(enclosingType, TypeDeclaration.BODY_DECLARATIONS_PROPERTY)</span>
+<span class="fc" id="L145">						.insertFirst(fieldDeclaration, null);</span>
+			}
 
-		        // Create a QualifiedName to refer to this new field
-<span class="fc" id="L117">		        fieldReference = ast.newQualifiedName(</span>
-<span class="fc" id="L118">		        	    ast.newSimpleName(enclosingType.getName().getIdentifier()),</span>
-<span class="fc" id="L119">		        	    ast.newSimpleName(fragment.getName().getIdentifier())</span>
-		        	);
-<span class="fc" id="L121">		    } else {</span>
-		        // If the field already exists, find its reference name
-<span class="nc" id="L123">		        VariableDeclarationFragment fragment = (VariableDeclarationFragment) existingField.fragments().get(0);</span>
-<span class="nc" id="L124">		        fieldReference = ast.newQualifiedName(</span>
-<span class="nc" id="L125">		            ast.newSimpleName(enclosingType.getName().getIdentifier()),</span>
-<span class="nc" id="L126">		            ast.newSimpleName(fragment.getName().getIdentifier())</span>
-		        );
-		    }
-
-		    // Cache the field reference in the map and return it
-<span class="fc" id="L131">		    charsetConstants.put(fieldName, fieldReference);</span>
-<span class="fc" id="L132">		    return fieldReference;</span>
+<span class="fc" id="L148">			charsetConstants.put(reservationKey, fieldReference);</span>
+<span class="fc" id="L149">			return copyQualifiedName(ast, fieldReference);</span>
 		}
 
 		@Override
 		protected String computeCharsetforPreview() {
-<span class="nc" id="L137">			return &quot;CharsetConstant&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L154">			return &quot;CharsetConstant&quot;; //$NON-NLS-1$</span>
 		}
 	};
 
-	abstract protected Expression computeCharsetASTNode(CompilationUnitRewrite cuRewrite, AST ast, String charset, Map&lt;String, QualifiedName&gt; charsetConstants);
+	abstract protected Expression computeCharsetASTNode(CompilationUnitRewrite cuRewrite, AST ast, ASTNode visited,
+			String charset, Map&lt;String, QualifiedName&gt; charsetConstants);
 
 	abstract protected String computeCharsetforPreview();
 
 	protected static FieldDeclaration findStaticCharsetField(TypeDeclaration type, String fieldName) {
-<span class="fc bfc" id="L146" title="All 2 branches covered.">	    for (FieldDeclaration field : type.getFields()) {</span>
-<span class="fc bfc" id="L147" title="All 2 branches covered.">	        for (Object fragment : field.fragments()) {</span>
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">	            if (fragment instanceof VariableDeclarationFragment) {</span>
-<span class="fc" id="L149">	                VariableDeclarationFragment varFrag = (VariableDeclarationFragment) fragment;</span>
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">	                if (varFrag.getName().getIdentifier().equals(fieldName)) {</span>
-<span class="nc" id="L151">	                    return field;</span>
-	                }
-	            }
-	        }
-	    }
-<span class="fc" id="L156">	    return null;</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">		for (FieldDeclaration field : type.getFields()) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">			for (Object fragment : field.fragments()) {</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">				if (fragment instanceof VariableDeclarationFragment varFrag</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">						&amp;&amp; varFrag.getName().getIdentifier().equals(fieldName)) {</span>
+<span class="nc" id="L168">					return field;</span>
+				}
+			}
+		}
+<span class="nc" id="L172">		return null;</span>
 	}
 
 	protected static Expression createCharsetAccessExpression(AST ast, String charset) {
-<span class="fc" id="L160">	    FieldAccess fieldAccess = ast.newFieldAccess();</span>
-<span class="fc" id="L161">	    fieldAccess.setExpression(ast.newName(StandardCharsets.class.getSimpleName()));</span>
-<span class="fc" id="L162">	    fieldAccess.setName(ast.newSimpleName(charset));</span>
-<span class="fc" id="L163">	    return fieldAccess;</span>
+<span class="nc" id="L176">		FieldAccess fieldAccess= ast.newFieldAccess();</span>
+<span class="nc" id="L177">		fieldAccess.setExpression(ast.newName(StandardCharsets.class.getSimpleName()));</span>
+<span class="nc" id="L178">		fieldAccess.setName(ast.newSimpleName(charset));</span>
+<span class="nc" id="L179">		return fieldAccess;</span>
 	}
 
 	/**
@@ -175,16 +191,16 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 		/**
 		 * Add import java.nio.charset.StandardCharsets - available since Java 1.7
 		 */
-<span class="fc" id="L178">		ImportRewrite importRewrite= cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L179">		importRewrite.addImport(StandardCharsets.class.getCanonicalName());</span>
+<span class="fc" id="L194">		ImportRewrite importRewrite= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L195">		String standardCharsetsType= importRewrite.addImport(StandardCharsets.class.getCanonicalName());</span>
 		/**
 		 * Add field access to StandardCharsets.UTF_8
 		 */
-<span class="fc" id="L183">		FieldAccess fieldaccess= ast.newFieldAccess();</span>
-<span class="fc" id="L184">		fieldaccess.setExpression(ASTNodeFactory.newName(ast, StandardCharsets.class.getSimpleName()));</span>
+<span class="fc" id="L199">		FieldAccess fieldaccess= ast.newFieldAccess();</span>
+<span class="fc" id="L200">		fieldaccess.setExpression(ASTNodeFactory.newName(ast, standardCharsetsType));</span>
 
-<span class="fc" id="L186">		fieldaccess.setName(ast.newSimpleName(charset));</span>
-<span class="fc" id="L187">		return fieldaccess;</span>
+<span class="fc" id="L202">		fieldaccess.setName(ast.newSimpleName(charset));</span>
+<span class="fc" id="L203">		return fieldaccess;</span>
 	}
 
 	/**
@@ -198,15 +214,15 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 		/**
 		 * Add import java.nio.charset.Charset
 		 */
-<span class="fc" id="L201">		ImportRewrite importRewrite= cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L202">		importRewrite.addImport(Charset.class.getCanonicalName());</span>
+<span class="fc" id="L217">		ImportRewrite importRewrite= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L218">		importRewrite.addImport(Charset.class.getCanonicalName());</span>
 		/**
-		 * Add call to Charset.defaultCharset() - this is available since Java 1.5
+		 * Create call to Charset.defaultCharset() - this is available since Java 1.5
 		 */
-<span class="fc" id="L206">		MethodInvocation firstCall= ast.newMethodInvocation();</span>
-<span class="fc" id="L207">		firstCall.setExpression(ASTNodeFactory.newName(ast, Charset.class.getSimpleName()));</span>
-<span class="fc" id="L208">		firstCall.setName(ast.newSimpleName(METHOD_DEFAULT_CHARSET));</span>
-<span class="fc" id="L209">		return firstCall;</span>
+<span class="fc" id="L222">		MethodInvocation firstCall= ast.newMethodInvocation();</span>
+<span class="fc" id="L223">		firstCall.setExpression(ASTNodeFactory.newName(ast, Charset.class.getSimpleName()));</span>
+<span class="fc" id="L224">		firstCall.setName(ast.newSimpleName(METHOD_DEFAULT_CHARSET));</span>
+<span class="fc" id="L225">		return firstCall;</span>
 	}
 
 	/**
@@ -218,15 +234,321 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 	 * @param charset Charset as String
 	 * @return MethodInvocation that returns String
 	 */
-	protected MethodInvocation addCharsetStringComputation(final CompilationUnitRewrite cuRewrite, AST ast, ChangeBehavior cb, String charset, Map&lt;String, QualifiedName&gt; charsetConstants) {
-<span class="nc" id="L222">		Expression callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, charset, charsetConstants);</span>
+	protected MethodInvocation addCharsetStringComputation(final CompilationUnitRewrite cuRewrite, AST ast,
+			ASTNode visited, ChangeBehavior cb, String charset, Map&lt;String, QualifiedName&gt; charsetConstants) {
+<span class="nc" id="L239">		Expression callToCharsetDefaultCharset= computeCharsetASTNode(cuRewrite, ast, visited, charset, charsetConstants);</span>
 		/**
 		 * Add second call to Charset.defaultCharset().displayName()
 		 */
-<span class="nc" id="L226">		MethodInvocation secondCall= ast.newMethodInvocation();</span>
-<span class="nc" id="L227">		secondCall.setExpression(callToCharsetDefaultCharset);</span>
-<span class="nc" id="L228">		secondCall.setName(ast.newSimpleName(METHOD_DISPLAY_NAME));</span>
-<span class="nc" id="L229">		return secondCall;</span>
+<span class="nc" id="L243">		MethodInvocation secondCall= ast.newMethodInvocation();</span>
+<span class="nc" id="L244">		secondCall.setExpression(callToCharsetDefaultCharset);</span>
+<span class="nc" id="L245">		secondCall.setName(ast.newSimpleName(METHOD_DISPLAY_NAME));</span>
+<span class="nc" id="L246">		return secondCall;</span>
+	}
+
+	private static QualifiedName copyQualifiedName(AST ast, QualifiedName qualifiedName) {
+<span class="fc" id="L250">		return ast.newQualifiedName(ast.newName(qualifiedName.getQualifier().getFullyQualifiedName()),</span>
+<span class="fc" id="L251">				ast.newSimpleName(qualifiedName.getName().getIdentifier()));</span>
+	}
+
+	/** Resolve expression-name obscuring for this occurrence, not for the cached field. */
+	private static String aggregateOwnerName(CompilationUnit root, TypeDeclaration owner, ASTNode visited) {
+<span class="fc" id="L256">		ITypeBinding type= owner.resolveBinding();</span>
+<span class="pc bpc" id="L257" title="2 of 4 branches missed.">		if (type == null || type.isRecovered()) {</span>
+<span class="nc" id="L258">			return null;</span>
+		}
+<span class="fc" id="L260">		IBinding[] scope= new ScopeAnalyzer(root).getDeclarationsInScope(visited.getStartPosition(),</span>
+<span class="fc" id="L261">				ScopeAnalyzer.VARIABLES | ScopeAnalyzer.TYPES | ScopeAnalyzer.CHECK_VISIBILITY);</span>
+<span class="fc" id="L262">		String simple= owner.getName().getIdentifier();</span>
+<span class="fc" id="L263">		boolean obscured= hasEnclosingTypeParameter(visited, simple);</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">		for (IBinding binding : scope) {</span>
+<span class="fc bfc" id="L265" title="All 4 branches covered.">			if (simple.equals(binding.getName()) &amp;&amp; !binding.isEqualTo(type)) {</span>
+<span class="fc" id="L266">				obscured= true;</span>
+<span class="fc" id="L267">				break;</span>
+			}
+		}
+<span class="fc bfc" id="L270" title="All 2 branches covered.">		if (!obscured) {</span>
+<span class="fc" id="L271">			return simple;</span>
+		}
+<span class="fc" id="L273">		String qualified= type.getTypeDeclaration().getQualifiedName();</span>
+<span class="fc" id="L274">		int dot= qualified.indexOf('.');</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">		if (dot &lt; 0) {</span>
+<span class="fc" id="L276">			return null; // A shadowed default-package type has no qualified alternative.</span>
+		}
+<span class="fc" id="L278">		String first= qualified.substring(0, dot);</span>
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">		if (hasEnclosingTypeParameter(visited, first)) {</span>
+<span class="nc" id="L280">			return null;</span>
+		}
+<span class="fc bfc" id="L282" title="All 2 branches covered.">		for (IBinding binding : scope) {</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">			if (first.equals(binding.getName())) {</span>
+<span class="fc" id="L284">				return null; // Qualification must not turn a package name into a variable/type.</span>
+			}
+		}
+<span class="fc bfc" id="L287" title="All 2 branches covered.">		for (ITypeBinding member= type; member.getDeclaringClass() != null; member= member.getDeclaringClass()) {</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">			for (ITypeBinding declaring= member.getDeclaringClass(); declaring != null; declaring= declaring.getSuperclass()) {</span>
+<span class="pc bpc" id="L289" title="1 of 2 branches missed.">				for (IVariableBinding field : declaring.getDeclaredFields()) {</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">					if (member.getName().equals(field.getName())) {</span>
+<span class="nc" id="L291">						return null; // An intermediate member name may also denote a field.</span>
+					}
+				}
+			}
+		}
+<span class="fc" id="L296">		return qualified;</span>
+	}
+
+	private static boolean hasEnclosingTypeParameter(ASTNode visited, String name) {
+<span class="fc bfc" id="L300" title="All 2 branches covered.">		for (ASTNode current= visited; current != null; current= current.getParent()) {</span>
+			List&lt;?&gt; parameters;
+<span class="fc bfc" id="L302" title="All 2 branches covered.">			if (current instanceof MethodDeclaration method) {</span>
+<span class="fc" id="L303">				parameters= method.typeParameters();</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">			} else if (current instanceof TypeDeclaration type) {</span>
+<span class="fc" id="L305">				parameters= type.typeParameters();</span>
+			} else {
+				continue;
+			}
+<span class="fc bfc" id="L309" title="All 2 branches covered.">			for (Object parameter : parameters) {</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">				if (name.equals(((TypeParameter) parameter).getName().getIdentifier())) {</span>
+<span class="fc" id="L311">					return true;</span>
+				}
+			}
+		}
+<span class="fc" id="L315">		return false;</span>
+	}
+
+	private static TypeDeclaration findAggregateCharsetOwner(CompilationUnitRewrite cuRewrite, ASTNode visited) {
+<span class="fc" id="L319">		TypeDeclaration owner= ASTNodes.getFirstAncestorOrNull(visited, TypeDeclaration.class);</span>
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">		if (owner != null) {</span>
+<span class="fc" id="L321">			return owner;</span>
+		}
+<span class="nc bnc" id="L323" title="All 4 branches missed.">		if (!cuRewrite.getRoot().types().isEmpty() &amp;&amp; cuRewrite.getRoot().types().get(0) instanceof TypeDeclaration type) {</span>
+<span class="nc" id="L324">			return type;</span>
+		}
+<span class="nc" id="L326">		return null;</span>
+	}
+
+	private static String aggregateCharsetOwnerKey(CompilationUnit root, TypeDeclaration owner) {
+<span class="fc" id="L330">		ITypeBinding binding= owner.resolveBinding();</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="fc" id="L332">			ITypeBinding declaration= binding.getTypeDeclaration();</span>
+<span class="pc bpc" id="L333" title="2 of 4 branches missed.">			if (declaration != null &amp;&amp; declaration.getKey() != null) {</span>
+<span class="fc" id="L334">				return declaration.getKey();</span>
+			}
+		}
+<span class="nc" id="L337">		List&lt;String&gt; segments= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">		for (ASTNode current= owner; current != null; current= current.getParent()) {</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">			if (current instanceof TypeDeclaration type) {</span>
+<span class="nc" id="L340">				segments.add(0, type.getName().getIdentifier());</span>
+			}
+		}
+<span class="nc bnc" id="L343" title="All 2 branches missed.">		String packageName= root.getPackage() == null ? &quot;&quot; : root.getPackage().getName().getFullyQualifiedName(); //$NON-NLS-1$</span>
+<span class="nc" id="L344">		String localName= String.join(&quot;.&quot;, segments); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L345" title="All 2 branches missed.">		return packageName.isEmpty() ? localName : packageName + '.' + localName;</span>
+	}
+
+	private static String normalizeCharsetFieldName(String charset) {
+<span class="fc" id="L349">		return charset.toUpperCase(Locale.ROOT).replace('-', '_');</span>
+	}
+
+	private static VariableDeclarationFragment findCompatibleCharsetField(TypeDeclaration owner, String requestedCharset) {
+<span class="fc" id="L353">		VariableDeclarationFragment fallback= null;</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">		for (FieldDeclaration field : owner.getFields()) {</span>
+<span class="fc bfc" id="L355" title="All 2 branches covered.">			for (Object fragment : field.fragments()) {</span>
+<span class="pc bpc" id="L356" title="1 of 2 branches missed.">				if (fragment instanceof VariableDeclarationFragment variable</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">						&amp;&amp; isCompatibleCharsetField(field, variable, requestedCharset)) {</span>
+<span class="fc bfc" id="L358" title="All 2 branches covered.">					if (requestedCharset.equals(variable.getName().getIdentifier())) {</span>
+<span class="fc" id="L359">						return variable;</span>
+					}
+<span class="pc bpc" id="L361" title="1 of 2 branches missed.">					if (fallback == null) {</span>
+<span class="fc" id="L362">						fallback= variable;</span>
+					}
+				}
+			}
+		}
+<span class="fc" id="L367">		return fallback;</span>
+	}
+
+	private static boolean isCompatibleCharsetField(FieldDeclaration field, VariableDeclarationFragment fragment,
+			String requestedCharset) {
+<span class="fc bfc" id="L372" title="All 4 branches covered.">		if (!Modifier.isStatic(field.getModifiers()) || !Modifier.isFinal(field.getModifiers())</span>
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">				|| fragment.getInitializer() == null) {</span>
+<span class="fc" id="L374">			return false;</span>
+		}
+<span class="fc" id="L376">		ITypeBinding binding= field.getType().resolveBinding();</span>
+<span class="pc bpc" id="L377" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="fc bfc" id="L378" title="All 2 branches covered.">			if (!Charset.class.getCanonicalName().equals(binding.getErasure().getQualifiedName())) {</span>
+<span class="fc" id="L379">				return false;</span>
+			}
+		} else {
+<span class="nc" id="L382">			String typeName= field.getType().toString();</span>
+<span class="nc bnc" id="L383" title="All 4 branches missed.">			if (!Charset.class.getSimpleName().equals(typeName) &amp;&amp; !typeName.endsWith(&quot;.Charset&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L384">				return false;</span>
+			}
+		}
+<span class="fc" id="L387">		String resolvedCharset= resolveCharsetInitializer(fragment.getInitializer());</span>
+<span class="fc bfc" id="L388" title="All 4 branches covered.">		return resolvedCharset != null &amp;&amp; requestedCharset.equals(normalizeCharsetFieldName(resolvedCharset));</span>
+	}
+
+	private static String resolveCharsetInitializer(Expression initializer) {
+<span class="fc" id="L392">		Expression expression= ASTNodes.getUnparenthesedExpression(initializer);</span>
+<span class="fc" id="L393">		IVariableBinding field= null;</span>
+<span class="pc bpc" id="L394" title="1 of 4 branches missed.">		if (expression instanceof Name name &amp;&amp; name.resolveBinding() instanceof IVariableBinding variable) {</span>
+<span class="fc" id="L395">			field= variable;</span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">		} else if (expression instanceof FieldAccess fieldAccess) {</span>
+<span class="nc" id="L397">			field= fieldAccess.resolveFieldBinding();</span>
+		}
+<span class="pc bpc" id="L399" title="1 of 4 branches missed.">		if (field != null &amp;&amp; !field.isRecovered()) {</span>
+<span class="fc" id="L400">			ITypeBinding declaringClass= field.getDeclaringClass();</span>
+<span class="pc bpc" id="L401" title="2 of 4 branches missed.">			if (declaringClass != null &amp;&amp; !declaringClass.isRecovered()</span>
+<span class="fc bfc" id="L402" title="All 2 branches covered.">					&amp;&amp; StandardCharsets.class.getCanonicalName().equals(declaringClass.getErasure().getQualifiedName())</span>
+<span class="pc bpc" id="L403" title="2 of 4 branches missed.">					&amp;&amp; Modifier.isStatic(field.getModifiers()) &amp;&amp; Modifier.isFinal(field.getModifiers())) {</span>
+<span class="fc" id="L404">				return field.getName().replace('_', '-');</span>
+			}
+<span class="fc" id="L406">			return null;</span>
+		}
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">		if (expression instanceof MethodInvocation methodInvocation</span>
+<span class="fc" id="L409">				&amp;&amp; ASTNodes.usesGivenSignature(methodInvocation, Charset.class.getCanonicalName(), &quot;forName&quot;, //$NON-NLS-1$</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">						String.class.getCanonicalName())</span>
+<span class="pc bpc" id="L411" title="1 of 2 branches missed.">				&amp;&amp; methodInvocation.arguments().size() == 1</span>
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">				&amp;&amp; methodInvocation.arguments().get(0) instanceof StringLiteral literal) {</span>
+<span class="fc" id="L413">			return literal.getLiteralValue().toUpperCase(Locale.ROOT);</span>
+		}
+<span class="nc" id="L415">		return null;</span>
+	}
+
+	private static boolean isSafeToReadField(TypeDeclaration owner, VariableDeclarationFragment targetField, ASTNode visited) {
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">		if (!(targetField.getParent() instanceof FieldDeclaration targetDeclaration)</span>
+<span class="pc bpc" id="L420" title="2 of 4 branches missed.">				|| targetDeclaration.getParent() != owner || !Modifier.isStatic(targetDeclaration.getModifiers())) {</span>
+<span class="nc" id="L421">			return false;</span>
+		}
+<span class="fc" id="L423">		BodyDeclaration enclosingDeclaration= findEnclosingBodyDeclaration(owner, visited);</span>
+<span class="pc bpc" id="L424" title="1 of 2 branches missed.">		if (enclosingDeclaration == null) {</span>
+<span class="nc" id="L425">			return false;</span>
+		}
+<span class="fc bfc" id="L427" title="All 2 branches covered.">		if (enclosingDeclaration instanceof FieldDeclaration fieldDeclaration</span>
+<span class="fc bfc" id="L428" title="All 2 branches covered.">				&amp;&amp; Modifier.isStatic(fieldDeclaration.getModifiers())) {</span>
+<span class="fc" id="L429">			return isSafeFromStaticFieldInitializer(owner, fieldDeclaration, targetField, visited);</span>
+		}
+<span class="pc bpc" id="L431" title="1 of 4 branches missed.">		if (enclosingDeclaration instanceof Initializer initializer &amp;&amp; Modifier.isStatic(initializer.getModifiers())) {</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">			return bodyDeclarationIndex(owner, initializer) &gt; bodyDeclarationIndex(owner, targetDeclaration);</span>
+		}
+		// Methods (including constructors), instance initializers and nested types may
+		// be reached through callbacks while this class is still being initialized.
+		// A same-owner static-call graph cannot establish that those reads are safe.
+<span class="fc bfc" id="L437" title="All 4 branches covered.">		return canInitializeOwnFieldsFirst(owner) &amp;&amp; isFirstExecutingStaticInitializer(owner, targetField);</span>
+	}
+
+	/**
+	 * Even a newly inserted first field runs after superclass and default-method
+	 * interface initialization. Without a proof about that hierarchy, keep direct
+	 * typed JDK constants instead of introducing an initialization dependency.
+	 * Local and non-static member classes also cannot host this field on older
+	 * supported source levels, and an interface cannot contain a private field.
+	 */
+	private static boolean canInitializeOwnFieldsFirst(TypeDeclaration owner) {
+<span class="fc" id="L448">		ITypeBinding binding= owner.resolveBinding();</span>
+<span class="pc bpc" id="L449" title="4 of 8 branches missed.">		if (binding == null || binding.isRecovered() || owner.isInterface() || binding.isLocal()</span>
+<span class="pc bpc" id="L450" title="1 of 6 branches missed.">				|| binding.isAnonymous() || binding.isMember() &amp;&amp; !Modifier.isStatic(binding.getModifiers())</span>
+<span class="fc bfc" id="L451" title="All 2 branches covered.">				|| binding.getInterfaces().length != 0) {</span>
+<span class="fc" id="L452">			return false;</span>
+		}
+<span class="fc" id="L454">		ITypeBinding superclass= binding.getSuperclass();</span>
+<span class="pc bpc" id="L455" title="2 of 4 branches missed.">		return superclass != null &amp;&amp; !superclass.isRecovered()</span>
+<span class="fc bfc" id="L456" title="All 2 branches covered.">				&amp;&amp; Object.class.getCanonicalName().equals(superclass.getErasure().getQualifiedName());</span>
+	}
+
+	private static boolean isFirstExecutingStaticInitializer(TypeDeclaration owner,
+			VariableDeclarationFragment targetField) {
+<span class="pc bpc" id="L461" title="1 of 2 branches missed.">		for (Object declaration : owner.bodyDeclarations()) {</span>
+<span class="pc bpc" id="L462" title="3 of 4 branches missed.">			if (declaration instanceof Initializer initializer &amp;&amp; Modifier.isStatic(initializer.getModifiers())) {</span>
+<span class="nc" id="L463">				return false;</span>
+			}
+<span class="pc bpc" id="L465" title="2 of 4 branches missed.">			if (declaration instanceof FieldDeclaration field &amp;&amp; Modifier.isStatic(field.getModifiers())) {</span>
+<span class="fc bfc" id="L466" title="All 2 branches covered.">				for (Object candidate : field.fragments()) {</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">					if (candidate == targetField) {</span>
+<span class="fc" id="L468">						return true;</span>
+					}
+<span class="pc bpc" id="L470" title="1 of 2 branches missed.">					if (candidate instanceof VariableDeclarationFragment fragment</span>
+<span class="pc bpc" id="L471" title="1 of 2 branches missed.">							&amp;&amp; fragment.getInitializer() != null</span>
+<span class="fc bfc" id="L472" title="All 2 branches covered.">							&amp;&amp; fragment.getInitializer().resolveConstantExpressionValue() == null) {</span>
+<span class="fc" id="L473">						return false;</span>
+					}
+				}
+			}
+		}
+<span class="nc" id="L478">		return false;</span>
+	}
+
+	private static boolean isSafeFromStaticFieldInitializer(TypeDeclaration owner, FieldDeclaration enclosingDeclaration,
+			VariableDeclarationFragment targetField, ASTNode visited) {
+<span class="fc" id="L483">		FieldDeclaration targetDeclaration= (FieldDeclaration) targetField.getParent();</span>
+<span class="pc bpc" id="L484" title="1 of 2 branches missed.">		if (enclosingDeclaration != targetDeclaration) {</span>
+<span class="nc bnc" id="L485" title="All 2 branches missed.">			return bodyDeclarationIndex(owner, enclosingDeclaration) &gt; bodyDeclarationIndex(owner, targetDeclaration);</span>
+		}
+<span class="fc" id="L487">		VariableDeclarationFragment enclosingFragment= findEnclosingFragment(enclosingDeclaration, visited);</span>
+<span class="pc bpc" id="L488" title="1 of 2 branches missed.">		if (enclosingFragment == null) {</span>
+<span class="nc" id="L489">			return false;</span>
+		}
+<span class="pc bpc" id="L491" title="1 of 2 branches missed.">		return fragmentIndex(enclosingDeclaration, enclosingFragment) &gt; fragmentIndex(enclosingDeclaration, targetField);</span>
+	}
+
+	private static BodyDeclaration findEnclosingBodyDeclaration(TypeDeclaration owner, ASTNode visited) {
+<span class="pc bpc" id="L495" title="2 of 4 branches missed.">		for (ASTNode current= visited; current != null &amp;&amp; current != owner; current= current.getParent()) {</span>
+<span class="pc bpc" id="L496" title="1 of 4 branches missed.">			if (current instanceof BodyDeclaration declaration &amp;&amp; current.getParent() == owner) {</span>
+<span class="fc" id="L497">				return declaration;</span>
+			}
+		}
+<span class="nc" id="L500">		return null;</span>
+	}
+
+	private static VariableDeclarationFragment findEnclosingFragment(FieldDeclaration declaration, ASTNode visited) {
+<span class="pc bpc" id="L504" title="2 of 4 branches missed.">		for (ASTNode current= visited; current != null &amp;&amp; current != declaration; current= current.getParent()) {</span>
+<span class="pc bpc" id="L505" title="1 of 4 branches missed.">			if (current instanceof VariableDeclarationFragment fragment &amp;&amp; current.getParent() == declaration) {</span>
+<span class="fc" id="L506">				return fragment;</span>
+			}
+		}
+<span class="nc" id="L509">		return null;</span>
+	}
+
+	private static int bodyDeclarationIndex(TypeDeclaration owner, BodyDeclaration declaration) {
+<span class="nc" id="L513">		return owner.bodyDeclarations().indexOf(declaration);</span>
+	}
+
+	private static int fragmentIndex(FieldDeclaration declaration, VariableDeclarationFragment fragment) {
+<span class="fc" id="L517">		return declaration.fragments().indexOf(fragment);</span>
+	}
+
+	private static String generateCharsetFieldName(TypeDeclaration owner, String ownerKey, String requestedFieldName,
+			Map&lt;String, QualifiedName&gt; charsetConstants) {
+<span class="pc bpc" id="L522" title="1 of 4 branches missed.">		if (!hasFieldName(owner, requestedFieldName) &amp;&amp; !hasReservedFieldName(ownerKey, requestedFieldName, charsetConstants)) {</span>
+<span class="fc" id="L523">			return requestedFieldName;</span>
+		}
+<span class="pc" id="L525">		for (int suffix= 1; ; suffix++) {</span>
+<span class="fc" id="L526">			String candidate= requestedFieldName + '_' + suffix;</span>
+<span class="pc bpc" id="L527" title="2 of 4 branches missed.">			if (!hasFieldName(owner, candidate) &amp;&amp; !hasReservedFieldName(ownerKey, candidate, charsetConstants)) {</span>
+<span class="fc" id="L528">				return candidate;</span>
+			}
+		}
+	}
+
+	private static boolean hasFieldName(TypeDeclaration owner, String fieldName) {
+<span class="fc bfc" id="L534" title="All 2 branches covered.">		for (FieldDeclaration field : owner.getFields()) {</span>
+<span class="fc bfc" id="L535" title="All 2 branches covered.">			for (Object fragment : field.fragments()) {</span>
+<span class="pc bpc" id="L536" title="1 of 2 branches missed.">				if (fragment instanceof VariableDeclarationFragment variable</span>
+<span class="fc bfc" id="L537" title="All 2 branches covered.">						&amp;&amp; fieldName.equals(variable.getName().getIdentifier())) {</span>
+<span class="fc" id="L538">					return true;</span>
+				}
+			}
+		}
+<span class="fc" id="L542">		return false;</span>
+	}
+
+	private static boolean hasReservedFieldName(String ownerKey, String fieldName,
+			Map&lt;String, QualifiedName&gt; charsetConstants) {
+<span class="fc" id="L547">		String prefix= ownerKey + '\u0000';</span>
+<span class="fc" id="L548">		return charsetConstants.entrySet().stream()</span>
+<span class="fc" id="L549">				.filter(entry -&gt; entry.getKey().startsWith(prefix))</span>
+<span class="fc" id="L550">				.map(Map.Entry::getValue)</span>
+<span class="fc" id="L551">				.anyMatch(name -&gt; fieldName.equals(name.getName().getIdentifier()));</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

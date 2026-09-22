@@ -186,7 +186,7 @@ import org.eclipse.jdt.internal.core.manipulation.JavaManipulationPlugin;
 <span class="fc" id="L186">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
 <span class="fc" id="L187">		AST ast= cuRewrite.getRoot().getAST();</span>
 <span class="fc" id="L188">		NodeData nodedata= (NodeData) data.get(visited);</span>
-<span class="fc" id="L189">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());</span>
+<span class="fc" id="L189">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, nodedata.encoding(),getCharsetConstants(cuRewrite));</span>
 		/**
 		 * Register encoding replacement BEFORE removing exception handling.
 		 * removeUnsupportedEncodingException may call simplifyEmptyTryStatement

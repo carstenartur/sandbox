@@ -66,7 +66,7 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 			TextEditGroup group, ChangeBehavior cb, ReferenceHolder&lt;ASTNode, Object&gt; data) {
 <span class="fc" id="L67">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
 <span class="fc" id="L68">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L69">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, (String) data.get(visited),getCharsetConstants());</span>
+<span class="fc" id="L69">		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, (String) data.get(visited),getCharsetConstants(cuRewrite));</span>
 		/**
 		 * new FileInputStream(&lt;filename&gt;)
 		 */
