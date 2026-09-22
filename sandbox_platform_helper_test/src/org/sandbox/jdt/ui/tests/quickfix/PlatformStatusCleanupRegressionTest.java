@@ -35,6 +35,7 @@ public class PlatformStatusCleanupRegressionTest {
 
 	@Test
 	void usesFactoriesOnlyForProvenIdentityAndCompatibleReturnTypes() throws CoreException {
+		installFactoryCompatibilityApi();
 		IFile manifest= createBundleManifest("test.bundle"); //$NON-NLS-1$
 		try {
 			String given= """
@@ -69,7 +70,7 @@ public class PlatformStatusCleanupRegressionTest {
 							Status concreteWarningNull = new Status(IStatus.WARNING, PLUGIN_ID, "warning null", null);
 							Status concreteError = new Status(IStatus.ERROR, PLUGIN_ID, "concrete", null);
 							IStatus delegated = new Status(IStatus.ERROR, "other.bundle", "delegated", null);
-							IStatus fromGetter = new Status(IStatus.ERROR, getPluginId(), "getter", null);
+							IStatus fromGetter = new Status(IStatus.ERROR, getPluginId(), "getter", "", null);
 							IStatus infoWithFailure = new Status(IStatus.INFO, PLUGIN_ID, "info", failure);
 						}
 					}"""; //$NON-NLS-1$
@@ -77,10 +78,19 @@ public class PlatformStatusCleanupRegressionTest {
 			IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 			ICompilationUnit unit= pack.createCompilationUnit("E1.java", given, false, null); //$NON-NLS-1$
 			context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
-			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { expected }, null);
+			context.assertRefactoringResultAsExpectedWithFullCompileCheck(new ICompilationUnit[] { unit }, new String[] { expected }, null);
 		} finally {
 			manifest.getParent().delete(true, null);
 		}
+	}
+
+	private void installFactoryCompatibilityApi() throws CoreException {
+		// The bundled Java-9 stub has no Class-based constructor. Use the existing
+		// explicit API fixture so the input compiles without changing factory return
+		// types (IStatus, deliberately not Status) or concealing latent diagnostics.
+		IPackageFragment api= context.getSourceFolder().createPackageFragment("org.eclipse.core.runtime", false, null); //$NON-NLS-1$
+		api.createCompilationUnit("IStatus.java", StatusDiagnosticPreservationTest.ISTATUS, false, null); //$NON-NLS-1$
+		api.createCompilationUnit("Status.java", StatusDiagnosticPreservationTest.status(true), false, null); //$NON-NLS-1$
 	}
 
 	@Test
