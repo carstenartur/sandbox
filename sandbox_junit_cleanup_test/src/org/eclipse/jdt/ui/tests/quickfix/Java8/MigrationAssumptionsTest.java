@@ -17,13 +17,13 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 
 /**
  * Tests for migrating JUnit 4 assumptions to JUnit 5.
@@ -38,7 +38,32 @@ public class MigrationAssumptionsTest {
 
 	@BeforeEach
 	public void setup() throws CoreException {
-		fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+		fRoot = JUnitMigrationFixtureClasspath.createJUnit4And5Root(context);
+		ensureMatcherAssumeFixture();
+	}
+
+	private void ensureMatcherAssumeFixture() throws CoreException {
+		IPackageFragment hamcrest= fRoot.createPackageFragment("org.hamcrest.junit", true, null); //$NON-NLS-1$
+		if (hamcrest.getCompilationUnit("MatcherAssume.java").exists()) { //$NON-NLS-1$
+			return;
+		}
+		hamcrest.createCompilationUnit("MatcherAssume.java", //$NON-NLS-1$
+				"""
+				package org.hamcrest.junit;
+				
+				import org.hamcrest.Matcher;
+				
+				public final class MatcherAssume {
+					private MatcherAssume() {
+					}
+				
+					public static <T> void assumeThat(T actual, Matcher<? super T> matcher) {
+					}
+				
+					public static <T> void assumeThat(String reason, T actual, Matcher<? super T> matcher) {
+					}
+				}
+				""", false, null);
 	}
 
 	@Test

@@ -37,6 +37,7 @@ import org.sandbox.jdt.internal.corext.fix.helper.JdtUiInheritedTestsRunnerMigra
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 
 /** Regression coverage for the JDT UI custom inherited-test runner. */
 public class JdtUiInheritedTestsRunnerMigrationTest {
@@ -54,7 +55,7 @@ public class JdtUiInheritedTestsRunnerMigrationTest {
 
 	@BeforeEach
 	public void setup() throws CoreException {
-		root= context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+		root= JUnitMigrationFixtureClasspath.createJUnit4And5Root(context);
 		AbstractEclipseJava.addToClasspath(context.getJavaProject(),
 				JavaCore.newContainerEntry(JUnitCore.JUNIT6_CONTAINER_PATH));
 	}
