@@ -63,8 +63,8 @@ public class PlatformStatusCleanupRegressionTest {
 						private static final String PLUGIN_ID = "test.bundle";
 						private static String getPluginId() { return PLUGIN_ID; }
 						void method(Throwable failure) {
-							IStatus fromConstant = Status.error("constant");
-							IStatus fromClass = Status.warning("class", failure);
+							Status.error("constant");
+							Status.warning("class", failure);
 							Status concreteWarning = new Status(IStatus.WARNING, PLUGIN_ID, "warning", failure);
 							Status concreteWarningNull = new Status(IStatus.WARNING, PLUGIN_ID, "warning null", null);
 							Status concreteError = new Status(IStatus.ERROR, PLUGIN_ID, "concrete", null);
