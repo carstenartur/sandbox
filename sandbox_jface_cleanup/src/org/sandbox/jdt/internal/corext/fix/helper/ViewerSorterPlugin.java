@@ -73,7 +73,7 @@ AbstractTool<ReferenceHolder<Integer, ViewerSorterPlugin.SorterHolder>> {
 	private static final String VIEWER_COMPARATOR = "org.eclipse.jface.viewers.ViewerComparator"; //$NON-NLS-1$
 	
 	/** Deprecated TreePathViewerSorter class */
-	private static final String TREEPATH_VIEWER_SORTER = "org.eclipse.ui.navigator.TreePathViewerSorter"; //$NON-NLS-1$
+	private static final String TREEPATH_VIEWER_SORTER = "org.eclipse.jface.viewers.TreePathViewerSorter"; //$NON-NLS-1$
 	
 	/** Replacement TreePathViewerComparator class */
 	private static final String TREEPATH_VIEWER_COMPARATOR = "org.eclipse.jface.viewers.TreePathViewerComparator"; //$NON-NLS-1$
