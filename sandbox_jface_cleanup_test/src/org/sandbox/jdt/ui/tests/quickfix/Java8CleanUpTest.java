@@ -527,7 +527,7 @@ public class Test {
 		sub.worked(10);
 	}
 	public void doWork(IProgressMonitor monitor) {
-		monitor.beginTask("Task", 100);
+		SubMonitor subMonitor = SubMonitor.convert(monitor, "Task", 100);
 		processMonitor(subMonitor.split(50));
 	}
 }
@@ -639,7 +639,7 @@ public class Test {
 		IProgressMonitor sub = SubMonitor.convert(getMonitor()).split(computeTicks());
 	}
 }
-""" ); //$NON-NLS-1$
+"""); //$NON-NLS-1$
 
 		String given;
 		String expected;
@@ -883,7 +883,7 @@ public class Test {
 		ViewerComparator s = (ViewerComparator) viewer.getComparator();
 	}
 }
-""" );
+""");
 
 		String given;
 		String expected;
@@ -940,7 +940,7 @@ public class Test {
 		return image;
 	}
 }
-""" );
+""");
 
 		String given;
 		String expected;
@@ -1008,7 +1008,7 @@ public class Test {
 		return image;
 	}
 }
-""" );
+""");
 
 		String given;
 
@@ -1070,7 +1070,7 @@ public class Test {
 		});
 	}
 }
-""" );
+""");
 
 		String given;
 		String expected;
