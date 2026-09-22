@@ -15,11 +15,11 @@ package org.sandbox.jdt.internal.corext.fix.helper;
 
 import java.util.Collections;
 import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -87,10 +87,25 @@ public abstract class AbstractExplicitEncoding<T extends ASTNode> {
 	protected static record NodeData(boolean replace, ASTNode visited, String encoding) {
 	}
 
-	private static final Map<String, QualifiedName> CHARSET_CONSTANTS = new ConcurrentHashMap<>();
+	private static final class CharsetConstantsHolder {
+		private final Map<ASTRewrite, Map<String, QualifiedName>> constantsByRewrite = new IdentityHashMap<>();
 
-	protected static Map<String, QualifiedName> getCharsetConstants() {
-		return CHARSET_CONSTANTS;
+		private Map<String, QualifiedName> forRewrite(ASTRewrite rewrite) {
+			return constantsByRewrite.computeIfAbsent(rewrite, key -> new HashMap<>());
+		}
+	}
+
+	private static final String CHARSET_CONSTANTS_PROPERTY =
+			AbstractExplicitEncoding.class.getName() + ".charsetConstants"; //$NON-NLS-1$
+
+	protected static Map<String, QualifiedName> getCharsetConstants(CompilationUnitRewrite cuRewrite) {
+		Object stored = cuRewrite.getRoot().getProperty(CHARSET_CONSTANTS_PROPERTY);
+		if (stored instanceof CharsetConstantsHolder holder) {
+			return holder.forRewrite(cuRewrite.getASTRewrite());
+		}
+		CharsetConstantsHolder holder = new CharsetConstantsHolder();
+		cuRewrite.getRoot().setProperty(CHARSET_CONSTANTS_PROPERTY, holder);
+		return holder.forRewrite(cuRewrite.getASTRewrite());
 	}
 
 	protected static final String KEY_ENCODING = "encoding"; //$NON-NLS-1$
