@@ -13,6 +13,7 @@ package org.sandbox.jdt.ui.helper.views;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -84,11 +85,65 @@ class AtomicPreviewScreenshotGeometryTest {
                     fixture.shell(), 2, 2);
             assertTrue(SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry
                     .sourceFits(fixture.leftPane()));
-            fixture.leftPane().setHorizontalPixel(120);
-            fixture.leftPane().setTopIndex(1);
-            fixture.leftPane().setTopPixel(20);
-            assertFalse(SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry
-                    .sourceFits(fixture.leftPane()));
+            // SWT clamps scroll requests when all content fits. Create real
+            // overflow and prove each requested scroll actually happened.
+            StyledText pane = fixture.leftPane();
+            String original = pane.getText();
+            pane.setText("W".repeat(fixture.shell().getDisplay().getClientArea().width)
+                    + "\nshort line".repeat(200));
+            pane.setHorizontalPixel(120);
+            assertTrue(pane.getHorizontalPixel() > 0, "The horizontal negative case must really scroll");
+            assertFalse(SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry.sourceFits(pane));
+            assertNull(SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry
+                    .captureBounds(fixture.shell()));
+            pane.setHorizontalPixel(0);
+            pane.setTopIndex(2);
+            pane.setTopPixel(Math.max(1, pane.getLineHeight()));
+            assertTrue(pane.getTopPixel() > 0, "The vertical negative case must really scroll");
+            assertFalse(SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry.sourceFits(pane));
+
+            // Restore the complete fixture and its styling; prepare must again
+            // establish an unscrolled, fully visible capture.
+            pane.setText(original);
+            pane.setStyleRange(new StyleRange(0, "package".length(), null, null, SWT.BOLD));
+            SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry.prepare(fixture.shell(), 2, 2);
+            assertNotNull(SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry
+                    .captureBounds(fixture.shell()));
+        });
+    }
+
+    @Test
+    void prepareRejectsContentWiderThanTheAvailableDisplay() {
+        withFixture(4, 2, fixture -> {
+            fixture.leftPane().setText("W".repeat(fixture.shell().getDisplay().getClientArea().width));
+            AssertionError failure = assertThrows(AssertionError.class,
+                    () -> SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry.prepare(
+                            fixture.shell(), 4, 2));
+            assertTrue(failure.getMessage().contains("does not fit inside the current display"));
+            assertNull(SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry
+                    .captureBounds(fixture.shell()));
+        });
+    }
+
+    @Test
+    void captureRejectsAHeaderChangedAfterPreparation() {
+        withFixture(4, 2, fixture -> {
+            SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry.prepare(fixture.shell(), 4, 2);
+            fixture.header().setText("The following changes to 14 files are necessary to perform the refactoring.");
+            assertNull(SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry
+                    .captureBounds(fixture.shell()));
+        });
+    }
+
+    @Test
+    void prepareRejectsAnIncorrectCandidateTableCount() {
+        withFixture(4, 2, fixture -> {
+            new TableItem(fixture.table(), SWT.NONE).setText("Unexpected.java");
+            assertThrows(AssertionError.class,
+                    () -> SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry.prepare(
+                            fixture.shell(), 4, 2));
+            assertNull(SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry
+                    .captureBounds(fixture.shell()));
         });
     }
 
@@ -153,14 +208,15 @@ class AtomicPreviewScreenshotGeometryTest {
     private static StyledText sourcePane(Composite parent) {
         StyledText pane = new StyledText(parent, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
         pane.setEditable(false);
+        // This small positive control fixture must fit the ordinary Maven
+        // display. The separate overflow case measures the actual display;
+        // real screenshot source fixtures and fonts are not changed here.
         pane.setText("""
                 package demo.junit.preview;
 
                 import java.util.concurrent.atomic.AtomicInteger;
-                import org.junit.jupiter.api.extension.AfterEachCallback;
-                import org.junit.jupiter.api.extension.BeforeEachCallback;
 
-                public final class ExtremelyLongFirstResourceName implements BeforeEachCallback, AfterEachCallback {
+                public final class FirstResource {
                     private final AtomicInteger counter = new AtomicInteger();
                 }
                 """);
