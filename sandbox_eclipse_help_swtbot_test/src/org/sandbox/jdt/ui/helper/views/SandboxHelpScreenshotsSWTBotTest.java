@@ -403,7 +403,10 @@ public class SandboxHelpScreenshotsSWTBotTest {
 
         private static PreviewControls locate(Shell shell, int expectedCandidateFileCount) {
             for (SashForm sash : visibleDescendants(shell, SashForm.class)) {
-                if (sash.getChildren().length != 2 || !(sash.getChildren()[0] instanceof Composite overview)) {
+                Control[] content = java.util.Arrays.stream(sash.getChildren())
+                        .filter(child -> !(child instanceof org.eclipse.swt.widgets.Sash))
+                        .toArray(Control[]::new);
+                if (content.length != 2 || !(content[0] instanceof Composite overview)) {
                     continue;
                 }
                 List<Table> tables = visibleDescendants(sash, Table.class);
