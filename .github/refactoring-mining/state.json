@@ -3702,9 +3702,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform": {
-      "lastProcessedCommit": "9d9bf70808c2410e55da9e8cd56d18f5227ad41d",
-      "lastProcessedDate": "2026-09-21T02:29:53.254277814Z",
-      "totalProcessed": 2748,
+      "lastProcessedCommit": "57815654148aeac962b8baa729f6fd29e1469533",
+      "lastProcessedDate": "2026-09-22T02:27:12.089131240Z",
+      "totalProcessed": 3036,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -3843,7 +3843,9 @@
         "Annotation Transformation": 1,
         "Redundant Code": 1,
         "Deprecation Improvement": 1,
-        "Method Rename": 1
+        "Method Rename": 1,
+        "Deprecation": 1,
+        "API Deprecation": 1
       },
       "exhaustedCategories": []
     },
@@ -3872,5 +3874,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 45003
+  "globalTotalProcessed": 45291
 }
