@@ -1,14 +1,20 @@
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.runtime.CoreException;
 
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.JavaCore;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -90,7 +96,20 @@ public class PlatformStatusCleanupRegressionTest {
 		// types (IStatus, deliberately not Status) or concealing latent diagnostics.
 		IPackageFragment api= context.getSourceFolder().createPackageFragment("org.eclipse.core.runtime", false, null); //$NON-NLS-1$
 		api.createCompilationUnit("IStatus.java", StatusDiagnosticPreservationTest.ISTATUS, false, null); //$NON-NLS-1$
-		api.createCompilationUnit("Status.java", StatusDiagnosticPreservationTest.status(true), false, null); //$NON-NLS-1$
+		ICompilationUnit status= api.createCompilationUnit("Status.java", StatusDiagnosticPreservationTest.status(true), false, null); //$NON-NLS-1$
+		// Creating source does not override an earlier binary classpath entry.
+		// Give only this explicit fixture priority; retain all entries and attributes.
+		var javaProject= context.getJavaProject();
+		var entries= new ArrayList<>(List.of(javaProject.getRawClasspath()));
+		IClasspathEntry sourceEntry= entries.stream()
+				.filter(entry -> entry.getEntryKind() == IClasspathEntry.CPE_SOURCE
+						&& context.getSourceFolder().getPath().equals(entry.getPath()))
+				.findFirst().orElseThrow();
+		entries.remove(sourceEntry);
+		entries.add(0, sourceEntry);
+		javaProject.setRawClasspath(entries.toArray(IClasspathEntry[]::new), null);
+		assertEquals(status.getType("Status"), javaProject.findType("org.eclipse.core.runtime.Status"), //$NON-NLS-1$ //$NON-NLS-2$
+				"The explicit source API must take precedence over the legacy binary stub"); //$NON-NLS-1$
 	}
 
 	@Test
