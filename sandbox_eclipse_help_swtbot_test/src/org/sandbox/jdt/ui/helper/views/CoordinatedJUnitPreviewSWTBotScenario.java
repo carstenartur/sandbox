@@ -98,9 +98,6 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
     private static final String PROJECT_EXPLORER_VIEW = "org.eclipse.ui.navigator.ProjectExplorer";
     private static final String OUTPUT_PROPERTY = "sandbox.help.screenshot.output";
     private static final String SCREENSHOT_FILE = "junit-coordinated-preview.png";
-    private static final int SCREENSHOT_CLIENT_WIDTH = 1280;
-    private static final int SCREENSHOT_CLIENT_HEIGHT = 900;
-
     private static final String JUNIT_MASTER_LABEL =
             "Enable JUnit migrations and compatibility rewrites";
     private static final String JUNIT_BEST_EFFORT_LABEL =
@@ -155,7 +152,6 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
         SWTBotShell wizard = openCleanUpWizard(packageNode);
         CleanUpPreview preview = openCleanUpPreview(wizard, FIRST_CANDIDATE_FRAGMENT);
         wizard = preview.shell();
-        prepareForScreenshot(wizard);
 
         SWTBotTreeItem firstCandidate = findTreeItemContaining(preview.tree(), FIRST_CANDIDATE_FRAGMENT);
         SWTBotTreeItem secondCandidate = findTreeItemContaining(preview.tree(), SECOND_CANDIDATE_FRAGMENT);
@@ -170,6 +166,7 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
         waitForCoordinatedPreviewDetails(wizard, "FirstResource.java", "FirstTest.java");
         assertTrue(currentPlainText(wizard).contains("Selection is atomic"),
                 "The coordinated viewer must explain the atomic selection contract");
+        prepareForScreenshot(wizard);
         capture(wizard);
 
         secondCandidate.uncheck();
@@ -587,7 +584,6 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
     }
 
     private static void capture(SWTBotShell shell) throws IOException {
-        prepareForScreenshot(shell);
         Path imageDirectory = outputRoot.resolve("sandbox_junit_cleanup_help").resolve("images");
         Files.createDirectories(imageDirectory);
         Path image = imageDirectory.resolve(SCREENSHOT_FILE);
@@ -611,12 +607,11 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
                             // Do not relayout the already sized preview while focusing.
                             return Boolean.FALSE;
                         }
-                        Rectangle clientArea = shell.widget.getClientArea();
-                        if (clientArea.width != SCREENSHOT_CLIENT_WIDTH
-                                || clientArea.height != SCREENSHOT_CLIENT_HEIGHT) {
+                        Rectangle clientBounds = SandboxHelpScreenshotsSWTBotTest
+                                .AtomicPreviewScreenshotGeometry.captureBounds(shell.widget);
+                        if (clientBounds == null) {
                             return Boolean.FALSE;
                         }
-                        Rectangle clientBounds = shell.display.map(shell.widget, null, clientArea);
                         return Boolean.valueOf(SWTUtils.captureScreenshot(image.toString(), clientBounds));
                     }
                 });
@@ -642,16 +637,7 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
     }
 
     private static void prepareForScreenshot(SWTBotShell shell) {
-        UIThreadRunnable.syncExec(shell.display, new VoidResult() {
-            @Override
-            public void run() {
-                Rectangle trim = shell.widget.computeTrim(0, 0,
-                        SCREENSHOT_CLIENT_WIDTH, SCREENSHOT_CLIENT_HEIGHT);
-                shell.widget.setBounds(20, 20, trim.width, trim.height);
-                shell.widget.layout(true, true);
-                shell.widget.update();
-            }
-        });
+        SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry.prepare(shell, 4);
         shell.activate();
         waitForActiveScreenshotShell(shell);
     }
@@ -664,15 +650,15 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
                     if (!shell.isOpen() || bot.activeShell().widget != shell.widget) {
                         return false;
                     }
-                    Rectangle clientArea = UIThreadRunnable.syncExec(shell.display,
-                            new Result<Rectangle>() {
+                    return UIThreadRunnable.syncExec(shell.display,
+                            new Result<Boolean>() {
                                 @Override
-                                public Rectangle run() {
-                                    return shell.widget.getClientArea();
+                                public Boolean run() {
+                                    return Boolean.valueOf(
+                                            SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry
+                                                    .matchesPreparedGeometry(shell.widget));
                                 }
                             });
-                    return clientArea.width == SCREENSHOT_CLIENT_WIDTH
-                            && clientArea.height == SCREENSHOT_CLIENT_HEIGHT;
                 } catch (WidgetNotFoundException exception) {
                     return false;
                 }
