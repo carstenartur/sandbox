@@ -26,6 +26,7 @@ import java.util.Deque;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -122,7 +123,8 @@ public class SandboxHelpScreenshotsSWTBotTest {
         private static final int OVERVIEW_PADDING = 24;
         private static final int TABLE_PADDING = 40;
 
-        private record CaptureGeometry(int clientWidth, int clientHeight) {
+        private record CaptureGeometry(int clientWidth, int clientHeight,
+                int expectedWizardFileCount, int expectedCandidateFileCount) {
         }
 
         private record PreviewControls(Shell shell, SashForm sash, Composite overview, Table table,
@@ -133,36 +135,46 @@ public class SandboxHelpScreenshotsSWTBotTest {
         }
 
         static void prepare(SWTBotShell shell, int expectedFileCount) {
+            prepare(shell, expectedFileCount, expectedFileCount);
+        }
+
+        static void prepare(SWTBotShell shell, int expectedWizardFileCount,
+                int expectedCandidateFileCount) {
             UIThreadRunnable.syncExec(shell.display, new VoidResult() {
                 @Override
                 public void run() {
-                    PreviewControls controls = locate(shell.widget, expectedFileCount);
-                    int clientHeight = clientHeight(controls.shell());
-                    int overviewWidth = overviewWidth(controls);
-                    int currentWidth = Math.max(controls.shell().getClientArea().width,
-                            MIN_OVERVIEW_WIDTH + 2);
-                    int maximumWidth = maximumClientWidth(controls.shell());
-                    applyGeometry(controls, maximumWidth, clientHeight, overviewWidth);
-                    if (!fits(controls, expectedFileCount)) {
-                        throw new AssertionError("The atomic preview does not fit inside the current display: "
-                                + describe(controls, expectedFileCount));
-                    }
-                    int low = currentWidth;
-                    int high = maximumWidth;
-                    while (low < high) {
-                        int middle = low + (high - low) / 2;
-                        applyGeometry(controls, middle, clientHeight, overviewWidth);
-                        if (fits(controls, expectedFileCount)) {
-                            high = middle;
-                        } else {
-                            low = middle + 1;
-                        }
-                    }
-                    applyGeometry(controls, high, clientHeight, overviewWidth);
-                    assertPrepared(controls, expectedFileCount);
-                    controls.shell().setData(CAPTURE_GEOMETRY_KEY, new CaptureGeometry(high, clientHeight));
+                    prepare(shell.widget, expectedWizardFileCount, expectedCandidateFileCount);
                 }
             });
+        }
+
+        static void prepare(Shell shell, int expectedWizardFileCount, int expectedCandidateFileCount) {
+            PreviewControls controls = locate(shell, expectedCandidateFileCount);
+            int clientHeight = clientHeight(controls.shell());
+            int overviewWidth = overviewWidth(controls);
+            int currentWidth = Math.max(controls.shell().getClientArea().width,
+                    MIN_OVERVIEW_WIDTH + 2);
+            int maximumWidth = maximumClientWidth(controls.shell());
+            applyGeometry(controls, maximumWidth, clientHeight, overviewWidth);
+            if (!fits(controls, expectedWizardFileCount, expectedCandidateFileCount)) {
+                throw new AssertionError("The atomic preview does not fit inside the current display: "
+                        + describe(controls, expectedWizardFileCount, expectedCandidateFileCount));
+            }
+            int low = currentWidth;
+            int high = maximumWidth;
+            while (low < high) {
+                int middle = low + (high - low) / 2;
+                applyGeometry(controls, middle, clientHeight, overviewWidth);
+                if (fits(controls, expectedWizardFileCount, expectedCandidateFileCount)) {
+                    high = middle;
+                } else {
+                    low = middle + 1;
+                }
+            }
+            applyGeometry(controls, high, clientHeight, overviewWidth);
+            assertPrepared(controls, expectedWizardFileCount, expectedCandidateFileCount);
+            controls.shell().setData(CAPTURE_GEOMETRY_KEY,
+                    new CaptureGeometry(high, clientHeight, expectedWizardFileCount, expectedCandidateFileCount));
         }
 
         static boolean matchesPreparedGeometry(Shell shell) {
@@ -171,21 +183,33 @@ public class SandboxHelpScreenshotsSWTBotTest {
                 return false;
             }
             Rectangle clientArea = shell.getClientArea();
-            return clientArea.width == geometry.clientWidth()
-                    && clientArea.height == geometry.clientHeight();
+            if (clientArea.width != geometry.clientWidth()
+                    || clientArea.height != geometry.clientHeight()) {
+                return false;
+            }
+            try {
+                return fits(locate(shell, geometry.expectedCandidateFileCount()),
+                        geometry.expectedWizardFileCount(), geometry.expectedCandidateFileCount())
+                        && displayContains(shell.getDisplay().getClientArea(),
+                                shell.getDisplay().map(shell, null, clientArea));
+            } catch (AssertionError failure) {
+                return false;
+            }
         }
 
         static Rectangle captureBounds(Shell shell) {
             if (!matchesPreparedGeometry(shell)) {
                 return null;
             }
-            return shell.getDisplay().map(shell, null, shell.getClientArea());
+            Rectangle captureBounds = shell.getDisplay().map(shell, null, shell.getClientArea());
+            return displayContains(shell.getDisplay().getClientArea(), captureBounds) ? captureBounds : null;
         }
 
-        private static void assertPrepared(PreviewControls controls, int expectedFileCount) {
-            assertTrue(fits(controls, expectedFileCount),
+        private static void assertPrepared(PreviewControls controls, int expectedWizardFileCount,
+                int expectedCandidateFileCount) {
+            assertTrue(fits(controls, expectedWizardFileCount, expectedCandidateFileCount),
                     () -> "The atomic preview still clips required content: "
-                            + describe(controls, expectedFileCount));
+                            + describe(controls, expectedWizardFileCount, expectedCandidateFileCount));
             assertTrue(!controls.details().getEditable(),
                     "Safety evidence must remain read-only during atomic preview capture");
             for (StyledText pane : controls.sourcePanes()) {
@@ -196,8 +220,11 @@ public class SandboxHelpScreenshotsSWTBotTest {
             }
         }
 
-        private static boolean fits(PreviewControls controls, int expectedFileCount) {
-            return headerCountMatches(controls.shell(), expectedFileCount) == 1
+        private static boolean fits(PreviewControls controls, int expectedWizardFileCount,
+                int expectedCandidateFileCount) {
+            return headerCountMatches(controls.shell(), expectedWizardFileCount) == 1
+                    && controls.table().getItemCount() == expectedCandidateFileCount
+                    && detailsCountMatches(controls.details(), expectedCandidateFileCount)
                     && safetyFits(controls.details())
                     && controls.sourcePanes().size() == 2
                     && controls.sourcePanes().stream().allMatch(AtomicPreviewScreenshotGeometry::sourceFits);
@@ -209,10 +236,17 @@ public class SandboxHelpScreenshotsSWTBotTest {
             return requiredHeight <= clientArea.height && details.getTopIndex() == 0;
         }
 
-        private static boolean sourceFits(StyledText pane) {
+        static boolean sourceFits(StyledText pane) {
             Rectangle clientArea = pane.getClientArea();
-            return requiredSourceWidth(pane) <= clientArea.width
-                    && pane.computeSize(SWT.DEFAULT, SWT.DEFAULT, true).y <= clientArea.height;
+            return !pane.isDisposed()
+                    && pane.isVisible()
+                    && pane.getHorizontalPixel() == 0
+                    && pane.getTopIndex() == 0
+                    && pane.getTopPixel() == 0
+                    && requiredSourceWidth(pane) <= clientArea.width
+                    && pane.computeSize(SWT.DEFAULT, SWT.DEFAULT, true).y <= clientArea.height
+                    && displayContains(pane.getDisplay().getClientArea(),
+                            pane.getDisplay().map(pane, null, clientArea));
         }
 
         private static int requiredSourceWidth(StyledText pane) {
@@ -229,21 +263,26 @@ public class SandboxHelpScreenshotsSWTBotTest {
             return required;
         }
 
-        private static int headerCountMatches(Shell shell, int expectedFileCount) {
-            String fragment = expectedFileCount + " files";
+        static int headerCountMatches(Shell shell, int expectedFileCount) {
+            Pattern headerPattern = wizardHeaderPattern(expectedFileCount);
             int matches = 0;
             for (String text : visibleTexts(shell)) {
-                if (text.contains(fragment)) {
+                if (headerPattern.matcher(text).matches()) {
                     matches++;
                 }
             }
             return matches;
         }
 
-        private static String describe(PreviewControls controls, int expectedFileCount) {
+        private static String describe(PreviewControls controls, int expectedWizardFileCount,
+                int expectedCandidateFileCount) {
             StringBuilder description = new StringBuilder();
             description.append("headerMatches=")
-                    .append(headerCountMatches(controls.shell(), expectedFileCount));
+                    .append(headerCountMatches(controls.shell(), expectedWizardFileCount));
+            description.append(", candidateTable=").append(controls.table().getItemCount())
+                    .append('/').append(expectedCandidateFileCount);
+            description.append(", candidateDetails=")
+                    .append(detailsCountMatches(controls.details(), expectedCandidateFileCount));
             description.append(", safety=").append(detailsSummary(controls.details()));
             for (int index = 0; index < controls.sourcePanes().size(); index++) {
                 StyledText pane = controls.sourcePanes().get(index);
@@ -251,7 +290,11 @@ public class SandboxHelpScreenshotsSWTBotTest {
                         .append(requiredSourceWidth(pane)).append('/')
                         .append(pane.getClientArea().width).append('x')
                         .append(pane.computeSize(SWT.DEFAULT, SWT.DEFAULT, true).y).append('/')
-                        .append(pane.getClientArea().height);
+                        .append(pane.getClientArea().height)
+                        .append(" scroll=")
+                        .append(pane.getHorizontalPixel()).append('/')
+                        .append(pane.getTopPixel()).append('/')
+                        .append(pane.getTopIndex());
             }
             description.append(", visibleTexts=").append(visibleTexts(controls.shell()));
             return description.toString();
@@ -344,11 +387,21 @@ public class SandboxHelpScreenshotsSWTBotTest {
             int totalWidth = controls.sash().getClientArea().width;
             int overviewWidth = Math.min(Math.max(1, desiredOverviewWidth), Math.max(1, totalWidth - 1));
             controls.sash().setWeights(new int[] { overviewWidth, Math.max(1, totalWidth - overviewWidth) });
+            controls.details().setTopIndex(0);
+            resetSourceOrigins(controls.sourcePanes());
             shell.layout(true, true);
             shell.update();
         }
 
-        private static PreviewControls locate(Shell shell, int expectedFileCount) {
+        private static void resetSourceOrigins(List<StyledText> panes) {
+            for (StyledText pane : panes) {
+                pane.setTopIndex(0);
+                pane.setTopPixel(0);
+                pane.setHorizontalPixel(0);
+            }
+        }
+
+        private static PreviewControls locate(Shell shell, int expectedCandidateFileCount) {
             for (SashForm sash : visibleDescendants(shell, SashForm.class)) {
                 if (sash.getChildren().length != 2 || !(sash.getChildren()[0] instanceof Composite overview)) {
                     continue;
@@ -359,11 +412,10 @@ public class SandboxHelpScreenshotsSWTBotTest {
                 if (tables.isEmpty() || panes.size() < 2) {
                     continue;
                 }
-                Table table = tables.stream().filter(candidate -> candidate.getItemCount() == expectedFileCount)
+                Table table = tables.stream().filter(candidate -> candidate.getItemCount() == expectedCandidateFileCount)
                         .findFirst().orElse(tables.get(0));
-                String detailsLine = "Affected source files: " + expectedFileCount;
                 Text details = visibleDescendants(sash, Text.class).stream()
-                        .filter(text -> text.getText().contains(detailsLine))
+                        .filter(text -> detailsCountMatches(text, expectedCandidateFileCount))
                         .findFirst().orElse(null);
                 if (details != null) {
                     return new PreviewControls(shell, sash, overview, table,
@@ -371,7 +423,7 @@ public class SandboxHelpScreenshotsSWTBotTest {
                 }
             }
             throw new AssertionError("Could not locate the atomic preview controls for "
-                    + expectedFileCount + " files");
+                    + expectedCandidateFileCount + " files");
         }
 
         private static CaptureGeometry captureGeometry(Shell shell) {
@@ -386,11 +438,31 @@ public class SandboxHelpScreenshotsSWTBotTest {
                 }
             }
             for (Text text : visibleDescendants(shell, Text.class)) {
-                if (text.isVisible() && text.getText().contains(ATOMIC_SELECTION)) {
+                if (text.isVisible() && !text.getText().isBlank()) {
                     texts.add(text.getText());
                 }
             }
             return texts;
+        }
+
+        private static boolean detailsCountMatches(Text details, int expectedCandidateFileCount) {
+            return Pattern.compile("(?m)^Affected source files:\\s+(?<!\\d)" //$NON-NLS-1$
+                    + Pattern.quote(Integer.toString(expectedCandidateFileCount)) + "(?!\\d)\\s*$") //$NON-NLS-1$
+                    .matcher(details.getText()).find();
+        }
+
+        private static Pattern wizardHeaderPattern(int expectedFileCount) {
+            return Pattern.compile("^\\s*The following changes to\\s+(?<!\\d)" //$NON-NLS-1$
+                    + Pattern.quote(Integer.toString(expectedFileCount))
+                    + "(?!\\d)\\s+file(?:s)?\\s+are necessary to perform the refactoring\\.\\s*$", //$NON-NLS-1$
+                    Pattern.DOTALL);
+        }
+
+        private static boolean displayContains(Rectangle outer, Rectangle inner) {
+            return inner.x >= outer.x
+                    && inner.y >= outer.y
+                    && inner.x + inner.width <= outer.x + outer.width
+                    && inner.y + inner.height <= outer.y + outer.height;
         }
 
         private static <T extends Control> List<T> visibleDescendants(Control root, Class<T> type) {

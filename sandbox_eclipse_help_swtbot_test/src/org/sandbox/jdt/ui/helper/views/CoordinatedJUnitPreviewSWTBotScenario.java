@@ -637,7 +637,7 @@ final class CoordinatedJUnitPreviewSWTBotScenario {
     }
 
     private static void prepareForScreenshot(SWTBotShell shell) {
-        SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry.prepare(shell, 4);
+        SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry.prepare(shell, 4, 2);
         shell.activate();
         waitForActiveScreenshotShell(shell);
     }
