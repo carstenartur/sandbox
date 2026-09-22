@@ -70,7 +70,7 @@ public class PlatformStatusCleanupRegressionTest {
 							Status concreteWarningNull = new Status(IStatus.WARNING, PLUGIN_ID, "warning null", null);
 							Status concreteError = new Status(IStatus.ERROR, PLUGIN_ID, "concrete", null);
 							IStatus delegated = new Status(IStatus.ERROR, "other.bundle", "delegated", null);
-							IStatus fromGetter = new Status(IStatus.ERROR, getPluginId(), "getter", "", null);
+							IStatus fromGetter = new Status(IStatus.ERROR, getPluginId(), "getter", null);
 							IStatus infoWithFailure = new Status(IStatus.INFO, PLUGIN_ID, "info", failure);
 						}
 					}"""; //$NON-NLS-1$
