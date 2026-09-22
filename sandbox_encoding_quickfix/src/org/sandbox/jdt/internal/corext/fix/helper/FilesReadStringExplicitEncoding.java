@@ -60,7 +60,6 @@ public class FilesReadStringExplicitEncoding extends AbstractExplicitEncoding<Me
 			return;
 		}
 		ReferenceHolder<ASTNode, Object> datah = ReferenceHolder.createForNodes();
-		getCharsetConstants().clear();
 		HelperVisitorFactory.forMethodCall(Files.class, METHOD_READ_STRING)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
@@ -108,8 +107,8 @@ public class FilesReadStringExplicitEncoding extends AbstractExplicitEncoding<Me
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
 		NodeData nodedata = (NodeData) data.get(visited);
-		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),
-				getCharsetConstants());
+		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, ast, visited, nodedata.encoding(),
+				getCharsetConstants(cuRewrite));
 
 		/**
 		 * Register encoding replacement BEFORE removing exception handling.

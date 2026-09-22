@@ -55,7 +55,6 @@ public class FilesNewBufferedReaderExplicitEncoding extends AbstractExplicitEnco
 	public void find(UseExplicitEncodingFixCore fixcore, CompilationUnit compilationUnit,
 			Set<CompilationUnitRewriteOperation> operations, Set<ASTNode> nodesprocessed, ChangeBehavior cb) {
 		ReferenceHolder<ASTNode, Object> datah = ReferenceHolder.createForNodes();
-		getCharsetConstants().clear();
 		HelperVisitorFactory.forMethodCall(Files.class, METHOD_NEW_BUFFERED_READER)
 			.in(compilationUnit)
 			.excluding(nodesprocessed)
@@ -103,8 +102,8 @@ public class FilesNewBufferedReaderExplicitEncoding extends AbstractExplicitEnco
 		ASTRewrite rewrite = cuRewrite.getASTRewrite();
 		AST ast = cuRewrite.getRoot().getAST();
 		NodeData nodedata = (NodeData) data.get(visited);
-		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),
-				getCharsetConstants());
+		ASTNode callToCharsetDefaultCharset = cb.computeCharsetASTNode(cuRewrite, ast, visited, nodedata.encoding(),
+				getCharsetConstants(cuRewrite));
 
 		/**
 		 * Register encoding replacement BEFORE removing exception handling.

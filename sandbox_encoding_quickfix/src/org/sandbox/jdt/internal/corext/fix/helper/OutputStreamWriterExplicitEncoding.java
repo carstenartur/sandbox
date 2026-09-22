@@ -102,7 +102,7 @@ public class OutputStreamWriterExplicitEncoding extends AbstractExplicitEncoding
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
 		NodeData nodedata= (NodeData) data.get(visited);
-		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, nodedata.encoding(),getCharsetConstants());
+		ASTNode callToCharsetDefaultCharset= cb.computeCharsetASTNode(cuRewrite, ast, visited, nodedata.encoding(),getCharsetConstants(cuRewrite));
 		/**
 		 * Register encoding replacement BEFORE removing exception handling.
 		 * removeUnsupportedEncodingException may call simplifyEmptyTryStatement
