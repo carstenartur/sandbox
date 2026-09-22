@@ -154,6 +154,7 @@ jobs:
           -e
           -V
           --batch-mode
+          --fail-at-end
           -Dtycho.localArtifacts=ignore
           clean verify
 
@@ -227,7 +228,7 @@ jobs:
           CHANGES_RESULT: ${{ needs.changes.result }}
           MAVEN_RELEVANT: ${{ needs.changes.outputs.relevant }}
           BUILD_RESULT: ${{ needs.build.result }}
-          OOMPH_RELEVANT: ${{ needs.changes.outputs.oomph }}
+          OOMPH_RELEVANT: ${{ needs.oomph.outputs.oomph }}
           OOMPH_RESULT: ${{ needs.oomph.result }}
         run: |
           set -euo pipefail
