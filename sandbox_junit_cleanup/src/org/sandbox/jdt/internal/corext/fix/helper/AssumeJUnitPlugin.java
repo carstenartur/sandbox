@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -48,10 +49,16 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlu
 public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 
 	// Assume-specific method sets (different from assertion methods)
-	private static final Set<String> MULTI_PARAM_ASSUMPTIONS = Set.of("assumeTrue", "assumeFalse", "assumeNotNull",
-			"assumeThat");
-	private static final Set<String> ONEPARAM_ASSUMPTIONS = Set.of("assumeTrue", "assumeFalse", "assumeNotNull");
-	private static final Set<String> ALL_ASSUMPTION_METHODS = Stream.of(MULTI_PARAM_ASSUMPTIONS, ONEPARAM_ASSUMPTIONS)
+	private static final String METHOD_ASSUME_NOT_NULL = "assumeNotNull"; //$NON-NLS-1$
+	private static final Set<String> MULTI_PARAM_ASSUMPTIONS = Set.of("assumeTrue", "assumeFalse", "assumeThat");
+	private static final Set<String> ONEPARAM_ASSUMPTIONS = Set.of("assumeTrue", "assumeFalse");
+	/*
+	 * Keep assumeNotNull visible to the visitor so its legacy imports can be
+	 * preserved, but never rewrite the invocation: Jupiter has no equivalent
+	 * method and JUnit 4 evaluates every vararg before checking for null.
+	 */
+	private static final Set<String> ALL_ASSUMPTION_METHODS = Stream.of(
+			MULTI_PARAM_ASSUMPTIONS, ONEPARAM_ASSUMPTIONS, Set.of(METHOD_ASSUME_NOT_NULL))
 			.flatMap(Set::stream).collect(Collectors.toSet());
 
 	@Override
@@ -83,7 +90,15 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 	protected void processMethodInvocation(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, MethodInvocation minv) {
 
-		if (METHOD_ASSUME_THAT.equals(minv.getName().getIdentifier()) && isJUnitAssume(minv)) {
+		String methodName = minv.getName().getIdentifier();
+		if (METHOD_ASSUME_NOT_NULL.equals(methodName) && isJUnitAssume(minv)) {
+			// There is no Jupiter Assumptions.assumeNotNull. Keep the proven
+			// JUnit 4 call intact instead of emitting uncompilable code or
+			// changing eager vararg evaluation into short-circuit semantics.
+			return;
+		}
+
+		if (METHOD_ASSUME_THAT.equals(methodName) && isJUnitAssume(minv)) {
 			// Special handling for assumeThat - check if using Hamcrest matchers
 			if (usesHamcrestMatcher(minv)) {
 				// Use Hamcrest's MatcherAssume for Hamcrest matchers
@@ -100,10 +115,16 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 			}
 			ASTNodes.replaceButKeepComment(rewriter, minv, newAssumeThatCall, group);
 		} else {
-			// For assumeTrue, assumeFalse, assumeNotNull - use base class behavior
+			// For assumeTrue and assumeFalse use the ordinary Jupiter migration.
 			super.processMethodInvocation(group, rewriter, ast, importRewriter, minv);
-			// Add import for Assumptions class (needed for qualified method calls)
-			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
+			if (minv.getExpression() == null) {
+				// A retained JUnit 4 wildcard import may still be needed by
+				// assumeNotNull. An explicit Jupiter static import safely wins
+				// for the migrated method without breaking the legacy call.
+				importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, methodName, false);
+			} else {
+				importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
+			}
 		}
 	}
 
@@ -112,13 +133,14 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 			ImportRewrite importRewriter, ImportDeclaration importDecl) {
 
 		String importName = importDecl.getName().getFullyQualifiedName();
+		boolean keepLegacyAssume = containsLegacyAssumeNotNull(importDecl);
 
 		// Special handling for org.junit.Assume imports when using Hamcrest
 		if (importDecl.isStatic()) {
 			// Handle static imports
 			if (importDecl.isOnDemand()) {
 				// Wildcard import: import static org.junit.Assume.*
-				if (ORG_JUNIT_ASSUME.equals(importName)) {
+				if (ORG_JUNIT_ASSUME.equals(importName) && !keepLegacyAssume) {
 					importRewriter.removeStaticImport(importName + ".*");
 					importRewriter.addStaticImport(getTargetClass(), "*", false);
 				}
@@ -126,6 +148,9 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 				// Specific static import: import static org.junit.Assume.assumeThat
 				if (importName.startsWith(ORG_JUNIT_ASSUME + ".")) {
 					String methodName = importName.substring(ORG_JUNIT_ASSUME.length() + 1);
+					if (METHOD_ASSUME_NOT_NULL.equals(methodName)) {
+						return;
+					}
 					// Remove the JUnit 4 static import - the method handler will add the correct
 					// one
 					importRewriter.removeStaticImport(importName);
@@ -139,14 +164,28 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 			}
 		} else {
 			// Handle regular imports: import org.junit.Assume
-			if (ORG_JUNIT_ASSUME.equals(importName)) {
-				// Always remove the JUnit 4 import
+			if (ORG_JUNIT_ASSUME.equals(importName) && !keepLegacyAssume) {
 				importRewriter.removeImport(ORG_JUNIT_ASSUME);
-				// Only add JUnit 5 Assumptions import if needed (will be added by
-				// processMethodInvocation for non-Hamcrest methods)
-				// Don't unconditionally add it here, as Hamcrest-only usage doesn't need it
+				// Target imports are added by the invocation that actually needs
+				// them; Hamcrest-only migrations do not need Assumptions.
 			}
 		}
+	}
+
+	private boolean containsLegacyAssumeNotNull(ImportDeclaration importDecl) {
+		boolean[] found = { false };
+		importDecl.getRoot().accept(new ASTVisitor() {
+			@Override
+			public boolean visit(MethodInvocation invocation) {
+				if (METHOD_ASSUME_NOT_NULL.equals(invocation.getName().getIdentifier())
+						&& isJUnitAssume(invocation)) {
+					found[0] = true;
+					return false;
+				}
+				return !found[0];
+			}
+		});
+		return found[0];
 	}
 
 	@Override
@@ -234,13 +273,13 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 	public String getPreview(boolean afterRefactoring) {
 		if (afterRefactoring) {
 			return """
-					Assumptions.assumeNotNull(object,"failuremessage");
-					Assumptions.assertTrue(condition,"failuremessage");
+					Assumptions.assumeTrue(condition, "failuremessage");
+					// Assume.assumeNotNull(...) stays on JUnit 4 for manual migration.
 					"""; //$NON-NLS-1$
 		}
 		return """
-				Assume.assumeNotNull("failuremessage", object);
-				Assume.assertTrue("failuremessage",condition);
+				Assume.assumeTrue("failuremessage", condition);
+				Assume.assumeNotNull(object);
 				"""; //$NON-NLS-1$
 	}
 

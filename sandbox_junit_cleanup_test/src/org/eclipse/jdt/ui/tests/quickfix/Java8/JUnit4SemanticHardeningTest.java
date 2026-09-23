@@ -415,21 +415,49 @@ public class JUnit4SemanticHardeningTest {
 		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { unit },
 				new String[] { """
 						package test;
-						import java.util.stream.Stream;
+						import java.util.Arrays;
+						import java.util.Collection;
 
-						import org.junit.jupiter.params.ParameterizedTest;
-						import org.junit.jupiter.params.provider.Arguments;
-						import org.junit.jupiter.params.provider.MethodSource;
+						import org.junit.jupiter.api.Order;
+						import org.junit.jupiter.api.Test;
 
+						@org.junit.jupiter.api.parallel.Execution(value = org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD)
+						@org.junit.jupiter.api.TestInstance(value = org.junit.jupiter.api.TestInstance.Lifecycle.PER_METHOD)
+						@org.junit.jupiter.api.TestMethodOrder(value = org.junit.jupiter.api.MethodOrderer.OrderAnnotation.class)
+						@org.junit.jupiter.params.provider.MethodSource(value = "jupiterArguments")
+						@org.junit.jupiter.params.ParameterizedClass(autoCloseArguments = false, name = "{argumentSetName}")
 						public class ExplicitParameterizedTest {
-							@ParameterizedTest
-							@MethodSource("data")
-							public void testValue(int value) {
+							private int value;
+
+							public ExplicitParameterizedTest(int value) {
+								this.value = value;
+							}
+
+							public static Collection<Object[]> data() {
+								return Arrays.asList(new Object[][] { { 1 }, { 2 } });
+							}
+
+							@org.junit.jupiter.api.DisplayName(value = "testValue")
+							@Order(0)
+							@Test
+							public void testValue() {
 								System.out.println(value);
 							}
 
-							static Stream<Arguments> data() {
-								return Stream.of(Arguments.of(1), Arguments.of(2));
+							static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> jupiterArguments() {
+								java.lang.Object source = data();
+								java.lang.Iterable<?> rows = source instanceof java.lang.Object[][]
+										? java.util.Arrays.asList((java.lang.Object[][]) source)
+										: (java.lang.Iterable<?>) source;
+								java.util.List<org.junit.jupiter.params.provider.Arguments> result = new java.util.ArrayList<>();
+								int index = 0;
+								for (java.lang.Object row : rows) {
+									java.lang.Object[] arguments = (java.lang.Object[]) row;
+									java.lang.String name = "[" + java.text.MessageFormat
+											.format("{index}".replace("{index}", java.lang.Integer.toString(index++)), arguments) + "]";
+									result.add(org.junit.jupiter.params.provider.Arguments.argumentSet(name, arguments));
+								}
+								return result.stream();
 							}
 						}
 						""" }, null);

@@ -255,6 +255,7 @@ public class MigrationThrowingRunnableTest {
 					public void test() throws Throwable {
 						final AtomicReference<ThrowingRunnable> callback = new AtomicReference<>(NOOP_RUNNABLE);
 						callback.get().run();
+						withNatives(true, callback.get());
 					}
 					
 					private static void withNatives(boolean natives, ThrowingRunnable runnable) throws Throwable {
@@ -279,6 +280,7 @@ public class MigrationThrowingRunnableTest {
 					public void test() throws Throwable {
 						final AtomicReference<Executable> callback = new AtomicReference<>(NOOP_RUNNABLE);
 						callback.get().execute();
+						withNatives(true, callback.get());
 					}
 					
 					private static void withNatives(boolean natives, Executable runnable) throws Throwable {

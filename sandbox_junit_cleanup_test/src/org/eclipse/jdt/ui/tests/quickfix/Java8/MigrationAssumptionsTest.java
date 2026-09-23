@@ -145,7 +145,7 @@ public class MigrationAssumptionsTest {
 	}
 
 	@Test
-	public void migrates_assumeNotNull() throws CoreException {
+	public void keeps_assumeNotNull_on_junit4() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
 				"""
@@ -169,14 +169,14 @@ public class MigrationAssumptionsTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
-				import org.junit.jupiter.api.Assumptions;
+				import org.junit.Assume;
 				import org.junit.jupiter.api.Test;
 				
 				public class MyTest {
 					@Test
 					public void testWithPrecondition() {
-						Assumptions.assumeNotNull(new Object(), "Value should not be null");
-						Assumptions.assumeNotNull(new Object());
+						Assume.assumeNotNull("Value should not be null", new Object());
+						Assume.assumeNotNull(new Object());
 					}
 				}
 				"""
@@ -255,6 +255,7 @@ public class MigrationAssumptionsTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
+				import org.junit.Assume;
 				import org.junit.jupiter.api.Assumptions;
 				import org.junit.jupiter.api.Test;
 				
@@ -262,7 +263,7 @@ public class MigrationAssumptionsTest {
 					@Test
 					public void testWithMultiplePreconditions() {
 						Assumptions.assumeTrue(System.getProperty("test.run") != null, "System property set");
-						Assumptions.assumeNotNull(getValue(), "Value exists");
+						Assume.assumeNotNull("Value exists", getValue());
 						// Test logic here
 					}
 					
