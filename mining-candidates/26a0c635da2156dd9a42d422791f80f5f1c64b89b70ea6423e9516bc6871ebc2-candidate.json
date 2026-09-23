@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "26a0c635da2156dd9a42d422791f80f5f1c64b89b70ea6423e9516bc6871ebc2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: remove.redundant.long.field.init\u003e\n\u003c!description: Remove redundant initialization of long fields to 0 or 0L.\u003e\n\u003c!severity: HINT\u003e\n\n$modifiers$ long $name \u003d $init; :: isField($name) \u0026\u0026 matchesAny($init, \"0\", \"0L\")\n\u003d\u003e\n$modifiers$ long $name;\n;;",
+  "beforeExample": "class MyClass {\n    private int foo \u003d 1;\n    protected volatile long lastNotifyDuration \u003d 0L;\n    private volatile long lastPostBuildId \u003d 0;\n    public static final long CONSTANT \u003d 0L;\n    long anotherField \u003d 5L;\n\n    void method() {\n        long local \u003d 0L;\n    }\n}",
+  "afterExample": "class MyClass {\n    private int foo \u003d 1;\n    protected volatile long lastNotifyDuration;\n    private volatile long lastPostBuildId;\n    public static final long CONSTANT \u003d 0L;\n    long anotherField \u003d 5L;\n\n    void method() {\n        long local \u003d 0L;\n    }\n}",
+  "negativeExample": "class MyClass {\n    private int foo \u003d 0;\n    protected volatile long lastNotifyDuration \u003d 1L;\n    private volatile boolean notificationRequested \u003d false; // Different type\n\n    void method() {\n        long local \u003d 0L; // Not a field\n    }\n}",
+  "targetHintFile": "style.sandbox-hint",
+  "sourceCommit": "cf092d3482fa9098863bc6d431dfacb4e92a9e64",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Redundant Initialization",
+  "summary": "Removes redundant initialization of long fields to their default value (0 or 0L).",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-23T02:25:35.154556446Z",
+  "ruleFingerprint": "sha256:920ae2b77ce1163b3cc8949a107135cfdd4b64ec599395f70cb753e0eaa92ab0",
+  "behaviorFingerprint": "sha256:76ef4bd7c434ffc2c4b6c2608fb4987e17a4a3fd71abcb3e46903ad6701d3ed8",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-23T02:25:40.588360064Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

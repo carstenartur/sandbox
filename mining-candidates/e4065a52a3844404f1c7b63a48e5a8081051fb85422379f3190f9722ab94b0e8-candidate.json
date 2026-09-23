@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e4065a52a3844404f1c7b63a48e5a8081051fb85422379f3190f9722ab94b0e8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: deprecate.IFileModificationValidator.validateEdit\u003e\n\u003c!description: Deprecate the IFileModificationValidator.validateEdit method.\u003e\n\u003c!severity: WARNING\u003e\norg.eclipse.core.runtime.IStatus $name($params$) :: methodNameMatches($name, \"validateEdit\") \u0026\u0026 inClass(\"org.eclipse.core.resources.IFileModificationValidator\")\n\u003d\u003e @java.lang.Deprecated org.eclipse.core.runtime.IStatus $name($params$)\n;;",
+  "beforeExample": "package org.eclipse.core.resources;\nimport org.eclipse.core.runtime.IStatus;\n\ninterface IFile {\n    // Minimal IFile for context\n}\n\npublic interface IFileModificationValidator {\n    IStatus validateEdit(IFile[] files, Object context);\n    IStatus validateSave(IFile file);\n}",
+  "afterExample": "package org.eclipse.core.resources;\nimport org.eclipse.core.runtime.IStatus;\n\ninterface IFile {\n    // Minimal IFile for context\n}\n\npublic interface IFileModificationValidator {\n    @java.lang.Deprecated IStatus validateEdit(IFile[] files, Object context);\n    IStatus validateSave(IFile file);\n}",
+  "negativeExample": "package org.eclipse.core.resources;\nimport org.eclipse.core.runtime.IStatus;\n\ninterface IFile {\n    // Minimal IFile for context\n}\n\npublic interface IFileModificationValidator {\n    IStatus validateMove(IFile[] files, Object context);\n    IStatus validateEditWithoutDeprecation(IFile[] files, Object context);\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "7c9185faa9f1229cae5fedbf2154fb117196da90",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Deprecation",
+  "summary": "Adds `@Deprecated` annotation to the `IFileModificationValidator.validateEdit` method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-23T02:25:35.198128771Z",
+  "ruleFingerprint": "sha256:117f034807d7325580c7b993c68288d4236dd66250294451f6d3e2c9b3de66c6",
+  "behaviorFingerprint": "sha256:90ed5dba26e16d990256dbe24910016a52f77c2940bd7a371d4c1f5114122dc6",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-23T02:25:40.597045839Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
