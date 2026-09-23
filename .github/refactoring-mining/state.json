@@ -3702,9 +3702,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform": {
-      "lastProcessedCommit": "57815654148aeac962b8baa729f6fd29e1469533",
-      "lastProcessedDate": "2026-09-22T02:27:12.089131240Z",
-      "totalProcessed": 3036,
+      "lastProcessedCommit": "e4b15d7ed4eca950a999178de041657042ac9ed7",
+      "lastProcessedDate": "2026-09-23T02:25:33.327064038Z",
+      "totalProcessed": 3412,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -3814,6 +3814,24 @@
           "deferredAt": "2026-09-21T02:25:14.358616306Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "f41e00d5b00028658e8a5163710129240feffc12",
+          "message": "Perform clean code of runtime/bundles/org.eclipse.core.runtime",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-23T02:21:05.964859248Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5564079942577d67ffeef44657f7b97c0b55a094",
+          "message": "Perform clean code of runtime/bundles/org.eclipse.core.runtime",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-23T02:23:44.419292909Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3844,8 +3862,11 @@
         "Redundant Code": 1,
         "Deprecation Improvement": 1,
         "Method Rename": 1,
-        "Deprecation": 1,
-        "API Deprecation": 1
+        "Deprecation": 3,
+        "API Deprecation": 1,
+        "Redundant Initialization": 1,
+        "Record Syntax": 1,
+        "Null Safety": 1
       },
       "exhaustedCategories": []
     },
@@ -3874,5 +3895,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 45291
+  "globalTotalProcessed": 45667
 }
