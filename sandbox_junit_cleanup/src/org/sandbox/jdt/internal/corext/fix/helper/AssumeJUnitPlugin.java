@@ -21,6 +21,7 @@ import java.util.stream.Stream;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -117,12 +118,13 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 		} else {
 			// For assumeTrue and assumeFalse use the ordinary Jupiter migration.
 			super.processMethodInvocation(group, rewriter, ast, importRewriter, minv);
-			if (minv.getExpression() == null) {
+			if (minv.getExpression() == null && containsLegacyAssumeNotNull(minv)) {
 				// A retained JUnit 4 wildcard import may still be needed by
-				// assumeNotNull. An explicit Jupiter static import safely wins
-				// for the migrated method without breaking the legacy call.
+				// assumeNotNull. Add a specific Jupiter import only in that
+				// mixed case; otherwise the ordinary import rewrite remains
+				// unchanged.
 				importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, methodName, false);
-			} else {
+			} else if (minv.getExpression() != null) {
 				importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS);
 			}
 		}
@@ -172,9 +174,9 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 		}
 	}
 
-	private boolean containsLegacyAssumeNotNull(ImportDeclaration importDecl) {
+	private boolean containsLegacyAssumeNotNull(ASTNode node) {
 		boolean[] found = { false };
-		importDecl.getRoot().accept(new ASTVisitor() {
+		node.getRoot().accept(new ASTVisitor() {
 			@Override
 			public boolean visit(MethodInvocation invocation) {
 				if (METHOD_ASSUME_NOT_NULL.equals(invocation.getName().getIdentifier())

@@ -175,7 +175,7 @@ public class MigrationRunnersTest {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_PARAMETERIZED);
 
-		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
+		context.assertRefactoringResultAsExpectedNormalizingWhitespace(new ICompilationUnit[] { cu }, new String[] {
 """
 package test;
 import java.util.Arrays;
