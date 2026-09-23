@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c14490770116067ec568d25e7e85ff8e5128268f15e704d9aa3d21c84db87f48",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: deprecate.PropertyChangeEvent.getProperty\u003e\n\u003c!description: Deprecate the Preferences.PropertyChangeEvent.getProperty method.\u003e\n\u003c!severity: WARNING\u003e\npublic java.lang.String $name($params$) :: methodNameMatches($name, \"getProperty\") \u0026\u0026 inClass(\"org.eclipse.core.runtime.Preferences.PropertyChangeEvent\")\n\u003d\u003e @java.lang.Deprecated public java.lang.String $name($params$)\n;;",
+  "beforeExample": "package org.eclipse.core.runtime;\n\nimport java.util.EventObject;\n\npublic class Preferences {\n    public static class PropertyChangeEvent extends EventObject {\n        private String propertyName;\n        private Object oldValue;\n        private Object newValue;\n\n        protected PropertyChangeEvent(Object source, String property, Object oldValue, Object newValue) {\n            super(source);\n            this.propertyName \u003d property;\n            this.oldValue \u003d oldValue;\n            this.newValue \u003d newValue;\n        }\n\n        public String getProperty() {\n            return propertyName;\n        }\n\n        public Object getNewValue() {\n            return newValue;\n        }\n\n        public Object getOldValue() {\n            return oldValue;\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.core.runtime;\n\nimport java.util.EventObject;\n\npublic class Preferences {\n    public static class PropertyChangeEvent extends EventObject {\n        private String propertyName;\n        private Object oldValue;\n        private Object newValue;\n\n        protected PropertyChangeEvent(Object source, String property, Object oldValue, Object newValue) {\n            super(source);\n            this.propertyName \u003d property;\n            this.oldValue \u003d oldValue;\n            this.newValue \u003d newValue;\n        }\n\n        @java.lang.Deprecated public String getProperty() {\n            return propertyName;\n        }\n\n        public Object getNewValue() {\n            return newValue;\n        }\n\n        public Object getOldValue() {\n            return oldValue;\n        }\n    }\n}",
+  "negativeExample": "package org.eclipse.core.runtime;\n\nimport java.util.EventObject;\n\npublic class Preferences {\n    public static class PropertyChangeEvent extends EventObject {\n        private String propertyName;\n        private Object oldValue;\n        private Object newValue;\n\n        protected PropertyChangeEvent(Object source, String property, Object oldValue, Object newValue) {\n            super(source);\n            this.propertyName \u003d property;\n            this.oldValue \u003d oldValue;\n            this.newValue \u003d newValue;\n        }\n\n        public String getName() { // Should not match\n            return propertyName;\n        }\n\n        public Object getNewValue() {\n            return newValue;\n        }\n\n        public Object getOldValue() {\n            return oldValue;\n        }\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "eda2f3ee2bcbe2477ef4288c7c6ef7930c472975",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Deprecation",
+  "summary": "Adds `@Deprecated` annotation to the `Preferences.PropertyChangeEvent.getProperty()` method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-23T02:25:35.217516198Z",
+  "ruleFingerprint": "sha256:0fbc0993790570b764d11edb58c7b492c3e6c71058ff1c57a0735231e6c71cc0",
+  "behaviorFingerprint": "sha256:f1ef8b23726426da38e2093f158d939d85b5ecf23ae91cfd6314595ea1abc1ad",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-23T02:25:40.605131488Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

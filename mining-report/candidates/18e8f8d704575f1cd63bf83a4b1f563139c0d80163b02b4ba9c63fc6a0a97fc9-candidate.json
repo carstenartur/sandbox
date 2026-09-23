@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "18e8f8d704575f1cd63bf83a4b1f563139c0d80163b02b4ba9c63fc6a0a97fc9",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.core.runtime.Platform.getOS().equals($osString)\n\u003d\u003e\njava.util.Objects.equals(org.eclipse.core.runtime.Platform.getOS(), $osString)\n;;",
+  "beforeExample": "import org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.internal.runtime.InternalPlatform;\n\nclass Example {\n    void checkOS(String expectedOs) {\n        // Original code: may throw NPE if Platform.getOS() returns null\n        boolean isExpected \u003d Platform.OS.is(expectedOs);\n    }\n\n    // Simplified Platform.OS class for example context\n    static class Platform {\n        public static final String OS_UNKNOWN \u003d \"unknown\";\n        public static String getOS() {\n            // Simulates cases where it might return null, even if contract implies OS_UNKNOWN\n            return \"Windows\"; \n        }\n\n        public static class OS {\n            public static boolean is(String osString) {\n                return Platform.getOS().equals(osString);\n            }\n        }\n    }\n}",
+  "afterExample": "import java.util.Objects;\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.internal.runtime.InternalPlatform;\n\nclass Example {\n    void checkOS(String expectedOs) {\n        // Transformed code using Objects.equals for null safety\n        boolean isExpected \u003d Platform.OS.is(expectedOs);\n    }\n\n    // Simplified Platform.OS class for example context\n    static class Platform {\n        public static final String OS_UNKNOWN \u003d \"unknown\";\n        public static String getOS() {\n            // Simulates cases where it might return null, even if contract implies OS_UNKNOWN\n            return \"Windows\"; \n        }\n\n        public static class OS {\n            public static boolean is(String osString) {\n                return Objects.equals(Platform.getOS(), osString);\n            }\n        }\n    }\n}",
+  "negativeExample": "import org.eclipse.core.runtime.Platform;\n\nclass Example {\n    String myString \u003d \"MyOS\";\n    void checkOS(String expectedOs) {\n        // This should not be matched, as the receiver is not Platform.getOS()\n        boolean isMyOS \u003d myString.equals(expectedOs);\n\n        // This should also not be matched, even if the method name is similar\n        Object obj \u003d new Object();\n        boolean objEquals \u003d obj.equals(expectedOs);\n    }\n\n    // Simplified Platform.OS class for example context\n    static class Platform {\n        public static final String OS_UNKNOWN \u003d \"unknown\";\n        public static String getOS() {\n            return \"Windows\"; \n        }\n\n        public static class OS {\n            public static boolean is(String osString) {\n                return Platform.getOS().equals(osString);\n            }\n        }\n    }\n}",
+  "targetHintFile": "null_safety.sandbox-hint",
+  "sourceCommit": "186adc9a7910ec4a32f46dc373537e72c1d7c6a6",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Null Safety",
+  "summary": "Replace direct `equals()` call on `Platform.getOS()` with `Objects.equals()` for null safety.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-23T02:25:35.285988580Z",
+  "ruleFingerprint": "sha256:2fc299ec8878e195eb7d168f25e190618dc409e47855902948cc81147df0483b",
+  "behaviorFingerprint": "sha256:09f8139b167c2c0fb631f75d0cd724a960cc49178a9bc7ef2dc37f89e2da89f5",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-09-23T02:25:40.642318092Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

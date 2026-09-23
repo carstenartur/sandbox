@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "497b3fca9e22435f53ed1a2d8b8bc514ff459e934d040bc3d8296a2c6401fd30",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.core.internal.runtime.KeyStoreUtil.KeyStoreAndPassword($keyStore, $password) :: sourceVersionGE(16)\n\u003d\u003e org.eclipse.core.internal.runtime.KeyStoreUtil.KeyStoreAndPassword($keyStore, $password)\n;;",
+  "beforeExample": "package org.eclipse.core.internal.runtime;\n\nimport java.security.KeyStore;\n\npublic class KeyStoreUtil {\n    private static final record KeyStoreAndPassword(KeyStore keyStore, char[] password) {\n    }\n\n    public void someMethod() {\n        KeyStoreAndPassword store \u003d new KeyStoreAndPassword(null, null);\n    }\n}",
+  "afterExample": "package org.eclipse.core.internal.runtime;\n\nimport java.security.KeyStore;\n\npublic class KeyStoreUtil {\n    private static final record KeyStoreAndPassword(KeyStore keyStore, char[] password) {\n    }\n\n    public void someMethod() {\n        KeyStoreAndPassword store \u003d KeyStoreAndPassword(null, null);\n    }\n}",
+  "negativeExample": "package org.eclipse.core.internal.runtime;\n\nimport java.security.KeyStore;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class KeyStoreUtil {\n    public void someMethod() {\n        List\u003cString\u003e list \u003d new ArrayList\u003c\u003e(); // Should not be affected\n    }\n}",
+  "targetHintFile": "records.sandbox-hint",
+  "sourceCommit": "ef7ee802d43d5637f15822b83530d2fcfe4e9763",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform",
+  "category": "Record Syntax",
+  "summary": "Replaces the explicit \u0027new\u0027 keyword with the shorter canonical constructor call for the \u0027KeyStoreUtil.KeyStoreAndPassword\u0027 record.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-23T02:25:35.259659332Z",
+  "ruleFingerprint": "sha256:58459f674c9856d6e140af1a39b0e74d3369c1c002461fe32f7730842368aa53",
+  "behaviorFingerprint": "sha256:021b27e559cf53fb5bdeaab10bcc8c77ef33d54644c614d3c955e8d2f3881cbd",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type KeyStoreUtil must be defined in its own file",
+    "verifiedAt": "2026-09-23T02:25:40.617994716Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
