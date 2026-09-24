@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f68d79b2c0c1a86054e55eb65761162aff719f82c37bba4c724fa4c2817f47a1",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jface.text.JFaceColors.getInformationViewerBackgroundColor($display$)\n\u003d\u003e\norg.eclipse.jface.text.JFaceColors.getInformationViewerForegroundColor($display$)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.jface.preference.JFacePreferences;\nimport org.eclipse.jface.resource.ColorRegistry;\nimport org.eclipse.jface.text.JFaceColors;\n\npublic class Example {\n    public void someMethod(ColorRegistry colorRegistry) {\n        Color foreground \u003d colorRegistry.get(JFacePreferences.CONTENT_ASSIST_FOREGROUND_COLOR);\n        if (foreground \u003d\u003d null) {\n            foreground \u003d JFaceColors.getInformationViewerBackgroundColor(Display.getDefault());\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.jface.preference.JFacePreferences;\nimport org.eclipse.jface.resource.ColorRegistry;\nimport org.eclipse.jface.text.JFaceColors;\n\npublic class Example {\n    public void someMethod(ColorRegistry colorRegistry) {\n        Color foreground \u003d colorRegistry.get(JFacePreferences.CONTENT_ASSIST_FOREGROUND_COLOR);\n        if (foreground \u003d\u003d null) {\n            foreground \u003d JFaceColors.getInformationViewerForegroundColor(Display.getDefault());\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.jface.text.JFaceColors;\n\npublic class NegativeExample {\n    public void otherMethod() {\n        // This method call already uses the correct foreground color method\n        Color correctForeground \u003d org.eclipse.jface.text.JFaceColors.getInformationViewerForegroundColor(Display.getDefault());\n        // This is a different JFaceColors method and should not be affected\n        Color someOtherColor \u003d org.eclipse.jface.text.JFaceColors.getWidgetBackgroundColor(Display.getDefault());\n    }\n}",
+  "targetHintFile": "jface-colors.sandbox-hint",
+  "sourceCommit": "abb49b4ffde7627b6bc90c63d16d4da04e4b9437",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Misuse Correction",
+  "summary": "Replace incorrect JFaceColors.getInformationViewerBackgroundColor with JFaceColors.getInformationViewerForegroundColor for content assist popup.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-24T02:29:17.846131077Z",
+  "ruleFingerprint": "sha256:4580097a5f994d47d3bf024445ced185abea32a3e979e16b9425392a4c7bf121",
+  "behaviorFingerprint": "sha256:c718d84296be9c6a984da79de2366f8a09e47a208ae0942c86ab8e04e1e26643",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-09-24T02:29:27.078490791Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

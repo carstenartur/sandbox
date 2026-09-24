@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c4c4cf272af4c903bd7392ea32664e5acf34904b6c52f326a855259e3a92b4d4",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: remove.unnecessary.varargs.array.messageformat\u003e\n\u003c!description: Remove unnecessary array creation for single argument to MessageFormat.format varargs method (varargs available since Java 5, baseline Java 8).\n\u003e\n\u003c!severity: HINT\u003e\njava.text.MessageFormat.format($msg, new java.lang.Object[] { $arg })\n\u003d\u003e java.text.MessageFormat.format($msg, $arg)\n;;",
+  "beforeExample": "import java.text.MessageFormat;\n\npublic class MyClass {\n    public String getFormattedString(String key, Object arg) {\n        return MessageFormat.format(key, new Object[] { arg });\n    }\n\n    public String getStatusMessage(String status) {\n        String pattern \u003d \"Status: {0}\";\n        return MessageFormat.format(pattern, new Object[] { status });\n    }\n}",
+  "afterExample": "import java.text.MessageFormat;\n\npublic class MyClass {\n    public String getFormattedString(String key, Object arg) {\n        return MessageFormat.format(key, arg);\n    }\n\n    public String getStatusMessage(String status) {\n        String pattern \u003d \"Status: {0}\";\n        return MessageFormat.format(pattern, status);\n    }\n}",
+  "negativeExample": "import java.text.MessageFormat;\n\npublic class MyClass {\n    public String formatMultipleArgs(String pattern, Object arg1, Object arg2) {\n        // Should not match: multiple arguments require an array or direct varargs\n        return MessageFormat.format(pattern, new Object[] { arg1, arg2 });\n    }\n\n    public String formatDirectVarargs(String pattern, Object arg) {\n        // Should not match: already uses direct varargs\n        return MessageFormat.format(pattern, arg);\n    }\n}",
+  "targetHintFile": "redundant-code.sandbox-hint",
+  "sourceCommit": "6ded71d47a2c4b3c2acc086040e4d75f2341ceb7",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Redundant Code",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-24T02:29:17.816274382Z",
+  "ruleFingerprint": "sha256:4ebc2e8f84b71882fe67fe5a303fe1fbc5be46c4e779f872dd6a0bff88e064df",
+  "behaviorFingerprint": "sha256:e3b7cb566eea55596b8e397ad9699c32198e1396a3302618369160ac07015e01",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-24T02:29:27.060827323Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

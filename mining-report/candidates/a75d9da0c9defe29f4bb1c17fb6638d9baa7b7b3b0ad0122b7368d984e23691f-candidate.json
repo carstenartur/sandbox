@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a75d9da0c9defe29f4bb1c17fb6638d9baa7b7b3b0ad0122b7368d984e23691f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: integer.parseint.optimization\u003e\n\u003c!description: Replace Integer.valueOf($arg) with Integer.parseInt($arg) to avoid unnecessary wrapper object creation when a primitive int is expected (available since Java 1.0, baseline Java 8).\n\u003e\n\u003c!severity: HINT\u003e\njava.lang.Integer.valueOf($arg)\n\u003d\u003e java.lang.Integer.parseInt($arg)\n;;",
+  "beforeExample": "public class MyClass {\n    public int convertStringToInt(String s) {\n        return Integer.valueOf(s);\n    }\n\n    public void processNumbers(String[] stringNumbers) {\n        int[] numbers \u003d new int[stringNumbers.length];\n        for (int i \u003d 0; i \u003c stringNumbers.length; i++) {\n            numbers[i] \u003d Integer.valueOf(stringNumbers[i]);\n        }\n    }\n}",
+  "afterExample": "public class MyClass {\n    public int convertStringToInt(String s) {\n        return Integer.parseInt(s);\n    }\n\n    public void processNumbers(String[] stringNumbers) {\n        int[] numbers \u003d new int[stringNumbers.length];\n        for (int i \u003d 0; i \u003c stringNumbers.length; i++) {\n            numbers[i] \u003d Integer.parseInt(stringNumbers[i]);\n        }\n    }\n}",
+  "negativeExample": "public class MyClass {\n    public Long convertStringToLong(String s) {\n        // Should not match Long.valueOf\n        return Long.valueOf(s);\n    }\n\n    public Integer decodeString(String s) {\n        // Should not match Integer.decode\n        return Integer.decode(s);\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "f4cc6a3ffa8fa4ea7b2dfdcd2709ca27936fcdcd",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-24T02:29:17.784796471Z",
+  "ruleFingerprint": "sha256:67b0ffed7e98fa68100d33aae16afde9e2aa1093d82dc12648c34ef46425fad9",
+  "behaviorFingerprint": "sha256:bb0849bdff70cced3a6707990c3c303253f531ba5ccada68b40a4d42bde786e4",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-24T02:29:27.046891459Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ad470e1dcb705473a4203b72905e5d6ebe89ab28e298eec3dcdb6363d7eca99b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.ArrayIndexOutOfBoundsException $x\n\u003d\u003e java.lang.IndexOutOfBoundsException $x\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class Example {\n    public void foo() {\n        List\u003cString\u003e list \u003d new ArrayList\u003c\u003e();\n        try {\n            list.get(10); // Throws IndexOutOfBoundsException, specifically ArrayIndexOutOfBoundsException\n        } catch (ArrayIndexOutOfBoundsException x) {\n            System.err.println(\"Caught AIOOBE: \" + x.getMessage());\n        }\n    }\n}",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.IndexOutOfBoundsException;\nimport java.util.List;\n\npublic class Example {\n    public void foo() {\n        List\u003cString\u003e list \u003d new ArrayList\u003c\u003e();\n        try {\n            list.get(10);\n        } catch (IndexOutOfBoundsException x) { // Changed to IndexOutOfBoundsException\n            System.err.println(\"Caught IOOBE: \" + x.getMessage());\n        }\n    }\n}",
+  "negativeExample": "import java.io.IOException;\n\npublic class Example {\n    public void foo() {\n        try {\n            // some I/O operation\n        } catch (IOException e) { // Should not match other exception types\n            System.err.println(e.getMessage());\n        }\n    }\n}",
+  "targetHintFile": "exceptions.sandbox-hint",
+  "sourceCommit": "9fae9caf849cc3428e20a680145072eb0372c891",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Exception Handling",
+  "summary": "Replace catching ArrayIndexOutOfBoundsException with its superclass IndexOutOfBoundsException for broader exception handling.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-24T02:29:17.681570169Z",
+  "ruleFingerprint": "sha256:6106ea8b9b621e927e3243eabc9564dc52615d8d106011a781b4ecfdced0631b",
+  "behaviorFingerprint": "sha256:f14f8414359b361efe755d353c1397d442c92c9c79264dfc572ff67c083bfcb0",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-24T02:29:26.998221333Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

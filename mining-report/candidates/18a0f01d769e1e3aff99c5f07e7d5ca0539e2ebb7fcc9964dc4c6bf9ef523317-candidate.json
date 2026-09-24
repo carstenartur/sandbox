@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "18a0f01d769e1e3aff99c5f07e7d5ca0539e2ebb7fcc9964dc4c6bf9ef523317",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.ArrayList\u003c\u003e()\n\u003d\u003e new java.util.concurrent.CopyOnWriteArrayList\u003c\u003e()\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Example {\n    List\u003c?\u003e list \u003d new ArrayList\u003c\u003e();\n\n    void someMethod() {\n        List\u003cString\u003e anotherList \u003d new ArrayList\u003c\u003e();\n    }\n}",
+  "afterExample": "import java.util.List;\nimport java.util.concurrent.CopyOnWriteArrayList;\n\nclass Example {\n    List\u003c?\u003e list \u003d new CopyOnWriteArrayList\u003c\u003e();\n\n    void someMethod() {\n        List\u003cString\u003e anotherList \u003d new CopyOnWriteArrayList\u003c\u003e();\n    }\n}",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.List;\n\nclass NegativeExample {\n    List\u003cString\u003e explicitGenericList \u003d new ArrayList\u003cString\u003e(); // Should not match\n    List rawList \u003d new ArrayList(); // Should not match\n\n    void someMethod() {\n        ArrayList\u003cInteger\u003e localList \u003d new ArrayList\u003cInteger\u003e(); // Should not match\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "2f7536d74aaf4c8f0e9e6718bf672bec6dc99bd4",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance / Thread Safety",
+  "summary": "Replaces \u0027new ArrayList\u003c\u003e()\u0027 with \u0027new CopyOnWriteArrayList\u003c\u003e()\u0027 for thread-safe performance, specifically matching the diamond operator form.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-24T02:29:17.997090510Z",
+  "ruleFingerprint": "sha256:ec6b1dbd5b2152f36dc653c8dc1f4dfeae5f44420f4a00b36f85359204e9df84",
+  "behaviorFingerprint": "sha256:fabcfc26ee23387da136cd495289f3059a73f489b059a2a89ee290ceb2e62c3c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example is ambiguous: expected one replacement but got 2",
+    "verifiedAt": "2026-09-24T02:29:27.167126140Z",
+    "verifierVersion": "7",
+    "matches": 2,
+    "replacements": 2
+  },
+  "transitions": []
+}
