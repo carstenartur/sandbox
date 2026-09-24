@@ -3702,10 +3702,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform": {
-      "lastProcessedCommit": "e4b15d7ed4eca950a999178de041657042ac9ed7",
-      "lastProcessedDate": "2026-09-23T02:25:33.327064038Z",
-      "totalProcessed": 3412,
-      "status": "CATCHING_UP",
+      "lastProcessedDate": "2026-09-24T02:21:34.613069685Z",
+      "totalProcessed": 3453,
+      "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
           "hash": "9d569a1b2eba6ededd365c1abc1ef16beb426469",
@@ -3837,8 +3836,10 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 0,
-      "completedEpochs": [],
+      "currentEpoch": 1,
+      "completedEpochs": [
+        "2020-01-01 to 2026-01-01"
+      ],
       "categoryHitCounts": {
         "API Modernization": 12,
         "Error Message Standardization": 1,
@@ -3871,15 +3872,58 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "totalProcessed": 0,
+      "lastProcessedCommit": "dd728eb92a34124118ea1b10fe8d41d20e6760e4",
+      "lastProcessedDate": "2026-09-24T02:29:12.566907009Z",
+      "totalProcessed": 72,
       "status": "CATCHING_UP",
-      "deferredCommits": [],
+      "deferredCommits": [
+        {
+          "hash": "9053ccf04b5d2e8bee7ed04a49a1153d540e2237",
+          "message": "Bug 550987 - [tests] Increase test coverage of TextPresentation",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-24T02:21:39.400382793Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3f839bb8f50d453ebe2112549b93a1c41342207c",
+          "message": "Convert JUnit 3.x style tests to 4.x",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-24T02:24:54.460436163Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4ff644875702c50707c44b318101fdfd1d03c5db",
+          "message": "Bug 553462 - Ctrl+3 misses some text search results",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-24T02:28:23.303914701Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
       "currentEpoch": 0,
       "completedEpochs": [],
-      "categoryHitCounts": {},
+      "categoryHitCounts": {
+        "Method Call Refactoring": 1,
+        "Exception Handling": 1,
+        "Null Safety": 1,
+        "API Modernization": 2,
+        "Performance": 1,
+        "Redundant Code": 1,
+        "API Misuse Correction": 1,
+        "Lambda to Method Reference": 1,
+        "JUnit migration": 1,
+        "Collection API Usage": 1,
+        "Concurrency": 1,
+        "Performance / Thread Safety": 1
+      },
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
@@ -3895,5 +3939,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 45667
+  "globalTotalProcessed": 45780
 }
