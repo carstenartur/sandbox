@@ -115,6 +115,9 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 		
 		AstProcessorBuilder.with(dataHolder, nodesprocessed)
 			.onSimpleType((node, h) -> {
+				if (isNestedWithinThrowingRunnableParameterizedType(node)) {
+					return true;
+				}
 				// Check if this is a ThrowingRunnable type reference
 				ITypeBinding binding = node.resolveBinding();
 				if (binding != null && ORG_JUNIT_FUNCTION_THROWING_RUNNABLE.equals(binding.getQualifiedName())) {
@@ -292,6 +295,11 @@ public class ThrowingRunnableJUnitPlugin extends AbstractTool<ReferenceHolder<In
 			}
 		}
 		return false;
+	}
+
+	private boolean isNestedWithinThrowingRunnableParameterizedType(SimpleType node) {
+		ASTNode parent = node.getParent();
+		return parent instanceof ParameterizedType parameterizedType && containsThrowingRunnable(parameterizedType);
 	}
 
 	/**

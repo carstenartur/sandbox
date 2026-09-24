@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -92,14 +93,14 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 			ImportRewrite importRewriter, MethodInvocation minv) {
 
 		String methodName = minv.getName().getIdentifier();
-		if (METHOD_ASSUME_NOT_NULL.equals(methodName) && isJUnitAssume(minv)) {
+		if (METHOD_ASSUME_NOT_NULL.equals(methodName) && isLegacyAssumeInvocation(minv)) {
 			// There is no Jupiter Assumptions.assumeNotNull. Keep the proven
 			// JUnit 4 call intact instead of emitting uncompilable code or
 			// changing eager vararg evaluation into short-circuit semantics.
 			return;
 		}
 
-		if (METHOD_ASSUME_THAT.equals(methodName) && isJUnitAssume(minv)) {
+		if (METHOD_ASSUME_THAT.equals(methodName) && isLegacyAssumeInvocation(minv)) {
 			// Special handling for assumeThat - check if using Hamcrest matchers
 			if (usesHamcrestMatcher(minv)) {
 				// Use Hamcrest's MatcherAssume for Hamcrest matchers
@@ -180,7 +181,7 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 			@Override
 			public boolean visit(MethodInvocation invocation) {
 				if (METHOD_ASSUME_NOT_NULL.equals(invocation.getName().getIdentifier())
-						&& isJUnitAssume(invocation)) {
+						&& isLegacyAssumeInvocation(invocation)) {
 					found[0] = true;
 					return false;
 				}
@@ -206,6 +207,50 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 	private boolean isJUnitAssume(MethodInvocation node) {
 		IMethodBinding binding = node.resolveMethodBinding();
 		return binding != null && ORG_JUNIT_ASSUME.equals(binding.getDeclaringClass().getQualifiedName());
+	}
+
+	private boolean isLegacyAssumeInvocation(MethodInvocation node) {
+		if (isJUnitAssume(node)) {
+			return true;
+		}
+		Expression expression = node.getExpression();
+		if (expression != null) {
+			return ASSUME.equals(expression.toString()) && hasLegacyAssumeTypeImport(node);
+		}
+		return hasLegacyAssumeStaticImport(node, node.getName().getIdentifier());
+	}
+
+	private boolean hasLegacyAssumeTypeImport(MethodInvocation node) {
+		if (!(node.getRoot() instanceof CompilationUnit unit)) {
+			return false;
+		}
+		for (Object current : unit.imports()) {
+			if (current instanceof ImportDeclaration importDeclaration && !importDeclaration.isStatic()
+					&& !importDeclaration.isOnDemand()
+					&& ORG_JUNIT_ASSUME.equals(importDeclaration.getName().getFullyQualifiedName())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean hasLegacyAssumeStaticImport(MethodInvocation node, String methodName) {
+		if (!(node.getRoot() instanceof CompilationUnit unit)) {
+			return false;
+		}
+		for (Object current : unit.imports()) {
+			if (!(current instanceof ImportDeclaration importDeclaration) || !importDeclaration.isStatic()) {
+				continue;
+			}
+			String importName = importDeclaration.getName().getFullyQualifiedName();
+			if (importDeclaration.isOnDemand() && ORG_JUNIT_ASSUME.equals(importName)) {
+				return true;
+			}
+			if ((ORG_JUNIT_ASSUME + "." + methodName).equals(importName)) { //$NON-NLS-1$
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

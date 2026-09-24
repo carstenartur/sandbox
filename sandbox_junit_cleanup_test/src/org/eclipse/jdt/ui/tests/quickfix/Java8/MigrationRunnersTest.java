@@ -39,7 +39,6 @@ public class MigrationRunnersTest {
 	@BeforeEach
 	public void setup() throws CoreException {
 		fRoot = JUnitMigrationFixtureClasspath.createJUnit4And5Root(context, "org.junit.platform.suite.api.Suite");
-		createRunnerFixtures();
 	}
 
 	private void createRunnerFixtures() throws CoreException {
@@ -233,6 +232,7 @@ public class MyParameterizedTest {
 
 	@Test
 	public void migrates_runWith_mockito() throws CoreException {
+		createRunnerFixtures();
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyMockitoTest.java",
 				"""
@@ -282,6 +282,7 @@ public class MyParameterizedTest {
 
 	@Test
 	public void migrates_runWith_spring() throws CoreException {
+		createRunnerFixtures();
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MySpringTest.java",
 				"""
