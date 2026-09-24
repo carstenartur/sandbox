@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "77d030726a532aacb3b8ad95b6260689ca5be51dd316d778f8d95f9ac3976c57",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "com.ibm.icu.text.MessageFormat\n\u003d\u003e\njava.text.MessageFormat\n;;",
+  "beforeExample": "package test;\n\nimport com.ibm.icu.text.MessageFormat;\n\npublic class Example {\n    public void method() {\n        String pattern \u003d \"Hello {0}!\";\n        Object[] args \u003d {\"World\"};\n        String result \u003d MessageFormat.format(pattern, args);\n        System.out.println(result);\n    }\n}",
+  "afterExample": "package test;\n\nimport java.text.MessageFormat;\n\npublic class Example {\n    public void method() {\n        String pattern \u003d \"Hello {0}!\";\n        Object[] args \u003d {\"World\"};\n        String result \u003d MessageFormat.format(pattern, args);\n        System.out.println(result);\n    }\n}",
+  "negativeExample": "package test;\n\nimport java.text.MessageFormat;\n// This class already uses java.text.MessageFormat, so it should not be matched.\n// Also, com.ibm.icu.text.DecimalFormat is not MessageFormat, so it should not trigger.\n\npublic class NegativeExample {\n    public void method() {\n        String pattern \u003d \"Hi {0}.\";\n        Object[] args \u003d {\"User\"};\n        String result \u003d MessageFormat.format(pattern, args);\n        System.out.println(result);\n        // com.ibm.icu.text.DecimalFormat df \u003d new com.ibm.icu.text.DecimalFormat(\"#.##\");\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "405737a043520c4ce6c5c7145ee7d6d71bfa04bf",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace com.ibm.icu.text.MessageFormat with java.text.MessageFormat to reduce external dependencies.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-24T02:29:17.968934899Z",
+  "ruleFingerprint": "sha256:a6ef35c63729d28a77fc59a894b91ae81fb0ef03a138cc4c9713c52f67120b2a",
+  "behaviorFingerprint": "sha256:e0d74e3d283387979c6b7dea6bd59108c31121dac68d7f7bb0a39789bbfa3fb8",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import com.ibm cannot be resolved",
+    "verifiedAt": "2026-09-24T02:29:27.141679815Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

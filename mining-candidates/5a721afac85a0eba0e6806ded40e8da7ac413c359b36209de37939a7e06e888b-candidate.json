@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5a721afac85a0eba0e6806ded40e8da7ac413c359b36209de37939a7e06e888b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.ArrayList($x) :: isNullable($x) \u0026\u0026 instanceof($x, \"java.util.Collection\")\n\u003d\u003e new java.util.ArrayList($x !\u003d null ? $x : java.util.Collections.emptyList())\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.Collection;\n\npublic class TestClass {\n    List\u003cString\u003e maybeNullList;\n    Collection\u003cInteger\u003e maybeNullCollection;\n\n    public TestClass(List\u003cString\u003e list) {\n        this.maybeNullList \u003d list;\n    }\n\n    public void init() {\n        List\u003cString\u003e filteredList \u003d new ArrayList\u003c\u003e(maybeNullList);\n        List\u003cInteger\u003e filteredCollection \u003d new ArrayList\u003c\u003e(maybeNullCollection);\n    }\n}",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.Collection;\nimport java.util.Collections;\n\npublic class TestClass {\n    List\u003cString\u003e maybeNullList;\n    Collection\u003cInteger\u003e maybeNullCollection;\n\n    public TestClass(List\u003cString\u003e list) {\n        this.maybeNullList \u003d list;\n    }\n\n    public void init() {\n        List\u003cString\u003e filteredList \u003d new ArrayList\u003c\u003e(maybeNullList !\u003d null ? maybeNullList : java.util.Collections.emptyList());\n        List\u003cInteger\u003e filteredCollection \u003d new ArrayList\u003c\u003e(maybeNullCollection !\u003d null ? maybeNullCollection : java.util.Collections.emptyList());\n    }\n}",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.List;\nimport java.util.Collection;\nimport java.util.Collections;\n\npublic class NegativeTestClass {\n    List\u003cString\u003e nonNullList \u003d new ArrayList\u003c\u003e();\n    Collection\u003cInteger\u003e nonNullCollection \u003d new ArrayList\u003c\u003e();\n\n    public void init() {\n        List\u003cString\u003e filteredList \u003d new ArrayList\u003c\u003e(nonNullList);\n        List\u003cInteger\u003e filteredCollection \u003d new ArrayList\u003c\u003e(nonNullCollection);\n    }\n\n    public void processNonNullParam(List\u003cString\u003e paramList) {\n        List\u003cString\u003e newList \u003d new ArrayList\u003c\u003e(paramList);\n    }\n}",
+  "targetHintFile": "null-safety.sandbox-hint",
+  "sourceCommit": "a3110fbed8b66c72a375fe1f219af881f7cd9586",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Null Safety",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-24T02:29:17.713752911Z",
+  "ruleFingerprint": "sha256:9cdf33c8fce2dc220a40e43e5e07dd3f804a41fabcd6953d997ba036de79a4e2",
+  "behaviorFingerprint": "sha256:95ddca386b5f1a67811c7d7ccd8116dde8f02adfd16275c2eb49c888e307ed65",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-09-24T02:29:27.019376366Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

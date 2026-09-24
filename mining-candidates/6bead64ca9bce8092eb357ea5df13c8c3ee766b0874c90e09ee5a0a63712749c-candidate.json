@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6bead64ca9bce8092eb357ea5df13c8c3ee766b0874c90e09ee5a0a63712749c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.junit.Assert.assertEquals($msg$, $expected$, $actual$) :: instanceof($expected$, \"double\") \u0026\u0026 instanceof($actual$, \"double\")\n\u003d\u003e\norg.junit.Assert.assertEquals($msg$, $expected$, $actual$, 0)\n;;",
+  "beforeExample": "import static org.junit.Assert.assertEquals;\n\nclass MyTest {\n    void testMethod() {\n        double expected \u003d 1.0;\n        double actual \u003d 1.0;\n        assertEquals(\"message\", expected, actual);\n    }\n}",
+  "afterExample": "import static org.junit.Assert.assertEquals;\n\nclass MyTest {\n    void testMethod() {\n        double expected \u003d 1.0;\n        double actual \u003d 1.0;\n        assertEquals(\"message\", expected, actual, 0);\n    }\n}",
+  "negativeExample": "import static org.junit.Assert.assertEquals;\n\nclass MyTest {\n    void testIntMethod() {\n        int expected \u003d 1;\n        int actual \u003d 1;\n        assertEquals(\"message\", expected, actual); // Should not match, applies only to doubles\n    }\n    void testFloatMethod() {\n        float expected \u003d 1.0f;\n        float actual \u003d 1.0f;\n        assertEquals(\"message\", expected, actual); // Should not match, applies only to doubles\n    }\n    void testDeltaAlreadyPresent() {\n        double expected \u003d 1.0;\n        double actual \u003d 1.0;\n        assertEquals(\"message\", expected, actual, 0.001); // Already has delta (different arity)\n    }\n}",
+  "targetHintFile": "junit.sandbox-hint",
+  "sourceCommit": "83e3ecbc3b9842bb8cc66a1b15852475d66ea474",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "JUnit migration",
+  "summary": "Add 0 delta argument to JUnit 4 assertEquals calls comparing double values. This is required for `org.junit.Assert.assertEquals(String, double, double, double)` when migrating from JUnit 3 where `assertEquals(String, double, double)` existed without a delta.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-24T02:29:17.909272514Z",
+  "ruleFingerprint": "sha256:0f17fde2c34e1dd828f400c645f9ee2ed45fa1f27353c43f97c4050fa3287a1e",
+  "behaviorFingerprint": "sha256:227793bbd50e2adcbf08132390ba418d91facf38fafb0252853ea7eb5db6d779",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.junit cannot be resolved",
+    "verifiedAt": "2026-09-24T02:29:27.109451945Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4ff0e081007a6467953e5966a8f436f82ca0a4bb26ee4dc5c2a078d13ef45c01",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: system.lineSeparator.property\u003e\n\u003c!description: Replace System.getProperty(\"line.separator\") with System.lineSeparator(). The latter has no security checks and is available since Java 7 (baseline Java 8).\n\u003e\n\u003c!severity: HINT\u003e\njava.lang.System.getProperty(\"line.separator\")\n\u003d\u003e java.lang.System.lineSeparator()\n;;",
+  "beforeExample": "public class MyClass {\n    public String getLineSeparator() {\n        return System.getProperty(\"line.separator\");\n    }\n\n    public void printLines() {\n        System.out.println(\"First line\" + System.getProperty(\"line.separator\") + \"Second line\");\n    }\n}",
+  "afterExample": "public class MyClass {\n    public String getLineSeparator() {\n        return System.lineSeparator();\n    }\n\n    public void printLines() {\n        System.out.println(\"First line\" + System.lineSeparator() + \"Second line\");\n    }\n}",
+  "negativeExample": "public class MyClass {\n    public String getOtherProperty() {\n        // Should not match other system properties\n        return System.getProperty(\"user.home\");\n    }\n}",
+  "targetHintFile": "modernize-java.sandbox-hint",
+  "sourceCommit": "a1993f28ebe965a670c7d8dec06f21d7de7c82e8",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-24T02:29:17.751612291Z",
+  "ruleFingerprint": "sha256:2b7ed5014b58c84e28e4dfc02902915c4a1f77bcc0f25583e025fce22b9eaf42",
+  "behaviorFingerprint": "sha256:c2c5e0b60a0bbfe8976735b0c6f36d81dce192a87c064326b16bac9c8dd832d3",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-24T02:29:27.033306939Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

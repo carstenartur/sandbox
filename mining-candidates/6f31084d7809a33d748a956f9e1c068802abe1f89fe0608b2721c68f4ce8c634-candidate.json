@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6f31084d7809a33d748a956f9e1c068802abe1f89fe0608b2721c68f4ce8c634",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: map.keyset.size-to-size\u003e\n\u003c!description: Replace map.keySet().size() with map.size() for brevity and efficiency.\u003e\n\u003c!severity: HINT\u003e\n\n$map.keySet().size()\n\u003d\u003e\n$map.size()\n;;",
+  "beforeExample": "import java.util.HashMap;\nimport java.util.Map;\n\npublic class Example {\n    public void method() {\n        Map\u003cString, String\u003e myMap \u003d new HashMap\u003c\u003e();\n        myMap.put(\"key1\", \"value1\");\n        int count \u003d myMap.keySet().size();\n        System.out.println(count);\n    }\n}",
+  "afterExample": "import java.util.HashMap;\nimport java.util.Map;\n\npublic class Example {\n    public void method() {\n        Map\u003cString, String\u003e myMap \u003d new HashMap\u003c\u003e();\n        myMap.put(\"key1\", \"value1\");\n        int count \u003d myMap.size();\n        System.out.println(count);\n    }\n}",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class NegativeExample {\n    public void method() {\n        List\u003cString\u003e myList \u003d new ArrayList\u003c\u003e();\n        myList.add(\"item1\");\n        int count \u003d myList.size(); // Already uses .size(), does not have .keySet()\n        System.out.println(count);\n    }\n}",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "4c9a7526886c2c5ebe32be6ba5e02a3d02cdbd2c",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Collection API Usage",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-24T02:29:17.942653394Z",
+  "ruleFingerprint": "sha256:d45cbb62b79737f4fdf9542a7fb0312b7c3dfaa9136126c93a04bdb826681c2f",
+  "behaviorFingerprint": "sha256:2aae5a8486d8df65d94da0aaef2183f73ec78fc2ac70d3b73108b2f58e102385",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-24T02:29:27.122912554Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
