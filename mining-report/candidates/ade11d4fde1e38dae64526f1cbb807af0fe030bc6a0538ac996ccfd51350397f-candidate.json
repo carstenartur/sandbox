@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ade11d4fde1e38dae64526f1cbb807af0fe030bc6a0538ac996ccfd51350397f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: jface.text.assert.isTrue.with.message\u003e\n\u003c!description: Replace deprecated org.eclipse.jface.text.Assert.isTrue(boolean, String) with org.eclipse.core.runtime.Assert.isTrue(boolean, String).\u003e\n\u003c!severity: WARNING\u003e\norg.eclipse.jface.text.Assert.isTrue($expression$, $message$)\n\u003d\u003e\norg.eclipse.core.runtime.Assert.isTrue($expression$, $message$)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.Assert;\n\npublic class MyClass {\n    public void foo(boolean condition, String msg) {\n        Assert.isTrue(condition, msg);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.runtime.Assert;\n\npublic class MyClass {\n    public void foo(boolean condition, String msg) {\n        Assert.isTrue(condition, msg);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.runtime.Assert;\n\npublic class MyClass {\n    public void foo(boolean condition, String msg) {\n        // Already using org.eclipse.core.runtime.Assert, should not match\n        Assert.isTrue(condition, msg);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "db75b9d62993253bb4af76c244cc058c8c490d38",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Deprecation",
+  "summary": "Replace deprecated `org.eclipse.jface.text.Assert.isTrue(boolean, String)` with `org.eclipse.core.runtime.Assert.isTrue(boolean, String)`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-25T02:28:59.682947841Z",
+  "ruleFingerprint": "sha256:e5ff90f40f22a514ed302303257be378b91455006586d871127f89f0ba515bb7",
+  "behaviorFingerprint": "sha256:4f12396c78a440efba1318e13c004a5b85df3ef937a3bf66ad2f46e3d8c0b954",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-25T02:29:08.740780311Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

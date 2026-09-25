@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "91a918101e6653559205126b5e33a37909d88278156dd986ca7db8f3d570dc35",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$settings.getBoolean(org.eclipse.search.internal.ui.SearchDialog.STORE_IS_OPEN_PREVIOUS_PAGE)\n\u003d\u003e org.eclipse.search.internal.ui.SearchPreferencePage.rememberLastUsedPage()\n;;",
+  "beforeExample": "package org.eclipse.search.internal.ui;\n\ninterface IDialogSettings {\n    boolean getBoolean(String key);\n    String get(String key);\n}\n\nclass SearchPlugin {\n    public static SearchPlugin getDefault() { return new SearchPlugin(); }\n    public org.eclipse.jface.preference.IPreferenceStore getPreferenceStore() { return null; }\n}\n\nclass SearchPreferencePage {\n    public static boolean rememberLastUsedPage() { return false; }\n}\n\npublic class SearchDialog {\n    private IDialogSettings fDialogSettings;\n    public static final String STORE_IS_OPEN_PREVIOUS_PAGE \u003d \"IS_OPEN_PREVIOUS_PAGE\";\n\n    public SearchDialog(IDialogSettings settings) {\n        this.fDialogSettings \u003d settings;\n    }\n\n    public boolean checkSetting() {\n        return fDialogSettings.getBoolean(STORE_IS_OPEN_PREVIOUS_PAGE);\n    }\n}",
+  "afterExample": "package org.eclipse.search.internal.ui;\n\ninterface IDialogSettings {\n    boolean getBoolean(String key);\n    String get(String key);\n}\n\nclass SearchPlugin {\n    public static SearchPlugin getDefault() { return new SearchPlugin(); }\n    public org.eclipse.jface.preference.IPreferenceStore getPreferenceStore() { return null; }\n}\n\nclass SearchPreferencePage {\n    public static boolean rememberLastUsedPage() { return false; }\n}\n\npublic class SearchDialog {\n    private IDialogSettings fDialogSettings;\n\n    public SearchDialog(IDialogSettings settings) {\n        this.fDialogSettings \u003d settings;\n    }\n\n    public boolean checkSetting() {\n        return org.eclipse.search.internal.ui.SearchPreferencePage.rememberLastUsedPage();\n    }\n}",
+  "negativeExample": "package org.eclipse.search.internal.ui;\n\nimport org.eclipse.jface.dialogs.IDialogSettings;\n\ninterface IDialogSettings {\n    boolean getBoolean(String key);\n}\n\npublic class OtherDialog {\n    private IDialogSettings settings;\n\n    public OtherDialog(IDialogSettings settings) {\n        this.settings \u003d settings;\n    }\n\n    public boolean checkOtherSetting() {\n        return settings.getBoolean(\"ANOTHER_KEY\");\n    }\n}",
+  "targetHintFile": "eclipse-search-api-migrations.sandbox-hint",
+  "sourceCommit": "3d463e2e4c4d9b548f327e52c3872177f3480d82",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Migration",
+  "summary": "Replace direct IDialogSettings lookup for \u0027remember last used page\u0027 with static SearchPreferencePage accessor.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-25T02:28:59.790308614Z",
+  "ruleFingerprint": "sha256:9ec2ae416e691cf32b195ce8b7a99d4f6ccac4755bf365d068647e57f8238d29",
+  "behaviorFingerprint": "sha256:bece5252809569647dd8caae58a601565890538d72199c9c90d93109a0668752",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 10: org.eclipse.jface.preference cannot be resolved to a type",
+    "verifiedAt": "2026-09-25T02:29:08.802363903Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
