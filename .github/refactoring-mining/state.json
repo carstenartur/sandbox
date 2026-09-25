@@ -3702,8 +3702,8 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform": {
-      "lastProcessedDate": "2026-09-24T02:21:34.613069685Z",
-      "totalProcessed": 3453,
+      "lastProcessedDate": "2026-09-25T02:20:05.045674292Z",
+      "totalProcessed": 6076,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3836,9 +3836,10 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 1,
+      "currentEpoch": 2,
       "completedEpochs": [
-        "2020-01-01 to 2026-01-01"
+        "2020-01-01 to 2026-01-01",
+        "2015-01-01 to 2020-01-01"
       ],
       "categoryHitCounts": {
         "API Modernization": 12,
@@ -3872,9 +3873,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "dd728eb92a34124118ea1b10fe8d41d20e6760e4",
-      "lastProcessedDate": "2026-09-24T02:29:12.566907009Z",
-      "totalProcessed": 72,
+      "lastProcessedCommit": "3efca1f37098b330a0326b26b5b4cde1ed163208",
+      "lastProcessedDate": "2026-09-25T02:28:54.745430665Z",
+      "totalProcessed": 144,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -3903,6 +3904,60 @@
           "deferredAt": "2026-09-24T02:28:23.303914701Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "1b4aecc4e1187a02bf9c9c33e81231fc6a771d86",
+          "message": "Enable save actions for texeditor.tests\n\nThis will avoid issues like\nhttps://git.eclipse.org/r/c/platform/eclipse.platfo",
+          "diffLines": 85,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-25T02:21:33.463150288Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "eb65eca6e06e5eef7b126a07fa8319dc46e0bd66",
+          "message": "Bug 565208: Remove calls to Color.dispose\n\nChange for\norg.eclipse.jface.text/src/org/eclipse/jface/text/AbstractInformat",
+          "diffLines": 43,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-25T02:21:33.463588256Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e47758780567222021a0d1d98185a0f716bafc3f",
+          "message": "Bug 565368 - Update org.eclipse.search to Java 11\n\nAs minimum runtime of platform is Java 11 it is good to have at least",
+          "diffLines": 258,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-25T02:21:33.463623873Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f2b57cdd13ddfaaf646e841b9b187d71ea7ba8a2",
+          "message": "Method reference in jface.text instead of lambda\n\nDone via JDT cleanup\n\nChange-Id: Id95cfc6281565a7196551b7290533da237b7",
+          "diffLines": 58,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-25T02:21:33.463636787Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "43aa85f0d63da0f2101b0cd7d7ae55234cf95e6f",
+          "message": "Bug 566317 -  Replace Helper with JFace Util.isValid in content assists",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-25T02:25:02.556912919Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a8e8f4b9ea82b28b8ad80fa74c782fabaf537288",
+          "message": "Bug 508821 - [Content assist] More flexible API in IContentAssistProcessor to decide whether to auto-activate or not",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-25T02:28:35.663079691Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3914,15 +3969,23 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 1,
-        "API Modernization": 2,
-        "Performance": 1,
+        "API Modernization": 3,
+        "Performance": 2,
         "Redundant Code": 1,
         "API Misuse Correction": 1,
         "Lambda to Method Reference": 1,
         "JUnit migration": 1,
         "Collection API Usage": 1,
         "Concurrency": 1,
-        "Performance / Thread Safety": 1
+        "Performance / Thread Safety": 1,
+        "Singleton_Usage": 1,
+        "Resource Management": 2,
+        "Structural Change": 1,
+        "Deprecation": 1,
+        "API Usage": 1,
+        "JUnit Assertion": 1,
+        "API Migration": 1,
+        "Configuration Default Update": 1
       },
       "exhaustedCategories": []
     },
@@ -3939,5 +4002,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 45780
+  "globalTotalProcessed": 48475
 }
