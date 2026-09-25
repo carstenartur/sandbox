@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a225d4361c2b2f26e6cebd1984ed936e86160c77994e2711796263a883fe1116",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jface.text.contentassist.ContentAssistant.CONTEXT_INFO_BELOW\n\u003d\u003e\norg.eclipse.jface.text.contentassist.IContentAssistant.CONTEXT_INFO_BELOW\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jface.text.contentassist.ContentAssistant;\nimport org.eclipse.jface.text.contentassist.IContentAssistant;\npublic class MyClass {\n    void foo(ContentAssistant assistant) {\n        assistant.setContextInformationPopupOrientation(ContentAssistant.CONTEXT_INFO_BELOW);\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jface.text.contentassist.ContentAssistant;\nimport org.eclipse.jface.text.contentassist.IContentAssistant;\npublic class MyClass {\n    void foo(ContentAssistant assistant) {\n        assistant.setContextInformationPopupOrientation(IContentAssistant.CONTEXT_INFO_BELOW);\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jface.text.contentassist.IContentAssistant;\npublic class MyClass {\n    void foo(IContentAssistant assistant) {\n        assistant.setContextInformationPopupOrientation(IContentAssistant.CONTEXT_INFO_BELOW);\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "22e289d31606b7e610972f220c527273883c3678",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Usage",
+  "summary": "Replaces a constant reference from a concrete class (ContentAssistant) to its interface (IContentAssistant) for CONTEXT_INFO_BELOW, improving API adherence.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-25T02:28:59.710433007Z",
+  "ruleFingerprint": "sha256:dfaaebdd90ee898badb357f42c454df1d3c3600fa9754f4527c98af7c74f1971",
+  "behaviorFingerprint": "sha256:133fefbce65e6d6a11b921897748ddfc33dcccab8131f119aac064b138b13391",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.jface.text.contentassist cannot be resolved",
+    "verifiedAt": "2026-09-25T02:29:08.757097476Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e46ae03e13b69fa939faed1b8936037f4a9eaeae04e43216ebdf3420db687b36",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jface.platform_getadaptermanager_to_adapters_adapt\u003e\n\u003c!description: Replace deprecated Platform.getAdapterManager().getAdapter() with Adapters.adapt() for adapter lookups.\u003e\n\u003c!severity: WARNING\u003e\n\u003c!tags: api-modernization, eclipse\u003e\n\norg.eclipse.core.runtime.Platform.getAdapterManager().getAdapter($part, $type)\n\u003d\u003e\norg.eclipse.core.runtime.Adapters.adapt($part, $type)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.runtime.Platform;\n\nclass MyPart {}\ninterface ITemplatesPage {}\n\npublic class TestClass {\n    ITemplatesPage getPage(MyPart part) {\n        ITemplatesPage page \u003d null;\n        if (page \u003d\u003d null) {\n            page \u003d Platform.getAdapterManager().getAdapter(part, ITemplatesPage.class);\n        }\n        return page;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.runtime.Adapters;\n\nclass MyPart {}\ninterface ITemplatesPage {}\n\npublic class TestClass {\n    ITemplatesPage getPage(MyPart part) {\n        ITemplatesPage page \u003d null;\n        if (page \u003d\u003d null) {\n            page \u003d Adapters.adapt(part, ITemplatesPage.class);\n        }\n        return page;\n    }\n}",
+  "negativeExample": "package test;\n\nclass MyPart {\n    public ITemplatesPage getAdapter(Class\u003c?\u003e type) { return null; }\n}\ninterface ITemplatesPage {}\n\npublic class TestClass {\n    ITemplatesPage getPage(MyPart part) {\n        // Should not match other getAdapter calls, e.g., on \u0027part\u0027 itself\n        ITemplatesPage page \u003d part.getAdapter(ITemplatesPage.class);\n        return page;\n    }\n}",
+  "targetHintFile": "eclipse.sandbox-hint",
+  "sourceCommit": "6c75d96e39e7421210e1a47a787ded7c1b99e539",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces a specific method chain to retrieve an adapter with the modern `Adapters.adapt` static method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-25T02:28:59.764950052Z",
+  "ruleFingerprint": "sha256:e32b64286d8ecdfc3cc6141415958d0eb5b087e75fc11d839a861c33fb0fd136",
+  "behaviorFingerprint": "sha256:1f300c0157dedb74f8b70ebc23028536d30ea2dfa7852aee14ec0c280656fa82",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-25T02:29:08.784563576Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

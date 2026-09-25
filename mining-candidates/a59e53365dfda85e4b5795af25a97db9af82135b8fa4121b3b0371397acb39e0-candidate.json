@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a59e53365dfda85e4b5795af25a97db9af82135b8fa4121b3b0371397acb39e0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$store.setDefault(org.eclipse.search.internal.ui.SearchPreferencePage.REMEMBER_LAST_USED_PAGE, false)\n\u003d\u003e $store.setDefault(org.eclipse.search.internal.ui.SearchPreferencePage.REMEMBER_LAST_USED_PAGE, true)\n;;",
+  "beforeExample": "package org.eclipse.search.internal.ui;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\n\ninterface IPreferenceStore {\n    void setDefault(String key, boolean value);\n}\n\npublic class SearchPreferencePage {\n    public static final String REMEMBER_LAST_USED_PAGE \u003d \"org.eclipse.search.potentialMatch.remember\";\n\n    public void initializeDefaults(IPreferenceStore store) {\n        store.setDefault(REMEMBER_LAST_USED_PAGE, false);\n    }\n}",
+  "afterExample": "package org.eclipse.search.internal.ui;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\n\ninterface IPreferenceStore {\n    void setDefault(String key, boolean value);\n}\n\npublic class SearchPreferencePage {\n    public static final String REMEMBER_LAST_USED_PAGE \u003d \"org.eclipse.search.potentialMatch.remember\";\n\n    public void initializeDefaults(IPreferenceStore store) {\n        store.setDefault(REMEMBER_LAST_USED_PAGE, true);\n    }\n}",
+  "negativeExample": "package org.eclipse.search.internal.ui;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\n\ninterface IPreferenceStore {\n    void setDefault(String key, boolean value);\n}\n\npublic class OtherPreferencePage {\n    public static final String ANOTHER_KEY \u003d \"another.key\";\n\n    public void initializeDefaults(IPreferenceStore store) {\n        store.setDefault(ANOTHER_KEY, false);\n        store.setDefault(SearchPreferencePage.REMEMBER_LAST_USED_PAGE, true); \n    }\n}",
+  "targetHintFile": "eclipse-search-config.sandbox-hint",
+  "sourceCommit": "88182cb588e2a0d985b4dcaf1614f1e0fe7b068b",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Configuration Default Update",
+  "summary": "Update default preference for \u0027remember last used page\u0027 from false to true.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-25T02:28:59.815915740Z",
+  "ruleFingerprint": "sha256:e88f81376cc04503325f1941cf98700e04d365d30f773f3ad36574aad3f4786a",
+  "behaviorFingerprint": "sha256:85aa37d07bff297e2f7a369d6813eb17327af1acca350641b52e48570d03714c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.preference cannot be resolved",
+    "verifiedAt": "2026-09-25T02:29:08.820857324Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

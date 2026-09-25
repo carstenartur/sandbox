@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6c2b568ea7e12b13e548764718644c49e7d067e26c45ee07d4e077eec65fe00c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.jface.viewers.ArrayContentProvider()\n\u003d\u003e\norg.eclipse.jface.viewers.ArrayContentProvider.getInstance()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.viewers.ArrayContentProvider;\nimport org.eclipse.jface.viewers.TableViewer;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyClass {\n    public void setupViewer(Shell parent) {\n        TableViewer fViewer \u003d new TableViewer(parent, SWT.MULTI);\n        fViewer.setContentProvider(new ArrayContentProvider());\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.viewers.ArrayContentProvider;\nimport org.eclipse.jface.viewers.TableViewer;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyClass {\n    public void setupViewer(Shell parent) {\n        TableViewer fViewer \u003d new TableViewer(parent, SWT.MULTI);\n        fViewer.setContentProvider(ArrayContentProvider.getInstance());\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.viewers.ArrayContentProvider;\nimport org.eclipse.jface.viewers.TableViewer;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyOtherClass {\n    public void setupViewer(Shell parent) {\n        TableViewer fViewer \u003d new TableViewer(parent, SWT.MULTI);\n        fViewer.setContentProvider(ArrayContentProvider.getInstance()); // Already uses getInstance()\n        fViewer.setContentProvider(new MyCustomContentProvider()); // Different class, should not match\n    }\n    private static class MyCustomContentProvider extends ArrayContentProvider {}\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "e425860e08de4c8fa630f1fa1d3fea2c3902c9be",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Singleton_Usage",
+  "summary": "Replace direct instantiation of `ArrayContentProvider` with its singleton instance `ArrayContentProvider.getInstance()` as it is a stateless class.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-25T02:28:59.587707308Z",
+  "ruleFingerprint": "sha256:a27df33572dd9ba73ffbb882306c7c05fcb61d867e9cf32b18b253f411653f2b",
+  "behaviorFingerprint": "sha256:e8d97c3713edfa1d0a13a998edf63004a547760c8a8825d77dcc607c11356767",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.viewers cannot be resolved",
+    "verifiedAt": "2026-09-25T02:29:08.709004306Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

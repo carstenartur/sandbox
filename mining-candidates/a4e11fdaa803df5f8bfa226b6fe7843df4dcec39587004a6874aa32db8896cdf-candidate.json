@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a4e11fdaa803df5f8bfa226b6fe7843df4dcec39587004a6874aa32db8896cdf",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "import java.util.regex.Matcher;\nimport java.util.regex.Pattern;\n\npublic class Example {\n    public String replace(String originalText, String replacementText) {\n        Pattern pattern \u003d Pattern.compile(\"some_regex\");\n        Matcher matcher \u003d pattern.matcher(originalText);\n        StringBuffer sb \u003d new StringBuffer(); // This line should match\n        matcher.reset();\n        if (matcher.find()) {\n            matcher.appendReplacement(sb, replacementText);\n        }\n        matcher.appendTail(sb);\n        return sb.toString();\n    }\n\n    // Negative: StringBuffer not assigned to local variable (e.g. field)\n    private StringBuffer fieldBuffer \u003d new StringBuffer();\n    public void useFieldBuffer(String s) {\n        fieldBuffer.append(s);\n    }\n}",
+  "afterExample": "import java.util.regex.Matcher;\nimport java.util.regex.Pattern;\n\npublic class Example {\n    public String replace(String originalText, String replacementText) {\n        Pattern pattern \u003d Pattern.compile(\"some_regex\");\n        Matcher matcher \u003d pattern.matcher(originalText);\n        StringBuilder sb \u003d new StringBuilder(); // This line should be replaced\n        matcher.reset();\n        if (matcher.find()) {\n            matcher.appendReplacement(sb, replacementText);\n        }\n        matcher.appendTail(sb);\n        return sb.toString();\n    }\n\n    // Negative: StringBuffer not assigned to local variable (e.g. field)\n    private StringBuffer fieldBuffer \u003d new StringBuffer();\n    public void useFieldBuffer(String s) {\n        fieldBuffer.append(s);\n    }\n}",
+  "negativeExample": "import java.util.regex.Matcher;\nimport java.util.regex.Pattern;\n\npublic class NegativeExample {\n    // Field declaration - should NOT match\n    private StringBuffer sharedBuffer \u003d new StringBuffer(\"initial\");\n\n    public void method1() {\n        System.out.println(sharedBuffer.toString());\n    }\n\n    public void method2(StringBuffer passedBuffer) {\n        // Parameter - should NOT match\n        passedBuffer.append(\"stuff\");\n    }\n\n    public StringBuffer createBuffer() {\n        // Return value - should NOT match\n        return new StringBuffer(\"returned\");\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "48b56eb5ab3bbd32a888b40d905f9a5f050ff6bb",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-25T02:28:59.650421493Z",
+  "ruleFingerprint": "sha256:52ef1fd9bf1ad95f1f0de9ba3173c2edfb9f1fa3141c9853875b3da50ac736f0",
+  "behaviorFingerprint": "sha256:6bde22ea5f3e058ca4cef3bf6ba551ace07a1e183ed29c0cffd4a5b422425b3b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-25T02:29:08.727052125Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

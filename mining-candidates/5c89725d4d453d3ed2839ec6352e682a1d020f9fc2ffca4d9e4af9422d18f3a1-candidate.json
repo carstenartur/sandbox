@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5c89725d4d453d3ed2839ec6352e682a1d020f9fc2ffca4d9e4af9422d18f3a1",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: junit.assert.equality.unboxing\u003e\n\u003c!description: Replaces Assert.assertTrue($int \u003d\u003d $Number) with Assert.assertEquals($int, $Number.intValue()) for clearer comparison and to explicitly unbox, avoiding autoboxing warnings.\u003e\n\u003c!severity: HINT\u003e\norg.junit.Assert.assertTrue($expected \u003d\u003d $actual) :: instanceof($actual, \"java.lang.Number\")\n\u003d\u003e org.junit.Assert.assertEquals($expected, $actual.intValue())\n;;",
+  "beforeExample": "import org.junit.Assert;\n\npublic class TestClass {\n    // Minimal helper class to demonstrate Number return type\n    static class BrowseHistory {\n        private Integer currentBrowsePoint;\n        public Integer getCurrentBrowsePoint() { return currentBrowsePoint; }\n        public void addOrReplace(int value) { this.currentBrowsePoint \u003d value; }\n    }\n\n    public void testMethod() {\n        BrowseHistory history \u003d new BrowseHistory();\n        history.addOrReplace(10);\n        // Matches: $expected\u003d10 (int), $actual\u003dhistory.getCurrentBrowsePoint() (Integer)\n        Assert.assertTrue(10 \u003d\u003d history.getCurrentBrowsePoint());\n        \n        int localValue \u003d 20;\n        history.addOrReplace(localValue);\n        // Matches: $expected\u003dlocalValue (int), $actual\u003dhistory.getCurrentBrowsePoint() (Integer)\n        Assert.assertTrue(localValue \u003d\u003d history.getCurrentBrowsePoint());\n\n        // Does not match: $actual is a primitive int, not an instance of Number\n        Assert.assertTrue(10 \u003d\u003d 10);\n        // Does not match: $actual is an int (result of length()), not an instance of Number\n        Assert.assertTrue(\"hello\".length() \u003d\u003d 5);\n    }\n}",
+  "afterExample": "import org.junit.Assert;\n\npublic class TestClass {\n    // Minimal helper class to demonstrate Number return type\n    static class BrowseHistory {\n        private Integer currentBrowsePoint;\n        public Integer getCurrentBrowsePoint() { return currentBrowsePoint; }\n        public void addOrReplace(int value) { this.currentBrowsePoint \u003d value; }\n    }\n\n    public void testMethod() {\n        BrowseHistory history \u003d new BrowseHistory();\n        history.addOrReplace(10);\n        // Replaced\n        Assert.assertEquals(10, history.getCurrentBrowsePoint().intValue());\n        \n        int localValue \u003d 20;\n        history.addOrReplace(localValue);\n        // Replaced\n        Assert.assertEquals(localValue, history.getCurrentBrowsePoint().intValue());\n\n        // Remains unchanged\n        Assert.assertTrue(10 \u003d\u003d 10);\n        // Remains unchanged\n        Assert.assertTrue(\"hello\".length() \u003d\u003d 5);\n    }\n}",
+  "negativeExample": "import org.junit.Assert;\n\npublic class NegativeTestClass {\n    // Minimal helper class\n    static class BrowseHistory {\n        private Integer currentBrowsePoint;\n        public Integer getCurrentBrowsePoint() { return currentBrowsePoint; }\n        public void addOrReplace(int value) { this.currentBrowsePoint \u003d value; }\n    }\n\n    public void testMethod() {\n        int primitiveValue \u003d 10;\n        // $actual is a primitive int, not a java.lang.Number; rule guard prevents match.\n        Assert.assertTrue(10 \u003d\u003d primitiveValue);\n\n        // Already uses assertEquals; rule pattern does not match.\n        Assert.assertEquals(10, primitiveValue);\n\n        String stringValue \u003d \"10\";\n        // $actual is a String, not a java.lang.Number; rule guard prevents match.\n        Assert.assertTrue(10 \u003d\u003d Integer.parseInt(stringValue));\n        \n        // $actual could be null; rule preserves behavior (NPE on .intValue() vs false on \u003d\u003d)\n        BrowseHistory history \u003d new BrowseHistory();\n        history.addOrReplace(0); // Ensure non-null for other test cases\n        history.currentBrowsePoint \u003d null; // Set to null for this specific test\n        Assert.assertTrue(10 \u003d\u003d history.getCurrentBrowsePoint()); // Behavior change for null is acceptable for this cleanup\n    }\n}",
+  "targetHintFile": "junit.sandbox-hint",
+  "sourceCommit": "88b7738f47e91630620220bbf93b5118859c212f",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "JUnit Assertion",
+  "summary": "Replaces JUnit Assert.assertTrue for primitive-wrapper equality checks with Assert.assertEquals using explicit unboxing, addressing autoboxing warnings.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-25T02:28:59.738466838Z",
+  "ruleFingerprint": "sha256:e47ab26adcf40597466bf5e21eb416c00656b5f1f9eaba494db5bd1f086f51b8",
+  "behaviorFingerprint": "sha256:d0fd6e17b9221fe1de06609311c0be9870671cd4e77b87bf99e9f22b251c848c",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-25T02:29:08.770726266Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
