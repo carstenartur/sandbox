@@ -215,7 +215,8 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 		}
 		Expression expression = node.getExpression();
 		if (expression != null) {
-			return ASSUME.equals(expression.toString()) && hasLegacyAssumeTypeImport(node);
+			String sourceSimpleName= ORG_JUNIT_ASSUME.substring(ORG_JUNIT_ASSUME.lastIndexOf('.') + 1);
+			return sourceSimpleName.equals(expression.toString()) && hasLegacyAssumeTypeImport(node);
 		}
 		return hasLegacyAssumeStaticImport(node, node.getName().getIdentifier());
 	}
