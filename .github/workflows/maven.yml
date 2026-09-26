@@ -154,6 +154,7 @@ jobs:
           -e
           -V
           --batch-mode
+          --fail-at-end
           -Dtycho.localArtifacts=ignore
           clean verify
 
