@@ -14,13 +14,13 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 
 /** Regression coverage for the fail-closed JUnit 3 migration boundary. */
 public class JUnit3HierarchySafetyTest {
@@ -32,7 +32,7 @@ public class JUnit3HierarchySafetyTest {
 
 	@BeforeEach
 	public void setup() throws CoreException {
-		root= context.createClasspathForJUnit(JUnitCore.JUNIT3_CONTAINER_PATH);
+		root= JUnitMigrationFixtureClasspath.createJUnit3And5Root(context);
 	}
 
 	@Test

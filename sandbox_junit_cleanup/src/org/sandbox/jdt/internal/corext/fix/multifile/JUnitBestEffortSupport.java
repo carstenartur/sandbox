@@ -64,7 +64,6 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
-import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
@@ -84,9 +83,9 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.TestNameRefactorer;
  *
  * <p>The normal cleanup remains fail closed. When best-effort mode is selected,
  * independently safe rewrites may proceed while every known unsupported
- * construct is represented by deterministic diagnostics and a compilable
- * {@code @todo} method scaffold in the affected source type. The scaffold is a
- * marker, not a guessed implementation.</p>
+ * construct is represented by deterministic diagnostics and an actionable
+ * {@code @todo} in the affected type's Javadoc. A method scaffold is retained
+ * as a code example, not an executable member or a guessed implementation.</p>
  */
 public final class JUnitBestEffortSupport {
 
@@ -485,15 +484,24 @@ public final class JUnitBestEffortSupport {
 				for (MethodDeclaration method : type.getMethods()) {
 					methodNames.add(method.getName().getIdentifier());
 				}
-				ListRewrite body= rewrite.getListRewrite(type, TypeDeclaration.BODY_DECLARATIONS_PROPERTY);
+				Javadoc documentation= type.getJavadoc() == null ? ast.newJavadoc()
+						: (Javadoc) ASTNode.copySubtree(ast, type.getJavadoc());
 				for (Gap gap : entry.getValue()) {
 					if (hasMarker(type, gap)) {
 						continue;
 					}
 					MethodDeclaration marker= markerMethod(ast, gap, methodNames);
 					methodNames.add(marker.getName().getIdentifier());
-					body.insertLast(marker, group);
+					TagElement todo= (TagElement) ASTNode.copySubtree(ast, (ASTNode) marker.getJavadoc().tags().get(0));
+					marker.setJavadoc(null);
+					TextElement example= ast.newTextElement();
+					String sample= marker.toString().replace("*/", "* /") //$NON-NLS-1$ //$NON-NLS-2$
+							.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
+					example.setText(" <pre>\n * " + sample.replace("\n", "\n * ") + "\n * </pre>"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					todo.fragments().add(example);
+					documentation.tags().add(todo);
 				}
+				rewrite.set(type, TypeDeclaration.JAVADOC_PROPERTY, documentation, group);
 			}
 		}
 	}
@@ -533,7 +541,11 @@ public final class JUnitBestEffortSupport {
 	}
 
 	private static boolean hasMarker(TypeDeclaration type, Gap gap) {
-		String marker= MARKER_PREFIX + gap.candidateId();
+		String marker= MARKER_PREFIX + gap.candidateId() + " ("; //$NON-NLS-1$
+		if (type.getJavadoc() != null && type.getJavadoc().toString().contains(marker)) {
+			return true;
+		}
+		// Recognize earlier executable scaffolds without duplicating or editing them.
 		for (MethodDeclaration method : type.getMethods()) {
 			Javadoc javadoc= method.getJavadoc();
 			if (javadoc != null && javadoc.toString().contains(marker)) {

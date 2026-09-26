@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -286,6 +287,15 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 			return;
 		}
 		model.setTerminal(preserved);
+		if (!isVariableReferencedAfter(loop, accumulator)) {
+			AST ast= cuRewrite.getRoot().getAST();
+			ASTRewrite rewrite= cuRewrite.getASTRewrite();
+			ASTStreamRenderer renderer= new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), extracted.originalBody);
+			String variableName= model.getElement() != null ? model.getElement().variableName() : "item"; //$NON-NLS-1$
+			Expression directForEach= renderer.renderDirectForEach(model.getSource(), java.util.List.of(), variableName, true);
+			rewrite.replace(loop, ast.newExpressionStatement(directForEach), group);
+			return;
+		}
 
 		AST ast= cuRewrite.getRoot().getAST();
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
@@ -298,6 +308,8 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 
 		VariableDeclarationStatement replacement= createMergedDeclaration(ast, accumulator, streamExpression);
 		rewrite.remove(accumulator, group);
+		cuRewrite.getImportRemover().registerRemovedNode(accumulator);
+		cuRewrite.getImportRemover().applyRemoves(cuRewrite.getImportRewrite());
 		rewrite.replace(loop, replacement, group);
 		addRequiredImports(cuRewrite, model);
 	}
@@ -314,6 +326,41 @@ public class SafeEnhancedForHandler extends EnhancedForHandler {
 		declaration.setType((Type) ASTNode.copySubtree(ast, original.getType()));
 		declaration.modifiers().addAll(ASTNode.copySubtrees(ast, original.modifiers()));
 		return declaration;
+	}
+
+	private boolean isVariableReferencedAfter(EnhancedForStatement loop, VariableDeclarationStatement accumulator) {
+		if (!(loop.getParent() instanceof Block block)) {
+			return true;
+		}
+		int loopIndex= block.statements().indexOf(loop);
+		if (loopIndex < 0 || accumulator.fragments().isEmpty()) {
+			return true;
+		}
+		VariableDeclarationFragment fragment=
+				(VariableDeclarationFragment) accumulator.fragments().get(0);
+		IVariableBinding binding= fragment.resolveBinding();
+		for (int i= loopIndex + 1; i < block.statements().size(); i++) {
+			if (referencesVariable((Statement) block.statements().get(i), fragment.getName().getIdentifier(), binding)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean referencesVariable(ASTNode node, String variableName, IVariableBinding binding) {
+		final boolean[] referenced= { false };
+		ReferenceHolder<ASTNode, Object> data= ReferenceHolder.create();
+		HelperVisitorFactory.callSimpleNameVisitor(node, data, new HashSet<>(), (name, holder) -> {
+			if (!variableName.equals(name.getIdentifier())) {
+				return true;
+			}
+			if (binding == null || binding.equals(name.resolveBinding())) {
+				referenced[0]= true;
+				return false;
+			}
+			return true;
+		});
+		return referenced[0];
 	}
 
 	private void addRequiredImports(CompilationUnitRewrite cuRewrite, LoopModel model) {

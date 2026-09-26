@@ -46,6 +46,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 
 
 public class JUnitMigrationCleanUpTest {
@@ -66,7 +67,7 @@ public class JUnitMigrationCleanUpTest {
 	@BeforeEach
 	public void setup() throws CoreException {
 		fRootJUnit3= context4junit3.createClasspathForJUnit(JUnitCore.JUNIT3_CONTAINER_PATH);
-		fRootJUnit4= context4junit4.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+		fRootJUnit4= JUnitMigrationFixtureClasspath.createJUnit4And5Root(context4junit4);
 		fRootJUnit5= context4junit5.createClasspathForJUnit(JUnitCore.JUNIT5_CONTAINER_PATH);
 	}
 

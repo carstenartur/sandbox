@@ -38,7 +38,6 @@ import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRe
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
@@ -91,7 +90,8 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 					List<Expression> arguments= visited.arguments();
 					Expression codeArgument= arguments.get(1);
 					if (!hasConstantIntValue(codeArgument, IStatus.OK)
-							|| isCanonicalIStatusOkReference(codeArgument)) {
+							|| isCanonicalIStatusOkReference(codeArgument)
+							|| !StatusRewriteSupport.canDiscard(codeArgument)) {
 						return false;
 					}
 
@@ -127,7 +127,6 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 			ReferenceHolder<ASTNode, Object> holder) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ImportRemover remover= cuRewrite.getImportRemover();
 		ImportRewrite importRewrite= cuRewrite.getImportRewrite();
 		ImportRewriteContext importContext= new ContextSensitiveImportRewriteContext(cuRewrite.getRoot(),
 				visited.getStartPosition(), importRewrite);
@@ -149,6 +148,8 @@ public class MultiStatusSimplifyPlatformStatus extends AbstractSimplifyPlatformS
 				ASTNodes.getUnparenthesedExpression(arguments.get(3))));
 
 		ASTNodes.replaceButKeepComment(rewrite, visited, newMultiStatus, group);
-		remover.registerRemovedNode(visited);
+		StatusRewriteSupport.finish(cuRewrite, visited,
+				List.of(arguments.get(0), arguments.get(2), arguments.get(3)), List.of(arguments.get(1)), group,
+				MultiStatus.class.getName(), IStatus.class.getName());
 	}
 }

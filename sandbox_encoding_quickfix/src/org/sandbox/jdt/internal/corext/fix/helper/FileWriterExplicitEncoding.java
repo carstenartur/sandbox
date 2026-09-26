@@ -81,6 +81,7 @@ public class FileWriterExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 		oswclassInstance.arguments().add(fosclassInstance);
 		oswclassInstance.arguments().add(callToCharsetDefaultCharset);
 
+		cuRewrite.getImportRemover().registerRemovedNode(visited.getType());
 		ASTNodes.replaceButKeepComment(rewrite, visited, oswclassInstance, group);
 	}
 

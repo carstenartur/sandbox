@@ -7,7 +7,8 @@ Fragment-Host: sandbox_jface_cleanup
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Require-Bundle: org.junit,
  sandbox_test_commons,
- org.eclipse.swt
+ org.eclipse.swt,
+ org.eclipse.ui.navigator
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global

@@ -154,7 +154,6 @@ public class E1 {
 
 						import java.io.InputStreamReader;
 						import java.io.FileInputStream;
-						import java.io.FileReader;
 						import java.io.Reader;
 						import java.nio.charset.Charset;
 						import java.io.FileNotFoundException;
@@ -191,7 +190,6 @@ public class E1 {
 					package test1;
 
 					import java.io.FileOutputStream;
-					import java.io.FileWriter;
 					import java.io.IOException;
 					import java.io.OutputStreamWriter;
 					import java.io.Writer;
@@ -237,10 +235,9 @@ public class E1 {
 						import java.io.FileInputStream;
 						import java.io.FileReader;
 						import java.io.Reader;
-						import java.io.FileNotFoundException;
-						import java.io.UnsupportedEncodingException;
 					import java.nio.charset.Charset;
 					import java.nio.charset.StandardCharsets;
+					import java.io.FileNotFoundException;
 
 						public class E1 {
 						    void method(String filename) {
@@ -289,10 +286,9 @@ public class E1 {
 					import java.io.FileReader;
 					import java.io.OutputStreamWriter;
 					import java.io.Reader;
-					import java.io.FileNotFoundException;
-					import java.io.UnsupportedEncodingException;
 					import java.nio.charset.Charset;
 					import java.nio.charset.StandardCharsets;
+					import java.io.FileNotFoundException;
 
 					public class E1 {
 					    void method(String filename) {
@@ -410,7 +406,6 @@ public class E1 {
 				"""
 						package test1;
 
-						import java.io.PrintWriter;
 						import java.io.Writer;
 						import java.nio.charset.Charset;
 						import java.io.BufferedWriter;
@@ -677,7 +672,6 @@ public class E1 {
 package test1;
 import java.io.File;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Formatter;
 import java.util.Locale;
@@ -743,7 +737,6 @@ public class E1 {
 						import java.io.InputStreamReader;
 						import java.io.FileInputStream;
 						import java.io.FileOutputStream;
-						import java.io.FileReader;
 						import java.io.OutputStreamWriter;
 						import java.io.Reader;
 						import java.nio.charset.Charset;
@@ -822,13 +815,11 @@ public class E1 {
 						import java.io.InputStreamReader;
 						import java.io.FileInputStream;
 						import java.io.FileOutputStream;
-						import java.io.FileReader;
 						import java.io.OutputStreamWriter;
 						import java.io.Reader;
-						import java.io.FileNotFoundException;
-						import java.io.UnsupportedEncodingException;
 						import java.nio.charset.Charset;
 						import java.nio.charset.StandardCharsets;
+						import java.io.FileNotFoundException;
 
 						public class E1 {
 						    void method(String filename) {

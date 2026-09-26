@@ -195,9 +195,9 @@ public class FunctionalLoopSimpleConversionTest {
 	 * Tests variable naming in lambda expressions with transformations.
 	 * 
 	 * <p>
-	 * <b>Conversion Rule:</b> The loop variable name is preserved in the first
-	 * map operation's lambda parameter. Intermediate variables in subsequent
-	 * map operations retain their original names from variable declarations.
+	 * <b>Conversion Rule:</b> When the original element is unused, the first map
+	 * operation emits an unnamed lambda parameter. Intermediate variables in
+	 * subsequent map operations retain their original names from variable declarations.
 	 * </p>
 	 * 
 	 * <p>
@@ -227,8 +227,8 @@ public class FunctionalLoopSimpleConversionTest {
 	 * </pre>
 	 * 
 	 * <p>
-	 * <b>Note:</b> The original loop variable {@code str} is used as the first
-	 * lambda parameter, even though it's not referenced in the expression.
+	 * <b>Note:</b> The first map uses an unnamed parameter because the original
+	 * loop variable is not referenced in the replacement expression.
 	 * </p>
 	 * 
 	 * @see org.sandbox.jdt.internal.corext.fix.helper.StreamPipelineBuilder#parseLoopBody
@@ -288,7 +288,7 @@ class JavaApplication1 {
 		List<String> strs = new ArrayList<String>();
 		int i = 0;
 		int j = 0;
-		strs.stream().map(str -> "foo").map(s -> s.toString()).forEachOrdered(s -> System.out.println(s));
+		strs.stream().map(_ -> "foo").map(s -> s.toString()).forEachOrdered(s -> System.out.println(s));
 		return false;
 
 	}
@@ -304,9 +304,9 @@ class JavaApplication1 {
 	 * Tests lambda parameter naming when loop variable is unused in body.
 	 * 
 	 * <p>
-	 * <b>Conversion Rule:</b> The loop variable name is preserved in the first
-	 * map operation. The forEach uses the variable name from the last map operation,
-	 * even when that variable is not referenced in the forEach body.
+	 * <b>Conversion Rule:</b> The first map uses an unnamed parameter when the
+	 * original element is unused, and the terminal forEach also uses an unnamed
+	 * parameter when its body is element-independent.
 	 * </p>
 	 * 
 	 * <p>
@@ -336,8 +336,8 @@ class JavaApplication1 {
 	 * </pre>
 	 * 
 	 * <p>
-	 * <b>Note:</b> The forEach parameter is {@code s} (from the last map operation),
-	 * even though it's not referenced in the body.
+	 * <b>Note:</b> The terminal forEach uses an unnamed parameter because the
+	 * final mapped value is not referenced in the body.
 	 * </p>
 	 */
 //	@Disabled("Not yet working - beautification logic needs improvement")
@@ -395,7 +395,7 @@ class JavaApplication1 {
 		List<String> strs = new ArrayList<String>();
 		int i = 0;
 		int j = 0;
-		strs.stream().map(str -> "foo").map(s -> s.toString()).forEachOrdered(s -> System.out.println());
+		strs.stream().map(_ -> "foo").map(s -> s.toString()).forEachOrdered(_ -> System.out.println());
 		return false;
 
 	}

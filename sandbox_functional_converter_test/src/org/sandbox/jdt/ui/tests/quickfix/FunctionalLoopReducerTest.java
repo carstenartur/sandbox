@@ -88,9 +88,8 @@ public class FunctionalLoopReducerTest {
  * </ul>
  * The final value of {@code i} is identical in both cases.</p>
  * 
- * <p><b>Note:</b> The lambda parameter is {@code l} (matching the loop variable
- * name) even though it's not used in the mapping expression {@code -> 1}. This
- * preserves the original variable naming from the source code.</p>
+ * <p><b>Note:</b> The mapping lambda uses an unnamed parameter because the
+ * element value is irrelevant to the counting result.</p>
  * 
  * <p><b>Implementation:</b> This conversion is handled by
  * {@link org.sandbox.jdt.internal.corext.fix.helper.ReducePatternDetector}
@@ -139,7 +138,7 @@ String expected = """
 
 				public Boolean test(List<Integer> ls) {
 					Integer i=0;
-					i = ls.stream().map(l -> 1).reduce(i, Integer::sum);
+					i = ls.stream().map(_ -> 1).reduce(i, Integer::sum);
 					System.out.println(i);
 					return true;
 				}
@@ -209,7 +208,7 @@ String expected = """
 				public static void main( String[] args) {
 					List<Integer> ls = new ArrayList<>();
 					int i =0;
-					i = ls.stream().map(l -> 1).reduce(i, Integer::sum);
+					i = ls.stream().map(_ -> 1).reduce(i, Integer::sum);
 
 				}
 
@@ -269,7 +268,7 @@ String expected = """
 				public static void main( String[] args) {
 					List<Integer> ints=new ArrayList<>();
 					long len=0L;
-					len = ints.stream().map(i -> 1L).reduce(len, Long::sum);
+					len = ints.stream().map(_ -> 1L).reduce(len, Long::sum);
 
 				}
 				}""";

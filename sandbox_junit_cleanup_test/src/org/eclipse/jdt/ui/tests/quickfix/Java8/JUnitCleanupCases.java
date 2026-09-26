@@ -210,7 +210,7 @@ public class MyTest {
     }
 
 	@RegisterExtension
-	public ExternalResource er = new MyExternalResource();
+	public MyExternalResource er = new MyExternalResource();
 
     // Anonyme Klasse als ExternalResource
 	@RegisterExtension
@@ -230,7 +230,7 @@ public class MyTest {
     }
 
 	@RegisterExtension
-	public static ExternalResource staticResource = new StaticExternalResource();
+	public static StaticExternalResource staticResource = new StaticExternalResource();
 
     // Klasse mit Konstruktor
     final class ConstructedExternalResource implements BeforeEachCallback, AfterEachCallback {
@@ -252,7 +252,7 @@ public class MyTest {
     }
 
 	@RegisterExtension
-	public ExternalResource constructedResource = new ConstructedExternalResource("TestResource");
+	public ConstructedExternalResource constructedResource = new ConstructedExternalResource("TestResource");
 
     // Zweite Regel
 	@RegisterExtension
