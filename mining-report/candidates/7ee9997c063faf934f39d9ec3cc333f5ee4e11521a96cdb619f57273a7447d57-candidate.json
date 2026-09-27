@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7ee9997c063faf934f39d9ec3cc333f5ee4e11521a96cdb619f57273a7447d57",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.AbstractSet\u003c$type\u003e()\n\u003d\u003e new java.util.AbstractSet\u003c\u003e()\n;;",
+  "beforeExample": "import java.util.AbstractSet;\nimport java.util.Iterator;\nimport java.util.Set;\nimport java.util.Map;\n\nclass Example {\n    Map\u003cString, ?\u003e originalMap;\n\n    Set\u003cString\u003e createSet() {\n        Set\u003cString\u003e delegate \u003d originalMap.keySet();\n        return new AbstractSet\u003cString\u003e() {\n            @Override\n            public Iterator\u003cString\u003e iterator() {\n                return delegate.iterator();\n            }\n            @Override\n            public int size() {\n                return delegate.size();\n            }\n        };\n    }\n}",
+  "afterExample": "import java.util.AbstractSet;\nimport java.util.Iterator;\nimport java.util.Set;\nimport java.util.Map;\n\nclass Example {\n    Map\u003cString, ?\u003e originalMap;\n\n    Set\u003cString\u003e createSet() {\n        Set\u003cString\u003e delegate \u003d originalMap.keySet();\n        return new AbstractSet\u003c\u003e() {\n            @Override\n            public Iterator\u003cString\u003e iterator() {\n                return delegate.iterator();\n            }\n            @Override\n            public int size() {\n                return delegate.size();\n            }\n        };\n    }\n}",
+  "negativeExample": "import java.util.HashSet;\n\nclass Example {\n    void foo() {\n        // Should not match other types using diamond\n        java.util.Set\u003cString\u003e set \u003d new HashSet\u003cString\u003e();\n        // Should not match type arguments when not AbstractSet\n        class MyClass\u003cT\u003e { MyClass\u003cT\u003e(){} }\n        MyClass\u003cInteger\u003e mc \u003d new MyClass\u003cInteger\u003e();\n    }\n}",
+  "targetHintFile": "generics.sandbox-hint",
+  "sourceCommit": "29f055a71766561793b63be4d825126d44b6b62d",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Generics Modernization",
+  "summary": "Replaces explicit type arguments in \u0027new AbstractSet\u003cType\u003e()\u0027 with diamond operator \u0027\u003c\u003e\u0027 when type is inferable.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-27T02:31:30.097913812Z",
+  "ruleFingerprint": "sha256:881533dbf0fef00c1032bf40e4f269a38eac30fce87132363bb8752ea92df9e4",
+  "behaviorFingerprint": "sha256:ecf037567f24b13f0cc210ae488e50fccbe6af20b2eceff283488af124d6c8e5",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed source is invalid: Java compile error at line 11: Type mismatch: cannot convert from AbstractSet to Set\u003cString\u003e",
+    "verifiedAt": "2026-09-27T02:31:38.605920346Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

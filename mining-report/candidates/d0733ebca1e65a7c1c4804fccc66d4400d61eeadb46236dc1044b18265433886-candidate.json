@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d0733ebca1e65a7c1c4804fccc66d4400d61eeadb46236dc1044b18265433886",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$string.substring($beginIndex, $string.length())\n\u003d\u003e $string.substring($beginIndex)\n;;",
+  "beforeExample": "public class Example {\n    public String extract(String input) {\n        return input.substring(1, input.length());\n    }\n}",
+  "afterExample": "public class Example {\n    public String extract(String input) {\n        return input.substring(1);\n    }\n}",
+  "negativeExample": "public class Example {\n    public String extract(String input) {\n        return input.substring(1, 3); // end index is not input.length()\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "facba56b7d8518f2075087081fbe3b7e67f02494",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Redundant Code",
+  "summary": "Removes the redundant second argument `string.length()` from `String.substring()` calls when it\u0027s implied by the single-argument version.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-27T02:31:29.982936144Z",
+  "ruleFingerprint": "sha256:a4d3f6e070b2b89f85b6268fbcf3e465ce6dab6ede4743c7e370f34626199e55",
+  "behaviorFingerprint": "sha256:e2e03b2b2cc449ee8af4b6f7ca6afafc628fffa483552d8ba608594753ad83df",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-27T02:31:38.513399917Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
