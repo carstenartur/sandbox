@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "207385d2a1077492efee3513f2d8b2c57cf932fb55e3dfdeeab8241e03b60b03",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.StringBuffer($arg)\n:: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($arg)\n;;",
+  "beforeExample": "package org.eclipse.jface.internal.text.html;\n\npublic class HTMLPrinter {\n    public static void printStyles(String[] styles) {\n        if (styles \u003d\u003d null || styles.length \u003d\u003d 0)\n            return;\n        StringBuffer styleBuf \u003d new StringBuffer(10 * styles.length);\n        for (String style : styles) {\n            styleBuf.append(\" style\u003d\\\"\");\n            styleBuf.append(style);\n        }\n        System.out.println(styleBuf.toString());\n    }\n\n    public void anotherMethod() {\n        StringBuffer sb1 \u003d new StringBuffer();\n        sb1.append(\"test\");\n        System.out.println(sb1.toString());\n\n        StringBuffer sb2 \u003d new StringBuffer(\"initial capacity\");\n        System.out.println(sb2.toString());\n    }\n}",
+  "afterExample": "package org.eclipse.jface.internal.text.html;\n\npublic class HTMLPrinter {\n    public static void printStyles(String[] styles) {\n        if (styles \u003d\u003d null || styles.length \u003d\u003d 0)\n            return;\n        StringBuilder styleBuf \u003d new StringBuilder(10 * styles.length);\n        for (String style : styles) {\n            styleBuf.append(\" style\u003d\\\"\");\n            styleBuf.append(style);\n        }\n        System.out.println(styleBuf.toString());\n    } \n\n    public void anotherMethod() {\n        StringBuilder sb1 \u003d new StringBuilder();\n        sb1.append(\"test\");\n        System.out.println(sb1.toString());\n\n        StringBuilder sb2 \u003d new StringBuilder(\"initial capacity\");\n        System.out.println(sb2.toString());\n    }\n}",
+  "negativeExample": "package org.eclipse.jface.internal.text.html;\n\npublic class HTMLPrinter {\n    private static StringBuffer SHARED_BUFFER \u003d new StringBuffer(100); // Field initialization, not a local var assignment\n\n    public void appendToSharedBuffer(String text) {\n        new StringBuffer(text).reverse(); // Not assigned to a local variable\n    }\n\n    public StringBuffer createBufferAndReturn(int capacity) {\n        return new StringBuffer(capacity); // Return value, not a local var assignment\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "c5fe8ecfd21ade83a548ed84b0ffdb8e50512ff3",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "summary": "Replace `new StringBuffer()` with `new StringBuilder()` for local variable declarations.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-27T02:31:30.122701551Z",
+  "ruleFingerprint": "sha256:63b2ee45f02bcf884ddad59e09e2ab18bb03372beb60c5caecb402fd75d9b236",
+  "behaviorFingerprint": "sha256:41d38bb811a30abfee10231f54f122fff7cb8f5f66681e40bcfb6b6938e4defa",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type HTMLPrinter must be defined in its own file",
+    "verifiedAt": "2026-09-27T02:31:38.620971268Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

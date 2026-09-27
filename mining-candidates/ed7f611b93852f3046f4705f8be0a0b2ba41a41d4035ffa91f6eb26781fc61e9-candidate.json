@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ed7f611b93852f3046f4705f8be0a0b2ba41a41d4035ffa91f6eb26781fc61e9",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.String.replaceAll(\"\u0027\u0027\", \"\u0027\")\n\u003d\u003e\njava.lang.String.replace(\"\u0027\u0027\", \"\u0027\")\n;;",
+  "beforeExample": "class Example {\n    String process(String input) {\n        // Replacing literal \u0027\u0027 with \u0027 using replaceAll\n        return input.replaceAll(\"\u0027\u0027\", \"\u0027\");\n    }\n}",
+  "afterExample": "class Example {\n    String process(String input) {\n        // Using replace is more direct for literal string replacement\n        return input.replace(\"\u0027\u0027\", \"\u0027\");\n    }\n}",
+  "negativeExample": "class Example {\n    String process(String input) {\n        // This should not be converted as \".\" is a regex special character\n        return input.replaceAll(\".\", \"X\");\n    }\n}",
+  "targetHintFile": "string.sandbox-hint",
+  "sourceCommit": "e4bedb87d125fb7234720a47523f9e3b4b117111",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "String API Usage",
+  "summary": "Replace `String.replaceAll(\"\u0027\u0027\", \"\u0027\")` with `String.replace(\"\u0027\u0027\", \"\u0027\")` for better clarity and performance when replacing a literal string that contains no regex special characters.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-27T02:31:29.881853961Z",
+  "ruleFingerprint": "sha256:83136703dea60049cec41658b134cefcf784816514646079e28b4ccfa03d72fc",
+  "behaviorFingerprint": "sha256:aae727863b067c8c617a0c132fb1fcecaa7d4957dc9fbfce1c870b77c45284b2",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-09-27T02:31:38.484344111Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

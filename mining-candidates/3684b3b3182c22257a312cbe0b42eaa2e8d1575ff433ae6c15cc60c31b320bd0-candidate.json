@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3684b3b3182c22257a312cbe0b42eaa2e8d1575ff433ae6c15cc60c31b320bd0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.Integer.valueOf($s)\n\u003d\u003e java.lang.Integer.parseInt($s)\n;;",
+  "beforeExample": "public class MyClass {\n    public void foo(String s) {\n        // Example 1 from diff: used in constructor expecting int\n        java.awt.Color c1 \u003d new java.awt.Color(0, java.lang.Integer.valueOf(s), 0);\n        // Example 2 from diff: explicit unboxing\n        int val \u003d java.lang.Integer.valueOf(s).intValue();\n        // Example 3 from diff: used in method expecting int\n        // (Assuming setWidth takes int, similar to org.eclipse.swt.widgets.TableColumn.setWidth)\n        Object col \u003d null;\n        if (col instanceof org.eclipse.swt.widgets.TableColumn) {\n            ((org.eclipse.swt.widgets.TableColumn) col).setWidth(java.lang.Integer.valueOf(s));\n        }\n    }\n    // This case would also be transformed by the JDT cleanup, as autoboxing handles the Integer object requirement efficiently.\n    public java.lang.Integer getIntegerObject(String s) {\n        return java.lang.Integer.valueOf(s);\n    }\n}",
+  "afterExample": "public class MyClass {\n    public void foo(String s) {\n        // Example 1 from diff: used in constructor expecting int\n        java.awt.Color c1 \u003d new java.awt.Color(0, java.lang.Integer.parseInt(s), 0);\n        // Example 2 from diff: explicit unboxing\n        int val \u003d java.lang.Integer.parseInt(s);\n        // Example 3 from diff: used in method expecting int\n        // (Assuming setWidth takes int, similar to org.eclipse.swt.widgets.TableColumn.setWidth)\n        Object col \u003d null;\n        if (col instanceof org.eclipse.swt.widgets.TableColumn) {\n            ((org.eclipse.swt.widgets.TableColumn) col).setWidth(java.lang.Integer.parseInt(s));\n        }\n    }\n    // This case would also be transformed by the JDT cleanup, as autoboxing handles the Integer object requirement efficiently.\n    public java.lang.Integer getIntegerObject(String s) {\n        return java.lang.Integer.parseInt(s);\n    }\n}",
+  "negativeExample": "public class MyClass {\n    public void otherMethods() {\n        // Different Wrapper class, should not match Integer.valueOf(String)\n        java.lang.Long.valueOf(\"123L\");\n\n        // Primitive argument, not String, should not match Integer.valueOf(String)\n        java.lang.Integer.valueOf(123);\n\n        // Different method name, should not match\n        String.valueOf(42);\n\n        // Two-argument Integer.valueOf (not covered by this specific rule, but by a similar one)\n        int base \u003d java.lang.Integer.valueOf(\"100\", 16);\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "c53b30f69e5521084602c893ad9c0affd0e27f2e",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "summary": "Replaces `Integer.valueOf(String)` with `Integer.parseInt(String)` for efficiency. This transformation is generally safe as `Integer.parseInt` returns an `int` primitive, which is implicitly unboxed or autoboxed as needed, avoiding an intermediate `Integer` object creation.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-27T02:31:30.044514356Z",
+  "ruleFingerprint": "sha256:e7fa47863f9e6377d11736bb9e3e50628fa6d76c9396ed4bf065bc6fc0d1f9f0",
+  "behaviorFingerprint": "sha256:93f81042a11322289374c90a43748ed75aee126c475f8aa30fbee5dd71128cd0",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-09-27T02:31:38.559587240Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

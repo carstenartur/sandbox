@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c5a7a16b2b64090dfcc9d1aa23e69099d10ec6f23fcf5105549e6091e7f4210a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.Iterator\u003c$TypeArgument$\u003e()\n\u003d\u003e\nnew java.util.Iterator\u003c\u003e()\n;;",
+  "beforeExample": "import java.util.Iterator;\nimport java.lang.annotation.Annotation;\n\npublic class MyClass {\n    public Iterator\u003cAnnotation\u003e createIterator() {\n        return new Iterator\u003cAnnotation\u003e() {\n            @Override\n            public void remove() { /* ... */ }\n            @Override\n            public boolean hasNext() { return false; }\n            @Override\n            public Annotation next() { return null; }\n        };\n    }\n}",
+  "afterExample": "import java.util.Iterator;\nimport java.lang.annotation.Annotation;\n\npublic class MyClass {\n    public Iterator\u003cAnnotation\u003e createIterator() {\n        return new Iterator\u003c\u003e() {\n            @Override\n            public void remove() { /* ... */ }\n            @Override\n            public boolean hasNext() { return false; }\n            @Override\n            public Annotation next() { return null; }\n        };\n    }\n}",
+  "negativeExample": "import java.util.Iterator;\nimport java.util.List;\nimport java.lang.annotation.Annotation;\n\npublic class MyClass {\n    public Iterator\u003cAnnotation\u003e createIterator() {\n        // Already uses diamond operator, should not match\n        return new Iterator\u003c\u003e() {\n            @Override\n            public void remove() { /* ... */ }\n            @Override\n            public boolean hasNext() { return false; }\n            @Override\n            public Annotation next() { return null; }\n        };\n    }\n    public List\u003cString\u003e createList() {\n        // Different type, should not match\n        return new java.util.ArrayList\u003cString\u003e();\n    }\n}",
+  "targetHintFile": "generics.sandbox-hint",
+  "sourceCommit": "315dc5cec8610724a3135cfc7c3afa31fa62d839",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Generics Modernization",
+  "summary": "Replaces explicit generic type arguments in anonymous class creation with the diamond operator for type inference.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-27T02:31:30.072059115Z",
+  "ruleFingerprint": "sha256:0d15df60841b74a7b4e9241b0a66ac114cc163ca4577676dd8acbeae923ee596",
+  "behaviorFingerprint": "sha256:4f93fc1d20fd3f161bf1a047c773c095f586ef850da9278e4a987327c76903a5",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-09-27T02:31:38.574480136Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

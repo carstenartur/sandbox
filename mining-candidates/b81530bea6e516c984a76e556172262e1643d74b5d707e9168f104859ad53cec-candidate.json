@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b81530bea6e516c984a76e556172262e1643d74b5d707e9168f104859ad53cec",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "public class Example {\n    public void test() {\n        StringBuffer sb \u003d new StringBuffer(\"hello\");\n        sb.append(\" world\");\n        System.out.println(sb.toString());\n    }\n}",
+  "afterExample": "public class Example {\n    public void test() {\n        StringBuilder sb \u003d new StringBuilder(\"hello\");\n        sb.append(\" world\");\n        System.out.println(sb.toString());\n    }\n}",
+  "negativeExample": "public class Example {\n    private static StringBuffer sharedBuffer \u003d new StringBuffer(); // Field, not local var\n    public void test(StringBuffer paramBuffer) { // Parameter, not local var\n        sharedBuffer.append(\"data\");\n        paramBuffer.append(\"other data\");\n        StringBuffer indirectBuffer;\n        indirectBuffer \u003d getBuffer(); // Not initialized with \u0027new\u0027 in declaration\n    }\n    private StringBuffer getBuffer() { return new StringBuffer(); }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "342b7a591064638657b6f7f23b77f1e8f8cf8939",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Thread Safety",
+  "summary": "Replaces StringBuffer constructor with StringBuilder constructor for local variables, improving performance when thread-safety is not required.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-27T02:31:29.948580308Z",
+  "ruleFingerprint": "sha256:52ef1fd9bf1ad95f1f0de9ba3173c2edfb9f1fa3141c9853875b3da50ac736f0",
+  "behaviorFingerprint": "sha256:f4a8c82f2435329d8c1307e051868c05ea9d973598cadbe01c907d76136b4358",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-09-27T02:31:38.499738537Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
