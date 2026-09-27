@@ -3702,8 +3702,8 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform": {
-      "lastProcessedDate": "2026-09-25T02:20:05.045674292Z",
-      "totalProcessed": 6076,
+      "lastProcessedDate": "2026-09-27T02:24:20.743962624Z",
+      "totalProcessed": 9453,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -3836,10 +3836,11 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 2,
+      "currentEpoch": 3,
       "completedEpochs": [
         "2020-01-01 to 2026-01-01",
-        "2015-01-01 to 2020-01-01"
+        "2015-01-01 to 2020-01-01",
+        "2010-01-01 to 2015-01-01"
       ],
       "categoryHitCounts": {
         "API Modernization": 12,
@@ -3873,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "3efca1f37098b330a0326b26b5b4cde1ed163208",
-      "lastProcessedDate": "2026-09-25T02:28:54.745430665Z",
-      "totalProcessed": 144,
+      "lastProcessedCommit": "e3f8f415422bff1a1436414003842bffaedc825f",
+      "lastProcessedDate": "2026-09-27T02:31:24.733895905Z",
+      "totalProcessed": 216,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -3958,6 +3959,15 @@
           "deferredAt": "2026-09-25T02:28:35.663079691Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "02497e3b6625f487edaa64d0276cb77e29d9af42",
+          "message": "Bug 570459 - [genericeditor] Support ContentAssistProcessors to be registered as OSGi-Services",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-27T02:25:11.015162598Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3969,9 +3979,9 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 1,
-        "API Modernization": 3,
-        "Performance": 2,
-        "Redundant Code": 1,
+        "API Modernization": 4,
+        "Performance": 4,
+        "Redundant Code": 2,
         "API Misuse Correction": 1,
         "Lambda to Method Reference": 1,
         "JUnit migration": 1,
@@ -3985,7 +3995,12 @@
         "API Usage": 1,
         "JUnit Assertion": 1,
         "API Migration": 1,
-        "Configuration Default Update": 1
+        "Configuration Default Update": 1,
+        "API Deprecation": 1,
+        "String API Usage": 1,
+        "Thread Safety": 1,
+        "Annotation Modernization": 1,
+        "Generics Modernization": 2
       },
       "exhaustedCategories": []
     },
@@ -4002,5 +4017,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 48475
+  "globalTotalProcessed": 51924
 }
