@@ -147,6 +147,18 @@ class AtomicPreviewScreenshotGeometryTest {
         });
     }
 
+    @Test
+    void preparationMarkerDistinguishesOrdinaryAndAtomicCapturePaths() {
+        withFixture(4, 2, fixture -> {
+            assertFalse(SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry
+                    .isPreparedForCapture(fixture.shell()));
+            SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry.prepare(
+                    fixture.shell(), 4, 2);
+            assertTrue(SandboxHelpScreenshotsSWTBotTest.AtomicPreviewScreenshotGeometry
+                    .isPreparedForCapture(fixture.shell()));
+        });
+    }
+
     private static void withFixture(int headerFileCount, int candidateFileCount,
             Consumer<Fixture> assertion) {
         Display.getDefault().syncExec(() -> {

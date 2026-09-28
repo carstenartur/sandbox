@@ -205,6 +205,10 @@ public class SandboxHelpScreenshotsSWTBotTest {
             return displayContains(shell.getDisplay().getClientArea(), captureBounds) ? captureBounds : null;
         }
 
+        static boolean isPreparedForCapture(Shell shell) {
+            return captureGeometry(shell) != null;
+        }
+
         private static void assertPrepared(PreviewControls controls, int expectedWizardFileCount,
                 int expectedCandidateFileCount) {
             assertTrue(fits(controls, expectedWizardFileCount, expectedCandidateFileCount),
@@ -1751,10 +1755,19 @@ public class SandboxHelpScreenshotsSWTBotTest {
     private static void captureCleanUpPreview(SWTBotShell shell, String helpBundle, String fileName)
             throws IOException {
         assertTrue(shell.isOpen(), "The Clean Up preview shell must still be open");
-        waitForPreparedAtomicPreviewShell(shell);
         shell.bot().button("Finish");
         shell.bot().button("Cancel");
-        captureAtomicPreview(shell, helpBundle, fileName);
+        if (UIThreadRunnable.syncExec(shell.display, new Result<Boolean>() {
+            @Override
+            public Boolean run() {
+                return Boolean.valueOf(AtomicPreviewScreenshotGeometry.isPreparedForCapture(shell.widget));
+            }
+        })) {
+            waitForPreparedAtomicPreviewShell(shell);
+            captureAtomicPreview(shell, helpBundle, fileName);
+        } else {
+            capture(shell, helpBundle, fileName);
+        }
         System.out.println("[help-screenshots] Captured real Clean Up preview: " + fileName);
     }
 
