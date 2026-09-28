@@ -267,6 +267,8 @@ public class MigrationThrowingRunnableTest {
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
+		String before = cu.getSource();
+		try {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
@@ -289,5 +291,12 @@ public class MigrationThrowingRunnableTest {
 				}
 				"""
 		}, null);
+		} catch (AssertionError failure) {
+			failure.addSuppressed(new AssertionError("Before cleanup:\n" + before //$NON-NLS-1$
+					+ "\nAfter cleanup:\n" + cu.getSource() //$NON-NLS-1$
+					+ "\nResolved classpath:\n" //$NON-NLS-1$
+					+ java.util.Arrays.toString(cu.getJavaProject().getResolvedClasspath(true))));
+			throw failure;
+		}
 	}
 }
