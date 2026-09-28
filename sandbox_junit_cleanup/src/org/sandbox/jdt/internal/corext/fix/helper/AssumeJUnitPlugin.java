@@ -119,6 +119,12 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 		} else {
 			// For assumeTrue and assumeFalse use the ordinary Jupiter migration.
 			super.processMethodInvocation(group, rewriter, ast, importRewriter, minv);
+			// The base implementation removes Assume when it rewrites a qualified
+			// boolean call. Restore that import if another call still needs it;
+			// preserving it only in processImportDeclaration is too early.
+			if (containsLegacyAssumeNotNull(minv) && hasLegacyAssumeTypeImport(minv)) {
+				importRewriter.addImport(ORG_JUNIT_ASSUME);
+			}
 			if (minv.getExpression() == null && containsLegacyAssumeNotNull(minv)) {
 				// A retained JUnit 4 wildcard import may still be needed by
 				// assumeNotNull. Add a specific Jupiter import only in that
@@ -281,7 +287,7 @@ public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {
 	}
 
 	/**
-	 * Recursively checks if a type binding implements org.hamcrest.Matcher
+	 * Recursively checks if a type binding implements Hamcrest Matcher
 	 * interface.
 	 * 
 	 * @param typeBinding the type binding to check
