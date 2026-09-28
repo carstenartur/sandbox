@@ -27,7 +27,7 @@
 		<bouncycastle.bcprov.version>1.85.2</bouncycastle.bcprov.version>
 		<assertj.version>3.27.7</assertj.version>
 		<bnd.version>7.3.0</bnd.version>
-		<caffeine.version>3.2.4</caffeine.version>
+		<caffeine.version>3.3.0</caffeine.version>
 		<djl.version>0.38.0</djl.version>
 		<!-- Pin ONNX Runtime native version: 1.21.1 (from DJL 0.36.0) fails
 		     DLL init on Windows; 1.19.0 (from DJL 0.31.1) works. -->
@@ -39,14 +39,14 @@
 		<hibernate.version>7.4.8.Final</hibernate.version>
 		<hibernate-search.version>8.4.0.Final</hibernate-search.version>
 		<jetty.version>12.1.12</jetty.version>
-		<jgit.version>7.7.1.202607240634-r</jgit.version>
+		<jgit.version>7.8.0.202609011348-r</jgit.version>
 		<jmh.version>1.37</jmh.version>
 		<maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
 		<maven-jar-plugin.version>3.5.1</maven-jar-plugin.version>
 		<maven-shade-plugin.version>3.6.2</maven-shade-plugin.version>
 		<maven-surefire-plugin.version>3.6.0</maven-surefire-plugin.version>
 		<maven-surefire-report-plugin.version>3.5.6</maven-surefire-report-plugin.version>
-		<slf4j.version>2.0.18</slf4j.version>
+		<slf4j.version>2.0.20</slf4j.version>
 		<snakeyaml.version>2.7</snakeyaml.version>
 	</properties>
 	<modules>
