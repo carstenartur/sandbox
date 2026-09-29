@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a57afdb34443c447ce0cf295686efd21e780fa523fb9b036a1b59318c009a58a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: swt.shell.isDisposed.check\u003e\n\u003c!description: Add isDisposed() check before accessing SWT Shell attributes to prevent Widget disposed exception.\u003e\n\u003c!severity: WARNING\u003e\n\n$shell.getDisplay().getActiveShell() \u003d\u003d $shell\n\u003d\u003e\n!$shell.isDisposed() \u0026\u0026 $shell.getDisplay().getActiveShell() \u003d\u003d $shell\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.Display;\n\npublic class MyControl {\n    private Shell fShell;\n\n    public MyControl(Shell shell) {\n        this.fShell \u003d shell;\n    }\n\n    public boolean isFocusControl() {\n        return fShell.getDisplay().getActiveShell() \u003d\u003d fShell;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.Display;\n\npublic class MyControl {\n    private Shell fShell;\n\n    public MyControl(Shell shell) {\n        this.fShell \u003d shell;\n    }\n\n    public boolean isFocusControl() {\n        return !fShell.isDisposed() \u0026\u0026 fShell.getDisplay().getActiveShell() \u003d\u003d fShell;\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.Display;\n\npublic class MyControl {\n    private Shell fShell;\n\n    public MyControl(Shell shell) {\n        this.fShell \u003d shell;\n    }\n\n    public boolean checkOtherCondition() {\n        // This should not be modified as it\u0027s a different comparison\n        return fShell.getDisplay().getPrimaryDisplay() \u003d\u003d fShell;\n    }\n\n    public void disposeShell() {\n        // This method also references fShell but is not the target pattern\n        if (fShell !\u003d null \u0026\u0026 !fShell.isDisposed()) {\n            fShell.dispose();\n        }\n    }\n}",
+  "targetHintFile": "defensive_programming.sandbox-hint",
+  "sourceCommit": "98257be30568adb8063497d86a5af459aa354254",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Defensive Programming",
+  "summary": "Add `!isDisposed()` check before accessing SWT Shell.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-29T02:34:17.981479284Z",
+  "ruleFingerprint": "sha256:11a0332e9d035df40b8860a2f747177192ba88740cd8898a1c9a5de5694ddf48",
+  "behaviorFingerprint": "sha256:216fb2fff9b97accb0401e6772b3f301bd547d7713f4dec9dc77b2c8660d9b45",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-29T02:34:24.753507330Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

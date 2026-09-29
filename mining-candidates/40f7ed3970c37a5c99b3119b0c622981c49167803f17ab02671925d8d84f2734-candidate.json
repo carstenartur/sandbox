@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "40f7ed3970c37a5c99b3119b0c622981c49167803f17ab02671925d8d84f2734",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jface.text.table.setsize.to.setbounds\u003e\n\u003c!description: Replace table.setSize with table.setBounds(0,0,...) to ensure explicit location setting to (0,0) for SWT Table widgets.\u003e\n\u003c!severity: WARNING\u003e\n\n$table.setSize($width, $height) :: instanceof($table, \"org.eclipse.swt.widgets.Table\")\n\u003d\u003e $table.setBounds(0, 0, $width, $height)\n;;",
+  "beforeExample": "import org.eclipse.swt.widgets.Table;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.graphics.Rectangle;\n\npublic class Example {\n    void foo(int width, int height) {\n        Shell shell \u003d new Shell();\n        Table table \u003d new Table(shell, SWT.NONE);\n        Rectangle area \u003d new Rectangle(0, 0, width, height);\n        table.setSize(area.width, area.height); // Should match\n    }\n\n    void bar(int width, int height) {\n        Shell shell \u003d new Shell();\n        Table table \u003d new Table(shell, SWT.NONE);\n        table.setSize(width, height); // Should match\n    }\n}",
+  "afterExample": "import org.eclipse.swt.widgets.Table;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.graphics.Rectangle;\n\npublic class Example {\n    void foo(int width, int height) {\n        Shell shell \u003d new Shell();\n        Table table \u003d new Table(shell, SWT.NONE);\n        Rectangle area \u003d new Rectangle(0, 0, width, height);\n        table.setBounds(0, 0, area.width, area.height); // Replaced\n    }\n\n    void bar(int width, int height) {\n        Shell shell \u003d new Shell();\n        Table table \u003d new Table(shell, SWT.NONE);\n        table.setBounds(0, 0, width, height); // Replaced\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.widgets.Button;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.SWT;\n\npublic class NegativeExample {\n    void baz(int width, int height) {\n        Shell shell \u003d new Shell();\n        Button button \u003d new Button(shell, SWT.NONE);\n        button.setSize(width, height); // Should NOT match (not a Table)\n    }\n}",
+  "targetHintFile": "eclipse-swt-cleanup.sandbox-hint",
+  "sourceCommit": "58fbfc9fd2266016e490fd06a2c975017966e2d7",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace setSize with setBounds(0,0,...) for SWT Table widgets to ensure explicit location setting.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-29T02:34:17.993857690Z",
+  "ruleFingerprint": "sha256:3ac5e1c5ed1acf5725620f6e5ef53b664b0fca4267d46f12cd3dcce7463287aa",
+  "behaviorFingerprint": "sha256:a6aef4c21c4e700869966ee25da3104969949e2aca6ec4b4fd20543fb7d29cee",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-29T02:34:24.762184508Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

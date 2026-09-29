@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 2: The import org.eclipse.jface.preference cannot be resolved",
-    "verifiedAt": "2026-09-27T02:31:34.466215950Z",
+    "verifiedAt": "2026-09-29T02:34:21.236469176Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

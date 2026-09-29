@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "14e0a11c1eed7759ca77554f7b2d413b8d173b4ed85552eed8b104868208a375",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: string.notTrimEmpty_to_notBlank\u003e\n\u003c!description: Replace !String.trim().isEmpty() with !String.isBlank() for improved readability and efficiency (Java 11+).\u003e\n\u003c!severity: HINT\u003e\n!$x.trim().isEmpty() :: sourceVersionGE(11)\n\u003d\u003e !$x.isBlank()\n;;",
+  "beforeExample": "public class Example {\n    public void processString(String text) {\n        if (text !\u003d null \u0026\u0026 !text.trim().isEmpty()) {\n            System.out.println(\"Content found: \" + text);\n        }\n    }\n}\n",
+  "afterExample": "public class Example {\n    public void processString(String text) {\n        if (text !\u003d null \u0026\u0026 !text.isBlank()) {\n            System.out.println(\"Content found: \" + text);\n        }\n    }\n}\n",
+  "negativeExample": "public class NegativeExample {\n    public void processString(String text) {\n        // Should not match if source version is \u003c Java 11\n        // (handled by sourceVersionGE(11) guard)\n        if (text !\u003d null \u0026\u0026 !text.trim().isEmpty()) {\n            System.out.println(\"Should not match if Java \u003c 11.\");\n        }\n\n        // Should not match a simple isEmpty() call\n        if (!text.isEmpty()) {\n            System.out.println(\"Only checks length, not content after trim.\");\n        }\n\n        // Should not match if trim() is not present\n        if (!text.equals(\" \")) {\n            System.out.println(\"Not just a space.\");\n        }\n    }\n}\n",
+  "targetHintFile": "modernize-java11.sandbox-hint",
+  "sourceCommit": "1f0525b1d0d0eebcb74b38c4d93e4c0d903ddb57",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Modernization",
+  "summary": "Replace `!String.trim().isEmpty()` with `!String.isBlank()` for Java 11 and later.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-29T02:34:17.915859558Z",
+  "ruleFingerprint": "sha256:052e4d476bf0beeb426acce5ce8cb7f4926f5392879cdc736f59b2a7577d68a3",
+  "behaviorFingerprint": "sha256:3bdd2ff2e5d376f2834434ddef477c18aa48497654d3309f79338fbe4d6170b9",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-09-29T02:34:24.712356871Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

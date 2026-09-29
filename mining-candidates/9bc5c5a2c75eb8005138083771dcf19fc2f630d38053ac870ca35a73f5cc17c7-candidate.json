@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9bc5c5a2c75eb8005138083771dcf19fc2f630d38053ac870ca35a73f5cc17c7",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$x !\u003d null \u0026\u0026 $x instanceof $Type\n\u003d\u003e $x instanceof $Type\n;;",
+  "beforeExample": "class Example {\n    void foo(Object obj) {\n        if (obj !\u003d null \u0026\u0026 obj instanceof String) {\n            System.out.println(\"It\u0027s a string\");\n        }\n    }\n}",
+  "afterExample": "class Example {\n    void foo(Object obj) {\n        if (obj instanceof String) {\n            System.out.println(\"It\u0027s a string\");\n        }\n    }\n}",
+  "negativeExample": "class ExampleNegative {\n    void foo(Object obj) {\n        if (obj !\u003d null \u0026\u0026 obj.hashCode() \u003e 0) { // Not an \u0027instanceof\u0027 check, should not match\n            System.out.println(\"Not a string\");\n        }\n        if (obj instanceof String \u0026\u0026 obj !\u003d null) { // Order is different, should not match\n            System.out.println(\"Order is different\");\n        }\n    }\n}",
+  "targetHintFile": "cleanup.sandbox-hint",
+  "sourceCommit": "fedd0b95a8e49c818d778298f48f051f9ab3e981",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Redundant Code",
+  "summary": "Remove redundant null check before instanceof operator.",
+  "sourceVersion": "21",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-09-29T02:34:17.968042654Z",
+  "ruleFingerprint": "sha256:d8d650285a00ded926caf47b04f5dd52c2f11eead725dba8bb372dff99fd1b0a",
+  "behaviorFingerprint": "sha256:04634275418f8194a2cce44b66fe41904923136d297e014e75eacdf33a600830",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Candidate behavior verified",
+    "verifiedAt": "2026-09-29T02:34:24.744502999Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-09-29T02:34:24.744669672Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-09-29T02:34:24.744685253Z"
+    }
+  ]
+}
