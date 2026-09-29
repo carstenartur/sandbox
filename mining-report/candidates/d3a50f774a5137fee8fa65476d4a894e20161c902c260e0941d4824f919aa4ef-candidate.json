@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d3a50f774a5137fee8fa65476d4a894e20161c902c260e0941d4824f919aa4ef",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "@java.lang.Deprecated :: sourceVersionGE(9)\n\u003d\u003e @java.lang.Deprecated(forRemoval \u003d true)\n;;",
+  "beforeExample": "package com.example;\n\nimport java.lang.Deprecated;\n\n@Deprecated\npublic interface MyOldInterface {\n    void oldMethod();\n}",
+  "afterExample": "package com.example;\n\nimport java.lang.Deprecated;\n\n@Deprecated(forRemoval \u003d true)\npublic interface MyOldInterface {\n    void oldMethod();\n}",
+  "negativeExample": "package com.example;\n\nimport java.lang.Deprecated;\n\n@Deprecated(forRemoval \u003d true)\npublic interface MyAlreadyDeprecatedForRemovalInterface {\n    void newMethod();\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "d7ee493d0cb6496fd0e1b915765ec05b2479b83a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Deprecation",
+  "summary": "Adds `forRemoval \u003d true` to existing `@Deprecated` annotations when the source level is Java 9 or higher.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-29T02:34:17.951288578Z",
+  "ruleFingerprint": "sha256:fa15f8fb3c86fa58fd2d6b4ec04caa246fe8df13683f9107f05ada0ac22e5313",
+  "behaviorFingerprint": "sha256:60542d871b6e5713599c9f446455d9af5bbfe4f6a94549ca02aeda3c26c90881",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type MyOldInterface must be defined in its own file",
+    "verifiedAt": "2026-09-29T02:34:24.723817984Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
