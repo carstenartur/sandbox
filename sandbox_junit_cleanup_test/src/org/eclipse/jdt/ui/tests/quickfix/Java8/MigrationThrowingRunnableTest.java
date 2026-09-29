@@ -13,10 +13,20 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.launching.JavaRuntime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -39,6 +49,17 @@ public class MigrationThrowingRunnableTest {
 	@BeforeEach
 	public void setup() throws CoreException {
 		fRoot = JUnitMigrationFixtureClasspath.createJUnit4And5Root(context);
+		// AtomicReference needs a complete runtime, not the reduced rtstubs fixture.
+		// Replace only the default runtime entries; retain both JUnit containers.
+		IJavaProject project = context.getJavaProject();
+		List<IClasspathEntry> classpath = new ArrayList<>(Arrays.asList(project.getRawClasspath()));
+		classpath.removeAll(Arrays.asList(context.getDefaultClasspath()));
+		classpath.add(JavaCore.newContainerEntry(JavaRuntime.newDefaultJREContainerPath()));
+		project.setRawClasspath(classpath.toArray(IClasspathEntry[]::new), null);
+		for (String type : List.of("java.util.concurrent.atomic.AtomicReference", //$NON-NLS-1$
+				"org.junit.function.ThrowingRunnable", "org.junit.jupiter.api.function.Executable")) { //$NON-NLS-1$ //$NON-NLS-2$
+			assertNotNull(project.findType(type), type);
+		}
 	}
 
 	@Test
@@ -54,6 +75,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
@@ -84,6 +106,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
@@ -118,6 +141,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
@@ -153,6 +177,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
@@ -187,6 +212,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
@@ -222,6 +248,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
@@ -264,6 +291,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
