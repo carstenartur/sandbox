@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "e3f8f415422bff1a1436414003842bffaedc825f",
-      "lastProcessedDate": "2026-09-27T02:31:24.733895905Z",
-      "totalProcessed": 216,
+      "lastProcessedCommit": "9904c7b88ffdb457e05145c5c9f5601bcf6ed882",
+      "lastProcessedDate": "2026-09-29T02:34:02.172613520Z",
+      "totalProcessed": 288,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -3968,6 +3968,168 @@
           "deferredAt": "2026-09-27T02:25:11.015162598Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "cc5a9e8582f2b91e676711c33b94f440390e4149",
+          "message": "Bug 567321 - \"Go to last edit location\" doesn\u0027t work after closing\neditors\n\nDon\u0027t browse backwards in history on closing",
+          "diffLines": 145,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:24:22.157079879Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2690d12a9b397f7a0b0587ffda56f2f72de874f1",
+          "message": "Bug 575242 - fix elementsChanged() to not refresh viewer too much\n\nDon\u0027t refresh viewer on every changed element, that m",
+          "diffLines": 59,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:24:22.157508162Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9917c2fa5a80e5111cfd50e07f1c0dda24ffbcbe",
+          "message": "Bug 575242 - fixed progress reporting and cancellation on replace\n\nFor many elements to be changed, initial preparation ",
+          "diffLines": 130,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:24:22.157560564Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "697ed6cd9c6828a9ea5c03d70d5eda2b14120f68",
+          "message": "Bug 575242 - improved isMatchToBeIncluded() check complexity\n\nisMatchToBeIncluded() iterated over every element of the a",
+          "diffLines": 38,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:24:22.157574075Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "bf5933129b8eb15b5b7cdefa781eacc1c4a5e3b9",
+          "message": "Bug 466532 -Support multiple carets/cursors/selections for text manipulation",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-29T02:24:22.180171910Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e57e5530453240142e96f9755a4f5b66e3a07a9e",
+          "message": "Bug 575520 - Fix CodeFormatterTest tests",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-29T02:25:59.414818195Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "60e9c94534cbfa3ec5ea59b66d18dd9d15f3ed0d",
+          "message": "Bug 575893 - [performance] improve file search: cache CharSequence\n\nUse up to 2MB temporary memory to improve the patter",
+          "diffLines": 41,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:28:25.330194244Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f3831f0ee7f44eddb3ae75fcb0c7b3fd2f08f083",
+          "message": "Bug 575893 - [performance] improve file search: avoid synchronization\n\nFileSearchQuery did spend the most time in waitin",
+          "diffLines": 190,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:28:25.330249890Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4be3cf0211d94eba4b1963fe982928ac9ccecc10",
+          "message": "Bug 575382 - \"Select All\" in Find/Replace dialog\n\nChange-Id: I493776503e55aa13c78f8394c190e17e643158a0\nReviewed-on: http",
+          "diffLines": 408,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:28:25.330263285Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e3d11f1798296654051627f25b5f0410e99c17ea",
+          "message": "Bug 575382 - Fix \"Select All\" with collapsed ranges\n\nChange-Id: I7e943093723fd38e0aa963406980ec49deac45b6\nReviewed-on: h",
+          "diffLines": 40,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:28:25.330273412Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "667a1fdf000996bc6367a72756d16e737b9f1b20",
+          "message": "Bug 576281 - To Upper/Lower case commands can lead to bad selection\n\nChange-Id: I00cb4e113a495903198c96920a6e952342f4426",
+          "diffLines": 233,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:28:26.061010356Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "28f7b0bdb359c68f7a4121d6ded754722e735906",
+          "message": "Bug 576281 - Fix warning in I-build\n\nRemove unused class member\n\nChange-Id: Ie08b1f807c5b79be605340c9ce2de98779d2a0ab\nRe",
+          "diffLines": 44,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:28:26.061075103Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0bbd1e7d64bf7f94d49d74c5a4fc714da149cf15",
+          "message": "Version bump for 4.22\n\nNeeded by\nhttps://git.eclipse.org/r/c/platform/eclipse.platform.text/+/185935\n\nChange-Id: Ibc2e76",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:28:26.061088858Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2267bdcb2b9d1448e3ed5e9f27e261cb8419fe6b",
+          "message": "Fix warnings in jface.tests\n\n* Remove redundant type arguments\n* Remove redundant implements\n* Enable save actions to au",
+          "diffLines": 199,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:28:26.061098211Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9c53fe96ecfc979b55e428ad8eae8cd5733ae586",
+          "message": "Remove unused api_filter.\n\nChange-Id: Idbfd8132067a5bd0dc65d872141eda0dfa5174ab\nReviewed-on: https://git.eclipse.org/r/c",
+          "diffLines": 19,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:30:37.782455882Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6ff1319e90cb6e78b3d6a79696f1ec4b121a1a72",
+          "message": "Bug 577325 - Home key at start of line move cursor to start of document\n\nChange-Id: I91152d94d540eeb00ec400618af18a623d6",
+          "diffLines": 59,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:30:37.782533921Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4d2cc4b61a61798a36af89e59f182a427fa5d3ea",
+          "message": "Bug 577442 - POM and product version change for 4.23 release\n\nChange-Id: I8c05ca31c5d52ac375e4c70155a3cd76e3baf378\nSigne",
+          "diffLines": 144,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:30:37.782549314Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e0da71e663d6a6df458f2a60d11ef9a31e7027cd",
+          "message": "Bug 577332 - In Compare editor, Generic Editor doesn\u0027t configure viewer\n\n...for baseline documents because the document ",
+          "diffLines": 363,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-29T02:30:37.782561435Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -3979,9 +4141,9 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 1,
-        "API Modernization": 4,
+        "API Modernization": 5,
         "Performance": 4,
-        "Redundant Code": 2,
+        "Redundant Code": 3,
         "API Misuse Correction": 1,
         "Lambda to Method Reference": 1,
         "JUnit migration": 1,
@@ -3991,7 +4153,7 @@
         "Singleton_Usage": 1,
         "Resource Management": 2,
         "Structural Change": 1,
-        "Deprecation": 1,
+        "Deprecation": 2,
         "API Usage": 1,
         "JUnit Assertion": 1,
         "API Migration": 1,
@@ -4000,7 +4162,12 @@
         "String API Usage": 1,
         "Thread Safety": 1,
         "Annotation Modernization": 1,
-        "Generics Modernization": 2
+        "Generics Modernization": 2,
+        "Uncategorized": 2,
+        "Logging Cleanup": 1,
+        "Concurrency Performance": 1,
+        "Modernization": 1,
+        "Defensive Programming": 1
       },
       "exhaustedCategories": []
     },
@@ -4017,5 +4184,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 51924
+  "globalTotalProcessed": 51996
 }
