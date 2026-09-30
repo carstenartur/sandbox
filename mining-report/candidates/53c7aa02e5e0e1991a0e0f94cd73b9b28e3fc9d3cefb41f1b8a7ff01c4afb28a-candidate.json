@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "53c7aa02e5e0e1991a0e0f94cd73b9b28e3fc9d3cefb41f1b8a7ff01c4afb28a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$widget.isFocusControl() :: instanceof($widget, \"org.eclipse.swt.custom.StyledText\") \u0026\u0026 inClass(\"org.eclipse.jface.text.TextViewerUndoManager\")\n\u003d\u003e $widget.isFocusControl() \u0026\u0026 ($widget.getSelectionRanges().length \u003c\u003d 2)\n;;",
+  "beforeExample": "package org.eclipse.jface.text;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.events.MouseEvent;\n\npublic class TextViewerUndoManager {\n    private StyledText fTextViewer; \n\n    // Simplified method for the example context\n    public void selectAndReveal(int offset, int length) { \n        System.out.println(\"Selecting and revealing...\");\n    }\n\n    public void processEvent(MouseEvent event) {\n        // Simulate fTextViewer being the widget\n        StyledText widget \u003d new StyledText(null, 0);\n        // Simulate isDisposed and isFocusControl methods\n        // In a real scenario, widget would come from fTextViewer.getTextWidget()\n        boolean isDisposed \u003d false; // Simplified\n        boolean isFocusControl \u003d true; // Simplified\n\n        if (widget !\u003d null \u0026\u0026 !isDisposed \u0026\u0026 (isFocusControl)) { // Original line\n            selectAndReveal(event.getOffset(), event.getText() \u003d\u003d null ? 0 : event.getText().length());\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.jface.text;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.events.MouseEvent;\n\npublic class TextViewerUndoManager {\n    private StyledText fTextViewer; \n\n    // Simplified method for the example context\n    public void selectAndReveal(int offset, int length) { \n        System.out.println(\"Selecting and revealing...\");\n    }\n\n    public void processEvent(MouseEvent event) {\n        // Simulate fTextViewer being the widget\n        StyledText widget \u003d new StyledText(null, 0);\n        // Simulate isDisposed and isFocusControl methods\n        // In a real scenario, widget would come from fTextViewer.getTextWidget()\n        boolean isDisposed \u003d false; // Simplified\n        boolean isFocusControl \u003d true; // Simplified\n\n        if (widget !\u003d null \u0026\u0026 !isDisposed \u0026\u0026 (isFocusControl) \u0026\u0026 (widget.getSelectionRanges().length \u003c\u003d 2)) { // Modified line\n            selectAndReveal(event.getOffset(), event.getText() \u003d\u003d null ? 0 : event.getText().length());\n        }\n    }\n}",
+  "negativeExample": "package some.other.package;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyTextEditor {\n    private StyledText myWidget;\n\n    public MyTextEditor(Shell shell) {\n        myWidget \u003d new StyledText(shell, 0);\n    }\n\n    public void checkFocus() {\n        if (myWidget.isFocusControl()) { // This call to isFocusControl should NOT be modified.\n            System.out.println(\"Widget has focus.\");\n        }\n    }\n}",
+  "targetHintFile": "conditional-logic.sandbox-hint",
+  "sourceCommit": "579ca5b681fe05936c8272af9109c79c4e4fb1a0",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Condition Improvement",
+  "summary": "Adds a `getSelectionRanges().length \u003c\u003d 2` check to the `StyledText.isFocusControl()` condition specifically within `TextViewerUndoManager` to refine caret handling logic.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-30T02:34:54.781070026Z",
+  "ruleFingerprint": "sha256:cbca6483790ffd61b6648051ec2890bd4d92bf6317fd2fadd1f3d7ba496ba830",
+  "behaviorFingerprint": "sha256:689f8aacf0dde73dd09d336e55035116aa3da0af74b6ca861f9da801b010df29",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-09-30T02:35:00.893617477Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
