@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "9904c7b88ffdb457e05145c5c9f5601bcf6ed882",
-      "lastProcessedDate": "2026-09-29T02:34:02.172613520Z",
-      "totalProcessed": 288,
+      "lastProcessedCommit": "2e817994b682605c65bbb096138c052d833d7e47",
+      "lastProcessedDate": "2026-09-30T02:34:47.658969214Z",
+      "totalProcessed": 360,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -4130,6 +4130,159 @@
           "deferredAt": "2026-09-29T02:30:37.782561435Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "1a27e19c6ff1267be05cb2b833b2f977d7da2dfc",
+          "message": "Bug 576377 - Provide shortcuts/commands for incremental multiselection/multiple carets in text editors",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-30T02:26:43.037954362Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "13e3e7a5866fb13f479253382030907238a54ee2",
+          "message": "Bug 576377 - Provide shortcuts/commands for incremental multiselection/multiple carets in text editors",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-30T02:26:43.043661562Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "99a2f5ea1eded2d0cae375b581af1354d973cb22",
+          "message": "Bug 579247 - Commands for multi-selection not available in multipage\neditor\n\nChange-Id: Ibcd40039339b3ba2c6e79820d3f8406",
+          "diffLines": 129,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-30T02:27:26.071084465Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "be2ef6867a344a6ed42a235f139ab695bd8e31e8",
+          "message": "Bug 579294: NPE in TextViewer.computeSelection\n\nfTextWidget can be null at line 2525\n\nChange-Id: I460e7d881f24a8f10926b2",
+          "diffLines": 16,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-30T02:27:26.071133899Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "070a1ce0eaa11fac3989d37429bdc34854495727",
+          "message": "Bug 576377 - Provide shortcuts/commands for incremental\nmultiselection/multiple carets in text editors\n\nCaret-offset now",
+          "diffLines": 57,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-30T02:27:26.071151576Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2f55fffaedd81f5cdd632687fb0f9a6c2eeea0b7",
+          "message": "Use verifyFreezeReport.sh from download.eclipse.org\n\nTo prevent hiting raw.githubusercontent.com quota.\n\nChange-Id: Ib07",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-30T02:27:26.071165818Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "150da4b2675d18f53a2087b74f6e6bed65ce0472",
+          "message": "Bug 576377 - Provide shortcuts/commands for incremental multiselection/multiple carets in text editors",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-30T02:27:26.075171752Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2937090a3de9dda30f24ea5afbdc6e6f22965afb",
+          "message": "Use TextLayout to break hover lines. Fixes #23\n\nSigned-off-by: Thomas Mäder \u003ctmader@redhat.com\u003e",
+          "diffLines": 487,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-30T02:30:18.781026845Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2fa1fb17cb5a83b63729dd39c3974cc39e22ad0a",
+          "message": "Version bump for 4.25 stream.\n\nNeeded by\nhttps://github.com/eclipse-platform/eclipse.platform.text/issues/23\n",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-30T02:30:18.781068057Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a1ac8bebc4317a8647163943422a9ed27907aedc",
+          "message": "Revert \"AnnotationModel uses inefficient iteration over map (Fixes #21)\"\n\nThis reverts commit db6a3b4064f214e15495613019",
+          "diffLines": 52,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-30T02:30:18.781083501Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "78fc9f6f6566323c691f1fee1eb14de2f27e7d34",
+          "message": "Improve async completion popup for completion on typing.\n\nThe popup is shown on type event of a letter or digit if the a",
+          "diffLines": 342,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-30T02:30:18.781094006Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7d0476fd8be607ced86a6cb9b834e550e0d3d34c",
+          "message": "Open most nested resource from Search View",
+          "diffLines": 66,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-30T02:30:26.347449974Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "398e2c606679e0bd4970a97b5f11ef72c470e6f4",
+          "message": "Fix NPE when searching in open file which is linked multiple times (#60)\n\nsee https://github.com/eclipse-platform/eclips",
+          "diffLines": 34,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-30T02:30:26.347508793Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a7c9d4339c0b048e96d0bb8369faa7b27a4b351a",
+          "message": "Bug 541178 - Cancel during file search (#61)\n\n* Allow to cancel between(!) files and\r\n* after the first(!) (and every 20",
+          "diffLines": 25,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-30T02:30:26.347525498Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fb058f40152ab9ad0b92cf1d745a2cf125220ddd",
+          "message": "Don\u0027t fail on null keys (#63)\n\nFixes https://github.com/eclipse-platform/eclipse.platform.text/issues/63",
+          "diffLines": 35,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-09-30T02:30:26.347539058Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5eb5df3cf79ba5e827999743b6653eeaca980c1e",
+          "message": "Add extension point for configuring ITextDoubleClickStrategy. (#118)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-30T02:34:05.795481002Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "81a446557dd3f8f354a272de447fe787881dbe1f",
+          "message": "API to Track TextViewer install/uninstall in generic editor contribution",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-09-30T02:34:05.797787767Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -4141,7 +4294,7 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 1,
-        "API Modernization": 5,
+        "API Modernization": 8,
         "Performance": 4,
         "Redundant Code": 3,
         "API Misuse Correction": 1,
@@ -4167,7 +4320,10 @@
         "Logging Cleanup": 1,
         "Concurrency Performance": 1,
         "Modernization": 1,
-        "Defensive Programming": 1
+        "Defensive Programming": 1,
+        "String Literal Replacement": 1,
+        "Condition Improvement": 1,
+        "Readability": 1
       },
       "exhaustedCategories": []
     },
@@ -4184,5 +4340,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 51996
+  "globalTotalProcessed": 52068
 }
