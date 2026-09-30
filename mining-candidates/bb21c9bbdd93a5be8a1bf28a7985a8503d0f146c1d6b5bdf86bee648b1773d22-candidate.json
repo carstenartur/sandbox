@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "bb21c9bbdd93a5be8a1bf28a7985a8503d0f146c1d6b5bdf86bee648b1773d22",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "fAnnotations.get($x) :: inClass(\"org.eclipse.jface.text.source.AnnotationModel\")\n\u003d\u003e\ngetAnnotationMap().get($x)\n;;",
+  "beforeExample": "package org.eclipse.jface.text.source;\n\nimport org.eclipse.jface.text.Position;\n\nimport java.util.HashMap;\nimport java.util.Iterator;\nimport java.util.Map;\n\nclass Annotation {\n}\n\ninterface IAnnotationMap extends Map\u003cAnnotation, Position\u003e {\n    Iterator\u003cAnnotation\u003e keySetIterator();\n}\n\npublic class AnnotationModel {\n    /** @deprecated Use {@link #getAnnotationMap()} instead. */\n    protected HashMap\u003cAnnotation, Position\u003e fAnnotations \u003d new HashMap\u003c\u003e();\n\n    protected IAnnotationMap getAnnotationMap() {\n        // Simplified for example, actual implementation is more complex\n        return (IAnnotationMap) fAnnotations;\n    }\n\n    public Position getPosition(Annotation annotation) {\n        Position position \u003d fAnnotations.get(annotation);\n        if (position !\u003d null) {\n            return position;\n        }\n        return null;\n    }\n}",
+  "afterExample": "package org.eclipse.jface.text.source;\n\nimport org.eclipse.jface.text.Position;\n\nimport java.util.HashMap;\nimport java.util.Iterator;\nimport java.util.Map;\n\nclass Annotation {\n}\n\ninterface IAnnotationMap extends Map\u003cAnnotation, Position\u003e {\n    Iterator\u003cAnnotation\u003e keySetIterator();\n}\n\npublic class AnnotationModel {\n    /** @deprecated Use {@link #getAnnotationMap()} instead. */\n    protected HashMap\u003cAnnotation, Position\u003e fAnnotations \u003d new HashMap\u003c\u003e();\n\n    protected IAnnotationMap getAnnotationMap() {\n        // Simplified for example, actual implementation is more complex\n        return (IAnnotationMap) fAnnotations;\n    }\n\n    public Position getPosition(Annotation annotation) {\n        Position position \u003d getAnnotationMap().get(annotation);\n        if (position !\u003d null) {\n            return position;\n        }\n        return null;\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class MyClass {\n    private HashMap\u003cString, String\u003e fAnnotations \u003d new HashMap\u003c\u003e();\n\n    public String getValue(String key) {\n        // This should not match because not in AnnotationModel class.\n        return fAnnotations.get(key);\n    }\n\n    public IAnnotationMap getAnnotationMap() {\n        return null; // Not relevant for this class\n    }\n\n    interface IAnnotationMap extends Map\u003cAnnotation, Position\u003e {\n        Iterator\u003cAnnotation\u003e keySetIterator();\n    }\n\n    class Annotation { }\n    class Position { }\n}",
+  "targetHintFile": "annotationmodel.sandbox-hint",
+  "sourceCommit": "3e6937a25228b0da4edd581e7ec22b726ec77bb4",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces direct access to the \u0027fAnnotations\u0027 field with a call to \u0027getAnnotationMap().get()\u0027 within the \u0027AnnotationModel\u0027 class.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-30T02:34:54.797787801Z",
+  "ruleFingerprint": "sha256:3a998d4741a6c084a6afd1e7a47099fe3b7ba63a6d383a92deae19058416f44c",
+  "behaviorFingerprint": "sha256:5aad2b6c5176039c8327ac6a73ca53fce476e6427bc92031e90c05a9331314c5",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 16: The public type AnnotationModel must be defined in its own file",
+    "verifiedAt": "2026-09-30T02:35:00.909881977Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

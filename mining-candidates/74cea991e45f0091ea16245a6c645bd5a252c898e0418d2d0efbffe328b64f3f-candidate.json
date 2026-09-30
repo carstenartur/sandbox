@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "74cea991e45f0091ea16245a6c645bd5a252c898e0418d2d0efbffe328b64f3f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$gc.stringExtent(\" \").x :: instanceof($gc, \"org.eclipse.swt.graphics.GC\")\n\u003d\u003e $gc.stringExtent(\"   \").x\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Rectangle;\n\npublic class TestClass {\n    public void testMethod(StyledText textWidget, GC gc, int widgetOffset, int length) {\n        int line\u003d textWidget.getLineAtOffset(widgetOffset);\n        int lineEndOffset\u003d widgetOffset \u003c textWidget.getCharCount() ? widgetOffset : textWidget.getCharCount() - 1;\n        Rectangle bounds\u003d textWidget.getTextBounds(lineEndOffset, lineEndOffset);\n        int lineEndX\u003d bounds.x + bounds.width + gc.stringExtent(\" \").x; //$NON-NLS-1$\n        // Other statements here\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Rectangle;\n\npublic class TestClass {\n    public void testMethod(StyledText textWidget, GC gc, int widgetOffset, int length) {\n        int line\u003d textWidget.getLineAtOffset(widgetOffset);\n        int lineEndOffset\u003d widgetOffset \u003c textWidget.getCharCount() ? widgetOffset : textWidget.getCharCount() - 1;\n        Rectangle bounds\u003d textWidget.getTextBounds(lineEndOffset, lineEndOffset);\n        int lineEndX\u003d bounds.x + bounds.width + gc.stringExtent(\"   \").x; //$NON-NLS-1$\n        // Other statements here\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Rectangle;\n\npublic class TestClass {\n    public void testMethod(StyledText textWidget, GC gc, int widgetOffset, int length) {\n        int line\u003d textWidget.getLineAtOffset(widgetOffset);\n        int lineEndOffset\u003d widgetOffset \u003c textWidget.getCharCount() ? widgetOffset : textWidget.getCharCount() - 1;\n        Rectangle bounds\u003d textWidget.getTextBounds(lineEndOffset, lineEndOffset);\n        int lineEndX\u003d bounds.x + bounds.width + gc.stringExtent(\"\").x; // Should not match //$NON-NLS-1$\n        int otherLineEndX\u003d bounds.x + bounds.width + gc.stringExtent(\"  \").x; // Should not match //$NON-NLS-1$\n    }\n}",
+  "targetHintFile": "jface.sandbox-hint",
+  "sourceCommit": "15d09249911dd8052192e2d146a5961dd5391ff9",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "String Literal Replacement",
+  "summary": "Replace single space string literal with triple space in `gc.stringExtent()` for increased UI spacing.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-30T02:34:54.746491078Z",
+  "ruleFingerprint": "sha256:eee196e402a786caaa40ec62ad470346f0676b382eae4b2b434ee674d8adee47",
+  "behaviorFingerprint": "sha256:874ed72b413def9bef12e05bb1a595aef055b0be5a27d430768edadb653c4b3d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-09-30T02:35:00.881499400Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

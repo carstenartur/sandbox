@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "823db8f590b7e694a4d17af2075af5cdcbe02731276fa8120fb78c81e9be5e32",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.ui.progress.UIJob($jobName) { @java.lang.Override public org.eclipse.core.runtime.IStatus runInUIThread(org.eclipse.core.runtime.IProgressMonitor $monitor) { $body$; return org.eclipse.core.runtime.Status.OK_STATUS; } }\n\u003d\u003e\norg.eclipse.ui.progress.UIJob.create($jobName, (org.eclipse.core.runtime.ICoreRunnable) $monitor -\u003e $body)\n;;",
+  "beforeExample": "import org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.IStatus;\nimport org.eclipse.core.runtime.Status;\nimport org.eclipse.ui.progress.UIJob;\n\npublic class TestClass {\n    public static class Messages {\n        public static String QuickSearchDialog_RefreshJob \u003d \"Refresh\";\n    }\n\n    private void refreshWidgets() {\n        System.out.println(\"Refreshing widgets...\");\n    }\n\n    private UIJob refreshJob \u003d new UIJob(Messages.QuickSearchDialog_RefreshJob) {\n        @Override\n        public IStatus runInUIThread(IProgressMonitor monitor) {\n            refreshWidgets();\n            return Status.OK_STATUS;\n        }\n    };\n\n    public void startJob() {\n        refreshJob.schedule();\n    }\n}",
+  "afterExample": "import org.eclipse.core.runtime.ICoreRunnable;\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.IStatus;\nimport org.eclipse.core.runtime.Status;\nimport org.eclipse.ui.progress.UIJob;\n\npublic class TestClass {\n    public static class Messages {\n        public static String QuickSearchDialog_RefreshJob \u003d \"Refresh\";\n    }\n\n    private void refreshWidgets() {\n        System.out.println(\"Refreshing widgets...\");\n    }\n\n    private UIJob refreshJob \u003d UIJob.create(Messages.QuickSearchDialog_RefreshJob,\n            (ICoreRunnable) monitor -\u003e refreshWidgets());\n\n    public void startJob() {\n        refreshJob.schedule();\n    }\n}",
+  "negativeExample": "import org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.IStatus;\nimport org.eclipse.core.runtime.Status;\nimport org.eclipse.ui.progress.UIJob;\nimport org.eclipse.core.jobs.Job;\n\npublic class NegativeTestClass {\n    public static class Messages {\n        public static String QuickSearchDialog_OtherJob \u003d \"Other Job\";\n    }\n\n    private void performOtherTask() {\n        System.out.println(\"Performing other task...\");\n    }\n\n    // This job\u0027s runInUIThread has conditional logic and different return paths,\n    // so it should not match the proposed rule which assumes a single body and OK_STATUS return.\n    private UIJob complexJob \u003d new UIJob(Messages.QuickSearchDialog_OtherJob) {\n        @Override\n        public IStatus runInUIThread(IProgressMonitor monitor) {\n            if (monitor.isCanceled()) {\n                return Status.CANCEL_STATUS;\n            }\n            performOtherTask();\n            return Status.OK_STATUS;\n        }\n    };\n\n    // A non-UIJob should not match\n    private Job backgroundJob \u003d new Job(\"Background Task\") {\n        @Override\n        protected IStatus run(IProgressMonitor monitor) {\n            return Status.OK_STATUS;\n        }\n    };\n}",
+  "targetHintFile": "eclipse-ui-api.sandbox-hint",
+  "sourceCommit": "1900585152bdd052e3c38e2da2440b3405fb36ee",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces the anonymous inner class instantiation of UIJob with the newer static factory method UIJob.create(), using a lambda expression for the task body.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-09-30T02:34:54.858332114Z",
+  "ruleFingerprint": "sha256:41987e015ce6d0e2ad5bb8848e2f5ce3a9af820f70da0ac9744795bd9027a5fa",
+  "behaviorFingerprint": "sha256:81261843cab6f5c2376fba0005374d0891b3ab950b5437831fd3b4f569dcd9cf",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.ui cannot be resolved",
+    "verifiedAt": "2026-09-30T02:35:00.953511117Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

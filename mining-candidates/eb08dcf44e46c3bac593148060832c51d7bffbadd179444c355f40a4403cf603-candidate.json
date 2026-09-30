@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "eb08dcf44e46c3bac593148060832c51d7bffbadd179444c355f40a4403cf603",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.RuntimeException()\n\u003d\u003e new java.lang.RuntimeException(\"Unnamed runtime exception\")\n;;",
+  "beforeExample": "class Example {\n    void method() {\n        throw new java.lang.RuntimeException();\n    }\n}",
+  "afterExample": "class Example {\n    void method() {\n        throw new java.lang.RuntimeException(\"Unnamed runtime exception\");\n    }\n}",
+  "negativeExample": "class Example {\n    void method() {\n        throw new java.lang.IllegalArgumentException(\"Specific reason\");\n    }\n    void anotherMethod() {\n        throw new java.lang.RuntimeException(\"Already has a message\");\n    }\n}",
+  "targetHintFile": "exceptions.sandbox-hint",
+  "sourceCommit": "22d9da227602ed8cbbb6257193c1e5867fefa910",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Readability",
+  "summary": "Adds a default message to no-argument RuntimeException constructors to improve debuggability without altering runtime behavior.",
+  "sourceVersion": "21",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-09-30T02:34:54.832930020Z",
+  "ruleFingerprint": "sha256:6a76e81c73e0234de25fea25ebe7bc1ded990b3ca227074df1f2aed186bb3bbd",
+  "behaviorFingerprint": "sha256:713c6e84b21c29551d78247dcb71f6cb54069d48dc61209cf2c92d3e58bee647",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Candidate behavior verified",
+    "verifiedAt": "2026-09-30T02:35:00.940385959Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-09-30T02:35:00.940599332Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-09-30T02:35:00.940617068Z"
+    }
+  ]
+}
