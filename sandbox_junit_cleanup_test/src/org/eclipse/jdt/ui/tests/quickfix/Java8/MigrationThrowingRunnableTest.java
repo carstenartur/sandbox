@@ -15,24 +15,21 @@ package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
-import org.eclipse.jdt.launching.JavaRuntime;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
-import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
 import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 
 /**
@@ -41,25 +38,45 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
  */
 public class MigrationThrowingRunnableTest {
 
+	// Keep the same explicit system library in both fixture initialization steps.
+	// Do not switch from rtstubs to a lazily resolved default-JRE container.
 	@RegisterExtension
-	AbstractEclipseJava context = new EclipseJava17();
+	AbstractEclipseJava context = new AbstractEclipseJava(
+			Path.of(System.getProperty("java.home"), "lib", "jrt-fs.jar").toString(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			JavaCore.VERSION_17);
 
 	IPackageFragmentRoot fRoot;
 
 	@BeforeEach
 	public void setup() throws CoreException {
 		fRoot = JUnitMigrationFixtureClasspath.createJUnit4And5Root(context);
-		// AtomicReference needs a complete runtime, not the reduced rtstubs fixture.
-		// Replace only the default runtime entries; retain both JUnit containers.
 		IJavaProject project = context.getJavaProject();
-		List<IClasspathEntry> classpath = new ArrayList<>(Arrays.asList(project.getRawClasspath()));
-		classpath.removeAll(Arrays.asList(context.getDefaultClasspath()));
-		classpath.add(JavaCore.newContainerEntry(JavaRuntime.newDefaultJREContainerPath()));
-		project.setRawClasspath(classpath.toArray(IClasspathEntry[]::new), null);
-		for (String type : List.of("java.util.concurrent.atomic.AtomicReference", //$NON-NLS-1$
+		for (String type : List.of("java.lang.Object", "java.util.concurrent.atomic.AtomicReference", //$NON-NLS-1$ //$NON-NLS-2$
 				"org.junit.function.ThrowingRunnable", "org.junit.jupiter.api.function.Executable")) { //$NON-NLS-1$ //$NON-NLS-2$
 			assertNotNull(project.findType(type), type);
 		}
+	}
+
+	@RepeatedTest(25)
+	public void resolvesRuntimeAndBothJUnitApisAfterEverySetup() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("probe", true, null); //$NON-NLS-1$
+		ICompilationUnit cu = pack.createCompilationUnit("RuntimeProbe.java", //$NON-NLS-1$
+				"""
+				package probe;
+				import java.util.concurrent.atomic.AtomicReference;
+				import org.junit.function.ThrowingRunnable;
+				import org.junit.jupiter.api.function.Executable;
+
+				public class RuntimeProbe {
+					public void run() throws Throwable {
+						AtomicReference<ThrowingRunnable> legacy = new AtomicReference<>(() -> {});
+						legacy.get().run();
+						AtomicReference<Executable> target = new AtomicReference<>(() -> {});
+						target.get().execute();
+					}
+				}
+				""", false, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	@Test
