@@ -7,7 +7,6 @@ package org.apache.maven.surefire.junitplatform;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
@@ -57,14 +56,12 @@ class ReportingProbeTest {
 
     @Suite @SelectClasses(CompilerFixture.class)
     public static class InnerSuite { }
-
     @Suite @SelectClasses(InnerSuite.class)
     public static class OuterSuite { }
 
     @Test void directParameterizedClassMustWriteResultsOnce() throws Exception {
         assertLinear(run("direct-32", CompilerFixture.class, 32));
     }
-
     @Test void nestedSuiteMustWriteResultsOnce() throws Exception {
         assertLinear(run("suite-32", OuterSuite.class, 32));
     }
@@ -83,7 +80,6 @@ class ReportingProbeTest {
         invocations = count;
         Path directory = Path.of(System.getProperty("probe.output"), name);
         Files.createDirectories(directory);
-        // Reject stale result files; every measurement must start from an empty directory.
         try (var existing = Files.list(directory)) {
             assertEquals(0, existing.count(), "Run clean before repeating a measurement");
         }
@@ -97,7 +93,7 @@ class ReportingProbeTest {
                 new SurefireConsoleOutputReporter(), new SurefireStatelessTestsetInfoReporter(),
                 new ReporterFactoryOptions());
         DefaultReporterFactory factory = new DefaultReporterFactory(config, logger);
-        TestReportListener<TestOutputReportEntry> delegate = factory.createReporter();
+        TestReportListener<TestOutputReportEntry> delegate = factory.createTestReportListener();
         long[] counters = new long[2];
         TestReportListener<TestOutputReportEntry> measured =
                 (TestReportListener<TestOutputReportEntry>) Proxy.newProxyInstance(
@@ -115,7 +111,6 @@ class ReportingProbeTest {
                                 Path xml = directory.resolve("TEST-" + entry.getSourceName() + ".xml");
                                 assertTrue(Files.isRegularFile(xml), "Missing real XML report: " + xml);
                                 // The reporter truncates and rewrites this file on completion.
-                                // Count its whole resulting size, not the change in final size.
                                 counters[1] += Files.size(xml);
                             }
                             return result;
@@ -169,6 +164,5 @@ class ReportingProbeTest {
         System.out.println(name + " " + observation);
         return observation;
     }
-
     private record Observation(long reportCompletions, long serializedBytes, long finalBytes, long tests) { }
 }
