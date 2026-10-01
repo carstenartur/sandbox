@@ -1,0 +1,36 @@
+name: JDT Core reporting probe
+on:
+  push:
+    branches: [investigate/jdt-core-reporting]
+    paths:
+      - 'qa/upstream-jdt/compiler-reporting/**'
+      - '.github/workflows/jdt-core-reporting-probe.yml'
+  pull_request:
+    paths:
+      - 'qa/upstream-jdt/compiler-reporting/**'
+      - '.github/workflows/jdt-core-reporting-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: jdt-reporting-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Run real Surefire reporter regression tests
+        run: mvn -B -ntp -f qa/upstream-jdt/compiler-reporting/pom.xml clean verify
+      - name: Preserve all evidence including failing tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jdt-core-reporting-probe
+          path: qa/upstream-jdt/compiler-reporting/target/
+          if-no-files-found: error
