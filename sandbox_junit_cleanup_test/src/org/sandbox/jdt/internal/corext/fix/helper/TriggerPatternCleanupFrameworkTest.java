@@ -27,7 +27,6 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -43,6 +42,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 
 /**
  * Comprehensive tests for the TriggerPattern Cleanup Plugin framework,
@@ -59,6 +59,10 @@ public class TriggerPatternCleanupFrameworkTest {
 
 	@RegisterExtension
 	AbstractEclipseJava context = new EclipseJava17();
+
+	private IPackageFragmentRoot createJUnit4And5Root() throws CoreException {
+		return JUnitMigrationFixtureClasspath.createJUnit4And5Root(context);
+	}
 
 	private CompilationUnit parseSource(String source) {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
@@ -150,7 +154,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("$value placeholder is preserved in SingleMemberAnnotation transformation")
 		void testValuePlaceholder_isPreservedInSingleMemberAnnotation() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -188,7 +192,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("MarkerAnnotation without placeholder is correctly transformed")
 		void testMarkerAnnotation_withoutPlaceholder_isTransformed() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -222,7 +226,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("NormalAnnotation with value attribute is correctly transformed")
 		void testNormalAnnotation_withValueAttribute_isTransformed() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -268,7 +272,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("removeImports correctly removes specified imports")
 		void testRemoveImports_removesSpecifiedImports() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -313,7 +317,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("addImports correctly adds new imports")
 		void testAddImports_addsNewImports() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -347,7 +351,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("Unused imports are removed after transformation")
 		void testUnusedImports_areRemovedAfterTransformation() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -392,7 +396,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("MarkerAnnotation transformation - @Before to @BeforeEach")
 		void testMarkerAnnotation_BeforeToBeforeEach() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -426,7 +430,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("SingleMemberAnnotation preservation - @Ignore(\"reason\") to @Disabled(\"reason\")")
 		void testSingleMemberAnnotation_IgnoreToDisabled() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -464,7 +468,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("NormalAnnotation with explicit value attribute")
 		void testNormalAnnotation_withExplicitValueAttribute() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -608,7 +612,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("Multiple annotations on same element are handled correctly")
 		void testMultipleAnnotations_onSameElement_areHandled() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -658,7 +662,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("Empty string in annotation value is preserved")
 		void testEmptyStringInAnnotationValue_isPreserved() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -727,7 +731,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@Test
 		@DisplayName("Annotation value with special characters is preserved")
 		void testAnnotationValue_withSpecialCharacters_isPreserved() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -871,7 +875,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@DisplayName("DSL: @Before marker annotation → @BeforeEach via annotations5.sandbox-hint")
 		@org.junit.jupiter.api.Disabled("DSL-based annotation cleanup not yet wired to integration test infrastructure")
 		void testDsl_beforeAnnotation_markerAnnotation() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -906,7 +910,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@DisplayName("DSL: @Ignore(\"reason\") → @Disabled(\"reason\") preserves value via annotations5.sandbox-hint")
 		@org.junit.jupiter.api.Disabled("DSL-based annotation cleanup not yet wired to integration test infrastructure")
 		void testDsl_ignoreAnnotation_preservesValue() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -945,7 +949,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@DisplayName("DSL: Assume.assumeTrue() → Assumptions.assumeTrue() via assume5.sandbox-hint")
 		@org.junit.jupiter.api.Disabled("DSL-based assume cleanup not yet wired to integration test infrastructure")
 		void testDsl_assumeTrue_migration() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -984,7 +988,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@DisplayName("DSL: Assert.assertEquals() → Assertions.assertEquals() via junit5.sandbox-hint")
 		@org.junit.jupiter.api.Disabled("DSL-based assert cleanup not yet wired to integration test infrastructure")
 		void testDsl_assertEquals_migration() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""
@@ -1023,7 +1027,7 @@ public class TriggerPatternCleanupFrameworkTest {
 		@DisplayName("DSL: Assert.assertThat() → MatcherAssert.assertThat() via junit5.sandbox-hint")
 		@org.junit.jupiter.api.Disabled("DSL-based assertThat cleanup not yet wired to integration test infrastructure")
 		void testDsl_assertThat_hamcrestMigration() throws CoreException {
-			IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+			IPackageFragmentRoot fRoot = createJUnit4And5Root();
 			IPackageFragment pack = fRoot.createPackageFragment("test", true, null); //$NON-NLS-1$
 			ICompilationUnit cu = pack.createCompilationUnit("MyTest.java", //$NON-NLS-1$
 					"""

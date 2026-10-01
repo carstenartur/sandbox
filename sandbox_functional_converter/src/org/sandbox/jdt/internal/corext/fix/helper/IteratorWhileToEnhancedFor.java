@@ -76,6 +76,10 @@ public class IteratorWhileToEnhancedFor extends AbstractFunctionalCall<ASTNode> 
 				.terminal(new ForEachTerminal(body.subList(1, body.size()), false)).build();
 		new ASTEnhancedForRenderer(rewrite.getAST(), rewrite.getASTRewrite()).renderIteratorLoop(model, loop,
 				previous, pattern.collectionExpression(), (VariableDeclarationStatement) element.getParent(), rewrite.getImportRewrite(), group);
+		if (previous != null) {
+			rewrite.getImportRemover().registerRemovedNode(previous);
+			rewrite.getImportRemover().applyRemoves(rewrite.getImportRewrite());
+		}
 	}
 
 	@Override

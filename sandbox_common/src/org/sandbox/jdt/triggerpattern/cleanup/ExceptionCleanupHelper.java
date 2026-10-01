@@ -158,7 +158,8 @@ public class ExceptionCleanupHelper {
 			CatchClause catchClause,
 			String exceptionFQN,
 			ASTRewrite rewrite,
-			TextEditGroup group) {
+			TextEditGroup group,
+			ImportRemover importRemover) {
 
 		ListRewrite unionRewrite = rewrite.getListRewrite(unionType, UnionType.TYPES_PROPERTY);
 		List<Type> types = unionType.types();
@@ -167,7 +168,10 @@ public class ExceptionCleanupHelper {
 				.filter(t -> isTargetException(t, exceptionFQN))
 				.toList();
 
-		typesToRemove.forEach(type -> unionRewrite.remove(type, group));
+		typesToRemove.forEach(type -> {
+			unionRewrite.remove(type, group);
+			importRemover.registerRemovedNode(type);
+		});
 
 		int remainingCount = types.size() - typesToRemove.size();
 		if (remainingCount == 1) {
@@ -180,6 +184,7 @@ public class ExceptionCleanupHelper {
 			}
 		} else if (remainingCount == 0) {
 			rewrite.remove(catchClause, group);
+			importRemover.registerRemovedNode(catchClause);
 			return true;
 		}
 		return false;
@@ -200,7 +205,7 @@ public class ExceptionCleanupHelper {
 			Type exceptionType = exception.getType();
 
 			if (exceptionType instanceof UnionType unionType) {
-				if (removeExceptionFromUnionType(unionType, catchClause, exceptionFQN, rewrite, group)) {
+				if (removeExceptionFromUnionType(unionType, catchClause, exceptionFQN, rewrite, group, importRemover)) {
 					removedCount++;
 				}
 			} else if (isTargetException(exceptionType, exceptionFQN)) {

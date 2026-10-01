@@ -1,12 +1,17 @@
 package org.sandbox.jdt.ui.tests.quickfix;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.runtime.CoreException;
 
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 
@@ -35,6 +40,7 @@ public class PlatformStatusCleanupRegressionTest {
 
 	@Test
 	void usesFactoriesOnlyForProvenIdentityAndCompatibleReturnTypes() throws CoreException {
+		installFactoryCompatibilityApi();
 		IFile manifest= createBundleManifest("test.bundle"); //$NON-NLS-1$
 		try {
 			String given= """
@@ -63,8 +69,8 @@ public class PlatformStatusCleanupRegressionTest {
 						private static final String PLUGIN_ID = "test.bundle";
 						private static String getPluginId() { return PLUGIN_ID; }
 						void method(Throwable failure) {
-							IStatus fromConstant = Status.error("constant");
-							IStatus fromClass = Status.warning("class", failure);
+							Status.error("constant");
+							Status.warning("class", failure);
 							Status concreteWarning = new Status(IStatus.WARNING, PLUGIN_ID, "warning", failure);
 							Status concreteWarningNull = new Status(IStatus.WARNING, PLUGIN_ID, "warning null", null);
 							Status concreteError = new Status(IStatus.ERROR, PLUGIN_ID, "concrete", null);
@@ -77,10 +83,32 @@ public class PlatformStatusCleanupRegressionTest {
 			IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
 			ICompilationUnit unit= pack.createCompilationUnit("E1.java", given, false, null); //$NON-NLS-1$
 			context.enable(MYCleanUpConstants.SIMPLIFY_STATUS_CLEANUP);
-			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { expected }, null);
+			context.assertRefactoringResultAsExpectedWithFullCompileCheck(new ICompilationUnit[] { unit }, new String[] { expected }, null);
 		} finally {
 			manifest.getParent().delete(true, null);
 		}
+	}
+
+	private void installFactoryCompatibilityApi() throws CoreException {
+		// The bundled Java-9 stub has no Class-based constructor. Use the existing
+		// explicit API fixture so the input compiles without changing factory return
+		// types (IStatus, deliberately not Status) or concealing latent diagnostics.
+		IPackageFragment api= context.getSourceFolder().createPackageFragment("org.eclipse.core.runtime", false, null); //$NON-NLS-1$
+		api.createCompilationUnit("IStatus.java", StatusDiagnosticPreservationTest.ISTATUS, false, null); //$NON-NLS-1$
+		ICompilationUnit status= api.createCompilationUnit("Status.java", StatusDiagnosticPreservationTest.status(true), false, null); //$NON-NLS-1$
+		// Creating source does not override an earlier binary classpath entry.
+		// Give only this explicit fixture priority; retain all entries and attributes.
+		var javaProject= context.getJavaProject();
+		var entries= new ArrayList<>(List.of(javaProject.getRawClasspath()));
+		IClasspathEntry sourceEntry= entries.stream()
+				.filter(entry -> entry.getEntryKind() == IClasspathEntry.CPE_SOURCE
+						&& context.getSourceFolder().getPath().equals(entry.getPath()))
+				.findFirst().orElseThrow();
+		entries.remove(sourceEntry);
+		entries.add(0, sourceEntry);
+		javaProject.setRawClasspath(entries.toArray(IClasspathEntry[]::new), null);
+		assertEquals(status.getType("Status"), javaProject.findType("org.eclipse.core.runtime.Status"), //$NON-NLS-1$ //$NON-NLS-2$
+				"The explicit source API must take precedence over the legacy binary stub"); //$NON-NLS-1$
 	}
 
 	@Test

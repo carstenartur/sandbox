@@ -20,7 +20,7 @@
       <li>An unsupported construct is not replaced by a guessed Jupiter implementation.</li>
       <li>The original unsupported source remains available for the developer who completes the migration.</li>
       <li>Each known gap has a stable candidate identifier, reason code, explanation, and concrete remediation.</li>
-      <li>A deterministic marker method is added to the source type that contains or owns the gap.</li>
+      <li>A deterministic TODO with a code example is added to the owning source type's Javadoc, without adding executable members.</li>
    </ul>
 
    <h2>What the mode does not guarantee</h2>
@@ -29,21 +29,28 @@
       that the complete test suite has already been migrated.</p>
 
    <h2>Generated source marker</h2>
-   <p>A marker is a compilable method body. It intentionally throws when called and contains the exact
-      candidate and reason in Javadoc. For example:</p>
+   <p>A marker is documentation attached to the affected type. Its method scaffold is a code example,
+      not an unused private method added to the application. It neither executes nor changes test discovery.
+      The candidate, reason, and manual completion instructions remain searchable. For example:</p>
    <pre>/**
  * @todo Sandbox JUnit migration gap runner:LegacyTest
  *       (CUSTOM_JUNIT4_RUNNER): The runner has no generally equivalent
  *       automatic Jupiter rewrite. Manual completion: port the runner
  *       behavior to one or more Jupiter extensions, or retain Vintage.
+ * &lt;pre&gt;
+ * private static void sandboxJUnitMigrationTodoCustomJunit4Runner() {
+ *     throw new UnsupportedOperationException(
+ *         "Manual JUnit migration required: CUSTOM_JUNIT4_RUNNER");
+ * }
+ * &lt;/pre&gt;
  */
-private static void sandboxJUnitMigrationTodoCustomJunit4Runner() {
-    throw new UnsupportedOperationException(
-        "Manual JUnit migration required: CUSTOM_JUNIT4_RUNNER");
+public class LegacyTest {
+    // Original unsupported constructs remain here.
 }</pre>
-   <p>The method is a work item, not a substitute for the missing extension, argument source, lifecycle
-      split, or assertion logic. Remove it only after the corresponding construct has been completed and
-      the relevant tests have passed.</p>
+   <p>The example is a work item, not a substitute for the missing extension, argument source, lifecycle
+      split, or assertion logic. Remove the TODO only after the corresponding construct has been completed
+      and the relevant tests have passed. Existing marker methods from older cleanup runs are recognized
+      and are not duplicated or silently removed.</p>
 
    <h2>Structured diagnostics</h2>
    <p>The project-wide cleanup application records the same evidence in JSON. Unit locations are represented

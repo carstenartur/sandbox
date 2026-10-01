@@ -168,7 +168,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		}
 		nodesProcessed.addAll(resolved.fields().keySet());
 		nodesProcessed.addAll(resolved.resourceTypes().keySet());
-		operations.add(new JUnitMultiFileRewriteOperation(resolved));
+		operations.add(new JUnitMultiFileRewriteOperation(resolved, junit4CompatibleExternalResourceTypes));
 	}
 
 	private void addJUnit3HierarchyOperations(ICompilationUnit unit, String unitHandle, CompilationUnit root,

@@ -105,6 +105,7 @@ public class PrintWriterExplicitEncoding extends AbstractExplicitEncoding<ClassI
 		bwclassInstance.setType(ast.newSimpleType(addImport(BufferedWriter.class.getCanonicalName(), cuRewrite, ast)));
 		bwclassInstance.arguments().add(oswclassInstance);
 
+		cuRewrite.getImportRemover().registerRemovedNode(visited.getType());
 		ASTNodes.replaceButKeepComment(rewrite, visited, bwclassInstance, group);
 	}
 

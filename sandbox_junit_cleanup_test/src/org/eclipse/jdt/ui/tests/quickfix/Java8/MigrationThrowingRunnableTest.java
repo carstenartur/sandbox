@@ -13,17 +13,24 @@
  *******************************************************************************/
 package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.nio.file.Path;
+import java.util.List;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.junit.JUnitCore;
+import org.eclipse.jdt.core.JavaCore;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
-import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 
 /**
  * Tests for migrating JUnit 4 ThrowingRunnable to JUnit 5 Executable.
@@ -31,14 +38,45 @@ import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
  */
 public class MigrationThrowingRunnableTest {
 
+	// Keep the same explicit system library in both fixture initialization steps.
+	// Do not switch from rtstubs to a lazily resolved default-JRE container.
 	@RegisterExtension
-	AbstractEclipseJava context = new EclipseJava17();
+	AbstractEclipseJava context = new AbstractEclipseJava(
+			Path.of(System.getProperty("java.home"), "lib", "jrt-fs.jar").toString(), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			JavaCore.VERSION_17);
 
 	IPackageFragmentRoot fRoot;
 
 	@BeforeEach
 	public void setup() throws CoreException {
-		fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+		fRoot = JUnitMigrationFixtureClasspath.createJUnit4And5Root(context);
+		IJavaProject project = context.getJavaProject();
+		for (String type : List.of("java.lang.Object", "java.util.concurrent.atomic.AtomicReference", //$NON-NLS-1$ //$NON-NLS-2$
+				"org.junit.function.ThrowingRunnable", "org.junit.jupiter.api.function.Executable")) { //$NON-NLS-1$ //$NON-NLS-2$
+			assertNotNull(project.findType(type), type);
+		}
+	}
+
+	@RepeatedTest(25)
+	public void resolvesRuntimeAndBothJUnitApisAfterEverySetup() throws CoreException {
+		IPackageFragment pack = fRoot.createPackageFragment("probe", true, null); //$NON-NLS-1$
+		ICompilationUnit cu = pack.createCompilationUnit("RuntimeProbe.java", //$NON-NLS-1$
+				"""
+				package probe;
+				import java.util.concurrent.atomic.AtomicReference;
+				import org.junit.function.ThrowingRunnable;
+				import org.junit.jupiter.api.function.Executable;
+
+				public class RuntimeProbe {
+					public void run() throws Throwable {
+						AtomicReference<ThrowingRunnable> legacy = new AtomicReference<>(() -> {});
+						legacy.get().run();
+						AtomicReference<Executable> target = new AtomicReference<>(() -> {});
+						target.get().execute();
+					}
+				}
+				""", false, null);
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 	}
 
 	@Test
@@ -54,6 +92,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
@@ -84,6 +123,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
@@ -118,6 +158,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
@@ -153,6 +194,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
@@ -187,6 +229,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
@@ -222,6 +265,7 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
@@ -255,6 +299,7 @@ public class MigrationThrowingRunnableTest {
 					public void test() throws Throwable {
 						final AtomicReference<ThrowingRunnable> callback = new AtomicReference<>(NOOP_RUNNABLE);
 						callback.get().run();
+						withNatives(true, callback.get());
 					}
 					
 					private static void withNatives(boolean natives, ThrowingRunnable runnable) throws Throwable {
@@ -263,9 +308,12 @@ public class MigrationThrowingRunnableTest {
 				}
 				""", false, null);
 
+		context.assertRefactoringHasNoChange(new ICompilationUnit[] { cu });
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP);
 		context.enable(MYCleanUpConstants.JUNIT_CLEANUP_4_THROWINGRUNNABLE);
 
+		String before = cu.getSource();
+		try {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
@@ -279,6 +327,7 @@ public class MigrationThrowingRunnableTest {
 					public void test() throws Throwable {
 						final AtomicReference<Executable> callback = new AtomicReference<>(NOOP_RUNNABLE);
 						callback.get().execute();
+						withNatives(true, callback.get());
 					}
 					
 					private static void withNatives(boolean natives, Executable runnable) throws Throwable {
@@ -287,5 +336,12 @@ public class MigrationThrowingRunnableTest {
 				}
 				"""
 		}, null);
+		} catch (AssertionError failure) {
+			failure.addSuppressed(new AssertionError("Before cleanup:\n" + before //$NON-NLS-1$
+					+ "\nAfter cleanup:\n" + cu.getSource() //$NON-NLS-1$
+					+ "\nResolved classpath:\n" //$NON-NLS-1$
+					+ java.util.Arrays.toString(cu.getJavaProject().getResolvedClasspath(true))));
+			throw failure;
+		}
 	}
 }
