@@ -3,13 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.sandbox.qa</groupId><artifactId>jdt-core-reporting-probe</artifactId><version>1.0.0-SNAPSHOT</version>
   <name>Isolated JDT Core reporting investigation</name>
-  <!-- No parent or product dependency: this is an explicit standalone QA scenario. -->
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
     <surefire.version>3.5.6</surefire.version><junit.version>5.14.3</junit.version>
-    <probe.output>${project.build.directory}/reporting-probe</probe.output>
-    <probe.expectBaseline>false</probe.expectBaseline>
+    <probe.output>${project.build.directory}/reporting-probe</probe.output><probe.expectBaseline>false</probe.expectBaseline>
   </properties>
   <dependencyManagement><dependencies>
     <dependency><groupId>org.junit</groupId><artifactId>junit-bom</artifactId><version>${junit.version}</version><type>pom</type><scope>import</scope></dependency>
@@ -24,7 +22,7 @@
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.14.1</version></plugin>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>${surefire.version}</version>
       <configuration>
-        <includes><include>**/ReportingProbeTest.java</include></includes>
+        <includes><include>**/ReportingProbeTest.java</include><include>**/TychoProbeInstallerTest.java</include></includes>
         <systemPropertyVariables><probe.output>${probe.output}</probe.output><probe.expectBaseline>${probe.expectBaseline}</probe.expectBaseline></systemPropertyVariables>
       </configuration>
     </plugin>
