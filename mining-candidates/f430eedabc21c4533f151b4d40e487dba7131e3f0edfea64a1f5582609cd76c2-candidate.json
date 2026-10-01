@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f430eedabc21c4533f151b4d40e487dba7131e3f0edfea64a1f5582609cd76c2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "($arrayExpression).length \u003e 0\n\u003d\u003e $arrayExpression !\u003d null \u0026\u0026 ($arrayExpression).length \u003e 0\n;;",
+  "beforeExample": "package com.example;\n\nclass MatchFilter {}\nclass SearchResult {\n    MatchFilter[] activeMatchFilters;\n    public MatchFilter[] getActiveMatchFilters() { return activeMatchFilters; }\n}\npublic class TestClass {\n    SearchResult fResult \u003d new SearchResult();\n\n    public void checkFilters() {\n        if (fResult.getActiveMatchFilters().length \u003e 0) {\n            System.out.println(\"Filters active.\");\n        }\n    }\n}",
+  "afterExample": "package com.example;\n\nclass MatchFilter {}\nclass SearchResult {\n    MatchFilter[] activeMatchFilters;\n    public MatchFilter[] getActiveMatchFilters() { return activeMatchFilters; }\n}\npublic class TestClass {\n    SearchResult fResult \u003d new SearchResult();\n\n    public void checkFilters() {\n        if (fResult.getActiveMatchFilters() !\u003d null \u0026\u0026 fResult.getActiveMatchFilters().length \u003e 0) {\n            System.out.println(\"Filters active.\");\n        }\n    }\n}",
+  "negativeExample": "package com.example;\n\npublic class TestClass {\n    String[] array \u003d null;\n    java.util.List\u003cString\u003e list;\n\n    public void noMatch() {\n        if (array \u003d\u003d null || array.length \u003d\u003d 0) { // different condition\n            System.out.println(\"No elements.\");\n        }\n        if (list.size() \u003e 0) { // not an array\u0027s .length property\n            System.out.println(\"List has elements.\");\n        }\n    }\n}",
+  "targetHintFile": "null_safety.sandbox-hint",
+  "sourceCommit": "4a4bc0a1bba046aaf5b11781e09189659a82cda2",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Null Safety",
+  "summary": "Add null check before accessing array.length property to prevent NullPointerException.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-01T02:40:20.155619637Z",
+  "ruleFingerprint": "sha256:98c0f3d5beb74c870177125e50b60141970fa91b83448ac2867ce1739e11ca32",
+  "behaviorFingerprint": "sha256:9bf8d118c9c3ea58c4c02fd3ceb75e0b723a6d11ff9ec836dd670850a4cc38aa",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 8: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-10-01T02:40:30.588167753Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

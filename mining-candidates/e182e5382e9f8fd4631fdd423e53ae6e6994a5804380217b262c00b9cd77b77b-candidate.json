@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e182e5382e9f8fd4631fdd423e53ae6e6994a5804380217b262c00b9cd77b77b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$array1.equals($array2) :: instanceof($array1, \"java.lang.Object[]\")\n\u003d\u003e\njava.util.Arrays.equals($array1, $array2)\n;;",
+  "beforeExample": "import java.util.Objects;\nclass Example {\n    String[] array1 \u003d new String[]{\"a\", \"b\"};\n    String[] array2 \u003d new String[]{\"a\", \"b\"};\n    String text1 \u003d \"hello\";\n    Object obj \u003d new Object();\n\n    void test() {\n        // This should be transformed: comparing array content\n        if (array1.equals(array2)) {\n            System.out.println(\"Array reference equals\");\n        }\n\n        // This should NOT be transformed: comparing a String\n        if (text1.equals(\"world\")) {\n            System.out.println(\"String equals\");\n        }\n\n        // This should NOT be transformed: comparing non-array Object\n        if (obj.equals(array1)) {\n            System.out.println(\"Object equals array\");\n        }\n    }\n}",
+  "afterExample": "import java.util.Arrays;\nimport java.util.Objects;\nclass Example {\n    String[] array1 \u003d new String[]{\"a\", \"b\"};\n    String[] array2 \u003d new String[]{\"a\", \"b\"};\n    String text1 \u003d \"hello\";\n    Object obj \u003d new Object();\n\n    void test() {\n        // This should be transformed: comparing array content\n        if (java.util.Arrays.equals(array1, array2)) {\n            System.out.println(\"Array reference equals\");\n        }\n\n        // This should NOT be transformed: comparing a String\n        if (text1.equals(\"world\")) {\n            System.out.println(\"String equals\");\n        }\n\n        // This should NOT be transformed: comparing non-array Object\n        if (obj.equals(array1)) {\n            System.out.println(\"Object equals array\");\n        }\n    }\n}",
+  "negativeExample": "class Example {\n    String stringArrayAlias1 \u003d \"someString\";\n    String stringArrayAlias2 \u003d \"otherString\";\n    Object object1 \u003d new Object();\n    Object object2 \u003d new Object();\n\n    void test() {\n        // String comparison, not an array\n        if (stringArrayAlias1.equals(stringArrayAlias2)) {\n            System.out.println(\"String comparison\");\n        }\n\n        // Object comparison, not an array\n        if (object1.equals(object2)) {\n            System.out.println(\"Object comparison\");\n        }\n\n        // Primitive arrays do not have an .equals() method that compiles.\n        // int[] primitiveArray1 \u003d {1, 2};\n        // int[] primitiveArray2 \u003d {1, 2};\n        // if (primitiveArray1.equals(primitiveArray2)) { /* ... */ }\n    }\n}",
+  "targetHintFile": "common.sandbox-hint",
+  "sourceCommit": "18765228c599e4e7e157ea3b9221ee45ed434278",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Bug Fix",
+  "summary": "Replace `Object.equals()` on array types with `java.util.Arrays.equals()` for content comparison.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-01T02:40:20.220152723Z",
+  "ruleFingerprint": "sha256:a1cff15a71869ac0ca38ffef244e2fdf3385625d188aad2bde1e76f24c4ad7d4",
+  "behaviorFingerprint": "sha256:c27ab3394ed26db6dfe933b1038cb3272d9351ea17b6974cf9ce21a97696beec",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-10-01T02:40:30.679465666Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

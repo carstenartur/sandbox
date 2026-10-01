@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "8b27903acaa750543f81639a60967e0c3de6d997b8d31b78d05f553ec6dac06a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$expr.getText() :: instanceof($expr, \"org.eclipse.swt.custom.StyledText\")\n\u003d\u003e ($expr \u003d\u003d null) ? \"\" : $expr.getText()\n;;",
+  "beforeExample": "package org.eclipse.ui.internal.views.minimap;\n\nimport org.eclipse.swt.custom.StyledText;\n\npublic class MinimapWidget {\n\n    private StyledText fMinimapTextWidget;\n    private org.eclipse.jface.text.ITextViewer fEditorViewer;\n\n    class InternalListener {\n        void synchText() {\n            StyledText editorTextWidget \u003d fEditorViewer.getTextWidget();\n            // This line can cause NPE if editorTextWidget is null\n            fMinimapTextWidget.setText(editorTextWidget.getText());\n        }\n    }\n\n    // Negative example: A class with a getText() method that is NOT StyledText\n    static class CustomWidget {\n        public String getText() { return \"custom content\"; }\n    }\n    public void testNonStyledText() {\n        CustomWidget widget \u003d new CustomWidget();\n        String content \u003d widget.getText(); // Should not be modified\n        System.out.println(content);\n    }\n}",
+  "afterExample": "package org.eclipse.ui.internal.views.minimap;\n\nimport org.eclipse.swt.custom.StyledText;\n\npublic class MinimapWidget {\n\n    private StyledText fMinimapTextWidget;\n    private org.eclipse.jface.text.ITextViewer fEditorViewer;\n\n    class InternalListener {\n        void synchText() {\n            StyledText editorTextWidget \u003d fEditorViewer.getTextWidget();\n            // The transformation applies here, providing null safety\n            fMinimapTextWidget.setText((editorTextWidget \u003d\u003d null) ? \"\" : editorTextWidget.getText());\n        }\n    }\n\n    // Negative example: A class with a getText() method that is NOT StyledText\n    static class CustomWidget {\n        public String getText() { return \"custom content\"; }\n    }\n    public void testNonStyledText() {\n        CustomWidget widget \u003d new CustomWidget();\n        String content \u003d widget.getText(); // Remains unchanged\n        System.out.println(content);\n    }\n}",
+  "negativeExample": "package org.example;\n\nimport java.awt.Button;\n\npublic class NonStyledTextExample {\n    // A common Button class from AWT, also has getText()\n    private Button button \u003d new Button(\"Click Me\");\n\n    public void processButton() {\n        String buttonText \u003d button.getText(); // Should NOT be transformed, as Button is not StyledText\n        System.out.println(buttonText);\n    }\n\n    // Another arbitrary class with getText()\n    static class GenericObject {\n        public String getText() { return \"generic data\"; }\n    }\n    public void processGenericObject() {\n        GenericObject obj \u003d new GenericObject();\n        String objText \u003d obj.getText(); // Should NOT be transformed\n        System.out.println(objText);\n    }\n}",
+  "targetHintFile": "null-safety.sandbox-hint",
+  "sourceCommit": "c185171f9e21e6c1bd7edfca9a79d27f876ef318",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Null Safety",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-01T02:40:20.124575584Z",
+  "ruleFingerprint": "sha256:26176990c31a581e8f9149590bf700a7f4bdec81b94ac58bebe8cb473442e158",
+  "behaviorFingerprint": "sha256:553249d182b8ee7f31fab31fb5b39fa578f59b9bde7b9fe09aad2ed455e48600",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-01T02:40:30.550414618Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

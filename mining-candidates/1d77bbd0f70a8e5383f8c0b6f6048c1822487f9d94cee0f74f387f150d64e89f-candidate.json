@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1d77bbd0f70a8e5383f8c0b6f6048c1822487f9d94cee0f74f387f150d64e89f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: null-safe-string-compare-gettext\u003e\n\u003c!description: Replace String.compareTo() with a null-safe comparison for results of getText() to prevent NullPointerExceptions.\u003e\n\u003c!severity: WARNING\u003e\n\n$x.getText().compareTo($y.getText()) :: instanceof($x, \"org.eclipse.jface.text.source.Annotation\") \u0026\u0026 instanceof($y, \"org.eclipse.jface.text.source.Annotation\")\n\u003d\u003e\n$x.getText() \u003d\u003d null ? ($y.getText() \u003d\u003d null ? 0 : -1) : ($y.getText() \u003d\u003d null ? 1 : $x.getText().compareTo($y.getText()))\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jface.text.source.Annotation;\n\npublic class TestClass {\n    public int compareAnnotations(Annotation a, Annotation b) {\n        // Original code potentially throwing NPE if a.getText() or b.getText() is null\n        return a.getText().compareTo(b.getText());\n    }\n\n    // Example with nulls to demonstrate NPE\n    public int compareAnnotationsWithNulls() {\n        Annotation a \u003d new Annotation(\"type\", false, null);\n        Annotation b \u003d new Annotation(\"type\", false, \"some text\");\n        return a.getText().compareTo(b.getText()); // This would throw NPE\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jface.text.source.Annotation;\n\npublic class TestClass {\n    public int compareAnnotations(Annotation a, Annotation b) {\n        // Null-safe comparison applied by the rule\n        return a.getText() \u003d\u003d null ? (b.getText() \u003d\u003d null ? 0 : -1) : (b.getText() \u003d\u003d null ? 1 : a.getText().compareTo(b.getText()));\n    }\n\n    // Example with nulls, now handled gracefully\n    public int compareAnnotationsWithNulls() {\n        Annotation a \u003d new Annotation(\"type\", false, null);\n        Annotation b \u003d new Annotation(\"type\", false, \"some text\");\n        return a.getText() \u003d\u003d null ? (b.getText() \u003d\u003d null ? 0 : -1) : (b.getText() \u003d\u003d null ? 1 : a.getText().compareTo(b.getText()));\n    }\n}",
+  "negativeExample": "package test;\n\npublic class TestClass {\n    public int compareDirectStrings(String s1, String s2) {\n        // This method does not call getText() on Annotation objects, so it should not match.\n        return s1.compareTo(s2);\n    }\n\n    public int compareStringLiterals() {\n        // This method does not match the pattern `_._.compareTo(_._)`.\n        return \"literal1\".compareTo(\"literal2\");\n    }\n}",
+  "targetHintFile": "null-safety.sandbox-hint",
+  "sourceCommit": "79055ed98441d36805fb528523e94f1a2577021d",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Null Safety",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-01T02:40:20.140094085Z",
+  "ruleFingerprint": "sha256:7fb76baef72d4c30c2160cc632a867488e7ba5644ab98c72dcbc1665326d8796",
+  "behaviorFingerprint": "sha256:0f7e0d8483f5bf281fdf03037940a3686833a05367faf4c313840afe353d7344",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-01T02:40:30.566625213Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

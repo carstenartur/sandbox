@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "daa12ec54d416b0859620ed768b6d8f1789c3979b53f9111aa777a3b323d1acd",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.junit.Assert.assertFalse($x \u003d\u003d $y)\n\u003d\u003e org.junit.Assert.assertNotEquals($x, $y)\n;;",
+  "beforeExample": "import static org.junit.Assert.assertFalse;\n\npublic class MyTest {\n    public void testInequality() {\n        int a \u003d 1;\n        int b \u003d 2;\n        assertFalse(a \u003d\u003d b);\n    }\n\n    public void testObjectReferenceInequality() {\n        Object obj1 \u003d new Object();\n        Object obj2 \u003d new Object();\n        assertFalse(obj1 \u003d\u003d obj2);\n    }\n}",
+  "afterExample": "import static org.junit.Assert.assertNotEquals;\n\npublic class MyTest {\n    public void testInequality() {\n        int a \u003d 1;\n        int b \u003d 2;\n        assertNotEquals(a, b);\n    }\n\n    public void testObjectReferenceInequality() {\n        Object obj1 \u003d new Object();\n        Object obj2 \u003d new Object();\n        assertNotEquals(obj1, obj2);\n    }\n}",
+  "negativeExample": "import static org.junit.Assert.assertFalse;\nimport static org.junit.Assert.assertTrue;\n\npublic class MyTestNegative {\n    public void testFalseCondition() {\n        boolean condition \u003d false;\n        assertFalse(condition); // Different pattern: assertFalse(boolean)\n    }\n\n    public void testEquality() {\n        int x \u003d 5;\n        int y \u003d 5;\n        assertTrue(x \u003d\u003d y); // Different assertion and pattern\n    }\n\n    public void testOtherComparison() {\n        String s1 \u003d \"hello\";\n        String s2 \u003d \"world\";\n        assertFalse(s1.equals(s2)); // Different comparison method\n    }\n}",
+  "targetHintFile": "junit-asserts.sandbox-hint",
+  "sourceCommit": "aa08c0942a250fbed65a74e24dd828f4f0d5afa6",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "JUnit Assertion Improvement",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-01T02:40:20.109108880Z",
+  "ruleFingerprint": "sha256:cdbe60ba194410a895e5040b583429ebc94ce8ed5a180e96a467050ea45d40ca",
+  "behaviorFingerprint": "sha256:4d7414c2cfdf818def0e1de65a97106f9db955a0c98ce426b93e07a7d8cc4db5",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.junit cannot be resolved",
+    "verifiedAt": "2026-10-01T02:40:30.528499268Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

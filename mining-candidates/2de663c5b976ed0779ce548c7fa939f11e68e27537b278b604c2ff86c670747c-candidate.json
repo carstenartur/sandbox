@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2de663c5b976ed0779ce548c7fa939f11e68e27537b278b604c2ff86c670747c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: stream.sorted.findFirst.to.min\u003e\n\u003c!description: Replace Stream.sorted(Comparator).findFirst() with Stream.min(Comparator) for conciseness and efficiency, as they are semantically equivalent for finding the minimum element.\u003e\n\u003c!severity: HINT\u003e\njava.util.Arrays.stream($array$).sorted($comparator$).findFirst()\n\u003d\u003e\njava.util.Arrays.stream($array$).min($comparator$)\n;;",
+  "beforeExample": "import java.util.Arrays;\nimport java.util.Comparator;\nimport java.util.Optional;\n\npublic class Example {\n    public Optional\u003cString\u003e findSmallest(String[] items) {\n        return Arrays.stream(items)\n                     .sorted(Comparator.comparingInt(String::length))\n                     .findFirst();\n    }\n\n    public Optional\u003cInteger\u003e findMinNumber(Integer[] numbers) {\n        return Arrays.stream(numbers)\n                     .sorted(Comparator.naturalOrder())\n                     .findFirst();\n    }\n}",
+  "afterExample": "import java.util.Arrays;\nimport java.util.Comparator;\nimport java.util.Optional;\n\npublic class Example {\n    public Optional\u003cString\u003e findSmallest(String[] items) {\n        return Arrays.stream(items)\n                     .min(Comparator.comparingInt(String::length));\n    }\n\n    public Optional\u003cInteger\u003e findMinNumber(Integer[] numbers) {\n        return Arrays.stream(numbers)\n                     .min(Comparator.naturalOrder());\n    }\n}",
+  "negativeExample": "import java.util.Arrays;\nimport java.util.Comparator;\nimport java.util.Optional;\n\npublic class Example {\n    public Optional\u003cString\u003e findSmallestButKeepSorted(String[] items) {\n        // Should not match if other operations follow sorted() besides findFirst()\n        return Arrays.stream(items)\n                     .sorted(Comparator.comparingInt(String::length))\n                     .skip(1) // additional operation\n                     .findFirst();\n    }\n\n    public Optional\u003cString\u003e findLargest(String[] items) {\n        // Should not match if using max()\n        return Arrays.stream(items)\n                     .max(Comparator.comparingInt(String::length));\n    }\n\n    public Optional\u003cString\u003e findFirstElement(String[] items) {\n        // Should not match if no sorting is involved\n        return Arrays.stream(items).findFirst();\n    }\n}",
+  "targetHintFile": "stream-api.sandbox-hint",
+  "sourceCommit": "0ccb8d0375e229ef6df62d2a71012d2aeea99c59",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Stream API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-01T02:40:20.002623527Z",
+  "ruleFingerprint": "sha256:a220d749d3b37339a90c665602406c526a8d3cc4267b3242f2fa96b650ad2405",
+  "behaviorFingerprint": "sha256:256a4791665567b8a4ddd02782b5c87785f08861fb9483175dd09b7e7e930d1f",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-01T02:40:30.457426541Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

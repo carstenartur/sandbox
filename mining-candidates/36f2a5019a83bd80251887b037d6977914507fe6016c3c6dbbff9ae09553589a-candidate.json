@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "36f2a5019a83bd80251887b037d6977914507fe6016c3c6dbbff9ae09553589a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n\u003c!id: replace-shell-stream-with-static-helper\u003e\n\u003c!description: Replace stream-based collection of visible shells with a call to the new static helper method AbstractContentAssistTest.getCurrentShells().\u003e\n\u003c!severity: HINT\u003e\n*/\njava.util.Arrays.stream($display$.getShells()).filter(org.eclipse.swt.widgets.Shell::isVisible).collect(java.util.stream.Collectors.toSet())\n\u003d\u003e\norg.eclipse.jface.text.tests.contentassist.AbstractContentAssistTest.getCurrentShells()\n;;",
+  "beforeExample": "package org.eclipse.jface.text.tests.contentassist;\n\nimport java.util.Arrays;\nimport java.util.Collection;\nimport java.util.Set;\nimport java.util.stream.Collectors;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class AsyncContentAssistTest {\n    public void testMethod() {\n        Display display \u003d Display.getDefault();\n        final Set\u003cShell\u003e beforeShells \u003d Arrays.stream(display.getShells()).filter(Shell::isVisible).collect(Collectors.toSet());\n        System.out.println(beforeShells.size());\n    }\n}\n\n// Dummy for compilation, simulating the helper method introduced\nclass AbstractContentAssistTest {\n    public static java.util.List\u003cShell\u003e getCurrentShells() {\n        // In real code, this would return visible shells from the display\n        return java.util.Arrays.asList(Display.getDefault().getShells()); \n    }\n}",
+  "afterExample": "package org.eclipse.jface.text.tests.contentassist;\n\nimport java.util.Arrays;\nimport java.util.Collection;\nimport java.util.Set; // Might be removed by IDE if not used\nimport java.util.List; // Might be added by IDE if not imported\nimport java.util.stream.Collectors; // Might be removed by IDE if not used\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class AsyncContentAssistTest {\n    public void testMethod() {\n        Display display \u003d Display.getDefault();\n        final java.util.List\u003cShell\u003e beforeShells \u003d org.eclipse.jface.text.tests.contentassist.AbstractContentAssistTest.getCurrentShells();\n        System.out.println(beforeShells.size());\n    }\n}\n\n// Dummy for compilation, simulating the helper method introduced\nclass AbstractContentAssistTest {\n    public static java.util.List\u003cShell\u003e getCurrentShells() {\n        // In real code, this would return visible shells from the display\n        return java.util.Arrays.asList(Display.getDefault().getShells()); \n    }\n}",
+  "negativeExample": "package org.eclipse.jface.text.tests.contentassist;\n\nimport java.util.Arrays;\nimport java.util.List;\nimport java.util.stream.Collectors;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class AsyncContentAssistTest {\n    public void testMethod() {\n        Display display \u003d Display.getDefault();\n        // This should not match because it\u0027s filtering differently and collecting to a List\n        final List\u003cShell\u003e allShells \u003d Arrays.stream(display.getShells()).filter(s -\u003e s.getText().contains(\"CustomShell\")).collect(Collectors.toList());\n        System.out.println(allShells.size());\n    }\n}\n\n// Dummy for compilation\nclass AbstractContentAssistTest {\n    public static java.util.List\u003cShell\u003e getCurrentShells() {\n        return java.util.Arrays.asList(Display.getDefault().getShells()); \n    }\n}",
+  "targetHintFile": "test-refactoring.sandbox-hint",
+  "sourceCommit": "9e6b830aa744380cc6cb4b0daf33090a000d8757",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-01T02:40:20.205347265Z",
+  "ruleFingerprint": "sha256:b5a78e4d02178e29af115571457fea04db5267ee4b764ed56b58428d4822914f",
+  "behaviorFingerprint": "sha256:e955b0ec05cce7f4187897a70750324c2799a6e1cc2a5fb651a2b312ecae7328",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-01T02:40:30.653166348Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

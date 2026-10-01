@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6abbaa5e1a5f7d71f38070fd729bf352faaba40ce69a7bee23f4369743592434",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$stream.collect(java.util.stream.Collectors.toList()) :: sourceVersionGE(16)\n\u003d\u003e $stream.toList()\n;;",
+  "beforeExample": "import java.util.Arrays;\nimport java.util.List;\nimport java.util.stream.Collectors;\nimport java.util.stream.Stream;\n\npublic class Example {\n    public List\u003cString\u003e oldMethod(String[] items) {\n        return Arrays.stream(items)\n                     .map(String::trim)\n                     .collect(Collectors.toList());\n    }\n\n    public List\u003cInteger\u003e anotherMethod(Stream\u003cInteger\u003e s) {\n        return s.collect(Collectors.toList());\n    }\n}",
+  "afterExample": "import java.util.Arrays;\nimport java.util.List;\nimport java.util.stream.Stream;\n\npublic class Example {\n    public List\u003cString\u003e oldMethod(String[] items) {\n        return Arrays.stream(items)\n                     .map(String::trim)\n                     .toList();\n    }\n\n    public List\u003cInteger\u003e anotherMethod(Stream\u003cInteger\u003e s) {\n        return s.toList();\n    }\n}",
+  "negativeExample": "import java.util.Arrays;\nimport java.util.List;\nimport java.util.stream.Collectors;\n\n// This example should NOT match if project source version is below 16.\n// For illustration, imagine a project configured for Java 11.\npublic class NegativeExample {\n    public List\u003cString\u003e legacyMethod(String[] items) {\n        // Stream.toList() is not available in Java 11.\n        return Arrays.stream(items).collect(Collectors.toList());\n    }\n\n    public List\u003cString\u003e otherCollector(String[] items) {\n        // Should not match other collectors\n        return Arrays.stream(items).collect(Collectors.toSet());\n    }\n\n    public List\u003cString\u003e otherMethodCall(String[] items) {\n        // Should not match other method calls on stream\n        return Arrays.stream(items).distinct().collect(Collectors.toList());\n    }\n}",
+  "targetHintFile": "modernize-java16.sandbox-hint",
+  "sourceCommit": "ace2db2cefa14d47e51a94e536c1827229f1bbcd",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Java 16 Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-01T02:40:20.090137834Z",
+  "ruleFingerprint": "sha256:754b4df444e26b27d1b2f329af4cfda6727d40bdc236469989d227811e5e8d1c",
+  "behaviorFingerprint": "sha256:56a5867a211fa7253ab79f7ee3813959ae47fcc8b4b0f19cb72d60ab8aad4cc5",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-01T02:40:30.506787304Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
