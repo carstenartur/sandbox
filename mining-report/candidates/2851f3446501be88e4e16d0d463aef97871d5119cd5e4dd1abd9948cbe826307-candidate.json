@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2851f3446501be88e4e16d0d463aef97871d5119cd5e4dd1abd9948cbe826307",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n\u003c!id: eclipse.jface.text.async-popup-hide-condition\u003e\n\u003c!description: Update the condition for hiding the async completion popup to include checking if proposals are available, aligning with fix for #183 revert.\u003e\n\u003c!severity: HINT\u003e\n*/\nisValid($shell$) \u0026\u0026 $shell$.isVisible() \u0026\u0026 $remaining$.get() \u003d\u003d 0\n\u003d\u003e\nisValid($shell$) \u0026\u0026 (!$shell$.isVisible() || !hasProposals) \u0026\u0026 $remaining$.get() \u003d\u003d 0\n;;",
+  "beforeExample": "package org.eclipse.jface.text.contentassist;\n\nimport org.eclipse.swt.widgets.Shell;\nimport java.util.concurrent.atomic.AtomicInteger;\n\npublic class AsyncCompletionProposalPopup {\n    private Shell fProposalShell;\n    \n    // Assume this is a method within AsyncCompletionProposalPopup\n    // or an anonymous class within it\n    public void someMethod(boolean hasProposals, AtomicInteger remaining) {\n        // ...\n        if (CompletionProposalPopup.isValid(fProposalShell) \u0026\u0026 fProposalShell.isVisible() \u0026\u0026 remaining.get() \u003d\u003d 0) {\n            hide();\n        }\n        // ...\n    }\n\n    private void hide() { /* ... */ }\n\n    // Dummy isValid for compilation\n    private static class CompletionProposalPopup {\n        static boolean isValid(Shell shell) { return shell !\u003d null \u0026\u0026 !shell.isDisposed(); }\n    }\n}",
+  "afterExample": "package org.eclipse.jface.text.contentassist;\n\nimport org.eclipse.swt.widgets.Shell;\nimport java.util.concurrent.atomic.AtomicInteger;\n\npublic class AsyncCompletionProposalPopup {\n    private Shell fProposalShell;\n    \n    // Assume this is a method within AsyncCompletionProposalPopup\n    // or an anonymous class within it\n    public void someMethod(boolean hasProposals, AtomicInteger remaining) {\n        // ...\n        if (CompletionProposalPopup.isValid(fProposalShell) \u0026\u0026 (!fProposalShell.isVisible() || !hasProposals) \u0026\u0026 remaining.get() \u003d\u003d 0) {\n            hide();\n        }\n        // ...\n    }\n\n    private void hide() { /* ... */ }\n    \n    // Dummy isValid for compilation\n    private static class CompletionProposalPopup {\n        static boolean isValid(Shell shell) { return shell !\u003d null \u0026\u0026 !shell.isDisposed(); }\n    }\n}",
+  "negativeExample": "package org.eclipse.jface.text.contentassist;\n\nimport org.eclipse.swt.widgets.Shell;\nimport java.util.concurrent.atomic.AtomicInteger;\n\npublic class AsyncCompletionProposalPopup {\n    private Shell fProposalShell;\n    \n    public void someOtherMethod(boolean hasProposals, AtomicInteger remaining) {\n        // This condition should not be affected as it\u0027s structurally different\n        if (CompletionProposalPopup.isValid(fProposalShell) \u0026\u0026 fProposalShell.isVisible() \u0026\u0026 (remaining.get() \u003e 0 || hasProposals)) {\n            // some other action\n        }\n    }\n\n    private void hide() { /* ... */ }\n\n    private static class CompletionProposalPopup {\n        static boolean isValid(Shell shell) { return shell !\u003d null \u0026\u0026 !shell.isDisposed(); }\n    }\n}",
+  "targetHintFile": "eclipse-jface-text.sandbox-hint",
+  "sourceCommit": "44c55d55654bb21a4318c3f3be401fb533eebbae",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Conditional Logic Refinement",
+  "summary": "Updates a boolean condition in an \u0027if\u0027 statement to incorporate an additional \u0027OR\u0027 clause with a boolean variable.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-01T02:40:20.189634781Z",
+  "ruleFingerprint": "sha256:a8935e02274f4cf38bac06a827550dcb077b9a7626ac1eafe5c2c4cb4cabb8d9",
+  "behaviorFingerprint": "sha256:b9ccf7e784bb2e8248345d77e665c762a9dd651b401b72b5639d4d36701d2219",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-01T02:40:30.629302706Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

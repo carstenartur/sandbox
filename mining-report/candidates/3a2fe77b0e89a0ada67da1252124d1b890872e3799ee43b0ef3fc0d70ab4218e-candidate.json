@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3a2fe77b0e89a0ada67da1252124d1b890872e3799ee43b0ef3fc0d70ab4218e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: junit.assert.assertTrue.identity.to.assert_same\u003e\n\u003c!description: Replace JUnit Assert.assertTrue(message, x \u003d\u003d y) with Assert.assertSame(message, y, x) for reference equality checks, improving clarity and adhering to JUnit\u0027s idiomatic assert methods.\u003e\n\u003c!severity: HINT\u003e\norg.junit.Assert.assertTrue($message$, $var1$ \u003d\u003d $var2$) :: instanceof($var1$, \"java.lang.Object\") \u0026\u0026 instanceof($var2$, \"java.lang.Object\")\n\u003d\u003e\norg.junit.Assert.assertSame($message$, $var2$, $var1$)\n;;",
+  "beforeExample": "import org.junit.Assert;\n\npublic class MyTest {\n    static class MyObject {}\n\n    @org.junit.Test\n    public void testReferences() {\n        MyObject obj1 \u003d new MyObject();\n        MyObject obj2 \u003d obj1;\n        MyObject obj3 \u003d new MyObject();\n\n        // This will be transformed\n        Assert.assertTrue(\"Obj1 and Obj2 should be same object\", obj1 \u003d\u003d obj2);\n        // This will also be transformed because it matches the pattern and guard\n        Assert.assertTrue(\"Obj1 and Obj3 should not be same object\", obj1 \u003d\u003d obj3);\n    }\n}",
+  "afterExample": "import org.junit.Assert;\n\npublic class MyTest {\n    static class MyObject {}\n\n    @org.junit.Test\n    public void testReferences() {\n        MyObject obj1 \u003d new MyObject();\n        MyObject obj2 \u003d obj1;\n        MyObject obj3 \u003d new MyObject();\n\n        // Transformed\n        Assert.assertSame(\"Obj1 and Obj2 should be same object\", obj2, obj1);\n        // Transformed\n        Assert.assertSame(\"Obj1 and Obj3 should not be same object\", obj3, obj1);\n    }\n}",
+  "negativeExample": "import org.junit.Assert;\n\npublic class NegativeTest {\n    @org.junit.Test\n    public void testPrimitives() {\n        int a \u003d 5;\n        int b \u003d 5;\n        // This should NOT match because a and b are primitives, failing the instanceof Object guard\n        Assert.assertTrue(\"Primitive values should be equal\", a \u003d\u003d b);\n    }\n\n    @org.junit.Test\n    public void testBooleanCondition() {\n        boolean condition \u003d true;\n        // This should NOT match as it\u0027s not an identity comparison using \u0027\u003d\u003d\u0027 operator on two variables\n        Assert.assertTrue(\"Condition should be true\", condition);\n    }\n\n    @org.junit.Test\n    public void testEqualsNotIdentity() {\n        String s1 \u003d \"hello\";\n        String s2 \u003d new String(\"hello\");\n        // This should NOT match because it uses .equals(), not \u0027\u003d\u003d\u0027\n        Assert.assertTrue(\"Strings should be equal\", s1.equals(s2));\n    }\n\n    @org.junit.Test\n    public void testAnotherAssertMethod() {\n        // Should not match if it\u0027s not assertTrue\n        Assert.assertFalse(\"Should be false\", 1 \u003d\u003d 2);\n    }\n}",
+  "targetHintFile": "junit-asserts.sandbox-hint",
+  "sourceCommit": "71cf8c12b27e1001c644ff77498e3216f126fda2",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "JUnit Assert Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-01T02:40:20.061118928Z",
+  "ruleFingerprint": "sha256:1b774817f9aa06b3938c1fbc468dd73acb48aca106a4bd2d079d16c5da9fb640",
+  "behaviorFingerprint": "sha256:dfee993702842cfb8e67ed8bee071006b3cbe43ce3a0f04d06e12a52efdc3c97",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-01T02:40:30.473944419Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

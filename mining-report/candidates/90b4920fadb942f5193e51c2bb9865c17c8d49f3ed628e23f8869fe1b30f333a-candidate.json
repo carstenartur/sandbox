@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "90b4920fadb942f5193e51c2bb9865c17c8d49f3ed628e23f8869fe1b30f333a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.jface.text.AbstractInformationControl($parentShell, $statusFieldText)\n\u003d\u003e new org.eclipse.jface.text.AbstractInformationControl($parentShell, $statusFieldText, true)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.AbstractInformationControl;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyControl extends AbstractInformationControl {\n    public MyControl(Shell parentShell) {\n        super(parentShell, \"Status Text\");\n        create(); // Required by constructor Javadoc\n    }\n\n    @Override\n    protected void createContent(org.eclipse.swt.widgets.Composite parent) {\n        // implementation\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.AbstractInformationControl;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyControl extends AbstractInformationControl {\n    public MyControl(Shell parentShell) {\n        super(parentShell, \"Status Text\", true);\n        create(); // Required by constructor Javadoc\n    }\n\n    @Override\n    protected void createContent(org.eclipse.swt.widgets.Composite parent) {\n        // implementation\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.AbstractInformationControl;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyOtherControl extends AbstractInformationControl {\n    public MyOtherControl(Shell parentShell) {\n        // This call explicitly uses the new constructor with resizable\u003dfalse\n        super(parentShell, \"Another Status Text\", false);\n        create();\n    }\n\n    @Override\n    protected void createContent(org.eclipse.swt.widgets.Composite parent) {\n        // implementation\n    }\n}",
+  "targetHintFile": "eclipse-jface-text.sandbox-hint",
+  "sourceCommit": "32edcb0c5bd1448f1175dfc6b39d85ad55cfba6f",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Migration",
+  "summary": "Migrate `AbstractInformationControl` two-argument constructor call to the new three-argument constructor with `resizable\u003dtrue` to preserve its original (pre-API change) resizable behavior.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-01T02:40:20.170870065Z",
+  "ruleFingerprint": "sha256:e219dbe861536cf1957a72583f459083c63602d0a44baab94fa07c4f999f6937",
+  "behaviorFingerprint": "sha256:31124f7709a719e86029d922cd4e58289c92e428001701056ebbccdb2d4aee12",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.text.AbstractInformationControl cannot be resolved",
+    "verifiedAt": "2026-10-01T02:40:30.609208056Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
