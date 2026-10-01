@@ -965,7 +965,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java9.unmodifiable-list-arrays-aslist.consider-list-of",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java",
-      "line": 356,
+      "line": 359,
       "matchedCode": "Collections.unmodifiableList(Arrays.asList(\"Spacer Glue\",\"SearchField\",\"Search-PS Glue\"))"
     },
     {

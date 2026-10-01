@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-09-30
+# Refactoring Mining Report — 2026-10-01
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -160,7 +160,7 @@
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CoolBarToTrimManager.java:313` — `workbenchTrimElements.stream().filter(e -> e instanceof MToolBar).map(e -> (M...`
 
 #### Rule: `modernize-java9` → `modernize-java9.unmodifiable-list-arrays-aslist.consider-list-of`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java:356` — `Collections.unmodifiableList(Arrays.asList("Spacer Glue","SearchField","Searc...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java:359` — `Collections.unmodifiableList(Arrays.asList("Spacer Glue","SearchField","Searc...`
 
 ### eclipse.platform
 #### Rule: `stream-performance` → `stream-performance.sorted-before-collect.review`
