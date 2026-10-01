@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "2e817994b682605c65bbb096138c052d833d7e47",
-      "lastProcessedDate": "2026-09-30T02:34:47.658969214Z",
-      "totalProcessed": 360,
+      "lastProcessedCommit": "edce3c197a2ea1d88e29d9af9628cd20ca2c53c3",
+      "lastProcessedDate": "2026-10-01T02:40:15.654234217Z",
+      "totalProcessed": 432,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -4283,6 +4283,69 @@
           "deferredAt": "2026-09-30T02:34:05.797787767Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "4e693fc90d649e5463f657dad3fa83ec7e98e9d1",
+          "message": "Revert \"InlinedAnnotationSupport.findExistingAnnotation() performance issues with a lot of inlined annotations and a lot",
+          "diffLines": 113,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-01T02:31:52.389015939Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "01906e9811dcfde3a1c1a995230c4ef5dd0a216b",
+          "message": "Test fix: focus shell before focusing button\n\nAfter https://github.com/eclipse-platform/eclipse.platform.swt/pull/451\nfo",
+          "diffLines": 26,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-01T02:31:52.389416792Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2929fd09d09f915807618019553f3f261a35ead7",
+          "message": "Revert \"Test fix: focus shell before focusing button\"\n\nThis reverts commit 01906e9811dcfde3a1c1a995230c4ef5dd0a216b as t",
+          "diffLines": 13,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-01T02:31:52.389462060Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8c09461a0e047d76b6a068876de1de5114acc321",
+          "message": "Fix problem with empty code minings being shown\n\n- fix CodeMiningLineHeaderAnnotation to add check for mining label bein",
+          "diffLines": 21,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-01T02:31:52.389493137Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0474b012fb59d067e9acab59e654942ba7345c02",
+          "message": "Add filtering support for duplicate files in nested projects (#144)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-01T02:33:13.651829047Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5fecb46432a09037d6f97446bf8f32819ed25928",
+          "message": "Delete EncodingActionGroup and friends",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-01T02:34:22.476979292Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "90b4304b80450e4dd0178bbb7c909f2163dad670",
+          "message": "Use patternmatching in o.e.ui.editors",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-01T02:34:35.074887974Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -4293,9 +4356,9 @@
       "categoryHitCounts": {
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
-        "Null Safety": 1,
-        "API Modernization": 8,
-        "Performance": 4,
+        "Null Safety": 4,
+        "API Modernization": 9,
+        "Performance": 5,
         "Redundant Code": 3,
         "API Misuse Correction": 1,
         "Lambda to Method Reference": 1,
@@ -4309,7 +4372,7 @@
         "Deprecation": 2,
         "API Usage": 1,
         "JUnit Assertion": 1,
-        "API Migration": 1,
+        "API Migration": 2,
         "Configuration Default Update": 1,
         "API Deprecation": 1,
         "String API Usage": 1,
@@ -4323,7 +4386,14 @@
         "Defensive Programming": 1,
         "String Literal Replacement": 1,
         "Condition Improvement": 1,
-        "Readability": 1
+        "Readability": 1,
+        "Stream API Modernization": 1,
+        "JUnit Assert Modernization": 1,
+        "Java 16 Modernization": 1,
+        "JUnit Assertion Improvement": 1,
+        "Structural Refactoring": 1,
+        "Conditional Logic Refinement": 1,
+        "Bug Fix": 1
       },
       "exhaustedCategories": []
     },
@@ -4340,5 +4410,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52068
+  "globalTotalProcessed": 52140
 }
