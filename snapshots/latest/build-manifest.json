@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-29T21:00:37.750043+00:00",
+  "generated_at": "2026-10-01T05:28:19.538482+00:00",
   "repository": "carstenartur/sandbox",
-  "commit_sha": "53f190fb2666fb87a597d7261def08a448567a57",
-  "commit_url": "https://github.com/carstenartur/sandbox/commit/53f190fb2666fb87a597d7261def08a448567a57",
+  "commit_sha": "57bee2541b523cad0bd5c1a9aed37bc803232f59",
+  "commit_url": "https://github.com/carstenartur/sandbox/commit/57bee2541b523cad0bd5c1a9aed37bc803232f59",
   "ref": "refs/heads/main",
   "event_name": "workflow_run",
   "provenance_workflow": {
     "name": "Deploy Snapshot to GitHub Pages",
-    "run_id": "36623976694",
-    "run_number": "730",
+    "run_id": "36815731451",
+    "run_number": "731",
     "run_attempt": "1",
-    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/36623976694",
-    "source_java_ci_run_id": "36619377769",
-    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/36619377769"
+    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/36815731451",
+    "source_java_ci_run_id": "36813696947",
+    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/36813696947"
   },
   "toolchain": {
     "project_version": "1.3.6-SNAPSHOT",
@@ -44,16 +44,16 @@
   "tests": {
     "inventory": {
       "total_modules": 17,
-      "total_tests": 2883,
-      "enabled_tests": 2853,
+      "total_tests": 2906,
+      "enabled_tests": 2876,
       "disabled_tests": 30
     },
     "executed": {
-      "tests": 4440,
+      "tests": 4571,
       "failures": 0,
       "errors": 0,
       "skipped": 11,
-      "report_files": 485
+      "report_files": 493
     }
   },
   "artifacts": {
@@ -70,42 +70,42 @@
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-linux.gtk.x86_64.tar.gz",
-        "size_bytes": 180770821,
-        "sha256": "dc0f36fa9d91fdc650a17b954a24ffe22e1a18c510ac8e04dfdee6fb69d0844f"
+        "size_bytes": 180800261,
+        "sha256": "18c28bf42113f73822aa1595bf06e4ad1e5edffb3522e0e11a01238e86abb566"
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-macosx.cocoa.x86_64.tar.gz",
-        "size_bytes": 181555853,
-        "sha256": "b7e41a6f46f4c063846a63426dc7287a908ab5b3f27f0fb78e376fc72f46701f"
+        "size_bytes": 181580103,
+        "sha256": "901cdbe3f3f513cf3db523fe2367ee3b63e9d1dd523caa40ae8353ea9a52c3ee"
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-win32.win32.x86_64.zip",
-        "size_bytes": 182387638,
-        "sha256": "9d4b37f2ed5846dede61deb0352512eb4f9cf14fc30cea8775b0eccbb2c2fa3a"
+        "size_bytes": 182409439,
+        "sha256": "a1601bee77594a377cfaeb2d4e9fefe937a94a0e1b9645d6280d50b4337a4816"
       }
     ],
     "product_tree": {
       "path": "sandbox_product/target/products",
       "file_count": 4443,
-      "total_bytes": 1169505889,
-      "sha256_tree": "22851f8919329882f053efa6dc8d8ca96fde51c5e301cd61eb6209e8ae326e26"
+      "total_bytes": 1169653176,
+      "sha256_tree": "670c0b0db51490a5740f5951da57210b99b6e96181175c4f549b1640388b71ac"
     },
     "product_status": "built",
     "update_site": {
       "path": "sandbox_updatesite/target/repository",
       "file_count": 55,
-      "total_bytes": 5287046,
-      "sha256_tree": "7a83244d457e3cb729e121251d78130ab893e0ac328d322bfd82d0915fc1d686",
+      "total_bytes": 5312602,
+      "sha256_tree": "f7097cb81038f408835016efd679e713b592c652faf640021cf5abe7ae386df0",
       "metadata": [
         {
           "path": "sandbox_updatesite/target/repository/artifacts.jar",
-          "size_bytes": 8652,
-          "sha256": "77247cf10393eac3ba3beb633be56eb34854c0f7f5d2ee1d13737446fe726dc9"
+          "size_bytes": 8685,
+          "sha256": "d29d9e7fe985394afe2a5f451348d75c0e98341c98e3acbc2068af5ff53fb09e"
         },
         {
           "path": "sandbox_updatesite/target/repository/content.jar",
-          "size_bytes": 36196,
-          "sha256": "759de49778b3747354b022664488fcc0044835fb393212bb7134e0b7ceb7ffce"
+          "size_bytes": 37481,
+          "sha256": "271f5bdc50fa94f458381626de968804af329e460d86db6e8451ef6884d7d3a5"
         }
       ]
     },
