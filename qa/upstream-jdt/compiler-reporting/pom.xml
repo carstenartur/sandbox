@@ -22,7 +22,7 @@
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.14.1</version></plugin>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>${surefire.version}</version>
       <configuration>
-        <includes><include>**/ReportingProbeTest.java</include><include>**/TychoProbeInstallerTest.java</include></includes>
+        <includes><include>**/ReportingProbeTest.java</include><include>**/TychoProbeInstallerTest.java</include><include>**/ExecutionLedgerTest.java</include></includes>
         <systemPropertyVariables><probe.output>${probe.output}</probe.output><probe.expectBaseline>${probe.expectBaseline}</probe.expectBaseline></systemPropertyVariables>
       </configuration>
     </plugin>

@@ -46,6 +46,35 @@ public class TychoProbeInstallerTest {
                 Map.of("a/A.class", bytes("original")), Map.of()));
         assertFalse(Files.exists(temp.resolve("missing.jar.baseline")));
     }
+    @Test void ledgerInstallationPreservesStockAdapterAndExistingListeners() throws Exception {
+        Path repo = Files.createDirectory(temp.resolve("isolated"));
+        Files.writeString(repo.resolve(".sandbox-reporting-investigation"), "bb86061a7a8d0c3ee4d02f358cf30be6e3e6ae4e\n");
+        String bundle = "org.eclipse.tycho.surefire.junit5";
+        Path dest = Files.createDirectories(repo.resolve("org/eclipse/tycho/" + bundle + "/5.0.4"));
+        String adapter = "org/apache/maven/surefire/junitplatform/RunListenerAdapter.class";
+        String service = "META-INF/services/org.junit.platform.launcher.TestExecutionListener";
+        Path runtime = jar("ledger-runtime.jar", Map.of(adapter, "original", service, "example.ExistingListener\n"));
+        java.nio.file.Files.move(runtime, dest.resolve(bundle + "-5.0.4.jar"));
+        Path stock = Files.createDirectory(temp.resolve("stock"));
+        Files.move(jar("stock.jar", Map.of(adapter, "original")), stock.resolve("surefire-junit-platform-3.5.6.jar"));
+        Path classes = Files.createDirectory(temp.resolve("classes"));
+        String ledger = "org/sandbox/qa/reporting/ExecutionLedger.class";
+        Files.createDirectories(classes.resolve(ledger).getParent());
+        Files.writeString(classes.resolve(ledger), "ledger-bytecode");
+        TychoProbeInstaller.main(new String[]{repo.toString(), classes.toString(), stock.toString(), temp.resolve("evidence").toString(), "LEDGER"});
+        Path installed = dest.resolve(bundle + "-5.0.4.jar");
+        try (JarFile result = new JarFile(installed.toFile())) {
+            assertEquals("original", new String(result.getInputStream(result.getJarEntry(adapter)).readAllBytes(), StandardCharsets.UTF_8));
+            assertEquals("example.ExistingListener\norg.sandbox.qa.reporting.ExecutionLedger\n",
+                    new String(result.getInputStream(result.getJarEntry(service)).readAllBytes(), StandardCharsets.UTF_8));
+            assertNotNull(result.getJarEntry(ledger));
+        }
+        assertTrue(Files.isRegularFile(installed.resolveSibling(installed.getFileName() + ".unmonitored")));
+        assertFalse(Files.exists(installed.resolveSibling(installed.getFileName() + ".baseline")), "Reporter patch must retain its separate baseline slot");
+        byte[] installedBytes = Files.readAllBytes(installed);
+        assertThrows(IllegalStateException.class, () -> TychoProbeInstaller.main(new String[]{repo.toString(), classes.toString(), stock.toString(), temp.resolve("evidence").toString(), "LEDGER"}));
+        assertArrayEquals(installedBytes, Files.readAllBytes(installed));
+    }
     private Path jar(String name, Map<String,String> entries) throws Exception {
         Path file = temp.resolve(name);
         try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(file))) {
