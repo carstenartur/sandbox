@@ -106,7 +106,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 	}
 
 	public boolean hasCoordinatedChanges() {
-<span class="pc bpc" id="L109" title="2 of 4 branches missed.">		return !externalResourceRules.isEmpty() || !junit3Hierarchies.isEmpty()</span>
+<span class="pc bpc" id="L109" title="1 of 4 branches missed.">		return !externalResourceRules.isEmpty() || !junit3Hierarchies.isEmpty()</span>
 <span class="fc bfc" id="L110" title="All 2 branches covered.">				|| preparedParameterizedPlans.stream().anyMatch(JUnit4ParameterizedPlan::executable);</span>
 	}
 
@@ -168,7 +168,7 @@ public record JUnitMigrationPlan(SelectedCompilationUnitPlan selectedScope,
 		}
 <span class="fc" id="L169">		nodesProcessed.addAll(resolved.fields().keySet());</span>
 <span class="fc" id="L170">		nodesProcessed.addAll(resolved.resourceTypes().keySet());</span>
-<span class="fc" id="L171">		operations.add(new JUnitMultiFileRewriteOperation(resolved));</span>
+<span class="fc" id="L171">		operations.add(new JUnitMultiFileRewriteOperation(resolved, junit4CompatibleExternalResourceTypes));</span>
 <span class="fc" id="L172">	}</span>
 
 	private void addJUnit3HierarchyOperations(ICompilationUnit unit, String unitHandle, CompilationUnit root,

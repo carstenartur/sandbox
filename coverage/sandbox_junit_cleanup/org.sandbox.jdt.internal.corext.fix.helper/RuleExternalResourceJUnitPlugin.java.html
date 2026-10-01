@@ -84,18 +84,18 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 <span class="nc" id="L84">			return false;</span>
 		}
 <span class="fc" id="L86">		String qualifiedName= binding.getErasure().getQualifiedName();</span>
-<span class="pc bpc" id="L87" title="1 of 4 branches missed.">		return !DEDICATED_RULE_TYPES.contains(qualifiedName) &amp;&amp; isExternalResourceHierarchy(binding);</span>
+<span class="fc bfc" id="L87" title="All 4 branches covered.">		return !DEDICATED_RULE_TYPES.contains(qualifiedName) &amp;&amp; isExternalResourceHierarchy(binding);</span>
 	}
 
 	private static boolean isExternalResourceHierarchy(ITypeBinding binding) {
 <span class="fc" id="L91">		ITypeBinding current= binding.getErasure();</span>
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">		while (current != null) {</span>
 <span class="fc bfc" id="L93" title="All 2 branches covered.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getQualifiedName())) {</span>
 <span class="fc" id="L94">				return true;</span>
 			}
 <span class="fc" id="L96">			current= current.getSuperclass();</span>
 		}
-<span class="nc" id="L98">		return false;</span>
+<span class="fc" id="L98">		return false;</span>
 	}
 
 	@Override

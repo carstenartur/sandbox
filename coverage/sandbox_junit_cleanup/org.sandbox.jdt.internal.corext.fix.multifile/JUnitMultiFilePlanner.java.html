@@ -122,20 +122,20 @@ public final class JUnitMultiFilePlanner {
 	public static MultiFileCleanUpPlanResult&lt;JUnitMigrationPlan&gt; create(IJavaProject project,
 			ICompilationUnit[] selectedUnits, boolean migrateExternalResourceRules, IProgressMonitor monitor)
 			throws CoreException {
-<span class="nc" id="L125">		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);</span>
-<span class="nc bnc" id="L126" title="All 4 branches missed.">		if (!migrateExternalResourceRules || selectedUnits.length == 0) {</span>
+<span class="fc" id="L125">		SelectedCompilationUnitPlan selectedScope= SelectedCompilationUnitPlan.of(project, selectedUnits);</span>
+<span class="pc bpc" id="L126" title="2 of 4 branches missed.">		if (!migrateExternalResourceRules || selectedUnits.length == 0) {</span>
 <span class="nc" id="L127">			return MultiFileCleanUpPlanResult.success(emptyPlan(selectedScope));</span>
 		}
-<span class="nc bnc" id="L129" title="All 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="pc bpc" id="L129" title="3 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
 <span class="nc" id="L130">			throw new OperationCanceledException();</span>
 		}
-<span class="nc" id="L132">		List&lt;ICompilationUnit&gt; allProjectUnits= JavaProjectCompilationUnits.collect(project);</span>
-<span class="nc" id="L133">		Set&lt;String&gt; projectHandles= new LinkedHashSet&lt;&gt;();</span>
-<span class="nc bnc" id="L134" title="All 2 branches missed.">		for (ICompilationUnit unit : allProjectUnits) {</span>
-<span class="nc" id="L135">			projectHandles.add(unit.getPrimary().getHandleIdentifier());</span>
+<span class="fc" id="L132">		List&lt;ICompilationUnit&gt; allProjectUnits= JavaProjectCompilationUnits.collect(project);</span>
+<span class="fc" id="L133">		Set&lt;String&gt; projectHandles= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		for (ICompilationUnit unit : allProjectUnits) {</span>
+<span class="fc" id="L135">			projectHandles.add(unit.getPrimary().getHandleIdentifier());</span>
 		}
-<span class="nc" id="L137">		return create(project, selectedUnits, true,</span>
-<span class="nc" id="L138">				selectedScope.compilationUnitHandles().equals(projectHandles), monitor);</span>
+<span class="fc" id="L137">		return create(project, selectedUnits, true,</span>
+<span class="fc" id="L138">				selectedScope.compilationUnitHandles().equals(projectHandles), monitor);</span>
 	}
 
 	/** Compatibility entry point for ExternalResource-only closed-scope planning. */
@@ -170,7 +170,7 @@ public final class JUnitMultiFilePlanner {
 <span class="pc bpc" id="L170" title="1 of 4 branches missed.">		if (!options.hasPlanningWork() || selectedUnits.length == 0) {</span>
 <span class="fc" id="L171">			return MultiFileCleanUpPlanResult.success(emptyPlan(selectedScope));</span>
 		}
-<span class="pc bpc" id="L173" title="2 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
+<span class="pc bpc" id="L173" title="1 of 4 branches missed.">		if (monitor != null &amp;&amp; monitor.isCanceled()) {</span>
 <span class="nc" id="L174">			throw new OperationCanceledException();</span>
 		}
 <span class="fc" id="L176">		List&lt;ICompilationUnit&gt; allProjectUnits= JavaProjectCompilationUnits.collect(project);</span>
@@ -219,7 +219,7 @@ public final class JUnitMultiFilePlanner {
 <span class="fc bfc" id="L219" title="All 2 branches covered.">				options.diagnoseParameterizedCandidates()</span>
 <span class="fc" id="L220">						? JUnit4ParameterizedPlanner.discover(rootsByHandle, parameterizedSnapshots, closedScope,</span>
 <span class="fc bfc" id="L221" title="All 2 branches covered.">								options.executeParameterizedPlans()</span>
-<span class="fc bfc" id="L222" title="All 2 branches covered.">										&amp;&amp; project.findType(&quot;org.junit.jupiter.params.ParameterizedClass&quot;) != null, monitor) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">										&amp;&amp; project.findType(&quot;org.junit.jupiter.params.ParameterizedClass&quot;) != null, monitor) //$NON-NLS-1$</span>
 <span class="fc" id="L223">						: new JUnit4ParameterizedPlanner.Result(List.of(), List.of());</span>
 
 <span class="fc bfc" id="L225" title="All 2 branches covered.">		if (!closedScope) {</span>
@@ -481,7 +481,7 @@ public final class JUnitMultiFilePlanner {
 <span class="fc" id="L481">			return true;</span>
 		}
 <span class="fc bfc" id="L483" title="All 2 branches covered.">		for (MethodDeclaration method : node.getMethods()) {</span>
-<span class="pc bpc" id="L484" title="1 of 4 branches missed.">			if (!method.isConstructor() &amp;&amp; method.parameters().isEmpty()) {</span>
+<span class="fc bfc" id="L484" title="All 4 branches covered.">			if (!method.isConstructor() &amp;&amp; method.parameters().isEmpty()) {</span>
 <span class="fc" id="L485">				String name= method.getName().getIdentifier();</span>
 <span class="pc bpc" id="L486" title="1 of 4 branches missed.">				if (&quot;before&quot;.equals(name) || &quot;after&quot;.equals(name)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L487">					return true;</span>
@@ -501,7 +501,7 @@ public final class JUnitMultiFilePlanner {
 <span class="fc bfc" id="L501" title="All 2 branches covered.">				if (ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {</span>
 <span class="fc" id="L502">					return RuleKind.INSTANCE;</span>
 				}
-<span class="pc bpc" id="L504" title="1 of 2 branches missed.">				if (ORG_JUNIT_CLASS_RULE.equals(binding.getQualifiedName())) {</span>
+<span class="fc bfc" id="L504" title="All 2 branches covered.">				if (ORG_JUNIT_CLASS_RULE.equals(binding.getQualifiedName())) {</span>
 <span class="fc" id="L505">					return RuleKind.CLASS;</span>
 				}
 			}

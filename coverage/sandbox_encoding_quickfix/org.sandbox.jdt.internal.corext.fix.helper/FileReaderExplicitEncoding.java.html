@@ -102,20 +102,21 @@ import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewr
 <span class="fc" id="L102">		isrclassInstance.arguments().add(fisclassInstance);</span>
 <span class="fc" id="L103">		isrclassInstance.arguments().add(callToCharsetDefaultCharset);</span>
 
-<span class="fc" id="L105">		ASTNodes.replaceButKeepComment(rewrite, visited, isrclassInstance, group);</span>
-<span class="fc" id="L106">	}</span>
+<span class="fc" id="L105">		cuRewrite.getImportRemover().registerRemovedNode(visited.getType());</span>
+<span class="fc" id="L106">		ASTNodes.replaceButKeepComment(rewrite, visited, isrclassInstance, group);</span>
+<span class="fc" id="L107">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring, ChangeBehavior cb) {
-<span class="nc bnc" id="L110" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L111">			return &quot;Reader r=new InputStreamReader(new FileInputStream(inputfile),&quot; + cb.computeCharsetforPreview() + &quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L112">			return &quot;Reader r=new InputStreamReader(new FileInputStream(inputfile),&quot; + cb.computeCharsetforPreview() + &quot;);\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
-<span class="nc" id="L113">		return &quot;Reader r=new FileReader(inputfile);\n&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L114">		return &quot;Reader r=new FileReader(inputfile);\n&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L118">		return &quot;new FileReader(inputfile)&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L119">		return &quot;new FileReader(inputfile)&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

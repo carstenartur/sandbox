@@ -1685,10 +1685,10 @@ public class HelperVisitorFactory {
 	public static &lt;V, T&gt; void callSimpleNameVisitor(ASTNode node, ReferenceHolder&lt;V, T&gt; dataholder, Set&lt;ASTNode&gt; nodesprocessed,
 			BiPredicate&lt;SimpleName, ReferenceHolder&lt;V, T&gt;&gt; bs) {
 
-<span class="nc" id="L1688">		HelperVisitor&lt;ReferenceHolder&lt;V, T&gt;,V,T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
-<span class="nc" id="L1689">		hv.addSimpleName(bs);</span>
-<span class="nc" id="L1690">		hv.build(node);</span>
-<span class="nc" id="L1691">	}</span>
+<span class="fc" id="L1688">		HelperVisitor&lt;ReferenceHolder&lt;V, T&gt;,V,T&gt; hv= new HelperVisitor&lt;&gt;(nodesprocessed, dataholder);</span>
+<span class="fc" id="L1689">		hv.addSimpleName(bs);</span>
+<span class="fc" id="L1690">		hv.build(node);</span>
+<span class="fc" id="L1691">	}</span>
 
 	/**
 	 *

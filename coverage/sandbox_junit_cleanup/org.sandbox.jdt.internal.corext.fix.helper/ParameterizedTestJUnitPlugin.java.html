@@ -384,7 +384,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 <span class="fc" id="L384">		ITypeBinding binding= annotation.resolveTypeBinding();</span>
 <span class="pc bpc" id="L385" title="1 of 2 branches missed.">		if (binding != null) {</span>
 <span class="fc" id="L386">			String qualifiedName= binding.getQualifiedName();</span>
-<span class="fc bfc" id="L387" title="All 4 branches covered.">			return ORG_JUNIT_TEST.equals(qualifiedName) || ORG_JUNIT_JUPITER_TEST.equals(qualifiedName);</span>
+<span class="pc bpc" id="L387" title="1 of 4 branches missed.">			return ORG_JUNIT_TEST.equals(qualifiedName) || ORG_JUNIT_JUPITER_TEST.equals(qualifiedName);</span>
 		}
 <span class="nc" id="L389">		String sourceName= annotation.getTypeName().getFullyQualifiedName();</span>
 <span class="nc bnc" id="L390" title="All 4 branches missed.">		return &quot;Test&quot;.equals(sourceName) || ORG_JUNIT_TEST.equals(sourceName) //$NON-NLS-1$</span>

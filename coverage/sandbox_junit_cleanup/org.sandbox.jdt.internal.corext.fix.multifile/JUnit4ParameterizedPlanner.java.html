@@ -252,7 +252,7 @@ final class JUnit4ParameterizedPlanner {
 <span class="fc" id="L252">			List&lt;MethodDeclaration&gt; declared= Arrays.asList(type.getMethods());</span>
 <span class="fc bfc" id="L253" title="All 2 branches covered.">			if (execute) {</span>
 <span class="fc" id="L254">				declared.sort(Comparator.comparingInt((MethodDeclaration method) -&gt; method.getName().getIdentifier().hashCode())</span>
-<span class="pc" id="L255">						.thenComparing(method -&gt; method.getName().getIdentifier()));</span>
+<span class="fc" id="L255">						.thenComparing(method -&gt; method.getName().getIdentifier()));</span>
 			}
 <span class="fc bfc" id="L257" title="All 2 branches covered.">			for (MethodDeclaration method : declared) {</span>
 <span class="fc" id="L258">				checkAnnotations(method);</span>

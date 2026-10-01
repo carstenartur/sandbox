@@ -575,10 +575,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public boolean visit(MemberRef node) {
-<span class="nc bnc" id="L578" title="All 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MemberRef)) {</span>
+<span class="pc bpc" id="L578" title="1 of 2 branches missed.">		if (this.helperVisitor.hasPredicate(VisitorEnum.MemberRef)) {</span>
 <span class="nc" id="L579">			return this.helperVisitor.testPredicate(VisitorEnum.MemberRef, node);</span>
 		}
-<span class="nc" id="L581">		return true;</span>
+<span class="fc" id="L581">		return true;</span>
 	}
 
 	@Override
@@ -710,7 +710,7 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 <span class="fc bfc" id="L710" title="All 2 branches covered.">				if (!typeBinding.isRecovered()) {</span>
 <span class="fc" id="L711">					return qualifiedName.equals(typeBinding.getQualifiedName());</span>
 				}
-<span class="fc bfc" id="L713" title="All 2 branches covered.">				if (expression instanceof SimpleName) {</span>
+<span class="pc bpc" id="L713" title="1 of 2 branches missed.">				if (expression instanceof SimpleName) {</span>
 <span class="fc" id="L714">					String startswith=typeBinding.toString().substring(9);</span>
 <span class="fc" id="L715">					startswith=startswith.substring(0, startswith.length()-1);</span>
 <span class="fc" id="L716">					return qualifiedName.endsWith(startswith);</span>
@@ -1563,10 +1563,10 @@ public class LambdaASTVisitor&lt;E extends HelperVisitorProvider&lt;V,T,E&gt;, V
 
 	@Override
 	public void endVisit(MemberRef node) {
-<span class="nc bnc" id="L1566" title="All 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MemberRef)) {</span>
+<span class="pc bpc" id="L1566" title="1 of 2 branches missed.">		if (this.helperVisitor.hasConsumer(VisitorEnum.MemberRef)) {</span>
 <span class="nc" id="L1567">			this.helperVisitor.acceptConsumer(VisitorEnum.MemberRef, node);</span>
 		}
-<span class="nc" id="L1569">	}</span>
+<span class="fc" id="L1569">	}</span>
 
 	@Override
 	public void endVisit(MemberValuePair node) {

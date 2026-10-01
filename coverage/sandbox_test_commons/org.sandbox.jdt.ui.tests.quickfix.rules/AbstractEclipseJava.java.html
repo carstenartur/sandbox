@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractEclipseJava.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_test_commons</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.tests.quickfix.rules</a> &gt; <span class="el_source">AbstractEclipseJava.java</span></div><h1>AbstractEclipseJava.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractEclipseJava.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_test_commons</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.tests.quickfix.rules</a> &gt; <span class="el_source">AbstractEclipseJava.java</span></div><h1>AbstractEclipseJava.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
  * Copyright (c) 2024 Carsten Hammer and others.
  *
  * This program and the accompanying materials
@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -157,10 +158,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param stubs path to the runtime stubs JAR file (e.g., &quot;testresources/rtstubs_17.jar&quot;)
 	 * @param compilerVersion the Java compiler compliance level (e.g., JavaCore.VERSION_17)
 	 */
-<span class="fc" id="L160">	public AbstractEclipseJava(final String stubs, final String compilerVersion) {</span>
-<span class="fc" id="L161">		this.testResourcesStubs = stubs;</span>
-<span class="fc" id="L162">		this.complianceLevel = compilerVersion;</span>
-<span class="fc" id="L163">	}</span>
+<span class="fc" id="L161">	public AbstractEclipseJava(final String stubs, final String compilerVersion) {</span>
+<span class="fc" id="L162">		this.testResourcesStubs = stubs;</span>
+<span class="fc" id="L163">		this.complianceLevel = compilerVersion;</span>
+<span class="fc" id="L164">	}</span>
 
 	/**
 	 * Sets up the test environment before each test execution.
@@ -180,21 +181,21 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	@Override
 	public void beforeEach(final ExtensionContext context) throws CoreException {
-<span class="fc" id="L183">		setJavaProject(createJavaProject(TEST_SETUP_PROJECT, DEFAULT_BIN_FOLDER));</span>
-<span class="fc" id="L184">		getJavaProject().setRawClasspath(getDefaultClasspath(), null);</span>
-<span class="fc" id="L185">		final Map&lt;String, String&gt; options = getJavaProject().getOptions(false);</span>
-<span class="fc" id="L186">		JavaCore.setComplianceOptions(complianceLevel, options);</span>
-<span class="fc" id="L187">		getJavaProject().setOptions(options);</span>
-<span class="fc" id="L188">		setSourceFolder(addSourceContainer(getProject(TEST_SETUP_PROJECT), DEFAULT_SRC_FOLDER, new Path[0],</span>
-<span class="fc" id="L189">				new Path[0], null, new IClasspathAttribute[0]));</span>
-<span class="fc" id="L190">		final Map&lt;String, String&gt; settings = new HashMap&lt;&gt;();</span>
-<span class="fc" id="L191">		cleanUpProfile = new ProfileManager.CustomProfile(&quot;testProfile&quot;, settings, CleanUpProfileVersioner.CURRENT_VERSION, //$NON-NLS-1$</span>
-<span class="fc" id="L192">				CleanUpProfileVersioner.PROFILE_KIND);</span>
-<span class="fc" id="L193">		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.CLEANUP_PROFILE, cleanUpProfile.getID());</span>
-<span class="fc" id="L194">		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.SAVE_PARTICIPANT_PROFILE,</span>
-<span class="fc" id="L195">				cleanUpProfile.getID());</span>
-<span class="fc" id="L196">		disableAll();</span>
-<span class="fc" id="L197">	}</span>
+<span class="fc" id="L184">		setJavaProject(createJavaProject(TEST_SETUP_PROJECT, DEFAULT_BIN_FOLDER));</span>
+<span class="fc" id="L185">		getJavaProject().setRawClasspath(getDefaultClasspath(), null);</span>
+<span class="fc" id="L186">		final Map&lt;String, String&gt; options = getJavaProject().getOptions(false);</span>
+<span class="fc" id="L187">		JavaCore.setComplianceOptions(complianceLevel, options);</span>
+<span class="fc" id="L188">		getJavaProject().setOptions(options);</span>
+<span class="fc" id="L189">		setSourceFolder(addSourceContainer(getProject(TEST_SETUP_PROJECT), DEFAULT_SRC_FOLDER, new Path[0],</span>
+<span class="fc" id="L190">				new Path[0], null, new IClasspathAttribute[0]));</span>
+<span class="fc" id="L191">		final Map&lt;String, String&gt; settings = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L192">		cleanUpProfile = new ProfileManager.CustomProfile(&quot;testProfile&quot;, settings, CleanUpProfileVersioner.CURRENT_VERSION, //$NON-NLS-1$</span>
+<span class="fc" id="L193">				CleanUpProfileVersioner.PROFILE_KIND);</span>
+<span class="fc" id="L194">		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.CLEANUP_PROFILE, cleanUpProfile.getID());</span>
+<span class="fc" id="L195">		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.SAVE_PARTICIPANT_PROFILE,</span>
+<span class="fc" id="L196">				cleanUpProfile.getID());</span>
+<span class="fc" id="L197">		disableAll();</span>
+<span class="fc" id="L198">	}</span>
 	/**
 	 * Creates a classpath for JUnit testing by adding the specified JUnit container to the project.
 	 * 
@@ -204,12 +205,12 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if project configuration fails
 	 */
 	public IPackageFragmentRoot createClasspathForJUnit(final IPath junitContainerPath) throws JavaModelException, CoreException {
-<span class="fc" id="L207">		final IJavaProject project = getJavaProject();</span>
-<span class="fc" id="L208">		project.setRawClasspath(getDefaultClasspath(), null);</span>
-<span class="fc" id="L209">		final IClasspathEntry cpe = JavaCore.newContainerEntry(junitContainerPath);</span>
-<span class="fc" id="L210">		AbstractEclipseJava.addToClasspath(project, cpe);</span>
-<span class="fc" id="L211">		sourceFolder = AbstractEclipseJava.addSourceContainer(project, DEFAULT_SRC_FOLDER);</span>
-<span class="fc" id="L212">		return sourceFolder;</span>
+<span class="fc" id="L208">		final IJavaProject project = getJavaProject();</span>
+<span class="fc" id="L209">		project.setRawClasspath(getDefaultClasspath(), null);</span>
+<span class="fc" id="L210">		final IClasspathEntry cpe = JavaCore.newContainerEntry(junitContainerPath);</span>
+<span class="fc" id="L211">		AbstractEclipseJava.addToClasspath(project, cpe);</span>
+<span class="fc" id="L212">		sourceFolder = AbstractEclipseJava.addSourceContainer(project, DEFAULT_SRC_FOLDER);</span>
+<span class="fc" id="L213">		return sourceFolder;</span>
 	}
 
 	/**
@@ -223,8 +224,8 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	@Override
 	public void afterEach(final ExtensionContext context) throws CoreException {
-<span class="fc" id="L226">		delete(getSourceFolder());</span>
-<span class="fc" id="L227">	}</span>
+<span class="fc" id="L227">		delete(getSourceFolder());</span>
+<span class="fc" id="L228">	}</span>
 
 	/**
 	 * Gets the Java project with the specified name from the workspace.
@@ -233,7 +234,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the Java project handle
 	 */
 	public IJavaProject getProject(final String projectName) {
-<span class="fc" id="L236">		return JavaCore.create(ResourcesPlugin.getWorkspace().getRoot().getProject(projectName));</span>
+<span class="fc" id="L237">		return JavaCore.create(ResourcesPlugin.getWorkspace().getRoot().getProject(projectName));</span>
 	}
 
 	/**
@@ -246,8 +247,8 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the runtime stubs cannot be located
 	 */
 	public IClasspathEntry[] getDefaultClasspath() throws CoreException {
-<span class="fc" id="L249">		final IPath[] rtJarPath = findRtJar(new Path(testResourcesStubs));</span>
-<span class="fc" id="L250">		return new IClasspathEntry[] { JavaCore.newLibraryEntry(rtJarPath[0], rtJarPath[1], rtJarPath[2], true) };</span>
+<span class="fc" id="L250">		final IPath[] rtJarPath = findRtJar(new Path(testResourcesStubs));</span>
+<span class="fc" id="L251">		return new IClasspathEntry[] { JavaCore.newLibraryEntry(rtJarPath[0], rtJarPath[1], rtJarPath[2], true) };</span>
 	}
 
 	/**
@@ -259,11 +260,11 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the profile cannot be updated
 	 */
 	protected void disableAll() throws CoreException {
-<span class="fc" id="L262">		final Map&lt;String, String&gt; settings = cleanUpProfile.getSettings();</span>
-<span class="fc" id="L263">		JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(DEFAULT_CLEAN_UP_OPTIONS).getKeys()</span>
-<span class="fc" id="L264">		.forEach(a -&gt; settings.put(a, CleanUpOptions.FALSE));</span>
-<span class="fc" id="L265">		commitProfile();</span>
-<span class="fc" id="L266">	}</span>
+<span class="fc" id="L263">		final Map&lt;String, String&gt; settings = cleanUpProfile.getSettings();</span>
+<span class="fc" id="L264">		JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(DEFAULT_CLEAN_UP_OPTIONS).getKeys()</span>
+<span class="fc" id="L265">		.forEach(a -&gt; settings.put(a, CleanUpOptions.FALSE));</span>
+<span class="fc" id="L266">		commitProfile();</span>
+<span class="fc" id="L267">	}</span>
 
 	/**
 	 * Removes an IJavaElement's resource with retry logic.
@@ -276,14 +277,14 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if all deletion attempts fail
 	 */
 	public void delete(final IJavaElement elem) throws CoreException {
-<span class="fc" id="L279">		final IWorkspaceRunnable runnable = monitor -&gt; {</span>
-<span class="fc bfc" id="L280" title="All 2 branches covered.">			if (elem instanceof IJavaProject jproject) {</span>
-<span class="fc" id="L281">				jproject.setRawClasspath(new IClasspathEntry[0], jproject.getProject().getFullPath(), null);</span>
+<span class="fc" id="L280">		final IWorkspaceRunnable runnable = monitor -&gt; {</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">			if (elem instanceof IJavaProject jproject) {</span>
+<span class="fc" id="L282">				jproject.setRawClasspath(new IClasspathEntry[0], jproject.getProject().getFullPath(), null);</span>
 			}
-<span class="fc" id="L283">			delete(elem.getResource());</span>
-<span class="fc" id="L284">		};</span>
-<span class="fc" id="L285">		ResourcesPlugin.getWorkspace().run(runnable, null);</span>
-<span class="fc" id="L286">	}</span>
+<span class="fc" id="L284">			delete(elem.getResource());</span>
+<span class="fc" id="L285">		};</span>
+<span class="fc" id="L286">		ResourcesPlugin.getWorkspace().run(runnable, null);</span>
+<span class="fc" id="L287">	}</span>
 
 	/**
 	 * Removes a resource with retry logic.
@@ -296,24 +297,24 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if all deletion attempts fail
 	 */
 	public static void delete(final IResource resource) throws CoreException {
-<span class="pc bpc" id="L299" title="1 of 2 branches missed.">		for (int i = 0; i &lt; MAX_RETRY; i++) {</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">		for (int i = 0; i &lt; MAX_RETRY; i++) {</span>
 			try {
-<span class="fc" id="L301">				resource.delete(IResource.FORCE | IResource.ALWAYS_DELETE_PROJECT_CONTENT, null);</span>
-<span class="fc" id="L302">				return; // Success, exit early</span>
-<span class="nc" id="L303">			} catch (CoreException e) {</span>
-<span class="nc bnc" id="L304" title="All 2 branches missed.">				if (i == MAX_RETRY - 1) {</span>
+<span class="fc" id="L302">				resource.delete(IResource.FORCE | IResource.ALWAYS_DELETE_PROJECT_CONTENT, null);</span>
+<span class="fc" id="L303">				return; // Success, exit early</span>
+<span class="nc" id="L304">			} catch (CoreException e) {</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">				if (i == MAX_RETRY - 1) {</span>
 					// Last attempt failed, throw the exception
-<span class="nc" id="L306">					throw e;</span>
+<span class="nc" id="L307">					throw e;</span>
 				}
 				try {
-<span class="nc" id="L309">					Thread.sleep(RETRY_DELAY); // give other threads time to close the file</span>
-<span class="nc" id="L310">				} catch (InterruptedException e1) {</span>
+<span class="nc" id="L310">					Thread.sleep(RETRY_DELAY); // give other threads time to close the file</span>
+<span class="nc" id="L311">				} catch (InterruptedException e1) {</span>
 					// Restore interrupt status
-<span class="nc" id="L312">					Thread.currentThread().interrupt();</span>
+<span class="nc" id="L313">					Thread.currentThread().interrupt();</span>
 				}
 			}
 		}
-<span class="nc" id="L316">	}</span>
+<span class="nc" id="L317">	}</span>
 
 	/**
 	 * Locates the runtime stubs JAR file for the configured Java version.
@@ -323,10 +324,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the stubs file doesn't exist
 	 */
 	public IPath[] findRtJar(final IPath rtStubsPath) throws CoreException {
-<span class="fc" id="L326">		final File rtStubs = rtStubsPath.toFile().getAbsoluteFile();</span>
-<span class="fc" id="L327">		assertNotNull(rtStubs, &quot;Runtime stubs file must not be null&quot;);</span>
-<span class="fc" id="L328">		assertTrue(rtStubs.exists(), &quot;Runtime stubs file must exist: &quot; + rtStubs.getAbsolutePath());</span>
-<span class="fc" id="L329">		return new IPath[] { Path.fromOSString(rtStubs.getPath()), null, null };</span>
+<span class="fc" id="L327">		final File rtStubs = rtStubsPath.toFile().getAbsoluteFile();</span>
+<span class="fc" id="L328">		assertNotNull(rtStubs, &quot;Runtime stubs file must not be null&quot;);</span>
+<span class="fc" id="L329">		assertTrue(rtStubs.exists(), &quot;Runtime stubs file must exist: &quot; + rtStubs.getAbsolutePath());</span>
+<span class="fc" id="L330">		return new IPath[] { Path.fromOSString(rtStubs.getPath()), null, null };</span>
 	}
 
 	/**
@@ -335,11 +336,11 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the associated bundle, or null if not running in an OSGi environment
 	 */
 	public final Bundle getBundle() {
-<span class="nc" id="L338">		final ClassLoader cl = getClass().getClassLoader();</span>
-<span class="nc bnc" id="L339" title="All 2 branches missed.">		if (cl instanceof BundleReference) {</span>
-<span class="nc" id="L340">			return ((BundleReference) cl).getBundle();</span>
+<span class="nc" id="L339">		final ClassLoader cl = getClass().getClassLoader();</span>
+<span class="nc bnc" id="L340" title="All 2 branches missed.">		if (cl instanceof BundleReference) {</span>
+<span class="nc" id="L341">			return ((BundleReference) cl).getBundle();</span>
 		}
-<span class="nc" id="L342">		return null;</span>
+<span class="nc" id="L343">		return null;</span>
 	}
 
 	/**
@@ -351,33 +352,33 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if project creation fails
 	 */
 	public static IJavaProject createJavaProject(final String projectName, final String binFolderName) throws CoreException {
-<span class="fc" id="L354">		final IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();</span>
-<span class="fc" id="L355">		final IProject project = root.getProject(projectName);</span>
-<span class="fc bfc" id="L356" title="All 2 branches covered.">		if (!project.exists()) {</span>
-<span class="fc" id="L357">			project.create(null);</span>
-<span class="fc" id="L358">		} else {</span>
-<span class="fc" id="L359">			project.refreshLocal(IResource.DEPTH_INFINITE, null);</span>
+<span class="fc" id="L355">		final IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();</span>
+<span class="fc" id="L356">		final IProject project = root.getProject(projectName);</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">		if (!project.exists()) {</span>
+<span class="fc" id="L358">			project.create(null);</span>
+<span class="fc" id="L359">		} else {</span>
+<span class="fc" id="L360">			project.refreshLocal(IResource.DEPTH_INFINITE, null);</span>
 		}
-<span class="fc bfc" id="L361" title="All 2 branches covered.">		if (!project.isOpen()) {</span>
-<span class="fc" id="L362">			project.open(null);</span>
+<span class="fc bfc" id="L362" title="All 2 branches covered.">		if (!project.isOpen()) {</span>
+<span class="fc" id="L363">			project.open(null);</span>
 		}
 		final IPath outputLocation;
-<span class="pc bpc" id="L365" title="2 of 4 branches missed.">		if (binFolderName != null &amp;&amp; binFolderName.length() &gt; 0) {</span>
-<span class="fc" id="L366">			final IFolder binFolder = project.getFolder(binFolderName);</span>
-<span class="fc bfc" id="L367" title="All 2 branches covered.">			if (!binFolder.exists()) {</span>
-<span class="fc" id="L368">				CoreUtility.createFolder(binFolder, false, true, null);</span>
+<span class="pc bpc" id="L366" title="2 of 4 branches missed.">		if (binFolderName != null &amp;&amp; binFolderName.length() &gt; 0) {</span>
+<span class="fc" id="L367">			final IFolder binFolder = project.getFolder(binFolderName);</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">			if (!binFolder.exists()) {</span>
+<span class="fc" id="L369">				CoreUtility.createFolder(binFolder, false, true, null);</span>
 			}
-<span class="fc" id="L370">			outputLocation = binFolder.getFullPath();</span>
-<span class="fc" id="L371">		} else {</span>
-<span class="nc" id="L372">			outputLocation = project.getFullPath();</span>
+<span class="fc" id="L371">			outputLocation = binFolder.getFullPath();</span>
+<span class="fc" id="L372">		} else {</span>
+<span class="nc" id="L373">			outputLocation = project.getFullPath();</span>
 		}
-<span class="fc bfc" id="L374" title="All 2 branches covered.">		if (!project.hasNature(JavaCore.NATURE_ID)) {</span>
-<span class="fc" id="L375">			addNatureToProject(project, JavaCore.NATURE_ID, null);</span>
+<span class="fc bfc" id="L375" title="All 2 branches covered.">		if (!project.hasNature(JavaCore.NATURE_ID)) {</span>
+<span class="fc" id="L376">			addNatureToProject(project, JavaCore.NATURE_ID, null);</span>
 		}
-<span class="fc" id="L377">		final IJavaProject jproject = JavaCore.create(project);</span>
-<span class="fc" id="L378">		jproject.setOutputLocation(outputLocation, null);</span>
-<span class="fc" id="L379">		jproject.setRawClasspath(new IClasspathEntry[0], null);</span>
-<span class="fc" id="L380">		return jproject;</span>
+<span class="fc" id="L378">		final IJavaProject jproject = JavaCore.create(project);</span>
+<span class="fc" id="L379">		jproject.setOutputLocation(outputLocation, null);</span>
+<span class="fc" id="L380">		jproject.setRawClasspath(new IClasspathEntry[0], null);</span>
+<span class="fc" id="L381">		return jproject;</span>
 	}
 
 	/**
@@ -390,14 +391,14 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	private static void addNatureToProject(final IProject proj, final String natureId, final IProgressMonitor monitor)
 			throws CoreException {
-<span class="fc" id="L393">		final IProjectDescription description = proj.getDescription();</span>
-<span class="fc" id="L394">		final String[] prevNatures = description.getNatureIds();</span>
-<span class="fc" id="L395">		final String[] newNatures = new String[prevNatures.length + 1];</span>
-<span class="fc" id="L396">		System.arraycopy(prevNatures, 0, newNatures, 0, prevNatures.length);</span>
-<span class="fc" id="L397">		newNatures[prevNatures.length] = natureId;</span>
-<span class="fc" id="L398">		description.setNatureIds(newNatures);</span>
-<span class="fc" id="L399">		proj.setDescription(description, monitor);</span>
-<span class="fc" id="L400">	}</span>
+<span class="fc" id="L394">		final IProjectDescription description = proj.getDescription();</span>
+<span class="fc" id="L395">		final String[] prevNatures = description.getNatureIds();</span>
+<span class="fc" id="L396">		final String[] newNatures = new String[prevNatures.length + 1];</span>
+<span class="fc" id="L397">		System.arraycopy(prevNatures, 0, newNatures, 0, prevNatures.length);</span>
+<span class="fc" id="L398">		newNatures[prevNatures.length] = natureId;</span>
+<span class="fc" id="L399">		description.setNatureIds(newNatures);</span>
+<span class="fc" id="L400">		proj.setDescription(description, monitor);</span>
+<span class="fc" id="L401">	}</span>
 
 	/**
 	 * Adds a source container to a Java project with full configuration options.
@@ -414,33 +415,33 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	public static IPackageFragmentRoot addSourceContainer(final IJavaProject jproject, final String containerName,
 			final IPath[] inclusionFilters, final IPath[] exclusionFilters, final String outputLocation, final IClasspathAttribute[] attributes)
 					throws CoreException {
-<span class="fc" id="L417">		final IProject project = jproject.getProject();</span>
+<span class="fc" id="L418">		final IProject project = jproject.getProject();</span>
 		final IContainer container;
-<span class="pc bpc" id="L419" title="2 of 4 branches missed.">		if (containerName == null || containerName.length() == 0) {</span>
-<span class="nc" id="L420">			container = project;</span>
-<span class="nc" id="L421">		} else {</span>
-<span class="fc" id="L422">			final IFolder folder = project.getFolder(containerName);</span>
-<span class="fc bfc" id="L423" title="All 2 branches covered.">			if (!folder.exists()) {</span>
-<span class="fc" id="L424">				CoreUtility.createFolder(folder, false, true, null);</span>
+<span class="pc bpc" id="L420" title="2 of 4 branches missed.">		if (containerName == null || containerName.length() == 0) {</span>
+<span class="nc" id="L421">			container = project;</span>
+<span class="nc" id="L422">		} else {</span>
+<span class="fc" id="L423">			final IFolder folder = project.getFolder(containerName);</span>
+<span class="fc bfc" id="L424" title="All 2 branches covered.">			if (!folder.exists()) {</span>
+<span class="fc" id="L425">				CoreUtility.createFolder(folder, false, true, null);</span>
 			}
-<span class="fc" id="L426">			container = folder;</span>
+<span class="fc" id="L427">			container = folder;</span>
 		}
-<span class="fc" id="L428">		final IPackageFragmentRoot root = jproject.getPackageFragmentRoot(container);</span>
+<span class="fc" id="L429">		final IPackageFragmentRoot root = jproject.getPackageFragmentRoot(container);</span>
 
 		final IPath outputPath;
-<span class="pc bpc" id="L431" title="1 of 2 branches missed.">		if (outputLocation != null) {</span>
-<span class="nc" id="L432">			final IFolder folder = project.getFolder(outputLocation);</span>
-<span class="nc bnc" id="L433" title="All 2 branches missed.">			if (!folder.exists()) {</span>
-<span class="nc" id="L434">				CoreUtility.createFolder(folder, false, true, null);</span>
+<span class="pc bpc" id="L432" title="1 of 2 branches missed.">		if (outputLocation != null) {</span>
+<span class="nc" id="L433">			final IFolder folder = project.getFolder(outputLocation);</span>
+<span class="nc bnc" id="L434" title="All 2 branches missed.">			if (!folder.exists()) {</span>
+<span class="nc" id="L435">				CoreUtility.createFolder(folder, false, true, null);</span>
 			}
-<span class="nc" id="L436">			outputPath = folder.getFullPath();</span>
-<span class="nc" id="L437">		} else {</span>
-<span class="fc" id="L438">			outputPath = null;</span>
+<span class="nc" id="L437">			outputPath = folder.getFullPath();</span>
+<span class="nc" id="L438">		} else {</span>
+<span class="fc" id="L439">			outputPath = null;</span>
 		}
-<span class="fc" id="L440">		final IClasspathEntry cpe = JavaCore.newSourceEntry(root.getPath(), inclusionFilters, exclusionFilters, outputPath,</span>
-<span class="fc" id="L441">				attributes);</span>
-<span class="fc" id="L442">		addToClasspath(jproject, cpe);</span>
-<span class="fc" id="L443">		return root;</span>
+<span class="fc" id="L441">		final IClasspathEntry cpe = JavaCore.newSourceEntry(root.getPath(), inclusionFilters, exclusionFilters, outputPath,</span>
+<span class="fc" id="L442">				attributes);</span>
+<span class="fc" id="L443">		addToClasspath(jproject, cpe);</span>
+<span class="fc" id="L444">		return root;</span>
 	}
 
 	/**
@@ -452,7 +453,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if creation fails
 	 */
 	public static IPackageFragmentRoot addSourceContainer(final IJavaProject jproject, final String containerName) throws CoreException {
-<span class="fc" id="L455">		return addSourceContainer(jproject, containerName, new Path[0]);</span>
+<span class="fc" id="L456">		return addSourceContainer(jproject, containerName, new Path[0]);</span>
 	}
 	
 	/**
@@ -465,7 +466,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if creation fails
 	 */
 	public static IPackageFragmentRoot addSourceContainer(final IJavaProject jproject, final String containerName, final IPath[] exclusionFilters) throws CoreException {
-<span class="fc" id="L468">		return addSourceContainer(jproject, containerName, new Path[0], exclusionFilters);</span>
+<span class="fc" id="L469">		return addSourceContainer(jproject, containerName, new Path[0], exclusionFilters);</span>
 	}
 	
 	/**
@@ -479,7 +480,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if creation fails
 	 */
 	public static IPackageFragmentRoot addSourceContainer(final IJavaProject jproject, final String containerName, final IPath[] inclusionFilters, final IPath[] exclusionFilters) throws CoreException {
-<span class="fc" id="L482">		return addSourceContainer(jproject, containerName, inclusionFilters, exclusionFilters, null);</span>
+<span class="fc" id="L483">		return addSourceContainer(jproject, containerName, inclusionFilters, exclusionFilters, null);</span>
 	}
 	
 	/**
@@ -494,8 +495,8 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if creation fails
 	 */
 	public static IPackageFragmentRoot addSourceContainer(final IJavaProject jproject, final String containerName, final IPath[] inclusionFilters, final IPath[] exclusionFilters, final String outputLocation) throws CoreException {
-<span class="fc" id="L497">		return addSourceContainer(jproject, containerName, inclusionFilters, exclusionFilters, outputLocation,</span>
-<span class="fc" id="L498">				new IClasspathAttribute[0]);</span>
+<span class="fc" id="L498">		return addSourceContainer(jproject, containerName, inclusionFilters, exclusionFilters, outputLocation,</span>
+<span class="fc" id="L499">				new IClasspathAttribute[0]);</span>
 	}
 	
 	/**
@@ -506,18 +507,18 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws JavaModelException if the operation fails
 	 */
 	public static void addToClasspath(final IJavaProject jproject, final IClasspathEntry cpe) throws JavaModelException {
-<span class="fc" id="L509">		final IClasspathEntry[] oldEntries = jproject.getRawClasspath();</span>
-<span class="fc bfc" id="L510" title="All 2 branches covered.">		for (final IClasspathEntry oldEntry : oldEntries) {</span>
-<span class="pc bpc" id="L511" title="1 of 2 branches missed.">			if (oldEntry.equals(cpe)) {</span>
-<span class="nc" id="L512">				return; // Entry already exists</span>
+<span class="fc" id="L510">		final IClasspathEntry[] oldEntries = jproject.getRawClasspath();</span>
+<span class="fc bfc" id="L511" title="All 2 branches covered.">		for (final IClasspathEntry oldEntry : oldEntries) {</span>
+<span class="pc bpc" id="L512" title="1 of 2 branches missed.">			if (oldEntry.equals(cpe)) {</span>
+<span class="nc" id="L513">				return; // Entry already exists</span>
 			}
 		}
-<span class="fc" id="L515">		final int nEntries = oldEntries.length;</span>
-<span class="fc" id="L516">		final IClasspathEntry[] newEntries = new IClasspathEntry[nEntries + 1];</span>
-<span class="fc" id="L517">		System.arraycopy(oldEntries, 0, newEntries, 0, nEntries);</span>
-<span class="fc" id="L518">		newEntries[nEntries] = cpe;</span>
-<span class="fc" id="L519">		jproject.setRawClasspath(newEntries, null);</span>
-<span class="fc" id="L520">	}</span>
+<span class="fc" id="L516">		final int nEntries = oldEntries.length;</span>
+<span class="fc" id="L517">		final IClasspathEntry[] newEntries = new IClasspathEntry[nEntries + 1];</span>
+<span class="fc" id="L518">		System.arraycopy(oldEntries, 0, newEntries, 0, nEntries);</span>
+<span class="fc" id="L519">		newEntries[nEntries] = cpe;</span>
+<span class="fc" id="L520">		jproject.setRawClasspath(newEntries, null);</span>
+<span class="fc" id="L521">	}</span>
 
 	/**
 	 * Adds a local JAR file from the test resources to the test project's classpath.
@@ -532,13 +533,13 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the JAR file doesn't exist or classpath modification fails
 	 */
 	public void addLocalJarToClasspath(String relativeJarPath) throws CoreException {
-<span class="fc" id="L535">		File jarFile = new File(relativeJarPath).getAbsoluteFile();</span>
-<span class="pc bpc" id="L536" title="1 of 2 branches missed.">		if (!jarFile.exists()) {</span>
-<span class="nc" id="L537">			throw new CoreException(Status.error(&quot;Stub JAR file not found: &quot; + jarFile.getAbsolutePath())); //$NON-NLS-1$</span>
+<span class="nc" id="L536">		File jarFile = new File(relativeJarPath).getAbsoluteFile();</span>
+<span class="nc bnc" id="L537" title="All 2 branches missed.">		if (!jarFile.exists()) {</span>
+<span class="nc" id="L538">			throw new CoreException(Status.error(&quot;Stub JAR file not found: &quot; + jarFile.getAbsolutePath())); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L539">		IClasspathEntry cpe = JavaCore.newLibraryEntry(Path.fromOSString(jarFile.getPath()), null, null);</span>
-<span class="fc" id="L540">		addToClasspath(getJavaProject(), cpe);</span>
-<span class="fc" id="L541">	}</span>
+<span class="nc" id="L540">		IClasspathEntry cpe = JavaCore.newLibraryEntry(Path.fromOSString(jarFile.getPath()), null, null);</span>
+<span class="nc" id="L541">		addToClasspath(getJavaProject(), cpe);</span>
+<span class="nc" id="L542">	}</span>
 
 	/**
 	 * Adds an Eclipse platform bundle to the test project's classpath.
@@ -553,77 +554,83 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the bundle cannot be found or added
 	 */
 	public void addBundleToClasspath(String bundleSymbolicName) throws CoreException {
-<span class="fc" id="L556">		Bundle bundle = Platform.getBundle(bundleSymbolicName);</span>
-<span class="pc bpc" id="L557" title="1 of 2 branches missed.">		if (bundle == null) {</span>
-<span class="nc" id="L558">			throw new CoreException(Status.error(&quot;Bundle not found: &quot; + bundleSymbolicName)); //$NON-NLS-1$</span>
+<span class="nc" id="L557">		Bundle bundle = Platform.getBundle(bundleSymbolicName);</span>
+<span class="nc bnc" id="L558" title="All 2 branches missed.">		if (bundle == null) {</span>
+<span class="nc" id="L559">			throw new CoreException(Status.error(&quot;Bundle not found: &quot; + bundleSymbolicName)); //$NON-NLS-1$</span>
 		}
 
 		// Get the bundle's file location
 		File bundleFile;
 		try {
-<span class="fc" id="L564">			bundleFile = FileLocator.getBundleFile(bundle);</span>
-<span class="pc" id="L565">		} catch (IOException e) {</span>
-<span class="nc" id="L566">			throw new CoreException(Status.error(&quot;Cannot locate bundle file: &quot; + bundleSymbolicName, e)); //$NON-NLS-1$</span>
+<span class="nc" id="L565">			bundleFile = FileLocator.getBundleFile(bundle);</span>
+<span class="nc" id="L566">		} catch (IOException e) {</span>
+<span class="nc" id="L567">			throw new CoreException(Status.error(&quot;Cannot locate bundle file: &quot; + bundleSymbolicName, e)); //$NON-NLS-1$</span>
 		}
 
-<span class="pc bpc" id="L569" title="2 of 4 branches missed.">		if (bundleFile == null || !bundleFile.exists()) {</span>
-<span class="nc" id="L570">			throw new CoreException(Status.error(&quot;Bundle file does not exist: &quot; + bundleSymbolicName)); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L570" title="All 4 branches missed.">		if (bundleFile == null || !bundleFile.exists()) {</span>
+<span class="nc" id="L571">			throw new CoreException(Status.error(&quot;Bundle file does not exist: &quot; + bundleSymbolicName)); //$NON-NLS-1$</span>
 		}
 
-<span class="fc" id="L573">		IPath bundlePath = new Path(bundleFile.getAbsolutePath());</span>
+<span class="nc" id="L574">		IPath bundlePath = new Path(bundleFile.getAbsolutePath());</span>
 		IClasspathEntry cpe;
 
-<span class="pc bpc" id="L576" title="1 of 2 branches missed.">		if (bundleFile.isDirectory()) {</span>
-<span class="nc" id="L577">			File binDir = new File(bundleFile, &quot;bin&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L578" title="All 4 branches missed.">			if (binDir.exists() &amp;&amp; binDir.isDirectory()) {</span>
-<span class="nc" id="L579">				cpe = JavaCore.newLibraryEntry(new Path(binDir.getAbsolutePath()), null, null);</span>
-<span class="nc" id="L580">			} else {</span>
-<span class="nc" id="L581">				cpe = JavaCore.newLibraryEntry(bundlePath, null, null);</span>
+<span class="nc bnc" id="L577" title="All 2 branches missed.">		if (bundleFile.isDirectory()) {</span>
+<span class="nc" id="L578">			File binDir = new File(bundleFile, &quot;bin&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L579" title="All 4 branches missed.">			if (binDir.exists() &amp;&amp; binDir.isDirectory()) {</span>
+<span class="nc" id="L580">				cpe = JavaCore.newLibraryEntry(new Path(binDir.getAbsolutePath()), null, null);</span>
+<span class="nc" id="L581">			} else {</span>
+<span class="nc" id="L582">				cpe = JavaCore.newLibraryEntry(bundlePath, null, null);</span>
 			}
-<span class="nc" id="L583">		} else {</span>
-<span class="fc" id="L584">			cpe = JavaCore.newLibraryEntry(bundlePath, null, null);</span>
+<span class="nc" id="L584">		} else {</span>
+<span class="nc" id="L585">			cpe = JavaCore.newLibraryEntry(bundlePath, null, null);</span>
 		}
 
-<span class="fc" id="L587">		addToClasspath(getJavaProject(), cpe);</span>
+<span class="nc" id="L588">		addToClasspath(getJavaProject(), cpe);</span>
 
 		// Also add any host or fragment bundles that may contain the actual classes
 		// This handles cases like org.eclipse.swt where the API bundle re-exports
 		// a platform-specific implementation fragment
-<span class="fc" id="L592">		Bundle[] fragments = Platform.getFragments(bundle);</span>
-<span class="pc bpc" id="L593" title="1 of 2 branches missed.">		if (fragments != null) {</span>
-<span class="fc bfc" id="L594" title="All 2 branches covered.">			for (Bundle fragment : fragments) {</span>
+<span class="nc" id="L593">		Bundle[] fragments = Platform.getFragments(bundle);</span>
+<span class="nc bnc" id="L594" title="All 2 branches missed.">		if (fragments != null) {</span>
+<span class="nc bnc" id="L595" title="All 2 branches missed.">			for (Bundle fragment : fragments) {</span>
 				try {
-<span class="fc" id="L596">					File fragmentFile = FileLocator.getBundleFile(fragment);</span>
-<span class="pc bpc" id="L597" title="2 of 4 branches missed.">					if (fragmentFile != null &amp;&amp; fragmentFile.exists()) {</span>
-<span class="fc" id="L598">						IPath fragmentPath = new Path(fragmentFile.getAbsolutePath());</span>
+<span class="nc" id="L597">					File fragmentFile = FileLocator.getBundleFile(fragment);</span>
+<span class="nc bnc" id="L598" title="All 4 branches missed.">					if (fragmentFile != null &amp;&amp; fragmentFile.exists()) {</span>
+<span class="nc" id="L599">						IPath fragmentPath = new Path(fragmentFile.getAbsolutePath());</span>
 						IClasspathEntry fragmentCpe;
-<span class="pc bpc" id="L600" title="1 of 2 branches missed.">						if (fragmentFile.isDirectory()) {</span>
-<span class="nc" id="L601">							File fragmentBinDir = new File(fragmentFile, &quot;bin&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L602" title="All 4 branches missed.">							if (fragmentBinDir.exists() &amp;&amp; fragmentBinDir.isDirectory()) {</span>
-<span class="nc" id="L603">								fragmentCpe = JavaCore.newLibraryEntry(new Path(fragmentBinDir.getAbsolutePath()), null, null);</span>
-<span class="nc" id="L604">							} else {</span>
-<span class="nc" id="L605">								fragmentCpe = JavaCore.newLibraryEntry(fragmentPath, null, null);</span>
+<span class="nc bnc" id="L601" title="All 2 branches missed.">						if (fragmentFile.isDirectory()) {</span>
+<span class="nc" id="L602">							File fragmentBinDir = new File(fragmentFile, &quot;bin&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L603" title="All 4 branches missed.">							if (fragmentBinDir.exists() &amp;&amp; fragmentBinDir.isDirectory()) {</span>
+<span class="nc" id="L604">								fragmentCpe = JavaCore.newLibraryEntry(new Path(fragmentBinDir.getAbsolutePath()), null, null);</span>
+<span class="nc" id="L605">							} else {</span>
+<span class="nc" id="L606">								fragmentCpe = JavaCore.newLibraryEntry(fragmentPath, null, null);</span>
 							}
-<span class="nc" id="L607">						} else {</span>
-<span class="fc" id="L608">							fragmentCpe = JavaCore.newLibraryEntry(fragmentPath, null, null);</span>
+<span class="nc" id="L608">						} else {</span>
+<span class="nc" id="L609">							fragmentCpe = JavaCore.newLibraryEntry(fragmentPath, null, null);</span>
 						}
-<span class="fc" id="L610">						addToClasspath(getJavaProject(), fragmentCpe);</span>
+<span class="nc" id="L611">						addToClasspath(getJavaProject(), fragmentCpe);</span>
 					}
-<span class="pc" id="L612">				} catch (IOException e) {</span>
+<span class="nc" id="L613">				} catch (IOException e) {</span>
 					// Skip fragments that can't be resolved
 				}
 			}
 		}
-<span class="fc" id="L617">	}</span>
+<span class="nc" id="L618">	}</span>
 
 	/**
 	 * Executes the configured refactoring and asserts the result matches expectations.
 	 * &lt;p&gt;
-	 * This method does NOT validate compilation errors in the input code.
-	 * Use {@link #assertRefactoringResultAsExpectedWithCompileCheck} when test fixtures
-	 * should be validated for compilation errors before refactoring.
+	 * Existing compiler errors and warnings in deliberately incomplete fixtures are
+	 * tolerated, but the refactoring must not introduce a new diagnostic signature or
+	 * an additional occurrence of an existing one. Diagnostic identity uses severity,
+	 * problem ID and compiler arguments; source positions are deliberately ignored so
+	 * harmless line movement does not fail a test.
 	 * &lt;/p&gt;
-	 * 
+	 * &lt;p&gt;
+	 * Use {@link #assertRefactoringResultAsExpectedWithCompileCheck} when the input
+	 * itself must additionally be free of compilation errors.
+	 * &lt;/p&gt;
+	 *
 	 * @param cus the compilation units to refactor
 	 * @param expected the expected source code after refactoring (one per CU)
 	 * @param setOfExpectedGroupCategories expected group category names, or null to skip validation
@@ -632,14 +639,14 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpected(final ICompilationUnit[] cus, final String[] expected,
 			final Set&lt;String&gt; setOfExpectedGroupCategories) throws CoreException {
-<span class="fc" id="L635">		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);</span>
-<span class="fc" id="L636">		final String[] previews = new String[cus.length];</span>
-<span class="fc bfc" id="L637" title="All 2 branches covered.">		for (int i = 0; i &lt; cus.length; i++) {</span>
-<span class="fc" id="L638">			final ICompilationUnit cu = cus[i];</span>
-<span class="fc" id="L639">			previews[i] = normalizeLineEndings(cu.getBuffer().getContents());</span>
+<span class="fc" id="L642">		final RefactoringStatus status = performRefactoringCheckingDiagnostics(cus, setOfExpectedGroupCategories);</span>
+<span class="fc" id="L643">		final String[] previews = new String[cus.length];</span>
+<span class="fc bfc" id="L644" title="All 2 branches covered.">		for (int i = 0; i &lt; cus.length; i++) {</span>
+<span class="fc" id="L645">			final ICompilationUnit cu = cus[i];</span>
+<span class="fc" id="L646">			previews[i] = normalizeLineEndings(cu.getBuffer().getContents());</span>
 		}
-<span class="fc" id="L641">		assertEqualStringsIgnoreOrder(previews, expected);</span>
-<span class="fc" id="L642">		return status;</span>
+<span class="fc" id="L648">		assertEqualStringsIgnoreOrder(previews, expected);</span>
+<span class="fc" id="L649">		return status;</span>
 	}
 
 	/**
@@ -660,10 +667,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpectedWithCompileCheck(final ICompilationUnit[] cus,
 			final String[] expected, final Set&lt;String&gt; setOfExpectedGroupCategories) throws CoreException {
-<span class="fc bfc" id="L663" title="All 2 branches covered.">		for (final ICompilationUnit cu : cus) {</span>
-<span class="fc" id="L664">			assertNoCompilationError(cu);</span>
+<span class="fc bfc" id="L670" title="All 2 branches covered.">		for (final ICompilationUnit cu : cus) {</span>
+<span class="fc" id="L671">			assertNoCompilationError(cu);</span>
 		}
-<span class="fc" id="L666">		return assertRefactoringResultAsExpected(cus, expected, setOfExpectedGroupCategories);</span>
+<span class="fc" id="L673">		return assertRefactoringResultAsExpected(cus, expected, setOfExpectedGroupCategories);</span>
 	}
 
 	/**
@@ -682,14 +689,14 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpectedWithFullCompileCheck(final ICompilationUnit[] cus,
 			final String[] expected, final Set&lt;String&gt; setOfExpectedGroupCategories) throws CoreException {
-<span class="fc bfc" id="L685" title="All 2 branches covered.">		for (final ICompilationUnit cu : cus) {</span>
-<span class="fc" id="L686">			assertNoCompilationError(cu);</span>
+<span class="fc bfc" id="L692" title="All 2 branches covered.">		for (final ICompilationUnit cu : cus) {</span>
+<span class="fc" id="L693">			assertNoCompilationError(cu);</span>
 		}
-<span class="fc" id="L688">		final RefactoringStatus status = assertRefactoringResultAsExpected(cus, expected, setOfExpectedGroupCategories);</span>
-<span class="fc bfc" id="L689" title="All 2 branches covered.">		for (final ICompilationUnit cu : cus) {</span>
-<span class="fc" id="L690">			assertNoCompilationError(cu);</span>
+<span class="fc" id="L695">		final RefactoringStatus status = assertRefactoringResultAsExpected(cus, expected, setOfExpectedGroupCategories);</span>
+<span class="fc bfc" id="L696" title="All 2 branches covered.">		for (final ICompilationUnit cu : cus) {</span>
+<span class="fc" id="L697">			assertNoCompilationError(cu);</span>
 		}
-<span class="fc" id="L692">		return status;</span>
+<span class="fc" id="L699">		return status;</span>
 	}
 
 	/**
@@ -703,10 +710,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the validation fails
 	 */
 	public RefactoringStatus assertRefactoringHasNoChange(final ICompilationUnit[] cus) throws CoreException {
-<span class="fc bfc" id="L706" title="All 2 branches covered.">		for (final ICompilationUnit cu : cus) {</span>
-<span class="fc" id="L707">			assertNoCompilationError(cu);</span>
+<span class="fc bfc" id="L713" title="All 2 branches covered.">		for (final ICompilationUnit cu : cus) {</span>
+<span class="fc" id="L714">			assertNoCompilationError(cu);</span>
 		}
-<span class="fc" id="L709">		return assertRefactoringHasNoChangeEventWithError(cus);</span>
+<span class="fc" id="L716">		return assertRefactoringHasNoChangeEventWithError(cus);</span>
 	}
 
 	/**
@@ -718,11 +725,69 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	protected RefactoringStatus assertRefactoringHasNoChangeEventWithError(final ICompilationUnit[] cus)
 			throws CoreException {
-<span class="fc" id="L721">		final String[] expected = new String[cus.length];</span>
-<span class="fc bfc" id="L722" title="All 2 branches covered.">		for (int i = 0; i &lt; cus.length; i++) {</span>
-<span class="fc" id="L723">			expected[i] = cus[i].getBuffer().getContents();</span>
+<span class="fc" id="L728">		final String[] expected = new String[cus.length];</span>
+<span class="fc bfc" id="L729" title="All 2 branches covered.">		for (int i = 0; i &lt; cus.length; i++) {</span>
+<span class="fc" id="L730">			expected[i] = cus[i].getBuffer().getContents();</span>
 		}
-<span class="fc" id="L725">		return assertRefactoringResultAsExpected(cus, expected, null);</span>
+<span class="fc" id="L732">		return assertRefactoringResultAsExpected(cus, expected, null);</span>
+	}
+
+	private record CompilerProblemKey(boolean error, int id, String arguments) {
+		static CompilerProblemKey of(IProblem problem) {
+<span class="fc" id="L737">			return new CompilerProblemKey(problem.isError(), problem.getID(),</span>
+<span class="fc" id="L738">					Arrays.toString(problem.getArguments()));</span>
+		}
+
+		String severity() {
+<span class="fc bfc" id="L742" title="All 2 branches covered.">			return error ? &quot;ERROR&quot; : &quot;WARNING&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+		}
+	}
+
+	private RefactoringStatus performRefactoringCheckingDiagnostics(ICompilationUnit[] units,
+			Set&lt;String&gt; expectedGroups) throws CoreException {
+<span class="fc" id="L748">		Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; before= captureCompilerDiagnostics(units);</span>
+<span class="fc" id="L749">		RefactoringStatus status= performRefactoring(units, expectedGroups);</span>
+<span class="fc" id="L750">		assertNoNewCompilerDiagnostics(units, before);</span>
+<span class="fc" id="L751">		return status;</span>
+	}
+
+	private static Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; captureCompilerDiagnostics(
+			ICompilationUnit[] units) {
+<span class="fc" id="L756">		Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; result= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L757" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="fc" id="L758">			result.put(unit, compilerDiagnostics(unit));</span>
+		}
+<span class="fc" id="L760">		return result;</span>
+	}
+
+	private static Map&lt;CompilerProblemKey, Long&gt; compilerDiagnostics(ICompilationUnit unit) {
+<span class="fc" id="L764">		CompilationUnit root= parseCompilationUnit(unit);</span>
+<span class="fc" id="L765">		return Arrays.stream(root.getProblems())</span>
+<span class="pc bpc" id="L766" title="1 of 4 branches missed.">				.filter(problem -&gt; problem.isError() || problem.isWarning())</span>
+<span class="fc" id="L767">				.collect(Collectors.groupingBy(CompilerProblemKey::of, LinkedHashMap::new, Collectors.counting()));</span>
+	}
+
+	private static void assertNoNewCompilerDiagnostics(ICompilationUnit[] units,
+			Map&lt;ICompilationUnit, Map&lt;CompilerProblemKey, Long&gt;&gt; before) {
+<span class="fc bfc" id="L772" title="All 2 branches covered.">		for (ICompilationUnit unit : units) {</span>
+<span class="fc" id="L773">			Map&lt;CompilerProblemKey, Long&gt; baseline= before.getOrDefault(unit, Map.of());</span>
+<span class="fc bfc" id="L774" title="All 2 branches covered.">			for (Map.Entry&lt;CompilerProblemKey, Long&gt; entry : compilerDiagnostics(unit).entrySet()) {</span>
+<span class="fc" id="L775">				long previous= baseline.getOrDefault(entry.getKey(), 0L);</span>
+<span class="fc bfc" id="L776" title="All 2 branches covered.">				if (entry.getValue() &gt; previous) {</span>
+<span class="fc" id="L777">					CompilerProblemKey problem= entry.getKey();</span>
+<span class="pc" id="L778">					fail(unit.getElementName() + &quot; gained compiler diagnostic: &quot; + problem.severity() //$NON-NLS-1$</span>
+<span class="fc" id="L779">							+ &quot; id=&quot; + problem.id() + &quot; arguments=&quot; + problem.arguments() //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L780">							+ &quot; before=&quot; + previous + &quot; after=&quot; + entry.getValue()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+				}
+			}
+		}
+<span class="fc" id="L784">	}</span>
+
+	private static CompilationUnit parseCompilationUnit(ICompilationUnit unit) {
+<span class="fc" id="L787">		ASTParser parser= ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
+<span class="fc" id="L788">		parser.setSource(unit);</span>
+<span class="fc" id="L789">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L790">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 
 	/**
@@ -737,35 +802,32 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws AssertionError if compilation errors (non-warnings) are found
 	 */
 	protected CompilationUnit assertNoCompilationError(final ICompilationUnit cu) {
-<span class="fc" id="L740">		final ASTParser parser = ASTParser.newParser(IASTSharedValues.SHARED_AST_LEVEL);</span>
-<span class="fc" id="L741">		parser.setSource(cu);</span>
-<span class="fc" id="L742">		parser.setResolveBindings(true);</span>
-<span class="fc" id="L743">		final CompilationUnit root = (CompilationUnit) parser.createAST(null);</span>
-<span class="fc" id="L744">		final IProblem[] problems = root.getProblems();</span>
-<span class="fc" id="L745">		boolean hasProblems = false;</span>
-<span class="fc bfc" id="L746" title="All 2 branches covered.">		for (final IProblem prob : problems) {</span>
-<span class="pc bpc" id="L747" title="3 of 4 branches missed.">			if (!prob.isWarning() &amp;&amp; !prob.isInfo()) {</span>
-<span class="nc" id="L748">				hasProblems = true;</span>
-<span class="nc" id="L749">				break;</span>
+<span class="fc" id="L805">		final CompilationUnit root = parseCompilationUnit(cu);</span>
+<span class="fc" id="L806">		final IProblem[] problems = root.getProblems();</span>
+<span class="fc" id="L807">		boolean hasProblems = false;</span>
+<span class="fc bfc" id="L808" title="All 2 branches covered.">		for (final IProblem prob : problems) {</span>
+<span class="pc bpc" id="L809" title="3 of 4 branches missed.">			if (!prob.isWarning() &amp;&amp; !prob.isInfo()) {</span>
+<span class="nc" id="L810">				hasProblems = true;</span>
+<span class="nc" id="L811">				break;</span>
 			}
 		}
-<span class="pc bpc" id="L752" title="1 of 2 branches missed.">		if (hasProblems) {</span>
-<span class="nc" id="L753">			final StringBuilder builder = new StringBuilder();</span>
-<span class="nc" id="L754">			builder.append(cu.getElementName()).append(&quot; has compilation problems: \n&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L755" title="All 2 branches missed.">			for (final IProblem prob : problems) {</span>
-<span class="nc bnc" id="L756" title="All 4 branches missed.">				if (!prob.isWarning() &amp;&amp; !prob.isInfo()) {</span>
-<span class="nc" id="L757">					builder.append(&quot;ERROR line &quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L758">					builder.append(prob.getSourceLineNumber());</span>
-<span class="nc" id="L759">					builder.append(&quot;: &quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L760">					builder.append(prob.getMessage());</span>
-<span class="nc" id="L761">					builder.append(&quot; [id=&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L762">					builder.append(prob.getID());</span>
-<span class="nc" id="L763">					builder.append(&quot;]\n&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L814" title="1 of 2 branches missed.">		if (hasProblems) {</span>
+<span class="nc" id="L815">			final StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L816">			builder.append(cu.getElementName()).append(&quot; has compilation problems: \n&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L817" title="All 2 branches missed.">			for (final IProblem prob : problems) {</span>
+<span class="nc bnc" id="L818" title="All 4 branches missed.">				if (!prob.isWarning() &amp;&amp; !prob.isInfo()) {</span>
+<span class="nc" id="L819">					builder.append(&quot;ERROR line &quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L820">					builder.append(prob.getSourceLineNumber());</span>
+<span class="nc" id="L821">					builder.append(&quot;: &quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L822">					builder.append(prob.getMessage());</span>
+<span class="nc" id="L823">					builder.append(&quot; [id=&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L824">					builder.append(prob.getID());</span>
+<span class="nc" id="L825">					builder.append(&quot;]\n&quot;); //$NON-NLS-1$</span>
 				}
 			}
-<span class="nc" id="L766">			fail(builder.toString());</span>
+<span class="nc" id="L828">			fail(builder.toString());</span>
 		}
-<span class="fc" id="L768">		return root;</span>
+<span class="fc" id="L830">		return root;</span>
 	}
 
 	/**
@@ -778,33 +840,33 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param expecteds the expected strings
 	 */
 	public static void assertEqualStringsIgnoreOrder(final String[] actuals, final String[] expecteds) {
-<span class="fc" id="L781">		final ArrayList&lt;String&gt; actualList = new ArrayList&lt;&gt;(</span>
-<span class="fc" id="L782">				Arrays.stream(actuals).map(AbstractEclipseJava::normalizeLineEndings).toList());</span>
-<span class="fc" id="L783">		final ArrayList&lt;String&gt; expectedList = new ArrayList&lt;&gt;(</span>
-<span class="fc" id="L784">				Arrays.stream(expecteds).map(AbstractEclipseJava::normalizeLineEndings).toList());</span>
+<span class="fc" id="L843">		final ArrayList&lt;String&gt; actualList = new ArrayList&lt;&gt;(</span>
+<span class="fc" id="L844">				Arrays.stream(actuals).map(AbstractEclipseJava::normalizeLineEndings).toList());</span>
+<span class="fc" id="L845">		final ArrayList&lt;String&gt; expectedList = new ArrayList&lt;&gt;(</span>
+<span class="fc" id="L846">				Arrays.stream(expecteds).map(AbstractEclipseJava::normalizeLineEndings).toList());</span>
 		
 		// Remove matching elements from both lists
-<span class="fc bfc" id="L787" title="All 2 branches covered.">		for (int i = actualList.size() - 1; i &gt;= 0; i--) {</span>
-<span class="pc bpc" id="L788" title="1 of 2 branches missed.">			if (expectedList.remove(actualList.get(i))) {</span>
-<span class="fc" id="L789">				actualList.remove(i);</span>
+<span class="fc bfc" id="L849" title="All 2 branches covered.">		for (int i = actualList.size() - 1; i &gt;= 0; i--) {</span>
+<span class="pc bpc" id="L850" title="1 of 2 branches missed.">			if (expectedList.remove(actualList.get(i))) {</span>
+<span class="fc" id="L851">				actualList.remove(i);</span>
 			}
 		}
 		
-<span class="fc" id="L793">		final int numUnmatchedActuals = actualList.size();</span>
-<span class="fc" id="L794">		final int numUnmatchedExpected = expectedList.size();</span>
+<span class="fc" id="L855">		final int numUnmatchedActuals = actualList.size();</span>
+<span class="fc" id="L856">		final int numUnmatchedExpected = expectedList.size();</span>
 		
-<span class="pc bpc" id="L796" title="1 of 2 branches missed.">		if (numUnmatchedActuals + numUnmatchedExpected &gt; 0) {</span>
+<span class="pc bpc" id="L858" title="1 of 2 branches missed.">		if (numUnmatchedActuals + numUnmatchedExpected &gt; 0) {</span>
 			// Special case: if there's exactly one difference, show a direct comparison
-<span class="nc bnc" id="L798" title="All 4 branches missed.">			if (numUnmatchedActuals == 1 &amp;&amp; numUnmatchedExpected == 1) {</span>
-<span class="nc" id="L799">				assertEquals(expectedList.get(0), actualList.get(0));</span>
+<span class="nc bnc" id="L860" title="All 4 branches missed.">			if (numUnmatchedActuals == 1 &amp;&amp; numUnmatchedExpected == 1) {</span>
+<span class="nc" id="L861">				assertEquals(expectedList.get(0), actualList.get(0));</span>
 			}
 			
 			// Build detailed error message showing all differences
-<span class="nc" id="L803">			final String actual = buildStringFromList(actualList);</span>
-<span class="nc" id="L804">			final String expected = buildStringFromList(expectedList);</span>
-<span class="nc" id="L805">			assertEquals(expected, actual);</span>
+<span class="nc" id="L865">			final String actual = buildStringFromList(actualList);</span>
+<span class="nc" id="L866">			final String expected = buildStringFromList(expectedList);</span>
+<span class="nc" id="L867">			assertEquals(expected, actual);</span>
 		}
-<span class="fc" id="L807">	}</span>
+<span class="fc" id="L869">	}</span>
 
 	/**
 	 * Helper method to build a single string from a list of strings.
@@ -813,14 +875,14 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return a single concatenated string with newline separators
 	 */
 	private static String buildStringFromList(final ArrayList&lt;String&gt; strings) {
-<span class="nc" id="L816">		final StringBuilder buf = new StringBuilder();</span>
-<span class="nc bnc" id="L817" title="All 2 branches missed.">		for (final String s : strings) {</span>
-<span class="nc bnc" id="L818" title="All 2 branches missed.">			if (s != null) {</span>
-<span class="nc" id="L819">				buf.append(s);</span>
-<span class="nc" id="L820">				buf.append(&quot;\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L878">		final StringBuilder buf = new StringBuilder();</span>
+<span class="nc bnc" id="L879" title="All 2 branches missed.">		for (final String s : strings) {</span>
+<span class="nc bnc" id="L880" title="All 2 branches missed.">			if (s != null) {</span>
+<span class="nc" id="L881">				buf.append(s);</span>
+<span class="nc" id="L882">				buf.append(&quot;\n&quot;); //$NON-NLS-1$</span>
 			}
 		}
-<span class="nc" id="L823">		return buf.toString();</span>
+<span class="nc" id="L885">		return buf.toString();</span>
 	}
 
 	/**
@@ -835,10 +897,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the normalized string, or {@code null} if input was {@code null}
 	 */
 	private static String normalizeLineEndings(final String s) {
-<span class="pc bpc" id="L838" title="1 of 2 branches missed.">		if (s == null) {</span>
-<span class="nc" id="L839">			return null;</span>
+<span class="pc bpc" id="L900" title="1 of 2 branches missed.">		if (s == null) {</span>
+<span class="nc" id="L901">			return null;</span>
 		}
-<span class="fc" id="L841">		return s.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace(&quot;\r&quot;, &quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L903">		return s.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace(&quot;\r&quot;, &quot;\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
 	}
 
 	/**
@@ -864,15 +926,15 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the normalized string, or {@code null} if input was {@code null}
 	 */
 	private static String normalizeWhitespace(final String s) {
-<span class="pc bpc" id="L867" title="1 of 2 branches missed.">		if (s == null) {</span>
-<span class="nc" id="L868">			return null;</span>
+<span class="pc bpc" id="L929" title="1 of 2 branches missed.">		if (s == null) {</span>
+<span class="nc" id="L930">			return null;</span>
 		}
-<span class="fc" id="L870">		final String normalized = normalizeLineEndings(s);</span>
-<span class="fc" id="L871">		return Arrays.stream(normalized.split(&quot;\n&quot;, -1)) //$NON-NLS-1$</span>
-<span class="fc" id="L872">				.map(line -&gt; normalizeIndentation(line).stripTrailing())</span>
-<span class="fc" id="L873">				.collect(Collectors.joining(&quot;\n&quot;)) //$NON-NLS-1$</span>
-<span class="fc" id="L874">				.replaceAll(&quot;\n{3,}&quot;, &quot;\n\n&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L875">				.strip();</span>
+<span class="fc" id="L932">		final String normalized = normalizeLineEndings(s);</span>
+<span class="fc" id="L933">		return Arrays.stream(normalized.split(&quot;\n&quot;, -1)) //$NON-NLS-1$</span>
+<span class="fc" id="L934">				.map(line -&gt; normalizeIndentation(line).stripTrailing())</span>
+<span class="fc" id="L935">				.collect(Collectors.joining(&quot;\n&quot;)) //$NON-NLS-1$</span>
+<span class="fc" id="L936">				.replaceAll(&quot;\n{3,}&quot;, &quot;\n\n&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L937">				.strip();</span>
 	}
 
 	/**
@@ -882,15 +944,15 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the line with tabs replaced by spaces in leading whitespace
 	 */
 	private static String normalizeIndentation(final String line) {
-<span class="fc" id="L885">		int i = 0;</span>
-<span class="fc bfc" id="L886" title="All 6 branches covered.">		while (i &lt; line.length() &amp;&amp; (line.charAt(i) == ' ' || line.charAt(i) == '\t')) {</span>
-<span class="fc" id="L887">			i++;</span>
+<span class="fc" id="L947">		int i = 0;</span>
+<span class="fc bfc" id="L948" title="All 6 branches covered.">		while (i &lt; line.length() &amp;&amp; (line.charAt(i) == ' ' || line.charAt(i) == '\t')) {</span>
+<span class="fc" id="L949">			i++;</span>
 		}
-<span class="fc bfc" id="L889" title="All 2 branches covered.">		if (i == 0) {</span>
-<span class="fc" id="L890">			return line;</span>
+<span class="fc bfc" id="L951" title="All 2 branches covered.">		if (i == 0) {</span>
+<span class="fc" id="L952">			return line;</span>
 		}
-<span class="fc" id="L892">		final String leading = line.substring(0, i).replace(&quot;\t&quot;, &quot;    &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L893">		return leading + line.substring(i);</span>
+<span class="fc" id="L954">		final String leading = line.substring(0, i).replace(&quot;\t&quot;, &quot;    &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L955">		return leading + line.substring(i);</span>
 	}
 
 	/**
@@ -907,31 +969,31 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param expecteds the expected strings
 	 */
 	public static void assertEqualStringsIgnoreOrderAndWhitespace(final String[] actuals, final String[] expecteds) {
-<span class="fc" id="L910">		final ArrayList&lt;String&gt; actualList = new ArrayList&lt;&gt;(</span>
-<span class="fc" id="L911">				Arrays.stream(actuals).map(AbstractEclipseJava::normalizeWhitespace).toList());</span>
-<span class="fc" id="L912">		final ArrayList&lt;String&gt; expectedList = new ArrayList&lt;&gt;(</span>
-<span class="fc" id="L913">				Arrays.stream(expecteds).map(AbstractEclipseJava::normalizeWhitespace).toList());</span>
+<span class="fc" id="L972">		final ArrayList&lt;String&gt; actualList = new ArrayList&lt;&gt;(</span>
+<span class="fc" id="L973">				Arrays.stream(actuals).map(AbstractEclipseJava::normalizeWhitespace).toList());</span>
+<span class="fc" id="L974">		final ArrayList&lt;String&gt; expectedList = new ArrayList&lt;&gt;(</span>
+<span class="fc" id="L975">				Arrays.stream(expecteds).map(AbstractEclipseJava::normalizeWhitespace).toList());</span>
 
 		// Remove matching elements from both lists
-<span class="fc bfc" id="L916" title="All 2 branches covered.">		for (int i = actualList.size() - 1; i &gt;= 0; i--) {</span>
-<span class="pc bpc" id="L917" title="1 of 2 branches missed.">			if (expectedList.remove(actualList.get(i))) {</span>
-<span class="fc" id="L918">				actualList.remove(i);</span>
+<span class="fc bfc" id="L978" title="All 2 branches covered.">		for (int i = actualList.size() - 1; i &gt;= 0; i--) {</span>
+<span class="pc bpc" id="L979" title="1 of 2 branches missed.">			if (expectedList.remove(actualList.get(i))) {</span>
+<span class="fc" id="L980">				actualList.remove(i);</span>
 			}
 		}
 
-<span class="fc" id="L922">		final int numUnmatchedActuals = actualList.size();</span>
-<span class="fc" id="L923">		final int numUnmatchedExpected = expectedList.size();</span>
+<span class="fc" id="L984">		final int numUnmatchedActuals = actualList.size();</span>
+<span class="fc" id="L985">		final int numUnmatchedExpected = expectedList.size();</span>
 
-<span class="pc bpc" id="L925" title="1 of 2 branches missed.">		if (numUnmatchedActuals + numUnmatchedExpected &gt; 0) {</span>
-<span class="nc bnc" id="L926" title="All 4 branches missed.">			if (numUnmatchedActuals == 1 &amp;&amp; numUnmatchedExpected == 1) {</span>
-<span class="nc" id="L927">				assertEquals(expectedList.get(0), actualList.get(0));</span>
+<span class="pc bpc" id="L987" title="1 of 2 branches missed.">		if (numUnmatchedActuals + numUnmatchedExpected &gt; 0) {</span>
+<span class="nc bnc" id="L988" title="All 4 branches missed.">			if (numUnmatchedActuals == 1 &amp;&amp; numUnmatchedExpected == 1) {</span>
+<span class="nc" id="L989">				assertEquals(expectedList.get(0), actualList.get(0));</span>
 			}
 
-<span class="nc" id="L930">			final String actual = buildStringFromList(actualList);</span>
-<span class="nc" id="L931">			final String expected = buildStringFromList(expectedList);</span>
-<span class="nc" id="L932">			assertEquals(expected, actual);</span>
+<span class="nc" id="L992">			final String actual = buildStringFromList(actualList);</span>
+<span class="nc" id="L993">			final String expected = buildStringFromList(expectedList);</span>
+<span class="nc" id="L994">			assertEquals(expected, actual);</span>
 		}
-<span class="fc" id="L934">	}</span>
+<span class="fc" id="L996">	}</span>
 
 	/**
 	 * Executes the configured refactoring and asserts the result matches expectations,
@@ -949,14 +1011,14 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	public RefactoringStatus assertRefactoringResultAsExpectedNormalizingWhitespace(final ICompilationUnit[] cus,
 			final String[] expected, final Set&lt;String&gt; setOfExpectedGroupCategories) throws CoreException {
-<span class="fc" id="L952">		final RefactoringStatus status = performRefactoring(cus, setOfExpectedGroupCategories);</span>
-<span class="fc" id="L953">		final String[] previews = new String[cus.length];</span>
-<span class="fc bfc" id="L954" title="All 2 branches covered.">		for (int i = 0; i &lt; cus.length; i++) {</span>
-<span class="fc" id="L955">			final ICompilationUnit cu = cus[i];</span>
-<span class="fc" id="L956">			previews[i] = cu.getBuffer().getContents();</span>
+<span class="fc" id="L1014">		final RefactoringStatus status = performRefactoringCheckingDiagnostics(cus, setOfExpectedGroupCategories);</span>
+<span class="fc" id="L1015">		final String[] previews = new String[cus.length];</span>
+<span class="fc bfc" id="L1016" title="All 2 branches covered.">		for (int i = 0; i &lt; cus.length; i++) {</span>
+<span class="fc" id="L1017">			final ICompilationUnit cu = cus[i];</span>
+<span class="fc" id="L1018">			previews[i] = cu.getBuffer().getContents();</span>
 		}
-<span class="fc" id="L958">		assertEqualStringsIgnoreOrderAndWhitespace(previews, expected);</span>
-<span class="fc" id="L959">		return status;</span>
+<span class="fc" id="L1020">		assertEqualStringsIgnoreOrderAndWhitespace(previews, expected);</span>
+<span class="fc" id="L1021">		return status;</span>
 	}
 
 	/**
@@ -972,10 +1034,10 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	protected final RefactoringStatus performRefactoring(final ICompilationUnit[] cus,
 			final Set&lt;String&gt; setOfExpectedGroupCategories) throws CoreException {
-<span class="fc" id="L975">		final CleanUpRefactoring ref = new CleanUpRefactoring();</span>
-<span class="fc" id="L976">		ref.setUseOptionsFromProfile(true);</span>
-<span class="fc" id="L977">		return performRefactoring(ref, cus, JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps(),</span>
-<span class="fc" id="L978">				setOfExpectedGroupCategories);</span>
+<span class="fc" id="L1037">		final CleanUpRefactoring ref = new CleanUpRefactoring();</span>
+<span class="fc" id="L1038">		ref.setUseOptionsFromProfile(true);</span>
+<span class="fc" id="L1039">		return performRefactoring(ref, cus, JavaPlugin.getDefault().getCleanUpRegistry().createCleanUps(),</span>
+<span class="fc" id="L1040">				setOfExpectedGroupCategories);</span>
 	}
 
 	/**
@@ -990,40 +1052,40 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	protected RefactoringStatus performRefactoring(final CleanUpRefactoring ref, final ICompilationUnit[] cus,
 			final ICleanUp[] cleanUps, final Set&lt;String&gt; setOfExpectedGroupCategories) throws CoreException {
-<span class="fc bfc" id="L993" title="All 2 branches covered.">		for (final ICompilationUnit cu : cus) {</span>
-<span class="fc" id="L994">			ref.addCompilationUnit(cu);</span>
+<span class="fc bfc" id="L1055" title="All 2 branches covered.">		for (final ICompilationUnit cu : cus) {</span>
+<span class="fc" id="L1056">			ref.addCompilationUnit(cu);</span>
 		}
-<span class="fc bfc" id="L996" title="All 2 branches covered.">		for (final ICleanUp cleanUp : cleanUps) {</span>
-<span class="fc" id="L997">			ref.addCleanUp(cleanUp);</span>
+<span class="fc bfc" id="L1058" title="All 2 branches covered.">		for (final ICleanUp cleanUp : cleanUps) {</span>
+<span class="fc" id="L1059">			ref.addCleanUp(cleanUp);</span>
 		}
-<span class="fc" id="L999">		final IUndoManager undoManager = RefactoringCore.getUndoManager();</span>
-<span class="fc" id="L1000">		undoManager.flush();</span>
-<span class="fc" id="L1001">		final CreateChangeOperation create = new CreateChangeOperation(</span>
-<span class="fc" id="L1002">				new CheckConditionsOperation(ref, CheckConditionsOperation.ALL_CONDITIONS), RefactoringStatus.FATAL);</span>
-<span class="fc" id="L1003">		final PerformChangeOperation perform = new PerformChangeOperation(create);</span>
-<span class="fc" id="L1004">		perform.setUndoManager(undoManager, ref.getName());</span>
-<span class="fc" id="L1005">		final IWorkspace workspace = ResourcesPlugin.getWorkspace();</span>
-<span class="fc" id="L1006">		workspace.run(perform, new NullProgressMonitor());</span>
-<span class="fc" id="L1007">		final RefactoringStatus status = create.getConditionCheckingStatus();</span>
-<span class="pc bpc" id="L1008" title="1 of 2 branches missed.">		if (status.hasFatalError()) {</span>
-<span class="nc" id="L1009">			throw new CoreException(</span>
-<span class="nc" id="L1010">					new StatusInfo(status.getSeverity(), status.getMessageMatchingSeverity(status.getSeverity())));</span>
+<span class="fc" id="L1061">		final IUndoManager undoManager = RefactoringCore.getUndoManager();</span>
+<span class="fc" id="L1062">		undoManager.flush();</span>
+<span class="fc" id="L1063">		final CreateChangeOperation create = new CreateChangeOperation(</span>
+<span class="fc" id="L1064">				new CheckConditionsOperation(ref, CheckConditionsOperation.ALL_CONDITIONS), RefactoringStatus.FATAL);</span>
+<span class="fc" id="L1065">		final PerformChangeOperation perform = new PerformChangeOperation(create);</span>
+<span class="fc" id="L1066">		perform.setUndoManager(undoManager, ref.getName());</span>
+<span class="fc" id="L1067">		final IWorkspace workspace = ResourcesPlugin.getWorkspace();</span>
+<span class="fc" id="L1068">		workspace.run(perform, new NullProgressMonitor());</span>
+<span class="fc" id="L1069">		final RefactoringStatus status = create.getConditionCheckingStatus();</span>
+<span class="pc bpc" id="L1070" title="1 of 2 branches missed.">		if (status.hasFatalError()) {</span>
+<span class="nc" id="L1071">			throw new CoreException(</span>
+<span class="nc" id="L1072">					new StatusInfo(status.getSeverity(), status.getMessageMatchingSeverity(status.getSeverity())));</span>
 		}
-<span class="fc" id="L1012">		assertTrue(perform.changeExecuted(), &quot;Change wasn't executed&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L1013">		final Change undo = perform.getUndoChange();</span>
-<span class="fc" id="L1014">		assertNotNull(undo, &quot;Undo doesn't exist&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L1015">		assertTrue(undoManager.anythingToUndo(), &quot;Undo manager is empty&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L1016" title="1 of 2 branches missed.">		if (setOfExpectedGroupCategories != null) {</span>
-<span class="nc" id="L1017">			final Change change = create.getChange();</span>
-<span class="nc" id="L1018">			final Set&lt;GroupCategory&gt; actualCategories = new HashSet&lt;&gt;();</span>
-<span class="nc" id="L1019">			collectGroupCategories(actualCategories, change);</span>
-<span class="nc" id="L1020">			actualCategories.forEach(actualCategory -&gt; {</span>
-<span class="nc" id="L1021">				assertTrue(setOfExpectedGroupCategories.contains(actualCategory.getName()),</span>
-<span class="nc" id="L1022">						() -&gt; &quot;Unexpected group category: &quot; + actualCategory.getName() + &quot;, should find: &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L1023">								+ String.join(&quot;, &quot;, setOfExpectedGroupCategories)); //$NON-NLS-1$</span>
-<span class="nc" id="L1024">			});</span>
+<span class="fc" id="L1074">		assertTrue(perform.changeExecuted(), &quot;Change wasn't executed&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L1075">		final Change undo = perform.getUndoChange();</span>
+<span class="fc" id="L1076">		assertNotNull(undo, &quot;Undo doesn't exist&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L1077">		assertTrue(undoManager.anythingToUndo(), &quot;Undo manager is empty&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L1078" title="1 of 2 branches missed.">		if (setOfExpectedGroupCategories != null) {</span>
+<span class="nc" id="L1079">			final Change change = create.getChange();</span>
+<span class="nc" id="L1080">			final Set&lt;GroupCategory&gt; actualCategories = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L1081">			collectGroupCategories(actualCategories, change);</span>
+<span class="nc" id="L1082">			actualCategories.forEach(actualCategory -&gt; {</span>
+<span class="nc" id="L1083">				assertTrue(setOfExpectedGroupCategories.contains(actualCategory.getName()),</span>
+<span class="nc" id="L1084">						() -&gt; &quot;Unexpected group category: &quot; + actualCategory.getName() + &quot;, should find: &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1085">								+ String.join(&quot;, &quot;, setOfExpectedGroupCategories)); //$NON-NLS-1$</span>
+<span class="nc" id="L1086">			});</span>
 		}
-<span class="fc" id="L1026">		return status;</span>
+<span class="fc" id="L1088">		return status;</span>
 	}
 
 	/**
@@ -1033,16 +1095,16 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param change the change to examine
 	 */
 	private void collectGroupCategories(final Set&lt;GroupCategory&gt; result, final Change change) {
-<span class="nc bnc" id="L1036" title="All 2 branches missed.">		if (change instanceof TextEditBasedChange) {</span>
-<span class="nc bnc" id="L1037" title="All 2 branches missed.">			for (final TextEditBasedChangeGroup group : ((TextEditBasedChange) change).getChangeGroups()) {</span>
-<span class="nc" id="L1038">				result.addAll(group.getGroupCategorySet().asList());</span>
+<span class="nc bnc" id="L1098" title="All 2 branches missed.">		if (change instanceof TextEditBasedChange) {</span>
+<span class="nc bnc" id="L1099" title="All 2 branches missed.">			for (final TextEditBasedChangeGroup group : ((TextEditBasedChange) change).getChangeGroups()) {</span>
+<span class="nc" id="L1100">				result.addAll(group.getGroupCategorySet().asList());</span>
 			}
-<span class="nc bnc" id="L1040" title="All 2 branches missed.">		} else if (change instanceof CompositeChange) {</span>
-<span class="nc bnc" id="L1041" title="All 2 branches missed.">			for (final Change child : ((CompositeChange) change).getChildren()) {</span>
-<span class="nc" id="L1042">				collectGroupCategories(result, child);</span>
+<span class="nc bnc" id="L1102" title="All 2 branches missed.">		} else if (change instanceof CompositeChange) {</span>
+<span class="nc bnc" id="L1103" title="All 2 branches missed.">			for (final Change child : ((CompositeChange) change).getChildren()) {</span>
+<span class="nc" id="L1104">				collectGroupCategories(result, child);</span>
 			}
 		}
-<span class="nc" id="L1045">	}</span>
+<span class="nc" id="L1107">	}</span>
 
 	/**
 	 * Enables a cleanup option in the current profile.
@@ -1051,9 +1113,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the profile cannot be updated
 	 */
 	public void enable(final String key) throws CoreException {
-<span class="fc" id="L1054">		cleanUpProfile.getSettings().put(key, CleanUpOptions.TRUE);</span>
-<span class="fc" id="L1055">		commitProfile();</span>
-<span class="fc" id="L1056">	}</span>
+<span class="fc" id="L1116">		cleanUpProfile.getSettings().put(key, CleanUpOptions.TRUE);</span>
+<span class="fc" id="L1117">		commitProfile();</span>
+<span class="fc" id="L1118">	}</span>
 
 	/**
 	 * Sets a cleanup option to a specific value in the current profile.
@@ -1066,9 +1128,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the profile cannot be updated
 	 */
 	public void set(final String key, final String value) throws CoreException {
-<span class="fc" id="L1069">		cleanUpProfile.getSettings().put(key, value);</span>
-<span class="fc" id="L1070">		commitProfile();</span>
-<span class="fc" id="L1071">	}</span>
+<span class="fc" id="L1131">		cleanUpProfile.getSettings().put(key, value);</span>
+<span class="fc" id="L1132">		commitProfile();</span>
+<span class="fc" id="L1133">	}</span>
 
 	/**
 	 * Disables a cleanup option in the current profile.
@@ -1077,9 +1139,9 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the profile cannot be updated
 	 */
 	public void disable(final String key) throws CoreException {
-<span class="fc" id="L1080">		cleanUpProfile.getSettings().put(key, CleanUpOptions.FALSE);</span>
-<span class="fc" id="L1081">		commitProfile();</span>
-<span class="fc" id="L1082">	}</span>
+<span class="fc" id="L1142">		cleanUpProfile.getSettings().put(key, CleanUpOptions.FALSE);</span>
+<span class="fc" id="L1143">		commitProfile();</span>
+<span class="fc" id="L1144">	}</span>
 
 	/**
 	 * Commits the current cleanup profile changes to persistent storage.
@@ -1087,13 +1149,13 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @throws CoreException if the profile cannot be saved
 	 */
 	private void commitProfile() throws CoreException {
-<span class="fc" id="L1090">		final List&lt;Profile&gt; profiles = CleanUpPreferenceUtil.getBuiltInProfiles();</span>
-<span class="fc" id="L1091">		profiles.add(cleanUpProfile);</span>
-<span class="fc" id="L1092">		final CleanUpProfileVersioner versioner = new CleanUpProfileVersioner();</span>
-<span class="fc" id="L1093">		final ProfileStore profileStore = new ProfileStore(CleanUpConstants.CLEANUP_PROFILES, versioner);</span>
-<span class="fc" id="L1094">		profileStore.writeProfiles(profiles, InstanceScope.INSTANCE);</span>
-<span class="fc" id="L1095">		CleanUpPreferenceUtil.saveSaveParticipantOptions(InstanceScope.INSTANCE, cleanUpProfile.getSettings());</span>
-<span class="fc" id="L1096">	}</span>
+<span class="fc" id="L1152">		final List&lt;Profile&gt; profiles = CleanUpPreferenceUtil.getBuiltInProfiles();</span>
+<span class="fc" id="L1153">		profiles.add(cleanUpProfile);</span>
+<span class="fc" id="L1154">		final CleanUpProfileVersioner versioner = new CleanUpProfileVersioner();</span>
+<span class="fc" id="L1155">		final ProfileStore profileStore = new ProfileStore(CleanUpConstants.CLEANUP_PROFILES, versioner);</span>
+<span class="fc" id="L1156">		profileStore.writeProfiles(profiles, InstanceScope.INSTANCE);</span>
+<span class="fc" id="L1157">		CleanUpPreferenceUtil.saveSaveParticipantOptions(InstanceScope.INSTANCE, cleanUpProfile.getSettings());</span>
+<span class="fc" id="L1158">	}</span>
 
 	/**
 	 * Gets the source folder for test compilation units.
@@ -1101,7 +1163,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the source folder root
 	 */
 	public IPackageFragmentRoot getSourceFolder() {
-<span class="fc" id="L1104">		return sourceFolder;</span>
+<span class="fc" id="L1166">		return sourceFolder;</span>
 	}
 
 	/**
@@ -1110,8 +1172,8 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param sourceFolder the source folder root
 	 */
 	public void setSourceFolder(final IPackageFragmentRoot sourceFolder) {
-<span class="fc" id="L1113">		this.sourceFolder = sourceFolder;</span>
-<span class="fc" id="L1114">	}</span>
+<span class="fc" id="L1175">		this.sourceFolder = sourceFolder;</span>
+<span class="fc" id="L1176">	}</span>
 
 	/**
 	 * Gets the temporary Java project created for the test.
@@ -1119,7 +1181,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @return the Java project
 	 */
 	public IJavaProject getJavaProject() {
-<span class="fc" id="L1122">		return javaProject;</span>
+<span class="fc" id="L1184">		return javaProject;</span>
 	}
 
 	/**
@@ -1128,7 +1190,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 * @param javaProject the Java project
 	 */
 	public void setJavaProject(final IJavaProject javaProject) {
-<span class="fc" id="L1131">		this.javaProject = javaProject;</span>
-<span class="fc" id="L1132">	}</span>
+<span class="fc" id="L1193">		this.javaProject = javaProject;</span>
+<span class="fc" id="L1194">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

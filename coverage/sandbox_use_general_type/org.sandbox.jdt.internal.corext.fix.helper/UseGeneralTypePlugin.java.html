@@ -163,25 +163,27 @@ import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer;
 <span class="nc" id="L163">				continue;</span>
 			}
 			
-			// Create new type
+<span class="fc" id="L166">			Type oldType = typeHolder.variableDeclarationStatement.getType();</span>
 <span class="fc" id="L167">			Type newType = cuRewrite.getImportRewrite().addImport(typeHolder.widenedType, ast);</span>
-			
-			// Replace the type in the variable declaration statement
-<span class="fc" id="L170">			rewrite.replace(typeHolder.variableDeclarationStatement.getType(), newType, group);</span>
+
+			// Let JDT remove the old import only when no surviving reference
+			// needs it. Replacing the declaration alone can create an unused import.
+<span class="fc" id="L171">			cuRewrite.getImportRemover().registerRemovedNode(oldType);</span>
+<span class="fc" id="L172">			rewrite.replace(oldType, newType, group);</span>
 			
 			// Mark as processed
-<span class="fc" id="L173">			typeHolder.nodesprocessed.add(typeHolder.variableDeclarationStatement);</span>
+<span class="fc" id="L175">			typeHolder.nodesprocessed.add(typeHolder.variableDeclarationStatement);</span>
 		}
-<span class="fc" id="L175">	}</span>
+<span class="fc" id="L177">	}</span>
 
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L178" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L179">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L181">			return &quot;&quot;&quot;</span>
 				Map&lt;String, Integer&gt; map = new LinkedHashMap&lt;&gt;();
 				map.put(&quot;a&quot;, 1);
 				&quot;&quot;&quot;;
 		}
-<span class="nc" id="L184">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L186">		return &quot;&quot;&quot;</span>
 			LinkedHashMap&lt;String, Integer&gt; map = new LinkedHashMap&lt;&gt;();
 			map.put(&quot;a&quot;, 1);
 			&quot;&quot;&quot;;

@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StatusRewriteSupport.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_platform_helper</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.corext.fix.helper</a> &gt; <span class="el_source">StatusRewriteSupport.java</span></div><h1>StatusRewriteSupport.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0 which accompanies this distribution, and is
+ * available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.corext.fix.helper;
+
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.Javadoc;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.text.edits.TextEditGroup;
+
+/** Target-API and binding housekeeping for the actual Status rewrite only. */
+final class StatusRewriteSupport {
+<span class="fc" id="L41">	private static final String STATE_KEY= StatusRewriteSupport.class.getName();</span>
+
+	private StatusRewriteSupport() {
+	}
+
+	/** Do not drop evaluation or orphan a documented private constant. */
+	static boolean canDiscard(Expression expression) {
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">		if (!ASTNodes.isPassive(expression)) {</span>
+<span class="nc" id="L49">			return false;</span>
+		}
+<span class="fc" id="L51">		boolean[] documented= { false };</span>
+<span class="fc" id="L52">		expression.accept(new ASTVisitor(true) {</span>
+			@Override
+			public boolean visit(SimpleName name) {
+<span class="fc bfc" id="L55" title="All 2 branches covered.">				if (name.resolveBinding() instanceof IVariableBinding variable</span>
+<span class="pc bpc" id="L56" title="1 of 4 branches missed.">						&amp;&amp; variable.isField() &amp;&amp; Modifier.isPrivate(variable.getModifiers())</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">						&amp;&amp; variable.getConstantValue() != null) {</span>
+<span class="fc" id="L58">					expression.getRoot().accept(new ASTVisitor(true) {</span>
+						@Override
+						public boolean visit(SimpleName reference) {
+<span class="fc bfc" id="L61" title="All 2 branches covered.">							if (variable.isEqualTo(reference.resolveBinding())</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">									&amp;&amp; ASTNodes.getFirstAncestorOrNull(reference, Javadoc.class) != null) {</span>
+<span class="fc" id="L63">								documented[0]= true;</span>
+							}
+<span class="fc bfc" id="L65" title="All 2 branches covered.">							return !documented[0];</span>
+						}
+					});
+				}
+<span class="fc bfc" id="L69" title="All 2 branches covered.">				return !documented[0];</span>
+			}
+		});
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		return !documented[0];</span>
+	}
+
+	static boolean hasPreservingConstructor(ClassInstanceCreation creation) {
+<span class="fc" id="L76">		IMethodBinding original= creation.resolveConstructorBinding();</span>
+<span class="pc bpc" id="L77" title="2 of 4 branches missed.">		if (original == null || original.isRecovered()) {</span>
+<span class="nc" id="L78">			return false;</span>
+		}
+<span class="fc" id="L80">		ITypeBinding[] old= original.getParameterTypes();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">		if (old.length != 5) {</span>
+<span class="fc" id="L82">			return false;</span>
+		}
+<span class="fc bfc" id="L84" title="All 2 branches covered.">		for (IMethodBinding candidate : original.getDeclaringClass().getDeclaredMethods()) {</span>
+<span class="fc" id="L85">			ITypeBinding[] parameters= candidate.getParameterTypes();</span>
+<span class="pc bpc" id="L86" title="2 of 6 branches missed.">			if (candidate.isConstructor() &amp;&amp; !candidate.isRecovered() &amp;&amp; Modifier.isPublic(candidate.getModifiers())</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">					&amp;&amp; parameters.length == 4</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">					&amp;&amp; parameters[0].getErasure().isEqualTo(old[0].getErasure())</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">					&amp;&amp; parameters[1].getErasure().isEqualTo(old[1].getErasure())</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">					&amp;&amp; parameters[2].getErasure().isEqualTo(old[3].getErasure())</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">					&amp;&amp; parameters[3].getErasure().isEqualTo(old[4].getErasure())</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">					&amp;&amp; candidate.getExceptionTypes().length == 0) {</span>
+<span class="fc" id="L93">				return true;</span>
+			}
+		}
+<span class="fc" id="L96">		return false;</span>
+	}
+
+	/** Avoid creating a newly unused local when a factory replaces an allocation. */
+	static boolean canUseFactory(ClassInstanceCreation creation) {
+<span class="fc" id="L101">		VariableDeclarationFragment fragment= localInitializer(creation);</span>
+<span class="fc bfc" id="L102" title="All 4 branches covered.">		if (fragment == null || hasReference((CompilationUnit) creation.getRoot(), fragment, Set.of())) {</span>
+<span class="fc" id="L103">			return true;</span>
+		}
+<span class="fc" id="L105">		VariableDeclarationStatement declaration= (VariableDeclarationStatement) fragment.getParent();</span>
+		// Preserve annotated declarations and multi-fragment evaluation order by
+		// using the shorter constructor there rather than a discarded local binding.
+<span class="pc bpc" id="L108" title="1 of 4 branches missed.">		return declaration.fragments().size() == 1 &amp;&amp; declaration.modifiers().stream().allMatch(Modifier.class::isInstance);</span>
+	}
+
+	static void replaceWithFactory(CompilationUnitRewrite cuRewrite, ClassInstanceCreation creation,
+			MethodInvocation factory, TextEditGroup group) {
+<span class="fc" id="L113">		VariableDeclarationFragment fragment= localInitializer(creation);</span>
+<span class="fc bfc" id="L114" title="All 4 branches covered.">		if (fragment != null &amp;&amp; !hasReference(cuRewrite.getRoot(), fragment, Set.of())) {</span>
+<span class="fc" id="L115">			VariableDeclarationStatement declaration= (VariableDeclarationStatement) fragment.getParent();</span>
+<span class="fc" id="L116">			ASTNodes.replaceButKeepComment(cuRewrite.getASTRewrite(), declaration,</span>
+<span class="fc" id="L117">					creation.getAST().newExpressionStatement(factory), group);</span>
+<span class="fc" id="L118">			cuRewrite.getImportRemover().registerRemovedNode(declaration);</span>
+<span class="fc" id="L119">		} else {</span>
+<span class="fc" id="L120">			ASTNodes.replaceButKeepComment(cuRewrite.getASTRewrite(), creation, factory, group);</span>
+		}
+<span class="fc" id="L122">	}</span>
+
+	static void finish(CompilationUnitRewrite cuRewrite, ClassInstanceCreation creation,
+			List&lt;Expression&gt; retained, List&lt;Expression&gt; discarded, TextEditGroup group, String... addedImports) {
+<span class="fc" id="L126">		var remover= cuRewrite.getImportRemover();</span>
+<span class="fc" id="L127">		remover.registerRemovedNode(creation);</span>
+<span class="fc" id="L128">		retained.forEach(expression -&gt; remover.registerRetainedNode(ASTNodes.getUnparenthesedExpression(expression)));</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">		for (String type : addedImports) {</span>
+<span class="fc" id="L130">			remover.registerAddedImport(type);</span>
+		}
+<span class="fc" id="L132">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L133">		State state= (State) rewrite.getProperty(STATE_KEY);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">		if (state == null) {</span>
+<span class="fc" id="L135">			state= new State();</span>
+<span class="fc" id="L136">			rewrite.setProperty(STATE_KEY, state);</span>
+		}
+<span class="fc bfc" id="L138" title="All 2 branches covered.">		for (Expression expression : discarded) {</span>
+<span class="fc" id="L139">			state.removed.add(expression);</span>
+<span class="fc" id="L140">			state.collect(cuRewrite.getRoot(), expression);</span>
+		}
+<span class="fc" id="L142">		state.removeUnreferencedConstants(cuRewrite, group);</span>
+<span class="fc" id="L143">	}</span>
+
+	private static VariableDeclarationFragment localInitializer(Expression expression) {
+<span class="fc" id="L146">		ASTNode current= expression;</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">		while (current.getParent() instanceof ParenthesizedExpression) {</span>
+<span class="nc" id="L148">			current= current.getParent();</span>
+		}
+<span class="fc bfc" id="L150" title="All 2 branches covered.">		if (current.getParent() instanceof VariableDeclarationFragment fragment</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">				&amp;&amp; fragment.getInitializer() == current</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">				&amp;&amp; fragment.getParent() instanceof VariableDeclarationStatement) {</span>
+<span class="fc" id="L153">			return fragment;</span>
+		}
+<span class="fc" id="L155">		return null;</span>
+	}
+
+	private static boolean hasReference(CompilationUnit root, VariableDeclarationFragment declaration,
+			Set&lt;ASTNode&gt; removed) {
+<span class="fc" id="L160">		IVariableBinding binding= declaration.resolveBinding();</span>
+<span class="pc bpc" id="L161" title="2 of 4 branches missed.">		if (binding == null || binding.isRecovered()) {</span>
+<span class="nc" id="L162">			return true;</span>
+		}
+<span class="fc" id="L164">		boolean[] found= { false };</span>
+<span class="fc" id="L165">		root.accept(new ASTVisitor(true) {</span>
+			@Override
+			public boolean preVisit2(ASTNode node) {
+<span class="fc bfc" id="L168" title="All 4 branches covered.">				return !found[0] &amp;&amp; !removed.contains(node);</span>
+			}
+
+			@Override
+			public boolean visit(SimpleName name) {
+<span class="fc bfc" id="L173" title="All 4 branches covered.">				if (name != declaration.getName() &amp;&amp; name.getIdentifier().equals(binding.getName())) {</span>
+<span class="fc" id="L174">					var reference= name.resolveBinding();</span>
+<span class="pc bpc" id="L175" title="2 of 6 branches missed.">					found[0]= reference == null || reference.isRecovered() || binding.isEqualTo(reference);</span>
+				}
+<span class="fc bfc" id="L177" title="All 2 branches covered.">				return !found[0];</span>
+			}
+		});
+<span class="fc" id="L180">		return found[0];</span>
+	}
+
+<span class="fc" id="L183">	private static final class State {</span>
+<span class="fc" id="L184">		final Set&lt;ASTNode&gt; removed= Collections.newSetFromMap(new IdentityHashMap&lt;&gt;());</span>
+<span class="fc" id="L185">		final Set&lt;VariableDeclarationFragment&gt; candidates= new LinkedHashSet&lt;&gt;();</span>
+
+		void collect(CompilationUnit root, ASTNode expression) {
+<span class="fc" id="L188">			expression.accept(new ASTVisitor(true) {</span>
+				@Override
+				public boolean visit(SimpleName name) {
+<span class="pc bpc" id="L191" title="1 of 4 branches missed.">					if (name.resolveBinding() instanceof IVariableBinding variable &amp;&amp; !variable.isRecovered()</span>
+<span class="pc bpc" id="L192" title="1 of 4 branches missed.">							&amp;&amp; variable.isField() &amp;&amp; Modifier.isPrivate(variable.getModifiers())</span>
+<span class="pc bpc" id="L193" title="2 of 4 branches missed.">							&amp;&amp; Modifier.isFinal(variable.getModifiers()) &amp;&amp; variable.getConstantValue() != null</span>
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">							&amp;&amp; root.findDeclaringNode(variable.getVariableDeclaration()) instanceof VariableDeclarationFragment fragment</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">							&amp;&amp; fragment.getParent() instanceof FieldDeclaration field</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">							&amp;&amp; field.modifiers().stream().allMatch(Modifier.class::isInstance)</span>
+<span class="pc bpc" id="L197" title="2 of 4 branches missed.">							&amp;&amp; fragment.getInitializer() != null &amp;&amp; ASTNodes.isPassive(fragment.getInitializer())) {</span>
+<span class="fc" id="L198">						candidates.add(fragment);</span>
+					}
+<span class="fc" id="L200">					return true;</span>
+				}
+			});
+<span class="fc" id="L203">		}</span>
+
+		void removeUnreferencedConstants(CompilationUnitRewrite cuRewrite, TextEditGroup group) {
+			boolean changed;
+			do {
+<span class="fc" id="L208">				changed= false;</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">				for (VariableDeclarationFragment fragment : List.copyOf(candidates)) {</span>
+<span class="fc bfc" id="L210" title="All 4 branches covered.">					if (removed.contains(fragment) || hasReference(cuRewrite.getRoot(), fragment, removed)) {</span>
+<span class="fc" id="L211">						continue;</span>
+					}
+<span class="fc" id="L213">					FieldDeclaration field= (FieldDeclaration) fragment.getParent();</span>
+<span class="fc" id="L214">					var fragments= cuRewrite.getASTRewrite().getListRewrite(field, FieldDeclaration.FRAGMENTS_PROPERTY);</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">					ASTNode deleted= fragments.getRewrittenList().size() == 1 ? field : fragment;</span>
+<span class="fc" id="L216">					ASTNodes.removeButKeepComment(cuRewrite.getASTRewrite(), deleted, group);</span>
+<span class="fc" id="L217">					cuRewrite.getImportRemover().registerRemovedNode(deleted);</span>
+<span class="fc" id="L218">					removed.add(fragment);</span>
+<span class="fc" id="L219">					removed.add(deleted);</span>
+<span class="fc" id="L220">					collect(cuRewrite.getRoot(), fragment.getInitializer());</span>
+<span class="fc" id="L221">					changed= true;</span>
+				}
+<span class="fc bfc" id="L223" title="All 2 branches covered.">			} while (changed);</span>
+<span class="fc" id="L224">		}</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

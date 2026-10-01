@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CompilerDiagnosticRegressionTest.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_test_commons</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.ui.tests.quickfix.rules</a> &gt; <span class="el_source">CompilerDiagnosticRegressionTest.java</span></div><h1>CompilerDiagnosticRegressionTest.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which accompanies this distribution,
+ * and is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.ui.tests.quickfix.rules;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Set;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import org.eclipse.core.runtime.CoreException;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.JavaCore;
+
+import org.eclipse.jdt.internal.corext.fix.CleanUpRefactoring;
+
+import org.eclipse.jdt.ui.cleanup.ICleanUp;
+
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+
+/** Characterizes the default before/after compiler-diagnostic guard. */
+<span class="fc" id="L33">class CompilerDiagnosticRegressionTest {</span>
+
+	@RegisterExtension
+<span class="fc" id="L36">	final DiagnosticHarness context= new DiagnosticHarness();</span>
+
+	@Test
+	void rejectsANewWarning() throws Exception {
+<span class="fc" id="L40">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);</span>
+<span class="fc" id="L41">		String before= source(&quot;int value= 1; System.out.println(value);&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L42">		String after= source(&quot;int value= 1;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L43">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L44">		context.output(after);</span>
+
+<span class="fc" id="L46">		AssertionError failure= assertThrows(AssertionError.class, () -&gt;</span>
+<span class="nc" id="L47">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+
+<span class="fc" id="L49">		assertTrue(failure.getMessage().contains(&quot;WARNING&quot;), failure.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L50">	}</span>
+
+	@Test
+	void whitespaceNormalizingAssertionAlsoRejectsANewWarning() throws Exception {
+<span class="fc" id="L54">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);</span>
+<span class="fc" id="L55">		String before= source(&quot;int value= 1; System.out.println(value);&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L56">		String after= source(&quot;int value= 1;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L57">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L58">		context.output(after);</span>
+
+<span class="fc" id="L60">		assertThrows(AssertionError.class, () -&gt;</span>
+<span class="pc" id="L61">				context.assertRefactoringResultAsExpectedNormalizingWhitespace(</span>
+<span class="pc" id="L62">						new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+<span class="fc" id="L63">	}</span>
+
+	@Test
+	void rejectsANewCompilerError() throws Exception {
+<span class="fc" id="L67">		String before= source(&quot;int value= 1; System.out.println(value);&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L68">		String after= source(&quot;int value= missing; System.out.println(value);&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L69">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L70">		context.output(after);</span>
+
+<span class="fc" id="L72">		AssertionError failure= assertThrows(AssertionError.class, () -&gt;</span>
+<span class="nc" id="L73">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+
+<span class="fc" id="L75">		assertTrue(failure.getMessage().contains(&quot;ERROR&quot;), failure.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L76">	}</span>
+
+	@Test
+	void rejectsAnAdditionalOccurrenceOfTheSameError() throws Exception {
+<span class="fc" id="L80">		String before= source(&quot;missing();&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L81">		String after= source(&quot;missing(); missing();&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L82">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L83">		context.output(after);</span>
+
+<span class="fc" id="L85">		AssertionError failure= assertThrows(AssertionError.class, () -&gt;</span>
+<span class="nc" id="L86">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+
+<span class="fc" id="L88">		assertTrue(failure.getMessage().contains(&quot;before=1 after=2&quot;), failure.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L89">	}</span>
+
+	@Test
+	void changingTheDiagnosticArgumentsIsARegression() throws Exception {
+<span class="fc" id="L93">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);</span>
+<span class="fc" id="L94">		String before= source(&quot;int first= 1;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L95">		String after= source(&quot;int second= 1;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L96">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L97">		context.output(after);</span>
+
+<span class="fc" id="L99">		assertThrows(AssertionError.class, () -&gt;</span>
+<span class="nc" id="L100">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+<span class="fc" id="L101">	}</span>
+
+	@Test
+	void diagnosticsAreComparedPerCompilationUnit() throws Exception {
+<span class="fc" id="L105">		String broken= source(&quot;First&quot;, &quot;missing();&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L106">		String clean= source(&quot;Second&quot;, &quot;System.out.println(1);&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L107">		ICompilationUnit first= createUnit(&quot;First.java&quot;, broken); //$NON-NLS-1$</span>
+<span class="fc" id="L108">		ICompilationUnit second= createUnit(&quot;Second.java&quot;, clean); //$NON-NLS-1$</span>
+<span class="fc" id="L109">		context.output(clean, broken);</span>
+
+<span class="fc" id="L111">		AssertionError failure= assertThrows(AssertionError.class, () -&gt;</span>
+<span class="pc" id="L112">				context.assertRefactoringResultAsExpected(</span>
+<span class="pc" id="L113">						new ICompilationUnit[] { first, second }, new String[] { clean, broken }, null));</span>
+
+<span class="fc" id="L115">		assertTrue(failure.getMessage().contains(&quot;Second.java&quot;), failure.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L116">	}</span>
+
+	@Test
+	void lineMovementOfTheSameExistingErrorIsAllowed() throws Exception {
+<span class="fc" id="L120">		String before= &quot;&quot;&quot;</span>
+				package test;
+				class Sample {
+					void run() {
+						missing();
+					}
+				}
+				&quot;&quot;&quot;;
+<span class="fc" id="L128">		String after= &quot;&quot;&quot;</span>
+				package test;
+				class Sample {
+
+					void run() {
+						missing();
+					}
+				}
+				&quot;&quot;&quot;;
+<span class="fc" id="L137">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L138">		context.output(after);</span>
+
+<span class="fc" id="L140">		assertDoesNotThrow(() -&gt;</span>
+<span class="fc" id="L141">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+<span class="fc" id="L142">	}</span>
+
+	@Test
+	void removingAnExistingWarningIsAllowed() throws Exception {
+<span class="fc" id="L146">		context.getJavaProject().setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL, JavaCore.WARNING);</span>
+<span class="fc" id="L147">		String before= source(&quot;int value= 1;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L148">		String after= source(&quot;int value= 1; System.out.println(value);&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L149">		ICompilationUnit unit= createUnit(before);</span>
+<span class="fc" id="L150">		context.output(after);</span>
+
+<span class="fc" id="L152">		assertDoesNotThrow(() -&gt;</span>
+<span class="fc" id="L153">				context.assertRefactoringResultAsExpected(new ICompilationUnit[] { unit }, new String[] { after }, null));</span>
+<span class="fc" id="L154">	}</span>
+
+	private ICompilationUnit createUnit(String source) throws CoreException {
+<span class="fc" id="L157">		return createUnit(&quot;Sample.java&quot;, source); //$NON-NLS-1$</span>
+	}
+
+	private ICompilationUnit createUnit(String name, String source) throws CoreException {
+<span class="fc" id="L161">		return context.getSourceFolder().createPackageFragment(&quot;test&quot;, false, null) //$NON-NLS-1$</span>
+<span class="fc" id="L162">				.createCompilationUnit(name, source, true, null);</span>
+	}
+
+	private static String source(String statement) {
+<span class="fc" id="L166">		return source(&quot;Sample&quot;, statement); //$NON-NLS-1$</span>
+	}
+
+	private static String source(String typeName, String statement) {
+<span class="fc" id="L170">		return &quot;&quot;&quot;</span>
+				package test;
+				class TYPE {
+					void run() {
+						STATEMENT
+					}
+				}
+<span class="fc" id="L177">				&quot;&quot;&quot;.replace(&quot;TYPE&quot;, typeName).replace(&quot;STATEMENT&quot;, statement); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	private static final class DiagnosticHarness extends AbstractEclipseJava {
+<span class="fc" id="L181">		private String[] output= new String[0];</span>
+
+		DiagnosticHarness() {
+<span class="fc" id="L184">			super(&quot;testresources/rtstubs_22.jar&quot;, JavaCore.VERSION_22); //$NON-NLS-1$</span>
+<span class="fc" id="L185">		}</span>
+
+		void output(String... source) {
+<span class="fc" id="L188">			output= source.clone();</span>
+<span class="fc" id="L189">		}</span>
+
+		@Override
+		protected RefactoringStatus performRefactoring(CleanUpRefactoring ref, ICompilationUnit[] units,
+				ICleanUp[] cleanUps, Set&lt;String&gt; expectedGroups) throws CoreException {
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">			if (units.length != output.length) {</span>
+<span class="nc" id="L195">				throw new CoreException(org.eclipse.core.runtime.Status.error(&quot;Missing simulated refactoring output&quot;)); //$NON-NLS-1$</span>
+			}
+<span class="fc bfc" id="L197" title="All 2 branches covered.">			for (int index= 0; index &lt; units.length; index++) {</span>
+<span class="fc" id="L198">				units[index].getBuffer().setContents(output[index]);</span>
+			}
+<span class="fc" id="L200">			return new RefactoringStatus();</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

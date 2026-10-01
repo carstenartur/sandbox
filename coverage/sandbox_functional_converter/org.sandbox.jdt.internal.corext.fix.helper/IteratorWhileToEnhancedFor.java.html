@@ -76,15 +76,19 @@ import org.sandbox.jdt.internal.corext.fix.helper.IteratorPatternDetector.Iterat
 <span class="fc" id="L76">				.terminal(new ForEachTerminal(body.subList(1, body.size()), false)).build();</span>
 <span class="fc" id="L77">		new ASTEnhancedForRenderer(rewrite.getAST(), rewrite.getASTRewrite()).renderIteratorLoop(model, loop,</span>
 <span class="fc" id="L78">				previous, pattern.collectionExpression(), (VariableDeclarationStatement) element.getParent(), rewrite.getImportRewrite(), group);</span>
-<span class="fc" id="L79">	}</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">		if (previous != null) {</span>
+<span class="fc" id="L80">			rewrite.getImportRemover().registerRemovedNode(previous);</span>
+<span class="fc" id="L81">			rewrite.getImportRemover().applyRemoves(rewrite.getImportRewrite());</span>
+		}
+<span class="fc" id="L83">	}</span>
 
 	@Override
 	public String getPreview(boolean after) {
-<span class="nc bnc" id="L83" title="All 2 branches missed.">		return after ? &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">		return after ? &quot;&quot;&quot;</span>
 				for (String item : items) {
 					System.out.println(item);
 				}
-<span class="nc" id="L87">				&quot;&quot;&quot; : &quot;&quot;&quot;</span>
+<span class="nc" id="L91">				&quot;&quot;&quot; : &quot;&quot;&quot;</span>
 				Iterator&lt;String&gt; it = items.iterator();
 				while (it.hasNext()) {
 					String item = it.next();

@@ -43,8 +43,8 @@ final class JUnit4ParameterizedMigration {
 
 	static void addOperations(JUnit4ParameterizedPlan plan, ICompilationUnit unit, CompilationUnit root,
 			Set&lt;CompilationUnitRewriteOperationWithSourceRange&gt; operations, Set&lt;ASTNode&gt; processed) throws CoreException {
-<span class="pc bpc" id="L46" title="1 of 4 branches missed.">		if (!plan.executable() || !plan.compilationUnits().containsValue(unit.getPrimary().getHandleIdentifier())) {</span>
-<span class="fc" id="L47">			return;</span>
+<span class="pc bpc" id="L46" title="2 of 4 branches missed.">		if (!plan.executable() || !plan.compilationUnits().containsValue(unit.getPrimary().getHandleIdentifier())) {</span>
+<span class="nc" id="L47">			return;</span>
 		}
 <span class="fc" id="L49">		validateCurrentSources(plan);</span>
 <span class="fc" id="L50">		Map&lt;NodeKey, ASTNode&gt; nodes= new LinkedHashMap&lt;&gt;();</span>

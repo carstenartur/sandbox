@@ -187,7 +187,7 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 <span class="nc" id="L187">					return true;</span>
 				}
 <span class="fc" id="L189">				SimpleName sn = ASTNodes.as(expr, SimpleName.class);</span>
-<span class="pc bpc" id="L190" title="1 of 2 branches missed.">				if (sn != null) {</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">				if (sn != null) {</span>
 <span class="fc" id="L191">					IBinding ibinding = sn.resolveBinding();</span>
 					// Add null-check for binding
 <span class="pc bpc" id="L193" title="1 of 2 branches missed.">					if (ibinding == null) {</span>
@@ -390,33 +390,33 @@ AbstractTool&lt;ReferenceHolder&lt;Integer, JFacePlugin.MonitorHolder&gt;&gt; {
 		
 		// First try binding (most reliable)
 <span class="fc" id="L392">		ITypeBinding binding = type.resolveBinding();</span>
-<span class="pc bpc" id="L393" title="1 of 4 branches missed.">		if (binding != null &amp;&amp; !binding.isRecovered()) {</span>
+<span class="pc bpc" id="L393" title="2 of 4 branches missed.">		if (binding != null &amp;&amp; !binding.isRecovered()) {</span>
 <span class="fc" id="L394">			return &quot;org.eclipse.core.runtime.SubProgressMonitor&quot;.equals(binding.getQualifiedName()); //$NON-NLS-1$</span>
 		}
 		
 		// Fallback: check type name
-<span class="fc" id="L398">		String typeName = getTypeName(type);</span>
-<span class="fc bfc" id="L399" title="All 2 branches covered.">		return &quot;SubProgressMonitor&quot;.equals(typeName) || //$NON-NLS-1$</span>
-<span class="pc bpc" id="L400" title="1 of 2 branches missed.">			   &quot;org.eclipse.core.runtime.SubProgressMonitor&quot;.equals(typeName); //$NON-NLS-1$</span>
+<span class="nc" id="L398">		String typeName = getTypeName(type);</span>
+<span class="nc bnc" id="L399" title="All 2 branches missed.">		return &quot;SubProgressMonitor&quot;.equals(typeName) || //$NON-NLS-1$</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">			   &quot;org.eclipse.core.runtime.SubProgressMonitor&quot;.equals(typeName); //$NON-NLS-1$</span>
 	}
 	
 	/**
 	 * Extracts the type name from a Type node.
 	 */
 	private static String getTypeName(org.eclipse.jdt.core.dom.Type type) {
-<span class="fc bfc" id="L407" title="All 2 branches covered.">		if (type.isSimpleType()) {</span>
-<span class="fc" id="L408">			org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) type;</span>
-<span class="fc" id="L409">			return simpleType.getName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L407" title="All 2 branches missed.">		if (type.isSimpleType()) {</span>
+<span class="nc" id="L408">			org.eclipse.jdt.core.dom.SimpleType simpleType = (org.eclipse.jdt.core.dom.SimpleType) type;</span>
+<span class="nc" id="L409">			return simpleType.getName().getFullyQualifiedName();</span>
 		}
-<span class="pc bpc" id="L411" title="1 of 2 branches missed.">		if (type.isQualifiedType()) {</span>
+<span class="nc bnc" id="L411" title="All 2 branches missed.">		if (type.isQualifiedType()) {</span>
 <span class="nc" id="L412">			org.eclipse.jdt.core.dom.QualifiedType qualifiedType = (org.eclipse.jdt.core.dom.QualifiedType) type;</span>
 <span class="nc" id="L413">			return qualifiedType.getName().getFullyQualifiedName();</span>
 		}
-<span class="pc bpc" id="L415" title="1 of 2 branches missed.">		if (type.isNameQualifiedType()) {</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">		if (type.isNameQualifiedType()) {</span>
 <span class="nc" id="L416">			org.eclipse.jdt.core.dom.NameQualifiedType nameQualifiedType = (org.eclipse.jdt.core.dom.NameQualifiedType) type;</span>
 <span class="nc" id="L417">			return nameQualifiedType.getName().getFullyQualifiedName();</span>
 		}
-<span class="fc" id="L419">		return type.toString();</span>
+<span class="nc" id="L419">		return type.toString();</span>
 	}
 
 	/**

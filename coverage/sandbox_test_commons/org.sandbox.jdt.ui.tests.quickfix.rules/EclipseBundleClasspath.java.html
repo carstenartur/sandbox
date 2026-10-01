@@ -46,12 +46,12 @@ import org.osgi.framework.Bundle;
  */
 public final class EclipseBundleClasspath {
 
-<span class="nc" id="L49">	private static final Map&lt;String, IPath&gt; JUNIT_LIBRARY_CONTAINERS= Map.of(</span>
-<span class="nc" id="L50">			&quot;org.junit&quot;, JUnitCore.JUNIT4_CONTAINER_PATH, //$NON-NLS-1$</span>
-<span class="nc" id="L51">			&quot;org.junit.jupiter.api&quot;, JUnitCore.JUNIT5_CONTAINER_PATH, //$NON-NLS-1$</span>
-<span class="nc" id="L52">			&quot;org.apiguardian.api&quot;, JUnitCore.JUNIT5_CONTAINER_PATH, //$NON-NLS-1$</span>
-<span class="nc" id="L53">			&quot;org.opentest4j&quot;, JUnitCore.JUNIT5_CONTAINER_PATH, //$NON-NLS-1$</span>
-<span class="nc" id="L54">			&quot;org.junit.platform.commons&quot;, JUnitCore.JUNIT5_CONTAINER_PATH); //$NON-NLS-1$</span>
+<span class="fc" id="L49">	private static final Map&lt;String, IPath&gt; JUNIT_LIBRARY_CONTAINERS= Map.of(</span>
+<span class="fc" id="L50">			&quot;org.junit&quot;, JUnitCore.JUNIT4_CONTAINER_PATH, //$NON-NLS-1$</span>
+<span class="fc" id="L51">			&quot;org.junit.jupiter.api&quot;, JUnitCore.JUNIT5_CONTAINER_PATH, //$NON-NLS-1$</span>
+<span class="fc" id="L52">			&quot;org.apiguardian.api&quot;, JUnitCore.JUNIT5_CONTAINER_PATH, //$NON-NLS-1$</span>
+<span class="fc" id="L53">			&quot;org.opentest4j&quot;, JUnitCore.JUNIT5_CONTAINER_PATH, //$NON-NLS-1$</span>
+<span class="fc" id="L54">			&quot;org.junit.platform.commons&quot;, JUnitCore.JUNIT5_CONTAINER_PATH); //$NON-NLS-1$</span>
 
 	private EclipseBundleClasspath() {
 	}
@@ -66,15 +66,15 @@ public final class EclipseBundleClasspath {
 	 * @throws CoreException if a dependency cannot be resolved or added
 	 */
 	public static void addBundles(IJavaProject javaProject, String... bundleSymbolicNames) throws CoreException {
-<span class="nc bnc" id="L69" title="All 2 branches missed.">		for (String bundleSymbolicName : bundleSymbolicNames) {</span>
-<span class="nc" id="L70">			IPath junitContainer= JUNIT_LIBRARY_CONTAINERS.get(bundleSymbolicName);</span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">			if (junitContainer != null) {</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">		for (String bundleSymbolicName : bundleSymbolicNames) {</span>
+<span class="fc" id="L70">			IPath junitContainer= JUNIT_LIBRARY_CONTAINERS.get(bundleSymbolicName);</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">			if (junitContainer != null) {</span>
 <span class="nc" id="L72">				addToClasspath(javaProject, JavaCore.newContainerEntry(junitContainer));</span>
 <span class="nc" id="L73">			} else {</span>
-<span class="nc" id="L74">				addBundle(javaProject, bundleSymbolicName);</span>
+<span class="fc" id="L74">				addBundle(javaProject, bundleSymbolicName);</span>
 			}
 		}
-<span class="nc" id="L77">	}</span>
+<span class="fc" id="L77">	}</span>
 
 	/**
 	 * Adds one bundle and its installed fragments.
@@ -84,56 +84,56 @@ public final class EclipseBundleClasspath {
 	 * @throws CoreException if the bundle cannot be resolved or added
 	 */
 	public static void addBundle(IJavaProject javaProject, String bundleSymbolicName) throws CoreException {
-<span class="nc" id="L87">		Bundle bundle= Platform.getBundle(bundleSymbolicName);</span>
-<span class="nc bnc" id="L88" title="All 2 branches missed.">		if (bundle == null) {</span>
+<span class="fc" id="L87">		Bundle bundle= Platform.getBundle(bundleSymbolicName);</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		if (bundle == null) {</span>
 <span class="nc" id="L89">			throw new CoreException(Status.error(&quot;Bundle not found: &quot; + bundleSymbolicName)); //$NON-NLS-1$</span>
 		}
 
-<span class="nc" id="L92">		addBundleFile(javaProject, bundle, bundleSymbolicName);</span>
-<span class="nc" id="L93">		Bundle[] fragments= Platform.getFragments(bundle);</span>
-<span class="nc bnc" id="L94" title="All 2 branches missed.">		if (fragments != null) {</span>
-<span class="nc bnc" id="L95" title="All 2 branches missed.">			for (Bundle fragment : fragments) {</span>
-<span class="nc" id="L96">				addBundleFile(javaProject, fragment, fragment.getSymbolicName());</span>
+<span class="fc" id="L92">		addBundleFile(javaProject, bundle, bundleSymbolicName);</span>
+<span class="fc" id="L93">		Bundle[] fragments= Platform.getFragments(bundle);</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">		if (fragments != null) {</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">			for (Bundle fragment : fragments) {</span>
+<span class="fc" id="L96">				addBundleFile(javaProject, fragment, fragment.getSymbolicName());</span>
 			}
 		}
-<span class="nc" id="L99">	}</span>
+<span class="fc" id="L99">	}</span>
 
 	private static void addBundleFile(IJavaProject javaProject, Bundle bundle, String displayName)
 			throws CoreException {
 		File bundleFile;
 		try {
-<span class="nc" id="L105">			bundleFile= FileLocator.getBundleFile(bundle);</span>
-<span class="nc" id="L106">		} catch (IOException exception) {</span>
+<span class="fc" id="L105">			bundleFile= FileLocator.getBundleFile(bundle);</span>
+<span class="pc" id="L106">		} catch (IOException exception) {</span>
 <span class="nc" id="L107">			throw new CoreException(Status.error(&quot;Cannot locate bundle file: &quot; + displayName, exception)); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L109" title="All 4 branches missed.">		if (bundleFile == null || !bundleFile.exists()) {</span>
+<span class="pc bpc" id="L109" title="2 of 4 branches missed.">		if (bundleFile == null || !bundleFile.exists()) {</span>
 <span class="nc" id="L110">			throw new CoreException(Status.error(&quot;Bundle file does not exist: &quot; + displayName)); //$NON-NLS-1$</span>
 		}
 
-<span class="nc" id="L113">		File classpathFile= bundleFile;</span>
-<span class="nc bnc" id="L114" title="All 2 branches missed.">		if (bundleFile.isDirectory()) {</span>
+<span class="fc" id="L113">		File classpathFile= bundleFile;</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">		if (bundleFile.isDirectory()) {</span>
 <span class="nc" id="L115">			File binDirectory= new File(bundleFile, &quot;bin&quot;); //$NON-NLS-1$</span>
 <span class="nc bnc" id="L116" title="All 2 branches missed.">			if (binDirectory.isDirectory()) {</span>
 <span class="nc" id="L117">				classpathFile= binDirectory;</span>
 			}
 		}
-<span class="nc" id="L120">		IPath path= Path.fromOSString(classpathFile.getAbsolutePath());</span>
-<span class="nc" id="L121">		addToClasspath(javaProject, JavaCore.newLibraryEntry(path, null, null));</span>
-<span class="nc" id="L122">	}</span>
+<span class="fc" id="L120">		IPath path= Path.fromOSString(classpathFile.getAbsolutePath());</span>
+<span class="fc" id="L121">		addToClasspath(javaProject, JavaCore.newLibraryEntry(path, null, null));</span>
+<span class="fc" id="L122">	}</span>
 
 	private static void addToClasspath(IJavaProject javaProject, IClasspathEntry entry)
 			throws JavaModelException {
-<span class="nc" id="L126">		IClasspathEntry[] current= javaProject.getRawClasspath();</span>
-<span class="nc bnc" id="L127" title="All 2 branches missed.">		for (IClasspathEntry existing : current) {</span>
-<span class="nc bnc" id="L128" title="All 2 branches missed.">			if (existing.equals(entry)) {</span>
+<span class="fc" id="L126">		IClasspathEntry[] current= javaProject.getRawClasspath();</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">		for (IClasspathEntry existing : current) {</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">			if (existing.equals(entry)) {</span>
 <span class="nc" id="L129">				return;</span>
 			}
 		}
 
-<span class="nc" id="L133">		IClasspathEntry[] updated= new IClasspathEntry[current.length + 1];</span>
-<span class="nc" id="L134">		System.arraycopy(current, 0, updated, 0, current.length);</span>
-<span class="nc" id="L135">		updated[current.length]= entry;</span>
-<span class="nc" id="L136">		javaProject.setRawClasspath(updated, null);</span>
-<span class="nc" id="L137">	}</span>
+<span class="fc" id="L133">		IClasspathEntry[] updated= new IClasspathEntry[current.length + 1];</span>
+<span class="fc" id="L134">		System.arraycopy(current, 0, updated, 0, current.length);</span>
+<span class="fc" id="L135">		updated[current.length]= entry;</span>
+<span class="fc" id="L136">		javaProject.setRawClasspath(updated, null);</span>
+<span class="fc" id="L137">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

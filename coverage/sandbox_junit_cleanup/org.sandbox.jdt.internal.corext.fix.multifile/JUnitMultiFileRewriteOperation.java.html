@@ -14,6 +14,7 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ANNO
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_CLASS_RULE;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -21,20 +22,25 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -61,201 +67,240 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 			Map&lt;TypeDeclaration, ResourceTypeEdit&gt; resourceTypes, Set&lt;String&gt; fieldKeys, Set&lt;String&gt; typeKeys) {
 
 		static Builder builder(CompilationUnit root) {
-<span class="fc" id="L64">			return new Builder(root);</span>
+<span class="fc" id="L70">			return new Builder(root);</span>
 		}
 
 		static final class Builder {
 			private final CompilationUnit root;
-<span class="fc" id="L69">			private final Map&lt;FieldDeclaration, FieldEdit&gt; fields= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L70">			private final Map&lt;TypeDeclaration, ResourceTypeEdit&gt; resourceTypes= new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L71">			private final Set&lt;String&gt; fieldKeys= new LinkedHashSet&lt;&gt;();</span>
-<span class="fc" id="L72">			private final Set&lt;String&gt; typeKeys= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L75">			private final Map&lt;FieldDeclaration, FieldEdit&gt; fields= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L76">			private final Map&lt;TypeDeclaration, ResourceTypeEdit&gt; resourceTypes= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L77">			private final Set&lt;String&gt; fieldKeys= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L78">			private final Set&lt;String&gt; typeKeys= new LinkedHashSet&lt;&gt;();</span>
 
-<span class="fc" id="L74">			Builder(CompilationUnit root) {</span>
-<span class="fc" id="L75">				this.root= root;</span>
-<span class="fc" id="L76">			}</span>
+<span class="fc" id="L80">			Builder(CompilationUnit root) {</span>
+<span class="fc" id="L81">				this.root= root;</span>
+<span class="fc" id="L82">			}</span>
 
 			void addField(FieldDeclaration field, String bindingKey, boolean classRule, Annotation ruleAnnotation) {
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">				if (ruleAnnotation != null) {</span>
-<span class="fc" id="L80">					fields.put(field, new FieldEdit(bindingKey, classRule, ruleAnnotation));</span>
-<span class="fc" id="L81">					fieldKeys.add(bindingKey);</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">				if (ruleAnnotation != null) {</span>
+<span class="fc" id="L86">					fields.put(field, new FieldEdit(bindingKey, classRule, ruleAnnotation));</span>
+<span class="fc" id="L87">					fieldKeys.add(bindingKey);</span>
 				}
-<span class="fc" id="L83">			}</span>
+<span class="fc" id="L89">			}</span>
 
 			void addResourceType(TypeDeclaration type, String bindingKey, boolean classRule,
 					boolean preserveJUnit4Compatibility) {
-<span class="fc" id="L87">				resourceTypes.put(type,</span>
-<span class="fc" id="L88">						new ResourceTypeEdit(bindingKey, classRule, preserveJUnit4Compatibility));</span>
-<span class="fc" id="L89">				typeKeys.add(bindingKey);</span>
-<span class="fc" id="L90">			}</span>
+<span class="fc" id="L93">				resourceTypes.put(type,</span>
+<span class="fc" id="L94">						new ResourceTypeEdit(bindingKey, classRule, preserveJUnit4Compatibility));</span>
+<span class="fc" id="L95">				typeKeys.add(bindingKey);</span>
+<span class="fc" id="L96">			}</span>
 
 			ResolvedEdits build() {
-<span class="fc" id="L93">				return new ResolvedEdits(root, Map.copyOf(fields), Map.copyOf(resourceTypes), Set.copyOf(fieldKeys),</span>
-<span class="fc" id="L94">						Set.copyOf(typeKeys));</span>
+<span class="fc" id="L99">				return new ResolvedEdits(root, Map.copyOf(fields), Map.copyOf(resourceTypes), Set.copyOf(fieldKeys),</span>
+<span class="fc" id="L100">						Set.copyOf(typeKeys));</span>
 			}
 		}
 	}
 
 	private final ResolvedEdits edits;
+	private final Set&lt;String&gt; compatibleResourceTypes;
 
-<span class="fc" id="L101">	JUnitMultiFileRewriteOperation(ResolvedEdits edits) {</span>
-<span class="fc" id="L102">		this.edits= edits;</span>
-<span class="fc" id="L103">	}</span>
+<span class="fc" id="L108">	JUnitMultiFileRewriteOperation(ResolvedEdits edits, Set&lt;String&gt; compatibleResourceTypes) {</span>
+<span class="fc" id="L109">		this.edits= edits;</span>
+<span class="fc" id="L110">		this.compatibleResourceTypes= Set.copyOf(compatibleResourceTypes);</span>
+<span class="fc" id="L111">	}</span>
 
 	@Override
 	public void rewriteASTInternal(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel)
 			throws CoreException {
-<span class="fc" id="L108">		TextEditGroup group= createTextEditGroup(&quot;Migrate named ExternalResource and its rule fields&quot;, cuRewrite); //$NON-NLS-1$</span>
-<span class="fc" id="L109">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
-<span class="fc" id="L110">		AST ast= cuRewrite.getRoot().getAST();</span>
-<span class="fc" id="L111">		ImportRewrite imports= cuRewrite.getImportRewrite();</span>
-<span class="fc" id="L112">		Set&lt;TypeDeclaration&gt; isolatedTypes= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L116">		TextEditGroup group= createTextEditGroup(&quot;Migrate named ExternalResource and its rule fields&quot;, cuRewrite); //$NON-NLS-1$</span>
+<span class="fc" id="L117">		ASTRewrite rewrite= cuRewrite.getASTRewrite();</span>
+<span class="fc" id="L118">		AST ast= cuRewrite.getRoot().getAST();</span>
+<span class="fc" id="L119">		ImportRewrite imports= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L120">		Set&lt;TypeDeclaration&gt; isolatedTypes= new LinkedHashSet&lt;&gt;();</span>
 
-<span class="fc bfc" id="L114" title="All 2 branches covered.">		for (Map.Entry&lt;FieldDeclaration, FieldEdit&gt; entry : edits.fields().entrySet()) {</span>
-<span class="fc" id="L115">			rewriteRuleField(entry.getKey(), entry.getValue(), rewrite, ast, imports, group, isolatedTypes);</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		for (Map.Entry&lt;FieldDeclaration, FieldEdit&gt; entry : edits.fields().entrySet()) {</span>
+<span class="fc" id="L123">			rewriteResourceFieldType(entry.getKey(), cuRewrite, group);</span>
+<span class="fc" id="L124">			rewriteRuleField(entry.getKey(), entry.getValue(), rewrite, ast, imports, group, isolatedTypes);</span>
 		}
-<span class="fc" id="L117">		removeUnusedRuleImports(imports);</span>
+<span class="fc" id="L126">		removeUnusedRuleImports(imports);</span>
 
-<span class="fc bfc" id="L119" title="All 2 branches covered.">		for (Map.Entry&lt;TypeDeclaration, ResourceTypeEdit&gt; entry : edits.resourceTypes().entrySet()) {</span>
-<span class="fc" id="L120">			ResourceTypeEdit edit= entry.getValue();</span>
-<span class="fc bfc" id="L121" title="All 2 branches covered.">			if (edit.preserveJUnit4Compatibility()) {</span>
-<span class="fc" id="L122">				ExternalResourceCompatibilityRefactorer.addJupiterCallbacks(entry.getKey(), edit.classRule(),</span>
-<span class="fc" id="L123">						rewrite, ast, group, imports);</span>
-<span class="fc" id="L124">			} else {</span>
-<span class="fc" id="L125">				ExternalResourceRefactorer.modifyExternalResourceClass(entry.getKey(), null, edit.classRule(),</span>
-<span class="fc" id="L126">						rewrite, ast, group, imports);</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">		for (Map.Entry&lt;TypeDeclaration, ResourceTypeEdit&gt; entry : edits.resourceTypes().entrySet()) {</span>
+<span class="fc" id="L129">			ResourceTypeEdit edit= entry.getValue();</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">			if (edit.preserveJUnit4Compatibility()) {</span>
+<span class="fc" id="L131">				ExternalResourceCompatibilityRefactorer.addJupiterCallbacks(entry.getKey(), edit.classRule(),</span>
+<span class="fc" id="L132">						rewrite, ast, group, imports);</span>
+<span class="fc" id="L133">			} else {</span>
+<span class="fc" id="L134">				ExternalResourceRefactorer.modifyExternalResourceClass(entry.getKey(), null, edit.classRule(),</span>
+<span class="fc" id="L135">						rewrite, ast, group, imports);</span>
 			}
 		}
-<span class="fc" id="L129">	}</span>
+<span class="fc" id="L138">	}</span>
+
+	/** Keep the field assignable when the coordinated plan removes its JUnit 4 base. */
+	private void rewriteResourceFieldType(FieldDeclaration field, CompilationUnitRewrite cuRewrite,
+			TextEditGroup group) throws CoreException {
+<span class="fc" id="L143">		ITypeBinding declared= field.getType().resolveBinding();</span>
+<span class="pc bpc" id="L144" title="2 of 4 branches missed.">		if (declared == null || declared.isRecovered()</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">				|| !(ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(declared.getErasure().getQualifiedName())</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">						|| &quot;org.junit.rules.TestRule&quot;.equals(declared.getErasure().getQualifiedName()))) { //$NON-NLS-1$</span>
+<span class="fc" id="L147">			return;</span>
+		}
+<span class="pc bpc" id="L149" title="1 of 2 branches missed.">		if (field.fragments().size() != 1</span>
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">				|| !(field.fragments().get(0) instanceof VariableDeclarationFragment fragment)</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">				|| !(fragment.getInitializer() instanceof ClassInstanceCreation creation)) {</span>
+<span class="nc" id="L152">			throw new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L153">					&quot;Cannot resolve the planned ExternalResource field initializer&quot;)); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L155">		ITypeBinding resource= creation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L156" title="3 of 6 branches missed.">		if (resource == null || resource.isRecovered() || resource.isAnonymous()) {</span>
+<span class="nc" id="L157">			throw new CoreException(new Status(IStatus.ERROR, &quot;sandbox_junit_cleanup&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L158">					&quot;Cannot resolve the planned named ExternalResource type&quot;)); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L160" title="All 2 branches covered.">		for (ITypeBinding type= resource; type != null; type= type.getSuperclass()) {</span>
+<span class="fc" id="L161">			String key= JUnitMigrationPlan.typeKey(type);</span>
+<span class="pc bpc" id="L162" title="1 of 4 branches missed.">			if (key != null &amp;&amp; compatibleResourceTypes.contains(key)) {</span>
+<span class="fc" id="L163">				return; // This chain intentionally retains its JUnit 4 superclass.</span>
+			}
+		}
+<span class="fc" id="L166">		ImportRewrite imports= cuRewrite.getImportRewrite();</span>
+<span class="fc" id="L167">		var context= new ContextSensitiveImportRewriteContext(field.getType(), imports);</span>
+		// Use the inferred binding, not the constructor's syntax: a diamond is legal
+		// in the initializer but not in a field type. Scope-aware imports also retain
+		// qualification when another source type has the same simple name.
+<span class="fc" id="L171">		var replacement= imports.addImport(resource, field.getAST(), context);</span>
+<span class="fc" id="L172">		cuRewrite.getASTRewrite().replace(field.getType(), replacement, group);</span>
+<span class="fc" id="L173">		cuRewrite.getImportRemover().registerRemovedNode(field.getType());</span>
+<span class="fc" id="L174">	}</span>
 
 	private void rewriteRuleField(FieldDeclaration field, FieldEdit edit, ASTRewrite rewrite, AST ast,
 			ImportRewrite imports, TextEditGroup group, Set&lt;TypeDeclaration&gt; isolatedTypes) {
-<span class="fc" id="L133">		rewrite.remove(edit.ruleAnnotation(), group);</span>
-<span class="pc bpc" id="L134" title="1 of 2 branches missed.">		if (!hasRegisterExtension(field)) {</span>
-<span class="fc" id="L135">			String annotationName= imports.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);</span>
-<span class="fc" id="L136">			MarkerAnnotation annotation= ast.newMarkerAnnotation();</span>
-<span class="fc" id="L137">			annotation.setTypeName(ast.newName(annotationName));</span>
-<span class="fc" id="L138">			ListRewrite modifiers= rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);</span>
-<span class="fc" id="L139">			modifiers.insertFirst(annotation, group);</span>
+<span class="fc" id="L178">		rewrite.remove(edit.ruleAnnotation(), group);</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">		if (!hasRegisterExtension(field)) {</span>
+<span class="fc" id="L180">			String annotationName= imports.addImport(ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION);</span>
+<span class="fc" id="L181">			MarkerAnnotation annotation= ast.newMarkerAnnotation();</span>
+<span class="fc" id="L182">			annotation.setTypeName(ast.newName(annotationName));</span>
+<span class="fc" id="L183">			ListRewrite modifiers= rewrite.getListRewrite(field, FieldDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L184">			modifiers.insertFirst(annotation, group);</span>
 		}
-<span class="fc" id="L141">		isolateOwningTestType(field, rewrite, ast, imports, group, isolatedTypes);</span>
-<span class="fc" id="L142">	}</span>
+<span class="fc" id="L186">		isolateOwningTestType(field, rewrite, ast, imports, group, isolatedTypes);</span>
+<span class="fc" id="L187">	}</span>
 
 	private void isolateOwningTestType(FieldDeclaration field, ASTRewrite rewrite, AST ast,
 			ImportRewrite imports, TextEditGroup group, Set&lt;TypeDeclaration&gt; isolatedTypes) {
-<span class="fc" id="L146">		ASTNode current= field.getParent();</span>
-<span class="pc bpc" id="L147" title="2 of 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof TypeDeclaration)) {</span>
-<span class="nc" id="L148">			current= current.getParent();</span>
+<span class="fc" id="L191">		ASTNode current= field.getParent();</span>
+<span class="pc bpc" id="L192" title="2 of 4 branches missed.">		while (current != null &amp;&amp; !(current instanceof TypeDeclaration)) {</span>
+<span class="nc" id="L193">			current= current.getParent();</span>
 		}
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">		if (current == null) {</span>
-<span class="nc" id="L151">			return;</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">		if (current == null) {</span>
+<span class="nc" id="L196">			return;</span>
 		}
-<span class="fc" id="L153">		TypeDeclaration type= (TypeDeclaration) current;</span>
-<span class="fc bfc" id="L154" title="All 4 branches covered.">		if (!isolatedTypes.add(type) || hasIsolated(type)) {</span>
-<span class="fc" id="L155">			return;</span>
+<span class="fc" id="L198">		TypeDeclaration type= (TypeDeclaration) current;</span>
+<span class="fc bfc" id="L199" title="All 4 branches covered.">		if (!isolatedTypes.add(type) || hasIsolated(type)) {</span>
+<span class="fc" id="L200">			return;</span>
 		}
 
-<span class="fc" id="L158">		String annotationName= imports.addImport(ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED);</span>
-<span class="fc" id="L159">		MarkerAnnotation annotation= ast.newMarkerAnnotation();</span>
-<span class="fc" id="L160">		annotation.setTypeName(ast.newName(annotationName));</span>
-<span class="fc" id="L161">		ListRewrite modifiers= rewrite.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
-<span class="fc" id="L162">		modifiers.insertFirst(annotation, group);</span>
-<span class="fc" id="L163">	}</span>
+<span class="fc" id="L203">		String annotationName= imports.addImport(ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED);</span>
+<span class="fc" id="L204">		MarkerAnnotation annotation= ast.newMarkerAnnotation();</span>
+<span class="fc" id="L205">		annotation.setTypeName(ast.newName(annotationName));</span>
+<span class="fc" id="L206">		ListRewrite modifiers= rewrite.getListRewrite(type, TypeDeclaration.MODIFIERS2_PROPERTY);</span>
+<span class="fc" id="L207">		modifiers.insertFirst(annotation, group);</span>
+<span class="fc" id="L208">	}</span>
 
 	private boolean hasRegisterExtension(FieldDeclaration field) {
-<span class="fc bfc" id="L166" title="All 2 branches covered.">		for (Object modifier : field.modifiers()) {</span>
-<span class="fc bfc" id="L167" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
-<span class="fc" id="L168">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L169" title="1 of 2 branches missed.">				if (binding != null</span>
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">						&amp;&amp; ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION.equals(binding.getQualifiedName())) {</span>
-<span class="nc" id="L171">					return true;</span>
+<span class="fc bfc" id="L211" title="All 2 branches covered.">		for (Object modifier : field.modifiers()) {</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L213">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">				if (binding != null</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">						&amp;&amp; ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION.equals(binding.getQualifiedName())) {</span>
+<span class="nc" id="L216">					return true;</span>
 				}
-<span class="pc bpc" id="L173" title="3 of 4 branches missed.">				if (binding == null &amp;&amp; ANNOTATION_REGISTER_EXTENSION.equals(annotation.getTypeName().getFullyQualifiedName())) {</span>
-<span class="nc" id="L174">					return true;</span>
+<span class="pc bpc" id="L218" title="3 of 4 branches missed.">				if (binding == null &amp;&amp; ANNOTATION_REGISTER_EXTENSION.equals(annotation.getTypeName().getFullyQualifiedName())) {</span>
+<span class="nc" id="L219">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L178">		return false;</span>
+<span class="fc" id="L223">		return false;</span>
 	}
 
 	private boolean hasIsolated(TypeDeclaration type) {
-<span class="fc bfc" id="L182" title="All 2 branches covered.">		for (Object modifier : type.modifiers()) {</span>
-<span class="fc bfc" id="L183" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
-<span class="fc" id="L184">				String name= annotation.getTypeName().getFullyQualifiedName();</span>
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">				if (ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(name)) {</span>
-<span class="nc" id="L186">					return true;</span>
+<span class="fc bfc" id="L227" title="All 2 branches covered.">		for (Object modifier : type.modifiers()) {</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">			if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L229">				String name= annotation.getTypeName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">				if (ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(name)) {</span>
+<span class="nc" id="L231">					return true;</span>
 				}
-<span class="fc" id="L188">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L189" title="2 of 4 branches missed.">				if (binding != null &amp;&amp; ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(binding.getQualifiedName())) {</span>
-<span class="nc" id="L190">					return true;</span>
+<span class="fc" id="L233">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L234" title="2 of 4 branches missed.">				if (binding != null &amp;&amp; ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L235">					return true;</span>
 				}
-<span class="pc bpc" id="L192" title="2 of 4 branches missed.">				if (ANNOTATION_ISOLATED.equals(name) &amp;&amp; importsIsolated(type)) {</span>
-<span class="fc" id="L193">					return true;</span>
+<span class="nc bnc" id="L237" title="All 4 branches missed.">				if (ANNOTATION_ISOLATED.equals(name) &amp;&amp; importsIsolated(type)) {</span>
+<span class="nc" id="L238">					return true;</span>
 				}
 			}
 		}
-<span class="fc" id="L197">		return false;</span>
+<span class="fc" id="L242">		return false;</span>
 	}
 
 	private boolean importsIsolated(TypeDeclaration type) {
-<span class="pc bpc" id="L201" title="1 of 2 branches missed.">		if (!(type.getRoot() instanceof CompilationUnit root)) {</span>
-<span class="nc" id="L202">			return false;</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">		if (!(type.getRoot() instanceof CompilationUnit root)) {</span>
+<span class="nc" id="L247">			return false;</span>
 		}
-<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		for (Object element : root.imports()) {</span>
-<span class="pc bpc" id="L205" title="2 of 4 branches missed.">			if (element instanceof ImportDeclaration declaration &amp;&amp; !declaration.isStatic()</span>
-<span class="pc bpc" id="L206" title="1 of 2 branches missed.">					&amp;&amp; !declaration.isOnDemand()</span>
-<span class="fc bfc" id="L207" title="All 2 branches covered.">					&amp;&amp; ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(declaration.getName().getFullyQualifiedName())) {</span>
-<span class="fc" id="L208">				return true;</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">		for (Object element : root.imports()) {</span>
+<span class="nc bnc" id="L250" title="All 4 branches missed.">			if (element instanceof ImportDeclaration declaration &amp;&amp; !declaration.isStatic()</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">					&amp;&amp; !declaration.isOnDemand()</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">					&amp;&amp; ORG_JUNIT_JUPITER_API_PARALLEL_ISOLATED.equals(declaration.getName().getFullyQualifiedName())) {</span>
+<span class="nc" id="L253">				return true;</span>
 			}
 		}
-<span class="nc" id="L211">		return false;</span>
+<span class="nc" id="L256">		return false;</span>
 	}
 
 	private void removeUnusedRuleImports(ImportRewrite imports) {
-<span class="fc" id="L215">		Set&lt;Annotation&gt; planned= edits.fields().values().stream().map(FieldEdit::ruleAnnotation)</span>
-<span class="fc" id="L216">				.collect(java.util.stream.Collectors.toSet());</span>
-<span class="fc" id="L217">		boolean[] remainingRule= { false };</span>
-<span class="fc" id="L218">		boolean[] remainingClassRule= { false };</span>
-<span class="fc" id="L219">		edits.root().accept(new ASTVisitor() {</span>
+<span class="fc" id="L260">		Set&lt;Annotation&gt; planned= edits.fields().values().stream().map(FieldEdit::ruleAnnotation)</span>
+<span class="fc" id="L261">				.collect(java.util.stream.Collectors.toSet());</span>
+<span class="fc" id="L262">		boolean[] remainingRule= { false };</span>
+<span class="fc" id="L263">		boolean[] remainingClassRule= { false };</span>
+<span class="fc" id="L264">		edits.root().accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(MarkerAnnotation node) {
-<span class="fc" id="L222">				inspect(node);</span>
-<span class="fc" id="L223">				return true;</span>
+<span class="fc" id="L267">				inspect(node);</span>
+<span class="fc" id="L268">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(org.eclipse.jdt.core.dom.SingleMemberAnnotation node) {
-<span class="nc" id="L228">				inspect(node);</span>
-<span class="nc" id="L229">				return true;</span>
+<span class="nc" id="L273">				inspect(node);</span>
+<span class="nc" id="L274">				return true;</span>
 			}
 
 			@Override
 			public boolean visit(org.eclipse.jdt.core.dom.NormalAnnotation node) {
-<span class="nc" id="L234">				inspect(node);</span>
-<span class="nc" id="L235">				return true;</span>
+<span class="nc" id="L279">				inspect(node);</span>
+<span class="nc" id="L280">				return true;</span>
 			}
 
 			private void inspect(Annotation annotation) {
-<span class="fc bfc" id="L239" title="All 2 branches covered.">				if (planned.contains(annotation)) {</span>
-<span class="fc" id="L240">					return;</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">				if (planned.contains(annotation)) {</span>
+<span class="fc" id="L285">					return;</span>
 				}
-<span class="fc" id="L242">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
-<span class="pc bpc" id="L243" title="1 of 2 branches missed.">				if (binding == null) {</span>
-<span class="nc" id="L244">					return;</span>
+<span class="fc" id="L287">				ITypeBinding binding= annotation.resolveTypeBinding();</span>
+<span class="pc bpc" id="L288" title="1 of 2 branches missed.">				if (binding == null) {</span>
+<span class="nc" id="L289">					return;</span>
 				}
-<span class="fc bfc" id="L246" title="All 2 branches covered.">				if (ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {</span>
-<span class="fc" id="L247">					remainingRule[0]= true;</span>
-<span class="pc bpc" id="L248" title="1 of 2 branches missed.">				} else if (ORG_JUNIT_CLASS_RULE.equals(binding.getQualifiedName())) {</span>
-<span class="nc" id="L249">					remainingClassRule[0]= true;</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">				if (ORG_JUNIT_RULE.equals(binding.getQualifiedName())) {</span>
+<span class="fc" id="L292">					remainingRule[0]= true;</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">				} else if (ORG_JUNIT_CLASS_RULE.equals(binding.getQualifiedName())) {</span>
+<span class="nc" id="L294">					remainingClassRule[0]= true;</span>
 				}
-<span class="fc" id="L251">			}</span>
+<span class="fc" id="L296">			}</span>
 		});
-<span class="fc bfc" id="L253" title="All 2 branches covered.">		if (!remainingRule[0]) {</span>
-<span class="fc" id="L254">			imports.removeImport(ORG_JUNIT_RULE);</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">		if (!remainingRule[0]) {</span>
+<span class="fc" id="L299">			imports.removeImport(ORG_JUNIT_RULE);</span>
 		}
-<span class="pc bpc" id="L256" title="1 of 2 branches missed.">		if (!remainingClassRule[0]) {</span>
-<span class="fc" id="L257">			imports.removeImport(ORG_JUNIT_CLASS_RULE);</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">		if (!remainingClassRule[0]) {</span>
+<span class="fc" id="L302">			imports.removeImport(ORG_JUNIT_CLASS_RULE);</span>
 		}
-<span class="fc" id="L259">	}</span>
+<span class="fc" id="L304">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

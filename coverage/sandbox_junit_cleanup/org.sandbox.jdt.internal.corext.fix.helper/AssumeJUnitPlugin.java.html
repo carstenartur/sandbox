@@ -20,6 +20,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
@@ -45,116 +48,161 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlu
  * &lt;li&gt;Other assumptions → JUnit 5 Assumptions with parameter reordering&lt;/li&gt;
  * &lt;/ul&gt;
  */
-<span class="fc" id="L48">public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {</span>
+<span class="fc" id="L51">public class AssumeJUnitPlugin extends AbstractMethodMigrationPlugin {</span>
 
 	// Assume-specific method sets (different from assertion methods)
-<span class="fc" id="L51">	private static final Set&lt;String&gt; MULTI_PARAM_ASSUMPTIONS = Set.of(&quot;assumeTrue&quot;, &quot;assumeFalse&quot;, &quot;assumeNotNull&quot;,</span>
-<span class="fc" id="L52">			&quot;assumeThat&quot;);</span>
-<span class="fc" id="L53">	private static final Set&lt;String&gt; ONEPARAM_ASSUMPTIONS = Set.of(&quot;assumeTrue&quot;, &quot;assumeFalse&quot;, &quot;assumeNotNull&quot;);</span>
-<span class="fc" id="L54">	private static final Set&lt;String&gt; ALL_ASSUMPTION_METHODS = Stream.of(MULTI_PARAM_ASSUMPTIONS, ONEPARAM_ASSUMPTIONS)</span>
-<span class="fc" id="L55">			.flatMap(Set::stream).collect(Collectors.toSet());</span>
+	private static final String METHOD_ASSUME_NOT_NULL = &quot;assumeNotNull&quot;; //$NON-NLS-1$
+<span class="fc" id="L55">	private static final Set&lt;String&gt; MULTI_PARAM_ASSUMPTIONS = Set.of(&quot;assumeTrue&quot;, &quot;assumeFalse&quot;, &quot;assumeThat&quot;);</span>
+<span class="fc" id="L56">	private static final Set&lt;String&gt; ONEPARAM_ASSUMPTIONS = Set.of(&quot;assumeTrue&quot;, &quot;assumeFalse&quot;);</span>
+	/*
+	 * Keep assumeNotNull visible to the visitor so its legacy imports can be
+	 * preserved, but never rewrite the invocation: Jupiter has no equivalent
+	 * method and JUnit 4 evaluates every vararg before checking for null.
+	 */
+<span class="fc" id="L62">	private static final Set&lt;String&gt; ALL_ASSUMPTION_METHODS = Stream.of(</span>
+<span class="fc" id="L63">			MULTI_PARAM_ASSUMPTIONS, ONEPARAM_ASSUMPTIONS, Set.of(METHOD_ASSUME_NOT_NULL))</span>
+<span class="fc" id="L64">			.flatMap(Set::stream).collect(Collectors.toSet());</span>
 
 	@Override
 	protected String getSourceClass() {
-<span class="fc" id="L59">		return ORG_JUNIT_ASSUME;</span>
+<span class="fc" id="L68">		return ORG_JUNIT_ASSUME;</span>
 	}
 
 	@Override
 	protected String getTargetClass() {
-<span class="fc" id="L64">		return ORG_JUNIT_JUPITER_API_ASSUMPTIONS;</span>
+<span class="fc" id="L73">		return ORG_JUNIT_JUPITER_API_ASSUMPTIONS;</span>
 	}
 
 	@Override
 	protected String getTargetSimpleName() {
-<span class="fc" id="L69">		return ASSUMPTIONS;</span>
+<span class="fc" id="L78">		return ASSUMPTIONS;</span>
 	}
 
 	@Override
 	protected Set&lt;String&gt; getMethodNames() {
-<span class="fc" id="L74">		return ALL_ASSUMPTION_METHODS;</span>
+<span class="fc" id="L83">		return ALL_ASSUMPTION_METHODS;</span>
 	}
 
 	@Override
 	protected Set&lt;String&gt; getMethodsRequiringReorder() {
-<span class="fc" id="L79">		return ONEPARAM_ASSUMPTIONS;</span>
+<span class="fc" id="L88">		return ONEPARAM_ASSUMPTIONS;</span>
 	}
 
 	@Override
 	protected void processMethodInvocation(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, MethodInvocation minv) {
 
-<span class="pc bpc" id="L86" title="1 of 4 branches missed.">		if (METHOD_ASSUME_THAT.equals(minv.getName().getIdentifier()) &amp;&amp; isJUnitAssume(minv)) {</span>
-			// Special handling for assumeThat - check if using Hamcrest matchers
-<span class="pc bpc" id="L88" title="1 of 2 branches missed.">			if (usesHamcrestMatcher(minv)) {</span>
-				// Use Hamcrest's MatcherAssume for Hamcrest matchers
-<span class="fc" id="L90">				importRewriter.addStaticImport(ORG_HAMCREST_JUNIT_MATCHER_ASSUME, METHOD_ASSUME_THAT, true);</span>
-<span class="fc" id="L91">			} else {</span>
-				// Use JUnit Jupiter's Assumptions for non-Hamcrest assumeThat
-<span class="nc" id="L93">				importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, METHOD_ASSUME_THAT, true);</span>
-			}
-<span class="fc" id="L95">			importRewriter.removeStaticImport(ORG_JUNIT_ASSUME + &quot;.&quot; + METHOD_ASSUME_THAT);</span>
-<span class="fc" id="L96">			MethodInvocation newAssumeThatCall = ast.newMethodInvocation();</span>
-<span class="fc" id="L97">			newAssumeThatCall.setName(ast.newSimpleName(METHOD_ASSUME_THAT));</span>
-<span class="fc bfc" id="L98" title="All 2 branches covered.">			for (Object arg : minv.arguments()) {</span>
-<span class="fc" id="L99">				newAssumeThatCall.arguments().add(rewriter.createCopyTarget((org.eclipse.jdt.core.dom.ASTNode) arg));</span>
-			}
-<span class="fc" id="L101">			ASTNodes.replaceButKeepComment(rewriter, minv, newAssumeThatCall, group);</span>
-<span class="fc" id="L102">		} else {</span>
-			// For assumeTrue, assumeFalse, assumeNotNull - use base class behavior
-<span class="fc" id="L104">			super.processMethodInvocation(group, rewriter, ast, importRewriter, minv);</span>
-			// Add import for Assumptions class (needed for qualified method calls)
-<span class="fc" id="L106">			importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS);</span>
+<span class="fc" id="L95">		String methodName = minv.getName().getIdentifier();</span>
+<span class="pc bpc" id="L96" title="1 of 4 branches missed.">		if (METHOD_ASSUME_NOT_NULL.equals(methodName) &amp;&amp; isLegacyAssumeInvocation(minv)) {</span>
+			// There is no Jupiter Assumptions.assumeNotNull. Keep the proven
+			// JUnit 4 call intact instead of emitting uncompilable code or
+			// changing eager vararg evaluation into short-circuit semantics.
+<span class="fc" id="L100">			return;</span>
 		}
-<span class="fc" id="L108">	}</span>
+
+<span class="pc bpc" id="L103" title="1 of 4 branches missed.">		if (METHOD_ASSUME_THAT.equals(methodName) &amp;&amp; isLegacyAssumeInvocation(minv)) {</span>
+			// Special handling for assumeThat - check if using Hamcrest matchers
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">			if (usesHamcrestMatcher(minv)) {</span>
+				// Use Hamcrest's MatcherAssume for Hamcrest matchers
+<span class="fc" id="L107">				importRewriter.addStaticImport(ORG_HAMCREST_JUNIT_MATCHER_ASSUME, METHOD_ASSUME_THAT, true);</span>
+<span class="fc" id="L108">			} else {</span>
+				// Use JUnit Jupiter's Assumptions for non-Hamcrest assumeThat
+<span class="nc" id="L110">				importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, METHOD_ASSUME_THAT, true);</span>
+			}
+<span class="fc" id="L112">			importRewriter.removeStaticImport(ORG_JUNIT_ASSUME + &quot;.&quot; + METHOD_ASSUME_THAT);</span>
+<span class="fc" id="L113">			MethodInvocation newAssumeThatCall = ast.newMethodInvocation();</span>
+<span class="fc" id="L114">			newAssumeThatCall.setName(ast.newSimpleName(METHOD_ASSUME_THAT));</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">			for (Object arg : minv.arguments()) {</span>
+<span class="fc" id="L116">				newAssumeThatCall.arguments().add(rewriter.createCopyTarget((org.eclipse.jdt.core.dom.ASTNode) arg));</span>
+			}
+<span class="fc" id="L118">			ASTNodes.replaceButKeepComment(rewriter, minv, newAssumeThatCall, group);</span>
+<span class="fc" id="L119">		} else {</span>
+			// For assumeTrue and assumeFalse use the ordinary Jupiter migration.
+<span class="fc" id="L121">			super.processMethodInvocation(group, rewriter, ast, importRewriter, minv);</span>
+			// The base implementation removes Assume when it rewrites a qualified
+			// boolean call. Restore that import if another call still needs it;
+			// preserving it only in processImportDeclaration is too early.
+<span class="pc bpc" id="L125" title="1 of 4 branches missed.">			if (containsLegacyAssumeNotNull(minv) &amp;&amp; hasLegacyAssumeTypeImport(minv)) {</span>
+<span class="fc" id="L126">				importRewriter.addImport(ORG_JUNIT_ASSUME);</span>
+			}
+<span class="pc bpc" id="L128" title="3 of 4 branches missed.">			if (minv.getExpression() == null &amp;&amp; containsLegacyAssumeNotNull(minv)) {</span>
+				// A retained JUnit 4 wildcard import may still be needed by
+				// assumeNotNull. Add a specific Jupiter import only in that
+				// mixed case; otherwise the ordinary import rewrite remains
+				// unchanged.
+<span class="nc" id="L133">				importRewriter.addStaticImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS, methodName, false);</span>
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">			} else if (minv.getExpression() != null) {</span>
+<span class="fc" id="L135">				importRewriter.addImport(ORG_JUNIT_JUPITER_API_ASSUMPTIONS);</span>
+			}
+		}
+<span class="fc" id="L138">	}</span>
 
 	@Override
 	protected void processImportDeclaration(TextEditGroup group, ASTRewrite rewriter, AST ast,
 			ImportRewrite importRewriter, ImportDeclaration importDecl) {
 
-<span class="fc" id="L114">		String importName = importDecl.getName().getFullyQualifiedName();</span>
+<span class="fc" id="L144">		String importName = importDecl.getName().getFullyQualifiedName();</span>
+<span class="fc" id="L145">		boolean keepLegacyAssume = containsLegacyAssumeNotNull(importDecl);</span>
 
 		// Special handling for org.junit.Assume imports when using Hamcrest
-<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		if (importDecl.isStatic()) {</span>
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">		if (importDecl.isStatic()) {</span>
 			// Handle static imports
-<span class="nc bnc" id="L119" title="All 2 branches missed.">			if (importDecl.isOnDemand()) {</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">			if (importDecl.isOnDemand()) {</span>
 				// Wildcard import: import static org.junit.Assume.*
-<span class="nc bnc" id="L121" title="All 2 branches missed.">				if (ORG_JUNIT_ASSUME.equals(importName)) {</span>
-<span class="nc" id="L122">					importRewriter.removeStaticImport(importName + &quot;.*&quot;);</span>
-<span class="nc" id="L123">					importRewriter.addStaticImport(getTargetClass(), &quot;*&quot;, false);</span>
+<span class="nc bnc" id="L152" title="All 4 branches missed.">				if (ORG_JUNIT_ASSUME.equals(importName) &amp;&amp; !keepLegacyAssume) {</span>
+<span class="nc" id="L153">					importRewriter.removeStaticImport(importName + &quot;.*&quot;);</span>
+<span class="nc" id="L154">					importRewriter.addStaticImport(getTargetClass(), &quot;*&quot;, false);</span>
 				}
-<span class="nc" id="L125">			} else {</span>
+<span class="nc" id="L156">			} else {</span>
 				// Specific static import: import static org.junit.Assume.assumeThat
-<span class="nc bnc" id="L127" title="All 2 branches missed.">				if (importName.startsWith(ORG_JUNIT_ASSUME + &quot;.&quot;)) {</span>
-<span class="nc" id="L128">					String methodName = importName.substring(ORG_JUNIT_ASSUME.length() + 1);</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">				if (importName.startsWith(ORG_JUNIT_ASSUME + &quot;.&quot;)) {</span>
+<span class="nc" id="L159">					String methodName = importName.substring(ORG_JUNIT_ASSUME.length() + 1);</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">					if (METHOD_ASSUME_NOT_NULL.equals(methodName)) {</span>
+<span class="nc" id="L161">						return;</span>
+					}
 					// Remove the JUnit 4 static import - the method handler will add the correct
 					// one
-<span class="nc" id="L131">					importRewriter.removeStaticImport(importName);</span>
+<span class="nc" id="L165">					importRewriter.removeStaticImport(importName);</span>
 					// For assumeThat, the processMethodInvocation will add the correct import
 					// (Hamcrest or JUnit 5)
 					// For other methods, add JUnit 5 static import
-<span class="nc bnc" id="L135" title="All 2 branches missed.">					if (!METHOD_ASSUME_THAT.equals(methodName)) {</span>
-<span class="nc" id="L136">						importRewriter.addStaticImport(getTargetClass(), methodName, false);</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">					if (!METHOD_ASSUME_THAT.equals(methodName)) {</span>
+<span class="nc" id="L170">						importRewriter.addStaticImport(getTargetClass(), methodName, false);</span>
 					}
 				}
 			}
-<span class="nc" id="L140">		} else {</span>
+<span class="nc" id="L174">		} else {</span>
 			// Handle regular imports: import org.junit.Assume
-<span class="pc bpc" id="L142" title="1 of 2 branches missed.">			if (ORG_JUNIT_ASSUME.equals(importName)) {</span>
-				// Always remove the JUnit 4 import
-<span class="fc" id="L144">				importRewriter.removeImport(ORG_JUNIT_ASSUME);</span>
-				// Only add JUnit 5 Assumptions import if needed (will be added by
-				// processMethodInvocation for non-Hamcrest methods)
-				// Don't unconditionally add it here, as Hamcrest-only usage doesn't need it
+<span class="pc bpc" id="L176" title="1 of 4 branches missed.">			if (ORG_JUNIT_ASSUME.equals(importName) &amp;&amp; !keepLegacyAssume) {</span>
+<span class="fc" id="L177">				importRewriter.removeImport(ORG_JUNIT_ASSUME);</span>
+				// Target imports are added by the invocation that actually needs
+				// them; Hamcrest-only migrations do not need Assumptions.
 			}
 		}
-<span class="fc" id="L150">	}</span>
+<span class="fc" id="L182">	}</span>
+
+	private boolean containsLegacyAssumeNotNull(ASTNode node) {
+<span class="fc" id="L185">		boolean[] found = { false };</span>
+<span class="fc" id="L186">		node.getRoot().accept(new ASTVisitor() {</span>
+			@Override
+			public boolean visit(MethodInvocation invocation) {
+<span class="fc bfc" id="L189" title="All 2 branches covered.">				if (METHOD_ASSUME_NOT_NULL.equals(invocation.getName().getIdentifier())</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">						&amp;&amp; isLegacyAssumeInvocation(invocation)) {</span>
+<span class="fc" id="L191">					found[0] = true;</span>
+<span class="fc" id="L192">					return false;</span>
+				}
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">				return !found[0];</span>
+			}
+		});
+<span class="fc" id="L197">		return found[0];</span>
+	}
 
 	@Override
 	protected void reorderMessageParameter(TextEditGroup group, ASTRewrite rewriter,
 			MethodInvocation methodInvocation) {
 		// Use specific parameter sets for assumptions
-<span class="fc" id="L156">		reorderParameters(methodInvocation, rewriter, group, ONEPARAM_ASSUMPTIONS, MULTI_PARAM_ASSUMPTIONS);</span>
-<span class="fc" id="L157">	}</span>
+<span class="fc" id="L204">		reorderParameters(methodInvocation, rewriter, group, ONEPARAM_ASSUMPTIONS, MULTI_PARAM_ASSUMPTIONS);</span>
+<span class="fc" id="L205">	}</span>
 
 	/**
 	 * Checks if the assumeThat method belongs to org.junit.Assume.
@@ -163,8 +211,53 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlu
 	 * @return true if the method is from org.junit.Assume
 	 */
 	private boolean isJUnitAssume(MethodInvocation node) {
-<span class="fc" id="L166">		IMethodBinding binding = node.resolveMethodBinding();</span>
-<span class="pc bpc" id="L167" title="2 of 4 branches missed.">		return binding != null &amp;&amp; ORG_JUNIT_ASSUME.equals(binding.getDeclaringClass().getQualifiedName());</span>
+<span class="fc" id="L214">		IMethodBinding binding = node.resolveMethodBinding();</span>
+<span class="pc bpc" id="L215" title="2 of 4 branches missed.">		return binding != null &amp;&amp; ORG_JUNIT_ASSUME.equals(binding.getDeclaringClass().getQualifiedName());</span>
+	}
+
+	private boolean isLegacyAssumeInvocation(MethodInvocation node) {
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">		if (isJUnitAssume(node)) {</span>
+<span class="fc" id="L220">			return true;</span>
+		}
+<span class="nc" id="L222">		Expression expression = node.getExpression();</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">		if (expression != null) {</span>
+<span class="nc" id="L224">			String sourceSimpleName= ORG_JUNIT_ASSUME.substring(ORG_JUNIT_ASSUME.lastIndexOf('.') + 1);</span>
+<span class="nc bnc" id="L225" title="All 4 branches missed.">			return sourceSimpleName.equals(expression.toString()) &amp;&amp; hasLegacyAssumeTypeImport(node);</span>
+		}
+<span class="nc" id="L227">		return hasLegacyAssumeStaticImport(node, node.getName().getIdentifier());</span>
+	}
+
+	private boolean hasLegacyAssumeTypeImport(MethodInvocation node) {
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">		if (!(node.getRoot() instanceof CompilationUnit unit)) {</span>
+<span class="nc" id="L232">			return false;</span>
+		}
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">		for (Object current : unit.imports()) {</span>
+<span class="pc bpc" id="L235" title="2 of 4 branches missed.">			if (current instanceof ImportDeclaration importDeclaration &amp;&amp; !importDeclaration.isStatic()</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">					&amp;&amp; !importDeclaration.isOnDemand()</span>
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">					&amp;&amp; ORG_JUNIT_ASSUME.equals(importDeclaration.getName().getFullyQualifiedName())) {</span>
+<span class="fc" id="L238">				return true;</span>
+			}
+		}
+<span class="nc" id="L241">		return false;</span>
+	}
+
+	private boolean hasLegacyAssumeStaticImport(MethodInvocation node, String methodName) {
+<span class="nc bnc" id="L245" title="All 2 branches missed.">		if (!(node.getRoot() instanceof CompilationUnit unit)) {</span>
+<span class="nc" id="L246">			return false;</span>
+		}
+<span class="nc bnc" id="L248" title="All 2 branches missed.">		for (Object current : unit.imports()) {</span>
+<span class="nc bnc" id="L249" title="All 4 branches missed.">			if (!(current instanceof ImportDeclaration importDeclaration) || !importDeclaration.isStatic()) {</span>
+<span class="nc" id="L250">				continue;</span>
+			}
+<span class="nc" id="L252">			String importName = importDeclaration.getName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L253" title="All 4 branches missed.">			if (importDeclaration.isOnDemand() &amp;&amp; ORG_JUNIT_ASSUME.equals(importName)) {</span>
+<span class="nc" id="L254">				return true;</span>
+			}
+<span class="nc bnc" id="L256" title="All 2 branches missed.">			if ((ORG_JUNIT_ASSUME + &quot;.&quot; + methodName).equals(importName)) { //$NON-NLS-1$</span>
+<span class="nc" id="L257">				return true;</span>
+			}
+		}
+<span class="nc" id="L260">		return false;</span>
 	}
 
 	/**
@@ -176,77 +269,77 @@ import org.sandbox.jdt.internal.corext.fix.helper.lib.AbstractMethodMigrationPlu
 	 * @return true if using Hamcrest matchers, false otherwise
 	 */
 	private boolean usesHamcrestMatcher(MethodInvocation minv) {
-<span class="pc bpc" id="L179" title="1 of 2 branches missed.">		if (minv.arguments().isEmpty()) {</span>
-<span class="nc" id="L180">			return false;</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">		if (minv.arguments().isEmpty()) {</span>
+<span class="nc" id="L273">			return false;</span>
 		}
 
 		// Check each argument to see if it's a Hamcrest Matcher
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">		for (Object arg : minv.arguments()) {</span>
-<span class="pc bpc" id="L185" title="1 of 2 branches missed.">			if (arg instanceof Expression) {</span>
-<span class="fc" id="L186">				Expression expr = (Expression) arg;</span>
-<span class="fc" id="L187">				ITypeBinding typeBinding = expr.resolveTypeBinding();</span>
-<span class="pc bpc" id="L188" title="1 of 4 branches missed.">				if (typeBinding != null &amp;&amp; implementsHamcrestMatcher(typeBinding)) {</span>
-<span class="fc" id="L189">					return true;</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">		for (Object arg : minv.arguments()) {</span>
+<span class="pc bpc" id="L278" title="1 of 2 branches missed.">			if (arg instanceof Expression) {</span>
+<span class="fc" id="L279">				Expression expr = (Expression) arg;</span>
+<span class="fc" id="L280">				ITypeBinding typeBinding = expr.resolveTypeBinding();</span>
+<span class="pc bpc" id="L281" title="1 of 4 branches missed.">				if (typeBinding != null &amp;&amp; implementsHamcrestMatcher(typeBinding)) {</span>
+<span class="fc" id="L282">					return true;</span>
 				}
 			}
 		}
-<span class="nc" id="L193">		return false;</span>
+<span class="nc" id="L286">		return false;</span>
 	}
 
 	/**
-	 * Recursively checks if a type binding implements org.hamcrest.Matcher
+	 * Recursively checks if a type binding implements Hamcrest Matcher
 	 * interface.
 	 * 
 	 * @param typeBinding the type binding to check
 	 * @return true if the type implements Matcher
 	 */
 	private boolean implementsHamcrestMatcher(ITypeBinding typeBinding) {
-<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
-<span class="nc" id="L205">			return false;</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L298">			return false;</span>
 		}
 
 		// Check if the type itself is Matcher
-<span class="fc" id="L209">		ITypeBinding erasure = typeBinding.getErasure();</span>
-<span class="pc bpc" id="L210" title="1 of 2 branches missed.">		if (erasure != null) {</span>
-<span class="fc" id="L211">			String qualifiedName = erasure.getQualifiedName();</span>
-<span class="fc bfc" id="L212" title="All 2 branches covered.">			if (ORG_HAMCREST_MATCHER.equals(qualifiedName)) {</span>
-<span class="fc" id="L213">				return true;</span>
+<span class="fc" id="L302">		ITypeBinding erasure = typeBinding.getErasure();</span>
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">		if (erasure != null) {</span>
+<span class="fc" id="L304">			String qualifiedName = erasure.getQualifiedName();</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">			if (ORG_HAMCREST_MATCHER.equals(qualifiedName)) {</span>
+<span class="fc" id="L306">				return true;</span>
 			}
 		}
 
 		// Check interfaces
-<span class="fc bfc" id="L218" title="All 2 branches covered.">		for (ITypeBinding interfaceBinding : typeBinding.getInterfaces()) {</span>
-<span class="pc bpc" id="L219" title="1 of 2 branches missed.">			if (implementsHamcrestMatcher(interfaceBinding)) {</span>
-<span class="nc" id="L220">				return true;</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">		for (ITypeBinding interfaceBinding : typeBinding.getInterfaces()) {</span>
+<span class="pc bpc" id="L312" title="1 of 2 branches missed.">			if (implementsHamcrestMatcher(interfaceBinding)) {</span>
+<span class="nc" id="L313">				return true;</span>
 			}
 		}
 
 		// Check superclass
-<span class="fc" id="L225">		ITypeBinding superclass = typeBinding.getSuperclass();</span>
-<span class="pc bpc" id="L226" title="1 of 4 branches missed.">		if (superclass != null &amp;&amp; implementsHamcrestMatcher(superclass)) {</span>
-<span class="nc" id="L227">			return true;</span>
+<span class="fc" id="L318">		ITypeBinding superclass = typeBinding.getSuperclass();</span>
+<span class="pc bpc" id="L319" title="1 of 4 branches missed.">		if (superclass != null &amp;&amp; implementsHamcrestMatcher(superclass)) {</span>
+<span class="nc" id="L320">			return true;</span>
 		}
 
-<span class="fc" id="L230">		return false;</span>
+<span class="fc" id="L323">		return false;</span>
 	}
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L235" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L236">			return &quot;&quot;&quot;</span>
-					Assumptions.assumeNotNull(object,&quot;failuremessage&quot;);
-					Assumptions.assertTrue(condition,&quot;failuremessage&quot;);
+<span class="nc bnc" id="L328" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L329">			return &quot;&quot;&quot;</span>
+					Assumptions.assumeTrue(condition, &quot;failuremessage&quot;);
+					// Assume.assumeNotNull(...) stays on JUnit 4 for manual migration.
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L241">		return &quot;&quot;&quot;</span>
-				Assume.assumeNotNull(&quot;failuremessage&quot;, object);
-				Assume.assertTrue(&quot;failuremessage&quot;,condition);
+<span class="nc" id="L334">		return &quot;&quot;&quot;</span>
+				Assume.assumeTrue(&quot;failuremessage&quot;, condition);
+				Assume.assumeNotNull(object);
 				&quot;&quot;&quot;; //$NON-NLS-1$
 	}
 
 	@Override
 	public String toString() {
-<span class="fc" id="L249">		return &quot;Assume&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L342">		return &quot;Assume&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
