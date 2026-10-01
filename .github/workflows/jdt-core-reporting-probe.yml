@@ -23,26 +23,27 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Reproduce the baseline with complete XML inventories
+      - name: Reproduce baseline amplification and preserve every outcome
         run: |
           mkdir -p "$RUNNER_TEMP/reporting-evidence"
           mvn -B -ntp -f qa/upstream-jdt/compiler-reporting/pom.xml clean verify -Dprobe.expectBaseline=true -Dprobe.output="$RUNNER_TEMP/reporting-evidence/baseline"
           cp -r qa/upstream-jdt/compiler-reporting/target/surefire-reports "$RUNNER_TEMP/reporting-evidence/baseline-test-reports"
-      - name: Test the isolated report-owner correction
+      - name: Verify write boundaries and complete XML totals
         run: |
           mvn -B -ntp -f qa/upstream-jdt/compiler-reporting/pom.xml clean verify -Ppatched-reporter -Dprobe.output="$RUNNER_TEMP/reporting-evidence/patched"
           cp -r qa/upstream-jdt/compiler-reporting/target/surefire-reports "$RUNNER_TEMP/reporting-evidence/patched-test-reports"
-      - name: Require identical before and after test inventories
+      - name: Require identical case identities, multiplicities and outcomes
         run: |
           set -euo pipefail
-          for scenario in direct-32 suite-32 scale-32 scale-64; do
+          for scenario in direct-32 suite-32 scale-32 scale-64 outcomes before-all after-all disabled-class; do
             diff -u "$RUNNER_TEMP/reporting-evidence/baseline/$scenario/inventory.txt" "$RUNNER_TEMP/reporting-evidence/patched/$scenario/inventory.txt"
           done
-      - name: Preserve the exact runtime and probe source
+      - name: Preserve the exact runtime and source
         if: always()
         run: |
           mvn -B -ntp -f qa/upstream-jdt/compiler-reporting/pom.xml org.apache.maven.plugins:maven-dependency-plugin:3.8.1:copy-dependencies -DincludeScope=test -DoutputDirectory=target/probe-libs
           cp -r qa/upstream-jdt/compiler-reporting/src qa/upstream-jdt/compiler-reporting/target/probe-source
+          cp qa/upstream-jdt/compiler-reporting/PrepareAdapter.java qa/upstream-jdt/compiler-reporting/target/
           git rev-parse HEAD > "$RUNNER_TEMP/reporting-evidence/sandbox-commit.txt"
           java -version 2> "$RUNNER_TEMP/reporting-evidence/java-version.txt"
       - name: Preserve evidence even on failure

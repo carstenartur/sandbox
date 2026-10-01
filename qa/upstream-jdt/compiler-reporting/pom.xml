@@ -34,11 +34,12 @@
     <build><plugins>
       <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.8.1</version>
         <executions><execution><id>pinned-upstream-source</id><phase>generate-test-sources</phase><goals><goal>unpack</goal></goals>
-          <configuration><artifactItems><artifactItem>
-            <groupId>org.apache.maven.surefire</groupId><artifactId>surefire-junit-platform</artifactId><version>${surefire.version}</version><classifier>sources</classifier>
-            <includes>org/apache/maven/surefire/junitplatform/RunListenerAdapter.java</includes>
-            <outputDirectory>${project.build.directory}/upstream-source</outputDirectory>
-          </artifactItem></artifactItems></configuration>
+          <configuration><artifactItems>
+            <artifactItem><groupId>org.apache.maven.surefire</groupId><artifactId>surefire-junit-platform</artifactId><version>${surefire.version}</version><classifier>sources</classifier>
+              <includes>org/apache/maven/surefire/junitplatform/RunListenerAdapter.java</includes><outputDirectory>${project.build.directory}/upstream-source</outputDirectory></artifactItem>
+            <artifactItem><groupId>org.apache.maven.surefire</groupId><artifactId>maven-surefire-common</artifactId><version>${surefire.version}</version><classifier>sources</classifier>
+              <includes>org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java</includes><outputDirectory>${project.build.directory}/upstream-source</outputDirectory></artifactItem>
+          </artifactItems></configuration>
         </execution></executions>
       </plugin>
       <plugin><groupId>org.codehaus.mojo</groupId><artifactId>build-helper-maven-plugin</artifactId><version>3.6.1</version>
@@ -52,6 +53,8 @@
             <argument>${project.basedir}/PrepareAdapter.java</argument>
             <argument>${project.build.directory}/upstream-source/org/apache/maven/surefire/junitplatform/RunListenerAdapter.java</argument>
             <argument>${project.build.directory}/patched-source/org/apache/maven/surefire/junitplatform/RunListenerAdapter.java</argument>
+            <argument>${project.build.directory}/upstream-source/org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java</argument>
+            <argument>${project.build.directory}/patched-source/org/apache/maven/plugin/surefire/report/StatelessXmlReporter.java</argument>
           </arguments></configuration>
         </execution></executions>
       </plugin>
