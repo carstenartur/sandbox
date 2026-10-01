@@ -1,41 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.sandbox.qa</groupId>
-  <artifactId>jdt-core-reporting-probe</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <groupId>org.sandbox.qa</groupId><artifactId>jdt-core-reporting-probe</artifactId><version>1.0.0-SNAPSHOT</version>
   <name>Isolated JDT Core reporting investigation</name>
-  <!-- Deliberately no parent: this probe must not provision the Sandbox product. -->
+  <!-- No parent or product dependency: this is an explicit standalone QA scenario. -->
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
-    <surefire.version>3.5.6</surefire.version>
-    <junit.version>5.14.3</junit.version>
+    <surefire.version>3.5.6</surefire.version><junit.version>5.14.3</junit.version>
+    <probe.output>${project.build.directory}/reporting-probe</probe.output>
+    <probe.expectBaseline>false</probe.expectBaseline>
   </properties>
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.junit</groupId><artifactId>junit-bom</artifactId>
-        <version>${junit.version}</version><type>pom</type><scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
+  <dependencyManagement><dependencies>
+    <dependency><groupId>org.junit</groupId><artifactId>junit-bom</artifactId><version>${junit.version}</version><type>pom</type><scope>import</scope></dependency>
+  </dependencies></dependencyManagement>
   <dependencies>
     <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
     <dependency><groupId>org.junit.platform</groupId><artifactId>junit-platform-suite</artifactId><scope>test</scope></dependency>
     <dependency><groupId>org.apache.maven.surefire</groupId><artifactId>surefire-junit-platform</artifactId><version>${surefire.version}</version><scope>test</scope></dependency>
     <dependency><groupId>org.apache.maven.surefire</groupId><artifactId>maven-surefire-common</artifactId><version>${surefire.version}</version><scope>test</scope></dependency>
   </dependencies>
-  <build>
-    <plugins>
-      <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.14.1</version></plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>${surefire.version}</version>
-        <configuration>
-          <includes><include>**/ReportingProbeTest.java</include></includes>
-          <systemPropertyVariables><probe.output>${project.build.directory}/reporting-probe</probe.output></systemPropertyVariables>
-        </configuration>
+  <build><plugins>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.14.1</version></plugin>
+    <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>${surefire.version}</version>
+      <configuration>
+        <includes><include>**/ReportingProbeTest.java</include></includes>
+        <systemPropertyVariables><probe.output>${probe.output}</probe.output><probe.expectBaseline>${probe.expectBaseline}</probe.expectBaseline></systemPropertyVariables>
+      </configuration>
+    </plugin>
+  </plugins></build>
+  <profiles><profile>
+    <id>patched-reporter</id>
+    <build><plugins>
+      <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.8.1</version>
+        <executions><execution><id>pinned-upstream-source</id><phase>generate-test-sources</phase><goals><goal>unpack</goal></goals>
+          <configuration><artifactItems><artifactItem>
+            <groupId>org.apache.maven.surefire</groupId><artifactId>surefire-junit-platform</artifactId><version>${surefire.version}</version><classifier>sources</classifier>
+            <includes>org/apache/maven/surefire/junitplatform/RunListenerAdapter.java</includes>
+            <outputDirectory>${project.build.directory}/upstream-source</outputDirectory>
+          </artifactItem></artifactItems></configuration>
+        </execution></executions>
       </plugin>
-    </plugins>
-  </build>
+      <plugin><groupId>org.codehaus.mojo</groupId><artifactId>build-helper-maven-plugin</artifactId><version>3.6.1</version>
+        <executions><execution><id>patched-adapter-source</id><phase>generate-test-sources</phase><goals><goal>add-test-source</goal></goals>
+          <configuration><sources><source>${project.build.directory}/patched-source</source></sources></configuration>
+        </execution></executions>
+      </plugin>
+      <plugin><groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>3.5.1</version>
+        <executions><execution><id>bounded-report-boundary-patch</id><phase>process-test-sources</phase><goals><goal>exec</goal></goals>
+          <configuration><executable>${java.home}/bin/java</executable><arguments>
+            <argument>${project.basedir}/PrepareAdapter.java</argument>
+            <argument>${project.build.directory}/upstream-source/org/apache/maven/surefire/junitplatform/RunListenerAdapter.java</argument>
+            <argument>${project.build.directory}/patched-source/org/apache/maven/surefire/junitplatform/RunListenerAdapter.java</argument>
+          </arguments></configuration>
+        </execution></executions>
+      </plugin>
+    </plugins></build>
+  </profile></profiles>
 </project>

@@ -1,7 +1,4 @@
-/*
- * Copyright (c) 2026 Carsten Hammer and others.
- * SPDX-License-Identifier: EPL-2.0
- */
+/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
 package org.apache.maven.surefire.junitplatform;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,12 +36,10 @@ import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.Suite;
 
-/** Runs the real 3.5.6 adapter and reporter, not a model of their behaviour. */
+/** Runs the actual adapter, engine and reporter. The proxy only measures delegated calls. */
 class ReportingProbeTest {
     private static int invocations;
-
-    @ParameterizedClass(name = "compliance={0}")
-    @MethodSource("levels")
+    @ParameterizedClass(name = "compliance={0}") @MethodSource("levels")
     public static class CompilerFixture {
         final int compliance;
         CompilerFixture(int compliance) { this.compliance = compliance; }
@@ -53,80 +48,83 @@ class ReportingProbeTest {
         @Test void second() { assertTrue(compliance >= 0); }
         @Test void third() { assertTrue(compliance >= 0); }
     }
-
-    @Suite @SelectClasses(CompilerFixture.class)
-    public static class InnerSuite { }
-    @Suite @SelectClasses(InnerSuite.class)
-    public static class OuterSuite { }
+    @Suite @SelectClasses(CompilerFixture.class) public static class InnerSuite { }
+    @Suite @SelectClasses(InnerSuite.class) public static class OuterSuite { }
 
     @Test void directParameterizedClassMustWriteResultsOnce() throws Exception {
-        assertLinear(run("direct-32", CompilerFixture.class, 32));
+        assertReporting(run("direct-32", CompilerFixture.class, 32));
     }
     @Test void nestedSuiteMustWriteResultsOnce() throws Exception {
-        assertLinear(run("suite-32", OuterSuite.class, 32));
+        assertReporting(run("suite-32", OuterSuite.class, 32));
     }
-
-    private static void assertLinear(Observation result) {
+    @Test void doublingInvocationsMustNotQuadrupleSerializedData() throws Exception {
+        Observation small = run("scale-32", OuterSuite.class, 32);
+        Observation large = run("scale-64", OuterSuite.class, 64);
+        assertEquals(96, small.tests());
+        assertEquals(192, large.tests());
+        if (Boolean.getBoolean("probe.expectBaseline")) {
+            assertTrue(large.serializedBytes() > small.serializedBytes() * 2,
+                    "The known baseline amplification must actually be reproduced");
+        } else {
+            assertEquals(1, large.reportCompletions());
+            assertTrue(large.serializedBytes() <= small.serializedBytes() * 2 + 1024,
+                    "Doubling the workload must only grow the final report approximately linearly");
+        }
+    }
+    private static void assertReporting(Observation result) {
         assertEquals(96, result.tests(), "All actual executions must be present in XML");
-        assertTrue(result.reportCompletions() <= 2,
-                "REPEATED_REPORT_COMPLETION: " + result.reportCompletions());
-        assertTrue(result.serializedBytes() <= result.finalBytes() * 2,
-                "QUADRATIC_XML_REWRITE: serialized=" + result.serializedBytes()
-                + ", final=" + result.finalBytes());
+        if (Boolean.getBoolean("probe.expectBaseline")) {
+            assertTrue(result.reportCompletions() > 2, "Missing baseline reproduction");
+            assertTrue(result.serializedBytes() > result.finalBytes() * 2, "Missing baseline rewrite amplification");
+        } else {
+            assertEquals(1, result.reportCompletions(), "REPEATED_REPORT_COMPLETION");
+            assertEquals(result.finalBytes(), result.serializedBytes(), "QUADRATIC_XML_REWRITE");
+        }
     }
-
     @SuppressWarnings("unchecked")
     private static Observation run(String name, Class<?> selection, int count) throws Exception {
         invocations = count;
         Path directory = Path.of(System.getProperty("probe.output"), name);
         Files.createDirectories(directory);
         try (var existing = Files.list(directory)) {
-            assertEquals(0, existing.count(), "Run clean before repeating a measurement");
+            assertEquals(0, existing.count(), "Run clean or use a fresh evidence directory");
         }
-        ConsoleLogger logger = (ConsoleLogger) Proxy.newProxyInstance(
-                ConsoleLogger.class.getClassLoader(), new Class<?>[]{ConsoleLogger.class},
-                (proxy, method, args) -> method.getReturnType() == boolean.class ? false : null);
-        StartupReportConfiguration config = new StartupReportConfiguration(
-                true, false, "PLAIN", false, directory.toFile(), false, null,
-                directory.resolve("TESTHASH").toFile(), false, 0, null, "UTF-8",
-                false, true, true, false, new SurefireStatelessReporter(),
-                new SurefireConsoleOutputReporter(), new SurefireStatelessTestsetInfoReporter(),
-                new ReporterFactoryOptions());
+        boolean baseline = Boolean.getBoolean("probe.expectBaseline");
+        String adapterLocation = RunListenerAdapter.class.getProtectionDomain().getCodeSource().getLocation().toString();
+        assertEquals(baseline, adapterLocation.endsWith("surefire-junit-platform-3.5.6.jar"),
+                "Wrong adapter loaded for this comparison: " + adapterLocation);
+        ConsoleLogger logger = (ConsoleLogger) Proxy.newProxyInstance(ConsoleLogger.class.getClassLoader(),
+                new Class<?>[]{ConsoleLogger.class}, (proxy, method, args) -> method.getReturnType() == boolean.class ? false : null);
+        StartupReportConfiguration config = new StartupReportConfiguration(true, false, "PLAIN", false,
+                directory.toFile(), false, null, directory.resolve("TESTHASH").toFile(), false, 0,
+                "https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd", "UTF-8",
+                false, true, true, false, new SurefireStatelessReporter(), new SurefireConsoleOutputReporter(),
+                new SurefireStatelessTestsetInfoReporter(), new ReporterFactoryOptions());
         DefaultReporterFactory factory = new DefaultReporterFactory(config, logger);
         TestReportListener<TestOutputReportEntry> delegate = factory.createTestReportListener();
         long[] counters = new long[2];
-        TestReportListener<TestOutputReportEntry> measured =
-                (TestReportListener<TestOutputReportEntry>) Proxy.newProxyInstance(
-                        TestReportListener.class.getClassLoader(), new Class<?>[]{TestReportListener.class},
-                        (proxy, method, args) -> {
-                            Object result;
-                            try {
-                                result = method.invoke(delegate, args);
-                            } catch (InvocationTargetException e) {
-                                throw e.getCause();
-                            }
-                            if (method.getName().equals("testSetCompleted")) {
-                                counters[0]++;
-                                ReportEntry entry = (ReportEntry) args[0];
-                                Path xml = directory.resolve("TEST-" + entry.getSourceName() + ".xml");
-                                assertTrue(Files.isRegularFile(xml), "Missing real XML report: " + xml);
-                                // The reporter truncates and rewrites this file on completion.
-                                counters[1] += Files.size(xml);
-                            }
-                            return result;
-                        });
+        TestReportListener<TestOutputReportEntry> measured = (TestReportListener<TestOutputReportEntry>) Proxy.newProxyInstance(
+                TestReportListener.class.getClassLoader(), new Class<?>[]{TestReportListener.class}, (proxy, method, args) -> {
+                    Object result;
+                    try { result = method.invoke(delegate, args); }
+                    catch (InvocationTargetException e) { throw e.getCause(); }
+                    if (method.getName().equals("testSetCompleted")) {
+                        counters[0]++;
+                        ReportEntry entry = (ReportEntry) args[0];
+                        Path xml = directory.resolve("TEST-" + entry.getSourceName() + ".xml");
+                        assertTrue(Files.isRegularFile(xml), "Missing XML report: " + xml);
+                        counters[1] += Files.size(xml);
+                    }
+                    return result;
+                });
         RunListenerAdapter adapter = new RunListenerAdapter(measured, Stoppable.NOOP);
         adapter.setRunMode(RunMode.NORMAL_RUN);
         SummaryGeneratingListener summary = new SummaryGeneratingListener();
         long start = System.nanoTime();
         try {
-            LauncherFactory.create().execute(LauncherDiscoveryRequestBuilder.request()
-                    .selectors(selectClass(selection))
-                    .configurationParameter("junit.jupiter.execution.parallel.enabled", "false")
-                    .build(), adapter, summary);
-        } finally {
-            factory.close();
-        }
+            LauncherFactory.create().execute(LauncherDiscoveryRequestBuilder.request().selectors(selectClass(selection))
+                    .configurationParameter("junit.jupiter.execution.parallel.enabled", "false").build(), adapter, summary);
+        } finally { factory.close(); }
         long nanos = System.nanoTime() - start;
         assertEquals(count * 3L, summary.getSummary().getTestsSucceededCount());
         assertEquals(0, summary.getSummary().getTotalFailureCount());
@@ -157,7 +155,7 @@ class ReportingProbeTest {
         evidence.setProperty("finalBytes", Long.toString(bytes));
         evidence.setProperty("testcases", Integer.toString(inventory.size()));
         evidence.setProperty("elapsedNanosIncludingInstrumentation", Long.toString(nanos));
-        evidence.setProperty("adapterLocation", RunListenerAdapter.class.getProtectionDomain().getCodeSource().getLocation().toString());
+        evidence.setProperty("adapterLocation", adapterLocation);
         try (var output = Files.newOutputStream(directory.resolve("measurement.properties"))) {
             evidence.store(output, "Actual adapter/reporter measurement; not a JDT performance claim");
         }
