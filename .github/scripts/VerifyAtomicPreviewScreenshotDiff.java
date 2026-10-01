@@ -88,9 +88,14 @@ public final class VerifyAtomicPreviewScreenshotDiff {
     }
 
     private static boolean isTransientGtkWidgetPaint(int x, int y, int width, int height) {
-        if (width != 1280 || height != 900) {
+        // These are the two measured native layouts, not arbitrary resized images.
+        // The full-source atomic preview is wider; its buttons remain right-aligned
+        // and its compare viewport starts higher because the safety text wraps less.
+        boolean fullSourcePreview = width == 2057;
+        if ((!fullSourcePreview && width != 1280) || height != 900) {
             return false;
         }
+        x -= width - 1280;
 
         // GTK can repaint the complete disabled/focused button surface while a
         // modal wizard is becoming active. Keep the allowance confined to the
@@ -113,7 +118,8 @@ public final class VerifyAtomicPreviewScreenshotDiff {
 
         // The Java compare viewer uses a six-pixel GTK overlay scrollbar. Its
         // hover/fade state changes only this narrow, fixed gutter.
-        return x >= 1250 && x <= 1257 && y >= 438 && y <= 755;
+        int scrollbarTop = fullSourcePreview ? 327 : 438;
+        return x >= 1250 && x <= 1257 && y >= scrollbarTop && y <= 755;
     }
 
     private static int maximumChannelDelta(int first, int second) {

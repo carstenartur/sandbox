@@ -81,7 +81,6 @@ public class JdtCompilerVersionContractTest {
 					"The native snapshot regression must directly depend on the public source-viewer API"); //$NON-NLS-1$
 		}
 	}
-
 	private static void assertInheritsVersion(String path, String artifactId) throws Exception {
 		Document module= pom(path);
 		String dependency= "/project/dependencies/" + JDT_DEPENDENCY.formatted(artifactId); //$NON-NLS-1$

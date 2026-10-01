@@ -23,9 +23,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.Manifest;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -46,6 +48,9 @@ public class CiBuildScopeContractTest {
 	private static final String STRICT_WORKFLOW = ".github/workflows/jdt-ui-junit4-strict-qa.yml"; //$NON-NLS-1$
 	private static final String CONTRACT_STEP = "Validate the dedicated JDT UI corpus contract"; //$NON-NLS-1$
 	private static final String PRODUCT_STEP = "Build and test the Sandbox product under test"; //$NON-NLS-1$
+	private static final String ATOMIC_WORKFLOW = ".github/workflows/patched-jdt-ui-atomic-help-screenshot.yml"; //$NON-NLS-1$
+	private static final String LTK_STEP = "Build, verify and provision the pinned LTK runtime through Maven"; //$NON-NLS-1$
+	private static final String ATOMIC_STEP = "Reproduce the atomic Cleanup previews"; //$NON-NLS-1$
 
 	@Test
 	public void linuxOnlyProfilesReplaceTargetAndArchivePlatformLists() throws Exception {
@@ -82,8 +87,6 @@ public class CiBuildScopeContractTest {
 		Map<String, String> semanticMarkers = new LinkedHashMap<>();
 		semanticMarkers.put(".github/workflows/eclipse-help-screenshots.yml", //$NON-NLS-1$
 				"SandboxHelpScreenshotsMergeGateSWTBotTest"); //$NON-NLS-1$
-		semanticMarkers.put(".github/workflows/patched-jdt-ui-atomic-help-screenshot.yml", //$NON-NLS-1$
-				"SandboxAtomicPreviewPatchedJdtSWTBotTest"); //$NON-NLS-1$
 		semanticMarkers.put(".github/scripts/compare_patched_jdt_ui_with_target.sh", //$NON-NLS-1$
 				"compatibility.json"); //$NON-NLS-1$
 
@@ -93,12 +96,73 @@ public class CiBuildScopeContractTest {
 			assertTrue(content.contains(SPOTBUGS_SKIP), entry.getKey());
 			assertTrue(content.contains(entry.getValue()), entry.getKey());
 		}
+		assertAtomicMavenScopes(Files.readString(root.resolve(ATOMIC_WORKFLOW), StandardCharsets.UTF_8));
 
 		String strict = Files.readString(root.resolve(STRICT_WORKFLOW), StandardCharsets.UTF_8);
 		assertStrictMavenScopes(strict);
 		assertTrue(strict.contains("run-jdt-ui-before-after.sh")); //$NON-NLS-1$
 		assertTrue(strict.contains("--mode strict")); //$NON-NLS-1$
 		assertTrue(strict.contains("VerifyWhitespaceRegression.java")); //$NON-NLS-1$
+	}
+
+	@Test
+	public void atomicScopeRequiresBothIndependentMavenGates() throws IOException {
+		String workflow = Files.readString(repositoryRoot().resolve(ATOMIC_WORKFLOW), StandardCharsets.UTF_8);
+		assertAtomicMavenScopes(workflow);
+		for (String name : List.of(LTK_STEP, ATOMIC_STEP)) {
+			String step = workflowStep(workflow, name);
+			assertThrows(AssertionError.class, () -> assertAtomicMavenScopes(workflow.replace(step, "")), name); //$NON-NLS-1$
+			String other = workflowStep(workflow, name.equals(LTK_STEP) ? ATOMIC_STEP : LTK_STEP);
+			String moved = workflow.replace(step, step.replace(LINUX_ONLY, "")) //$NON-NLS-1$
+					.replace(other, other.replace(LINUX_ONLY, LINUX_ONLY + ' ' + LINUX_ONLY));
+			assertEquals(2, occurrences(moved, LINUX_ONLY));
+			assertThrows(AssertionError.class, () -> assertAtomicMavenScopes(moved), name);
+		}
+		for (String marker : List.of("PinnedLtkRuntimeIT", "LtkRuntimePatchTest", "LtkRuntimeMetadataTest", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				"SandboxAtomicPreviewPatchedJdtSWTBotTest", "SANDBOX_LTK_PATCH_EVIDENCE", "clean verify")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			assertThrows(AssertionError.class, () -> assertAtomicMavenScopes(workflow.replace(marker, "")), marker); //$NON-NLS-1$
+		}
+	}
+
+	@Test
+	public void atomicProvisioningCannotStopBeforeBundlePackaging() throws IOException {
+		String workflow = Files.readString(repositoryRoot().resolve(ATOMIC_WORKFLOW), StandardCharsets.UTF_8);
+		assertAtomicMavenScopes(workflow);
+		String provision = workflowStep(workflow, LTK_STEP);
+		for (String phase : List.of("compile", "test")) { //$NON-NLS-1$ //$NON-NLS-2$
+			String premature = workflow.replace(provision, provision.replace(" package", " " + phase)); //$NON-NLS-1$ //$NON-NLS-2$
+			assertThrows(AssertionError.class, () -> assertAtomicMavenScopes(premature), phase);
+		}
+	}
+
+	@Test
+	public void atomicLayoutDeclaresItsLtkUiDependency() throws IOException {
+		Path manifest = repositoryRoot().resolve("sandbox_eclipse_help_swtbot_test/META-INF/MANIFEST.MF"); //$NON-NLS-1$
+		try (var input = Files.newInputStream(manifest)) {
+			String required = new Manifest(input).getMainAttributes().getValue("Require-Bundle"); //$NON-NLS-1$
+			assertTrue(Arrays.stream(required.split(",")) //$NON-NLS-1$
+					.map(clause -> clause.split(";", 2)[0].strip()) //$NON-NLS-1$
+					.anyMatch("org.eclipse.ltk.ui.refactoring"::equals), //$NON-NLS-1$
+					"The preview API must be a direct PDE dependency, not an access-rule workaround"); //$NON-NLS-1$
+		}
+	}
+
+	private static void assertAtomicMavenScopes(String workflow) {
+		assertEquals(2, occurrences(workflow, LINUX_ONLY), ATOMIC_WORKFLOW);
+		for (String name : List.of(LTK_STEP, ATOMIC_STEP)) {
+			assertEquals(1, occurrences(workflowStep(workflow, name), LINUX_ONLY), name);
+		}
+		String provision = workflowStep(workflow, LTK_STEP);
+		assertTrue(provision.contains("mvn "), LTK_STEP); //$NON-NLS-1$
+		assertTrue(provision.contains("-Dtest=LtkRuntimePatchTest,LtkRuntimeMetadataTest,PinnedLtkRuntimeIT"), LTK_STEP); //$NON-NLS-1$
+		assertTrue(provision.stripTrailing().endsWith(" package"), LTK_STEP); //$NON-NLS-1$
+		assertFalse(provision.contains("-DskipTests"), LTK_STEP); //$NON-NLS-1$
+		assertFalse(provision.contains("-Dmaven.test.skip"), LTK_STEP); //$NON-NLS-1$
+		String preview = workflowStep(workflow, ATOMIC_STEP);
+		assertEquals(1, occurrences(preview, SPOTBUGS_SKIP), ATOMIC_STEP);
+		assertTrue(preview.contains("SandboxAtomicPreviewPatchedJdtSWTBotTest"), ATOMIC_STEP); //$NON-NLS-1$
+		assertTrue(preview.contains("SANDBOX_LTK_PATCH_EVIDENCE"), ATOMIC_STEP); //$NON-NLS-1$
+		assertTrue(preview.contains("clean verify"), ATOMIC_STEP); //$NON-NLS-1$
 	}
 
 	@Test

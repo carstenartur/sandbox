@@ -220,7 +220,6 @@ public class RepositoryBaselineConsistencyTest {
 			}
 		}
 	}
-
 	private static Path repositoryRoot() {
 		Path candidate = Path.of("").toAbsolutePath().normalize(); //$NON-NLS-1$
 		while (candidate != null) {
