@@ -102,6 +102,7 @@ public class FileReaderExplicitEncoding extends AbstractExplicitEncoding<ClassIn
 		isrclassInstance.arguments().add(fisclassInstance);
 		isrclassInstance.arguments().add(callToCharsetDefaultCharset);
 
+		cuRewrite.getImportRemover().registerRemovedNode(visited.getType());
 		ASTNodes.replaceButKeepComment(rewrite, visited, isrclassInstance, group);
 	}
 

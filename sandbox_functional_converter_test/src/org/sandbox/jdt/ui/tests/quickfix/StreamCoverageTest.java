@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -161,6 +162,66 @@ class StreamCoverageTest {
 		String converted = context.convert(original, "iterator_while");
 		assertNotEquals(original, converted);
 		assertEquals(execute(original, "bounds-original"), execute(converted, "bounds-loop"));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "stream", "enhanced_for", "iterator_while" })
+	void elementIndependentBodiesDoNotCallToString(String target) throws Exception {
+		// The test VM is Java 21; keep runtime evidence separate from Java 22 syntax coverage.
+		var project = context.getSourceFolder().getJavaProject();
+		var options = project.getOptions(false);
+		JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
+		project.setOptions(options);
+		String original = elementIndependentSource(target);
+		String converted = context.convert(original, target, true);
+		assertNotEquals(original, converted, context::cleanupDiagnostics);
+		assertEquals("[tick, tick]:0", execute(original, "unused-original"));
+		assertEquals("[tick, tick]:0", execute(converted, "unused-converted"), converted);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "stream", "enhanced_for", "iterator_while" })
+	void elementIndependentBodiesCompileAndRemainStableAtJava22(String target) throws Exception {
+		String original = elementIndependentSource(target);
+		// convert checks the original and generated units using the real Java 22 JDT project.
+		String converted = context.convert(original, target, true);
+		assertNotEquals(original, converted, context::cleanupDiagnostics);
+		if ("stream".equals(target)) {
+			assertTrue(converted.contains("_ -> \"tick\""), converted);
+		}
+		assertEquals(converted, context.convert(converted, target, true), "A second cleanup pass is stable");
+	}
+
+	private static String elementIndependentSource(String target) {
+		String loop = "enhanced_for".equals(target) ? """
+				Iterator<Bomb> iterator = List.of(new Bomb(), new Bomb()).iterator();
+				while (iterator.hasNext()) {
+					Bomb item = iterator.next();
+					result.add("tick");
+				}
+				""" : """
+				for (Bomb item : List.of(new Bomb(), new Bomb())) {
+					result.add("tick");
+				}
+				""";
+		return """
+				package test1;
+				import java.util.*;
+				public class Example {
+					static int toStringCalls;
+					static final class Bomb {
+						@Override public String toString() {
+							toStringCalls++;
+							throw new IllegalStateException("boom");
+						}
+					}
+					public static String run() {
+						List<String> result = new ArrayList<>();
+						LOOP
+						return result + ":" + toStringCalls;
+					}
+				}
+				""".replace("LOOP", loop);
 	}
 
 	private String execute(String source, String directory) throws Exception {

@@ -17,13 +17,13 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 
 /**
  * Tests for migrating JUnit 4 assumptions to JUnit 5.
@@ -38,7 +38,32 @@ public class MigrationAssumptionsTest {
 
 	@BeforeEach
 	public void setup() throws CoreException {
-		fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+		fRoot = JUnitMigrationFixtureClasspath.createJUnit4And5Root(context);
+		ensureMatcherAssumeFixture();
+	}
+
+	private void ensureMatcherAssumeFixture() throws CoreException {
+		IPackageFragment hamcrest= fRoot.createPackageFragment("org.hamcrest.junit", true, null); //$NON-NLS-1$
+		if (hamcrest.getCompilationUnit("MatcherAssume.java").exists()) { //$NON-NLS-1$
+			return;
+		}
+		hamcrest.createCompilationUnit("MatcherAssume.java", //$NON-NLS-1$
+				"""
+				package org.hamcrest.junit;
+				
+				import org.hamcrest.Matcher;
+				
+				public final class MatcherAssume {
+					private MatcherAssume() {
+					}
+				
+					public static <T> void assumeThat(T actual, Matcher<? super T> matcher) {
+					}
+				
+					public static <T> void assumeThat(String reason, T actual, Matcher<? super T> matcher) {
+					}
+				}
+				""", false, null);
 	}
 
 	@Test
@@ -120,7 +145,7 @@ public class MigrationAssumptionsTest {
 	}
 
 	@Test
-	public void migrates_assumeNotNull() throws CoreException {
+	public void keeps_assumeNotNull_on_junit4() throws CoreException {
 		IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
 		ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
 				"""
@@ -144,14 +169,14 @@ public class MigrationAssumptionsTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
-				import org.junit.jupiter.api.Assumptions;
+				import org.junit.Assume;
 				import org.junit.jupiter.api.Test;
 				
 				public class MyTest {
 					@Test
 					public void testWithPrecondition() {
-						Assumptions.assumeNotNull(new Object(), "Value should not be null");
-						Assumptions.assumeNotNull(new Object());
+						Assume.assumeNotNull("Value should not be null", new Object());
+						Assume.assumeNotNull(new Object());
 					}
 				}
 				"""
@@ -230,6 +255,7 @@ public class MigrationAssumptionsTest {
 		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] {
 				"""
 				package test;
+				import org.junit.Assume;
 				import org.junit.jupiter.api.Assumptions;
 				import org.junit.jupiter.api.Test;
 				
@@ -237,7 +263,7 @@ public class MigrationAssumptionsTest {
 					@Test
 					public void testWithMultiplePreconditions() {
 						Assumptions.assumeTrue(System.getProperty("test.run") != null, "System property set");
-						Assumptions.assumeNotNull(getValue(), "Value exists");
+						Assume.assumeNotNull("Value exists", getValue());
 						// Test logic here
 					}
 					

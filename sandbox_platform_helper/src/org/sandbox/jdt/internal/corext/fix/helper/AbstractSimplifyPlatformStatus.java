@@ -47,7 +47,6 @@ import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
-import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.common.HelperVisitorFactory;
 import org.sandbox.jdt.internal.common.ReferenceHolder;
@@ -124,11 +123,15 @@ public abstract class AbstractSimplifyPlatformStatus {
 
 					List<Expression> arguments= visited.arguments();
 					if (!hasConstantIntValue(arguments.get(0), expectedSeverity)
-							|| !hasConstantIntValue(arguments.get(2), IStatus.OK)) {
+							|| !hasConstantIntValue(arguments.get(2), IStatus.OK)
+							|| !StatusRewriteSupport.canDiscard(arguments.get(2))) {
 						return false;
 					}
 
 					Integer factoryArgumentCount= factoryArgumentCount(visited, arguments, bundleId);
+					if (factoryArgumentCount == null && !StatusRewriteSupport.hasPreservingConstructor(visited)) {
+						return false;
+					}
 					operations.add(fixcore.rewrite(visited, data, factoryArgumentCount));
 					nodesProcessed.add(visited);
 					return false;
@@ -140,8 +143,10 @@ public abstract class AbstractSimplifyPlatformStatus {
 
 	private Integer factoryArgumentCount(ClassInstanceCreation visited, List<Expression> arguments,
 			String bundleId) {
-		if (factoryMethodName == null || bundleId == null
-				|| !hasEquivalentIdentity(arguments.get(1), visited, bundleId)) {
+		if (factoryMethodName == null || bundleId == null || !StatusRewriteSupport.canUseFactory(visited)
+				|| !hasEquivalentIdentity(arguments.get(1), visited, bundleId)
+				|| !StatusRewriteSupport.canDiscard(arguments.get(0))
+				|| !StatusRewriteSupport.canDiscard(arguments.get(1))) {
 			return null;
 		}
 		boolean nullThrowable= ASTNodes.getUnparenthesedExpression(arguments.get(4)) instanceof NullLiteral;
@@ -260,7 +265,6 @@ public abstract class AbstractSimplifyPlatformStatus {
 			ReferenceHolder<ASTNode, Object> holder) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ImportRemover remover= cuRewrite.getImportRemover();
 
 		ClassInstanceCreation simplifiedStatus= ast.newClassInstanceCreation();
 		Name statusName= addImport(Status.class.getName(), cuRewrite, ast);
@@ -278,7 +282,9 @@ public abstract class AbstractSimplifyPlatformStatus {
 				ASTNodes.getUnparenthesedExpression(originalArguments.get(4))));
 
 		ASTNodes.replaceButKeepComment(rewrite, visited, simplifiedStatus, group);
-		remover.registerRemovedNode(visited);
+		StatusRewriteSupport.finish(cuRewrite, visited,
+				List.of(originalArguments.get(0), originalArguments.get(1), originalArguments.get(3), originalArguments.get(4)),
+				List.of(originalArguments.get(2)), group, Status.class.getName());
 	}
 
 	/** Uses a factory after identity and target-type equivalence have been proven. */
@@ -287,7 +293,6 @@ public abstract class AbstractSimplifyPlatformStatus {
 			ReferenceHolder<ASTNode, Object> holder, int factoryArgumentCount) {
 		ASTRewrite rewrite= cuRewrite.getASTRewrite();
 		AST ast= cuRewrite.getRoot().getAST();
-		ImportRemover remover= cuRewrite.getImportRemover();
 
 		MethodInvocation factoryCall= ast.newMethodInvocation();
 		factoryCall.setExpression(addImport(Status.class.getName(), cuRewrite, ast));
@@ -301,7 +306,11 @@ public abstract class AbstractSimplifyPlatformStatus {
 					ASTNodes.getUnparenthesedExpression(originalArguments.get(4))));
 		}
 
-		ASTNodes.replaceButKeepComment(rewrite, visited, factoryCall, group);
-		remover.registerRemovedNode(visited);
+		StatusRewriteSupport.replaceWithFactory(cuRewrite, visited, factoryCall, group);
+		StatusRewriteSupport.finish(cuRewrite, visited,
+				factoryArgumentCount == 2 ? List.of(originalArguments.get(3), originalArguments.get(4))
+						: List.of(originalArguments.get(3)),
+				List.of(originalArguments.get(0), originalArguments.get(1), originalArguments.get(2)),
+				group, Status.class.getName());
 	}
 }

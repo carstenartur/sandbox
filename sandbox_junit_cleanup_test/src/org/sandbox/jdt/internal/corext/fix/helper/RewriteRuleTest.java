@@ -19,13 +19,13 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.junit.JUnitCore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.triggerpattern.api.RewriteRule;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 
 /**
  * Tests for @RewriteRule annotation functionality.
@@ -35,6 +35,10 @@ class RewriteRuleTest {
     
     @RegisterExtension
     AbstractEclipseJava context = new EclipseJava17();
+
+    private IPackageFragmentRoot createJUnit4And5Root() throws CoreException {
+        return JUnitMigrationFixtureClasspath.createJUnit4And5Root(context);
+    }
     
     @Test
     void testBeforeJUnitPlugin_hasRewriteRuleAnnotation() {
@@ -158,7 +162,7 @@ class RewriteRuleTest {
      */
     @Test
     void testRewriteRule_actualTransformation_Before() throws CoreException {
-        IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+        IPackageFragmentRoot fRoot = createJUnit4And5Root();
         IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
         ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
                 """
@@ -207,7 +211,7 @@ class RewriteRuleTest {
      */
     @Test
     void testRewriteRule_actualTransformation_After() throws CoreException {
-        IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+        IPackageFragmentRoot fRoot = createJUnit4And5Root();
         IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
         ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
                 """
@@ -256,7 +260,7 @@ class RewriteRuleTest {
      */
     @Test
     void testRewriteRule_actualTransformation_BeforeClass() throws CoreException {
-        IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+        IPackageFragmentRoot fRoot = createJUnit4And5Root();
         IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
         ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
                 """
@@ -305,7 +309,7 @@ class RewriteRuleTest {
      */
     @Test
     void testRewriteRule_actualTransformation_AfterClass() throws CoreException {
-        IPackageFragmentRoot fRoot = context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+        IPackageFragmentRoot fRoot = createJUnit4And5Root();
         IPackageFragment pack = fRoot.createPackageFragment("test", true, null);
         ICompilationUnit cu = pack.createCompilationUnit("MyTest.java",
                 """

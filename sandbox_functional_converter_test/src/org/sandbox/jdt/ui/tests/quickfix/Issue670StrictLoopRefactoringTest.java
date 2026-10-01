@@ -447,7 +447,6 @@ public class Issue670StrictLoopRefactoringTest {
 
 		String expected = """
 				package test1;
-				import java.util.*;
 				import java.util.concurrent.CopyOnWriteArrayList;
 				public class MyTest {
 					void process(CopyOnWriteArrayList<String> list) {

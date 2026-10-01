@@ -216,11 +216,14 @@ class MyTest {
 		String expected = """
 package test1;
 import java.util.*;
-import java.util.stream.Collectors;
 class MyTest {
 	public void process(List<String> items) {
-		List<String> upper = items.stream().filter(item -> (item != null)).map(item -> item.toUpperCase())
-				.collect(Collectors.toList());
+		List<String> upper = new ArrayList<>();
+		items.forEach(item -> {
+			if (item != null) {
+				upper.add(item.toUpperCase());
+			}
+		});
 	}
 }
 """;
@@ -385,10 +388,10 @@ class MyTest {
 		String expected = """
 				package test1;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class MyTest {
 					public void process(List<String> items) {
-						List<String> processed = items.stream().map(item -> item.trim().toUpperCase()).collect(Collectors.toList());
+						List<String> processed = new ArrayList<>();
+						items.forEach(item -> processed.add(item.trim().toUpperCase()));
 					}
 				}
 				""";
@@ -627,7 +630,7 @@ class MyTest {
 	 * <p><b>Note:</b> Currently disabled - pattern not converting in V1. Needs investigation.</p>
 	 */
 	@Test
-	@DisplayName("Unused element: lambda with unused parameter")
+	@DisplayName("Unused element: unnamed lambda parameter")
 	void testUnusedElement() throws CoreException {
 		String input = """
 				package test1;
@@ -654,7 +657,7 @@ class MyTest {
 						new MyTest().process(new ArrayList<>());
 					}
 					public void process(List<String> items) {
-						items.forEach(item -> counter++);
+						items.forEach(_ -> counter++);
 					}
 				}
 				""";

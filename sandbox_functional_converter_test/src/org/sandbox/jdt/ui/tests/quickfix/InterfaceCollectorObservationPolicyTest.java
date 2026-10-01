@@ -44,10 +44,10 @@ class InterfaceCollectorObservationPolicyTest {
 				""", """
 				package test;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class E {
 					void copy(List<String> source) {
-						List<String> result = source.stream().collect(Collectors.toList());
+						List<String> result = new ArrayList<>();
+						source.forEach(item -> result.add(item));
 					}
 				}
 				""");
@@ -69,10 +69,10 @@ class InterfaceCollectorObservationPolicyTest {
 				""", """
 				package test;
 				import java.util.*;
-				import java.util.stream.Collectors;
 				class E {
 					void copy(List<Object> source) {
-						Set<Object> result = source.stream().collect(Collectors.toCollection(java.util.TreeSet::new));
+						Set<Object> result = new TreeSet<>();
+						source.forEach(item -> result.add(item));
 					}
 				}
 				""");

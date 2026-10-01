@@ -122,10 +122,11 @@ public class Java9CleanUpTest {
 					import org.eclipse.core.runtime.IStatus;
 					import org.eclipse.core.runtime.Status;
 					public class E1 {
-						private static final int OK_CODE = 0;
 						IStatus status = new Status(IStatus.ERROR, "plugin.id", "important message", null);
 					}"""), //$NON-NLS-1$
 
+		// The legacy target lacks the Class-based four-argument constructor.
+		// Both target API variants are covered by StatusDiagnosticPreservationTest.
 		STATUS_WITH_CLASS_IDENTITY("""
 			package test1;
 			import org.eclipse.core.runtime.IStatus;
@@ -139,7 +140,7 @@ public class Java9CleanUpTest {
 					import org.eclipse.core.runtime.IStatus;
 					import org.eclipse.core.runtime.Status;
 					public class E1 {
-						IStatus status = new Status(IStatus.INFO, E1.class, "important message", null);
+						IStatus status = new Status(IStatus.INFO, E1.class, IStatus.OK, "important message", null);
 					}"""); //$NON-NLS-1$
 
 		final String given;
@@ -256,7 +257,6 @@ public class Java9CleanUpTest {
 					import org.eclipse.core.runtime.IStatus;
 					import org.eclipse.core.runtime.MultiStatus;
 					public class E1 {
-						private static final int OK_CODE = 0;
 						void method(Throwable e) {
 							MultiStatus status = new MultiStatus("plugin.id", IStatus.OK, "important message", e);
 						}

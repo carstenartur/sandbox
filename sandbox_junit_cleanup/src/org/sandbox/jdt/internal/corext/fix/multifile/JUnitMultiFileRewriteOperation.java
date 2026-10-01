@@ -14,6 +14,7 @@ import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ANNO
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_CLASS_RULE;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_JUPITER_API_EXTENSION_REGISTER_EXTENSION;
 import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULE;
+import static org.sandbox.jdt.internal.corext.fix.helper.lib.JUnitConstants.ORG_JUNIT_RULES_EXTERNAL_RESOURCE;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -21,20 +22,25 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperationWithSourceRange;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
@@ -97,9 +103,11 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 	}
 
 	private final ResolvedEdits edits;
+	private final Set<String> compatibleResourceTypes;
 
-	JUnitMultiFileRewriteOperation(ResolvedEdits edits) {
+	JUnitMultiFileRewriteOperation(ResolvedEdits edits, Set<String> compatibleResourceTypes) {
 		this.edits= edits;
+		this.compatibleResourceTypes= Set.copyOf(compatibleResourceTypes);
 	}
 
 	@Override
@@ -112,6 +120,7 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 		Set<TypeDeclaration> isolatedTypes= new LinkedHashSet<>();
 
 		for (Map.Entry<FieldDeclaration, FieldEdit> entry : edits.fields().entrySet()) {
+			rewriteResourceFieldType(entry.getKey(), cuRewrite, group);
 			rewriteRuleField(entry.getKey(), entry.getValue(), rewrite, ast, imports, group, isolatedTypes);
 		}
 		removeUnusedRuleImports(imports);
@@ -126,6 +135,42 @@ final class JUnitMultiFileRewriteOperation extends CompilationUnitRewriteOperati
 						rewrite, ast, group, imports);
 			}
 		}
+	}
+
+	/** Keep the field assignable when the coordinated plan removes its JUnit 4 base. */
+	private void rewriteResourceFieldType(FieldDeclaration field, CompilationUnitRewrite cuRewrite,
+			TextEditGroup group) throws CoreException {
+		ITypeBinding declared= field.getType().resolveBinding();
+		if (declared == null || declared.isRecovered()
+				|| !(ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(declared.getErasure().getQualifiedName())
+						|| "org.junit.rules.TestRule".equals(declared.getErasure().getQualifiedName()))) { //$NON-NLS-1$
+			return;
+		}
+		if (field.fragments().size() != 1
+				|| !(field.fragments().get(0) instanceof VariableDeclarationFragment fragment)
+				|| !(fragment.getInitializer() instanceof ClassInstanceCreation creation)) {
+			throw new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", //$NON-NLS-1$
+					"Cannot resolve the planned ExternalResource field initializer")); //$NON-NLS-1$
+		}
+		ITypeBinding resource= creation.resolveTypeBinding();
+		if (resource == null || resource.isRecovered() || resource.isAnonymous()) {
+			throw new CoreException(new Status(IStatus.ERROR, "sandbox_junit_cleanup", //$NON-NLS-1$
+					"Cannot resolve the planned named ExternalResource type")); //$NON-NLS-1$
+		}
+		for (ITypeBinding type= resource; type != null; type= type.getSuperclass()) {
+			String key= JUnitMigrationPlan.typeKey(type);
+			if (key != null && compatibleResourceTypes.contains(key)) {
+				return; // This chain intentionally retains its JUnit 4 superclass.
+			}
+		}
+		ImportRewrite imports= cuRewrite.getImportRewrite();
+		var context= new ContextSensitiveImportRewriteContext(field.getType(), imports);
+		// Use the inferred binding, not the constructor's syntax: a diamond is legal
+		// in the initializer but not in a field type. Scope-aware imports also retain
+		// qualification when another source type has the same simple name.
+		var replacement= imports.addImport(resource, field.getAST(), context);
+		cuRewrite.getASTRewrite().replace(field.getType(), replacement, group);
+		cuRewrite.getImportRemover().registerRemovedNode(field.getType());
 	}
 
 	private void rewriteRuleField(FieldDeclaration field, FieldEdit edit, ASTRewrite rewrite, AST ast,

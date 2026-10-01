@@ -446,7 +446,6 @@ public class UseGeneralTypeCleanUpTest {
 				package test;
 				import java.util.ArrayList;
 				import java.util.Collection;
-				import java.util.List;
 
 				public class Test {
 				    public void method() {

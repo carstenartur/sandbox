@@ -26,6 +26,7 @@ import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ForStatement;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.Type;
+import org.eclipse.jdt.core.dom.VariableDeclarationExpression;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
@@ -219,8 +220,19 @@ public class IteratorWhileHandler extends AbstractFunctionalCall<ASTNode> {
 			Statement iteratorDeclaration= findPreviousStatement((Statement) visited);
 			if (iteratorDeclaration != null) {
 				rewrite.remove(iteratorDeclaration, group);
+				if (iteratorDeclaration instanceof VariableDeclarationStatement declaration) {
+					cuRewrite.getImportRemover().registerRemovedNode(declaration.getType());
+				}
+			}
+		} else if (visited instanceof ForStatement loop) {
+			for (Object initializer : loop.initializers()) {
+				if (initializer instanceof VariableDeclarationExpression declaration) {
+					cuRewrite.getImportRemover().registerRemovedNode(declaration.getType());
+				}
 			}
 		}
+		cuRewrite.getImportRemover().applyRemoves(cuRewrite.getImportRewrite());
+		IteratorImportCleanup.removeUnusedPackageImports(cuRewrite);
 		addRequiredImports(cuRewrite, model);
 	}
 

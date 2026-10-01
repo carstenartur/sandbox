@@ -20,11 +20,11 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
-import org.eclipse.jdt.junit.JUnitCore;
 
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
+import org.sandbox.jdt.ui.tests.quickfix.rules.JUnitMigrationFixtureClasspath;
 
 /** Re-runs the historical rule-case matrix as an active regression suite. */
 class JUnitRuleCasesActivationTest {
@@ -36,7 +36,7 @@ class JUnitRuleCasesActivationTest {
 
 	@BeforeEach
 	void setup() throws CoreException {
-		root= context.createClasspathForJUnit(JUnitCore.JUNIT4_CONTAINER_PATH);
+		root= JUnitMigrationFixtureClasspath.createJUnit4And5Root(context);
 	}
 
 	@ParameterizedTest

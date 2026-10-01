@@ -163,11 +163,13 @@ public class UseGeneralTypePlugin {
 				continue;
 			}
 			
-			// Create new type
+			Type oldType = typeHolder.variableDeclarationStatement.getType();
 			Type newType = cuRewrite.getImportRewrite().addImport(typeHolder.widenedType, ast);
-			
-			// Replace the type in the variable declaration statement
-			rewrite.replace(typeHolder.variableDeclarationStatement.getType(), newType, group);
+
+			// Let JDT remove the old import only when no surviving reference
+			// needs it. Replacing the declaration alone can create an unused import.
+			cuRewrite.getImportRemover().registerRemovedNode(oldType);
+			rewrite.replace(oldType, newType, group);
 			
 			// Mark as processed
 			typeHolder.nodesprocessed.add(typeHolder.variableDeclarationStatement);
