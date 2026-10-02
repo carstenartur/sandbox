@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-10-01
+# Refactoring Mining Report — 2026-10-02
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1461 | 81 | 11 |
+| sandbox | 1478 | 82 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -286,12 +286,13 @@
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:208` — `bom.clone()`
 - `sandbox_xml_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/XMLResourceSupport.java:213` — `bom.clone()`
 - `.github/probes/patched-jdt-ui/src/org/sandbox/jdt/ui/probe/ScopeExpansionProbeApplication.java:312` — `compilationUnits.clone()`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:274` — `fixes.clone()`
-- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:696` — `fixes.clone()`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:273` — `fixes.clone()`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:708` — `fixes.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:108` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:115` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:209` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:216` — `arguments.clone()`
+- `sandbox_test_commons/integration-src/org/sandbox/jdt/ui/tests/quickfix/rules/CompilerDiagnosticRegressionTest.java:188` — `source.clone()`
 - `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/StreamChainToLoopTest.java:94` — `cleanups.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:54` — `applicationArguments.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:59` — `applicationArguments.clone()`
@@ -312,7 +313,7 @@
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:182` — `System.arraycopy(bom,0,result,0,bom.length)`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:366` — `System.arraycopy(BUNDLED_LIBRARIES,0,result,0,BUNDLED_LIBRARIES.length)`
 - `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/EclipseBundleClasspath.java:134` — `System.arraycopy(current,0,updated,0,current.length)`
-- `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java:396` — `System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)`
+- `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java:397` — `System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)`
 
 #### Rule: `arrays` → `arrays.aslist-stream.to-arrays-stream`
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java:103` — `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream()` → `java.util.Arrays.stream(packageRoot.getJavaProject().getPackageFragments())`
@@ -321,8 +322,8 @@
 - `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:44` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
 - `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:44` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
 - `sandbox_triggerpattern/src/org/sandbox/jdt/internal/ui/wizard/NewRuleWizardPage.java:459` — `sourcePatternText.getText().trim().isEmpty()` → `sourcePatternText.getText().isBlank()`
-- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:104` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
-- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:104` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
+- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:105` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
+- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:105` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JavaHelperView.java:329` — `newText.trim().isEmpty()` → `newText.isBlank()`
 - `sandbox_xml_cleanup_test/src/test/java/org/sandbox/jdt/ui/tests/quickfix/XMLTestUtils.java:120` — `child.getTextContent().trim().isEmpty()` → `child.getTextContent().isBlank()`
 

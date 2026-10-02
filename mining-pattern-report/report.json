@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 257,
+    "totalMatches": 258,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1461,
-        "matches": 81,
+        "files": 1478,
+        "matches": 82,
         "rules": 11
       }
     }
@@ -1815,7 +1815,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java",
-      "line": 274,
+      "line": 273,
       "matchedCode": "fixes.clone()"
     },
     {
@@ -1823,7 +1823,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java",
-      "line": 696,
+      "line": 708,
       "matchedCode": "fixes.clone()"
     },
     {
@@ -1912,8 +1912,16 @@
       "hintFile": "arrays",
       "rule": "arrays.arraycopy-full-copy.review",
       "file": "sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java",
-      "line": 396,
+      "line": 397,
       "matchedCode": "System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_test_commons/integration-src/org/sandbox/jdt/ui/tests/quickfix/rules/CompilerDiagnosticRegressionTest.java",
+      "line": 188,
+      "matchedCode": "source.clone()"
     },
     {
       "repository": "sandbox",
@@ -2043,7 +2051,7 @@
       "hintFile": "string-isblank",
       "rule": "string-isblank1",
       "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
-      "line": 104,
+      "line": 105,
       "matchedCode": "parts[0].trim().isEmpty()",
       "suggestedReplacement": "parts[0].isBlank()"
     },
@@ -2052,7 +2060,7 @@
       "hintFile": "string-isblank",
       "rule": "string-isblank1",
       "file": "sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java",
-      "line": 104,
+      "line": 105,
       "matchedCode": "parts[1].trim().isEmpty()",
       "suggestedReplacement": "parts[1].isBlank()"
     },
