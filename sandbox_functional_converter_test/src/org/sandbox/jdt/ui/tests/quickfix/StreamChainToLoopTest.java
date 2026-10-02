@@ -16,18 +16,23 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import javax.tools.ToolProvider;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.JavaCore;
@@ -80,6 +85,10 @@ class StreamChainToLoopTest {
 		private Map<String, String> cleanupOptions = Map.of();
 		private RefactoringStatus cleanupStatus;
 		private boolean cleanupFixCreated;
+		private final List<CleanupEditSnapshot> cleanupEdits = new ArrayList<>();
+		private ICompilationUnit cleanupUnit;
+		private String cleanupInput;
+		private String cleanupObserved;
 
 		ConversionContext() {
 			super("testresources/rtstubs_22.jar", JavaCore.VERSION_22);
@@ -89,6 +98,8 @@ class StreamChainToLoopTest {
 		protected RefactoringStatus performRefactoring(CleanUpRefactoring ref, ICompilationUnit[] units,
 				ICleanUp[] cleanups, Set<String> expectedGroups) throws CoreException {
 			cleanupAst = null;
+			cleanupStatus = null;
+			cleanupEdits.clear();
 			cleanupFixCreated = false;
 			cleanupOptions = Map.of();
 			ICleanUp[] traced = cleanups.clone();
@@ -110,7 +121,15 @@ class StreamChainToLoopTest {
 							cleanupAst = context.getAST();
 							ICleanUpFix fix = super.createFix(context);
 							cleanupFixCreated |= fix != null;
-							return fix;
+							return fix == null ? null : monitor -> {
+								var change = fix.createChange(monitor);
+								// Copy the actual edit without resolving bindings, reading a
+								// live buffer or asking the change for a preview.
+								cleanupEdits.add(new CleanupEditSnapshot(
+										change == null ? null : change.getEdit(),
+										change == null ? -1 : change.getSaveMode()));
+								return change;
+							};
 						}
 					};
 					traced[index] = new AbstractCleanUpCoreWrapper<UseFunctionalCallCleanUpCore>(Map.of(), core) { };
@@ -123,7 +142,15 @@ class StreamChainToLoopTest {
 		String cleanupDiagnostics() {
 			StringBuilder diagnostic = new StringBuilder("Cleanup status: ").append(cleanupStatus)
 					.append("\nFix created: ").append(cleanupFixCreated)
-					.append("\nOptions: ").append(cleanupOptions);
+					.append("\nOptions: ").append(cleanupOptions)
+					.append("\nCreated changes: ").append(cleanupEdits.size())
+					.append("\nObserved source after cleanup and validation:\n").append(cleanupObserved);
+			for (CleanupEditSnapshot edit : cleanupEdits) {
+				// Multiple fixpoint passes may use different intermediate sources.
+				// Do not compare those edits against the original input by mistake.
+				diagnostic.append(edit.describe(cleanupEdits.size() == 1 ? cleanupInput : null, cleanupObserved));
+			}
+			appendResourceDiagnostics(diagnostic);
 			if (cleanupAst == null) {
 				return diagnostic.append("\nNo AST reached the functional cleanup").toString();
 			}
@@ -143,6 +170,25 @@ class StreamChainToLoopTest {
 			return diagnostic.toString();
 		}
 
+		private void appendResourceDiagnostics(StringBuilder diagnostic) {
+			if (cleanupUnit == null) return;
+			try {
+				diagnostic.append("\nDiagnostic-time working copy: ").append(cleanupUnit.isWorkingCopy());
+				if (cleanupUnit.getResource() instanceof IFile file) {
+					diagnostic.append("; file exists: ").append(file.exists())
+							.append("; modification stamp: ").append(file.getModificationStamp());
+					if (file.exists()) {
+						try (var contents = file.getContents()) {
+							diagnostic.append("\nDiagnostic-time file source:\n")
+									.append(new String(contents.readAllBytes(), Charset.forName(file.getCharset())));
+						}
+					}
+				}
+			} catch (CoreException | IOException | IllegalArgumentException failure) {
+				diagnostic.append("\nResource diagnostic failed: ").append(failure);
+			}
+		}
+
 		private static String binding(IBinding binding) {
 			return binding == null ? "null" : binding.getKey() + " (recovered=" + binding.isRecovered() + ")";
 		}
@@ -152,8 +198,12 @@ class StreamChainToLoopTest {
 		}
 
 		String convert(String source, String target, boolean allSources) throws CoreException {
+			cleanupInput = source;
+			cleanupObserved = null;
+			cleanupUnit = null;
 			ICompilationUnit unit = getSourceFolder().createPackageFragment("test1", false, null)
 					.createCompilationUnit("Example.java", source, true, null);
+			cleanupUnit = unit;
 			enable(MYCleanUpConstants.LOOP_CONVERSION_ENABLED);
 			set(MYCleanUpConstants.LOOP_CONVERSION_TARGET_FORMAT, target);
 			enable(MYCleanUpConstants.LOOP_CONVERSION_FROM_STREAM);
@@ -164,7 +214,8 @@ class StreamChainToLoopTest {
 			assertNoCompilationError(unit);
 			performRefactoring(new ICompilationUnit[] { unit }, null);
 			assertNoCompilationError(unit);
-			return unit.getSource();
+			cleanupObserved = unit.getSource();
+			return cleanupObserved;
 		}
 
 		JdtStreamExtractor.ExtractedStream extract(String source) throws CoreException {
