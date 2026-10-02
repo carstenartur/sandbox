@@ -119,7 +119,7 @@ import org.eclipse.ltk.ui.refactoring.IChangePreviewViewer;
 <span class="nc bnc" id="L119" title="All 2 branches missed.">				return element instanceof FilePreview preview ? preview.label() : super.getText(element);</span>
 			}
 		});
-<span class="nc" id="L122">		GridData filesData= new GridData(SWT.FILL, SWT.FILL, true, true);</span>
+<span class="nc" id="L122">		GridData filesData= new GridData(SWT.FILL, SWT.FILL, true, false);</span>
 <span class="nc" id="L123">		filesData.heightHint= 110;</span>
 <span class="nc" id="L124">		files.getControl().setLayoutData(filesData);</span>
 <span class="nc" id="L125">		files.addSelectionChangedListener(event -&gt; {</span>
@@ -165,7 +165,7 @@ import org.eclipse.ltk.ui.refactoring.IChangePreviewViewer;
 <span class="nc" id="L165">					? ATOMIC_SELECTION</span>
 <span class="nc" id="L166">					: candidate.description() + System.lineSeparator() + ATOMIC_SELECTION);</span>
 <span class="nc" id="L167">			details.setText(String.join(System.lineSeparator(), candidate.details()));</span>
-<span class="nc" id="L168">			files.setInput(candidate.files());</span>
+<span class="nc" id="L168">			setFileInput(candidate.files());</span>
 <span class="nc bnc" id="L169" title="All 2 branches missed.">			if (candidate.files().isEmpty()) {</span>
 <span class="nc" id="L170">				showFile(null);</span>
 <span class="nc" id="L171">			} else {</span>
@@ -232,59 +232,66 @@ import org.eclipse.ltk.ui.refactoring.IChangePreviewViewer;
 <span class="nc" id="L232">		return null;</span>
 	}
 
+	private void setFileInput(List&lt;FilePreview&gt; input) {
+<span class="nc" id="L236">		files.setInput(input);</span>
+		// Keep a short file list compact so the safety evidence gets the remaining height.
+<span class="nc" id="L238">		GridData data= (GridData) files.getControl().getLayoutData();</span>
+<span class="nc" id="L239">		data.heightHint= files.getTable().getItemHeight() * Math.max(1, Math.min(5, input.size()));</span>
+<span class="nc" id="L240">	}</span>
+
 	private void showFile(FilePreview preview) {
-<span class="nc bnc" id="L236" title="All 4 branches missed.">		if (comparePreviewer != null &amp;&amp; !comparePreviewer.isDisposed()) {</span>
-<span class="nc" id="L237">			comparePreviewer.setPreview(preview);</span>
+<span class="nc bnc" id="L243" title="All 4 branches missed.">		if (comparePreviewer != null &amp;&amp; !comparePreviewer.isDisposed()) {</span>
+<span class="nc" id="L244">			comparePreviewer.setPreview(preview);</span>
 		}
-<span class="nc" id="L239">	}</span>
+<span class="nc" id="L246">	}</span>
 
 	private void clear(String message) {
-<span class="nc bnc" id="L242" title="All 4 branches missed.">		if (title != null &amp;&amp; !title.isDisposed()) {</span>
-<span class="nc" id="L243">			title.setText(&quot;Coordinated Cleanup preview&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L249" title="All 4 branches missed.">		if (title != null &amp;&amp; !title.isDisposed()) {</span>
+<span class="nc" id="L250">			title.setText(&quot;Coordinated Cleanup preview&quot;); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L245" title="All 4 branches missed.">		if (description != null &amp;&amp; !description.isDisposed()) {</span>
-<span class="nc bnc" id="L246" title="All 2 branches missed.">			description.setText(message == null ? &quot;&quot; : message); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L252" title="All 4 branches missed.">		if (description != null &amp;&amp; !description.isDisposed()) {</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">			description.setText(message == null ? &quot;&quot; : message); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L248" title="All 4 branches missed.">		if (details != null &amp;&amp; !details.isDisposed()) {</span>
-<span class="nc" id="L249">			details.setText(ATOMIC_SELECTION);</span>
+<span class="nc bnc" id="L255" title="All 4 branches missed.">		if (details != null &amp;&amp; !details.isDisposed()) {</span>
+<span class="nc" id="L256">			details.setText(ATOMIC_SELECTION);</span>
 		}
-<span class="nc bnc" id="L251" title="All 6 branches missed.">		if (files != null &amp;&amp; files.getControl() != null &amp;&amp; !files.getControl().isDisposed()) {</span>
-<span class="nc" id="L252">			files.setInput(List.of());</span>
+<span class="nc bnc" id="L258" title="All 6 branches missed.">		if (files != null &amp;&amp; files.getControl() != null &amp;&amp; !files.getControl().isDisposed()) {</span>
+<span class="nc" id="L259">			setFileInput(List.of());</span>
 		}
-<span class="nc" id="L254">		showFile(null);</span>
-<span class="nc" id="L255">	}</span>
+<span class="nc" id="L261">		showFile(null);</span>
+<span class="nc" id="L262">	}</span>
 
 	private static String safeMessage(Throwable throwable) {
-<span class="nc" id="L258">		Throwable current= throwable;</span>
-<span class="nc bnc" id="L259" title="All 4 branches missed.">		if (throwable instanceof InvocationTargetException invocation &amp;&amp; invocation.getCause() != null) {</span>
-<span class="nc" id="L260">			current= invocation.getCause();</span>
+<span class="nc" id="L265">		Throwable current= throwable;</span>
+<span class="nc bnc" id="L266" title="All 4 branches missed.">		if (throwable instanceof InvocationTargetException invocation &amp;&amp; invocation.getCause() != null) {</span>
+<span class="nc" id="L267">			current= invocation.getCause();</span>
 		}
-<span class="nc" id="L262">		String message= current.getMessage();</span>
-<span class="nc bnc" id="L263" title="All 4 branches missed.">		return message == null || message.isBlank() ? current.getClass().getSimpleName() : message;</span>
+<span class="nc" id="L269">		String message= current.getMessage();</span>
+<span class="nc bnc" id="L270" title="All 4 branches missed.">		return message == null || message.isBlank() ? current.getClass().getSimpleName() : message;</span>
 	}
 
 	private static List&lt;String&gt; stringList(Object value) {
-<span class="nc bnc" id="L267" title="All 2 branches missed.">		if (!(value instanceof List&lt;?&gt; list)) {</span>
-<span class="nc" id="L268">			return List.of();</span>
+<span class="nc bnc" id="L274" title="All 2 branches missed.">		if (!(value instanceof List&lt;?&gt; list)) {</span>
+<span class="nc" id="L275">			return List.of();</span>
 		}
-<span class="nc" id="L270">		return list.stream().filter(String.class::isInstance).map(String.class::cast).toList();</span>
+<span class="nc" id="L277">		return list.stream().filter(String.class::isInstance).map(String.class::cast).toList();</span>
 	}
 
 	private static &lt;T&gt; T invoke(Change change, String methodName, Class&lt;T&gt; expectedType)
 			throws ReflectiveOperationException {
-<span class="nc" id="L275">		Method method= change.getClass().getMethod(methodName);</span>
-<span class="nc" id="L276">		Object value= method.invoke(change);</span>
-<span class="nc" id="L277">		return expectedType.cast(value);</span>
+<span class="nc" id="L282">		Method method= change.getClass().getMethod(methodName);</span>
+<span class="nc" id="L283">		Object value= method.invoke(change);</span>
+<span class="nc" id="L284">		return expectedType.cast(value);</span>
 	}
 
 	private record CandidatePreview(String name, String description, List&lt;String&gt; details,
 			List&lt;FilePreview&gt; files) {
-<span class="nc" id="L282">		CandidatePreview {</span>
-<span class="nc bnc" id="L283" title="All 2 branches missed.">			name= name == null ? &quot;&quot; : name; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L284" title="All 2 branches missed.">			description= description == null ? &quot;&quot; : description; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L285" title="All 2 branches missed.">			details= details == null ? List.of() : details;</span>
-<span class="nc bnc" id="L286" title="All 2 branches missed.">			files= files == null ? List.of() : files;</span>
-<span class="nc" id="L287">		}</span>
+<span class="nc" id="L289">		CandidatePreview {</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">			name= name == null ? &quot;&quot; : name; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L291" title="All 2 branches missed.">			description= description == null ? &quot;&quot; : description; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">			details= details == null ? List.of() : details;</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">			files= files == null ? List.of() : files;</span>
+<span class="nc" id="L294">		}</span>
 	}
 
 	private record FilePreview(String label, String originalContent, String refactoredContent,
@@ -295,16 +302,16 @@ import org.eclipse.ltk.ui.refactoring.IChangePreviewViewer;
 		private final CompareConfiguration configuration;
 
 		AdaptableViewForm(Composite parent, CompareConfiguration configuration) {
-<span class="nc" id="L298">			super(parent, SWT.NONE);</span>
-<span class="nc" id="L299">			this.configuration= configuration;</span>
-<span class="nc" id="L300">		}</span>
+<span class="nc" id="L305">			super(parent, SWT.NONE);</span>
+<span class="nc" id="L306">			this.configuration= configuration;</span>
+<span class="nc" id="L307">		}</span>
 
 		@Override
 		public &lt;T&gt; T getAdapter(Class&lt;T&gt; adapter) {
-<span class="nc bnc" id="L304" title="All 2 branches missed.">			if (CompareConfiguration.class.equals(adapter)) {</span>
-<span class="nc" id="L305">				return adapter.cast(configuration);</span>
+<span class="nc bnc" id="L311" title="All 2 branches missed.">			if (CompareConfiguration.class.equals(adapter)) {</span>
+<span class="nc" id="L312">				return adapter.cast(configuration);</span>
 			}
-<span class="nc" id="L307">			return null;</span>
+<span class="nc" id="L314">			return null;</span>
 		}
 	}
 
@@ -312,24 +319,24 @@ import org.eclipse.ltk.ui.refactoring.IChangePreviewViewer;
 		private final CompareConfiguration configuration;
 
 		ComparePreviewer(Composite parent, CompareConfiguration configuration) {
-<span class="nc" id="L315">			super(parent, SWT.BORDER | SWT.FLAT, true);</span>
-<span class="nc" id="L316">			this.configuration= configuration;</span>
-<span class="nc" id="L317">		}</span>
+<span class="nc" id="L322">			super(parent, SWT.BORDER | SWT.FLAT, true);</span>
+<span class="nc" id="L323">			this.configuration= configuration;</span>
+<span class="nc" id="L324">		}</span>
 
 		@Override
 		protected Viewer getViewer(Viewer oldViewer, Object input) {
-<span class="nc" id="L321">			return CompareUI.findContentViewer(oldViewer, (ICompareInput) input, this, configuration);</span>
+<span class="nc" id="L328">			return CompareUI.findContentViewer(oldViewer, (ICompareInput) input, this, configuration);</span>
 		}
 
 		void setPreview(FilePreview preview) {
-<span class="nc bnc" id="L325" title="All 2 branches missed.">			if (preview == null) {</span>
-<span class="nc" id="L326">				setInput(null);</span>
-<span class="nc" id="L327">				return;</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">			if (preview == null) {</span>
+<span class="nc" id="L333">				setInput(null);</span>
+<span class="nc" id="L334">				return;</span>
 			}
-<span class="nc" id="L329">			setInput(new DiffNode(</span>
-<span class="nc" id="L330">					new CompareElement(preview.refactoredContent(), preview.type(), preview.resource()),</span>
-<span class="nc" id="L331">					new CompareElement(preview.originalContent(), preview.type(), preview.resource())));</span>
-<span class="nc" id="L332">		}</span>
+<span class="nc" id="L336">			setInput(new DiffNode(</span>
+<span class="nc" id="L337">					new CompareElement(preview.refactoredContent(), preview.type(), preview.resource()),</span>
+<span class="nc" id="L338">					new CompareElement(preview.originalContent(), preview.type(), preview.resource())));</span>
+<span class="nc" id="L339">		}</span>
 	}
 
 	private static final class CompareElement
@@ -338,40 +345,40 @@ import org.eclipse.ltk.ui.refactoring.IChangePreviewViewer;
 		private final String type;
 		private final IResource resource;
 
-<span class="nc" id="L341">		CompareElement(String content, String type, IResource resource) {</span>
-<span class="nc" id="L342">			this.content= content;</span>
-<span class="nc" id="L343">			this.type= type;</span>
-<span class="nc" id="L344">			this.resource= resource;</span>
-<span class="nc" id="L345">		}</span>
+<span class="nc" id="L348">		CompareElement(String content, String type, IResource resource) {</span>
+<span class="nc" id="L349">			this.content= content;</span>
+<span class="nc" id="L350">			this.type= type;</span>
+<span class="nc" id="L351">			this.resource= resource;</span>
+<span class="nc" id="L352">		}</span>
 
 		@Override
 		public String getName() {
-<span class="nc" id="L349">			return &quot;Source&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L356">			return &quot;Source&quot;; //$NON-NLS-1$</span>
 		}
 
 		@Override
 		public Image getImage() {
-<span class="nc" id="L354">			return null;</span>
+<span class="nc" id="L361">			return null;</span>
 		}
 
 		@Override
 		public String getType() {
-<span class="nc" id="L359">			return type;</span>
+<span class="nc" id="L366">			return type;</span>
 		}
 
 		@Override
 		public InputStream getContents() {
-<span class="nc" id="L364">			return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));</span>
+<span class="nc" id="L371">			return new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));</span>
 		}
 
 		@Override
 		public String getCharset() {
-<span class="nc" id="L369">			return StandardCharsets.UTF_8.name();</span>
+<span class="nc" id="L376">			return StandardCharsets.UTF_8.name();</span>
 		}
 
 		@Override
 		public IResource getResource() {
-<span class="nc" id="L374">			return resource;</span>
+<span class="nc" id="L381">			return resource;</span>
 		}
 	}
 }
