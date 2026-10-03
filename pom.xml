@@ -23,7 +23,7 @@
 		<maven.compiler.release>${java-version}</maven.compiler.release>
 		<license.licenseName>epl_v1</license.licenseName>
 		<!-- Orbit 4.41 ships the 1.85 family with bcprov at patch level 1.85.2. -->
-		<bouncycastle.version>1.85</bouncycastle.version>
+		<bouncycastle.version>1.86</bouncycastle.version>
 		<bouncycastle.bcprov.version>1.85.2</bouncycastle.bcprov.version>
 		<assertj.version>3.27.7</assertj.version>
 		<bnd.version>7.3.0</bnd.version>
