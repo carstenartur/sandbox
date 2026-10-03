@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4138da2dc4c795f8085fc4cfc14187b5be681d529c1a089a6497312ea33aaa14",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.debug.internal.core.InputStreamMonitor($stream, $encodingString)\n\u003d\u003e new org.eclipse.debug.internal.core.InputStreamMonitor($stream, java.nio.charset.Charset.forName($encodingString))\n;;",
+  "beforeExample": "import java.io.ByteArrayOutputStream;\nimport java.io.OutputStream;\nimport org.eclipse.debug.internal.core.InputStreamMonitor;\n\npublic class Example {\n    public void test() {\n        OutputStream os \u003d new ByteArrayOutputStream();\n        // This constructor was marked @Deprecated for using String encoding\n        InputStreamMonitor monitor1 \u003d new InputStreamMonitor(os, \"UTF-8\");\n        // If encodingString is null, Charset.forName(null) would throw NullPointerException,\n        // which mirrors the behavior of the original deprecated constructor\u0027s internal call.\n        InputStreamMonitor monitor2 \u003d new InputStreamMonitor(os, null);\n    }\n}",
+  "afterExample": "import java.io.ByteArrayOutputStream;\nimport java.io.OutputStream;\nimport java.nio.charset.Charset;\nimport org.eclipse.debug.internal.core.InputStreamMonitor;\n\npublic class Example {\n    public void test() {\n        OutputStream os \u003d new ByteArrayOutputStream();\n        // The replacement uses Charset.forName() directly, avoiding the deprecated constructor\n        InputStreamMonitor monitor1 \u003d new InputStreamMonitor(os, Charset.forName(\"UTF-8\"));\n        // Behavior for null encoding string is preserved (throws NullPointerException)\n        InputStreamMonitor monitor2 \u003d new InputStreamMonitor(os, Charset.forName(null));\n    }\n}",
+  "negativeExample": "import java.io.ByteArrayOutputStream;\nimport java.io.OutputStream;\nimport java.nio.charset.StandardCharsets;\nimport org.eclipse.debug.internal.core.InputStreamMonitor;\n\npublic class Example {\n    public void test() {\n        OutputStream os \u003d new ByteArrayOutputStream();\n        // Already uses a Charset constant, so should not match\n        InputStreamMonitor monitor1 \u003d new InputStreamMonitor(os, StandardCharsets.UTF_8);\n        // Different constructor signature (takes Charset directly), should not match\n        InputStreamMonitor monitor2 \u003d new InputStreamMonitor(os, (java.nio.charset.Charset) null);\n        // Another constructor (takes only OutputStream), should not match\n        InputStreamMonitor monitor3 \u003d new InputStreamMonitor(os);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "4296b4127e2e3b8549f5733c4c7d8f2f24a4b891",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Deprecated API Usage",
+  "summary": "Replaces the deprecated InputStreamMonitor constructor that accepts a String encoding with its modern equivalent using Charset.forName().",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-03T02:32:49.054789068Z",
+  "ruleFingerprint": "sha256:b06ded3638762783c88d6d5a2c91ca5e65f322443b09295d3a9144189c58d7d1",
+  "behaviorFingerprint": "sha256:0946f3995b78015f872018ad42b494314688b553c834bff66af74432e4c18840",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.debug cannot be resolved",
+    "verifiedAt": "2026-10-03T02:32:59.984910298Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

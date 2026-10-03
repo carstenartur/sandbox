@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f805ddec2ea814ab324d7edb90c93f6550a2a418fc86460f703b1b8dcf305b72",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.junit.Assert.assertNotNull($target)\n\u003d\u003e\norg.junit.Assert.assertNotNull(\"Assertion failed: Null value detected for \" + java.lang.String.valueOf($target), $target)\n;;",
+  "beforeExample": "import org.junit.Assert;\n\npublic class TestClass {\n    public void testMethod(Object myObject) {\n        Assert.assertNotNull(myObject);\n    }\n}",
+  "afterExample": "import org.junit.Assert;\n\npublic class TestClass {\n    public void testMethod(Object myObject) {\n        Assert.assertNotNull(\"Assertion failed: Null value detected for \" + java.lang.String.valueOf(myObject), myObject);\n    }\n}",
+  "negativeExample": "import org.junit.Assert;\n\npublic class TestClass {\n    public void testMethod(Object myObject) {\n        // Already has a message\n        Assert.assertNotNull(\"Specific message here\", myObject);\n        // Different assert method\n        Assert.assertTrue(myObject !\u003d null);\n    }\n}",
+  "targetHintFile": "junit.sandbox-hint",
+  "sourceCommit": "268003f80fd898edbfbb558f622aa6b53abd9bbd",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Assertion Improvement",
+  "summary": "Add a generic, null-safe diagnostic message to single-argument `org.junit.Assert.assertNotNull()` calls.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-03T02:32:48.910953312Z",
+  "ruleFingerprint": "sha256:3b80ef9db02a0858977206171ab50f91cae0d649295c5a4cd6f8c6af0a2e2f07",
+  "behaviorFingerprint": "sha256:6384dfedc77a32461015bb2c2ceefd4140d9eb83a9b75da905389ee4c129b319",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.junit cannot be resolved",
+    "verifiedAt": "2026-10-03T02:32:59.871424473Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

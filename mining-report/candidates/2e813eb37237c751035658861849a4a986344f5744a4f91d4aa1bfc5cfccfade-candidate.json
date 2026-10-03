@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2e813eb37237c751035658861849a4a986344f5744a4f91d4aa1bfc5cfccfade",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "com.ibm.icu.text.MessageFormat.format($pattern$, $arguments$)\n\u003d\u003e\njava.text.MessageFormat.format($pattern$, $arguments$)\n;;",
+  "beforeExample": "package test;\n\nimport com.ibm.icu.text.MessageFormat;\n\npublic class MyClass {\n    public void someMethod() {\n        String message \u003d MessageFormat.format(\"Hello {0}\", \"World\");\n        System.out.println(message);\n    }\n}",
+  "afterExample": "package test;\n\nimport java.text.MessageFormat;\n\npublic class MyClass {\n    public void someMethod() {\n        String message \u003d MessageFormat.format(\"Hello {0}\", \"World\");\n        System.out.println(message);\n    }\n}",
+  "negativeExample": "package test;\n\nimport java.text.MessageFormat; // Already using java.text.MessageFormat\n\npublic class MyClass {\n    public void someMethod() {\n        String message \u003d MessageFormat.format(\"Hello {0}\", \"World\"); // Should not be matched as it\u0027s already java.text\n        System.out.println(message);\n    }\n}",
+  "targetHintFile": "api-migration.sandbox-hint",
+  "sourceCommit": "c9b0891a0334a445b527da4bf6a5b3f127f13502",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "API Migration",
+  "summary": "Migrate `com.ibm.icu.text.MessageFormat.format` to `java.text.MessageFormat.format`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-03T02:32:49.036283409Z",
+  "ruleFingerprint": "sha256:359b15af08c597657e9cb285accd7be9f5781fc8406b4071be6136b51e75b4c5",
+  "behaviorFingerprint": "sha256:1c2ce84f95ae614421da8f155e5e4a523f0a409d8ddf4596fe448db1ae8ddec6",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import com.ibm cannot be resolved",
+    "verifiedAt": "2026-10-03T02:32:59.965200989Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

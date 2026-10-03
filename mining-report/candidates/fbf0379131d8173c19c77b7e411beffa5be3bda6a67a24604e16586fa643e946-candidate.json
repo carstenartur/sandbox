@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "fbf0379131d8173c19c77b7e411beffa5be3bda6a67a24604e16586fa643e946",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.util.Vector\u003c$E\u003e $var \u003d new java.util.Vector\u003c$E\u003e(); :: isLocalVariable($var)\n\u003d\u003e\njava.util.ArrayList\u003c$E\u003e $var \u003d new java.util.ArrayList\u003c$E\u003e();\n;;",
+  "beforeExample": "import java.util.Vector;\n\npublic class MyClass {\n    public void processData(String input) {\n        Vector\u003cString\u003e localData \u003d new Vector\u003c\u003e();\n        localData.add(input);\n        System.out.println(\"Processed: \" + localData.get(0));\n    }\n\n    private Vector\u003cInteger\u003e fieldVector \u003d new Vector\u003c\u003e(); // This field should not be transformed\n\n    public void anotherMethod() {\n        Vector\u003cDouble\u003e tempNumbers;\n        tempNumbers \u003d new Vector\u003c\u003e(); // This assignment should not be transformed\n        tempNumbers.add(1.0);\n    }\n}",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.Vector;\n\npublic class MyClass {\n    public void processData(String input) {\n        ArrayList\u003cString\u003e localData \u003d new ArrayList\u003c\u003e();\n        localData.add(input);\n        System.out.println(\"Processed: \" + localData.get(0));\n    }\n\n    private Vector\u003cInteger\u003e fieldVector \u003d new Vector\u003c\u003e(); // This field should not be transformed\n\n    public void anotherMethod() {\n        Vector\u003cDouble\u003e tempNumbers;\n        tempNumbers \u003d new Vector\u003c\u003e(); // This assignment should not be transformed\n        tempNumbers.add(1.0);\n    }\n}",
+  "negativeExample": "import java.util.Vector;\n\npublic class MyClass {\n    // This is a field declaration, should not be matched by the rule due to \u0027isLocalVariable($var)\u0027 guard\n    private Vector\u003cString\u003e fieldVector \u003d new Vector\u003c\u003e();\n\n    public void someMethod() {\n        // This is an assignment, not a declaration statement, so it should not be matched\n        Vector\u003cString\u003e existingVector;\n        existingVector \u003d new Vector\u003c\u003e();\n        existingVector.add(\"value\");\n\n        // Another method call, not a declaration\n        callMethod(new Vector\u003c\u003e());\n    }\n\n    public void callMethod(Vector\u003cString\u003e vec) {\n        System.out.println(vec);\n    }\n}",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "abea61af946d53de0baa75846690dc9026da37ba",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Collections Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-03T02:32:49.013488770Z",
+  "ruleFingerprint": "sha256:9b29e7221596cec13fdb7172dc97979353b48826a1864525b5ba15e091840558",
+  "behaviorFingerprint": "sha256:661b7b19eb0a39abc1d8dec951378aa94535a1314d87f3feffce5d49bbff0f1b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-10-03T02:32:59.943514822Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
