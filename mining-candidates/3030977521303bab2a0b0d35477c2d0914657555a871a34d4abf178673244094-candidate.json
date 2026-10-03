@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3030977521303bab2a0b0d35477c2d0914657555a871a34d4abf178673244094",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: array-content-provider-get-instance\u003e\n\u003c!description: Replace \u0027new ArrayContentProvider()\u0027 with \u0027ArrayContentProvider.getInstance()\u0027 for shared stateless instances.\nThis is a common optimization for stateless singleton providers, improving performance and reducing object creation.\u003e\n\u003c!severity: INFO\u003e\n\nnew org.eclipse.jface.viewers.ArrayContentProvider()\n\u003d\u003e\norg.eclipse.jface.viewers.ArrayContentProvider.getInstance()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.viewers.ArrayContentProvider;\nimport org.eclipse.jface.viewers.TableViewer;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class TestClass {\n    public void setupViewer(Composite parent) {\n        TableViewer fTableViewer \u003d new TableViewer(parent, SWT.MULTI);\n        fTableViewer.setContentProvider(new ArrayContentProvider());\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.viewers.ArrayContentProvider;\nimport org.eclipse.jface.viewers.TableViewer;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class TestClass {\n    public void setupViewer(Composite parent) {\n        TableViewer fTableViewer \u003d new TableViewer(parent, SWT.MULTI);\n        fTableViewer.setContentProvider(ArrayContentProvider.getInstance());\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.viewers.IContentProvider;\nimport org.eclipse.jface.viewers.TableViewer;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Composite;\n\n// A different content provider class, should not be affected by the rule\nclass CustomContentProvider implements IContentProvider {\n    @Override public void dispose() {}\n    @Override public void inputChanged(TableViewer viewer, Object oldInput, Object newInput) {}\n}\n\npublic class NegativeTestClass {\n    public void setupViewer(Composite parent) {\n        TableViewer fTableViewer \u003d new TableViewer(parent, SWT.MULTI);\n        fTableViewer.setContentProvider(new CustomContentProvider()); // This should NOT match\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "a06f5209e64e878bb7b5a6f849239d0bca0a273a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Constructor to static factory",
+  "summary": "Replaces \u0027new ArrayContentProvider()\u0027 with \u0027ArrayContentProvider.getInstance()\u0027 for an optimized singleton instance.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-03T02:32:49.072915558Z",
+  "ruleFingerprint": "sha256:2cb2e9b687a4169b8963d18a345fb236a44c83c7834194dd9411be8a85fbe3ca",
+  "behaviorFingerprint": "sha256:7491c1971964cc39267837f4703e8308619c19f8bcb3f0a4f700983e2b07d604",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-03T02:33:00.000373086Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

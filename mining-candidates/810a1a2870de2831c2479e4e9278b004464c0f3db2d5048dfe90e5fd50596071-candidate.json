@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "810a1a2870de2831c2479e4e9278b004464c0f3db2d5048dfe90e5fd50596071",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: java.system.lineSeparator\u003e\n\u003c!description: Use System.lineSeparator() instead of System.getProperty(\"line.separator\"). It avoids security checks and is functionally equivalent.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: java-7, api-modernization, performance\u003e\n\njava.lang.System.getProperty(\"line.separator\")\n\u003d\u003e\njava.lang.System.lineSeparator()\n;;",
+  "beforeExample": "public class MyClass {\n    public void printLine() {\n        System.out.println(\"Hello\" + System.getProperty(\"line.separator\") + \"World\");\n    }\n}",
+  "afterExample": "public class MyClass {\n    public void printLine() {\n        System.out.println(\"Hello\" + System.lineSeparator() + \"World\");\n    }\n}",
+  "negativeExample": "public class MyClass {\n    public void otherProperty() {\n        System.out.println(\"Path: \" + System.getProperty(\"java.home\"));\n    }\n    public void directCall() {\n        String ls \u003d System.lineSeparator();\n    }\n}",
+  "targetHintFile": "java-modernization.sandbox-hint",
+  "sourceCommit": "ef601e2f25021d9b861b231dcb100738f7e1b989",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "API Modernization",
+  "summary": "Replace System.getProperty(\"line.separator\") with System.lineSeparator()",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-03T02:32:48.965319886Z",
+  "ruleFingerprint": "sha256:d6be719cacee8abbdb7a3f052ebaee2dc33d4ce87e73a387e7e039852fe8021e",
+  "behaviorFingerprint": "sha256:e9f8a4ecfbbca4350431e88f3cd53df91db07c2c54d856d26663e39fb4cb6927",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-03T02:32:59.904401695Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

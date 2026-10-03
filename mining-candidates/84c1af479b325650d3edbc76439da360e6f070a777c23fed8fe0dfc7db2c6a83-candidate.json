@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "84c1af479b325650d3edbc76439da360e6f070a777c23fed8fe0dfc7db2c6a83",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: environment.variable.value.provider\u003e\n\u003c!description: In ColumnLabelProvider, replace getName() with getValue() for EnvironmentVariable elements to display the correct property value.\u003e\n\u003c!severity: HINT\u003e\norg.eclipse.jface.viewers.ColumnLabelProvider.createTextProvider($param -\u003e ((org.eclipse.debug.core.model.EnvironmentVariable) $param).getName())\n\u003d\u003e\norg.eclipse.jface.viewers.ColumnLabelProvider.createTextProvider($param -\u003e ((org.eclipse.debug.core.model.EnvironmentVariable) $param).getValue())\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.viewers.ColumnLabelProvider;\nimport org.eclipse.debug.core.model.EnvironmentVariable;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.jface.viewers.TableViewerColumn;\nimport org.eclipse.swt.widgets.Table;\n\npublic class Example {\n    public void setup(Table environmentTable) {\n        final TableViewerColumn tcv2 \u003d new TableViewerColumn(environmentTable, SWT.NONE, 1);\n        tcv2.setLabelProvider(\n                ColumnLabelProvider.createTextProvider(element -\u003e ((EnvironmentVariable) element).getName()));\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.viewers.ColumnLabelProvider;\nimport org.eclipse.debug.core.model.EnvironmentVariable;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.jface.viewers.TableViewerColumn;\nimport org.eclipse.swt.widgets.Table;\n\npublic class Example {\n    public void setup(Table environmentTable) {\n        final TableViewerColumn tcv2 \u003d new TableViewerColumn(environmentTable, SWT.NONE, 1);\n        tcv2.setLabelProvider(\n                ColumnLabelProvider.createTextProvider(element -\u003e ((EnvironmentVariable) element).getValue()));\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.viewers.ColumnLabelProvider;\nimport org.eclipse.debug.core.model.IEnvironmentVariable; // Different type\nimport org.eclipse.swt.SWT;\nimport org.eclipse.jface.viewers.TableViewerColumn;\nimport org.eclipse.swt.widgets.Table;\n\npublic class Example {\n    public void setup(Table environmentTable) {\n        final TableViewerColumn tcv1 \u003d new TableViewerColumn(environmentTable, SWT.NONE, 0);\n        // Should not match if cast type is different\n        tcv1.setLabelProvider(\n                ColumnLabelProvider.createTextProvider(elem -\u003e ((IEnvironmentVariable) elem).getName()));\n        // Should not match if lambda body is different\n        tcv1.setLabelProvider(\n                ColumnLabelProvider.createTextProvider(element -\u003e element.toString()));\n\n        // Should not match if not within createTextProvider or EnvironmentVariable context\n        EnvironmentVariable var \u003d null;\n        String name \u003d var.getName();\n    }\n}\n",
+  "targetHintFile": "eclipse-debug.sandbox-hint",
+  "sourceCommit": "34b14920b02039d1301e5fbc28cc0c752792c6ad",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "API Misuse",
+  "summary": "Replace EnvironmentVariable.getName() with getValue() in ColumnLabelProvider for correct display.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-03T02:32:48.942331113Z",
+  "ruleFingerprint": "sha256:913f9de31ec474caf0b209623f60a2b3cf3d4163af4e1047975eaae00732fd65",
+  "behaviorFingerprint": "sha256:5e083c9b99c9e5e76a574ee93c76b75588ce65ec59b1b60e0fc27eda358e01b4",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-03T02:32:59.887546052Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

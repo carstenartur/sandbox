@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2de08538294466f76cb5368e25f8fdac5553a237a77598a5df69ed15efead43e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.Math.round($x) :: instanceof($x, \"int\")\n\u003d\u003e $x\n;;",
+  "beforeExample": "class Example {\n    void foo(int lines) {\n        int increment \u003d java.lang.Math.max(java.lang.Math.round(lines / 10), 10);\n    }\n}",
+  "afterExample": "class Example {\n    void foo(int lines) {\n        int increment \u003d java.lang.Math.max(lines / 10, 10);\n    }\n}",
+  "negativeExample": "class Example {\n    void bar(float f) {\n        long rounded \u003d java.lang.Math.round(f); // Should not match\n    }\n    void baz(double d) {\n        long rounded \u003d java.lang.Math.round(d); // Should not match\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "cafa8b1a6ea64aa8b6edae1104e8d3562a33aebe",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Redundant Code",
+  "summary": "Remove redundant Math.round() call on integer expressions",
+  "sourceVersion": "21",
+  "status": "READY_FOR_REVIEW",
+  "discoveredAt": "2026-10-03T02:32:48.844364940Z",
+  "ruleFingerprint": "sha256:79c8f1a4003a91a679b59b7eafcffdb28183e8364af393cc324d6b3ccb693190",
+  "behaviorFingerprint": "sha256:5548fddb2b650b37ef8a94e03214d99808fd6c736c97d7478d9b44e1f3a89e74",
+  "verification": {
+    "successful": true,
+    "stage": "SUCCESS",
+    "message": "Candidate behavior verified",
+    "verifiedAt": "2026-10-03T02:32:59.850619685Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": [
+    {
+      "from": "DSL_VALID",
+      "to": "BEHAVIOR_VALID",
+      "actor": "CandidateVerifier",
+      "reason": "Positive and negative behavior examples passed",
+      "occurredAt": "2026-10-03T02:32:59.851008121Z"
+    },
+    {
+      "from": "BEHAVIOR_VALID",
+      "to": "READY_FOR_REVIEW",
+      "actor": "CandidateVerificationCli",
+      "reason": "All deterministic candidate gates passed",
+      "occurredAt": "2026-10-03T02:32:59.851042215Z"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3b148ca9312ca4afae2fa344ca6f87429c2b7e98c0cf6388c0e8d65454145458",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.console.followHyperlinkAction.apiChange\u003e\n\u003c!description: Update FollowHyperlinkAction constructor usage from TextConsoleViewer to IHyperlink to fix disabled context menu issue (Bug 229202).\u003e\n\u003c!severity: WARNING\u003e\n\u003c!tags: eclipse-api-migration\u003e\n\nnew org.eclipse.ui.internal.console.FollowHyperlinkAction($viewer) :: instanceof($viewer, \"org.eclipse.ui.console.TextConsoleViewer\")\n\u003d\u003e\nnew org.eclipse.ui.internal.console.FollowHyperlinkAction($viewer.getHyperlink())\n;;",
+  "beforeExample": "package org.eclipse.myplugin;\nimport org.eclipse.jface.action.MenuManager;\nimport org.eclipse.ui.console.TextConsoleViewer;\nimport org.eclipse.ui.internal.console.FollowHyperlinkAction;\n\npublic class MyConsoleMenu {\n    private TextConsoleViewer viewer;\n\n    public MyConsoleMenu(TextConsoleViewer viewer) {\n        this.viewer \u003d viewer;\n    }\n\n    public void createMenu(MenuManager menuManager) {\n        menuManager.add(new FollowHyperlinkAction(viewer));\n    }\n}",
+  "afterExample": "package org.eclipse.myplugin;\nimport org.eclipse.jface.action.MenuManager;\nimport org.eclipse.ui.console.TextConsoleViewer;\nimport org.eclipse.ui.internal.console.FollowHyperlinkAction;\n\npublic class MyConsoleMenu {\n    private TextConsoleViewer viewer;\n\n    public MyConsoleMenu(TextConsoleViewer viewer) {\n        this.viewer \u003d viewer;\n    }\n\n    public void createMenu(MenuManager menuManager) {\n        menuManager.add(new FollowHyperlinkAction(viewer.getHyperlink()));\n    }\n}",
+  "negativeExample": "package org.eclipse.myplugin;\nimport org.eclipse.jface.action.MenuManager;\nimport org.eclipse.ui.console.TextConsoleViewer;\nimport org.eclipse.ui.internal.console.FollowHyperlinkAction;\nimport org.eclipse.ui.console.IHyperlink;\n\npublic class MyConsoleMenu {\n    private IHyperlink myHyperlink;\n\n    public MyConsoleMenu(IHyperlink hyperlink) {\n        this.myHyperlink \u003d hyperlink;\n    }\n\n    public void createMenu(MenuManager menuManager) {\n        menuManager.add(new FollowHyperlinkAction(myHyperlink));\n    }\n}",
+  "targetHintFile": "eclipse-api.sandbox-hint",
+  "sourceCommit": "ba77a9eb15753401e8f2c4d6413151244669cb7a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "API Migration",
+  "summary": "Update FollowHyperlinkAction constructor argument from TextConsoleViewer to TextConsoleViewer.getHyperlink()",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-03T02:32:48.994626594Z",
+  "ruleFingerprint": "sha256:1c11c84509db9f8d0e2a3f233f7e4bb7c3ffc73a2ea9f8f780ae87feb1db02b6",
+  "behaviorFingerprint": "sha256:eeb78ee9b1f0de610c5754741476e311113d61b8bfae72f0034f6361a437821d",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-03T02:32:59.920664219Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
