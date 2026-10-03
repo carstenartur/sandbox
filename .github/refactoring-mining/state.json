@@ -3874,10 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "edce3c197a2ea1d88e29d9af9628cd20ca2c53c3",
-      "lastProcessedDate": "2026-10-01T02:40:15.654234217Z",
-      "totalProcessed": 432,
-      "status": "CATCHING_UP",
+      "lastProcessedDate": "2026-10-03T02:24:50.325240530Z",
+      "totalProcessed": 448,
+      "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
           "hash": "9053ccf04b5d2e8bee7ed04a49a1153d540e2237",
@@ -4351,15 +4350,17 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 0,
-      "completedEpochs": [],
+      "currentEpoch": 1,
+      "completedEpochs": [
+        "2020-01-01 to 2026-01-01"
+      ],
       "categoryHitCounts": {
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 4,
         "API Modernization": 9,
         "Performance": 5,
-        "Redundant Code": 3,
+        "Redundant Code": 4,
         "API Misuse Correction": 1,
         "Lambda to Method Reference": 1,
         "JUnit migration": 1,
@@ -4393,22 +4394,117 @@
         "JUnit Assertion Improvement": 1,
         "Structural Refactoring": 1,
         "Conditional Logic Refinement": 1,
-        "Bug Fix": 1
+        "Bug Fix": 1,
+        "Assertion Improvement": 1,
+        "Unnecessary Annotation": 1
       },
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "totalProcessed": 0,
+      "lastProcessedCommit": "7339831997863b6334bd620b70ea2969143a2a9b",
+      "lastProcessedDate": "2026-10-03T02:32:43.641743009Z",
+      "totalProcessed": 57,
       "status": "CATCHING_UP",
-      "deferredCommits": [],
+      "deferredCommits": [
+        {
+          "hash": "2f6e2318fa4db3f21adcb458245b8ec7398d8d96",
+          "message": "Bug 553282 - Extract code to partition newly appended output",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-03T02:27:14.052547054Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "89a1b717855675c6f4a4d2f55062292dbb7eaf1f",
+          "message": "Bug 553282 - [console] Handle \\f and \\v in console output\n\nChange-Id: I8c86ad1116aa12c59ec4cbfbf2662e484c55c1c4\nSigned-o",
+          "diffLines": 262,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-03T02:27:39.779035408Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "034cac2c534b426f1018932b824bbe818b878797",
+          "message": "Bug 559590 - \"Custom\" debug view is not considered in\nSourceLookupService.debugContextChanged\n\nCheck if the view part pr",
+          "diffLines": 44,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-03T02:27:39.779083307Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "439ed53aab73abadad2279f7e2cab56d9c76594f",
+          "message": "Use method reference instead of lambdas\n\nMethod references are slightly faster than lambdas and better readable.\n\nChange",
+          "diffLines": 43,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-03T02:27:39.779101992Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9cffce2ed07f6f04ae7c595543dc07ec1fbe1fcb",
+          "message": "Bug 559814 - Shorter text for remove dialogs\n\nChange-Id: Ic8eb6641bce888366ac1971852a5fd3035b71099\nSigned-off-by: Lars V",
+          "diffLines": 51,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-03T02:27:40.684195855Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "641acbdd37d0a0c9773b3c8f4a686efd557b3a81",
+          "message": "Clean-up use lambdas and method references in ui.console\n\nUsing the JDT cleanup action -\u003e\n- Use lambda where possible\n- ",
+          "diffLines": 149,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-03T02:27:40.684236791Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1174c3ba92868a02950e11aa138a63c5b3241fa8",
+          "message": "Bug 550195 - Reduce wait time in runtime process termination\n\nJava 8 added a waitFor method with timeout for the Process",
+          "diffLines": 244,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-03T02:27:40.684255947Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "74e688a23653d390662d791d63d879af077a4217",
+          "message": "Bug 345435 - [console] EOF Ctrl+Z keybinding doesn\u0027t work with two\nconsoles up\n\nChange-Id: I1e45eb5450887c9107e1cb46b3f3",
+          "diffLines": 48,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-03T02:27:40.684271987Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "296b2b78ef97e1aecb6e46e0eb45e4aed37c0ffb",
+          "message": "Bug 251642 - Store termination timestamp as launch and process attribute",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-03T02:27:40.700057872Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        }
+      ],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
       "currentEpoch": 0,
       "completedEpochs": [],
-      "categoryHitCounts": {},
+      "categoryHitCounts": {
+        "API Misuse": 1,
+        "API Modernization": 1,
+        "API Migration": 2,
+        "Collections Modernization": 1,
+        "Lambda Conversion": 1,
+        "Control Flow Refactoring": 1,
+        "Deprecated API Usage": 1,
+        "Constructor to static factory": 1
+      },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52140
+  "globalTotalProcessed": 52213
 }
