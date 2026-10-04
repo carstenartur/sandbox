@@ -1,6 +1,6 @@
 # Issue #1657: mathematics cleanup integration draft
 
-This is a local integration/reference branch for [#1657](https://github.com/carstenartur/sandbox/issues/1657), not a merge-ready change. It combines the Java 25 baseline with a locally embedded, independently checked Regelsuche optimization SDK and exactly four new Sandbox modules:
+This is an integration/reference draft for [#1657](https://github.com/carstenartur/sandbox/issues/1657), not a merge-ready change. It combines the Java 25 baseline with a privately embedded Regelsuche optimization SDK and exactly four new Sandbox modules:
 
 - `sandbox_math_cleanup`
 - `sandbox_math_cleanup_feature`
@@ -26,13 +26,13 @@ Historical test counts, SDK pins and performance measurements do not qualify thi
 
 | Area | Required evidence | Current state |
 | --- | --- | --- |
-| SDK | Semantic regression tests, independent candidate checks, public API baseline, deterministic distribution and external consumer | Reconstructing |
-| JDT core | Binding/extraction negatives, promotion and source-trace preservation, emitted-candidate verification, compile/differential tests | Reconstructing |
-| UI and headless | Options, cancellation, stale state, two-project isolation, real LTK preview/apply/exact undo, CLI explicit consent | Reconstructing |
-| Java 25 | Runtime baseline contracts, target-Java independence, Java 21 rejection, CI/product/JustJ consistency | 26 fresh contract tests pass; native qualification pending |
+| SDK | Semantic regression tests, independent candidate checks, public API baseline, deterministic distribution and external consumer | 43 fresh SDK tests, API/publication contracts and isolated consumer pass in the companion SDK working tree; final reproducible pin pending |
+| JDT core | Binding/extraction negatives, promotion and source-trace preservation, emitted-candidate verification, compile/differential tests | 62 fresh tests and 11 independent probes pass; valid emission accepted, injected side effect and dead division by zero rejected |
+| UI and headless | Options, cancellation, stale state, two-project isolation, real LTK preview/apply/exact undo, CLI explicit consent | 32 fresh standalone tests pass; native UI, apply-failure reporting and classpath freshness review still in progress |
+| Java 25 | Runtime baseline contracts, target-Java independence, Java 21 rejection, CI/product/JustJ consistency | 26 fresh contract tests, 60 VM argument configurations and actual Java 21 rejection pass; native qualification pending |
 | Oomph | Fresh catalog-based provisioning and update, actual workspace build, fresh attempt receipts | Pending |
 | Distribution | Sequential full Maven/Tycho build, fresh p2 install and installed headless analysis/apply/idempotence | 121 fresh module tests pass; full build and native qualification pending |
-| Corpus | Exact JGit pins, analysis-only Bouncy Castle scan, positive/negative local controls | Reconstructing |
+| Corpus | Exact JGit pins, analysis-only Bouncy Castle scan, positive/negative local controls | 14 fresh QA tests and exact JGit pins pass against the provisional SDK; final-pin full scan pending |
 | Performance | Original versus generated Java, multiple forks, raw JMH samples and allocations, measured uncertainty | Pending |
 | Native platforms | Linux workbench and configured Windows/macOS native jobs | Pending |
 
@@ -46,6 +46,17 @@ receipt checks. This qualifies the verifier's contracts, not an installed produc
 The Oomph harness's lightweight suite also passes, with its native scenario still
 explicitly unexecuted; that opt-in skip is not counted as native acceptance.
 
+The embedded SDK JAR remains explicitly provisional. The core's newest semantic
+tests use the rebuilt companion SDK; these results do not qualify the older
+embedded artifact. Replace that artifact with a reproducible, source-bound pin
+before the native product and installed CLI gates. The common-core Maven suite
+also passes 1,071 tests, and the common-test suite passes 508 tests with the
+substantive repository policy exception above. These suites overlap in places;
+their counts are not an aggregate acceptance total.
+
 ## Publication
 
-No branch has been pushed and no pull request or issue comment has been published. Automatic approval review rejected the earlier attempt to create a remote branch because publication had not been explicitly authorized. Finish the concrete local changes and qualification first, then obtain approval for both branch pushes and draft pull requests. Do not close the umbrella issue on the basis of a partial milestone.
+The user explicitly requested pull request creation and continued implementation
+on 2026-10-04. Publish the current Sandbox and companion Regelsuche branches as
+drafts, keep their qualification status current, and continue the remaining gates.
+Do not close the umbrella issue on the basis of this partial milestone.
