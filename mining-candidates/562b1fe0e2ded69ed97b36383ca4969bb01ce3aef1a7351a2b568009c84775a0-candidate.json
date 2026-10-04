@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "562b1fe0e2ded69ed97b36383ca4969bb01ce3aef1a7351a2b568009c84775a0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: junit3.to.junit4.add.test\u003e\n\u003c!description: Add @Test annotation to JUnit 3 public test methods within classes extending TestCase, for migration to JUnit 4.\u003e\n\u003c!severity: INFO\u003e\n\nvoid $name($params$) :: methodNameMatches($name, \"test.*\")\n                     :: !isStatic($name)\n                     :: hasModifier($name, \"PUBLIC\")\n                     :: enclosingClassExtends(\"junit.framework.TestCase\")\n\u003d\u003e @org.junit.Test void $name($params$)\n;;",
+  "beforeExample": "package com.example;\n\nimport junit.framework.TestCase;\nimport junit.framework.TestSuite;\n\npublic class MyJUnit3Test extends TestCase {\n\n    public void testFirstFeature() {\n        // Test logic\n        junit.framework.Assert.assertTrue(\"Test failed\", true);\n    }\n\n    protected void testHelperMethod() { // Not public, so should not be annotated\n        junit.framework.Assert.fail(\"This is a helper, not a test\");\n    }\n\n    // A method that is not a test due to name\n    public void setupData() {}\n\n    public static junit.framework.Test suite() {\n        return new TestSuite(MyJUnit3Test.class);\n    }\n}",
+  "afterExample": "package com.example;\n\nimport junit.framework.TestCase;\nimport junit.framework.TestSuite;\nimport org.junit.Test; // Added import for @Test\n\npublic class MyJUnit3Test extends TestCase {\n\n    @Test // Annotation added\n    public void testFirstFeature() {\n        // Test logic\n        junit.framework.Assert.assertTrue(\"Test failed\", true);\n    }\n\n    protected void testHelperMethod() { // Remains unchanged, as it\u0027s not public\n        junit.framework.Assert.fail(\"This is a helper, not a test\");\n    }\n\n    // A method that is not a test due to name\n    public void setupData() {}\n\n    public static junit.framework.Test suite() {\n        return new TestSuite(MyJUnit3Test.class);\n    }\n}",
+  "negativeExample": "package com.example;\n\n// Does not extend TestCase\npublic class MyPlainClass {\n\n    public void testSomething() { // Should not be annotated as class does not extend TestCase\n        System.out.println(\"This is just a method named testSomething\");\n    }\n\n    public static void testStaticMethod() { // Is static, so should not be annotated\n        System.out.println(\"This is a static method named testStaticMethod\");\n    }\n\n    public void notATestMethod() { // Does not start with \"test\", so should not be annotated\n        System.out.println(\"This is not a test method\");\n    }\n}",
+  "targetHintFile": "junit4.sandbox-hint",
+  "sourceCommit": "79782e1b3df69cff447cb2c40093172cd769117b",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "JUnit Migration",
+  "summary": "Adds the @org.junit.Test annotation to public instance methods whose names start with \u0027test\u0027 in classes that extend junit.framework.TestCase, facilitating migration from JUnit 3 to JUnit 4.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-04T03:18:53.942266740Z",
+  "ruleFingerprint": "sha256:4c77baf2821710b483cc658fc8d693bcd3659c340cd8b30b91b2800987dde678",
+  "behaviorFingerprint": "sha256:0d54cbf50b4decbd21cbb4faf9fee1752ade72c1e05e3e6c43e9b6b426829bf2",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-04T03:19:02.895291789Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

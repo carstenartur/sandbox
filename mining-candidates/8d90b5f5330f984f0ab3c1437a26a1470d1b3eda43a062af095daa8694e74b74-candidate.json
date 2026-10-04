@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "8d90b5f5330f984f0ab3c1437a26a1470d1b3eda43a062af095daa8694e74b74",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.ui.ide.IDE.openEditor($activePage, $file, true)\n\u003d\u003e\norg.eclipse.search.tests.SearchTestPlugin.openTextEditor($activePage, $file)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.core.resources.IFile;\nimport org.eclipse.search.internal.ui.SearchPlugin;\nimport org.eclipse.ui.IWorkbenchPage;\nimport org.eclipse.ui.PartInitException;\nimport org.eclipse.ui.ide.IDE;\n\npublic class TestClass {\n    public void testMethod(IFile fFile) throws PartInitException {\n        IWorkbenchPage activePage \u003d SearchPlugin.getActivePage();\n        IDE.openEditor(activePage, fFile, true);\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.core.resources.IFile;\nimport org.eclipse.search.internal.ui.SearchPlugin;\nimport org.eclipse.ui.IWorkbenchPage;\nimport org.eclipse.ui.PartInitException;\nimport org.eclipse.search.tests.SearchTestPlugin; // Assuming this class is visible in the classpath\n\npublic class TestClass {\n    public void testMethod(IFile fFile) throws PartInitException {\n        IWorkbenchPage activePage \u003d SearchPlugin.getActivePage();\n        SearchTestPlugin.openTextEditor(activePage, fFile);\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.core.resources.IFile;\nimport org.eclipse.search.internal.ui.SearchPlugin;\nimport org.eclipse.ui.IWorkbenchPage;\nimport org.eclipse.ui.PartInitException;\nimport org.eclipse.ui.ide.IDE;\n\npublic class TestClass {\n    public void testMethod(IFile fFile) throws PartInitException {\n        IWorkbenchPage activePage \u003d SearchPlugin.getActivePage();\n        IDE.openEditor(activePage, fFile, false); // Does not match because the third argument is \u0027false\u0027\n    }\n}",
+  "targetHintFile": "eclipse-api-modernization.sandbox-hint",
+  "sourceCommit": "0cfdcf63faaf40dab307eb2b272008ecab536947",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Eclipse API Modernization",
+  "summary": "Replace direct calls to org.eclipse.ui.ide.IDE.openEditor with `activate\u003dtrue` to the helper method org.eclipse.search.tests.SearchTestPlugin.openTextEditor.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-04T03:18:53.817282757Z",
+  "ruleFingerprint": "sha256:beeb4ae6ed36b9c382f911c365308cc2b363e1dcd2b2565881ee8736148d8907",
+  "behaviorFingerprint": "sha256:24ca3dcf65ea956e20bcd539a8e529d79f51e7c60e02d176531fb68449703c31",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.search cannot be resolved",
+    "verifiedAt": "2026-10-04T03:19:02.851608575Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
