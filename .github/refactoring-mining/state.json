@@ -3874,8 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedDate": "2026-10-03T02:24:50.325240530Z",
-      "totalProcessed": 448,
+      "lastProcessedCommit": "1de9e3bf88bd2e6c53fd9c8377c3dbc65b693873",
+      "lastProcessedDate": "2026-10-04T03:11:37.704837584Z",
+      "totalProcessed": 508,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -4345,6 +4346,492 @@
           "deferredAt": "2026-10-01T02:34:35.074887974Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "8041d58d7588a3871f4593462b7fa1686de64058",
+          "message": "Bug 441016 - Speed up text search by parallelizing",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-04T02:57:42.573583348Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "08a6a77656f8b30f83c8ffefb52bfb8fd76f8f95",
+          "message": "Bug 458704 - Fix failing FileSearchTest",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-04T02:57:42.583308285Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "838db3ab8b66b061ce07ef89e70c5cb083177254",
+          "message": "Updated copyright date",
+          "diffLines": 23,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:00:48.680899080Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "95d13081e0809f76f0cf43102c2fca0a2cf66fa9",
+          "message": "Increased bundle version for Neon",
+          "diffLines": 34,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:00:48.681314988Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "24f2d349df52c2b9d8c0e778757335f0287fb84c",
+          "message": "Bug 468856: [rulers] Can\u0027t scroll with mouse wheel when mouse over line number ruler",
+          "diffLines": 148,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:00:48.681368769Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8d5901fe570a11599a4ad10c168ed8e8d839efb0",
+          "message": "Bug 468856: [rulers] Can\u0027t scroll with mouse wheel when mouse over line number ruler",
+          "diffLines": 70,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:00:48.681412831Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f7be1826b98bdd4c3b0a141ab0435c92fbde1759",
+          "message": "Bug 473836 - ConcurrentModificationException in OverviewRuler.isCovered\n\nProtect fAllowedAnnotationTypes and fAllowedHea",
+          "diffLines": 94,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:01:02.863929489Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8adb5b1fd09f49220df849992b9e5647453275ea",
+          "message": "Fixed bug 475602: No way to search for text with * in text files only",
+          "diffLines": 295,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:01:02.863999871Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "46be3a541b1a4b96813dc1acb603ffa82b9a29cb",
+          "message": "Renamed \"Binary resources\" to \"Binary files\"",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:01:02.864027673Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4999acac015957c00b0e6a348d7e5e08a855a81f",
+          "message": "Bug 468856: [rulers] Can\u0027t scroll with mouse wheel when mouse over line number ruler\n\nRestored the \"Jump to next range o",
+          "diffLines": 109,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:01:02.864049534Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ff524ece1cc48dd63a9e22c40111223f37223a39",
+          "message": "Fixed bug 478554: Text Search should be enabled even if file name patterns is empty.",
+          "diffLines": 25,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:01:17.667704149Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "76cd75d299bbbe5067691b291a5ca9aa99ae541b",
+          "message": "Partial fix for bug 420653: [hovering] HTMLPrinter - BG_COLOR_RGB, FG_COLOR_RGB are set asynchronously",
+          "diffLines": 23,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:01:17.667760715Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f3aa2b434363976f354dc31930255a470a95fa1c",
+          "message": "Bug 477523: Provide new severity level \"information\" in the UI\n\nChange-Id: I6f0dd88f55a3db31745439970f0a65c1d53f1bbc\nSig",
+          "diffLines": 48,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:01:17.667793507Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d5b9678a12d6740cdb04acc43e2fec78c2512366",
+          "message": "Fixed bug 397610: \"org.eclipse.core.runtime.AssertionFailedException\" in \"org.eclipse.jface.text.source.AnnotationModel.",
+          "diffLines": 32,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:01:32.359539624Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e72b93fedb0ee392c7cbd9df98e9d836e44cad47",
+          "message": "Increased bundle version for Neon",
+          "diffLines": 34,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:01:32.359600357Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a6baa3f82147bb0751b5050bf2eb6c0c23891e78",
+          "message": "Bug 64510: [templates] \"Restore Removed\" button on template pref page could select restored",
+          "diffLines": 64,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:01:32.359626346Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a50bb821beaaf193dc9bf412316a0c15b32ac0f1",
+          "message": "Bug 35779 - [misc] Text Viewer and Editor needs to support word wrap",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-04T03:01:32.392768127Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7e4ccad828f771ba6f03bf5c585ba5779d2bacdc",
+          "message": "follow-up to bug 478673: fixed resource leaks",
+          "diffLines": 69,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:02:33.787521977Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e50df14d542df55037bc33e82f5d5aad9c99bf54",
+          "message": "Bug 476037: Increase/Decrease font size commands for text editors\n\nBasic support for Zoom In/Out on text editors.\nNote t",
+          "diffLines": 369,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:02:49.614799481Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "cbc4ba46f507b96b74b0f2c190cb2b8b4fe55f8b",
+          "message": "remove @SuppressWarnings(\"unchecked\") to satisfy SDK build\n\nThis will get fixed with bug 483395 and bug 483190.",
+          "diffLines": 13,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:02:49.614848332Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0d555d0f718246a3d98a4f027a532407bb56ba0e",
+          "message": "Bug 483747: Status error message gets lost when clicking line number ruler",
+          "diffLines": 53,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:02:49.614935176Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ed9bc992c5e7369f0146149b6431951010069c3e",
+          "message": "Bug 470203: [content assist] color/style substring code completion\nproposals\n\nChange-Id: I0d5876cb224206336663d24c206db4",
+          "diffLines": 102,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:02:49.614954763Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9a6ac0d725b0783c337cf80a20d7cbbef60c052b",
+          "message": "Only emphasize match if the propoisal shell can be accessed",
+          "diffLines": 21,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:02:59.715667497Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "3ed1845ebd7446875f59a4b229c203bfcf13bff6",
+          "message": "Bug 481818 - [rulers] Annotation in vertical ruler not on the wrapped line\n\nChange-Id: I5f21f2a4205ae09ff982233660d39502",
+          "diffLines": 128,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:02:59.715729593Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a877b5f322f5bca5b46dd8e809c5197ce98f40d1",
+          "message": "Bug 483939: %command.zoomIn.description",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:02:59.715754028Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8db3e6fe5879e20fd946ab03de47a52754ebe3f7",
+          "message": "Bug 483942: [key binding] \u0027Zoom In\u0027 should be bound to Ctrl+\u003d",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:02:59.715774587Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "166aadc5b779bb368a00801a61339989165355df",
+          "message": "Bug 483942: [key binding] bind \u0027Zoom In\u0027 to both Ctrl+\u003d and Ctrl++\n\nSigned-off-by: Mickael Istria \u003cmistria@redhat.com\u003e\n",
+          "diffLines": 17,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:03:16.645121869Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "39962f1bdb7aa3001ae908f0e6e0bea00b9b3e78",
+          "message": "Bug 479525 - Inline helper method Progress#getMonitor\n\nMethod is only called once and has only one statement, can be inl",
+          "diffLines": 48,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:03:16.645240010Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "44ffb674b1a7697e1c665142e478fd9a59439027",
+          "message": "Bug 478673 - made AbstractDocument methods accept wildcards",
+          "diffLines": 23,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:03:16.645271518Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c60ccbee66cbbd10ae8bb43bd6debf5d743f2e02",
+          "message": "Bug 484697 - NPE in getInitialWordWrapStatus\n\nChange-Id: I220c1f53717591b1e6b649a84828367e6a5f5b2b\nSigned-off-by: Andrey",
+          "diffLines": 17,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:03:16.645287378Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "af943ace53343375fc9be8db1f65154929022452",
+          "message": "Fixed bug 484330: CompletionProposalPopup.handleSetData invoked twice\nfor each proposal\n\nChange-Id: I83fc832e35f8782b885",
+          "diffLines": 15,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:03:35.035868693Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6609897c2bbf882fcd53e2ebdf1e0783db9158c8",
+          "message": "Bug 470203: [content assist] color/style substring code completion\nproposals\n\nChange-Id: If767b15faa7daef7795aa70cb6274f",
+          "diffLines": 312,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:03:35.035928765Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "48c24e2f1e475f55f3b737256122c0c0e32e36d6",
+          "message": "Removed duplicate #getBoldStylerProvider call",
+          "diffLines": 22,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:03:35.035947851Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b39c96b5b9ef219a62925929107ad06c6b1e8c74",
+          "message": "Bug 485746 - \"Save As\" for external files does not work as expected\n\nFilter path for the FileDialog must be a directory,",
+          "diffLines": 24,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:03:35.035961516Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "596e4a6f3d0dac22f668b1e9cc55f43a0e33a1f7",
+          "message": "Bug 485748 - Proactively call done() on progress monitors at the top level\n\nSigned-off-by: Stefan Xenos \u003csxenos@gmail.co",
+          "diffLines": 71,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:04:09.038794532Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fa5f93df33b1754f609d95f8f3813992804e1b74",
+          "message": "Fixed bug 483512: [content assist] Substring completion breaks \"Insert\ncommon prefixes automatically\"\n\nChange-Id: Ieeffc",
+          "diffLines": 228,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:04:09.038860856Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "23c9d0a7c36fa11ae3658b26158a8337fbe3293d",
+          "message": "don\u0027t swallow root exception (example: bug 479217 comment 17)",
+          "diffLines": 207,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:04:09.038885121Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b6ea8c0e0e548eae232032eea6b5591dff189ee5",
+          "message": "Bug 484157: Fix computation of fonts to propage zoom action\n\nChange-Id: I058fff5a7bf3df89b646a15696b8ab79f8eb632d\nSigned",
+          "diffLines": 196,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:04:09.038907944Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0bea9726df0c7a51257165226de61c26c7798c58",
+          "message": "Fixes for bug 483340: ListenerList should be parameterized",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-04T03:04:09.050466581Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4e7aa5c62f126bb1ab1f6a4a527176bb2debd450",
+          "message": "Bug 487095 - Move test bundles to JUnit 4",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-04T03:05:50.856982975Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "10aeaf896c50b34fb8ddd90b3bdd17ff95b5a30e",
+          "message": "FUP to bug 486532: don\u0027t use bold inside text\n",
+          "diffLines": 14,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:09:26.483391344Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "94c39a4e3ae778044d0fc97947ec53dc720e98f2",
+          "message": "Bug 486656: [key binding] Toggle Word Wrap shortcut Alt+Shift+Y is wrong on the Mac",
+          "diffLines": 41,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:09:26.483465383Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fdfe9878fed51da5cf72454dea079a13b139d607",
+          "message": "Bug 486889 - Migrated TemplatesTestSuite to JUnit 4\n\nChange-Id: I9b2f4194d765e59a39c59a85db724c03b95c8cfe\nSigned-off-by:",
+          "diffLines": 445,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:09:26.483486923Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b0506297da6a094d95545ef5aa683ea71091420c",
+          "message": "Bug 487095 - Move test bundles to JUnit 4",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-04T03:09:26.493633348Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fec66960072003e3f884ea68ed4f19ea82dce76e",
+          "message": "Bug 487095 - Move test bundles to JUnit 4",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-04T03:09:26.498120250Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "86d7d066a8cdcbeaa1a8eee30ef8b529893652e3",
+          "message": "Bug 487095 - Move test bundles to JUnit 4",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-04T03:11:10.639927733Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4cffb0013023a237c3d43ffa763649b07f7b61fe",
+          "message": "Bug 487152: ZoomTest leaks open editor",
+          "diffLines": 24,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:15:13.276632088Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9e178f2b274b2e8d498ab3c9d86df474fa0ab76a",
+          "message": "Bug 486903 - [Templates] Allow specifying a default value in case the\nword_selection is empty\n\nChange-Id: I5a5c2e77f65aa",
+          "diffLines": 167,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:15:13.276703011Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6d491f54cebf2892afd3b5665a61ab6dd21d313f",
+          "message": "Improved word_selection description",
+          "diffLines": 12,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:15:13.276732977Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0e1c9f6f7d0f8aa4bf2a25e85272869463a486a5",
+          "message": "Bug 486903 - [Templates] Clarifies the usage of word_selection defaults\n\nChange-Id: I51158e66bd4cf1cff947bc794cc295cdfec",
+          "diffLines": 12,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:15:13.276754928Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e462c416ddf66bbf893a0f0364be8f88a28963a4",
+          "message": "Bug 487327 - [templates] Allow specifying a default value in case\nthe line_selection is empty\n\nStill WIP, awaiting feedb",
+          "diffLines": 55,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:18:48.931104793Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "7ac23aba2856a9f56d61046e76b61f51fbbc1f56",
+          "message": "Bug 488162 - [word wrap] Hide WW preference to avoid unexpected\nperformance impact\n\nHide \"Preferences-\u003eGeneral-\u003eEditors-",
+          "diffLines": 38,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:18:48.931171929Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4c660fe130091516bd9db3552dbf580f8b209c81",
+          "message": "Fixed bug 473524: template importer never throws \"Duplicate template id\" exception",
+          "diffLines": 62,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:18:48.931219918Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "9eed8099525346097ff1b50e9fa317249dc283b4",
+          "message": "Bug 487901 - [templates] Create base class for adjust word_selection and\nline_selection variable to avoid code duplicati",
+          "diffLines": 153,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-04T03:18:48.931242250Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -4358,7 +4845,7 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 4,
-        "API Modernization": 9,
+        "API Modernization": 10,
         "Performance": 5,
         "Redundant Code": 4,
         "API Misuse Correction": 1,
@@ -4383,7 +4870,7 @@
         "Uncategorized": 2,
         "Logging Cleanup": 1,
         "Concurrency Performance": 1,
-        "Modernization": 1,
+        "Modernization": 2,
         "Defensive Programming": 1,
         "String Literal Replacement": 1,
         "Condition Improvement": 1,
@@ -4396,7 +4883,10 @@
         "Conditional Logic Refinement": 1,
         "Bug Fix": 1,
         "Assertion Improvement": 1,
-        "Unnecessary Annotation": 1
+        "Unnecessary Annotation": 1,
+        "Eclipse API Modernization": 1,
+        "API Simplification": 1,
+        "JUnit Migration": 1
       },
       "exhaustedCategories": []
     },
@@ -4506,5 +4996,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52213
+  "globalTotalProcessed": 52273
 }
