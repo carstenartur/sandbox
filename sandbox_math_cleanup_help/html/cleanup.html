@@ -10,7 +10,7 @@ does not acquire a Regelsuche dependency. The cleanup is disabled by default;
 its initial profile is <strong>Only BigInteger</strong> with
 <strong>Preserve Java behavior</strong>.</p>
 
-<h2>Configure, preview and apply</h2>
+<h2 id="configure">Configure, preview and apply</h2>
 <ol>
 <li>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a profile and
 select <strong>Mathematics (Sandbox)</strong>.</li>
@@ -28,12 +28,7 @@ analysis request, even when automatic inclusion in cleanup is disabled.</p>
 <p>There is no save-action search. Changing the source, compiler settings, classpath, referenced project binding state or
 mathematics profile invalidates an existing proposal. Analyze the current version
 again instead of applying old evidence.</p>
-<p>If another cleanup has already rewritten a file in a preceding analysis phase,
-mathematics diagnoses <code>MATHEMATICS_PHASE_CHANGED</code> and skips that file.
-Run mathematics again on the resulting current source. Validation is tied to the
-live primary file, never to a discarded refactoring working copy.</p>
-
-<h2>Independent options</h2>
+<h2 id="options">Independent options</h2>
 <table><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody>
 <tr><td>Numeric types</td><td>Only BigInteger; int and long; float and double; or a
 custom selection of BigInteger, byte, short, char, int, long, float and double.
@@ -50,7 +45,7 @@ the required tiny-and-inexact event. The disabled control cannot enable it;
 configuration requesting it is rejected.</td></tr>
 </tbody></table>
 
-<h2>Safety profiles</h2>
+<h2 id="safety">Safety profiles</h2>
 <table><thead><tr><th>Profile</th><th>Contract</th></tr></thead><tbody>
 <tr><td><code>PRESERVE_JAVA</code></td><td>Preserve Java values, integer wraparound,
 IEEE-754 behavior, relevant exception paths and evaluation effects. No new
@@ -69,11 +64,16 @@ floating-point checks require non-finite-value detection and agreement with the
 original Java calculation. Unsupported obligations produce a diagnostic, not an
 unchecked replacement. Select All does not grant checked-mode consent.</div>
 
-<h2>What can be analyzed?</h2>
+<h2 id="supported-inputs">What can be analyzed?</h2>
 <table><thead><tr><th>Input</th><th>Boundary</th></tr></thead><tbody>
 <tr><td>BigInteger</td><td>Resolved exact-receiver/value-semantics calculations,
 including multiple statements and outputs. Null behavior, dynamic dispatch,
-division, modulus and exponent requirements must be justified. Derived receiver chains must end in a proven primitive observation. Magnitude proofs use a conservative 1,000,000-bit bound so implementation-range exceptions cannot be removed. Unknown BigInteger receivers mixed with primitive guard obligations are currently rejected.</td></tr>
+division, modulus and exponent requirements must be justified. Magnitudes must be
+bounded; mathematically unbounded identities alone cannot justify removing Java
+implementation-range exceptions. Derived receiver chains must end in a supported
+value observation. Unknown receivers need supported guards or are rejected;
+receiver guards are currently unavailable for the lower-estimated-runtime goal
+and cannot be combined with primitive numerical guard obligations.</td></tr>
 <tr><td>byte, short, char, int, long</td><td>Promotions, concrete widths, casts and
 operation order remain part of the proof. Existing exact-arithmetic exceptions
 cannot disappear.</td></tr>
@@ -90,7 +90,7 @@ binding, effect and value-semantics checks. External user-defined field constant
 edited remains unchanged and limits generated syntax and APIs. Unknown or
 unqualified target contracts are rejected.</p>
 
-<h2>Examples and counterexamples</h2>
+<h2 id="examples">Examples and counterexamples</h2>
 <p>An eligible shape uses a known BigInteger factory and value-only observations:</p>
 <pre>BigInteger input = BigInteger.valueOf(a * b);
 BigInteger sum = input.add(BigInteger.ONE);
@@ -113,28 +113,27 @@ mode must still observe an original overflowing addition.</li>
 <code>strictfp</code>, or an arbitrary epsilon does not prove this rewrite.</li>
 </ul>
 
-<h2>Headless use and diagnostics</h2>
+<h2 id="headless">Headless use and diagnostics</h2>
 <p>For a strictly read-only analysis, use the separate application with an
 existing, open Java project in an Eclipse workspace:</p>
 <pre>eclipse -nosplash -application sandbox_math_cleanup.analysis \
   -data /work/eclipse-workspace \
   --project Example --config /work/math.properties \
   --report /work/math-analysis.json</pre>
-<p>The default mode edits only an in-memory preview. The JSON report contains
-exact before/after source, source, compiler and binding-environment identity, diagnostics, numerical
-profile, checked assumptions, proof revisions/hashes and estimated costs. Report
-destinations that overwrite source or configuration files are rejected.</p>
-<p>Add <code>--apply</code> to write accepted changes. In checked mode, application
-also requires <code>--accept-checked</code> and the profile's explicit opt-in.
-Unsaved editor changes are not overwritten. Applied files are marked separately
-from candidates; a later failure or cancellation may leave earlier files
-applied. Exit codes are 0 for completed processing, 1 for an error and 2 for
-cancellation. Missing prerequisites are printed to stderr before a report can
-be safely created.</p>
-<p>The existing Sandbox cleanup CLI discovers this plugin through the normal JDT
-cleanup registry. Its check/diff modes apply then restore; use the separate
-mathematics application above for analysis without source writes. Both use the
-same strict properties:</p>
+<p>The application contract is
+<code>sandbox_math_cleanup.analysis --project NAME --config FILE --report FILE [--apply] [--accept-checked]</code>.
+The three valued arguments are required; unknown or duplicate arguments are
+rejected. <code>--project</code> names one existing workspace project, not a path.
+The configuration and report must use different destinations.</p>
+<p>Analysis is the default: candidates are reported without applying source edits.
+Add <code>--apply</code> to request application. Applying
+<code>CHECKED_THROW</code> additionally requires both
+<code>cleanup.mathematics.checkedOptIn=true</code> in the configuration and
+<code>--accept-checked</code> on the command line. A candidate and an applied
+change are distinct report outcomes. Estimated costs are not measured timings.</p>
+<p>The mathematics configuration has nine strict keys. This example explicitly
+enables the otherwise disabled cleanup, selects the default numeric/safety
+profiles, and excludes generated files:</p>
 <pre>cleanup.mathematics=true
 cleanup.mathematics.numericKinds=BIG_INTEGER
 cleanup.mathematics.safetyProfile=PRESERVE_JAVA
@@ -149,31 +148,23 @@ reports <code>STALE_ANALYSIS</code>. Unresolved bindings, excluded types, unknow
 effects or domains, absent proofs, cancellation and exhausted budgets produce
 specific analysis diagnostics. No analyzed user program is executed to infer
 its behavior.</p>
-<h2>Recorded local qualification</h2>
-<p>The 2026-10-04 analysis of the pinned Bouncy Castle source examined 8,113 Java
-files and accepted no improvement candidates. It made no source changes. The
-standalone source environment had compiler errors in 421 files; those files
-were reported as unsupported rather than counted as successful analyses. The
-two upstream reference versions likewise remained unchanged because the local
-extractor could not prove their required facts.</p>
-<p>Separate normalized local fixtures exercised actual emitted Java with JMH
-1.37 on OpenJDK 25.0.2. These exploratory measurements used two forks in a shared
-container; they do not establish a general or upstream speedup. The complete
-generated numeric body was measured, with the optimizer absent from the measured
-JVM. Reported errors below are the 99.9% confidence half-widths:</p>
-<table><thead><tr><th>Local fixture</th><th>Implementation</th><th>Time, ns/op</th><th>Allocation, B/op</th></tr></thead><tbody>
-<tr><td>17-bit modulus</td><td>Original</td><td>1546.157 ± 550.650</td><td>1972.599 ± 0.250</td></tr>
-<tr><td>17-bit modulus</td><td>Generated</td><td>1193.260 ± 170.310</td><td>1998.395 ± 124.009</td></tr>
-<tr><td>256-bit modulus</td><td>Original</td><td>5291.640 ± 1205.778</td><td>3422.337 ± 27.975</td></tr>
-<tr><td>256-bit modulus</td><td>Generated</td><td>3402.034 ± 508.974</td><td>3290.402 ± 31.389</td></tr>
-</tbody></table>
-<p>The small-case time intervals overlap and no allocation reduction was shown.
-The larger local fixture had lower observed time and allocation; the shared
-environment and narrow fixture limit that observation. Exact pins, raw samples,
-generated source, class hashes and the later packaging-only SDK comparison are
-retained in the source checkout at
-<code>qa/math-optimization/RESULTS-2026-10-04.md</code> and its adjacent results.</p>
+<h2 id="qualification">Qualification status</h2>
+<p>Fresh workbench screenshots, the full analysis-only corpus report and measured
+Java performance results are pending for the reconstructed build. Preliminary
+tests do not establish final installation, GUI or performance qualification.</p>
+<p>The source checkout separates new evidence under
+<code>qa/math-optimization/results/</code> from incomplete historical recovery
+under <code>qa/math-optimization/history/pre-reset/</code>. Earlier corpus outputs
+and JMH raw samples were lost. Historical aggregate reports are not current
+measurements and must not be used to claim a speedup.</p>
+<p>The benchmark harness compares the actual emitted and original Java with the
+same rotating inputs, warmup, multiple forks and allocation profiling. Search,
+proof and code generation are separate development-time work. All generated
+normalization, guards and checks belong in runtime measurements. A local fixture
+result does not establish performance for Bouncy Castle or every safety profile.</p>
 <p>Numerical equivalence does not certify constant-time behavior. Review secret
-or unclassified cryptographic regions separately. The corpus result does not
-authorize automatic cryptographic changes.</p>
+or unclassified cryptographic regions separately. An analysis result does not
+authorize automatic cryptographic changes. Public-parameter initialization needs
+explicit review; constructor arguments are not automatically public. A missing
+precondition or an unchanged already-optimized file is not a proof of optimality.</p>
 </body></html>
