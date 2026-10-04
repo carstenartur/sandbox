@@ -317,7 +317,7 @@ Consider:
 **Symptom**: Eclipse fails to start
 
 **Solutions**:
-- Check Java version (requires Java 21)
+- Check Java version (requires Java 25)
 - Verify platform matches OS
 - Check error log in workspace
 - Try with clean workspace

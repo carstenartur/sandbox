@@ -712,7 +712,7 @@ public final class AggregateInstallationVerifier {
         Map<Path, List<FieldEvidence>> fields = new TreeMap<>(Comparator.comparing(Path::toString));
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8)) {
             Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjectsFromPaths(sources);
-            JavacTask task = (JavacTask) compiler.getTask(null, fileManager, diagnostics, List.of("--release", "21", "-proc:none"),
+            JavacTask task = (JavacTask) compiler.getTask(null, fileManager, diagnostics, List.of("--release", "25", "-proc:none"),
                     null, units);
             Iterable<? extends CompilationUnitTree> trees = task.parse();
             task.analyze();
@@ -801,7 +801,7 @@ public final class AggregateInstallationVerifier {
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, StandardCharsets.UTF_8)) {
             Iterable<? extends JavaFileObject> units = fileManager.getJavaFileObjectsFromPaths(sources);
-            List<String> arguments = List.of("--release", "21", "-d", classes.toString());
+            List<String> arguments = List.of("--release", "25", "-d", classes.toString());
             Boolean success = compiler.getTask(null, fileManager, diagnostics, arguments, null, units).call();
             List<String> normalized = diagnostics(diagnostics);
             require(Boolean.TRUE.equals(success), "Invalid Java output: " + String.join(System.lineSeparator(), normalized));
@@ -1003,7 +1003,7 @@ public final class AggregateInstallationVerifier {
             classpath = files.filter(path -> path.toString().endsWith(".jar")).sorted().map(Path::toString)
                     .collect(java.util.stream.Collectors.joining(java.io.File.pathSeparator));
         }
-        require(ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "21", "-classpath", classpath,
+        require(ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "25", "-classpath", classpath,
                 "-d", classes.toString(), source.toString()) == 0, "Runtime probe compilation failed");
         Manifest manifest = new Manifest();
         Attributes attributes = manifest.getMainAttributes();
@@ -1013,7 +1013,7 @@ public final class AggregateInstallationVerifier {
         attributes.putValue("Bundle-Version", "1.0.0");
         attributes.putValue("Require-Bundle", "org.eclipse.core.runtime,org.eclipse.equinox.app,org.eclipse.jdt.ui,org.eclipse.help");
         attributes.putValue("Import-Package", "org.osgi.framework,org.osgi.framework.wiring");
-        attributes.putValue("Bundle-RequiredExecutionEnvironment", "JavaSE-21");
+        attributes.putValue("Bundle-RequiredExecutionEnvironment", "JavaSE-25");
         Path archive = work.resolve("aggregate-probe.jar");
         try (JarOutputStream output = new JarOutputStream(Files.newOutputStream(archive), manifest)) {
             output.putNextEntry(new JarEntry("plugin.xml"));

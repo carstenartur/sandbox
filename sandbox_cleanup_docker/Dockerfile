@@ -6,7 +6,7 @@
 #   docker run -v /path/to/project:/workspace sandbox-cleanup \
 #       --config /workspace/cleanup.properties --mode check --source /workspace
 
-FROM eclipse-temurin:21-jre-noble
+FROM eclipse-temurin:25-jre-noble
 
 LABEL org.opencontainers.image.title="Sandbox Cleanup CLI" \
       org.opencontainers.image.description="Eclipse JDT cleanup transformations in a container" \

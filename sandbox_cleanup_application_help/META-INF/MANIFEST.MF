@@ -4,6 +4,6 @@ Bundle-Name: Sandbox Headless Cleanup Application Help
 Bundle-SymbolicName: sandbox_cleanup_application_help;singleton:=true
 Bundle-Version: 1.3.6
 Bundle-Vendor: sandbox
-Bundle-RequiredExecutionEnvironment: JavaSE-21
+Bundle-RequiredExecutionEnvironment: JavaSE-25
 Eclipse-BundleShape: dir
 Automatic-Module-Name: sandbox.cleanup.application.help

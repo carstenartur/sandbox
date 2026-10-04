@@ -10,7 +10,7 @@ This roadmap tracks work that remains after establishing the current Sandbox tar
 |---|---|
 | Eclipse simultaneous release | Eclipse 2026-09 |
 | Eclipse Platform | 4.41 |
-| Java execution environment | Java 21 |
+| Java execution environment | Java 25 |
 | Tycho | 5.0.4 |
 | Orbit aggregation | 2026-09 |
 | Bouncy Castle | 1.85 family (bcprov 1.85.2) from Orbit maven-osgi release 4.41.0 |

@@ -1,6 +1,6 @@
 # Oomph setup architecture
 
-The contributor baseline is Eclipse 2026-09 / Platform 4.41, Java 21 and Tycho 5.0.4.
+The contributor baseline is Eclipse 2026-09 / Platform 4.41, Java 25 and Tycho 5.0.4.
 This directory contains Oomph models and a standalone Maven/JUnit acceptance test, not an Eclipse cleanup plug-in.
 
 ## Public integration contract

@@ -57,10 +57,10 @@ jobs:
             org.eclipse.jdt.ui/schema/cleanUps.exsd
             org.eclipse.jdt.ui/schema/quickFixProcessors.exsd
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: temurin
           cache: maven
 

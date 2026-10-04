@@ -4,7 +4,7 @@ Bundle-Name: Sandbox Common Core
 Bundle-SymbolicName: sandbox_common_core
 Bundle-Vendor: Carsten Hammer
 Bundle-Version: 1.2.6.qualifier
-Bundle-RequiredExecutionEnvironment: JavaSE-21
+Bundle-RequiredExecutionEnvironment: JavaSE-25
 Export-Package: org.sandbox.jdt.cleanup.io,
  org.sandbox.jdt.cleanup.multifile.api,
  org.sandbox.jdt.container.analysis,

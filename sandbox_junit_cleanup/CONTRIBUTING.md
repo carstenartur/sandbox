@@ -5,7 +5,7 @@ This guide helps contributors add new migration features to the JUnit cleanup pl
 ## Quick Start
 
 ### Prerequisites
-- Java 21
+- Java 25
 - Maven 3.6+
 - Eclipse JDT knowledge
 - Understanding of AST (Abstract Syntax Tree) manipulation

@@ -23,7 +23,7 @@ Converted to a **composite action** (`runs: using: 'composite'`) which provides:
 
 **Architecture**:
 The composite action now:
-1. Sets up Java 21 with Maven caching
+1. Sets up Java 25 with Maven caching
 2. Caches the built Eclipse product (`/tmp/eclipse`)
 3. Installs Xvfb and GTK dependencies for headless Eclipse
 4. Conditionally builds sandbox (only if cache miss)

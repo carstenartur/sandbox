@@ -165,11 +165,9 @@ class OomphSetupTest {
                         "-Dsandbox.oomph.commit=" + System.getProperty("sandbox.oomph.commit", ""),
                         "-Dsandbox.oomph.repository=" + System.getProperty("sandbox.oomph.repository",
                                 "https://github.com/carstenartur/sandbox.git")));
-                process(run.resolve(logPrefix + "-" + attempt + ".log"), run, command);
-                result.clear();
-                try (var in = Files.newInputStream(run.resolve(phase + ".properties"))) {
-                    result.load(in);
-                }
+                String invocation = logPrefix + "-" + attempt;
+                result = runSetupInvocation(run, phase, invocation,
+                        () -> process(run.resolve(invocation + ".log"), run, command));
                 if ("passed".equals(result.getProperty("result"))) {
                     break;
                 }
@@ -199,6 +197,50 @@ class OomphSetupTest {
         assertThrows(AssertionError.class, () -> createFreshRuntime(run));
     }
 
+    @Test
+    void rejectsEarlierPassOrRestartWhenNativeLaunchWritesNoReceipt(@TempDir Path temporary) throws Exception {
+        for (String earlier : List.of("passed", "restart")) {
+            Path run = Files.createDirectory(temporary.resolve(earlier));
+            String previous = "result=" + earlier + "\nsource=previous\n";
+            Files.writeString(run.resolve("update.properties"), previous);
+            assertThrows(AssertionError.class,
+                    () -> runSetupInvocation(run, "update", "update-repeat-2-0", () -> {}));
+            assertFalse(Files.exists(run.resolve("update.properties")));
+            assertEquals(previous, Files.readString(run.resolve("update-repeat-2-0-previous.properties")),
+                    "Keep the earlier receipt as failure evidence");
+        }
+    }
+
+    @Test
+    void readsOnlyNewReceiptAndRetainsPreviousEvidence(@TempDir Path temporary) throws Exception {
+        String previous = "result=passed\nsource=previous\n";
+        Files.writeString(temporary.resolve("update.properties"), previous);
+        Properties result = runSetupInvocation(temporary, "update", "update-repeat-3-0",
+                () -> Files.writeString(temporary.resolve("update.properties"), "result=restart\nsource=current\n"));
+        assertEquals("restart", result.getProperty("result"));
+        assertEquals("current", result.getProperty("source"));
+        assertTrue(Files.isRegularFile(temporary.resolve("update-repeat-3-0-previous.properties")),
+                "The prior receipt must remain available for diagnosing an interrupted update");
+        assertEquals(previous, Files.readString(temporary.resolve("update-repeat-3-0-previous.properties")));
+    }
+
+    @FunctionalInterface
+    private interface NativeLaunch { void run() throws Exception; }
+
+    private static Properties runSetupInvocation(Path run, String phase, String invocation, NativeLaunch launch)
+            throws Exception {
+        Path receipt = run.resolve(phase + ".properties");
+        if (Files.exists(receipt, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            Files.move(receipt, run.resolve(invocation + "-previous.properties"));
+        }
+        launch.run();
+        assertTrue(Files.isRegularFile(receipt),
+                "Native setup invocation " + invocation + " did not write a new result receipt: " + receipt);
+        Properties result = new Properties();
+        try (var in = Files.newInputStream(receipt)) { result.load(in); }
+        return result;
+    }
+
     private static Path createFreshRuntime(Path run) throws Exception {
         assertFalse(Files.exists(run, java.nio.file.LinkOption.NOFOLLOW_LINKS),
                 "Acceptance testing requires a fresh runtime and workspace; run Maven clean verify");
@@ -215,7 +257,7 @@ class OomphSetupTest {
                     .map(Path::toString).collect(Collectors.joining(File.pathSeparator));
         }
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
-                "--release", "21", "-sourcepath", "", "-classpath", classpath, "-d", classes.toString(),
+                "--release", "25", "-sourcepath", "", "-classpath", classpath, "-d", classes.toString(),
                 module.resolve("src/test/resources/probe/SetupProbe.java").toString()));
         Manifest manifest = new Manifest();
         Attributes a = manifest.getMainAttributes();
@@ -223,7 +265,7 @@ class OomphSetupTest {
         a.putValue("Bundle-ManifestVersion", "2");
         a.putValue("Bundle-SymbolicName", "org.sandbox.oomph.probe;singleton:=true");
         a.putValue("Bundle-Version", "1.0.0");
-        a.putValue("Bundle-RequiredExecutionEnvironment", "JavaSE-21");
+        a.putValue("Bundle-RequiredExecutionEnvironment", "JavaSE-25");
         a.putValue("Require-Bundle", String.join(",", List.of("org.eclipse.core.runtime", "org.eclipse.core.resources",
                 "org.eclipse.ui", "org.eclipse.equinox.app", "org.eclipse.equinox.p2.metadata",
                 "org.eclipse.equinox.p2.core", "org.eclipse.equinox.p2.director.app", "org.eclipse.oomph.p2.core", "bcpg",

@@ -7,7 +7,7 @@ This directory contains a **composite GitHub Action** that wraps the **sandbox c
 ## What This Action Does
 
 The action:
-1. Sets up Java 21 with Maven caching
+1. Sets up Java 25 with Maven caching
 2. Caches the built Eclipse product for faster subsequent runs
 3. Builds the sandbox cleanup application (only on cache miss)
 4. Extracts the Eclipse product (only on cache miss)
@@ -91,7 +91,7 @@ This workflow can be manually triggered with customizable options:
 This is a **composite action** that runs directly in the GitHub Actions runner (no Docker build required).
 
 **Step 1: Java Setup**
-- Sets up Java 21 (Temurin distribution)
+- Sets up Java 25 (Temurin distribution)
 - Configures Maven caching for dependency resolution
 
 **Step 2: Eclipse Product Caching**
@@ -200,7 +200,7 @@ The Eclipse product cache is invalidated when:
 **Symptom**: Maven build fails during action execution
 
 **Solutions**:
-- Check Java version (must be Java 21)
+- Check Java version (must be Java 25)
 - Verify all dependencies are available in Maven Central/Eclipse repositories
 - Check that sandbox_product builds successfully locally: `mvn clean install -DskipTests`
 - Clear GitHub Actions cache if stale: Settings → Actions → Caches

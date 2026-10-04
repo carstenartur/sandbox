@@ -26,8 +26,8 @@ java -version 2>&1 | tee "$evidence_dir/java-version.log"
 java_specification="$({ java -XshowSettings:properties -version; } 2>&1 \
   | sed -n 's/^ *java.specification.version = //p' \
   | tail -n 1)"
-if [[ "$java_specification" != "21" ]]; then
-  echo "Sandbox's storage contract requires Java 21, found $java_specification." >&2
+if [[ "$java_specification" != "25" ]]; then
+  echo "Sandbox's storage contract requires Java 25, found $java_specification." >&2
   exit 1
 fi
 

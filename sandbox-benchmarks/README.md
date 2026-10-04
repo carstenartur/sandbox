@@ -14,7 +14,7 @@ The benchmark suite includes:
 
 ### Prerequisites
 
-- Java 21 or later
+- Java 25
 - Maven 3.6 or later
 
 ### Build the Benchmark JAR

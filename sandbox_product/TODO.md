@@ -8,7 +8,7 @@
 - ✅ Eclipse product definition (sandbox.product)
 - ✅ P2 category definition (category.xml)
 - ✅ Multi-platform builds (Linux, Windows, macOS)
-- ✅ Launcher configuration with Java 21
+- ✅ Launcher configuration with Java 25
 - ✅ Feature-based composition
 - ✅ Update site generation
 

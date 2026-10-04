@@ -14,8 +14,11 @@
 		<rcp-version>eclipse</rcp-version>
 		<!-- <rcp-version>2021-03</rcp-version> -->
 		<jacoco-version>0.8.15</jacoco-version>
-		<java-version>21</java-version>
-		<java-execenv>JavaSE-21</java-execenv>
+		<java-version>25</java-version>
+		<java-execenv>JavaSE-25</java-execenv>
+		<tycho.platformArgLine />
+		<!-- JaCoCo prepends its agent before Tycho reads this execution-time property. -->
+		<tycho.testArgLine>${tycho.platformArgLine}</tycho.testArgLine>
 		<spotbugs-version>4.10.4.1</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>${java-version}</maven.compiler.source>
@@ -116,6 +119,10 @@
 		<module>sandbox_int_to_enum_help</module>
 		<module>sandbox_int_to_enum_feature</module>
 		<module>sandbox_int_to_enum_test</module>
+		<module>sandbox_math_cleanup</module>
+		<module>sandbox_math_cleanup_help</module>
+		<module>sandbox_math_cleanup_feature</module>
+		<module>sandbox_math_cleanup_test</module>
 		<module>sandbox_container_cleanup</module>
 		<module>sandbox_container_cleanup_help</module>
 		<module>sandbox_container_cleanup_feature</module>
@@ -163,7 +170,7 @@
 			<id>justj</id>
 			<layout>p2</layout>
 			<url>
-				https://download.eclipse.org/justj/jres/21/updates/release/latest/</url>
+				https://download.eclipse.org/justj/jres/25/updates/release/25.0.4.v20260826-0822</url>
 		</repository>
 
 		<!-- 6. Babel Translations -->
@@ -214,21 +221,21 @@
 						<configuration>
 							<rules>
 								<requireJavaVersion>
-									<version>[21,)</version>
+									<version>[25,26)</version>
 									<message>
 										========================================
-										ERROR: Java 21 or later is required!
+										ERROR: Supported build runtime is Java 25!
 										========================================
 										Current Java version: ${java.version}
 										This project uses Tycho ${tycho-version}, which
-										requires Java 21+.
+										is qualified here with Java 25.
 
-										Building with Java 17 or earlier will
+										Building with Java 21 or earlier will
 										fail with:
 										UnsupportedClassVersionError: class file
-										version 65.0
+										version 69.0
 
-										Please install Java 21 or later and set
+										Please install Java 25 and set
 										JAVA_HOME accordingly.
 
 										See README.md for more information.
@@ -407,6 +414,11 @@
 	</reporting>
 	<dependencyManagement>
 		<dependencies>
+			<dependency>
+				<groupId>org.sandbox</groupId>
+				<artifactId>sandbox_math_cleanup</artifactId>
+				<version>${project.version}</version>
+			</dependency>
 			<dependency>
 				<groupId>org.junit</groupId>
 				<artifactId>junit-bom</artifactId>
@@ -883,6 +895,11 @@
 		</repository>
 	</distributionManagement>
 	<profiles>
+		<profile>
+			<id>macos-tests</id>
+			<activation><os><family>mac</family></os></activation>
+			<properties><tycho.platformArgLine>-XstartOnFirstThread</tycho.platformArgLine></properties>
+		</profile>
 		<!-- Dev profile: Fast development build - excludes heavy product and
 		updatesite modules -->
 		<profile>

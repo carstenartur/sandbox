@@ -11,6 +11,9 @@
 	<artifactId>sandbox_eclipse_help_swtbot_test</artifactId>
 	<name>Sandbox Eclipse Help SWTBot test</name>
 	<packaging>eclipse-test-plugin</packaging>
+	<properties>
+		<tycho.testArgLine>${tycho.platformArgLine} "-Dsandbox.repository.root=${maven.multiModuleProjectDirectory}"</tycho.testArgLine>
+	</properties>
 	<build>
 		<testSourceDirectory>src</testSourceDirectory>
 		<plugins>
@@ -23,7 +26,6 @@
 					<skip>false</skip>
 					<useUIHarness>true</useUIHarness>
 					<showEclipseLog>true</showEclipseLog>
-					<argLine>-Dsandbox.repository.root="${maven.multiModuleProjectDirectory}"</argLine>
 					<excludes>
 						<exclude>**/*SWTBotTest.class</exclude>
 					</excludes>
@@ -67,6 +69,7 @@
 			<id>help-screenshots</id>
 			<properties>
 				<help.screenshot.testClass>org.sandbox.jdt.ui.helper.views.SandboxHelpScreenshotsMergeGateSWTBotTest</help.screenshot.testClass>
+				<tycho.testArgLine>${tycho.platformArgLine} "-Dsandbox.repository.root=${maven.multiModuleProjectDirectory}" "-Dsandbox.help.screenshot.output=${maven.multiModuleProjectDirectory}" -Dsandbox.help.screenshot.mode=true -Dorg.eclipse.swtbot.search.timeout=120000 -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8</tycho.testArgLine>
 			</properties>
 			<dependencies>
 				<dependency><groupId>org.sandbox</groupId><artifactId>sandbox_css_cleanup</artifactId><version>${project.version}</version></dependency>
@@ -96,7 +99,6 @@
 							<failIfNoTests>true</failIfNoTests>
 							<forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
 							<appArgLine>-nl en</appArgLine>
-							<argLine>-Dsandbox.repository.root="${maven.multiModuleProjectDirectory}" -Dsandbox.help.screenshot.output="${maven.multiModuleProjectDirectory}" -Dsandbox.help.screenshot.mode=true -Dorg.eclipse.swtbot.search.timeout=120000 -Duser.language=en -Duser.country=US -Duser.timezone=UTC -Dfile.encoding=UTF-8</argLine>
 							<excludes combine.self="override" />
 							<testClass>${help.screenshot.testClass}</testClass>
 							<dependencies>

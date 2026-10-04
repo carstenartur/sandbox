@@ -15,7 +15,7 @@
 	<fileSets>
 		<!-- Launcher scripts -->
 		<fileSet>
-			<directory>${project.basedir}/bin</directory>
+			<directory>${project.basedir}/src/main/scripts</directory>
 			<outputDirectory>bin</outputDirectory>
 			<includes>
 				<include>sandbox-cleanup</include>
@@ -37,10 +37,11 @@
 		<!-- Eclipse product contents (plugins + configuration) -->
 		<!-- Assembled from the product build output -->
 		<fileSet>
-			<directory>${project.basedir}/../sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64/client</directory>
+			<directory>${project.basedir}/../sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64</directory>
 			<outputDirectory>/</outputDirectory>
 			<includes>
 				<include>plugins/**</include>
+				<include>plugins/org.eclipse.justj.openjdk.hotspot.jre.*/jre/**</include>
 				<include>configuration/**</include>
 				<include>artifacts.xml</include>
 			</includes>

@@ -4,12 +4,12 @@ Sandbox is included in the official Eclipse Installer under **Github Projects �
 The catalog points directly to [`sandboxproject.setup`](sandboxproject.setup) in this repository.
 No custom catalog or manual setup-file import is required for that route.
 
-The contributor baseline is **Eclipse 2026-09 / Platform 4.41, Java 21, and Tycho 5.0.4**.
+The contributor baseline is **Eclipse 2026-09 / Platform 4.41, Java 25, and Tycho 5.0.4**.
 
 ## Set up a workspace
 
 1. Start the [Eclipse Installer](https://www.eclipse.org/downloads/packages/installer) in Advanced Mode.
-2. Select Eclipse Platform SDK 4.41 (2026-09), or the matching Eclipse IDE for Java Developers package, and a JDK 21.
+2. Select Eclipse Platform SDK 4.41 (2026-09), or the matching Eclipse IDE for Java Developers package, and a JDK 25.
 3. On the Projects page select **Github Projects → Sandbox Project → Main**.
 4. Choose installation, workspace and Git clone locations. Complete installation and let workspace setup finish.
 5. Check the setup log and Problems view before developing. The active target should be **target platform for sandbox**.
@@ -67,7 +67,7 @@ Fast local contract checks:
 ./mvnw -f sandbox_oomph/pom.xml test
 ```
 
-Real provisioning and workspace acceptance test on Linux x86_64, with JDK 21 and an X display:
+Real provisioning and workspace acceptance test on Linux x86_64, with JDK 25 and an X display:
 
 ```sh
 xvfb-run --auto-servernum ./mvnw -f sandbox_oomph/pom.xml \
@@ -78,7 +78,7 @@ Set `sandbox.oomph.ref` to the candidate branch for a setup change. Forks can al
 The Maven/JUnit test provisions a clean SDK 4.41, resolves the development tools with p2, validates the models with EMF/Oomph,
 resolves Sandbox through the live official catalog, and executes real Oomph workspace tasks. It restarts Eclipse and repeats
 manual setup after removing a project from the workspace without deleting its files. Target resolution, project imports,
-Java 21, build errors, PDE launch resolution and preservation of user-owned content are checked. Reports and logs are under `target/`.
+Java 25, build errors, PDE launch resolution and preservation of user-owned content are checked. Reports and logs are under `target/`.
 The existing Maven CI workflow includes this gate for setup, target, product and project-metadata changes.
 
 See [Architecture](ARCHITECTURE.md), [Maintenance](TODO.md), and the

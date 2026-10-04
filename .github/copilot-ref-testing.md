@@ -7,8 +7,8 @@
 Most tests are Eclipse plugin tests requiring Xvfb:
 
 ```bash
-# Set Java 21 first!
-export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+# Set Java 25 first!
+export JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64
 export PATH=$JAVA_HOME/bin:$PATH
 
 # Run all tests
@@ -109,7 +109,7 @@ grep -B 5 -A 50 "expected:" /tmp/ci_log.txt
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `UnsupportedClassVersionError` | Wrong Java version | Set Java 21 |
+| `UnsupportedClassVersionError` | Wrong Java version | Set Java 25 |
 | Display/Xvfb errors | Missing display server | Use `xvfb-run --auto-servernum` |
 | Import order mismatch | Eclipse ImportRewrite behavior | Check CI log for actual order |
 | Whitespace/tab differences | Eclipse formatter quirks | Check CI log, normalize in test |

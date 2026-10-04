@@ -6,7 +6,7 @@
 
 `sandbox_target` defines the external Eclipse/OSGi world in which Sandbox plug-ins are compiled and tested. It is a build-configuration module, not an Eclipse bundle and not application code.
 
-The current executable baseline is Eclipse 2026-09 / Platform 4.41, Java 21, and Tycho 5.0.4.
+The current executable baseline is Eclipse 2026-09 / Platform 4.41, Java 25, and Tycho 5.0.4.
 
 ## Resolution flow
 
@@ -82,7 +82,7 @@ The frozen R4_40 source corpus and dedicated migration-QA installation are separ
 
 ## Build invariants
 
-1. Maven runs with Java 21.
+1. Maven runs with Java 25.
 2. Root POM and target resolve one named Eclipse release.
 3. Orbit aggregation matches that release.
 4. Product, p2 category, contributor Oomph default, and capability inventory use the same release identifier.

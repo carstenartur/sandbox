@@ -2,7 +2,7 @@
 
 An experimental Java modernization toolkit built on Eclipse JDT (Java Development Tools). The repository provides tested cleanup plugins, quick fixes, static-analysis tools, and reusable transformation infrastructure for Eclipse-based and standalone Java development.
 
-**Main Technologies:** Eclipse JDT, Java 21, Maven/Tycho 5.0.4
+**Main Technologies:** Eclipse JDT, Java 25, Maven/Tycho 5.0.4
 
 **Status:** Experimental and under active development. Supported transformations are protected by regression tests; maturity and known limitations are documented per module.
 
@@ -104,13 +104,13 @@ The repository includes CI workflows for building, testing, and code quality ana
 > **For Contributors/Developers**: Want to build the project locally? See [Building from Source](CONTRIBUTING.md#building-from-source) in CONTRIBUTING.md for complete build instructions.
 
 **Quick Start:**
-- **Requires**: Java 21 or later
+- **Requires**: Java 25
 - **Quick Build**: `mvn -T 1C verify`
 - **Standalone IDE Product**: `mvn -Pproduct clean verify`
 - **Complete Distribution**: `mvn -Pdistribution --batch-mode -Dtycho.localArtifacts=ignore clean verify`
 - **Eclipse Help and screenshot reproduction**: [docs/ECLIPSE_HELP.md](docs/ECLIPSE_HELP.md)
 
-**Note**: Building with Java 17 or earlier will fail. This project requires Java 21.
+**Note**: The supported build/runtime is Java 25. Java 21 and earlier are rejected; later JDKs require separate qualification.
 
 ---
 
@@ -139,11 +139,11 @@ Want to build and run the Eclipse product with bundled plugins? See the [Buildin
 
 | Branch          | Java Version | Tycho Version |
 |-----------------|--------------|---------------|
-| `main` (2026-09)| Java 21      | 5.0.4         |
+| `main` (2026-09)| Java 25      | 5.0.4         |
 
 **Legacy branches**: Older branches (`2022-06`, `2022-09`, `2022-12`) use Java 11-17 with Tycho 3.x-4.x.
 
-**Note**: Tycho 5.x requires Java 21+ at build time. Attempting to build with Java 17 will result in `UnsupportedClassVersionError`.
+**Note**: Java 25 is the Sandbox project baseline. This does not assert that every Eclipse 2026-09 or Tycho 5.x installation independently requires Java 25. Cleanup targets retain their own source/compliance levels.
 
 ---
 
@@ -259,7 +259,7 @@ Provides a powerful pattern matching engine for code transformations in Eclipse.
 ---
 ### Fluent AST API (`sandbox-ast-api`)
 
-Fluent, type-safe AST wrapper API using Java 21 features. Pure Maven module with no Eclipse dependencies, enabling reuse outside Eclipse context. Replaces verbose instanceof checks and nested visitor patterns with modern, readable fluent API for AST operations.
+Fluent, type-safe AST wrapper API using Java 25 features. Pure Maven module with no Eclipse dependencies, enabling reuse outside Eclipse context. Replaces verbose instanceof checks and nested visitor patterns with modern, readable fluent API for AST operations.
 
 📖 **Full Documentation**: [Plugin README](sandbox-ast-api/README.md)
 

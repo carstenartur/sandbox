@@ -38,6 +38,8 @@ import org.eclipse.equinox.internal.p2.director.app.DirectorApplication.AvoidTru
 import org.eclipse.equinox.p2.core.UIServices;
 import org.eclipse.equinox.p2.metadata.IArtifactKey;
 import org.eclipse.equinox.p2.metadata.ILicense;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.oomph.internal.setup.SetupPrompter;
@@ -275,8 +277,8 @@ public class SetupProbe implements IApplication {
         require(Arrays.stream(workspace.getRoot().getProjects()).noneMatch(p -> p.getLocation() != null
                 && p.getLocation().toOSString().startsWith(clone.resolve(".github").toString())),
                 "CI fixture must not be imported into the contributor workspace");
-        var ee = JavaRuntime.getExecutionEnvironmentsManager().getEnvironment("JavaSE-21");
-        require(ee != null && ee.getCompatibleVMs().length > 0, "JavaSE-21 is not configured");
+        var ee = JavaRuntime.getExecutionEnvironmentsManager().getEnvironment("JavaSE-25");
+        require(ee != null && ee.getCompatibleVMs().length > 0, "JavaSE-25 is not configured");
         var bundleContext = FrameworkUtil.getBundle(ITargetPlatformService.class).getBundleContext();
         var reference = bundleContext.getServiceReference(ITargetPlatformService.class);
         require(reference != null, "PDE target service is unavailable");
@@ -323,6 +325,20 @@ public class SetupProbe implements IApplication {
             System.out.println("Pending workspace jobs: " + Arrays.toString(Job.getJobManager().find(null)));
         }
         require(errors.isEmpty(), "Workspace build errors:\n" + String.join("\n", errors));
+        // A fragment compiles against a workspace host project, while binary
+        // Tycho tests use the host bundle's classpath. Check the IDE model too.
+        var mathHost = JavaCore.create(workspace.getRoot().getProject("sandbox_math_cleanup"));
+        var mathTests = JavaCore.create(workspace.getRoot().getProject("sandbox_math_cleanup_test"));
+        String sdkType = "de.regelsuche.sdk.optimization.NumericOperation";
+        var hostSdkType = mathHost.findType(sdkType);
+        var testSdkType = mathTests.findType(sdkType);
+        require(hostSdkType != null, "Mathematics host cannot resolve its private SDK: " + sdkType);
+        require(testSdkType != null, "Mathematics test fragment cannot resolve the host SDK: " + sdkType);
+        var hostSdkRoot = hostSdkType.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT).getPath();
+        var testSdkRoot = testSdkType.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT).getPath();
+        require(hostSdkRoot.equals(testSdkRoot), "Host and fragment must use the same SDK: "
+                + hostSdkRoot + " != " + testSdkRoot);
+        System.out.println("Mathematics workspace SDK: " + hostSdkRoot);
         var launchFile = workspace.getRoot().getProject("sandbox_product").getFile("sandbox.product.launch");
         var launch = DebugPlugin.getDefault().getLaunchManager().getLaunchConfiguration(launchFile);
         var launchModels = BundleLauncherHelper.getMergedBundleMap(launch, false).keySet();
@@ -346,6 +362,7 @@ public class SetupProbe implements IApplication {
         result.setProperty("result", "passed");
         result.setProperty("projects", Integer.toString(workspace.getRoot().getProjects().length));
         result.setProperty("target", target.getName());
+        result.setProperty("mathSdk", hostSdkRoot.toString());
         saveResult(run, update, result);
         System.out.println("OOMPH VERIFIED: " + result);
     }

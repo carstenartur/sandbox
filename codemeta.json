@@ -10,7 +10,7 @@
   "programmingLanguage": [
     "Java"
   ],
-  "runtimePlatform": "Eclipse, Java 21, Maven, Tycho",
+  "runtimePlatform": "Eclipse, Java 25, Maven, Tycho",
   "applicationCategory": "Developer Tools, Static Analysis, Eclipse Plugin",
   "keywords": [
     "Eclipse",
@@ -41,7 +41,7 @@
   },
   "developmentStatus": "active",
   "softwareRequirements": [
-    "Java 21+",
+    "Java 25",
     "Maven",
     "Eclipse target platform"
   ]

@@ -5,7 +5,7 @@ Bundle-SymbolicName: sandbox_cleanup_application;singleton:=true
 Bundle-Vendor: sandbox
 Bundle-Version: 1.3.6
 Automatic-Module-Name: ui.sandbox.fragment
-Bundle-RequiredExecutionEnvironment: JavaSE-21
+Bundle-RequiredExecutionEnvironment: JavaSE-25
 Bundle-ActivationPolicy: lazy
 Eclipse-BuddyPolicy: global
 Require-Bundle: sandbox_common_core,

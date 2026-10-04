@@ -139,7 +139,7 @@ Then use it:
 ## How It Works
 
 ### Composite Action Flow
-1. **Setup Java 21** - Installs Java 21 with Maven dependency caching
+1. **Setup Java 25** - Installs Java 25 with Maven dependency caching
 2. **Cache Eclipse Product** - Checks cache for previously built Eclipse product (saves 10-15 minutes on cache hit)
 3. **Install Dependencies** - Installs Xvfb and GTK libraries for headless Eclipse
 4. **Build (Cache Miss Only)** - Builds entire sandbox project with Maven/Tycho if not cached
@@ -159,7 +159,7 @@ Then use it:
 **Issue**: Maven build fails during action execution
 
 **Solution**: 
-- Check Java version (must be Java 21)
+- Check Java version (must be Java 25)
 - Verify Maven dependencies are accessible in Maven Central/Eclipse repositories
 - Check build logs for specific errors
 - Clear GitHub Actions cache if stale (Settings → Actions → Caches)
