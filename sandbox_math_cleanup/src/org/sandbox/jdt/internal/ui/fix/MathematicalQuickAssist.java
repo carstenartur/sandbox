@@ -34,7 +34,7 @@ import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis.Analysis;
 
 /** Bounded per-processor result cache; selection search runs only in a cancellable Job. */
 public final class MathematicalQuickAssist implements IQuickAssistProcessor {
- private final Map<Key,Analysis> cache=new LinkedHashMap<>();
+ private final Map<Key,CachedAnalysis> cache=new LinkedHashMap<>();
  private final Map<Key,Job> pending=new LinkedHashMap<>();
  @Override public boolean hasAssists(IInvocationContext context) {
   return context.getCompilationUnit()!=null && context.getSelectionOffset()>=0;
@@ -46,16 +46,20 @@ public final class MathematicalQuickAssist implements IQuickAssistProcessor {
   try { options=options(unit); } catch(IllegalArgumentException invalid) { showStatus(invalid.getMessage());return new IJavaCompletionProposal[0]; }
   String source=unit.getSource();
   Key key=new Key(unit.getHandleIdentifier(),MathematicalEnvironment.digest(source),Map.copyOf(unit.getJavaProject().getOptions(true)),
-    options,context.getSelectionOffset(),context.getSelectionLength(),MathematicalEnvironment.capture(unit.getJavaProject()));
-  Analysis analysis;
+    options,context.getSelectionOffset(),context.getSelectionLength(),MathematicalEnvironment.captureStructure(unit.getJavaProject()));
+  CachedAnalysis cached;
   synchronized(cache) {
-   analysis=cache.get(key);
-   if(analysis==null) { schedule(key,unit,source);return new IJavaCompletionProposal[0]; }
+   cached=cache.get(key);
+   if(cached==null) { schedule(key,unit,source);return new IJavaCompletionProposal[0]; }
+   // Refresh binary contents asynchronously, including replacements preceding a JDT delta.
+   schedule(key,unit,source);
   }
+  Analysis analysis=cached.analysis();
   if(!analysis.changed() || !analysis.matches(source,key.compilerOptions())) return new IJavaCompletionProposal[0];
   String label=MathematicalCleanUpCore.label(options);
-  MathematicalChange change=new MathematicalChange(label,unit,analysis,options,()->options(unit),key.environment());
-  change.requireCurrent();return new IJavaCompletionProposal[]{new CUCorrectionProposal(label,unit,change,50)};
+  // Full binary verification belongs to the worker and the change's preview/apply guard.
+  MathematicalChange change=new MathematicalChange(label,unit,analysis,options,()->options(unit),cached.environment());
+  return new IJavaCompletionProposal[]{new CUCorrectionProposal(label,unit,change,50)};
  }
  private void schedule(Key key,ICompilationUnit unit,String source) {
   Job previous=pending.get(key);
@@ -66,17 +70,23 @@ public final class MathematicalQuickAssist implements IQuickAssistProcessor {
    @Override protected IStatus run(IProgressMonitor monitor) {
     try {
      if(monitor.isCanceled()) return Status.CANCEL_STATUS;
+     MathematicalEnvironment.Snapshot environment=MathematicalEnvironment.capture(unit.getJavaProject());
+     synchronized(cache) {
+      CachedAnalysis existing=cache.get(key);
+      if(existing!=null && existing.environment().equals(environment)) return Status.OK_STATUS;
+      cache.remove(key);
+     }
      ASTParser parser=ASTParser.newParser(AST.getJLSLatest());
      parser.setSource(unit);parser.setProject(unit.getJavaProject());parser.setCompilerOptions(key.compilerOptions());parser.setResolveBindings(true);
      CompilationUnit ast=(CompilationUnit)parser.createAST(monitor);
      if(!source.equals(unit.getSource()) || !key.compilerOptions().equals(unit.getJavaProject().getOptions(true))) return stale();
      Analysis analysis=MathematicalAnalysis.analyze(ast,source,key.options(),monitor,key.offset(),key.length());
      if(monitor.isCanceled()) return Status.CANCEL_STATUS;
-     if(!key.environment().matches(unit.getJavaProject()) || !analysis.matches(source,key.compilerOptions())
+     if(!key.environment().equals(MathematicalEnvironment.captureStructure(unit.getJavaProject())) || !environment.matches(unit.getJavaProject()) || !analysis.matches(source,key.compilerOptions())
        || !source.equals(unit.getSource()) || !key.compilerOptions().equals(unit.getJavaProject().getOptions(true))) return stale();
      synchronized(cache) {
       while(cache.size()>=8) cache.remove(cache.keySet().iterator().next());
-      cache.put(key,analysis);
+      cache.put(key,new CachedAnalysis(analysis,environment));
      }
      showStatus(analysis.changed()?"Mathematics analysis complete. Invoke Quick Assist again to preview the verified change."
        :analysis.diagnostics().stream().findFirst().map(item->item.code()+": "+item.message()).orElse("Mathematics analysis found no verified improvement."));
@@ -114,4 +124,5 @@ public final class MathematicalQuickAssist implements IQuickAssistProcessor {
    int offset,int length,MathematicalEnvironment.Snapshot environment) {
   Key { compilerOptions=Map.copyOf(compilerOptions); }
  }
+ private record CachedAnalysis(Analysis analysis,MathematicalEnvironment.Snapshot environment) { }
 }

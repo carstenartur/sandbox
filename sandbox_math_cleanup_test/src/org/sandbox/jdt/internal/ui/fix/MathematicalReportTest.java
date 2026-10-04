@@ -12,6 +12,14 @@ import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 class MathematicalReportTest {
+ @Test void observedPartialSourceMustNotBeReportedAsUnapplied() throws Exception {
+  String source="class C { int r = x + 0; }";int offset=source.indexOf("x + 0");
+  var analysis=new MathematicalAnalysis.Analysis(List.of(new MathematicalAnalysis.Replacement(offset,5,"x","verified")),List.of(),MathematicalEnvironment.digest(source),Map.of());
+  var file=MathematicalReport.planned("C.java",source,Map.of(),MathCleanUpOptions.defaults(17),new MathematicalEnvironment.Snapshot("environment",Map.of()),analysis,false);
+  var observed=file.withObserved("partial source");assertTrue(observed.applied());assertEquals("OTHER",observed.applicationStatus());assertEquals(MathematicalEnvironment.digest("partial source"),observed.observedSourceSha256());
+  var restored=file.withObserved(source);assertFalse(restored.applied());assertEquals("ORIGINAL",restored.applicationStatus());
+  var unavailable=file.withObserved(null);assertEquals("UNAVAILABLE",unavailable.applicationStatus());assertNull(unavailable.observedSourceSha256());
+ }
  @Test void analysisReportHashesTheCompleteProposedFileWithoutClaimingApplication() throws Exception {
   String source="class C { int r = x + 0; }";int offset=source.indexOf("x + 0");
   var analysis=new MathematicalAnalysis.Analysis(List.of(new MathematicalAnalysis.Replacement(offset,5,"x","verified")),List.of(),MathematicalEnvironment.digest(source),Map.of());

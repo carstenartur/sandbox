@@ -68,7 +68,7 @@ public final class MathematicalApplication implements IApplication {
    try { return analyze(units,options,worker); } catch(CoreException failure) { throw new IllegalStateException(failure.getMessage(),failure); }
   },monitor);
   MathematicalArtifacts.Receipt artifacts=MathematicalArtifacts.capture(false);
-  MathematicalReport proposal=report(arguments,options,config,artifacts,plans,false);
+  MathematicalReport proposal=report(arguments,options,config,artifacts,plans,arguments.apply()?"IN_PROGRESS":"SUCCESS",null,List.of());
   // Verify the requested destination is writable before any source changes.
   proposal.write(arguments.report());
   if(arguments.apply()) workspace.run(transaction->{
@@ -84,17 +84,22 @@ public final class MathematicalApplication implements IApplication {
      MathematicalChange change=plan.change(options);change.setSaveMode(TextFileChange.FORCE_SAVE);
      change.initializeValidationData(transaction);change.requireCurrent();
      if(change.isValid(transaction).hasFatalError()) throw new IllegalArgumentException("STALE_ANALYSIS: change validation failed");
-     Change inverse=change.perform(transaction);if(inverse!=null)undo.add(inverse);
+     Change inverse=change.perform(transaction);undo.add(inverse);
+     report(arguments,options,config,artifacts,plans,"IN_PROGRESS",null,List.of()).write(arguments.report());
      if(!plan.unit().getSource().equals(plan.file().replacement())) throw new IllegalArgumentException("Applied source differs from verified replacement");
     }
-    report(arguments,options,config,artifacts,plans,true).write(arguments.report());
+    report(arguments,options,config,artifacts,plans,"SUCCESS",null,List.of()).write(arguments.report());
    } catch(CoreException | IOException | RuntimeException failure) {
-    for(Change inverse:undo.reversed()) {
-     try { inverse.perform(new NullProgressMonitor()); } catch(CoreException rollback) { failure.addSuppressed(rollback); }
-    }
+    var rollback=MathematicalRollback.attempt(undo);
+    List<String> failures=new ArrayList<>();failures.add(failure.getClass().getSimpleName()+": "+failure.getMessage());failures.addAll(rollback.failures());
+    MathematicalReport observed=report(arguments,options,config,artifacts,plans,"FAILURE",null,failures);
+    boolean complete=rollback.complete() && observed.files().stream().allMatch(file->"ORIGINAL".equals(file.applicationStatus()));
+    try { new MathematicalReport(observed.schemaVersion(),observed.project(),observed.mode(),observed.requestedOptions(),observed.configProperties(),
+      observed.sdkSha256(),observed.adapterBundleSha256(),observed.files(),"FAILURE",complete,failures).write(arguments.report()); }
+    catch(IOException | RuntimeException reporting) { failure.addSuppressed(reporting); }
     if(failure instanceof OperationCanceledException cancelled) throw cancelled;
-    throw new CoreException(Status.error("Mathematics apply failed; performed changes were rolled back",failure));
-   } finally { undo.forEach(Change::dispose); }
+    throw new CoreException(Status.error(complete?"Mathematics apply failed; observed sources were restored":"Mathematics apply failed; rollback incomplete or source state unavailable; inspect report and sources",failure));
+   } finally { undo.stream().filter(java.util.Objects::nonNull).forEach(Change::dispose); }
   },resource,IWorkspace.AVOID_UPDATE,monitor);
   return IApplication.EXIT_OK;
  }
@@ -116,9 +121,12 @@ public final class MathematicalApplication implements IApplication {
   return List.copyOf(plans);
  }
  private static MathematicalReport report(MathematicalArguments args,MathCleanUpOptions options,Map<String,String> config,
-   MathematicalArtifacts.Receipt artifacts,List<Planned> plans,boolean applied) {
+   MathematicalArtifacts.Receipt artifacts,List<Planned> plans,String status,Boolean rollbackComplete,List<String> failures) {
   return new MathematicalReport(1,args.project(),args.apply()?"apply":"analysis",options.toMap(),config,
-    artifacts.sdkSha256(),artifacts.adapterBundleSha256(),plans.stream().map(plan->plan.file().withApplied(applied&&plan.analysis().changed())).toList());
+    artifacts.sdkSha256(),artifacts.adapterBundleSha256(),plans.stream().map(plan->{
+     try { return plan.file().withObserved(plan.unit().getSource()); }
+     catch(CoreException | RuntimeException unavailable) { return plan.file().withObserved(null); }
+    }).toList(),status,rollbackComplete,failures);
  }
  private static Map<String,String> configuration(Path file) throws IOException {
   Properties properties=new Properties() {

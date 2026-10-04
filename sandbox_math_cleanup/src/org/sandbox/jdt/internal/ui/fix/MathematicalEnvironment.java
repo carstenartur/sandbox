@@ -8,12 +8,15 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.LinkOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.ElementChangedEvent;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.ICompilationUnit;
@@ -77,38 +81,78 @@ final class MathematicalEnvironment {
   return type==IJavaElement.COMPILATION_UNIT && (flags&IJavaElementDelta.F_FINE_GRAINED)==0;
  }
  static Snapshot capture(IJavaProject project) throws CoreException {
+  return capture(project,true);
+ }
+ /** Foreground cache key only; full binary freshness remains a worker/apply guard. */
+ static Snapshot captureStructure(IJavaProject project) throws CoreException {
+  return capture(project,false);
+ }
+ private static Snapshot capture(IJavaProject project,boolean binaryContents) throws CoreException {
   start();
   StringBuilder content=new StringBuilder();
   Map<String,Long> revisions=new HashMap<>();
-  appendProject(project,content,new HashSet<>(),revisions);
+  appendProject(project,content,new HashSet<>(),revisions,binaryContents);
   return new Snapshot(digest(content.toString()),Map.copyOf(revisions));
  }
- private static void appendProject(IJavaProject project,StringBuilder content,Set<String> visited,Map<String,Long> revisions) throws CoreException {
+ private static void appendProject(IJavaProject project,StringBuilder content,Set<String> visited,Map<String,Long> revisions,boolean binaryContents) throws CoreException {
   String handle=project.getHandleIdentifier();
   if(!visited.add(handle)) return;
   revisions.put(handle,REVISIONS.getOrDefault(handle,0L));
   append(content,handle);append(content,Boolean.toString(project.exists()));
   append(content,digestOptions(project.getOptions(true)));
   append(content,project.getOutputLocation().toPortableString());
-  for(IClasspathEntry entry:project.getRawClasspath()) { append(content,"raw");appendEntry(entry,content); }
+  for(IClasspathEntry entry:project.getRawClasspath()) { append(content,"raw");appendEntry(entry,content,binaryContents); }
   for(IClasspathEntry entry:project.getResolvedClasspath(true)) {
-   append(content,"resolved");appendEntry(entry,content);
+   append(content,"resolved");appendEntry(entry,content,binaryContents);
    if(entry.getEntryKind()==IClasspathEntry.CPE_PROJECT) {
     IJavaProject dependency=JavaCore.create(ResourcesPlugin.getWorkspace().getRoot().getProject(entry.getPath().lastSegment()));
-    if(dependency.exists()) appendProject(dependency,content,visited,revisions);
+    if(dependency.exists()) appendProject(dependency,content,visited,revisions,binaryContents);
    }
   }
  }
- private static void appendEntry(IClasspathEntry entry,StringBuilder content) {
+ private static void appendEntry(IClasspathEntry entry,StringBuilder content,boolean binaryContents) throws CoreException {
   append(content,entry.toString());
-  if(entry.getEntryKind()!=IClasspathEntry.CPE_LIBRARY) return;
+  if(!binaryContents || entry.getEntryKind()!=IClasspathEntry.CPE_LIBRARY) return;
   IResource resource=ResourcesPlugin.getWorkspace().getRoot().findMember(entry.getPath());
   Path path=resource!=null && resource.getLocation()!=null ? resource.getLocation().toFile().toPath() : entry.getPath().toFile().toPath();
   append(content,path.toAbsolutePath().normalize().toString());
   try {
-   append(content,Boolean.toString(Files.exists(path)));
-   if(Files.exists(path)) { append(content,Long.toString(Files.size(path)));append(content,Files.getLastModifiedTime(path).toString()); }
-  } catch(IOException unavailable) { append(content,"UNREADABLE:"+unavailable.getClass().getName()); }
+   append(content,binaryFingerprint(path));
+  } catch(IOException | RuntimeException unavailable) { throw new CoreException(Status.error("Cannot verify classpath contents: "+path,unavailable)); }
+ }
+ static String binaryFingerprint(Path path) throws IOException {
+  if(Files.isSymbolicLink(path)) throw new IOException("Symbolic classpath roots cannot be verified: "+path);
+  BasicFileAttributes attributes=Files.readAttributes(path,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS);
+  if(attributes.isRegularFile()) return fileFingerprint(path);
+  if(!attributes.isDirectory()) throw new IOException("Unsupported classpath entry: "+path);
+  StringBuilder content=new StringBuilder();
+  List<Path> entries=directoryEntries(path);
+  for(Path entry:entries) {
+   BasicFileAttributes item=Files.readAttributes(entry,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS);
+   if(item.isSymbolicLink() || !(item.isDirectory() || item.isRegularFile())) throw new IOException("Unsupported binary entry: "+entry);
+   append(content,path.relativize(entry).toString().replace(java.io.File.separatorChar,'/'));
+   append(content,item.isDirectory()?"directory":fileFingerprint(entry));
+  }
+  if(!entries.equals(directoryEntries(path))) throw new IOException("Classpath directory changed during verification: "+path);
+  return digest(content.toString());
+ }
+ private static List<Path> directoryEntries(Path root) throws IOException {
+  try(var paths=Files.walk(root)) { return paths.filter(path->!path.equals(root)).sorted(java.util.Comparator.comparing(path->root.relativize(path).toString())).toList(); }
+  catch(java.io.UncheckedIOException failure) { throw failure.getCause(); }
+ }
+ private static String fileFingerprint(Path path) throws IOException {
+  BasicFileAttributes before=Files.readAttributes(path,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS);
+  if(!before.isRegularFile()) throw new IOException("Not a regular binary file: "+path);
+  try {
+   MessageDigest hash=MessageDigest.getInstance("SHA-256");
+   try(var input=Files.newInputStream(path,LinkOption.NOFOLLOW_LINKS)) {
+    byte[] buffer=new byte[65536];for(int count;(count=input.read(buffer))!=-1;)hash.update(buffer,0,count);
+   }
+   BasicFileAttributes after=Files.readAttributes(path,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS);
+   if(!after.isRegularFile() || before.size()!=after.size() || !before.lastModifiedTime().equals(after.lastModifiedTime())
+     || !java.util.Objects.equals(before.fileKey(),after.fileKey())) throw new IOException("Binary changed during verification: "+path);
+   return HexFormat.of().formatHex(hash.digest());
+  } catch(NoSuchAlgorithmException unavailable) { throw new IllegalStateException(unavailable); }
  }
  static String digestOptions(Map<String,String> options) {
   StringBuilder value=new StringBuilder();new TreeMap<>(options).forEach((key,item)->{append(value,key);append(value,item);});
