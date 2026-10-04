@@ -1,0 +1,4 @@
+JAVA_HOME=/workspace/scratch/e422f490850c/tooling/jdk-21.0.12.1+1
+command=[sh, sandbox_cleanup_cli_dist/src/main/scripts/sandbox-cleanup, --help]
+workingDirectory=/workspace/scratch/e422f490850c/sandbox-restored
+exit=1

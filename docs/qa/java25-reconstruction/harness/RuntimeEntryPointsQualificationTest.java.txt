@@ -1,0 +1,64 @@
+/* SPDX-License-Identifier: EPL-2.0 */
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+
+/** Qualification against real Java installations, without substituting a java executable. */
+public class RuntimeEntryPointsQualificationTest {
+    private static final Path SOURCE = Path.of(System.getProperty("qualification.source"));
+    private static final Path OUTPUT = Path.of(System.getProperty("qualification.output"));
+    private static final Path JAVA21 = Path.of(System.getProperty("qualification.java21"));
+    private static final Path JAVA25 = Path.of(System.getProperty("qualification.java25"));
+    private static final Path MAVEN = Path.of(System.getProperty("qualification.maven"));
+
+    @Test
+    void cliRejectsJava21BeforeLoadingEquinox() throws Exception {
+        check("java21-cli", JAVA21, List.of("sh", "sandbox_cleanup_cli_dist/src/main/scripts/sandbox-cleanup", "--help"),
+                1, "requires the supported Java 25 runtime; found 21");
+    }
+
+    @Test
+    void makeRejectsJava21UsedByMaven() throws Exception {
+        check("java21-make", JAVA21, List.of("make", "check-java"), 2, "Maven is using JDK 21");
+    }
+
+    @Test
+    void mavenEnforcerRejectsRealJava21() throws Exception {
+        check("java21-enforcer", JAVA21, List.of(MAVEN.toString(), "-o", "-B", "-ntp", "-N",
+                "org.apache.maven.plugins:maven-enforcer-plugin:3.6.3:enforce@enforce-java-version"),
+                1, "ERROR: Supported build runtime is Java 25!");
+    }
+
+    @Test
+    void makeAcceptsQualifiedJava25() throws Exception {
+        check("java25-make", JAVA25, List.of("make", "check-java"), 0, "");
+    }
+
+    private static void check(String name, Path javaHome, List<String> command, int expectedExit, String expectedMessage)
+            throws Exception {
+        Files.createDirectories(OUTPUT);
+        Path log = OUTPUT.resolve(name + ".log");
+        assertFalse(Files.exists(log), "Each qualification run must retain its own output");
+        ProcessBuilder builder = new ProcessBuilder(command).directory(SOURCE.toFile()).redirectErrorStream(true)
+                .redirectOutput(log.toFile());
+        builder.environment().put("JAVA_HOME", javaHome.toString());
+        builder.environment().put("PATH", javaHome.resolve("bin") + ":" + MAVEN.getParent() + ":" + System.getenv("PATH"));
+        builder.environment().put("MAVEN_OPTS", "-Xmx256m -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts");
+        Process process = builder.start();
+        try {
+            assertTrue(process.waitFor(Duration.ofSeconds(60).toMillis(), TimeUnit.MILLISECONDS), "Timed out: " + command);
+            String output = Files.readString(log);
+            assertEquals(expectedExit, process.exitValue(), output);
+            assertTrue(output.contains(expectedMessage), output);
+        } finally {
+            if (process.isAlive()) process.destroyForcibly();
+        }
+        Files.writeString(OUTPUT.resolve(name + ".command.txt"), "JAVA_HOME=" + javaHome + "\ncommand=" + command
+                + "\nworkingDirectory=" + SOURCE + "\nexit=" + process.exitValue() + "\n");
+    }
+}

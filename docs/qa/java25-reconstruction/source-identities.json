@@ -1,0 +1,80 @@
+{
+  "sourceCheckpoint": "638a2a39fdcc5593693eef1dd7bfcdcab20bd251",
+  "note": "Qualification ran during reconstruction on the shared branch. These exact tested configuration/source inputs match this checkpoint byte for byte; this is not a full-reactor qualification of the checkpoint.",
+  "inputs": [
+    {
+      "path": "pom.xml",
+      "sha256": "f62d3b8ef501f945d1a3d01e3f71be3cf8dfca6d8fa2b61a391826ae49a1bead",
+      "matchesCommit": true
+    },
+    {
+      "path": "sandbox_eclipse_help_swtbot_test/pom.xml",
+      "sha256": "d4c7d4b1b4cb3ac4ea335659297d15aead108b828f5679e093fae9438ba694fd",
+      "matchesCommit": true
+    },
+    {
+      "path": "sandbox_math_cleanup_test/pom.xml",
+      "sha256": "f7dd48f2dfb40b04adb29be18fdd82950418aea26b07c86ee2bec014eb743618",
+      "matchesCommit": true
+    },
+    {
+      "path": "sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/JavaRuntimeConsistencyTest.java",
+      "sha256": "f942bd7f8b16df777f61e7bfaae4a76bff7682e2327e1d4a26cab0ede5ad6d42",
+      "matchesCommit": true
+    },
+    {
+      "path": "sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/RepositoryBaselineConsistencyTest.java",
+      "sha256": "464f7a5a5b5be12354ecfbd15ac55e7c30b093d48cbaf0185dd75606bff8ea41",
+      "matchesCommit": true
+    },
+    {
+      "path": "sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/JdtCompilerVersionContractTest.java",
+      "sha256": "e1c603dc096dbc5597ac3bc66277464ac3e61353cafc76b7fdd7d667c02a1e1c",
+      "matchesCommit": true
+    },
+    {
+      "path": "sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/CiBuildScopeContractTest.java",
+      "sha256": "b8ce788f4db3e3fc5420f5fee3b50392eec3a7f97f9302cb147c3ed96437bc04",
+      "matchesCommit": true
+    },
+    {
+      "path": "sandbox_oomph/pom.xml",
+      "sha256": "b4f7182251e7127a5120e4455b4563b0901a9ccb885678078ca2aaff9984e83e",
+      "matchesCommit": true
+    },
+    {
+      "path": "sandbox_oomph/src/test/java/org/sandbox/oomph/OomphSetupTest.java",
+      "sha256": "82e0bd2105faa618b96cf7f7681749ae413f347095a9d5bec662a6beb46fc7b4",
+      "matchesCommit": true
+    },
+    {
+      "path": "sandbox_oomph/src/test/resources/probe/SetupProbe.java",
+      "sha256": "357361aa4bee663134df7378d4ff4c9132d7132ddf9478e9f3d7dd4d0b14c281",
+      "matchesCommit": true
+    },
+    {
+      "path": "sandbox_cleanup_cli_dist/src/main/scripts/sandbox-cleanup",
+      "sha256": "68e8d918643402b3e32a3f3c0dd1331539a39dbd72511decce37348439bcf04e",
+      "matchesCommit": true
+    },
+    {
+      "path": "Makefile",
+      "sha256": "eb6be45eb0edd71b8e52725f6c62b18e517864b6af050ca57305d0be4eaffe40",
+      "matchesCommit": true
+    }
+  ],
+  "downloadedArtifacts": [
+    {
+      "file": "justj25-content.jar",
+      "sha256": "f1a52a2d70f5fb98d8de1c5c0b11d21bf4cf1e4d8651f28f9a42bd3e88ac7cc6"
+    },
+    {
+      "file": "justj25-linux.jar",
+      "sha256": "bbbd27989fd446e9718ec7da5f24cd8523b2e25a15f4705a9eeba49f2b9387a8"
+    },
+    {
+      "file": "junit.jar",
+      "sha256": "3fdfc37e29744a9a67dd5365e81467e26fbde0b7aa204e6f8bbe79eeaa7ae892"
+    }
+  ]
+}

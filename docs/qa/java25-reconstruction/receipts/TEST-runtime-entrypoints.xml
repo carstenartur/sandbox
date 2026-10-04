@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="JUnit Jupiter" tests="4" skipped="0" failures="0" errors="0" time="4.628" hostname="9e8f5a315e8f" timestamp="2026-10-05T02:33:18">
+<properties>
+<property name="file.encoding" value="UTF-8"/>
+<property name="file.separator" value="/"/>
+<property name="java.class.path" value="junit.jar"/>
+<property name="java.class.version" value="69.0"/>
+<property name="java.home" value="/workspace/scratch/e422f490850c/tooling/jdk-25.0.2+10"/>
+<property name="java.io.tmpdir" value="/tmp"/>
+<property name="java.library.path" value="/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib"/>
+<property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
+<property name="java.runtime.version" value="25.0.2+10-LTS"/>
+<property name="java.specification.name" value="Java Platform API Specification"/>
+<property name="java.specification.vendor" value="Oracle Corporation"/>
+<property name="java.specification.version" value="25"/>
+<property name="java.vendor" value="Eclipse Adoptium"/>
+<property name="java.vendor.url" value="https://adoptium.net/"/>
+<property name="java.vendor.url.bug" value="https://github.com/adoptium/adoptium-support/issues"/>
+<property name="java.vendor.version" value="Temurin-25.0.2+10"/>
+<property name="java.version" value="25.0.2"/>
+<property name="java.version.date" value="2026-01-20"/>
+<property name="java.vm.compressedOopsMode" value="32-bit"/>
+<property name="java.vm.info" value="mixed mode, sharing"/>
+<property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
+<property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+<property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+<property name="java.vm.specification.version" value="25"/>
+<property name="java.vm.vendor" value="Eclipse Adoptium"/>
+<property name="java.vm.version" value="25.0.2+10-LTS"/>
+<property name="jdk.debug" value="release"/>
+<property name="junit.docs.version" value="1.13.4"/>
+<property name="line.separator" value="&#10;"/>
+<property name="native.encoding" value="UTF-8"/>
+<property name="os.arch" value="amd64"/>
+<property name="os.name" value="Linux"/>
+<property name="os.version" value="6.18.44"/>
+<property name="path.separator" value=":"/>
+<property name="qualification.java21" value="/workspace/scratch/e422f490850c/tooling/jdk-21.0.12.1+1"/>
+<property name="qualification.java25" value="/workspace/scratch/e422f490850c/tooling/jdk-25.0.2+10"/>
+<property name="qualification.maven" value="/workspace/scratch/25b139af1f8e/maven-home/wrapper/dists/apache-maven-3.9.16/9c464432/bin/mvn"/>
+<property name="qualification.output" value="/workspace/scratch/e422f490850c/tooling/runtime-entrypoint-junit"/>
+<property name="qualification.source" value="/workspace/scratch/e422f490850c/sandbox-restored"/>
+<property name="stderr.encoding" value="UTF-8"/>
+<property name="stdin.encoding" value="UTF-8"/>
+<property name="stdout.encoding" value="UTF-8"/>
+<property name="sun.arch.data.model" value="64"/>
+<property name="sun.boot.library.path" value="/workspace/scratch/e422f490850c/tooling/jdk-25.0.2+10/lib"/>
+<property name="sun.cpu.endian" value="little"/>
+<property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+<property name="sun.java.command" value="junit.jar execute --class-path java25-vm-classes --select-class RuntimeEntryPointsQualificationTest --reports-dir runtime-entrypoint-reports --details summary"/>
+<property name="sun.java.launcher" value="SUN_STANDARD"/>
+<property name="sun.jnu.encoding" value="UTF-8"/>
+<property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+<property name="user.dir" value="/workspace/scratch/e422f490850c/tooling"/>
+<property name="user.home" value="/root"/>
+<property name="user.language" value="en"/>
+<property name="user.name" value="root"/>
+<property name="user.timezone" value="Asia/Bangkok"/>
+</properties>
+<testcase name="makeAcceptsQualifiedJava25()" classname="RuntimeEntryPointsQualificationTest" time="0.208">
+<system-out><![CDATA[
+unique-id: [engine:junit-jupiter]/[class:RuntimeEntryPointsQualificationTest]/[method:makeAcceptsQualifiedJava25()]
+display-name: makeAcceptsQualifiedJava25()
+]]></system-out>
+</testcase>
+<testcase name="mavenEnforcerRejectsRealJava21()" classname="RuntimeEntryPointsQualificationTest" time="4.097">
+<system-out><![CDATA[
+unique-id: [engine:junit-jupiter]/[class:RuntimeEntryPointsQualificationTest]/[method:mavenEnforcerRejectsRealJava21()]
+display-name: mavenEnforcerRejectsRealJava21()
+]]></system-out>
+</testcase>
+<testcase name="cliRejectsJava21BeforeLoadingEquinox()" classname="RuntimeEntryPointsQualificationTest" time="0.044">
+<system-out><![CDATA[
+unique-id: [engine:junit-jupiter]/[class:RuntimeEntryPointsQualificationTest]/[method:cliRejectsJava21BeforeLoadingEquinox()]
+display-name: cliRejectsJava21BeforeLoadingEquinox()
+]]></system-out>
+</testcase>
+<testcase name="makeRejectsJava21UsedByMaven()" classname="RuntimeEntryPointsQualificationTest" time="0.237">
+<system-out><![CDATA[
+unique-id: [engine:junit-jupiter]/[class:RuntimeEntryPointsQualificationTest]/[method:makeRejectsJava21UsedByMaven()]
+display-name: makeRejectsJava21UsedByMaven()
+]]></system-out>
+</testcase>
+<system-out><![CDATA[
+unique-id: [engine:junit-jupiter]
+display-name: JUnit Jupiter
+]]></system-out>
+</testsuite>

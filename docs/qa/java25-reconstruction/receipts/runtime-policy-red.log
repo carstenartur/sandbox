@@ -1,0 +1,108 @@
+
+Thanks for using JUnit! Support its development at https://junit.org/sponsoring
+
+
+Failures (7):
+  JUnit Jupiter:JavaRuntimeConsistencyTest:buildEntrypointsRequireExactlyJava25()
+    MethodSource [className = 'org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest', methodName = 'buildEntrypointsRequireExactlyJava25', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: expected: <25> but was: <21>
+       org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+       org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+       org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+       org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+       org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
+       org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
+       org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest.buildEntrypointsRequireExactlyJava25(JavaRuntimeConsistencyTest.java:33)
+       java.base/java.lang.reflect.Method.invoke(Method.java:565)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+  JUnit Jupiter:JavaRuntimeConsistencyTest:tychoTestsKeepMacFirstThreadAndLateCoverageArguments()
+    MethodSource [className = 'org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest', methodName = 'tychoTestsKeepMacFirstThreadAndLateCoverageArguments', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: expected: <${tycho.platformArgLine}> but was: <>
+       org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+       org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+       org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+       org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+       org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
+       org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
+       org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest.tychoTestsKeepMacFirstThreadAndLateCoverageArguments(JavaRuntimeConsistencyTest.java:148)
+       java.base/java.lang.reflect.Method.invoke(Method.java:565)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+  JUnit Jupiter:JavaRuntimeConsistencyTest:contributorSetupUsesJava25WithoutChangingFrozenQaTargets()
+    MethodSource [className = 'org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest', methodName = 'contributorSetupUsesJava25WithoutChangingFrozenQaTargets', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: expected: <true> but was: <false>
+       org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+       org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+       org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
+       org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
+       org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)
+       org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)
+       org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest.contributorSetupUsesJava25WithoutChangingFrozenQaTargets(JavaRuntimeConsistencyTest.java:104)
+       java.base/java.lang.reflect.Method.invoke(Method.java:565)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+  JUnit Jupiter:JavaRuntimeConsistencyTest:cliDistributionContainsTrackedLaunchersAndTheMaterializedRuntime()
+    MethodSource [className = 'org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest', methodName = 'cliDistributionContainsTrackedLaunchersAndTheMaterializedRuntime', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: expected: <true> but was: <false>
+       org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+       org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+       org.junit.jupiter.api.AssertTrue.failNotTrue(AssertTrue.java:63)
+       org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:36)
+       org.junit.jupiter.api.AssertTrue.assertTrue(AssertTrue.java:31)
+       org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:183)
+       org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest.cliDistributionContainsTrackedLaunchersAndTheMaterializedRuntime(JavaRuntimeConsistencyTest.java:131)
+       java.base/java.lang.reflect.Method.invoke(Method.java:565)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+  JUnit Jupiter:JavaRuntimeConsistencyTest:bundlesAndWorkspaceProjectsUseJava25()
+    MethodSource [className = 'org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest', methodName = 'bundlesAndWorkspaceProjectsUseJava25', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: /workspace/scratch/e422f490850c/sandbox-restored/sandbox-ast-api/.classpath ==> expected: <false> but was: <true>
+       org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+       org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+       org.junit.jupiter.api.AssertFalse.failNotFalse(AssertFalse.java:63)
+       org.junit.jupiter.api.AssertFalse.assertFalse(AssertFalse.java:36)
+       org.junit.jupiter.api.Assertions.assertFalse(Assertions.java:239)
+       org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest.bundlesAndWorkspaceProjectsUseJava25(JavaRuntimeConsistencyTest.java:66)
+       java.base/java.lang.reflect.Method.invoke(Method.java:565)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+  JUnit Jupiter:JavaRuntimeConsistencyTest:activeBuildAndNativeCiUseJava25()
+    MethodSource [className = 'org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest', methodName = 'activeBuildAndNativeCiUseJava25', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: maven ==> expected: <25> but was: <21>
+       org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+       org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+       org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+       org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+       org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1156)
+       org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest.activeBuildAndNativeCiUseJava25(JavaRuntimeConsistencyTest.java:121)
+       java.base/java.lang.reflect.Method.invoke(Method.java:565)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+  JUnit Jupiter:JavaRuntimeConsistencyTest:productUsesPinnedJustJWithoutChangingTheCompilationEnvironment()
+    MethodSource [className = 'org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest', methodName = 'productUsesPinnedJustJWithoutChangingTheCompilationEnvironment', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: expected: <https://download.eclipse.org/justj/jres/25/updates/release/25.0.4.v20260826-0822> but was: <https://download.eclipse.org/justj/jres/21/updates/release/latest/>
+       org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+       org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+       org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+       org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+       org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
+       org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
+       org.sandbox.jdt.triggerpattern.test.policy.JavaRuntimeConsistencyTest.productUsesPinnedJustJWithoutChangingTheCompilationEnvironment(JavaRuntimeConsistencyTest.java:83)
+       java.base/java.lang.reflect.Method.invoke(Method.java:565)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+       java.base/java.util.ArrayList.forEach(ArrayList.java:1604)
+
+Test run finished after 158 ms
+[         4 containers found      ]
+[         0 containers skipped    ]
+[         4 containers started    ]
+[         0 containers aborted    ]
+[         4 containers successful ]
+[         0 containers failed     ]
+[         7 tests found           ]
+[         0 tests skipped         ]
+[         7 tests started         ]
+[         0 tests aborted         ]
+[         0 tests successful      ]
+[         7 tests failed          ]

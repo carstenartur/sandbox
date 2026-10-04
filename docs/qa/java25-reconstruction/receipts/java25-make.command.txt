@@ -1,0 +1,4 @@
+JAVA_HOME=/workspace/scratch/e422f490850c/tooling/jdk-25.0.2+10
+command=[make, check-java]
+workingDirectory=/workspace/scratch/e422f490850c/sandbox-restored
+exit=0
