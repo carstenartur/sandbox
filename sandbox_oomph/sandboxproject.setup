@@ -85,7 +85,7 @@
   <setupTask
       xsi:type="jdt:JRETask"
       version="JavaSE-25"
-      location="${jre.location-21}">
+      location="${jre.location-25}">
     <description>Define the JRE needed to compile and run the Java projects of ${scope.project.label}</description>
   </setupTask>
   <!-- Git clone task: clone the sandbox repository from GitHub -->

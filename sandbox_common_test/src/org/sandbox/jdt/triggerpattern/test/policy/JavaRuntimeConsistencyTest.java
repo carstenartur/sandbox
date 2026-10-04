@@ -101,9 +101,14 @@ public class JavaRuntimeConsistencyTest {
 	@Test
 	void contributorSetupUsesJava25WithoutChangingFrozenQaTargets() throws Exception {
 		assertTrue(read("sandbox_oomph/sandboxproject.setup").contains("version=\"JavaSE-25\""));
+		assertEquals("${jre.location-25}", value(xml("sandbox_oomph/sandboxproject.setup"),
+				"//setupTask[@version='JavaSE-25']/@location"), "The JRE selection variable must match the declared Java version");
 		assertEquals("25", value(xml("sandbox_oomph/pom.xml"), "/project/properties/maven.compiler.release"));
 		assertTrue(read("sandbox_oomph/src/test/java/org/sandbox/oomph/OomphSetupTest.java").contains("\"JavaSE-25\""));
 		assertTrue(read("sandbox_oomph/src/test/resources/probe/SetupProbe.java").contains("getEnvironment(\"JavaSE-25\")"));
+		assertTrue(read("sandbox_oomph/src/test/resources/probe/SetupProbe.java")
+				.contains("Map.entry(\"jre.location-25\", System.getProperty(\"java.home\"))"),
+				"The native probe must supply the project's Java 25 selection variable");
 		assertTrue(read("sandbox_oomph/jdt-migration-qa.setup").contains("version=\"JavaSE-21\""), "Frozen upstream QA keeps its own target");
 		assertTrue(read(".github/actions/cleanup-review/integration-fixture/.classpath").contains("JavaSE-21"), "Do not raise the target Java level of edited-project fixtures");
 		for (String path : List.of("README.md", ".github/copilot-instructions.md", "sandbox_oomph/README.md", "sandbox_target/README.md", "docs/JAVA_BUILD_RUNTIME.md")) {

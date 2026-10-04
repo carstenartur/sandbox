@@ -169,6 +169,7 @@ public class SetupProbe implements IApplication {
         Map<String, String> values = Map.ofEntries(
                 Map.entry("git.clone.sandbox.location", clone.toString()),
                 Map.entry("jre.location-21", System.getProperty("java.home")),
+                Map.entry("jre.location-25", System.getProperty("java.home")),
                 Map.entry("installation.location", run.toString()),
                 Map.entry("installation.relativeProductFolder", "eclipse"),
                 Map.entry("workspace.location", workspace.getRoot().getLocation().toOSString()),

@@ -103,6 +103,25 @@ The green invocation above ran all ordinary tests. The fresh-runtime guard and
 SDK publisher/digest pins remain active. Previous phase receipts are archived
 before each native launch, and a launch must produce a new receipt to succeed.
 
+## Follow-up: contributor JRE selection
+
+The later preparation review found that the JavaSE-25 project task still used
+`${jre.location-21}`. The probe had supplied that variable with its Java 25 VM,
+so the earlier assertions did not catch a contributor selecting a Java 21 JDK.
+The strengthened contract failed on that exact mismatch before the fix; see
+[the red receipt](receipts/jre-selection/TEST-red.xml).
+
+Oomph's [JRETask model](https://help.eclipse.org/latest/topic/org.eclipse.oomph.setup.doc/javadoc/org/eclipse/oomph/setup/jdt/JRETask.html)
+declares version and location as separate required attributes. The project now
+selects `${jre.location-25}`. The native probe supplies that variable in addition
+to its existing Java 21 variable. The four policy classes
+then passed again on JustJ: [26 tests, zero failures/skips](receipts/jre-selection/TEST-justj-green.xml).
+The standalone Oomph Maven gate again reports seven passes and one opt-in native
+skip: [receipt](receipts/jre-selection/TEST-oomph.xml).
+[Source hashes](receipts/jre-selection/source-sha256.txt) identify this follow-up;
+the earlier checkpoint hashes and receipts are retained unchanged. This does
+not yet qualify the native workspace setup.
+
 ## Outstanding native gates
 
 A fresh Oomph installation at an exact final reconstructed source commit, its
