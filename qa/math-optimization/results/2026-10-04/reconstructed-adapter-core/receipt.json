@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "scope": "Reconstructed adapter Java/JUnit qualification; no native/product/installed-CLI qualification",
+  "recordedAt": "2026-10-04T19:43:31.928384+00:00",
+  "baseCheckpoint": "efedc2eba",
+  "sourceIdentity": "sources.sha256 binds the current source; source is reconstructed, not byte-identical to deleted files",
+  "java": "openjdk 25.0.2 2026-01-20 LTS\nOpenJDK Runtime Environment Temurin-25.0.2+10 (build 25.0.2+10-LTS)\nOpenJDK 64-Bit Server VM Temurin-25.0.2+10 (build 25.0.2+10-LTS, mixed mode, sharing)",
+  "tests": {
+    "found": 62,
+    "started": 62,
+    "successful": 62,
+    "failed": 0,
+    "skipped": 0,
+    "aborted": 0
+  },
+  "classes": [
+    "JavaComputationExtractorTest (12)",
+    "JavaComputationRoundTripTest (17; one covers24 indentation/target/profile combinations)",
+    "FloatingPointRoundTripTest (5)",
+    "CharacterLiteralRoundTripTest (3; char/byte/short boundary loops)",
+    "JavaComputationEmitterTest (15; compiled --release8 and --release17 fixtures)",
+    "JavaEmissionVerifierTest (10; conditional-profile parameterization included)"
+  ],
+  "jvmHeap": "512MiB",
+  "sdkCheckerBeforeAndAfter": "81b20d694a4de11f58eeeeaade18be8a516fb0ce25770fcb5cc057a5fbd460cb",
+  "inputTiming": "Classpath contents inventoried immediately after the run; the SDK checker hash was explicitly captured before and after. This is a class-directory qualification, not the final embedded SDK JAR qualification.",
+  "redEvidence": {
+    "indentation-red.log": "1 failed regression before restoring preserved-source indentation.",
+    "character-red.log": "2 failed cases at strict emitted/candidate proof before escaped literals and exact SDK literal-cast normalization.",
+    "literal-cast-intermediate-failure.log": "2 failures remain at original/emitted proof before compositional SDK literal-cast normalization; retained as failed attempt.",
+    "emitted-effects-red.log": "8 executed,6 passed,2 failed: added side effect and dead division were incorrectly accepted before full-body/full-trace verification. The used-initializer division case was already rejected."
+  },
+  "proofBoundary": "Generated method permits only initialized single local declarations; extraction covers every statement; independent strict candidate\u2192decoded and full emitted-trace decoded\u2192candidate PRESERVE checks precede original-profile proof.",
+  "provenance": "Six production types reconstructed from historical Vineflower references under /tmp/issue1657-decompiled-reference, corrected against bytecode and late recovered patch0f0722c; APIs preserved. Fresh evidence only; historical native/JMH/83-test claims are not transferred.",
+  "remainingGates": [
+    "Final reconstructed SDK artifact pin and artifact-based consumer verification",
+    "Normal Maven/Tycho and real SWT/product/p2/installed CLI qualification owned by parent/UI"
+  ],
+  "logFormatting": "Archived copies normalize terminal blank lines only; all assertions, counts and diagnostics are retained."
+}

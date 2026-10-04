@@ -36,7 +36,12 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
 final class JavaEmissionVerifier {
    private JavaEmissionVerifier() {
@@ -60,8 +65,8 @@ final class JavaEmissionVerifier {
 
       for (Entry<String, Type> input : request.plan().inputs().entrySet()) {
          String javaName = region.inputNames().get(input.getKey());
-         parameters.add(MathematicalAnalysis.javaType(NumericKind.fromType((Type)input.getValue())) + " " + javaName);
-         originalInputIds.put(javaName, (String)input.getKey());
+         parameters.add(MathematicalAnalysis.javaType(NumericKind.fromType(input.getValue())) + " " + javaName);
+         originalInputIds.put(javaName, input.getKey());
       }
 
       source.append(String.join(",", parameters)).append(") {\n").append(emission.statements());
@@ -87,7 +92,7 @@ final class JavaEmissionVerifier {
       source.append("}}\n");
       ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
       parser.setSource(source.toString().toCharArray());
-      parser.setKind(8);
+      parser.setKind(ASTParser.K_COMPILATION_UNIT);
       parser.setUnitName("MathRoundTrip.java");
       parser.setEnvironment(new String[0], new String[0], null, true);
       parser.setResolveBindings(true);
@@ -101,6 +106,7 @@ final class JavaEmissionVerifier {
             throw new IllegalArgumentException("EMITTED_JAVA_INVALID: " + problem.getMessage());
          }
       }
+      Block body = declarationBody(ast);
 
       MathCleanUpOptions extractionOptions = new MathCleanUpOptions(
          true,
@@ -114,31 +120,41 @@ final class JavaEmissionVerifier {
          List.of()
       );
       JavaComputationExtractor.Extraction extraction = new JavaComputationExtractor().extractForVerification(ast, source.toString(), extractionOptions);
+      // A correct output cannot excuse skipped statements or an incompletely decoded initializer.
+      if (!extraction.diagnostics().isEmpty() || extraction.regions().size() != 1
+            || extraction.regions().getFirst().outputs().size() != body.statements().size()) {
+         throw new IllegalArgumentException("EMITTED_BODY_NOT_FULLY_EXTRACTED: " + extraction.diagnostics());
+      }
       HashMap<String, Expr> expressionsByJavaName = new HashMap<>();
+      ArrayList<SourceEvaluationTrace.Occurrence> emittedOccurrences = new ArrayList<>();
 
       for (JavaComputationRegion decodedRegion : extraction.regions()) {
          HashMap<String, String> inputIds = new HashMap<>();
 
          for (Entry<String, String> decodedInput : decodedRegion.inputNames().entrySet()) {
-            String originalId = (String)originalInputIds.get(decodedInput.getValue());
+            String originalId = originalInputIds.get(decodedInput.getValue());
             if (originalId == null) {
                throw new IllegalArgumentException("EMITTED_INPUT_NOT_BOUND");
             }
 
-            inputIds.put((String)decodedInput.getKey(), originalId);
+            inputIds.put(decodedInput.getKey(), originalId);
          }
 
          List<Expr> expressions = decodedRegion.plan().outputExpressions();
 
          for (int index = 0; index < decodedRegion.outputs().size(); index++) {
-            expressionsByJavaName.put(decodedRegion.outputs().get(index).javaName(), rename((Expr)expressions.get(index), inputIds));
+            expressionsByJavaName.put(decodedRegion.outputs().get(index).javaName(), rename(expressions.get(index), inputIds));
+         }
+         for (var occurrence : decodedRegion.trace().occurrences()) {
+            emittedOccurrences.add(new SourceEvaluationTrace.Occurrence(occurrence.sourceId(),
+                  rename(occurrence.expression(), inputIds), occurrence.declaredKind(), occurrence.evaluatedKind()));
          }
       }
 
       ArrayList<Expr> decodedOutputs = new ArrayList<>();
 
       for (String outputName : outputNames.values()) {
-         Expr expression = (Expr)expressionsByJavaName.get(outputName);
+         Expr expression = expressionsByJavaName.get(outputName);
          if (expression == null) {
             throw new IllegalArgumentException("EMITTED_OUTPUT_NOT_EXTRACTED: " + extraction.diagnostics());
          }
@@ -172,22 +188,50 @@ final class JavaEmissionVerifier {
          throw new IllegalArgumentException("EMITTED_CANDIDATE_MISMATCH: " + replacementProof);
       }
 
+      // Reverse the strict proof with the entire decoded execution trace. This includes dead
+      // operations: division, exact arithmetic and BigInteger range failures remain observable.
+      OptimizationRequest emittedRequest = new OptimizationRequest(decodedPlan,
+            new SourceEvaluationTrace(emittedOccurrences), request.selectedKinds(), request.semanticsRevision(),
+            replacementAssumptions, SafetyProfile.PRESERVE_JAVA, request.goal(), request.budget(), CheckedPolicy.NONE);
+      VerificationResult emittedProof = new ComputationOptimizer().verify(emittedRequest, candidate.plan(), cancellation);
+      if (!(emittedProof instanceof Verified)) {
+         throw new IllegalArgumentException("EMITTED_TRACE_NOT_PROVED: " + emittedProof);
+      }
+
       VerificationResult originalProof = new ComputationOptimizer().verify(request, decodedPlan, cancellation);
       if (!(originalProof instanceof Verified)) {
          throw new IllegalArgumentException("EMITTED_JAVA_NOT_PROVED: " + originalProof);
       }
    }
 
+   private static Block declarationBody(CompilationUnit ast) {
+      if (ast.types().size() != 1 || !(ast.types().getFirst() instanceof TypeDeclaration type)
+            || type.bodyDeclarations().size() != 1
+            || !(type.bodyDeclarations().getFirst() instanceof MethodDeclaration method)
+            || !method.getName().getIdentifier().equals("verify") || method.getBody() == null) {
+         throw new IllegalArgumentException("EMITTED_CONTAINER_SHAPE_CHANGED");
+      }
+      Block body = method.getBody();
+      for (Object child : body.statements()) {
+         if (!(child instanceof VariableDeclarationStatement declaration)
+               || declaration.fragments().size() != 1
+               || ((VariableDeclarationFragment) declaration.fragments().getFirst()).getInitializer() == null) {
+            throw new IllegalArgumentException("EMITTED_NON_DECLARATION_STATEMENT");
+         }
+      }
+      return body;
+   }
+
    private static Expr rename(Expr expression, Map<String, String> inputIds) {
       if (expression instanceof VariableExpr variable) {
-         String originalId = (String)inputIds.get(variable.name());
+         String originalId = inputIds.get(variable.name());
          if (originalId == null) {
             throw new IllegalArgumentException("EMITTED_UNBOUND_VALUE");
          } else {
             return new VariableExpr(originalId);
          }
       } else {
-         return (Expr)(expression instanceof FunctionExpr function
+         return (expression instanceof FunctionExpr function
             ? new FunctionExpr(function.name(), function.arguments().stream().map(operand -> rename(operand, inputIds)).toList())
             : expression);
       }

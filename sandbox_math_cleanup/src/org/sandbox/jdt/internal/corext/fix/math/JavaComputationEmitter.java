@@ -178,14 +178,14 @@ public final class JavaComputationEmitter {
       List<Expr> expressions = request.plan().outputExpressions();
 
       for (int index = 0; index < expressions.size(); index++) {
-         outputs.put(((Output)request.plan().outputs().get(index)).name(), sourceValue((Expr)expressions.get(index), request.plan().inputs(), evaluated, state));
+         outputs.put((request.plan().outputs().get(index)).name(), sourceValue(expressions.get(index), request.plan().inputs(), evaluated, state));
       }
 
       return outputs;
    }
 
    private static String sourceValue(Expr expression, Map<String, Type> inputs, Map<Expr, String> evaluated, JavaComputationEmitter.State state) {
-      String value = (String)evaluated.get(expression);
+      String value = evaluated.get(expression);
       if (value != null) {
          return value;
       }
@@ -206,13 +206,13 @@ public final class JavaComputationEmitter {
       ArrayDeque<Integer> pending = new ArrayDeque<>(plan.outputBindings().values());
 
       while (!pending.isEmpty()) {
-         int index = (Integer)pending.removeLast();
+         int index = pending.removeLast();
          if (index < 0 || index >= nodes.size()) {
             throw unsupported("MATH_INVALID_SCHEDULE");
          }
 
-         if (required.add(index) && !JavaExpressions.isLiteral(((Node)nodes.get(index)).expression())) {
-            pending.addAll(((Node)nodes.get(index)).arguments());
+         if (required.add(index) && !JavaExpressions.isLiteral((nodes.get(index)).expression())) {
+            pending.addAll((nodes.get(index)).arguments());
          }
       }
 
@@ -220,7 +220,7 @@ public final class JavaComputationEmitter {
 
       for (int index = 0; index < nodes.size(); index++) {
          if (required.contains(index)) {
-            Node node = (Node)nodes.get(index);
+            Node node = nodes.get(index);
             NumericKind kind = NumericKind.fromType(node.type());
             if (!(node.expression() instanceof VariableExpr) && JavaExpressions.resultKind(node.expression()) != kind) {
                throw unsupported("MATH_SCHEDULE_TYPE_MISMATCH");
@@ -229,7 +229,7 @@ public final class JavaComputationEmitter {
             ArrayList<String> arguments = new ArrayList<>();
             if (!JavaExpressions.isLiteral(node.expression())) {
                for (int dependency : node.arguments()) {
-                  String value = (String)values.get(dependency);
+                  String value = values.get(dependency);
                   if (dependency >= index || value == null) {
                      throw unsupported("MATH_NON_TOPOLOGICAL_SCHEDULE");
                   }
@@ -243,7 +243,7 @@ public final class JavaComputationEmitter {
       }
 
       LinkedHashMap<String, String> outputs = new LinkedHashMap<>();
-      plan.outputBindings().forEach((name, index) -> outputs.put(name, (String)values.get(index)));
+      plan.outputBindings().forEach((name, index) -> outputs.put(name, values.get(index)));
       return outputs;
    }
 
@@ -254,12 +254,12 @@ public final class JavaComputationEmitter {
          int index = 0;
 
          while (index < request.plan().outputs().size()) {
-            Output original = (Output)request.plan().outputs().get(index);
-            Output replacement = (Output)candidate.plan().outputs().get(index);
+            Output original = request.plan().outputs().get(index);
+            Output replacement = candidate.plan().outputs().get(index);
             if (original.name().equals(replacement.name()) && original.type().equals(replacement.type())) {
                NumericKind kind = NumericKind.fromType(original.type());
-               String before = (String)originalValues.get(original.name());
-               String after = (String)replacementValues.get(original.name());
+               String before = originalValues.get(original.name());
+               String after = replacementValues.get(original.name());
 
                String equal = switch (kind) {
                   case FLOAT -> "java.lang.Float.floatToRawIntBits(" + before + ") == java.lang.Float.floatToRawIntBits(" + after + ")";
@@ -284,8 +284,8 @@ public final class JavaComputationEmitter {
    }
 
    private static List<JavaComputationEmitter.Check> integralChecks(NumericOperation operation, NumericKind kind, List<String> operands, boolean checkRange) {
-      String left = (String)operands.getFirst();
-      String right = operands.size() > 1 ? (String)operands.get(1) : "";
+      String left = operands.getFirst();
+      String right = operands.size() > 1 ? operands.get(1) : "";
       ArrayList<Check> checks = new ArrayList<>();
       if (operation == NumericOperation.DIVIDE || operation == NumericOperation.REMAINDER) {
          checks.add(new JavaComputationEmitter.Check(right + " != 0", "MATH_DIVIDE_BY_ZERO"));
@@ -331,8 +331,8 @@ public final class JavaComputationEmitter {
          case MOD_POW, MOD_MULTIPLY -> 3;
       };
       requireArity(operands, arity);
-      String left = (String)operands.getFirst();
-      String right = operands.size() > 1 ? (String)operands.get(1) : "";
+      String left = operands.getFirst();
+      String right = operands.size() > 1 ? operands.get(1) : "";
       if (kind == NumericKind.BIG_INTEGER) {
          String method = switch (operation) {
             case ADD -> "add";
@@ -355,7 +355,7 @@ public final class JavaComputationEmitter {
             case POW -> "pow";
          };
          return operation == NumericOperation.MOD_MULTIPLY
-            ? left + ".multiply(" + right + ").mod(" + (String)operands.get(2) + ")"
+            ? left + ".multiply(" + right + ").mod(" + operands.get(2) + ")"
             : left + "." + method + "(" + String.join(", ", operands.subList(1, operands.size())) + ")";
       } else {
          if (kind != NumericKind.INT && kind != NumericKind.LONG && !kind.floatingPoint()) {
@@ -432,9 +432,23 @@ public final class JavaComputationEmitter {
          }
          case BYTE -> "(byte) " + value;
          case SHORT -> "(short) " + value;
-         case CHAR -> "(char) " + (int)(Character)value;
+         case CHAR -> characterLiteral((Character)value);
          case INT -> value.toString();
          case LONG -> value + "L";
+      };
+   }
+
+   /** Keep the CHAR literal node intact when the generated Java is independently parsed. */
+   private static String characterLiteral(char value) {
+      return switch (value) {
+         case '\b' -> "'\\b'";
+         case '\t' -> "'\\t'";
+         case '\n' -> "'\\n'";
+         case '\f' -> "'\\f'";
+         case '\r' -> "'\\r'";
+         case '\'' -> "'\\''";
+         case '\\' -> "'\\\\'";
+         default -> String.format(Locale.ROOT, "'\\u%04x'", (int)value);
       };
    }
 
@@ -595,10 +609,10 @@ public final class JavaComputationEmitter {
                   throw JavaComputationEmitter.unsupported("MATH_CHECKED_FLOAT_TO_INTEGRAL_CAST_UNSUPPORTED");
                }
 
-               checks.add(new JavaComputationEmitter.Check(JavaComputationEmitter.inRange("(long) " + (String)operands.getFirst(), kind), "MATH_NARROWING"));
+               checks.add(new JavaComputationEmitter.Check(JavaComputationEmitter.inRange("(long) " + operands.getFirst(), kind), "MATH_NARROWING"));
             }
 
-            javaExpression = "(" + JavaComputationEmitter.type(kind) + ") " + (String)operands.getFirst();
+            javaExpression = "(" + JavaComputationEmitter.type(kind) + ") " + operands.getFirst();
          } else {
             NumericOperation originalOperation = JavaExpressions.operationOf(expression).orElseThrow(() -> JavaComputationEmitter.unsupported("MATH_UNKNOWN_OPERATION"));
             NumericOperation emittedOperation = this.mode == JavaComputationEmitter.Mode.CHECKED && this.checkRange && kind.integral()

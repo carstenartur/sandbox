@@ -1,0 +1,29 @@
+
+Test run finished after 1298 ms
+[         2 containers found      ]
+[         0 containers skipped    ]
+[         2 containers started    ]
+[         0 containers aborted    ]
+[         2 containers successful ]
+[         0 containers failed     ]
+[         2 tests found           ]
+[         0 tests skipped         ]
+[         2 tests started         ]
+[         0 tests aborted         ]
+[         0 tests successful      ]
+[         2 tests failed          ]
+
+
+Failures (2):
+  JUnit Jupiter:CharacterLiteralRoundTripTest:escapedCharacterCodeUnitsKeepTheirJavaValue()
+    MethodSource [className = 'org.sandbox.jdt.math.tests.CharacterLiteralRoundTripTest', methodName = 'escapedCharacterCodeUnitsKeepTheirJavaValue', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: '\u2028': [Diagnostic[code=UNSUPPORTED_OR_UNPROVED, message=EMITTED_CANDIDATE_MISMATCH: Inconclusive[diagnostic=OUTSIDE_PROVED_NUMERIC_FRAGMENT], offset=62, length=24]] ==> expected: <true> but was: <false>
+       org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:232)
+       org.sandbox.jdt.math.tests.CharacterLiteralRoundTripTest.check(CharacterLiteralRoundTripTest.java:49)
+       org.sandbox.jdt.math.tests.CharacterLiteralRoundTripTest.escapedCharacterCodeUnitsKeepTheirJavaValue(CharacterLiteralRoundTripTest.java:40)
+  JUnit Jupiter:CharacterLiteralRoundTripTest:nonAsciiCharacterSurvivesIndependentReExtractionAndJava8Compilation()
+    MethodSource [className = 'org.sandbox.jdt.math.tests.CharacterLiteralRoundTripTest', methodName = 'nonAsciiCharacterSurvivesIndependentReExtractionAndJava8Compilation', methodParameterTypes = '']
+    => org.opentest4j.AssertionFailedError: '\uffff': [Diagnostic[code=UNSUPPORTED_OR_UNPROVED, message=EMITTED_CANDIDATE_MISMATCH: Inconclusive[diagnostic=OUTSIDE_PROVED_NUMERIC_FRAGMENT], offset=62, length=24]] ==> expected: <true> but was: <false>
+       org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:232)
+       org.sandbox.jdt.math.tests.CharacterLiteralRoundTripTest.check(CharacterLiteralRoundTripTest.java:49)
+       org.sandbox.jdt.math.tests.CharacterLiteralRoundTripTest.nonAsciiCharacterSurvivesIndependentReExtractionAndJava8Compilation(CharacterLiteralRoundTripTest.java:31)
