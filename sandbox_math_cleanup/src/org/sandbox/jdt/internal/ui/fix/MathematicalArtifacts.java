@@ -25,12 +25,19 @@ final class MathematicalArtifacts {
   if(bundle==null) throw new IOException("The mathematics application is not running in its installed bundle");
   Path archive=FileLocator.getBundleFile(bundle).toPath();
   byte[] sdk;
-  try(InputStream input=bundle.getEntry("lib/regelsuche-optimization-sdk.jar").openStream()) { sdk=input.readAllBytes(); }
+  var sdkEntry=bundle.getEntry("lib/regelsuche-optimization-sdk.jar");
+  if(sdkEntry==null) throw new IOException("The installed adapter does not contain its private SDK artifact");
+  try(InputStream input=sdkEntry.openStream()) { sdk=input.readAllBytes(); }
   if(!Files.isRegularFile(archive)) throw new IOException("Artifact qualification requires a packaged adapter JAR, not a development directory");
   List<String> matchedClasses=new ArrayList<>();
   if(requireLoadedClassIdentity) {
    ClassLoader loader=MathematicalApplication.class.getClassLoader();
    try(JarFile jar=new JarFile(archive.toFile())) {
+    var packagedSdk=jar.getJarEntry("lib/regelsuche-optimization-sdk.jar");
+    if(packagedSdk==null) throw new IOException("The packaged adapter does not contain its private SDK artifact");
+    try(InputStream input=jar.getInputStream(packagedSdk)) {
+     if(!Arrays.equals(sdk,input.readAllBytes())) throw new IOException("Loaded SDK entry differs from packaged adapter JAR");
+    }
     for(var entry:jar.stream().filter(item->item.getName().endsWith(".class") && item.getName().startsWith("org/sandbox/")).toList()) {
      byte[] packaged;try(InputStream input=jar.getInputStream(entry)) { packaged=input.readAllBytes(); }
      verifyResource(loader,entry.getName(),packaged);matchedClasses.add(entry.getName());
@@ -51,7 +58,12 @@ final class MathematicalArtifacts {
   return new Receipt(MathematicalEnvironment.digest(sdk),MathematicalEnvironment.digest(Files.readAllBytes(archive)),"sha256-jar-bytes",archive.toString(),List.copyOf(matchedClasses));
  }
  private static void verifyResource(ClassLoader loader,String name,byte[] expected) throws IOException {
-  try(InputStream resource=loader.getResourceAsStream(name)) {
+  Class<?> loaded=null;
+  if(name.endsWith(".class")) {
+   try { loaded=Class.forName(name.substring(0,name.length()-6).replace('/','.'),false,loader); }
+   catch(ClassNotFoundException | LinkageError unavailable) { throw new IOException("Cannot load qualified class: "+name,unavailable); }
+  }
+  try(InputStream resource=loaded==null?loader.getResourceAsStream(name):loaded.getResourceAsStream("/"+name)) {
    if(resource==null || !Arrays.equals(expected,resource.readAllBytes())) throw new IOException("Loaded resource differs from packaged artifact: "+name);
   }
  }
