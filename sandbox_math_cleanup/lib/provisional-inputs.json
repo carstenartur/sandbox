@@ -1,0 +1,21 @@
+{
+  "status": "PROVISIONAL_RECONSTRUCTION_NOT_FINAL_PIN",
+  "revision": "4fc49eaf9c4ebd700027c1005dcdb69127d4a316",
+  "sdkJUnitTests": 41,
+  "inputs": {
+    "/workspace/scratch/e422f490850c/Regelsuche-restored/regelsuche-core/target/regelsuche-core-0.5.0-SNAPSHOT.jar": "36a8e471004b70caef628a3ad3274b868c078ba68fdb82eaef41a992ea09bb82",
+    "/workspace/scratch/e422f490850c/Regelsuche-restored/regelsuche-egraph/target/regelsuche-egraph-0.5.0-SNAPSHOT.jar": "b118ebcff4b2a151c6d531e2e1afb71bc36b001bcd6511fe0b223c817cc4b871",
+    "/workspace/scratch/e422f490850c/Regelsuche-restored/regelsuche-search/target/regelsuche-search-0.5.0-SNAPSHOT.jar": "1b8158545778c1d4e7818e10cdaacfd268391380ef2c17af24a2ba5307b352d6",
+    "/workspace/scratch/e422f490850c/Regelsuche-restored/regelsuche-validation/target/regelsuche-validation-0.5.0-SNAPSHOT.jar": "80adf363134a5ddd864affc0dbd0ff3d1cc62c38871fc742714e5bb647b6f960",
+    "/workspace/scratch/e422f490850c/Regelsuche-restored/regelsuche-math-algorithms/target/regelsuche-math-algorithms-0.5.0-SNAPSHOT.jar": "d29cc95c13ee7e6c1d7a3cb75b566f41f1f2de54275f249dcb7489107a5f763e",
+    "/workspace/scratch/e422f490850c/Regelsuche-restored/regelsuche-optimization-sdk/target/regelsuche-optimization-sdk-0.5.0-SNAPSHOT.jar": "c9285de7e392f3e833460138a73e2703bcc1cd4fd754813d5914cabfe4435ef5",
+    "/root/.m2/repository/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.22.2/jackson-dataformat-yaml-2.22.2.jar": "f5e52c7d8914f23c5fcc00d0afbef77e20557228a6200e184bb61f69ab03fc44",
+    "/root/.m2/repository/org/yaml/snakeyaml/2.5/snakeyaml-2.5.jar": "e6682acf1ace77508ef13649cbf4f8d09d2cf5457bdb61d25ffb6ac0233d78dd",
+    "/root/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.22.2/jackson-databind-2.22.2.jar": "d0da14c12b16b5d54719aa172d83b542ff4abeb8b0fb7db476fde8ceece760ca",
+    "/root/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.22/jackson-annotations-2.22.jar": "21ddb598807d3a51a876704eb979d9296e1c6a6f47ab1826ff88c6d6a127a2d0",
+    "/root/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.22.2/jackson-core-2.22.2.jar": "ff167a6317be15895706c26668f45b898efe40ab8780970658210fe1393d52a6",
+    "/root/.m2/repository/org/jspecify/jspecify/1.0.0/jspecify-1.0.0.jar": "1fad6e6be7557781e4d33729d49ae1cdc8fdda6fe477bb0cc68ce351eafdfbab"
+  },
+  "jar": "/workspace/scratch/e422f490850c/artifacts/regelsuche-sdk-provisional-4fc49eaf9c4e.jar",
+  "sha256": "f8969808aa92ccdc48db0cfac214cd572c16d0d82e90be55f44709b6d61935f4"
+}

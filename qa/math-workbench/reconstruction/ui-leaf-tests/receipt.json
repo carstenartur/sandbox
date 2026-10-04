@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "tests": 32,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "scope": "Standalone Maven/JUnit options, edit guards, job scheduling, CLI grammar/report serialization, cleanup metadata, Java model delta classification and queued assist cancellation. No native application/preferences/apply qualification.",
+  "sdkStatus": "PROVISIONAL_RECONSTRUCTION_NOT_FINAL_PIN",
+  "sdkSha256": "f8969808aa92ccdc48db0cfac214cd572c16d0d82e90be55f44709b6d61935f4",
+  "sources": {
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalAnalysisJob.java": "b5fbef839571620af531b5779d9ff5882820492149a71e9489a9cd3627c77763",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalApplication.java": "dff75d252de449d47ddfed1b496bac7f7f76940e5b518de097c81e470b1ad17d",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalArguments.java": "3c65e0b3b8baa6927412d301828d660ed9d86f5d41f30949f97d103ef1e1dec6",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalArtifacts.java": "d254bcfe4af91129a87346cb1d85231aa2633fcef0d9ef897dd81449f22a46ac",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalChange.java": "281a83b82c082c211cf6abfb77d7423500ababc47f0e1bc41e6cd01d8bf043f6",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalCleanUp.java": "08b2d4ff04be58dd9cb36996dba49d6ce8c2c35a3933d3c7e98e1a75c47f4057",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalCleanUpCore.java": "3b7bd36edae03e93f35e182f81b762a44ed1e5d3bb3ce99328df295cd6a68889",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalEnvironment.java": "8e4b73ae3ed02caf9baaf14042e8005afd9f2f98652b97c71c7b903b6ebfb567",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalPlugin.java": "dfe21e6a6961035555c74054014e931c0472dc03caa9f7f26d8084ccc47bd1ae",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalQuickAssist.java": "3c8b004ecf4a65652d3d1a2daef2d5940e59633370e717fa294a24eb11bc2aca",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalReport.java": "e1622ca9d847dec4121ccf271d77b57fc39d44a904b92472df69bb596efb5a8a",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalValidationEdit.java": "a115fdc04a987e2aa087612059b8a1f51ac30d991aeb09a091d63ae61012ed9d",
+    "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalAnalysisJobTest.java": "89618b97ca197edd7efc29a29c0205cb6b8285a4540172eabe8576256984dea7",
+    "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalArgumentsTest.java": "29b670cffe6978d93917a8218d371a214cd624abc2580c2f83a9c6d48b75d74b",
+    "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalCleanUpCoreTest.java": "fa1ca455e4611c958bc18ba0beaf26dca2af4f81ba43eed4d082003c4919f83f",
+    "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalEnvironmentTest.java": "d79764b2586dbb4841ad158b46cd2d645314bb018102a338c58e40e12295ca9b",
+    "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalQuickAssistTest.java": "e54700063d7225e3aa22eb96d75ac282c672d0ecc637074f2bac19c611185f47",
+    "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalReportTest.java": "081ccd9c8b58538d9bfbf6a4679df6e1a1e2b6cc290bf48e199c65b628aa588b",
+    "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalValidationEditTest.java": "0ed00f1dfe3665ab6e13f4dea4b96ea09ed3d5f17dcb62757bc428a516776829"
+  }
+}

@@ -1,0 +1,66 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for local.qualification:options-reconstruction:jar:1
+[WARNING] 'dependencies.dependency.systemPath' for local.qualification:provisional-sdk:jar should use a variable instead of a hard-coded path /workspace/scratch/e422f490850c/sandbox-restored/sandbox_math_cleanup/lib/regelsuche-optimization-sdk.jar @ line 1, column 981
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] 
+[INFO] -------------< local.qualification:options-reconstruction >-------------
+[INFO] Building options-reconstruction 1
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ options-reconstruction ---
+[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
+[INFO] skip non existing resourceDirectory /workspace/scratch/e422f490850c/tooling/options-reconstruction/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ options-reconstruction ---
+[INFO] Recompiling the module because of changed source code.
+[WARNING] File encoding has not been set, using platform encoding UTF-8, i.e. build is platform dependent!
+[INFO] Compiling 15 source files with javac [debug release 25] to target/classes
+[INFO] /workspace/scratch/e422f490850c/sandbox-restored/sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalEnvironment.java: Some input files use or override a deprecated API.
+[INFO] /workspace/scratch/e422f490850c/sandbox-restored/sandbox_math_cleanup/src/org/sandbox/jdt/internal/ui/fix/MathematicalEnvironment.java: Recompile with -Xlint:deprecation for details.
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ options-reconstruction ---
+[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
+[INFO] skip non existing resourceDirectory /workspace/scratch/e422f490850c/tooling/options-reconstruction/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ options-reconstruction ---
+[INFO] Recompiling the module because of changed dependency.
+[WARNING] File encoding has not been set, using platform encoding UTF-8, i.e. build is platform dependent!
+[INFO] Compiling 7 source files with javac [debug release 25] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.5.4:test (default-test) @ options-reconstruction ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.083 s -- in org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest
+[INFO] Running org.sandbox.jdt.internal.ui.fix.MathematicalArgumentsTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.007 s -- in org.sandbox.jdt.internal.ui.fix.MathematicalArgumentsTest
+[INFO] Running org.sandbox.jdt.internal.ui.fix.MathematicalQuickAssistTest
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.130 s -- in org.sandbox.jdt.internal.ui.fix.MathematicalQuickAssistTest
+[INFO] Running org.sandbox.jdt.internal.ui.fix.MathematicalValidationEditTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.026 s -- in org.sandbox.jdt.internal.ui.fix.MathematicalValidationEditTest
+[INFO] Running org.sandbox.jdt.internal.ui.fix.MathematicalCleanUpCoreTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.017 s -- in org.sandbox.jdt.internal.ui.fix.MathematicalCleanUpCoreTest
+[INFO] Running org.sandbox.jdt.internal.ui.fix.MathematicalEnvironmentTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.041 s -- in org.sandbox.jdt.internal.ui.fix.MathematicalEnvironmentTest
+[INFO] Running org.sandbox.jdt.internal.ui.fix.MathematicalAnalysisJobTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.250 s -- in org.sandbox.jdt.internal.ui.fix.MathematicalAnalysisJobTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 28, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  4.569 s
+[INFO] Finished at: 2026-10-05T02:35:50+07:00
+[INFO] ------------------------------------------------------------------------
