@@ -50,6 +50,7 @@ public class MathematicsOptimizationBenchmark {
         public int cursor;
         private final long[] seeds = new long[64];
         private final long[] bases = new long[64];
+        private final Random random = new Random(93802455L);
         private final List<URLClassLoader> loaders = new ArrayList<>();
         private Path compiledDirectory;
         private Computation original;
@@ -60,7 +61,7 @@ public class MathematicsOptimizationBenchmark {
             compiledDirectory = Files.createTempDirectory("math-jmh-");
             original = compile("original");
             generated = compile("generated");
-            Random random = new Random(93802455L);
+            random.setSeed(93802455L);
             for (int i = 0; i < seeds.length; i++) {
                 seeds[i] = random.nextLong();
                 bases[i] = random.nextLong();
