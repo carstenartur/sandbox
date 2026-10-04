@@ -44,6 +44,16 @@
 				<version>3.6.3</version>
 				<executions>
 					<execution>
+						<id>verify-installed-mathematics</id>
+						<goals><goal>java</goal></goals>
+						<configuration>
+							<mainClass>org.sandbox.distribution.InstalledMathematicsVerifier</mainClass>
+							<arguments><argument>${maven.multiModuleProjectDirectory}</argument></arguments>
+							<classpathScope>runtime</classpathScope>
+							<cleanupDaemonThreads>false</cleanupDaemonThreads>
+						</configuration>
+					</execution>
+					<execution>
 						<id>verify-distribution</id>
 						<phase>verify</phase>
 						<goals>

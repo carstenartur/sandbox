@@ -46,7 +46,11 @@ concurrency:
 
 jobs:
   product-and-update-site:
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-15-intel]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 150
     steps:
       - uses: actions/checkout@v7
@@ -55,11 +59,12 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
       - name: Use runner Maven
         uses: ./.github/actions/use-runner-maven
       - name: Verify preinstalled Eclipse desktop runtime
+        if: runner.os == 'Linux'
         uses: ./.github/actions/verify-eclipse-desktop-runtime
       - name: Select repository-policy review context
         shell: bash
@@ -86,26 +91,37 @@ jobs:
         run: |
           set -o pipefail
           status=0
-          xvfb-run --auto-servernum mvn \
-            -Pdistribution \
-            --batch-mode \
-            -Dtycho.localArtifacts=ignore \
-            clean verify 2>&1 \
-            | tee /tmp/sandbox-distribution-maven.log || status=$?
+          command=(mvn -Pdistribution,cli-dist,swtbot --batch-mode -Dtycho.localArtifacts=ignore
+            -Dsandbox.math.retainHeadlessProbe=true clean verify)
+          if [[ "$RUNNER_OS" == 'Linux' ]]; then
+            command=(xvfb-run --auto-servernum "${command[@]}")
+          fi
+          log="$RUNNER_TEMP/sandbox-distribution-maven.log"
+          "${command[@]}" 2>&1 | tee "$log" || status=$?
           mkdir -p target/distribution-verification
-          cp /tmp/sandbox-distribution-maven.log \
-            target/distribution-verification/maven.log
+          cp "$log" target/distribution-verification/maven.log
           exit "$status"
+      - name: Verify installed mathematics without a display
+        shell: bash
+        run: >-
+          mvn -Pdistribution --batch-mode -pl sandbox_distribution_verify
+          -Dtycho.localArtifacts=ignore exec:java@verify-installed-mathematics
       - name: Validate distribution evidence contract
+        shell: bash
         run: python3 .github/scripts/validate_distribution_evidence.py
       - name: Publish verification summary
         if: always() && hashFiles('target/distribution-verification/verification.md') != ''
+        shell: bash
         run: cat target/distribution-verification/verification.md >> "$GITHUB_STEP_SUMMARY"
       - name: Upload distribution evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: distribution-smoke-${{ github.sha }}
-          path: target/distribution-verification/
+          name: distribution-smoke-${{ matrix.os }}-${{ github.sha }}
+          path: |
+            target/distribution-verification/
+            sandbox_math_cleanup_test/target/headless-probe/
+            sandbox_math_cleanup_test/target/surefire-reports/
+            sandbox_math_cleanup_test/target/screenshots/
           retention-days: 30
           if-no-files-found: error
