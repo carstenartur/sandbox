@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7a70ef861dbeb165e6e7df68135d89855e38171734cda5ab90afe32506e5d00c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.search2.internal.ui.Messages.format($message, $object)\n\u003d\u003e\ncom.ibm.icu.text.MessageFormat.format($message, $object)\n;;",
+  "beforeExample": "package test;\n\n// In a real project, this class would exist and its format method would delegate to com.ibm.icu.text.MessageFormat.\n// For the purpose of this example, we\u0027ll assume it\u0027s imported or fully qualified.\n// However, to make the example compile, we need a mock for org.eclipse.search2.internal.ui.Messages\n// For a true sandbox-hint, the class does not need to be present, it only needs to match.\n// We simulate its previous existence.\n\npublic class Test {\n    // Assuming a static import or FQN was used, replicating the diff\u0027s usage.\n    // In the actual diff, the `Messages` class was deleted, so its FQN is critical.\n    public void method() {\n        String label \u003d \"Count: {0}\";\n        int limit \u003d 10;\n        // Original code from the diff:\n        String formatted \u003d org.eclipse.search2.internal.ui.Messages.format(label, new Integer(limit));\n        System.out.println(formatted);\n    }\n}\n",
+  "afterExample": "package test;\n\nimport com.ibm.icu.text.MessageFormat;\n\npublic class Test {\n    public void method() {\n        String label \u003d \"Count: {0}\";\n        int limit \u003d 10;\n        // Transformed code:\n        String formatted \u003d MessageFormat.format(label, new Integer(limit));\n        System.out.println(formatted);\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport java.text.MessageFormat;\n\npublic class Test {\n    public void method() {\n        String label \u003d \"Count: {0}\";\n        int limit \u003d 10;\n        // This uses java.text.MessageFormat, which should not be affected.\n        String formatted \u003d MessageFormat.format(label, new Object[]{new Integer(limit)});\n        System.out.println(formatted);\n\n        // This is a different method signature, not covered by the rule.\n        String someOtherFormatted \u003d org.eclipse.search2.internal.ui.Messages.format(label, new Object[]{new Integer(limit), \"extra\"});\n        System.out.println(someOtherFormatted);\n    }\n}\n",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "c5ff519b79fc9afc70e056f31520d1e220a33713",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces calls to `org.eclipse.search2.internal.ui.Messages.format(String, Object)` with `com.ibm.icu.text.MessageFormat.format(String, Object)`. This removes a redundant wrapper class after its functionality was directly available in the underlying API.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-04T03:18:53.980682682Z",
+  "ruleFingerprint": "sha256:1e6da0f134a95df2418e0c9839b24b713139b31aa88ef0d2a08e655b1117b2fd",
+  "behaviorFingerprint": "sha256:8084281d785d10467fee4cfd36faa0ec943ac28374b3ca042c326854f49de85f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 9: The public type Test must be defined in its own file",
+    "verifiedAt": "2026-10-04T03:19:02.911597714Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

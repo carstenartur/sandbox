@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "67cd1b91432b83e53c736fe4123ac0301b2e804b599fff1d66b770d1f4e3884a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.Boolean($expr)\n\u003d\u003e java.lang.Boolean.valueOf($expr)\n;;",
+  "beforeExample": "import java.util.HashMap;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyClass {\n    public void someMethod(Control w, HashMap h, boolean enabled) {\n        if (!w.isDisposed()) {\n            h.put(w, new Boolean(w.isEnabled()));\n            w.setEnabled(enabled);\n        }\n        boolean result \u003d (new Boolean(true)).booleanValue();\n        Boolean myBool \u003d new Boolean(false);\n    }\n\n    public boolean isEnabled() { return true; }\n}",
+  "afterExample": "import java.util.HashMap;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyClass {\n    public void someMethod(Control w, HashMap h, boolean enabled) {\n        if (!w.isDisposed()) {\n            h.put(w, Boolean.valueOf(w.isEnabled()));\n            w.setEnabled(enabled);\n        }\n        boolean result \u003d (Boolean.valueOf(true)).booleanValue();\n        Boolean myBool \u003d Boolean.valueOf(false);\n    }\n\n    public boolean isEnabled() { return true; }\n}",
+  "negativeExample": "public class MyOtherClass {\n    public void anotherMethod() {\n        // This should not be changed as it\u0027s Integer.valueOf, not Boolean.valueOf\n        Integer i \u003d Integer.valueOf(10);\n\n        // This is a Boolean literal, not a constructor call\n        Boolean constantTrue \u003d Boolean.TRUE;\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "a4fd9a1fcbb3ae2e7650bfdfa62b8f53f788c964",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Modernization",
+  "summary": "Replaced `new Boolean(...)` with `Boolean.valueOf(...)`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-04T03:18:53.919816280Z",
+  "ruleFingerprint": "sha256:82b1abd3f215033d844697eb220f8ca0c42b1ea51cb1dbe60214e5fb7cb229bb",
+  "behaviorFingerprint": "sha256:2ed30b7df64d754e153c38cf63976227e54a49b169b68bd82db15bbd63d802b0",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-04T03:19:02.883566461Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

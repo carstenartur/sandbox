@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_REWRITE",
     "message": "Transformed source is invalid: Java compile error at line 11: Type mismatch: cannot convert from AbstractSet to Set\u003cString\u003e",
-    "verifiedAt": "2026-10-03T02:32:59.388774753Z",
+    "verifiedAt": "2026-10-04T03:19:02.371351708Z",
     "verifierVersion": "7",
     "matches": 1,
     "replacements": 1
