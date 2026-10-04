@@ -82,6 +82,11 @@
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_use_general_type_feature</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_math_cleanup_feature</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<finalName>sandbox.updatesite_${project.version}</finalName>

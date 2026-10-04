@@ -16,6 +16,7 @@
    <includes id="sandbox_int_to_enum_feature" version="0.0.0"/>
    <includes id="sandbox_jface_cleanup_feature" version="0.0.0"/>
    <includes id="sandbox_junit_cleanup_feature" version="0.0.0"/>
+   <includes id="sandbox_math_cleanup_feature" version="0.0.0"/>
    <includes id="sandbox_method_reuse_feature" version="0.0.0"/>
    <includes id="sandbox_platform_helper_feature" version="0.0.0"/>
    <includes id="sandbox_tools_feature" version="0.0.0"/>

@@ -82,6 +82,11 @@
 			<groupId>org.sandbox</groupId>
 			<artifactId>sandbox_use_general_type_feature</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox_math_cleanup_feature</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<finalName>sandbox-product-${project.version}</finalName>
@@ -116,6 +121,7 @@
 				<artifactId>tycho-p2-director-plugin</artifactId>
 				<version>${tycho-version}</version>
 				<configuration>
+					<productRepository>https://download.eclipse.org/justj/jres/25/updates/release/25.0.4.v20260826-0822</productRepository>
 					<products>
 						<product>
 							<id>sandbox.bundle.product${rcp-version}</id>

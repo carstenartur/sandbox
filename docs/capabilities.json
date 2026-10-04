@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "repository": {
-    "javaVersion": "21",
+    "javaVersion": "25",
     "tychoVersion": "5.0.4",
     "eclipseRelease": "2026-09",
     "defaultStatus": "experimental",
@@ -218,6 +218,22 @@
       "tests": { "total": 30, "enabled": 30, "disabled": 0 },
       "delivery": { "product": true, "updateSite": true },
       "knownLimitations": ["#1216", "#1223", "#1225", "#1226"]
+    },
+    {
+      "id": "mathematics-cleanup",
+      "kind": "cleanup",
+      "bundle": "sandbox_math_cleanup",
+      "feature": "sandbox_math_cleanup_feature",
+      "testModule": "sandbox_math_cleanup_test",
+      "scope": "local",
+      "automaticSupport": "no",
+      "saveActionSupport": "no",
+      "safetyLevel": "conservative",
+      "status": "experimental",
+      "tests": { "total": 7, "enabled": 7, "disabled": 0 },
+      "testCountsSource": "Reconstruction: seven fresh standalone option tests; full module and native qualification pending",
+      "delivery": { "product": true, "updateSite": true },
+      "knownLimitations": ["#1657"]
     },
     {
       "id": "container-cleanup",

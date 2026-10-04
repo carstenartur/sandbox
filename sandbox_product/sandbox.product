@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?pde version="3.5"?>
 
-<product name="Sandbox Product" uid="sandbox.bundle.producteclipse" id="org.eclipse.platform.ide" application="org.eclipse.ui.ide.workbench" version="1.3.6" type="features" includeLaunchers="true" autoIncludeRequirements="true">
+<product name="Sandbox Product" uid="sandbox.bundle.producteclipse" id="org.eclipse.platform.ide" application="org.eclipse.ui.ide.workbench" version="1.3.6" type="features" includeLaunchers="true" includeJRE="true" autoIncludeRequirements="true">
 
    <configIni use="default">
    </configIni>
@@ -13,7 +13,7 @@
 -Xmx1024m
 -XX:+UseG1GC
 -XX:+UseStringDeduplication
--Dosgi.requiredJavaVersion=21
+-Dosgi.requiredJavaVersion=25
 -Dosgi.dataAreaRequiresExplicitInit=true
 -Dorg.eclipse.swt.graphics.Resource.reportNonDisposed=true
 --add-modules=ALL-SYSTEM
@@ -35,9 +35,9 @@
    </launcher>
 
    <vm>
-      <linux include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-21</linux>
-      <macos include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-21</macos>
-      <windows include="true">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-21</windows>
+      <linux include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-25</linux>
+      <macos include="false">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-25</macos>
+      <windows include="true">org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-25</windows>
    </vm>
 
    <license>
@@ -210,6 +210,7 @@ United States, other countries, or both.
       <feature id="sandbox_functional_converter_feature"/>
       <feature id="sandbox_method_reuse_feature"/>
       <feature id="sandbox_int_to_enum_feature"/>
+      <feature id="sandbox_math_cleanup_feature"/>
       <feature id="sandbox_cleanup_application_feature"/>
       <feature id="sandbox_triggerpattern_feature"/>
       <feature id="sandbox_container_cleanup_feature"/>
