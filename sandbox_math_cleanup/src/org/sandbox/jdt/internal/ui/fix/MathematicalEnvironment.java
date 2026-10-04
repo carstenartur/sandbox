@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.core.ElementChangedEvent;
 import org.eclipse.jdt.core.IClasspathEntry;
@@ -81,79 +83,96 @@ final class MathematicalEnvironment {
   return type==IJavaElement.COMPILATION_UNIT && (flags&IJavaElementDelta.F_FINE_GRAINED)==0;
  }
  static Snapshot capture(IJavaProject project) throws CoreException {
-  return capture(project,true);
+  return capture(project,null);
+ }
+ static Snapshot capture(IJavaProject project,IProgressMonitor monitor) throws CoreException {
+  return capture(project,true,monitor);
  }
  /** Foreground cache key only; full binary freshness remains a worker/apply guard. */
  static Snapshot captureStructure(IJavaProject project) throws CoreException {
-  return capture(project,false);
+  return capture(project,false,null);
  }
- private static Snapshot capture(IJavaProject project,boolean binaryContents) throws CoreException {
+ private static Snapshot capture(IJavaProject project,boolean binaryContents,IProgressMonitor monitor) throws CoreException {
+  cancelled(monitor);
   start();
   StringBuilder content=new StringBuilder();
   Map<String,Long> revisions=new HashMap<>();
-  appendProject(project,content,new HashSet<>(),revisions,binaryContents);
+  appendProject(project,content,new HashSet<>(),revisions,binaryContents,monitor);
+  cancelled(monitor);
   return new Snapshot(digest(content.toString()),Map.copyOf(revisions));
  }
- private static void appendProject(IJavaProject project,StringBuilder content,Set<String> visited,Map<String,Long> revisions,boolean binaryContents) throws CoreException {
+ private static void appendProject(IJavaProject project,StringBuilder content,Set<String> visited,Map<String,Long> revisions,boolean binaryContents,IProgressMonitor monitor) throws CoreException {
+  cancelled(monitor);
   String handle=project.getHandleIdentifier();
   if(!visited.add(handle)) return;
   revisions.put(handle,REVISIONS.getOrDefault(handle,0L));
   append(content,handle);append(content,Boolean.toString(project.exists()));
   append(content,digestOptions(project.getOptions(true)));
   append(content,project.getOutputLocation().toPortableString());
-  for(IClasspathEntry entry:project.getRawClasspath()) { append(content,"raw");appendEntry(entry,content,binaryContents); }
+  for(IClasspathEntry entry:project.getRawClasspath()) { cancelled(monitor);append(content,"raw");appendEntry(entry,content,binaryContents,monitor); }
+  cancelled(monitor);
   for(IClasspathEntry entry:project.getResolvedClasspath(true)) {
-   append(content,"resolved");appendEntry(entry,content,binaryContents);
+   cancelled(monitor);append(content,"resolved");appendEntry(entry,content,binaryContents,monitor);
    if(entry.getEntryKind()==IClasspathEntry.CPE_PROJECT) {
     IJavaProject dependency=JavaCore.create(ResourcesPlugin.getWorkspace().getRoot().getProject(entry.getPath().lastSegment()));
-    if(dependency.exists()) appendProject(dependency,content,visited,revisions,binaryContents);
+    if(dependency.exists()) appendProject(dependency,content,visited,revisions,binaryContents,monitor);
    }
   }
  }
- private static void appendEntry(IClasspathEntry entry,StringBuilder content,boolean binaryContents) throws CoreException {
+ private static void appendEntry(IClasspathEntry entry,StringBuilder content,boolean binaryContents,IProgressMonitor monitor) throws CoreException {
   append(content,entry.toString());
   if(!binaryContents || entry.getEntryKind()!=IClasspathEntry.CPE_LIBRARY) return;
   IResource resource=ResourcesPlugin.getWorkspace().getRoot().findMember(entry.getPath());
   Path path=resource!=null && resource.getLocation()!=null ? resource.getLocation().toFile().toPath() : entry.getPath().toFile().toPath();
   append(content,path.toAbsolutePath().normalize().toString());
   try {
-   append(content,binaryFingerprint(path));
+   append(content,binaryFingerprint(path,monitor));
+  } catch(OperationCanceledException cancelled) { throw cancelled;
   } catch(IOException | RuntimeException unavailable) { throw new CoreException(Status.error("Cannot verify classpath contents: "+path,unavailable)); }
  }
  static String binaryFingerprint(Path path) throws IOException {
+  return binaryFingerprint(path,null);
+ }
+ static String binaryFingerprint(Path path,IProgressMonitor monitor) throws IOException {
+  cancelled(monitor);
   if(Files.isSymbolicLink(path)) throw new IOException("Symbolic classpath roots cannot be verified: "+path);
   BasicFileAttributes attributes=Files.readAttributes(path,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS);
-  if(attributes.isRegularFile()) return fileFingerprint(path);
+  if(attributes.isRegularFile()) return fileFingerprint(path,monitor);
   if(!attributes.isDirectory()) throw new IOException("Unsupported classpath entry: "+path);
   StringBuilder content=new StringBuilder();
-  List<Path> entries=directoryEntries(path);
+  List<Path> entries=directoryEntries(path,monitor);
   for(Path entry:entries) {
+   cancelled(monitor);
    BasicFileAttributes item=Files.readAttributes(entry,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS);
    if(item.isSymbolicLink() || !(item.isDirectory() || item.isRegularFile())) throw new IOException("Unsupported binary entry: "+entry);
    append(content,path.relativize(entry).toString().replace(java.io.File.separatorChar,'/'));
-   append(content,item.isDirectory()?"directory":fileFingerprint(entry));
+   append(content,item.isDirectory()?"directory":fileFingerprint(entry,monitor));
   }
-  if(!entries.equals(directoryEntries(path))) throw new IOException("Classpath directory changed during verification: "+path);
+  if(!entries.equals(directoryEntries(path,monitor))) throw new IOException("Classpath directory changed during verification: "+path);
+  cancelled(monitor);
   return digest(content.toString());
  }
- private static List<Path> directoryEntries(Path root) throws IOException {
-  try(var paths=Files.walk(root)) { return paths.filter(path->!path.equals(root)).sorted(java.util.Comparator.comparing(path->root.relativize(path).toString())).toList(); }
+ private static List<Path> directoryEntries(Path root,IProgressMonitor monitor) throws IOException {
+  cancelled(monitor);
+  try(var paths=Files.walk(root)) { return paths.peek(path->cancelled(monitor)).filter(path->!path.equals(root)).sorted(java.util.Comparator.comparing(path->{cancelled(monitor);return root.relativize(path).toString();})).toList(); }
   catch(java.io.UncheckedIOException failure) { throw failure.getCause(); }
  }
- private static String fileFingerprint(Path path) throws IOException {
+ private static String fileFingerprint(Path path,IProgressMonitor monitor) throws IOException {
+  cancelled(monitor);
   BasicFileAttributes before=Files.readAttributes(path,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS);
   if(!before.isRegularFile()) throw new IOException("Not a regular binary file: "+path);
   try {
    MessageDigest hash=MessageDigest.getInstance("SHA-256");
    try(var input=Files.newInputStream(path,LinkOption.NOFOLLOW_LINKS)) {
-    byte[] buffer=new byte[65536];for(int count;(count=input.read(buffer))!=-1;)hash.update(buffer,0,count);
+    byte[] buffer=new byte[65536];for(;;) { cancelled(monitor);int count=input.read(buffer);cancelled(monitor);if(count==-1)break;hash.update(buffer,0,count); }
    }
    BasicFileAttributes after=Files.readAttributes(path,BasicFileAttributes.class,LinkOption.NOFOLLOW_LINKS);
    if(!after.isRegularFile() || before.size()!=after.size() || !before.lastModifiedTime().equals(after.lastModifiedTime())
      || !java.util.Objects.equals(before.fileKey(),after.fileKey())) throw new IOException("Binary changed during verification: "+path);
-   return HexFormat.of().formatHex(hash.digest());
+   cancelled(monitor);return HexFormat.of().formatHex(hash.digest());
   } catch(NoSuchAlgorithmException unavailable) { throw new IllegalStateException(unavailable); }
  }
+ private static void cancelled(IProgressMonitor monitor) { if(monitor!=null && monitor.isCanceled()) throw new OperationCanceledException(); }
  static String digestOptions(Map<String,String> options) {
   StringBuilder value=new StringBuilder();new TreeMap<>(options).forEach((key,item)->{append(value,key);append(value,item);});
   return digest(value.toString());
@@ -167,7 +186,10 @@ final class MathematicalEnvironment {
  record Snapshot(String digest,Map<String,Long> revisions) {
   Snapshot { revisions=Map.copyOf(revisions); }
   boolean matches(IJavaProject project) {
-   try { return equals(capture(project)); } catch(CoreException unavailable) { return false; }
+   return matches(project,null);
+  }
+  boolean matches(IJavaProject project,IProgressMonitor monitor) {
+   try { return equals(capture(project,monitor)); } catch(CoreException unavailable) { return false; }
   }
  }
 }

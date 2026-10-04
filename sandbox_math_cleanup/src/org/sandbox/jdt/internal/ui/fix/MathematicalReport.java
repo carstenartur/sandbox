@@ -30,8 +30,11 @@ record MathematicalReport(int schemaVersion,String project,String mode,Map<Strin
   this(schemaVersion,project,mode,requestedOptions,configProperties,sdkSha256,adapterBundleSha256,files,"SUCCESS",null,List.of());
  }
  void write(Path path) throws IOException {
-  Path absolute=path.toAbsolutePath();Files.createDirectories(absolute.getParent());
-  Path temporary=Files.createTempFile(absolute.getParent(),"mathematics-report-",".json");
+  Path absolute=path.toAbsolutePath().normalize();
+  Path parent=absolute.getParent();Path fileName=absolute.getFileName();
+  if(parent==null || fileName==null) throw new IOException("The report destination must name a file: "+absolute);
+  Files.createDirectories(parent);
+  Path temporary=Files.createTempFile(parent,"mathematics-report-",".json");
   try {
    new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(temporary.toFile(),this);
    try { Files.move(temporary,absolute,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING); }

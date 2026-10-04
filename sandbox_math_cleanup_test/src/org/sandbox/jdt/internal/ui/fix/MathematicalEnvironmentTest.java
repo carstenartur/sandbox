@@ -8,6 +8,19 @@ import org.eclipse.jdt.core.IJavaElementDelta;
 import org.junit.jupiter.api.Test;
 
 class MathematicalEnvironmentTest {
+ @Test void contentReadsAndDirectoryTraversalRespectCancellation(@org.junit.jupiter.api.io.TempDir java.nio.file.Path directory) throws Exception {
+  var file=directory.resolve("Dependency.class");java.nio.file.Files.write(file,new byte[262144]);
+  var reads=new java.util.concurrent.atomic.AtomicInteger();var fileMonitor=new org.eclipse.core.runtime.NullProgressMonitor(){@Override public boolean isCanceled(){return reads.incrementAndGet()>=6;}};
+  assertThrows(org.eclipse.core.runtime.OperationCanceledException.class,()->MathematicalEnvironment.binaryFingerprint(file,fileMonitor));assertEquals(6,reads.get());
+  for(int index=0;index<12;index++)java.nio.file.Files.createDirectory(directory.resolve("package"+index));
+  var visits=new java.util.concurrent.atomic.AtomicInteger();var directoryMonitor=new org.eclipse.core.runtime.NullProgressMonitor(){@Override public boolean isCanceled(){return visits.incrementAndGet()>=7;}};
+  assertThrows(org.eclipse.core.runtime.OperationCanceledException.class,()->MathematicalEnvironment.binaryFingerprint(directory,directoryMonitor));assertEquals(7,visits.get());
+ }
+ @Test void canceledCaptureAndFinalMatchingPropagateCancellation() {
+  var monitor=new org.eclipse.core.runtime.NullProgressMonitor();monitor.setCanceled(true);
+  assertThrows(org.eclipse.core.runtime.OperationCanceledException.class,()->MathematicalEnvironment.capture(null,monitor));
+  assertThrows(org.eclipse.core.runtime.OperationCanceledException.class,()->new MathematicalEnvironment.Snapshot("ignored",Map.of()).matches(null,monitor));
+ }
  @Test void foregroundBindingKeyDoesNotReadBinaryResources() throws Exception {
   var entry=(org.eclipse.jdt.core.IClasspathEntry)Proxy.newProxyInstance(IJavaElement.class.getClassLoader(),new Class<?>[]{org.eclipse.jdt.core.IClasspathEntry.class},
    (proxy,method,args)->switch(method.getName()){case "getEntryKind"->org.eclipse.jdt.core.IClasspathEntry.CPE_LIBRARY;case "toString"->"unreadable library";default->throw new AssertionError("Foreground path lookup: "+method);});

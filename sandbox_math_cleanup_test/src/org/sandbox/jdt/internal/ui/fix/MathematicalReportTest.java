@@ -12,6 +12,10 @@ import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 class MathematicalReportTest {
+ @Test void filesystemRootCannotBeAReportFile() {
+  var report=new MathematicalReport(1,"Example","analysis",Map.of(),Map.of(),"sdk","adapter",List.of());
+  assertThrows(java.io.IOException.class,()->report.write(Path.of("/").toAbsolutePath().getRoot()));
+ }
  @Test void observedPartialSourceMustNotBeReportedAsUnapplied() throws Exception {
   String source="class C { int r = x + 0; }";int offset=source.indexOf("x + 0");
   var analysis=new MathematicalAnalysis.Analysis(List.of(new MathematicalAnalysis.Replacement(offset,5,"x","verified")),List.of(),MathematicalEnvironment.digest(source),Map.of());

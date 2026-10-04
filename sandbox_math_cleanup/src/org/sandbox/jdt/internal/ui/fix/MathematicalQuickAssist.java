@@ -70,8 +70,9 @@ public final class MathematicalQuickAssist implements IQuickAssistProcessor {
    @Override protected IStatus run(IProgressMonitor monitor) {
     try {
      if(monitor.isCanceled()) return Status.CANCEL_STATUS;
-     MathematicalEnvironment.Snapshot environment=MathematicalEnvironment.capture(unit.getJavaProject());
+     MathematicalEnvironment.Snapshot environment=MathematicalEnvironment.capture(unit.getJavaProject(),monitor);
      synchronized(cache) {
+      if(monitor.isCanceled()) return Status.CANCEL_STATUS;
       CachedAnalysis existing=cache.get(key);
       if(existing!=null && existing.environment().equals(environment)) return Status.OK_STATUS;
       cache.remove(key);
@@ -82,12 +83,14 @@ public final class MathematicalQuickAssist implements IQuickAssistProcessor {
      if(!source.equals(unit.getSource()) || !key.compilerOptions().equals(unit.getJavaProject().getOptions(true))) return stale();
      Analysis analysis=MathematicalAnalysis.analyze(ast,source,key.options(),monitor,key.offset(),key.length());
      if(monitor.isCanceled()) return Status.CANCEL_STATUS;
-     if(!key.environment().equals(MathematicalEnvironment.captureStructure(unit.getJavaProject())) || !environment.matches(unit.getJavaProject()) || !analysis.matches(source,key.compilerOptions())
+     if(!key.environment().equals(MathematicalEnvironment.captureStructure(unit.getJavaProject())) || !environment.matches(unit.getJavaProject(),monitor) || !analysis.matches(source,key.compilerOptions())
        || !source.equals(unit.getSource()) || !key.compilerOptions().equals(unit.getJavaProject().getOptions(true))) return stale();
      synchronized(cache) {
+      if(monitor.isCanceled()) return Status.CANCEL_STATUS;
       while(cache.size()>=8) cache.remove(cache.keySet().iterator().next());
       cache.put(key,new CachedAnalysis(analysis,environment));
      }
+     if(monitor.isCanceled()) return Status.CANCEL_STATUS;
      showStatus(analysis.changed()?"Mathematics analysis complete. Invoke Quick Assist again to preview the verified change."
        :analysis.diagnostics().stream().findFirst().map(item->item.code()+": "+item.message()).orElse("Mathematics analysis found no verified improvement."));
      return Status.OK_STATUS;

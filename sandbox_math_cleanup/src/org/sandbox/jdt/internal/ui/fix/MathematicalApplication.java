@@ -107,13 +107,13 @@ public final class MathematicalApplication implements IApplication {
   List<Planned> plans=new ArrayList<>();
   for(ICompilationUnit unit:units) {
    cancelled(monitor);
-   var environment=MathematicalEnvironment.capture(unit.getJavaProject());String source=unit.getSource();
+   var environment=MathematicalEnvironment.capture(unit.getJavaProject(),monitor);String source=unit.getSource();
    Map<String,String> compilerOptions=Map.copyOf(unit.getJavaProject().getOptions(true));
    ASTParser parser=ASTParser.newParser(AST.getJLSLatest());parser.setSource(unit);parser.setResolveBindings(true);parser.setCompilerOptions(compilerOptions);
    CompilationUnit ast=(CompilationUnit)parser.createAST(monitor);
    Analysis analysis=MathematicalAnalysis.analyze(ast,source,options,monitor,-1,0);
    cancelled(monitor);
-   if(!environment.matches(unit.getJavaProject()) || !analysis.matches(unit.getSource(),unit.getJavaProject().getOptions(true)))
+   if(!environment.matches(unit.getJavaProject(),monitor) || !analysis.matches(unit.getSource(),unit.getJavaProject().getOptions(true)))
     throw new IllegalArgumentException("STALE_ANALYSIS: source or binding context changed during analysis");
    var file=MathematicalReport.planned(unit.getPath().toPortableString(),source,compilerOptions,options,environment,analysis,false);
    plans.add(new Planned(unit,analysis,environment,file));

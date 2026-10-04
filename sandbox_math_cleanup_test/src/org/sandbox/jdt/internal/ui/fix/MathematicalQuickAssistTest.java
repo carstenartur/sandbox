@@ -15,6 +15,29 @@ import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 
 class MathematicalQuickAssistTest {
+ @Test void cancellationDuringCachedFreshnessCaptureReturnsCancel() throws Exception {
+  var listening=MathematicalEnvironment.class.getDeclaredField("listening");listening.setAccessible(true);boolean prior=listening.getBoolean(null);listening.setBoolean(null,true);
+  var cancelDuringCapture=new java.util.concurrent.atomic.AtomicBoolean();
+  var project=(org.eclipse.jdt.core.IJavaProject)java.lang.reflect.Proxy.newProxyInstance(ICompilationUnit.class.getClassLoader(),new Class<?>[]{org.eclipse.jdt.core.IJavaProject.class},
+   (proxy,method,args)->switch(method.getName()) {
+    case "getHandleIdentifier"->"=CancellationProbe";case "exists"->true;case "getOptions"->Map.of();
+    case "getOutputLocation"->org.eclipse.core.runtime.IPath.fromPortableString("/CancellationProbe/bin");
+    case "getRawClasspath"->{if(cancelDuringCapture.get())Job.getJobManager().currentJob().cancel();yield new org.eclipse.jdt.core.IClasspathEntry[0];}
+    case "getResolvedClasspath"->new org.eclipse.jdt.core.IClasspathEntry[0];default->throw new AssertionError(method);
+   });
+  var unit=(ICompilationUnit)java.lang.reflect.Proxy.newProxyInstance(ICompilationUnit.class.getClassLoader(),new Class<?>[]{ICompilationUnit.class},
+   (proxy,method,args)->method.getName().equals("getJavaProject")?project:null);
+  try {
+   var environment=MathematicalEnvironment.capture(project);var key=new MathematicalQuickAssist.Key("unit","source",Map.of(),MathCleanUpOptions.defaults(17),0,1,environment);
+   var assist=new MathematicalQuickAssist();var cacheField=MathematicalQuickAssist.class.getDeclaredField("cache");cacheField.setAccessible(true);
+   var cached=Class.forName("org.sandbox.jdt.internal.ui.fix.MathematicalQuickAssist$CachedAnalysis");var constructor=cached.getDeclaredConstructors()[0];constructor.setAccessible(true);
+   @SuppressWarnings("unchecked") var cache=(Map<Object,Object>)cacheField.get(assist);Object original=constructor.newInstance(null,environment);cache.put(key,original);
+   var pendingField=MathematicalQuickAssist.class.getDeclaredField("pending");pendingField.setAccessible(true);var schedule=MathematicalQuickAssist.class.getDeclaredMethod("schedule",MathematicalQuickAssist.Key.class,ICompilationUnit.class,String.class);schedule.setAccessible(true);
+   cancelDuringCapture.set(true);Job worker;
+   synchronized(cache) {schedule.invoke(assist,key,unit,"source");worker=(Job)((Map<?,?>)pendingField.get(assist)).get(key);}
+   worker.join();assertTrue(worker.getResult().matches(IStatus.CANCEL),()->"Canceled freshness returned "+worker.getResult());assertSame(original,cache.get(key));
+  } finally { listening.setBoolean(null,prior); }
+ }
  @Test void queuedCancellationRemovesPendingEntryAndAllowsTheSameSelectionAgain() throws Exception {
   CountDownLatch entered=new CountDownLatch(1),release=new CountDownLatch(1);
   Job blocker=new Job("hold shared mathematics rule") {
