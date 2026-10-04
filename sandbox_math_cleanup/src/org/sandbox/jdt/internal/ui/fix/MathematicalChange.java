@@ -31,7 +31,7 @@ final class MathematicalChange extends CompilationUnitChange {
   this.analyzedOptions=Objects.requireNonNull(options);this.currentOptions=Objects.requireNonNull(currentOptions);
   this.environment=Objects.requireNonNull(environment);
   TextEdit root=analysis.newEdit();TextEdit[] replacements=root.getChildren();
-  for(TextEdit replacement:replacements) replacement.addChild(new MathematicalValidationEdit(replacement.getOffset(),this::isCurrent));
+  for(TextEdit replacement:replacements) replacement.addChild(new MathematicalValidationEdit(replacement.getOffset(),this::isCurrentForEdit));
   setEdit(root);
   // JDT merges and detaches roots; groups must reference the actual guarded replacements.
   addTextEditGroup(new TextEditGroup(name,replacements));
@@ -39,6 +39,12 @@ final class MathematicalChange extends CompilationUnitChange {
  boolean isCurrent() {
   try {
    return analyzedOptions.equals(currentOptions.get()) && environment.matches(unit.getJavaProject())
+     && analysis.matches(unit.getSource(),unit.getJavaProject().getOptions(true));
+  } catch(CoreException | IllegalArgumentException stale) { return false; }
+ }
+ private boolean isCurrentForEdit() {
+  try {
+   return analyzedOptions.equals(currentOptions.get()) && environment.revisionsCurrent()
      && analysis.matches(unit.getSource(),unit.getJavaProject().getOptions(true));
   } catch(CoreException | IllegalArgumentException stale) { return false; }
  }

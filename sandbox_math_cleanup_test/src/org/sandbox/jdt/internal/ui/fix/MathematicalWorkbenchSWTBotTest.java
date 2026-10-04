@@ -324,6 +324,9 @@ public class MathematicalWorkbenchSWTBotTest {
   String[] args={"--project",project.getElementName(),"--config",config.toString(),"--report",report.toString()};
   IApplicationContext context=(IApplicationContext)Proxy.newProxyInstance(IApplicationContext.class.getClassLoader(),new Class<?>[]{IApplicationContext.class},
     (proxy,method,parameters)->method.getName().equals("getArguments")?Map.of(IApplicationContext.APPLICATION_ARGS,args):null);
+  Path classpath=project.getProject().getFile(".classpath").getLocation().toFile().toPath();byte[] classpathContents=Files.readAllBytes(classpath);
+  args[5]=classpath.toString();assertEquals(Integer.valueOf(1),application.start(context));assertArrayEquals(classpathContents,Files.readAllBytes(classpath));
+  args[5]=report.toString();
   assertEquals(IApplication.EXIT_OK,application.start(context));assertEquals(before,unit.getSource());
   var json=new ObjectMapper().readTree(Files.readString(report));assertEquals("analysis",json.path("mode").asText());assertEquals(9,json.path("requestedOptions").size());
   var file=json.path("files").get(0);assertFalse(file.path("applied").asBoolean());assertTrue(file.path("changes").size()>0);assertTrue(file.path("evidence").size()>0);

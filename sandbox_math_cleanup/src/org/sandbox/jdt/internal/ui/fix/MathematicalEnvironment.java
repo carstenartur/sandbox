@@ -185,6 +185,9 @@ final class MathematicalEnvironment {
  }
  record Snapshot(String digest,Map<String,Long> revisions) {
   Snapshot { revisions=Map.copyOf(revisions); }
+  boolean revisionsCurrent() {
+   return revisions.entrySet().stream().allMatch(entry->REVISIONS.getOrDefault(entry.getKey(),0L).equals(entry.getValue()));
+  }
   boolean matches(IJavaProject project) {
    return matches(project,null);
   }

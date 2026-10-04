@@ -63,7 +63,7 @@ public final class MathematicalApplication implements IApplication {
   if(arguments.apply() && options.safety()==SafetyProfile.CHECKED_THROW && !arguments.acceptChecked())
    throw new IllegalArgumentException("CHECKED_THROW application requires --accept-checked as well as checkedOptIn=true");
   List<ICompilationUnit> units=units(project);
-  protectReport(arguments,units);
+  protectReport(arguments,resource,units);
   List<Planned> plans=MathematicalAnalysisJob.runAndWait(worker->{
    try { return analyze(units,options,worker); } catch(CoreException failure) { throw new IllegalStateException(failure.getMessage(),failure); }
   },monitor);
@@ -72,18 +72,27 @@ public final class MathematicalApplication implements IApplication {
   // Verify the requested destination is writable before any source changes.
   proposal.write(arguments.report());
   if(arguments.apply()) workspace.run(transaction->{
-   List<Change> undo=new ArrayList<>();
+   List<Change> undo=new ArrayList<>();List<MathematicalChange> changes=new ArrayList<>();
    try {
-    for(Planned plan:plans) {
+    for(int index=0;index<plans.size();index++) {
+     Planned plan=plans.get(index);
      cancelled(transaction);
      if(plan.unit().hasUnsavedChanges()) throw new IllegalArgumentException("UNSAVED_EDITOR: refusing to apply over unsaved source");
-     plan.change(options).requireCurrent();
-    }
-    for(Planned plan:plans) {
-     cancelled(transaction);if(!plan.analysis().changed())continue;
-     MathematicalChange change=plan.change(options);change.setSaveMode(TextFileChange.FORCE_SAVE);
-     change.initializeValidationData(transaction);change.requireCurrent();
+     MathematicalChange change=plan.change(options);
+     changes.add(change);
+     if(!plan.analysis().changed()) {
+      change.requireCurrent();
+      continue;
+     }
+     change.setSaveMode(TextFileChange.FORCE_SAVE);
+     change.initializeValidationData(transaction);
      if(change.isValid(transaction).hasFatalError()) throw new IllegalArgumentException("STALE_ANALYSIS: change validation failed");
+    }
+    for(int index=0;index<plans.size();index++) {
+     Planned plan=plans.get(index);
+     cancelled(transaction);if(!plan.analysis().changed())continue;
+     if(plan.unit().hasUnsavedChanges()) throw new IllegalArgumentException("UNSAVED_EDITOR: refusing to apply over unsaved source");
+     MathematicalChange change=changes.get(index);
      Change inverse=change.perform(transaction);undo.add(inverse);
      report(arguments,options,config,artifacts,plans,"IN_PROGRESS",null,List.of()).write(arguments.report());
      if(!plan.unit().getSource().equals(plan.file().replacement())) throw new IllegalArgumentException("Applied source differs from verified replacement");
@@ -99,7 +108,10 @@ public final class MathematicalApplication implements IApplication {
     catch(IOException | RuntimeException reporting) { failure.addSuppressed(reporting); }
     if(failure instanceof OperationCanceledException cancelled) throw cancelled;
     throw new CoreException(Status.error(complete?"Mathematics apply failed; observed sources were restored":"Mathematics apply failed; rollback incomplete or source state unavailable; inspect report and sources",failure));
-   } finally { undo.stream().filter(java.util.Objects::nonNull).forEach(Change::dispose); }
+   } finally {
+    undo.stream().filter(java.util.Objects::nonNull).forEach(Change::dispose);
+    changes.forEach(Change::dispose);
+   }
   },resource,IWorkspace.AVOID_UPDATE,monitor);
   return IApplication.EXIT_OK;
  }
@@ -150,12 +162,20 @@ public final class MathematicalApplication implements IApplication {
    for(ICompilationUnit unit:fragment.getCompilationUnits()) units.add(unit);
   units.sort(Comparator.comparing(unit->unit.getPath().toPortableString()));return List.copyOf(units);
  }
- private static void protectReport(MathematicalArguments arguments,List<ICompilationUnit> units) throws IOException {
+ private static void protectReport(MathematicalArguments arguments,IProject project,List<ICompilationUnit> units) throws CoreException,IOException {
   Path report=arguments.report().toAbsolutePath().normalize();
   List<Path> protectedPaths=new ArrayList<>();protectedPaths.add(arguments.configuration().toAbsolutePath().normalize());
   for(ICompilationUnit unit:units) if(unit.getResource().getLocation()!=null) protectedPaths.add(unit.getResource().getLocation().toFile().toPath().toAbsolutePath().normalize());
+  if(project.getLocation()!=null) {
+   Path projectLocation=project.getLocation().toFile().toPath().toAbsolutePath().normalize();
+   protectedPaths.add(projectLocation.resolve(".project"));protectedPaths.add(projectLocation.resolve(".classpath"));
+  }
+  project.accept(member->{
+   if(member.getLocation()!=null) protectedPaths.add(member.getLocation().toFile().toPath().toAbsolutePath().normalize());
+   return true;
+  });
   for(Path protectedPath:protectedPaths) if(report.equals(protectedPath) || Files.exists(report)&&Files.exists(protectedPath)&&Files.isSameFile(report,protectedPath))
-   throw new IllegalArgumentException("The report must not overwrite configuration or source: "+report);
+   throw new IllegalArgumentException("The report must not overwrite configuration or project resources: "+report);
  }
  private static void cancelled(IProgressMonitor monitor) { if(monitor.isCanceled())throw new OperationCanceledException(); }
  private record Planned(ICompilationUnit unit,Analysis analysis,MathematicalEnvironment.Snapshot environment,MathematicalReport.FileReport file) {
