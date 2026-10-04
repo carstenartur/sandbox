@@ -42,6 +42,7 @@ import org.eclipse.jgit.transport.TagOpt;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.sandbox.benchmarks.MathematicsOptimizationBenchmark;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationExtractor;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
@@ -318,6 +319,17 @@ public final class MathCorpusRunner {
         receipt.setProperty("javaRuntime", System.getProperty("java.runtime.version"));
         classClosure(receipt, MathematicalAnalysis.class, "org/sandbox/jdt/internal/corext/fix/math/", "core");
         classClosure(receipt, MathCorpusRunner.class, "org/sandbox/math/qa/", "qa");
+        classClosure(receipt, PinnedGitRepository.class, "org/sandbox/jdt/triggerpattern/test/policy/", "sharedGitFixture");
+        classClosure(receipt, MathematicsOptimizationBenchmark.class, "org/sandbox/benchmarks/", "benchmark");
+        int entryIndex = 0;
+        for (String entry : System.getProperty("java.class.path").split(java.io.File.pathSeparator)) {
+            Path path = Path.of(entry).toAbsolutePath();
+            if (Files.isRegularFile(path)) {
+                String key = "classpath." + entryIndex++;
+                receipt.setProperty(key + ".path", path.toString());
+                receipt.setProperty(key + ".sha256", sha256(Files.readAllBytes(path)));
+            }
+        }
         Path sdk = Path.of(ComputationOptimizer.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         if (!Files.isRegularFile(sdk)) throw new IllegalStateException("Qualification requires a frozen SDK jar, not development class directories: " + sdk);
         receipt.setProperty("sdk.codeSource", sdk.toString());

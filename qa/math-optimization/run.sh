@@ -29,7 +29,7 @@ mkdir -p "$classes"
   "$repository"/sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathCorpusIntegrationTest.java \
   "$repository"/sandbox-benchmarks/src/main/java/org/sandbox/benchmarks/MathematicsOptimizationBenchmark.java \
   "$repository"/qa/math-optimization/src/main/java/org/sandbox/math/qa/*.java \
-  "$repository"/qa/math-optimization/src/test/java/org/sandbox/math/qa/*.java
+  "$repository"/qa/math-optimization/src/test/java/org/sandbox/math/qa/*.java 2>&1 | tee "$output/compile.log"
 
 cd "$repository"
 case "$mode" in
@@ -37,22 +37,27 @@ case "$mode" in
     options=()
     if [[ -n ${MATH_QA_BC_MIRROR:-} ]]; then
       options+=("-Dmath.qa.bcMirror=$MATH_QA_BC_MIRROR")
+      options+=("-Dmath.qa.pinnedReportDirectory=$output/pinned-reference")
     fi
     if [[ -n ${MATH_QA_WRITE_FIXTURES:-} ]]; then
       options+=("-Dmath.qa.fixtureDirectory=$MATH_QA_WRITE_FIXTURES")
     fi
+    "$java_command" "-Xmx${MATH_QA_HEAP:-512m}" "-Dmath.qa.sandboxRoot=$repository" -cp "$classes:$classpath" \
+      org.sandbox.math.qa.CaptureMathReceipts "$output/receipts-before"
     "$java_command" "-Xmx${MATH_QA_HEAP:-512m}" "${options[@]}" -cp "$classes:$classpath" \
       org.junit.platform.console.ConsoleLauncher execute \
-      --select-package org.sandbox.jdt.math.tests --select-package org.sandbox.math.qa \
-      --reports-dir "$output/junit" --details=summary
+      --select-class org.sandbox.jdt.math.tests.MathCorpusIntegrationTest --select-package org.sandbox.math.qa \
+      --reports-dir "$output/junit" --details=summary 2>&1 | tee "$output/test.log"
+    "$java_command" "-Xmx${MATH_QA_HEAP:-512m}" "-Dmath.qa.sandboxRoot=$repository" -cp "$classes:$classpath" \
+      org.sandbox.math.qa.CaptureMathReceipts "$output/receipts-after" "$output/receipts-before/implementation.properties"
     ;;
   references)
     "$java_command" "-Xmx${MATH_QA_HEAP:-512m}" -cp "$classes:$classpath" org.sandbox.math.qa.MathCorpusRunner \
-      references "${MATH_QA_CACHE:-$output/cache}" "$output/upstream"
+      references "${MATH_QA_CACHE:-$output/cache}" "$output/upstream" 2>&1 | tee "$output/references.log"
     ;;
   corpus)
     "$java_command" "-Xmx${MATH_QA_HEAP:-512m}" "-Dmath.qa.sandboxRoot=$repository" -cp "$classes:$classpath" org.sandbox.math.qa.MathCorpusRunner \
-      "${MATH_QA_CACHE:-$output/cache}" "$output/corpus"
+      "${MATH_QA_CACHE:-$output/cache}" "$output/corpus" 2>&1 | tee "$output/corpus.log"
     ;;
   benchmark)
     # Exclude Eclipse and Regelsuche dependencies from the measured runtime.
@@ -67,7 +72,12 @@ case "$mode" in
     if [[ -n ${MATH_QA_BENCHMARK_FIXTURES:-} ]]; then
       parameters+=("-p" "fixtureDirectory=$MATH_QA_BENCHMARK_FIXTURES/small,$MATH_QA_BENCHMARK_FIXTURES/wide")
     fi
+    fixture_root=${MATH_QA_BENCHMARK_FIXTURES:-$repository/qa/math-optimization/fixtures/local}
+    "$java_command" -Xmx384m -cp "$runtime" org.sandbox.math.qa.CaptureFixtureReceipts \
+      "$fixture_root" "$output/fixtures-before.properties"
     "$java_command" -Xmx384m -cp "$runtime" org.openjdk.jmh.Main '.*MathematicsOptimizationBenchmark.*' \
-      "${parameters[@]}" -prof gc -rf json -rff "$output/jmh.json" -jvmArgs '-Xms256m -Xmx256m'
+      "${parameters[@]}" -prof gc -rf json -rff "$output/jmh.json" -jvmArgs '-Xms256m -Xmx256m' 2>&1 | tee "$output/jmh.log"
+    "$java_command" -Xmx384m -cp "$runtime" org.sandbox.math.qa.CaptureFixtureReceipts \
+      "$fixture_root" "$output/fixtures-after.properties" "$output/fixtures-before.properties"
     ;;
 esac

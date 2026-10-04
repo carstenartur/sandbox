@@ -17,8 +17,10 @@ fresh qualification of this reconstruction. No missing samples are fabricated.
 `MathematicsOptimizationBenchmark.java` is restored from a complete recovered
 source read. The scanner and test sources are new reconstructions. Fresh corpus,
 test and measurement artifacts must record their own current hashes and output
-directories. At this checkpoint the complete reconstructed pipeline has not yet
-been qualified. No historical throughput or allocation result is a current claim.
+directories. The [fresh provisional 14-test run](results/reconstruction-provisional-4fc49eaf/README.md)
+passed, including both exact upstream trees. The final build, full corpus and
+JMH measurement gates remain pending. No historical throughput or allocation
+result is a current claim.
 
 ## Inputs and contracts
 
@@ -89,6 +91,8 @@ operations and cached intermediates (see [RFC 9380 section 10](https://datatrack
 `implementation.properties` hashes the whole math core class closure (including
 inner/helper classes), QA classes and complete SDK jar. Qualification requires a
 jar, checks implementation drift, and records the SDK's embedded provenance.
+It also fingerprints the reused JGit fixture, benchmark/JMH classes and every
+classpath jar. Scoped tests capture receipts before and after execution.
 `sandbox-source.properties` records HEAD, dirty status, the HEAD-to-working-tree
 diff digest and hashes of changed/untracked files. A dirty build is reported as
 dirty. Every scanned source is verified unchanged at the end of analysis.
@@ -101,3 +105,5 @@ allocations in raw JSON. All emitted normalization, allocations and guards remai
 in the measured body. The fixture's single observed parse/search/proof/emission
 time is reported separately. A local result is not a Bouncy Castle public-API or
 cryptographic performance claim; a missing gain must be reported as such.
+Source and compiled-fixture receipts are captured with the actual benchmark
+compiler before and after measurement; a drift mismatch fails qualification.
