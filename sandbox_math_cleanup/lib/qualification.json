@@ -10,34 +10,19 @@
     "jackson-core-2.22.2.jar": "ff167a6317be15895706c26668f45b898efe40ab8780970658210fe1393d52a6",
     "jackson-databind-2.22.2.jar": "d0da14c12b16b5d54719aa172d83b542ff4abeb8b0fb7db476fde8ceece760ca",
     "jackson-dataformat-yaml-2.22.2.jar": "f5e52c7d8914f23c5fcc00d0afbef77e20557228a6200e184bb61f69ab03fc44",
-    "regelsuche-core-0.5.0-SNAPSHOT.jar": "9b3b826a1efcdd652ea5f0afe47c75b7df58d6757a2f578218b62a39c91e912e",
-    "regelsuche-egraph-0.5.0-SNAPSHOT.jar": "ce9b4246d8901ffe6b6eabd852b3d8b9419f8172b66a3a06cd857cafd1d3eba9",
-    "regelsuche-math-algorithms-0.5.0-SNAPSHOT.jar": "568cfa70593437f726975ed982dc6aa6cfd35024ce5b6a2d575b59fe2f710a0a",
-    "regelsuche-optimization-sdk-0.5.0-SNAPSHOT.jar": "53d781f499e210b64a3062369e4fb925ee2e32d00bb1f65337a8355ef2f39be8",
-    "regelsuche-search-0.5.0-SNAPSHOT.jar": "af4535564fabcfb164370cd0442c78d0fc246db698f99309e08f0a1dda7ab1dc",
-    "regelsuche-validation-0.5.0-SNAPSHOT.jar": "012f34e6087b000ba504012f4006ba86ad9edada622fc6b68bcc2ed6578fcaf0",
+    "regelsuche-core-0.5.0-SNAPSHOT.jar": "f76eb1d35236e9c3e2baa527ba385ed8c4c14b2c33edef4c723b2c656722c7f2",
+    "regelsuche-egraph-0.5.0-SNAPSHOT.jar": "1f2350d20ecdf7efa711a742e06ffc66b73e6b5a0098b69363067bc1805ab3a8",
+    "regelsuche-math-algorithms-0.5.0-SNAPSHOT.jar": "f6996144f2eb04dad7d396f008e99b8b5e25e44bd1398daa2cc524428ff74014",
+    "regelsuche-optimization-sdk-0.5.0-SNAPSHOT.jar": "53636dc19ed05aeae32d3db7f2b2c8ba6a2813577aeaa9e28d9c29ebff7be3f4",
+    "regelsuche-search-0.5.0-SNAPSHOT.jar": "7194eee22db1ac3b5e68627a71bee629fc29b39d18874d05956ec94dd779556a",
+    "regelsuche-validation-0.5.0-SNAPSHOT.jar": "369495cc6bddd60ff5d6db9c06de2d5b9ed50a60e3c4d1314bd0e333932fde73",
     "snakeyaml-2.5.jar": "e6682acf1ace77508ef13649cbf4f8d09d2cf5457bdb61d25ffb6ac0233d78dd"
   },
   "javaRelease": 25,
   "publiclyPublished": false,
-  "reproducibility": {
-    "archiveSha256": "5922afe52a8cbbaa667947f40ed5d43adf4e9b733d922437d6f630df60de7680",
-    "cleanBuilds": 2,
-    "focusedTestsPerBuild": {
-      "errors": 0,
-      "failures": 0,
-      "skipped": 0,
-      "tests": 55
-    },
-    "identicalDistributionBytes": true,
-    "javaVersion": "25.0.2+10",
-    "mavenVersion": "3.9.16"
-  },
   "schema": "regelsuche.optimization-distribution/v1",
   "semanticsRevision": "java25-numeric/v1",
-  "sourceEpoch": 1791146677,
-  "sourceRevision": "b99787c55af6536b8782382d705f18b00657252f",
-  "sourceTree": "8d37a72d8b271ae11f04bce4028a4e0649a1be22",
-  "standaloneJarSha256": "4549d75c7b673c230bed5f45c45473746308862ef443d206a8d3476e636d8428",
-  "version": "0.5.0-issue1657-b99787c55af6"
+  "sourceRevision": "8fd46b85efe828b8a4c439077cf84f276bd9410e",
+  "standaloneJarSha256": "0ba645ebaae8ec29761cc2f871cd6b9f60d7a7a10f8807ba5a1d7492c86975d7",
+  "version": "0.5.0-issue1657-8fd46b85efe8"
 }
