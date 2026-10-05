@@ -63,7 +63,7 @@ public final class MathematicalApplication implements IApplication {
   if(arguments.apply() && options.safety()==SafetyProfile.CHECKED_THROW && !arguments.acceptChecked())
    throw new IllegalArgumentException("CHECKED_THROW application requires --accept-checked as well as checkedOptIn=true");
   List<ICompilationUnit> units=units(project);
-  protectReport(arguments,resource,units);
+  protectReport(arguments,workspace,units,monitor);
   List<Planned> plans=MathematicalAnalysisJob.runAndWait(worker->{
    try { return analyze(units,options,worker); } catch(CoreException failure) { throw new IllegalStateException(failure.getMessage(),failure); }
   },monitor);
@@ -162,20 +162,32 @@ public final class MathematicalApplication implements IApplication {
    for(ICompilationUnit unit:fragment.getCompilationUnits()) units.add(unit);
   units.sort(Comparator.comparing(unit->unit.getPath().toPortableString()));return List.copyOf(units);
  }
- private static void protectReport(MathematicalArguments arguments,IProject project,List<ICompilationUnit> units) throws CoreException,IOException {
-  Path report=arguments.report().toAbsolutePath().normalize();
-  List<Path> protectedPaths=new ArrayList<>();protectedPaths.add(arguments.configuration().toAbsolutePath().normalize());
-  for(ICompilationUnit unit:units) if(unit.getResource().getLocation()!=null) protectedPaths.add(unit.getResource().getLocation().toFile().toPath().toAbsolutePath().normalize());
-  if(project.getLocation()!=null) {
-   Path projectLocation=project.getLocation().toFile().toPath().toAbsolutePath().normalize();
-   protectedPaths.add(projectLocation.resolve(".project"));protectedPaths.add(projectLocation.resolve(".classpath"));
+ static void protectReport(MathematicalArguments arguments,IWorkspace workspace,List<ICompilationUnit> units,
+   IProgressMonitor monitor) throws CoreException,IOException {
+  List<Path> protectedPaths=new ArrayList<>();protectedPaths.add(arguments.configuration());
+  List<Path> protectedRoots=new ArrayList<>();
+  for(ICompilationUnit unit:units) {
+   cancelled(monitor);
+   if(unit.getResource()!=null && unit.getResource().getLocation()!=null)
+    protectedPaths.add(unit.getResource().getLocation().toFile().toPath());
   }
-  project.accept(member->{
-   if(member.getLocation()!=null) protectedPaths.add(member.getLocation().toFile().toPath().toAbsolutePath().normalize());
-   return true;
-  });
-  for(Path protectedPath:protectedPaths) if(report.equals(protectedPath) || Files.exists(report)&&Files.exists(protectedPath)&&Files.isSameFile(report,protectedPath))
-   throw new IllegalArgumentException("The report must not overwrite configuration or project resources: "+report);
+  if(workspace.getRoot().getLocation()!=null)
+   protectedRoots.add(workspace.getRoot().getLocation().toFile().toPath().resolve(".metadata")); //$NON-NLS-1$
+  for(IProject project:workspace.getRoot().getProjects()) {
+   cancelled(monitor);
+   // Protect closed project roots too, even if their resources cannot be visited.
+   if(project.getLocation()!=null) protectedRoots.add(project.getLocation().toFile().toPath());
+   if(project.isAccessible()) project.accept(member->{
+    cancelled(monitor);
+    if(member.getLocation()!=null) {
+     Path location=member.getLocation().toFile().toPath();
+     protectedPaths.add(location);
+     if(member.isLinked()) protectedRoots.add(location);
+    }
+    return true;
+   });
+  }
+  MathematicalReportPathGuard.requireSafe(arguments.report(),protectedPaths,protectedRoots);
  }
  private static void cancelled(IProgressMonitor monitor) { if(monitor.isCanceled())throw new OperationCanceledException(); }
  private record Planned(ICompilationUnit unit,Analysis analysis,MathematicalEnvironment.Snapshot environment,MathematicalReport.FileReport file) {

@@ -1,2 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<toc label="Mathematics Cleanup" topic="html/cleanup.html"><topic label="Configuration, safety and headless use" href="html/cleanup.html"/></toc>
+<toc label="Mathematics Cleanup" topic="html/cleanup.html">
+  <topic label="Configuration, safety and headless use" href="html/cleanup.html"/>
+  <topic label="Report destinations and protected workspace files" href="html/report-paths.html"/>
+</toc>
