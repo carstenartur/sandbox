@@ -12,9 +12,11 @@ import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 class MathematicalReportTest {
- @Test void filesystemRootCannotBeAReportFile() {
+ @Test void filesystemRootCannotBeAReportFile(@TempDir Path temporary) {
   var report=new MathematicalReport(1,"Example","analysis",Map.of(),Map.of(),"sdk","adapter",List.of());
-  assertThrows(java.io.IOException.class,()->report.write(Path.of("/").toAbsolutePath().getRoot()));
+  Path root=temporary.toAbsolutePath().getRoot();
+  assertNotNull(root, "An absolute temporary directory must have a filesystem root");
+  assertThrows(java.io.IOException.class,()->report.write(root));
  }
  @Test void observedPartialSourceMustNotBeReportedAsUnapplied() throws Exception {
   String source="class C { int r = x + 0; }";int offset=source.indexOf("x + 0");

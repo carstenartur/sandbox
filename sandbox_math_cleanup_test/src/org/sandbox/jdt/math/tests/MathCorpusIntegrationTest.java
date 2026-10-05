@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 
@@ -126,6 +127,7 @@ class MathCorpusIntegrationTest {
     }
 
     private static String source(String modulus) {
+        // Source fixtures retain canonical LF on every host, including Windows.
         return """
                 import java.math.BigInteger;
                 public class Calculation {
@@ -139,7 +141,7 @@ class MathCorpusIntegrationTest {
                     return new long[] {left.longValue(), right.longValue()};
                   }
                 }
-                """.formatted(modulus);
+                """.replace("%s", modulus);
     }
 
     private static void export(String name, Rewrite rewrite) throws Exception {
@@ -159,7 +161,7 @@ class MathCorpusIntegrationTest {
     }
 
     private static void writeNewOrIdentical(Path path, String content) throws Exception {
-        Files.createDirectories(path.getParent());
+        Files.createDirectories(Objects.requireNonNull(path.getParent(), "Fixture file must have a parent directory"));
         if (Files.exists(path)) assertEquals(content, Files.readString(path), "Refusing to overwrite earlier fixture: " + path);
         else Files.writeString(path, content, StandardOpenOption.CREATE_NEW);
     }
