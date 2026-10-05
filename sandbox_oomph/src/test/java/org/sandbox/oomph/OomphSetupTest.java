@@ -216,12 +216,57 @@ class OomphSetupTest {
         String previous = "result=passed\nsource=previous\n";
         Files.writeString(temporary.resolve("update.properties"), previous);
         Properties result = runSetupInvocation(temporary, "update", "update-repeat-3-0",
-                () -> Files.writeString(temporary.resolve("update.properties"), "result=restart\nsource=current\n"));
+                () -> {
+                    Files.writeString(temporary.resolve("update.properties"), "result=restart\nsource=current\n");
+                    Files.writeString(temporary.resolve("update-repeat-3-0.log"), "Restart requested\n");
+                });
         assertEquals("restart", result.getProperty("result"));
         assertEquals("current", result.getProperty("source"));
         assertTrue(Files.isRegularFile(temporary.resolve("update-repeat-3-0-previous.properties")),
                 "The prior receipt must remain available for diagnosing an interrupted update");
         assertEquals(previous, Files.readString(temporary.resolve("update-repeat-3-0-previous.properties")));
+    }
+
+
+    @Test
+    void rejectsWorkbenchErrorsDespiteSuccessfulNativeReceipt(@TempDir Path temporary) throws Exception {
+        for (String result : List.of("passed", "restart")) {
+            for (String entry : List.of("!ENTRY org.eclipse.e4.ui.workbench 4 0 2026-10-05 17:56:53.701",
+                    "!SUBENTRY 1 org.eclipse.ui 4 0 2026-10-05 17:56:53.701")) {
+                Path run = Files.createTempDirectory(temporary, "native-");
+                var failure = assertThrows(java.io.IOException.class,
+                        () -> runSetupInvocation(run, "update", "update-0", () -> {
+                            Files.writeString(run.resolve("update.properties"), "result=" + result + "\n");
+                            Files.writeString(run.resolve("update-0.log"), entry + "\n"
+                                    + "!MESSAGE No underlying browser available\n!STACK 0\n"
+                                    + "org.eclipse.swt.SWTError: No more handles\n");
+                        }));
+                assertTrue(failure.getMessage().contains(entry));
+                assertTrue(Files.isRegularFile(run.resolve("update.properties")),
+                        "Keep the receipt and failing native log for diagnosis");
+                assertTrue(Files.readString(run.resolve("update-0.log")).contains("SWTError"));
+            }
+        }
+    }
+
+    @Test
+    void rejectsReceiptWithoutTheInvocationLog(@TempDir Path temporary) throws Exception {
+        assertThrows(java.io.IOException.class,
+                () -> runSetupInvocation(temporary, "fresh", "fresh-0",
+                        () -> Files.writeString(temporary.resolve("fresh.properties"), "result=passed\n")));
+    }
+
+    @Test
+    void nonErrorWorkbenchMessagesDoNotInvalidateSetup(@TempDir Path temporary) throws Exception {
+        Properties result = runSetupInvocation(temporary, "fresh", "fresh-0", () -> {
+            Files.writeString(temporary.resolve("fresh.properties"), "result=passed\n");
+            Files.writeString(temporary.resolve("fresh-0.log"),
+                    "!ENTRY org.eclipse.ui 2 0 2026-10-05 17:56:53.701\n"
+                    + "!MESSAGE Ordinary warning\n"
+                    + "!ENTRY org.eclipse.ui 1 4 2026-10-05 17:56:53.702\n"
+                    + "!MESSAGE Informational entry with error-like text or code 4\n");
+        });
+        assertEquals("passed", result.getProperty("result"));
     }
 
     @FunctionalInterface
@@ -236,9 +281,22 @@ class OomphSetupTest {
         launch.run();
         assertTrue(Files.isRegularFile(receipt),
                 "Native setup invocation " + invocation + " did not write a new result receipt: " + receipt);
+        verifyWorkbenchLog(run.resolve(invocation + ".log"));
         Properties result = new Properties();
         try (var in = Files.newInputStream(receipt)) { result.load(in); }
         return result;
+    }
+
+
+    private static void verifyWorkbenchLog(Path log) throws java.io.IOException {
+        var errorEntry = java.util.regex.Pattern.compile(
+                "^!(?:ENTRY\\s+\\S+|SUBENTRY\\s+\\d+\\s+\\S+)\\s+4\\s+.*");
+        try (var lines = Files.lines(log, java.nio.charset.StandardCharsets.UTF_8)) {
+            String error = lines.filter(line -> errorEntry.matcher(line).matches()).findFirst().orElse(null);
+            if (error != null) {
+                throw new java.io.IOException("Native Eclipse logged an error: " + error + "; see " + log);
+            }
+        }
     }
 
     private static Path createFreshRuntime(Path run) throws Exception {

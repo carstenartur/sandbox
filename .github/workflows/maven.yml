@@ -197,6 +197,16 @@ jobs:
           distribution: temurin
           cache: maven
       - uses: ./.github/actions/verify-eclipse-desktop-runtime
+      - name: Provide the SWT browser required by Oomph notifications
+        shell: bash
+        run: |
+          set -euo pipefail
+          package=libwebkit2gtk-4.1-0
+          if [[ "$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true)" != 'install ok installed' ]]; then
+            sudo apt-get update
+            sudo apt-get install --yes --no-install-recommends "$package"
+          fi
+          dpkg-query -W "$package"
       - name: Verify fresh provisioning and manual setup after restart
         env:
           CANDIDATE_REF: ${{ github.head_ref || github.ref_name }}
