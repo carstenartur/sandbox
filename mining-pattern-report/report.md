@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-10-02
+# Refactoring Mining Report — 2026-10-05
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1478 | 82 | 11 |
+| sandbox | 1480 | 82 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -94,8 +94,8 @@
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/browser/DefaultWebBrowser.java:155` — `Runtime.getRuntime().exec(new String[]{webBrowser,href})`
 
 #### Rule: `stream-performance` → `stream-performance.collection-stream-foreach.to-collection-foreach`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java:167` — `groupedEditorReferences.getValue().stream().forEach(editorReference -> editor...` → `groupedEditorReferences.getValue().forEach(editorReference -> editorReference...`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java:200` — `refsToMakeDistinguishableViaPathSegments.stream().forEach(e -> editorReferenc...` → `refsToMakeDistinguishableViaPathSegments.forEach(e -> editorReferenceLabelTex...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java:165` — `groupedEditorReferences.getValue().stream().forEach(editorReference -> editor...` → `groupedEditorReferences.getValue().forEach(editorReference -> editorReference...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java:198` — `refsToMakeDistinguishableViaPathSegments.stream().forEach(e -> editorReferenc...` → `refsToMakeDistinguishableViaPathSegments.forEach(e -> editorReferenceLabelTex...`
 
 #### Rule: `arrays` → `arrays.arraycopy-full-copy.review`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/activities/ActivityCategoryPreferencePage.java:401` — `System.arraycopy(enabledCategories,0,allChecked,0,enabledCategories.length)`
@@ -293,7 +293,7 @@
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:209` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:216` — `arguments.clone()`
 - `sandbox_test_commons/integration-src/org/sandbox/jdt/ui/tests/quickfix/rules/CompilerDiagnosticRegressionTest.java:188` — `source.clone()`
-- `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/StreamChainToLoopTest.java:94` — `cleanups.clone()`
+- `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/StreamChainToLoopTest.java:105` — `cleanups.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:54` — `applicationArguments.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:59` — `applicationArguments.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:70` — `applicationArguments.clone()`

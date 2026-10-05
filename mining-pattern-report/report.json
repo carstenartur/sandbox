@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1478,
+        "files": 1480,
         "matches": 82,
         "rules": 11
       }
@@ -525,7 +525,7 @@
       "hintFile": "stream-performance",
       "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java",
-      "line": 167,
+      "line": 165,
       "matchedCode": "groupedEditorReferences.getValue().stream().forEach(editorReference -> editorReferenceLabelTexts.put(editorReference,getWorkbenchPartReferenceText(editorReference)))",
       "suggestedReplacement": "groupedEditorReferences.getValue().forEach(editorReference -> editorReferenceLabelTexts.put(editorReference,getWorkbenchPartReferenceText(editorReference)))"
     },
@@ -534,7 +534,7 @@
       "hintFile": "stream-performance",
       "rule": "stream-performance.collection-stream-foreach.to-collection-foreach",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java",
-      "line": 200,
+      "line": 198,
       "matchedCode": "refsToMakeDistinguishableViaPathSegments.stream().forEach(e -> editorReferenceLabelTexts.put(e.getKey(),getWorkbenchPartReferenceText(e.getKey())))",
       "suggestedReplacement": "refsToMakeDistinguishableViaPathSegments.forEach(e -> editorReferenceLabelTexts.put(e.getKey(),getWorkbenchPartReferenceText(e.getKey())))"
     },
@@ -1928,7 +1928,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/StreamChainToLoopTest.java",
-      "line": 94,
+      "line": 105,
       "matchedCode": "cleanups.clone()"
     },
     {
