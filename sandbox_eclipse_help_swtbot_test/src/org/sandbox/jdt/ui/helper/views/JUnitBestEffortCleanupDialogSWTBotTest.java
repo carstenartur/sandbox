@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 public class JUnitBestEffortCleanupDialogSWTBotTest {
 
 	private static final String JUNIT_TAB= "JUnit Migration (Sandbox)"; //$NON-NLS-1$
+	private static final String MIGRATION_LABEL= "Enable JUnit migrations and compatibility rewrites"; //$NON-NLS-1$
 	private static final String BEST_EFFORT_LABEL=
 			"Best effort: migrate every proven construct and add @todo scaffolds for unresolved gaps (manual repair may be required)"; //$NON-NLS-1$
 
@@ -65,11 +66,27 @@ public class JUnitBestEffortCleanupDialogSWTBotTest {
 
 		assertTrue(bestEffort.isVisible(),
 				"The best-effort JUnit migration switch must be visible in the real cleanup profile dialog"); //$NON-NLS-1$
-		assertTrue(bestEffort.isEnabled(),
-				"The best-effort switch must be selectable when JUnit migration is enabled in the profile"); //$NON-NLS-1$
 		assertFalse(bestEffort.isChecked(),
 				"Best-effort migration must remain an explicit opt-in and must be disabled by default"); //$NON-NLS-1$
 
+		SWTBotCheckBox migration= profileDialog.bot().checkBox(MIGRATION_LABEL);
+		assertTrue(migration.isEnabled(), "The JUnit migration switch must be selectable"); //$NON-NLS-1$
+		migration.select();
+		assertTrue(migration.isChecked());
+		assertTrue(bestEffort.isEnabled(),
+				"The best-effort switch must be selectable when JUnit migration is enabled in the profile"); //$NON-NLS-1$
+		assertFalse(bestEffort.isChecked(),
+				"Enabling migration must not silently opt into best-effort rewriting"); //$NON-NLS-1$
+
+		bestEffort.select();
+		assertTrue(bestEffort.isChecked(), "Explicit best-effort selection must take effect"); //$NON-NLS-1$
+		bestEffort.deselect();
+		assertFalse(bestEffort.isChecked(), "Best-effort selection must be reversible"); //$NON-NLS-1$
+		migration.deselect();
+		assertFalse(bestEffort.isEnabled(), "Best effort requires its parent migration switch"); //$NON-NLS-1$
+		migration.select();
+		assertTrue(bestEffort.isEnabled());
+		assertFalse(bestEffort.isChecked(), "Re-enabling migration must retain the opt-out"); //$NON-NLS-1$
 		bestEffort.setFocus();
 		clickButton(profileDialog, "Cancel"); //$NON-NLS-1$
 		clickButton(preferences, "Cancel"); //$NON-NLS-1$
