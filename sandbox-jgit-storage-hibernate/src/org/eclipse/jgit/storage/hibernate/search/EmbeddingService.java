@@ -38,7 +38,8 @@ import ai.djl.translate.TranslateException;
  * <p>
  * The model is lazily initialized on first use and cached for the lifetime of
  * the service. If the model cannot be loaded (e.g., no network on first run,
- * corrupted cache), the service degrades gracefully — {@link #embed(String)}
+ * corrupted cache, missing or incompatible native runtime), the service
+ * degrades gracefully — {@link #embed(String)}
  * returns {@code null} and callers should set {@code hasEmbedding = false}.
  * </p>
  *
@@ -225,32 +226,42 @@ public class EmbeddingService {
 		try {
 			LOG.log(Level.INFO,
 					"Initializing embedding model: {0}", modelName); //$NON-NLS-1$
-			Criteria.Builder<String, float[]> builder = Criteria.builder()
-					.setTypes(String.class, float[].class)
-					.optModelUrls(
-							"djl://ai.djl.huggingface.pytorch/" //$NON-NLS-1$
-									+ modelName)
-					.optEngine("OnnxRuntime") //$NON-NLS-1$
-					.optTranslatorFactory(
-							new ai.djl.huggingface.translator.TextEmbeddingTranslatorFactory());
-			if (modelDir != null && !modelDir.isEmpty()) {
-				Path dir = Paths.get(modelDir);
-				System.setProperty("DJL_CACHE_DIR", //$NON-NLS-1$
-						dir.toAbsolutePath().toString());
-			}
-			model = builder.build().loadModel();
+			model = loadModel();
 			available = true;
 			LOG.log(Level.INFO,
 					"Embedding model loaded successfully: {0}", //$NON-NLS-1$
 					modelName);
 		} catch (ModelNotFoundException | MalformedModelException
-				| IOException e) {
+				| IOException | LinkageError e) {
 			LOG.log(Level.WARNING,
 					"Failed to load embedding model — vector search disabled. " //$NON-NLS-1$
 							+ "Full-text search remains functional.", //$NON-NLS-1$
 					e);
 			available = false;
 		}
+	}
+
+	/**
+	 * Load the optional model and its native engine. Keep this boundary separate
+	 * from the initialization state so a native linkage failure leaves ordinary
+	 * indexing usable, without hiding fatal VM errors or programming defects.
+	 */
+	ZooModel<String, float[]> loadModel()
+			throws ModelNotFoundException, MalformedModelException, IOException {
+		Criteria.Builder<String, float[]> builder = Criteria.builder()
+				.setTypes(String.class, float[].class)
+				.optModelUrls(
+						"djl://ai.djl.huggingface.pytorch/" //$NON-NLS-1$
+								+ modelName)
+				.optEngine("OnnxRuntime") //$NON-NLS-1$
+				.optTranslatorFactory(
+						new ai.djl.huggingface.translator.TextEmbeddingTranslatorFactory());
+		if (modelDir != null && !modelDir.isEmpty()) {
+			Path dir = Paths.get(modelDir);
+			System.setProperty("DJL_CACHE_DIR", //$NON-NLS-1$
+					dir.toAbsolutePath().toString());
+		}
+		return builder.build().loadModel();
 	}
 
 	/**

@@ -16,16 +16,25 @@ package org.eclipse.jgit.storage.hibernate.search;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.jupiter.api.Test;
+
+import ai.djl.repository.zoo.ZooModel;
 
 /**
  * Unit tests for {@link EmbeddingService}.
  * <p>
  * These tests validate the static helper method
  * {@link EmbeddingService#buildEmbeddingText(String, String, String, String)}
- * and the disabled-mode behavior. The actual model loading tests are
+ * and the disabled/unavailable-mode behavior. Fault injection at the model
+ * loader boundary verifies optional native-runtime failures without a network
+ * download. The actual model loading tests are
  * integration-level and require the DJL model to be available.
  * </p>
  */
@@ -95,6 +104,72 @@ class EmbeddingServiceTest {
 		assertNull(service.embed(null));
 		assertNull(service.embed("")); //$NON-NLS-1$
 		assertNull(service.embed("   ")); //$NON-NLS-1$
+	}
+
+	@Test
+	void unavailableNativeRuntimeDisablesVectorSearchWithoutRetrying() {
+		AtomicInteger attempts = new AtomicInteger();
+		EmbeddingService service = new EmbeddingService(true, "unused", null) { //$NON-NLS-1$
+			@Override
+			ZooModel<String, float[]> loadModel() {
+				attempts.incrementAndGet();
+				throw new UnsatisfiedLinkError("Missing ONNX native runtime"); //$NON-NLS-1$
+			}
+		};
+		assertNull(service.embed("first document")); //$NON-NLS-1$
+		assertFalse(service.isAvailable());
+		assertTrue(service.isEnabled());
+		assertNull(service.embed("second document")); //$NON-NLS-1$
+		assertEquals(1, attempts.get(), "Do not retry a failed native initialization for each document"); //$NON-NLS-1$
+		service.close();
+	}
+
+	@Test
+	void previouslyFailedNativeClassInitializationAlsoDisablesVectorSearch() {
+		EmbeddingService service = new EmbeddingService(true, "unused", null) { //$NON-NLS-1$
+			@Override
+			ZooModel<String, float[]> loadModel() {
+				throw new NoClassDefFoundError("Could not initialize native runtime class"); //$NON-NLS-1$
+			}
+		};
+		assertFalse(service.isAvailable());
+		assertNull(service.embed("document")); //$NON-NLS-1$
+	}
+
+	@Test
+	void modelIoFailureStillLeavesEmbeddingsUnavailable() {
+		EmbeddingService service = new EmbeddingService(true, "unused", null) { //$NON-NLS-1$
+			@Override
+			ZooModel<String, float[]> loadModel() throws IOException {
+				throw new IOException("Unreadable model cache"); //$NON-NLS-1$
+			}
+		};
+		assertNull(service.embed("document")); //$NON-NLS-1$
+		assertFalse(service.isAvailable());
+	}
+
+	@Test
+	void virtualMachineFailuresAreNotTreatedAsOptionalRuntimeUnavailability() {
+		OutOfMemoryError failure = new OutOfMemoryError("Synthetic fatal VM failure"); //$NON-NLS-1$
+		EmbeddingService service = new EmbeddingService(true, "unused", null) { //$NON-NLS-1$
+			@Override
+			ZooModel<String, float[]> loadModel() {
+				throw failure;
+			}
+		};
+		assertSame(failure, assertThrows(OutOfMemoryError.class, () -> service.embed("document"))); //$NON-NLS-1$
+	}
+
+	@Test
+	void unexpectedProgrammingFailuresAreNotHiddenByTheNativeFallback() {
+		IllegalStateException failure = new IllegalStateException("Unexpected loader defect"); //$NON-NLS-1$
+		EmbeddingService service = new EmbeddingService(true, "unused", null) { //$NON-NLS-1$
+			@Override
+			ZooModel<String, float[]> loadModel() {
+				throw failure;
+			}
+		};
+		assertSame(failure, assertThrows(IllegalStateException.class, () -> service.embed("document"))); //$NON-NLS-1$
 	}
 
 	@Test
