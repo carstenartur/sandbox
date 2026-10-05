@@ -35,6 +35,7 @@ on:
       - '.github/workflows/distribution-smoke.yml'
   schedule:
     - cron: '30 3 * * 1'
+  create:
   workflow_dispatch:
     inputs:
       regelsuche_sdk_revision:
@@ -52,7 +53,7 @@ concurrency:
 
 jobs:
   product-and-update-site:
-    if: github.event_name != 'workflow_dispatch' || inputs.regelsuche_sdk_revision == ''
+    if: github.event_name != 'create' && (github.event_name != 'workflow_dispatch' || inputs.regelsuche_sdk_revision == '')
     strategy:
       fail-fast: false
       matrix:
@@ -134,16 +135,29 @@ jobs:
           if-no-files-found: error
 
   sdk-prepare:
-    if: github.event_name == 'workflow_dispatch' && inputs.regelsuche_sdk_revision != ''
+    if: (github.event_name == 'workflow_dispatch' && inputs.regelsuche_sdk_revision != '') || (github.event_name == 'create' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'sdk-transfer-request/'))
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     permissions:
       contents: read
     steps:
+      - name: Resolve the explicitly requested SDK commit
+        id: sdk
+        shell: bash
+        env:
+          SDK_REQUEST: ${{ inputs.regelsuche_sdk_revision || github.event.ref }}
+        run: |
+          set -euo pipefail
+          revision="${SDK_REQUEST#sdk-transfer-request/}"
+          if [[ ! "$revision" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'An exact 40-character Regelsuche commit is required.' >&2
+            exit 1
+          fi
+          printf 'revision=%s\n' "$revision" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7
         with:
           repository: carstenartur/Regelsuche
-          ref: ${{ inputs.regelsuche_sdk_revision }}
+          ref: ${{ steps.sdk.outputs.revision }}
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-java@v6
@@ -186,7 +200,7 @@ jobs:
 
   sdk-stage:
     needs: sdk-prepare
-    if: github.event_name == 'workflow_dispatch' && inputs.regelsuche_sdk_revision != '' && startsWith(github.ref, 'refs/heads/') && github.ref != 'refs/heads/main'
+    if: needs.sdk-prepare.result == 'success' && startsWith(github.ref, 'refs/heads/') && github.ref != 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
