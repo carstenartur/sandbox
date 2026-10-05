@@ -37,6 +37,9 @@
 	<profiles>
 		<profile>
 			<id>swtbot</id>
+			<dependencies>
+				<dependency><groupId>org.sandbox</groupId><artifactId>sandbox_junit_cleanup</artifactId><version>${project.version}</version></dependency>
+			</dependencies>
 			<build>
 				<plugins>
 					<plugin>
@@ -45,11 +48,19 @@
 						<version>${tycho-version}</version>
 						<configuration>
 							<useUIThread>false</useUIThread>
-							<excludes combine.self="override" />
+							<!-- Screenshot generators and patched-JDT probes run in the dedicated
+							     help-screenshots profile with its complete runtime and fixtures.
+							     Keep the ordinary JUnit dialog and all non-SWTBot tests here. -->
+							<excludes combine.self="override">
+								<exclude>**/SandboxHelpScreenshotsSWTBotTest.class</exclude>
+								<exclude>**/SandboxHelpScreenshotsMergeGateSWTBotTest.class</exclude>
+								<exclude>**/SandboxAtomicPreviewPatchedJdtSWTBotTest.class</exclude>
+							</excludes>
 							<includes>
 								<include>**/*Test.class</include>
 							</includes>
 							<dependencies>
+								<dependency><type>eclipse-plugin</type><groupId>org.sandbox</groupId><artifactId>sandbox_junit_cleanup</artifactId><version>0.0.0</version></dependency>
 								<dependency>
 									<type>eclipse-plugin</type>
 									<artifactId>org.eclipse.swtbot.eclipse.finder</artifactId>
