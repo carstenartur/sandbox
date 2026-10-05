@@ -148,15 +148,18 @@ jobs:
           fi
 
       - name: Maven Wrapper clean verify
-        run: >-
-          xvfb-run --auto-servernum ./mvnw
-          --no-transfer-progress
-          -e
-          -V
-          --batch-mode
-          --fail-at-end
-          -Dtycho.localArtifacts=ignore
-          clean verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=0
+          log="$RUNNER_TEMP/sandbox-maven.log"
+          xvfb-run --auto-servernum ./mvnw \
+            --no-transfer-progress -e -V --batch-mode --fail-at-end \
+            -Dtycho.localArtifacts=ignore clean verify 2>&1 | tee "$log" || status=$?
+          # Store the log after clean, including failures before Surefire starts.
+          mkdir -p target/build-verification
+          cp "$log" target/build-verification/maven.log
+          exit "$status"
 
       - name: Publish JUnit annotations
         if: always()
@@ -172,7 +175,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-reports-${{ github.run_number }}
-          path: '**/target/surefire-reports/**'
+          path: |
+            **/target/surefire-reports/**
+            target/build-verification/maven.log
           retention-days: 14
           if-no-files-found: warn
 

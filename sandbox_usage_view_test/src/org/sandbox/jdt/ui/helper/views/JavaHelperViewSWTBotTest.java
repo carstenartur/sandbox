@@ -18,6 +18,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
@@ -180,16 +184,23 @@ public class JavaHelperViewSWTBotTest {
         view.show();
         view.setFocus();
         
-        // Find the Refresh button in toolbar
-        try {
-            SWTBotToolbarButton refreshButton = view.toolbarButton("Refresh"); //$NON-NLS-1$
-            assertNotNull(refreshButton, "Refresh button should exist"); //$NON-NLS-1$
-            
-            // Click refresh
-            refreshButton.click();
-        } catch (WidgetNotFoundException e) {
-            fail("Refresh button not found: " + e.getMessage()); //$NON-NLS-1$
-        }
+        // JFace decorates command tooltips with the active key binding (for
+        // example "Refresh (F5)"). Find the real visible action by command ID,
+        // not by localized text, the current keymap, or an arbitrary first item.
+        List<SWTBotToolbarButton> buttons = view.getToolbarButtons();
+        List<SWTBotToolbarButton> refreshButtons = new ArrayList<>();
+        Display.getDefault().syncExec(() -> {
+            for (SWTBotToolbarButton button : buttons) {
+                if (button.widget.getData() instanceof ActionContributionItem item
+                        && "org.eclipse.ui.file.refresh".equals(item.getAction().getActionDefinitionId())) { //$NON-NLS-1$
+                    refreshButtons.add(button);
+                }
+            }
+        });
+        assertEquals(1, refreshButtons.size(), "The view must expose exactly one Refresh toolbar action"); //$NON-NLS-1$
+        SWTBotToolbarButton refreshButton = refreshButtons.getFirst();
+        assertTrue(refreshButton.isEnabled(), "Refresh should be enabled"); //$NON-NLS-1$
+        refreshButton.click();
     }
 
     @BeforeEach
