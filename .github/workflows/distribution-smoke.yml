@@ -36,6 +36,12 @@ on:
   schedule:
     - cron: '30 3 * * 1'
   workflow_dispatch:
+    inputs:
+      regelsuche_sdk_revision:
+        description: 'Regelsuche SDK revision to qualify and stage; blank runs the normal smoke tests'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -46,6 +52,7 @@ concurrency:
 
 jobs:
   product-and-update-site:
+    if: github.event_name != 'workflow_dispatch' || inputs.regelsuche_sdk_revision == ''
     strategy:
       fail-fast: false
       matrix:
@@ -125,3 +132,87 @@ jobs:
             sandbox_math_cleanup_test/target/screenshots/
           retention-days: 30
           if-no-files-found: error
+
+  sdk-prepare:
+    if: github.event_name == 'workflow_dispatch' && inputs.regelsuche_sdk_revision != ''
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: carstenartur/Regelsuche
+          ref: ${{ inputs.regelsuche_sdk_revision }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - name: Qualify the SDK through its existing Maven and JUnit authority
+        run: >-
+          mvn --batch-mode --no-transfer-progress -Psdk-release -pl maven-build-contract
+          -Dtest=MavenOptimizationSdkDistributionTest test
+      - name: Collect the verified binary and source-bound receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/sdk-transfer"
+          reports=maven-build-contract/target/surefire-reports
+          find "$reports" -path '*/first/repository/*-all.jar' \
+            -exec cp '{}' "$RUNNER_TEMP/sdk-transfer/regelsuche-optimization-sdk.jar" \;
+          find "$reports" -path '*/first/*-qualification.json' \
+            -exec cp '{}' "$RUNNER_TEMP/sdk-transfer/qualification.json" \;
+          find "$reports" -name reproducibility.json \
+            -exec cp '{}' "$RUNNER_TEMP/sdk-transfer/reproducibility.json" \;
+          find "$reports" -name source-revision.txt \
+            -exec cp '{}' "$RUNNER_TEMP/sdk-transfer/source-revision.txt" \;
+      - uses: actions/upload-artifact@v7
+        with:
+          name: verified-sdk-transfer-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sdk-transfer/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Retain SDK qualification diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: sdk-transfer-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: maven-build-contract/target/surefire-reports/
+          if-no-files-found: warn
+          retention-days: 14
+
+  sdk-stage:
+    needs: sdk-prepare
+    if: github.event_name == 'workflow_dispatch' && inputs.regelsuche_sdk_revision != '' && startsWith(github.ref, 'refs/heads/') && github.ref != 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      # SDK code only runs in the preceding read-only job. This job copies its
+      # qualified bytes and writes a separate staging branch, never main or the PR.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: verified-sdk-transfer-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sdk-transfer
+      - name: Stage the qualified SDK without moving the consumer branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          transfer="$RUNNER_TEMP/sdk-transfer"
+          revision="$(cat "$transfer/source-revision.txt")"
+          cp "$transfer/regelsuche-optimization-sdk.jar" sandbox_math_cleanup/lib/regelsuche-optimization-sdk.jar
+          cp "$transfer/qualification.json" sandbox_math_cleanup/lib/qualification.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- sandbox_math_cleanup/lib/regelsuche-optimization-sdk.jar sandbox_math_cleanup/lib/qualification.json
+          git commit -m "Stage verified Regelsuche SDK $revision"
+          git push origin "HEAD:refs/heads/sdk-transfer/$revision"
+          printf 'SDK transfer branch: sdk-transfer/%s\n' "$revision" >> "$GITHUB_STEP_SUMMARY"
