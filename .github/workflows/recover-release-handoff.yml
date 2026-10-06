@@ -195,7 +195,8 @@ jobs:
 
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -A -- ':!.github/workflows/'
+          # Version transitions only modify tracked metadata; publication scratch files stay untracked.
+          git add -u -- ':!.github/workflows/'
           git commit -m "Prepare for next development iteration ${NEXT_SNAPSHOT}"
           git push --force-with-lease origin "$next_branch"
 

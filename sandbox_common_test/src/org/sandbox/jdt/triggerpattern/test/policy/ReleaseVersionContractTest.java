@@ -22,9 +22,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -151,6 +153,68 @@ public class ReleaseVersionContractTest {
 				"", true);
 		assertTrue(lfBlankAtEof.exitCode() != 0, lfBlankAtEof.output());
 		assertTrue(lfBlankAtEof.output().contains("new blank line at EOF"), lfBlankAtEof.output());
+	}
+
+	@Test
+	public void stableCommitDoesNotStagePublicationScratchFiles(@TempDir Path temporaryDirectory) throws Exception {
+		assertVersionStaging(temporaryDirectory, workflow(), "Commit stable release tree");
+	}
+
+	@Test
+	public void nextDevelopmentCommitDoesNotStagePublicationScratchFiles(@TempDir Path temporaryDirectory)
+			throws Exception {
+		assertVersionStaging(temporaryDirectory, workflow(), TRANSITIONS.getLast().step());
+	}
+
+	@Test
+	public void recoveryCommitDoesNotStagePublicationScratchFiles(@TempDir Path temporaryDirectory) throws Exception {
+		assertVersionStaging(temporaryDirectory, workflow(RECOVERY_WORKFLOW), RECOVERY_TRANSITIONS.getFirst().step());
+	}
+
+	private static void assertVersionStaging(Path repository, String workflow, String stepName) throws Exception {
+		String step = workflowStep(workflow, stepName);
+		Matcher command = Pattern.compile("(?m)^[ \t]*(git add [^\r\n]+)$").matcher(step);
+		assertTrue(command.find(), "Missing staging command in " + stepName);
+		String staging = command.group(1);
+		assertTrue(!command.find(), "Duplicate staging command in " + stepName);
+
+		runSuccessful(repository, List.of("git", "init"));
+		runSuccessful(repository, List.of("git", "config", "user.name", "Sandbox Test"));
+		runSuccessful(repository, List.of("git", "config", "user.email", "sandbox@example.invalid"));
+		Set<String> versionFiles = Set.of("pom.xml", "module/pom.xml", "module/META-INF/MANIFEST.MF",
+				"feature/feature.xml", "product/example.product", "release.properties");
+		for (String name : versionFiles) {
+			Path file = repository.resolve(name);
+			Files.createDirectories(file.getParent());
+			Files.writeString(file, "original version\n", StandardCharsets.UTF_8);
+		}
+		Path workflowFile = repository.resolve(WORKFLOW);
+		Files.createDirectories(workflowFile.getParent());
+		Files.writeString(workflowFile, "original workflow\n", StandardCharsets.UTF_8);
+		runSuccessful(repository, List.of("git", "add", "."));
+		runSuccessful(repository, List.of("git", "commit", "-m", "initial"));
+		for (String name : versionFiles) {
+			Files.writeString(repository.resolve(name), "next version\n", StandardCharsets.UTF_8);
+		}
+		Files.writeString(workflowFile, "unrelated workflow edit\n", StandardCharsets.UTF_8);
+		Files.writeString(repository.resolve("release-notes.md"), "generated notes\n", StandardCharsets.UTF_8);
+		Files.writeString(repository.resolve("generated.log"), "generated log\n", StandardCharsets.UTF_8);
+		Path pages = Files.createDirectory(repository.resolve("gh-pages-release"));
+		runSuccessful(pages, List.of("git", "init"));
+		runSuccessful(pages, List.of("git", "config", "user.name", "Sandbox Test"));
+		runSuccessful(pages, List.of("git", "config", "user.email", "sandbox@example.invalid"));
+		Files.writeString(pages.resolve("index.html"), "published content\n", StandardCharsets.UTF_8);
+		runSuccessful(pages, List.of("git", "add", "."));
+		runSuccessful(pages, List.of("git", "commit", "-m", "published"));
+
+		// Execute the workflow's real Git command against a real nested repository.
+		runSuccessful(repository, List.of("bash", "-lc", staging));
+		CommandResult staged = run(repository, List.of("git", "diff", "--cached", "--name-only"));
+		assertEquals(0, staged.exitCode(), staged.output());
+		assertEquals(versionFiles, staged.output().lines().collect(Collectors.toSet()), staged.output());
+		assertEquals("generated notes\n", Files.readString(repository.resolve("release-notes.md")));
+		assertEquals("published content\n", Files.readString(pages.resolve("index.html")));
+		assertEquals("unrelated workflow edit\n", Files.readString(workflowFile));
 	}
 
 	private static String handoffDiffCheckCommand(String step) {

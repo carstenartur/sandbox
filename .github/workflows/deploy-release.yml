@@ -209,7 +209,8 @@ jobs:
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add -A -- ':!.github/workflows/'
+          # Version transitions only modify tracked metadata; publication scratch files stay untracked.
+          git add -u -- ':!.github/workflows/'
           git commit -m "Release version ${RELEASE_VERSION}"
           echo "RELEASE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
@@ -525,7 +526,8 @@ jobs:
           fi
           git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check
 
-          git add -A -- ':!.github/workflows/'
+          # Version transitions only modify tracked metadata; publication scratch files stay untracked.
+          git add -u -- ':!.github/workflows/'
           git commit -m "Prepare for next development iteration ${NEXT_SNAPSHOT}"
           git push origin "$branch"
 
