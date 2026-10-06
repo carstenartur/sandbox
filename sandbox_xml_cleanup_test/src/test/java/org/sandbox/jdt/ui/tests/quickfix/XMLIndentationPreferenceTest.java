@@ -11,6 +11,7 @@
 package org.sandbox.jdt.ui.tests.quickfix;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.sandbox.jdt.ui.tests.quickfix.XMLTestUtils.assertXmlSemanticallyEqual;
 
@@ -18,6 +19,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.sandbox.jdt.internal.corext.fix.helper.SchemaTransformationUtils;
 
@@ -63,24 +66,37 @@ public class XMLIndentationPreferenceTest {
 		}
 	}
 
-	@Test
-	public void testMeaningfulMultilineTextIsNotNormalized() throws Exception {
+	@ParameterizedTest
+	@ValueSource(strings = { "\n", "\r\n" }) //$NON-NLS-1$ //$NON-NLS-2$
+	public void testMeaningfulMultilineTextIsNotNormalized(String lineDelimiter) throws Exception {
 		String xml= """
 				<?xml version="1.0" encoding="UTF-8"?>
 				<plugin><description>first line
 
 				    second line</description></plugin>
-				""";
+				""".replace("\n", lineDelimiter); //$NON-NLS-1$
 		Path input= Files.createTempFile("xml-meaningful-whitespace", ".xml");
 		try {
 			Files.writeString(input, xml);
 
 			String transformed= SchemaTransformationUtils.transform(input, false);
 
-			assertTrue(transformed.contains("first line\n\n    second line"),
-					"Blank lines and leading spaces inside meaningful text must be preserved");
+			// XML parsers normalize physical CRLF to LF. Compare the actual text
+			// nodes, retaining blank lines and leading spaces in meaningful text.
+			assertXmlSemanticallyEqual(xml, transformed);
 		} finally {
 			Files.deleteIfExists(input);
 		}
+	}
+
+	@Test
+	public void semanticComparisonRejectsChangedMeaningfulWhitespace() {
+		String xml= "<description>first line\n\n    second line</description>"; //$NON-NLS-1$
+		assertThrows(AssertionError.class,
+				() -> assertXmlSemanticallyEqual(xml, xml.replace("\n\n", "\n"))); //$NON-NLS-1$ //$NON-NLS-2$
+		assertThrows(AssertionError.class,
+				() -> assertXmlSemanticallyEqual(xml, xml.replace("    second line", "second line"))); //$NON-NLS-1$ //$NON-NLS-2$
+		assertThrows(AssertionError.class,
+				() -> assertXmlSemanticallyEqual(xml, xml.replace("second line", "changed text"))); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }
