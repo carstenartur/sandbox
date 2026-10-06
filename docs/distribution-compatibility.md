@@ -6,7 +6,7 @@ Sandbox is an experimental Eclipse JDT cleanup distribution. The statements belo
 
 | Component | Configured baseline |
 |---|---|
-| Java runtime | Java 21 |
+| Java runtime | Java 25 |
 | Eclipse target | Eclipse 2026-09 / Platform 4.41 |
 | Build system | Maven with Tycho 5.0.4 |
 | Plug-in status | Experimental; evaluate in a disposable installation or development workspace |
@@ -48,7 +48,7 @@ The required pull-request gate is **Distribution Smoke Test**. On Linux GTK x86-
 4. installs every published Sandbox feature into a fresh p2 destination;
 5. starts both the materialized product and the fresh installation;
 6. imports an isolated Java project through the installed cleanup application;
-7. applies a deterministic cleanup, validates the report and source change, and compiles the transformed source with Java 21.
+7. applies a deterministic cleanup, validates the report and source change, and compiles the transformed source with Java 25.
 
 Windows and macOS archives are assembled by the same reactor but do not yet receive equivalent native launch-and-transform verification. A successful distribution build establishes assembly coverage for those platforms, not native runtime coverage.
 
@@ -80,7 +80,7 @@ GitHub Actions stores the evidence as an immutable workflow artifact. Snapshot a
 
 ## Installation guidance
 
-Use a separate Eclipse installation or disposable workspace for initial evaluation, and keep source changes under version control. The command-line cleanup application requires Java 21 and an explicit Eclipse workspace through `-data`.
+Use a separate Eclipse installation or disposable workspace for initial evaluation, and keep source changes under version control. The command-line cleanup application requires Java 25 and an explicit Eclipse workspace through `-data`.
 
 ## Baseline consistency
 

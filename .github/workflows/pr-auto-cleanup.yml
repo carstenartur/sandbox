@@ -55,6 +55,12 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
+      - name: Set up review JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+
       - name: Analyze changed Java source and publish suggestions
         uses: ./.github/actions/cleanup-review
         with:
@@ -63,6 +69,7 @@ jobs:
           head-sha: ${{ github.event.pull_request.head.sha }}
           config-file: .github/cleanup-profiles/review-explicit-encoding.properties
           image: ghcr.io/carstenartur/sandbox-cleanup:latest
+          java-home: ${{ env.JAVA_HOME }}
           scope: both
           source-mode: changed
           tool-name: sandbox-explicit-encoding

@@ -91,11 +91,11 @@ jobs:
           fi
           echo "run=$run" >> "$GITHUB_OUTPUT"
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         if: steps.gate.outputs.run == 'true'
         uses: actions/setup-java@v6
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: temurin
           cache: maven
 

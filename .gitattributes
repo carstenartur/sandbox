@@ -1,2 +1,6 @@
 mvnw text eol=lf
 mvnw.cmd text eol=crlf
+# Shell execution and workflow source contracts require LF on every host.
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf

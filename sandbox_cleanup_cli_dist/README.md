@@ -1,7 +1,7 @@
 # Sandbox Cleanup CLI Distribution
 
 This module packages the Eclipse-based cleanup application into a distributable archive
-(zip/tar.gz) that can be run standalone on any machine with Java 21+.
+(zip/tar.gz) using the supported Java 25 runtime.
 
 ## Contents
 
@@ -18,7 +18,9 @@ sandbox-cleanup-cli-<version>/
 
 ## Prerequisites
 
-- **Java 21+** must be installed and available via `JAVA_HOME` or `PATH`
+- Java 25 is included with the Linux product runtime. Launchers prefer an explicit
+  `JAVA_HOME`, then the bundled JustJ runtime, then `PATH`, and reject other Java
+  major versions. macOS and Windows require a matching native product/runtime.
 
 ## Usage
 
@@ -47,8 +49,9 @@ bin/sandbox-cleanup --config cleanup.properties --mode check \
 
 ## Environment Variables
 
-- `JAVA_HOME` — Path to Java 21+ installation
-- `SANDBOX_CLEANUP_WORKSPACE` — Custom Eclipse workspace directory (optional)
+- `JAVA_HOME` — Path to a Java 25 installation
+- `SANDBOX_WORKSPACE` — Custom Eclipse workspace directory (optional)
+- `SANDBOX_CLEANUP_WORKSPACE` — Compatibility alias when `SANDBOX_WORKSPACE` is unset
 
 ## Build
 
@@ -56,7 +59,7 @@ This distribution is assembled from the `sandbox_product` build output.
 Build with Maven profiles:
 
 ```bash
-mvn -Pproduct verify
+mvn -Pcli-dist verify
 ```
 
 The distribution archive will be in `sandbox_cleanup_cli_dist/target/`.

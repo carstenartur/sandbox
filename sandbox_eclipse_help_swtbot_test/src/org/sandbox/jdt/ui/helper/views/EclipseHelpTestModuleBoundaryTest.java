@@ -12,17 +12,26 @@ package org.sandbox.jdt.ui.helper.views;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /** Protects the ownership boundary between Usage View and Help SWTBot tests. */
 public class EclipseHelpTestModuleBoundaryTest {
@@ -102,6 +111,76 @@ public class EclipseHelpTestModuleBoundaryTest {
 				".github/workflows/eclipse-help-screenshots.yml"); //$NON-NLS-1$
 		assertWorkflowUsesDedicatedModule(repository,
 				".github/workflows/patched-jdt-ui-atomic-help-screenshot.yml"); //$NON-NLS-1$
+	}
+
+	@Test
+	public void generalSwtbotDoesNotStartSpecializedScreenshotPipelines() throws Exception {
+		Node configuration= configuration(profile("swtbot")); //$NON-NLS-1$
+		assertEquals(Set.of(
+				"**/SandboxHelpScreenshotsSWTBotTest.class", //$NON-NLS-1$
+				"**/SandboxHelpScreenshotsMergeGateSWTBotTest.class", //$NON-NLS-1$
+				"**/SandboxAtomicPreviewPatchedJdtSWTBotTest.class"), //$NON-NLS-1$
+				texts(configuration, "excludes/exclude")); //$NON-NLS-1$
+		assertEquals(Set.of("**/*Test.class"), texts(configuration, "includes/include")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(Set.of("true"), texts(configuration, "failIfNoTests")); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void generalSwtbotInstallsTheJUnitCleanupWhoseDialogItExercises() throws Exception {
+		Node swtbot= profile("swtbot"); //$NON-NLS-1$
+		assertEquals(Set.of("${project.version}"), texts(swtbot, //$NON-NLS-1$
+				"dependencies/dependency[groupId='org.sandbox' and artifactId='sandbox_junit_cleanup']/version")); //$NON-NLS-1$
+		assertEquals(Set.of("eclipse-plugin"), texts(configuration(swtbot), //$NON-NLS-1$
+				"dependencies/dependency[artifactId='sandbox_junit_cleanup']/type")); //$NON-NLS-1$
+	}
+
+	@Test
+	public void specializedScreenshotsRemainExplicitlyRunnableWithTheirOwnDependencies() throws Exception {
+		Node screenshots= profile("help-screenshots"); //$NON-NLS-1$
+		Node configuration= configuration(screenshots);
+		assertTrue(texts(configuration, "excludes/exclude").isEmpty()); //$NON-NLS-1$
+		assertEquals(Set.of("override"), texts(configuration, "excludes/@combine.self")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(Set.of("${help.screenshot.testClass}"), texts(configuration, "testClass")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals(Set.of("true"), texts(configuration, "failIfNoTests")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertTrue(texts(configuration, "dependencies/dependency/artifactId") //$NON-NLS-1$
+				.containsAll(Set.of("sandbox_junit_cleanup", "sandbox_jface_cleanup", "sandbox_int_to_enum"))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		Path repository= SandboxCheckout.locate(null);
+		assertTrue(read(repository, ".github/workflows/eclipse-help-screenshots.yml") //$NON-NLS-1$
+				.contains("-Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.SandboxHelpScreenshotsMergeGateSWTBotTest")); //$NON-NLS-1$
+		assertTrue(read(repository, ".github/workflows/patched-jdt-ui-atomic-help-screenshot.yml") //$NON-NLS-1$
+				.contains("-Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.SandboxAtomicPreviewPatchedJdtSWTBotTest")); //$NON-NLS-1$
+	}
+
+	private static Node profile(String id) throws Exception {
+		var factory= DocumentBuilderFactory.newDefaultInstance();
+		factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+		factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true); //$NON-NLS-1$
+		factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, ""); //$NON-NLS-1$
+		factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, ""); //$NON-NLS-1$
+		var document= factory.newDocumentBuilder().parse(SandboxCheckout.locate(null)
+				.resolve("sandbox_eclipse_help_swtbot_test/pom.xml").toFile()); //$NON-NLS-1$
+		Node profile= (Node) XPathFactory.newDefaultInstance().newXPath().evaluate(
+				"/project/profiles/profile[id='" + id + "']", document, XPathConstants.NODE); //$NON-NLS-1$ //$NON-NLS-2$
+		assertNotNull(profile, id);
+		return profile;
+	}
+
+	private static Node configuration(Node profile) throws Exception {
+		Node configuration= (Node) XPathFactory.newDefaultInstance().newXPath().evaluate(
+				"build/plugins/plugin[artifactId='tycho-surefire-plugin']/configuration", //$NON-NLS-1$
+				profile, XPathConstants.NODE);
+		assertNotNull(configuration);
+		return configuration;
+	}
+
+	private static Set<String> texts(Node context, String expression) throws Exception {
+		NodeList nodes= (NodeList) XPathFactory.newDefaultInstance().newXPath()
+				.evaluate(expression, context, XPathConstants.NODESET);
+		Set<String> values= new HashSet<>();
+		for (int index= 0; index < nodes.getLength(); index++) {
+			values.add(nodes.item(index).getTextContent().strip());
+		}
+		return Set.copyOf(values);
 	}
 
 	private static void assertWorkflowUsesDedicatedModule(Path repository, String relativePath)

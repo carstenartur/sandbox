@@ -1,0 +1,44 @@
+[INFO] Scanning for projects...
+[INFO] Tycho Version:  5.0.4 (c4349ee27dfde2817dfc7121b5f84bfb9eeb0195)
+[INFO] Tycho Mode:     project
+[INFO] Tycho Builder:  maven
+[INFO] Build Threads:  1
+[INFO]
+[INFO] ------------------------< org.sandbox:central >-------------------------
+[INFO] Building Sandbox central 1.3.6
+[INFO]   from pom.xml
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO]
+[INFO] --- enforcer:3.6.3:enforce (enforce-java-version) @ central ---
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.478 s
+[INFO] Finished at: 2026-10-05T02:33:17+07:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-enforcer-plugin:3.6.3:enforce (enforce-java-version) on project central:
+[ERROR] Rule 0: org.apache.maven.enforcer.rules.version.RequireJavaVersion failed with message:
+[ERROR] ========================================
+[ERROR] 										ERROR: Supported build runtime is Java 25!
+[ERROR] 										========================================
+[ERROR] 										Current Java version: 21.0.12.1
+[ERROR] 										This project uses Tycho 5.0.4, which
+[ERROR] 										is qualified here with Java 25.
+[ERROR]
+[ERROR] 										Building with Java 21 or earlier will
+[ERROR] 										fail with:
+[ERROR] 										UnsupportedClassVersionError: class file
+[ERROR] 										version 69.0
+[ERROR]
+[ERROR] 										Please install Java 25 and set
+[ERROR] 										JAVA_HOME accordingly.
+[ERROR]
+[ERROR] 										See README.md for more information.
+[ERROR] 										========================================
+[ERROR] -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

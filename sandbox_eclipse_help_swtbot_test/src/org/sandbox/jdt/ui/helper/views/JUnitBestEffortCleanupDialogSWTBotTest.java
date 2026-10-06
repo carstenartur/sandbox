@@ -11,7 +11,10 @@
 package org.sandbox.jdt.ui.helper.views;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
@@ -22,7 +25,9 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotCheckBox;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.IHandlerService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,13 +39,16 @@ import org.junit.jupiter.api.Test;
 public class JUnitBestEffortCleanupDialogSWTBotTest {
 
 	private static final String JUNIT_TAB= "JUnit Migration (Sandbox)"; //$NON-NLS-1$
+	private static final String MIGRATION_LABEL= "Enable JUnit migrations and compatibility rewrites"; //$NON-NLS-1$
 	private static final String BEST_EFFORT_LABEL=
 			"Best effort: migrate every proven construct and add @todo scaffolds for unresolved gaps (manual repair may be required)"; //$NON-NLS-1$
 
 	private SWTWorkbenchBot bot;
+	private final AtomicReference<Throwable> preferenceFailure= new AtomicReference<>();
 
 	@BeforeEach
 	public void setUp() {
+		preferenceFailure.set(null);
 		bot= new SWTWorkbenchBot();
 		closeWelcomeView();
 	}
@@ -48,12 +56,21 @@ public class JUnitBestEffortCleanupDialogSWTBotTest {
 	@AfterEach
 	public void tearDown() {
 		closeModalShells();
+		assertNull(preferenceFailure.get(), () -> "Preferences command failed: " + preferenceFailure.get()); //$NON-NLS-1$
 	}
 
 	@Test
 	public void bestEffortMigrationIsVisibleExplicitAndDisabledByDefault() {
-		SWTBotShell workbench= workbenchShell().activate();
-		workbench.bot().menu("Window").menu("Preferences...").click(); //$NON-NLS-1$ //$NON-NLS-2$
+		workbenchShell().activate();
+		// Use the same workbench command on platforms with different menu locations.
+		Display.getDefault().asyncExec(() -> {
+			try {
+				PlatformUI.getWorkbench().getService(IHandlerService.class)
+						.executeCommand(IWorkbenchCommandConstants.WINDOW_PREFERENCES, null);
+			} catch (Exception failure) {
+				preferenceFailure.compareAndSet(null, failure);
+			}
+		});
 
 		SWTBotShell preferences= bot.shell("Preferences").activate(); //$NON-NLS-1$
 		selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -65,11 +82,27 @@ public class JUnitBestEffortCleanupDialogSWTBotTest {
 
 		assertTrue(bestEffort.isVisible(),
 				"The best-effort JUnit migration switch must be visible in the real cleanup profile dialog"); //$NON-NLS-1$
-		assertTrue(bestEffort.isEnabled(),
-				"The best-effort switch must be selectable when JUnit migration is enabled in the profile"); //$NON-NLS-1$
 		assertFalse(bestEffort.isChecked(),
 				"Best-effort migration must remain an explicit opt-in and must be disabled by default"); //$NON-NLS-1$
 
+		SWTBotCheckBox migration= profileDialog.bot().checkBox(MIGRATION_LABEL);
+		assertTrue(migration.isEnabled(), "The JUnit migration switch must be selectable"); //$NON-NLS-1$
+		migration.select();
+		assertTrue(migration.isChecked());
+		assertTrue(bestEffort.isEnabled(),
+				"The best-effort switch must be selectable when JUnit migration is enabled in the profile"); //$NON-NLS-1$
+		assertFalse(bestEffort.isChecked(),
+				"Enabling migration must not silently opt into best-effort rewriting"); //$NON-NLS-1$
+
+		bestEffort.select();
+		assertTrue(bestEffort.isChecked(), "Explicit best-effort selection must take effect"); //$NON-NLS-1$
+		bestEffort.deselect();
+		assertFalse(bestEffort.isChecked(), "Best-effort selection must be reversible"); //$NON-NLS-1$
+		migration.deselect();
+		assertFalse(bestEffort.isEnabled(), "Best effort requires its parent migration switch"); //$NON-NLS-1$
+		migration.select();
+		assertTrue(bestEffort.isEnabled());
+		assertFalse(bestEffort.isChecked(), "Re-enabling migration must retain the opt-out"); //$NON-NLS-1$
 		bestEffort.setFocus();
 		clickButton(profileDialog, "Cancel"); //$NON-NLS-1$
 		clickButton(preferences, "Cancel"); //$NON-NLS-1$

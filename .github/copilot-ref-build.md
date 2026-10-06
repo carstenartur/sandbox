@@ -6,19 +6,19 @@
 
 | Component | Value |
 |---|---|
-| Java | 21 |
+| Java | 25 |
 | Tycho | 5.0.4 |
 | Eclipse target | Eclipse 2026-09 / Platform 4.41 |
 | Target definition | `sandbox_target/eclipse.target` |
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+export JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64
 export PATH=$JAVA_HOME/bin:$PATH
 java -version
 mvn -version
 ```
 
-An `UnsupportedClassVersionError` normally means Maven is running with Java 17 or earlier. The version shown by `mvn -version`, not only the shell's `java -version`, must be Java 21.
+An `UnsupportedClassVersionError` normally means Maven is running with Java 17 or earlier. The version shown by `mvn -version`, not only the shell's `java -version`, must be Java 25.
 
 ## Maven profiles
 
@@ -86,7 +86,7 @@ When the Eclipse or Tycho baseline changes, update all active build, product, co
 
 | Problem | Likely cause | Action |
 |---|---|---|
-| `UnsupportedClassVersionError` | Maven uses an older JDK | Set `JAVA_HOME` to Java 21 and re-check `mvn -version` |
+| `UnsupportedClassVersionError` | Maven uses an older JDK | Set `JAVA_HOME` to Java 25 and re-check `mvn -version` |
 | Tycho/p2 resolution failure | Repository or target mismatch | Compare `pom.xml` with `sandbox_target/eclipse.target` |
 | Product assembles but install verification fails | p2 metadata or category mismatch | Run the sequential `distribution` profile |
 | SWTBot timeout or missing shell | No display or stale workspace state | Use Xvfb and inspect uploaded SWTBot diagnostics |

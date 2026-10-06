@@ -38,6 +38,8 @@ import org.eclipse.equinox.internal.p2.director.app.DirectorApplication.AvoidTru
 import org.eclipse.equinox.p2.core.UIServices;
 import org.eclipse.equinox.p2.metadata.IArtifactKey;
 import org.eclipse.equinox.p2.metadata.ILicense;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.oomph.internal.setup.SetupPrompter;
@@ -75,10 +77,13 @@ public class SetupProbe implements IApplication {
     private static final String ENTRY = "https://raw.githubusercontent.com/carstenartur/sandbox/main/"
             + "sandbox_oomph/sandboxproject.setup";
     private volatile Throwable failure;
+    private volatile String activeSetupTask = "workbench startup";
 
     @Override
     public Object start(IApplicationContext applicationContext) {
         Display display = PlatformUI.createDisplay();
+        org.eclipse.core.runtime.ILogListener indexDiagnostic = this::captureIndexFailure;
+        org.eclipse.core.runtime.Platform.addLogListener(indexDiagnostic);
         try {
             PlatformUI.createAndRunWorkbench(display, new WorkbenchAdvisor() {
                 @Override
@@ -105,9 +110,47 @@ public class SetupProbe implements IApplication {
                 }
             });
         } finally {
+            org.eclipse.core.runtime.Platform.removeLogListener(indexDiagnostic);
             display.dispose();
         }
         return failure == null ? EXIT_OK : Integer.valueOf(1);
+    }
+
+
+    private void captureIndexFailure(IStatus status, String plugin) {
+        if (!JavaCore.PLUGIN_ID.equals(status.getPlugin()) || !status.matches(IStatus.ERROR)
+                || !(status.getException() instanceof org.eclipse.jdt.core.JavaModelException exception)) {
+            return;
+        }
+        // Observe the original failure only. Do not open/reconcile Java elements,
+        // create links, refresh resources, or change the order of setup tasks.
+        var modelStatus = exception.getJavaModelStatus();
+        System.err.println("INDEX_ROOT_STATE task=" + activeSetupTask + " thread="
+                + Thread.currentThread().getName() + " code=" + modelStatus.getCode());
+        System.err.println("INDEX_ROOT_STATUS_PATH " + modelStatus.getPath());
+        var elements = modelStatus.getElements();
+        for (var element : elements == null ? new IJavaElement[0] : elements) {
+            var path = element.getPath();
+            System.err.println("INDEX_ROOT_ELEMENT type=" + element.getClass().getName()
+                    + " handle=" + element.getHandleIdentifier() + " path=" + path);
+            if (path != null) {
+                var local = path.toFile().toPath();
+                System.err.println("INDEX_ROOT_FILE exists=" + Files.exists(local)
+                        + " directory=" + Files.isDirectory(local) + " readable=" + Files.isReadable(local));
+                var links = ResourcesPlugin.getWorkspace().getRoot().findContainersForLocationURI(local.toUri());
+                System.err.println("INDEX_ROOT_LINKS count=" + links.length);
+                for (var link : links) {
+                    System.err.println("INDEX_ROOT_LINK path=" + link.getFullPath() + " exists=" + link.exists()
+                            + " linked=" + link.isLinked() + " projectOpen=" + link.getProject().isOpen()
+                            + " location=" + link.getLocationURI());
+                }
+            }
+        }
+        var external = ResourcesPlugin.getWorkspace().getRoot().getProject(".org.eclipse.jdt.core.external.folders");
+        System.err.println("INDEX_ROOT_EXTERNAL_PROJECT exists=" + external.exists() + " open=" + external.isOpen());
+        var jna = org.eclipse.core.runtime.Platform.getBundle("com.sun.jna");
+        System.err.println("INDEX_ROOT_BUNDLE " + (jna == null ? "unavailable" : jna.getLocation()
+                + " classpath=" + jna.getHeaders("").get("Bundle-ClassPath")));
     }
 
     private void verify() throws Exception {
@@ -167,6 +210,7 @@ public class SetupProbe implements IApplication {
         Map<String, String> values = Map.ofEntries(
                 Map.entry("git.clone.sandbox.location", clone.toString()),
                 Map.entry("jre.location-21", System.getProperty("java.home")),
+                Map.entry("jre.location-25", System.getProperty("java.home")),
                 Map.entry("installation.location", run.toString()),
                 Map.entry("installation.relativeProductFolder", "eclipse"),
                 Map.entry("workspace.location", workspace.getRoot().getLocation().toOSString()),
@@ -234,7 +278,10 @@ public class SetupProbe implements IApplication {
             @Override public void log(String line, boolean filter, Severity severity) { log(line, severity); }
             @Override public void log(IStatus status) { log(status.toString()); }
             @Override public void log(Throwable t) { t.printStackTrace(); }
-            @Override public void task(SetupTask task) { log("Oomph task: " + task); }
+            @Override public void task(SetupTask task) {
+                activeSetupTask = task.eClass().getName();
+                log("Oomph task: " + task);
+            }
             @Override public void setTerminating() { }
         });
         System.out.println("Executing Oomph " + (update ? "MANUAL" : "STARTUP") + " tasks");
@@ -275,8 +322,8 @@ public class SetupProbe implements IApplication {
         require(Arrays.stream(workspace.getRoot().getProjects()).noneMatch(p -> p.getLocation() != null
                 && p.getLocation().toOSString().startsWith(clone.resolve(".github").toString())),
                 "CI fixture must not be imported into the contributor workspace");
-        var ee = JavaRuntime.getExecutionEnvironmentsManager().getEnvironment("JavaSE-21");
-        require(ee != null && ee.getCompatibleVMs().length > 0, "JavaSE-21 is not configured");
+        var ee = JavaRuntime.getExecutionEnvironmentsManager().getEnvironment("JavaSE-25");
+        require(ee != null && ee.getCompatibleVMs().length > 0, "JavaSE-25 is not configured");
         var bundleContext = FrameworkUtil.getBundle(ITargetPlatformService.class).getBundleContext();
         var reference = bundleContext.getServiceReference(ITargetPlatformService.class);
         require(reference != null, "PDE target service is unavailable");
@@ -323,6 +370,20 @@ public class SetupProbe implements IApplication {
             System.out.println("Pending workspace jobs: " + Arrays.toString(Job.getJobManager().find(null)));
         }
         require(errors.isEmpty(), "Workspace build errors:\n" + String.join("\n", errors));
+        // A fragment compiles against a workspace host project, while binary
+        // Tycho tests use the host bundle's classpath. Check the IDE model too.
+        var mathHost = JavaCore.create(workspace.getRoot().getProject("sandbox_math_cleanup"));
+        var mathTests = JavaCore.create(workspace.getRoot().getProject("sandbox_math_cleanup_test"));
+        String sdkType = "de.regelsuche.sdk.optimization.NumericOperation";
+        var hostSdkType = mathHost.findType(sdkType);
+        var testSdkType = mathTests.findType(sdkType);
+        require(hostSdkType != null, "Mathematics host cannot resolve its private SDK: " + sdkType);
+        require(testSdkType != null, "Mathematics test fragment cannot resolve the host SDK: " + sdkType);
+        var hostSdkRoot = hostSdkType.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT).getPath();
+        var testSdkRoot = testSdkType.getAncestor(IJavaElement.PACKAGE_FRAGMENT_ROOT).getPath();
+        require(hostSdkRoot.equals(testSdkRoot), "Host and fragment must use the same SDK: "
+                + hostSdkRoot + " != " + testSdkRoot);
+        System.out.println("Mathematics workspace SDK: " + hostSdkRoot);
         var launchFile = workspace.getRoot().getProject("sandbox_product").getFile("sandbox.product.launch");
         var launch = DebugPlugin.getDefault().getLaunchManager().getLaunchConfiguration(launchFile);
         var launchModels = BundleLauncherHelper.getMergedBundleMap(launch, false).keySet();
@@ -346,6 +407,7 @@ public class SetupProbe implements IApplication {
         result.setProperty("result", "passed");
         result.setProperty("projects", Integer.toString(workspace.getRoot().getProjects().length));
         result.setProperty("target", target.getName());
+        result.setProperty("mathSdk", hostSdkRoot.toString());
         saveResult(run, update, result);
         System.out.println("OOMPH VERIFIED: " + result);
     }

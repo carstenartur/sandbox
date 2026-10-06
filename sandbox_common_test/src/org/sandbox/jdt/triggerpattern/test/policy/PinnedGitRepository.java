@@ -35,6 +35,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.TagOpt;
+import org.eclipse.jgit.util.FileUtils;
 
 /**
  * A JGit-backed test fixture that checks out one exact repository ref and commit.
@@ -91,6 +92,9 @@ public final class PinnedGitRepository implements AutoCloseable {
 			config.setString("remote", Constants.DEFAULT_REMOTE_NAME, "url", remote.toString()); //$NON-NLS-1$ //$NON-NLS-2$
 			// Fetch maintenance must finish before this disposable checkout can be deleted.
 			config.setBoolean("gc", null, "autoDetach", false); //$NON-NLS-1$ //$NON-NLS-2$
+			// Consumer source identity must not depend on the host's checkout defaults.
+			config.setBoolean("core", null, "autocrlf", false); //$NON-NLS-1$ //$NON-NLS-2$
+			config.setString("core", null, "eol", "lf"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			config.save();
 
 			RefSpec pinnedRefSpec = new RefSpec()
@@ -214,7 +218,13 @@ public final class PinnedGitRepository implements AutoCloseable {
 		Files.walkFileTree(root, new SimpleFileVisitor<>() {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
-				Files.delete(file);
+				// Never change permissions through a link to a file outside this checkout.
+				if (attributes.isSymbolicLink()) {
+					Files.delete(file);
+				} else {
+					// JGit pack files may be read-only on Windows. Do not ignore failures.
+					FileUtils.delete(file.toFile(), FileUtils.RETRY);
+				}
 				return FileVisitResult.CONTINUE;
 			}
 
@@ -223,7 +233,7 @@ public final class PinnedGitRepository implements AutoCloseable {
 				if (failure != null) {
 					throw failure;
 				}
-				Files.delete(directory);
+				FileUtils.delete(directory.toFile(), FileUtils.RETRY);
 				return FileVisitResult.CONTINUE;
 			}
 		});

@@ -106,10 +106,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: temurin
           cache: maven
 
@@ -148,15 +148,18 @@ jobs:
           fi
 
       - name: Maven Wrapper clean verify
-        run: >-
-          xvfb-run --auto-servernum ./mvnw
-          --no-transfer-progress
-          -e
-          -V
-          --batch-mode
-          --fail-at-end
-          -Dtycho.localArtifacts=ignore
-          clean verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=0
+          log="$RUNNER_TEMP/sandbox-maven.log"
+          xvfb-run --auto-servernum ./mvnw \
+            --no-transfer-progress -e -V --batch-mode --fail-at-end \
+            -Dtycho.localArtifacts=ignore clean verify 2>&1 | tee "$log" || status=$?
+          # Store the log after clean, including failures before Surefire starts.
+          mkdir -p target/build-verification
+          cp "$log" target/build-verification/maven.log
+          exit "$status"
 
       - name: Publish JUnit annotations
         if: always()
@@ -172,7 +175,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-reports-${{ github.run_number }}
-          path: '**/target/surefire-reports/**'
+          path: |
+            **/target/surefire-reports/**
+            target/build-verification/maven.log
           retention-days: 14
           if-no-files-found: warn
 
@@ -188,10 +193,20 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-java@v6
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: temurin
           cache: maven
       - uses: ./.github/actions/verify-eclipse-desktop-runtime
+      - name: Provide the SWT browser required by Oomph notifications
+        shell: bash
+        run: |
+          set -euo pipefail
+          package=libwebkit2gtk-4.1-0
+          if [[ "$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true)" != 'install ok installed' ]]; then
+            sudo apt-get update
+            sudo apt-get install --yes --no-install-recommends "$package"
+          fi
+          dpkg-query -W "$package"
       - name: Verify fresh provisioning and manual setup after restart
         env:
           CANDIDATE_REF: ${{ github.head_ref || github.ref_name }}

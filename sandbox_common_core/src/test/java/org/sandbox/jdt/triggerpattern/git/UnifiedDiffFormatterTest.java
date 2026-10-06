@@ -32,8 +32,7 @@ class UnifiedDiffFormatterTest {
 	@Test
 	void formatsPatchThatGitCanCheckAndApply() throws Exception {
 		Path repoDir= tempDir.resolve("cleanup-project"); //$NON-NLS-1$
-		Files.createDirectories(repoDir);
-		exec(repoDir, "git", "init", "."); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		initRepository(repoDir);
 
 		String spacedPath= "src/File With Spaces.java"; //$NON-NLS-1$
 		byte[] spacedBefore= String.join("\n", //$NON-NLS-1$
@@ -178,8 +177,7 @@ class UnifiedDiffFormatterTest {
 	@Test
 	void preservesNonUtf8BytesInPatchOutput() throws Exception {
 		Path repoDir= tempDir.resolve("latin1-project"); //$NON-NLS-1$
-		Files.createDirectories(repoDir);
-		exec(repoDir, "git", "init", "."); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		initRepository(repoDir);
 
 		String latin1Path= "src/Latin1.java"; //$NON-NLS-1$
 		byte[] before= "class A {String s=\"Grüße\";}\n".getBytes(StandardCharsets.ISO_8859_1); //$NON-NLS-1$
@@ -201,6 +199,15 @@ class UnifiedDiffFormatterTest {
 		byte[] original= "class Same {}\n".getBytes(StandardCharsets.UTF_8); //$NON-NLS-1$
 
 		assertEquals(0, UnifiedDiffFormatter.format("src/Same.java", original, original).length); //$NON-NLS-1$
+	}
+
+	private static void initRepository(Path repoDir) throws IOException, InterruptedException {
+		Files.createDirectories(repoDir);
+		exec(repoDir, "git", "init", "."); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		// These tests assert the formatter's raw bytes, including LF, CRLF and Latin-1.
+		// Git for Windows can otherwise rewrite them after applying a correct patch.
+		exec(repoDir, "git", "config", "core.autocrlf", "false"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		Files.writeString(repoDir.resolve(".git/info/attributes"), "* -text\n", StandardCharsets.UTF_8); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private static void write(Path path, byte[] content) throws IOException {

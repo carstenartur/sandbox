@@ -1,5 +1,5 @@
 # === Build Stage ===
-FROM eclipse-temurin:21-jdk AS builder
+FROM eclipse-temurin:25-jdk AS builder
 WORKDIR /build
 COPY . .
 RUN chmod +x mvnw 2>/dev/null || true
@@ -11,7 +11,7 @@ RUN mvn -pl sandbox-jgit-server-webapp \
     -B -q
 
 # === Runtime Stage ===
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 WORKDIR /app
 
 COPY --from=builder /build/sandbox-jgit-server-webapp/target/jgit-server.jar .

@@ -3,11 +3,11 @@
 ## Environment setup
 
 ```bash
-export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+export JAVA_HOME=/usr/lib/jvm/temurin-25-jdk-amd64
 export PATH=$JAVA_HOME/bin:$PATH
 ```
 
-The executable baseline is Java 21, Tycho 5.0.4, and Eclipse 2026-09 / Platform 4.41.
+The executable baseline is Java 25, Tycho 5.0.4, and Eclipse 2026-09 / Platform 4.41.
 
 ## Running tests
 
@@ -23,7 +23,7 @@ mvn test -pl sandbox-functional-converter-core
 
 ## Critical rules
 
-1. **Java 21 is required** — the current Tycho and Eclipse baseline is built and tested with Java 21.
+1. **Java 25 is required** — build and test the current Tycho and Eclipse baseline with Java 25.
 2. **Do not restructure packages casually** — `org.sandbox.*` often maps deliberately to `org.eclipse.*` for JDT porting.
 3. **Do not de-duplicate CleanUpCore classes merely because they look similar** — some separation mirrors JDT execution layers.
 4. **Do not rename `MYCleanUpConstants`** — the prefix avoids conflicts with Eclipse JDT classes.

@@ -4,7 +4,7 @@ Bundle-Name: Sandbox Patched JDT UI Runtime Probe
 Bundle-SymbolicName: sandbox_patched_jdt_ui_runtime_probe;singleton:=true
 Bundle-Version: 1.0.0
 Bundle-Vendor: Sandbox
-Bundle-RequiredExecutionEnvironment: JavaSE-21
+Bundle-RequiredExecutionEnvironment: JavaSE-25
 Bundle-ActivationPolicy: lazy
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.resources,

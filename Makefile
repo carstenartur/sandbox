@@ -1,10 +1,10 @@
-SUPPORTED_JAVA_MAJOR := 21
+SUPPORTED_JAVA_MAJOR := 25
 
 .PHONY: check-java dev dev-notests product repo release test clean help cli-dist
 
 help:
 	@echo "Available targets:"
-	@echo "  check-java  - Verify that Maven runs on the supported JDK 21"
+	@echo "  check-java  - Verify that Maven runs on the supported JDK 25"
 	@echo "  dev         - Fast development build with tests"
 	@echo "  dev-notests - Fast development build without tests"
 	@echo "  product     - Build with Eclipse product"

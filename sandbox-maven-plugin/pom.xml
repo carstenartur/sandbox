@@ -16,8 +16,8 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>21</maven.compiler.source>
-		<maven.compiler.target>21</maven.compiler.target>
+		<maven.compiler.source>25</maven.compiler.source>
+		<maven.compiler.target>25</maven.compiler.target>
 		<maven-plugin-api.version>3.9.16</maven-plugin-api.version>
 		<maven-plugin-annotations.version>3.16.0</maven-plugin-annotations.version>
 	</properties>
@@ -55,7 +55,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.16.0</version>
 				<configuration>
-					<release>21</release>
+					<release>25</release>
 				</configuration>
 			</plugin>
 		</plugins>

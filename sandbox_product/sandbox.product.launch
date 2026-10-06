@@ -21,10 +21,10 @@
     <booleanAttribute key="org.eclipse.debug.core.ATTR_FORCE_SYSTEM_CONSOLE_ENCODING" value="false" />
     <booleanAttribute key="org.eclipse.jdt.launching.ATTR_ATTR_USE_ARGFILE" value="false" />
     <booleanAttribute key="org.eclipse.jdt.launching.ATTR_SHOW_CODEDETAILS_IN_EXCEPTION_MESSAGES" value="true" />
-    <stringAttribute key="org.eclipse.jdt.launching.JRE_CONTAINER" value="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-21" />
+    <stringAttribute key="org.eclipse.jdt.launching.JRE_CONTAINER" value="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-25" />
     <stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="-os ${target.os} -ws ${target.ws} -arch ${target.arch} -nl ${target.nl} -consoleLog -clearPersistedState --launcher.defaultAction openFile --launcher.appendVmargs" />
     <stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.pde.ui.workbenchClasspathProvider" />
-    <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dorg.eclipse.swt.graphics.Resource.reportNonDisposed=true -Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseStringDeduplication -Dosgi.requiredJavaVersion=21 -Dosgi.dataAreaRequiresExplicitInit=true --add-modules=ALL-SYSTEM" />
+    <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dorg.eclipse.swt.graphics.Resource.reportNonDisposed=true -Xms512m -Xmx1024m -XX:+UseG1GC -XX:+UseStringDeduplication -Dosgi.requiredJavaVersion=25 -Dosgi.dataAreaRequiresExplicitInit=true --add-modules=ALL-SYSTEM" />
     <stringAttribute key="pde.version" value="3.3" />
     <stringAttribute key="product" value="org.eclipse.platform.ide" />
     <booleanAttribute key="show_selected_only" value="false" />
@@ -54,6 +54,7 @@
         <setEntry value="sandbox_functional_converter_feature:default" />
         <setEntry value="sandbox_method_reuse_feature:default" />
         <setEntry value="sandbox_int_to_enum_feature:default" />
+        <setEntry value="sandbox_math_cleanup_feature:default" />
         <setEntry value="sandbox_cleanup_application_feature:default" />
         <setEntry value="sandbox_triggerpattern_feature:default" />
         <setEntry value="sandbox_container_cleanup_feature:default" />
@@ -87,6 +88,7 @@
         <setEntry value="sandbox_functional_converter_feature" />
         <setEntry value="sandbox_method_reuse_feature" />
         <setEntry value="sandbox_int_to_enum_feature" />
+        <setEntry value="sandbox_math_cleanup_feature" />
         <setEntry value="sandbox_cleanup_application_feature" />
         <setEntry value="sandbox_triggerpattern_feature" />
         <setEntry value="sandbox_container_cleanup_feature" />

@@ -1,0 +1,17 @@
+  java.lang.String[] splitArgLine(java.lang.String) throws org.apache.maven.plugin.MojoExecutionException;
+    Code:
+         0: aload_1
+         1: invokestatic  #1238               // Method org/codehaus/plexus/util/cli/CommandLineUtils.translateCommandline:(Ljava/lang/String;)[Ljava/lang/String;
+         4: areturn
+         5: astore_2
+         6: new           #60                 // class org/apache/maven/plugin/MojoExecutionException
+         9: dup
+        10: aload_2
+        11: invokevirtual #362                // Method java/lang/Exception.getMessage:()Ljava/lang/String;
+        14: invokedynamic #1243,  0           // InvokeDynamic #23:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+        19: aload_2
+        20: invokespecial #359                // Method org/apache/maven/plugin/MojoExecutionException."<init>":(Ljava/lang/String;Ljava/lang/Exception;)V
+        23: athrow
+      Exception table:
+         from    to  target type
+             0     4     5   Class java/lang/Exception

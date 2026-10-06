@@ -67,7 +67,7 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>${maven-compiler-plugin.version}</version>
 				<configuration>
-					<release>21</release>
+					<release>25</release>
 				</configuration>
 			</plugin>
 			
@@ -103,6 +103,10 @@
 				<groupId>biz.aQute.bnd</groupId>
 				<artifactId>bnd-maven-plugin</artifactId>
 				<version>${bnd.version}</version>
+				<!-- Do not let PDE mistake Maven instructions for a plain Bnd workspace. -->
+				<configuration>
+					<bndfile>maven-bundle.bnd</bndfile>
+				</configuration>
 				<executions>
 					<execution>
 						<goals>

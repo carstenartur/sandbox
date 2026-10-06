@@ -1,0 +1,83 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] -------------< local.qualification:options-reconstruction >-------------
+[INFO] Building options-reconstruction 1
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- resources:3.4.0:resources (default-resources) @ options-reconstruction ---
+[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
+[INFO] skip non existing resourceDirectory /workspace/scratch/e422f490850c/tooling/options-reconstruction/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:compile (default-compile) @ options-reconstruction ---
+[INFO] Recompiling the module because of changed source code.
+[WARNING] File encoding has not been set, using platform encoding UTF-8, i.e. build is platform dependent!
+[INFO] Compiling 5 source files with javac [debug release 25] to target/classes
+[INFO] 
+[INFO] --- resources:3.4.0:testResources (default-testResources) @ options-reconstruction ---
+[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
+[INFO] skip non existing resourceDirectory /workspace/scratch/e422f490850c/tooling/options-reconstruction/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.14.1:testCompile (default-testCompile) @ options-reconstruction ---
+[INFO] Recompiling the module because of changed dependency.
+[WARNING] File encoding has not been set, using platform encoding UTF-8, i.e. build is platform dependent!
+[INFO] Compiling 5 source files with javac [debug release 25] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.5.4:test (default-test) @ options-reconstruction ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.077 s -- in org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest
+[INFO] Running org.sandbox.jdt.internal.ui.fix.MathematicalArgumentsTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.010 s -- in org.sandbox.jdt.internal.ui.fix.MathematicalArgumentsTest
+[INFO] Running org.sandbox.jdt.internal.ui.fix.MathematicalValidationEditTest
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.049 s -- in org.sandbox.jdt.internal.ui.fix.MathematicalValidationEditTest
+[INFO] Running org.sandbox.jdt.internal.ui.fix.MathematicalEnvironmentTest
+[ERROR] Tests run: 4, Failures: 3, Errors: 0, Skipped: 0, Time elapsed: 0.034 s <<< FAILURE! -- in org.sandbox.jdt.internal.ui.fix.MathematicalEnvironmentTest
+[ERROR] org.sandbox.jdt.internal.ui.fix.MathematicalEnvironmentTest.memberSignaturesAndImportsInvalidateSavedBindings -- Time elapsed: 0.007 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <true> but was: <false>
+	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:190)
+	at org.sandbox.jdt.internal.ui.fix.MathematicalEnvironmentTest.memberSignaturesAndImportsInvalidateSavedBindings(MathematicalEnvironmentTest.java:17)
+
+[ERROR] org.sandbox.jdt.internal.ui.fix.MathematicalEnvironmentTest.addedTypesAndArchiveClasspathChangesInvalidateSavedBindings -- Time elapsed: 0.001 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: <true> but was: <false>
+	at org.junit.jupiter.api.Assertions.assertTrue(Assertions.java:190)
+	at org.sandbox.jdt.internal.ui.fix.MathematicalEnvironmentTest.addedTypesAndArchiveClasspathChangesInvalidateSavedBindings(MathematicalEnvironmentTest.java:20)
+
+[ERROR] org.sandbox.jdt.internal.ui.fix.MathematicalEnvironmentTest.mapDigestIsOrderIndependentButValuesAndKeysAreUnambiguous -- Time elapsed: 0.002 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: not equal but was: <>
+	at org.junit.jupiter.api.Assertions.assertNotEquals(Assertions.java:2920)
+	at org.sandbox.jdt.internal.ui.fix.MathematicalEnvironmentTest.mapDigestIsOrderIndependentButValuesAndKeysAreUnambiguous(MathematicalEnvironmentTest.java:26)
+
+[INFO] Running org.sandbox.jdt.internal.ui.fix.MathematicalAnalysisJobTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.251 s -- in org.sandbox.jdt.internal.ui.fix.MathematicalAnalysisJobTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[ERROR] Failures: 
+[ERROR]   MathematicalEnvironmentTest.addedTypesAndArchiveClasspathChangesInvalidateSavedBindings:20 expected: <true> but was: <false>
+[ERROR]   MathematicalEnvironmentTest.mapDigestIsOrderIndependentButValuesAndKeysAreUnambiguous:26 expected: not equal but was: <>
+[ERROR]   MathematicalEnvironmentTest.memberSignaturesAndImportsInvalidateSavedBindings:17 expected: <true> but was: <false>
+[INFO] 
+[ERROR] Tests run: 22, Failures: 3, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.084 s
+[INFO] Finished at: 2026-10-05T02:28:26+07:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.5.4:test (default-test) on project options-reconstruction: There are test failures.
+[ERROR] 
+[ERROR] See /workspace/scratch/e422f490850c/tooling/options-reconstruction/target/surefire-reports for the individual test results.
+[ERROR] See dump files (if any exist) [date].dump, [date]-jvmRun[N].dump and [date].dumpstream.
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

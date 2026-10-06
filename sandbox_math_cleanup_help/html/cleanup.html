@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Mathematics Cleanup</title>
+<style>body{font-family:system-ui,sans-serif;max-width:70em;margin:2em;line-height:1.5}table{border-collapse:collapse}th,td{border:1px solid #aaa;padding:.5em;text-align:left}pre{background:#eee;padding:1em;overflow:auto}.warning{border-left:4px solid #b65b00;padding:1em;background:#fff4e8}</style></head>
+<body>
+<h1>Mathematics Cleanup</h1>
+<p>Analyze method-local Java calculations with a local, bounded optimizer and an
+independent numerical checker. The result is ordinary Java. Your application
+does not acquire a Regelsuche dependency. The cleanup is disabled by default;
+its initial profile is <strong>Only BigInteger</strong> with
+<strong>Preserve Java behavior</strong>.</p>
+
+<h2 id="configure">Configure, preview and apply</h2>
+<ol>
+<li>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a profile and
+select <strong>Mathematics (Sandbox)</strong>.</li>
+<li>Enable the explicit cleanup. Choose a numeric profile or individual types,
+then independently choose the safety profile, goal and budget.</li>
+<li>Run <strong>Source &gt; Clean Up</strong>. Read the diagnostics and ordinary
+file diff before applying. Related outputs belong to one edit group.</li>
+<li>Use Eclipse Undo to revert the applied change.</li>
+</ol>
+<p>Quick Assist analyzes the current selection in a cancellable background job.
+When the editor status line reports completion, invoke Quick Assist again to
+obtain the standard change proposal and preview. Numerical options come from
+the active project/workspace cleanup profile. Invoking Quick Assist is an explicit
+analysis request, even when automatic inclusion in cleanup is disabled.</p>
+<p>There is no save-action search. Changing the source, compiler settings, classpath, referenced project binding state or
+mathematics profile invalidates an existing proposal. Analyze the current version
+again instead of applying old evidence.</p>
+<h2 id="options">Independent options</h2>
+<table><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>Numeric types</td><td>Only BigInteger; int and long; float and double; or a
+custom selection of BigInteger, byte, short, char, int, long, float and double.
+Both declared and actually promoted operation types must be selected.</td></tr>
+<tr><td>Goal</td><td>Lower estimated runtime, lower allocation, or readability.
+An estimated improvement is not a measured speedup.</td></tr>
+<tr><td>Work budget / states</td><td>Default 100,000 units of search work and 2,000
+states. Allowed maxima are 100,000,000 and 1,000,000. Cancellation and budget
+exhaustion leave unverified candidates unapplied.</td></tr>
+<tr><td>Exclusions</td><td>Semicolon-separated path globs, for example
+<code>**/generated/**;org/example/Secret.java</code>. Excluded files remain unchanged.</td></tr>
+<tr><td>Underflow checks</td><td>Explicitly unsupported. A zero test cannot detect
+the required tiny-and-inexact event. The disabled control cannot enable it;
+configuration requesting it is rejected.</td></tr>
+</tbody></table>
+
+<h2 id="safety">Safety profiles</h2>
+<table><thead><tr><th>Profile</th><th>Contract</th></tr></thead><tbody>
+<tr><td><code>PRESERVE_JAVA</code></td><td>Preserve Java values, integer wraparound,
+IEEE-754 behavior, relevant exception paths and evaluation effects. No new
+numerical exceptions are introduced.</td></tr>
+<tr><td><code>GUARDED_FALLBACK</code></td><td>A checked, side-effect-free condition
+selects an equivalent replacement. Otherwise the original calculation executes.
+The guard and fallback costs count toward the estimate.</td></tr>
+<tr><td><code>CHECKED_THROW</code></td><td>A deliberately stricter contract. Numerical
+violations may raise <code>ArithmeticException</code>. Requires the separate
+<em>I explicitly accept new ArithmeticException behavior</em> checkbox.</td></tr>
+</tbody></table>
+<div class="warning"><strong>Checked arithmetic changes behavior.</strong>
+Checks must cover both original and replacement operations, including eliminated
+intermediate values. Integral checks cover modeled range/narrowing obligations;
+floating-point checks require non-finite-value detection and agreement with the
+original Java calculation. Unsupported obligations produce a diagnostic, not an
+unchecked replacement. Select All does not grant checked-mode consent.</div>
+
+<h2 id="supported-inputs">What can be analyzed?</h2>
+<table><thead><tr><th>Input</th><th>Boundary</th></tr></thead><tbody>
+<tr><td>BigInteger</td><td>Resolved exact-receiver/value-semantics calculations,
+including multiple statements and outputs. Null behavior, dynamic dispatch,
+division, modulus and exponent requirements must be justified. Magnitudes must be
+bounded; mathematically unbounded identities alone cannot justify removing Java
+implementation-range exceptions. Derived receiver chains must end in a supported
+value observation. Unknown receivers need supported guards or are rejected;
+receiver guards are currently unavailable for the lower-estimated-runtime goal
+and cannot be combined with primitive numerical guard obligations.</td></tr>
+<tr><td>byte, short, char, int, long</td><td>Promotions, concrete widths, casts and
+operation order remain part of the proof. Existing exact-arithmetic exceptions
+cannot disappear.</td></tr>
+<tr><td>float, double</td><td>Only concrete IEEE-equivalent transformations qualify.
+The supported strict contract requires a target Java level of at least 17.
+Rounding, signed zero, NaN and infinities are not interchangeable with real arithmetic. Only explicitly supported primitive or canonical-value observations qualify; raw-bit and object-identity observations require separate evidence.</td></tr>
+<tr><td>BigDecimal, arbitrary Number subclasses, unresolved bindings</td><td>No
+automatic BigInteger interpretation. Unsupported regions stay unchanged.</td></tr>
+<tr><td>Effects, loops, mutable arrays, unknown calls, identity observations</td><td>No
+general algorithm rewrite. A region must satisfy the extractor's explicit local
+binding, effect and value-semantics checks. External user-defined field constants are rejected because their defining source is not part of the local proof.</td></tr>
+</tbody></table>
+<p>Host Eclipse bundles require Java 25. The Java level of the project being
+edited remains unchanged and limits generated syntax and APIs. Unknown or
+unqualified target contracts are rejected.</p>
+
+<h2 id="examples">Examples and counterexamples</h2>
+<p>An eligible shape uses a known BigInteger factory and value-only observations:</p>
+<pre>BigInteger input = BigInteger.valueOf(a * b);
+BigInteger sum = input.add(BigInteger.ONE);
+BigInteger result = sum.subtract(BigInteger.ONE);
+return result.intValue();</pre>
+<p>The primitive <code>a * b</code> is evaluated under its existing Java contract.
+Selecting Only BigInteger does not turn it into unbounded multiplication.
+An accepted candidate may reuse <code>input</code> for the value of
+<code>result</code>; the concrete preview includes all retained output and check
+obligations. Unknown BigInteger parameter receivers or observed object identity
+need separate evidence and may be rejected.</p>
+<ul>
+<li><code>(x * 2) / 2 -&gt; x</code> is invalid for arbitrary Java int inputs:
+<code>Integer.MAX_VALUE</code> exposes overflow. Checking only the replacement
+would miss the original overflow.</li>
+<li><code>(x + 1) - 1 -&gt; x</code> preserves int wraparound values, but checked
+mode must still observe an original overflowing addition.</li>
+<li><code>(x + 1.0) - x -&gt; 1.0</code> is invalid for
+<code>x = 1e16</code>. Both values can be finite and different. A finite test,
+<code>strictfp</code>, or an arbitrary epsilon does not prove this rewrite.</li>
+</ul>
+
+<h2 id="headless">Headless use and diagnostics</h2>
+<p>For a strictly read-only analysis, use the separate application with an
+existing, open Java project in an Eclipse workspace:</p>
+<pre>eclipse -nosplash -application sandbox_math_cleanup.analysis \
+  -data /work/eclipse-workspace \
+  --project Example --config /work/math.properties \
+  --report /work/math-analysis.json</pre>
+<p>The application contract is
+<code>sandbox_math_cleanup.analysis --project NAME --config FILE --report FILE [--apply] [--accept-checked]</code>.
+The three valued arguments are required; unknown or duplicate arguments are
+rejected. <code>--project</code> names one existing workspace project, not a path.
+The configuration and report must use different destinations.</p>
+<p>Analysis is the default: candidates are reported without applying source edits.
+Add <code>--apply</code> to request application. Applying
+<code>CHECKED_THROW</code> additionally requires both
+<code>cleanup.mathematics.checkedOptIn=true</code> in the configuration and
+<code>--accept-checked</code> on the command line. A candidate and an applied
+change are distinct report outcomes. Estimated costs are not measured timings.</p>
+<p>The mathematics configuration has nine strict keys. This example explicitly
+enables the otherwise disabled cleanup, selects the default numeric/safety
+profiles, and excludes generated files:</p>
+<pre>cleanup.mathematics=true
+cleanup.mathematics.numericKinds=BIG_INTEGER
+cleanup.mathematics.safetyProfile=PRESERVE_JAVA
+cleanup.mathematics.goal=LOWER_ESTIMATED_RUNTIME
+cleanup.mathematics.workBudget=100000
+cleanup.mathematics.maxStates=2000
+cleanup.mathematics.checkedOptIn=false
+cleanup.mathematics.underflowChecks=false
+cleanup.mathematics.exclusions=**/generated/**</pre>
+<p>Invalid option names or values fail validation. Source/configuration mismatch
+reports <code>STALE_ANALYSIS</code>. Unresolved bindings, excluded types, unknown
+effects or domains, absent proofs, cancellation and exhausted budgets produce
+specific analysis diagnostics. No analyzed user program is executed to infer
+its behavior.</p>
+<h2 id="qualification">Qualification status</h2>
+<p>Fresh workbench screenshots, the full analysis-only corpus report and measured
+Java performance results are pending for the reconstructed build. Preliminary
+tests do not establish final installation, GUI or performance qualification.</p>
+<p>The source checkout separates new evidence under
+<code>qa/math-optimization/results/</code> from incomplete historical recovery
+under <code>qa/math-optimization/history/pre-reset/</code>. Earlier corpus outputs
+and JMH raw samples were lost. Historical aggregate reports are not current
+measurements and must not be used to claim a speedup.</p>
+<p>The benchmark harness compares the actual emitted and original Java with the
+same rotating inputs, warmup, multiple forks and allocation profiling. Search,
+proof and code generation are separate development-time work. All generated
+normalization, guards and checks belong in runtime measurements. A local fixture
+result does not establish performance for Bouncy Castle or every safety profile.</p>
+<p>Numerical equivalence does not certify constant-time behavior. Review secret
+or unclassified cryptographic regions separately. An analysis result does not
+authorize automatic cryptographic changes. Public-parameter initialization needs
+explicit review; constructor arguments are not automatically public. A missing
+precondition or an unchanged already-optimized file is not a proof of optimality.</p>
+</body></html>

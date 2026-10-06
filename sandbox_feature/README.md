@@ -82,7 +82,7 @@ compatibility with every historical host.
 
 ## Verification
 
-Use the existing build, with Java 21 and a desktop display (Xvfb on Linux):
+Use the existing build, with Java 25 and a desktop display (Xvfb on Linux):
 
 ```sh
 xvfb-run --auto-servernum mvn -Pdistribution clean verify

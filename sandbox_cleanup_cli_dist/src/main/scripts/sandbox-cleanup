@@ -1,0 +1,36 @@
+#!/bin/sh
+# Launch the assembled cleanup application with the supported Java runtime.
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+INSTALL_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+
+if [ -n "${JAVA_HOME:-}" ]; then
+    JAVA="$JAVA_HOME/bin/java"
+    [ -x "$JAVA" ] || { echo "JAVA_HOME must name a Java 25 installation." >&2; exit 1; }
+else
+    JAVA=
+    for candidate in "$INSTALL_DIR"/plugins/org.eclipse.justj.openjdk.hotspot.jre.*/jre/bin/java; do
+        if [ -x "$candidate" ]; then JAVA=$candidate; break; fi
+    done
+    if [ -z "$JAVA" ]; then JAVA=$(command -v java || true); fi
+    [ -n "$JAVA" ] || { echo "Java 25 is required. Set JAVA_HOME or install the bundled runtime." >&2; exit 1; }
+fi
+JAVA_MAJOR=$("$JAVA" -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java.specification.version = //p' | head -n 1)
+if [ "$JAVA_MAJOR" != 25 ]; then
+    echo "Sandbox cleanup requires the supported Java 25 runtime; found ${JAVA_MAJOR:-unknown}." >&2
+    exit 1
+fi
+
+LAUNCHER=
+for candidate in "$INSTALL_DIR"/plugins/org.eclipse.equinox.launcher_*.jar; do
+    if [ -f "$candidate" ]; then LAUNCHER=$candidate; break; fi
+done
+[ -n "$LAUNCHER" ] || { echo "Missing Equinox launcher in $INSTALL_DIR/plugins." >&2; exit 1; }
+WORKSPACE=${SANDBOX_WORKSPACE:-${SANDBOX_CLEANUP_WORKSPACE:-${TMPDIR:-/tmp}/sandbox-cleanup-$$}}
+mkdir -p "$WORKSPACE"
+
+if [ "$(uname -s)" = Darwin ]; then
+    exec "$JAVA" -XstartOnFirstThread -jar "$LAUNCHER" -nosplash -consoleLog -application org.sandbox.jdt.core.JavaCleanup -configuration "$INSTALL_DIR/configuration" -data "$WORKSPACE" "$@"
+fi
+exec "$JAVA" -jar "$LAUNCHER" -nosplash -consoleLog -application org.sandbox.jdt.core.JavaCleanup -configuration "$INSTALL_DIR/configuration" -data "$WORKSPACE" "$@"

@@ -1,0 +1,5 @@
+ERROR: Sandbox builds are supported with JDK 25, but Maven is using JDK 21.
+Set JAVA_HOME to a JDK 25 installation and retry.
+Fedora: sudo dnf install java-25-openjdk-devel
+See docs/JAVA_BUILD_RUNTIME.md for details.
+make: *** [Makefile:19: check-java] Error 1

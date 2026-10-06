@@ -8,7 +8,7 @@ Sandbox is an experimental Java modernization toolkit built on Eclipse JDT. Cont
 
 | Component | Current baseline |
 |---|---|
-| Java | 21 |
+| Java | 25 |
 | Eclipse target | Eclipse 2026-09 / Platform 4.41 |
 | Build system | Maven Wrapper 3.3.4, Maven 3.9.16, Tycho 5.0.4 |
 | Default branch | `main` |
@@ -26,7 +26,7 @@ The authoritative values are declared in `.mvn/wrapper/maven-wrapper.properties`
 
 ## Building and testing
 
-Only Java 21 is required to bootstrap Maven. Do not depend on a separately installed system Maven; the checked-in wrapper downloads and verifies the pinned Maven distribution.
+Only Java 25 is required to bootstrap Maven. Do not depend on a separately installed system Maven; the checked-in wrapper downloads and verifies the pinned Maven distribution.
 
 A normal development verification on Linux or macOS is:
 

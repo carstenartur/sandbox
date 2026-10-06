@@ -24,6 +24,10 @@ inputs:
     description: Sandbox cleanup container image.
     required: false
     default: ghcr.io/carstenartur/sandbox-cleanup:latest
+  java-home:
+    description: Optional host JDK mounted read-only for analysis; overrides the image runtime without changing project settings.
+    required: false
+    default: ''
   scope:
     description: Cleanup source scope (main, test, or both).
     required: false
@@ -69,16 +73,24 @@ runs:
       id: cleanup
       shell: bash
       env:
+        REVIEW_JAVA_HOME: ${{ inputs.java-home }}
         OUTPUT_DIR: ${{ runner.temp }}/sandbox-cleanup-review-${{ github.run_id }}-${{ github.run_attempt }}
       run: |
+        set -euo pipefail
+        status=0
+        # The runner resets OUTPUT_DIR, so keep the live log beside it.
         "$GITHUB_ACTION_PATH/run-cleanup-review.sh" \
           --base-sha "${{ inputs.base-sha }}" \
           --head-sha "${{ inputs.head-sha }}" \
           --config-file "${{ inputs.config-file }}" \
           --image "${{ inputs.image }}" \
+          --java-home "${REVIEW_JAVA_HOME:-}" \
           --scope "${{ inputs.scope }}" \
           --source-mode "${{ inputs.source-mode }}" \
-          --output-dir "$OUTPUT_DIR"
+          --output-dir "$OUTPUT_DIR" 2>&1 | tee "$OUTPUT_DIR.log" || status=$?
+        mkdir -p "$OUTPUT_DIR"
+        mv -- "$OUTPUT_DIR.log" "$OUTPUT_DIR/cleanup.log"
+        exit "$status"
 
     - name: Publish applicable Suggested Changes
       id: publish
@@ -123,11 +135,11 @@ runs:
         fi
 
     - name: Upload complete cleanup evidence
-      if: always() && steps.cleanup.outputs.has_changes == 'true' && inputs.upload-artifact == 'true'
+      if: always() && inputs.upload-artifact == 'true' && (steps.cleanup.outputs.has_changes == 'true' || steps.cleanup.outcome == 'failure')
       uses: actions/upload-artifact@v7
       with:
         name: ${{ inputs.artifact-name }}
-        path: ${{ steps.cleanup.outputs.output_dir }}
+        path: ${{ runner.temp }}/sandbox-cleanup-review-${{ github.run_id }}-${{ github.run_attempt }}
         if-no-files-found: error
 
     - name: Add cleanup summary

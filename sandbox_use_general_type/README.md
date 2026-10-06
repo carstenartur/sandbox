@@ -106,7 +106,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design documentation.
 ## Requirements
 
 - Eclipse 2025-12 or later
-- Java 21 or later
+- Java 25
 
 ## License
 

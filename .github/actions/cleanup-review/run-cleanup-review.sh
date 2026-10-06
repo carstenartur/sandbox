@@ -11,6 +11,7 @@ Usage: run-cleanup-review.sh \
   --head-sha <sha> \
   --config-file <repository-relative path> \
   --image <container image> \
+  [--java-home <host JDK directory>] \
   [--scope main|test|both] \
   [--source-mode changed|project] \
   [--output-dir <directory>]
@@ -50,6 +51,7 @@ base_sha=
 head_sha=
 config_file=
 image=
+java_home=
 scope=both
 source_mode=changed
 output_dir=${RUNNER_TEMP:-/tmp}/sandbox-cleanup-review
@@ -74,6 +76,11 @@ while (($# > 0)); do
     --image)
       (($# >= 2)) || die "--image requires a value"
       image=$2
+      shift 2
+      ;;
+    --java-home)
+      (($# >= 2)) || die "--java-home requires a value"
+      java_home=$2
       shift 2
       ;;
     --scope)
@@ -107,6 +114,14 @@ done
 [[ -n $image ]] || die "--image is required"
 [[ $scope == main || $scope == test || $scope == both ]] || die "Invalid scope: $scope"
 [[ $source_mode == changed || $source_mode == project ]] || die "Invalid source mode: $source_mode"
+
+# A released image may predate the source project's Java baseline. An explicit
+# host JDK is mounted read-only; never rewrite the project's compiler settings.
+if [[ -n $java_home ]]; then
+  java_home=$(realpath -- "$java_home") || die "Cannot resolve JDK directory"
+  [[ -x $java_home/bin/java && -f $java_home/release ]] || die "JDK must contain an executable bin/java and a release file"
+  [[ $java_home != *:* && $java_home != *$'\n'* ]] || die "JDK path cannot contain a colon or newline"
+fi
 
 repo_root=$(git rev-parse --show-toplevel 2>/dev/null) || die "The action must run inside a Git repository"
 repo_root=$(realpath "$repo_root")
@@ -237,6 +252,12 @@ for project_index in "${!project_roots[@]}"; do
   fi
 
   report_name=report-${project_index}.json
+  runtime_args=()
+  if [[ -n $java_home ]]; then
+    runtime_args+=(--volume "$java_home:/opt/sandbox-review-jdk:ro"
+      --env JAVA_HOME=/opt/sandbox-review-jdk
+      --env PATH=/opt/sandbox-review-jdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin)
+  fi
   command_args=(
     "$docker_bin" run --rm
     --user "$(id -u):$(id -g)"
@@ -245,6 +266,7 @@ for project_index in "${!project_roots[@]}"; do
     --volume "$repo_root:/workspace"
     --volume "$output_dir:/review-output"
     --workdir /workspace
+    "${runtime_args[@]}"
     "$image"
     --config "/workspace/$config_rel"
     --mode apply
