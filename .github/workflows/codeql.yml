@@ -20,7 +20,9 @@ on:
     paths:
       - '**.java'
       - '**/pom.xml'
-      - '.github/actions/use-runner-maven/**'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.mvn/**'
       - '.github/workflows/codeql.yml'
   schedule:
     - cron: '37 10 * * 6'
@@ -56,8 +58,8 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Use runner Maven
-      uses: ./.github/actions/use-runner-maven
+    - name: Verify pinned Maven Wrapper
+      run: ./mvnw --batch-mode --no-transfer-progress --version
 
     - name: Cache Maven dependencies
       uses: actions/cache@v6
@@ -78,7 +80,7 @@ jobs:
     # Build with the versions declared by the reactor. Hard-coding Tycho here can
     # make CodeQL validate a different build than the normal Maven workflow.
     - name: Build with Maven
-      run: mvn -B -DskipTests clean package
+      run: ./mvnw -B -DskipTests clean package
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4

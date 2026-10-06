@@ -12,7 +12,8 @@ on:
       - 'org/**'
       - '*.xml'
       - '*.properties'
-      - '.github/actions/use-runner-maven/**'
+      - 'mvnw'
+      - 'mvnw.cmd'
       - '.github/actions/verify-eclipse-desktop-runtime/**'
       - '.github/scripts/smoke_test_distribution.sh'
       - '.github/scripts/validate_distribution_evidence.py'
@@ -28,7 +29,8 @@ on:
       - 'org/**'
       - '*.xml'
       - '*.properties'
-      - '.github/actions/use-runner-maven/**'
+      - 'mvnw'
+      - 'mvnw.cmd'
       - '.github/actions/verify-eclipse-desktop-runtime/**'
       - '.github/scripts/smoke_test_distribution.sh'
       - '.github/scripts/validate_distribution_evidence.py'
@@ -69,8 +71,9 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
-      - name: Use runner Maven
-        uses: ./.github/actions/use-runner-maven
+      - name: Verify pinned Maven Wrapper
+        shell: bash
+        run: ./mvnw --batch-mode --no-transfer-progress --version
       - name: Verify preinstalled Eclipse desktop runtime
         if: runner.os == 'Linux'
         uses: ./.github/actions/verify-eclipse-desktop-runtime
@@ -99,7 +102,7 @@ jobs:
         run: |
           set -o pipefail
           status=0
-          command=(mvn -Pdistribution,cli-dist,swtbot --batch-mode -Dtycho.localArtifacts=ignore
+          command=(./mvnw -Pdistribution,cli-dist,swtbot --batch-mode -Dtycho.localArtifacts=ignore
             -Dsandbox.math.retainHeadlessProbe=true clean verify)
           if [[ "$RUNNER_OS" == 'Linux' ]]; then
             command=(xvfb-run --auto-servernum "${command[@]}")
@@ -112,7 +115,7 @@ jobs:
       - name: Verify installed mathematics without a display
         shell: bash
         run: >-
-          mvn -Pdistribution --batch-mode -pl sandbox_distribution_verify
+          ./mvnw -Pdistribution --batch-mode -pl sandbox_distribution_verify
           -Dtycho.localArtifacts=ignore exec:java@verify-installed-mathematics
       - name: Validate distribution evidence contract
         shell: bash
