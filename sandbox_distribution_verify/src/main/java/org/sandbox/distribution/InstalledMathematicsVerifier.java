@@ -328,17 +328,23 @@ public final class InstalledMathematicsVerifier {
         require(Files.isDirectory(installation), "Fresh p2 installation must pass before this gate: " + installation);
         try (var files = Files.walk(installation, 4)) {
             List<Path> homes = files.filter(Files::isDirectory).filter(path -> path.endsWith("plugins"))
-                    .map(Path::getParent).filter(Objects::nonNull).toList();
+                    .map(Path::getParent).filter(Objects::nonNull)
+                    .filter(path -> Files.isRegularFile(path.resolve("configuration/config.ini")))
+                    .filter(path -> launcherCandidates(path).stream().anyMatch(Files::isRegularFile)).toList();
             require(homes.size() == 1, "Expected one installed Eclipse home: " + homes);
             return homes.getFirst();
         }
     }
 
     static Path launcher(Path home) throws IOException {
-        for (Path path : List.of(home.resolve("eclipse"), home.resolve("eclipse.exe"), home.resolve("../MacOS/eclipse").normalize(),
-                home.resolve("Eclipse.app/Contents/MacOS/eclipse")))
+        for (Path path : launcherCandidates(home))
             if (Files.isRegularFile(path)) return path;
         throw new IOException("Missing installed native launcher: " + home);
+    }
+
+    private static List<Path> launcherCandidates(Path home) {
+        return List.of(home.resolve("eclipse"), home.resolve("eclipse.exe"), home.resolve("../MacOS/eclipse").normalize(),
+                home.resolve("Eclipse.app/Contents/MacOS/eclipse"));
     }
 
     private record InstalledBundle(Path path, Manifest manifest) { }

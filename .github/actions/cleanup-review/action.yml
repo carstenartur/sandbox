@@ -71,6 +71,9 @@ runs:
       env:
         OUTPUT_DIR: ${{ runner.temp }}/sandbox-cleanup-review-${{ github.run_id }}-${{ github.run_attempt }}
       run: |
+        set -euo pipefail
+        status=0
+        # The runner resets OUTPUT_DIR, so keep the live log beside it.
         "$GITHUB_ACTION_PATH/run-cleanup-review.sh" \
           --base-sha "${{ inputs.base-sha }}" \
           --head-sha "${{ inputs.head-sha }}" \
@@ -78,7 +81,10 @@ runs:
           --image "${{ inputs.image }}" \
           --scope "${{ inputs.scope }}" \
           --source-mode "${{ inputs.source-mode }}" \
-          --output-dir "$OUTPUT_DIR"
+          --output-dir "$OUTPUT_DIR" 2>&1 | tee "$OUTPUT_DIR.log" || status=$?
+        mkdir -p "$OUTPUT_DIR"
+        mv -- "$OUTPUT_DIR.log" "$OUTPUT_DIR/cleanup.log"
+        exit "$status"
 
     - name: Publish applicable Suggested Changes
       id: publish
@@ -123,11 +129,11 @@ runs:
         fi
 
     - name: Upload complete cleanup evidence
-      if: always() && steps.cleanup.outputs.has_changes == 'true' && inputs.upload-artifact == 'true'
+      if: always() && inputs.upload-artifact == 'true' && (steps.cleanup.outputs.has_changes == 'true' || steps.cleanup.outcome == 'failure')
       uses: actions/upload-artifact@v7
       with:
         name: ${{ inputs.artifact-name }}
-        path: ${{ steps.cleanup.outputs.output_dir }}
+        path: ${{ runner.temp }}/sandbox-cleanup-review-${{ github.run_id }}-${{ github.run_attempt }}
         if-no-files-found: error
 
     - name: Add cleanup summary
