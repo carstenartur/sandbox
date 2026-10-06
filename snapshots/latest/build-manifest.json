@@ -1,24 +1,24 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-06T05:32:48.966504+00:00",
+  "generated_at": "2026-10-06T18:18:08.839210+00:00",
   "repository": "carstenartur/sandbox",
-  "commit_sha": "12fda4657c47c483a3380e95b2b4303de122cba0",
-  "commit_url": "https://github.com/carstenartur/sandbox/commit/12fda4657c47c483a3380e95b2b4303de122cba0",
+  "commit_sha": "b3752f900e8ce2d3a0ab9b40444306d2be18688c",
+  "commit_url": "https://github.com/carstenartur/sandbox/commit/b3752f900e8ce2d3a0ab9b40444306d2be18688c",
   "ref": "refs/heads/main",
   "event_name": "workflow_run",
   "provenance_workflow": {
     "name": "Deploy Snapshot to GitHub Pages",
-    "run_id": "37415338004",
-    "run_number": "738",
+    "run_id": "37502898119",
+    "run_number": "742",
     "run_attempt": "1",
-    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/37415338004",
-    "source_java_ci_run_id": "37412294594",
-    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/37412294594"
+    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/37502898119",
+    "source_java_ci_run_id": "37496726645",
+    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/37496726645"
   },
   "toolchain": {
     "project_version": "1.3.7-SNAPSHOT",
-    "java_version": "21",
-    "java_execution_environment": "JavaSE-21",
+    "java_version": "25",
+    "java_execution_environment": "JavaSE-25",
     "tycho_version": "5.0.4",
     "spotbugs_maven_plugin_version": "4.10.4.1",
     "eclipse_release": "2026-09",
@@ -27,11 +27,11 @@
       "https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-09/",
       "https://download.eclipse.org/cbi/updates/license/",
       "https://download.eclipse.org/egit/updates/",
-      "https://download.eclipse.org/justj/jres/21/updates/release/latest/",
+      "https://download.eclipse.org/justj/jres/25/updates/release/25.0.4.v20260826-0822",
       "https://download.eclipse.org/technology/babel/update-site/latest/"
     ],
     "runtime_python": "3.12.3",
-    "runtime_java": "openjdk version \"21.0.12.1\" 2026-08-18 LTS",
+    "runtime_java": "openjdk version \"25.0.4.1\" 2026-08-18 LTS",
     "runtime_maven": "Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5)",
     "target_definitions": [
       {
@@ -43,21 +43,31 @@
   },
   "tests": {
     "inventory": {
-      "total_modules": 17,
-      "total_tests": 2955,
-      "enabled_tests": 2925,
+      "total_modules": 18,
+      "total_tests": 3078,
+      "enabled_tests": 3048,
       "disabled_tests": 30
     },
     "executed": {
-      "tests": 4619,
+      "tests": 4833,
       "failures": 0,
       "errors": 0,
       "skipped": 11,
-      "report_files": 498
+      "report_files": 527
     }
   },
   "artifacts": {
     "products": [
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/linux/gtk/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.linux.x86_64_25.0.4.v20260826-0822/jre/lib/src.zip",
+        "size_bytes": 53031373,
+        "sha256": "657dc2b53da098d8053f28284eb275a4394e05849fda89ea90ef8adc3a2b87a8"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/macosx/cocoa/x86_64/Eclipse.app/Contents/Eclipse/plugins/org.eclipse.justj.openjdk.hotspot.jre.minimal.macosx.x86_64_25.0.4.v20260826-0822/jre/lib/src.zip",
+        "size_bytes": 36018011,
+        "sha256": "f3eb2c58b7b3fc8c8d437a5bb415c810714907b03ebe4942320c0b7c6445153c"
+      },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/eclipse.exe",
         "size_bytes": 548520,
@@ -69,43 +79,213 @@
         "sha256": "01b8ce638a591e97aa42f65e76b269b6ae05bbb7dc5bb7d9af4c455508bee853"
       },
       {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jabswitch.exe",
+        "size_bytes": 55536,
+        "sha256": "77e806d535281a51f5fd3cea5baf2f75286de44a70a2eeb124029ce5e7225a1b"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jaccessinspector.exe",
+        "size_bytes": 115968,
+        "sha256": "226de5f43d7e70a070f9f1514f569bffe6959aa466e4fbc04b4af9e8bb9f7b53"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jaccesswalker.exe",
+        "size_bytes": 81648,
+        "sha256": "e4dd135fa3e114e64c5e8aa43ada0d052d1d9386fc94ccc73f680130bb5cb92a"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jar.exe",
+        "size_bytes": 34560,
+        "sha256": "a1b78bd082bf62301857cfef56ebbfe646fa1fe8f5863823fb8ac426049c4f37"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jarsigner.exe",
+        "size_bytes": 35072,
+        "sha256": "d8c7e1a9463345cb018b265603edad3cfbd1c171113876deba3cdbd2c43cc8b1"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/java.exe",
+        "size_bytes": 60680,
+        "sha256": "81e2238d00c2fcf8c0b28251c000d9f361e2776da63ea0f3a39dc2d5e3011178"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/javac.exe",
+        "size_bytes": 35056,
+        "sha256": "6f0b22609886996b74d7d10d36274742c8ba7ea2f241d9de857ee5c0d5318db6"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/javadoc.exe",
+        "size_bytes": 35080,
+        "sha256": "8d5f53d0fe1d267c5919965da97415dd104419130bb1504fbfa950f40a3f9255"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/javap.exe",
+        "size_bytes": 35080,
+        "sha256": "d61fe7f20e6fa61ab2e5f73618008d9d0547afb06dfa0dd55b39bbb7516c13d2"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/javaw.exe",
+        "size_bytes": 60672,
+        "sha256": "1984d9b8c133e2c97a9ae3e64b300cd3faf8284f8ecff7b302739a38478ba584"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jcmd.exe",
+        "size_bytes": 34560,
+        "sha256": "c7607b6275e69735d6d45dcc6b007d8de5c43bdd7aabede2af3a9fb99d53fb53"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jconsole.exe",
+        "size_bytes": 35072,
+        "sha256": "afa011af2f983337ff3ea513fa04c97be1dde6e54cd19c3d7fb7ab7112ee3a41"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jdb.exe",
+        "size_bytes": 34560,
+        "sha256": "43ffbcb418d8d731dedb344a7033ba8641a6d5eba67ec9092b41fb2ea7951224"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jdeprscan.exe",
+        "size_bytes": 35072,
+        "sha256": "bd044f1afd75e4a3f1dbab9357b0dac271de197638d51a7e2b15c4d327c0a237"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jdeps.exe",
+        "size_bytes": 35072,
+        "sha256": "66ebc00693f5f48efb2bc8aabcbf50ddc4a265c24bf43b30d56430e19544a991"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jfr.exe",
+        "size_bytes": 34544,
+        "sha256": "c17f56ed52dbeb1f70261b77e9298bef45d62a337731fb59622baa015ef866df"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jhsdb.exe",
+        "size_bytes": 35056,
+        "sha256": "92d2b6517d388fab69a6dc778f52f52a3935826f5c55d6160f6809e0cf41df61"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jinfo.exe",
+        "size_bytes": 35072,
+        "sha256": "06481c795b33d7a713790e1a937e9aee0ea1dfade79c4757003c4630be79c9b4"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jmap.exe",
+        "size_bytes": 34544,
+        "sha256": "d2d4293a37c388da79b25a48d8c1b2846edd9151fa06ec3bc460bae5f73211e8"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jnativescan.exe",
+        "size_bytes": 35056,
+        "sha256": "6b8fcb81f9e02660554d141579d9e0d9b16298e0e70438f3f91a54e49017ff73"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jps.exe",
+        "size_bytes": 34544,
+        "sha256": "baafd70b68cc9e3b89257bd82421acd8ceeb2dd08288546945b4d7dcd2075472"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jrunscript.exe",
+        "size_bytes": 35080,
+        "sha256": "8cf9c43bcb97421641a259a5af4539b0441da0e61b603ce1aae84415f089ec87"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jshell.exe",
+        "size_bytes": 35080,
+        "sha256": "3b08fb1732a841a3f6c10c98f6db551397769f1663ca5c153860ce4f984e71bb"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jstack.exe",
+        "size_bytes": 35080,
+        "sha256": "2458ebcc74fa2105d7de0496828d6e57fa319fcca17cab525f3ff5719b185714"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jstat.exe",
+        "size_bytes": 35072,
+        "sha256": "206b0420786ac303a4ff326e293379b355a553451ab1811f700b4583fd22aba5"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jstatd.exe",
+        "size_bytes": 35072,
+        "sha256": "1affb18931b8bdefc13d6866316c6c21bb3e486fd8d8e1253bd5661d965e82b6"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/jwebserver.exe",
+        "size_bytes": 35072,
+        "sha256": "413786c63ae57983bff6004a59653d3cf63ee0b145bc167280f64a62bb171a35"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/keytool.exe",
+        "size_bytes": 35072,
+        "sha256": "730893a7994e0cfa46cfc60ada9b931825c198576c4e4c259cec335c3bc1d3ad"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/kinit.exe",
+        "size_bytes": 35056,
+        "sha256": "9b6feee815af0f3469146c6c933fe6663262c6222253fb183baf04100ada46d4"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/klist.exe",
+        "size_bytes": 35056,
+        "sha256": "42c3c5f47e4e170948cd78e6e34c1d4451e0234199a2872f00ef0bf8abc00fb8"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/ktab.exe",
+        "size_bytes": 34544,
+        "sha256": "cc5c0cb087d5ab2a886b0d8834cce70f503be324cbffb3d02ed4dbd43e956fda"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/rmiregistry.exe",
+        "size_bytes": 35056,
+        "sha256": "5331f81e55ae608e9c6146927df84957d4aa2128994b589f9d8b0cbe243518b6"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/bin/serialver.exe",
+        "size_bytes": 35080,
+        "sha256": "cd726b68bad1d47c7eace84c45dbcc3602982fd63cc028b8aa26350db3e41592"
+      },
+      {
+        "path": "sandbox_product/target/products/sandbox.bundle.producteclipse/win32/win32/x86_64/plugins/org.eclipse.justj.openjdk.hotspot.jre.full.win32.x86_64_25.0.4.v20260826-0822/jre/lib/src.zip",
+        "size_bytes": 52480218,
+        "sha256": "c9496dc16243bbe84e33747275f2d57dd910a4c35134d2e2f60e77f75ccdeb75"
+      },
+      {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-linux.gtk.x86_64.tar.gz",
-        "size_bytes": 180785534,
-        "sha256": "7c8668392ca5af74fa8e7098101b0e8a5824ab3c21d35c8f62490a2db9f86a4b"
+        "size_bytes": 329671005,
+        "sha256": "1b2259754b5ade51be902d0e462e9159aa6b5702749e163cb5b3d6bad1064052"
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-macosx.cocoa.x86_64.tar.gz",
-        "size_bytes": 181570011,
-        "sha256": "3c25399a30be77e079433f5576e23f88341ccf90da1a1c93da1e92595e8f863c"
+        "size_bytes": 275532418,
+        "sha256": "ed0563c0590377c6120ad6b22436e61015b518704914d3a15b5f50dfc48cc2b5"
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-win32.win32.x86_64.zip",
-        "size_bytes": 182415918,
-        "sha256": "b1d0be707ae71175dca2d884d423356fbf7554eb82c74532bb14aae449c22995"
+        "size_bytes": 327442866,
+        "sha256": "25e95e3846c26ceb68fd71da83068039b75bbb8035dc6c051a8d2a96741bfae9"
       }
     ],
     "product_tree": {
       "path": "sandbox_product/target/products",
-      "file_count": 4443,
-      "total_bytes": 1169675362,
-      "sha256_tree": "3a266cd0085e8d43b3f515c826f5e7878e5aed70d04cf129a59ae0eb40d71199"
+      "file_count": 5539,
+      "total_bytes": 2108296817,
+      "sha256_tree": "fc9271f84d65030c5507b29e1434cb196dc424dac159e6af74057998c115b7fe"
     },
     "product_status": "built",
     "update_site": {
       "path": "sandbox_updatesite/target/repository",
-      "file_count": 55,
-      "total_bytes": 5319282,
-      "sha256_tree": "4c5deb02adeb94fc4b82485b9e9109ac535d803132e40c60c626faa601c870c6",
+      "file_count": 58,
+      "total_bytes": 11625098,
+      "sha256_tree": "227d788863861b9984fd0058d2592850f44cc14dad740c67efe89ea4fb456423",
       "metadata": [
         {
           "path": "sandbox_updatesite/target/repository/artifacts.jar",
-          "size_bytes": 8711,
-          "sha256": "dc6e66f0d8e57c82ed3a0cb80241d9eda31b6e76bf5bece3e32c7dee283f73f7"
+          "size_bytes": 9113,
+          "sha256": "581a35da266442307582313b92c123bb901054c3de341dff26efd3a6560eebb4"
         },
         {
           "path": "sandbox_updatesite/target/repository/content.jar",
-          "size_bytes": 37861,
-          "sha256": "96ef136e012b8d1d46f855b1e53bd2e5da743c8f58a8708bad7046274c8af557"
+          "size_bytes": 36598,
+          "sha256": "9614ad78274adbbad994dd42664f9a4d939ea2aa49be1c1e2679406c6adb81dd"
         }
       ]
     },
