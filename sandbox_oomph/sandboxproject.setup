@@ -104,10 +104,24 @@
       vm="true">
     <description>Set an Oomph redirection system property to redirect the logical location of this setup to its physical location in the Git clone.</description>
   </setupTask>
-  <!-- Maven must run before ProjectsImportTask: its STARTUP check skips a
-       source tree if even one of its projects has already been imported. -->
+  <!-- Expose only the non-Java target project before resolving the target.
+       Importing Java/PDE consumers first temporarily binds them to the running
+       SDK, whose external class folders need not belong to this workspace. -->
+  <setupTask xsi:type="projects:ProjectsImportTask" id="sandbox.target.project"
+      predecessors="git.clone.sandbox" label="Sandbox target definition">
+    <sourceLocator rootFolder="${git.clone.sandbox.location}/sandbox_target"/>
+  </setupTask>
+  <setupTask xsi:type="pde:TargetPlatformTask" id="sandbox.target"
+      predecessors="sandbox.target.project" name="target platform for sandbox">
+    <description>Resolve and activate the target before importing its Java and PDE consumers.</description>
+  </setupTask>
+  <!-- Oomph determines needed tasks before performing them. On a fresh
+       workspace the full Maven import is therefore already scheduled when the
+       target-only project is imported. Keep the broad ProjectsImportTask after
+       Maven; Maven's STARTUP check skips a tree with previously imported projects.
+       Manual setup retains Maven's existing repair/reimport behavior. -->
   <setupTask xsi:type="maven:MavenImportTask" id="sandbox.maven"
-      label="Sandbox Maven projects">
+      predecessors="sandbox.target" label="Sandbox Maven projects">
     <sourceLocator rootFolder="${git.clone.sandbox.location}" locateNestedProjects="true">
       <excludedPath>.git</excludedPath>
       <excludedPath>.github</excludedPath>
@@ -163,19 +177,11 @@
     </workingSet>
     <description>The dynamic working sets for ${scope.project.label}</description>
   </setupTask>
-  <!-- Target platform activation: use the target definition from the sandbox_target module -->
-  <setupTask
-      xsi:type="pde:TargetPlatformTask"
-      id="sandbox.target"
-      predecessors="sandbox.projects"
-      name="target platform for sandbox">
-    <description>Activate the sandbox target platform so the workspace uses the correct Eclipse version and dependencies.</description>
-  </setupTask>
   <!-- Build imported projects -->
   <setupTask
       xsi:type="projects:ProjectsBuildTask"
       onlyNewProjects="true"
-      predecessors="sandbox.target">
+      predecessors="sandbox.target sandbox.projects">
     <description>Build newly imported projects</description>
   </setupTask>
   <!-- Stream definition for the main branch -->
