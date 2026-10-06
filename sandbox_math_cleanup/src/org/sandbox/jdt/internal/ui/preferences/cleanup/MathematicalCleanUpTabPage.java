@@ -26,6 +26,7 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
@@ -164,6 +165,15 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 		underflow.setEnabled(false);
 		underflow.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, columns, 1));
 		wrappedLabel(columns, group, "Unsupported numerical combinations are diagnosed and left unchanged. Estimates are not benchmark measurements."); //$NON-NLS-1$
+		// JDT's preference factories put labels and fixed-width inputs side by side.
+		// Their shared column minima can exceed the viewport even when the outer
+		// content fits. Give each label and input its own full-width, shrinkable row.
+		for (Control child : group.getChildren()) {
+			GridData data= (GridData) child.getLayoutData();
+			data.horizontalSpan= columns;
+			data.horizontalAlignment= SWT.FILL;
+			data.grabExcessHorizontalSpace= true;
+		}
 		refresh= () -> {
 			boolean active= enabled.getChecked();
 			boolean checked= safety.hasValue(SafetyProfile.CHECKED_THROW.name());
