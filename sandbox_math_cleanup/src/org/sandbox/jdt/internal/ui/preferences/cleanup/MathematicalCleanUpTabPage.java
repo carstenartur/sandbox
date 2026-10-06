@@ -106,7 +106,7 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 						"Checked: throw ArithmeticException" }); //$NON-NLS-1$
 		CheckboxPreference optIn= createCheckboxPref(group, columns,
 				"I explicitly accept new ArithmeticException behavior", MathCleanUpOptions.CHECKED_OPT_IN, FALSE_TRUE); //$NON-NLS-1$
-		Label warning= wrappedLabel(columns, group, MathCleanUpOptions.CHECKED_WARNING);
+		Label warning= MathematicalPreferenceControls.wrappedLabel(columns, group, MathCleanUpOptions.CHECKED_WARNING);
 		ComboPreference goal= createComboPref(group, columns, "Optimization goal:", MathCleanUpOptions.GOAL, //$NON-NLS-1$
 				Arrays.stream(OptimizationGoal.values()).map(Enum::name).toArray(String[]::new),
 				new String[] { "Lower estimated runtime", "Lower allocation", "Readability" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -118,11 +118,9 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 		textValues.put(MathCleanUpOptions.MAX_STATES, (Text) states.getControl());
 		textValues.put(MathCleanUpOptions.EXCLUSIONS, (Text) exclusions.getControl());
 		createLabel(columns, group, "Example exclusions: **/generated/**;org/example/Secret.java"); //$NON-NLS-1$
-		Button underflow= new Button(group, SWT.CHECK);
-		underflow.setText("Detect tiny-and-inexact underflow (unsupported)"); //$NON-NLS-1$
-		underflow.setEnabled(false);
-		underflow.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, columns, 1));
-		wrappedLabel(columns, group, "Unsupported numerical combinations are diagnosed and left unchanged. Estimates are not benchmark measurements."); //$NON-NLS-1$
+		MathematicalPreferenceControls.unavailableOption(columns, group,
+				"Detect tiny-and-inexact underflow (unsupported)"); //$NON-NLS-1$
+		MathematicalPreferenceControls.wrappedLabel(columns, group, "Unsupported numerical combinations are diagnosed and left unchanged. Estimates are not benchmark measurements."); //$NON-NLS-1$
 		refresh= () -> {
 			boolean active= enabled.getChecked();
 			boolean checked= safety.hasValue(SafetyProfile.CHECKED_THROW.name());
@@ -157,15 +155,6 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			refresh.run();
 		});
 		refresh.run();
-	}
-
-	private static Label wrappedLabel(int columns, Composite parent, String text) {
-		Label label= new Label(parent, SWT.WRAP);
-		label.setText(text);
-		GridData data= new GridData(SWT.FILL, SWT.CENTER, true, false, columns, 1);
-		data.widthHint= 440;
-		label.setLayoutData(data);
-		return label;
 	}
 
 	private static void setEnabledIfChanged(Preference preference, boolean enabled) {
