@@ -35,8 +35,9 @@ import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.JavaCore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.osgi.framework.Bundle;
 
 class CleanupPatchLifecycleTest {
@@ -71,8 +72,9 @@ class CleanupPatchLifecycleTest {
 		}
 	}
 
-	@Test
-	void localApplyPatchTracksCurrentRunAndClearsNoOpOutput() throws Exception {
+	@ParameterizedTest
+	@ValueSource(strings = { "\n", "\r\n" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void localApplyPatchTracksCurrentRunAndClearsNoOpOutput(String lineDelimiter) throws Exception {
 		IFile source= createSource("src/test/LocalPatch.java", //$NON-NLS-1$
 				"""
 				package test;
@@ -81,7 +83,7 @@ class CleanupPatchLifecycleTest {
 				System.out.println("local");
 				}
 				}
-				""");
+				""".replace("\n", lineDelimiter)); //$NON-NLS-1$
 		byte[] original= read(source);
 		Path patch= temporaryDirectory.resolve("local.patch"); //$NON-NLS-1$
 		Path config= writeConfig("cleanup.format_source_code=true\n"); //$NON-NLS-1$
@@ -106,8 +108,9 @@ class CleanupPatchLifecycleTest {
 		assertArrayEquals(new byte[0], Files.readAllBytes(patch));
 	}
 
-	@Test
-	void projectWideApplyPatchTracksCurrentRunAndClearsNoOpOutput() throws Exception {
+	@ParameterizedTest
+	@ValueSource(strings = { "\n", "\r\n" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void projectWideApplyPatchTracksCurrentRunAndClearsNoOpOutput(String lineDelimiter) throws Exception {
 		IFile source= createSource("src/test/ProjectWidePatch.java", //$NON-NLS-1$
 				"""
 				package test;
@@ -116,7 +119,7 @@ class CleanupPatchLifecycleTest {
 				return 1;
 				}
 				}
-				""");
+				""".replace("\n", lineDelimiter)); //$NON-NLS-1$
 		byte[] original= read(source);
 		Path patch= temporaryDirectory.resolve("project-wide.patch"); //$NON-NLS-1$
 		Path report= temporaryDirectory.resolve("project-wide-report.json"); //$NON-NLS-1$
@@ -156,9 +159,10 @@ class CleanupPatchLifecycleTest {
 	}
 
 	private void runGitApply(Path patch, boolean checkOnly) throws Exception {
+		// Verify patch bytes, independently of the runner's checkout conversion policy.
 		ProcessBuilder builder= checkOnly
-				? new ProcessBuilder("git", "apply", "--check", "--", patch.toString()) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-				: new ProcessBuilder("git", "apply", "--", patch.toString()); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				? new ProcessBuilder("git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "apply", "--check", "--", patch.toString()) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$ //$NON-NLS-8$
+				: new ProcessBuilder("git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "apply", "--", patch.toString()); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
 		Path log= temporaryDirectory.resolve(checkOnly ? "git-check.log" : "git-apply.log"); //$NON-NLS-1$ //$NON-NLS-2$
 		builder.directory(project.getLocation().toFile());
 		builder.redirectErrorStream(true);

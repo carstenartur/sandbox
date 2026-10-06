@@ -11,7 +11,10 @@
 package org.sandbox.jdt.ui.helper.views;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swtbot.eclipse.finder.SWTWorkbenchBot;
@@ -22,7 +25,9 @@ import org.eclipse.swtbot.swt.finder.widgets.SWTBotCheckBox;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotShell;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTree;
 import org.eclipse.swtbot.swt.finder.widgets.SWTBotTreeItem;
+import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.IHandlerService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,9 +44,11 @@ public class JUnitBestEffortCleanupDialogSWTBotTest {
 			"Best effort: migrate every proven construct and add @todo scaffolds for unresolved gaps (manual repair may be required)"; //$NON-NLS-1$
 
 	private SWTWorkbenchBot bot;
+	private final AtomicReference<Throwable> preferenceFailure= new AtomicReference<>();
 
 	@BeforeEach
 	public void setUp() {
+		preferenceFailure.set(null);
 		bot= new SWTWorkbenchBot();
 		closeWelcomeView();
 	}
@@ -49,12 +56,21 @@ public class JUnitBestEffortCleanupDialogSWTBotTest {
 	@AfterEach
 	public void tearDown() {
 		closeModalShells();
+		assertNull(preferenceFailure.get(), () -> "Preferences command failed: " + preferenceFailure.get()); //$NON-NLS-1$
 	}
 
 	@Test
 	public void bestEffortMigrationIsVisibleExplicitAndDisabledByDefault() {
-		SWTBotShell workbench= workbenchShell().activate();
-		workbench.bot().menu("Window").menu("Preferences...").click(); //$NON-NLS-1$ //$NON-NLS-2$
+		workbenchShell().activate();
+		// Use the same workbench command on platforms with different menu locations.
+		Display.getDefault().asyncExec(() -> {
+			try {
+				PlatformUI.getWorkbench().getService(IHandlerService.class)
+						.executeCommand(IWorkbenchCommandConstants.WINDOW_PREFERENCES, null);
+			} catch (Exception failure) {
+				preferenceFailure.compareAndSet(null, failure);
+			}
+		});
 
 		SWTBotShell preferences= bot.shell("Preferences").activate(); //$NON-NLS-1$
 		selectPreferencePath(preferences.bot().tree(), "Java", "Code Style", "Clean Up"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$

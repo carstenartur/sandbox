@@ -73,6 +73,8 @@ import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.ltk.core.refactoring.TextChange;
+import org.eclipse.ltk.internal.ui.refactoring.ErrorWizardPage;
+import org.eclipse.ltk.internal.ui.refactoring.RefactoringStatusDialog;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizard;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
 import org.eclipse.swt.SWT;
@@ -276,7 +278,7 @@ public class MathematicalWorkbenchSWTBotTest {
   MathematicalQuickAssist assist=new MathematicalQuickAssist();AssistContext context=new AssistContext(unit,source.indexOf("BigInteger sum"),80);
   assertEquals(0,ui(()->assist.getAssists(context,new IProblemLocation[0])).length);
   AtomicReference<IJavaCompletionProposal[]> result=new AtomicReference<>();
-  await(()->{try {var proposals=ui(()->assist.getAssists(context,new IProblemLocation[0]));result.set(proposals);return proposals.length==1;}catch(RuntimeException failure){throw failure;}},"Verified assist result becomes available");
+  await(()->{try {var proposals=ui(()->assist.getAssists(context,new IProblemLocation[0]));result.set(proposals);return proposals.length==1;}catch(RuntimeException failure){throw failure;}} ,"Verified assist result becomes available");
   assertTrue(result.get()[0] instanceof CUCorrectionProposal);CUCorrectionProposal proposal=(CUCorrectionProposal)result.get()[0];
   assertNotEquals(source,proposal.getPreviewContent());assertEquals(source,unit.getSource());
   project.setOption(JavaCore.COMPILER_PB_UNUSED_LOCAL,JavaCore.WARNING);
@@ -399,11 +401,31 @@ public class MathematicalWorkbenchSWTBotTest {
  }
  private static void selectCleanup(SWTBotShell preferences) {preferences.bot().tree().getTreeItem("Java").expand().getNode("Code Style").expand().getNode("Clean Up").select();}
  private void advanceToPreview(SWTBotShell dialog,AtomicReference<CleanUpRefactoringWizard> model) {
+  Set<Shell> acknowledged=new HashSet<>();
   for(int count=0;count<4;count++) {
    IWizardPage before=ui(()->model.get().getContainer().getCurrentPage());
    if(before!=null && before.getClass().getSimpleName().contains("Preview"))return;
    button(dialog.widget,"Preview >","Next >").click();
-   await(()->ui(()->{IWizardPage page=model.get().getContainer().getCurrentPage();return page!=null && page!=before && page.getControl()!=null && page.getControl().isVisible();}),"Wizard completes one page transition before the next click");
+   await(()->{
+    assertNull(ASYNC_FAILURE.get(),()->"Asynchronous wizard failure: "+ASYNC_FAILURE.get());
+    IWizardPage current=ui(()->model.get().getContainer().getCurrentPage());
+    if(current instanceof ErrorWizardPage error) {
+     var status=ui(error::getStatus);assertNotNull(status);
+     assertFalse(status.hasError() || status.hasFatalError(),status.toString());
+     // Dialog-based LTK shows diagnostics in a nested shell, not a visible page.
+     Shell diagnostic=ui(()->Arrays.stream(dialog.widget.getShells())
+       .filter(shell->!shell.isDisposed() && shell.isVisible() && shell.getData() instanceof RefactoringStatusDialog)
+       .findFirst().orElse(null));
+     if(diagnostic!=null) {
+      if(acknowledged.add(diagnostic)) {
+       System.out.println("Acknowledging mathematics diagnostics: "+status);
+       button(diagnostic,"Continue").click();
+      }
+      return false;
+     }
+    }
+    return ui(()->{IWizardPage page=model.get().getContainer().getCurrentPage();return page!=null && page!=before && page.getControl()!=null && page.getControl().isVisible();});
+   },"Wizard completes its page transition after any non-error diagnostic dialog");
   }
   fail("The normal cleanup wizard did not reach its file preview");
  }
