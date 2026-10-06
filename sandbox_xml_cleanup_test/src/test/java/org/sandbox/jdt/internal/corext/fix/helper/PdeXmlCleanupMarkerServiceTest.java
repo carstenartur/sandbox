@@ -30,6 +30,8 @@ import org.eclipse.ui.IMarkerResolution;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.ui.tests.quickfix.XMLTestUtils;
 
 class PdeXmlCleanupMarkerServiceTest {
@@ -97,24 +99,36 @@ class PdeXmlCleanupMarkerServiceTest {
 				"The applied quick fix must be idempotent"); //$NON-NLS-1$
 	}
 
-	@Test
-	void standaloneCompactServicesDoNotShareIndentationState() throws Exception {
+	@ParameterizedTest
+	@ValueSource(strings = { "\n", "\r\n" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void standaloneCompactServicesDoNotShareIndentationState(String lineDelimiter) throws Exception {
+		String source= SOURCE.replace("\n", lineDelimiter); //$NON-NLS-1$
 		XMLCleanupService configured= XMLCleanupService.compactFormatting();
 		configured.setEnableIndent(true);
 		XMLCleanupService standalone= XMLCleanupService.compactFormatting();
-		IFile indentedFile= createFile("schema/indented.exsd", SOURCE); //$NON-NLS-1$
-		IFile compactFile= createFile("schema/compact.exsd", SOURCE); //$NON-NLS-1$
+		IFile indentedFile= createFile("schema/indented.exsd", source); //$NON-NLS-1$
+		IFile compactFile= createFile("schema/compact.exsd", source); //$NON-NLS-1$
 
 		assertTrue(configured.processFile(indentedFile, monitor));
 		assertTrue(standalone.processFile(compactFile, monitor));
 		String indented= read(indentedFile);
 		String compact= read(compactFile);
-		assertEquals(SchemaTransformationUtils.transform(SOURCE, StandardCharsets.UTF_8, true), indented);
-		assertEquals(SchemaTransformationUtils.transform(SOURCE, StandardCharsets.UTF_8, false), compact);
+		assertEquals(expectedWithSourceLineDelimiter(source, true, lineDelimiter), indented);
+		assertEquals(expectedWithSourceLineDelimiter(source, false, lineDelimiter), compact);
 		assertNotEquals(indented, compact, "Changing another service must not change the standalone policy"); //$NON-NLS-1$
 		XMLTestUtils.assertXmlSemanticallyEqual(SOURCE, compact);
 		XMLTestUtils.assertXmlSemanticallyEqual(SOURCE, indented);
 		assertFalse(standalone.processFile(compactFile, monitor), "Compact formatting must be idempotent"); //$NON-NLS-1$
+		assertFalse(configured.processFile(indentedFile, monitor), "Indented formatting must be idempotent"); //$NON-NLS-1$
+	}
+
+	private static String expectedWithSourceLineDelimiter(String source, boolean indent, String lineDelimiter)
+			throws Exception {
+		// The workspace boundary preserves the source delimiter, whereas the
+		// standalone serializer uses the host delimiter. Do not normalize actual output.
+		return SchemaTransformationUtils.transform(source, StandardCharsets.UTF_8, indent)
+				.replace("\r\n", "\n").replace("\r", "\n") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+				.replace("\n", lineDelimiter); //$NON-NLS-1$
 	}
 
 	@Test
