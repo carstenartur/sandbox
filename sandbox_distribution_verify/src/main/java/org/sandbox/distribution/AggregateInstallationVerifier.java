@@ -433,9 +433,11 @@ public final class AggregateInstallationVerifier {
         require(Files.isRegularFile(file), label + " produced no result");
         if (previous == null) return;
         BasicFileAttributes current = Files.readAttributes(file, BasicFileAttributes.class);
-        boolean sameKey = previous.fileKey() != null && previous.fileKey().equals(current.fileKey());
-        boolean notNewer = !current.lastModifiedTime().toInstant().isAfter(previous.lastModified().toInstant());
-        require(!sameKey || !notNewer, label + " is stale: " + file);
+        // An unavailable identity is not evidence that the old file was replaced.
+        boolean replaced = previous.fileKey() != null && current.fileKey() != null
+                && !previous.fileKey().equals(current.fileKey());
+        boolean newer = current.lastModifiedTime().toInstant().isAfter(previous.lastModified().toInstant());
+        require(replaced || newer, label + " is stale: " + file);
     }
 
     static void requireCompilation(List<Path> sources, Path classes) throws IOException {
