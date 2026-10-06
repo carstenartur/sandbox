@@ -77,10 +77,13 @@ public class SetupProbe implements IApplication {
     private static final String ENTRY = "https://raw.githubusercontent.com/carstenartur/sandbox/main/"
             + "sandbox_oomph/sandboxproject.setup";
     private volatile Throwable failure;
+    private volatile String activeSetupTask = "workbench startup";
 
     @Override
     public Object start(IApplicationContext applicationContext) {
         Display display = PlatformUI.createDisplay();
+        org.eclipse.core.runtime.ILogListener indexDiagnostic = this::captureIndexFailure;
+        org.eclipse.core.runtime.Platform.addLogListener(indexDiagnostic);
         try {
             PlatformUI.createAndRunWorkbench(display, new WorkbenchAdvisor() {
                 @Override
@@ -107,9 +110,47 @@ public class SetupProbe implements IApplication {
                 }
             });
         } finally {
+            org.eclipse.core.runtime.Platform.removeLogListener(indexDiagnostic);
             display.dispose();
         }
         return failure == null ? EXIT_OK : Integer.valueOf(1);
+    }
+
+
+    private void captureIndexFailure(IStatus status, String plugin) {
+        if (!JavaCore.PLUGIN_ID.equals(plugin) || !status.matches(IStatus.ERROR)
+                || !(status.getException() instanceof org.eclipse.jdt.core.JavaModelException exception)) {
+            return;
+        }
+        // Observe the original failure only. Do not open/reconcile Java elements,
+        // create links, refresh resources, or change the order of setup tasks.
+        var modelStatus = exception.getJavaModelStatus();
+        System.err.println("INDEX_ROOT_STATE task=" + activeSetupTask + " thread="
+                + Thread.currentThread().getName() + " code=" + modelStatus.getCode());
+        System.err.println("INDEX_ROOT_STATUS_PATH " + modelStatus.getPath());
+        var elements = modelStatus.getElements();
+        for (var element : elements == null ? new IJavaElement[0] : elements) {
+            var path = element.getPath();
+            System.err.println("INDEX_ROOT_ELEMENT type=" + element.getClass().getName()
+                    + " handle=" + element.getHandleIdentifier() + " path=" + path);
+            if (path != null) {
+                var local = path.toFile().toPath();
+                System.err.println("INDEX_ROOT_FILE exists=" + Files.exists(local)
+                        + " directory=" + Files.isDirectory(local) + " readable=" + Files.isReadable(local));
+                var links = ResourcesPlugin.getWorkspace().getRoot().findContainersForLocationURI(local.toUri());
+                System.err.println("INDEX_ROOT_LINKS count=" + links.length);
+                for (var link : links) {
+                    System.err.println("INDEX_ROOT_LINK path=" + link.getFullPath() + " exists=" + link.exists()
+                            + " linked=" + link.isLinked() + " projectOpen=" + link.getProject().isOpen()
+                            + " location=" + link.getLocationURI());
+                }
+            }
+        }
+        var external = ResourcesPlugin.getWorkspace().getRoot().getProject(".org.eclipse.jdt.core.external.folders");
+        System.err.println("INDEX_ROOT_EXTERNAL_PROJECT exists=" + external.exists() + " open=" + external.isOpen());
+        var jna = org.eclipse.core.runtime.Platform.getBundle("com.sun.jna");
+        System.err.println("INDEX_ROOT_BUNDLE " + (jna == null ? "unavailable" : jna.getLocation()
+                + " classpath=" + jna.getHeaders("").get("Bundle-ClassPath")));
     }
 
     private void verify() throws Exception {
@@ -237,7 +278,10 @@ public class SetupProbe implements IApplication {
             @Override public void log(String line, boolean filter, Severity severity) { log(line, severity); }
             @Override public void log(IStatus status) { log(status.toString()); }
             @Override public void log(Throwable t) { t.printStackTrace(); }
-            @Override public void task(SetupTask task) { log("Oomph task: " + task); }
+            @Override public void task(SetupTask task) {
+                activeSetupTask = task.eClass().getName();
+                log("Oomph task: " + task);
+            }
             @Override public void setTerminating() { }
         });
         System.out.println("Executing Oomph " + (update ? "MANUAL" : "STARTUP") + " tasks");
