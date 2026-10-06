@@ -18,14 +18,22 @@ The separately pinned upstream JDT QA models retain their own Eclipse 4.40 produ
 ## Workspace task ordering
 
 1. GitCloneTask locates or clones Sandbox.
-2. MavenImportTask imports Maven projects, including modules without committed Eclipse metadata.
-3. ProjectsImportTask discovers remaining Eclipse projects.
-4. TargetPlatformTask activates `sandbox_target/eclipse.target` by its existing target name.
-5. ProjectsBuildTask explicitly builds newly imported projects.
+2. A target-only ProjectsImportTask exposes `sandbox_target`, which has no Java nature.
+3. TargetPlatformTask resolves and activates `sandbox_target/eclipse.target` by its existing target name.
+4. MavenImportTask imports the Java/Maven consumers against that active target.
+5. The broad ProjectsImportTask discovers remaining Eclipse projects.
+6. ProjectsBuildTask explicitly builds newly imported projects after both imports and target activation.
 
-Explicit predecessor references enforce the import/target/build order. Maven import must precede Eclipse import:
-Oomph's Maven task skips STARTUP import when any project from a source locator is already in the workspace.
-MANUAL setup runs Maven discovery again and restores missing projects.
+Explicit predecessor references enforce the target-before-consumers dependency. This avoids using the running IDE as a
+provisional target while Java projects are being imported. It does not create external-folder links manually or disable
+indexing. The exact native import/indexing behavior is still qualified by the full Oomph acceptance test, not by task order alone.
+
+Oomph's SetupTaskPerformer computes its needed-task list before executing the list. On a fresh workspace, the full Maven
+import is therefore already selected when the target-only project is created. Maven's STARTUP check skips a source tree
+with previously imported projects, so the broad Eclipse import must still follow Maven. MANUAL setup runs Maven discovery
+again and remains the recovery path for an interrupted/partial import. Existing task IDs and public catalog entry points remain.
+`OomphTargetBootstrapTest` checks the limited non-Java bootstrap, dependency graph, retained Maven discovery and public identity;
+it is a configuration regression, not a substitute for fresh provisioning and repeated native manual setup.
 The build task uses `onlyNewProjects` so repeated manual setup does not force a full
 rebuild of every existing project. Existing projects retain the workspace's normal
 automatic/incremental build policy. This avoids repeatedly deleting and regenerating
@@ -34,7 +42,7 @@ unresolved-bundle markers even after its resolver has found the regenerated bund
 An explicit second Maven source locator imports this standalone verification module because m2e follows root-POM modules.
 Maven discovery excludes the root artifact `central`; Eclipse import keeps its existing project name `sandbox`, avoiding
 two differently named projects at the same repository location.
-The two import tasks exclude `.git`, `.github`, root `target` content and the test installation under `sandbox_oomph/target`.
+The two broad import tasks exclude `.git`, `.github`, root `target` content and the test installation under `sandbox_oomph/target`.
 
 The repository target remains the source of workspace dependencies. Installing development tools into the host IDE is a
 separate p2 operation; it must not replace the target with the running platform. Baseline changes must update the target,
