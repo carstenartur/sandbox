@@ -46,5 +46,12 @@ jobs:
           GIT_INDEX_FILE="$verification_index" git update-index --force-remove .github/workflows/complete-ci-main-merge.yml
           actual=$(GIT_INDEX_FILE="$verification_index" git write-tree)
           test "$actual" = "$expected" || { echo "Merge tree mismatch: $actual != $expected" >&2; exit 1; }
-          git commit -m 'Merge verified 1.3.7-SNAPSHOT main while retaining the mathematics integration'
-          git push origin HEAD:refs/heads/codex/1657-mathematics-cleanup
+          # Stage workflow bytes as inert files; only the connector with workflow
+          # permission will install those reviewed blobs on the real PR branch.
+          mkdir .ci-merge-staging
+          git show :.github/workflows/deploy-release.yml > .ci-merge-staging/deploy-release.txt
+          git show :.github/workflows/recover-release-handoff.yml > .ci-merge-staging/recover-release-handoff.txt
+          git add .ci-merge-staging
+          git restore --source=HEAD --staged --worktree -- .github/workflows
+          git commit -m 'Stage exact reviewed main-merge objects without modifying executable workflows'
+          git push origin HEAD:refs/heads/integration/1658-verified-main-tree
