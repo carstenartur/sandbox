@@ -42,7 +42,12 @@ final class MathematicalAnalysisJob {
   try { job.schedule(); } catch(RuntimeException failure) { ACTIVE.remove(job);throw failure; }
  }
 
- static void cancelAll() { ACTIVE.forEach(Job::cancel); }
+ /** Requests cancellation without blocking the UI; resource owners can join the returned jobs. */
+ static Job[] cancelAll() {
+  Job[] jobs=ACTIVE.toArray(Job[]::new);
+  for(Job job:jobs) job.cancel();
+  return jobs;
+ }
 
  static <T> T runAndWait(Function<IProgressMonitor,T> operation,IProgressMonitor caller) {
   Objects.requireNonNull(operation);

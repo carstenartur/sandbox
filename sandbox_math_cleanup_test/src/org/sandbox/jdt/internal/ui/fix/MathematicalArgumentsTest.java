@@ -1,6 +1,7 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.junit.jupiter.api.Assertions.*;
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class MathematicalArgumentsTest {
@@ -24,7 +25,8 @@ class MathematicalArgumentsTest {
  }
  @Test void projectIsOneWorkspaceNameAndPathsMayContainSpaces() {
   var args=MathematicalArguments.parse(new String[]{"--project","Example project","--config","a folder/options.properties","--report","a folder/report.json"});
-  assertEquals("a folder/options.properties",args.configuration().toString());
+  assertEquals(Path.of("a folder", "options.properties"),args.configuration());
+  assertEquals(Path.of("a folder", "report.json"),args.report());
   assertThrows(IllegalArgumentException.class,()->MathematicalArguments.parse(new String[]{"--project","../Outside","--config","c","--report","r"}));
  }
 }

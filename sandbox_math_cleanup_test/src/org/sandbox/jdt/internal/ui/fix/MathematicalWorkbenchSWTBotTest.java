@@ -154,7 +154,10 @@ public class MathematicalWorkbenchSWTBotTest {
   ui(()->{var window=PlatformUI.getWorkbench().getActiveWorkbenchWindow();if(window.getActivePage()!=null)window.getActivePage().closeAllEditors(false);return null;});
   Shell workbench=workbench();
   for(SWTBotShell shell:bot.shells()) if(shell.widget!=workbench && shell.isOpen())shell.close();
-  MathematicalAnalysisJob.cancelAll();
+  // Cancellation is only a request. A parser may still be using the project's JRE.
+  // Join on the JUnit thread, with a timeout, before deleting any fixture resources.
+  for(Job worker:MathematicalAnalysisJob.cancelAll())
+   assertTrue(worker.join(10000,new NullProgressMonitor()),"Cancelled mathematics worker did not terminate: "+worker.getName());
   for(IProject resource:temporaryProjects) if(resource.exists())resource.delete(true,true,MONITOR);
   assertNull(ASYNC_FAILURE.get(),()->"Asynchronous dialog failure: "+ASYNC_FAILURE.get());
  }

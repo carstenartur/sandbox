@@ -48,6 +48,7 @@ public class CiBuildScopeContractTest {
 	private static final String STRICT_WORKFLOW = ".github/workflows/jdt-ui-junit4-strict-qa.yml"; //$NON-NLS-1$
 	private static final String CONTRACT_STEP = "Validate the dedicated JDT UI corpus contract"; //$NON-NLS-1$
 	private static final String PRODUCT_STEP = "Build and test the Sandbox product under test"; //$NON-NLS-1$
+	private static final String RUNNER_MAVEN = "--maven \"$GITHUB_WORKSPACE/sandbox/mvnw\""; //$NON-NLS-1$
 	private static final String ATOMIC_WORKFLOW = ".github/workflows/patched-jdt-ui-atomic-help-screenshot.yml"; //$NON-NLS-1$
 	private static final String LTK_STEP = "Build, verify and provision the pinned LTK runtime through Maven"; //$NON-NLS-1$
 	private static final String ATOMIC_STEP = "Reproduce the atomic Cleanup previews"; //$NON-NLS-1$
@@ -196,6 +197,18 @@ public class CiBuildScopeContractTest {
 	}
 
 	@Test
+	public void strictMavenCommandsCannotFallBackToTheRunnerInstallation() throws IOException {
+		String strict = Files.readString(repositoryRoot().resolve(STRICT_WORKFLOW), StandardCharsets.UTF_8);
+		assertStrictMavenScopes(strict);
+		for (String name : List.of(CONTRACT_STEP, PRODUCT_STEP)) {
+			String step = workflowStep(strict, name);
+			String unpinned = strict.replace(step, step.replace("./mvnw", "mvn")); //$NON-NLS-1$ //$NON-NLS-2$
+			assertThrows(AssertionError.class, () -> assertStrictMavenScopes(unpinned), name);
+		}
+		assertThrows(AssertionError.class, () -> assertStrictMavenScopes(strict.replace(RUNNER_MAVEN, ""))); //$NON-NLS-1$
+	}
+
+	@Test
 	public void authoritativeMavenAndDistributionGatesRemainFullScope() throws IOException {
 		Path root = repositoryRoot();
 		for (String path : List.of(".github/workflows/maven.yml", //$NON-NLS-1$
@@ -216,13 +229,15 @@ public class CiBuildScopeContractTest {
 			assertEquals(1, occurrences(step, SPOTBUGS_SKIP), name);
 		}
 		String contract = workflowStep(workflow, CONTRACT_STEP);
-		assertTrue(contract.contains("mvn "), CONTRACT_STEP); //$NON-NLS-1$
+		assertTrue(contract.contains("./mvnw "), CONTRACT_STEP); //$NON-NLS-1$
 		assertTrue(contract.contains("-Dtest='JdtUiCorpus*Test'"), CONTRACT_STEP); //$NON-NLS-1$
 		assertTrue(contract.contains("-pl sandbox_target,sandbox_common_test -am package"), CONTRACT_STEP); //$NON-NLS-1$
 		String product = workflowStep(workflow, PRODUCT_STEP);
-		assertTrue(product.contains("xvfb-run --auto-servernum mvn"), PRODUCT_STEP); //$NON-NLS-1$
+		assertTrue(product.contains("xvfb-run --auto-servernum ./mvnw"), PRODUCT_STEP); //$NON-NLS-1$
 		assertTrue(product.contains("-Pproduct"), PRODUCT_STEP); //$NON-NLS-1$
 		assertTrue(product.contains("clean verify"), PRODUCT_STEP); //$NON-NLS-1$
+		String regression = workflowStep(workflow, "Execute isolated check/apply, tests and whitespace regression QA"); //$NON-NLS-1$
+		assertTrue(regression.contains(RUNNER_MAVEN), "The nested before/after builds must use the same pinned Maven"); //$NON-NLS-1$
 	}
 
 	private static String workflowStep(String workflow, String name) {
