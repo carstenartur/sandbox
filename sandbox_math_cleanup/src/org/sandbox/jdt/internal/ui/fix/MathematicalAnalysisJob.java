@@ -6,9 +6,12 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -43,6 +46,34 @@ final class MathematicalAnalysisJob {
  }
 
  static void cancelAll() { ACTIVE.forEach(Job::cancel); }
+
+ /**
+  * Stops registered work before callers dispose its resources. Callers must
+  * first prevent new submissions, and must not wait on the display thread.
+  * Unlike cancelAll(), this method fails if any worker has not terminated.
+  */
+ static void cancelAllAndWait(Duration timeout) throws InterruptedException, TimeoutException {
+  Objects.requireNonNull(timeout);
+  if(timeout.isZero() || timeout.isNegative())
+   throw new IllegalArgumentException("The mathematics drain timeout must be positive"); //$NON-NLS-1$
+  if(PlatformUI.isWorkbenchRunning() && Display.getCurrent()!=null)
+   throw new IllegalStateException("Cannot wait for mathematics workers on the display thread"); //$NON-NLS-1$
+  Job current=Job.getJobManager().currentJob();
+  if(current!=null && ACTIVE.contains(current))
+   throw new IllegalStateException("A mathematics worker cannot wait for itself"); //$NON-NLS-1$
+  long budget=timeout.toNanos(),started=System.nanoTime();
+  while(!ACTIVE.isEmpty()) {
+   // Only real registered workers: a scheduling-rule owner may be a ThreadJob,
+   // which must not be cancelled or joined just because it holds our rule.
+   Job[] workers=ACTIVE.toArray(Job[]::new);
+   for(Job worker:workers) worker.cancel();
+   for(Job worker:workers) {
+    long remaining=budget-(System.nanoTime()-started);
+    if(remaining<=0 || !worker.join(Math.max(1,TimeUnit.NANOSECONDS.toMillis(remaining)),null))
+     throw new TimeoutException("Mathematics worker did not stop: "+worker.getName()); //$NON-NLS-1$
+   }
+  }
+ }
 
  static <T> T runAndWait(Function<IProgressMonitor,T> operation,IProgressMonitor caller) {
   Objects.requireNonNull(operation);
