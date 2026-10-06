@@ -118,7 +118,7 @@ public class SetupProbe implements IApplication {
 
 
     private void captureIndexFailure(IStatus status, String plugin) {
-        if (!JavaCore.PLUGIN_ID.equals(plugin) || !status.matches(IStatus.ERROR)
+        if (!JavaCore.PLUGIN_ID.equals(status.getPlugin()) || !status.matches(IStatus.ERROR)
                 || !(status.getException() instanceof org.eclipse.jdt.core.JavaModelException exception)) {
             return;
         }
