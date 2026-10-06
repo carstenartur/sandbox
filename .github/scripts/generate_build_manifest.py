@@ -73,12 +73,32 @@ def parse_pom(repo_root: Path) -> dict[str, Any]:
         for element in root.findall("m:repositories/m:repository/m:url", MAVEN_NAMESPACE)
         if element.text
     ]
-    release = None
-    for url in repository_urls:
-        match = re.search(r"/releases/([^/]+)/?", url)
+    target_name = property_value("rcp-version") or "eclipse"
+    target = ET.parse(repo_root / "sandbox_target" / f"{target_name}.target").getroot()
+    target_urls = [
+        repository.attrib["location"].strip()
+        for repository in target.findall("./locations/location[@type='InstallableUnit']/repository")
+        if repository.get("location")
+    ]
+    repository_urls.extend(target_urls)
+    product_pom = repo_root / "sandbox_product" / "pom.xml"
+    if product_pom.is_file():
+        product = ET.parse(product_pom).getroot()
+        repository_urls.extend(
+            element.text.strip()
+            for element in product.findall(
+                "m:repositories/m:repository[m:layout='p2']/m:url", MAVEN_NAMESPACE
+            )
+            if element.text
+        )
+    releases = set()
+    for url in target_urls:
+        match = re.fullmatch(r"https://download\.eclipse\.org/releases/([^/]+)/?", url)
         if match:
-            release = match.group(1)
-            break
+            releases.add(match.group(1))
+    if len(releases) != 1:
+        raise ValueError("Expected exactly one Eclipse release in the selected target definition")
+    release = releases.pop()
 
     return {
         "project_version": version,
@@ -87,7 +107,7 @@ def parse_pom(repo_root: Path) -> dict[str, Any]:
         "tycho_version": property_value("tycho-version"),
         "spotbugs_maven_plugin_version": property_value("spotbugs-version"),
         "eclipse_release": release,
-        "p2_repositories": repository_urls,
+        "p2_repositories": list(dict.fromkeys(repository_urls)),
     }
 
 

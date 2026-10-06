@@ -44,17 +44,21 @@ class BuildManifestTest(unittest.TestCase):
     <java-version>21</java-version>
     <java-execenv>JavaSE-21</java-execenv>
     <spotbugs-version>4.10.3.0</spotbugs-version>
+    <rcp-version>sandbox</rcp-version>
   </properties>
-  <repositories>
-    <repository><url>https://download.eclipse.org/releases/2025-12/</url></repository>
-  </repositories>
 </project>
 """,
                 encoding="utf-8",
             )
             target_dir = root / "sandbox_target"
             target_dir.mkdir()
-            (target_dir / "sandbox.target").write_text("target", encoding="utf-8")
+            (target_dir / "sandbox.target").write_text(
+                '<target><locations><location type="InstallableUnit">'
+                '<repository location="https://download.eclipse.org/technology/swtbot/releases/latest/"/>'
+                '</location><location type="InstallableUnit">'
+                '<repository location="https://download.eclipse.org/releases/2025-12/"/>'
+                '</location></locations></target>', encoding="utf-8"
+            )
             (root / "test-report.json").write_text(
                 json.dumps(
                     {
@@ -76,6 +80,11 @@ class BuildManifestTest(unittest.TestCase):
             )
             products = root / "sandbox_product" / "target" / "products"
             products.mkdir(parents=True)
+            (root / "sandbox_product" / "pom.xml").write_text(
+                '<project xmlns="http://maven.apache.org/POM/4.0.0"><repositories><repository>'
+                '<layout>p2</layout><url>https://example.invalid/pinned-jre/</url>'
+                '</repository></repositories></project>', encoding="utf-8"
+            )
             (products / "sandbox.zip").write_bytes(b"product")
             update_site = root / "sandbox_updatesite" / "target" / "repository"
             update_site.mkdir(parents=True)
@@ -109,6 +118,11 @@ class BuildManifestTest(unittest.TestCase):
             self.assertEqual("refs/heads/main", manifest["ref"])
             self.assertEqual("5.0.3", manifest["toolchain"]["tycho_version"])
             self.assertEqual("2025-12", manifest["toolchain"]["eclipse_release"])
+            self.assertEqual({
+                "https://download.eclipse.org/releases/2025-12/",
+                "https://download.eclipse.org/technology/swtbot/releases/latest/",
+                "https://example.invalid/pinned-jre/",
+            }, set(manifest["toolchain"]["p2_repositories"]))
             self.assertEqual(10, manifest["tests"]["inventory"]["total_tests"])
             self.assertEqual(3, manifest["tests"]["executed"]["tests"])
             self.assertEqual(1, manifest["tests"]["executed"]["failures"])
