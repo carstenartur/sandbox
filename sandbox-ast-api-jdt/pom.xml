@@ -97,6 +97,10 @@
 				<groupId>biz.aQute.bnd</groupId>
 				<artifactId>bnd-maven-plugin</artifactId>
 				<version>${bnd.version}</version>
+				<!-- Do not let PDE mistake Maven instructions for a plain Bnd workspace. -->
+				<configuration>
+					<bndfile>maven-bundle.bnd</bndfile>
+				</configuration>
 				<executions>
 					<execution>
 						<goals>
