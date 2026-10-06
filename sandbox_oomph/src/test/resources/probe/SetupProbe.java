@@ -235,7 +235,17 @@ public class SetupProbe implements IApplication {
             require(sentinel.exists(), "User project was not persisted across restart");
             var missing = workspace.getRoot().getProject("sandbox_distribution_verify");
             require(missing.exists(), "Fresh setup did not import distribution verification");
+            Path projectLocation = missing.getLocation().toFile().toPath();
+            byte[] pomBeforeRemoval = Files.readAllBytes(projectLocation.resolve("pom.xml"));
+            // EGit 7.8 deletes provider metadata during PRE_DELETE while an open
+            // project can still be decorated. Close first so it is inaccessible
+            // before that notification (upstream EGit fix 31d647e073ef).
+            missing.close(monitor);
+            require(!missing.isAccessible(), "Recovery fixture must be closed before removal");
             missing.delete(false, true, monitor);
+            require(!missing.exists(), "Recovery fixture must actually leave the workspace");
+            require(Arrays.equals(pomBeforeRemoval, Files.readAllBytes(projectLocation.resolve("pom.xml"))),
+                    "Removing the workspace project must preserve its Maven source");
         } else if (!sentinel.exists()) {
             require(!update && attempt == 0, "User project was lost across an IDE restart");
             sentinel.create(monitor);
