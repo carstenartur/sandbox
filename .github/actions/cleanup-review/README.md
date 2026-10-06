@@ -88,3 +88,13 @@ bash -n .github/actions/cleanup-review/run-cleanup-review.sh
 ```
 
 The contract test uses a mocked Docker executable and verifies project discovery, paths containing spaces, exact changed-file selection, patch generation, report generation, skipped files, and the no-Java no-op path.
+
+### Selecting the analysis JVM
+
+The optional `java-home` input names a JDK on the Linux runner. The action
+mounts it read-only and supplies both `JAVA_HOME` and `PATH` inside the cleanup
+container, including for older launchers that invoke `java` from `PATH`. With
+no input, the image's default runtime is retained. The repository review
+workflow provisions Java 25 and passes its `JAVA_HOME`; this avoids using an
+older published image's JVM to resolve the Java-25 contributor projects.
+No `.classpath`, compiler preference or source compatibility level is changed.

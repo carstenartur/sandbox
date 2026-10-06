@@ -24,6 +24,10 @@ inputs:
     description: Sandbox cleanup container image.
     required: false
     default: ghcr.io/carstenartur/sandbox-cleanup:latest
+  java-home:
+    description: Optional host JDK mounted read-only for analysis; overrides the image runtime without changing project settings.
+    required: false
+    default: ''
   scope:
     description: Cleanup source scope (main, test, or both).
     required: false
@@ -69,6 +73,7 @@ runs:
       id: cleanup
       shell: bash
       env:
+        REVIEW_JAVA_HOME: ${{ inputs.java-home }}
         OUTPUT_DIR: ${{ runner.temp }}/sandbox-cleanup-review-${{ github.run_id }}-${{ github.run_attempt }}
       run: |
         set -euo pipefail
@@ -79,6 +84,7 @@ runs:
           --head-sha "${{ inputs.head-sha }}" \
           --config-file "${{ inputs.config-file }}" \
           --image "${{ inputs.image }}" \
+          --java-home "${REVIEW_JAVA_HOME:-}" \
           --scope "${{ inputs.scope }}" \
           --source-mode "${{ inputs.source-mode }}" \
           --output-dir "$OUTPUT_DIR" 2>&1 | tee "$OUTPUT_DIR.log" || status=$?
