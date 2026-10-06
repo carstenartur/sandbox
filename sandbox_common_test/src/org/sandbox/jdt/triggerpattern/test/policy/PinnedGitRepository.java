@@ -218,8 +218,13 @@ public final class PinnedGitRepository implements AutoCloseable {
 		Files.walkFileTree(root, new SimpleFileVisitor<>() {
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
-				// JGit pack files may be read-only on Windows. Do not ignore failures.
-				FileUtils.delete(file.toFile(), FileUtils.RETRY);
+				// Never change permissions through a link to a file outside this checkout.
+				if (attributes.isSymbolicLink()) {
+					Files.delete(file);
+				} else {
+					// JGit pack files may be read-only on Windows. Do not ignore failures.
+					FileUtils.delete(file.toFile(), FileUtils.RETRY);
+				}
 				return FileVisitResult.CONTINUE;
 			}
 
