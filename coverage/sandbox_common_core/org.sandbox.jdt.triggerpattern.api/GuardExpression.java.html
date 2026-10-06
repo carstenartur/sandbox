@@ -113,7 +113,7 @@ public sealed interface GuardExpression
 <span class="fc" id="L113">		case MATCH -&gt; right.truthValue();</span>
 <span class="nc bnc" id="L114" title="All 2 branches missed.">		case UNKNOWN -&gt; right.truthValue() == TruthValue.NO_MATCH</span>
 <span class="nc" id="L115">				? TruthValue.NO_MATCH : TruthValue.UNKNOWN;</span>
-<span class="pc" id="L116">		case NO_MATCH -&gt; TruthValue.NO_MATCH;</span>
+<span class="nc" id="L116">		case NO_MATCH -&gt; TruthValue.NO_MATCH;</span>
 		};
 <span class="fc" id="L118">		return new Evaluation(truth,</span>
 <span class="pc bpc" id="L119" title="1 of 4 branches missed.">				left.compatibilityValue() &amp;&amp; right.compatibilityValue());</span>
@@ -129,7 +129,7 @@ public sealed interface GuardExpression
 <span class="fc" id="L129">		case NO_MATCH -&gt; right.truthValue();</span>
 <span class="fc bfc" id="L130" title="All 2 branches covered.">		case UNKNOWN -&gt; right.truthValue() == TruthValue.MATCH</span>
 <span class="fc" id="L131">				? TruthValue.MATCH : TruthValue.UNKNOWN;</span>
-<span class="pc" id="L132">		case MATCH -&gt; TruthValue.MATCH;</span>
+<span class="nc" id="L132">		case MATCH -&gt; TruthValue.MATCH;</span>
 		};
 <span class="fc" id="L134">		return new Evaluation(truth,</span>
 <span class="pc bpc" id="L135" title="1 of 4 branches missed.">				left.compatibilityValue() || right.compatibilityValue());</span>
@@ -140,7 +140,7 @@ public sealed interface GuardExpression
 <span class="pc bpc" id="L140" title="2 of 3 branches missed.">		TruthValue truth= switch (operand.truthValue()) {</span>
 <span class="fc" id="L141">		case MATCH -&gt; TruthValue.NO_MATCH;</span>
 <span class="nc" id="L142">		case NO_MATCH -&gt; TruthValue.MATCH;</span>
-<span class="pc" id="L143">		case UNKNOWN -&gt; TruthValue.UNKNOWN;</span>
+<span class="nc" id="L143">		case UNKNOWN -&gt; TruthValue.UNKNOWN;</span>
 		};
 <span class="pc bpc" id="L145" title="1 of 2 branches missed.">		return new Evaluation(truth, !operand.compatibilityValue());</span>
 	}

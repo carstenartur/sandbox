@@ -191,11 +191,11 @@ public final class LineDelimiterPreserver {
 <span class="fc" id="L191">		StringBuilder normalized= new StringBuilder(content.length() + 64);</span>
 <span class="fc bfc" id="L192" title="All 2 branches covered.">		for (int index= 0; index &lt; content.length(); index++) {</span>
 <span class="fc" id="L193">			char current= content.charAt(index);</span>
-<span class="pc bpc" id="L194" title="1 of 2 branches missed.">			if (current == '\r') {</span>
-<span class="nc bnc" id="L195" title="All 4 branches missed.">				if (index + 1 &lt; content.length() &amp;&amp; content.charAt(index + 1) == '\n') {</span>
-<span class="nc" id="L196">					index++;</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">			if (current == '\r') {</span>
+<span class="pc bpc" id="L195" title="2 of 4 branches missed.">				if (index + 1 &lt; content.length() &amp;&amp; content.charAt(index + 1) == '\n') {</span>
+<span class="fc" id="L196">					index++;</span>
 				}
-<span class="nc" id="L198">				normalized.append(delimiter);</span>
+<span class="fc" id="L198">				normalized.append(delimiter);</span>
 <span class="fc bfc" id="L199" title="All 2 branches covered.">			} else if (current == '\n') {</span>
 <span class="fc" id="L200">				normalized.append(delimiter);</span>
 			} else {

@@ -38,7 +38,8 @@ import ai.djl.translate.TranslateException;
  * &lt;p&gt;
  * The model is lazily initialized on first use and cached for the lifetime of
  * the service. If the model cannot be loaded (e.g., no network on first run,
- * corrupted cache), the service degrades gracefully — {@link #embed(String)}
+ * corrupted cache, missing or incompatible native runtime), the service
+ * degrades gracefully — {@link #embed(String)}
  * returns {@code null} and callers should set {@code hasEmbedding = false}.
  * &lt;/p&gt;
  *
@@ -56,8 +57,8 @@ import ai.djl.translate.TranslateException;
  */
 public class EmbeddingService {
 
-<span class="fc" id="L59">	private static final Logger LOG = Logger</span>
-<span class="fc" id="L60">			.getLogger(EmbeddingService.class.getName());</span>
+<span class="fc" id="L60">	private static final Logger LOG = Logger</span>
+<span class="fc" id="L61">			.getLogger(EmbeddingService.class.getName());</span>
 
 	/** Embedding vector dimension produced by all-MiniLM-L6-v2. */
 	public static final int EMBEDDING_DIMENSION = 384;
@@ -85,8 +86,8 @@ public class EmbeddingService {
 	 * variables.
 	 */
 	public EmbeddingService() {
-<span class="fc" id="L88">		this(isEnabledFromEnv(), getModelNameFromEnv(), getModelDirFromEnv());</span>
-<span class="fc" id="L89">	}</span>
+<span class="fc" id="L89">		this(isEnabledFromEnv(), getModelNameFromEnv(), getModelDirFromEnv());</span>
+<span class="fc" id="L90">	}</span>
 
 	/**
 	 * Create an embedding service with explicit configuration.
@@ -99,11 +100,11 @@ public class EmbeddingService {
 	 *            local model cache directory, or {@code null} for DJL default
 	 */
 	public EmbeddingService(boolean enabled, String modelName,
-<span class="fc" id="L102">			String modelDir) {</span>
-<span class="fc" id="L103">		this.enabled = enabled;</span>
-<span class="fc" id="L104">		this.modelName = modelName;</span>
-<span class="fc" id="L105">		this.modelDir = modelDir;</span>
-<span class="fc" id="L106">	}</span>
+<span class="fc" id="L103">			String modelDir) {</span>
+<span class="fc" id="L104">		this.enabled = enabled;</span>
+<span class="fc" id="L105">		this.modelName = modelName;</span>
+<span class="fc" id="L106">		this.modelDir = modelDir;</span>
+<span class="fc" id="L107">	}</span>
 
 	/**
 	 * Generate a semantic embedding vector for the given text.
@@ -119,23 +120,23 @@ public class EmbeddingService {
 	 *         unavailable
 	 */
 	public float[] embed(String text) {
-<span class="fc bfc" id="L122" title="All 6 branches covered.">		if (!enabled || text == null || text.isBlank()) {</span>
-<span class="fc" id="L123">			return null;</span>
+<span class="fc bfc" id="L123" title="All 6 branches covered.">		if (!enabled || text == null || text.isBlank()) {</span>
+<span class="fc" id="L124">			return null;</span>
 		}
-<span class="fc" id="L125">		ensureInitialized();</span>
-<span class="pc bpc" id="L126" title="3 of 4 branches missed.">		if (!available || model == null) {</span>
-<span class="fc" id="L127">			return null;</span>
+<span class="fc" id="L126">		ensureInitialized();</span>
+<span class="pc bpc" id="L127" title="3 of 4 branches missed.">		if (!available || model == null) {</span>
+<span class="fc" id="L128">			return null;</span>
 		}
 		try {
-<span class="nc" id="L130">			String truncated = truncateToTokenLimit(text);</span>
-<span class="nc" id="L131">			try (Predictor&lt;String, float[]&gt; predictor = model</span>
-<span class="nc" id="L132">					.newPredictor()) {</span>
-<span class="nc" id="L133">				return predictor.predict(truncated);</span>
+<span class="nc" id="L131">			String truncated = truncateToTokenLimit(text);</span>
+<span class="nc" id="L132">			try (Predictor&lt;String, float[]&gt; predictor = model</span>
+<span class="nc" id="L133">					.newPredictor()) {</span>
+<span class="nc" id="L134">				return predictor.predict(truncated);</span>
 			}
-<span class="nc" id="L135">		} catch (TranslateException e) {</span>
-<span class="nc" id="L136">			LOG.log(Level.WARNING,</span>
+<span class="nc" id="L136">		} catch (TranslateException e) {</span>
+<span class="nc" id="L137">			LOG.log(Level.WARNING,</span>
 					&quot;Failed to generate embedding&quot;, e); //$NON-NLS-1$
-<span class="nc" id="L138">			return null;</span>
+<span class="nc" id="L139">			return null;</span>
 		}
 	}
 
@@ -159,29 +160,29 @@ public class EmbeddingService {
 	public static String buildEmbeddingText(String simpleClassName,
 			String typeDocumentation, String methodSignatures,
 			String packageName) {
-<span class="fc" id="L162">		StringBuilder sb = new StringBuilder();</span>
-<span class="fc bfc" id="L163" title="All 4 branches covered.">		if (simpleClassName != null &amp;&amp; !simpleClassName.isEmpty()) {</span>
-<span class="fc" id="L164">			sb.append(simpleClassName);</span>
+<span class="fc" id="L163">		StringBuilder sb = new StringBuilder();</span>
+<span class="fc bfc" id="L164" title="All 4 branches covered.">		if (simpleClassName != null &amp;&amp; !simpleClassName.isEmpty()) {</span>
+<span class="fc" id="L165">			sb.append(simpleClassName);</span>
 		}
-<span class="fc bfc" id="L166" title="All 4 branches covered.">		if (typeDocumentation != null &amp;&amp; !typeDocumentation.isEmpty()) {</span>
-<span class="fc bfc" id="L167" title="All 2 branches covered.">			if (sb.length() &gt; 0) {</span>
-<span class="fc" id="L168">				sb.append(&quot;: &quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L167" title="All 4 branches covered.">		if (typeDocumentation != null &amp;&amp; !typeDocumentation.isEmpty()) {</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">			if (sb.length() &gt; 0) {</span>
+<span class="fc" id="L169">				sb.append(&quot;: &quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L170">			sb.append(typeDocumentation);</span>
+<span class="fc" id="L171">			sb.append(typeDocumentation);</span>
 		}
-<span class="fc bfc" id="L172" title="All 4 branches covered.">		if (methodSignatures != null &amp;&amp; !methodSignatures.isEmpty()) {</span>
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">			if (sb.length() &gt; 0) {</span>
-<span class="fc" id="L174">				sb.append(&quot;\nMethods: &quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L173" title="All 4 branches covered.">		if (methodSignatures != null &amp;&amp; !methodSignatures.isEmpty()) {</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">			if (sb.length() &gt; 0) {</span>
+<span class="fc" id="L175">				sb.append(&quot;\nMethods: &quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L176">			sb.append(methodSignatures);</span>
+<span class="fc" id="L177">			sb.append(methodSignatures);</span>
 		}
-<span class="fc bfc" id="L178" title="All 4 branches covered.">		if (packageName != null &amp;&amp; !packageName.isEmpty()) {</span>
-<span class="pc bpc" id="L179" title="1 of 2 branches missed.">			if (sb.length() &gt; 0) {</span>
-<span class="fc" id="L180">				sb.append(&quot;\nPackage: &quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L179" title="All 4 branches covered.">		if (packageName != null &amp;&amp; !packageName.isEmpty()) {</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">			if (sb.length() &gt; 0) {</span>
+<span class="fc" id="L181">				sb.append(&quot;\nPackage: &quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L182">			sb.append(packageName);</span>
+<span class="fc" id="L183">			sb.append(packageName);</span>
 		}
-<span class="fc" id="L184">		return sb.toString();</span>
+<span class="fc" id="L185">		return sb.toString();</span>
 	}
 
 	/**
@@ -190,11 +191,11 @@ public class EmbeddingService {
 	 * @return {@code true} if embeddings can be generated
 	 */
 	public boolean isAvailable() {
-<span class="pc bpc" id="L193" title="1 of 2 branches missed.">		if (!enabled) {</span>
-<span class="fc" id="L194">			return false;</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">		if (!enabled) {</span>
+<span class="fc" id="L195">			return false;</span>
 		}
-<span class="nc" id="L196">		ensureInitialized();</span>
-<span class="nc" id="L197">		return available;</span>
+<span class="fc" id="L197">		ensureInitialized();</span>
+<span class="fc" id="L198">		return available;</span>
 	}
 
 	/**
@@ -203,55 +204,65 @@ public class EmbeddingService {
 	 * @return {@code true} if embedding is enabled
 	 */
 	public boolean isEnabled() {
-<span class="fc" id="L206">		return enabled;</span>
+<span class="fc" id="L207">		return enabled;</span>
 	}
 
 	/**
 	 * Close the model and release resources.
 	 */
 	public void close() {
-<span class="nc bnc" id="L213" title="All 2 branches missed.">		if (model != null) {</span>
-<span class="nc" id="L214">			model.close();</span>
-<span class="nc" id="L215">			model = null;</span>
-<span class="nc" id="L216">			available = false;</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">		if (model != null) {</span>
+<span class="nc" id="L215">			model.close();</span>
+<span class="nc" id="L216">			model = null;</span>
+<span class="nc" id="L217">			available = false;</span>
 		}
-<span class="nc" id="L218">	}</span>
+<span class="fc" id="L219">	}</span>
 
 	private synchronized void ensureInitialized() {
-<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		if (initAttempted) {</span>
-<span class="nc" id="L222">			return;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">		if (initAttempted) {</span>
+<span class="fc" id="L223">			return;</span>
 		}
-<span class="fc" id="L224">		initAttempted = true;</span>
+<span class="fc" id="L225">		initAttempted = true;</span>
 		try {
-<span class="fc" id="L226">			LOG.log(Level.INFO,</span>
+<span class="fc" id="L227">			LOG.log(Level.INFO,</span>
 					&quot;Initializing embedding model: {0}&quot;, modelName); //$NON-NLS-1$
-<span class="fc" id="L228">			Criteria.Builder&lt;String, float[]&gt; builder = Criteria.builder()</span>
-<span class="fc" id="L229">					.setTypes(String.class, float[].class)</span>
-<span class="fc" id="L230">					.optModelUrls(</span>
-							&quot;djl://ai.djl.huggingface.pytorch/&quot; //$NON-NLS-1$
-									+ modelName)
-<span class="fc" id="L233">					.optEngine(&quot;OnnxRuntime&quot;) //$NON-NLS-1$</span>
-<span class="fc" id="L234">					.optTranslatorFactory(</span>
-							new ai.djl.huggingface.translator.TextEmbeddingTranslatorFactory());
-<span class="pc bpc" id="L236" title="3 of 4 branches missed.">			if (modelDir != null &amp;&amp; !modelDir.isEmpty()) {</span>
-<span class="nc" id="L237">				Path dir = Paths.get(modelDir);</span>
-<span class="nc" id="L238">				System.setProperty(&quot;DJL_CACHE_DIR&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L239">						dir.toAbsolutePath().toString());</span>
-			}
-<span class="nc" id="L241">			model = builder.build().loadModel();</span>
-<span class="nc" id="L242">			available = true;</span>
-<span class="nc" id="L243">			LOG.log(Level.INFO,</span>
+<span class="nc" id="L229">			model = loadModel();</span>
+<span class="nc" id="L230">			available = true;</span>
+<span class="nc" id="L231">			LOG.log(Level.INFO,</span>
 					&quot;Embedding model loaded successfully: {0}&quot;, //$NON-NLS-1$
 					modelName);
-<span class="fc" id="L246">		} catch (ModelNotFoundException | MalformedModelException</span>
-				| IOException e) {
-<span class="fc" id="L248">			LOG.log(Level.WARNING,</span>
+<span class="fc" id="L234">		} catch (ModelNotFoundException | MalformedModelException</span>
+				| IOException | LinkageError e) {
+<span class="fc" id="L236">			LOG.log(Level.WARNING,</span>
 					&quot;Failed to load embedding model — vector search disabled. &quot; //$NON-NLS-1$
 							+ &quot;Full-text search remains functional.&quot;, //$NON-NLS-1$
 					e);
-<span class="fc" id="L252">			available = false;</span>
-<span class="nc" id="L253">		}</span>
-<span class="fc" id="L254">	}</span>
+<span class="fc" id="L240">			available = false;</span>
+<span class="nc" id="L241">		}</span>
+<span class="fc" id="L242">	}</span>
+
+	/**
+	 * Load the optional model and its native engine. Keep this boundary separate
+	 * from the initialization state so a native linkage failure leaves ordinary
+	 * indexing usable, without hiding fatal VM errors or programming defects.
+	 */
+	ZooModel&lt;String, float[]&gt; loadModel()
+			throws ModelNotFoundException, MalformedModelException, IOException {
+<span class="fc" id="L251">		Criteria.Builder&lt;String, float[]&gt; builder = Criteria.builder()</span>
+<span class="fc" id="L252">				.setTypes(String.class, float[].class)</span>
+<span class="fc" id="L253">				.optModelUrls(</span>
+						&quot;djl://ai.djl.huggingface.pytorch/&quot; //$NON-NLS-1$
+								+ modelName)
+<span class="fc" id="L256">				.optEngine(&quot;OnnxRuntime&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L257">				.optTranslatorFactory(</span>
+						new ai.djl.huggingface.translator.TextEmbeddingTranslatorFactory());
+<span class="pc bpc" id="L259" title="3 of 4 branches missed.">		if (modelDir != null &amp;&amp; !modelDir.isEmpty()) {</span>
+<span class="nc" id="L260">			Path dir = Paths.get(modelDir);</span>
+<span class="nc" id="L261">			System.setProperty(&quot;DJL_CACHE_DIR&quot;, //$NON-NLS-1$</span>
+<span class="nc" id="L262">					dir.toAbsolutePath().toString());</span>
+		}
+<span class="nc" id="L264">		return builder.build().loadModel();</span>
+	}
 
 	/**
 	 * Truncate text to approximate the model's token limit.
@@ -264,25 +275,25 @@ public class EmbeddingService {
 	 */
 	private static String truncateToTokenLimit(String text) {
 		// Simple character-based approximation: ~4 chars per token for English
-<span class="nc" id="L267">		int maxChars = MAX_TOKEN_LENGTH * 4;</span>
-<span class="nc bnc" id="L268" title="All 2 branches missed.">		if (text.length() &gt; maxChars) {</span>
-<span class="nc" id="L269">			return text.substring(0, maxChars);</span>
+<span class="nc" id="L278">		int maxChars = MAX_TOKEN_LENGTH * 4;</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">		if (text.length() &gt; maxChars) {</span>
+<span class="nc" id="L280">			return text.substring(0, maxChars);</span>
 		}
-<span class="nc" id="L271">		return text;</span>
+<span class="nc" id="L282">		return text;</span>
 	}
 
 	private static boolean isEnabledFromEnv() {
-<span class="fc" id="L275">		String val = System.getenv(&quot;JGIT_EMBEDDING_ENABLED&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L276" title="3 of 4 branches missed.">		return val == null || !&quot;false&quot;.equalsIgnoreCase(val); //$NON-NLS-1$</span>
+<span class="fc" id="L286">		String val = System.getenv(&quot;JGIT_EMBEDDING_ENABLED&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L287" title="3 of 4 branches missed.">		return val == null || !&quot;false&quot;.equalsIgnoreCase(val); //$NON-NLS-1$</span>
 	}
 
 	private static String getModelNameFromEnv() {
-<span class="fc" id="L280">		String val = System.getenv(&quot;JGIT_EMBEDDING_MODEL_NAME&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L281" title="3 of 4 branches missed.">		return val != null &amp;&amp; !val.isEmpty() ? val : DEFAULT_MODEL_NAME;</span>
+<span class="fc" id="L291">		String val = System.getenv(&quot;JGIT_EMBEDDING_MODEL_NAME&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L292" title="3 of 4 branches missed.">		return val != null &amp;&amp; !val.isEmpty() ? val : DEFAULT_MODEL_NAME;</span>
 	}
 
 	private static String getModelDirFromEnv() {
-<span class="fc" id="L285">		return System.getenv(&quot;JGIT_EMBEDDING_MODEL_DIR&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L296">		return System.getenv(&quot;JGIT_EMBEDDING_MODEL_DIR&quot;); //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
