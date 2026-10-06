@@ -1,0 +1,50 @@
+name: Complete verified development-version merge
+
+on:
+  push:
+    branches: [ 'codex/1657-mathematics-cleanup' ]
+    paths: [ '.github/workflows/complete-ci-main-merge.yml' ]
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.repository == 'carstenartur/sandbox' && github.ref == 'refs/heads/codex/1657-mathematics-cleanup'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Apply only the locally reviewed merge tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          main=12fda4657c47c483a3380e95b2b4303de122cba0
+          expected=79b129819a45af983bcf5aa02419aea1cf5e88df
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          if ! git merge --no-commit --no-ff "$main"; then
+            while IFS= read -r -d '' path; do
+              case "$path" in
+                sandbox_common/META-INF/MANIFEST.MF|sandbox_css_cleanup/META-INF/MANIFEST.MF|sandbox_eclipse_help_swtbot_test/META-INF/MANIFEST.MF|sandbox_encoding_quickfix/META-INF/MANIFEST.MF|sandbox_functional_converter/META-INF/MANIFEST.MF|sandbox_int_to_enum/META-INF/MANIFEST.MF|sandbox_jface_cleanup/META-INF/MANIFEST.MF|sandbox_junit_cleanup/META-INF/MANIFEST.MF|sandbox_method_reuse/META-INF/MANIFEST.MF|sandbox_platform_helper/META-INF/MANIFEST.MF|sandbox_product/sandbox.product|sandbox_test_commons/META-INF/MANIFEST.MF|sandbox_tools/META-INF/MANIFEST.MF|sandbox_triggerpattern/META-INF/MANIFEST.MF|sandbox_use_general_type/META-INF/MANIFEST.MF|sandbox_xml_cleanup/META-INF/MANIFEST.MF)
+                  git checkout --ours -- "$path"
+                  git add -- "$path"
+                  ;;
+                *) echo "Unexpected conflict: $path" >&2; exit 1 ;;
+              esac
+            done < <(git diff --name-only --diff-filter=U -z)
+          fi
+          test -z "$(git ls-files --unmerged)"
+          git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --cached --check
+          verification_index=$(mktemp)
+          trap 'rm -f "$verification_index"' EXIT
+          cp .git/index "$verification_index"
+          GIT_INDEX_FILE="$verification_index" git update-index --force-remove .github/workflows/complete-ci-main-merge.yml
+          actual=$(GIT_INDEX_FILE="$verification_index" git write-tree)
+          test "$actual" = "$expected" || { echo "Merge tree mismatch: $actual != $expected" >&2; exit 1; }
+          git commit -m 'Merge verified 1.3.7-SNAPSHOT main while retaining the mathematics integration'
+          git push origin HEAD:refs/heads/codex/1657-mathematics-cleanup
