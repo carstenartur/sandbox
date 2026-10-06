@@ -155,16 +155,7 @@ class OomphSetupTest {
             String logPrefix = pass < 2 ? phase : phase + "-repeat-" + pass;
             Properties result = new Properties();
             for (int attempt = 0; attempt < 3; attempt++) {
-                List<String> command = eclipseCommand(eclipse);
-                command.addAll(List.of("-clean", "-nosplash", "-application", "org.sandbox.oomph.probe.run",
-                        "-data", workspace.toString(), "-consoleLog", "-vmargs", "-Xmx4g",
-                        "-Doomph.setup.skip=true", "-Doomph.setup.questionnaire.skip=true",
-                        "-Dsandbox.oomph.root=" + root, "-Dsandbox.oomph.phase=" + phase,
-                        "-Dsandbox.oomph.attempt=" + attempt,
-                        "-Dsandbox.oomph.ref=" + System.getProperty("sandbox.oomph.ref", "main"),
-                        "-Dsandbox.oomph.commit=" + System.getProperty("sandbox.oomph.commit", ""),
-                        "-Dsandbox.oomph.repository=" + System.getProperty("sandbox.oomph.repository",
-                                "https://github.com/carstenartur/sandbox.git")));
+                List<String> command = setupCommand(eclipse, workspace, phase, attempt);
                 String invocation = logPrefix + "-" + attempt;
                 result = runSetupInvocation(run, phase, invocation,
                         () -> process(run.resolve(invocation + ".log"), run, command));
@@ -269,6 +260,74 @@ class OomphSetupTest {
         assertEquals("passed", result.getProperty("result"));
     }
 
+    @Test
+    void everySetupLaunchExcludesUnrelatedPoolsWithoutSkippingP2(@TempDir Path temporary) {
+        Path eclipse = temporary.resolve("test IDE");
+        Path workspace = temporary.resolve("test workspace");
+        for (String phase : List.of("fresh", "update")) {
+            for (int attempt = 0; attempt < 3; attempt++) {
+                List<String> command = setupCommand(eclipse, workspace, phase, attempt);
+                int vmargs = command.indexOf("-vmargs");
+                assertTrue(vmargs > command.indexOf("-application"));
+                assertEquals("org.sandbox.oomph.probe.run", command.get(command.indexOf("-application") + 1));
+                assertEquals(workspace.toString(), command.get(command.indexOf("-data") + 1));
+                List<String> properties = command.subList(vmargs + 1, command.size()).stream()
+                        .filter(value -> value.startsWith("-D")).toList();
+                assertEquals(List.of("-Doomph.setup.skip=true", "-Doomph.setup.questionnaire.skip=true",
+                        "-Doomph.p2.additional.pools=false",
+                        "-Dsandbox.oomph.root=" + root, "-Dsandbox.oomph.phase=" + phase,
+                        "-Dsandbox.oomph.attempt=" + attempt,
+                        "-Dsandbox.oomph.ref=" + System.getProperty("sandbox.oomph.ref", "main"),
+                        "-Dsandbox.oomph.commit=" + System.getProperty("sandbox.oomph.commit", ""),
+                        "-Dsandbox.oomph.repository=" + System.getProperty("sandbox.oomph.repository",
+                                "https://github.com/carstenartur/sandbox.git")), properties);
+            }
+        }
+    }
+
+    @Test
+    void poolIsolationReachesTheChildVmWithoutChangingTheParent(@TempDir Path temporary) throws Exception {
+        String property = "oomph.p2.additional.pools";
+        String parentValue = System.getProperty(property);
+        List<String> launch = setupCommand(temporary.resolve("eclipse"), temporary.resolve("workspace"), "update", 1);
+        List<String> command = new ArrayList<>(List.of(
+                Path.of(System.getProperty("java.home"), "bin/java").toString(), "-D" + property + "=true"));
+        command.addAll(launch.subList(launch.indexOf("-vmargs") + 1, launch.size()));
+        command.addAll(List.of("-XshowSettings:properties", "-version"));
+        Path log = temporary.resolve("child-vm.log");
+        Process child = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(log.toFile()).start();
+        try {
+            assertTrue(child.waitFor(10, TimeUnit.SECONDS), "Child JVM must terminate");
+            String output = Files.readString(log);
+            assertEquals(0, child.exitValue(), output);
+            assertTrue(java.util.regex.Pattern.compile("(?m)^\\s*oomph\\.p2\\.additional\\.pools = false\\s*$")
+                    .matcher(output).find(), output);
+            assertEquals(parentValue, System.getProperty(property), "Only the disposable child JVM is isolated");
+        } finally {
+            if (child.isAlive()) {
+                child.destroyForcibly();
+                assertTrue(child.waitFor(10, TimeUnit.SECONDS), "Terminated child JVM must exit");
+            }
+        }
+    }
+
+    @Test
+    void missingP2RepositoryStillInvalidatesPassAndRestartReceipts(@TempDir Path temporary) throws Exception {
+        String entry = "!ENTRY org.eclipse.equinox.p2.artifact.repository 4 1000 2026-10-06 13:00:29.019";
+        String log = entry + "\n!MESSAGE No repository found at file:/home/runner/.p2/pool.\n";
+        for (String result : List.of("passed", "restart")) {
+            Path run = Files.createDirectory(temporary.resolve(result));
+            var failure = assertThrows(java.io.IOException.class,
+                    () -> runSetupInvocation(run, "update", "update-0", () -> {
+                        Files.writeString(run.resolve("update.properties"), "result=" + result + "\n");
+                        Files.writeString(run.resolve("update-0.log"), log);
+                    }));
+            assertTrue(failure.getMessage().contains(entry));
+            assertEquals(log, Files.readString(run.resolve("update-0.log")));
+            assertEquals("result=" + result + "\n", Files.readString(run.resolve("update.properties")));
+        }
+    }
+
     @FunctionalInterface
     private interface NativeLaunch { void run() throws Exception; }
 
@@ -348,6 +407,25 @@ class OomphSetupTest {
                 }
             }
         }
+    }
+
+    private List<String> setupCommand(Path eclipse, Path workspace, String phase, int attempt) {
+        // Oomph otherwise adds every registered user bundle pool as an artifact
+        // source, including an unused ~/.p2/pool without a repository. This
+        // disposable installation must resolve from its declared repositories
+        // and own pool, not depend on or repair unrelated contributor caches.
+        List<String> command = eclipseCommand(eclipse);
+        command.addAll(List.of("-clean", "-nosplash", "-application", "org.sandbox.oomph.probe.run",
+                "-data", workspace.toString(), "-consoleLog", "-vmargs", "-Xmx4g",
+                "-Doomph.setup.skip=true", "-Doomph.setup.questionnaire.skip=true",
+                "-Doomph.p2.additional.pools=false",
+                "-Dsandbox.oomph.root=" + root, "-Dsandbox.oomph.phase=" + phase,
+                "-Dsandbox.oomph.attempt=" + attempt,
+                "-Dsandbox.oomph.ref=" + System.getProperty("sandbox.oomph.ref", "main"),
+                "-Dsandbox.oomph.commit=" + System.getProperty("sandbox.oomph.commit", ""),
+                "-Dsandbox.oomph.repository=" + System.getProperty("sandbox.oomph.repository",
+                        "https://github.com/carstenartur/sandbox.git")));
+        return command;
     }
 
     private static List<String> eclipseCommand(Path eclipse) {
