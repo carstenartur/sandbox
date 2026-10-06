@@ -13,6 +13,11 @@
             <unit id="org.eclipse.pde.feature.group" version="0.0.0"/>
             <unit id="org.eclipse.pde.spies.feature.group" version="0.0.0"/>
             <unit id="org.eclipse.equinox.executable.feature.group" version="0.0.0"/>
+            <!-- Product features and the inherited p2 UI extra requirement
+                 must be available through the selected target itself. -->
+            <unit id="org.eclipse.emf.ecore.feature.group" version="0.0.0"/>
+            <unit id="org.eclipse.emf.common.feature.group" version="0.0.0"/>
+            <unit id="org.eclipse.equinox.p2.user.ui.feature.group" version="0.0.0"/>
         </location>
 
         <!-- 2. Orbit dependencies aligned with Eclipse 2026-09 / Platform 4.41 -->

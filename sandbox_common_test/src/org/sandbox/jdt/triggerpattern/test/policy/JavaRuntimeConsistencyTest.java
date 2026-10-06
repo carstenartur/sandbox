@@ -79,12 +79,17 @@ public class JavaRuntimeConsistencyTest {
 	@Test
 	void productUsesPinnedJustJWithoutChangingTheCompilationEnvironment() throws Exception {
 		Document pom = xml("pom.xml");
-		assertEquals(JUSTJ, value(pom, "/project/repositories/repository[id='justj']/url"));
+		assertEquals("0", value(pom, "count(/project/repositories/repository[layout='p2'])"),
+				"Build dependencies come from the target; the product runtime must not widen every module's p2 scope");
 		assertEquals("${java-execenv}", value(pom, "/project/build/plugins/plugin[artifactId='target-platform-configuration']/configuration/executionEnvironment"));
 		Document product = xml("sandbox_product/sandbox.product");
 		assertEquals("true", product.getDocumentElement().getAttribute("includeJRE"));
 		assertTrue(value(product, "/product/launcherArgs/vmArgs").contains("-Dosgi.requiredJavaVersion=25"));
-		assertEquals(JUSTJ, value(xml("sandbox_product/pom.xml"), "/project/build/plugins/plugin[artifactId='tycho-p2-director-plugin']/configuration/productRepository"));
+		Document productPom = xml("sandbox_product/pom.xml");
+		assertEquals("1", value(productPom, "count(/project/repositories/repository[layout='p2'])"));
+		assertEquals(JUSTJ, value(productPom, "/project/repositories/repository[layout='p2']/url"),
+				"Product assembly needs the pinned runtime repository in its own module");
+		assertEquals(JUSTJ, value(productPom, "/project/build/plugins/plugin[artifactId='tycho-p2-director-plugin']/configuration/productRepository"));
 		assertFalse(read("sandbox_target/eclipse.target").contains("org.eclipse.justj"), "Product runtime must not replace the JavaSE compilation environment");
 		assertEquals("", value(product, "/product/features/feature[starts-with(@id,'org.eclipse.justj')]/@id"));
 		for (Path module : modules()) {

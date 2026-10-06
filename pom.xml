@@ -135,52 +135,9 @@
 		<!-- Heavy modules (sandbox_product, sandbox_updatesite) moved to
 		profiles below -->
 	</modules>
-	<repositories>
-		<!-- 1. Eclipse SimRel Release Repository - stable 2026-09 baseline -->
-		<repository>
-			<id>eclipse-2026-09</id>
-			<layout>p2</layout>
-			<url>https://download.eclipse.org/releases/2026-09/</url>
-		</repository>
-
-		<!-- 2. Eclipse Orbit (externe Abhängigkeiten wie Apache Commons) -->
-		<repository>
-			<id>orbit</id>
-			<layout>p2</layout>
-			<url>
-				https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-09/</url>
-		</repository>
-
-		<!-- 3. Eclipse Lizenzinformationen -->
-		<repository>
-			<id>cbi-license</id>
-			<layout>p2</layout>
-			<url>https://download.eclipse.org/cbi/updates/license/</url>
-		</repository>
-
-		<!-- 4. EGit Repository -->
-		<repository>
-			<id>egit</id>
-			<layout>p2</layout>
-			<url>https://download.eclipse.org/egit/updates/</url>
-		</repository>
-
-		<!-- 5. JustJ Java Runtime -->
-		<repository>
-			<id>justj</id>
-			<layout>p2</layout>
-			<url>
-				https://download.eclipse.org/justj/jres/25/updates/release/25.0.4.v20260826-0822</url>
-		</repository>
-
-		<!-- 6. Babel Translations -->
-		<repository>
-			<id>babel</id>
-			<layout>p2</layout>
-			<url>
-				https://download.eclipse.org/technology/babel/update-site/latest/</url>
-		</repository>
-	</repositories>
+	<!-- The target artifact below supplies the selected p2 units. Global p2
+	     repositories would additionally expose every unit in those repositories
+	     to each Tycho module. Product-only repositories belong in its POM. -->
 	<build>
 		<plugins>
 			<plugin>

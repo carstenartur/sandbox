@@ -80,6 +80,8 @@ A green lightweight inventory gate does not replace Maven, distribution, or SWTB
 
 `sandbox_target/eclipse.target` resolves the named Eclipse 2026-09 release, the matching Orbit aggregation, EGit, SWTBot, and the pinned Bouncy Castle bundles from the Orbit 4.41 repository. The 1.85 family uses 1.85.0 for `bcutil`, `bcpkix` and `bcpg`, and 1.85.2 for `bcprov`. The project intentionally uses named release repositories rather than a floating Eclipse `latest` URL.
 
+Declare shared p2 build dependencies as selected units in that target. Global parent POM p2 repositories add their entire contents to each module's available target and can make p2-to-Maven dependency mapping expensive. JustJ is scoped to `sandbox_product/pom.xml`; the update site uses `addIUTargetRepositoryReferences` with `filterProvided` to publish external dependency sources. The target-only module unbinds the inherited SpotBugs `analyze-compile` execution because it has no bytecode; its target validation and packaging remain active.
+
 When the Eclipse or Tycho baseline changes, update all active build, product, contributor Oomph, capability, and documentation references in the same reviewed change. `RepositoryBaselineConsistencyTest` rejects contradictory active values. Frozen migration corpora and their separate QA configurations retain their own exact pins; historical screenshot provenance must not be relabelled.
 
 ## Troubleshooting

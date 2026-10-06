@@ -111,7 +111,9 @@
 					<includeAllDependencies>true</includeAllDependencies>
 					<!-- Do not mirror Eclipse/Orbit/EGit content already provided by our POM repositories. -->
 					<filterProvided>true</filterProvided>
-					<addPomRepositoryReferences>true</addPomRepositoryReferences>
+					<!-- Publish dependency sources from the same selected target used
+					     by the build, so filterProvided can keep the update site lean. -->
+					<addIUTargetRepositoryReferences>true</addIUTargetRepositoryReferences>
 				</configuration>
 			</plugin>
 		</plugins>

@@ -4,6 +4,7 @@ package org.sandbox.distribution;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,15 +25,88 @@ class DistributionVerifierModelTest {
     private static final List<String> IDS = List.of("bcutil", "bcprov", "bcpkix", "bcpg");
     private static final String RELEASE = "https://download.eclipse.org/releases/2026-09/";
     private static final String ORBIT = "https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-09/";
+    private static final String JUSTJ = "https://download.eclipse.org/justj/jres/25/updates/release/25.0.4.v20260826-0822";
 
     @TempDir
     Path root;
 
     @Test
-    void validDistinctDeclarationsReachArtifactVerification() throws Exception {
+    void targetOnlyRepositoriesReachArtifactVerification() throws Exception {
         fixture();
         // No built repository: reaching this diagnostic proves the complete model passed.
         assertFailure("Built p2 repository does not exist: " + root.resolve("sandbox_updatesite/target/repository"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"org.eclipse.emf.ecore.feature.group", "org.eclipse.emf.common.feature.group",
+            "org.eclipse.equinox.p2.user.ui.feature.group"})
+    void rejectsMissingProductTargetRoots(String id) throws Exception {
+        fixture();
+        replace("sandbox_target/eclipse.target", unit(id, "0.0.0"), "");
+        assertFailure("Target is missing product feature roots: [" + id + "]");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"<groupId>org.sandbox</groupId>", "<artifactId>sandbox_target</artifactId>",
+            "<version>${project.version}</version>", "<artifactId>target-platform-configuration</artifactId>"})
+    void rejectsMissingMavenTargetLink(String declaration) throws Exception {
+        fixture();
+        replace("pom.xml", declaration, "");
+        assertFailure("Maven must use the reactor target artifact org.sandbox:sandbox_target:${project.version}");
+    }
+
+    @Test
+    void rejectsTargetLinkThatExistsOnlyInPluginManagement() throws Exception {
+        fixture();
+        replace("pom.xml", "<build><plugins>", "<build><pluginManagement><plugins>");
+        replace("pom.xml", "</plugins></build>", "</plugins></pluginManagement></build>");
+        assertFailure("Maven must use the reactor target artifact org.sandbox:sandbox_target:${project.version}");
+    }
+
+    @Test
+    void rejectsUnrelatedTargetArtifact() throws Exception {
+        fixture();
+        replace("pom.xml", "<artifactId>sandbox_target</artifactId>", "<artifactId>another_target</artifactId>");
+        assertFailure("Maven must use the reactor target artifact org.sandbox:sandbox_target:${project.version}");
+    }
+
+    @Test
+    void rejectsGlobalP2RepositoryThatWidensTheTarget() throws Exception {
+        fixture();
+        replace("pom.xml", "<project>", "<project><repositories>" + repository(RELEASE) + "</repositories>");
+        assertFailure("Global p2 repositories must be declared through the target definition");
+    }
+
+    @Test
+    void rejectsOrbitFromAnotherEclipseRelease() throws Exception {
+        fixture();
+        replace("sandbox_target/eclipse.target", ORBIT, ORBIT.replace("2026-09", "2025-12"));
+        assertFailure("Target Eclipse and Orbit releases are inconsistent: Eclipse=2026-09, Orbit=2025-12");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"url", "productRepository"})
+    void rejectsDifferentJustJPinsForAssemblyAndMaterialization(String element) throws Exception {
+        fixture();
+        replace("sandbox_product/pom.xml", "<" + element + ">" + JUSTJ + "</" + element + ">",
+                "<" + element + ">" + JUSTJ.replace("25.0.4", "25.0.3") + "</" + element + ">");
+        assertFailure("Product assembly and materialization must use the same pinned Java 25 JustJ repository");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"https://download.eclipse.org/justj/jres/25/updates/release/latest/",
+            "https://download.eclipse.org/justj/jres/21/updates/release/21.0.8.v20250717-0822"})
+    void rejectsUnpinnedOrWrongJavaRuntime(String repository) throws Exception {
+        fixture();
+        replace("sandbox_product/pom.xml", JUSTJ, repository);
+        assertFailure("Product assembly and materialization must use the same pinned Java 25 JustJ repository");
+    }
+
+    @Test
+    void rejectsRuntimeRepositoryMissingFromProductAssembly() throws Exception {
+        fixture();
+        replace("sandbox_product/pom.xml", "<repositories>" + repository(JUSTJ) + "</repositories>", "");
+        assertFailure("Product assembly and materialization must use the same pinned Java 25 JustJ repository");
     }
 
     @ParameterizedTest(name = "{0}: {1}, version {2}, prepend={3}")
@@ -81,9 +155,16 @@ class DistributionVerifierModelTest {
     private void fixture() throws IOException {
         String requirements = IDS.stream().map(id -> requirement(id, version(id))).reduce("", String::concat);
         String units = IDS.stream().map(id -> unit(id, version(id))).reduce("", String::concat);
-        write("pom.xml", "<project><repositories>" + repository(RELEASE) + repository(ORBIT)
-                + "</repositories><properties><bouncycastle.version>1.85</bouncycastle.version>"
+        units += Stream.of("org.eclipse.emf.ecore.feature.group", "org.eclipse.emf.common.feature.group",
+                "org.eclipse.equinox.p2.user.ui.feature.group")
+                .map(id -> unit(id, "0.0.0")).reduce("", String::concat);
+        write("pom.xml", "<project><properties><java-version>25</java-version>"
+                + "<bouncycastle.version>1.85</bouncycastle.version>"
                 + "<bouncycastle.bcprov.version>1.85.2</bouncycastle.bcprov.version></properties>"
+                + "<build><plugins><plugin><groupId>org.eclipse.tycho</groupId>"
+                + "<artifactId>target-platform-configuration</artifactId><configuration><target><artifact>"
+                + "<groupId>org.sandbox</groupId><artifactId>sandbox_target</artifactId>"
+                + "<version>${project.version}</version></artifact></target></configuration></plugin></plugins></build>"
                 + "<extraRequirements>" + requirements + "</extraRequirements><profiles><profile>"
                 + "<id>distribution</id><modules><module>sandbox_product</module>"
                 + "<module>sandbox_updatesite</module><module>sandbox_distribution_verify</module>"
@@ -99,7 +180,10 @@ class DistributionVerifierModelTest {
         write("sandbox_updatesite/category.xml", "<site><feature id=\"sandbox_sample_feature\"/></site>");
         String deliveryPom = "<project><dependencies><dependency><artifactId>sandbox_sample_feature</artifactId>"
                 + "</dependency></dependencies></project>";
-        write("sandbox_product/pom.xml", deliveryPom);
+        write("sandbox_product/pom.xml", deliveryPom.replace("</project>", "<repositories>" + repository(JUSTJ)
+                + "</repositories><build><plugins><plugin><groupId>org.eclipse.tycho</groupId>"
+                + "<artifactId>tycho-p2-director-plugin</artifactId><configuration><productRepository>"
+                + JUSTJ + "</productRepository></configuration></plugin></plugins></build></project>"));
         write("sandbox_updatesite/pom.xml", deliveryPom);
         write("sandbox_oomph/sandbox.setup", "<setupTask name=\"eclipse.target.version\" defaultValue=\"2026-09\"/>");
     }
@@ -108,6 +192,13 @@ class DistributionVerifierModelTest {
         Path file = root.resolve(path);
         Files.createDirectories(file.getParent());
         Files.writeString(file, content, StandardCharsets.UTF_8);
+    }
+
+    private void replace(String path, String original, String replacement) throws IOException {
+        Path file = root.resolve(path);
+        String content = Files.readString(file, StandardCharsets.UTF_8);
+        assertTrue(content.contains(original), "Fixture must contain the declaration being changed");
+        Files.writeString(file, content.replace(original, replacement), StandardCharsets.UTF_8);
     }
 
     private static String repository(String url) {

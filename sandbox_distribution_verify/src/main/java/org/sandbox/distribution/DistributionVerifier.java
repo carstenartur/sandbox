@@ -57,6 +57,9 @@ public final class DistributionVerifier {
     private static final Pattern HEX_32 = Pattern.compile("[0-9a-fA-F]{32}");
     private static final Set<String> BOUNCY_CASTLE_IDS =
             Set.of("bcutil", "bcprov", "bcpkix", "bcpg");
+    private static final Set<String> PRODUCT_TARGET_ROOTS = Set.of(
+            "org.eclipse.emf.ecore.feature.group", "org.eclipse.emf.common.feature.group",
+            "org.eclipse.equinox.p2.user.ui.feature.group");
 
     private final Path root;
     private final Path evidence;
@@ -100,14 +103,11 @@ public final class DistributionVerifier {
         Document productPom = parseXml(root.resolve("sandbox_product/pom.xml"));
         Document updateSitePom = parseXml(root.resolve("sandbox_updatesite/pom.xml"));
 
-        List<String> pomRepositories = childTexts(pom, "repository", "url").stream()
-                .filter(url -> "p2".equals(repositoryLayout(pom, url)))
-                .toList();
+        verifyTargetConfiguration(pom, target);
         List<String> targetRepositories = targetRepositories(target);
         List<String> productRepositories = directChildAttributeValues(
                 product.getDocumentElement(), "repositories", "repository", "location");
 
-        String pomRelease = singleRepositoryVersion(pomRepositories, RELEASE_REPOSITORY, "Maven Eclipse");
         String targetRelease = singleRepositoryVersion(targetRepositories, RELEASE_REPOSITORY, "target Eclipse");
         String productRelease = singleRepositoryVersion(productRepositories, RELEASE_REPOSITORY, "product Eclipse");
 
@@ -119,17 +119,24 @@ public final class DistributionVerifier {
         String oomphRelease = oomphMatcher.group(1);
 
         Map<String, String> releases = Map.of(
-                "pom.xml", pomRelease,
                 "sandbox_target/eclipse.target", targetRelease,
                 "sandbox_product/sandbox.product", productRelease,
                 "sandbox_oomph/sandbox.setup", oomphRelease);
         require(new HashSet<>(releases.values()).size() == 1,
                 "Eclipse release repositories are inconsistent: " + releases);
 
-        String pomOrbit = singleRepositoryVersion(pomRepositories, ORBIT_REPOSITORY, "Maven Orbit");
         String targetOrbit = singleRepositoryVersion(targetRepositories, ORBIT_REPOSITORY, "target Orbit");
-        require(pomOrbit.equals(targetOrbit),
-                "Orbit repositories are inconsistent: pom.xml=" + pomOrbit + ", target=" + targetOrbit);
+        require(targetRelease.equals(targetOrbit),
+                "Target Eclipse and Orbit releases are inconsistent: Eclipse=" + targetRelease + ", Orbit=" + targetOrbit);
+
+        String javaVersion = requiredFirstText(pom, "java-version");
+        String productRepository = pluginConfiguration(productPom, "tycho-p2-director-plugin")
+                .flatMap(configuration -> directChildText(configuration, "productRepository")).orElse("");
+        String pinnedJustJ = "https://download\\.eclipse\\.org/justj/jres/" + Pattern.quote(javaVersion)
+                + "/updates/release/" + Pattern.quote(javaVersion) + "\\.\\d+\\.\\d+\\.v\\d{8}-\\d{4}/?";
+        require(productRepository.matches(pinnedJustJ)
+                        && p2Repositories(productPom).equals(List.of(productRepository)),
+                "Product assembly and materialization must use the same pinned Java " + javaVersion + " JustJ repository");
 
         String mavenBc = requiredFirstText(pom, "bouncycastle.version");
         String mavenBcprov = requiredFirstText(pom, "bouncycastle.bcprov.version");
@@ -212,21 +219,43 @@ public final class DistributionVerifier {
                         + distributionModules);
 
         return new Model(
-                pomRelease,
-                pomOrbit,
+                targetRelease,
+                targetOrbit,
                 mavenBc + " family (bcprov " + mavenBcprov + ")",
                 List.copyOf(publishedFeatures),
                 targetRepositories);
     }
 
-    private String repositoryLayout(Document pom, String url) {
-        for (Element repository : elements(pom, "repository")) {
-            String candidate = directChildText(repository, "url").orElse("");
-            if (candidate.equals(url)) {
-                return directChildText(repository, "layout").orElse("");
-            }
-        }
-        return "";
+    private void verifyTargetConfiguration(Document pom, Document target) throws VerificationException {
+        List<Element> artifacts = pluginConfiguration(pom, "target-platform-configuration")
+                .map(configuration -> directChildren(configuration, "target", "artifact")).orElse(List.of());
+        require(artifacts.size() == 1
+                        && "org.sandbox".equals(directChildText(artifacts.getFirst(), "groupId").orElse(""))
+                        && "sandbox_target".equals(directChildText(artifacts.getFirst(), "artifactId").orElse(""))
+                        && "${project.version}".equals(directChildText(artifacts.getFirst(), "version").orElse(""))
+                        && directChildText(artifacts.getFirst(), "classifier").isEmpty(),
+                "Maven must use the reactor target artifact org.sandbox:sandbox_target:${project.version}");
+        require(p2Repositories(pom).isEmpty(),
+                "Global p2 repositories must be declared through the target definition");
+        Set<String> targetRoots = new HashSet<>(attributeValues(target, "unit", "id"));
+        require(targetRoots.containsAll(PRODUCT_TARGET_ROOTS),
+                "Target is missing product feature roots: " + difference(PRODUCT_TARGET_ROOTS, targetRoots));
+    }
+
+    private Optional<Element> pluginConfiguration(Document pom, String artifactId) {
+        return directChild(pom.getDocumentElement(), "build").stream()
+                .flatMap(build -> directChildren(build, "plugins", "plugin").stream())
+                .filter(plugin -> "org.eclipse.tycho".equals(directChildText(plugin, "groupId").orElse(""))
+                        && artifactId.equals(directChildText(plugin, "artifactId").orElse("")))
+                .flatMap(plugin -> directChild(plugin, "configuration").stream())
+                .findFirst();
+    }
+
+    private List<String> p2Repositories(Document pom) {
+        return directChildren(pom.getDocumentElement(), "repositories", "repository").stream()
+                .filter(repository -> "p2".equals(directChildText(repository, "layout").orElse("")))
+                .map(repository -> directChildText(repository, "url").orElse(""))
+                .toList();
     }
 
     private void verifyDeliveryDependencies(
@@ -851,14 +880,6 @@ public final class DistributionVerifier {
                 .filter(text -> !text.isEmpty())
                 .findFirst()
                 .orElseThrow(() -> new VerificationException("Missing " + localName));
-    }
-
-    private List<String> childTexts(Document document, String parentName, String childName) {
-        List<String> result = new ArrayList<>();
-        for (Element parent : elements(document, parentName)) {
-            directChildText(parent, childName).ifPresent(result::add);
-        }
-        return result;
     }
 
     private static List<String> attributeValues(Document document, String elementName, String attribute) {
