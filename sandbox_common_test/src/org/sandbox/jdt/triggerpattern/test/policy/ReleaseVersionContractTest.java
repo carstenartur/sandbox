@@ -173,7 +173,9 @@ public class ReleaseVersionContractTest {
 		runSuccessful(repository, List.of("git", "add", "pom.xml"));
 		runSuccessful(repository, List.of("git", "commit", "-m", "initial"));
 		writePom(pom, "1.3.6-SNAPSHOT", lineEnding, versionLineSuffix, appendBlankLineAtEof);
-		return run(repository, List.of("bash", "-lc", command));
+		// The matcher permits only this fixed Git argv, with no shell syntax.
+		// A login shell can change the working directory or invoke WSL on Windows.
+		return run(repository, List.of(command.split(" ")));
 	}
 
 	private static void writePom(Path pom, String version, String lineEnding, String versionLineSuffix,
