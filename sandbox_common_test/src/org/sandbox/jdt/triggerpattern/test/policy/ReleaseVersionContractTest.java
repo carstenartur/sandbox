@@ -208,13 +208,22 @@ public class ReleaseVersionContractTest {
 		runSuccessful(pages, List.of("git", "commit", "-m", "published"));
 
 		// Execute the workflow's real Git command against a real nested repository.
-		runSuccessful(repository, List.of("bash", "-lc", staging));
+		runSuccessful(repository, stagingArguments(staging));
 		CommandResult staged = run(repository, List.of("git", "diff", "--cached", "--name-only"));
 		assertEquals(0, staged.exitCode(), staged.output());
 		assertEquals(versionFiles, staged.output().lines().collect(Collectors.toSet()), staged.output());
 		assertEquals("generated notes\n", Files.readString(repository.resolve("release-notes.md")));
 		assertEquals("published content\n", Files.readString(pages.resolve("index.html")));
 		assertEquals("unrelated workflow edit\n", Files.readString(workflowFile));
+	}
+
+	static List<String> stagingArguments(String command) {
+		// Execute the workflow's literal argv, not a Windows WSL/login shell.
+		// Fail closed for shell syntax this deliberately narrow adapter cannot model.
+		Matcher arguments = Pattern.compile("git[ \\t]+add[ \\t]+(-[A-Za-z]+)[ \\t]+--[ \\t]+'([^'\\r\\n]+)'[ \\t]*")
+				.matcher(command);
+		assertTrue(arguments.matches(), "Unsupported staging command: " + command);
+		return List.of("git", "add", arguments.group(1), "--", arguments.group(2));
 	}
 
 	private static String handoffDiffCheckCommand(String step) {

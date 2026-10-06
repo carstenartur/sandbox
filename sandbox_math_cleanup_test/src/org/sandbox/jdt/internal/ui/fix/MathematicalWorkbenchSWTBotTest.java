@@ -294,7 +294,7 @@ public class MathematicalWorkbenchSWTBotTest {
 
  @Test @Order(8) void progressDialogCancelsTheSharedAnalysisWorker() throws Exception {
   ICompilationUnit unit=unit("Calculation.java",source("Calculation"));String before=unit.getSource();
-  CountDownLatch started=new CountDownLatch(1),finished=new CountDownLatch(1);AtomicBoolean cancelled=new AtomicBoolean();
+  CountDownLatch started=new CountDownLatch(1),finished=new CountDownLatch(1),workerFinished=new CountDownLatch(1);AtomicBoolean cancelled=new AtomicBoolean();
   Display.getDefault().asyncExec(()->{
    try {
     new ProgressMonitorDialog(workbenchUnchecked()).run(true,true,progress->{
@@ -306,7 +306,10 @@ public class MathematicalWorkbenchSWTBotTest {
          MathematicalAnalysis.analyze(parse(unit),before,MathCleanUpOptions.parse(enabledOptions(),17),worker,-1,0);
          if(System.nanoTime()>deadline)throw new IllegalStateException("Cancellation was not delivered");
         }
-       } catch(Exception failure) {throw new IllegalStateException(failure);}
+       } finally {
+        // Preserve OperationCanceledException for the shared job's CANCEL status.
+        workerFinished.countDown();
+       }
        return null;
       },progress);
      } catch(org.eclipse.core.runtime.OperationCanceledException expected) { cancelled.set(true); }
@@ -314,7 +317,9 @@ public class MathematicalWorkbenchSWTBotTest {
    } catch(Throwable failure) { ASYNC_FAILURE.compareAndSet(null,failure); } finally { finished.countDown(); }
   });
   assertTrue(started.await(20,TimeUnit.SECONDS));button(bot.activeShell().widget,"Cancel").click();
-  assertTrue(finished.await(20,TimeUnit.SECONDS));assertTrue(cancelled.get());assertEquals(before,unit.getSource());
+  assertTrue(finished.await(20,TimeUnit.SECONDS));assertTrue(cancelled.get());
+  assertTrue(workerFinished.await(20,TimeUnit.SECONDS),"The cancelled worker must stop before its project is deleted");
+  assertEquals(before,unit.getSource());
  }
 
  @Test @Order(9) void registeredApplicationProducesReadOnlyBoundEvidence() throws Exception {
