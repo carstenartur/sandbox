@@ -78,6 +78,8 @@ public class SchemaTransformationUtils {
 
 	/**
 	 * Transforms XML content without requiring a physical workspace location.
+	 * Serialized line breaks use LF; the workspace boundary restores the file's
+	 * original delimiter. Explicit XML character references retain their values.
 	 *
 	 * @param sourceContent decoded XML source
 	 * @param outputCharset charset named in the serialized XML declaration
@@ -104,7 +106,11 @@ public class SchemaTransformationUtils {
 			StringWriter output= new StringWriter(Math.max(1024, sourceContent.length()));
 			transformer.transform(new StreamSource(new StringReader(sourceContent)),
 					new StreamResult(output));
-			return convertMarkupIndentationToTabs(output.toString());
+			// JAXP serializers can expand normalized XML newlines to the host delimiter.
+			// Canonicalize literal line ends only; references such as &#13; stay intact.
+			// XMLResourceSupport restores the workspace file's original delimiter.
+			String normalized= output.toString().replace("\r\n", "\n").replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$
+			return convertMarkupIndentationToTabs(normalized);
 		}
 	}
 
