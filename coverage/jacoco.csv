@@ -736,7 +736,7 @@ sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLPlugin,270,0,40,0,72,0,31,0,11,0
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils.IndentationFinding,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLResourceSupport.Snapshot,5,34,0,0,1,5,1,2,1,2
-sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils,13,306,5,43,5,75,5,28,0,9
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils,13,314,5,43,5,76,5,28,0,9
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils.ProtectedXmlRegions,0,86,0,10,0,20,0,8,0,3
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils.ProtectedXmlRegion,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLResourceSupport.Decoded,0,21,0,0,0,4,0,2,0,2

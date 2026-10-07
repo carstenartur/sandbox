@@ -78,6 +78,8 @@ public class SchemaTransformationUtils {
 
 	/**
 	 * Transforms XML content without requiring a physical workspace location.
+	 * Serialized line breaks use LF; the workspace boundary restores the file's
+	 * original delimiter. Explicit XML character references retain their values.
 	 *
 	 * @param sourceContent decoded XML source
 	 * @param outputCharset charset named in the serialized XML declaration
@@ -87,24 +89,28 @@ public class SchemaTransformationUtils {
 	 */
 	public static String transform(String sourceContent, Charset outputCharset,
 			boolean enableIndent) throws Exception {
-<span class="fc" id="L90">		try (InputStream xslStream= SchemaTransformationUtils.class.getClassLoader()</span>
-<span class="fc" id="L91">				.getResourceAsStream(&quot;resources/formatter.xsl&quot;)) { //$NON-NLS-1$</span>
-<span class="pc bpc" id="L92" title="1 of 2 branches missed.">			if (xslStream == null) {</span>
-<span class="nc" id="L93">				throw new IllegalArgumentException(&quot;Unable to find formatter.xsl in resources.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L92">		try (InputStream xslStream= SchemaTransformationUtils.class.getClassLoader()</span>
+<span class="fc" id="L93">				.getResourceAsStream(&quot;resources/formatter.xsl&quot;)) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">			if (xslStream == null) {</span>
+<span class="nc" id="L95">				throw new IllegalArgumentException(&quot;Unable to find formatter.xsl in resources.&quot;); //$NON-NLS-1$</span>
 			}
 
-<span class="fc" id="L96">			TransformerFactory factory= TransformerFactory.newInstance();</span>
-<span class="fc" id="L97">			factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);</span>
-<span class="fc" id="L98">			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, &quot;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L99">			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L98">			TransformerFactory factory= TransformerFactory.newInstance();</span>
+<span class="fc" id="L99">			factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);</span>
+<span class="fc" id="L100">			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, &quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L101">			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, &quot;&quot;); //$NON-NLS-1$</span>
 
-<span class="fc" id="L101">			Transformer transformer= factory.newTransformer(new StreamSource(xslStream));</span>
-<span class="fc bfc" id="L102" title="All 2 branches covered.">			transformer.setOutputProperty(OutputKeys.INDENT, enableIndent ? &quot;yes&quot; : &quot;no&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L103">			transformer.setOutputProperty(OutputKeys.ENCODING, outputCharset.name());</span>
-<span class="fc" id="L104">			StringWriter output= new StringWriter(Math.max(1024, sourceContent.length()));</span>
-<span class="fc" id="L105">			transformer.transform(new StreamSource(new StringReader(sourceContent)),</span>
-<span class="fc" id="L106">					new StreamResult(output));</span>
-<span class="fc" id="L107">			return convertMarkupIndentationToTabs(output.toString());</span>
+<span class="fc" id="L103">			Transformer transformer= factory.newTransformer(new StreamSource(xslStream));</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">			transformer.setOutputProperty(OutputKeys.INDENT, enableIndent ? &quot;yes&quot; : &quot;no&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L105">			transformer.setOutputProperty(OutputKeys.ENCODING, outputCharset.name());</span>
+<span class="fc" id="L106">			StringWriter output= new StringWriter(Math.max(1024, sourceContent.length()));</span>
+<span class="fc" id="L107">			transformer.transform(new StreamSource(new StringReader(sourceContent)),</span>
+<span class="fc" id="L108">					new StreamResult(output));</span>
+			// JAXP serializers can expand normalized XML newlines to the host delimiter.
+			// Canonicalize literal line ends only; references such as &amp;#13; stay intact.
+			// XMLResourceSupport restores the workspace file's original delimiter.
+<span class="fc" id="L112">			String normalized= output.toString().replace(&quot;\r\n&quot;, &quot;\n&quot;).replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L113">			return convertMarkupIndentationToTabs(normalized);</span>
 		}
 	}
 
@@ -115,44 +121,44 @@ public class SchemaTransformationUtils {
 	 * the next line starts with a closing tag.
 	 */
 	static String convertMarkupIndentationToTabs(String content) {
-<span class="fc" id="L118">		Matcher matcher= MARKUP_INDENTATION.matcher(content);</span>
-<span class="fc" id="L119">		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);</span>
-<span class="fc" id="L120">		StringBuilder result= new StringBuilder(content.length());</span>
-<span class="fc" id="L121">		int copiedThrough= 0;</span>
-<span class="fc bfc" id="L122" title="All 2 branches covered.">		while (matcher.find()) {</span>
-<span class="fc" id="L123">			result.append(content, copiedThrough, matcher.start());</span>
-<span class="fc bfc" id="L124" title="All 2 branches covered.">			if (isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {</span>
-<span class="fc" id="L125">				result.append(&quot;\t&quot;.repeat(matcher.group().length() / 4)); //$NON-NLS-1$</span>
-<span class="fc" id="L126">			} else {</span>
-<span class="fc" id="L127">				result.append(matcher.group());</span>
+<span class="fc" id="L124">		Matcher matcher= MARKUP_INDENTATION.matcher(content);</span>
+<span class="fc" id="L125">		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);</span>
+<span class="fc" id="L126">		StringBuilder result= new StringBuilder(content.length());</span>
+<span class="fc" id="L127">		int copiedThrough= 0;</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">		while (matcher.find()) {</span>
+<span class="fc" id="L129">			result.append(content, copiedThrough, matcher.start());</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">			if (isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {</span>
+<span class="fc" id="L131">				result.append(&quot;\t&quot;.repeat(matcher.group().length() / 4)); //$NON-NLS-1$</span>
+<span class="fc" id="L132">			} else {</span>
+<span class="fc" id="L133">				result.append(matcher.group());</span>
 			}
-<span class="fc" id="L129">			copiedThrough= matcher.end();</span>
+<span class="fc" id="L135">			copiedThrough= matcher.end();</span>
 		}
-<span class="fc" id="L131">		return result.append(content, copiedThrough, content.length()).toString();</span>
+<span class="fc" id="L137">		return result.append(content, copiedThrough, content.length()).toString();</span>
 	}
 
 	static IndentationFinding firstConvertibleMarkupIndentation(String content) {
-<span class="fc" id="L135">		Matcher matcher= MARKUP_INDENTATION.matcher(content);</span>
-<span class="fc" id="L136">		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);</span>
-<span class="fc bfc" id="L137" title="All 2 branches covered.">		while (matcher.find()) {</span>
-<span class="fc bfc" id="L138" title="All 2 branches covered.">			if (!isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {</span>
-<span class="fc" id="L139">				continue;</span>
+<span class="fc" id="L141">		Matcher matcher= MARKUP_INDENTATION.matcher(content);</span>
+<span class="fc" id="L142">		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">		while (matcher.find()) {</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">			if (!isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {</span>
+<span class="fc" id="L145">				continue;</span>
 			}
-<span class="fc" id="L141">			int lineNumber= 1;</span>
-<span class="fc bfc" id="L142" title="All 2 branches covered.">			for (int offset= 0; offset &lt; matcher.start(); offset++) {</span>
-<span class="fc bfc" id="L143" title="All 2 branches covered.">				if (content.charAt(offset) == '\n') {</span>
-<span class="fc" id="L144">					lineNumber++;</span>
+<span class="fc" id="L147">			int lineNumber= 1;</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">			for (int offset= 0; offset &lt; matcher.start(); offset++) {</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">				if (content.charAt(offset) == '\n') {</span>
+<span class="fc" id="L150">					lineNumber++;</span>
 				}
 			}
-<span class="fc" id="L147">			return new IndentationFinding(lineNumber, matcher.start(), matcher.end() - matcher.start());</span>
+<span class="fc" id="L153">			return new IndentationFinding(lineNumber, matcher.start(), matcher.end() - matcher.start());</span>
 		}
-<span class="fc" id="L149">		return null;</span>
+<span class="fc" id="L155">		return null;</span>
 	}
 
 	private static boolean isConvertibleMarkupIndentation(String content, int indentationOffset,
 			ProtectedXmlRegions protectedRegions) {
-<span class="fc bfc" id="L154" title="All 2 branches covered.">		return !protectedRegions.contains(indentationOffset)</span>
-<span class="fc bfc" id="L155" title="All 2 branches covered.">				&amp;&amp; isFormattingOnlyIndentation(content, indentationOffset, protectedRegions);</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">		return !protectedRegions.contains(indentationOffset)</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">				&amp;&amp; isFormattingOnlyIndentation(content, indentationOffset, protectedRegions);</span>
 	}
 
 	private record ProtectedXmlRegion(int start, int end, boolean textContent) {
@@ -160,85 +166,85 @@ public class SchemaTransformationUtils {
 
 	private static final class ProtectedXmlRegions {
 
-<span class="fc" id="L163">		private final List&lt;ProtectedXmlRegion&gt; regions= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L169">		private final List&lt;ProtectedXmlRegion&gt; regions= new ArrayList&lt;&gt;();</span>
 
-<span class="fc" id="L165">		ProtectedXmlRegions(String content) {</span>
-<span class="fc" id="L166">			Matcher matcher= PROTECTED_XML_REGION.matcher(content);</span>
-<span class="fc bfc" id="L167" title="All 2 branches covered.">			while (matcher.find()) {</span>
-<span class="fc" id="L168">				regions.add(new ProtectedXmlRegion(matcher.start(), matcher.end(),</span>
-<span class="fc" id="L169">						content.startsWith(CDATA_START, matcher.start())));</span>
+<span class="fc" id="L171">		ProtectedXmlRegions(String content) {</span>
+<span class="fc" id="L172">			Matcher matcher= PROTECTED_XML_REGION.matcher(content);</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">			while (matcher.find()) {</span>
+<span class="fc" id="L174">				regions.add(new ProtectedXmlRegion(matcher.start(), matcher.end(),</span>
+<span class="fc" id="L175">						content.startsWith(CDATA_START, matcher.start())));</span>
 			}
-<span class="fc" id="L171">		}</span>
+<span class="fc" id="L177">		}</span>
 
 		boolean contains(int offset) {
-<span class="fc bfc" id="L174" title="All 2 branches covered.">			return containing(offset) != null;</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">			return containing(offset) != null;</span>
 		}
 
 		ProtectedXmlRegion containing(int offset) {
-<span class="fc" id="L178">			int low= 0;</span>
-<span class="fc" id="L179">			int high= regions.size() - 1;</span>
-<span class="fc bfc" id="L180" title="All 2 branches covered.">			while (low &lt;= high) {</span>
-<span class="fc" id="L181">				int middle= (low + high) &gt;&gt;&gt; 1;</span>
-<span class="fc" id="L182">				ProtectedXmlRegion region= regions.get(middle);</span>
-<span class="fc bfc" id="L183" title="All 2 branches covered.">				if (offset &lt; region.start()) {</span>
-<span class="fc" id="L184">					high= middle - 1;</span>
-<span class="fc bfc" id="L185" title="All 2 branches covered.">				} else if (offset &gt;= region.end()) {</span>
-<span class="fc" id="L186">					low= middle + 1;</span>
-<span class="fc" id="L187">				} else {</span>
-<span class="fc" id="L188">					return region;</span>
+<span class="fc" id="L184">			int low= 0;</span>
+<span class="fc" id="L185">			int high= regions.size() - 1;</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">			while (low &lt;= high) {</span>
+<span class="fc" id="L187">				int middle= (low + high) &gt;&gt;&gt; 1;</span>
+<span class="fc" id="L188">				ProtectedXmlRegion region= regions.get(middle);</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">				if (offset &lt; region.start()) {</span>
+<span class="fc" id="L190">					high= middle - 1;</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">				} else if (offset &gt;= region.end()) {</span>
+<span class="fc" id="L192">					low= middle + 1;</span>
+<span class="fc" id="L193">				} else {</span>
+<span class="fc" id="L194">					return region;</span>
 				}
 			}
-<span class="fc" id="L191">			return null;</span>
+<span class="fc" id="L197">			return null;</span>
 		}
 	}
 
 	private static boolean isFormattingOnlyIndentation(String content, int indentationOffset,
 			ProtectedXmlRegions protectedRegions) {
-<span class="fc" id="L197">		int offset= indentationOffset - 1;</span>
-<span class="pc bpc" id="L198" title="1 of 2 branches missed.">		while (offset &gt;= 0) {</span>
-<span class="fc" id="L199">			ProtectedXmlRegion protectedRegion= protectedRegions.containing(offset);</span>
-<span class="fc bfc" id="L200" title="All 2 branches covered.">			if (protectedRegion != null) {</span>
-<span class="fc bfc" id="L201" title="All 2 branches covered.">				if (protectedRegion.textContent()) {</span>
-<span class="fc" id="L202">					return false;</span>
+<span class="fc" id="L203">		int offset= indentationOffset - 1;</span>
+<span class="pc bpc" id="L204" title="1 of 2 branches missed.">		while (offset &gt;= 0) {</span>
+<span class="fc" id="L205">			ProtectedXmlRegion protectedRegion= protectedRegions.containing(offset);</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">			if (protectedRegion != null) {</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">				if (protectedRegion.textContent()) {</span>
+<span class="fc" id="L208">					return false;</span>
 				}
-<span class="fc" id="L204">				offset= protectedRegion.start() - 1;</span>
-<span class="fc" id="L205">				continue;</span>
+<span class="fc" id="L210">				offset= protectedRegion.start() - 1;</span>
+<span class="fc" id="L211">				continue;</span>
 			}
-<span class="fc" id="L207">			char character= content.charAt(offset);</span>
-<span class="fc bfc" id="L208" title="All 2 branches covered.">			if (Character.isWhitespace(character)) {</span>
-<span class="fc" id="L209">				offset--;</span>
-<span class="fc" id="L210">				continue;</span>
+<span class="fc" id="L213">			char character= content.charAt(offset);</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">			if (Character.isWhitespace(character)) {</span>
+<span class="fc" id="L215">				offset--;</span>
+<span class="fc" id="L216">				continue;</span>
 			}
-<span class="fc bfc" id="L212" title="All 4 branches covered.">			return character == '&gt;' &amp;&amp; isMarkupEnd(content, offset, protectedRegions);</span>
+<span class="fc bfc" id="L218" title="All 4 branches covered.">			return character == '&gt;' &amp;&amp; isMarkupEnd(content, offset, protectedRegions);</span>
 		}
-<span class="nc" id="L214">		return true;</span>
+<span class="nc" id="L220">		return true;</span>
 	}
 
 	private static boolean isMarkupEnd(String content, int markupEnd,
 			ProtectedXmlRegions protectedRegions) {
-<span class="fc" id="L219">		char quote= 0;</span>
-<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		for (int offset= markupEnd - 1; offset &gt;= 0; offset--) {</span>
-<span class="fc" id="L221">			ProtectedXmlRegion protectedRegion= protectedRegions.containing(offset);</span>
-<span class="pc bpc" id="L222" title="1 of 2 branches missed.">			if (protectedRegion != null) {</span>
-<span class="nc" id="L223">				offset= protectedRegion.start();</span>
-<span class="nc" id="L224">				continue;</span>
+<span class="fc" id="L225">		char quote= 0;</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">		for (int offset= markupEnd - 1; offset &gt;= 0; offset--) {</span>
+<span class="fc" id="L227">			ProtectedXmlRegion protectedRegion= protectedRegions.containing(offset);</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">			if (protectedRegion != null) {</span>
+<span class="nc" id="L229">				offset= protectedRegion.start();</span>
+<span class="nc" id="L230">				continue;</span>
 			}
-<span class="fc" id="L226">			char character= content.charAt(offset);</span>
-<span class="fc bfc" id="L227" title="All 2 branches covered.">			if (quote != 0) {</span>
-<span class="fc bfc" id="L228" title="All 2 branches covered.">				if (character == quote) {</span>
-<span class="fc" id="L229">					quote= 0;</span>
+<span class="fc" id="L232">			char character= content.charAt(offset);</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">			if (quote != 0) {</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">				if (character == quote) {</span>
+<span class="fc" id="L235">					quote= 0;</span>
 				}
-<span class="fc" id="L231">				continue;</span>
+<span class="fc" id="L237">				continue;</span>
 			}
-<span class="pc bpc" id="L233" title="1 of 4 branches missed.">			if (character == '\'' || character == '&quot;') {</span>
-<span class="fc" id="L234">				quote= character;</span>
-<span class="fc bfc" id="L235" title="All 2 branches covered.">			} else if (character == '&lt;') {</span>
-<span class="fc" id="L236">				return true;</span>
-<span class="fc bfc" id="L237" title="All 2 branches covered.">			} else if (character == '&gt;') {</span>
-<span class="fc" id="L238">				return false;</span>
+<span class="pc bpc" id="L239" title="1 of 4 branches missed.">			if (character == '\'' || character == '&quot;') {</span>
+<span class="fc" id="L240">				quote= character;</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">			} else if (character == '&lt;') {</span>
+<span class="fc" id="L242">				return true;</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">			} else if (character == '&gt;') {</span>
+<span class="fc" id="L244">				return false;</span>
 			}
 		}
-<span class="nc" id="L241">		return false;</span>
+<span class="nc" id="L247">		return false;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
