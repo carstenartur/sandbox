@@ -27,7 +27,6 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Text;
@@ -107,7 +106,8 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,
 					"sandbox_math_cleanup.cleanup_configuration"); //$NON-NLS-1$
 		}
-		Group group= createGroup(columns, composite, "Verified mathematical calculations"); //$NON-NLS-1$
+		Composite group= MathematicalPreferenceGroup.createBody(
+				createGroup(columns, composite, "Verified mathematical calculations")); //$NON-NLS-1$
 		CheckboxPreference enabled= createCheckboxPref(group, columns, "Enable explicit mathematics cleanup", //$NON-NLS-1$
 				MathCleanUpOptions.CLEANUP, FALSE_TRUE);
 		createLabel(columns, group, "Runs locally during explicit cleanup or Quick Assist. Never runs when saving."); //$NON-NLS-1$
