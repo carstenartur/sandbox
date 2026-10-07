@@ -732,7 +732,7 @@ sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,AbstractTool,16,0,0,0,4,0,4,0,4,0
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,ReplaceSpacesWithTabsQuickFix,21,44,1,1,5,13,1,4,0,4
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,PdeXmlCleanupMarkerService,6,141,5,13,3,32,5,9,0,5
-sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLResourceSupport,109,550,21,49,24,125,19,33,0,17
+sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLResourceSupport,103,556,19,51,24,125,17,35,0,17
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLPlugin,270,0,40,0,72,0,31,0,11,0
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,SchemaTransformationUtils.IndentationFinding,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_xml_cleanup,org.sandbox.jdt.internal.corext.fix.helper,XMLResourceSupport.Snapshot,5,34,0,0,1,5,1,2,1,2

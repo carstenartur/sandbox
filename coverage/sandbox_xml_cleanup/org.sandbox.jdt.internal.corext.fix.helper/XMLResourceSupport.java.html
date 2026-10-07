@@ -311,12 +311,12 @@ public final class XMLResourceSupport {
 	}
 
 	private static String detectLineDelimiter(String content) {
-<span class="pc bpc" id="L314" title="1 of 2 branches missed.">		return content.contains(&quot;\r\n&quot;) ? &quot;\r\n&quot; : &quot;\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">		return content.contains(&quot;\r\n&quot;) ? &quot;\r\n&quot; : &quot;\n&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 	}
 
 	private static String normalizeLineDelimiters(String content, String delimiter) {
 <span class="fc" id="L318">		String normalized= content.replace(&quot;\r\n&quot;, &quot;\n&quot;).replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		return &quot;\n&quot;.equals(delimiter) ? normalized : normalized.replace(&quot;\n&quot;, delimiter); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">		return &quot;\n&quot;.equals(delimiter) ? normalized : normalized.replace(&quot;\n&quot;, delimiter); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	private static boolean startsWith(byte[] content, byte[] prefix) {
