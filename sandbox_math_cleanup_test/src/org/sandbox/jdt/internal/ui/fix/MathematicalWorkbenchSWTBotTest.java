@@ -154,7 +154,7 @@ public class MathematicalWorkbenchSWTBotTest {
   ui(()->{var window=PlatformUI.getWorkbench().getActiveWorkbenchWindow();if(window.getActivePage()!=null)window.getActivePage().closeAllEditors(false);return null;});
   Shell workbench=workbench();
   for(SWTBotShell shell:bot.shells()) if(shell.widget!=workbench && shell.isOpen())shell.close();
-  MathematicalAnalysisJob.cancelAll();
+  MathematicalAnalysisJob.cancelAllAndWait(java.time.Duration.ofSeconds(30));
   for(IProject resource:temporaryProjects) if(resource.exists())resource.delete(true,true,MONITOR);
   assertNull(ASYNC_FAILURE.get(),()->"Asynchronous dialog failure: "+ASYNC_FAILURE.get());
  }
