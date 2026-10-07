@@ -55,7 +55,7 @@ function compactRun(run) {
   };
 }
 
-function selectDeletionCandidates(runs, keepMinimumRuns, additionallyProtectedIds = []) {
+function selectDeletionCandidates(runs, keepMinimumRuns, additionallyProtectedIds = [], recentCounts = new Map()) {
   const byWorkflow = new Map();
   for (const run of runs) {
     const group = byWorkflow.get(run.workflowId) || [];
@@ -64,9 +64,11 @@ function selectDeletionCandidates(runs, keepMinimumRuns, additionallyProtectedId
   }
 
   const protectedIds = new Set(additionallyProtectedIds.map(Number));
-  for (const group of byWorkflow.values()) {
+  for (const [workflowId, group] of byWorkflow) {
     group.sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt) || right.id - left.id);
-    group.slice(0, keepMinimumRuns).forEach((run) => protectedIds.add(run.id));
+    // Recent completed runs already satisfy part (or all) of the overall minimum.
+    const keepOld = Math.max(0, keepMinimumRuns - (recentCounts.get(workflowId) || 0));
+    group.slice(0, keepOld).forEach((run) => protectedIds.add(run.id));
   }
 
   return {
@@ -84,16 +86,21 @@ function computeDeletionBudget(rateRemaining, requestedMaximum, dryRun) {
     : Math.min(requestedMaximum, Math.max(0, rateRemaining - RATE_LIMIT_RESERVE));
 }
 
-async function listWindow({ github, owner, repo, startSeconds, endSeconds }) {
+function totalCount(response) {
+  const count = response.data?.total_count;
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new Error('Invalid workflow-run total_count; refusing an incomplete scan');
+  }
+  return count;
+}
+
+async function listWindow({ github, owner, repo, startSeconds, endSeconds, core }) {
   const created = createdRange(startSeconds, endSeconds);
-  const probe = await github.rest.actions.listWorkflowRunsForRepo({
-    owner,
-    repo,
-    status: 'completed',
-    created,
-    per_page: 1,
-  });
-  const total = probe.data.total_count;
+  const query = { owner, repo, status: 'completed', created };
+  const probe = await requestWithRetry(
+    () => github.rest.actions.listWorkflowRunsForRepo({ ...query, per_page: 1 }),
+    `counting completed runs in ${created}`, core);
+  const total = totalCount(probe);
   if (total === 0) {
     return [];
   }
@@ -105,22 +112,51 @@ async function listWindow({ github, owner, repo, startSeconds, endSeconds }) {
       throw new Error(`At least ${MAX_FILTERED_RESULTS} completed runs share ${created}`);
     }
     const midpoint = Math.floor((startSeconds + endSeconds) / 2);
-    const older = await listWindow({ github, owner, repo, startSeconds, endSeconds: midpoint });
-    const newer = await listWindow({ github, owner, repo, startSeconds: midpoint + 1, endSeconds });
+    const older = await listWindow({ github, owner, repo, startSeconds, endSeconds: midpoint, core });
+    const newer = await listWindow({ github, owner, repo, startSeconds: midpoint + 1, endSeconds, core });
     return older.concat(newer);
   }
 
   const runs = [];
-  for await (const response of github.paginate.iterator(github.rest.actions.listWorkflowRunsForRepo, {
-    owner,
-    repo,
-    status: 'completed',
-    created,
-    per_page: 100,
-  })) {
-    pageRuns(response).forEach((run) => runs.push(compactRun(run)));
+  const ids = new Set();
+  for (let page = 1; runs.length < total; page += 1) {
+    // Retry the HTTP request, not iterator.next(): a rejected async generator
+    // can be closed and must never turn the rest of the listing into success.
+    const response = await requestWithRetry(
+      () => github.rest.actions.listWorkflowRunsForRepo({ ...query, per_page: 100, page }),
+      `listing completed runs in ${created}, page ${page}`, core);
+    const batch = pageRuns(response);
+    if (totalCount(response) !== total || batch.length !== Math.min(100, total - runs.length)) {
+      throw new Error(`Incomplete or changing workflow-run listing in ${created}, page ${page}`);
+    }
+    for (const run of batch) {
+      const timestamp = Date.parse(run.created_at);
+      if (!Number.isSafeInteger(run.id) || run.id <= 0 || ids.has(run.id)
+          || !Number.isSafeInteger(run.workflow_id) || run.workflow_id <= 0
+          || run.status !== 'completed' || !Number.isFinite(timestamp)
+          || timestamp < startSeconds * 1000 || timestamp >= (endSeconds + 1) * 1000) {
+        throw new Error(`Invalid or duplicate workflow run in ${created}, page ${page}`);
+      }
+      ids.add(run.id);
+      runs.push(compactRun(run));
+    }
   }
   return runs;
+}
+
+async function countRecentRuns({ github, owner, repo, oldRuns, keepMinimumRuns, cutoffSeconds, nowSeconds, core }) {
+  const counts = new Map();
+  if (keepMinimumRuns === 0) return counts;
+  // Only workflows with old candidates matter. A count query avoids downloading
+  // the potentially large recent history and does not depend on response order.
+  for (const workflowId of new Set(oldRuns.map((run) => run.workflowId))) {
+    const response = await requestWithRetry(() => github.rest.actions.listWorkflowRuns({
+      owner, repo, workflow_id: workflowId, status: 'completed',
+      created: createdRange(cutoffSeconds, nowSeconds), per_page: 1,
+    }), `counting recent completed runs for workflow ${workflowId}`, core);
+    counts.set(workflowId, totalCount(response));
+  }
+  return counts;
 }
 
 async function listOldCompletedRuns({ github, owner, repo, cutoffSeconds, core }) {
@@ -134,6 +170,7 @@ async function listOldCompletedRuns({ github, owner, repo, cutoffSeconds, core }
     repo,
     startSeconds: SEARCH_START_SECONDS,
     endSeconds: cutoffSeconds - 1,
+    core,
   });
   return [...new Map(runs.map((run) => [run.id, run])).values()];
 }
@@ -156,24 +193,30 @@ function retryDelay(error, attempt) {
   return Number.isFinite(retryAfter) ? retryAfter * 1000 : 1000 * (2 ** (attempt - 1));
 }
 
-async function deleteRun({ github, owner, repo, run, core }) {
+async function requestWithRetry(operation, description, core) {
   for (let attempt = 1; attempt <= 4; attempt += 1) {
     try {
-      await github.rest.actions.deleteWorkflowRun({ owner, repo, run_id: run.id });
-      return 'deleted';
+      return await operation();
     } catch (error) {
-      if ((error.status || error.response?.status) === 404) {
-        return 'already-gone';
-      }
       const delay = retryDelay(error, attempt);
-      if (delay === null || attempt === 4) {
-        throw error;
-      }
-      core.warning(`Retrying deletion of run ${run.id} in ${delay} ms`);
+      if (delay === null || attempt === 4) throw error;
+      core.warning(`Retrying ${description} in ${delay} ms (attempt ${attempt + 1}/4)`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  throw new Error(`Unreachable retry state for run ${run.id}`);
+  throw new Error(`Unreachable retry state for ${description}`);
+}
+
+async function deleteRun({ github, owner, repo, run, core }) {
+  try {
+    await requestWithRetry(
+      () => github.rest.actions.deleteWorkflowRun({ owner, repo, run_id: run.id }),
+      `deletion of run ${run.id}`, core);
+    return 'deleted';
+  } catch (error) {
+    if ((error.status || error.response?.status) === 404) return 'already-gone';
+    throw error;
+  }
 }
 
 async function deleteInParallel({ github, owner, repo, runs, parallelism, core }) {
@@ -222,6 +265,7 @@ async function summarize(core, data) {
       [{ data: 'Metric', header: true }, { data: 'Value', header: true }],
       ['Retention', `${data.retainDays} days`],
       ['Cutoff', data.cutoffIso],
+      ['Minimum completed runs per workflow (including recent)', String(data.keepMinimumRuns)],
       ['Old completed runs discovered', String(data.oldRuns)],
       ['Old runs protected', String(data.protectedCount)],
       ['Workflows represented', String(data.workflowCount)],
@@ -248,23 +292,31 @@ async function run({ github, context, core, env = process.env }) {
   const requestedMaximum = parseInteger(env.MAX_DELETIONS, 'MAX_DELETIONS', 4000, 1, 4500);
   const parallelism = parseInteger(env.PARALLELISM, 'PARALLELISM', 4, 1, 12);
   const dryRun = parseBoolean(env.DRY_RUN, 'DRY_RUN');
-  const cutoffSeconds = Math.floor((Date.now() - retainDays * 86400000) / 1000);
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const cutoffSeconds = nowSeconds - retainDays * 86400;
   const cutoffIso = isoFromSeconds(cutoffSeconds);
   const { owner, repo } = context.repo;
   const currentRunId = Number(context.runId || env.GITHUB_RUN_ID || 0);
 
   core.info(`Retention=${retainDays}d cutoff=${cutoffIso} keep=${keepMinimumRuns} cap=${requestedMaximum} parallelism=${parallelism} dryRun=${dryRun}`);
   const oldRuns = await listOldCompletedRuns({ github, owner, repo, cutoffSeconds, core });
+  const recentCounts = await countRecentRuns({
+    github, owner, repo, oldRuns, keepMinimumRuns, cutoffSeconds, nowSeconds, core,
+  });
   const selection = selectDeletionCandidates(
     oldRuns,
     keepMinimumRuns,
     Number.isSafeInteger(currentRunId) && currentRunId > 0 ? [currentRunId] : [],
+    recentCounts,
   );
-  const rate = await github.rest.rateLimit.get();
-  const rateRemaining = rate.data.resources.core.remaining;
+  const rate = await requestWithRetry(() => github.rest.rateLimit.get(), 'reading the API budget', core);
+  const rateRemaining = rate.data?.resources?.core?.remaining;
+  if (!Number.isSafeInteger(rateRemaining) || rateRemaining < 0) {
+    throw new Error('Invalid remaining API budget; refusing deletion');
+  }
   const deletionBudget = computeDeletionBudget(rateRemaining, requestedMaximum, dryRun);
   const selected = selection.candidates.slice(0, deletionBudget);
-  core.info(`Found ${oldRuns.length} old runs; ${selection.candidates.length} eligible; selecting ${selected.length}`);
+  core.info(`Found ${oldRuns.length} old runs; ${selection.protectedCount} protected; ${selection.candidates.length} eligible; selecting ${selected.length}`);
 
   let result = { deleted: 0, alreadyGone: 0, failures: [], deletedByWorkflow: new Map() };
   if (dryRun) {
@@ -280,6 +332,7 @@ async function run({ github, context, core, env = process.env }) {
   await summarize(core, {
     dryRun,
     retainDays,
+    keepMinimumRuns,
     cutoffIso,
     oldRuns: oldRuns.length,
     protectedCount: selection.protectedCount,
@@ -293,6 +346,8 @@ async function run({ github, context, core, env = process.env }) {
     remaining,
     deletedByWorkflow: result.deletedByWorkflow,
   });
+  core.setOutput('old', oldRuns.length);
+  core.setOutput('protected', selection.protectedCount);
   core.setOutput('deleted', result.deleted);
   core.setOutput('remaining', remaining);
   core.setOutput('selected', selected.length);
