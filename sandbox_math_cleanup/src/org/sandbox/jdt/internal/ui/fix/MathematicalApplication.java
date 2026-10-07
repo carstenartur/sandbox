@@ -113,6 +113,21 @@ public final class MathematicalApplication implements IApplication {
     changes.forEach(Change::dispose);
    }
   },resource,IWorkspace.AVOID_UPDATE,monitor);
+  // A headless Equinox exit does not perform the workbench's full workspace save.
+  // Save only after successful work, outside the apply transaction: cancellation
+  // or failure may otherwise leave an analysis worker still using the workspace.
+  try {
+   cancelled(monitor);
+   var saveStatus=workspace.save(true,monitor);
+   if(!saveStatus.isOK()) throw new CoreException(saveStatus);
+  } catch(CoreException | OperationCanceledException failure) {
+   // Source application has already completed. Do not claim it was rolled back
+   // just because persisting the workspace's resource tree failed afterwards.
+   try { report(arguments,options,config,artifacts,plans,"FAILURE",null, //$NON-NLS-1$
+     List.of("Workspace save failed after command completion: "+failure.getMessage())).write(arguments.report()); } //$NON-NLS-1$
+   catch(IOException | RuntimeException reporting) { failure.addSuppressed(reporting); }
+   throw failure;
+  }
   return IApplication.EXIT_OK;
  }
  private static List<Planned> analyze(List<ICompilationUnit> units,MathCleanUpOptions options,IProgressMonitor monitor) throws CoreException {
