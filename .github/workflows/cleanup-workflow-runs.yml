@@ -12,7 +12,7 @@ on:
         type: number
         default: 30
       keep_minimum_runs:
-        description: 'Keep at least this many old runs per workflow beyond retention'
+        description: 'Keep at least this many completed runs per workflow in total (including recent runs)'
         required: false
         type: number
         default: 5
@@ -63,6 +63,8 @@ jobs:
       - name: Checkout cleanup implementation
         uses: actions/checkout@v7
 
+      # Full read/retry/retention regressions run in the normal Maven/JUnit gate
+      # (WorkflowRunCleanupTest); keep the existing lightweight Node preflight.
       - name: Test selection, pagination and rate-limit logic
         run: node --test .github/scripts/cleanup-workflow-runs.test.cjs
 
@@ -85,7 +87,8 @@ jobs:
         uses: actions/github-script@v9
         env:
           RETAIN_DAYS: ${{ inputs.retain_days || '30' }}
-          KEEP_MINIMUM_RUNS: ${{ inputs.keep_minimum_runs || '5' }}
+          # Empty scheduled input defaults to five in the script; preserve an explicit zero.
+          KEEP_MINIMUM_RUNS: ${{ inputs.keep_minimum_runs }}
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
           MAX_DELETIONS: ${{ inputs.max_deletions || '4000' }}
           PARALLELISM: ${{ inputs.parallelism || '4' }}
@@ -98,6 +101,8 @@ jobs:
       - name: Publish cleanup result
         if: always()
         run: |
-          echo "Selected: ${{ steps.cleanup.outputs.selected || '0' }}"
-          echo "Deleted: ${{ steps.cleanup.outputs.deleted || '0' }}"
+          echo "Old completed runs: ${{ steps.cleanup.outputs.old || 'unknown' }}"
+          echo "Old runs protected by the overall minimum: ${{ steps.cleanup.outputs.protected || 'unknown' }}"
+          echo "Selected: ${{ steps.cleanup.outputs.selected || 'unknown' }}"
+          echo "Deleted: ${{ steps.cleanup.outputs.deleted || 'unknown' }}"
           echo "Remaining eligible backlog: ${{ steps.cleanup.outputs.remaining || 'unknown' }}"
