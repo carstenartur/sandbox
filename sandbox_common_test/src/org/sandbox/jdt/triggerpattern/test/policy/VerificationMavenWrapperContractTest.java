@@ -22,6 +22,7 @@ class VerificationMavenWrapperContractTest {
 
     static Stream<Invocation> invocations() {
         return Stream.of(
+                new Invocation("codacy.yml", "Build and run Maven analysis", "run: ./mvnw -B -DskipTests package"),
                 new Invocation("codeql.yml", "Build with Maven", "run: ./mvnw -B -DskipTests clean package"),
                 new Invocation("distribution-smoke.yml", "Maven distribution build and verification",
                         "command=(./mvnw -Pdistribution,cli-dist,swtbot"),
@@ -49,7 +50,7 @@ class VerificationMavenWrapperContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "codeql.yml", "distribution-smoke.yml" })
+    @ValueSource(strings = { "codacy.yml", "codeql.yml", "distribution-smoke.yml" })
     void wrapperChangesTriggerVerification(String file) throws IOException {
         String workflow = workflow(file);
         int pathLists = "distribution-smoke.yml".equals(file) ? 2 : 1;
