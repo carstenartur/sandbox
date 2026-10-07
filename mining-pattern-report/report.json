@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 258,
+    "totalMatches": 259,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1480,
-        "matches": 82,
+        "files": 1555,
+        "matches": 83,
         "rules": 11
       }
     }
@@ -1829,6 +1829,14 @@
     {
       "repository": "sandbox",
       "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java",
+      "line": 439,
+      "matchedCode": "Arrays.asList(labels).contains(control.getText().replace(\"&\",\"\"))"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
       "rule": "arrays.aslist-stream.to-arrays-stream",
       "file": "sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java",
       "line": 103,
@@ -1888,7 +1896,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java",
-      "line": 209,
+      "line": 213,
       "matchedCode": "arguments.clone()"
     },
     {
@@ -1896,7 +1904,7 @@
       "hintFile": "arrays",
       "rule": "arrays.clone.review",
       "file": "sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java",
-      "line": 216,
+      "line": 220,
       "matchedCode": "arguments.clone()"
     },
     {
