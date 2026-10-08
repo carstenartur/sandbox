@@ -40,6 +40,7 @@ import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.launching.JavaRuntime;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,7 +75,7 @@ class MathematicalApplicationWorkspaceTest {
 		description.setNatureIds(new String[] { JavaCore.NATURE_ID });
 		project.setDescription(description, monitor);
 		project.getFolder("bin").create(true, true, monitor); //$NON-NLS-1$
-		JavaCore.create(project).setRawClasspath(new IClasspathEntry[0],
+		JavaCore.create(project).setRawClasspath(new IClasspathEntry[] { JavaRuntime.getDefaultJREContainerEntry() },
 				project.getFolder("bin").getFullPath(), monitor); //$NON-NLS-1$
 		project.getFile("state.txt").create(new ByteArrayInputStream(new byte[] { 1 }), true, monitor); //$NON-NLS-1$
 		configuration = Files.writeString(temporary.resolve("math.properties"), //$NON-NLS-1$
@@ -199,7 +200,9 @@ class MathematicalApplicationWorkspaceTest {
 					if (!finish.await(10, TimeUnit.SECONDS)) return Status.error("Fixture initialization timed out"); //$NON-NLS-1$
 					project.getFolder("src").create(true, true, progress); //$NON-NLS-1$
 					var javaProject = JavaCore.create(project);
-					javaProject.setRawClasspath(new IClasspathEntry[] { JavaCore.newSourceEntry(project.getFolder("src").getFullPath()) }, progress); //$NON-NLS-1$
+					javaProject.setRawClasspath(new IClasspathEntry[] {
+							JavaCore.newSourceEntry(project.getFolder("src").getFullPath()), //$NON-NLS-1$
+							JavaRuntime.getDefaultJREContainerEntry() }, progress);
 					javaProject.getPackageFragmentRoot(project.getFolder("src")).getPackageFragment("") //$NON-NLS-1$ //$NON-NLS-2$
 							.createCompilationUnit("Ready.java", "class Ready {}", true, progress); //$NON-NLS-1$ //$NON-NLS-2$
 					return Status.OK_STATUS;
