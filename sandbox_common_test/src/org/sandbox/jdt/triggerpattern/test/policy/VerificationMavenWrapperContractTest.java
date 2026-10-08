@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
@@ -115,7 +116,7 @@ class VerificationMavenWrapperContractTest {
     private static String workflow(String file) throws IOException {
         for (Path root = Path.of("").toAbsolutePath(); root != null; root = root.getParent()) {
             Path path = root.resolve(".github/workflows").resolve(file);
-            if (Files.isRegularFile(path)) return Files.readString(path);
+            if (Files.isRegularFile(path)) return Files.readString(path, StandardCharsets.UTF_8);
         }
         throw new IOException("Repository workflow not found: " + file);
     }
