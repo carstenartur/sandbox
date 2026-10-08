@@ -1,0 +1,14 @@
+package p; //8, 17, 8, 22
+
+public class A {
+    void m() {
+        final int _math0 = 9;
+        final int _math1 = 10;
+        final int _math2 = 8;
+        final int _math3 = 178;
+        int x = _math0;
+        int y = _math1;
+        int k = _math2;
+        int j = _math3;
+    }
+}

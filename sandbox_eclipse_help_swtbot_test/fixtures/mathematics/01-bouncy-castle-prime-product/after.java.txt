@@ -1,0 +1,40 @@
+package org.bouncycastle.crypto.generators;
+
+import java.math.BigInteger;
+import org.bouncycastle.util.BigIntegers;
+
+class DHParametersHelper
+{
+    private static boolean hasAnySmallFactorsSafe(BigInteger x)
+    {
+        /*
+         * Bundle trial divisors into ~32-bit moduli then use fast tests on the ~32-bit remainders.
+         * We check for remainders: 0 => n|p, 1 => n|((p-1)/2)
+         */
+
+        final int _math0 = 1078282205;
+        int m = _math0;
+        int r = BigIntegers.intValueExact(x.mod(BigInteger.valueOf(m)));
+        if ((r % 5) < 2 || (r % 7) < 2 || (r % 11) < 2 || (r % 13) < 2 || (r % 17) < 2 || (r % 19) < 2 || (r % 23) < 2
+            || (r % 29) < 2)
+        {
+            return true;
+        }
+
+        m = 31 * 37 * 41 * 43 * 47;
+        r = BigIntegers.intValueExact(x.mod(BigInteger.valueOf(m)));
+        if ((r % 31) < 2 || (r % 37) < 2 || (r % 41) < 2 || (r % 43) < 2 || (r % 47) < 2)
+        {
+            return true;
+        }
+
+        m = 53 * 59 * 61 * 67 * 71;
+        r = BigIntegers.intValueExact(x.mod(BigInteger.valueOf(m)));
+        if ((r % 53) < 2 || (r % 59) < 2 || (r % 61) < 2 || (r % 67) < 2 || (r % 71) < 2)
+        {
+            return true;
+        }
+
+        return false;
+    }
+}

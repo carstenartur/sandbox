@@ -147,6 +147,7 @@ jobs:
             captureCleanupConfigurationTabs \
             captureRealCleanupPreviewAndVerifyIndependentSelection \
             capturePdeXmlMarkerQuickFix \
+            captureRealMathematicsExamples \
             verifyRealMethodReuseCleanupPreviewApplyAndUndo
           do
             if ! grep -Fq "name=\"$scenario\"" "$report"; then

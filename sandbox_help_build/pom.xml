@@ -74,6 +74,11 @@
 		<module>../sandbox_junit_cleanup_help</module>
 		<module>../sandbox_junit_cleanup_feature</module>
 
+		<!-- Mathematics cleanup and source-bound before/after screenshots. -->
+		<module>../sandbox_math_cleanup</module>
+		<module>../sandbox_math_cleanup_help</module>
+		<module>../sandbox_math_cleanup_feature</module>
+
 		<!-- Method reuse family. -->
 		<module>../sandbox_method_reuse</module>
 		<module>../sandbox_method_reuse_help</module>

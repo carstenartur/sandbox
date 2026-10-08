@@ -52,7 +52,7 @@ The screenshot generator is a normal Tycho/SWTBot test in `sandbox_eclipse_help_
 
 Prerequisites:
 
-- Java 21 or later;
+- Java 25;
 - the repository Maven Wrapper;
 - an available graphical display;
 - on headless Linux, Xvfb and the same GTK runtime libraries required by the normal UI test build.
@@ -119,3 +119,27 @@ Every Help bundle must contain:
 - a `build.properties` entry for every shipped documentation resource.
 
 The normal Maven/Tycho reactor validates bundle metadata and feature resolution. Repository-level structural validation in `sandbox_eclipse_help_swtbot_test` additionally checks local TOC links and image references so missing documentation resources fail before publication. A separate evidence test rejects unreferenced PNGs, unreadable preview images, byte-identical JFace states, and preview images that merely duplicate a configuration tab.
+
+## Mathematics source gallery
+
+The Mathematics Help TOC includes four native before/after previews, increasing
+in source-calculation complexity. One unchanged method comes from Bouncy Castle
+production code; three inputs come from the pinned JDT Core/UI regression suites.
+See `sandbox_eclipse_help_swtbot_test/fixtures/mathematics/README.md` for exact
+provenance and licensing. These are statically known calculations, not runtime
+performance evidence or claims of whole-project optimization.
+
+The standard Help merge gate invokes `captureRealMathematicsExamples`. For a
+focused reproduction using the same native driver, add this property to the
+documented Maven command:
+
+```sh
+-Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest
+```
+
+Each capture requires resolved source bindings, the exact registered-cleanup
+preview, visible original/result arithmetic, exact application and byte-exact
+Undo. PNGs and deterministic `.provenance.json` files are written to
+`sandbox_math_cleanup_help/images/`. Provenance includes the source revision,
+profile, before/after source and their hashes. The Help bundle ships `images/`;
+its TOC and overview link directly to the gallery.

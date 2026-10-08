@@ -91,6 +91,29 @@ public class EclipseHelpScreenshotEvidenceTest {
     }
 
     @Test
+    public void mathematicsExamplesShipFourDistinctSourceBoundPreviews() throws Exception {
+        Path repository= SandboxCheckout.locate(null);
+        Path images= repository.resolve("sandbox_math_cleanup_help/images"); //$NON-NLS-1$
+        Set<String> digests= new HashSet<>();
+        for (String id : List.of("01-bouncy-castle-prime-product", "02-jdt-core-shared-value", //$NON-NLS-1$ //$NON-NLS-2$
+                "03-jdt-ui-multiple-lines", "04-jdt-ui-nested-arithmetic")) { //$NON-NLS-1$ //$NON-NLS-2$
+            Path png= images.resolve(id + ".png"); //$NON-NLS-1$
+            BufferedImage preview= requireImage(png);
+            assertEquals(1280, preview.getWidth());
+            assertEquals(900, preview.getHeight());
+            String digest= sha256(Files.readAllBytes(png));
+            assertTrue(digests.add(digest), "Mathematics examples must show distinct actual changes"); //$NON-NLS-1$
+            String provenance= Files.readString(images.resolve(id + ".provenance.json")); //$NON-NLS-1$
+            assertTrue(provenance.contains("\"screenshotSha256\": \"" + digest + "\"")); //$NON-NLS-1$ //$NON-NLS-2$
+            Path fixture= repository.resolve("sandbox_eclipse_help_swtbot_test/fixtures/mathematics").resolve(id); //$NON-NLS-1$
+            String beforeHash= sha256(Files.readAllBytes(fixture.resolve("before.java.txt"))); //$NON-NLS-1$
+            String afterHash= sha256(Files.readAllBytes(fixture.resolve("after.java.txt"))); //$NON-NLS-1$
+            assertTrue(provenance.contains("\"excerptSha256\": \"" + beforeHash + "\"")); //$NON-NLS-1$ //$NON-NLS-2$
+            assertTrue(provenance.contains("\"afterSha256\": \"" + afterHash + "\"")); //$NON-NLS-1$ //$NON-NLS-2$
+        }
+    }
+
+    @Test
     public void coordinatedPreviewEvidenceIsInstalledAndReferenced() throws Exception {
         Path repository = SandboxCheckout.locate(null);
         requireReferenced(repository, "sandbox_int_to_enum_help", //$NON-NLS-1$

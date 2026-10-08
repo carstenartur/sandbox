@@ -1,0 +1,16 @@
+package p;
+public class B {
+  public static void main(String[] args) {
+    final int _math0 = -8;
+    final int _math1 = 8;
+    int offset = _math0;
+    int temp = _math1;
+    offset = _math1;  // This is the problem line
+    System.out.println("offset: " + offset);
+    System.out.println("temp: " + temp);
+    if (offset != temp ) {
+      System.err.println("offset (" + offset + ") should be equal to temp (" + temp + ").");
+      System.exit(-1);
+    }
+  }
+}
