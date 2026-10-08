@@ -1,6 +1,6 @@
 # Published test and coverage metrics
 
-The README badges are generated from the machine-readable reports of the complete Maven verification. Sandbox does not maintain its own JUnit or JaCoCo parser.
+The README badges are generated from the machine-readable reports of the complete Maven verification. JaCoCo remains the sole coverage measurement.
 
 ## Established report processors
 
@@ -12,7 +12,9 @@ The README badges are generated from the machine-readable reports of the complet
 sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv
 ```
 
-It generates the Shields-compatible instruction-coverage endpoint directly. No repository code interprets JaCoCo XML.
+It generates the Shields-compatible instruction-coverage endpoint directly.
+
+For GitHub's native line-coverage gate, the Maven-tested `CoverageReportConverter` transfers the measured JaCoCo source lines to Cobertura. It preserves module identity, requires versioned source paths, and rejects missing, ambiguous, duplicate or lost line data by checking the original JaCoCo LINE counters. The official `actions/upload-code-coverage` action uploads that format; it does not run a second coverage measurement. PR coverage builds and uploads use the exact PR head.
 
 ## Build and report publication
 

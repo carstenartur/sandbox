@@ -1,9 +1,11 @@
 # Verified test and coverage publication
 
-Sandbox publishes measured test and coverage values from the complete Maven verification. The implementation deliberately delegates report interpretation to established GitHub Actions rather than maintaining repository-specific parsers:
+Sandbox publishes measured test and coverage values from the complete Maven verification. Established GitHub Actions generate the published metrics:
 
 - `mikepenz/action-junit-report@v6` supplies JUnit totals from Surefire and Failsafe reports;
 - `cicirello/jacoco-badge-generator@v2` generates the instruction-coverage endpoint from JaCoCo CSV.
+
+GitHub's native line-coverage rule receives the same JaCoCo measurement through a Maven-tested Cobertura format adapter and the official `actions/upload-code-coverage` action. The adapter retains module/source identity and checks every exported line against the JaCoCo LINE counters; it does not remeasure coverage.
 
 The detailed contract is documented in [`docs/quality-metrics.md`](docs/quality-metrics.md).
 
