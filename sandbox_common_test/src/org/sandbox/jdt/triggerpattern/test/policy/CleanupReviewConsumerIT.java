@@ -99,7 +99,7 @@ class CleanupReviewConsumerIT {
         run(repository, "git", "apply", "--index", evidence.resolve("suggestions.patch").toString());
         assertEquals(tree, run(repository, "git", "write-tree"));
         Files.writeString(retained.resolve("verification.txt"), "Base: " + base + "\nHead: " + head
-                + "\nComplete cleaned tree: " + tree + "Behavior before/after: " + expected, StandardCharsets.UTF_8);
+                + "\nComplete cleaned tree: " + tree.strip() + "\nBehavior before/after: " + expected, StandardCharsets.UTF_8);
     }
 
     private String compileAndRun(Path project, Path output, int release) throws Exception {
@@ -113,6 +113,10 @@ class CleanupReviewConsumerIT {
         Path log = Files.createTempFile(temporary, "command-", ".log");
         var builder = new ProcessBuilder(command).directory(cwd.toFile()).redirectErrorStream(true).redirectOutput(log.toFile());
         builder.environment().remove("GITHUB_OUTPUT");
+        if (Boolean.getBoolean("cleanup.review.skipPull")) {
+            // The distribution workflow supplies the image it has just built locally.
+            builder.environment().put("SANDBOX_CLEANUP_SKIP_PULL", "true");
+        }
         Process process = builder.start();
         try {
             assertTrue(process.waitFor(Duration.ofMinutes(3).toSeconds(), TimeUnit.SECONDS), "Timed out: " + List.of(command));

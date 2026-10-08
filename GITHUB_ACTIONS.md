@@ -18,7 +18,8 @@ by merging a cleanup PR into that original branch.
 ## Install: one workflow for an existing Eclipse Java repository
 
 Create `.github/workflows/cleanup.yml` in **your repository** using this complete
-example. No Sandbox checkout, copied profile, Maven build of Sandbox, personal
+example. The action requires a Linux runner with Docker and GNU shell utilities.
+No Sandbox checkout, copied profile, Maven build of Sandbox, personal
 access token or additional secret is needed for same-repository PRs.
 
 The example follows Sandbox's **development channel**. Before regular use,
@@ -91,8 +92,9 @@ Maven Java classpath. The action accepts only Java source changes in its result;
 changes to project metadata are rejected.
 
 The analysis runtime is Java 25, but the target project's source level stays
-unchanged. The standalone example targets Java 11 and is compiled at that level
-before and after cleanup. A locally configured JRE, absolute library path,
+unchanged. The standalone example targets Java 11. The candidate-runtime test
+compiles and executes it before and after cleanup without changing that level.
+A locally configured JRE, absolute library path,
 classpath variable, m2e/Buildship container, PDE target platform or reference to
 another workspace project must also be resolvable in the headless environment.
 This action does **not** provision an arbitrary Oomph workspace or resolve every
@@ -170,7 +172,7 @@ Read the Actions job summary first. `analysis-status` distinguishes these cases:
 | `no-java-changes` | No applicable Java input in this PR comparison; no project was analysed. |
 | `no-supported-projects` | Java input exists, but none belongs to an Eclipse Java project. Fix project setup; do not interpret this as clean code. |
 | `partial-analysis` | Some input Java files have no Eclipse Java project. Default behaviour stops before cleanup. |
-| `failed` | Preparation or execution failed; inspect the log. Earlier argument/checkout errors may have no status output. |
+| `failed` | Preparation or execution failed; inspect the log. Argument, checkout and profile validation also report this state. |
 
 Missing or partial project coverage is an error by default. A repository that
 **intentionally** contains standalone Java tooling outside Eclipse projects can
@@ -213,13 +215,25 @@ Maintainers run the same Maven/JUnit authority as CI:
 
 ```bash
 ./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml test
-# Real Docker execution, before/after compilation and complete patch round trip:
-./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml -Pconsumer-e2e verify
+# Qualify an explicitly selected image; it must include the source changes being tested:
+./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml -Pconsumer-e2e \
+  -Dcleanup.review.image=YOUR_TESTED_IMAGE verify
 ```
+
+A historical published image with digest
+`sha256:329b12a6daeffc9899d68c459e0c7dbe1710f7f16e80c327af400aceb3fbf264`
+incorrectly restricted `Charset.forName` migration to Java 18+. This change
+corrects its DSL guard to Java 7, matching the existing Java handler. Java 11
+consumers need an image built with that correction; updating only the action
+reference cannot fix an older runtime image.
 
 The fast regressions use separate temporary Git repositories with no Sandbox
 modules and mock only Docker's process boundary. `consumer-e2e` instead uses the
-real image for single and nested Eclipse-project layouts, retains the execution
-evidence, and verifies that `.project`, `.classpath` and compiler preferences
-remain byte-identical. This does not claim an independently hosted sample
+selected image for single and nested Eclipse-project layouts and generic or
+execution-environment JRE containers. CI runs these tests in the existing Linux
+distribution job, building the candidate image from its already verified CLI
+archive. It does not rebuild Sandbox in a separate consumer pipeline or re-run
+the fast Surefire suite. The tests verify that `.project`, `.classpath` and
+compiler preferences remain byte-identical; the distribution artifact retains
+the execution evidence. This does not claim an independently hosted sample
 repository, authenticated GitHub UI screenshots or an automated acceptance merge.

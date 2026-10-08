@@ -50,6 +50,9 @@ append_quoted_line() {
   printf '%q\n' "$value" >> "$output_file"
 }
 
+# Publish a failure state even when argument, checkout or profile validation exits early.
+emit_output analysis_status failed
+
 base_sha=
 head_sha=
 config_file=
@@ -185,7 +188,6 @@ summary_file=$output_dir/summary.md
 : > "$patch_file"
 emit_output output_dir "$output_dir"
 emit_output summary_file "$summary_file"
-emit_output analysis_status failed
 
 is_java_project_root() {
   local directory=$1

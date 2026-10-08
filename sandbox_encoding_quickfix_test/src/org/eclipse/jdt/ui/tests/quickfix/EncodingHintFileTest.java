@@ -93,6 +93,14 @@ public class EncodingHintFileTest {
 	}
 
 	@Test
+	public void testCharsetForNameUsesTheJava7ApiBaseline() throws Exception {
+		String rule = loadHintFileContent().lines()
+				.filter(line -> line.startsWith("java.nio.charset.Charset.forName(")) //$NON-NLS-1$
+				.findFirst().orElseThrow();
+		assertEquals("java.nio.charset.Charset.forName(\"${CHARSET}\") :: sourceVersionGE(7)", rule); //$NON-NLS-1$
+	}
+
+	@Test
 	public void testTierClassification() {
 		// Tier 1 (DSL-handled): simple argument replacement patterns
 		assertTrue(UseExplicitEncodingFixCore.CHARSET.isDslHandled());

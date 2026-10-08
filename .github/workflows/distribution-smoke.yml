@@ -18,6 +18,8 @@ on:
       - '.github/scripts/smoke_test_distribution.sh'
       - '.github/scripts/validate_distribution_evidence.py'
       - '.github/workflows/distribution-smoke.yml'
+      - '.github/actions/cleanup-review/**'
+      - 'examples/cleanup-review/**'
   push:
     branches: [ main ]
     paths:
@@ -35,6 +37,8 @@ on:
       - '.github/scripts/smoke_test_distribution.sh'
       - '.github/scripts/validate_distribution_evidence.py'
       - '.github/workflows/distribution-smoke.yml'
+      - '.github/actions/cleanup-review/**'
+      - 'examples/cleanup-review/**'
   schedule:
     - cron: '30 3 * * 1'
   create:
@@ -112,6 +116,25 @@ jobs:
           mkdir -p target/distribution-verification
           cp "$log" target/distribution-verification/maven.log
           exit "$status"
+      - name: Qualify native Eclipse consumers against the candidate image
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Reuse this job's verified CLI distribution. Never qualify PR source
+          # against the older, independently published :latest runtime.
+          archives=(sandbox_cleanup_cli_dist/target/sandbox-cleanup-cli-*-dist.tar.gz)
+          [[ ${#archives[@]} -eq 1 && -f "${archives[0]}" ]]
+          context="$RUNNER_TEMP/cleanup-consumer-image"
+          mkdir -p "$context/dist"
+          tar -xzf "${archives[0]}" -C "$context/dist" --strip-components=1
+          [[ -d "$context/dist/plugins" && -f "$context/dist/bin/sandbox-cleanup" ]]
+          cp sandbox_cleanup_docker/Dockerfile sandbox_cleanup_docker/entrypoint.sh "$context/"
+          docker build --tag sandbox-cleanup:consumer-ci "$context"
+          ./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml \
+            -Pconsumer-e2e -Dcleanup.review.image=sandbox-cleanup:consumer-ci \
+            -Dcleanup.review.skipPull=true \
+            test-compile failsafe:integration-test failsafe:verify
       - name: Verify installed mathematics without a display
         shell: bash
         run: >-
@@ -131,6 +154,8 @@ jobs:
           name: distribution-smoke-${{ matrix.os }}-${{ github.sha }}
           path: |
             target/distribution-verification/
+            sandbox_common_test/target/cleanup-review/failsafe-reports/
+            sandbox_common_test/target/cleanup-review/consumer-evidence/
             sandbox_math_cleanup_test/target/headless-probe/
             sandbox_math_cleanup_test/target/surefire-reports/
             sandbox_math_cleanup_test/target/screenshots/

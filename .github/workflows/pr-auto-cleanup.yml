@@ -48,18 +48,7 @@ jobs:
           cache: maven
 
       - name: Verify cleanup-review contracts through Maven and JUnit
-        run: ./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml -Pconsumer-e2e verify
-
-      - name: Retain consumer qualification evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: cleanup-consumer-qualification
-          path: |
-            sandbox_common_test/target/cleanup-review/surefire-reports
-            sandbox_common_test/target/cleanup-review/failsafe-reports
-            sandbox_common_test/target/cleanup-review/consumer-evidence
-          if-no-files-found: warn
+        run: ./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml test
 
   suggestions:
     name: Propose conservative encoding cleanup

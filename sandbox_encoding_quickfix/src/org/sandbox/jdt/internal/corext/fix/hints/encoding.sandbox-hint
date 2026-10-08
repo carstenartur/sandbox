@@ -37,10 +37,10 @@ $s.getBytes("${CHARSET}") :: sourceVersionGE(7)
 ;;
 
 // === Charset.forName(String) ===
-// Requires Java 18+: matches the imperative CharsetForNameExplicitEncoding handler
-// which gates on JavaModelUtil.is18OrHigher()
+// StandardCharsets exists since Java 7, matching CharsetForNameExplicitEncoding.
+// An explicit standard charset is independent of the platform default charset.
 
-java.nio.charset.Charset.forName("${CHARSET}") :: sourceVersionGE(18)
+java.nio.charset.Charset.forName("${CHARSET}") :: sourceVersionGE(7)
 => java.nio.charset.StandardCharsets.${CHARSET_CONSTANT}
 ;;
 

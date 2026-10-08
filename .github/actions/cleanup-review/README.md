@@ -11,6 +11,8 @@ commit on a separate `cleanup/pr-…` branch. Its short review links to an ordin
 GitHub diff and a form to open a cleanup PR **into the original PR branch**.
 It never automatically pushes to that branch, opens the helper PR or merges it.
 
+**Runner:** Linux with Docker and GNU shell utilities, as in the Ubuntu example.
+
 ## Inputs
 
 | Input | Default | Meaning |
@@ -72,10 +74,13 @@ read-only, not copied into the caller's checkout.
 bash -n .github/actions/cleanup-review/run-cleanup-review.sh
 .github/actions/cleanup-review/test/run-cleanup-review-test.sh
 ./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml test
-./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml -Pconsumer-e2e verify
+./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml -Pconsumer-e2e -Dcleanup.review.image=YOUR_TESTED_IMAGE verify
 ```
 
 Maven/JUnit explicitly executes the publisher, proposal and consumer Node suites,
-requiring nonempty suites with no failing or skipped cases. The separate
+requiring nonempty suites with no failing or skipped cases. The Linux-only
+consumer runner suite is qualified on Linux; the other suites remain cross-platform.
+The separate
 `consumer-e2e` profile runs real container qualification on the standalone
-consumer; it is not required when using the action in your own project.
+consumer. The Linux distribution job selects its freshly built candidate image.
+These maintainer tests are not required when using the action in your own project.

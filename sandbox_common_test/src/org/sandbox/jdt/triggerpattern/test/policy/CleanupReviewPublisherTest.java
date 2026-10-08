@@ -11,6 +11,9 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -21,7 +24,7 @@ class CleanupReviewPublisherTest {
     @TempDir Path temporary;
 
     @ParameterizedTest
-    @ValueSource(strings = {"cleanup-review.test.cjs", "cleanup-proposal.test.cjs", "cleanup-consumer.test.cjs"})
+    @ValueSource(strings = {"cleanup-review.test.cjs", "cleanup-proposal.test.cjs"})
     void completePublisherRegressionSuitePassesWithoutSkippedCases(String suite) throws Exception {
         Path root = root();
         Path output = temporary.resolve("publisher-tests.log");
@@ -45,6 +48,13 @@ class CleanupReviewPublisherTest {
         } finally {
             if (process.isAlive()) process.destroyForcibly();
         }
+    }
+
+    @Test
+    @EnabledOnOs(OS.LINUX)
+    void nativeLinuxConsumerRegressionSuitePasses() throws Exception {
+        // The action requires a Linux Docker host and GNU shell utilities.
+        completePublisherRegressionSuitePassesWithoutSkippedCases("cleanup-consumer.test.cjs");
     }
 
     private static int summaryCount(String report, String name) {

@@ -106,6 +106,7 @@ test('an explicit custom profile with spaces works and a missing custom profile 
   succeeds(consumer(t, [''], custom).run(['--config-file', 'profiles/my profile.properties']));
   const missing = consumer(t, ['']).run(['--config-file', 'missing.properties']);
   assert.notEqual(missing.status, 0); assert.match(missing.stderr, /configuration does not exist/i);
+  assert.match(missing.outputs, /analysis_status=failed/);
   assert.equal(missing.calls.length, 0);
 });
 
@@ -183,4 +184,17 @@ test('all entry pages describe the current review action rather than automatic P
     assert.ok(!document.includes('Not directly - this action is specific'), name);
     assert.ok(document.includes('cleanup-review'), name);
   }
+});
+
+
+test('real consumer qualification reuses the current distribution instead of testing an older latest image', () => {
+  const root = path.resolve(action, '../../..');
+  const distribution = fs.readFileSync(path.join(root, '.github/workflows/distribution-smoke.yml'), 'utf8');
+  const reviewWorkflow = fs.readFileSync(path.join(root, '.github/workflows/pr-auto-cleanup.yml'), 'utf8');
+  assert.ok(distribution.includes('sandbox_cleanup_cli_dist/target/sandbox-cleanup-cli-*-dist.tar.gz'));
+  assert.ok(distribution.includes('docker build --tag sandbox-cleanup:consumer-ci'));
+  assert.ok(distribution.includes('-Dcleanup.review.image=sandbox-cleanup:consumer-ci'));
+  assert.ok(distribution.includes('-Dcleanup.review.skipPull=true'));
+  assert.ok(distribution.includes('test-compile failsafe:integration-test failsafe:verify'));
+  assert.ok(!reviewWorkflow.includes('-Pconsumer-e2e'));
 });

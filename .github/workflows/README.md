@@ -64,7 +64,7 @@ The workflow uses a **fail-fast approach** with two jobs:
    - Checks if release tag already exists
    - Checks for SNAPSHOT references in codebase
    - Validates Maven configuration
-   - Shows summary in UI
+   - Shows summary in GitHub Actions UI
 
 2. **Release Job** (depends on preflight):
    - Only runs if preflight succeeds
@@ -158,9 +158,8 @@ Preflight: ✅ All checks passed
 Build: ✅ Builds successfully
 Tag: ⏭️  Skipped (would create v1.2.2)
 Branch: ⏭️  Skipped (would create maintenance/1.2.x)
-Release: ⏭️  Skipped (would create GitHub Release)
-gh-pages: ⏭️  Skipped (would deploy)
-PR: ✅ Created (release/prepare-next-1.2.3-SNAPSHOT)
+Release: ⏭️  Skipped (would deploy)
+PR: ✅ Created (release-prepare branch)
 
 Result: Workflow validated, nothing published
 ```
@@ -269,8 +268,9 @@ Inputs:
 **Triggers**: relevant PR changes targeting `main`; manual dispatch runs the
 contract/qualification job, not PR publication without a PR context.
 
-The read-only contract job runs Maven/JUnit, including the separate consumer
-container qualification. The publishing job uses the exact PR head and the
+The read-only contract job runs the fast Maven/JUnit contracts. The existing
+Linux distribution job qualifies the native consumer against its freshly built
+candidate image, reusing the verified CLI archive. The publishing job uses the exact PR head and the
 [cleanup-review action](../actions/cleanup-review/README.md) with scoped
 `contents: write` and `pull-requests: write`. Fork heads and cleanup proposal
 heads do not publish further proposals.
@@ -437,7 +437,7 @@ The release process is **fully automated** through GitHub Actions. To create a r
 4. Fill in the required inputs:
    - **Release version**: The version to release (e.g., `1.2.2`)
    - **Next SNAPSHOT version**: The next development version (e.g., `1.2.3-SNAPSHOT`)
-5. Click "Run workflow" to start the automated release process
+5. Click **"Run workflow"** to start the automated release process
 
 #### 2. What the Workflow Does Automatically
 

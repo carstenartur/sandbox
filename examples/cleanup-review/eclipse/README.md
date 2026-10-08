@@ -26,7 +26,11 @@ See [the integration guide](https://github.com/carstenartur/sandbox/blob/main/GI
 for permissions, Eclipse/PDE dependencies, Maven/Gradle boundaries and diagnosis.
 
 The `consumer-e2e` Maven profile copies this example to a separate Git repository,
-runs the real Docker cleanup, compiles and executes before/after, checks the
+runs the selected Docker image, compiles and executes before/after, checks the
 complete patch round trip, and verifies unchanged Eclipse metadata. That test
 qualifies the consumer files and runner; it does not claim a separate hosted
 repository or an automatically completed GitHub merge.
+
+CI selects the candidate image from the existing Linux distribution build. The
+Java 11 Charset example requires the corrected Java 7 DSL guard; an older image
+may silently miss these calls. The integration guide records that limitation.
