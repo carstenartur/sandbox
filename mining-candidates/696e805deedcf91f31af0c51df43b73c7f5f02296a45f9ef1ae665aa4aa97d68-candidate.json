@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "696e805deedcf91f31af0c51df43b73c7f5f02296a45f9ef1ae665aa4aa97d68",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n@id: jface.text.source.addGtkCheck\n@description: Extend ruler redraw condition to include GTK.\n@severity: INFO\n*/\norg.eclipse.jface.text.source.VerticalRuler.IS_MAC_BUG_298936\n\u003d\u003e\norg.eclipse.jface.text.source.VerticalRuler.IS_MAC_BUG_298936 || org.eclipse.jface.util.Util.isGtk()\n;;",
+  "beforeExample": "package org.eclipse.jface.text.source;\n\nimport org.eclipse.swt.widgets.Canvas;\n\n// Dummy VerticalRuler and Util for compilation\nclass VerticalRuler {\n    static final boolean IS_MAC_BUG_298936 \u003d false;\n}\nclass Util { public static boolean isGtk() { return false; } }\n\npublic class AnnotationRulerColumn {\n    private Canvas fCanvas \u003d new Canvas(null, 0); // Assume initialized\n\n    public void redraw() {\n        if (fCanvas !\u003d null \u0026\u0026 !fCanvas.isDisposed()) {\n            if (VerticalRuler.IS_MAC_BUG_298936) { // Target pattern\n                fCanvas.redraw();\n                fCanvas.update();\n            } else {\n                // other logic\n            }\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.jface.text.source;\n\nimport org.eclipse.swt.widgets.Canvas;\nimport org.eclipse.jface.util.Util;\n\n// Dummy VerticalRuler for compilation\nclass VerticalRuler {\n    static final boolean IS_MAC_BUG_298936 \u003d false;\n}\n\npublic class AnnotationRulerColumn {\n    private Canvas fCanvas \u003d new Canvas(null, 0); // Assume initialized\n\n    public void redraw() {\n        if (fCanvas !\u003d null \u0026\u0026 !fCanvas.isDisposed()) {\n            if (VerticalRuler.IS_MAC_BUG_298936 || Util.isGtk()) { // Transformed\n                fCanvas.redraw();\n                fCanvas.update();\n            } else {\n                // other logic\n            }\n        }\n    }\n}",
+  "negativeExample": "package org.eclipse.jface.text.source;\n\nimport org.eclipse.swt.widgets.Canvas;\n\n// Dummy VerticalRuler and Util for compilation\nclass VerticalRuler {\n    static final boolean IS_MAC_BUG_298936 \u003d false;\n}\nclass Util { public static boolean isGtk() { return false; } }\n\npublic class AnotherClass {\n    private Canvas fCanvas \u003d new Canvas(null, 0);\n\n    public void doSomething() {\n        boolean someOtherCondition \u003d false;\n        if (someOtherCondition) { // Must not match VerticalRuler.IS_MAC_BUG_298936\n            System.out.println(\"hello\");\n        }\n    }\n}",
+  "targetHintFile": "jface-text-rulers.sandbox-hint",
+  "sourceCommit": "ddba351a9ef141e70b1dde8c86e9f49a972beb1a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Extend a boolean condition `VerticalRuler.IS_MAC_BUG_298936` to include `|| Util.isGtk()` for improved redraw logic on GTK platforms.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-08T02:35:20.716926936Z",
+  "ruleFingerprint": "sha256:4e27dc1ba09cae307a9a4e252b5541d7aa36eca66fea37230c4002ba85dda0cd",
+  "behaviorFingerprint": "sha256:8f7ff9edf8dd056aacd3d1d43afdecf0fd969e7e4c31d82c729a64ab7c375688",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-08T02:35:29.395166019Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
