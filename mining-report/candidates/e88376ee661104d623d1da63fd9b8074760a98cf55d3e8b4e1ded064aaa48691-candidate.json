@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e88376ee661104d623d1da63fd9b8074760a98cf55d3e8b4e1ded064aaa48691",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: scrollbar.getVisible\u003e\n\u003c!description: Replace Control.isVisible() with Widget.getVisible() for ScrollBar instances.\u003e\n\u003c!severity: HINT\u003e\n\n$bar.isVisible() :: instanceof($bar, \"org.eclipse.swt.widgets.ScrollBar\")\n\u003d\u003e\n$bar.getVisible()\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.swt.widgets.ScrollBar;\nimport org.eclipse.swt.widgets.StyledText;\n\npublic class TestClass {\n    void foo(StyledText textWidget) {\n        ScrollBar verticalBar \u003d textWidget.getVerticalBar();\n        if (verticalBar \u003d\u003d null || !verticalBar.isVisible()) {\n            System.out.println(\"Not visible\");\n        }\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.swt.widgets.ScrollBar;\nimport org.eclipse.swt.widgets.StyledText;\n\npublic class TestClass {\n    void foo(StyledText textWidget) {\n        ScrollBar verticalBar \u003d textWidget.getVerticalBar();\n        if (verticalBar \u003d\u003d null || !verticalBar.getVisible()) {\n            System.out.println(\"Not visible\");\n        }\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.swt.widgets.Control;\n\npublic class TestClass {\n    void foo(Control control) {\n        // This should not be changed, as \u0027control\u0027 is not necessarily a ScrollBar\n        if (control.isVisible()) {\n            System.out.println(\"Control visible\");\n        }\n    }\n}",
+  "targetHintFile": "swt.sandbox-hint",
+  "sourceCommit": "b8aad5a47e813827433aa4e688c2d1cd41dc3de7",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces `isVisible()` with `getVisible()` on `org.eclipse.swt.widgets.ScrollBar` objects.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-08T02:35:20.835296262Z",
+  "ruleFingerprint": "sha256:09a971c4aa256b2886ced55ef6926007b9dadada5cd9fb3226d9da3f64fe872b",
+  "behaviorFingerprint": "sha256:5439c5278ed8eafbd5aa3d25dbb39bb99026d75937f370cc579db4c5e75d0bef",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-08T02:35:29.443614105Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

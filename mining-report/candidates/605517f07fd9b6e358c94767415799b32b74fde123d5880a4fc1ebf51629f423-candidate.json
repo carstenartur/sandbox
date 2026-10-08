@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 5: The import org.eclipse.jdt.ui cannot be resolved",
-    "verifiedAt": "2026-10-04T03:18:55.919732185Z",
+    "verifiedAt": "2026-10-08T02:35:22.556111525Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

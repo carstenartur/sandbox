@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "66f4781fde7e3664a913b0092b053fca04ad1ad7895f1b37c2aae150a1c63c26",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: string.empty.constructor.to.literal\u003e\n\u003c!description: Replace inefficient new java.lang.String() constructor with the empty string literal \"\".\u003e\n\u003c!severity: HINT\u003e\nnew java.lang.String()\n\u003d\u003e \"\"\n;;",
+  "beforeExample": "public class MyClass {\n    public void process() {\n        String emptyString \u003d new java.lang.String();\n        System.out.println(emptyString.length());\n    }\n}",
+  "afterExample": "public class MyClass {\n    public void process() {\n        String emptyString \u003d \"\";\n        System.out.println(emptyString.length());\n    }\n}",
+  "negativeExample": "public class MyClass {\n    public void process() {\n        String non_empty \u003d new java.lang.String(\"hello\"); // Should not match\n        byte[] bytes \u003d { \u0027a\u0027, \u0027b\u0027, \u0027c\u0027 };\n        String from_bytes \u003d new java.lang.String(bytes); // Should not match\n        System.out.println(non_empty + from_bytes);\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "6b799159067d9d904353f767b5e118ae5a437427",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "summary": "Replace the inefficient `new String()` constructor call with the empty string literal `\"\"` for better performance and clarity.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-08T02:35:20.858604846Z",
+  "ruleFingerprint": "sha256:aa9de713c571a2f7ab4bf64cbacf55b3ec483048b72dfe697b71c3f9bf1514ab",
+  "behaviorFingerprint": "sha256:01b3aeb4f2823b14da81c7b2f87eebacfb6837d4af2804c40c7fb064a6e5355e",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-08T02:35:29.453578211Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The import org.eclipse.jface.action cannot be resolved",
-    "verifiedAt": "2026-10-04T03:18:59.499879893Z",
+    "verifiedAt": "2026-10-08T02:35:26.260978961Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

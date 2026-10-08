@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e138189dee6db50443fda20bf285c62888f656964199df38433651fe671500fd",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$stringVar !\u003d null :: instanceof($stringVar, \"java.lang.String\")\n\u003d\u003e $stringVar !\u003d null \u0026\u0026 !$stringVar.isEmpty()\n;;",
+  "beforeExample": "class TestClass {\n    String getSomeString() {\n        return \"example\";\n    }\n\n    void methodA(String paramString) {\n        // Case 1: Local variable (matches)\n        String localString \u003d getSomeString();\n        if (localString !\u003d null) {\n            System.out.println(\"Local string is \" + localString);\n        }\n\n        // Case 2: Parameter (matches)\n        if (paramString !\u003d null) {\n            System.out.println(\"Parameter string is \" + paramString);\n        }\n\n        // Case 3: Method call result (matches)\n        if (getSomeString() !\u003d null) {\n            System.out.println(\"Method result is \" + getSomeString());\n        }\n    }\n}",
+  "afterExample": "class TestClass {\n    String getSomeString() {\n        return \"example\";\n    }\n\n    void methodA(String paramString) {\n        // Case 1: Local variable (matches)\n        String localString \u003d getSomeString();\n        if (localString !\u003d null \u0026\u0026 !localString.isEmpty()) {\n            System.out.println(\"Local string is \" + localString);\n        }\n\n        // Case 2: Parameter (matches)\n        if (paramString !\u003d null \u0026\u0026 !paramString.isEmpty()) {\n            System.out.println(\"Parameter string is \" + paramString);\n        }\n\n        // Case 3: Method call result (matches)\n        if (getSomeString() !\u003d null \u0026\u0026 !getSomeString().isEmpty()) {\n            System.out.println(\"Method result is \" + getSomeString());\n        }\n    }\n}",
+  "negativeExample": "class NegativeTestClass {\n    Object getSomeObject() {\n        return new Object();\n    }\n    \n    String getNullableString() {\n        return null;\n    }\n\n    void methodB(Integer count) {\n        // Negative Case 1: Non-String type\n        Object obj \u003d getSomeObject();\n        if (obj !\u003d null) { // Should NOT match, $obj is not String\n            System.out.println(\"Object is not null\");\n        }\n        \n        // Negative Case 2: Parameter of non-String type\n        if (count !\u003d null) { // Should NOT match, $count is not String\n            System.out.println(\"Count is not null\");\n        }\n\n        // Negative Case 3: Different operator (\u003d\u003d null)\n        String nullableString \u003d getNullableString();\n        if (nullableString \u003d\u003d null) { // Should NOT match, operator is \u003d\u003d\n            System.out.println(\"Nullable string is null\");\n        }\n        \n        // Negative Case 4: No null check at all\n        String anotherString \u003d \"test\";\n        if (anotherString.isEmpty()) { // Should NOT match, not a null check\n            System.out.println(\"Another string is empty\");\n        }\n    }\n}",
+  "targetHintFile": "string.sandbox-hint",
+  "sourceCommit": "4c04a97e157b64ddf79f1c2f72296559e5455c8f",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "String API Usage",
+  "summary": "Expands a null check for String expressions to also include an emptiness check, treating empty strings as effectively \u0027not present\u0027.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-08T02:35:20.811852443Z",
+  "ruleFingerprint": "sha256:cce7f18e6a7e17221ff8417647831ce02ad7f46e29f244cb4e4618895b807262",
+  "behaviorFingerprint": "sha256:59aa0b45ab08992ab2f087087746f58b5d5c5a49d5aa2dadbc41a518bfbe3d89",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example is ambiguous: expected one replacement but got 3",
+    "verifiedAt": "2026-10-08T02:35:29.433677905Z",
+    "verifierVersion": "7",
+    "matches": 3,
+    "replacements": 3
+  },
+  "transitions": []
+}
