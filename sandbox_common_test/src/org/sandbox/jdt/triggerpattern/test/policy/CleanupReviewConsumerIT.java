@@ -50,10 +50,15 @@ class CleanupReviewConsumerIT {
         String expected = compileAndRun(repository.resolve(projects.getFirst()), temporary.resolve("before-bin"));
         assertEquals("2:1", expected.strip());
         Path evidence = temporary.resolve("evidence");
-        run(repository, "bash", action.toString(), "--base-sha", base, "--head-sha", head,
+        String cleanupLog = run(repository, "bash", action.toString(), "--base-sha", base, "--head-sha", head,
                 "--image", System.getProperty("cleanup.review.image", "ghcr.io/carstenartur/sandbox-cleanup:latest"),
                 "--java-home", System.getProperty("java.home"), "--output-dir", evidence.toString());
+        Path retained = root.resolve("sandbox_common_test/target/cleanup-review/consumer-evidence/" + (nested ? "nested" : "single"));
+        copy(evidence, retained);
+        Files.writeString(retained.resolve("cleanup.log"), cleanupLog, StandardCharsets.UTF_8);
         String patch = Files.readString(evidence.resolve("suggestions.patch"), StandardCharsets.UTF_8);
+        assertFalse(patch.isBlank(), "The real cleanup produced no patch:\n" + cleanupLog
+                + "\n" + Files.readString(evidence.resolve("summary.md"), StandardCharsets.UTF_8));
         assertTrue(patch.contains("+import java.nio.charset.StandardCharsets;"), patch);
         assertTrue(patch.contains("+        return StandardCharsets.UTF_8;"), patch);
         assertTrue(patch.contains("+        return StandardCharsets.ISO_8859_1;"), patch);
@@ -72,8 +77,6 @@ class CleanupReviewConsumerIT {
         assertEquals("", run(repository, "git", "status", "--porcelain").strip());
         run(repository, "git", "apply", "--index", evidence.resolve("suggestions.patch").toString());
         assertEquals(tree, run(repository, "git", "write-tree"));
-        Path retained = root.resolve("sandbox_common_test/target/cleanup-review/consumer-evidence/" + (nested ? "nested" : "single"));
-        copy(evidence, retained);
         Files.writeString(retained.resolve("verification.txt"), "Base: " + base + "\nHead: " + head
                 + "\nComplete cleaned tree: " + tree + "Behavior before/after: " + expected, StandardCharsets.UTF_8);
     }
