@@ -3,8 +3,8 @@ package example;
 import java.nio.charset.Charset;
 
 /**
- * Both conversions intentionally use their before-form. A new PR file exposes
- * the complete range, including the StandardCharsets import added by cleanup.
+ * Both conversions intentionally use their before-form. The cleanup commit
+ * must contain both conversions and their new StandardCharsets import.
  */
 public final class GroupedEncodingExample {
     private GroupedEncodingExample() {

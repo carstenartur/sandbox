@@ -11,27 +11,33 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-/** Makes the existing publisher behavioral regressions part of the Maven/JUnit gate. */
+/** Runs both cleanup capture/publication and complete-commit regressions through Maven/JUnit. */
 class CleanupReviewPublisherTest {
-    private static final String SUITE = ".github/actions/cleanup-review/test/cleanup-review.test.cjs";
+    private static final String ACTION_DIRECTORY = ".github/actions/cleanup-review";
     @TempDir Path temporary;
 
-    @Test
-    void completePublisherRegressionSuitePassesWithoutSkippedCases() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"cleanup-review.test.cjs", "cleanup-proposal.test.cjs"})
+    void completePublisherRegressionSuitePassesWithoutSkippedCases(String suite) throws Exception {
         Path root = root();
         Path output = temporary.resolve("publisher-tests.log");
-        Process process = new ProcessBuilder("node", "--test", "--test-reporter=tap", root.resolve(SUITE).toString())
+        Path scenario = root.resolve(ACTION_DIRECTORY).resolve("test").resolve(suite);
+        assertTrue(Files.isRegularFile(scenario), "Missing cleanup regression suite: " + scenario);
+        Process process = new ProcessBuilder("node", "--test", "--test-reporter=tap", scenario.toString())
                 .directory(root.toFile()).redirectErrorStream(true).redirectOutput(output.toFile()).start();
         try {
             boolean completed = process.waitFor(30, TimeUnit.SECONDS);
             String report = Files.readString(output, StandardCharsets.UTF_8);
             assertTrue(completed, "Publisher regressions timed out:\n" + report);
             assertEquals(0, process.exitValue(), report);
+            assertFalse(report.lines().anyMatch(line -> line.equals("# Subtest: " + scenario)),
+                    "Node must execute registered scenarios, not only load an empty suite:\n" + report);
             int tests = summaryCount(report, "tests");
-            assertTrue(tests >= 24, "The complete established publisher regression suite must execute:\n" + report);
+            assertTrue(tests > 0, "The cleanup regression suite must execute tests:\n" + report);
             assertEquals(tests, summaryCount(report, "pass"), report);
             for (String outcome : new String[]{"fail", "cancelled", "skipped", "todo"}) {
                 assertEquals(0, summaryCount(report, outcome), report);
@@ -51,7 +57,7 @@ class CleanupReviewPublisherTest {
 
     private static Path root() {
         for (Path root = Path.of("").toAbsolutePath(); root != null; root = root.getParent()) {
-            if (Files.isRegularFile(root.resolve(SUITE))) return root;
+            if (Files.isRegularFile(root.resolve(ACTION_DIRECTORY).resolve("action.yml"))) return root;
         }
         throw new IllegalStateException("Cannot find the cleanup review publisher regression suite");
     }

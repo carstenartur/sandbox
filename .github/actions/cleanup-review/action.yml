@@ -1,5 +1,5 @@
-name: Sandbox Cleanup Review Suggestions
-description: Publish the complete Sandbox cleanup result, grouping all required edits before offering applicable GitHub suggestions.
+name: Sandbox Cleanup Review
+description: Publish the complete Sandbox cleanup as one bot commit with a comparison and a link to open a cleanup pull request.
 author: Sandbox Project
 
 branding:
@@ -8,7 +8,7 @@ branding:
 
 inputs:
   github-token:
-    description: Token used to publish the pull-request review.
+    description: Token used to create the cleanup branch and publish the pull-request review.
     required: true
   base-sha:
     description: Pull-request base commit SHA.
@@ -36,12 +36,8 @@ inputs:
     description: Analyze only changed Java files or each complete affected Eclipse project (changed or project).
     required: false
     default: changed
-  suggestion-scope:
-    description: Acceptance unit (run or file). Use file only for a cleanup whose changes in different files are independent.
-    required: false
-    default: run
   tool-name:
-    description: Name shown on generated review suggestions.
+    description: Name shown on the cleanup review.
     required: false
     default: sandbox-cleanup
   artifact-name:
@@ -70,7 +66,7 @@ outputs:
     description: Path to the complete Git patch.
     value: ${{ steps.cleanup.outputs.patch_file }}
   artifact-url:
-    description: Download page for the complete patch, grouped review, and execution reports.
+    description: Download page for the complete patch, captured review, and execution reports.
     value: ${{ steps.evidence.outputs.artifact-url }}
 
 runs:
@@ -108,7 +104,6 @@ runs:
         REVIEW_PATCH_FILE: ${{ steps.cleanup.outputs.patch_file }}
         REVIEW_OUTPUT_DIR: ${{ steps.cleanup.outputs.output_dir }}
         REVIEW_TOOL_NAME: ${{ inputs.tool-name }}
-        REVIEW_SUGGESTION_SCOPE: ${{ inputs.suggestion-scope }}
       run: node "$GITHUB_ACTION_PATH/cleanup-review.cjs" --prepare
 
     - name: Upload complete cleanup evidence
@@ -129,7 +124,6 @@ runs:
         REVIEW_HEAD_SHA: ${{ inputs.head-sha }}
         REVIEW_OUTPUT_DIR: ${{ steps.cleanup.outputs.output_dir }}
         REVIEW_TOOL_NAME: ${{ inputs.tool-name }}
-        REVIEW_SUGGESTION_SCOPE: ${{ inputs.suggestion-scope }}
         REVIEW_ARTIFACT_URL: ${{ steps.evidence.outputs.artifact-url }}
       with:
         github-token: ${{ inputs.github-token }}

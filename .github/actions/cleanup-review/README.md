@@ -1,38 +1,34 @@
-# Sandbox Cleanup Review Suggestions
+# Sandbox Cleanup Review
 
-This composite action runs the headless Sandbox Eclipse cleanup application on Java files changed by a pull request and publishes the **complete cleanup result** in a GitHub review. The review groups the diff by file and links to the full patch and execution reports.
+This composite action runs the headless Sandbox Eclipse cleanup application on Java files changed by a pull request. It captures the **complete cleanup result** and publishes it as one commit on a separate `cleanup/pr-…` branch. The review contains a short summary, a normal GitHub comparison, and a link to open a cleanup pull request.
 
-A native **Suggested Change** is offered only when it can contain the complete acceptance unit in one commentable range. Several changed locations in the same file are combined, including the unchanged lines between them. If the complete range is unavailable in the PR diff, the review shows the full diff and patch link instead of independently applicable fragments.
+## Accepting the cleanup
 
-By default, the artifact contains `suggestions.patch`, `review.md`, `review.json`, and the cleanup JSON reports. It is uploaded before review publication, so the complete result remains available if GitHub rejects the review. Oversized reviews explicitly direct the reader to the complete artifact; they do not present a shortened patch as complete. If no artifact is available, an oversized result fails publication with a visible error instead of publishing an incomplete review.
+1. Click **Review cleanup diff** in the bot review to inspect the complete commit in GitHub's ordinary diff view. The comparison uses the analyzed head SHA and the cleanup commit SHA, so it shows exactly the recorded result.
+2. Click **Open cleanup PR**. GitHub opens a prefilled pull-request form with the original PR's head branch as the target and the cleanup branch as the source.
+3. Create that cleanup PR, review it, and merge it. The merge adds all cleanup changes to the original PR branch. The original PR then includes them and its matching CI runs again.
 
-## Accepting a suggestion
+The bot creates the cleanup branch and commit; you create and merge the cleanup PR. Imports, distant uses, changes across several files, and new or deleted Java files stay together in that commit. No inline replacement blocks or individually applicable fragments are published.
 
-Open the file's review comment under **Files changed**. Below the native **Suggested change** block, click **Commit suggestion**, then **Commit changes**. This accepts every cleanup edit in that file together; selecting a batch is unnecessary for a single file suggestion.
-
-GitHub displays the complete replacement range in red and green, including unchanged lines between edits. Lines outside that range remain in the file, even when the displayed fragment ends before a closing brace. The review's additional file diffs are collapsed and marked **view only**: they provide the complete patch for inspection, while the native suggestion in the file comment provides GitHub's commit controls.
-
-Files marked **Complete patch required** have no native acceptance button. To apply the whole result, download the artifact and apply `suggestions.patch` to its recorded head. This is an alternative to accepting individual suggestions: the patch already contains all of their changes. The integration-fixture files intentionally contain the before-form and demonstrate the review output.
+A workflow filtered to `pull_request.branches: [main]` does not run on a cleanup PR targeting a feature branch. The original PR's normal CI runs when that branch is updated by your merge, subject to its configured triggers and filters. Pushes made with `GITHUB_TOKEN` do not start `push` workflows. Human creation through the link also avoids the repository setting and additional CI approval needed for PRs created automatically with `GITHUB_TOKEN`. See GitHub's [PR URL parameters](https://docs.github.com/en/pull-requests/reference/using-query-parameters-to-create-a-pull-request), [workflow events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows), and [token behavior](https://docs.github.com/en/actions/concepts/security/github_token).
 
 ## How it works
 
 1. The caller checks out the exact pull-request head with full Git history.
-2. The action identifies changed Java files from `base...head`.
-3. Each file is assigned to its nearest ancestor containing an Eclipse `.project` file.
-4. The configured Sandbox cleanup runs once per affected Eclipse project in an isolated temporary workspace.
-5. The cleanup changes remain only in the ephemeral Actions checkout.
-6. A Node publisher captures the complete diff and constructs one acceptance unit per run, or per file when the caller explicitly declares file independence.
-7. The artifact is uploaded, and the publisher verifies that the PR still has the analyzed head before submitting the review.
+2. The action identifies changed Java files from `base...head` and assigns them to their nearest ancestor Eclipse `.project`.
+3. The configured cleanup runs once per affected project in an isolated temporary workspace.
+4. The publisher captures the complete Git patch and result before the evidence artifact is uploaded.
+5. The publisher checks that the PR still has the analyzed head, creates one commit whose parent is that head, and publishes a review linking to it. It never pushes to the original PR branch.
 
-Git generates the complete patch. The cleanup application's own `--patch` output remains diagnostic evidence and is not used to place review comments. Publication does not stash, restore, or otherwise modify the cleanup result.
+The default artifact retains `suggestions.patch`, `review.md`, `review.json`, cleanup JSON reports, and the console log. It is uploaded before publication, including diagnostic evidence when cleanup fails. Git generates the authoritative complete patch; the application's own patch output is diagnostic evidence. Publication preserves the cleanup checkout and index.
 
 ## Example
 
+The bundled workflow limits publication to PRs from the same repository and skips heads beginning with `cleanup/pr-` to prevent repeated cleanup proposals for cleanup branches. Only its publishing job needs write permissions:
+
 ```yaml
 permissions:
-  contents: read
-  checks: write
-  issues: write
+  contents: write
   pull-requests: write
 
 steps:
@@ -49,15 +45,15 @@ steps:
       config-file: .github/cleanup-profiles/review-explicit-encoding.properties
       image: ghcr.io/carstenartur/sandbox-cleanup:latest
       source-mode: changed
-      # Use file only when the configured cleanup has no cross-file dependencies.
-      suggestion-scope: file
 ```
+
+`contents: write` permits the cleanup commit and branch; `pull-requests: write` permits the review. Automatic PR creation is not required. The ordinary `GITHUB_TOKEN` is sufficient for same-repository publication when repository rules permit creating the branch.
 
 ## Inputs
 
 | Input | Default | Meaning |
 |---|---|---|
-| `github-token` | required | Token used to publish the review. |
+| `github-token` | required | Token used to create the cleanup branch and publish the review. |
 | `base-sha` | required | Pull-request base commit. |
 | `head-sha` | required | Exact checked-out pull-request head. |
 | `config-file` | conservative encoding profile | Repository-relative cleanup properties file. |
@@ -65,16 +61,13 @@ steps:
 | `java-home` | empty | Optional host JDK mounted read-only for analysis. |
 | `scope` | `both` | `main`, `test`, or `both`. |
 | `source-mode` | `changed` | `changed` passes only PR Java files; `project` passes each complete affected Eclipse project. |
-| `suggestion-scope` | `run` | `run` keeps the whole cleanup result together; `file` declares that changes in different files are independent. |
 | `tool-name` | `sandbox-cleanup` | Name displayed in the review. |
 | `artifact-name` | `sandbox-cleanup-review` | Patch/report artifact name. |
-| `upload-artifact` | `true` | Retain the complete patch and reports according to the repository artifact-retention policy. |
+| `upload-artifact` | `true` | Retain the complete patch and reports according to repository retention policy. |
 
 ## Choosing a cleanup
 
-Use one narrowly scoped properties file per review workflow. This keeps every result attributable to a single cleanup. A diff does not describe semantic dependencies, so the publisher must not infer that separate hunks or files are independent.
-
-The default profile enables only the conservative Explicit Encoding strategy:
+Use one narrowly scoped properties file per workflow to keep each result attributable to a single cleanup. The default enables only conservative Explicit Encoding:
 
 ```properties
 cleanup.explicit_encoding=true
@@ -83,23 +76,15 @@ cleanup.explicit_encoding_insert_utf8=false
 cleanup.explicit_encoding_aggregate_to_utf8=false
 ```
 
-A repository can add another properties file and point `config-file` at it without changing the action.
+A repository can select another properties file through `config-file`. Every result is still published as one complete commit; the publisher does not infer semantic independence from separate hunks or files.
 
-## Several lines and several files
+The default Docker/CLI entry point invokes `JavaCleanup`, which creates a `CleanUpRefactoring` per compilation unit and performs its complete `Change`. `source-mode: project` widens the input but still processes files separately; it does not plan a coordinated multi-file refactoring or roll back earlier files if a later file fails. A failed cleanup publishes no proposal.
 
-| Cleanup result | Publication and acceptance |
-|---|---|
-| One replacement covering several adjacent lines | One multiline suggestion, when the complete original range is commentable. |
-| An import and one or more uses farther down the same file | One spanning suggestion containing all changes and the unchanged lines between them, when the complete range is commentable. Otherwise, the complete file diff and patch link. |
-| Several independent files with `suggestion-scope: file` | One complete suggestion per eligible file. Ineligible files remain visible in the grouped diff. |
-| Several files with the default `suggestion-scope: run` | The complete result is a single patch acceptance unit; no individually committable file fragments are offered. |
-| A newly created or deleted Java file, or edits outside the PR diff | Included in the complete patch and review. GitHub inline limitations do not remove them from the result. |
+Sandbox also has `ProjectWideJavaCleanup` and semantic multi-file planning infrastructure. A cleanup that changes a declaration and its callers requires a runner that plans and verifies that complete source scope. Keeping its published result in one commit does not supply that execution capability. See [Coordinated multi-file cleanups](../../../docs/multi-file-cleanups.md).
 
-The bundled conservative Explicit Encoding workflow uses `suggestion-scope: file`: its changes are local to each compilation unit. It still groups all edits within that file, so an import cannot be separated from the call that requires it. Other profiles default to `run` until their independence is established.
+## Complete patch and boundaries
 
-GitHub can commit a user-selected batch of suggestions together, but it does not require the user to select all members of a dependent transformation. Being in the same review is therefore insufficient to make a fix indivisible. Switching the former reviewdog `diff_context` filter to `nofilter` would expose more diagnostics, but would not make separately generated suggestions a complete acceptance unit.
-
-For a patch result, download the artifact, check out its recorded PR head, and apply the complete `suggestions.patch`:
+The artifact is also a local acceptance route. Check out the recorded PR head, then apply its complete patch:
 
 ```bash
 git apply --check /path/to/suggestions.patch
@@ -107,23 +92,15 @@ git apply /path/to/suggestions.patch
 git diff --check
 ```
 
-Run the appropriate compilation and tests before committing. Re-run the cleanup on an updated head instead of assuming an old patch still describes the current source. The publisher rejects stale-head reviews.
+Run the appropriate compilation and tests before committing. Re-run the cleanup on an updated head; publication rejects a stale analyzed head. The integration fixtures deliberately retain their before-form to demonstrate the output.
 
-### Execution scope is a separate concern
-
-The default Docker/CLI entry point invokes `JavaCleanup`, which creates a `CleanUpRefactoring` for each compilation unit and performs its complete `Change`. Multiple edits inside that file are supported. `source-mode: project` supplies more input files but still processes them separately; it does **not** create a coordinated multi-file refactoring or roll back the whole run if a later file fails.
-
-Sandbox has a separate `ProjectWideJavaCleanup` application and semantic multi-file planning infrastructure. The default action does not select that application. Supporting a cleanup that changes a declaration and callers in other files requires both a runner that plans and verifies the complete source scope and publication that keeps the result together. `suggestion-scope: run` provides the publication policy; it does not supply the missing execution transaction. See [Coordinated multi-file cleanups](../../../docs/multi-file-cleanups.md).
-
-## Safety boundaries
-
-- The script fails if the checkout does not match `head-sha`, tracked files are already dirty, a path escapes the repository, or a cleanup modifies a non-Java file.
-- Every Eclipse project receives a separate temporary workspace, avoiding project-name collisions.
-- Files without an ancestor `.project` are reported and skipped rather than processed without bindings.
-- GitHub suggestions require a complete commentable range. The publisher never drops a required edit merely to fit a suggestion into the PR diff. Files without a usable API patch are retained in the review and artifact.
-- The bundled workflow publishes reviews only for branches in the same repository. External fork support needs a separate unprivileged analysis and privileged, validating publisher workflow; it must not execute fork code with a write-capable token.
-- If GitHub rejects inline ranges, publication falls back to the complete review without inline suggestions. Other API errors remain visible. Repeated publication of the same generated review by the standard `github-actions[bot]` token is detected to avoid duplicate bot reviews.
-- The container image is recorded by resolved repository digest in the job summary when Docker exposes one. Production consumers may replace `latest` with a release tag or digest.
+- Cleanup fails if the checkout differs from `head-sha`, tracked files are dirty, a path escapes the repository, or cleanup modifies a non-Java file.
+- Files without an ancestor `.project` are reported and skipped; each imported Eclipse project gets a separate temporary workspace.
+- The complete commit and patch include changes outside the original PR diff. Commentable line ranges do not constrain publication.
+- The bundled publisher supports same-repository PRs. Fork publication requires a separate unprivileged analysis and privileged validating publisher; fork code must not run with a write-capable token.
+- If GitHub denies branch creation, the review provides the complete patch. An oversized fallback requires the uploaded artifact; otherwise publication fails visibly. Other API failures remain visible.
+- Existing matching cleanup branches and standard `github-actions[bot]` reviews are reused on retries. No automatic PR creation, merge, or force-push to a contributor branch occurs.
+- The summary records the resolved container digest when Docker exposes one. Consumers can replace `latest` with a release tag or digest.
 
 ## Verification
 
@@ -133,14 +110,8 @@ bash -n .github/actions/cleanup-review/run-cleanup-review.sh
 ./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml test
 ```
 
-Maven/JUnit owns the executable contract: `CleanupReviewPublisherTest` runs the publisher scenarios and requires every case to pass, alongside the action's Java evidence and runtime contracts. The standalone test POM runs these same Java sources without building Eclipse plugins; the normal `sandbox_common_test` Maven gate also discovers them. The Node scenario harness exercises grouped replacements, multiple files, off-diff changes, GitHub range constraints, and complete-result fallbacks without making network writes. The shell preflight uses a mocked Docker executable while keeping Git and the action runner real to check the shell adapter.
+Maven/JUnit owns the executable contract: `CleanupReviewPublisherTest` explicitly runs both `test/cleanup-review.test.cjs` and `test/cleanup-proposal.test.cjs` through Node, requiring nonempty suites with every case passing and no skipped cases. They exercise capture, complete commit publication, retry handling, and stale-head rejection without network writes. The Java evidence and runtime contracts run alongside them. The standalone POM uses those same Java sources without building Eclipse plugins; the normal `sandbox_common_test` Maven gate discovers them too. The shell preflight keeps Git and the action runner real and supplies a mocked Docker executable.
 
 ### Selecting the analysis JVM
 
-The optional `java-home` input names a JDK on the Linux runner. The action
-mounts it read-only and supplies both `JAVA_HOME` and `PATH` inside the cleanup
-container, including for older launchers that invoke `java` from `PATH`. With
-no input, the image's default runtime is retained. The repository review
-workflow provisions Java 25 and passes its `JAVA_HOME`; this avoids using an
-older published image's JVM to resolve the Java-25 contributor projects.
-No `.classpath`, compiler preference or source compatibility level is changed.
+The optional `java-home` input names a JDK on the Linux runner. It is mounted read-only, and both `JAVA_HOME` and `PATH` are supplied inside the container. With no input, the image runtime is retained. The bundled workflow uses Java 25 so older image runtimes do not have to resolve Java-25 contributor projects. Project classpaths, compiler preferences, and source compatibility remain unchanged.

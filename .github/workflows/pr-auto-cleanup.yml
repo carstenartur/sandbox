@@ -1,4 +1,4 @@
-name: Sandbox Cleanup Review Suggestions
+name: Sandbox Cleanup Review
 
 on:
   pull_request:
@@ -49,14 +49,12 @@ jobs:
         run: ./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml test
 
   suggestions:
-    name: Suggest conservative encoding cleanup
+    name: Propose conservative encoding cleanup
     needs: action-contract
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && !startsWith(github.event.pull_request.head.ref, 'cleanup/pr-')
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      checks: write
-      issues: write
+      contents: write
       pull-requests: write
 
     steps:
@@ -83,8 +81,5 @@ jobs:
           java-home: ${{ env.JAVA_HOME }}
           scope: both
           source-mode: changed
-          # Explicit Encoding only changes the current compilation unit. Each
-          # file is independent; all edits within that file stay together.
-          suggestion-scope: file
           tool-name: sandbox-explicit-encoding
           artifact-name: sandbox-cleanup-pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
