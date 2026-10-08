@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "1de9e3bf88bd2e6c53fd9c8377c3dbc65b693873",
-      "lastProcessedDate": "2026-10-04T03:11:37.704837584Z",
-      "totalProcessed": 508,
+      "lastProcessedCommit": "1629a6e4a78a208b678d91cc50e81b3f416ab5d0",
+      "lastProcessedDate": "2026-10-08T02:35:17.850016999Z",
+      "totalProcessed": 580,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -4760,78 +4760,6 @@
           "deferredAt": "2026-10-04T03:11:10.639927733Z",
           "retryCount": 0,
           "maxRetries": 3
-        },
-        {
-          "hash": "4cffb0013023a237c3d43ffa763649b07f7b61fe",
-          "message": "Bug 487152: ZoomTest leaks open editor",
-          "diffLines": 24,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-10-04T03:15:13.276632088Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "9e178f2b274b2e8d498ab3c9d86df474fa0ab76a",
-          "message": "Bug 486903 - [Templates] Allow specifying a default value in case the\nword_selection is empty\n\nChange-Id: I5a5c2e77f65aa",
-          "diffLines": 167,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-10-04T03:15:13.276703011Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "6d491f54cebf2892afd3b5665a61ab6dd21d313f",
-          "message": "Improved word_selection description",
-          "diffLines": 12,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-10-04T03:15:13.276732977Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "0e1c9f6f7d0f8aa4bf2a25e85272869463a486a5",
-          "message": "Bug 486903 - [Templates] Clarifies the usage of word_selection defaults\n\nChange-Id: I51158e66bd4cf1cff947bc794cc295cdfec",
-          "diffLines": 12,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-10-04T03:15:13.276754928Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "e462c416ddf66bbf893a0f0364be8f88a28963a4",
-          "message": "Bug 487327 - [templates] Allow specifying a default value in case\nthe line_selection is empty\n\nStill WIP, awaiting feedb",
-          "diffLines": 55,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-10-04T03:18:48.931104793Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "7ac23aba2856a9f56d61046e76b61f51fbbc1f56",
-          "message": "Bug 488162 - [word wrap] Hide WW preference to avoid unexpected\nperformance impact\n\nHide \"Preferences-\u003eGeneral-\u003eEditors-",
-          "diffLines": 38,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-10-04T03:18:48.931171929Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "4c660fe130091516bd9db3552dbf580f8b209c81",
-          "message": "Fixed bug 473524: template importer never throws \"Duplicate template id\" exception",
-          "diffLines": 62,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-10-04T03:18:48.931219918Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "9eed8099525346097ff1b50e9fa317249dc283b4",
-          "message": "Bug 487901 - [templates] Create base class for adjust word_selection and\nline_selection variable to avoid code duplicati",
-          "diffLines": 153,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-10-04T03:18:48.931242250Z",
-          "retryCount": 0,
-          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -4845,8 +4773,8 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 4,
-        "API Modernization": 10,
-        "Performance": 5,
+        "API Modernization": 14,
+        "Performance": 6,
         "Redundant Code": 4,
         "API Misuse Correction": 1,
         "Lambda to Method Reference": 1,
@@ -4863,7 +4791,7 @@
         "API Migration": 2,
         "Configuration Default Update": 1,
         "API Deprecation": 1,
-        "String API Usage": 1,
+        "String API Usage": 2,
         "Thread Safety": 1,
         "Annotation Modernization": 1,
         "Generics Modernization": 2,
@@ -4996,5 +4924,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52273
+  "globalTotalProcessed": 52345
 }
