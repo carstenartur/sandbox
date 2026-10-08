@@ -57,14 +57,18 @@ def repository_metadata() -> tuple[dict[str, str], set[str]]:
         for module in pom.findall(".//m:module", MAVEN_NS)
         if (module.text or "").strip()
     }
-    release = None
-    for url in pom.findall("m:repositories/m:repository/m:url", MAVEN_NS):
-        match = re.search(r"/releases/([^/]+)/?", (url.text or "").strip())
+    target_name = maven_value(pom, "m:properties/m:rcp-version")
+    target_path = ROOT / "sandbox_target" / f"{target_name}.target"
+    target = ET.parse(target_path).getroot()
+    releases = set()
+    for repository in target.findall("./locations/location[@type='InstallableUnit']/repository"):
+        match = re.fullmatch(r"https://download\.eclipse\.org/releases/([^/]+)/?",
+                             repository.get("location", "").strip())
         if match:
-            release = match.group(1)
-            break
-    if release is None:
-        fail("Cannot derive Eclipse release from pom.xml repositories")
+            releases.add(match.group(1))
+    if len(releases) != 1:
+        fail(f"Cannot derive one Eclipse release from {target_path.relative_to(ROOT)}")
+    release = releases.pop()
     return {
         "javaVersion": java_version,
         "tychoVersion": tycho_version,

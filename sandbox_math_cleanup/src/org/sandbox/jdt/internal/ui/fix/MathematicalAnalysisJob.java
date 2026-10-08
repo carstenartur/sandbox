@@ -45,7 +45,12 @@ final class MathematicalAnalysisJob {
   try { job.schedule(); } catch(RuntimeException failure) { ACTIVE.remove(job);throw failure; }
  }
 
- static void cancelAll() { ACTIVE.forEach(Job::cancel); }
+ /** Requests cancellation without blocking the UI; resource owners can join the returned jobs. */
+ static Job[] cancelAll() {
+  Job[] jobs=ACTIVE.toArray(Job[]::new);
+  for(Job job:jobs) job.cancel();
+  return jobs;
+ }
 
  /**
   * Stops registered work before callers dispose its resources. Callers must
@@ -65,9 +70,7 @@ final class MathematicalAnalysisJob {
   while(!ACTIVE.isEmpty()) {
    // Only real registered workers: a scheduling-rule owner may be a ThreadJob,
    // which must not be cancelled or joined just because it holds our rule.
-   Job[] workers=ACTIVE.toArray(Job[]::new);
-   for(Job worker:workers) worker.cancel();
-   for(Job worker:workers) {
+   for(Job worker:cancelAll()) {
     long remaining=budget-(System.nanoTime()-started);
     if(remaining<=0 || !worker.join(Math.max(1,TimeUnit.NANOSECONDS.toMillis(remaining)),null))
      throw new TimeoutException("Mathematics worker did not stop: "+worker.getName()); //$NON-NLS-1$

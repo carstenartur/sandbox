@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -31,7 +32,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
+
 import org.junit.jupiter.api.Test;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -73,8 +82,14 @@ public class RepositoryBaselineConsistencyTest {
 		assertTrue(pom.contains("This project uses Tycho ${tycho-version}, which"), //$NON-NLS-1$
 				"The Java enforcer diagnostic must interpolate the Tycho property"); //$NON-NLS-1$
 
-		assertEquals(Set.of(eclipseRelease), releaseRepositories(pom),
-				"The root POM must resolve only the declared Eclipse release"); //$NON-NLS-1$
+		Document rootPom = xml(root, "pom.xml"); //$NON-NLS-1$
+		String artifact = "/project/build/plugins/plugin[artifactId='target-platform-configuration']/configuration/target/artifact"; //$NON-NLS-1$
+		assertEquals("org.sandbox", value(rootPom, artifact + "/groupId")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals("sandbox_target", value(rootPom, artifact + "/artifactId")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals("${project.version}", value(rootPom, artifact + "/version")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals("", value(rootPom, artifact + "/classifier")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertEquals("0", value(rootPom, "count(/project/repositories/repository[layout='p2'])"), //$NON-NLS-1$ //$NON-NLS-2$
+				"The root POM must use the declared target without adding whole p2 repositories"); //$NON-NLS-1$
 		assertEquals(Set.of(eclipseRelease), releaseRepositories(target),
 				"The PDE target must resolve only the declared Eclipse release"); //$NON-NLS-1$
 		assertEquals(Set.of(eclipseRelease),
@@ -106,6 +121,37 @@ public class RepositoryBaselineConsistencyTest {
 				"The patched JDT UI report must derive its release from the target"); //$NON-NLS-1$
 		assertTrue(compatibilityScript.contains("Eclipse {target_release}"), //$NON-NLS-1$
 				"The patched JDT UI report must render the derived target release"); //$NON-NLS-1$
+	}
+
+	@Test
+	@SuppressWarnings("nls")
+	public void targetRetainsProductFeaturesTestToolsSourcesAndNativePlatforms() throws Exception {
+		Path root = repositoryRoot();
+		Document target = xml(root, "sandbox_target/eclipse.target");
+		Set<String> roots = values(target, "/target/locations/location/unit/@id");
+		assertTrue(roots.containsAll(Set.of(
+				"org.eclipse.jdt.feature.group", "org.eclipse.jdt.astview.feature.feature.group",
+				"org.eclipse.jdt.jeview.feature.feature.group", "org.eclipse.sdk.feature.group",
+				"org.eclipse.pde.feature.group", "org.eclipse.pde.spies.feature.group",
+				"org.eclipse.equinox.executable.feature.group", "org.eclipse.license.feature.group",
+				"org.eclipse.emf.ecore.feature.group", "org.eclipse.emf.common.feature.group",
+				"org.eclipse.equinox.p2.user.ui.feature.group", "org.eclipse.egit.feature.group",
+				"org.eclipse.jgit.feature.group", "org.eclipse.swtbot.eclipse.feature.group",
+				"org.eclipse.swtbot.feature.group", "org.apache.commons.commons-io",
+				"org.apache.commons.lang3", "com.google.gson")),
+				"The target must supply product features, development tools and test dependencies without global repositories");
+		assertEquals("0", value(target, "count(/target/locations/location[not(@includeSource='true') or not(@includeMode='planner')])"),
+				"Target resolution must retain sources and planner dependency closure");
+		Document pom = xml(root, "pom.xml");
+		String environments = "/project/build/plugins/plugin[artifactId='target-platform-configuration']/configuration/environments/environment";
+		Set<String> platforms = new LinkedHashSet<>();
+		NodeList nodes = (NodeList) XPathFactory.newInstance().newXPath().evaluate(environments, pom, XPathConstants.NODESET);
+		for (int index = 0; index < nodes.getLength(); index++) {
+			Node node = nodes.item(index);
+			platforms.add(value(node, "os") + "/" + value(node, "ws") + "/" + value(node, "arch"));
+		}
+		assertEquals(Set.of("linux/gtk/x86_64", "win32/win32/x86_64", "macosx/cocoa/x86_64"), platforms,
+				"The default target must preserve all three native distribution platforms");
 	}
 
 	@Test
@@ -234,6 +280,30 @@ public class RepositoryBaselineConsistencyTest {
 
 	private static String read(Path root, String relativePath) throws IOException {
 		return Files.readString(root.resolve(relativePath), StandardCharsets.UTF_8);
+	}
+
+	@SuppressWarnings("nls")
+	private static Document xml(Path root, String relativePath) throws Exception {
+		var factory = DocumentBuilderFactory.newInstance();
+		factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+		factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+		factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+		try (var input = Files.newInputStream(root.resolve(relativePath))) {
+			return factory.newDocumentBuilder().parse(input);
+		}
+	}
+
+	private static String value(Node node, String expression) throws Exception {
+		return XPathFactory.newInstance().newXPath().evaluate(expression, node).strip();
+	}
+
+	private static Set<String> values(Document document, String expression) throws Exception {
+		NodeList nodes = (NodeList) XPathFactory.newInstance().newXPath().evaluate(expression, document, XPathConstants.NODESET);
+		Set<String> result = new LinkedHashSet<>();
+		for (int index = 0; index < nodes.getLength(); index++) {
+			result.add(nodes.item(index).getNodeValue());
+		}
+		return result;
 	}
 
 	private static String firstGroup(Pattern pattern, String content, String description) {

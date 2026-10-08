@@ -23,7 +23,7 @@ The active Sandbox target is Eclipse 2026-09. Compatibility must be established 
 
 - `eclipse.target` — PDE/Tycho target definition.
 - `pom.xml` — target-definition Maven artifact.
-- root `pom.xml` — Tycho, Java, and matching p2 repository configuration.
+- root `pom.xml` — Tycho, Java, and the reference to the target artifact.
 - `../docs/capabilities.json` — machine-readable public baseline.
 
 `RepositoryBaselineConsistencyTest` verifies that the target, root build, product, p2 category, Oomph setup, capability inventory, and active documentation describe the same Eclipse release.
@@ -32,7 +32,7 @@ The active Sandbox target is Eclipse 2026-09. Compatibility must be established 
 
 The target currently resolves:
 
-1. Eclipse 2026-09 SDK, JDT, PDE, executable, AST View, Java Element View, and PDE spies;
+1. Eclipse 2026-09 SDK, JDT, PDE, executable, AST View, Java Element View, PDE spies, EMF Common/Ecore, and the p2 user interface features;
 2. the matching Orbit 2026-09 aggregation for Apache Commons and Gson bundles;
 3. the Eclipse license feature;
 4. EGit and JGit;
@@ -43,6 +43,20 @@ The exact list is declared in `eclipse.target`; this README is explanatory and m
 
 Gson is explicitly included for the OSGi runtime of `sandbox_common_core`. Its Maven dependency makes compilation work,
 but a PDE development launch also needs the compatible Gson bundle in the active target.
+
+The root POM deliberately does not repeat these repositories as global p2 repositories. Tycho combines POM repositories
+with the target's selected units; repeating a repository exposes its complete contents in addition to the target closure.
+Keep build dependencies in the target. The product alone declares the pinned JustJ repository for JRE assembly and
+materialization. Babel remains a repository reference offered by the product, without becoming a build dependency.
+
+The update site publishes references from these IU target locations with `addIUTargetRepositoryReferences`. Together with
+`filterProvided`, this keeps externally provided dependencies out of the assembled Sandbox update site while retaining
+their installation sources. EMF Common/Ecore and the p2 user UI are explicit target roots because product feature groups
+and the inherited p2 UI extra requirement need them even after the global repositories are removed.
+
+The target-definition module has no bytecode. Its POM unbinds the inherited SpotBugs `analyze-compile` execution with
+`phase=none`. A SpotBugs skip property is insufficient here: Maven can resolve the goal's test dependencies before the
+goal checks whether it has files to analyze. The normal target validation and packaging executions still run.
 
 ## Building with the target
 
@@ -75,7 +89,7 @@ IDE provisioning and workspace target resolution remain separate operations.
 Treat an Eclipse baseline update as one coordinated transaction:
 
 1. update `eclipse.target`, including matching Orbit and Bouncy Castle sources;
-2. update root `pom.xml` repositories and any API version pins;
+2. update root `pom.xml` API version pins and any product-only repository pins;
 3. update `sandbox_product/sandbox.product` and `sandbox_product/category.xml`;
 4. update the contributor Oomph setup and its real-SDK acceptance test;
 5. update `docs/capabilities.json` and regenerate `docs/capabilities.md`;

@@ -2,6 +2,23 @@
 
 This document describes the build acceleration improvements implemented in the Sandbox project to speed up local development and CI builds.
 
+## Target resolution
+
+The target definition is the shared p2 dependency boundary. The root POM references `sandbox_target` without
+also declaring the complete Eclipse, Orbit, EGit, license, JustJ, and Babel repositories globally. Required build
+features belong in `sandbox_target/eclipse.target`; JustJ is a product-only repository. The update site derives
+external dependency references from the target locations and retains `filterProvided`.
+
+`sandbox_target` also unbinds the inherited SpotBugs `analyze-compile` execution. This prevents an empty target
+module from requesting a test classpath and invoking SpotBugs' forked goal before eventually discovering that
+there is no bytecode. Setting only `spotbugs.skip` would still allow Maven's earlier dependency-resolution work.
+
+To compare this stage, run `./mvnw -pl sandbox_target -am clean verify` on both revisions with the same JDK,
+Maven version, and cache state. Inspect the target's reactor time and the full reactor time separately: useful
+dependency resolution may move to the first plug-in module. A fast target-only build does not by itself prove
+that the complete build is equally faster. The default three operating-system environments and source bundles
+are retained; use the existing full Maven and sequential distribution gates to verify the actual deliverables.
+
 ## Problem Statement
 
 The Sandbox project previously built all modules on every build, including two heavy modules:

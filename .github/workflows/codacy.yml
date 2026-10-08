@@ -10,7 +10,9 @@ on:
       - '**/pom.xml'
       - '.codacy.yml'
       - 'ruleset.xml'
-      - '.github/actions/use-runner-maven/**'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.mvn/**'
       - '.github/workflows/codacy.yml'
 
 concurrency:
@@ -40,14 +42,14 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Use runner Maven
-        uses: ./.github/actions/use-runner-maven
+      - name: Verify pinned Maven Wrapper
+        run: ./mvnw --batch-mode --no-transfer-progress --version
 
       # This is the authoritative analysis gate. The parent POM binds the
       # SpotBugs Maven plugin with failOnError=true to the compile phase, so
       # source or bytecode findings still fail the job without Codacy/Docker.
       - name: Build and run Maven analysis
-        run: mvn -B -DskipTests package
+        run: ./mvnw -B -DskipTests package
 
       # Codacy's action starts by pulling this image. Warm it with retries so a
       # short Docker Hub outage does not immediately discard the reporting run.

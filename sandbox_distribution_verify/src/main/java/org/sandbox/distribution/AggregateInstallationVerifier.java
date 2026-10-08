@@ -211,8 +211,9 @@ public final class AggregateInstallationVerifier {
             List<String> install, List<String> uninstall) throws Exception {
         List<String> repositories = new ArrayList<>(additionalRepositories);
         repositories.addAll(baseRepositories);
+        // Let p2 use the effective destination as its bundle pool, including Contents/Eclipse on macOS.
         List<String> arguments = new ArrayList<>(List.of("-repository", String.join(",", repositories),
-                "-destination", destination.toString(), "-bundlepool", destination.toString(),
+                "-destination", destination.toString(),
                 "-profile", "SandboxAggregate", "-profileProperties", "org.eclipse.update.install.features=true", "-roaming"));
         arguments.addAll(platformArguments(System.getProperty("os.name", ""), System.getProperty("os.arch", "")));
         if (!uninstall.isEmpty()) arguments.addAll(List.of("-uninstallIU", String.join(",", uninstall)));
@@ -433,9 +434,11 @@ public final class AggregateInstallationVerifier {
         require(Files.isRegularFile(file), label + " produced no result");
         if (previous == null) return;
         BasicFileAttributes current = Files.readAttributes(file, BasicFileAttributes.class);
-        boolean sameKey = previous.fileKey() != null && previous.fileKey().equals(current.fileKey());
-        boolean notNewer = !current.lastModifiedTime().toInstant().isAfter(previous.lastModified().toInstant());
-        require(!sameKey || !notNewer, label + " is stale: " + file);
+        // An unavailable identity is not evidence that the old file was replaced.
+        boolean replaced = previous.fileKey() != null && current.fileKey() != null
+                && !previous.fileKey().equals(current.fileKey());
+        boolean newer = current.lastModifiedTime().toInstant().isAfter(previous.lastModified().toInstant());
+        require(replaced || newer, label + " is stale: " + file);
     }
 
     static void requireCompilation(List<Path> sources, Path classes) throws IOException {
@@ -1074,7 +1077,11 @@ public final class AggregateInstallationVerifier {
 
     private static Path home(Path installation) {
         Path mac = installation.resolve("Contents/Eclipse");
-        return Files.isDirectory(mac) ? mac : installation;
+        if (Files.isDirectory(mac)) {
+            return mac;
+        }
+        Path nestedMac = installation.resolve("Eclipse.app/Contents/Eclipse");
+        return Files.isDirectory(nestedMac) ? nestedMac : installation;
     }
 
     private void run(Path home, String stage, String application, List<String> arguments, Duration timeout) throws Exception {

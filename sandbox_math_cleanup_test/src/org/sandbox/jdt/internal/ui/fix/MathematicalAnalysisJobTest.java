@@ -4,6 +4,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.fix;
 import static org.junit.jupiter.api.Assertions.*;
+import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.core.runtime.*;
@@ -39,5 +40,36 @@ class MathematicalAnalysisJobTest {
    MathematicalAnalysisJob.schedule(second);assertFalse(secondEntered.await(150,TimeUnit.MILLISECONDS),"Two mathematical searches must not execute concurrently");
   }finally{release.countDown();first.join(5000,new NullProgressMonitor());second.join(5000,new NullProgressMonitor());first.cancel();second.cancel();}
   assertEquals(0,secondEntered.getCount());
+ }
+ @Test void cancellationRetainsRunningAndQueuedJobsForResourceSafeTeardown() throws Exception {
+  var entered=new CountDownLatch(1);var release=new CountDownLatch(1);
+  var observedCancellation=new AtomicBoolean();var queuedRan=new AtomicBoolean();
+  Job running=new Job("Cancellation teardown running worker") {
+   @Override protected IStatus run(IProgressMonitor monitor) {
+    entered.countDown();
+    try {
+     if(!release.await(5,TimeUnit.SECONDS)) return Status.error("Test latch timed out");
+     observedCancellation.set(monitor.isCanceled());
+     return monitor.isCanceled()?Status.CANCEL_STATUS:Status.OK_STATUS;
+    } catch(InterruptedException interrupted) { Thread.currentThread().interrupt();return Status.CANCEL_STATUS; }
+   }
+  };
+  Job queued=new Job("Cancellation teardown queued worker") {
+   @Override protected IStatus run(IProgressMonitor monitor) { queuedRan.set(true);return Status.OK_STATUS; }
+  };
+  try {
+   MathematicalAnalysisJob.schedule(running);assertTrue(entered.await(5,TimeUnit.SECONDS));
+   MathematicalAnalysisJob.schedule(queued);
+   Job[] cancelled=MathematicalAnalysisJob.cancelAll();
+   assertTrue(Arrays.asList(cancelled).containsAll(Arrays.asList(running,queued)));
+   assertFalse(running.join(100,new NullProgressMonitor()),"Cancellation must not be mistaken for termination");
+   release.countDown();
+   for(Job job:cancelled) assertTrue(job.join(5000,new NullProgressMonitor()),job.getName());
+   assertTrue(observedCancellation.get());assertFalse(queuedRan.get());
+  } finally {
+   release.countDown();running.cancel();queued.cancel();
+   assertTrue(running.join(5000,new NullProgressMonitor()));
+   assertTrue(queued.join(5000,new NullProgressMonitor()));
+  }
  }
 }

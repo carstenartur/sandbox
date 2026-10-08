@@ -20,13 +20,15 @@ import org.eclipse.jdt.internal.ui.preferences.cleanup.AbstractCleanUpTabPage;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
@@ -42,10 +44,48 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 	private final Map<NumericKind, Button> kindButtons= new EnumMap<>(NumericKind.class);
 	private final Map<String, Text> textValues= new HashMap<>();
 	private Combo kindPreset;
+	private Composite settingsPane;
 	private boolean customSelection;
 	private boolean statusReady;
 	private IStatus fieldStatus;
 	private Runnable refresh= () -> { };
+
+	@Override
+	public Composite createContents(Composite parent) {
+		Composite result= super.createContents(parent);
+		Composite content= settingsPane.getParent();
+		if (content.getParent() instanceof ScrolledComposite scroll) {
+			// JDT's default page layout measures an unconstrained preferred width and
+			// can turn horizontal expansion off. Wrapped math descriptions must instead
+			// use the actual viewport, including the space occupied by native scrollbars.
+			content.setLayout(new Layout() {
+				@Override
+				protected Point computeSize(Composite composite, int widthHint, int heightHint, boolean flushCache) {
+					int width= widthHint == SWT.DEFAULT ? Math.max(1, scroll.getClientArea().width) : widthHint;
+					return settingsPane.computeSize(width, heightHint, flushCache);
+				}
+
+				@Override
+				protected void layout(Composite composite, boolean flushCache) {
+					settingsPane.setBounds(composite.getClientArea());
+				}
+			});
+			scroll.setExpandHorizontal(true);
+			scroll.setExpandVertical(true);
+			scroll.setMinWidth(0);
+			scroll.addListener(SWT.Resize, event -> updateScrollMinimum(scroll));
+			content.addListener(SWT.Resize, event -> updateScrollMinimum(scroll));
+			updateScrollMinimum(scroll);
+			content.layout(true, true);
+		}
+		return result;
+	}
+
+	private static void updateScrollMinimum(ScrolledComposite scroll) {
+		if (scroll.isDisposed() || scroll.getContent() == null || scroll.getClientArea().width <= 0) { return; }
+		int height= scroll.getContent().computeSize(scroll.getClientArea().width, SWT.DEFAULT, true).y;
+		if (scroll.getMinHeight() != height) { scroll.setMinHeight(height); }
+	}
 
 	@Override
 	public void setWorkingValues(Map<String, String> values) {
@@ -61,11 +101,13 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 
 	@Override
 	protected void doCreatePreferences(Composite composite, int columns) {
+		settingsPane= composite;
 		if (PlatformUI.isWorkbenchRunning()) {
 			PlatformUI.getWorkbench().getHelpSystem().setHelp(composite,
 					"sandbox_math_cleanup.cleanup_configuration"); //$NON-NLS-1$
 		}
-		Group group= createGroup(columns, composite, "Verified mathematical calculations"); //$NON-NLS-1$
+		Composite group= MathematicalPreferenceGroup.createBody(
+				createGroup(columns, composite, "Verified mathematical calculations")); //$NON-NLS-1$
 		CheckboxPreference enabled= createCheckboxPref(group, columns, "Enable explicit mathematics cleanup", //$NON-NLS-1$
 				MathCleanUpOptions.CLEANUP, FALSE_TRUE);
 		createLabel(columns, group, "Runs locally during explicit cleanup or Quick Assist. Never runs when saving."); //$NON-NLS-1$
@@ -123,6 +165,15 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 		underflow.setEnabled(false);
 		underflow.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, columns, 1));
 		wrappedLabel(columns, group, "Unsupported numerical combinations are diagnosed and left unchanged. Estimates are not benchmark measurements."); //$NON-NLS-1$
+		// JDT's preference factories put labels and fixed-width inputs side by side.
+		// Their shared column minima can exceed the viewport even when the outer
+		// content fits. Give each label and input its own full-width, shrinkable row.
+		for (Control child : group.getChildren()) {
+			GridData data= (GridData) child.getLayoutData();
+			data.horizontalSpan= columns;
+			data.horizontalAlignment= SWT.FILL;
+			data.grabExcessHorizontalSpace= true;
+		}
 		refresh= () -> {
 			boolean active= enabled.getChecked();
 			boolean checked= safety.hasValue(SafetyProfile.CHECKED_THROW.name());
@@ -140,9 +191,7 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			group.layout(true, true);
 			for (Composite parent= group.getParent(); parent != null; parent= parent.getParent()) {
 				parent.layout(true, true);
-				if (parent instanceof ScrolledComposite scroll && scroll.getContent() != null) {
-					scroll.setMinSize(scroll.getContent().computeSize(scroll.getClientArea().width, SWT.DEFAULT));
-				}
+				if (parent instanceof ScrolledComposite scroll) { updateScrollMinimum(scroll); }
 			}
 			publishStatus();
 		};

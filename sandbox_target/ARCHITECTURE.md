@@ -10,23 +10,10 @@ The current executable baseline is Eclipse 2026-09 / Platform 4.41, Java 25, and
 
 ## Resolution flow
 
-```text
-root pom.xml
-  - Java and Tycho versions
-  - matching release repositories
-  - target-platform-configuration
-              |
-              v
-sandbox_target/pom.xml
-  packages eclipse.target as a target-definition artifact
-              |
-              v
-sandbox_target/eclipse.target
-  resolves Eclipse, Orbit, EGit, Bouncy Castle and SWTBot IUs
-              |
-              v
-Tycho reactors, PDE workspace, product and update-site builds
-```
+The root POM configures Java, Tycho, and the `sandbox_target` artifact. The target module packages
+`eclipse.target`, whose selected units supply Eclipse, Orbit, EGit, Bouncy Castle, and SWTBot dependencies
+to Tycho modules and the PDE workspace. The update site derives its external dependency references from
+the same target locations. JustJ is scoped to the product POM for JRE assembly and materialization.
 
 Every plug-in manifest is resolved against this graph. A dependency that is available in the developer's running IDE but absent from the target is not part of the supported build.
 
@@ -34,7 +21,7 @@ Every plug-in manifest is resolved against this graph. A dependency that is avai
 
 ### Eclipse 2026-09
 
-Provides the SDK, Platform, JDT, PDE, executable feature, AST View, Java Element View, and PDE spies. The target and root POM both use the named `2026-09` simultaneous-release repository.
+Provides the SDK, Platform, JDT, PDE, executable feature, AST View, Java Element View, PDE spies, EMF Common/Ecore, and p2 user UI. The target selects these units from the named `2026-09` simultaneous-release repository. The root POM references this target artifact rather than adding the full release repository to every module.
 
 ### Orbit 2026-09
 
@@ -74,7 +61,9 @@ The target is one part of a coordinated baseline:
 - `sandbox_product/category.xml` declares repository references shown to p2 clients installing published features.
 - `sandbox_oomph/sandbox.setup` provisions the contributor IDE and carries the same default Eclipse release.
 - `docs/capabilities.json` publishes the Java, Tycho, and Eclipse baseline.
-- root `pom.xml` configures Tycho and matching repositories.
+- root `pom.xml` configures Tycho and references the target artifact.
+- `sandbox_product/pom.xml` scopes the pinned JustJ repository to product assembly and materialization.
+- `sandbox_updatesite/pom.xml` publishes external repository references from the target's IU locations.
 
 These files cannot be generated from one another with the current toolchain, so `RepositoryBaselineConsistencyTest` treats their agreement as an executable invariant.
 
@@ -83,7 +72,7 @@ The frozen R4_40 source corpus and dedicated migration-QA installation are separ
 ## Build invariants
 
 1. Maven runs with Java 25.
-2. Root POM and target resolve one named Eclipse release.
+2. The root POM references the target, which resolves one named Eclipse release without additional global p2 repositories.
 3. Orbit aggregation matches that release.
 4. Product, p2 category, contributor Oomph default, and capability inventory use the same release identifier.
 5. The root Tycho property and capability inventory use the same Tycho version.

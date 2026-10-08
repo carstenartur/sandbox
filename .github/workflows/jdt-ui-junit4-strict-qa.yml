@@ -5,6 +5,9 @@ on:
     branches: [ main ]
     paths:
       - 'pom.xml'
+      - '.mvn/wrapper/**'
+      - 'mvnw'
+      - 'mvnw.cmd'
       - 'qa/upstream-jdt/**'
       - 'sandbox_cleanup_application/**'
       - 'sandbox_common/**'
@@ -52,6 +55,10 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
+
+      - name: Verify pinned Maven Wrapper
+        working-directory: sandbox
+        run: ./mvnw --version
 
       - name: Set up Node.js for Sandbox CSS tests
         uses: actions/setup-node@v7
@@ -106,7 +113,7 @@ jobs:
       - name: Validate the dedicated JDT UI corpus contract
         working-directory: sandbox
         run: >-
-          mvn --batch-mode --no-transfer-progress
+          ./mvnw --batch-mode --no-transfer-progress
           -Dsandbox.tycho.linux-only=true
           -Dspotbugs.skip=true
           -Dtest='JdtUiCorpus*Test'
@@ -117,7 +124,7 @@ jobs:
       - name: Build and test the Sandbox product under test
         working-directory: sandbox
         run: >-
-          xvfb-run --auto-servernum mvn
+          xvfb-run --auto-servernum ./mvnw
           -Pproduct
           --no-transfer-progress
           -e
@@ -218,6 +225,7 @@ jobs:
           GIT_CONFIG_KEY_0=core.whitespace \
           GIT_CONFIG_VALUE_0=-trailing-space,-space-before-tab \
           bash sandbox/qa/upstream-jdt/run-jdt-ui-before-after.sh \
+            --maven "$GITHUB_WORKSPACE/sandbox/mvnw" \
             --jdt-ui "$repository" \
             --workspace "$workspace_template" \
             --sandbox-eclipse "$launcher" \

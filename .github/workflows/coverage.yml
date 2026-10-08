@@ -1,27 +1,12 @@
-# Publish measured JUnit and JaCoCo metrics without repository-specific parsers.
+# Enforce JaCoCo line coverage and publish measured JUnit and JaCoCo metrics.
 name: Verified test and coverage metrics
 
 on:
   push:
     branches: [ main ]
-    # One list keeps instrumented pre-merge and main verification aligned.
-    paths: &coverage_paths
-      - 'pom.xml'
-      - '.mvn/**'
-      - 'sandbox*/**'
-      - 'features/**'
-      - 'plugins/**'
-      - 'org/**'
-      - '*.xml'
-      - '*.properties'
-      - '.github/actions/use-runner-maven/**'
-      - '.github/workflows/coverage.yml'
-      - 'README.md'
-      - 'COVERAGE_DEPLOYMENT.md'
-      - 'docs/quality-metrics.md'
   pull_request:
     branches: [ main ]
-    paths: *coverage_paths
+    # This required check must also complete on documentation-only pull requests.
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
@@ -46,12 +31,14 @@ jobs:
     env:
       MAVEN_OPTS: -Djava.awt.headless=true
       QUALITY_SITE: target/quality-site
+      SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Select repository-policy review context
         shell: bash
@@ -99,9 +86,9 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Use runner Maven
+      - name: Verify pinned Maven Wrapper
         if: steps.gate.outputs.run == 'true'
-        uses: ./.github/actions/use-runner-maven
+        run: ./mvnw --batch-mode --no-transfer-progress --version
 
       - name: Set up Node.js for CSS tests
         if: steps.gate.outputs.run == 'true'
@@ -120,16 +107,27 @@ jobs:
 
       - name: Build the complete coverage reactor
         if: steps.gate.outputs.run == 'true'
+        # Tycho 5.0.4 deletes and renames its local p2 index while saving.
+        # Serialize the reactor so repository assembly cannot race index updates.
         run: >-
-          xvfb-run --auto-servernum mvn
+          xvfb-run --auto-servernum ./mvnw
           --no-transfer-progress
           -e
           -V
-          -T 1C
           --batch-mode
           -Dtycho.localArtifacts=ignore
           -Pjacoco,reports,product,repo,benchmark,cli-dist,maven-plugin
           clean verify
+
+      - name: Verify 63% JaCoCo line coverage and retain source evidence
+        if: success() && steps.gate.outputs.run == 'true'
+        run: |
+          mkdir -p target/github-coverage
+          git ls-files -z -- '*.java' > target/github-coverage/sources.list
+          ./mvnw --batch-mode --no-transfer-progress -Dtycho.mode=maven \
+            -f sandbox_distribution_verify/pom.xml test exec:java \
+            -Dexec.mainClass=org.sandbox.distribution.CoverageReportConverter \
+            "-Dexec.args=$GITHUB_WORKSPACE"
 
       - name: Collect JUnit results
         id: junit
@@ -216,7 +214,7 @@ jobs:
 
           generated_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           jq -n \
-            --arg sourceCommit "$GITHUB_SHA" \
+            --arg sourceCommit "$SOURCE_COMMIT" \
             --arg generatedAt "$generated_at" \
             --argjson total "$TOTAL" \
             --argjson passed "$PASSED" \
@@ -256,7 +254,7 @@ jobs:
           </head>
           <body>
             <h1>Sandbox verified test results</h1>
-            <p>Source commit: <code>$GITHUB_SHA</code></p>
+            <p>Source commit: <code>$SOURCE_COMMIT</code></p>
             <table>
               <thead><tr><th>Metric</th><th>Value</th></tr></thead>
               <tbody>
@@ -299,6 +297,7 @@ jobs:
             target/quality-site/**
             sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv
             sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml
+            target/github-coverage/cobertura.xml
             **/target/surefire-reports/TEST-*.xml
             **/target/failsafe-reports/TEST-*.xml
           if-no-files-found: warn

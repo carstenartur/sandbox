@@ -11,6 +11,14 @@
 	<artifactId>sandbox_product</artifactId>
 	<name>Sandbox product</name>
 	<packaging>eclipse-repository</packaging>
+	<repositories>
+		<!-- Product assembly needs the bundled JRE; plug-in compilation does not. -->
+		<repository>
+			<id>justj</id>
+			<layout>p2</layout>
+			<url>https://download.eclipse.org/justj/jres/25/updates/release/25.0.4.v20260826-0822</url>
+		</repository>
+	</repositories>
 	<dependencies>
 		<dependency>
 			<groupId>org.sandbox</groupId>
