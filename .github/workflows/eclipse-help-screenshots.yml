@@ -5,6 +5,9 @@ on:
     branches: [ main ]
     paths:
       - 'pom.xml'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.mvn/**'
       - 'docs/ECLIPSE_HELP.md'
       - 'docs/ECLIPSE_HELP_COVERAGE.md'
       - 'qa/upstream-jdt/pins.env'
@@ -33,7 +36,6 @@ on:
       - 'sandbox_use_general_type/**'
       - 'sandbox_use_general_type_help/**'
       - 'sandbox_eclipse_help_swtbot_test/**'
-      - '.github/actions/use-runner-maven/**'
       - '.github/actions/verify-eclipse-desktop-runtime/**'
       - '.github/scripts/*.java'
       - '.github/workflows/eclipse-help-screenshots.yml'
@@ -98,8 +100,9 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Use runner Maven
-        uses: ./.github/actions/use-runner-maven
+      - name: Verify pinned Maven Wrapper
+        shell: bash
+        run: ./mvnw --batch-mode --no-transfer-progress --version
 
       - name: Verify preinstalled Eclipse desktop runtime
         uses: ./.github/actions/verify-eclipse-desktop-runtime
@@ -115,7 +118,7 @@ jobs:
           xvfb-run
           --auto-servernum
           --server-args="-screen 0 1600x1200x24"
-          mvn
+          ./mvnw
           --no-transfer-progress
           -e
           -V

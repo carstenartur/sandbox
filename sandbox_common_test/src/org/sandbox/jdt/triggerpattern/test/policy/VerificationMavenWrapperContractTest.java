@@ -29,7 +29,14 @@ class VerificationMavenWrapperContractTest {
                 new Invocation("distribution-smoke.yml", "Verify installed mathematics without a display",
                         "./mvnw -Pdistribution --batch-mode -pl sandbox_distribution_verify"),
                 new Invocation("publish-cleanup-image.yml", "Build Eclipse product",
-                        "xvfb-run --auto-servernum ./mvnw -e -V --batch-mode"));
+                        "xvfb-run --auto-servernum ./mvnw -e -V --batch-mode"),
+                new Invocation("eclipse-help-screenshots.yml", "Reproduce Eclipse Help screenshots",
+                        "          ./mvnw\n"),
+                new Invocation("patched-jdt-ui-atomic-help-screenshot.yml", "Reproduce the atomic Cleanup previews",
+                        "          ./mvnw\n"),
+                new Invocation("patched-jdt-ui-atomic-help-screenshot.yml",
+                        "Build, verify and provision the pinned LTK runtime through Maven",
+                        "./mvnw -B -ntp -Dsandbox.tycho.linux-only=true"));
     }
 
     @ParameterizedTest
@@ -52,7 +59,8 @@ class VerificationMavenWrapperContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "codacy.yml", "codeql.yml", "distribution-smoke.yml", "publish-cleanup-image.yml" })
+    @ValueSource(strings = { "codacy.yml", "codeql.yml", "distribution-smoke.yml", "publish-cleanup-image.yml",
+            "eclipse-help-screenshots.yml", "patched-jdt-ui-atomic-help-screenshot.yml" })
     void wrapperChangesTriggerVerification(String file) throws IOException {
         String workflow = workflow(file);
         int pathLists = "distribution-smoke.yml".equals(file) ? 2 : 1;
@@ -68,7 +76,21 @@ class VerificationMavenWrapperContractTest {
         assertTrue(execution.contains(invocation.command()), invocation.step());
         assertFalse(Pattern.compile("(?<![\\w./-])mvn(?:\\.cmd)?\\s").matcher(execution).find(), invocation.step());
         assertFalse(workflow.contains("maven.resolver.validation"), "Do not turn off coordinate validation");
-        if (invocation.step().equals("Maven distribution build and verification")) {
+        if (invocation.step().startsWith("Reproduce ")) {
+            assertTrue(execution.contains("-f sandbox_help_build/pom.xml"));
+            assertTrue(execution.contains("-Phelp-screenshots"));
+            assertTrue(execution.contains("clean verify"));
+            assertTrue(execution.contains("-Dtycho.localArtifacts=ignore"));
+            assertFalse(execution.contains("-DskipTests"), "Screenshot verification must execute its tests");
+            assertFalse(execution.contains("-Dmaven.test.skip"), "Screenshot tests must be compiled and executed");
+            String testClass = "eclipse-help-screenshots.yml".equals(invocation.file())
+                    ? "SandboxHelpScreenshotsMergeGateSWTBotTest" : "SandboxAtomicPreviewPatchedJdtSWTBotTest";
+            assertTrue(execution.contains("-Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views." + testClass));
+        } else if (invocation.step().equals("Build, verify and provision the pinned LTK runtime through Maven")) {
+            assertTrue(execution.contains("-Dsandbox.ltk.maven=\"$GITHUB_WORKSPACE/mvnw\""),
+                    "The nested LTK build must use the same pinned Maven");
+            assertTrue(execution.contains("-Dtest=LtkRuntimePatchTest,LtkRuntimeMetadataTest,PinnedLtkRuntimeIT"));
+        } else if (invocation.step().equals("Maven distribution build and verification")) {
             assertTrue(execution.contains("-Dsandbox.math.retainHeadlessProbe=true clean verify"));
             assertTrue(execution.contains("-Dtycho.localArtifacts=ignore"));
         } else if (invocation.step().equals("Verify installed mathematics without a display")) {

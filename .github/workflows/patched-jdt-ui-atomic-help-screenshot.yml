@@ -17,6 +17,9 @@ on:
       - '.github/scripts/verify_patched_jdt_ui_repository.py'
       - '.github/workflows/patched-jdt-ui-atomic-help-screenshot.yml'
       - 'pom.xml'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.mvn/**'
       - 'sandbox_help_build/**'
       - 'sandbox_target/**'
       - 'sandbox_common/**'
@@ -63,6 +66,10 @@ jobs:
 
       - name: Use runner Maven
         uses: ./.github/actions/use-runner-maven
+
+      - name: Verify pinned Maven Wrapper
+        shell: bash
+        run: ./mvnw --batch-mode --no-transfer-progress --version
 
       - name: Verify preinstalled Eclipse desktop runtime
         uses: ./.github/actions/verify-eclipse-desktop-runtime
@@ -117,14 +124,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mvn -B -ntp -Dsandbox.tycho.linux-only=true \
+          ./mvnw -B -ntp -Dsandbox.tycho.linux-only=true \
             -pl sandbox_target,sandbox_common_core,sandbox_common,sandbox_common_test -am \
             -Dtest=LtkRuntimePatchTest,LtkRuntimeMetadataTest,PinnedLtkRuntimeIT \
             -Dsurefire.failIfNoSpecifiedTests=false -DfailIfNoTests=false \
             -Dsandbox.ltk.root="$GITHUB_WORKSPACE" \
             -Dsandbox.ltk.output="$RUNNER_TEMP/patched-ltk" \
             -Dsandbox.ltk.resolvedJars="$RUNNER_TEMP/patched-jdt-ui-compatibility/resolved-jars.txt" \
-            -Dsandbox.ltk.maven="$(command -v mvn)" package
+            -Dsandbox.ltk.maven="$GITHUB_WORKSPACE/mvnw" package
 
       - name: Preserve committed atomic preview baselines
         shell: bash
@@ -155,7 +162,7 @@ jobs:
           xvfb-run
           --auto-servernum
           --server-args="-screen 0 3200x1800x24"
-          mvn
+          ./mvnw
           --no-transfer-progress
           -e
           -V
