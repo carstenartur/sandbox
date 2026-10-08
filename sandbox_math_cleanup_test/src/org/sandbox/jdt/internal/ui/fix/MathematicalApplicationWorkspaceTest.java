@@ -6,6 +6,7 @@ package org.sandbox.jdt.internal.ui.fix;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -17,6 +18,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.core.resources.IProject;
@@ -25,8 +31,11 @@ import org.eclipse.core.resources.ISaveParticipant;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.jdt.core.IClasspathEntry;
@@ -47,6 +56,7 @@ class MathematicalApplicationWorkspaceTest {
 	private final NullProgressMonitor monitor = new NullProgressMonitor();
 	private final AtomicInteger completedSaves = new AtomicInteger();
 	private final AtomicInteger preparedSaves = new AtomicInteger();
+	private final CountDownLatch commandStarted = new CountDownLatch(1);
 	private IWorkspace workspace;
 	private IProject project;
 	private Path configuration;
@@ -128,17 +138,92 @@ class MathematicalApplicationWorkspaceTest {
 		assertFalse(Files.exists(report));
 	}
 
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void commandsWaitForWorkspaceInitializationBeforeEnumeratingSources(boolean refresh) throws Exception {
+		var entered = new CountDownLatch(1);
+		var finish = new CountDownLatch(1);
+		Job initialization = initializationJob(refresh, entered, finish);
+		initialization.schedule();
+		var executor = Executors.newSingleThreadExecutor();
+		try {
+			assertTrue(entered.await(5, TimeUnit.SECONDS));
+			var command = executor.submit(() -> invoke(false));
+			assertTrue(commandStarted.await(5, TimeUnit.SECONDS));
+			try { assertThrows(TimeoutException.class, () -> command.get(1, TimeUnit.SECONDS)); }
+			finally { finish.countDown(); }
+			assertEquals(IApplication.EXIT_OK, command.get(10, TimeUnit.SECONDS));
+			assertEquals(1, new ObjectMapper().readTree(report.toFile()).path("files").size()); //$NON-NLS-1$
+		} finally { finishInitialization(initialization, finish, executor); }
+		assertTrue(initialization.getResult().isOK(), initialization.getResult().toString());
+	}
+
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void stoppingDuringInitializationDoesNotReportOrSaveSuccess(boolean refresh) throws Exception {
+		var entered = new CountDownLatch(1);
+		var finish = new CountDownLatch(1);
+		Job initialization = initializationJob(refresh, entered, finish);
+		initialization.schedule();
+		var executor = Executors.newSingleThreadExecutor();
+		try {
+			assertTrue(entered.await(5, TimeUnit.SECONDS));
+			var application = new MathematicalApplication();
+			var command = executor.submit(() -> invoke(false, application));
+			try {
+				assertTrue(commandStarted.await(5, TimeUnit.SECONDS));
+				assertThrows(TimeoutException.class, () -> command.get(1, TimeUnit.SECONDS));
+				application.stop();
+				assertEquals(Integer.valueOf(2), command.get(5, TimeUnit.SECONDS));
+				assertFalse(Files.exists(report));
+				assertEquals(0, preparedSaves.get());
+			} finally { finish.countDown(); }
+		} finally { finishInitialization(initialization, finish, executor); }
+		assertTrue(initialization.getResult().isOK(), initialization.getResult().toString());
+	}
+
+	private void finishInitialization(Job initialization, CountDownLatch finish, ExecutorService executor) throws InterruptedException {
+		finish.countDown();
+		executor.shutdownNow();
+		try { assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS), "Application test thread did not stop"); } //$NON-NLS-1$
+		finally { assertTrue(initialization.join(5000, monitor), "Workspace initializer did not stop"); } //$NON-NLS-1$
+	}
+
+	private Job initializationJob(boolean refresh, CountDownLatch entered, CountDownLatch finish) {
+		Object family = refresh ? ResourcesPlugin.FAMILY_AUTO_REFRESH : ResourcesPlugin.FAMILY_AUTO_BUILD;
+		return new Job("Initialize mathematics fixture") { //$NON-NLS-1$
+			@Override public boolean belongsTo(Object candidate) { return candidate == family; }
+			@Override protected IStatus run(IProgressMonitor progress) {
+				entered.countDown();
+				try {
+					if (!finish.await(10, TimeUnit.SECONDS)) return Status.error("Fixture initialization timed out"); //$NON-NLS-1$
+					project.getFolder("src").create(true, true, progress); //$NON-NLS-1$
+					var javaProject = JavaCore.create(project);
+					javaProject.setRawClasspath(new IClasspathEntry[] { JavaCore.newSourceEntry(project.getFolder("src").getFullPath()) }, progress); //$NON-NLS-1$
+					javaProject.getPackageFragmentRoot(project.getFolder("src")).getPackageFragment("") //$NON-NLS-1$ //$NON-NLS-2$
+							.createCompilationUnit("Ready.java", "class Ready {}", true, progress); //$NON-NLS-1$ //$NON-NLS-2$
+					return Status.OK_STATUS;
+				} catch (Exception failure) { return Status.error("Fixture initialization failed", failure); } //$NON-NLS-1$
+			}
+		};
+	}
+
 	private Object invoke(boolean apply) {
+		return invoke(apply, new MathematicalApplication());
+	}
+
+	private Object invoke(boolean apply, MathematicalApplication application) {
 		List<String> arguments = new ArrayList<>(List.of("--project", project.getName(), //$NON-NLS-1$
 				"--config", configuration.toString(), "--report", report.toString())); //$NON-NLS-1$ //$NON-NLS-2$
 		if (apply) arguments.add("--apply"); //$NON-NLS-1$
 		var context = (IApplicationContext) Proxy.newProxyInstance(IApplicationContext.class.getClassLoader(),
 				new Class<?>[] { IApplicationContext.class }, (proxy, method, values) -> {
 					if (method.getName().equals("getArguments")) { //$NON-NLS-1$
+						commandStarted.countDown();
 						return Map.of(IApplicationContext.APPLICATION_ARGS, arguments.toArray(String[]::new));
 					}
 					throw new AssertionError(method);
 				});
-		return new MathematicalApplication().start(context);
+		return application.start(context);
 	}
 }

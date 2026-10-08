@@ -24,6 +24,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.jdt.core.ICompilationUnit;
@@ -58,6 +59,7 @@ public final class MathematicalApplication implements IApplication {
   IWorkspace workspace=ResourcesPlugin.getWorkspace();IProject resource=workspace.getRoot().getProject(arguments.project());
   if(!resource.exists() || !resource.isOpen() || !resource.hasNature(JavaCore.NATURE_ID))
    throw new IllegalArgumentException("--project must name an existing open Java project in this workspace");
+  initializeWorkspace(monitor);
   IJavaProject project=JavaCore.create(resource);
   MathCleanUpOptions options=MathCleanUpOptions.parse(config,MathematicalCleanUpCore.targetJava(project));
   if(arguments.apply() && options.safety()==SafetyProfile.CHECKED_THROW && !arguments.acceptChecked())
@@ -129,6 +131,20 @@ public final class MathematicalApplication implements IApplication {
    throw failure;
   }
   return IApplication.EXIT_OK;
+ }
+ private static void initializeWorkspace(IProgressMonitor monitor) throws CoreException {
+  // Headless applications do not run the workbench's JDT initialization job.
+  // Finish recovery refreshes and classpath initialization before enumerating
+  // sources or taking binding snapshots; both can otherwise race the analysis.
+  try {
+   Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_REFRESH,monitor);
+   JavaCore.initializeAfterLoad(monitor);
+   Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_REFRESH,monitor);
+   Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD,monitor);
+  } catch(InterruptedException interrupted) {
+   Thread.currentThread().interrupt();throw new OperationCanceledException();
+  }
+  cancelled(monitor);
  }
  private static List<Planned> analyze(List<ICompilationUnit> units,MathCleanUpOptions options,IProgressMonitor monitor) throws CoreException {
   List<Planned> plans=new ArrayList<>();
