@@ -12,7 +12,9 @@ on:
       - 'sandbox-*/**'
       - 'pom.xml'
       - 'sandbox_cleanup_docker/**'
-      - '.github/actions/use-runner-maven/**'
+      - 'mvnw'
+      - 'mvnw.cmd'
+      - '.mvn/**'
       - '.github/workflows/publish-cleanup-image.yml'
     tags:
       - 'v*'
@@ -53,15 +55,15 @@ jobs:
           libgtk-3-0 libxext6 libxrender1 libxtst6 libxi6 libxrandr2 libxfixes3 \
           libasound2t64 libnss3 libgbm1
 
-    - name: Use runner Maven
-      uses: ./.github/actions/use-runner-maven
+    - name: Verify pinned Maven Wrapper
+      run: ./mvnw --batch-mode --no-transfer-progress --version
 
     - name: Build Eclipse product
       run: |
         # Keep this mixed Maven/bnd/Tycho reactor sequential. With Maven reactor
         # parallelism, Tycho can inspect sandbox_common_core/target/classes before
         # bnd has written its OSGi manifest and then report the bundle as missing.
-        xvfb-run --auto-servernum mvn -e -V --batch-mode \
+        xvfb-run --auto-servernum ./mvnw -e -V --batch-mode \
           -Dtycho.localArtifacts=ignore \
           -Pproduct clean verify -DskipTests
 
