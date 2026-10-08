@@ -123,14 +123,20 @@
   <setupTask xsi:type="maven:MavenImportTask" id="sandbox.maven"
       predecessors="sandbox.target" label="Sandbox Maven projects">
     <sourceLocator rootFolder="${git.clone.sandbox.location}" locateNestedProjects="true">
-      <excludedPath>.git</excludedPath>
-      <excludedPath>.github</excludedPath>
-      <excludedPath>target</excludedPath>
-      <excludedPath>sandbox_oomph/target</excludedPath>
-      <!-- The root POM is "central", but its existing Eclipse project is
-           "sandbox". Let ProjectsImportTask preserve that public name. -->
-      <predicate xsi:type="predicates:NotPredicate">
-        <operand xsi:type="predicates:NamePredicate" pattern="central"/>
+      <!-- MavenImportTask's excludedPath check compares BackendSystem objects
+           by identity and can dereference a null relative URI on reimport.
+           Use Oomph's standard location predicate for the same four subtrees;
+           normalize and quote the checkout path rather than treating it as regex.
+           ProjectsImportTask below retains its independent traversal exclusions. -->
+      <predicate xsi:type="predicates:AndPredicate">
+        <!-- Preserve the root Eclipse project name "sandbox", not "central". -->
+        <operands xsi:type="predicates:NotPredicate">
+          <operand xsi:type="predicates:NamePredicate" pattern="central"/>
+        </operands>
+        <operands xsi:type="predicates:NotPredicate">
+          <operand xsi:type="predicates:LocationPredicate"
+              pattern="(?s)${git.clone.sandbox.location|path|trimTrailingSlashes|patternQuote}/(?:\.git|\.github|target|sandbox_oomph/target)(?:/.*)?"/>
+        </operands>
       </predicate>
     </sourceLocator>
     <!-- m2e follows the root POM's modules. This standalone verification
