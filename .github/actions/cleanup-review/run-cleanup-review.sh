@@ -292,7 +292,8 @@ while IFS= read -r -d '' untracked_path; do
   case $untracked_path in
     *.java)
       # Intent-to-add makes a newly generated Java file visible to git diff and
-      # therefore to the Suggested Changes publisher without staging content.
+      # therefore to the complete patch without staging content. GitHub cannot
+      # offer a native suggestion to create a file that is absent from the PR.
       git add --intent-to-add -- "$untracked_path"
       ;;
     *)
@@ -337,6 +338,7 @@ fi
   echo "| Skipped files outside Eclipse Java projects | $skipped_count |"
   echo
   echo "**Profile:** \`$config_rel\`  "
+  echo "**Analyzed head:** \`$resolved_head\`  "
   echo "**Scope:** \`$scope\`  "
   echo "**Source mode:** \`$source_mode\`  "
   echo "**Cleanup image:** \`$image_identity\`"
@@ -350,7 +352,9 @@ fi
     echo
   fi
   if [[ $has_changes == true ]]; then
-    echo "Applicable changed lines are published as GitHub Suggested Changes. The complete patch and JSON reports are retained as a workflow artifact, including changes that GitHub cannot place inline."
+    echo "The review groups every cleanup change by file, including edits outside the PR diff. Native Suggested Changes contain the complete acceptance unit or are omitted in favor of the complete patch. The artifact retains suggestions.patch, the grouped review, and JSON reports."
+    echo
+    echo "The default CLI processes files separately. Choosing project source mode widens the input; it does not create a coordinated multi-file cleanup transaction."
   elif ((project_count == 0 && input_java_count > 0)); then
     echo "No cleanup ran because none of the changed Java files belongs to an Eclipse Java project."
   else

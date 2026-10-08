@@ -37,6 +37,9 @@ jobs:
       - name: Run cleanup-review contract tests
         run: .github/actions/cleanup-review/test/run-cleanup-review-test.sh
 
+      - name: Verify complete grouped reviews and suggestion ranges
+        run: node --test .github/actions/cleanup-review/test/cleanup-review.test.cjs
+
   suggestions:
     name: Suggest conservative encoding cleanup
     needs: action-contract
@@ -72,5 +75,8 @@ jobs:
           java-home: ${{ env.JAVA_HOME }}
           scope: both
           source-mode: changed
+          # Explicit Encoding only changes the current compilation unit. Each
+          # file is independent; all edits within that file stay together.
+          suggestion-scope: file
           tool-name: sandbox-explicit-encoding
           artifact-name: sandbox-cleanup-pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
