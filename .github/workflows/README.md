@@ -4,19 +4,21 @@ This directory contains GitHub Actions workflows and a custom action for automat
 
 ## Quick Start
 
-### For Pull Requests (Automatic)
+### For Pull Requests (Automatic suggestions)
 
-The `pr-auto-cleanup.yml` workflow automatically runs on PRs that modify Java files and applies the "standard" cleanup profile.
+For installation in **your own repository**, use the complete
+[GitHub Actions integration guide](../../GITHUB_ACTIONS.md). Native Eclipse Java
+projects keep their `.project`, `.classpath` and compiler preferences; neither
+a Sandbox checkout nor a copied cleanup profile is required.
 
-**It will**:
-- ✅ Format code and organize imports
-- ✅ Add missing annotations
-- ✅ Remove unnecessary code
-- ✅ Convert to modern Java features
-- ✅ Apply sandbox-specific cleanups
-- ✅ Commit changes back to the PR
+Here, `pr-auto-cleanup.yml` runs the shipped conservative encoding profile and
+publishes a complete result commit on a separate cleanup branch. The review
+links to the ordinary GitHub diff and a cleanup-PR form targeting the original
+PR branch. It does **not** automatically push changes to that original branch.
 
-**To disable**: Delete or rename `.github/workflows/pr-auto-cleanup.yml`
+The local workflow also runs Sandbox's own Maven/JUnit contract and consumer
+qualification tests. External users copy the guide's workflow, not this
+maintainer workflow or the Sandbox test modules.
 
 ### For Manual Cleanup
 
@@ -62,7 +64,7 @@ The workflow uses a **fail-fast approach** with two jobs:
    - Checks if release tag already exists
    - Checks for SNAPSHOT references in codebase
    - Validates Maven configuration
-   - Shows summary in GitHub Actions UI
+   - Shows summary in UI
 
 2. **Release Job** (depends on preflight):
    - Only runs if preflight succeeds
@@ -262,20 +264,23 @@ Inputs:
 
 **Manual trigger**: Add the `auto-fix-nls` label to any PR to manually trigger this workflow.
 
-### 2. Auto PR Cleanup (`pr-auto-cleanup.yml`)
+### 2. Cleanup Review (`pr-auto-cleanup.yml`)
 
-**Triggers**: Automatically on PR opened/synchronized (when `.java` files change)
+**Triggers**: relevant PR changes targeting `main`; manual dispatch runs the
+contract/qualification job, not PR publication without a PR context.
 
-**What it does**:
-- Checks out PR branch
-- Runs cleanup with "standard" profile
-- Commits and pushes changes if any
-- Adds comment to PR explaining changes
+The read-only contract job runs Maven/JUnit, including the separate consumer
+container qualification. The publishing job uses the exact PR head and the
+[cleanup-review action](../actions/cleanup-review/README.md) with scoped
+`contents: write` and `pull-requests: write`. Fork heads and cleanup proposal
+heads do not publish further proposals.
 
-**Configuration**: Edit the workflow file to:
-- Change cleanup profile: modify `config-file` parameter
-- Change source directory: modify `source-dir` parameter
-- Disable auto-commit: remove the commit step
+The default is the shipped conservative encoding profile. Set `config-file`
+only for an intentional repository-owned override. `scope` and `source-mode`
+control inputs, not Maven/Gradle import or coordinated cross-file refactoring.
+Sandbox explicitly uses `unmatched-files: warn` because it contains standalone
+Java CI scripts; external consumers default to an error on incomplete project
+coverage. Always inspect `analysis-status` and skipped-file counts.
 
 ### 3. Manual Cleanup (`manual-cleanup.yml`)
 
@@ -294,259 +299,53 @@ Inputs:
 - **commit_changes**: Whether to push changes (default: true)
 - **verbose**: Enable verbose logging (default: true)
 
-## Cleanup Profiles
+## Cleanup actions: choose the right entry point
 
-Located in `.github/cleanup-profiles/`:
+| Need | Entry point |
+|---|---|
+| Review automatic cleanup proposals in an existing Eclipse repository | [Consumer guide](../../GITHUB_ACTIONS.md) and [cleanup-review](../actions/cleanup-review/README.md). Uses a prebuilt image and a shipped conservative default; accepts changes through a separate cleanup PR. |
+| Try a complete external example | [Standalone Eclipse project](../../examples/cleanup-review/eclipse), including its own external-action workflow. Existing projects copy only that workflow. |
+| Run the older Sandbox-local build-and-apply route manually | `manual-cleanup.yml` and [cleanup-action](../actions/cleanup-action/README.md). This is a different action, not the PR-review setup. |
 
-| Profile | Use Case | Changes Applied |
-|---------|----------|-----------------|
-| **minimal** | Conservative - only formatting | Format code, organize imports |
-| **standard** | Recommended - balanced improvements | Format + annotations + basic modernization |
-| **aggressive** | Comprehensive - maximum modernization | All cleanups + sandbox-specific transformations |
+The `minimal`, `standard` and `aggressive` profiles under
+`.github/cleanup-profiles` belong to the configurable/manual route. They are
+not the default of the current PR-review workflow. Do not add an independent
+`git add .; git commit; git push` step after the review action: that would bypass
+the explicit acceptance workflow.
 
-See individual `.properties` files for detailed configuration.
+### Configuration and troubleshooting
 
-## Custom Action
+The authoritative [consumer guide](../../GITHUB_ACTIONS.md) covers custom
+profiles, permissions, source selection, Eclipse/PDE dependencies and status
+outputs. A source SHA and a container digest pin different components; neither
+implies that a consumer's target platform has been resolved.
 
-The workflows use a custom Docker-based action located in `.github/actions/cleanup-action/`.
+**Can external repositories use it?** Yes, native Eclipse Java repositories can
+reference `carstenartur/sandbox/.github/actions/cleanup-review@<reviewed-ref>`.
+Use the complete workflow in the guide. No source build of Sandbox is required.
 
-This action:
-1. Builds the sandbox cleanup application with all plugins
-2. Extracts the Eclipse product
-3. Runs cleanup on your Java files
-4. Supports all Eclipse JDT + sandbox cleanup options
+**What about forks?** The bundled publisher is limited to same-repository PRs.
+Do not switch to `pull_request_target` and execute untrusted head code with
+write permissions. A separate unprivileged analysis/validating publisher is
+needed for a broader contribution flow.
 
-**Documentation**: See `.github/actions/cleanup-action/README.md`
+**What does a green no-change result mean?** Read `analysis-status`.
+`no-java-changes` means nothing was analysed; `no-supported-projects` means
+Java inputs were not assigned to Eclipse Java projects. Neither is a clean-code
+claim. Missing coverage errors by default; `unmatched-files: warn` is an
+explicit opt-in to incomplete coverage.
 
-## Customization
+**How do I accept or reject?** Review the complete diff, open the cleanup PR,
+and merge it into the original PR branch to accept. To reject, do not merge;
+there is no automatic update to undo. Run your project's checks on the result.
 
-### Create a Custom Cleanup Profile
+**Why can a run take time?** The review route pulls a prebuilt image, then
+starts Eclipse for each affected project. Download, startup and dependency
+resolution costs vary. Old timings for building Sandbox on the runner do not
+describe this route.
 
-1. Create `.github/cleanup-profiles/my-profile.properties`:
-```properties
-cleanup.format_source_code=true
-cleanup.organize_imports=true
-# Add your preferred cleanup options
-```
-
-2. Use it in a workflow:
-```yaml
-- name: Run Sandbox Cleanup
-  uses: ./.github/actions/cleanup-action
-  with:
-    config-file: '.github/cleanup-profiles/my-profile.properties'
-```
-
-### Modify Auto-Cleanup Behavior
-
-Edit `.github/workflows/pr-auto-cleanup.yml`:
-
-**Change profile**:
-```yaml
-config-file: '.github/cleanup-profiles/aggressive.properties'  # Instead of standard
-```
-
-**Clean only specific directory**:
-```yaml
-source-dir: 'src/main/java'  # Instead of '.'
-```
-
-**Disable PR comments**:
-```yaml
-# Comment out or remove the "Comment on PR" step
-```
-
-### Add Cleanup to Existing Workflow
-
-Add this step to any workflow:
-
-```yaml
-- name: Checkout code
-  uses: actions/checkout@v6
-
-- name: Run cleanup
-  uses: ./.github/actions/cleanup-action
-  with:
-    config-file: '.github/cleanup-profiles/standard.properties'
-    verbose: 'true'
-    
-- name: Commit changes
-  run: |
-    git config user.name "github-actions[bot]"
-    git config user.email "github-actions[bot]@users.noreply.github.com"
-    git add .
-    git commit -m "Apply cleanup" || echo "No changes"
-    git push || echo "Nothing to push"
-```
-
-## Examples
-
-### Example 1: Cleanup Before Release
-
-```yaml
-name: Pre-Release Cleanup
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  cleanup:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/cleanup-action
-        with:
-          config-file: '.github/cleanup-profiles/aggressive.properties'
-          verbose: 'true'
-      # ... create release ...
-```
-
-### Example 2: Cleanup Specific Module
-
-```yaml
-name: Module Cleanup
-on:
-  workflow_dispatch:
-    inputs:
-      module:
-        description: 'Module to clean'
-        required: true
-
-jobs:
-  cleanup:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/cleanup-action
-        with:
-          config-file: '.github/cleanup-profiles/standard.properties'
-          source-dir: '${{ inputs.module }}/src'
-```
-
-### Example 3: Cleanup Check (No Commit)
-
-```yaml
-name: Cleanup Check
-on: [pull_request]
-
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/cleanup-action
-        with:
-          config-file: '.github/cleanup-profiles/standard.properties'
-      - name: Check if cleanup needed
-        run: |
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "::error::Code needs cleanup! Run the manual cleanup workflow."
-            git diff
-            exit 1
-          fi
-```
-
-## FAQ
-
-### Q: Why is the first run slow?
-
-**A**: The Docker action builds the entire sandbox project on first run (~10-15 minutes). Subsequent runs use Docker layer caching and are faster.
-
-**Solution**: Consider pre-building and publishing the Docker image to GitHub Container Registry (see action README).
-
-### Q: Does this work with PRs from forks?
-
-**A**: **No, automatic cleanup does not work for PRs from external forks.** This is a GitHub Actions security limitation. The `GITHUB_TOKEN` provided to workflows triggered by fork PRs has read-only access and cannot push commits back to the fork.
-
-**Workarounds**:
-- Contributors can run the Manual Cleanup workflow on their fork before creating the PR
-- Maintainers can manually check out the PR branch and run cleanup locally
-- The workflow could be modified to post cleanup suggestions as a PR comment instead of auto-committing (future enhancement)
-
-**Note**: PRs from branches within the same repository work fine.
-
-### Q: Can I use this action in external repositories?
-
-**A**: Not directly - this action is specific to the sandbox repository because it builds the sandbox plugins. For external repos, you can:
-1. Copy the action and modify it
-2. Publish the sandbox cleanup as a standalone tool
-3. Use the standard Eclipse JDT cleanup actions available on GitHub Marketplace
-
-### Q: What if cleanup breaks my code?
-
-**A**: 
-1. Review the PR before merging - the cleanup commits are visible
-2. Use the "minimal" profile for less invasive changes
-3. Configure your cleanup profile to exclude problematic transformations
-4. Test your code after cleanup (add test steps to workflow)
-
-### Q: Can I apply different profiles to different directories?
-
-**A**: Yes! Run the action multiple times:
-
-```yaml
-- name: Cleanup core (aggressive)
-  uses: ./.github/actions/cleanup-action
-  with:
-    config-file: '.github/cleanup-profiles/aggressive.properties'
-    source-dir: 'core/src'
-
-- name: Cleanup legacy (minimal)
-  uses: ./.github/actions/cleanup-action
-  with:
-    config-file: '.github/cleanup-profiles/minimal.properties'
-    source-dir: 'legacy/src'
-```
-
-### Q: How do I disable auto-cleanup temporarily?
-
-**A**: 
-1. **For one PR**: Add `[skip cleanup]` to the PR title or description (requires workflow modification)
-2. **For all PRs**: Disable the workflow in GitHub UI (Actions → Auto PR Cleanup → ⋯ → Disable workflow)
-3. **Permanently**: Delete `.github/workflows/pr-auto-cleanup.yml`
-
-### Q: What does the NLS fix workflow do?
-
-**A**: The NLS (Non-Localized String) fix workflow automatically adds `//$NON-NLS-n$` comments to string literals in Java files. This is required by Eclipse to suppress warnings about strings that should not be internationalized.
-
-**How it works**:
-- Scans only plugin source directories (`sandbox_*/src/`)
-- Skips test modules (directories ending with `_test`)
-- Counts string literals on each line
-- Adds sequential NLS comments (e.g., `//$NON-NLS-1$ //$NON-NLS-2$`)
-- Preserves existing NLS comments (no duplicates)
-
-**When it runs**:
-- Automatically for PRs created by GitHub Copilot
-- Manually by adding the `auto-fix-nls` label to any PR
-
-**Example**:
-```java
-// Before:
-return "Hello World";
-
-// After:
-return "Hello World"; //$NON-NLS-1$
-```
-
-## Troubleshooting
-
-See `.github/actions/cleanup-action/README.md` for detailed troubleshooting.
-
-**Common issues**:
-- **Build failures**: Check Java version, Maven dependencies
-- **Files not processed**: Files must be in repository
-- **No changes**: Code might already be clean, or config might be invalid
-- **Slow performance**: Use Docker caching or pre-built images
-
-## Contributing
-Improvements welcome:
-- Optimize build time
-- Add more cleanup profiles
-- Improve error handling
-- Add dry-run mode
-- Support incremental cleanup
+**How do I disable it?** Disable the workflow in GitHub Actions or remove the
+consumer workflow file. No implicit `[skip cleanup]` title convention exists.
 
 ## CI & Testing Workflows
 
@@ -603,7 +402,8 @@ For the detailed evidence contract and local reproduction instructions, see [`do
 
 - [Published test and coverage metrics](../../docs/quality-metrics.md)
 - [Sandbox Cleanup Application](../../sandbox_cleanup_application/README.md)
-- [Custom Action README](./../actions/cleanup-action/README.md)
+- [PR cleanup integration](../../GITHUB_ACTIONS.md)
+- [Cleanup review action reference](../actions/cleanup-review/README.md)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 
 ## License
@@ -637,7 +437,7 @@ The release process is **fully automated** through GitHub Actions. To create a r
 4. Fill in the required inputs:
    - **Release version**: The version to release (e.g., `1.2.2`)
    - **Next SNAPSHOT version**: The next development version (e.g., `1.2.3-SNAPSHOT`)
-5. Click **"Run workflow"** to start the automated release process
+5. Click "Run workflow" to start the automated release process
 
 #### 2. What the Workflow Does Automatically
 

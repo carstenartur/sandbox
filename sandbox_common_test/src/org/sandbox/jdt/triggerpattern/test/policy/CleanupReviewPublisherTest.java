@@ -15,13 +15,13 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** Runs both cleanup capture/publication and complete-commit regressions through Maven/JUnit. */
+/** Runs capture, publication and external consumer regressions through Maven/JUnit. */
 class CleanupReviewPublisherTest {
     private static final String ACTION_DIRECTORY = ".github/actions/cleanup-review";
     @TempDir Path temporary;
 
     @ParameterizedTest
-    @ValueSource(strings = {"cleanup-review.test.cjs", "cleanup-proposal.test.cjs"})
+    @ValueSource(strings = {"cleanup-review.test.cjs", "cleanup-proposal.test.cjs", "cleanup-consumer.test.cjs"})
     void completePublisherRegressionSuitePassesWithoutSkippedCases(String suite) throws Exception {
         Path root = root();
         Path output = temporary.resolve("publisher-tests.log");

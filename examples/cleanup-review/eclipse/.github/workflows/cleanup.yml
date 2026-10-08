@@ -1,0 +1,33 @@
+name: Sandbox cleanup suggestions
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths: ['**/*.java', '**/.project', '**/.classpath', '**/.settings/**', '.github/workflows/cleanup.yml']
+permissions:
+  contents: read
+concurrency:
+  group: sandbox-cleanup-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  cleanup:
+    if: github.event.pull_request.user.login != 'dependabot[bot]' && github.event.pull_request.head.repo.full_name == github.repository && !startsWith(github.event.pull_request.head.ref, 'cleanup/pr-')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      # main is the development channel. Pin a reviewed full commit SHA for regular use.
+      - uses: carstenartur/sandbox/.github/actions/cleanup-review@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          base-sha: ${{ github.event.pull_request.base.sha }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
+          java-home: ${{ env.JAVA_HOME }}

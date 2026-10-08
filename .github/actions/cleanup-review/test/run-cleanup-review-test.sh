@@ -283,6 +283,7 @@ log_file=$test_root/docker.log
     --image ghcr.io/carstenartur/sandbox-cleanup:test \
     --scope both \
     --source-mode changed \
+    --unmatched-files warn \
     --output-dir "$output"
 )
 

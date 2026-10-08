@@ -17,9 +17,9 @@ inputs:
     description: Exact checked-out pull-request head commit SHA.
     required: true
   config-file:
-    description: Repository-relative Sandbox cleanup properties file.
+    description: Optional repository-relative cleanup profile. Omit to use the shipped conservative encoding profile.
     required: false
-    default: .github/cleanup-profiles/review-explicit-encoding.properties
+    default: ''
   image:
     description: Sandbox cleanup container image.
     required: false
@@ -36,6 +36,10 @@ inputs:
     description: Analyze only changed Java files or each complete affected Eclipse project (changed or project).
     required: false
     default: changed
+  unmatched-files:
+    description: Fail if any changed Java file lacks an Eclipse Java project; warn explicitly permits incomplete coverage (error or warn).
+    required: false
+    default: error
   tool-name:
     description: Name shown on the cleanup review.
     required: false
@@ -50,6 +54,9 @@ inputs:
     default: 'true'
 
 outputs:
+  analysis-status:
+    description: Result classification; distinguishes missing project coverage from a completed cleanup with no changes.
+    value: ${{ steps.cleanup.outputs.analysis_status }}
   has-changes:
     description: Whether the cleanup modified Java source files.
     value: ${{ steps.cleanup.outputs.has_changes }}
@@ -76,6 +83,7 @@ runs:
       id: cleanup
       shell: bash
       env:
+        REVIEW_UNMATCHED_FILES: ${{ inputs.unmatched-files }}
         REVIEW_JAVA_HOME: ${{ inputs.java-home }}
         OUTPUT_DIR: ${{ runner.temp }}/sandbox-cleanup-review-${{ github.run_id }}-${{ github.run_attempt }}
       run: |
@@ -90,6 +98,7 @@ runs:
           --java-home "${REVIEW_JAVA_HOME:-}" \
           --scope "${{ inputs.scope }}" \
           --source-mode "${{ inputs.source-mode }}" \
+          --unmatched-files "${REVIEW_UNMATCHED_FILES:-error}" \
           --output-dir "$OUTPUT_DIR" 2>&1 | tee "$OUTPUT_DIR.log" || status=$?
         mkdir -p "$OUTPUT_DIR"
         mv -- "$OUTPUT_DIR.log" "$OUTPUT_DIR/cleanup.log"
@@ -108,7 +117,7 @@ runs:
 
     - name: Upload complete cleanup evidence
       id: evidence
-      if: always() && inputs.upload-artifact == 'true' && (steps.cleanup.outputs.has_changes == 'true' || steps.cleanup.outcome == 'failure')
+      if: always() && inputs.upload-artifact == 'true' && ((steps.cleanup.outputs.has_changes == 'true' || steps.cleanup.outcome == 'failure') || (steps.cleanup.outputs.skipped_file_count != '0' && steps.cleanup.outputs.skipped_file_count != ''))
       uses: actions/upload-artifact@v7
       with:
         name: ${{ inputs.artifact-name }}
