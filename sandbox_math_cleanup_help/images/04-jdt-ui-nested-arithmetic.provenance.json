@@ -20,7 +20,7 @@
     "id": "04-jdt-ui-nested-arithmetic",
     "kinds": "INT",
     "packageName": "p",
-    "screenshotSha256": "45ee8cc3f9eb661f13252f2e99492bd55f037cb50e1f4c3a2772672b848fa5f6",
+    "screenshotSha256": "c0e3f67d27254a753833279a8eb06c255e48fa6589cf873377cdc084491716e6",
     "sourceCommit": "c922f757b27b7e2b6215db383cec5f8aafd13227",
     "sourceLines": "1-10",
     "sourcePath": "org.eclipse.jdt.ui.tests.refactoring/resources/ExtractTemp/canExtract/A_test54_in.java",

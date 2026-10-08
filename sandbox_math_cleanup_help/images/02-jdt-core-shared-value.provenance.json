@@ -20,7 +20,7 @@
     "id": "02-jdt-core-shared-value",
     "kinds": "INT",
     "packageName": "p",
-    "screenshotSha256": "03b43a803af2a8b7c9255ef4e0fbfec53597a6b8f6154edb8e00a7d1acca13bc",
+    "screenshotSha256": "c7e388c1b556bce0fcabf5cf189f813adf70b235eebb34f4ebb2cf0292ffadd5",
     "sourceCommit": "ef3d6f2115df89d7964bc13aa363ab8d6bd21256",
     "sourceLines": "31-44",
     "sourcePath": "org.eclipse.jdt.core.tests.compiler/src/org/eclipse/jdt/core/tests/compiler/regression/NumericTest.java",
