@@ -23,13 +23,13 @@ function repository(t) {
   const write = (name, bytes) => fs.writeFileSync(path.join(cwd, name), bytes);
   git('init', '-q', '--object-format=sha1');
   git('config', 'user.name', 'Cleanup Test'); git('config', 'user.email', 'cleanup@example.test');
-  git('config', 'core.autocrlf', 'false'); git('config', 'core.filemode', 'true');
+  git('config', 'core.autocrlf', 'false'); git('config', 'core.filemode', 'false');
   const baseline = { 'A.java': original, 'Other file.java': 'old companion\n', 'Gone.java': 'delete me\n',
     'Bytes.java': Buffer.from([0, 1, 255]), 'Crlf.java': 'old\r\n', 'Executable.java': 'same\n', 'Untouched.java': 'retained\n' };
   for (const [name, bytes] of Object.entries(baseline)) write(name, bytes);
   git('add', '.'); git('commit', '-qm', 'Analyzed head');
   const headSha = git('rev-parse', 'HEAD').toString().trim();
-  const patch = () => git('diff', '--binary', '--no-ext-diff', '--no-textconv', '--src-prefix=a/', '--dst-prefix=b/');
+  const patch = () => git('diff', 'HEAD', '--binary', '--no-ext-diff', '--no-textconv', '--src-prefix=a/', '--dst-prefix=b/');
   return { cwd, git, write, headSha, patch, index: () => fs.readFileSync(path.join(cwd, '.git/index')) };
 }
 
@@ -40,7 +40,7 @@ function completeCleanup(t) {
   'Added.java': 'new source\n', 'Empty.java': '', 'Bytes.java': Buffer.from([0, 255, 2, 128]), 'Crlf.java': 'new\r\n' };
   for (const [name, bytes] of Object.entries(expected)) r.write(name, bytes);
   fs.unlinkSync(path.join(r.cwd, 'Gone.java'));
-  fs.chmodSync(path.join(r.cwd, 'Executable.java'), 0o755);
+  r.git('update-index', '--chmod=+x', '--', 'Executable.java');
   fs.symlinkSync('Other file.java', path.join(r.cwd, 'Link.java'));
   r.git('add', '--intent-to-add', '--', 'Added.java', 'Empty.java', 'Link.java');
   return { ...r, expected };
@@ -88,7 +88,7 @@ for (const [name, mutate] of [
   ['another changed file', (r) => r.write('Other file.java', 'omitted\n')],
   ['a new Java file', (r) => r.write('Missing.java', 'omitted\n')],
   ['a removed Java file', (r) => fs.unlinkSync(path.join(r.cwd, 'Gone.java'))],
-  ['a mode-only change', (r) => fs.chmodSync(path.join(r.cwd, 'Executable.java'), 0o755)],
+  ['a mode-only change', (r) => r.git('update-index', '--chmod=+x', '--', 'Executable.java')],
   ['a non-Java change', (r) => r.write('notes.txt', 'omitted\n')],
   ['a staged change', (r) => { r.write('Other file.java', 'staged\n'); r.git('add', '--', 'Other file.java'); }],
 ]) test(`capture rejects a patch omitting ${name} and preserves the index on failure`, (t) => {
@@ -112,9 +112,17 @@ test('capture rejects non-Java paths even when the patch and whole tree agree', 
 
 test('capture rejects filename bytes that GitHub JSON cannot represent', (t) => {
   const r = repository(t);
-  fs.writeFileSync(Buffer.concat([Buffer.from(r.cwd + '/'), Buffer.from([255]), Buffer.from('.java')]), 'new\n');
-  r.git('add', '-N', '--', '.');
-  assert.throws(() => captureProposal({ headSha: r.headSha, patch: r.patch(), cwd: r.cwd }), /UTF-8|path/i);
+  // Git trees can contain invalid UTF-8 even on filesystems that reject it.
+  // Put the name only in the base tree; the valid worktree represents its deletion.
+  const entry = Buffer.concat([Buffer.from(`100644 blob ${r.git('rev-parse', 'HEAD:A.java').toString().trim()}\t`),
+    Buffer.from([255]), Buffer.from('.java\0')]);
+  const tree = execFileSync('git', ['mktree', '-z'], { cwd: r.cwd,
+    input: Buffer.concat([r.git('ls-tree', '-z', 'HEAD'), entry]) }).toString().trim();
+  const headSha = r.git('commit-tree', tree, '-p', r.headSha, '-m', 'Unrepresentable tree path').toString().trim();
+  r.git('update-ref', 'HEAD', headSha);
+  const index = r.index();
+  assert.throws(() => captureProposal({ headSha, patch: r.patch(), cwd: r.cwd }), /UTF-8|path/i);
+  assert.deepEqual(r.index(), index);
 });
 
 test('capture rejects Java-named gitlinks instead of silently turning them into blobs', (t) => {

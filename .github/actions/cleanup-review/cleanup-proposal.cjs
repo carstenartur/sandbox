@@ -35,13 +35,18 @@ function captureProposal({ headSha, patch, cwd = process.cwd() }) {
   const assertHead = () => { if (oid(['rev-parse', '--verify', 'HEAD']) !== headSha) throw new Error('Checkout HEAD differs from the analyzed HEAD'); };
   assertHead();
   const baseTreeSha = oid(['rev-parse', '--verify', `${headSha}^{tree}`]);
+  const sourceIndex = utf8(git(['rev-parse', '--path-format=absolute', '--git-path', 'index'])).replace(/\n$/, '');
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'cleanup-proposal-index-'));
   env = { ...env, GIT_INDEX_FILE: path.join(temporary, 'index') };
   try {
     git(['read-tree', headSha]);
     git(['-c', 'apply.ignoreWhitespace=false', 'apply', '--cached', '--whitespace=nowarn', '-'], patch);
     const cleanedTreeSha = oid(['write-tree']);
-    git(['read-tree', headSha]);
+    // Start from the caller's index, not HEAD: on core.filemode=false
+    // filesystems, staged executable bits cannot be recovered from stat().
+    // Only the disposable copy is staged; the original index stays untouched.
+    if (fs.existsSync(sourceIndex)) fs.copyFileSync(sourceIndex, env.GIT_INDEX_FILE);
+    else git(['read-tree', '--empty']);
     git(['add', '-A', '--', '.']);
     if (oid(['write-tree']) !== cleanedTreeSha) throw new Error('The patch does not describe the complete committable worktree tree');
     if (cleanedTreeSha === baseTreeSha) throw new Error('No cleanup tree changes were captured');
