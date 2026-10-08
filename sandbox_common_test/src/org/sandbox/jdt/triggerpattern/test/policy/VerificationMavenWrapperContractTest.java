@@ -27,7 +27,9 @@ class VerificationMavenWrapperContractTest {
                 new Invocation("distribution-smoke.yml", "Maven distribution build and verification",
                         "command=(./mvnw -Pdistribution,cli-dist,swtbot"),
                 new Invocation("distribution-smoke.yml", "Verify installed mathematics without a display",
-                        "./mvnw -Pdistribution --batch-mode -pl sandbox_distribution_verify"));
+                        "./mvnw -Pdistribution --batch-mode -pl sandbox_distribution_verify"),
+                new Invocation("publish-cleanup-image.yml", "Build Eclipse product",
+                        "xvfb-run --auto-servernum ./mvnw -e -V --batch-mode"));
     }
 
     @ParameterizedTest
@@ -50,7 +52,7 @@ class VerificationMavenWrapperContractTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "codacy.yml", "codeql.yml", "distribution-smoke.yml" })
+    @ValueSource(strings = { "codacy.yml", "codeql.yml", "distribution-smoke.yml", "publish-cleanup-image.yml" })
     void wrapperChangesTriggerVerification(String file) throws IOException {
         String workflow = workflow(file);
         int pathLists = "distribution-smoke.yml".equals(file) ? 2 : 1;
@@ -71,6 +73,11 @@ class VerificationMavenWrapperContractTest {
             assertTrue(execution.contains("-Dtycho.localArtifacts=ignore"));
         } else if (invocation.step().equals("Verify installed mathematics without a display")) {
             assertTrue(execution.contains("exec:java@verify-installed-mathematics"));
+        } else if (invocation.step().equals("Build Eclipse product")) {
+            assertTrue(execution.contains("-Dtycho.localArtifacts=ignore"));
+            assertTrue(execution.contains("-Pproduct clean verify -DskipTests"));
+            assertFalse(Pattern.compile("(?:^|\\s)-T(?:\\s|\\d)").matcher(execution).find(),
+                    "Keep the mixed Maven/bnd/Tycho product build sequential");
         }
     }
 
