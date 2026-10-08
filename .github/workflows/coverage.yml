@@ -1,28 +1,12 @@
-# Publish measured JUnit and JaCoCo metrics and transfer JaCoCo lines to GitHub.
+# Enforce JaCoCo line coverage and publish measured JUnit and JaCoCo metrics.
 name: Verified test and coverage metrics
 
 on:
   push:
     branches: [ main ]
-    # One list keeps instrumented pre-merge and main verification aligned.
-    paths: &coverage_paths
-      - 'pom.xml'
-      - '.mvn/**'
-      - 'mvnw'
-      - 'mvnw.cmd'
-      - 'sandbox*/**'
-      - 'features/**'
-      - 'plugins/**'
-      - 'org/**'
-      - '*.xml'
-      - '*.properties'
-      - '.github/workflows/coverage.yml'
-      - 'README.md'
-      - 'COVERAGE_DEPLOYMENT.md'
-      - 'docs/quality-metrics.md'
   pull_request:
     branches: [ main ]
-    paths: *coverage_paths
+    # This required check must also complete on documentation-only pull requests.
   schedule:
     - cron: '0 0 * * *'
   workflow_dispatch:
@@ -44,7 +28,6 @@ jobs:
     permissions:
       contents: read
       checks: write
-      code-quality: write
     env:
       MAVEN_OPTS: -Djava.awt.headless=true
       QUALITY_SITE: target/quality-site
@@ -136,7 +119,7 @@ jobs:
           -Pjacoco,reports,product,repo,benchmark,cli-dist,maven-plugin
           clean verify
 
-      - name: Transfer measured JaCoCo lines to Cobertura
+      - name: Verify 63% JaCoCo line coverage and retain source evidence
         if: success() && steps.gate.outputs.run == 'true'
         run: |
           mkdir -p target/github-coverage
@@ -145,14 +128,6 @@ jobs:
             -f sandbox_distribution_verify/pom.xml test exec:java \
             -Dexec.mainClass=org.sandbox.distribution.CoverageReportConverter \
             "-Dexec.args=$GITHUB_WORKSPACE"
-
-      - name: Upload measured line coverage to GitHub
-        if: success() && steps.gate.outputs.run == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-        uses: actions/upload-code-coverage@2b21a77928be8d5168c2b9581a67f2adbebacc52 # v1
-        with:
-          file: target/github-coverage/cobertura.xml
-          language: Java
-          label: code-coverage/jacoco
 
       - name: Collect JUnit results
         id: junit

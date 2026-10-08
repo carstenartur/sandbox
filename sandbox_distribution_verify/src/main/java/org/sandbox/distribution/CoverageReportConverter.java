@@ -4,6 +4,7 @@ package org.sandbox.distribution;
 import static org.sandbox.distribution.AggregateInstallationEvidence.children;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -20,17 +21,26 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Element;
 
-/** Transfers measured JaCoCo source lines to GitHub's Cobertura interchange format. */
+/** Validates measured JaCoCo source lines, retains Cobertura evidence, and enforces the coverage minimum. */
 public final class CoverageReportConverter {
+    private static final BigDecimal MINIMUM_LINE_COVERAGE = new BigDecimal("0.63");
+
     private CoverageReportConverter() { }
 
     public static void main(String[] args) throws Exception {
         Path root = Path.of(args[0]).toAbsolutePath().normalize();
-        convert(root, root.resolve("sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml"),
+        LineCoverage coverage = convert(root, root.resolve("sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml"),
                 root.resolve("target/github-coverage/cobertura.xml"));
+        if (BigDecimal.valueOf(coverage.covered()).compareTo(
+                BigDecimal.valueOf(coverage.total()).multiply(MINIMUM_LINE_COVERAGE)) < 0)
+            throw new IOException("JaCoCo LINE coverage " + coverage.covered() + "/" + coverage.total()
+                    + " is below the required 63%");
+        System.out.println("Verified JaCoCo LINE coverage minimum: 63%");
     }
 
-    static void convert(Path root, Path input, Path output) throws Exception {
+    record LineCoverage(long covered, long total) { }
+
+    static LineCoverage convert(Path root, Path input, Path output) throws Exception {
         root = root.toAbsolutePath().normalize();
         Files.deleteIfExists(output);
         Path checkout = root;
@@ -113,6 +123,7 @@ public final class CoverageReportConverter {
         factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
         factory.newTransformer().transform(new DOMSource(document), new StreamResult(output.toFile()));
         System.out.println("Transferred JaCoCo coverage: " + covered + "/" + total + " source lines");
+        return new LineCoverage(covered, total);
     }
 
     private static Element append(Element parent, String name) {

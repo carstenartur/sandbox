@@ -14,14 +14,22 @@ sandbox_coverage/target/site/jacoco-aggregate/jacoco.csv
 
 It generates the Shields-compatible instruction-coverage endpoint directly.
 
-For GitHub's native line-coverage gate, the Maven-tested `CoverageReportConverter` transfers the measured JaCoCo source lines to Cobertura. It preserves module identity, requires versioned source paths, and rejects missing, ambiguous, duplicate or lost line data by checking the original JaCoCo LINE counters. The official `actions/upload-code-coverage` action uploads that format; it does not run a second coverage measurement. PR coverage builds and uploads use the exact PR head.
+The Maven-tested `CoverageReportConverter` validates the measured JaCoCo source lines and retains a Cobertura evidence file. It preserves module identity, requires versioned source paths, and rejects missing, ambiguous, duplicate or lost line data by checking the original JaCoCo LINE counters. Its command then fails if aggregate line coverage is below **63%**, comparing exact counts without rounding. Empty or inconsistent reports fail validation. PR coverage builds use the exact PR head.
+
+This check runs directly in CI. It does not depend on the native GitHub Code Quality upload service, which GitHub [documents for Team and Enterprise Cloud](https://docs.github.com/en/code-security/concepts/code-quality/code-quality). JaCoCo remains the sole coverage measurement; conversion retains the existing measured lines.
+
+## Required coverage check
+
+Require the GitHub Actions check **Build and verify/publish metrics** alongside **Maven verification** in the ruleset for `main`. Coverage runs on every pull request to `main`, including documentation-only changes, so the required check cannot be left pending by workflow path filters. Build, test, report-validation or threshold failures make this check fail.
+
+When replacing a native **Restrict code coverage** rule, first validate this implementation in CI and add the coverage job as a required status check. Only then remove the native rule: its 63% threshold is enforced by the required JaCoCo check. **Require code scanning results** and **Require code quality results** are separate rules and do not enable coverage uploads.
 
 ## Build and report publication
 
 The workflow runs the complete verification with:
 
 ```bash
-xvfb-run --auto-servernum mvn \
+xvfb-run --auto-servernum ./mvnw \
   -Dtycho.localArtifacts=ignore \
   -Pjacoco,reports,product,repo,benchmark,cli-dist,maven-plugin \
   clean verify

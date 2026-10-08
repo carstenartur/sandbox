@@ -1,10 +1,12 @@
 /* SPDX-License-Identifier: EPL-2.0 */
 package org.sandbox.distribution;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -12,6 +14,8 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class CoverageReportConverterTest {
     @TempDir Path root;
@@ -94,5 +98,27 @@ class CoverageReportConverterTest {
         Files.createDirectories(generated.getParent());
         Files.copy(root.resolve("first/src/example/Demo.java"), generated);
         CoverageReportConverter.convert(root, input, output);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"62,100,false", "63,100,true", "64,100,true", "6299,10000,false",
+            "1,1,true", "0,1,false", "0,0,false"})
+    void commandEnforcesMinimumLineCoverageWithoutRounding(int covered, int total, boolean accepted) throws Exception {
+        var lines = new StringBuilder();
+        for (int line = 1; line <= total; line++) {
+            lines.append("<line nr=\"").append(line).append("\" ci=\"")
+                    .append(line <= covered ? 1 : 0).append("\"/>");
+        }
+        Path report = root.resolve("sandbox_coverage/target/site/jacoco-aggregate/jacoco.xml");
+        Files.createDirectories(report.getParent());
+        Files.writeString(report, "<report><group name=\"first\"><package name=\"example\">"
+                + "<sourcefile name=\"Demo.java\">" + lines + "</sourcefile></package></group>"
+                + "<counter type=\"LINE\" covered=\"" + covered + "\" missed=\"" + (total - covered)
+                + "\"/></report>");
+        if (accepted) {
+            assertDoesNotThrow(() -> CoverageReportConverter.main(new String[] {root.toString()}));
+        } else {
+            assertThrows(IOException.class, () -> CoverageReportConverter.main(new String[] {root.toString()}));
+        }
     }
 }
