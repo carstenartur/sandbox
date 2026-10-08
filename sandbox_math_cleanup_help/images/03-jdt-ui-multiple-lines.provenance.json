@@ -20,7 +20,7 @@
     "id": "03-jdt-ui-multiple-lines",
     "kinds": "INT",
     "packageName": "p",
-    "screenshotSha256": "9c3b1ae7ad1d06e9f40466d790b7d1a50d3874c62eb8cf47861aabd393ddda14",
+    "screenshotSha256": "21703caf1fb3902fc3d99c03932c61fc84b13019aca6bc15c5042f6b59ddb8ef",
     "sourceCommit": "c922f757b27b7e2b6215db383cec5f8aafd13227",
     "sourceLines": "1-10",
     "sourcePath": "org.eclipse.jdt.ui.tests.refactoring/resources/ExtractTemp/canExtract/A_test114_in.java",

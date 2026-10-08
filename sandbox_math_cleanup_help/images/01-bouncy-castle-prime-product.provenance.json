@@ -21,7 +21,7 @@
     "id": "01-bouncy-castle-prime-product",
     "kinds": "INT",
     "packageName": "org.bouncycastle.crypto.generators",
-    "screenshotSha256": "d505d30ae7e834454838b3f77f32042baa8371693ef2669d6f32e1b57554d209",
+    "screenshotSha256": "718c33555d1c43f34616703a2196ac28463bf19274859f2fff383f1e74709b7a",
     "sourceCommit": "c314b9cdffa3958a0eff5344f8fdcdb0181ed830",
     "sourceLines": "107-137",
     "sourcePath": "core/src/main/java/org/bouncycastle/crypto/generators/DHParametersHelper.java",
