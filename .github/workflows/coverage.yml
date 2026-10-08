@@ -124,12 +124,13 @@ jobs:
 
       - name: Build the complete coverage reactor
         if: steps.gate.outputs.run == 'true'
+        # Tycho 5.0.4 deletes and renames its local p2 index while saving.
+        # Serialize the reactor so repository assembly cannot race index updates.
         run: >-
           xvfb-run --auto-servernum ./mvnw
           --no-transfer-progress
           -e
           -V
-          -T 1C
           --batch-mode
           -Dtycho.localArtifacts=ignore
           -Pjacoco,reports,product,repo,benchmark,cli-dist,maven-plugin
