@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -193,13 +194,14 @@ class WorkflowRunCleanupTest {
 
     @Test void existingNodeRegressionSuiteStillPasses() throws Exception {
         Path root = root();
-        String output = node(root, "--test", root.resolve(".github/scripts/cleanup-workflow-runs.test.cjs").toString());
+        String output = node(root, "--test", "--test-reporter=tap",
+                root.resolve(".github/scripts/cleanup-workflow-runs.test.cjs").toString());
         assertTrue(output.contains("# pass 7"), output);
         assertTrue(output.contains("# fail 0"), output);
     }
 
     @Test void workflowPreservesExplicitZeroAndMainOnlyDeletion() throws Exception {
-        String workflow = Files.readString(root().resolve(".github/workflows/cleanup-workflow-runs.yml"));
+        String workflow = Files.readString(root().resolve(".github/workflows/cleanup-workflow-runs.yml"), StandardCharsets.UTF_8);
         assertTrue(workflow.contains("KEEP_MINIMUM_RUNS: ${{ inputs.keep_minimum_runs }}"),
                 "The script supplies the missing-input default; zero must not become five");
         assertTrue(workflow.contains("if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'"));
@@ -208,7 +210,7 @@ class WorkflowRunCleanupTest {
     }
 
     @Test void workflowReportsAnUnfinishedScanAsUnknown() throws Exception {
-        String workflow = Files.readString(root().resolve(".github/workflows/cleanup-workflow-runs.yml"));
+        String workflow = Files.readString(root().resolve(".github/workflows/cleanup-workflow-runs.yml"), StandardCharsets.UTF_8);
         assertTrue(workflow.contains("steps.cleanup.outputs.old || 'unknown'"));
         assertTrue(workflow.contains("steps.cleanup.outputs.protected || 'unknown'"));
         assertTrue(workflow.contains("steps.cleanup.outputs.selected || 'unknown'"));
@@ -218,7 +220,7 @@ class WorkflowRunCleanupTest {
     private JsonObject execute(JsonObject config) throws Exception {
         Path root = root();
         Path input = Files.createTempFile(temporary, "input-", ".json");
-        Files.writeString(input, config.toString());
+        Files.writeString(input, config.toString(), StandardCharsets.UTF_8);
         return JsonParser.parseString(node(root, "-e", DRIVER,
                 root.resolve(".github/scripts/cleanup-workflow-runs.cjs").toString(), input.toString())).getAsJsonObject();
     }
@@ -231,7 +233,7 @@ class WorkflowRunCleanupTest {
                 .redirectOutput(output.toFile()).start();
         try {
             assertTrue(process.waitFor(30, TimeUnit.SECONDS), "Node cleanup probe timed out");
-            String text = Files.readString(output);
+            String text = Files.readString(output, StandardCharsets.UTF_8);
             assertEquals(0, process.exitValue(), text);
             return text;
         } finally {

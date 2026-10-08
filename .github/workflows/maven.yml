@@ -21,6 +21,9 @@ on:
       - '.github/actions/cleanup-action/**'
       - '.github/actions/verify-eclipse-desktop-runtime/**'
       - '.github/workflows/maven.yml'
+      - '.github/workflows/cleanup-workflow-runs.yml'
+      - '.github/scripts/cleanup-workflow-runs.cjs'
+      - '.github/scripts/cleanup-workflow-runs.test.cjs'
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -70,7 +73,8 @@ jobs:
             case "$path" in
               mvnw|mvnw.cmd|.gitattributes|.project|.classpath|.settings/*|pom.xml|.mvn/*|sandbox*/*|features/*|plugins/*|org/*|*.xml|*.properties|\
               .github/actions/cleanup-action/*|.github/actions/verify-eclipse-desktop-runtime/*|\
-              .github/workflows/maven.yml)
+              .github/workflows/maven.yml|.github/workflows/cleanup-workflow-runs.yml|\
+              .github/scripts/cleanup-workflow-runs.cjs|.github/scripts/cleanup-workflow-runs.test.cjs)
                 relevant=true
                 ;;
             esac
