@@ -1069,9 +1069,11 @@ public final class DistributionVerifier {
 
         boolean matchesProductPath(Path path) {
             String normalized = path.toString().replace('\\', '/');
-            return normalized.contains("/" + osgiOs + "/")
-                    && normalized.contains("/" + osgiWs + "/")
-                    && normalized.endsWith("/" + osgiArch);
+            String platformSuffix = "/" + osgiOs + "/" + osgiWs + "/" + osgiArch;
+            // Tycho places the macOS p2 home inside the native application bundle.
+            return normalized.endsWith(platformSuffix)
+                    || "macosx".equals(osgiOs) && Pattern.compile(Pattern.quote(platformSuffix)
+                            + "/[^/]+\\.app/Contents/Eclipse$").matcher(normalized).find();
         }
 
         @Override

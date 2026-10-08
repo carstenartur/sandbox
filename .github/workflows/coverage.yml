@@ -8,13 +8,14 @@ on:
     paths: &coverage_paths
       - 'pom.xml'
       - '.mvn/**'
+      - 'mvnw'
+      - 'mvnw.cmd'
       - 'sandbox*/**'
       - 'features/**'
       - 'plugins/**'
       - 'org/**'
       - '*.xml'
       - '*.properties'
-      - '.github/actions/use-runner-maven/**'
       - '.github/workflows/coverage.yml'
       - 'README.md'
       - 'COVERAGE_DEPLOYMENT.md'
@@ -99,9 +100,9 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Use runner Maven
+      - name: Verify pinned Maven Wrapper
         if: steps.gate.outputs.run == 'true'
-        uses: ./.github/actions/use-runner-maven
+        run: ./mvnw --batch-mode --no-transfer-progress --version
 
       - name: Set up Node.js for CSS tests
         if: steps.gate.outputs.run == 'true'
@@ -121,7 +122,7 @@ jobs:
       - name: Build the complete coverage reactor
         if: steps.gate.outputs.run == 'true'
         run: >-
-          xvfb-run --auto-servernum mvn
+          xvfb-run --auto-servernum ./mvnw
           --no-transfer-progress
           -e
           -V
