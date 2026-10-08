@@ -1,0 +1,115 @@
+name: Prepare verified PR 1673 Help candidate
+on:
+  push:
+    branches: [diagnostics/pr1673-help-candidate-20261008]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: a68b50240daf906c53e57f78ef442760f80eaed5
+          fetch-depth: 1
+      - uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: maven
+      - name: Apply the locally reproduced contract correction
+        shell: bash
+        run: |
+          set -euo pipefail
+          git apply <<'PATCH'
+          diff --git a/sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/CiBuildScopeContractTest.java b/sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/CiBuildScopeContractTest.java
+          --- a/sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/CiBuildScopeContractTest.java
+          +++ b/sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/CiBuildScopeContractTest.java
+          @@ -134,6 +134,8 @@
+           			String premature = workflow.replace(provision, provision.replace(" package", " " + phase)); //$NON-NLS-1$ //$NON-NLS-2$
+           			assertThrows(AssertionError.class, () -> assertAtomicMavenScopes(premature), phase);
+           		}
+          +		String unpinned = workflow.replace(provision, provision.replace("./mvnw ", "mvn ")); //$NON-NLS-1$ //$NON-NLS-2$
+          +		assertThrows(AssertionError.class, () -> assertAtomicMavenScopes(unpinned), LTK_STEP);
+           	}
+           
+           	@Test
+          @@ -154,7 +156,7 @@
+           			assertEquals(1, occurrences(workflowStep(workflow, name), LINUX_ONLY), name);
+           		}
+           		String provision = workflowStep(workflow, LTK_STEP);
+          -		assertTrue(provision.contains("mvn "), LTK_STEP); //$NON-NLS-1$
+          +		assertTrue(provision.contains("./mvnw "), LTK_STEP); //$NON-NLS-1$
+           		assertTrue(provision.contains("-Dtest=LtkRuntimePatchTest,LtkRuntimeMetadataTest,PinnedLtkRuntimeIT"), LTK_STEP); //$NON-NLS-1$
+           		assertTrue(provision.stripTrailing().endsWith(" package"), LTK_STEP); //$NON-NLS-1$
+           		assertFalse(provision.contains("-DskipTests"), LTK_STEP); //$NON-NLS-1$
+          PATCH
+          test "$(git hash-object sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/CiBuildScopeContractTest.java)" = f666a086956388c829eacd3c27283079fc68ea96
+      - name: Import only the reviewed native capture files
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint='repos/carstenartur/sandbox/actions/artifacts/11572958245'
+          test "$(gh api "$endpoint" --jq '.workflow_run.head_sha')" = a68b50240daf906c53e57f78ef442760f80eaed5
+          archive="$RUNNER_TEMP/help-evidence.zip"
+          gh api "$endpoint/zip" > "$archive"
+          printf 'd6b30e713dc344207221447016c91fdae885c6cb49f58246cba409953b4198db  %s\n' "$archive" | sha256sum -c -
+          unzip -q "$archive" -d "$RUNNER_TEMP/help-evidence"
+          evidence="$RUNNER_TEMP/help-evidence/generated-help-screenshot-evidence"
+          (cd "$evidence/files" && sha256sum -c ../sha256.txt)
+          while IFS= read -r path; do
+            cp -- "$evidence/files/$path" "$path"
+            git add -- "$path"
+          done <<'FILES'
+          sandbox_encoding_quickfix_help/images/explicit-encoding-cleanup.png
+          sandbox_functional_converter_help/images/functional-converter-cleanup.png
+          sandbox_int_to_enum_help/images/int-to-enum-cleanup.png
+          sandbox_jface_cleanup_help/images/jface-cleanup.png
+          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-diff-step.png
+          sandbox_jface_cleanup_help/images/jface-cleanup-real-preview-multi-file-selection.png
+          sandbox_junit_cleanup_help/images/junit-migration-cleanup.png
+          sandbox_method_reuse_help/images/method-reuse-cleanup.png
+          sandbox_platform_helper_help/images/platform-status-cleanup.png
+          sandbox_triggerpattern_help/images/code-patterns-cleanup.png
+          sandbox_use_general_type_help/images/use-general-type-cleanup.png
+          sandbox_xml_cleanup_help/images/xml-cleanup.png
+          sandbox_math_cleanup_help/images/01-bouncy-castle-prime-product.png
+          sandbox_math_cleanup_help/images/01-bouncy-castle-prime-product.provenance.json
+          sandbox_math_cleanup_help/images/02-jdt-core-shared-value.png
+          sandbox_math_cleanup_help/images/02-jdt-core-shared-value.provenance.json
+          sandbox_math_cleanup_help/images/03-jdt-ui-multiple-lines.png
+          sandbox_math_cleanup_help/images/03-jdt-ui-multiple-lines.provenance.json
+          sandbox_math_cleanup_help/images/04-jdt-ui-nested-arithmetic.png
+          sandbox_math_cleanup_help/images/04-jdt-ui-nested-arithmetic.provenance.json
+          FILES
+      - name: Run both existing contracts with the repository toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./mvnw -B -ntp -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true \
+            -pl sandbox_target,sandbox_common_core,sandbox_common,sandbox_common_test -am \
+            -Dtest=CiBuildScopeContractTest,VerificationMavenWrapperContractTest \
+            -Dsurefire.failIfNoSpecifiedTests=false -DfailIfNoTests=false package
+      - name: Publish candidate without changing the PR or main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/CiBuildScopeContractTest.java
+          git diff --cached --check
+          git diff --cached --stat
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m 'fix: align Help verification contracts and canonical mathematics captures' \
+            -m 'Fix the obsolete ambient-mvn expectation. Keep the package-phase and anti-skip checks, and reject unpinned Maven in a mutation test.' \
+            -m 'Import reviewed native capture bytes from Help run 37829517144, artifact 11572958245 (sha256 d6b30e713dc344207221447016c91fdae885c6cb49f58246cba409953b4198db). Adding Mathematics to the Help reactor adds its tab and checkbox, changing the total from 205 to 206. The four source panes are pixel-identical; provenance retains exact source and capture hashes. No screenshot verifier or tolerance is changed.'
+          git push origin HEAD:refs/heads/repair/pr1673-verified-help-candidate-20261008
+          git log -1 --format=%H >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pr1673-focused-contract-results
+          path: sandbox_common_test/target/surefire-reports/**
