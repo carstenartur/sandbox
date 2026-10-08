@@ -442,6 +442,7 @@ public final class DistributionVerifier {
         Path fresh = evidence.resolve("fresh-install");
         deleteRecursively(fresh);
         Files.createDirectories(fresh);
+        InstallationPaths paths = platform.installationPaths(fresh);
 
         List<String> roots = new ArrayList<>();
         roots.add("org.eclipse.sdk.ide");
@@ -463,8 +464,8 @@ public final class DistributionVerifier {
                         "-application", "org.eclipse.equinox.p2.director",
                         "-repository", String.join(",", repositories),
                         "-installIU", String.join(",", roots),
-                        "-destination", fresh.toString(),
-                        "-bundlepool", fresh.toString(),
+                        "-destination", paths.destination().toString(),
+                        "-bundlepool", paths.home().toString(),
                         "-profile", "SandboxDistributionSmoke",
                         "-profileProperties", "org.eclipse.update.install.features=true",
                         "-p2.os", platform.osgiOs(),
@@ -478,8 +479,8 @@ public final class DistributionVerifier {
                 Duration.ofMinutes(15));
         require(install.exitCode() == 0, "Fresh p2 installation failed; see " + installLog);
 
-        Path freshLauncher = findNativeLauncher(fresh);
-        FreshInstallation installation = new FreshInstallation(fresh, freshLauncher);
+        Path freshLauncher = findNativeLauncher(paths.home());
+        FreshInstallation installation = new FreshInstallation(paths.home(), freshLauncher);
 
         ProcessResult rootsResult = run(
                 List.of(
@@ -489,7 +490,7 @@ public final class DistributionVerifier {
                         "-application", "org.eclipse.equinox.p2.director",
                         "-listInstalledRoots",
                         "-data", evidence.resolve("fresh-data").toString()),
-                fresh,
+                paths.home(),
                 evidence.resolve("fresh-product.log"),
                 Duration.ofMinutes(5));
         require(rootsResult.exitCode() == 0, "Fresh installation did not start p2 director");
@@ -1042,7 +1043,18 @@ public final class DistributionVerifier {
     private record ProcessResult(int exitCode, boolean timedOut) {
     }
 
+    record InstallationPaths(Path destination, Path home) { }
+
     record Platform(String osgiOs, String osgiWs, String osgiArch) {
+        InstallationPaths installationPaths(Path container) {
+            if ("macosx".equals(osgiOs)) {
+                // The p2 director creates a native macOS bundle only for a .app destination.
+                Path app = container.resolve("Eclipse.app");
+                return new InstallationPaths(app, app.resolve("Contents/Eclipse"));
+            }
+            return new InstallationPaths(container, container);
+        }
+
         static Platform current() throws VerificationException {
             return from(System.getProperty("os.name", ""), System.getProperty("os.arch", ""));
         }
