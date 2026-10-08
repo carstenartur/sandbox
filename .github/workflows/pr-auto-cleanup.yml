@@ -9,6 +9,7 @@ on:
       - '.github/actions/cleanup-review/**'
       - '.github/cleanup-profiles/review-explicit-encoding.properties'
       - '.github/workflows/pr-auto-cleanup.yml'
+      - 'sandbox_common_test/pom-cleanup-review.xml'
       - 'sandbox_cleanup_application/**'
       - 'sandbox_cleanup_docker/**'
   workflow_dispatch:
@@ -37,8 +38,15 @@ jobs:
       - name: Run cleanup-review contract tests
         run: .github/actions/cleanup-review/test/run-cleanup-review-test.sh
 
-      - name: Verify complete grouped reviews and suggestion ranges
-        run: node --test .github/actions/cleanup-review/test/cleanup-review.test.cjs
+      - name: Set up contract test JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+
+      - name: Verify cleanup-review contracts through Maven and JUnit
+        run: ./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml test
 
   suggestions:
     name: Suggest conservative encoding cleanup

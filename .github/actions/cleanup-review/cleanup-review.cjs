@@ -266,7 +266,7 @@ function inlineCode(text) {
   return `${fence} ${value} ${fence}`;
 }
 
-function suggestionFor(file, prFile, toolName) {
+function suggestionFor(file, prFile) {
   if (!prFile || typeof prFile.patch !== 'string' || !prFile.patch || prFile.patch.includes('\r')) {
     throw new Error('The PR has no complete text patch for this file');
   }
@@ -294,7 +294,13 @@ function suggestionFor(file, prFile, toolName) {
       throw new Error('The PR patch context does not match the analyzed source');
     }
   }
-  const body = `${inlineCode(toolName)}: apply all cleanup edits for ${inlineCode(file.path)} together.\n\n${codeFence(text, 'suggestion', replacementLineCount)}`;
+  const range = startLine === endLine ? `line ${startLine}` : `lines ${startLine}–${endLine}`;
+  const body = [
+    '**Apply all cleanup changes in this file**',
+    'Click **Commit suggestion** below, then **Commit changes**. This accepts every cleanup edit in this file together.',
+    `GitHub replaces **${range}** as one block. Unchanged lines between the edits are included to keep the changes together. The rest of the file, including any closing braces outside this range, stays as it is.`,
+    codeFence(text, 'suggestion', replacementLineCount),
+  ].join('\n\n');
   if (Buffer.byteLength(body) > MAX_BODY_BYTES) throw new Error('The complete file replacement exceeds the inline comment limit');
   return {
     path: file.path, side: 'RIGHT', line: endLine, body,
@@ -314,7 +320,7 @@ function planReview(review, prFiles, { maxComments = MAX_INLINE_COMMENTS } = {})
     if (!reason && !file.envelope) reason = 'No complete replacement could be reconstructed';
     if (!reason) {
       try {
-        const comment = suggestionFor(file, filesByPath.get(file.path), review.toolName);
+        const comment = suggestionFor(file, filesByPath.get(file.path));
         if (comments.length < maxComments) {
           comments.push(comment);
           decisions.push({ path: file.path, inline: true, reason: 'One native suggestion contains every cleanup edit in this file' });
@@ -342,22 +348,36 @@ function buildReviewBody(review, plan, { artifactUrl = '', runUrl = '', maxBytes
   const run = safeUrl(runUrl);
   const header = [
     `## ${inlineCode(review.toolName)} cleanup review`,
-    `Analyzed head: ${inlineCode(review.headSha)}. Changed files: **${review.files.length}**.`,
+    `Changed files: **${review.files.length}**.${plan.pending ? '' : ` Directly applicable file suggestions: **${plan.comments.length}**.`}`,
+    ...(plan.comments.length ? ['**To accept a suggestion:** open its review comment under **Files changed**, click **Commit suggestion**, then **Commit changes**. Each suggestion contains all cleanup edits for that file.'] : []),
+    artifact
+      ? `**${plan.comments.length ? 'Alternative: apply' : 'Apply'} the whole cleanup result:** [download the complete patch and reports](<${artifact}>), check out the analyzed commit listed below, and apply \`suggestions.patch\`. This patch already includes every suggestion in this review.`
+      : 'The complete patch is included below for application to the analyzed commit listed under Analysis details. It already includes every suggestion in this review.',
     review.scope === 'file'
-      ? 'Each file is declared an independent fix unit. Apply all edits within a file together.'
-      : 'Apply all files in this cleanup run together as one fix unit.',
-    fallbackReason ? `**Native suggestions unavailable:** ${fallbackReason}`
-      : `Complete file suggestions offered inline: **${plan.comments.length}**. All cleanup changes are included in the grouped patch below.`,
-    artifact ? `[Complete patch, review, and reports](<${artifact}>)` : 'No uploaded artifact link is available; the complete patch is included in this review.',
-    ...(run ? [`[Workflow run](<${run}>)`] : []),
-    `Patch SHA-256: ${inlineCode(review.patchSha256)}.`,
+      ? 'Files are independent; changes within each file must be applied together.'
+      : 'All files in this cleanup run must be applied together.',
+    ...(fallbackReason ? [`**Native suggestions unavailable:** ${fallbackReason}`] : []),
   ].join('\n\n');
   const sections = review.files.map((file, index) => [
-    `### ${inlineCode(file.path)}`,
+    `### ${inlineCode(path.posix.basename(file.path))}`,
+    plan.decisions[index]?.inline === true
+      ? '**Suggestion available:** use **Commit suggestion** in this file\'s review comment.'
+      : plan.pending ? 'Native suggestion availability is shown in the published review.'
+        : '**Complete patch required:** this file has no directly applicable suggestion.',
+    '<details>\n<summary>View complete file diff (view only)</summary>',
+    inlineCode(file.path),
     plan.decisions[index]?.reason || file.reason || 'Complete file patch',
     codeFence(file.diff, file.encoding === 'base64' ? 'base64' : 'diff'),
+    '</details>',
   ].join('\n\n'));
-  const complete = `${header}\n\n## Complete patch by file\n\n${sections.join('\n\n')}\n\n${review.marker}\n`;
+  const details = [
+    '<details>\n<summary>Analysis details</summary>',
+    `Analyzed head: ${inlineCode(review.headSha)}.`,
+    `Patch SHA-256: ${inlineCode(review.patchSha256)}.`,
+    ...(run ? [`[Workflow run](<${run}>)`] : []),
+    '</details>',
+  ].join('\n\n');
+  const complete = `${header}\n\n${sections.join('\n\n')}\n\n${details}\n\n${review.marker}\n`;
   if (Buffer.byteLength(complete) <= maxBytes) return complete;
   if (!artifact) {
     throw new Error('The complete review exceeds the GitHub comment limit and no uploaded artifact URL is available; refusing to publish a truncated cleanup fix');
@@ -409,7 +429,7 @@ function prepareFromEnvironment(env = process.env) {
   });
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(path.join(outputDir, 'review.json'), JSON.stringify(review, null, 2) + '\n');
-  const pendingPlan = { comments: [], decisions: review.files.map((file) => ({ reason: file.reason || 'Complete file patch; native placement is evaluated against the current PR diff when publishing' })) };
+  const pendingPlan = { pending: true, comments: [], decisions: review.files.map((file) => ({ reason: file.reason || 'Complete file patch; native placement is evaluated against the current PR diff when publishing' })) };
   fs.writeFileSync(path.join(outputDir, 'review.md'), buildReviewBody(review, pendingPlan, { maxBytes: Infinity }));
   return review;
 }
@@ -433,8 +453,13 @@ async function publish({ github, context, core, env = process.env }) {
     github.paginate(github.rest.pulls.listFiles, { ...parameters, per_page: 100 }),
     github.paginate(github.rest.pulls.listReviews, { ...parameters, per_page: 100 }),
   ]);
+  const assertCurrentHead = async () => {
+    const { data: pr } = await github.rest.pulls.get(parameters);
+    if (pr.head.sha !== headSha) throw new Error(`Refusing stale cleanup review: PR head is ${pr.head.sha}, analyzed head is ${headSha}`);
+  };
   if (reviews.some((item) => item.user?.type === 'Bot' && item.user?.login === 'github-actions[bot]'
       && item.state !== 'PENDING' && item.body?.includes(review.marker))) {
+    await assertCurrentHead();
     core.info('The GitHub Actions bot already published this exact cleanup patch for this head');
     return { duplicate: true };
   }
@@ -444,10 +469,6 @@ async function publish({ github, context, core, env = process.env }) {
   const runUrl = runId ? `${server}/${encodeURIComponent(context.repo.owner)}/${encodeURIComponent(context.repo.repo)}/actions/runs/${runId}` : '';
   const bodyOptions = { artifactUrl: env.REVIEW_ARTIFACT_URL || '', runUrl };
   const body = buildReviewBody(review, plan, bodyOptions);
-  const assertCurrentHead = async () => {
-    const { data: pr } = await github.rest.pulls.get(parameters);
-    if (pr.head.sha !== headSha) throw new Error(`Refusing stale cleanup review: PR head is ${pr.head.sha}, analyzed head is ${headSha}`);
-  };
   const request = { ...parameters, commit_id: headSha, event: 'COMMENT', body, ...(plan.comments.length ? { comments: plan.comments } : {}) };
   await assertCurrentHead();
   try {

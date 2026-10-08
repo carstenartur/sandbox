@@ -6,6 +6,14 @@ A native **Suggested Change** is offered only when it can contain the complete a
 
 By default, the artifact contains `suggestions.patch`, `review.md`, `review.json`, and the cleanup JSON reports. It is uploaded before review publication, so the complete result remains available if GitHub rejects the review. Oversized reviews explicitly direct the reader to the complete artifact; they do not present a shortened patch as complete. If no artifact is available, an oversized result fails publication with a visible error instead of publishing an incomplete review.
 
+## Accepting a suggestion
+
+Open the file's review comment under **Files changed**. Below the native **Suggested change** block, click **Commit suggestion**, then **Commit changes**. This accepts every cleanup edit in that file together; selecting a batch is unnecessary for a single file suggestion.
+
+GitHub displays the complete replacement range in red and green, including unchanged lines between edits. Lines outside that range remain in the file, even when the displayed fragment ends before a closing brace. The review's additional file diffs are collapsed and marked **view only**: they provide the complete patch for inspection, while the native suggestion in the file comment provides GitHub's commit controls.
+
+Files marked **Complete patch required** have no native acceptance button. To apply the whole result, download the artifact and apply `suggestions.patch` to its recorded head. This is an alternative to accepting individual suggestions: the patch already contains all of their changes. The integration-fixture files intentionally contain the before-form and demonstrate the review output.
+
 ## How it works
 
 1. The caller checks out the exact pull-request head with full Git history.
@@ -122,10 +130,10 @@ Sandbox has a separate `ProjectWideJavaCleanup` application and semantic multi-f
 ```bash
 bash -n .github/actions/cleanup-review/run-cleanup-review.sh
 .github/actions/cleanup-review/test/run-cleanup-review-test.sh
-node --test .github/actions/cleanup-review/test/cleanup-review.test.cjs
+./mvnw --batch-mode -f sandbox_common_test/pom-cleanup-review.xml test
 ```
 
-The shell contract uses a mocked Docker executable while keeping Git and the action runner real. It verifies project discovery, paths containing spaces, changed-file selection, complete patch generation, report generation, skipped files, and the no-Java no-op path. Publisher tests exercise grouped replacements, multiple files, off-diff changes, GitHub range constraints, and complete-result fallbacks without making network writes.
+Maven/JUnit owns the executable contract: `CleanupReviewPublisherTest` runs the publisher scenarios and requires every case to pass, alongside the action's Java evidence and runtime contracts. The standalone test POM runs these same Java sources without building Eclipse plugins; the normal `sandbox_common_test` Maven gate also discovers them. The Node scenario harness exercises grouped replacements, multiple files, off-diff changes, GitHub range constraints, and complete-result fallbacks without making network writes. The shell preflight uses a mocked Docker executable while keeping Git and the action runner real to check the shell adapter.
 
 ### Selecting the analysis JVM
 

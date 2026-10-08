@@ -338,6 +338,15 @@ test('a stale PR head prevents every publication', async (t) => {
   assert.equal(github.calls.filter(([name]) => name === 'createReview').length, 0);
 });
 
+test('an existing review cannot make a stale-head retry succeed', async (t) => {
+  const review = prepare();
+  const github = mockGithub({ head: 'b'.repeat(40), reviews: [
+    { body: review.marker, user: { login: 'github-actions[bot]', type: 'Bot' }, state: 'COMMENTED' },
+  ] });
+  await assert.rejects(publishFixture(t, github, review), /head|stale/i);
+  assert.equal(github.calls.filter(([name]) => name === 'createReview').length, 0);
+});
+
 test('retry deduplication requires the marker from the same GitHub Actions bot', async (t) => {
   const review = prepare();
   const duplicate = mockGithub({ reviews: [{ body: review.marker, user: { login: 'github-actions[bot]', type: 'Bot' }, state: 'COMMENTED' }] });

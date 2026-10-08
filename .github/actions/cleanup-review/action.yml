@@ -101,7 +101,7 @@ runs:
 
     - name: Prepare complete grouped review
       id: prepare
-      if: steps.cleanup.outputs.has_changes == 'true'
+      if: steps.cleanup.outcome == 'success' && steps.cleanup.outputs.has_changes == 'true'
       shell: bash
       env:
         REVIEW_HEAD_SHA: ${{ inputs.head-sha }}
