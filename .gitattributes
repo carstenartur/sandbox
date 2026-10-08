@@ -4,3 +4,5 @@ mvnw.cmd text eol=crlf
 *.sh text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+# Captured mathematics source is hashed byte-for-byte by Help provenance.
+/sandbox_eclipse_help_swtbot_test/fixtures/mathematics/**/*.java.txt text eol=lf
