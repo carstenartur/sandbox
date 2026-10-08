@@ -1,6 +1,7 @@
 package example;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Both conversions intentionally use their before-form. The cleanup commit
@@ -11,7 +12,7 @@ public final class GroupedEncodingExample {
     }
 
     public static Charset utf8() {
-        return Charset.forName("UTF-8");
+        return StandardCharsets.UTF_8;
     }
 
     public static String describe() {
@@ -19,6 +20,6 @@ public final class GroupedEncodingExample {
     }
 
     public static Charset latin1() {
-        return Charset.forName("ISO-8859-1");
+        return StandardCharsets.ISO_8859_1;
     }
 }

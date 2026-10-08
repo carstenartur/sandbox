@@ -1,6 +1,7 @@
 package example;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Intentionally contains the conservative before-form used by the PR review
@@ -11,7 +12,7 @@ public final class ExplicitEncodingExample {
     }
 
     public static Charset utf8() {
-        return Charset.forName("UTF-8");
+        return StandardCharsets.UTF_8;
     }
 
     /** Keep the import outside this PR's diff context to exercise full-patch review. */
