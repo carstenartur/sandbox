@@ -34,13 +34,52 @@ cat > "$repo/alpha/.project" <<'PROJECT'
 </projectDescription>
 PROJECT
 cat > "$repo/alpha/src/A.java" <<'JAVA'
+import java.nio.charset.Charset;
+
 class A {
-    String value() { return "before"; }
+    int firstUnchangedValue() {
+        return 1;
+    }
+
+    int secondUnchangedValue() {
+        return 2;
+    }
+
+    String first(byte[] bytes) {
+        return new String(bytes, Charset.forName("UTF-8"));
+    }
+
+    int thirdUnchangedValue() {
+        return 3;
+    }
+
+    int fourthUnchangedValue() {
+        return 4;
+    }
+
+    String second(byte[] bytes) {
+        return new String(bytes, Charset.forName("UTF-8"));
+    }
+
+    int fifthUnchangedValue() {
+        return 5;
+    }
+
+    int sixthUnchangedValue() {
+        return 6;
+    }
 }
 JAVA
 cat > "$repo/alpha/src/With Space.java" <<'JAVA'
 class WithSpace {
     String value() { return "before"; }
+}
+JAVA
+cat > "$repo/alpha/src/Obsolete.java" <<'JAVA'
+final class Obsolete {
+    static int legacyValue() {
+        return -1;
+    }
 }
 JAVA
 cat > "$repo/orphan/B.java" <<'JAVA'
@@ -59,6 +98,8 @@ PROPERTIES
   git init -q
   git config user.name test
   git config user.email test@example.invalid
+  git config core.autocrlf false
+  git config diff.context 3
   git add .
   git commit -qm baseline
 )
@@ -73,6 +114,75 @@ printf '\n// pull request change\n' >> "$repo/.github/scripts/Verifier.java"
   git commit -qm head
 )
 head_sha=$(git -C "$repo" rev-parse HEAD)
+
+# The PR only appends a comment. Neither the import nor either expression is
+# visible in its normal diff context, but the cleanup must retain all three.
+pr_context=$test_root/pr-context.patch
+git -C "$repo" diff --unified=3 "$base_sha...$head_sha" -- alpha/src/A.java > "$pr_context"
+grep -F '// pull request change' "$pr_context" >/dev/null
+if grep -F 'Charset' "$pr_context" >/dev/null; then
+  echo 'The fixture must keep every charset edit outside the PR diff context' >&2
+  exit 1
+fi
+
+# Build an independent byte-for-byte oracle, including a new and a deleted file.
+expected_repo=$test_root/expected-repository
+git clone --quiet --no-hardlinks "$repo" "$expected_repo"
+git -C "$expected_repo" config core.autocrlf false
+cat > "$expected_repo/alpha/src/A.java" <<'JAVA'
+import java.nio.charset.StandardCharsets;
+
+class A {
+    int firstUnchangedValue() {
+        return 1;
+    }
+
+    int secondUnchangedValue() {
+        return 2;
+    }
+
+    String first(byte[] bytes) {
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    int thirdUnchangedValue() {
+        return 3;
+    }
+
+    int fourthUnchangedValue() {
+        return 4;
+    }
+
+    String second(byte[] bytes) {
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
+
+    int fifthUnchangedValue() {
+        return 5;
+    }
+
+    int sixthUnchangedValue() {
+        return 6;
+    }
+}
+
+// pull request change
+JAVA
+cat > "$expected_repo/alpha/src/With Space.java" <<'JAVA'
+class WithSpace {
+    String value() { return "after"; }
+}
+
+// pull request change
+JAVA
+cat > "$expected_repo/alpha/src/Generated.java" <<'JAVA'
+final class Generated {
+    static final String NAME = "cleanup";
+}
+JAVA
+rm "$expected_repo/alpha/src/Obsolete.java"
+git -C "$expected_repo" add --all
+expected_tree=$(git -C "$expected_repo" write-tree)
 
 cat > "$bin_dir/docker" <<'MOCK'
 #!/usr/bin/env bash
@@ -128,10 +238,32 @@ done
 [[ $import_project == /workspace/alpha ]]
 for source in "${sources[@]}"; do
   relative=${source#/workspace/}
-  printf '\n// cleanup suggestion\n' >> "$workspace/$relative"
+  case $relative in
+    alpha/src/A.java)
+      sed 's/import java.nio.charset.Charset;/import java.nio.charset.StandardCharsets;/;
+           s/Charset.forName("UTF-8")/StandardCharsets.UTF_8/g' \
+        "$workspace/$relative" > "$workspace/$relative.tmp"
+      mv "$workspace/$relative.tmp" "$workspace/$relative"
+      ;;
+    'alpha/src/With Space.java')
+      sed 's/return "before";/return "after";/' \
+        "$workspace/$relative" > "$workspace/$relative.tmp"
+      mv "$workspace/$relative.tmp" "$workspace/$relative"
+      ;;
+    *)
+      echo "Unexpected cleanup input: $source" >&2
+      exit 1
+      ;;
+  esac
 done
+cat > "$workspace/alpha/src/Generated.java" <<'JAVA'
+final class Generated {
+    static final String NAME = "cleanup";
+}
+JAVA
+rm "$workspace/alpha/src/Obsolete.java"
 report_path=$review_output/${report#/review-output/}
-printf '{"tool":"sandbox-cleanup","filesChanged":%d}\n' "${#sources[@]}" > "$report_path"
+printf '{"tool":"sandbox-cleanup","filesChanged":%d}\n' "$((${#sources[@]} + 2))" > "$report_path"
 MOCK
 chmod +x "$bin_dir/docker"
 
@@ -157,17 +289,49 @@ log_file=$test_root/docker.log
 grep -Fx 'has_changes=true' "$output_file" >/dev/null
 grep -Fx 'input_java_count=4' "$output_file" >/dev/null
 grep -Fx 'project_count=1' "$output_file" >/dev/null
-grep -Fx 'changed_file_count=2' "$output_file" >/dev/null
+grep -Fx 'changed_file_count=4' "$output_file" >/dev/null
 grep -Fx 'skipped_file_count=2' "$output_file" >/dev/null
 grep -F -- '--import-project /workspace/alpha' "$log_file" >/dev/null
 grep -F -- '--source /workspace/alpha/src/A.java' "$log_file" >/dev/null
 grep -F -- "--source /workspace/alpha/src/With\\ Space.java" "$log_file" >/dev/null
 [[ $(grep -c '^run ' "$log_file") -eq 1 ]]
 grep -F '`alpha`' "$output/summary.md" >/dev/null
-grep -F '// cleanup suggestion' "$output/suggestions.patch" >/dev/null
+grep -Fx '+import java.nio.charset.StandardCharsets;' "$output/suggestions.patch" >/dev/null
+[[ $(grep -Fxc '+        return new String(bytes, StandardCharsets.UTF_8);' "$output/suggestions.patch") -eq 2 ]]
+[[ $(awk '
+  /^diff --git / { in_a = ($0 == "diff --git a/alpha/src/A.java b/alpha/src/A.java") }
+  in_a && /^@@ / { count++ }
+  END { print count + 0 }
+' "$output/suggestions.patch") -eq 3 ]]
+grep -Fx '+    String value() { return "after"; }' "$output/suggestions.patch" >/dev/null
+grep -Fx '+final class Generated {' "$output/suggestions.patch" >/dev/null
+grep -Fx -- '-final class Obsolete {' "$output/suggestions.patch" >/dev/null
+grep -Fx 'new file mode 100644' "$output/suggestions.patch" >/dev/null
+grep -Fx 'deleted file mode 100644' "$output/suggestions.patch" >/dev/null
 grep -F 'orphan/B.java' "$output/skipped-files.txt" >/dev/null
 grep -F '.github/scripts/Verifier.java' "$output/skipped-files.txt" >/dev/null
 [[ -s $output/report-0.json ]]
+
+# Compare the entire generated result, then prove the artifact alone can undo
+# and reproduce it. Tree equality covers all file bytes, names and modes,
+# including files that were not in the PR's changed-file input.
+git -C "$repo" add --all
+[[ $(git -C "$repo" write-tree) == "$expected_tree" ]]
+cmp "$repo/alpha/src/A.java" "$expected_repo/alpha/src/A.java"
+cmp "$repo/alpha/src/With Space.java" "$expected_repo/alpha/src/With Space.java"
+git -C "$repo" apply --reverse --check --index "$output/suggestions.patch"
+git -C "$repo" apply --reverse --index "$output/suggestions.patch"
+[[ $(git -C "$repo" write-tree) == "$(git -C "$repo" rev-parse "${head_sha}^{tree}")" ]]
+[[ -z $(git -C "$repo" status --porcelain --untracked-files=all) ]]
+git -C "$repo" apply --check --index "$output/suggestions.patch"
+git -C "$repo" apply --index "$output/suggestions.patch"
+[[ $(git -C "$repo" write-tree) == "$expected_tree" ]]
+cmp "$repo/alpha/src/A.java" "$expected_repo/alpha/src/A.java"
+cmp "$repo/alpha/src/With Space.java" "$expected_repo/alpha/src/With Space.java"
+cmp "$repo/alpha/src/Generated.java" "$expected_repo/alpha/src/Generated.java"
+[[ ! -e $repo/alpha/src/Obsolete.java ]]
+git -C "$repo" apply --reverse --index "$output/suggestions.patch"
+[[ -z $(git -C "$repo" status --porcelain --untracked-files=all) ]]
 
 # A pull request without Java changes must not invoke Docker and must be a clean no-op.
 printf 'documentation\n' > "$repo/README.md"

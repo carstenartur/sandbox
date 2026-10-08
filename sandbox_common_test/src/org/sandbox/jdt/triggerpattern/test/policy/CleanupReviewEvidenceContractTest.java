@@ -97,8 +97,16 @@ class CleanupReviewEvidenceContractTest {
                 "The failure upload must not depend on outputs produced only at successful script completion");
         String cleanup = step(yaml, "Run configured Sandbox cleanup");
         assertFalse(cleanup.contains("continue-on-error"));
-        String publish = step(yaml, "Publish applicable Suggested Changes");
-        assertFalse(publish.contains("always()"), "A failed cleanup must not publish its partial diff");
+        String prepare = condition(step(yaml, "Prepare complete grouped review"));
+        assertTrue(prepare.contains("steps.cleanup.outcome == 'success'"),
+                "A failed cleanup must not prepare its partial diff for publication");
+        assertTrue(prepare.contains("steps.cleanup.outputs.has_changes == 'true'"),
+                "Only a completed cleanup with changes should prepare a review");
+        String publish = condition(step(yaml, "Publish complete cleanup review"));
+        assertTrue(publish.contains("steps.prepare.outcome == 'success'"),
+                "Publication must require successfully prepared complete evidence");
+        assertTrue(publish.contains("!cancelled()"), "A cancelled run must not publish a review");
+        // always() is safe behind these gates: an upload failure must not hide a ready review.
     }
 
     private static String action() throws Exception {
@@ -116,5 +124,13 @@ class CleanupReviewEvidenceContractTest {
         assertFalse(match.find(), "Duplicate action step " + name);
         var next = Pattern.compile("(?m)^    - name: ").matcher(yaml);
         return yaml.substring(start, next.find(contentStart) ? next.start() : yaml.length());
+    }
+
+    private static String condition(String step) {
+        var match = Pattern.compile("(?m)^      if: (.+)\\r?$").matcher(step);
+        assertTrue(match.find(), "Missing action step condition: " + step);
+        String condition = match.group(1);
+        assertFalse(match.find(), "Duplicate action step condition: " + step);
+        return condition;
     }
 }

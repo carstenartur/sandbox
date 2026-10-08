@@ -13,4 +13,9 @@ public final class ExplicitEncodingExample {
     public static Charset utf8() {
         return Charset.forName("UTF-8");
     }
+
+    /** Keep the import outside this PR's diff context to exercise full-patch review. */
+    public static String describe() {
+        return "Existing file: the conversion and its import must remain together.";
+    }
 }

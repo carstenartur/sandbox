@@ -292,7 +292,7 @@ while IFS= read -r -d '' untracked_path; do
   case $untracked_path in
     *.java)
       # Intent-to-add makes a newly generated Java file visible to git diff and
-      # therefore to the Suggested Changes publisher without staging content.
+      # therefore to the complete cleanup commit and patch without staging content.
       git add --intent-to-add -- "$untracked_path"
       ;;
     *)
@@ -319,7 +319,7 @@ while IFS= read -r -d '' changed_path; do
   ((changed_file_count += 1))
 done < <(git diff -z --name-only --diff-filter=ACMRD -- '*.java')
 
-git diff --binary --no-ext-diff --src-prefix=a/ --dst-prefix=b/ -- '*.java' > "$patch_file"
+git diff --binary --no-ext-diff --no-textconv --src-prefix=a/ --dst-prefix=b/ -- '*.java' > "$patch_file"
 
 has_changes=false
 if ((changed_file_count > 0)); then
@@ -337,6 +337,7 @@ fi
   echo "| Skipped files outside Eclipse Java projects | $skipped_count |"
   echo
   echo "**Profile:** \`$config_rel\`  "
+  echo "**Analyzed head:** \`$resolved_head\`  "
   echo "**Scope:** \`$scope\`  "
   echo "**Source mode:** \`$source_mode\`  "
   echo "**Cleanup image:** \`$image_identity\`"
@@ -350,7 +351,9 @@ fi
     echo
   fi
   if [[ $has_changes == true ]]; then
-    echo "Applicable changed lines are published as GitHub Suggested Changes. The complete patch and JSON reports are retained as a workflow artifact, including changes that GitHub cannot place inline."
+    echo "The review links to one complete cleanup commit, including edits outside the PR diff. Inspect its GitHub comparison, then open and merge the cleanup PR into the original PR branch to accept every change together. The artifact retains suggestions.patch, the captured review, and JSON reports."
+    echo
+    echo "The default CLI processes files separately. Choosing project source mode widens the input; it does not create a coordinated multi-file cleanup transaction."
   elif ((project_count == 0 && input_java_count > 0)); then
     echo "No cleanup ran because none of the changed Java files belongs to an Eclipse Java project."
   else
