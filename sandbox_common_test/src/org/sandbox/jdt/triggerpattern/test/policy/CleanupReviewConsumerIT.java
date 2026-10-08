@@ -11,26 +11,47 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /** Real Docker qualification of the standalone consumer, only in consumer-e2e. */
 class CleanupReviewConsumerIT {
     @TempDir Path temporary;
 
     @ParameterizedTest
-    @ValueSource(booleans = {false, true})
-    void nativeEclipseMetadataAndCompleteEditsSurviveExternalUse(boolean nested) throws Exception {
+    @CsvSource({"false,11,false", "true,11,false", "false,11,true", "false,21,false", "false,21,true"})
+    void nativeEclipseMetadataAndCompleteEditsSurviveExternalUse(boolean nested, int release, boolean executionEnvironment) throws Exception {
         Path root = Path.of("").toAbsolutePath();
         Path action = root.resolve(".github/actions/cleanup-review/run-cleanup-review.sh");
         Path template = root.resolve("examples/cleanup-review/eclipse");
         Path repository = Files.createDirectory(temporary.resolve("independent consumer"));
         List<String> projects = nested ? List.of("plugin", "test project") : List.of("");
-        for (String project : projects) copy(template, repository.resolve(project));
+        Map<Path, byte[]> metadataBefore = new LinkedHashMap<>();
+        for (String project : projects) {
+            Path target = repository.resolve(project);
+            copy(template, target);
+            // Build independent consumer configurations before their baseline commit.
+            // Cleanup must preserve each configuration, not normalize it to the template.
+            Path preferences = target.resolve(".settings/org.eclipse.jdt.core.prefs");
+            Files.writeString(preferences, Files.readString(preferences, StandardCharsets.UTF_8)
+                    .replace("=11", "=" + release), StandardCharsets.UTF_8);
+            if (executionEnvironment) {
+                Path classpath = target.resolve(".classpath");
+                Files.writeString(classpath, Files.readString(classpath, StandardCharsets.UTF_8)
+                        .replace("JRE_CONTAINER\"", "JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-" + release + "\""),
+                        StandardCharsets.UTF_8);
+            }
+            for (String metadata : List.of(".project", ".classpath", ".settings/org.eclipse.jdt.core.prefs")) {
+                Path file = target.resolve(metadata);
+                metadataBefore.put(file, Files.readAllBytes(file));
+            }
+        }
         if (nested) Files.writeString(repository.resolve(".project"),
                 "<projectDescription><natures/></projectDescription>\n", StandardCharsets.UTF_8);
         run(repository, "git", "init", "-q");
@@ -47,13 +68,13 @@ class CleanupReviewConsumerIT {
         run(repository, "git", "add", ".");
         run(repository, "git", "commit", "-qm", "PR head");
         String head = run(repository, "git", "rev-parse", "HEAD").strip();
-        String expected = compileAndRun(repository.resolve(projects.getFirst()), temporary.resolve("before-bin"));
+        String expected = compileAndRun(repository.resolve(projects.getFirst()), temporary.resolve("before-bin"), release);
         assertEquals("2:1", expected.strip());
         Path evidence = temporary.resolve("evidence");
         String cleanupLog = run(repository, "bash", action.toString(), "--base-sha", base, "--head-sha", head,
                 "--image", System.getProperty("cleanup.review.image", "ghcr.io/carstenartur/sandbox-cleanup:latest"),
                 "--java-home", System.getProperty("java.home"), "--output-dir", evidence.toString());
-        Path retained = root.resolve("sandbox_common_test/target/cleanup-review/consumer-evidence/" + (nested ? "nested" : "single"));
+        Path retained = root.resolve("sandbox_common_test/target/cleanup-review/consumer-evidence/" + (nested ? "nested" : "single") + "-" + release + "-" + executionEnvironment);
         copy(evidence, retained);
         Files.writeString(retained.resolve("cleanup.log"), cleanupLog, StandardCharsets.UTF_8);
         String patch = Files.readString(evidence.resolve("suggestions.patch"), StandardCharsets.UTF_8);
@@ -65,10 +86,10 @@ class CleanupReviewConsumerIT {
         assertEquals(projects.size(), run(repository, "git", "diff", "--name-only").lines().count());
         for (String project : projects) {
             Path target = repository.resolve(project);
-            for (String metadata : List.of(".project", ".classpath", ".settings/org.eclipse.jdt.core.prefs")) {
-                assertArrayEquals(Files.readAllBytes(template.resolve(metadata)), Files.readAllBytes(target.resolve(metadata)), metadata);
-            }
-            assertEquals(expected, compileAndRun(target, temporary.resolve("after-" + projects.indexOf(project))));
+            assertEquals(expected, compileAndRun(target, temporary.resolve("after-" + projects.indexOf(project)), release));
+        }
+        for (var metadata : metadataBefore.entrySet()) {
+            assertArrayEquals(metadata.getValue(), Files.readAllBytes(metadata.getKey()), metadata.getKey().toString());
         }
         assertFalse(Files.exists(repository.resolve("sandbox_common_test")));
         run(repository, "git", "add", "-A");
@@ -81,9 +102,9 @@ class CleanupReviewConsumerIT {
                 + "\nComplete cleaned tree: " + tree + "Behavior before/after: " + expected, StandardCharsets.UTF_8);
     }
 
-    private String compileAndRun(Path project, Path output) throws Exception {
+    private String compileAndRun(Path project, Path output, int release) throws Exception {
         Files.createDirectories(output);
-        run(project, Path.of(System.getProperty("java.home"), "bin", "javac").toString(), "--release", "11",
+        run(project, Path.of(System.getProperty("java.home"), "bin", "javac").toString(), "--release", Integer.toString(release),
                 "-d", output.toString(), "src/example/EncodingExample.java");
         return run(project, Path.of(System.getProperty("java.home"), "bin", "java").toString(), "-cp", output.toString(), "example.EncodingExample");
     }
