@@ -14,7 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
@@ -101,7 +100,7 @@ class BouncyCastleRuntimeCorpusIT {
         }
         assertFalse(analyze(parse(generated, example.name()), generated, example.name()).changed(), "Idempotence");
         assertFalse(generated.contains("_math"), "Do not hide a more verbose generated result in the demo");
-        Path before = write(caseOutput.resolve("before").resolve(relative), original);
+        write(caseOutput.resolve("before").resolve(relative), original);
         Path after = write(caseOutput.resolve("after").resolve(relative), generated);
         Path classes = Files.createDirectories(caseOutput.resolve("classes"));
         var compilerOutput = new ByteArrayOutputStream();
@@ -228,7 +227,8 @@ class BouncyCastleRuntimeCorpusIT {
     }
 
     private static Path write(Path path, String value) throws Exception {
-        Files.createDirectories(path.getParent());
+        Path parent = path.getParent();
+        if (parent != null) Files.createDirectories(parent);
         Files.writeString(path, value);
         return path;
     }
