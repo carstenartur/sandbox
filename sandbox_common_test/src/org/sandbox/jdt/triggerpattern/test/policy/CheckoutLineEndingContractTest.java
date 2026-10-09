@@ -33,6 +33,10 @@ class CheckoutLineEndingContractTest {
             ".github/scripts/fixture.sh", "#!/bin/sh\nprintf 'fixture\\n'\n".getBytes(StandardCharsets.UTF_8),
             "mvnw", "#!/bin/sh\nexit 0\n".getBytes(StandardCharsets.UTF_8),
             "mvnw.cmd", "@echo off\r\nexit /b 0\r\n".getBytes(StandardCharsets.UTF_8),
+            "sandbox_eclipse_help_swtbot_test/fixtures/mathematics/01-bouncy-castle-prime-product/before.java.txt",
+                "int product = 3 * 5;\n".getBytes(StandardCharsets.UTF_8),
+            "sandbox_eclipse_help_swtbot_test/fixtures/mathematics/01-bouncy-castle-prime-product/after.java.txt",
+                "int product = 15;\n".getBytes(StandardCharsets.UTF_8),
             "fixture.png", new byte[] {0, 13, 10, 1, 10, 2});
         for (var entry : expected.entrySet()) {
             Path file = repository.resolve(entry.getKey());

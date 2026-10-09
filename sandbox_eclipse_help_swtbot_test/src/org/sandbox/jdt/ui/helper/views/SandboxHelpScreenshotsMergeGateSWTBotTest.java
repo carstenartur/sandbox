@@ -139,6 +139,12 @@ public class SandboxHelpScreenshotsMergeGateSWTBotTest {
 				screenshots::verifyRealMethodReuseCleanupPreviewApplyAndUndo);
 	}
 
+	@Test
+	@Order(9)
+	public void captureRealMathematicsExamples() throws Exception {
+		MathematicsHelpScreenshots.capture();
+	}
+
 	private static void showView(String viewId) {
 		UIThreadRunnable.syncExec(Display.getDefault(), new VoidResult() {
 			@Override

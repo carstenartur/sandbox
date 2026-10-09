@@ -55,6 +55,8 @@ public class EclipseHelpTestModuleBoundaryTest {
 			"EclipseHelpTestModuleBoundaryTest.java", //$NON-NLS-1$
 			"FocusedCleanupConfigurationScreenshots.java", //$NON-NLS-1$
 			"JUnitBestEffortCleanupDialogSWTBotTest.java", //$NON-NLS-1$
+			"MathematicsHelpScreenshots.java", //$NON-NLS-1$
+			"MathematicsHelpScreenshotsSWTBotTest.java", //$NON-NLS-1$
 			"PdeXmlQuickFixScreenshot.java", //$NON-NLS-1$
 			"PreviewContract.java", //$NON-NLS-1$
 			"SandboxAtomicPreviewPatchedJdtSWTBotTest.java", //$NON-NLS-1$
@@ -119,6 +121,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 		assertEquals(Set.of(
 				"**/SandboxHelpScreenshotsSWTBotTest.class", //$NON-NLS-1$
 				"**/SandboxHelpScreenshotsMergeGateSWTBotTest.class", //$NON-NLS-1$
+				"**/MathematicsHelpScreenshotsSWTBotTest.class", //$NON-NLS-1$
 				"**/SandboxAtomicPreviewPatchedJdtSWTBotTest.class"), //$NON-NLS-1$
 				texts(configuration, "excludes/exclude")); //$NON-NLS-1$
 		assertEquals(Set.of("**/*Test.class"), texts(configuration, "includes/include")); //$NON-NLS-1$ //$NON-NLS-2$

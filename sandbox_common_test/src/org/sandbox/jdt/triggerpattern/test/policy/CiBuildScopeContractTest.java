@@ -134,6 +134,8 @@ public class CiBuildScopeContractTest {
 			String premature = workflow.replace(provision, provision.replace(" package", " " + phase)); //$NON-NLS-1$ //$NON-NLS-2$
 			assertThrows(AssertionError.class, () -> assertAtomicMavenScopes(premature), phase);
 		}
+		String unpinned = workflow.replace(provision, provision.replace("./mvnw ", "mvn ")); //$NON-NLS-1$ //$NON-NLS-2$
+		assertThrows(AssertionError.class, () -> assertAtomicMavenScopes(unpinned), LTK_STEP);
 	}
 
 	@Test
@@ -154,7 +156,7 @@ public class CiBuildScopeContractTest {
 			assertEquals(1, occurrences(workflowStep(workflow, name), LINUX_ONLY), name);
 		}
 		String provision = workflowStep(workflow, LTK_STEP);
-		assertTrue(provision.contains("mvn "), LTK_STEP); //$NON-NLS-1$
+		assertTrue(provision.contains("./mvnw "), LTK_STEP); //$NON-NLS-1$
 		assertTrue(provision.contains("-Dtest=LtkRuntimePatchTest,LtkRuntimeMetadataTest,PinnedLtkRuntimeIT"), LTK_STEP); //$NON-NLS-1$
 		assertTrue(provision.stripTrailing().endsWith(" package"), LTK_STEP); //$NON-NLS-1$
 		assertFalse(provision.contains("-DskipTests"), LTK_STEP); //$NON-NLS-1$

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Mathematics Cleanup: real before/after examples</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:76em;margin:2em;line-height:1.5}
+img{display:block;width:100%;height:auto;border:1px solid #aaa}figure{margin:1.5em 0}
+figcaption{margin:.5em 0}table{border-collapse:collapse;width:100%}th,td{border:1px solid #aaa;padding:.6em;text-align:left}
+code,pre{font-family:monospace}pre{background:#eee;padding:1em;overflow:auto}.note{border-left:4px solid #936600;background:#fff7e8;padding:1em}
+</style></head><body>
+<h1>Real mathematics cleanup: four before/after examples</h1>
+<p>These are screenshots of the ordinary Eclipse <strong>Clean Up</strong> preview.
+The left and right panes contain the original and proposed Java source. The
+registered mathematics cleanup computes each change; the screenshot test checks
+the complete preview, applies it, parses the result with resolved bindings, and
+verifies byte-for-byte Undo before accepting the image.</p>
+<p>The examples increase the complexity of the <em>source calculation</em>. One
+comes from Bouncy Castle production code; three are existing Eclipse JDT
+regression inputs. The JDT fixtures are not claims that the JDT implementation
+contains those calculations. Original repository revisions and source locations
+are linked beside every example.</p>
+<div class="note"><strong>What these results mean.</strong> All four examples
+simplify calculations whose values are statically known. They demonstrate the
+current cleanup's constant evaluation, propagation and shared values. They do
+not demonstrate a general algebraic optimizer or a measured speedup. Java
+compilers already fold literal constant expressions. The current emitter also
+introduces <code>final _math...</code> temporaries and preserves the original
+variable declarations, so fewer arithmetic operations can mean more source
+lines. The screenshots show that output without hand editing it.</div>
+<h2>Reproduce the settings</h2>
+<ol>
+<li>Open <strong>Java &gt; Code Style &gt; Clean Up</strong> and edit a profile.</li>
+<li>On <strong>Mathematics (Sandbox)</strong>, enable the explicit cleanup and
+select <strong>Custom selection</strong> with <strong>int</strong> only. The default
+<strong>Only BigInteger</strong> profile does not select these calculations.</li>
+<li>Choose <strong>Preserve Java behavior</strong>, <strong>Readability</strong>,
+a search work budget of <strong>1,000,000</strong> and <strong>20,000</strong>
+maximum states. Checked arithmetic and underflow checks remain off.</li>
+<li>Run <strong>Source &gt; Clean Up...</strong>, use the configured profile,
+and open the preview. Select the Java file to see the two source panes.</li>
+</ol>
+<p>The example projects target Java 17; the Eclipse host runs on Java 25.
+Click an image to inspect the full-size 1280 × 900 capture.</p>
+<table><thead><tr><th>Level</th><th>Source</th><th>Visible transformation</th></tr></thead><tbody>
+<tr><td>1</td><td>Bouncy Castle production method</td><td>A product of eight small primes becomes one integer constant.</td></tr>
+<tr><td>2</td><td>JDT Core compiler regression input</td><td>Two negations reuse the same known value while assignments and a comment remain.</td></tr>
+<tr><td>3</td><td>JDT UI Extract Temp regression input</td><td>Values propagate through three local declarations into a longer sum.</td></tr>
+<tr><td>4</td><td>JDT UI Extract Temp regression input</td><td>Two nested arithmetic expressions produce two independent results.</td></tr>
+</tbody></table>
+<h2 id="bouncy-castle">1. A constant product in Bouncy Castle</h2>
+<p><a href="https://github.com/bcgit/bc-java/blob/c314b9cdffa3958a0eff5344f8fdcdb0181ed830/core/src/main/java/org/bouncycastle/crypto/generators/DHParametersHelper.java#L107-L137">DHParametersHelper.hasAnySmallFactorsSafe</a>
+combines small prime divisors into a modulus for trial division. The screenshot
+uses that complete, unchanged method in its original package and class; only
+unrelated members are omitted. The real Bouncy Castle <code>BigIntegers</code>
+class supplies bindings, rather than a source stub.</p>
+<pre>Before: int m = 5 * 7 * 11 * 13 * 17 * 19 * 23 * 29;
+After:  final int _math0 = 1078282205;
+        int m = _math0;</pre>
+<figure><a href="../images/01-bouncy-castle-prime-product.png"><img src="../images/01-bouncy-castle-prime-product.png" alt="Native cleanup preview: Bouncy Castle prime product becomes 1078282205"></a>
+<figcaption>The subsequent BigInteger operation and conditional trial-division
+checks remain visible and unchanged. This is a source simplification, not a
+cryptographic performance or constant-time certification.</figcaption></figure>
+<p>Source: <code>bcgit/bc-java</code>, commit <code>c314b9cdffa3958a0eff5344f8fdcdb0181ed830</code>.
+<a href="bouncy-castle-license.html">Bouncy Castle copyright and MIT license</a>.</p>
+<h2 id="jdt-core">2. A shared result across assignments in JDT Core</h2>
+<p><a href="https://github.com/eclipse-jdt/eclipse.jdt.core/blob/ef3d6f2115df89d7964bc13aa363ab8d6bd21256/org.eclipse.jdt.core.tests.compiler/src/org/eclipse/jdt/core/tests/compiler/regression/NumericTest.java#L31-L44">NumericTest.test001</a>
+contains a small compiler regression program. Starting with <code>offset = -8</code>,
+it calculates <code>0 - offset</code> twice. The cleanup produces one constant
+<code>8</code> and uses it for both <code>temp</code> and the new <code>offset</code>.</p>
+<figure><a href="../images/02-jdt-core-shared-value.png"><img src="../images/02-jdt-core-shared-value.png" alt="Native cleanup preview: JDT Core regression program reuses the value eight"></a>
+<figcaption>The original assignments, output checks and “problem line” comment
+are preserved. The whole embedded Java program is used unchanged as input.</figcaption></figure>
+<p>Source: JDT Core <code>R4_40</code>, commit <code>ef3d6f2115df89d7964bc13aa363ab8d6bd21256</code>, EPL-2.0.</p>
+<h2 id="multiple-lines">3. Propagate values through several lines</h2>
+<p><a href="https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/c922f757b27b7e2b6215db383cec5f8aafd13227/org.eclipse.jdt.ui.tests.refactoring/resources/ExtractTemp/canExtract/A_test114_in.java">ExtractTemp A_test114_in.java</a>
+initializes <code>x = 9</code>, <code>y = 10</code> and <code>k = 8</code> before
+a longer sum. The cleanup follows those local values and derives
+<code>j = 178</code>. The screenshot uses the complete upstream fixture.</p>
+<figure><a href="../images/03-jdt-ui-multiple-lines.png"><img src="../images/03-jdt-ui-multiple-lines.png" alt="Native cleanup preview: values from x y and k propagate into the result 178"></a>
+<figcaption>This illustrates reasoning across statements. It does not establish
+an equivalent rewrite for arbitrary, unknown x, y and k.</figcaption></figure>
+<h2 id="nested">4. Nested expressions with two results</h2>
+<p><a href="https://github.com/eclipse-jdt/eclipse.jdt.ui/blob/c922f757b27b7e2b6215db383cec5f8aafd13227/org.eclipse.jdt.ui.tests.refactoring/resources/ExtractTemp/canExtract/A_test54_in.java">ExtractTemp A_test54_in.java</a>
+contains nested additions and multiplications in two initializers. The actual
+cleanup computes <code>e = 204</code> and <code>c = 47</code>, retaining both
+outputs and the original surrounding source.</p>
+<figure><a href="../images/04-jdt-ui-nested-arithmetic.png"><img src="../images/04-jdt-ui-nested-arithmetic.png" alt="Native cleanup preview: two nested JDT UI arithmetic expressions become 204 and 47"></a>
+<figcaption>The two source expressions are processed together. The generated
+temporary variables are part of the actual cleanup result.</figcaption></figure>
+<p>Both JDT UI examples: <code>R4_40</code>, commit
+<code>c922f757b27b7e2b6215db383cec5f8aafd13227</code>, EPL-2.0.</p>
+<h2>Limits exposed by real code</h2>
+<p>The inspected Bouncy Castle <code>GF256AES.mul</code> calculation exceeded
+the current plan-preparation bound. A JDT test with nested shifts of a variable
+returned an inconclusive search relation. Neither is presented as a successful
+transformation. Likewise, the BigInteger/modular reference described in the
+qualification documentation is not evidence that arbitrary cryptographic
+methods are optimized. Review each actual preview and its diagnostics.</p>
+<p><a href="cleanup.html">Back to configuration, safety profiles and headless use</a>.</p>
+</body></html>
