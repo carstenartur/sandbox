@@ -29,8 +29,20 @@ done
 [ -n "$LAUNCHER" ] || { echo "Missing Equinox launcher in $INSTALL_DIR/plugins." >&2; exit 1; }
 WORKSPACE=${SANDBOX_WORKSPACE:-${SANDBOX_CLEANUP_WORKSPACE:-${TMPDIR:-/tmp}/sandbox-cleanup-$$}}
 mkdir -p "$WORKSPACE"
+WORKSPACE=$(CDPATH= cd -- "$WORKSPACE" && pwd)
+# Docker callers use their own UID, not the image owner's UID. Keep the shipped
+# configuration read-only and place Equinox's writable state beside this run's
+# workspace state. Cascading retains the product's original bundle selection.
+CONFIGURATION="$WORKSPACE/.sandbox-configuration"
+mkdir -p "$CONFIGURATION"
 
 if [ "$(uname -s)" = Darwin ]; then
-    exec "$JAVA" -XstartOnFirstThread -jar "$LAUNCHER" -nosplash -consoleLog -application org.sandbox.jdt.core.JavaCleanup -configuration "$INSTALL_DIR/configuration" -data "$WORKSPACE" "$@"
+    exec "$JAVA" -XstartOnFirstThread -Dosgi.configuration.cascaded=true \
+        "-Dosgi.sharedConfiguration.area=$INSTALL_DIR/configuration" \
+        -Dosgi.sharedConfiguration.area.readOnly=true \
+        -jar "$LAUNCHER" -install "$INSTALL_DIR" -nosplash -consoleLog -application org.sandbox.jdt.core.JavaCleanup -configuration "$CONFIGURATION" -data "$WORKSPACE" "$@"
 fi
-exec "$JAVA" -jar "$LAUNCHER" -nosplash -consoleLog -application org.sandbox.jdt.core.JavaCleanup -configuration "$INSTALL_DIR/configuration" -data "$WORKSPACE" "$@"
+exec "$JAVA" -Dosgi.configuration.cascaded=true \
+        "-Dosgi.sharedConfiguration.area=$INSTALL_DIR/configuration" \
+        -Dosgi.sharedConfiguration.area.readOnly=true \
+        -jar "$LAUNCHER" -install "$INSTALL_DIR" -nosplash -consoleLog -application org.sandbox.jdt.core.JavaCleanup -configuration "$CONFIGURATION" -data "$WORKSPACE" "$@"
