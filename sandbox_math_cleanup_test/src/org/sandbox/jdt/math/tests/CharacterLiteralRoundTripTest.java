@@ -51,7 +51,7 @@ class CharacterLiteralRoundTripTest {
     }
 
     @Test
-    voidExplicitConstantCastsAndQualifiedNamesAreNotRewritten() throws Exception {
+    void explicitConstantCastsAndQualifiedNamesAreNotRewritten() throws Exception {
         for (String expression : new String[] {"(int)'\\uffff'", "Byte.MIN_VALUE", "Short.MAX_VALUE"}) {
             String source = "public class Calculation { public static int compute(int x) { return x+"
                     + expression + "+0; }}";
