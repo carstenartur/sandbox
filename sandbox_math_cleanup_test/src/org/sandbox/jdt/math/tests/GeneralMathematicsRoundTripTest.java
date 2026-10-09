@@ -10,7 +10,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Random;
+import java.util.SplittableRandom;
 import java.util.Set;
 import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -118,7 +118,7 @@ class GeneralMathematicsRoundTripTest {
         int[] edges={0,1,-1,17,Integer.MIN_VALUE,Integer.MAX_VALUE,1<<30};
         for(int x:edges)for(int a:edges)for(int b:edges)
             assertEquals(before.invoke(null,x,a,b),after.invoke(null,x,a,b),"x="+x+",a="+a+",b="+b);
-        Random random=new Random(1657);
+        SplittableRandom random=new SplittableRandom(1657);
         for(int i=0;i<128;i++){
             int x=random.nextInt(),a=random.nextInt(),b=random.nextInt();
             assertEquals(before.invoke(null,x,a,b),after.invoke(null,x,a,b));
