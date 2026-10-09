@@ -43,3 +43,10 @@ cd "$sandbox"
 xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
   -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am \
   -Dtest=BouncyCastleRuntimeCorpusIT verify
+cp -a sandbox_math_cleanup_test/target/surefire-reports "$output/production-junit"
+# This second JUnit invocation consumes only PASS receipts and matching source
+# hashes from the preceding full-production-file test; it cannot invent outputs.
+xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
+  -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am \
+  -Dtest=RuntimeHelpFixtureExportIT verify
+cp -a sandbox_math_cleanup_test/target/surefire-reports "$output/fixture-export-junit"
