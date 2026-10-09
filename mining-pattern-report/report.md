@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-10-08
+# Refactoring Mining Report — 2026-10-09
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1558 | 83 | 11 |
+| sandbox | 1572 | 84 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
@@ -160,7 +160,7 @@
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CoolBarToTrimManager.java:313` — `workbenchTrimElements.stream().filter(e -> e instanceof MToolBar).map(e -> (M...`
 
 #### Rule: `modernize-java9` → `modernize-java9.unmodifiable-list-arrays-aslist.consider-list-of`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java:359` — `Collections.unmodifiableList(Arrays.asList("Spacer Glue","SearchField","Searc...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java:361` — `Collections.unmodifiableList(Arrays.asList("Spacer Glue","SearchField","Searc...`
 
 ### eclipse.platform
 #### Rule: `stream-performance` → `stream-performance.sorted-before-collect.review`
@@ -244,7 +244,7 @@
 
 #### Rule: `stream-performance` → `stream-performance.sorted-before-collect.review`
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java:205` — `group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candi...`
-- `sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java:907` — `variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(...`
+- `sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java:910` — `variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(...`
 
 #### Rule: `stream-performance` → `stream-performance.collection-stream-foreach.to-collection-foreach`
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java:103` — `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream().fo...` → `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).forEach(pac...`
@@ -258,6 +258,7 @@
 #### Rule: `arrays` → `arrays.aslist-contains.review`
 - `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:1591` — `Arrays.asList(additionalExpectedOperators).contains(actualOperator)`
 - `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:3301` — `Arrays.asList(fieldNames).contains(node.getName().getIdentifier())`
+- `sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/MathematicsHelpScreenshots.java:277` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java:439` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:42` — `Arrays.asList(filtered).contains("test")`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:66` — `Arrays.asList(filtered).contains("--source")`

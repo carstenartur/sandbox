@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 259,
+    "totalMatches": 260,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1558,
-        "matches": 83,
+        "files": 1572,
+        "matches": 84,
         "rules": 11
       }
     }
@@ -965,7 +965,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java9.unmodifiable-list-arrays-aslist.consider-list-of",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java",
-      "line": 359,
+      "line": 361,
       "matchedCode": "Collections.unmodifiableList(Arrays.asList(\"Spacer Glue\",\"SearchField\",\"Search-PS Glue\"))"
     },
     {
@@ -1575,7 +1575,7 @@
       "hintFile": "stream-performance",
       "rule": "stream-performance.sorted-before-collect.review",
       "file": "sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java",
-      "line": 907,
+      "line": 910,
       "matchedCode": "variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(java.util.Locale.ROOT)).sorted().collect(java.util.stream.Collectors.joining(\" \"))"
     },
     {
@@ -1625,6 +1625,14 @@
       "file": "sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/CleanupSourceSnapshot.java",
       "line": 29,
       "matchedCode": "Objects.requireNonNull(bytes).clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.aslist-contains.review",
+      "file": "sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/MathematicsHelpScreenshots.java",
+      "line": 277,
+      "matchedCode": "Arrays.asList(labels).contains(control.getText().replace(\"&\",\"\"))"
     },
     {
       "repository": "sandbox",
