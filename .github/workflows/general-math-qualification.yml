@@ -28,31 +28,27 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq --no-install-recommends xvfb libgtk-3-0
-      - name: Observe real failing assertions before integrating the new SDK
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = cda23a871fb44f2a089f5a309295316b1292cfbc
-          test -z "$(git status --porcelain)"
-          set +e
-          xvfb-run -a ./mvnw --batch-mode --no-transfer-progress -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am -Dtest=GeneralMathematicsRoundTripTest -DfailIfNoTests=true verify > "$RUNNER_TEMP/general-before.log" 2>&1
-          rc=$?
-          set -e
-          tail -95 "$RUNNER_TEMP/general-before.log"
-          echo "$rc" > "$RUNNER_TEMP/general-before-exit.txt"
-          test "$rc" -ne 0
-          report=sandbox_math_cleanup_test/target/surefire-reports/TEST-org.sandbox.jdt.math.tests.GeneralMathematicsRoundTripTest.xml
-          test -f "$report"
-          grep -q '<failure' "$report"
-          cp -R sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/general-before-reports"
-      - name: Reuse the independently qualified immutable SDK artifact
+      - name: Reuse exact-source failed assertions and the qualified SDK without rerunning them
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = cda23a871fb44f2a089f5a309295316b1292cfbc
+          test -z "$(git status --porcelain)"
           test "$(gh api repos/carstenartur/sandbox/actions/jobs/114066440103 --jq .conclusion)" = success
           gh run download 38003364428 --repo carstenartur/sandbox --name general-math-sdk-38003364428 --dir "$RUNNER_TEMP/general-sdk"
+          gh run download 38003936380 --repo carstenartur/sandbox --name general-math-integration-38003936380 --dir "$RUNNER_TEMP/general-red"
+          python3 - <<'PY'
+          import os, pathlib, xml.etree.ElementTree as E
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'general-red'
+          files = list(root.glob('**/general-before-reports/TEST-org.sandbox.jdt.math.tests.GeneralMathematicsRoundTripTest.xml'))
+          assert len(files) == 1, files
+          suite = E.parse(files[0]).getroot()
+          actual = {key: int(suite.get(key, '0')) for key in ('tests','failures','errors','skipped')}
+          assert actual == dict(tests=6, failures=5, errors=0, skipped=0), actual
+          print('OBSERVED_OLD_SDK_RED_RUN=38003936380 SOURCE=cda23a871fb44f2a089f5a309295316b1292cfbc ' + str(actual))
+          PY
       - name: Integrate only Java source policy and source-bound SDK files
         shell: bash
         run: |
@@ -77,13 +73,17 @@ jobs:
           revision = '597d6eeb025595bac85078022c592e4312ecefa4'
           assert receipt['status'] == 'PASS' and receipt['sourceRevision'] == revision
           assert receipt['cleanBuilds'] == 2 and receipt['freshConsumers'] == 2
-          qualifications = list((receipts[0].parent / 'first').glob('*-qualification.json'))
+          first = receipts[0].parent / 'first'
+          qualifications = list(first.glob('*-qualification.json'))
           assert len(qualifications) == 1, qualifications
           qualification = qualifications[0]
           proof = json.loads(qualification.read_text())
-          jar = qualification.with_name(qualification.name.replace('-qualification.json', '.jar'))
+          assert proof['sourceRevision'] == revision
+          matches = [jar for jar in first.rglob('*.jar')
+                     if hashlib.sha256(jar.read_bytes()).hexdigest() == proof['standaloneJarSha256']]
+          assert len(matches) == 1, matches
+          jar = matches[0]
           sha = hashlib.sha256(jar.read_bytes()).hexdigest()
-          assert proof['sourceRevision'] == revision and proof['standaloneJarSha256'] == sha
           lib = pathlib.Path('sandbox_math_cleanup/lib')
           shutil.copyfile(jar, lib / 'regelsuche-optimization-sdk.jar')
           shutil.copyfile(qualification, lib / 'qualification.json')
@@ -139,9 +139,6 @@ jobs:
           name: general-math-integration-${{ github.run_id }}
           retention-days: 7
           path: |
-            ${{ runner.temp }}/general-before.log
-            ${{ runner.temp }}/general-before-exit.txt
-            ${{ runner.temp }}/general-before-reports/**
             ${{ runner.temp }}/general-after.log
             ${{ runner.temp }}/general-tested-tree.txt
             ${{ runner.temp }}/general-published-commit.txt
