@@ -36,7 +36,7 @@ import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 import org.eclipse.text.edits.TextEditGroup;
 
-/** Shared bridge from real Charset constructor migrations to exception planning. */
+/** Shared Charset expression rewrites and constructor exception planning. */
 public final class CharsetConstructorMigration {
     private static final String INSTALLED= CharsetConstructorMigration.class.getName();
     private static final Set<String> CHARSETS= Set.of("UTF-8", "UTF-16", "UTF-16BE", "UTF-16LE", "US-ASCII", "ISO-8859-1"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
@@ -91,6 +91,7 @@ public final class CharsetConstructorMigration {
     /** Use AST edits and the shared NLS finisher, never a textual enclosing try. */
     static boolean rewriteExpression(ASTNode original, ASTNode replacement, String text,
             CompilationUnitRewrite rewrite, TextEditGroup group) {
+        if (rewriteCharsetLookup(original, replacement, text, rewrite, group)) return true;
         if (!(original instanceof ClassInstanceCreation creation) || !(replacement instanceof ClassInstanceCreation copy)) return false;
         if (rewriteStringConstructor(creation, copy, rewrite, group)) return true;
         IMethodBinding target= target(creation);
@@ -99,6 +100,24 @@ public final class CharsetConstructorMigration {
             EncodingSourceRewrite.record(rewrite, literal);
         copy.arguments().set(0, rewrite.getASTRewrite().createMoveTarget((ASTNode) creation.arguments().get(0)));
         rewrite.getASTRewrite().replace(original, copy, group);
+        return true;
+    }
+
+    /** Leaf replacements compose; replacing the enclosing statement would lose sibling lookups. */
+    private static boolean rewriteCharsetLookup(ASTNode original, ASTNode replacement, String text,
+            CompilationUnitRewrite rewrite, TextEditGroup group) {
+        if (!(original instanceof MethodInvocation call) || !(replacement instanceof QualifiedName)
+                || call.arguments().size() != 1 || !(call.arguments().get(0) instanceof StringLiteral literal)) return false;
+        IMethodBinding binding= call.resolveMethodBinding();
+        if (binding == null || binding.isRecovered() || !"forName".equals(binding.getName()) //$NON-NLS-1$
+                || !"java.nio.charset.Charset".equals(binding.getDeclaringClass().getQualifiedName()) //$NON-NLS-1$
+                || binding.getParameterTypes().length != 1
+                || !"java.lang.String".equals(binding.getParameterTypes()[0].getQualifiedName())) return false; //$NON-NLS-1$
+        String charset= literal.getLiteralValue().toUpperCase(Locale.ROOT);
+        if (!CHARSETS.contains(charset)
+                || !("java.nio.charset.StandardCharsets." + charset.replace('-', '_')).equals(text.strip())) return false; //$NON-NLS-1$
+        EncodingSourceRewrite.record(rewrite, literal);
+        rewrite.getASTRewrite().replace(original, replacement, group);
         return true;
     }
 
