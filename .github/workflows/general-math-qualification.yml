@@ -1,0 +1,84 @@
+name: General mathematics immutable-source qualification
+on:
+  push:
+    branches: [diagnostic/general-math-integration-20261010]
+permissions:
+  contents: read
+concurrency:
+  group: general-math-qualification
+  cancel-in-progress: false
+jobs:
+  baseline:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 49ec9ff5cadc6f89c4132a9da9d31d420a9894a7
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+          cache: maven
+      - name: Provision native test prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends xvfb libgtk-3-0
+      - name: Reproduce the general-source regression on the old SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 49ec9ff5cadc6f89c4132a9da9d31d420a9894a7
+          test -z "$(git status --porcelain)"
+          set +e
+          xvfb-run -a ./mvnw --batch-mode --no-transfer-progress -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am -Dtest=GeneralMathematicsRoundTripTest -DfailIfNoTests=true verify > "$RUNNER_TEMP/baseline.log" 2>&1
+          rc=$?
+          set -e
+          tail -130 "$RUNNER_TEMP/baseline.log"
+          echo "$rc" > "$RUNNER_TEMP/baseline-exit.txt"
+          exit "$rc"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: general-math-baseline-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/baseline.log
+            ${{ runner.temp }}/baseline-exit.txt
+            sandbox_math_cleanup_test/target/surefire-reports/**
+  sdk:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: carstenartur/Regelsuche
+          ref: 597d6eeb025595bac85078022c592e4312ecefa4
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+          cache: maven
+      - name: Qualify two clean source-bound SDK builds and fresh consumers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 597d6eeb025595bac85078022c592e4312ecefa4
+          test -z "$(git status --porcelain)"
+          if ! mvn --batch-mode --no-transfer-progress -Psdk-release -Dregelsuche.sdk.distribution=true -pl maven-build-contract -Dtest=MavenOptimizationSdkDistributionTest test > "$RUNNER_TEMP/sdk-distribution.log" 2>&1; then
+            tail -150 "$RUNNER_TEMP/sdk-distribution.log"
+            exit 1
+          fi
+          tail -45 "$RUNNER_TEMP/sdk-distribution.log"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: general-math-sdk-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/sdk-distribution.log
+            maven-build-contract/target/surefire-reports/**
