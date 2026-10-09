@@ -14,54 +14,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/** Value outputs and removable source bindings are distinct from the original execution trace. */
 public record JavaComputationRegion(
-   JointComputationPlan plan,
-   SourceEvaluationTrace trace,
-   List<JavaComputationRegion.OutputBinding> outputs,
-   Map<String, String> inputNames,
-   Set<SemanticAssumption> assumptions,
-   Set<String> reservedNames,
-   Set<String> receiverGuards,
-   int start,
-   int length
-) {
-   public JavaComputationRegion(
-      JointComputationPlan plan,
-      SourceEvaluationTrace trace,
-      List<JavaComputationRegion.OutputBinding> outputs,
-      Map<String, String> inputNames,
-      Set<SemanticAssumption> assumptions,
-      Set<String> reservedNames,
-      Set<String> receiverGuards,
-      int start,
-      int length
-   ) {
+      JointComputationPlan plan, SourceEvaluationTrace trace, List<OutputBinding> outputs,
+      Map<String, String> inputNames, Set<SemanticAssumption> assumptions,
+      Set<String> reservedNames, Set<String> receiverGuards, int start, int length,
+      List<OutputBinding> internalBindings) {
+   public JavaComputationRegion {
       outputs = List.copyOf(outputs);
       inputNames = Map.copyOf(inputNames);
       assumptions = Set.copyOf(assumptions);
       reservedNames = Set.copyOf(reservedNames);
       receiverGuards = Set.copyOf(receiverGuards);
-      this.plan = plan;
-      this.trace = trace;
-      this.outputs = outputs;
-      this.inputNames = inputNames;
-      this.assumptions = assumptions;
-      this.reservedNames = reservedNames;
-      this.receiverGuards = receiverGuards;
-      this.start = start;
-      this.length = length;
+      internalBindings = List.copyOf(internalBindings);
    }
 
-   public record OutputBinding(
-      String id,
-      String javaName,
-      NumericKind declaredKind,
-      int initializerStart,
-      int initializerLength,
-      int statementStart,
-      int statementLength,
-      boolean declaration,
-      String bindingKey
-   ) {
+   public JavaComputationRegion(JointComputationPlan plan, SourceEvaluationTrace trace,
+         List<OutputBinding> outputs, Map<String, String> inputNames,
+         Set<SemanticAssumption> assumptions, Set<String> reservedNames,
+         Set<String> receiverGuards, int start, int length) {
+      this(plan, trace, outputs, inputNames, assumptions, reservedNames, receiverGuards,
+            start, length, List.of());
+   }
+
+   public record OutputBinding(String id, String javaName, NumericKind declaredKind,
+         int initializerStart, int initializerLength, int statementStart, int statementLength,
+         boolean declaration, String bindingKey, boolean returnValue) {
+      public OutputBinding(String id, String javaName, NumericKind declaredKind,
+            int initializerStart, int initializerLength, int statementStart, int statementLength,
+            boolean declaration, String bindingKey) {
+         this(id, javaName, declaredKind, initializerStart, initializerLength, statementStart,
+               statementLength, declaration, bindingKey, false);
+      }
    }
 }
