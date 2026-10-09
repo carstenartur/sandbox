@@ -307,16 +307,23 @@ public final class MathematicalAnalysis {
    }
 
    private static boolean matchesAstSource(CompilationUnit original, String source, Map<String, String> options, int targetJava) {
-      ASTParser parser = ASTParser.newParser(original.getAST().apiLevel());
-      parser.setSource(source.toCharArray());
-      HashMap<String, String> compilerOptions = new HashMap<>(options);
-      if (compilerOptions.isEmpty()) {
-         JavaCore.setComplianceOptions(targetJava == 8 ? "1.8" : Integer.toString(targetJava), compilerOptions);
+      // Standalone clients can parse structured Javadoc with either setting.
+      // Retry only that parser setting: syntax, documented text and source
+      // positions must still match exactly; no stale-source guard is bypassed.
+      for (String documentation : List.of(JavaCore.ENABLED, JavaCore.DISABLED)) {
+         ASTParser parser = ASTParser.newParser(original.getAST().apiLevel());
+         parser.setSource(source.toCharArray());
+         HashMap<String, String> compilerOptions = new HashMap<>(options);
+         if (compilerOptions.isEmpty()) {
+            JavaCore.setComplianceOptions(targetJava == 8 ? "1.8" : Integer.toString(targetJava), compilerOptions);
+         }
+         compilerOptions.put(JavaCore.COMPILER_DOC_COMMENT_SUPPORT, documentation);
+         parser.setCompilerOptions(compilerOptions);
+         CompilationUnit parsed = (CompilationUnit) parser.createAST(null);
+         if (original.subtreeMatch(new ASTMatcher(true), parsed)
+               && sourcePositions(original).equals(sourcePositions(parsed))) return true;
       }
-
-      parser.setCompilerOptions(compilerOptions);
-      CompilationUnit parsed = (CompilationUnit)parser.createAST(null);
-      return !original.subtreeMatch(new ASTMatcher(true), parsed) ? false : sourcePositions(original).equals(sourcePositions(parsed));
+      return false;
    }
 
    private static List<Integer> sourcePositions(CompilationUnit ast) {

@@ -84,6 +84,8 @@ class BouncyCastleRuntimeCorpusIT {
         var analysis = analyze(originalAst, original, example.name());
         Files.writeString(caseOutput.resolve("diagnostics.txt"), analysis.diagnostics().toString());
         Files.writeString(caseOutput.resolve("independent-proof-and-cost.txt"), analysis.evidence().toString());
+        assertFalse(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("STALE_AST_SOURCE")),
+                analysis.diagnostics().toString());
         assertEquals(example.methods().size(), analysis.evidence().size(), analysis.diagnostics().toString());
         assertTrue(analysis.evidence().stream().allMatch(e -> e.cost().estimatedRuntimeImprovement()));
 
@@ -177,7 +179,9 @@ class BouncyCastleRuntimeCorpusIT {
     }
 
     private static void runOriginalUpstreamTests(ClassLoader loader, String digest) throws Exception {
-        Object test = loader.loadClass("org.bouncycastle.crypto.test." + digest + "Test").getConstructor().newInstance();
+        var constructor = loader.loadClass("org.bouncycastle.crypto.test." + digest + "Test").getDeclaredConstructor();
+        assertTrue(constructor.trySetAccessible(), "Original upstream test constructor must be callable");
+        Object test = constructor.newInstance();
         Object result = test.getClass().getMethod("perform").invoke(test);
         Class<?> resultType = loader.loadClass("org.bouncycastle.util.test.TestResult");
         assertEquals(Boolean.TRUE, resultType.getMethod("isSuccessful").invoke(result), result.toString());
