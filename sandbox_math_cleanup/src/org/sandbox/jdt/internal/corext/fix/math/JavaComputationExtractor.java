@@ -70,14 +70,19 @@ import org.eclipse.jdt.core.dom.InfixExpression.Operator;
 
 public final class JavaComputationExtractor {
    public JavaComputationExtractor.Extraction extract(CompilationUnit unit, String source, MathCleanUpOptions options) {
-      return this.extract(unit, source, options, false);
+      return this.extract(unit, source, options, false, false);
+   }
+
+   /** Production source policy excludes constant-only statements, but not runtime cancellations. */
+   public JavaComputationExtractor.Extraction extractRuntime(CompilationUnit unit, String source, MathCleanUpOptions options) {
+      return this.extract(unit, source, options, false, true);
    }
 
    JavaComputationExtractor.Extraction extractForVerification(CompilationUnit unit, String source, MathCleanUpOptions options) {
-      return this.extract(unit, source, options, true);
+      return this.extract(unit, source, options, true, false);
    }
 
-   private JavaComputationExtractor.Extraction extract(final CompilationUnit unit, String source, final MathCleanUpOptions options, final boolean includeValues) {
+   private JavaComputationExtractor.Extraction extract(final CompilationUnit unit, String source, final MathCleanUpOptions options, final boolean includeValues, final boolean runtimeOnly) {
       final ArrayList<JavaComputationRegion> regions = new ArrayList<>();
       final ArrayList<Diagnostic> diagnostics = new ArrayList<>();
       if (!options.enabled()) {
@@ -109,25 +114,29 @@ public final class JavaComputationExtractor {
       );
       unit.accept(new ASTVisitor() {
          public boolean visit(Block block) {
-            if (!JavaComputationExtractor.eligibleBlock(block)) {
+            if (!JavaComputationExtractor.eligibleBlock(block, runtimeOnly)) {
                return false;
             }
 
-            JavaComputationExtractor.Builder builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues);
+            JavaComputationExtractor.Builder builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
 
             for (Object child : block.statements()) {
                Statement statement = (Statement)child;
-               if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)
+               if (runtimeOnly && RuntimeCalculationPolicy.preserve(statement, declarations)) {
+                  JavaComputationExtractor.finish(builder, regions, diagnostics);
+                  diagnostics.add(new Diagnostic("CONSTANT_EXPRESSION_PRESERVED", "Intentional constant source is outside runtime cleanup", statement.getStartPosition(), statement.getLength()));
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+               } else if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)
                      && !(statement instanceof ReturnStatement)) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
-                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues);
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
                } else {
                   try {
                      builder.statement(statement);
                   } catch (JavaComputationExtractor.Rejected rejected) {
                      JavaComputationExtractor.finish(builder.prior, regions, diagnostics);
                      diagnostics.add(JavaComputationExtractor.diagnostic(rejected));
-                     builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues);
+                     builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
                   }
                }
             }
@@ -139,7 +148,7 @@ public final class JavaComputationExtractor {
       return new JavaComputationExtractor.Extraction(regions, diagnostics);
    }
 
-   private static boolean eligibleBlock(Block block) {
+   private static boolean eligibleBlock(Block block, boolean runtimeOnly) {
       for (ASTNode ancestor = block.getParent(); ancestor != null; ancestor = ancestor.getParent()) {
          if (ancestor instanceof MethodDeclaration) {
             return true;
@@ -147,10 +156,10 @@ public final class JavaComputationExtractor {
 
          if (ancestor instanceof LambdaExpression
             || ancestor instanceof AnonymousClassDeclaration
-            || ancestor instanceof ForStatement
-            || ancestor instanceof EnhancedForStatement
-            || ancestor instanceof WhileStatement
-            || ancestor instanceof DoStatement
+            || !runtimeOnly && (ancestor instanceof ForStatement
+               || ancestor instanceof EnhancedForStatement
+               || ancestor instanceof WhileStatement
+               || ancestor instanceof DoStatement)
             || ancestor instanceof Initializer) {
             return false;
          }
@@ -299,6 +308,7 @@ public final class JavaComputationExtractor {
       final Set<String> reserved;
       final Block block;
       final boolean includeValues;
+      final boolean runtimeOnly;
       final Map<String, Expr> values = new HashMap<>();
       final Map<String, String> inputKeys = new HashMap<>();
       final Map<String, String> inputNames = new LinkedHashMap<>();
@@ -312,18 +322,19 @@ public final class JavaComputationExtractor {
       int first = -1;
       int end;
 
-      Builder(CompilationUnit unit, MathCleanUpOptions options, Map<String, VariableDeclarationFragment> declarations, Set<String> reserved, Block block, boolean includeValues) {
+      Builder(CompilationUnit unit, MathCleanUpOptions options, Map<String, VariableDeclarationFragment> declarations, Set<String> reserved, Block block, boolean includeValues, boolean runtimeOnly) {
          this.unit = unit;
          this.options = options;
          this.declarations = declarations;
          this.reserved = reserved;
          this.block = block;
          this.includeValues = includeValues;
+         this.runtimeOnly = runtimeOnly;
       }
 
       JavaComputationExtractor.Builder snapshot() {
          JavaComputationExtractor.Builder copy = new JavaComputationExtractor.Builder(
-            this.unit, this.options, this.declarations, this.reserved, this.block, this.includeValues
+            this.unit, this.options, this.declarations, this.reserved, this.block, this.includeValues, this.runtimeOnly
          );
          copy.values.putAll(this.values);
          copy.inputKeys.putAll(this.inputKeys);
@@ -491,6 +502,15 @@ public final class JavaComputationExtractor {
                   throw JavaComputationExtractor.reject("EFFECTFUL_CONSTANT_QUALIFIER", expression);
                } else {
                   if (binding.getConstantValue() != null) {
+                     if (this.runtimeOnly && name instanceof SimpleName) {
+                        // Retain the programmer's symbolic name. The independent checker
+                        // proves the rewrite for every value of this additional input.
+                        this.validatedConstant(expression);
+                        String inputId = this.inputKeys.computeIfAbsent(binding.getKey(), key -> "input" + this.inputKeys.size());
+                        this.inputNames.put(inputId, binding.getName());
+                        this.inputTypes.put(inputId, resultKind.type());
+                        return new VariableExpr(inputId);
+                     }
                      return JavaComputationExtractor.literal(this.validatedConstant(expression), expression);
                   }
 
