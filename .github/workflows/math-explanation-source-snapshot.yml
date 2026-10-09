@@ -1,48 +1,42 @@
-name: Mathematics explanation immutable source snapshot
+name: General mathematics Java integration qualification
 on:
   push:
     branches: [diagnostic/math-explanation-source-20261009]
 permissions:
   contents: read
 jobs:
-  snapshot:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 8
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 30c27689fa0063e58cc77abab065603509aba457
-          path: sandbox-source
+          ref: 49ec9ff5cadc6f89c4132a9da9d31d420a9894a7
           persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
-          repository: carstenartur/Regelsuche
-          ref: 015a28cf9c4755bf3b8bd14c88c4bde2f44f4ede
-          path: regelsuche-source
-          persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: bcgit/bc-java
-          ref: ab16374d37c7e18c4090eb8838ebbd72a92593f2
-          path: bc-source
-          persist-credentials: false
-      - name: Export immutable source trees for the offline development workspace
-        shell: bash
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+          cache: maven
+      - uses: ./.github/actions/verify-eclipse-desktop-runtime
+      - name: Run the actual Java extraction/search/emission regression tests
         run: |
           set -euo pipefail
-          mkdir -p snapshots
-          for name in sandbox regelsuche bc; do
-            git -C "$name-source" rev-parse HEAD > "snapshots/$name-commit.txt"
-            test -z "$(git -C "$name-source" status --porcelain)"
-          done
-          git -C sandbox-source archive --format=tar.gz HEAD > snapshots/sandbox.tar.gz
-          git -C regelsuche-source archive --format=tar.gz HEAD > snapshots/regelsuche.tar.gz
-          git -C bc-source archive --format=tar.gz HEAD core/src/main/java/org/bouncycastle/crypto/hash2curve/impl/GenericSqrtRatioCalculator.java LICENSE.html > snapshots/bc-reference.tar.gz
-          cd snapshots
-          sha256sum *.tar.gz > SHA256SUMS
+          test "$(git rev-parse HEAD)" = 49ec9ff5cadc6f89c4132a9da9d31d420a9894a7
+          if ! xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
+            -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am \
+            -Dtest=GeneralMathematicsRoundTripTest -DfailIfNoTests=true verify > math-general-integration.log 2>&1; then
+            tail -150 math-general-integration.log
+            exit 1
+          fi
+          test -n "$(find sandbox_math_cleanup_test/target/surefire-reports -name '*GeneralMathematicsRoundTripTest*.xml' -print -quit)"
+          grep -E 'Tests run:|BUILD SUCCESS' math-general-integration.log | tail -25
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
         with:
-          name: mathematics-explanation-source-snapshot
-          retention-days: 3
-          compression-level: 0
-          path: snapshots/*
+          name: general-java-integration-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            math-general-integration.log
+            sandbox_math_cleanup_test/target/surefire-reports/**
