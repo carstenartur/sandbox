@@ -1,0 +1,60 @@
+name: Mathematics variable regions (scoped repair)
+
+on:
+  push:
+    branches: [fix/math-variable-regions-20261009]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: math-variable-regions-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  region-regressions:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+      - name: Provision native workbench prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0
+      - name: Run the actual Maven/Tycho/JUnit regression class
+        id: tests
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          xvfb-run --auto-servernum mvn --batch-mode --no-transfer-progress \
+            -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am \
+            -Dtest=MathVariableRegionsTest -DfailIfNoTests=false test 2>&1 | tee math-variable-tests.log
+      - name: Retain portable dependency cache and exact sources for offline repair
+        if: github.event.before == 'fb8d3e1da4c7b9d4766723b446033e31eada0cc3'
+        run: |
+          set -euo pipefail
+          mkdir -p offline
+          git archive --format=tar.gz HEAD > offline/sandbox-source.tar.gz
+          git rev-parse HEAD > offline/sandbox-commit.txt
+          tar -czf offline/maven-repository.tar.gz -C "$HOME/.m2" repository
+          if [ -d "$HOME/.p2" ]; then tar -czf offline/p2.tar.gz -C "$HOME" .p2; fi
+          sha256sum offline/*.tar.gz > offline/SHA256SUMS
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: math-variable-regions-${{ github.sha }}
+          retention-days: 7
+          compression-level: 0
+          path: |
+            math-variable-tests.log
+            sandbox_math_cleanup_test/target/surefire-reports/**
+            sandbox_math_cleanup_test/target/work/data/.metadata/.log
+            offline/**
+      - name: Preserve the real test outcome
+        if: always() && steps.tests.outcome != 'success'
+        run: exit 1
