@@ -281,7 +281,7 @@ public final class JdtUiInheritedTestsRunnerMigration {
 		}
 <span class="fc" id="L282">		synchronized (CONTRACT_CACHE) {</span>
 <span class="fc" id="L283">			ContractCacheEntry cached= CONTRACT_CACHE.get(before.project());</span>
-<span class="fc bfc" id="L284" title="All 4 branches covered.">			if (cached != null &amp;&amp; cached.sourceState().equals(before.sourceState())) {</span>
+<span class="pc bpc" id="L284" title="1 of 4 branches missed.">			if (cached != null &amp;&amp; cached.sourceState().equals(before.sourceState())) {</span>
 <span class="fc" id="L285">				return cached.rejection();</span>
 			}
 		}

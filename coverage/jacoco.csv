@@ -682,7 +682,7 @@ sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helpe
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,JdtUiInheritedTestsRunnerMigration.Variable,0,9,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,FixMethodOrderJUnitPlugin,10,121,5,9,6,31,5,7,1,4
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,CategoryJUnitPlugin,16,199,12,18,5,49,12,10,1,6
-sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,JdtUiInheritedTestsRunnerMigration,129,1447,140,190,48,255,141,54,1,29
+sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,JdtUiInheritedTestsRunnerMigration,129,1447,141,189,48,255,142,53,1,29
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleImportCleanupSupport.new ASTVisitor() {...},0,38,0,2,0,6,0,3,0,2
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,JdtUiInheritedTestsRunnerMigration.SuppressedMethod,0,15,0,0,0,4,0,1,0,1
 sandbox_coverage/sandbox_junit_cleanup,org.sandbox.jdt.internal.corext.fix.helper,RuleErrorCollectorJUnitPlugin,66,373,22,32,16,86,18,19,1,9
