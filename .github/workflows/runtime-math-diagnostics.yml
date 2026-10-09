@@ -7,11 +7,11 @@ permissions:
 jobs:
   mathematics:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 12f3f112fa96fd71698bde701e8b5981fc4ee295
+          ref: 63fb96d88dc246ed561bb03bb6faba999d4bc815
           path: verified-source
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -26,49 +26,119 @@ jobs:
           verify-signature: true
           cache: maven
           cache-dependency-path: verified-source/**/pom.xml
+      - name: Reproduce the documented-source regression before changing production code
+        working-directory: verified-source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 63fb96d88dc246ed561bb03bb6faba999d4bc815
+          test -z "$(git status --porcelain)"
+          set +e
+          xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
+            -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am \
+            -Dtest=DocumentedSourceSnapshotTest verify > "$RUNNER_TEMP/snapshot-red.log" 2>&1
+          result=$?
+          set -e
+          test "$result" != 0
+          python3 - <<'PY'
+          import pathlib, xml.etree.ElementTree as E
+          paths=list(pathlib.Path('sandbox_math_cleanup_test/target/surefire-reports').glob('TEST-*DocumentedSourceSnapshotTest*.xml'))
+          assert len(paths)==1, paths
+          suite=E.parse(paths[0]).getroot()
+          assert suite.get('errors')=='0' and suite.get('failures')=='1', E.tostring(suite).decode()
+          failures=[case for case in suite.findall('testcase') if case.find('failure') is not None]
+          assert len(failures)==1 and failures[0].get('name')=='structuredDocumentationIsNotAStaleSourceChange'
+          print('EXPECTED_RED',E.tostring(failures[0]).decode())
+          PY
+          cp -a sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/snapshot-red-reports"
+      - name: Commit the source-identity and upstream-test-adapter corrections
+        working-directory: verified-source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java')
+          text=p.read_text()
+          start=text.index('   private static boolean matchesAstSource(')
+          end=text.index('   private static List<Integer> sourcePositions(',start)
+          text=text[:start]+'''   private static boolean matchesAstSource(CompilationUnit original, String source, Map<String, String> options, int targetJava) {
+                // Standalone clients can parse structured Javadoc with either setting.
+                // Retry only that parser setting: syntax, documented text and source
+                // positions must still match exactly; no stale-source guard is bypassed.
+                for (String documentation : List.of(JavaCore.ENABLED, JavaCore.DISABLED)) {
+                   ASTParser parser = ASTParser.newParser(original.getAST().apiLevel());
+                   parser.setSource(source.toCharArray());
+                   HashMap<String, String> compilerOptions = new HashMap<>(options);
+                   if (compilerOptions.isEmpty()) {
+                      JavaCore.setComplianceOptions(targetJava == 8 ? "1.8" : Integer.toString(targetJava), compilerOptions);
+                   }
+                   compilerOptions.put(JavaCore.COMPILER_DOC_COMMENT_SUPPORT, documentation);
+                   parser.setCompilerOptions(compilerOptions);
+                   CompilationUnit parsed = (CompilationUnit) parser.createAST(null);
+                   if (original.subtreeMatch(new ASTMatcher(true), parsed)
+                         && sourcePositions(original).equals(sourcePositions(parsed))) return true;
+                }
+                return false;
+             }
+
+          '''+text[end:]
+          p.write_text(text)
+          p=Path('sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleRuntimeCorpusIT.java')
+          text=p.read_text()
+          old='Object test = loader.loadClass("org.bouncycastle.crypto.test." + digest + "Test").getConstructor().newInstance();'
+          assert text.count(old)==1
+          text=text.replace(old,'''var constructor = loader.loadClass("org.bouncycastle.crypto.test." + digest + "Test").getDeclaredConstructor();
+                  assertTrue(constructor.trySetAccessible(), "Original upstream test constructor must be callable");
+                  Object test = constructor.newInstance();''')
+          old='assertEquals(example.methods().size(), analysis.evidence().size(), analysis.diagnostics().toString());'
+          assert text.count(old)==1
+          text=text.replace(old,'''assertFalse(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("STALE_AST_SOURCE")),
+                          analysis.diagnostics().toString());
+                  '''+old)
+          p.write_text(text)
+          PY
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add sandbox_math_cleanup/src sandbox_math_cleanup_test/src
+          git commit -m 'fix: preserve exact source identity across Javadoc parser modes' -m 'Call original package-private upstream test constructors without changing their source. AI-assisted.'
+          git push origin "HEAD:refs/heads/build/runtime-math-documented-${GITHUB_RUN_ID}"
+          git rev-parse HEAD
       - name: Run the complete default mathematics module
         id: default-tests
         working-directory: verified-source
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = 12f3f112fa96fd71698bde701e8b5981fc4ee295
           test -z "$(git status --porcelain)"
           if ! xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
             -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify \
             > "$RUNNER_TEMP/math-regressions.log" 2>&1; then
-            tail -90 "$RUNNER_TEMP/math-regressions.log"; exit 1
+            tail -110 "$RUNNER_TEMP/math-regressions.log"; exit 1
           fi
+          cp -a sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/default-math-reports"
           grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/math-regressions.log" | tail -35
-      - name: Retain complete default-suite reports before the external corpus run
-        if: always()
-        shell: bash
-        run: |
-          if [ -d verified-source/sandbox_math_cleanup_test/target/surefire-reports ]; then
-            cp -a verified-source/sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/default-math-reports"
-          fi
-      - name: Qualify unchanged production files and original upstream digest tests
+      - name: Qualify unchanged production files and derive matching native preview fixtures
         id: corpus
-        if: ${{ !cancelled() }}
         working-directory: verified-source
         shell: bash
         run: |
           set -euo pipefail
           if ! bash qa/math-optimization/runtime-bouncy.sh "$GITHUB_WORKSPACE/bouncy-castle" "$RUNNER_TEMP/bc-runtime" \
             > "$RUNNER_TEMP/bc-runtime.log" 2>&1; then
-            tail -130 "$RUNNER_TEMP/bc-runtime.log"; exit 1
+            tail -140 "$RUNNER_TEMP/bc-runtime.log"; exit 1
           fi
-          grep -E 'BC_RUNTIME_PASS|Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/bc-runtime.log"
+          grep -E 'BC_RUNTIME_PASS|RUNTIME_HELP_FIXTURES_PASS|Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/bc-runtime.log"
           find "$RUNNER_TEMP/bc-runtime/results" -name qualification.properties -print -exec cat {} \;
           find "$RUNNER_TEMP/bc-runtime/results" -name '*.patch' -print -exec cat {} \;
-      - name: Retain source-bound successful evidence on an isolated result branch
-        if: ${{ success() && steps.default-tests.outcome == 'success' && steps.corpus.outcome == 'success' }}
+      - name: Commit only qualified production evidence and generated native preview inputs
         working-directory: verified-source
         shell: bash
         run: |
           set -euo pipefail
           test -z "$(git status --porcelain)"
-          destination="qa/math-optimization/results/runtime-bouncy-12f3f112"
+          destination="qa/math-optimization/results/runtime-bouncy-${GITHUB_RUN_ID}"
           mkdir -p "$destination"
           cp "$RUNNER_TEMP/bc-runtime/run.properties" "$destination/"
           for name in MD4Digest RIPEMD160Digest SM3Digest SHA256Digest; do
@@ -77,12 +147,45 @@ jobs:
             cp "$RUNNER_TEMP/bc-runtime/results/$name/$name.patch" "$destination/$name/"
             cp "$RUNNER_TEMP/bc-runtime/results/$name/independent-proof-and-cost.txt" "$destination/$name/"
           done
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "$destination"
+          fixtures=sandbox_eclipse_help_swtbot_test/fixtures/mathematics
+          for old in 01-bouncy-castle-prime-product 02-jdt-core-shared-value 03-jdt-ui-multiple-lines 04-jdt-ui-nested-arithmetic; do
+            git rm -r "$fixtures/$old"
+          done
+          cp -a "$RUNNER_TEMP/bc-runtime/results/help-fixtures/"* "$fixtures/"
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/EclipseHelpScreenshotEvidenceTest.java')
+          s=p.read_text()
+          old=['01-bouncy-castle-prime-product','02-jdt-core-shared-value','03-jdt-ui-multiple-lines','04-jdt-ui-nested-arithmetic']
+          new=['01-bouncy-castle-md4-choice','02-bouncy-castle-md4-majority','03-bouncy-castle-ripemd-choices','04-bouncy-castle-sm3-functions']
+          for a,b in zip(old,new):
+              assert a in s
+              s=s.replace(a,b)
+          p.write_text(s)
+          PY
+          git add "$destination" "$fixtures" sandbox_eclipse_help_swtbot_test/src
           git diff --cached --check
-          git commit -m 'test: retain actual Bouncy Castle runtime patches and independent qualification'
-          git push origin "HEAD:refs/heads/build/runtime-math-accepted-${GITHUB_RUN_ID}"
+          git commit -m 'test: retain real production patches and exact runtime preview fixtures'
+          git push origin "HEAD:refs/heads/build/runtime-math-fixtures-${GITHUB_RUN_ID}"
+          git rev-parse HEAD
+      - name: Capture genuine registered cleanup previews and verify Apply and Undo
+        working-directory: verified-source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          if ! xvfb-run --auto-servernum --server-args='-screen 0 1600x1200x24 -dpi 96' \
+            ./mvnw --batch-mode --no-transfer-progress -Phelp-screenshots \
+            -pl sandbox_eclipse_help_swtbot_test -am \
+            -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest verify \
+            > "$RUNNER_TEMP/native-math.log" 2>&1; then
+            tail -150 "$RUNNER_TEMP/native-math.log"; exit 1
+          fi
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/native-math.log" | tail -35
+          git add sandbox_math_cleanup_help/images
+          git diff --cached --check
+          git commit -m 'docs: capture genuine native previews of runtime Bouncy Castle optimizations'
+          git push origin "HEAD:refs/heads/build/runtime-math-native-${GITHUB_RUN_ID}"
           git rev-parse HEAD
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
@@ -90,10 +193,14 @@ jobs:
           name: runtime-math-regressions-${{ github.run_id }}
           retention-days: 7
           path: |
+            ${{ runner.temp }}/snapshot-red.log
+            ${{ runner.temp }}/snapshot-red-reports/**
             ${{ runner.temp }}/math-regressions.log
             ${{ runner.temp }}/default-math-reports/**
             ${{ runner.temp }}/bc-runtime.log
             ${{ runner.temp }}/bc-runtime/**
+            ${{ runner.temp }}/native-math.log
             verified-source/sandbox_math_cleanup_test/target/surefire-reports/**
-            verified-source/sandbox_math_cleanup_test/target/work/data/.metadata/.log
+            verified-source/sandbox_eclipse_help_swtbot_test/target/surefire-reports/**
+            verified-source/sandbox_math_cleanup_help/images/**
             verified-source/**/hs_err_pid*.log
