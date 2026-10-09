@@ -6,3 +6,6 @@ mvnw.cmd text eol=crlf
 *.yaml text eol=lf
 # Captured mathematics source is hashed byte-for-byte by Help provenance.
 /sandbox_eclipse_help_swtbot_test/fixtures/mathematics/**/*.java.txt text eol=lf
+# A unified patch encodes empty context lines with one required leading space.
+# Preserve those bytes: each exported patch is checked against the pinned source.
+/qa/math-optimization/results/**/*.patch text eol=lf -whitespace
