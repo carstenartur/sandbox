@@ -8,14 +8,16 @@ concurrency:
   group: general-math-qualification
   cancel-in-progress: false
 jobs:
-  baseline:
+  integration:
     runs-on: ubuntu-22.04
     timeout-minutes: 35
+    permissions:
+      contents: write
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 49ec9ff5cadc6f89c4132a9da9d31d420a9894a7
-          persist-credentials: false
+          ref: cda23a871fb44f2a089f5a309295316b1292cfbc
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
@@ -26,59 +28,124 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq --no-install-recommends xvfb libgtk-3-0
-      - name: Reproduce the general-source regression on the old SDK
+      - name: Observe real failing assertions before integrating the new SDK
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = 49ec9ff5cadc6f89c4132a9da9d31d420a9894a7
+          test "$(git rev-parse HEAD)" = cda23a871fb44f2a089f5a309295316b1292cfbc
           test -z "$(git status --porcelain)"
           set +e
-          xvfb-run -a ./mvnw --batch-mode --no-transfer-progress -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am -Dtest=GeneralMathematicsRoundTripTest -DfailIfNoTests=true verify > "$RUNNER_TEMP/baseline.log" 2>&1
+          xvfb-run -a ./mvnw --batch-mode --no-transfer-progress -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am -Dtest=GeneralMathematicsRoundTripTest -DfailIfNoTests=true verify > "$RUNNER_TEMP/general-before.log" 2>&1
           rc=$?
           set -e
-          tail -130 "$RUNNER_TEMP/baseline.log"
-          echo "$rc" > "$RUNNER_TEMP/baseline-exit.txt"
-          exit "$rc"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        if: always()
-        with:
-          name: general-math-baseline-${{ github.run_id }}
-          retention-days: 7
-          path: |
-            ${{ runner.temp }}/baseline.log
-            ${{ runner.temp }}/baseline-exit.txt
-            sandbox_math_cleanup_test/target/surefire-reports/**
-  sdk:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: carstenartur/Regelsuche
-          ref: 597d6eeb025595bac85078022c592e4312ecefa4
-          persist-credentials: false
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
-        with:
-          distribution: temurin
-          java-version: '25'
-          verify-signature: true
-          cache: maven
-      - name: Qualify two clean source-bound SDK builds and fresh consumers
+          tail -95 "$RUNNER_TEMP/general-before.log"
+          echo "$rc" > "$RUNNER_TEMP/general-before-exit.txt"
+          test "$rc" -ne 0
+          report=sandbox_math_cleanup_test/target/surefire-reports/TEST-org.sandbox.jdt.math.tests.GeneralMathematicsRoundTripTest.xml
+          test -f "$report"
+          grep -q '<failure' "$report"
+          cp -R sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/general-before-reports"
+      - name: Reuse the independently qualified immutable SDK artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = 597d6eeb025595bac85078022c592e4312ecefa4
-          test -z "$(git status --porcelain)"
-          if ! mvn --batch-mode --no-transfer-progress -Psdk-release -Dregelsuche.sdk.distribution=true -pl maven-build-contract -Dtest=MavenOptimizationSdkDistributionTest test > "$RUNNER_TEMP/sdk-distribution.log" 2>&1; then
-            tail -150 "$RUNNER_TEMP/sdk-distribution.log"
+          test "$(gh api repos/carstenartur/sandbox/actions/jobs/114066440103 --jq .conclusion)" = success
+          gh run download 38003364428 --repo carstenartur/sandbox --name general-math-sdk-38003364428 --dir "$RUNNER_TEMP/general-sdk"
+      - name: Integrate only Java source policy and source-bound SDK files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin e224357e0ecd09f5e799f1bb8d2de825629f3ae4
+          for path in \
+            sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/RuntimeCalculationPolicy.java \
+            sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationExtractor.java \
+            sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java \
+            sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/RuntimeOnlyMathTest.java \
+            sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/RuntimeConstantExpressionsTest.java \
+            sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/CharacterLiteralRoundTripTest.java \
+            sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationRoundTripTest.java; do
+            git show "e224357e0ecd09f5e799f1bb8d2de825629f3ae4:$path" > "$path"
+          done
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, shutil
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'general-sdk'
+          receipts = list(root.glob('**/sdk-distribution-*/reproducibility.json'))
+          assert len(receipts) == 1, receipts
+          receipt = json.loads(receipts[0].read_text())
+          revision = '597d6eeb025595bac85078022c592e4312ecefa4'
+          assert receipt['status'] == 'PASS' and receipt['sourceRevision'] == revision
+          assert receipt['cleanBuilds'] == 2 and receipt['freshConsumers'] == 2
+          qualifications = list((receipts[0].parent / 'first').glob('*-qualification.json'))
+          assert len(qualifications) == 1, qualifications
+          qualification = qualifications[0]
+          proof = json.loads(qualification.read_text())
+          jar = qualification.with_name(qualification.name.replace('-qualification.json', '.jar'))
+          sha = hashlib.sha256(jar.read_bytes()).hexdigest()
+          assert proof['sourceRevision'] == revision and proof['standaloneJarSha256'] == sha
+          lib = pathlib.Path('sandbox_math_cleanup/lib')
+          shutil.copyfile(jar, lib / 'regelsuche-optimization-sdk.jar')
+          shutil.copyfile(qualification, lib / 'qualification.json')
+          shutil.copyfile(receipts[0], lib / 'reproducibility.json')
+          (lib / 'README.md').write_text('# Pinned Regelsuche optimization SDK\n\n'
+              + 'Source revision: `' + revision + '`.\n'
+              + 'Standalone JAR SHA-256: `' + sha + '`.\n\n'
+              + 'The ordinary core algebra inventory is available through ComputationOptimizer; no source-specific mathematical task is selected by Sandbox. Every proposed Java rewrite retains independent numeric and execution-trace verification.\n\n'
+              + 'Two clean Maven builds and two fresh consumers passed in run 38003364428. See qualification.json and reproducibility.json for exact source-bound receipts.\n'
+              + 'Generated Java needs no Regelsuche runtime. This is a development distribution, not a public Maven release. Existing license and archive notices remain applicable.\n')
+          print('SDK_REVISION=' + revision + ' SDK_SHA256=' + sha)
+          print(json.dumps(receipt, indent=2))
+          PY
+          git add sandbox_math_cleanup/src sandbox_math_cleanup/lib sandbox_math_cleanup_test/src
+          git diff --cached --stat
+          git write-tree > "$RUNNER_TEMP/general-tested-tree.txt"
+      - name: Run the complete standard mathematics module without exclusions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! xvfb-run -a ./mvnw --batch-mode --no-transfer-progress -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/general-after.log" 2>&1; then
+            tail -180 "$RUNNER_TEMP/general-after.log"
             exit 1
           fi
-          tail -45 "$RUNNER_TEMP/sdk-distribution.log"
+          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size|Total bugs' "$RUNNER_TEMP/general-after.log" | tail -55
+          python3 - <<'PY'
+          import pathlib, xml.etree.ElementTree as E
+          files = sorted(pathlib.Path('sandbox_math_cleanup_test/target/surefire-reports').glob('TEST-*.xml'))
+          assert files, 'Missing actual JUnit XML'
+          totals = dict.fromkeys(('tests','failures','errors','skipped'), 0)
+          for file in files:
+              root = E.parse(file).getroot()
+              for name in totals: totals[name] += int(root.get(name, '0'))
+          assert totals['tests'] > 156 and all(totals[name] == 0 for name in ('failures','errors','skipped')), totals
+          print('FULL_MATHEMATICS_MODULE=' + str(totals))
+          PY
+      - name: Publish only the tested ordinary product changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code
+          test "$(git write-tree)" = "$(cat "$RUNNER_TEMP/general-tested-tree.txt")"
+          git fetch --no-tags origin refs/heads/fix/general-mathematics-integration-20261009
+          test "$(git rev-parse FETCH_HEAD)" = cda23a871fb44f2a089f5a309295316b1292cfbc
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'fix: integrate core algebra search for actual Java sequences without showcase recognizers'
+          test -z "$(git status --porcelain)"
+          git push origin HEAD:refs/heads/fix/general-mathematics-integration-20261009
+          git rev-parse HEAD > "$RUNNER_TEMP/general-published-commit.txt"
+          git diff --binary cda23a871fb44f2a089f5a309295316b1292cfbc HEAD > "$RUNNER_TEMP/general-integration.patch"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: general-math-sdk-${{ github.run_id }}
+          name: general-math-integration-${{ github.run_id }}
           retention-days: 7
           path: |
-            ${{ runner.temp }}/sdk-distribution.log
-            maven-build-contract/target/surefire-reports/**
+            ${{ runner.temp }}/general-before.log
+            ${{ runner.temp }}/general-before-exit.txt
+            ${{ runner.temp }}/general-before-reports/**
+            ${{ runner.temp }}/general-after.log
+            ${{ runner.temp }}/general-tested-tree.txt
+            ${{ runner.temp }}/general-published-commit.txt
+            ${{ runner.temp }}/general-integration.patch
+            sandbox_math_cleanup_test/target/surefire-reports/**
+            sandbox_math_cleanup/lib/qualification.json
+            sandbox_math_cleanup/lib/reproducibility.json
