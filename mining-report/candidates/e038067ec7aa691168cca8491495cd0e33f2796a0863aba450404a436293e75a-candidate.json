@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e038067ec7aa691168cca8491495cd0e33f2796a0863aba450404a436293e75a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n\u003c!id: eclipse.preference.default.quickdiff.always\u003e\n\u003c!description: Set default for REVISION_ASK_BEFORE_QUICKDIFF_SWITCH to MessageDialogWithToggle.ALWAYS.\u003e\n\u003c!severity: HINT\u003e\n*/\n$store.setDefault(org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants.REVISION_ASK_BEFORE_QUICKDIFF_SWITCH, \"\") :: instanceof($store, \"org.eclipse.jface.preference.IPreferenceStore\")\n\u003d\u003e\n$store.setDefault(org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants.REVISION_ASK_BEFORE_QUICKDIFF_SWITCH, org.eclipse.jface.dialogs.MessageDialogWithToggle.ALWAYS)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;\n\npublic class TestClass {\n    public void setup(IPreferenceStore store) {\n        store.setDefault(AbstractDecoratedTextEditorPreferenceConstants.REVISION_ASK_BEFORE_QUICKDIFF_SWITCH, \"\");\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;\nimport org.eclipse.jface.dialogs.MessageDialogWithToggle;\n\npublic class TestClass {\n    public void setup(IPreferenceStore store) {\n        store.setDefault(AbstractDecoratedTextEditorPreferenceConstants.REVISION_ASK_BEFORE_QUICKDIFF_SWITCH, MessageDialogWithToggle.ALWAYS);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;\nimport org.eclipse.jface.dialogs.MessageDialogWithToggle;\n\npublic class TestClass {\n    public void setup(IPreferenceStore store) {\n        // Different preference key\n        store.setDefault(\"some.other.preference\", \"\");\n        // Already using the target value\n        store.setDefault(AbstractDecoratedTextEditorPreferenceConstants.REVISION_ASK_BEFORE_QUICKDIFF_SWITCH, MessageDialogWithToggle.ALWAYS);\n    }\n}",
+  "targetHintFile": "eclipse-preferences.sandbox-hint",
+  "sourceCommit": "a79ee3160495d8173821f6af6d1c6284fe32ce57",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Preference Default",
+  "summary": "Set the default value for \u0027REVISION_ASK_BEFORE_QUICKDIFF_SWITCH\u0027 preference to \u0027MessageDialogWithToggle.ALWAYS\u0027.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-09T02:37:30.609371662Z",
+  "ruleFingerprint": "sha256:173d8ea15aed0d9111312800ff23c26efe80accbe1782bc45cfc2044c991cc3f",
+  "behaviorFingerprint": "sha256:c02079a88d97494aca002d3ba03acaf634ae1a7024e0c17f2a57e8827ecdf964",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.preference cannot be resolved",
+    "verifiedAt": "2026-10-09T02:37:39.068732646Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

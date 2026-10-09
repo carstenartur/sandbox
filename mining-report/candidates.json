@@ -22,7 +22,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:22.768483312Z",
+      "verifiedAt": "2026-10-09T02:37:32.551399985Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -52,7 +52,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 12: The public type MyClientCode must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.640884121Z",
+      "verifiedAt": "2026-10-09T02:37:35.183456837Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -82,7 +82,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.528366474Z",
+      "verifiedAt": "2026-10-09T02:37:34.365988108Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -112,7 +112,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.675948066Z",
+      "verifiedAt": "2026-10-09T02:37:34.482973733Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -142,7 +142,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.950168972Z",
+      "verifiedAt": "2026-10-09T02:37:33.746211544Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -172,7 +172,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type Example0 must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.188165772Z",
+      "verifiedAt": "2026-10-09T02:37:35.680195297Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -202,7 +202,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.335232204Z",
+      "verifiedAt": "2026-10-09T02:37:36.850709122Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -232,7 +232,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.corext cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.152275659Z",
+      "verifiedAt": "2026-10-09T02:37:35.641222599Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -262,7 +262,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.048666654Z",
+      "verifiedAt": "2026-10-09T02:37:36.575310133Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -292,7 +292,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.076419221Z",
+      "verifiedAt": "2026-10-09T02:37:37.586556996Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -322,7 +322,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
-      "verifiedAt": "2026-10-08T02:35:22.672359110Z",
+      "verifiedAt": "2026-10-09T02:37:32.453733847Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -352,7 +352,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 22: The public type TypeHierarchyViewPart must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.244143045Z",
+      "verifiedAt": "2026-10-09T02:37:35.744475222Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -382,7 +382,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 2: The import org.eclipse.jface.preference cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.713861401Z",
+      "verifiedAt": "2026-10-09T02:37:34.508502797Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -412,7 +412,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.431723800Z",
+      "verifiedAt": "2026-10-09T02:37:35.978955921Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -442,7 +442,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 17: The public type JavaAutoIndentStrategy must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.225767083Z",
+      "verifiedAt": "2026-10-09T02:37:34.903846821Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -472,7 +472,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type AbstractInfoView must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.528416586Z",
+      "verifiedAt": "2026-10-09T02:37:37.046236970Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -502,7 +502,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.jface.dialogs cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.694428391Z",
+      "verifiedAt": "2026-10-09T02:37:37.219657352Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -531,7 +531,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:22.349920416Z",
+      "verifiedAt": "2026-10-09T02:37:32.114916517Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -561,7 +561,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type MyASTConsumer must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.724124500Z",
+      "verifiedAt": "2026-10-09T02:37:36.257010558Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -591,7 +591,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.207526080Z",
+      "verifiedAt": "2026-10-09T02:37:34.885976974Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -620,7 +620,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 12: The public type ParameterGuesser must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.708173811Z",
+      "verifiedAt": "2026-10-09T02:37:36.235163671Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -650,7 +650,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.777830612Z",
+      "verifiedAt": "2026-10-09T02:37:36.310304001Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -680,7 +680,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.908725118Z",
+      "verifiedAt": "2026-10-09T02:37:34.676595513Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -710,7 +710,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.330790990Z",
+      "verifiedAt": "2026-10-09T02:37:33.081988012Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -740,7 +740,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.156558682Z",
+      "verifiedAt": "2026-10-09T02:37:36.658812485Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -770,7 +770,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.resource cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:23.450057246Z",
+      "verifiedAt": "2026-10-09T02:37:33.213933344Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -799,7 +799,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jface.text.ITextViewer cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.210422536Z",
+      "verifiedAt": "2026-10-09T02:37:36.714948862Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -828,7 +828,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui.JavaElementLabels cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.827287391Z",
+      "verifiedAt": "2026-10-09T02:37:37.349080441Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -858,7 +858,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.922707426Z",
+      "verifiedAt": "2026-10-09T02:37:38.469355741Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -888,7 +888,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.355254070Z",
+      "verifiedAt": "2026-10-09T02:37:37.853043222Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -918,7 +918,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.666125356Z",
+      "verifiedAt": "2026-10-09T02:37:37.192903986Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -948,7 +948,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 7: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.353144897Z",
+      "verifiedAt": "2026-10-09T02:37:36.868259485Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -978,7 +978,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.429505507Z",
+      "verifiedAt": "2026-10-09T02:37:33.186282894Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1008,7 +1008,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example is ambiguous: expected one replacement but got 2",
-      "verifiedAt": "2026-10-08T02:35:28.624313673Z",
+      "verifiedAt": "2026-10-09T02:37:38.112848369Z",
       "verifierVersion": "7",
       "matches": 2,
       "replacements": 2
@@ -1038,7 +1038,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:25.431448980Z",
+      "verifiedAt": "2026-10-09T02:37:35.047537733Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1068,7 +1068,7 @@
       "successful": false,
       "stage": "AFTER_REWRITE",
       "message": "Transformed syntax tree does not equal afterExample",
-      "verifiedAt": "2026-10-08T02:35:28.463200619Z",
+      "verifiedAt": "2026-10-09T02:37:37.951501005Z",
       "verifierVersion": "7",
       "matches": 1,
       "replacements": 1
@@ -1098,7 +1098,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.984826909Z",
+      "verifiedAt": "2026-10-09T02:37:37.497305876Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1128,7 +1128,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.100692186Z",
+      "verifiedAt": "2026-10-09T02:37:37.611627565Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1157,7 +1157,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.458983424Z",
+      "verifiedAt": "2026-10-09T02:37:35.998092162Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1186,7 +1186,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.646691094Z",
+      "verifiedAt": "2026-10-09T02:37:37.172822974Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1215,7 +1215,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:29.121298787Z",
+      "verifiedAt": "2026-10-09T02:37:38.662590524Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1245,7 +1245,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.text.source.ICharacterPairMatcher cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.963744340Z",
+      "verifiedAt": "2026-10-09T02:37:36.489484133Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1275,7 +1275,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 7: The public type NewJavaProjectPreferencePage must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.099811446Z",
+      "verifiedAt": "2026-10-09T02:37:36.619076940Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1305,7 +1305,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.868734484Z",
+      "verifiedAt": "2026-10-09T02:37:36.396690256Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1335,7 +1335,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type MyInterface must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.811753414Z",
+      "verifiedAt": "2026-10-09T02:37:37.332513946Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1365,7 +1365,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example produced no replacement",
-      "verifiedAt": "2026-10-08T02:35:25.684083463Z",
+      "verifiedAt": "2026-10-09T02:37:35.213023438Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1395,7 +1395,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.237502273Z",
+      "verifiedAt": "2026-10-09T02:37:37.742255631Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1425,7 +1425,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type NewPackageWizardPage must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:24.728155596Z",
+      "verifiedAt": "2026-10-09T02:37:34.523510523Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1455,7 +1455,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type HTMLPrinter must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.907125780Z",
+      "verifiedAt": "2026-10-09T02:37:38.457284591Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1485,7 +1485,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.042586056Z",
+      "verifiedAt": "2026-10-09T02:37:33.837047017Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1515,7 +1515,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:22.852649558Z",
+      "verifiedAt": "2026-10-09T02:37:32.632400365Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1545,7 +1545,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:25.527611436Z",
+      "verifiedAt": "2026-10-09T02:37:35.107161425Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1574,7 +1574,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:25.015338967Z",
+      "verifiedAt": "2026-10-09T02:37:34.750902637Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1604,7 +1604,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.592214041Z",
+      "verifiedAt": "2026-10-09T02:37:36.124417893Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1634,7 +1634,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.396319942Z",
+      "verifiedAt": "2026-10-09T02:37:37.882197101Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1664,7 +1664,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.279586677Z",
+      "verifiedAt": "2026-10-09T02:37:34.105094811Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1694,7 +1694,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
-      "verifiedAt": "2026-10-08T02:35:24.163487620Z",
+      "verifiedAt": "2026-10-09T02:37:33.968886548Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1724,7 +1724,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.167262532Z",
+      "verifiedAt": "2026-10-09T02:37:38.705249637Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1754,7 +1754,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jface.viewers cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.552420130Z",
+      "verifiedAt": "2026-10-09T02:37:35.123466346Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1784,7 +1784,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.280263800Z",
+      "verifiedAt": "2026-10-09T02:37:36.793572959Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1813,7 +1813,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.691762874Z",
+      "verifiedAt": "2026-10-09T02:37:36.218657916Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1842,7 +1842,37 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 7: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.511591924Z",
+      "verifiedAt": "2026-10-09T02:37:35.097111352Z",
+      "verifierVersion": "7",
+      "matches": 0,
+      "replacements": 0
+    },
+    "transitions": []
+  },
+  {
+    "schemaVersion": 2,
+    "candidateId": "2b3cd3f72a2ba37d568836663db9d1179eceeee4a3c8c96e66222c5259ec4fe2",
+    "revision": 1,
+    "candidateOrdinal": 0,
+    "dslRule": "org.eclipse.jface.resource.ImageDescriptor.createFromFile($Class, \"images/$name.gif\")\n\u003d\u003e\norg.eclipse.jface.resource.ImageDescriptor.createFromFile($Class, \"images/$name.png\")\n;;",
+    "beforeExample": "package test;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyImageLoader {\n    private Image fCachedDefaultCueImage;\n    private Control getControl() { return null; }\n\n    private Image getDefaultCueImage() {\n        if (fCachedDefaultCueImage \u003d\u003d null) {\n            ImageDescriptor cueID \u003d ImageDescriptor.createFromFile(MyImageLoader.class, \"images/content_assist_cue.gif\"); //$NON-NLS-1$\n            fCachedDefaultCueImage \u003d cueID.createImage(getControl().getDisplay());\n        }\n        return fCachedDefaultCueImage;\n    }\n}",
+    "afterExample": "package test;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyImageLoader {\n    private Image fCachedDefaultCueImage;\n    private Control getControl() { return null; }\n\n    private Image getDefaultCueImage() {\n        if (fCachedDefaultCueImage \u003d\u003d null) {\n            ImageDescriptor cueID \u003d ImageDescriptor.createFromFile(MyImageLoader.class, \"images/content_assist_cue.png\"); //$NON-NLS-1$\n            fCachedDefaultCueImage \u003d cueID.createImage(getControl().getDisplay());\n        }\n        return fCachedDefaultCueImage;\n    }\n}",
+    "negativeExample": "package test;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\n\npublic class MyOtherImageLoader {\n    public void loadImage() {\n        // This should not match because the extension is not .gif\n        ImageDescriptor img \u003d ImageDescriptor.createFromFile(MyOtherImageLoader.class, \"icons/myicon.svg\");\n    }\n}",
+    "targetHintFile": "image-file-extension.sandbox-hint",
+    "sourceCommit": "797b6837d8bf09a59a3bba06ebfd319ef39976e9",
+    "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+    "category": "Image File Extension Update",
+    "summary": "Replaces image file extension from .gif to .png in ImageDescriptor.createFromFile calls.",
+    "sourceVersion": "21",
+    "status": "DSL_VALID",
+    "discoveredAt": "2026-10-09T02:37:30.429628661Z",
+    "ruleFingerprint": "sha256:a4b6239082d2ddc7e2d02594a8a6457006bc18ac7fd1226cafde63d16e37e12f",
+    "behaviorFingerprint": "sha256:ee095c42fd708f736057531202a2649c3477bdd980497153ade110cc2f522255",
+    "verification": {
+      "successful": false,
+      "stage": "BEFORE_PARSE",
+      "message": "Java compile error at line 3: The import org.eclipse.jface.resource cannot be resolved",
+      "verifiedAt": "2026-10-09T02:37:38.994327018Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1872,7 +1902,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 2: The import org.eclipse.core.runtime.CoreException conflicts with a type defined in the same file",
-      "verifiedAt": "2026-10-08T02:35:25.084243046Z",
+      "verifiedAt": "2026-10-09T02:37:34.804521219Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1902,7 +1932,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:22.937617593Z",
+      "verifiedAt": "2026-10-09T02:37:32.714021873Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -1976,7 +2006,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:29.052675937Z",
+      "verifiedAt": "2026-10-09T02:37:38.592885206Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2006,7 +2036,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import com.ibm cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.292528819Z",
+      "verifiedAt": "2026-10-09T02:37:38.814903153Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2036,7 +2066,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.424766097Z",
+      "verifiedAt": "2026-10-09T02:37:36.938934630Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2066,7 +2096,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.jface.dialogs cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:23.842142295Z",
+      "verifiedAt": "2026-10-09T02:37:33.651597225Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2096,7 +2126,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.372141534Z",
+      "verifiedAt": "2026-10-09T02:37:35.002631320Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2126,7 +2156,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.415825248Z",
+      "verifiedAt": "2026-10-09T02:37:33.170814622Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2156,7 +2186,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.261758619Z",
+      "verifiedAt": "2026-10-09T02:37:37.766773164Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2186,7 +2216,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:29.315964282Z",
+      "verifiedAt": "2026-10-09T02:37:38.839548480Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2216,7 +2246,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
-      "verifiedAt": "2026-10-08T02:35:27.713262537Z",
+      "verifiedAt": "2026-10-09T02:37:37.239455090Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2246,7 +2276,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.022622239Z",
+      "verifiedAt": "2026-10-09T02:37:32.792861355Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2276,7 +2306,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.762315947Z",
+      "verifiedAt": "2026-10-09T02:37:36.294613907Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2306,7 +2336,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:25.888978890Z",
+      "verifiedAt": "2026-10-09T02:37:35.367195386Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2336,7 +2366,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 18: The public type CodeAssistConfigurationBlock must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.611591045Z",
+      "verifiedAt": "2026-10-09T02:37:36.145162471Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2365,7 +2395,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.jface.resource cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:23.383847868Z",
+      "verifiedAt": "2026-10-09T02:37:33.139007037Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2395,7 +2425,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.937949343Z",
+      "verifiedAt": "2026-10-09T02:37:36.464757519Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2425,7 +2455,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.289707810Z",
+      "verifiedAt": "2026-10-09T02:37:33.039017941Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2455,7 +2485,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.022244364Z",
+      "verifiedAt": "2026-10-09T02:37:33.813587404Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2485,7 +2515,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.415961136Z",
+      "verifiedAt": "2026-10-09T02:37:35.037397747Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2515,7 +2545,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.842902105Z",
+      "verifiedAt": "2026-10-09T02:37:38.390942210Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2545,7 +2575,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.948482087Z",
+      "verifiedAt": "2026-10-09T02:37:36.474679064Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2574,7 +2604,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 7: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.185169706Z",
+      "verifiedAt": "2026-10-09T02:37:38.721995572Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2604,7 +2634,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 2: The import org.eclipse.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.676455546Z",
+      "verifiedAt": "2026-10-09T02:37:36.203778403Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2633,7 +2663,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.857858641Z",
+      "verifiedAt": "2026-10-09T02:37:37.380295708Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2663,7 +2693,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.256390910Z",
+      "verifiedAt": "2026-10-09T02:37:34.079093381Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2692,7 +2722,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:29.062155799Z",
+      "verifiedAt": "2026-10-09T02:37:38.602711865Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2721,7 +2751,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type MarkerSeverityChecker must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:22.798644124Z",
+      "verifiedAt": "2026-10-09T02:37:32.580710970Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2751,7 +2781,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type UnresolvedElementsSubProcessor must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.241851543Z",
+      "verifiedAt": "2026-10-09T02:37:36.754724009Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2781,7 +2811,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:29.257512654Z",
+      "verifiedAt": "2026-10-09T02:37:38.784829333Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2811,7 +2841,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.225218639Z",
+      "verifiedAt": "2026-10-09T02:37:36.732163852Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2841,7 +2871,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.223085402Z",
+      "verifiedAt": "2026-10-09T02:37:32.980067959Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2871,7 +2901,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.692060360Z",
+      "verifiedAt": "2026-10-09T02:37:34.492939663Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2900,7 +2930,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 2: The import org.eclipse.jface.viewers cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.922491508Z",
+      "verifiedAt": "2026-10-09T02:37:35.401563165Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2930,7 +2960,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 9: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.052153795Z",
+      "verifiedAt": "2026-10-09T02:37:32.822157004Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2960,7 +2990,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.069400010Z",
+      "verifiedAt": "2026-10-09T02:37:33.858443906Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -2990,7 +3020,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui.JavaPluginImages cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:22.749489095Z",
+      "verifiedAt": "2026-10-09T02:37:32.533794660Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3020,7 +3050,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 2: The import org.eclipse.jface.wizard cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.542989878Z",
+      "verifiedAt": "2026-10-09T02:37:36.073328906Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3050,7 +3080,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.911052396Z",
+      "verifiedAt": "2026-10-09T02:37:37.433744933Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3080,7 +3110,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.966082637Z",
+      "verifiedAt": "2026-10-09T02:37:38.503324013Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3110,7 +3140,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.592981231Z",
+      "verifiedAt": "2026-10-09T02:37:33.376406562Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3140,7 +3170,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.debug cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.305923378Z",
+      "verifiedAt": "2026-10-09T02:37:38.829576154Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3170,7 +3200,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.176381559Z",
+      "verifiedAt": "2026-10-09T02:37:36.678986892Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3200,7 +3230,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example produced no replacement",
-      "verifiedAt": "2026-10-08T02:35:28.147617019Z",
+      "verifiedAt": "2026-10-09T02:37:37.660658873Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3230,7 +3260,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:25.816289993Z",
+      "verifiedAt": "2026-10-09T02:37:35.308252457Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3260,7 +3290,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.201304373Z",
+      "verifiedAt": "2026-10-09T02:37:37.705117745Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3290,7 +3320,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.670827219Z",
+      "verifiedAt": "2026-10-09T02:37:33.462405705Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3320,7 +3350,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.557639964Z",
+      "verifiedAt": "2026-10-09T02:37:37.076164869Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3350,7 +3380,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 2: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:23.004420470Z",
+      "verifiedAt": "2026-10-09T02:37:32.776838471Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3380,7 +3410,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.439523336Z",
+      "verifiedAt": "2026-10-09T02:37:36.954625804Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3409,7 +3439,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 7: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.456604765Z",
+      "verifiedAt": "2026-10-09T02:37:35.065343865Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3439,7 +3469,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.compare cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.028717113Z",
+      "verifiedAt": "2026-10-09T02:37:38.567114953Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3469,7 +3499,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type KeyStoreUtil must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.432458686Z",
+      "verifiedAt": "2026-10-09T02:37:37.918631057Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3499,7 +3529,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type AbstractInfoView must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.465049524Z",
+      "verifiedAt": "2026-10-09T02:37:36.981018496Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3529,7 +3559,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.009536370Z",
+      "verifiedAt": "2026-10-09T02:37:35.492407191Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3559,7 +3589,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.281117689Z",
+      "verifiedAt": "2026-10-09T02:37:35.789257158Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3589,7 +3619,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type JavaCodeScanner must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:24.132071895Z",
+      "verifiedAt": "2026-10-09T02:37:33.929711358Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3619,7 +3649,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:23.206911064Z",
+      "verifiedAt": "2026-10-09T02:37:32.963279092Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3649,7 +3679,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 7: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.560676834Z",
+      "verifiedAt": "2026-10-09T02:37:36.091183168Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3679,7 +3709,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 12: The public type MyPlugin must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.380534516Z",
+      "verifiedAt": "2026-10-09T02:37:37.871683701Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3708,7 +3738,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.475686290Z",
+      "verifiedAt": "2026-10-09T02:37:33.240043353Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3738,7 +3768,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The import org.eclipse.jdt.core.dom.SharedASTProvider cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.576478311Z",
+      "verifiedAt": "2026-10-09T02:37:36.108020394Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3768,7 +3798,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:22.393470517Z",
+      "verifiedAt": "2026-10-09T02:37:32.164146686Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3798,7 +3828,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example produced no replacement",
-      "verifiedAt": "2026-10-08T02:35:24.465121486Z",
+      "verifiedAt": "2026-10-09T02:37:34.291645669Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3827,7 +3857,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.521848054Z",
+      "verifiedAt": "2026-10-09T02:37:38.006711432Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3857,7 +3887,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The import org.eclipse.search.internal.ui.SearchPlugin cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.342994607Z",
+      "verifiedAt": "2026-10-09T02:37:38.866666829Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3886,7 +3916,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.686934606Z",
+      "verifiedAt": "2026-10-09T02:37:33.478277410Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3915,7 +3945,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type CPListElement must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.640680139Z",
+      "verifiedAt": "2026-10-09T02:37:33.430310787Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3945,7 +3975,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
-      "verifiedAt": "2026-10-08T02:35:26.329549594Z",
+      "verifiedAt": "2026-10-09T02:37:35.847023162Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -3975,7 +4005,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.577397149Z",
+      "verifiedAt": "2026-10-09T02:37:33.360327550Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4005,7 +4035,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.854551653Z",
+      "verifiedAt": "2026-10-09T02:37:34.636284719Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4035,7 +4065,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.270349627Z",
+      "verifiedAt": "2026-10-09T02:37:36.783293603Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4065,7 +4095,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:28.996924774Z",
+      "verifiedAt": "2026-10-09T02:37:38.532618221Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4094,7 +4124,67 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.627573758Z",
+      "verifiedAt": "2026-10-09T02:37:36.157412676Z",
+      "verifierVersion": "7",
+      "matches": 0,
+      "replacements": 0
+    },
+    "transitions": []
+  },
+  {
+    "schemaVersion": 2,
+    "candidateId": "5566dca8035436ba55898d279984806c2dbafe0de2ee14c9bfa72d3358547540",
+    "revision": 1,
+    "candidateOrdinal": 0,
+    "dslRule": "org.eclipse.jface.resource.ImageDescriptor.createFromFile($Class, \"images/$name.png\")\n\u003d\u003e\norg.eclipse.jface.resource.ImageDescriptor.createFromFile($Class, \"images/$name.gif\")\n;;",
+    "beforeExample": "package test;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyImageLoader {\n    private Image fCachedDefaultCueImage;\n    private Control getControl() { return null; }\n\n    private Image getDefaultCueImage() {\n        if (fCachedDefaultCueImage \u003d\u003d null) {\n            ImageDescriptor cueID \u003d ImageDescriptor.createFromFile(MyImageLoader.class, \"images/content_assist_cue.png\"); //$NON-NLS-1$\n            fCachedDefaultCueImage \u003d cueID.createImage(getControl().getDisplay());\n        }\n        return fCachedDefaultCueImage;\n    }\n}",
+    "afterExample": "package test;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyImageLoader {\n    private Image fCachedDefaultCueImage;\n    private Control getControl() { return null; }\n\n    private Image getDefaultCueImage() {\n        if (fCachedDefaultCueImage \u003d\u003d null) {\n            ImageDescriptor cueID \u003d ImageDescriptor.createFromFile(MyImageLoader.class, \"images/content_assist_cue.gif\"); //$NON-NLS-1$\n            fCachedDefaultCueImage \u003d cueID.createImage(getControl().getDisplay());\n        }\n        return fCachedDefaultCueImage;\n    }\n}",
+    "negativeExample": "package test;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\n\npublic class MyOtherImageLoader {\n    public void loadImage() {\n        // This should not match because the extension is not .png\n        ImageDescriptor img \u003d ImageDescriptor.createFromFile(MyOtherImageLoader.class, \"icons/myicon.svg\");\n    }\n}",
+    "targetHintFile": "image-file-extension.sandbox-hint",
+    "sourceCommit": "c26c83e44725f551e3fdeed4c36a2724001fbfb4",
+    "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+    "category": "Image File Extension Update",
+    "summary": "Reverts image file extension from .png to .gif in ImageDescriptor.createFromFile calls.",
+    "sourceVersion": "21",
+    "status": "DSL_VALID",
+    "discoveredAt": "2026-10-09T02:37:30.489876323Z",
+    "ruleFingerprint": "sha256:fb5243e06c0b3dd298292223cdef040dcab69e80e361f18bd319930c621a2d9d",
+    "behaviorFingerprint": "sha256:c262276bf8b7f2149cfeec89bacfd1292c42d7bbf2b40874b3a69dc648b00748",
+    "verification": {
+      "successful": false,
+      "stage": "BEFORE_PARSE",
+      "message": "Java compile error at line 3: The import org.eclipse.jface.resource cannot be resolved",
+      "verifiedAt": "2026-10-09T02:37:39.008975250Z",
+      "verifierVersion": "7",
+      "matches": 0,
+      "replacements": 0
+    },
+    "transitions": []
+  },
+  {
+    "schemaVersion": 2,
+    "candidateId": "559148b5445f8ffa27ce26233067cac14b901d21fa8342e90cf88b6f0d5d7896",
+    "revision": 1,
+    "candidateOrdinal": 0,
+    "dslRule": "\u003c!id: use-linkedhashset-for-ordered-set-init\u003e\n\u003c!description: Replace HashSet with LinkedHashSet for local variables to preserve insertion order, ensuring predictable iteration. This is a safe change for local variables where thread-safety is not a concern.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: collection, order, performance\u003e\n\nnew java.util.HashSet\u003c$Generics$\u003e($args$)\n:: isAssignedToLocalVariable()\n\u003d\u003e\nnew java.util.LinkedHashSet\u003c$Generics$\u003e($args$)\n;;",
+    "beforeExample": "import java.util.Arrays;\nimport java.util.HashSet;\nimport java.util.Set;\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.content.IContentType;\n\npublic class Example {\n    private Set\u003cIContentType\u003e contentTypes;\n    public void someMethod(Object editor) {\n        String name \u003d \"file.txt\";\n        // Matched line:\n        Set\u003cIContentType\u003e types \u003d new HashSet\u003c\u003e(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(name)));\n        System.out.println(types);\n        this.contentTypes \u003d types;\n    }\n}",
+    "afterExample": "import java.util.Arrays;\nimport java.util.LinkedHashSet;\nimport java.util.Set;\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.content.IContentType;\n\npublic class Example {\n    private Set\u003cIContentType\u003e contentTypes;\n    public void someMethod(Object editor) {\n        String name \u003d \"file.txt\";\n        // Changed line:\n        Set\u003cIContentType\u003e types \u003d new LinkedHashSet\u003c\u003e(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(name)));\n        System.out.println(types);\n        this.contentTypes \u003d types;\n    }\n}",
+    "negativeExample": "import java.util.Arrays;\nimport java.util.HashSet;\nimport java.util.Set;\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.content.IContentType;\n\npublic class NegativeExample {\n    // Should NOT match because it\u0027s a field, not a local variable\n    private Set\u003cIContentType\u003e contentTypes \u003d new HashSet\u003c\u003e(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(\"file.txt\")));\n\n    public void anotherMethod() {\n        Set\u003cString\u003e anotherSet \u003d new LinkedHashSet\u003c\u003e(); // Already LinkedHashSet\n        System.out.println(anotherSet);\n\n        Set\u003cInteger\u003e yetAnotherSet \u003d new HashSet\u003c\u003e(); // No-arg constructor, still matches as $args$ can be empty\n        System.out.println(yetAnotherSet);\n    }\n}",
+    "targetHintFile": "collections.sandbox-hint",
+    "sourceCommit": "d929f218362bd560d9a6e43bf62820b06a1dcf79",
+    "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+    "category": "Collection Modernization",
+    "summary": "Replaces `new HashSet(...)` with `new LinkedHashSet(...)` for local variable initializations to ensure predictable iteration order.",
+    "sourceVersion": "21",
+    "status": "DSL_VALID",
+    "discoveredAt": "2026-10-09T02:37:30.567385674Z",
+    "ruleFingerprint": "sha256:8cdd9a14f6a42194cd7432f09d8dadf5ba498ef41fc4ec862fd84a384dc7de34",
+    "behaviorFingerprint": "sha256:127526af927a74a79899e5d5cae2d22ad459536ede898085d8e2e84c6a14a073",
+    "verification": {
+      "successful": false,
+      "stage": "DSL_PARSE",
+      "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+      "verifiedAt": "2026-10-09T02:37:39.045512371Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4124,7 +4214,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:29.367426971Z",
+      "verifiedAt": "2026-10-09T02:37:38.891466115Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4154,7 +4244,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.text.ITextOperationTarget cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.927843110Z",
+      "verifiedAt": "2026-10-09T02:37:36.454201095Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4184,7 +4274,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.758060308Z",
+      "verifiedAt": "2026-10-09T02:37:34.562434290Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4214,7 +4304,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:22.871578885Z",
+      "verifiedAt": "2026-10-09T02:37:32.649810881Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4289,7 +4379,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:25.162646500Z",
+      "verifiedAt": "2026-10-09T02:37:34.855787189Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4318,7 +4408,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.504890781Z",
+      "verifiedAt": "2026-10-09T02:37:37.996250133Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4347,7 +4437,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type JavaMethodCompletionProposal must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.514096840Z",
+      "verifiedAt": "2026-10-09T02:37:37.030920615Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4377,7 +4467,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example is ambiguous: expected one replacement but got 2",
-      "verifiedAt": "2026-10-08T02:35:24.103106235Z",
+      "verifiedAt": "2026-10-09T02:37:33.895343592Z",
       "verifierVersion": "7",
       "matches": 2,
       "replacements": 2
@@ -4407,7 +4497,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.ltk cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.436747636Z",
+      "verifiedAt": "2026-10-09T02:37:34.260680290Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4437,7 +4527,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.695271670Z",
+      "verifiedAt": "2026-10-09T02:37:38.176104211Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4512,7 +4602,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.870781972Z",
+      "verifiedAt": "2026-10-09T02:37:34.646066553Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4542,7 +4632,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.174498070Z",
+      "verifiedAt": "2026-10-09T02:37:33.984818999Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4572,7 +4662,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.952688014Z",
+      "verifiedAt": "2026-10-09T02:37:35.433285117Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4602,7 +4692,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:22.410008448Z",
+      "verifiedAt": "2026-10-09T02:37:32.186935211Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4632,7 +4722,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 2: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.968547367Z",
+      "verifiedAt": "2026-10-09T02:37:35.448756388Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4662,7 +4752,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 15: The public type JarFileExportOperation must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.906684163Z",
+      "verifiedAt": "2026-10-09T02:37:36.432172440Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4692,7 +4782,7 @@
       "successful": false,
       "stage": "GUARD_RESOLUTION",
       "message": "Unknown guard function: handlePreferenceStoreChanged",
-      "verifiedAt": "2026-10-08T02:35:28.566715120Z",
+      "verifiedAt": "2026-10-09T02:37:38.051768638Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4722,7 +4812,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The import org.eclipse.jdt.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:22.556111525Z",
+      "verifiedAt": "2026-10-09T02:37:32.344120205Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4752,7 +4842,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type StringComparison must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.054319803Z",
+      "verifiedAt": "2026-10-09T02:37:34.777349301Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4782,7 +4872,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.858322861Z",
+      "verifiedAt": "2026-10-09T02:37:36.386296923Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4812,7 +4902,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.122823310Z",
+      "verifiedAt": "2026-10-09T02:37:36.633842143Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4841,7 +4931,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.170345496Z",
+      "verifiedAt": "2026-10-09T02:37:35.663598717Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4871,7 +4961,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.373582247Z",
+      "verifiedAt": "2026-10-09T02:37:34.195978951Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4901,7 +4991,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.271056975Z",
+      "verifiedAt": "2026-10-09T02:37:35.772811120Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4931,7 +5021,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.core.IClasspathEntry conflicts with a type defined in the same file",
-      "verifiedAt": "2026-10-08T02:35:23.714662370Z",
+      "verifiedAt": "2026-10-09T02:37:33.505526554Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4961,7 +5051,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.core.compiler.IProblem conflicts with a type defined in the same file",
-      "verifiedAt": "2026-10-08T02:35:25.777424155Z",
+      "verifiedAt": "2026-10-09T02:37:35.281751037Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -4990,7 +5080,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 7: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.488442169Z",
+      "verifiedAt": "2026-10-09T02:37:35.080926558Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5019,7 +5109,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 10: The public type JavaDocScanner must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.595544366Z",
+      "verifiedAt": "2026-10-09T02:37:37.114682293Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5049,7 +5139,36 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.text.TabsToSpacesConverter cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:22.252049158Z",
+      "verifiedAt": "2026-10-09T02:37:32.012601446Z",
+      "verifierVersion": "7",
+      "matches": 0,
+      "replacements": 0
+    },
+    "transitions": []
+  },
+  {
+    "schemaVersion": 2,
+    "candidateId": "66cf047f40bcb6092315a9d88aacaa8d46e113acb3945eca2421647978506ae9",
+    "revision": 1,
+    "candidateOrdinal": 0,
+    "dslRule": "org.eclipse.ui.texteditor.FindReplaceDialog.HISTORY_SIZE - 1\n\u003d\u003e\norg.eclipse.ui.texteditor.FindReplaceDialog.HISTORY_SIZE\n;;",
+    "beforeExample": "package org.eclipse.ui.texteditor;\n\nimport java.util.ArrayList;\n\npublic class FindReplaceDialog {\n    private static final int HISTORY_SIZE \u003d 15;\n    private ArrayList\u003cString\u003e fFindHistory;\n\n    public FindReplaceDialog() {\n        // Example usage in constructor\n        fFindHistory \u003d new ArrayList\u003c\u003e(HISTORY_SIZE - 1);\n    }\n\n    public void someMethod() {\n        // Example usage in another method\n        int initialCapacity \u003d HISTORY_SIZE - 1;\n        System.out.println(\"Capacity: \" + initialCapacity);\n    }\n}",
+    "afterExample": "package org.eclipse.ui.texteditor;\n\nimport java.util.ArrayList;\n\npublic class FindReplaceDialog {\n    private static final int HISTORY_SIZE \u003d 15;\n    private ArrayList\u003cString\u003e fFindHistory;\n\n    public FindReplaceDialog() {\n        // Example usage in constructor\n        fFindHistory \u003d new ArrayList\u003c\u003e(HISTORY_SIZE);\n    }\n\n    public void someMethod() {\n        // Example usage in another method\n        int initialCapacity \u003d HISTORY_SIZE;\n        System.out.println(\"Capacity: \" + initialCapacity);\n    }\n}",
+    "negativeExample": "package org.eclipse.ui.texteditor;\n\nimport java.util.ArrayList;\n\npublic class FindReplaceDialog {\n    private static final int HISTORY_SIZE \u003d 15;\n    private static final int SOME_OTHER_SIZE \u003d 10;\n    private ArrayList\u003cString\u003e fFindHistory;\n\n    public FindReplaceDialog() {\n        // This should not match, as it refers to a different constant\n        fFindHistory \u003d new ArrayList\u003c\u003e(SOME_OTHER_SIZE - 1);\n    }\n\n    public void anotherMethod() {\n        int x \u003d 5;\n        // This should not match, as it\u0027s a local variable, not the specific FQN constant\n        System.out.println(x - 1);\n    }\n}",
+    "targetHintFile": "constants-updates.sandbox-hint",
+    "sourceCommit": "6ac9ef9309a19dca183c39b074ec5f5f92357460",
+    "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+    "category": "Constant Expression Simplification",
+    "sourceVersion": "21",
+    "status": "DSL_VALID",
+    "discoveredAt": "2026-10-09T02:37:30.651482670Z",
+    "ruleFingerprint": "sha256:5ef09275994430ccd546e172522ca712de07ee69436cc2cdde36f20a96b57755",
+    "behaviorFingerprint": "sha256:875dfb2cee019916704a0ec3359edff7aabc897642ef10aa484648f4ca31ff36",
+    "verification": {
+      "successful": false,
+      "stage": "BEFORE_PARSE",
+      "message": "Java compile error at line 5: The public type FindReplaceDialog must be defined in its own file",
+      "verifiedAt": "2026-10-09T02:37:39.101446585Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5079,7 +5198,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:29.453578211Z",
+      "verifiedAt": "2026-10-09T02:37:38.979757379Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5108,7 +5227,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.dialogs cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:23.110030838Z",
+      "verifiedAt": "2026-10-09T02:37:32.878802746Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5138,7 +5257,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.397699918Z",
+      "verifiedAt": "2026-10-09T02:37:36.913798110Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5168,7 +5287,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 2: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.357232170Z",
+      "verifiedAt": "2026-10-09T02:37:38.881502064Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5198,7 +5317,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 9: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.883257485Z",
+      "verifiedAt": "2026-10-09T02:37:36.411064606Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5228,7 +5347,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.249975259Z",
+      "verifiedAt": "2026-10-09T02:37:34.920144344Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5258,7 +5377,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.395166019Z",
+      "verifiedAt": "2026-10-09T02:37:38.918016332Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5288,7 +5407,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain exactly one transformation rule, but contains 2",
-      "verifiedAt": "2026-10-08T02:35:24.295718489Z",
+      "verifiedAt": "2026-10-09T02:37:34.121865796Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5317,7 +5436,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:29.083388390Z",
+      "verifiedAt": "2026-10-09T02:37:38.624512865Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5347,7 +5466,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.junit cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:28.579938514Z",
+      "verifiedAt": "2026-10-09T02:37:38.065855416Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5377,7 +5496,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.767855628Z",
+      "verifiedAt": "2026-10-09T02:37:34.573630397Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5407,7 +5526,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.viewers cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:28.640590287Z",
+      "verifiedAt": "2026-10-09T02:37:38.126826895Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5437,7 +5556,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.118271549Z",
+      "verifiedAt": "2026-10-09T02:37:37.629487361Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5467,7 +5586,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.485338287Z",
+      "verifiedAt": "2026-10-09T02:37:37.001931630Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5497,7 +5616,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:23.799705999Z",
+      "verifiedAt": "2026-10-09T02:37:33.610575096Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5527,7 +5646,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example is ambiguous: expected one replacement but got 2",
-      "verifiedAt": "2026-10-08T02:35:27.847688908Z",
+      "verifiedAt": "2026-10-09T02:37:37.370221337Z",
       "verifierVersion": "7",
       "matches": 2,
       "replacements": 2
@@ -5556,7 +5675,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.384123166Z",
+      "verifiedAt": "2026-10-09T02:37:34.205969419Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5585,7 +5704,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.589730880Z",
+      "verifiedAt": "2026-10-09T02:37:38.075914070Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5614,7 +5733,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 8: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.772112965Z",
+      "verifiedAt": "2026-10-09T02:37:33.583629307Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5644,7 +5763,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.038853303Z",
+      "verifiedAt": "2026-10-09T02:37:36.564148755Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5674,7 +5793,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:25.265704655Z",
+      "verifiedAt": "2026-10-09T02:37:34.930224596Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5703,7 +5822,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.420776590Z",
+      "verifiedAt": "2026-10-09T02:37:34.242514038Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5733,7 +5852,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.906696222Z",
+      "verifiedAt": "2026-10-09T02:37:35.384687146Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5763,7 +5882,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 2: The import org.eclipse.jface.viewers cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:22.976855475Z",
+      "verifiedAt": "2026-10-09T02:37:32.750762100Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5793,7 +5912,37 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:28.982809162Z",
+      "verifiedAt": "2026-10-09T02:37:38.517835467Z",
+      "verifierVersion": "7",
+      "matches": 0,
+      "replacements": 0
+    },
+    "transitions": []
+  },
+  {
+    "schemaVersion": 2,
+    "candidateId": "74e6e68f2e0343e78c7adde2a640157e6bee479c0d432ad73782809fbbd93445",
+    "revision": 1,
+    "candidateOrdinal": 0,
+    "dslRule": "\u003c!id: submonitor.step-to-split\u003e\n\u003c!description: Replace SubMonitor.step(1) with SubMonitor.split(1) for improved progress monitoring, which is a more robust way to advance progress in SubMonitor.\n\u003c!severity: HINT\u003e\n\n$subMonitor.step(1)\n\u003d\u003e\n$subMonitor.split(1)\n;;",
+    "beforeExample": "import org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.SubMonitor;\n\npublic class MyClass {\n    public void doSomething(IProgressMonitor monitor) {\n        SubMonitor subMonitor \u003d SubMonitor.convert(monitor, 10);\n        try {\n            // Some work\n            subMonitor.step(1); // Target for replacement\n            // More work\n            subMonitor.setWorkRemaining(1);\n            subMonitor.step(1); // Another target\n            subMonitor.split(1); // Already split, should not match\n        } finally {\n            subMonitor.done();\n        }\n    }\n}",
+    "afterExample": "import org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.SubMonitor;\n\npublic class MyClass {\n    public void doSomething(IProgressMonitor monitor) {\n        SubMonitor subMonitor \u003d SubMonitor.convert(monitor, 10);\n        try {\n            // Some work\n            subMonitor.split(1); // Replaced\n            // More work\n            subMonitor.setWorkRemaining(1);\n            subMonitor.split(1); // Replaced\n            subMonitor.split(1); // Already split, should not match\n        } finally {\n            subMonitor.done();\n        }\n    }\n}",
+    "negativeExample": "import org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.core.runtime.SubMonitor;\n\npublic class MyClass {\n    public void doSomethingElse(IProgressMonitor monitor) {\n        SubMonitor subMonitor \u003d SubMonitor.convert(monitor, 10);\n        try {\n            subMonitor.step(2); // Argument is not 1, should not match\n            subMonitor.anotherMethod(1); // Different method, should not match\n        } finally {\n            subMonitor.done();\n        }\n    }\n}",
+    "targetHintFile": "eclipse-api.sandbox-hint",
+    "sourceCommit": "c54a6055d460951ecdbcf51eaba19c346370a783",
+    "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+    "category": "API Modernization",
+    "summary": "Replaces `subMonitor.step(1)` with `subMonitor.split(1)`.",
+    "sourceVersion": "21",
+    "status": "DSL_VALID",
+    "discoveredAt": "2026-10-09T02:37:30.588597962Z",
+    "ruleFingerprint": "sha256:12cbe818baf1674083a10a6f1b4417ad103b600c6893c2b02e9c53e28e3d3812",
+    "behaviorFingerprint": "sha256:220c24696f76a66053b7ba2713be5f47f71c26981dfd5b4489b869d16a5bde56",
+    "verification": {
+      "successful": false,
+      "stage": "DSL_PARSE",
+      "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+      "verifiedAt": "2026-10-09T02:37:39.055330189Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5823,7 +5972,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.058518492Z",
+      "verifiedAt": "2026-10-09T02:37:36.585216660Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5853,7 +6002,7 @@
       "successful": false,
       "stage": "AFTER_PARSE",
       "message": "Java compile error at line 11: Collections cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.931357385Z",
+      "verifiedAt": "2026-10-09T02:37:37.454793767Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5883,7 +6032,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.core.CoreException cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.347964664Z",
+      "verifiedAt": "2026-10-09T02:37:34.171138062Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5912,7 +6061,36 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.414755669Z",
+      "verifiedAt": "2026-10-09T02:37:36.928692877Z",
+      "verifierVersion": "7",
+      "matches": 0,
+      "replacements": 0
+    },
+    "transitions": []
+  },
+  {
+    "schemaVersion": 2,
+    "candidateId": "7739aa8690122f4b4195f9e34406b9f900c2accc55fcfb5fa9579d2f1c557c82",
+    "revision": 1,
+    "candidateOrdinal": 0,
+    "dslRule": "/*!\n\u003c!id: explicit.unboxing.character.array\u003e\n\u003c!description: Make explicit unboxing of Character to char when assigning to a char array element.\u003e\n\u003c!severity: INFO\u003e\n*/\n$array[$index$] \u003d $charObject :: instanceof($array, \"char[]\") \u0026\u0026 instanceof($charObject, \"java.lang.Character\")\n\u003d\u003e\n$array[$index$] \u003d $charObject.charValue()\n;;",
+    "beforeExample": "package test;\n\nimport java.util.HashSet;\nimport java.util.Set;\n\npublic class TestClass {\n    public char[] processChars(Set\u003cCharacter\u003e chars) {\n        char[] res \u003d new char[chars.size()];\n        int i \u003d 0;\n        for (Character c : chars) {\n            res[i] \u003d c; // Implicit unboxing\n            i++;\n        }\n        return res;\n    }\n\n    public char[] otherProcessChars() {\n        Set\u003cCharacter\u003e chars \u003d new HashSet\u003c\u003e();\n        chars.add(\u0027a\u0027);\n        chars.add(\u0027b\u0027);\n        return processChars(chars);\n    }\n}",
+    "afterExample": "package test;\n\nimport java.util.HashSet;\nimport java.util.Set;\n\npublic class TestClass {\n    public char[] processChars(Set\u003cCharacter\u003e chars) {\n        char[] res \u003d new char[chars.size()];\n        int i \u003d 0;\n        for (Character c : chars) {\n            res[i] \u003d c.charValue(); // Explicit unboxing\n            i++;\n        }\n        return res;\n    }\n\n    public char[] otherProcessChars() {\n        Set\u003cCharacter\u003e chars \u003d new HashSet\u003c\u003e();\n        chars.add(\u0027a\u0027);\n        chars.add(\u0027b\u0027);\n        return processChars(chars);\n    }\n}",
+    "negativeExample": "package test;\n\nimport java.util.Set;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class TestClass {\n    public void noMatch() {\n        // Not a char array\n        int[] intArray \u003d new int[5];\n        Integer iObj \u003d 10;\n        intArray[0] \u003d iObj; // No match (int array, Integer object)\n\n        // Not a Character object\n        char[] charArray \u003d new char[5];\n        String s \u003d \"hello\";\n        // charArray[0] \u003d s; // This wouldn\u0027t compile\n        \n        // Already explicit\n        char charPrim \u003d \u0027x\u0027;\n        Character charObj \u003d Character.valueOf(charPrim);\n        charArray[1] \u003d charObj.charValue(); // Already explicit\n    }\n\n    public void directAssignment(char[] arr, char c) {\n        arr[0] \u003d c; // No match (primitive char to char array, no unboxing needed)\n    }\n}",
+    "targetHintFile": "boxing-unboxing.sandbox-hint",
+    "sourceCommit": "b6b48fbb1efc77cea2fb11a8db30a87849965a8a",
+    "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+    "category": "Explicit Unboxing",
+    "sourceVersion": "21",
+    "status": "DSL_VALID",
+    "discoveredAt": "2026-10-09T02:37:30.629944910Z",
+    "ruleFingerprint": "sha256:4581e2a071820e97107bde0aced69318813e27ca1e779a87cb9addf0ac128786",
+    "behaviorFingerprint": "sha256:c97b28b9121a3ff2fc5e450bb66d974454465d441c6760632ecf7b1c57039be0",
+    "verification": {
+      "successful": false,
+      "stage": "BEFORE_PARSE",
+      "message": "Java compile error at line 6: The public type TestClass must be defined in its own file",
+      "verifiedAt": "2026-10-09T02:37:39.084915984Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5942,7 +6120,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import com.ibm cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:28.603302737Z",
+      "verifiedAt": "2026-10-09T02:37:38.089936462Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -5972,7 +6150,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jdt.core.ITypeBinding cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.653404854Z",
+      "verifiedAt": "2026-10-09T02:37:34.466997380Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6001,7 +6179,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The import org.eclipse.jdt.internal.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.312873573Z",
+      "verifiedAt": "2026-10-09T02:37:34.962979395Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6031,7 +6209,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 2: The import org.eclipse.jdt.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.542541963Z",
+      "verifiedAt": "2026-10-09T02:37:37.060786270Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6061,7 +6239,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 9: The public type Test must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:29.381422004Z",
+      "verifiedAt": "2026-10-09T02:37:38.904902189Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6091,7 +6269,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.751968106Z",
+      "verifiedAt": "2026-10-09T02:37:35.258474384Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6121,7 +6299,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 7: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.049571615Z",
+      "verifiedAt": "2026-10-09T02:37:37.557048674Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6151,7 +6329,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type JavaIndenter must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.400656770Z",
+      "verifiedAt": "2026-10-09T02:37:35.939959731Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6181,7 +6359,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.577608830Z",
+      "verifiedAt": "2026-10-09T02:37:37.096259677Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6210,7 +6388,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 7: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.315629128Z",
+      "verifiedAt": "2026-10-09T02:37:37.812865604Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6239,7 +6417,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 9: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.292771536Z",
+      "verifiedAt": "2026-10-09T02:37:37.797798311Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6269,7 +6447,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.488224867Z",
+      "verifiedAt": "2026-10-09T02:37:33.256713373Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6298,7 +6476,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.276576929Z",
+      "verifiedAt": "2026-10-09T02:37:37.780356326Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6328,7 +6506,7 @@
       "successful": false,
       "stage": "AFTER_REWRITE",
       "message": "Transformed source is invalid: Java compile error at line 11: Type mismatch: cannot convert from AbstractSet to Set\u003cString\u003e",
-      "verifiedAt": "2026-10-08T02:35:28.885280643Z",
+      "verifiedAt": "2026-10-09T02:37:38.441826182Z",
       "verifierVersion": "7",
       "matches": 1,
       "replacements": 1
@@ -6358,7 +6536,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.968577766Z",
+      "verifiedAt": "2026-10-09T02:37:37.482713905Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6388,7 +6566,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui.text.template cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:22.832915831Z",
+      "verifiedAt": "2026-10-09T02:37:32.614641059Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6418,7 +6596,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.305948147Z",
+      "verifiedAt": "2026-10-09T02:37:33.055380320Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6447,7 +6625,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.705632166Z",
+      "verifiedAt": "2026-10-09T02:37:35.227397125Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6477,7 +6655,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:29.247073544Z",
+      "verifiedAt": "2026-10-09T02:37:38.774933460Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6507,7 +6685,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.043099235Z",
+      "verifiedAt": "2026-10-09T02:37:38.582966690Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6537,7 +6715,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.185449485Z",
+      "verifiedAt": "2026-10-09T02:37:34.871041396Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6567,7 +6745,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.837416229Z",
+      "verifiedAt": "2026-10-09T02:37:34.626231425Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6597,7 +6775,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.819941702Z",
+      "verifiedAt": "2026-10-09T02:37:36.346550198Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6627,7 +6805,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:29.235897711Z",
+      "verifiedAt": "2026-10-09T02:37:38.765016516Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6656,7 +6834,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:25.328648098Z",
+      "verifiedAt": "2026-10-09T02:37:34.973267592Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6686,7 +6864,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:25.656832337Z",
+      "verifiedAt": "2026-10-09T02:37:35.194695221Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6716,7 +6894,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.979958202Z",
+      "verifiedAt": "2026-10-09T02:37:36.499620960Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6746,7 +6924,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.185952588Z",
+      "verifiedAt": "2026-10-09T02:37:36.688897099Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6776,7 +6954,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.ui.JavaPluginImages cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.798279159Z",
+      "verifiedAt": "2026-10-09T02:37:37.318931537Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6806,7 +6984,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.077336198Z",
+      "verifiedAt": "2026-10-09T02:37:36.603930206Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6836,7 +7014,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 41: The public type MyStreamProcessor must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.336876428Z",
+      "verifiedAt": "2026-10-09T02:37:37.833899705Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6866,7 +7044,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.227419458Z",
+      "verifiedAt": "2026-10-09T02:37:37.732005645Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6896,7 +7074,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.750860639Z",
+      "verifiedAt": "2026-10-09T02:37:37.270976900Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6925,7 +7103,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.575131872Z",
+      "verifiedAt": "2026-10-09T02:37:35.138705636Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6955,7 +7133,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.166289163Z",
+      "verifiedAt": "2026-10-09T02:37:36.668900572Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -6985,7 +7163,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.449468119Z",
+      "verifiedAt": "2026-10-09T02:37:36.964995819Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7014,7 +7192,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.111357300Z",
+      "verifiedAt": "2026-10-09T02:37:38.652675170Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7044,7 +7222,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.006294516Z",
+      "verifiedAt": "2026-10-09T02:37:33.797541973Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7074,7 +7252,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.search cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.329565099Z",
+      "verifiedAt": "2026-10-09T02:37:38.853158182Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7104,7 +7282,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.viewers cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.598488733Z",
+      "verifiedAt": "2026-10-09T02:37:35.153539921Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7134,7 +7312,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:22.370254580Z",
+      "verifiedAt": "2026-10-09T02:37:32.140266966Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7164,7 +7342,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type CallHierarchyUI must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.011386669Z",
+      "verifiedAt": "2026-10-09T02:37:36.529569881Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7194,7 +7372,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.224501682Z",
+      "verifiedAt": "2026-10-09T02:37:35.720226423Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7224,7 +7402,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.text.AbstractInformationControl cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.153221540Z",
+      "verifiedAt": "2026-10-09T02:37:38.691372352Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7254,7 +7432,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.373300100Z",
+      "verifiedAt": "2026-10-09T02:37:35.899051345Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7283,7 +7461,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.980270091Z",
+      "verifiedAt": "2026-10-09T02:37:33.771462562Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7312,7 +7490,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.079308933Z",
+      "verifiedAt": "2026-10-09T02:37:35.571307236Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7342,7 +7520,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The import org.eclipse.jface.text.source.DefaultCharacterPairMatcher cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.996475598Z",
+      "verifiedAt": "2026-10-09T02:37:36.514274474Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7372,7 +7550,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 10: org.eclipse.jface.preference cannot be resolved to a type",
-      "verifiedAt": "2026-10-08T02:35:28.718484166Z",
+      "verifiedAt": "2026-10-09T02:37:38.200597640Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7402,7 +7580,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jface.preference cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.205811525Z",
+      "verifiedAt": "2026-10-09T02:37:35.694835346Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7431,7 +7609,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.891162736Z",
+      "verifiedAt": "2026-10-09T02:37:37.411970117Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7461,7 +7639,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The import org.eclipse.jdt.internal.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:22.325135823Z",
+      "verifiedAt": "2026-10-09T02:37:32.087349383Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7491,7 +7669,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 13: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.553449295Z",
+      "verifiedAt": "2026-10-09T02:37:33.335265959Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7521,7 +7699,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.729830771Z",
+      "verifiedAt": "2026-10-09T02:37:37.250948842Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7551,7 +7729,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.568492327Z",
+      "verifiedAt": "2026-10-09T02:37:34.401258323Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7581,7 +7759,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.394348314Z",
+      "verifiedAt": "2026-10-09T02:37:34.215888496Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7611,7 +7789,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.411410628Z",
+      "verifiedAt": "2026-10-09T02:37:38.932401676Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7641,7 +7819,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.567545621Z",
+      "verifiedAt": "2026-10-09T02:37:37.086240051Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7671,7 +7849,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.393292994Z",
+      "verifiedAt": "2026-10-09T02:37:35.016672159Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7701,7 +7879,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: Syntax error on token \"package\", Identifier expected",
-      "verifiedAt": "2026-10-08T02:35:26.484754031Z",
+      "verifiedAt": "2026-10-09T02:37:36.018331566Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7731,7 +7909,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.016242634Z",
+      "verifiedAt": "2026-10-09T02:37:37.523111847Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7761,7 +7939,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.796035540Z",
+      "verifiedAt": "2026-10-09T02:37:34.595770667Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7881,7 +8059,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.357996313Z",
+      "verifiedAt": "2026-10-09T02:37:34.181226163Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7911,7 +8089,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.095697214Z",
+      "verifiedAt": "2026-10-09T02:37:35.587050767Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7941,7 +8119,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: Syntax error on token \"package\", Identifier expected",
-      "verifiedAt": "2026-10-08T02:35:23.082688794Z",
+      "verifiedAt": "2026-10-09T02:37:32.852429662Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -7971,7 +8149,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.000232676Z",
+      "verifiedAt": "2026-10-09T02:37:34.740565010Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8001,7 +8179,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type BreadcrumbItemDropDown must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.877136269Z",
+      "verifiedAt": "2026-10-09T02:37:35.353252601Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8031,7 +8209,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.090891449Z",
+      "verifiedAt": "2026-10-09T02:37:37.601725453Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8061,7 +8239,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.810340045Z",
+      "verifiedAt": "2026-10-09T02:37:36.336576945Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8091,7 +8269,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 2: The import org.eclipse.jface.text.contentassist cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:28.685632856Z",
+      "verifiedAt": "2026-10-09T02:37:38.166184834Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8121,7 +8299,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jdt.launching cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:23.912520844Z",
+      "verifiedAt": "2026-10-09T02:37:33.720259585Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8151,7 +8329,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.028827737Z",
+      "verifiedAt": "2026-10-09T02:37:35.509118120Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8180,7 +8358,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.662699566Z",
+      "verifiedAt": "2026-10-09T02:37:38.142327859Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8210,7 +8388,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.956374286Z",
+      "verifiedAt": "2026-10-09T02:37:38.493337661Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8240,7 +8418,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.preference cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:28.732760219Z",
+      "verifiedAt": "2026-10-09T02:37:38.219907642Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8269,7 +8447,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.534107392Z",
+      "verifiedAt": "2026-10-09T02:37:38.016626754Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8299,7 +8477,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.191333004Z",
+      "verifiedAt": "2026-10-09T02:37:37.694763779Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8329,7 +8507,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.action cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.260978961Z",
+      "verifiedAt": "2026-10-09T02:37:35.760504736Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8359,7 +8537,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.935049581Z",
+      "verifiedAt": "2026-10-09T02:37:33.736098847Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8389,7 +8567,37 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.590009872Z",
+      "verifiedAt": "2026-10-09T02:37:34.416753038Z",
+      "verifierVersion": "7",
+      "matches": 0,
+      "replacements": 0
+    },
+    "transitions": []
+  },
+  {
+    "schemaVersion": 2,
+    "candidateId": "ab30d6810e13e3ee817fea025ea88a2291dc08ec95d473b50be3455b358ce586",
+    "revision": 1,
+    "candidateOrdinal": 0,
+    "dslRule": "new java.lang.Integer($arg)\n\u003d\u003e\njava.lang.Integer.valueOf($arg)\n;;",
+    "beforeExample": "package test;\n\npublic class MyClass {\n    public String getFormattedCount(int count) {\n        Object[] args \u003d { \"Label\", new Integer(count) };\n        return \"Formatted: \" + args[1];\n    }\n}",
+    "afterExample": "package test;\n\npublic class MyClass {\n    public String getFormattedCount(int count) {\n        Object[] args \u003d { \"Label\", java.lang.Integer.valueOf(count) };\n        return \"Formatted: \" + args[1];\n    }\n}",
+    "negativeExample": "package test;\n\npublic class MyClass {\n    public String doSomething(int count) {\n        // This should not match, it\u0027s already using valueOf\n        Object[] args \u003d { \"Label\", Integer.valueOf(count) };\n        return \"Value: \" + args[1];\n    }\n}",
+    "targetHintFile": "deprecations.sandbox-hint",
+    "sourceCommit": "19b9ebaeda8e44b887a21263df8c15d822cc3575",
+    "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+    "category": "Deprecated API Usage",
+    "summary": "Replaces deprecated Integer constructor with static factory method Integer.valueOf().",
+    "sourceVersion": "21",
+    "status": "DSL_VALID",
+    "discoveredAt": "2026-10-09T02:37:30.521463163Z",
+    "ruleFingerprint": "sha256:c93578ef60ec2e73f6819bc82ab52d7516cec85191684f87f5955c62d218b24d",
+    "behaviorFingerprint": "sha256:b94b180e3e1c4170af38ccdcaa627cf5b5e639aa0e98e0c354ca1504c424c9f0",
+    "verification": {
+      "successful": false,
+      "stage": "BEFORE_PARSE",
+      "message": "Java compile error at line 3: The public type MyClass must be defined in its own file",
+      "verifiedAt": "2026-10-09T02:37:39.021923055Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8419,7 +8627,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
-      "verifiedAt": "2026-10-08T02:35:24.491052068Z",
+      "verifiedAt": "2026-10-09T02:37:34.323073625Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8449,7 +8657,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type JavadocView must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.245732037Z",
+      "verifiedAt": "2026-10-09T02:37:33.001172208Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8479,7 +8687,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example produced no replacement",
-      "verifiedAt": "2026-10-08T02:35:22.717514436Z",
+      "verifiedAt": "2026-10-09T02:37:32.502622398Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8509,7 +8717,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.502208841Z",
+      "verifiedAt": "2026-10-09T02:37:33.273175583Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8539,7 +8747,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.488319136Z",
+      "verifiedAt": "2026-10-09T02:37:37.979585356Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8568,7 +8776,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.corext cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.800156789Z",
+      "verifiedAt": "2026-10-09T02:37:36.326518634Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8597,7 +8805,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type FatJarPackageWizardPage must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.145199970Z",
+      "verifiedAt": "2026-10-09T02:37:36.648462029Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8627,7 +8835,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.672714249Z",
+      "verifiedAt": "2026-10-09T02:37:38.152515195Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8657,7 +8865,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.963821656Z",
+      "verifiedAt": "2026-10-09T02:37:33.756151225Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8687,7 +8895,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:22.617752355Z",
+      "verifiedAt": "2026-10-09T02:37:32.413437712Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8770,7 +8978,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain exactly one transformation rule, but contains 2",
-      "verifiedAt": "2026-10-08T02:35:24.142671663Z",
+      "verifiedAt": "2026-10-09T02:37:33.946068747Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8799,7 +9007,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.128609062Z",
+      "verifiedAt": "2026-10-09T02:37:37.640339645Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8829,7 +9037,37 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.656413028Z",
+      "verifiedAt": "2026-10-09T02:37:37.182870813Z",
+      "verifierVersion": "7",
+      "matches": 0,
+      "replacements": 0
+    },
+    "transitions": []
+  },
+  {
+    "schemaVersion": 2,
+    "candidateId": "b38da874d3539305ef0c13639f50cedfef69eea0a6330c0402d5451eedcbd911",
+    "revision": 1,
+    "candidateOrdinal": 0,
+    "dslRule": "org.eclipse.jface.resource.ImageDescriptor.createFromFile($Class, \"images/$name.gif\")\n\u003d\u003e\norg.eclipse.jface.resource.ImageDescriptor.createFromFile($Class, \"images/$name.png\")\n;;",
+    "beforeExample": "package test;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyImageLoader {\n    private Image fCachedDefaultCueImage;\n    private Control getControl() { return null; }\n\n    private Image getDefaultCueImage() {\n        if (fCachedDefaultCueImage \u003d\u003d null) {\n            ImageDescriptor cueID \u003d ImageDescriptor.createFromFile(MyImageLoader.class, \"images/content_assist_cue.gif\"); //$NON-NLS-1$\n            fCachedDefaultCueImage \u003d cueID.createImage(getControl().getDisplay());\n        }\n        return fCachedDefaultCueImage;\n    }\n}",
+    "afterExample": "package test;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyImageLoader {\n    private Image fCachedDefaultCueImage;\n    private Control getControl() { return null; }\n\n    private Image getDefaultCueImage() {\n        if (fCachedDefaultCueImage \u003d\u003d null) {\n            ImageDescriptor cueID \u003d ImageDescriptor.createFromFile(MyImageLoader.class, \"images/content_assist_cue.png\"); //$NON-NLS-1$\n            fCachedDefaultCueImage \u003d cueID.createImage(getControl().getDisplay());\n        }\n        return fCachedDefaultCueImage;\n    }\n}",
+    "negativeExample": "package test;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\n\npublic class MyOtherImageLoader {\n    public void loadImage() {\n        // This should not match because the extension is not .gif\n        ImageDescriptor img \u003d ImageDescriptor.createFromFile(MyOtherImageLoader.class, \"icons/myicon.svg\");\n    }\n}",
+    "targetHintFile": "image-file-extension.sandbox-hint",
+    "sourceCommit": "c009accb9bfb0ddee3aa26dc28bf4248793d6c6d",
+    "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+    "category": "Image File Extension Update",
+    "summary": "Replaces image file extension from .gif to .png in ImageDescriptor.createFromFile calls.",
+    "sourceVersion": "21",
+    "status": "DSL_VALID",
+    "discoveredAt": "2026-10-09T02:37:30.545151417Z",
+    "ruleFingerprint": "sha256:a4b6239082d2ddc7e2d02594a8a6457006bc18ac7fd1226cafde63d16e37e12f",
+    "behaviorFingerprint": "sha256:ee095c42fd708f736057531202a2649c3477bdd980497153ade110cc2f522255",
+    "verification": {
+      "successful": false,
+      "stage": "BEFORE_PARSE",
+      "message": "Java compile error at line 3: The import org.eclipse.jface.resource cannot be resolved",
+      "verifiedAt": "2026-10-09T02:37:39.035676748Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8858,7 +9096,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.jface.resource cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.146393293Z",
+      "verifiedAt": "2026-10-09T02:37:34.845301783Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8888,7 +9126,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.105590365Z",
+      "verifiedAt": "2026-10-09T02:37:34.820832261Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8918,7 +9156,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type Test must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.506847182Z",
+      "verifiedAt": "2026-10-09T02:37:36.040991176Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8947,7 +9185,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 7: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.066983346Z",
+      "verifiedAt": "2026-10-09T02:37:35.559897968Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -8977,7 +9215,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:22.576372805Z",
+      "verifiedAt": "2026-10-09T02:37:32.365803872Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9007,7 +9245,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.769424694Z",
+      "verifiedAt": "2026-10-09T02:37:38.251152399Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9037,7 +9275,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.text.StyledString cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.621061062Z",
+      "verifiedAt": "2026-10-09T02:37:35.168977664Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9067,7 +9305,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 16: The public type AnnotationModel must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:29.015270004Z",
+      "verifiedAt": "2026-10-09T02:37:38.551957471Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9097,7 +9335,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example is ambiguous: expected one replacement but got 2",
-      "verifiedAt": "2026-10-08T02:35:23.887697331Z",
+      "verifiedAt": "2026-10-09T02:37:33.695099918Z",
       "verifierVersion": "7",
       "matches": 2,
       "replacements": 2
@@ -9126,7 +9364,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 16: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.288866603Z",
+      "verifiedAt": "2026-10-09T02:37:34.945735187Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9156,7 +9394,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.028907476Z",
+      "verifiedAt": "2026-10-09T02:37:36.547622724Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9186,7 +9424,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.251927774Z",
+      "verifiedAt": "2026-10-09T02:37:37.756894908Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9215,7 +9453,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.383827937Z",
+      "verifiedAt": "2026-10-09T02:37:36.899529287Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9245,7 +9483,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.938148976Z",
+      "verifiedAt": "2026-10-09T02:37:35.417308648Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9275,7 +9513,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:22.597368179Z",
+      "verifiedAt": "2026-10-09T02:37:32.387172980Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9305,7 +9543,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:22.517103855Z",
+      "verifiedAt": "2026-10-09T02:37:32.303481389Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9335,7 +9573,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.internal cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.295810556Z",
+      "verifiedAt": "2026-10-09T02:37:35.806197035Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9365,7 +9603,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type MyResourceChecker must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.800431020Z",
+      "verifiedAt": "2026-10-09T02:37:35.297808987Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9395,7 +9633,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.jface.dialogs cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.305481374Z",
+      "verifiedAt": "2026-10-09T02:37:36.818490897Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9425,7 +9663,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jdt.core.IJavaElement conflicts with a type defined in the same file",
-      "verifiedAt": "2026-10-08T02:35:27.768769398Z",
+      "verifiedAt": "2026-10-09T02:37:37.288502433Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9455,7 +9693,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The import org.eclipse.jdt.internal.ui.text.javadoc cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.842794770Z",
+      "verifiedAt": "2026-10-09T02:37:35.323175015Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9485,7 +9723,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.416541367Z",
+      "verifiedAt": "2026-10-09T02:37:37.902375275Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9514,7 +9752,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.290248247Z",
+      "verifiedAt": "2026-10-09T02:37:36.803408752Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9544,7 +9782,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.260270009Z",
+      "verifiedAt": "2026-10-09T02:37:36.772748007Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9573,7 +9811,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.543699449Z",
+      "verifiedAt": "2026-10-09T02:37:38.028106792Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9603,7 +9841,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.857099531Z",
+      "verifiedAt": "2026-10-09T02:37:38.408545053Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9633,7 +9871,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type Test must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.527411916Z",
+      "verifiedAt": "2026-10-09T02:37:36.056974693Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9663,7 +9901,37 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 9: The public type MyScanner must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.359756849Z",
+      "verifiedAt": "2026-10-09T02:37:33.113562069Z",
+      "verifierVersion": "7",
+      "matches": 0,
+      "replacements": 0
+    },
+    "transitions": []
+  },
+  {
+    "schemaVersion": 2,
+    "candidateId": "c8b9e813177140928fd660bc8a0503d8b7745b25c209d6c67b0b7d6a9a3059f3",
+    "revision": 1,
+    "candidateOrdinal": 0,
+    "dslRule": "new org.eclipse.swt.custom.CTabFolder($composite, org.eclipse.swt.SWT.NONE)\n\u003d\u003e\nnew org.eclipse.swt.custom.CTabFolder($composite, org.eclipse.swt.SWT.BORDER)\n;;",
+    "beforeExample": "package test;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.custom.CTabFolder;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    public void createUI(Composite parent) {\n        Composite composite \u003d new Composite(parent, SWT.NONE);\n        CTabFolder folder \u003d new CTabFolder(composite, SWT.NONE); // Line to change\n        folder.pack();\n    }\n}",
+    "afterExample": "package test;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.custom.CTabFolder;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    public void createUI(Composite parent) {\n        Composite composite \u003d new Composite(parent, SWT.NONE);\n        CTabFolder folder \u003d new CTabFolder(composite, SWT.BORDER); // Changed line\n        folder.pack();\n    }\n}",
+    "negativeExample": "package test;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.custom.CTabFolder;\nimport org.eclipse.swt.widgets.Button;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    public void createUI(Composite parent) {\n        Composite composite \u003d new Composite(parent, SWT.NONE);\n        CTabFolder folderWithMulti \u003d new CTabFolder(composite, SWT.MULTI); // Should not change\n        Button button \u003d new Button(composite, SWT.NONE); // Should not change\n        folderWithMulti.pack();\n        button.pack();\n    }\n}",
+    "targetHintFile": "swt.sandbox-hint",
+    "sourceCommit": "2aaa3369051605d2e1d4ac677a5a1055b99d5011",
+    "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+    "category": "UI Style",
+    "summary": "Replace SWT.NONE with SWT.BORDER for CTabFolder constructor",
+    "sourceVersion": "21",
+    "status": "DSL_VALID",
+    "discoveredAt": "2026-10-09T02:37:30.690635618Z",
+    "ruleFingerprint": "sha256:7bc9203cee85047789bf2d48fd5d85edd949862705e20bcfc9b4e750bf7e93b4",
+    "behaviorFingerprint": "sha256:0626b7c4ed5219284dc0d09eed8f3c677cd944e829405e6086ab633ffd311906",
+    "verification": {
+      "successful": false,
+      "stage": "BEFORE_PARSE",
+      "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+      "verifiedAt": "2026-10-09T02:37:39.128308879Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9692,7 +9960,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 11: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.145671552Z",
+      "verifiedAt": "2026-10-09T02:37:32.913377412Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9722,7 +9990,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type MyContentProvider must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:25.729379012Z",
+      "verifiedAt": "2026-10-09T02:37:35.243321389Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9752,7 +10020,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.621671704Z",
+      "verifiedAt": "2026-10-09T02:37:37.146721760Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9782,7 +10050,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
-      "verifiedAt": "2026-10-08T02:35:26.050436717Z",
+      "verifiedAt": "2026-10-09T02:37:35.541592253Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9812,7 +10080,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.475298190Z",
+      "verifiedAt": "2026-10-09T02:37:36.991600428Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9842,7 +10110,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.748288952Z",
+      "verifiedAt": "2026-10-09T02:37:34.549773252Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9872,7 +10140,37 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.417106891Z",
+      "verifiedAt": "2026-10-09T02:37:35.956440199Z",
+      "verifierVersion": "7",
+      "matches": 0,
+      "replacements": 0
+    },
+    "transitions": []
+  },
+  {
+    "schemaVersion": 2,
+    "candidateId": "ccb3b46422d62fc59f3b8d5ecf8588a763f295c8d24850c18732c522ff125d64",
+    "revision": 1,
+    "candidateOrdinal": 0,
+    "dslRule": "org.eclipse.swt.widgets.TabFolder $folder \u003d new org.eclipse.swt.widgets.TabFolder($parent, $style);\n\u003d\u003e org.eclipse.swt.custom.CTabFolder $folder \u003d new org.eclipse.swt.custom.CTabFolder($parent, $style);\n;;",
+    "beforeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.layout.GridLayout;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.TabFolder;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class TabFolderDeclaration {\n    public void createUI(Composite parent) {\n        // This should match\n        TabFolder folder \u003d new TabFolder(parent, SWT.NONE);\n        folder.setLayout(new GridLayout());\n\n        // This should not match (different type of declaration)\n        String s \u003d new String(\"hello\");\n\n        // This should not match (assignment, not declaration)\n        TabFolder existingFolder;\n        existingFolder \u003d new TabFolder(parent, SWT.BORDER);\n    }\n}",
+    "afterExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.custom.CTabFolder; // Added import\nimport org.eclipse.swt.layout.GridLayout;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.TabFolder; // Still needed if other TabFolder types exist\nimport org.eclipse.swt.widgets.Composite;\n\npublic class TabFolderDeclaration {\n    public void createUI(Composite parent) {\n        // This should match\n        CTabFolder folder \u003d new CTabFolder(parent, SWT.NONE); // Changed\n        folder.setLayout(new GridLayout());\n\n        // This should not match (different type of declaration)\n        String s \u003d new String(\"hello\");\n\n        // This should not match (assignment, not declaration)\n        TabFolder existingFolder;\n        existingFolder \u003d new TabFolder(parent, SWT.BORDER);\n    }\n}",
+    "negativeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.TabFolder;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class TabFolderNegative {\n    public void createUI(Composite parent) {\n        // Should not match: not a declaration statement with init\n        TabFolder folder;\n        folder \u003d new TabFolder(parent, SWT.NONE);\n\n        // Should not match: different type\n        Shell shell \u003d new Shell(Display.getCurrent(), SWT.SHELL_TRIM);\n    }\n}",
+    "targetHintFile": "eclipse.swt.sandbox-hint",
+    "sourceCommit": "7d8417bb93eedbb2b682247e38b149cc700a0281",
+    "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+    "category": "API Modernization",
+    "summary": "Replace `org.eclipse.swt.widgets.TabFolder` declaration and instantiation with `org.eclipse.swt.custom.CTabFolder`.",
+    "sourceVersion": "21",
+    "status": "DSL_VALID",
+    "discoveredAt": "2026-10-09T02:37:30.670953104Z",
+    "ruleFingerprint": "sha256:15d1c378f1f853bf6d6dba5a24b0c062146f1d5ae6590a747e76bf37f6e63930",
+    "behaviorFingerprint": "sha256:db44800a389d56b2bd5c2685361e500f87d7b6905ac5108cc7dd85f450e01546",
+    "verification": {
+      "successful": false,
+      "stage": "BEFORE_PARSE",
+      "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+      "verifiedAt": "2026-10-09T02:37:39.114931765Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9902,7 +10200,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jface.resource cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:23.615931259Z",
+      "verifiedAt": "2026-10-09T02:37:33.405937106Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9932,7 +10230,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type MyEditor must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:24.117231434Z",
+      "verifiedAt": "2026-10-09T02:37:33.909993183Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9962,7 +10260,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 16: The import org.eclipse.jdt.internal.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.610961132Z",
+      "verifiedAt": "2026-10-09T02:37:37.129820545Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -9992,7 +10290,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.784962475Z",
+      "verifiedAt": "2026-10-09T02:37:38.264201677Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10021,7 +10319,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.246373016Z",
+      "verifiedAt": "2026-10-09T02:37:34.057787498Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10051,7 +10349,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.501426147Z",
+      "verifiedAt": "2026-10-09T02:37:34.339647496Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10081,7 +10379,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.168789274Z",
+      "verifiedAt": "2026-10-09T02:37:37.674294930Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10111,7 +10409,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.901301176Z",
+      "verifiedAt": "2026-10-09T02:37:37.421928667Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10141,7 +10439,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type MyOldInterface must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.942896380Z",
+      "verifiedAt": "2026-10-09T02:37:38.483305687Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10171,7 +10469,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.738273119Z",
+      "verifiedAt": "2026-10-09T02:37:34.533512324Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10200,7 +10498,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.399936542Z",
+      "verifiedAt": "2026-10-09T02:37:33.154895123Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10230,7 +10528,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.162698281Z",
+      "verifiedAt": "2026-10-09T02:37:32.924988462Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10260,7 +10558,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.605511201Z",
+      "verifiedAt": "2026-10-09T02:37:34.430928522Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10289,7 +10587,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 8: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.033462490Z",
+      "verifiedAt": "2026-10-09T02:37:37.540626286Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10319,7 +10617,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 8: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.937512208Z",
+      "verifiedAt": "2026-10-09T02:37:34.695833460Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10349,7 +10647,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type JavaOutlineInformationControl must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.311324089Z",
+      "verifiedAt": "2026-10-09T02:37:35.821687477Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10379,7 +10677,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.211965159Z",
+      "verifiedAt": "2026-10-09T02:37:34.020140275Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10409,7 +10707,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.783572864Z",
+      "verifiedAt": "2026-10-09T02:37:37.303478401Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10439,7 +10737,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.text.ITextViewerExtension4 cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.350560419Z",
+      "verifiedAt": "2026-10-09T02:37:34.988121927Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10468,7 +10766,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.junit cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.096880610Z",
+      "verifiedAt": "2026-10-09T02:37:38.638478024Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10498,7 +10796,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.330313530Z",
+      "verifiedAt": "2026-10-09T02:37:34.154609887Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10528,7 +10826,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 7: The public type ProblemsLabelDecorator must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:24.628237374Z",
+      "verifiedAt": "2026-10-09T02:37:34.446469250Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10558,7 +10856,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.195941140Z",
+      "verifiedAt": "2026-10-09T02:37:36.699245524Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10588,7 +10886,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The public type Example must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.324658175Z",
+      "verifiedAt": "2026-10-09T02:37:36.837828374Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10618,7 +10916,37 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.639406038Z",
+      "verifiedAt": "2026-10-09T02:37:36.167547692Z",
+      "verifierVersion": "7",
+      "matches": 0,
+      "replacements": 0
+    },
+    "transitions": []
+  },
+  {
+    "schemaVersion": 2,
+    "candidateId": "e038067ec7aa691168cca8491495cd0e33f2796a0863aba450404a436293e75a",
+    "revision": 1,
+    "candidateOrdinal": 0,
+    "dslRule": "/*!\n\u003c!id: eclipse.preference.default.quickdiff.always\u003e\n\u003c!description: Set default for REVISION_ASK_BEFORE_QUICKDIFF_SWITCH to MessageDialogWithToggle.ALWAYS.\u003e\n\u003c!severity: HINT\u003e\n*/\n$store.setDefault(org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants.REVISION_ASK_BEFORE_QUICKDIFF_SWITCH, \"\") :: instanceof($store, \"org.eclipse.jface.preference.IPreferenceStore\")\n\u003d\u003e\n$store.setDefault(org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants.REVISION_ASK_BEFORE_QUICKDIFF_SWITCH, org.eclipse.jface.dialogs.MessageDialogWithToggle.ALWAYS)\n;;",
+    "beforeExample": "package test;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;\n\npublic class TestClass {\n    public void setup(IPreferenceStore store) {\n        store.setDefault(AbstractDecoratedTextEditorPreferenceConstants.REVISION_ASK_BEFORE_QUICKDIFF_SWITCH, \"\");\n    }\n}",
+    "afterExample": "package test;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;\nimport org.eclipse.jface.dialogs.MessageDialogWithToggle;\n\npublic class TestClass {\n    public void setup(IPreferenceStore store) {\n        store.setDefault(AbstractDecoratedTextEditorPreferenceConstants.REVISION_ASK_BEFORE_QUICKDIFF_SWITCH, MessageDialogWithToggle.ALWAYS);\n    }\n}",
+    "negativeExample": "package test;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;\nimport org.eclipse.jface.dialogs.MessageDialogWithToggle;\n\npublic class TestClass {\n    public void setup(IPreferenceStore store) {\n        // Different preference key\n        store.setDefault(\"some.other.preference\", \"\");\n        // Already using the target value\n        store.setDefault(AbstractDecoratedTextEditorPreferenceConstants.REVISION_ASK_BEFORE_QUICKDIFF_SWITCH, MessageDialogWithToggle.ALWAYS);\n    }\n}",
+    "targetHintFile": "eclipse-preferences.sandbox-hint",
+    "sourceCommit": "a79ee3160495d8173821f6af6d1c6284fe32ce57",
+    "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+    "category": "Preference Default",
+    "summary": "Set the default value for \u0027REVISION_ASK_BEFORE_QUICKDIFF_SWITCH\u0027 preference to \u0027MessageDialogWithToggle.ALWAYS\u0027.",
+    "sourceVersion": "21",
+    "status": "DSL_VALID",
+    "discoveredAt": "2026-10-09T02:37:30.609371662Z",
+    "ruleFingerprint": "sha256:173d8ea15aed0d9111312800ff23c26efe80accbe1782bc45cfc2044c991cc3f",
+    "behaviorFingerprint": "sha256:c02079a88d97494aca002d3ba03acaf634ae1a7024e0c17f2a57e8827ecdf964",
+    "verification": {
+      "successful": false,
+      "stage": "BEFORE_PARSE",
+      "message": "Java compile error at line 3: The import org.eclipse.jface.preference cannot be resolved",
+      "verifiedAt": "2026-10-09T02:37:39.068732646Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10648,7 +10976,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:23.817031217Z",
+      "verifiedAt": "2026-10-09T02:37:33.628431486Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10678,7 +11006,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example is ambiguous: expected one replacement but got 3",
-      "verifiedAt": "2026-10-08T02:35:29.433677905Z",
+      "verifiedAt": "2026-10-09T02:37:38.952506692Z",
       "verifierVersion": "7",
       "matches": 3,
       "replacements": 3
@@ -10708,7 +11036,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example produced no replacement",
-      "verifiedAt": "2026-10-08T02:35:24.232932682Z",
+      "verifiedAt": "2026-10-09T02:37:34.041325080Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10738,7 +11066,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example produced no replacement",
-      "verifiedAt": "2026-10-08T02:35:29.209890474Z",
+      "verifiedAt": "2026-10-09T02:37:38.742430251Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10767,7 +11095,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 20: The public type MyChecker must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.116710643Z",
+      "verifiedAt": "2026-10-09T02:37:35.606138146Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10797,7 +11125,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.406885220Z",
+      "verifiedAt": "2026-10-09T02:37:37.892391616Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10872,7 +11200,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.704857838Z",
+      "verifiedAt": "2026-10-09T02:37:38.186005485Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10902,7 +11230,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.404237530Z",
+      "verifiedAt": "2026-10-09T02:37:34.225748700Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10932,7 +11260,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 16: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.217158735Z",
+      "verifiedAt": "2026-10-09T02:37:37.720017429Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10962,7 +11290,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type JavaElementLine must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.500579268Z",
+      "verifiedAt": "2026-10-09T02:37:37.017141480Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -10992,7 +11320,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The import org.eclipse.core.runtime.IResourceStatus cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.958063503Z",
+      "verifiedAt": "2026-10-09T02:37:37.472717825Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11022,7 +11350,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:25.030636779Z",
+      "verifiedAt": "2026-10-09T02:37:34.760842919Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11052,7 +11380,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.core.runtime.Platform conflicts with a type defined in the same file",
-      "verifiedAt": "2026-10-08T02:35:27.875715338Z",
+      "verifiedAt": "2026-10-09T02:37:37.397900583Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11082,7 +11410,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:29.443614105Z",
+      "verifiedAt": "2026-10-09T02:37:38.964104936Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11112,7 +11440,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.004573573Z",
+      "verifiedAt": "2026-10-09T02:37:37.512892564Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11142,7 +11470,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.784945507Z",
+      "verifiedAt": "2026-10-09T02:37:34.584668974Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11172,7 +11500,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 6: The import org.eclipse.jdt.internal.corext cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.314641848Z",
+      "verifiedAt": "2026-10-09T02:37:34.144135840Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11201,7 +11529,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.747215531Z",
+      "verifiedAt": "2026-10-09T02:37:36.280110098Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11275,7 +11603,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.736577834Z",
+      "verifiedAt": "2026-10-09T02:37:36.269894539Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11305,7 +11633,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.preference cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:22.909561733Z",
+      "verifiedAt": "2026-10-09T02:37:32.686552958Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11334,7 +11662,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:28.473176189Z",
+      "verifiedAt": "2026-10-09T02:37:37.962959260Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11364,7 +11692,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example produced no replacement",
-      "verifiedAt": "2026-10-08T02:35:28.755544383Z",
+      "verifiedAt": "2026-10-09T02:37:38.237326766Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11394,7 +11722,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.383272469Z",
+      "verifiedAt": "2026-10-09T02:37:35.924179734Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11424,7 +11752,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 9: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.066686350Z",
+      "verifiedAt": "2026-10-09T02:37:37.576530137Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11453,7 +11781,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.internal.ui.text.correction cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.892967558Z",
+      "verifiedAt": "2026-10-09T02:37:34.660195526Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11483,7 +11811,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example produced no replacement",
-      "verifiedAt": "2026-10-08T02:35:22.497721500Z",
+      "verifiedAt": "2026-10-09T02:37:32.283073982Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11513,7 +11841,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.829623386Z",
+      "verifiedAt": "2026-10-09T02:37:36.356765707Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11543,7 +11871,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 8: The public type TestClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:29.137003191Z",
+      "verifiedAt": "2026-10-09T02:37:38.676532340Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11573,7 +11901,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.132460444Z",
+      "verifiedAt": "2026-10-09T02:37:35.622982799Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11603,7 +11931,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:26.650759048Z",
+      "verifiedAt": "2026-10-09T02:37:36.177687400Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11632,7 +11960,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jface.dialogs cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:23.996361785Z",
+      "verifiedAt": "2026-10-09T02:37:33.787000880Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11662,7 +11990,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain exactly one transformation rule, but contains 2",
-      "verifiedAt": "2026-10-08T02:35:23.728173348Z",
+      "verifiedAt": "2026-10-09T02:37:33.522145052Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11692,7 +12020,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 11: The public type AdvancedQuickAssistProcessor must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:26.361791650Z",
+      "verifiedAt": "2026-10-09T02:37:35.881879345Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11722,7 +12050,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jdt.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.861964820Z",
+      "verifiedAt": "2026-10-09T02:37:35.338050100Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11752,7 +12080,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.jdt.ui cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.196770633Z",
+      "verifiedAt": "2026-10-09T02:37:34.005797429Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11782,7 +12110,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:28.798239999Z",
+      "verifiedAt": "2026-10-09T02:37:38.277488624Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11812,7 +12140,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:28.557004166Z",
+      "verifiedAt": "2026-10-09T02:37:38.041835445Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11841,7 +12169,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 7: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.747229408Z",
+      "verifiedAt": "2026-10-09T02:37:33.556554428Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11871,7 +12199,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.junit cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:29.225938186Z",
+      "verifiedAt": "2026-10-09T02:37:38.755132840Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11901,7 +12229,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The import org.eclipse.jdt.internal.corext cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.368517343Z",
+      "verifiedAt": "2026-10-09T02:37:36.884360198Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11931,7 +12259,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:26.844418783Z",
+      "verifiedAt": "2026-10-09T02:37:36.372629878Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11961,7 +12289,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:25.987051459Z",
+      "verifiedAt": "2026-10-09T02:37:35.470364401Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -11991,7 +12319,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:27.678974454Z",
+      "verifiedAt": "2026-10-09T02:37:37.205894856Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -12021,7 +12349,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.977002896Z",
+      "verifiedAt": "2026-10-09T02:37:34.723430676Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -12050,7 +12378,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:29.277809593Z",
+      "verifiedAt": "2026-10-09T02:37:38.801520941Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -12080,7 +12408,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 5: The import org.eclipse.jdt.internal.corext cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:27.636234903Z",
+      "verifiedAt": "2026-10-09T02:37:37.162386050Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -12109,7 +12437,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:24.961206831Z",
+      "verifiedAt": "2026-10-09T02:37:34.713453838Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -12139,7 +12467,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 4: The public type MyClass must be defined in its own file",
-      "verifiedAt": "2026-10-08T02:35:23.524655022Z",
+      "verifiedAt": "2026-10-09T02:37:33.304882476Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -12169,7 +12497,7 @@
       "successful": false,
       "stage": "BEFORE_MATCH",
       "message": "Positive example produced no replacement",
-      "verifiedAt": "2026-10-08T02:35:24.820536997Z",
+      "verifiedAt": "2026-10-09T02:37:34.616227781Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -12199,7 +12527,7 @@
       "successful": false,
       "stage": "DSL_PARSE",
       "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
-      "verifiedAt": "2026-10-08T02:35:27.740331367Z",
+      "verifiedAt": "2026-10-09T02:37:37.260936770Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0
@@ -12229,7 +12557,7 @@
       "successful": false,
       "stage": "BEFORE_PARSE",
       "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
-      "verifiedAt": "2026-10-08T02:35:24.552590624Z",
+      "verifiedAt": "2026-10-09T02:37:34.390896099Z",
       "verifierVersion": "7",
       "matches": 0,
       "replacements": 0

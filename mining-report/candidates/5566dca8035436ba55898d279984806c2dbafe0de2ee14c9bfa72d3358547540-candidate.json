@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5566dca8035436ba55898d279984806c2dbafe0de2ee14c9bfa72d3358547540",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jface.resource.ImageDescriptor.createFromFile($Class, \"images/$name.png\")\n\u003d\u003e\norg.eclipse.jface.resource.ImageDescriptor.createFromFile($Class, \"images/$name.gif\")\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyImageLoader {\n    private Image fCachedDefaultCueImage;\n    private Control getControl() { return null; }\n\n    private Image getDefaultCueImage() {\n        if (fCachedDefaultCueImage \u003d\u003d null) {\n            ImageDescriptor cueID \u003d ImageDescriptor.createFromFile(MyImageLoader.class, \"images/content_assist_cue.png\"); //$NON-NLS-1$\n            fCachedDefaultCueImage \u003d cueID.createImage(getControl().getDisplay());\n        }\n        return fCachedDefaultCueImage;\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.swt.graphics.Image;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyImageLoader {\n    private Image fCachedDefaultCueImage;\n    private Control getControl() { return null; }\n\n    private Image getDefaultCueImage() {\n        if (fCachedDefaultCueImage \u003d\u003d null) {\n            ImageDescriptor cueID \u003d ImageDescriptor.createFromFile(MyImageLoader.class, \"images/content_assist_cue.gif\"); //$NON-NLS-1$\n            fCachedDefaultCueImage \u003d cueID.createImage(getControl().getDisplay());\n        }\n        return fCachedDefaultCueImage;\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.resource.ImageDescriptor;\n\npublic class MyOtherImageLoader {\n    public void loadImage() {\n        // This should not match because the extension is not .png\n        ImageDescriptor img \u003d ImageDescriptor.createFromFile(MyOtherImageLoader.class, \"icons/myicon.svg\");\n    }\n}",
+  "targetHintFile": "image-file-extension.sandbox-hint",
+  "sourceCommit": "c26c83e44725f551e3fdeed4c36a2724001fbfb4",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Image File Extension Update",
+  "summary": "Reverts image file extension from .png to .gif in ImageDescriptor.createFromFile calls.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-09T02:37:30.489876323Z",
+  "ruleFingerprint": "sha256:fb5243e06c0b3dd298292223cdef040dcab69e80e361f18bd319930c621a2d9d",
+  "behaviorFingerprint": "sha256:c262276bf8b7f2149cfeec89bacfd1292c42d7bbf2b40874b3a69dc648b00748",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.resource cannot be resolved",
+    "verifiedAt": "2026-10-09T02:37:39.008975250Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

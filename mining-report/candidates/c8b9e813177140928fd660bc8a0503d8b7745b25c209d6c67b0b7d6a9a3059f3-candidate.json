@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c8b9e813177140928fd660bc8a0503d8b7745b25c209d6c67b0b7d6a9a3059f3",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.swt.custom.CTabFolder($composite, org.eclipse.swt.SWT.NONE)\n\u003d\u003e\nnew org.eclipse.swt.custom.CTabFolder($composite, org.eclipse.swt.SWT.BORDER)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.custom.CTabFolder;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    public void createUI(Composite parent) {\n        Composite composite \u003d new Composite(parent, SWT.NONE);\n        CTabFolder folder \u003d new CTabFolder(composite, SWT.NONE); // Line to change\n        folder.pack();\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.custom.CTabFolder;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    public void createUI(Composite parent) {\n        Composite composite \u003d new Composite(parent, SWT.NONE);\n        CTabFolder folder \u003d new CTabFolder(composite, SWT.BORDER); // Changed line\n        folder.pack();\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.custom.CTabFolder;\nimport org.eclipse.swt.widgets.Button;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class TestClass {\n    public void createUI(Composite parent) {\n        Composite composite \u003d new Composite(parent, SWT.NONE);\n        CTabFolder folderWithMulti \u003d new CTabFolder(composite, SWT.MULTI); // Should not change\n        Button button \u003d new Button(composite, SWT.NONE); // Should not change\n        folderWithMulti.pack();\n        button.pack();\n    }\n}",
+  "targetHintFile": "swt.sandbox-hint",
+  "sourceCommit": "2aaa3369051605d2e1d4ac677a5a1055b99d5011",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "UI Style",
+  "summary": "Replace SWT.NONE with SWT.BORDER for CTabFolder constructor",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-09T02:37:30.690635618Z",
+  "ruleFingerprint": "sha256:7bc9203cee85047789bf2d48fd5d85edd949862705e20bcfc9b4e750bf7e93b4",
+  "behaviorFingerprint": "sha256:0626b7c4ed5219284dc0d09eed8f3c677cd944e829405e6086ab633ffd311906",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-09T02:37:39.128308879Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

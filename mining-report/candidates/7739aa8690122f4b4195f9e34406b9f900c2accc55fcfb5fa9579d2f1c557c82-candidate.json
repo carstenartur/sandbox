@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7739aa8690122f4b4195f9e34406b9f900c2accc55fcfb5fa9579d2f1c557c82",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n\u003c!id: explicit.unboxing.character.array\u003e\n\u003c!description: Make explicit unboxing of Character to char when assigning to a char array element.\u003e\n\u003c!severity: INFO\u003e\n*/\n$array[$index$] \u003d $charObject :: instanceof($array, \"char[]\") \u0026\u0026 instanceof($charObject, \"java.lang.Character\")\n\u003d\u003e\n$array[$index$] \u003d $charObject.charValue()\n;;",
+  "beforeExample": "package test;\n\nimport java.util.HashSet;\nimport java.util.Set;\n\npublic class TestClass {\n    public char[] processChars(Set\u003cCharacter\u003e chars) {\n        char[] res \u003d new char[chars.size()];\n        int i \u003d 0;\n        for (Character c : chars) {\n            res[i] \u003d c; // Implicit unboxing\n            i++;\n        }\n        return res;\n    }\n\n    public char[] otherProcessChars() {\n        Set\u003cCharacter\u003e chars \u003d new HashSet\u003c\u003e();\n        chars.add(\u0027a\u0027);\n        chars.add(\u0027b\u0027);\n        return processChars(chars);\n    }\n}",
+  "afterExample": "package test;\n\nimport java.util.HashSet;\nimport java.util.Set;\n\npublic class TestClass {\n    public char[] processChars(Set\u003cCharacter\u003e chars) {\n        char[] res \u003d new char[chars.size()];\n        int i \u003d 0;\n        for (Character c : chars) {\n            res[i] \u003d c.charValue(); // Explicit unboxing\n            i++;\n        }\n        return res;\n    }\n\n    public char[] otherProcessChars() {\n        Set\u003cCharacter\u003e chars \u003d new HashSet\u003c\u003e();\n        chars.add(\u0027a\u0027);\n        chars.add(\u0027b\u0027);\n        return processChars(chars);\n    }\n}",
+  "negativeExample": "package test;\n\nimport java.util.Set;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class TestClass {\n    public void noMatch() {\n        // Not a char array\n        int[] intArray \u003d new int[5];\n        Integer iObj \u003d 10;\n        intArray[0] \u003d iObj; // No match (int array, Integer object)\n\n        // Not a Character object\n        char[] charArray \u003d new char[5];\n        String s \u003d \"hello\";\n        // charArray[0] \u003d s; // This wouldn\u0027t compile\n        \n        // Already explicit\n        char charPrim \u003d \u0027x\u0027;\n        Character charObj \u003d Character.valueOf(charPrim);\n        charArray[1] \u003d charObj.charValue(); // Already explicit\n    }\n\n    public void directAssignment(char[] arr, char c) {\n        arr[0] \u003d c; // No match (primitive char to char array, no unboxing needed)\n    }\n}",
+  "targetHintFile": "boxing-unboxing.sandbox-hint",
+  "sourceCommit": "b6b48fbb1efc77cea2fb11a8db30a87849965a8a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Explicit Unboxing",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-09T02:37:30.629944910Z",
+  "ruleFingerprint": "sha256:4581e2a071820e97107bde0aced69318813e27ca1e779a87cb9addf0ac128786",
+  "behaviorFingerprint": "sha256:c97b28b9121a3ff2fc5e450bb66d974454465d441c6760632ecf7b1c57039be0",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-10-09T02:37:39.084915984Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "559148b5445f8ffa27ce26233067cac14b901d21fa8342e90cf88b6f0d5d7896",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: use-linkedhashset-for-ordered-set-init\u003e\n\u003c!description: Replace HashSet with LinkedHashSet for local variables to preserve insertion order, ensuring predictable iteration. This is a safe change for local variables where thread-safety is not a concern.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: collection, order, performance\u003e\n\nnew java.util.HashSet\u003c$Generics$\u003e($args$)\n:: isAssignedToLocalVariable()\n\u003d\u003e\nnew java.util.LinkedHashSet\u003c$Generics$\u003e($args$)\n;;",
+  "beforeExample": "import java.util.Arrays;\nimport java.util.HashSet;\nimport java.util.Set;\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.content.IContentType;\n\npublic class Example {\n    private Set\u003cIContentType\u003e contentTypes;\n    public void someMethod(Object editor) {\n        String name \u003d \"file.txt\";\n        // Matched line:\n        Set\u003cIContentType\u003e types \u003d new HashSet\u003c\u003e(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(name)));\n        System.out.println(types);\n        this.contentTypes \u003d types;\n    }\n}",
+  "afterExample": "import java.util.Arrays;\nimport java.util.LinkedHashSet;\nimport java.util.Set;\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.content.IContentType;\n\npublic class Example {\n    private Set\u003cIContentType\u003e contentTypes;\n    public void someMethod(Object editor) {\n        String name \u003d \"file.txt\";\n        // Changed line:\n        Set\u003cIContentType\u003e types \u003d new LinkedHashSet\u003c\u003e(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(name)));\n        System.out.println(types);\n        this.contentTypes \u003d types;\n    }\n}",
+  "negativeExample": "import java.util.Arrays;\nimport java.util.HashSet;\nimport java.util.Set;\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.content.IContentType;\n\npublic class NegativeExample {\n    // Should NOT match because it\u0027s a field, not a local variable\n    private Set\u003cIContentType\u003e contentTypes \u003d new HashSet\u003c\u003e(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(\"file.txt\")));\n\n    public void anotherMethod() {\n        Set\u003cString\u003e anotherSet \u003d new LinkedHashSet\u003c\u003e(); // Already LinkedHashSet\n        System.out.println(anotherSet);\n\n        Set\u003cInteger\u003e yetAnotherSet \u003d new HashSet\u003c\u003e(); // No-arg constructor, still matches as $args$ can be empty\n        System.out.println(yetAnotherSet);\n    }\n}",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "d929f218362bd560d9a6e43bf62820b06a1dcf79",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Collection Modernization",
+  "summary": "Replaces `new HashSet(...)` with `new LinkedHashSet(...)` for local variable initializations to ensure predictable iteration order.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-09T02:37:30.567385674Z",
+  "ruleFingerprint": "sha256:8cdd9a14f6a42194cd7432f09d8dadf5ba498ef41fc4ec862fd84a384dc7de34",
+  "behaviorFingerprint": "sha256:127526af927a74a79899e5d5cae2d22ad459536ede898085d8e2e84c6a14a073",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-09T02:37:39.045512371Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

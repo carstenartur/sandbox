@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The import org.eclipse.jface.dialogs cannot be resolved",
-    "verifiedAt": "2026-10-08T02:35:23.110030838Z",
+    "verifiedAt": "2026-10-09T02:37:32.878802746Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
