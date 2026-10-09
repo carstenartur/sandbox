@@ -6,6 +6,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.math.tests;
 
+import de.regelsuche.sdk.optimization.JavaExpressions;
+import de.regelsuche.sdk.optimization.NumericOperation;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.SafetyProfile;
@@ -30,15 +32,19 @@ class JavaComputationExtractorTest {
    }
 
    @Test
-   void retainsTwoOutputsAndOriginalOperationOccurrencesAcrossStatements() {
+   void projectsInternalValuesButRetainsTheirOriginalOperationOccurrences() {
       String var1 = "class Calculation {\n  static int compute(int x) {\n    int a = x + 1;\n    int b = a - 1;\n    return a ^ b;\n  }\n}\n";
       JavaComputationExtractor.Extraction var2 = new JavaComputationExtractor()
          .extract(MathTestSupport.parse(var1), var1, options(Set.of(NumericKind.INT), SafetyProfile.PRESERVE_JAVA));
       Assertions.assertEquals(1, var2.regions().size(), var2.diagnostics().toString());
       JavaComputationRegion var3 = (JavaComputationRegion)var2.regions().getFirst();
-      Assertions.assertEquals(List.of("a", "b"), var3.outputs().stream().map(var0 -> var0.javaName()).toList());
-      Assertions.assertEquals(2, var3.trace().occurrences().size());
-      Assertions.assertEquals(2, var3.plan().outputs().size());
+      Assertions.assertEquals(List.of("a", "b"), var3.internalBindings().stream().map(var0 -> var0.javaName()).toList());
+      Assertions.assertEquals(1, var3.outputs().size());
+      Assertions.assertTrue(var3.outputs().getFirst().returnValue());
+      Assertions.assertEquals(3, var3.trace().occurrences().size());
+      Assertions.assertEquals(List.of(NumericOperation.ADD, NumericOperation.SUBTRACT, NumericOperation.XOR),
+            var3.trace().occurrences().stream().map(o -> JavaExpressions.operationOf(o.expression()).orElseThrow()).toList());
+      Assertions.assertEquals(1, var3.plan().outputs().size());
       Assertions.assertEquals(Set.of("x"), Set.copyOf(var3.inputNames().values()));
    }
 
@@ -59,8 +65,14 @@ class JavaComputationExtractorTest {
       JavaComputationExtractor.Extraction var2 = new JavaComputationExtractor()
          .extract(MathTestSupport.parse(var1), var1, options(Set.of(NumericKind.INT, NumericKind.LONG), SafetyProfile.PRESERVE_JAVA));
       Assertions.assertEquals(1, var2.regions().size(), var2.diagnostics().toString());
-      List var3 = ((JavaComputationRegion)var2.regions().getFirst()).plan().outputExpressions();
-      Assertions.assertNotEquals(var3.get(0), var3.get(1));
+      var returned = var2.regions().getFirst().plan().outputExpressions().getFirst();
+      Assertions.assertEquals(NumericOperation.XOR, JavaExpressions.operationOf(returned).orElseThrow());
+      var operands = JavaExpressions.operands(returned);
+      Assertions.assertNotEquals(operands.get(0), operands.get(1));
+      Assertions.assertEquals(NumericKind.INT, JavaExpressions.castSourceKind(operands.getFirst()).orElseThrow());
+      Assertions.assertEquals(NumericKind.INT, JavaExpressions.resultKind(JavaExpressions.operands(operands.getFirst()).getFirst()));
+      Assertions.assertEquals(NumericOperation.MULTIPLY, JavaExpressions.operationOf(operands.get(1)).orElseThrow());
+      Assertions.assertEquals(NumericKind.LONG, JavaExpressions.resultKind(operands.get(1)));
       Assertions.assertTrue(
          ((JavaComputationRegion)var2.regions().getFirst()).trace().occurrences().stream().anyMatch(var0 -> var0.evaluatedKind() == NumericKind.INT)
       );
@@ -99,8 +111,11 @@ class JavaComputationExtractorTest {
          .extract(MathTestSupport.parse(var1), var1, options(Set.of(NumericKind.BYTE, NumericKind.INT), SafetyProfile.PRESERVE_JAVA));
       Assertions.assertEquals(1, var2.regions().size(), var2.diagnostics().toString());
       Assertions.assertEquals(
-         NumericKind.BYTE, ((JavaComputationRegion.OutputBinding)((JavaComputationRegion)var2.regions().getFirst()).outputs().getFirst()).declaredKind()
+         NumericKind.BYTE, var2.regions().getFirst().internalBindings().getFirst().declaredKind()
       );
+      Assertions.assertEquals(NumericKind.INT, var2.regions().getFirst().outputs().getFirst().declaredKind());
+      Assertions.assertTrue(var2.regions().getFirst().outputs().getFirst().returnValue());
+      Assertions.assertTrue(var2.regions().getFirst().trace().occurrences().stream().anyMatch(o -> o.evaluatedKind() == NumericKind.BYTE));
       Assertions.assertTrue(
          ((JavaComputationRegion)var2.regions().getFirst()).trace().occurrences().stream().anyMatch(var0 -> var0.evaluatedKind() == NumericKind.INT)
       );
@@ -113,7 +128,10 @@ class JavaComputationExtractorTest {
          .extract(MathTestSupport.parse(var1), var1, options(Set.of(NumericKind.BYTE, NumericKind.INT), SafetyProfile.PRESERVE_JAVA));
       Assertions.assertEquals(1, var2.regions().size(), var2.diagnostics().toString());
       JavaComputationRegion var3 = (JavaComputationRegion)var2.regions().getFirst();
-      Assertions.assertEquals(3, var3.outputs().size());
+      Assertions.assertEquals(3, var3.internalBindings().size());
+      Assertions.assertEquals(1, var3.outputs().size());
+      Assertions.assertTrue(var3.outputs().getFirst().returnValue());
+      Assertions.assertEquals(NumericKind.BYTE, var3.outputs().getFirst().declaredKind());
       Assertions.assertTrue(var3.trace().occurrences().stream().anyMatch(var0 -> var0.evaluatedKind() == NumericKind.INT));
       Assertions.assertTrue(var3.trace().occurrences().stream().anyMatch(var0 -> var0.evaluatedKind() == NumericKind.BYTE));
    }

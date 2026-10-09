@@ -31,17 +31,16 @@ class JavaEmissionVerifierTest {
     @Test
     void changedOutputLiteralIsRejected() {
         Fixture fixture = fixture(NumericKind.INT, SafetyProfile.PRESERVE_JAVA, "(x+1)-1");
-        var tampered = new JavaComputationEmitter.Emission(fixture.emission().statements(), Map.of("output0", "0"));
+        var tampered = withSingleOutput(fixture, "0");
         assertThrows(IllegalArgumentException.class, () -> verify(fixture, tampered));
     }
 
     @Test
     void changedInputOperatorIsRejected() {
         Fixture fixture = fixture(NumericKind.INT, SafetyProfile.PRESERVE_JAVA, "(x+1)-1");
-        String modified = fixture.emission().statements().replace(" = x;", " = -x;");
-        assertNotEquals(fixture.emission().statements(), modified, "The mutation must alter emitted Java");
-        assertThrows(IllegalArgumentException.class, () -> verify(fixture,
-                new JavaComputationEmitter.Emission(modified, fixture.emission().outputValues())));
+        var tampered = withSingleOutput(fixture, "-x");
+        var rejected = assertThrows(IllegalArgumentException.class, () -> verify(fixture, tampered));
+        assertTrue(rejected.getMessage().startsWith("EMITTED_CANDIDATE_MISMATCH"), rejected.getMessage());
     }
 
     @Test
@@ -65,10 +64,9 @@ class JavaEmissionVerifierTest {
     @Test
     void correctOutputCannotHideAThrowingOperationInsideAUsedInitializer() {
         Fixture fixture = fixture(NumericKind.INT, SafetyProfile.PRESERVE_JAVA, "(x+1)-1");
-        String modified = fixture.emission().statements().replace(" = x;", " = x + (1 / 0) * 0;");
-        assertNotEquals(fixture.emission().statements(), modified);
-        assertThrows(IllegalArgumentException.class, () -> verify(fixture,
-                new JavaComputationEmitter.Emission(modified, fixture.emission().outputValues())));
+        var tampered = withSingleOutput(fixture, "x + (1 / 0) * 0");
+        var rejected = assertThrows(IllegalArgumentException.class, () -> verify(fixture, tampered));
+        assertTrue(rejected.getMessage().contains("POSSIBLE_DIVISION_EXCEPTION"), rejected.getMessage());
     }
 
     @Test
@@ -101,9 +99,36 @@ class JavaEmissionVerifierTest {
     void conditionalFloatingProofCannotExcuseAnIncorrectReplacement(SafetyProfile profile) {
         Fixture fixture = fixture(NumericKind.DOUBLE, profile, "(x+1.0)-x");
         assertDoesNotThrow(() -> verify(fixture, fixture.emission()));
-        var tampered = new JavaComputationEmitter.Emission(fixture.emission().statements(), Map.of("output0", "2.0"));
+        var tampered = withSingleOutput(fixture, "2.0");
         var rejected = assertThrows(IllegalArgumentException.class, () -> verify(fixture, tampered));
         assertTrue(rejected.getMessage().startsWith("EMITTED_CANDIDATE_MISMATCH"), rejected.getMessage());
+    }
+
+    @Test
+    void unexpectedOutputBindingCannotBeIgnored() {
+        Fixture fixture = fixture(NumericKind.INT, SafetyProfile.PRESERVE_JAVA, "(x+1)-1");
+        assertDoesNotThrow(() -> verify(fixture, fixture.emission()));
+        var outputs = new java.util.HashMap<>(fixture.emission().outputValues());
+        outputs.put("unrequested", "x");
+        var tampered = new JavaComputationEmitter.Emission(fixture.emission().statements(), outputs);
+        var rejected = assertThrows(IllegalArgumentException.class, () -> verify(fixture, tampered));
+        assertEquals("EMITTED_OUTPUT_BINDINGS_MISMATCH", rejected.getMessage());
+    }
+
+    @Test
+    void missingOutputBindingIsDiagnosedBeforeJavaParsing() {
+        Fixture fixture = fixture(NumericKind.INT, SafetyProfile.PRESERVE_JAVA, "(x+1)-1");
+        var tampered = new JavaComputationEmitter.Emission(fixture.emission().statements(), Map.of());
+        var rejected = assertThrows(IllegalArgumentException.class, () -> verify(fixture, tampered));
+        assertEquals("EMITTED_OUTPUT_BINDINGS_MISMATCH", rejected.getMessage());
+    }
+
+    private static JavaComputationEmitter.Emission withSingleOutput(Fixture fixture, String replacement) {
+        assertDoesNotThrow(() -> verify(fixture, fixture.emission()), "Unmodified emission must be accepted");
+        assertEquals(1, fixture.emission().outputValues().size());
+        var original = fixture.emission().outputValues().entrySet().iterator().next();
+        assertNotEquals(original.getValue(), replacement, "The mutation must change actual emitted Java");
+        return new JavaComputationEmitter.Emission(fixture.emission().statements(), Map.of(original.getKey(), replacement));
     }
 
     private static void verify(Fixture fixture, JavaComputationEmitter.Emission emission) {
