@@ -10,6 +10,8 @@ on:
       - '.github/cleanup-profiles/review-explicit-encoding.properties'
       - '.github/workflows/pr-auto-cleanup.yml'
       - 'sandbox_common_test/pom-cleanup-review.xml'
+      - 'examples/cleanup-review/**'
+      - 'GITHUB_ACTIONS.md'
       - 'sandbox_cleanup_application/**'
       - 'sandbox_cleanup_docker/**'
   workflow_dispatch:
@@ -76,9 +78,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           base-sha: ${{ github.event.pull_request.base.sha }}
           head-sha: ${{ github.event.pull_request.head.sha }}
-          config-file: .github/cleanup-profiles/review-explicit-encoding.properties
           image: ghcr.io/carstenartur/sandbox-cleanup:latest
           java-home: ${{ env.JAVA_HOME }}
+          # Sandbox also contains standalone Java CI scripts outside Eclipse projects.
+          unmatched-files: warn
           scope: both
           source-mode: changed
           tool-name: sandbox-explicit-encoding

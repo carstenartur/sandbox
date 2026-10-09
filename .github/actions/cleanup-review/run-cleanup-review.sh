@@ -9,14 +9,17 @@ usage() {
 Usage: run-cleanup-review.sh \
   --base-sha <sha> \
   --head-sha <sha> \
-  --config-file <repository-relative path> \
+  [--config-file <repository-relative path>] \
   --image <container image> \
   [--java-home <host JDK directory>] \
   [--scope main|test|both] \
   [--source-mode changed|project] \
+  [--unmatched-files error|warn] \
   [--output-dir <directory>]
 
 The repository must be checked out at --head-sha with full history available.
+Omit --config-file to use the shipped conservative encoding profile. Existing
+Eclipse .project/.classpath/.settings are used as-is; build files are not converted.
 USAGE
 }
 
@@ -47,6 +50,9 @@ append_quoted_line() {
   printf '%q\n' "$value" >> "$output_file"
 }
 
+# Publish a failure state even when argument, checkout or profile validation exits early.
+emit_output analysis_status failed
+
 base_sha=
 head_sha=
 config_file=
@@ -54,6 +60,7 @@ image=
 java_home=
 scope=both
 source_mode=changed
+unmatched_files=error
 output_dir=${RUNNER_TEMP:-/tmp}/sandbox-cleanup-review
 
 while (($# > 0)); do
@@ -93,6 +100,11 @@ while (($# > 0)); do
       source_mode=$2
       shift 2
       ;;
+    --unmatched-files)
+      (($# >= 2)) || die "--unmatched-files requires a value"
+      unmatched_files=$2
+      shift 2
+      ;;
     --output-dir)
       (($# >= 2)) || die "--output-dir requires a value"
       output_dir=$2
@@ -110,10 +122,10 @@ done
 
 [[ -n $base_sha ]] || die "--base-sha is required"
 [[ -n $head_sha ]] || die "--head-sha is required"
-[[ -n $config_file ]] || die "--config-file is required"
 [[ -n $image ]] || die "--image is required"
 [[ $scope == main || $scope == test || $scope == both ]] || die "Invalid scope: $scope"
 [[ $source_mode == changed || $source_mode == project ]] || die "Invalid source mode: $source_mode"
+[[ $unmatched_files == error || $unmatched_files == warn ]] || die "Invalid unmatched-files policy: $unmatched_files"
 
 # A released image may predate the source project's Java baseline. An explicit
 # host JDK is mounted read-only; never rewrite the project's compiler settings.
@@ -136,13 +148,25 @@ if [[ -n $(git status --porcelain --untracked-files=all) ]]; then
   die "The checkout is not clean before the cleanup run"
 fi
 
-config_path=$(realpath -m "$repo_root/$config_file")
-case $config_path in
-  "$repo_root"/*) ;;
-  *) die "Configuration path escapes the repository: $config_file" ;;
-esac
-[[ -f $config_path ]] || die "Cleanup configuration does not exist: $config_file"
-config_rel=${config_path#"$repo_root"/}
+config_mount=()
+if [[ -z $config_file ]]; then
+  action_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+  config_path=$action_dir/profiles/conservative-encoding.properties
+  config_rel="built-in conservative encoding"
+  config_container=/review-config/cleanup.properties
+  [[ -f $config_path ]] || die "The installed action is missing its built-in cleanup profile"
+  [[ $config_path != *:* && $config_path != *$'\n'* ]] || die "Action path cannot contain a colon or newline"
+  config_mount=(--volume "$config_path:$config_container:ro")
+else
+  config_path=$(realpath -m "$repo_root/$config_file")
+  case $config_path in
+    "$repo_root"/*) ;;
+    *) die "Configuration path escapes the repository: $config_file" ;;
+  esac
+  [[ -f $config_path ]] || die "Cleanup configuration does not exist: $config_file (omit config-file to use the built-in profile)"
+  config_rel=${config_path#"$repo_root"/}
+  config_container=/workspace/$config_rel
+fi
 
 mkdir -p "$output_dir"
 output_dir=$(realpath "$output_dir")
@@ -162,6 +186,8 @@ summary_file=$output_dir/summary.md
 : > "$skipped_file"
 : > "$changed_file_list"
 : > "$patch_file"
+emit_output output_dir "$output_dir"
+emit_output summary_file "$summary_file"
 
 is_java_project_root() {
   local directory=$1
@@ -197,6 +223,9 @@ declare -a project_roots=()
 skipped_count=0
 input_java_count=0
 
+# Do not hide Git failures inside process substitution and report an empty input.
+git diff -z --name-only --diff-filter=ACMR "$resolved_base...$resolved_head" -- '*.java' \
+  > "$output_dir/manifests/pr-input.files" || die "Cannot determine PR Java input; no cleanup ran"
 while IFS= read -r -d '' relative_path; do
   [[ -f $repo_root/$relative_path ]] || continue
   ((input_java_count += 1))
@@ -227,9 +256,33 @@ while IFS= read -r -d '' relative_path; do
     project_index=${project_index_by_root[$project_rel]}
   fi
   printf '%s\0' "$relative_path" >> "$output_dir/manifests/project-${project_index}.files"
-done < <(git diff -z --name-only --diff-filter=ACMR "$resolved_base...$resolved_head" -- '*.java')
+done < "$output_dir/manifests/pr-input.files"
 
 project_count=${#project_roots[@]}
+emit_output input_java_count "$input_java_count"
+emit_output project_count "$project_count"
+emit_output skipped_file_count "$skipped_count"
+if ((skipped_count > 0)); then
+  analysis_status=partial-analysis
+  if ((project_count == 0)); then analysis_status=no-supported-projects; fi
+  emit_output analysis_status "$analysis_status"
+  {
+    echo "## Cleanup input not fully analysed"
+    echo
+    echo "**$skipped_count Java file(s) are not analysed:** no enclosing Eclipse Java project was found."
+    echo "Existing Eclipse .project, .classpath and .settings are reused, not generated or overwritten."
+    echo "A Maven pom.xml or Gradle build file alone is not an Eclipse project import."
+    echo "See the project prerequisites in GITHUB_ACTIONS.md in carstenartur/sandbox."
+    echo
+    echo '```text'
+    cat "$skipped_file"
+    echo '```'
+  } > "$summary_file"
+  if [[ $unmatched_files == error ]]; then
+    die "$skipped_count Java file(s) not analysed. Supply an Eclipse Java project with its classpath, or explicitly set unmatched-files: warn to permit partial coverage. No cleanup ran."
+  fi
+  warning "$skipped_count Java file(s) not analysed; unmatched-files: warn explicitly permits incomplete coverage"
+fi
 docker_bin=${DOCKER_BIN:-docker}
 image_identity=$image
 
@@ -265,10 +318,11 @@ for project_index in "${!project_roots[@]}"; do
     --env "SANDBOX_CLEANUP_WORKSPACE=/tmp/sandbox-cleanup-workspace-${project_index}"
     --volume "$repo_root:/workspace"
     --volume "$output_dir:/review-output"
+    "${config_mount[@]}"
     --workdir /workspace
     "${runtime_args[@]}"
     "$image"
-    --config "/workspace/$config_rel"
+    --config "$config_container"
     --mode apply
     --scope "$scope"
     --import-project "$project_container"
@@ -326,8 +380,26 @@ if ((changed_file_count > 0)); then
   has_changes=true
 fi
 
+analysis_status=no-cleanup-changes
+if ((input_java_count == 0)); then
+  analysis_status=no-java-changes
+elif ((project_count == 0)); then
+  analysis_status=no-supported-projects
+elif ((skipped_count > 0)); then
+  analysis_status=partial-analysis
+elif [[ $has_changes == true ]]; then
+  analysis_status=changes-proposed
+fi
+emit_output analysis_status "$analysis_status"
+
 {
   echo "## Sandbox cleanup review"
+  echo
+  echo "**Result:** \`$analysis_status\`"
+  if ((skipped_count > 0)); then
+    echo
+    echo "**Incomplete coverage: $skipped_count Java file(s) were not analysed.** See skipped-files.txt in the evidence."
+  fi
   echo
   echo "| Field | Value |"
   echo "|---|---:|"
@@ -372,6 +444,8 @@ emit_output summary_file "$summary_file"
 
 if [[ $has_changes == true ]]; then
   note "Sandbox cleanup produced suggestions for $changed_file_count Java file(s)"
+elif ((project_count == 0)); then
+  note "Sandbox cleanup did not analyse any project ($analysis_status)"
 else
-  note "Sandbox cleanup produced no applicable suggestions"
+  note "Sandbox cleanup completed without source changes ($analysis_status)"
 fi

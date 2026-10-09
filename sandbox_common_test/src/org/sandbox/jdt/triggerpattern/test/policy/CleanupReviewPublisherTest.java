@@ -11,11 +11,14 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** Runs both cleanup capture/publication and complete-commit regressions through Maven/JUnit. */
+/** Runs capture, publication and external consumer regressions through Maven/JUnit. */
 class CleanupReviewPublisherTest {
     private static final String ACTION_DIRECTORY = ".github/actions/cleanup-review";
     @TempDir Path temporary;
@@ -45,6 +48,13 @@ class CleanupReviewPublisherTest {
         } finally {
             if (process.isAlive()) process.destroyForcibly();
         }
+    }
+
+    @Test
+    @EnabledOnOs(OS.LINUX)
+    void nativeLinuxConsumerRegressionSuitePasses() throws Exception {
+        // The action requires a Linux Docker host and GNU shell utilities.
+        completePublisherRegressionSuitePassesWithoutSkippedCases("cleanup-consumer.test.cjs");
     }
 
     private static int summaryCount(String report, String name) {

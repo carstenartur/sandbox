@@ -23,6 +23,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.testplugin.TestOptions;
+import org.eclipse.jdt.ui.tests.quickfix.StandardCharsetExpectedSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -59,10 +60,12 @@ public class ExplicitEncodingCleanUpTest {
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
 //		context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
 //		context.enable(CleanUpConstants.REMOVE_UNNECESSARY_NLS_TAGS);
+		String expected= test == ExplicitEncodingPatternsKeepBehavior.CHARSET
+				? StandardCharsetExpectedSource.ANNOTATED : expected(test.name(), false, test.expected);
 		if (test.skipCompileCheck) {
-			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected(test.name(), false, test.expected) }, null);
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 		} else {
-			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { expected(test.name(), false, test.expected) }, null);
+			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 		}
 	}
 
@@ -75,10 +78,12 @@ public class ExplicitEncodingCleanUpTest {
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
 		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
+		String expected= test == ExplicitEncodingPatternsPreferUTF8.CHARSET
+				? StandardCharsetExpectedSource.LEGACY_IMPORTS : expected(test.name(), false, test.expected);
 		if (test.skipCompileCheck) {
-			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected(test.name(), false, test.expected) }, null);
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 		} else {
-			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { expected(test.name(), false, test.expected) }, null);
+			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 		}
 	}
 
@@ -113,6 +118,11 @@ public class ExplicitEncodingCleanUpTest {
 						+ "e.printStackTrace();\n" + indent.repeat(2) + "}"; //$NON-NLS-1$ //$NON-NLS-2$
 			}
 			case "STRING" -> { //$NON-NLS-1$
+				if (!aggregate) {
+					expected= replaceFixtureFragment(name, expected,
+							"Charset charset = Charset.forName(\"UTF-16\");", //$NON-NLS-1$
+							"Charset charset = StandardCharsets.UTF_16;"); //$NON-NLS-1$
+				}
 				before= "static void bla(String filename) throws FileNotFoundException {"; //$NON-NLS-1$
 				after= "static void bla(String filename) throws FileNotFoundException, UnsupportedEncodingException {"; //$NON-NLS-1$
 			}
@@ -126,6 +136,10 @@ public class ExplicitEncodingCleanUpTest {
 			}
 			default -> { return expected; }
 		}
+		return replaceFixtureFragment(name, expected, before, after);
+	}
+
+	private static String replaceFixtureFragment(String name, String expected, String before, String after) {
 		int first= expected.indexOf(before);
 		if (first < 0 || expected.indexOf(before, first + before.length()) >= 0)
 			throw new AssertionError("Ambiguous expected-source fixture: " + name); //$NON-NLS-1$

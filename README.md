@@ -95,9 +95,11 @@ Each cleanup or quick-fix feature installs its matching offline user documentati
 
 ## GitHub Actions
 
-The repository includes CI workflows for building, testing, and code quality analysis. A cleanup action for applying Eclipse JDT cleanups via GitHub Actions exists (see [GITHUB_ACTIONS.md](GITHUB_ACTIONS.md)) but is currently **not active for automatic PR cleanup** — it can only be triggered manually via `workflow_dispatch`.
+Add automated, reviewable cleanup proposals to your own **Eclipse Java repository** with one workflow file. Existing `.project`, `.classpath` and compiler settings are reused; no Sandbox checkout or copied default profile is required. Proposals use normal GitHub diffs and are accepted together through a cleanup PR, not pushed automatically into your original branch.
 
-**[📖 Full Documentation](GITHUB_ACTIONS.md)** | **[Workflows Guide](.github/workflows/README.md)** | **[Action Details](.github/actions/cleanup-action/README.md)**
+**[Set up cleanup proposals in your project](GITHUB_ACTIONS.md)** | **[Standalone Eclipse example](examples/cleanup-review/eclipse)** | **[Action reference](.github/actions/cleanup-review/README.md)**
+
+Maven/Gradle repositories without Eclipse metadata and PDE target-platform dependencies need additional preparation; the guide describes the supported boundaries. Sandbox's own `pr-auto-cleanup.yml` runs automatically and also contains internal tests that consumers should not copy.
 
 ## Building from Source
 

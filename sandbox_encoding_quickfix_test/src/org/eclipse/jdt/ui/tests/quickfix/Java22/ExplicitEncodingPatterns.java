@@ -61,7 +61,7 @@ public class E1 {
     @SuppressWarnings("unused")
 	void method(String filename) {
         // Ursprüngliche Verwendung von Charset.forName() mit verschiedenen Charsets
-		Charset cs1 = StandardCharsets.UTF_8;
+        Charset cs1 = StandardCharsets.UTF_8;
         Charset cs1b = StandardCharsets.UTF_8;  // Unterschiedliche Schreibweise (diese sollten gleich behandelt werden)
         Charset cs2 = StandardCharsets.UTF_16;
         Charset cs3 = StandardCharsets.UTF_16BE;
