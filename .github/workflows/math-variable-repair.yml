@@ -3,84 +3,121 @@ name: Mathematics variable regions (scoped repair)
 on:
   push:
     branches: [fix/math-variable-regions-20261009]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
   group: math-variable-regions-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  offline-toolchain:
-    if: github.event.before == '622bdc7896d99d5399cdb126b803c87184c6f5e9'
-    runs-on: ubuntu-22.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
-        with:
-          distribution: temurin
-          java-version: '25'
-          verify-signature: true
-      - name: Archive the exact test toolchain for the network-isolated repair workspace
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/math-toolchain"
-          java -version 2> "$RUNNER_TEMP/math-toolchain/java-version.txt"
-          tar -czf "$RUNNER_TEMP/math-toolchain/jdk-25.tar.gz" -C "$JAVA_HOME" .
-          cd "$RUNNER_TEMP/math-toolchain"
-          sha256sum jdk-25.tar.gz > SHA256SUMS
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: math-java25-offline-${{ github.sha }}
-          retention-days: 3
-          compression-level: 0
-          path: ${{ runner.temp }}/math-toolchain/**
   region-regressions:
+    if: github.ref == 'refs/heads/fix/math-variable-regions-20261009'
     runs-on: ubuntu-22.04
     timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: sandbox
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
           java-version: '25'
           verify-signature: true
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: hashFiles('sandbox/.github/math-region-fix.patch') != ''
+        with:
+          repository: carstenartur/Regelsuche
+          ref: 655809a500a18eda8dca6ad4e89b82751de0e521
+          path: regelsuche
+          persist-credentials: false
+      - name: Qualify the pinned SDK with the existing Maven consumer contract
+        if: hashFiles('sandbox/.github/math-region-fix.patch') != ''
+        working-directory: regelsuche
+        run: |
+          set -euo pipefail
+          mvn --batch-mode --no-transfer-progress -Psdk-release -pl maven-build-contract \
+            -Dtest=MavenOptimizationSdkDistributionTest test 2>&1 | tee "$RUNNER_TEMP/sdk-qualification.log"
+      - name: Stage the qualified SDK and reviewed source repair
+        if: hashFiles('sandbox/.github/math-region-fix.patch') != ''
+        working-directory: sandbox
+        run: |
+          set -euo pipefail
+          mapfile -t receipts < <(find ../regelsuche/maven-build-contract/target/surefire-reports -name reproducibility.json)
+          test "${#receipts[@]}" -eq 1
+          receipt="${receipts[0]}"
+          jq -e '.status == "PASS" and .sourceRevision == "655809a500a18eda8dca6ad4e89b82751de0e521" and .cleanBuilds == 2 and .freshConsumers == 2 and .sdkTestsPerBuild > 0' "$receipt"
+          distribution="$(dirname "$receipt")/first"
+          mapfile -t qualifications < <(find "$distribution" -maxdepth 1 -name '*-qualification.json')
+          test "${#qualifications[@]}" -eq 1
+          qualification="${qualifications[0]}"
+          version="$(jq -er '.version' "$qualification")"
+          jar="$distribution/regelsuche-optimization-sdk-$version.jar"
+          expected="$(jq -er '.standaloneJarSha256' "$qualification")"
+          echo "$expected  $jar" | sha256sum --check -
+          cp "$jar" sandbox_math_cleanup/lib/regelsuche-optimization-sdk.jar
+          cp "$qualification" sandbox_math_cleanup/lib/qualification.json
+          cp "$receipt" sandbox_math_cleanup/lib/reproducibility.json
+          printf '# Pinned Regelsuche optimization SDK\n\nSource revision: `655809a500a18eda8dca6ad4e89b82751de0e521`.\nVersion: `%s`.\nStandalone JAR SHA-256: `%s`.\n\nThe existing MavenOptimizationSdkDistributionTest qualified two clean builds and two fresh consumers before this copy. See qualification.json and reproducibility.json for the source-bound receipts.\nGenerated Java has no Regelsuche runtime dependency. This is a private SDK distribution, not a public Maven release. Regelsuche-LICENSE and archive notices remain applicable.\n' "$version" "$expected" > sandbox_math_cleanup/lib/README.md
+          git apply --recount --unidiff-zero --check .github/math-region-fix.patch
+          git apply --recount --unidiff-zero .github/math-region-fix.patch
+          rm .github/math-region-fix.patch
+          git diff --check
+          git diff --stat
       - name: Provision native workbench prerequisites
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0
-      - name: Run the actual Maven/Tycho/JUnit regression class
-        id: tests
-        continue-on-error: true
-        run: |
-          set -o pipefail
-          xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
-            -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am \
-            -Dtest=MathVariableRegionsTest -DfailIfNoTests=true verify 2>&1 | tee math-variable-tests.log
-          test -n "$(find sandbox_math_cleanup_test/target/surefire-reports -name '*MathVariableRegionsTest*.xml' -print -quit)"
-      - name: Retain portable dependency cache and exact sources for offline repair
-        if: github.event.before == 'a0183b53023b2385a055310702acd30ac8216501'
+      - name: Run variable-region regressions through Maven and Tycho
+        working-directory: sandbox
         run: |
           set -euo pipefail
-          mkdir -p offline
-          git archive --format=tar.gz HEAD > offline/sandbox-source.tar.gz
-          git rev-parse HEAD > offline/sandbox-commit.txt
-          tar -czf offline/maven-repository.tar.gz -C "$HOME/.m2" repository
-          if [ -d "$HOME/.m2/wrapper" ]; then tar -czf offline/maven-wrapper.tar.gz -C "$HOME/.m2" wrapper; fi
-          if [ -d "$HOME/.p2" ]; then tar -czf offline/p2.tar.gz -C "$HOME" .p2; fi
-          sha256sum offline/*.tar.gz > offline/SHA256SUMS
+          xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
+            -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am \
+            -Dtest=MathVariableRegionsTest -DfailIfNoTests=true verify 2>&1 | tee "$RUNNER_TEMP/math-variable-tests.log"
+          test -n "$(find sandbox_math_cleanup_test/target/surefire-reports -name '*MathVariableRegionsTest*.xml' -print -quit)"
+          mkdir -p "$RUNNER_TEMP/math-variable-reports"
+          cp sandbox_math_cleanup_test/target/surefire-reports/*MathVariableRegionsTest* "$RUNNER_TEMP/math-variable-reports/"
+      - name: Run the complete mathematics test module
+        working-directory: sandbox
+        run: |
+          set -euo pipefail
+          xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
+            -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify \
+            2>&1 | tee "$RUNNER_TEMP/math-module-tests.log"
+      - name: Commit only the tested SDK and source changes on this repair branch
+        working-directory: sandbox
+        run: |
+          set -euo pipefail
+          git diff --check
+          git add -A sandbox_math_cleanup .github/math-region-fix.patch
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m 'fix: optimize live variable results and direct returns with compact verified Java'
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+      - name: Retain exact repair sources and diagnostics
+        if: always()
+        working-directory: sandbox
+        run: |
+          git diff --binary > "$RUNNER_TEMP/math-repair-working.diff"
+          git rev-parse HEAD > "$RUNNER_TEMP/math-repair-head.txt"
+          git status --short >> "$RUNNER_TEMP/math-repair-head.txt"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: math-variable-regions-${{ github.sha }}
+          name: math-variable-regions-${{ github.run_id }}
           retention-days: 7
-          compression-level: 0
           path: |
-            math-variable-tests.log
-            sandbox_math_cleanup_test/target/surefire-reports/**
-            sandbox_math_cleanup_test/target/work/data/.metadata/.log
-            offline/**
-      - name: Preserve the real test outcome
-        if: always() && steps.tests.outcome != 'success'
-        run: exit 1
+            ${{ runner.temp }}/sdk-qualification.log
+            ${{ runner.temp }}/math-variable-tests.log
+            ${{ runner.temp }}/math-module-tests.log
+            ${{ runner.temp }}/math-variable-reports/**
+            ${{ runner.temp }}/math-repair-working.diff
+            ${{ runner.temp }}/math-repair-head.txt
+            sandbox/sandbox_math_cleanup_test/target/surefire-reports/**
+            regelsuche/maven-build-contract/target/surefire-reports/**

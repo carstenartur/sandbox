@@ -1,0 +1,146 @@
+diff --git a/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationExtractor.java b/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationExtractor.java
+--- a/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationExtractor.java
++++ b/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationExtractor.java
+@@ -57,6 +57,7 @@
+ import org.eclipse.jdt.core.dom.QualifiedName;
++import org.eclipse.jdt.core.dom.ReturnStatement;
+ import org.eclipse.jdt.core.dom.SimpleName;
+@@ -120,7 +121,8 @@
+-               if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)) {
++               if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)
++                     && !(statement instanceof ReturnStatement)) {
+@@ -166,7 +168,9 @@
+-            regions.add(builder.finish());
++            JavaComputationRegion region = builder.finish();
++            if (!builder.includeValues) region = JavaRegionLiveness.project(region, builder.unit);
++            if (region != null) regions.add(region);
+@@ -343,6 +347,10 @@
+       void statement(Statement statement) {
+          this.prior = this.snapshot();
++         if (statement instanceof ReturnStatement returned) {
++            returnStatement(returned);
++            return;
++         }
+          if (this.outputs.size() >= 64) {
+@@ -442,6 +450,45 @@
+-      Expr expression(Expression expression, boolean primitiveBoundary, int depth) {
++      private void returnStatement(ReturnStatement returned) {
++         Expression expression = returned.getExpression();
++         if (expression == null) throw JavaComputationExtractor.reject("VOID_RETURN_BOUNDARY", returned);
++         MethodDeclaration method = null;
++         for (ASTNode node = returned.getParent(); node != null; node = node.getParent()) {
++            if (node instanceof MethodDeclaration declaration) { method = declaration; break; }
++         }
++         if (method == null || method.resolveBinding() == null || method.resolveBinding().isRecovered()) {
++            throw JavaComputationExtractor.reject("UNRESOLVED_RETURN_TYPE", returned);
++         }
++         NumericKind declared = kind(method.resolveBinding().getReturnType(), returned);
++         selected(declared, returned);
++         if (declared == NumericKind.BIG_INTEGER) {
++            throw JavaComputationExtractor.reject("BIG_INTEGER_IDENTITY_OR_ESCAPE", returned);
++         }
++         if (outputs.size() >= 64) throw JavaComputationExtractor.reject("REGION_SIZE_LIMIT", returned);
++         for (Object value : unit.getCommentList()) {
++            ASTNode comment = (ASTNode) value;
++            if (comment.getStartPosition() >= expression.getStartPosition()
++                  && comment.getStartPosition() < expression.getStartPosition() + expression.getLength()) {
++               throw JavaComputationExtractor.reject("COMMENT_IN_EXPRESSION", expression);
++            }
++         }
++         if (first < 0) first = returned.getStartPosition();
++         NumericKind evaluated = kind(expression.resolveTypeBinding(), expression);
++         Expr value = expression(expression, false, 0);
++         if (declared != evaluated) value = cast(value, evaluated, declared, expression);
++         String id = "output" + outputs.size();
++         planOutputs.add(new Output(id, declared.type(), value));
++         outputs.add(new JavaComputationRegion.OutputBinding(id, "", declared,
++               expression.getStartPosition(), expression.getLength(), returned.getStartPosition(),
++               returned.getLength(), false, "return@" + returned.getStartPosition(), true));
++         end = returned.getStartPosition() + returned.getLength();
++      }
++
++      Expr expression(Expression expression, boolean primitiveBoundary, int depth) {
+@@ -879,7 +926,9 @@
+-            final boolean[] canonicalOnly = new boolean[]{true};
++            final boolean[] canonicalOnly = new boolean[]{this.outputs.stream()
++                  .noneMatch(output -> output.returnValue() && output.declaredKind().floatingPoint())};
+diff --git a/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java b/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java
+--- a/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java
++++ b/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java
+@@ -287,43 +287,7 @@
+    private static String rewriteValues(CompilationUnit ast, String source, JavaComputationRegion region, Map<String, String> values, Map<String, String> compilerOptions) {
+-      ASTRewrite rewrite = ASTRewrite.create(ast.getAST());
+-
+-      for (JavaComputationRegion.OutputBinding output : region.outputs()) {
+-         String expression = Objects.requireNonNull((String)values.get(output.id()), "MISSING_OUTPUT");
+-         if (!output.declaration()) {
+-            expression = output.javaName() + " = " + expression;
+-         }
+-
+-         ASTNode initializer = NodeFinder.perform(ast, output.initializerStart(), output.initializerLength());
+-         if (initializer == null || initializer.getStartPosition() != output.initializerStart() || initializer.getLength() != output.initializerLength()) {
+-            throw new IllegalArgumentException("STALE_SOURCE_RANGE");
+-         }
+-
+-         ASTParser parser = ASTParser.newParser(ast.getAST().apiLevel());
+-         parser.setKind(1);
+-         parser.setSource(expression.toCharArray());
+-         rewrite.replace(initializer, ASTNode.copySubtree(ast.getAST(), parser.createAST(null)), null);
+-      }
+-
+-      try {
+-         Document document = new Document(source);
+-         TextEdit edit = rewrite.rewriteAST(document, compilerOptions);
+-         if (edit.getOffset() >= region.start() && edit.getExclusiveEnd() <= region.start() + region.length()) {
+-            edit.apply(document);
+-            return document.get(region.start(), region.length() + document.getLength() - source.length());
+-         } else {
+-            throw new IllegalArgumentException("REWRITE_OUTSIDE_REGION");
+-         }
+-      } catch (BadLocationException badLocation) {
+-         throw new IllegalArgumentException("STALE_SOURCE_RANGE", badLocation);
+-      }
++      return JavaRegionSourceRewriter.rewrite(ast, source, region, values, compilerOptions);
+    }
+@@ -400,7 +364,8 @@
+       for (JavaComputationRegion.OutputBinding output : region.outputs()) {
+-         branch.append(output.javaName()).append(" = ").append(emitted.outputValues().get(output.id())).append(";\n");
++         branch.append(output.returnValue() ? "return " : output.javaName() + " = ")
++               .append(emitted.outputValues().get(output.id())).append(";\n");
+       }
+diff --git a/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationEmitter.java b/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationEmitter.java
+--- a/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationEmitter.java
++++ b/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationEmitter.java
+@@ -218,6 +218,14 @@
+       HashMap<Integer, String> values = new HashMap<>();
++      int[] uses = new int[nodes.size()];
++      for (int output : plan.outputBindings().values()) uses[output]++;
++      for (int index : required) {
++         Node node = nodes.get(index);
++         if (!JavaExpressions.isLiteral(node.expression())) {
++            for (int dependency : node.arguments()) uses[dependency]++;
++         }
++      }
+ 
+       for (int index = 0; index < nodes.size(); index++) {
+@@ -243,7 +251,10 @@
+-            values.put(index, state.value(node.expression(), kind, arguments));
++            boolean inline = state.mode == Mode.PRESERVE && (node.expression() instanceof VariableExpr
++                  || uses[index] == 1 || kind != NumericKind.BIG_INTEGER && JavaExpressions.isLiteral(node.expression()));
++            values.put(index, state.value(node.expression(), kind, arguments, inline));
+@@ -589,6 +600,10 @@
+       String value(Expr expression, NumericKind kind, List<String> operands) {
++         return value(expression, kind, operands, false);
++      }
++
++      String value(Expr expression, NumericKind kind, List<String> operands, boolean inline) {
+@@ -642,6 +657,14 @@
+-         String name = this.fresh();
++         if (inline && this.mode == Mode.PRESERVE) {
++            if (!checks.isEmpty()) throw JavaComputationEmitter.unsupported("MATH_CHECK_CANNOT_BE_INLINED");
++            // Parentheses preserve grouping, promotions and casts. Shared arithmetic
++            // nodes still receive one temporary; checked source occurrences never inline.
++            return leaf ? javaExpression : "(" + javaExpression + ")";
++         }
++
++         String name = this.fresh();
