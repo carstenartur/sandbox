@@ -22,6 +22,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.formatter.DefaultCodeFormatterConstants;
 import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.testplugin.TestOptions;
+import org.eclipse.jdt.ui.tests.quickfix.StandardCharsetExpectedSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -55,11 +56,68 @@ public class ExplicitEncodingCleanUpTest {
 		ICompilationUnit cu= pack.createCompilationUnit("E1.java", test.given, false, null);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
 		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
+		String expected= test == ExplicitEncodingPatterns.CHARSET
+				? StandardCharsetExpectedSource.LEGACY_IMPORTS : test.expected;
 		if (test.skipCompileCheck) {
-			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+			context.assertRefactoringResultAsExpected(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 		} else {
-			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { test.expected }, null);
+			context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] { expected }, null);
 		}
+	}
+
+	@Test
+	public void testStandardCharsetLookupsOnJava8KeepCustomAndDynamicNames() throws CoreException {
+		IPackageFragment pack= context.getSourceFolder().createPackageFragment("test1", false, null); //$NON-NLS-1$
+		ICompilationUnit cu= pack.createCompilationUnit("E1.java", //$NON-NLS-1$
+				"""
+				package test1;
+
+				import java.nio.charset.Charset;
+
+				public class E1 {
+				    Charset[] charsets(String requested) {
+				        return new Charset[] {
+				            Charset.forName("UTF-8"), //$NON-NLS-1$
+				            Charset.forName("Utf-8"), //$NON-NLS-1$
+				            Charset.forName("UTF-16"), //$NON-NLS-1$
+				            Charset.forName("UTF-16BE"), //$NON-NLS-1$
+				            Charset.forName("UTF-16LE"), //$NON-NLS-1$
+				            Charset.forName("ISO-8859-1"), //$NON-NLS-1$
+				            Charset.forName("US-ASCII"), //$NON-NLS-1$
+				            Charset.forName("windows-1252"), //$NON-NLS-1$
+				            Charset.forName(requested)
+				        };
+				    }
+				}
+				""", false, null);
+		context.enable(MYCleanUpConstants.EXPLICITENCODING_CLEANUP);
+		context.enable(MYCleanUpConstants.EXPLICITENCODING_KEEP_BEHAVIOR);
+		context.disable(MYCleanUpConstants.EXPLICITENCODING_INSERT_UTF8);
+		context.disable(MYCleanUpConstants.EXPLICITENCODING_AGGREGATE_TO_UTF8);
+		context.assertRefactoringResultAsExpectedWithCompileCheck(new ICompilationUnit[] { cu }, new String[] {
+				"""
+				package test1;
+
+				import java.nio.charset.Charset;
+				import java.nio.charset.StandardCharsets;
+
+				public class E1 {
+				    Charset[] charsets(String requested) {
+				        return new Charset[] {
+				            StandardCharsets.UTF_8,
+				            StandardCharsets.UTF_8,
+				            StandardCharsets.UTF_16,
+				            StandardCharsets.UTF_16BE,
+				            StandardCharsets.UTF_16LE,
+				            StandardCharsets.ISO_8859_1,
+				            StandardCharsets.US_ASCII,
+				            Charset.forName("windows-1252"), //$NON-NLS-1$
+				            Charset.forName(requested)
+				        };
+				    }
+				}
+				"""
+		}, null);
 	}
 
 	@Test
