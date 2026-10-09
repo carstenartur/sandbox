@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ccb3b46422d62fc59f3b8d5ecf8588a763f295c8d24850c18732c522ff125d64",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.swt.widgets.TabFolder $folder \u003d new org.eclipse.swt.widgets.TabFolder($parent, $style);\n\u003d\u003e org.eclipse.swt.custom.CTabFolder $folder \u003d new org.eclipse.swt.custom.CTabFolder($parent, $style);\n;;",
+  "beforeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.layout.GridLayout;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.TabFolder;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class TabFolderDeclaration {\n    public void createUI(Composite parent) {\n        // This should match\n        TabFolder folder \u003d new TabFolder(parent, SWT.NONE);\n        folder.setLayout(new GridLayout());\n\n        // This should not match (different type of declaration)\n        String s \u003d new String(\"hello\");\n\n        // This should not match (assignment, not declaration)\n        TabFolder existingFolder;\n        existingFolder \u003d new TabFolder(parent, SWT.BORDER);\n    }\n}",
+  "afterExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.custom.CTabFolder; // Added import\nimport org.eclipse.swt.layout.GridLayout;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.TabFolder; // Still needed if other TabFolder types exist\nimport org.eclipse.swt.widgets.Composite;\n\npublic class TabFolderDeclaration {\n    public void createUI(Composite parent) {\n        // This should match\n        CTabFolder folder \u003d new CTabFolder(parent, SWT.NONE); // Changed\n        folder.setLayout(new GridLayout());\n\n        // This should not match (different type of declaration)\n        String s \u003d new String(\"hello\");\n\n        // This should not match (assignment, not declaration)\n        TabFolder existingFolder;\n        existingFolder \u003d new TabFolder(parent, SWT.BORDER);\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.TabFolder;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class TabFolderNegative {\n    public void createUI(Composite parent) {\n        // Should not match: not a declaration statement with init\n        TabFolder folder;\n        folder \u003d new TabFolder(parent, SWT.NONE);\n\n        // Should not match: different type\n        Shell shell \u003d new Shell(Display.getCurrent(), SWT.SHELL_TRIM);\n    }\n}",
+  "targetHintFile": "eclipse.swt.sandbox-hint",
+  "sourceCommit": "7d8417bb93eedbb2b682247e38b149cc700a0281",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace `org.eclipse.swt.widgets.TabFolder` declaration and instantiation with `org.eclipse.swt.custom.CTabFolder`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-09T02:37:30.670953104Z",
+  "ruleFingerprint": "sha256:15d1c378f1f853bf6d6dba5a24b0c062146f1d5ae6590a747e76bf37f6e63930",
+  "behaviorFingerprint": "sha256:db44800a389d56b2bd5c2685361e500f87d7b6905ac5108cc7dd85f450e01546",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-09T02:37:39.114931765Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

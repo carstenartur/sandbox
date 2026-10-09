@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ab30d6810e13e3ee817fea025ea88a2291dc08ec95d473b50be3455b358ce586",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.Integer($arg)\n\u003d\u003e\njava.lang.Integer.valueOf($arg)\n;;",
+  "beforeExample": "package test;\n\npublic class MyClass {\n    public String getFormattedCount(int count) {\n        Object[] args \u003d { \"Label\", new Integer(count) };\n        return \"Formatted: \" + args[1];\n    }\n}",
+  "afterExample": "package test;\n\npublic class MyClass {\n    public String getFormattedCount(int count) {\n        Object[] args \u003d { \"Label\", java.lang.Integer.valueOf(count) };\n        return \"Formatted: \" + args[1];\n    }\n}",
+  "negativeExample": "package test;\n\npublic class MyClass {\n    public String doSomething(int count) {\n        // This should not match, it\u0027s already using valueOf\n        Object[] args \u003d { \"Label\", Integer.valueOf(count) };\n        return \"Value: \" + args[1];\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "19b9ebaeda8e44b887a21263df8c15d822cc3575",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Deprecated API Usage",
+  "summary": "Replaces deprecated Integer constructor with static factory method Integer.valueOf().",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-09T02:37:30.521463163Z",
+  "ruleFingerprint": "sha256:c93578ef60ec2e73f6819bc82ab52d7516cec85191684f87f5955c62d218b24d",
+  "behaviorFingerprint": "sha256:b94b180e3e1c4170af38ccdcaa627cf5b5e639aa0e98e0c354ca1504c424c9f0",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-10-09T02:37:39.021923055Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

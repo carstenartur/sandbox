@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "66cf047f40bcb6092315a9d88aacaa8d46e113acb3945eca2421647978506ae9",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.ui.texteditor.FindReplaceDialog.HISTORY_SIZE - 1\n\u003d\u003e\norg.eclipse.ui.texteditor.FindReplaceDialog.HISTORY_SIZE\n;;",
+  "beforeExample": "package org.eclipse.ui.texteditor;\n\nimport java.util.ArrayList;\n\npublic class FindReplaceDialog {\n    private static final int HISTORY_SIZE \u003d 15;\n    private ArrayList\u003cString\u003e fFindHistory;\n\n    public FindReplaceDialog() {\n        // Example usage in constructor\n        fFindHistory \u003d new ArrayList\u003c\u003e(HISTORY_SIZE - 1);\n    }\n\n    public void someMethod() {\n        // Example usage in another method\n        int initialCapacity \u003d HISTORY_SIZE - 1;\n        System.out.println(\"Capacity: \" + initialCapacity);\n    }\n}",
+  "afterExample": "package org.eclipse.ui.texteditor;\n\nimport java.util.ArrayList;\n\npublic class FindReplaceDialog {\n    private static final int HISTORY_SIZE \u003d 15;\n    private ArrayList\u003cString\u003e fFindHistory;\n\n    public FindReplaceDialog() {\n        // Example usage in constructor\n        fFindHistory \u003d new ArrayList\u003c\u003e(HISTORY_SIZE);\n    }\n\n    public void someMethod() {\n        // Example usage in another method\n        int initialCapacity \u003d HISTORY_SIZE;\n        System.out.println(\"Capacity: \" + initialCapacity);\n    }\n}",
+  "negativeExample": "package org.eclipse.ui.texteditor;\n\nimport java.util.ArrayList;\n\npublic class FindReplaceDialog {\n    private static final int HISTORY_SIZE \u003d 15;\n    private static final int SOME_OTHER_SIZE \u003d 10;\n    private ArrayList\u003cString\u003e fFindHistory;\n\n    public FindReplaceDialog() {\n        // This should not match, as it refers to a different constant\n        fFindHistory \u003d new ArrayList\u003c\u003e(SOME_OTHER_SIZE - 1);\n    }\n\n    public void anotherMethod() {\n        int x \u003d 5;\n        // This should not match, as it\u0027s a local variable, not the specific FQN constant\n        System.out.println(x - 1);\n    }\n}",
+  "targetHintFile": "constants-updates.sandbox-hint",
+  "sourceCommit": "6ac9ef9309a19dca183c39b074ec5f5f92357460",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Constant Expression Simplification",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-09T02:37:30.651482670Z",
+  "ruleFingerprint": "sha256:5ef09275994430ccd546e172522ca712de07ee69436cc2cdde36f20a96b57755",
+  "behaviorFingerprint": "sha256:875dfb2cee019916704a0ec3359edff7aabc897642ef10aa484648f4ca31ff36",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type FindReplaceDialog must be defined in its own file",
+    "verifiedAt": "2026-10-09T02:37:39.101446585Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
