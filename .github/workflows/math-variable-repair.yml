@@ -19,35 +19,34 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           path: sandbox
+      - name: Check and apply the source repair before any expensive build
+        if: hashFiles('sandbox/.github/math-region-fix.patch') != ''
+        working-directory: sandbox
+        run: |
+          set -euo pipefail
+          git apply --recount --unidiff-zero --check .github/math-region-fix.patch
+          git apply --recount --unidiff-zero .github/math-region-fix.patch
+          git diff --check
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
           java-version: '25'
           verify-signature: true
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Reuse the two-build qualified SDK rather than rebuild it for each adapter change
         if: hashFiles('sandbox/.github/math-region-fix.patch') != ''
-        with:
-          repository: carstenartur/Regelsuche
-          ref: 655809a500a18eda8dca6ad4e89b82751de0e521
-          path: regelsuche
-          persist-credentials: false
-      - name: Qualify the pinned SDK with the existing Maven consumer contract
-        if: hashFiles('sandbox/.github/math-region-fix.patch') != ''
-        working-directory: regelsuche
-        run: |
-          set -euo pipefail
-          mvn --batch-mode --no-transfer-progress -Psdk-release -pl maven-build-contract \
-            -Dtest=MavenOptimizationSdkDistributionTest test 2>&1 | tee "$RUNNER_TEMP/sdk-qualification.log"
-      - name: Stage the qualified SDK and reviewed source repair
-        if: hashFiles('sandbox/.github/math-region-fix.patch') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
         working-directory: sandbox
         run: |
           set -euo pipefail
-          mapfile -t receipts < <(find ../regelsuche/maven-build-contract/target/surefire-reports -name reproducibility.json)
+          gh run download 37927294868 --repo "$GITHUB_REPOSITORY" \
+            --name math-variable-regions-37927294868 --dir "$RUNNER_TEMP/qualified-sdk"
+          mapfile -t receipts < <(find "$RUNNER_TEMP/qualified-sdk" -name reproducibility.json)
           test "${#receipts[@]}" -eq 1
           receipt="${receipts[0]}"
           jq -e '.status == "PASS" and .sourceRevision == "655809a500a18eda8dca6ad4e89b82751de0e521" and .cleanBuilds == 2 and .freshConsumers == 2 and .sdkTestsPerBuild > 0' "$receipt"
@@ -56,15 +55,13 @@ jobs:
           test "${#qualifications[@]}" -eq 1
           qualification="${qualifications[0]}"
           version="$(jq -er '.version' "$qualification")"
-          jar="$distribution/regelsuche-optimization-sdk-$version.jar"
+          jar="$distribution/repository/de/regelsuche/regelsuche-optimization-sdk/$version/regelsuche-optimization-sdk-$version-all.jar"
           expected="$(jq -er '.standaloneJarSha256' "$qualification")"
           echo "$expected  $jar" | sha256sum --check -
           cp "$jar" sandbox_math_cleanup/lib/regelsuche-optimization-sdk.jar
           cp "$qualification" sandbox_math_cleanup/lib/qualification.json
           cp "$receipt" sandbox_math_cleanup/lib/reproducibility.json
-          printf '# Pinned Regelsuche optimization SDK\n\nSource revision: `655809a500a18eda8dca6ad4e89b82751de0e521`.\nVersion: `%s`.\nStandalone JAR SHA-256: `%s`.\n\nThe existing MavenOptimizationSdkDistributionTest qualified two clean builds and two fresh consumers before this copy. See qualification.json and reproducibility.json for the source-bound receipts.\nGenerated Java has no Regelsuche runtime dependency. This is a private SDK distribution, not a public Maven release. Regelsuche-LICENSE and archive notices remain applicable.\n' "$version" "$expected" > sandbox_math_cleanup/lib/README.md
-          git apply --recount --unidiff-zero --check .github/math-region-fix.patch
-          git apply --recount --unidiff-zero .github/math-region-fix.patch
+          printf '# Pinned Regelsuche optimization SDK\n\nSource revision: `655809a500a18eda8dca6ad4e89b82751de0e521`.\nVersion: `%s`.\nStandalone JAR SHA-256: `%s`.\n\nMavenOptimizationSdkDistributionTest qualified two clean builds and two fresh consumers in run 37927294868 before this copy. See qualification.json and reproducibility.json for the source-bound receipts.\nGenerated Java has no Regelsuche runtime dependency. This is a private SDK distribution, not a public Maven release. Regelsuche-LICENSE and archive notices remain applicable.\n' "$version" "$expected" > sandbox_math_cleanup/lib/README.md
           rm .github/math-region-fix.patch
           git diff --check
           git diff --stat
@@ -94,7 +91,7 @@ jobs:
         run: |
           set -euo pipefail
           git diff --check
-          git add -A sandbox_math_cleanup .github/math-region-fix.patch
+          git add -A -- sandbox_math_cleanup .github
           if ! git diff --cached --quiet; then
             git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
               commit -m 'fix: optimize live variable results and direct returns with compact verified Java'
@@ -113,11 +110,9 @@ jobs:
           name: math-variable-regions-${{ github.run_id }}
           retention-days: 7
           path: |
-            ${{ runner.temp }}/sdk-qualification.log
             ${{ runner.temp }}/math-variable-tests.log
             ${{ runner.temp }}/math-module-tests.log
             ${{ runner.temp }}/math-variable-reports/**
             ${{ runner.temp }}/math-repair-working.diff
             ${{ runner.temp }}/math-repair-head.txt
             sandbox/sandbox_math_cleanup_test/target/surefire-reports/**
-            regelsuche/maven-build-contract/target/surefire-reports/**
