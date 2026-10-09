@@ -1,9 +1,10 @@
 {
-  "status" : "PASS",
-  "sourceRevision" : "655809a500a18eda8dca6ad4e89b82751de0e521",
-  "sourceTree" : "378453bcd147972f7f3332294d38ee5ce5c830db",
-  "cleanBuilds" : 2,
-  "sdkTestsPerBuild" : 62,
-  "freshConsumers" : 2,
-  "identicalDistributionFiles" : 10
+  "status": "PASS",
+  "sourceRevision": "015a28cf9c4755bf3b8bd14c88c4bde2f44f4ede",
+  "sourceTree": "5d8fe572a8ccaa5e7ad2eb294d7d1cb829e5c45c",
+  "cleanBuilds": 2,
+  "sdkTestsPerBuild": 70,
+  "freshConsumers": 2,
+  "identicalDistributionFiles": 10,
+  "qualificationRun": "https://github.com/carstenartur/sandbox/actions/runs/37942736343"
 }

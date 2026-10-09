@@ -107,7 +107,7 @@ public final class MathematicalAnalysis {
          }
       }
 
-      JavaComputationExtractor.Extraction extraction = new JavaComputationExtractor().extract(ast, source, options);
+      JavaComputationExtractor.Extraction extraction = new JavaComputationExtractor().extractRuntime(ast, source, options);
 
       for (JavaComputationExtractor.Diagnostic diagnostic : extraction.diagnostics()) {
          diagnostics.add(new MathematicalAnalysis.Diagnostic(diagnostic.code(), diagnostic.message(), diagnostic.offset(), diagnostic.length()));
@@ -118,9 +118,11 @@ public final class MathematicalAnalysis {
       JavaComputationEmitter emitter = new JavaComputationEmitter();
       CancellationToken cancellation = monitor::isCanceled;
       long remainingWork = options.workBudget();
+      int unvisitedRegions = extraction.regions().size();
 
       try {
          for (JavaComputationRegion region : extraction.regions()) {
+            int regionsLeft = unvisitedRegions--;
             if (monitor.isCanceled()) {
                return cancelled(sourceDigest, compilerOptions);
             }
@@ -131,6 +133,8 @@ public final class MathematicalAnalysis {
                   break;
                }
 
+               // One difficult method must not consume the search allocation of all later methods.
+               long regionWork = selectionOffset >= 0 ? remainingWork : Math.max(1L, remainingWork / regionsLeft);
                OptimizationRequest request = new OptimizationRequest(
                   region.plan(),
                   region.trace(),
@@ -139,7 +143,7 @@ public final class MathematicalAnalysis {
                   region.assumptions(),
                   options.safety(),
                   options.goal(),
-                  new OptimizationBudget(remainingWork, options.maxStates(), 64, 5000L),
+                  new OptimizationBudget(regionWork, options.maxStates(), 64, 5000L),
                   options.safety() == SafetyProfile.CHECKED_THROW ? CheckedPolicy.EXPLICIT_DEFAULT : CheckedPolicy.NONE
                );
 
@@ -152,7 +156,7 @@ public final class MathematicalAnalysis {
                      }
 
                      if (result instanceof BudgetExceeded) {
-                        remainingWork = 0L;
+                        remainingWork -= regionWork;
                      }
                      continue;
                   }
