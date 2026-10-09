@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<plugin>
-	<extension point="org.eclipse.jdt.ui.cleanUps">
-		<cleanUpConfigurationUI class="org.sandbox.jdt.internal.ui.preferences.cleanup.SandboxCodeTabPage" cleanUpKind="cleanUp" name="Method Reuse (Sandbox)" />
-		<cleanUpOptionsInitializer class="org.sandbox.jdt.internal.ui.preferences.cleanup.DefaultCleanUpOptionsInitializer" cleanUpKind="cleanUp"></cleanUpOptionsInitializer>
-		<cleanUp class="org.sandbox.jdt.internal.ui.fix.MethodReuseCleanUp" id="org.eclipse.jdt.ui.cleanup.methodreuse" />
-	</extension>
-</plugin>

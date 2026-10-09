@@ -1,4 +1,0 @@
-JAVA_HOME=/workspace/scratch/e422f490850c/tooling/jdk-21.0.12.1+1
-command=[/workspace/scratch/25b139af1f8e/maven-home/wrapper/dists/apache-maven-3.9.16/9c464432/bin/mvn, -o, -B, -ntp, -N, org.apache.maven.plugins:maven-enforcer-plugin:3.6.3:enforce@enforce-java-version]
-workingDirectory=/workspace/scratch/e422f490850c/sandbox-restored
-exit=1

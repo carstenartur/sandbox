@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<toc label="Sandbox – Iterator cleanup reference" topic="html/index.html">
-   <topic label="Reference overview" href="html/index.html"/>
-   <topic label="Using the maintained JDT cleanup" href="html/usage.html"/>
-   <topic label="Runtime ownership and safety" href="html/reference.html"/>
-</toc>

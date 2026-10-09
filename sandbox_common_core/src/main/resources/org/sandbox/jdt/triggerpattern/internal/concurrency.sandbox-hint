@@ -1,3 +1,0 @@
-new java.util.HashMap()
-=> new java.util.concurrent.ConcurrentHashMap()
-;;

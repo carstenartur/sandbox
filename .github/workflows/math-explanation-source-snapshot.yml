@@ -1,0 +1,48 @@
+name: Mathematics explanation immutable source snapshot
+on:
+  push:
+    branches: [diagnostic/math-explanation-source-20261009]
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 30c27689fa0063e58cc77abab065603509aba457
+          path: sandbox-source
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: carstenartur/Regelsuche
+          ref: 015a28cf9c4755bf3b8bd14c88c4bde2f44f4ede
+          path: regelsuche-source
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: bcgit/bc-java
+          ref: ab16374d37c7e18c4090eb8838ebbd72a92593f2
+          path: bc-source
+          persist-credentials: false
+      - name: Export immutable source trees for the offline development workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p snapshots
+          for name in sandbox regelsuche bc; do
+            git -C "$name-source" rev-parse HEAD > "snapshots/$name-commit.txt"
+            test -z "$(git -C "$name-source" status --porcelain)"
+          done
+          git -C sandbox-source archive --format=tar.gz HEAD > snapshots/sandbox.tar.gz
+          git -C regelsuche-source archive --format=tar.gz HEAD > snapshots/regelsuche.tar.gz
+          git -C bc-source archive --format=tar.gz HEAD core/src/main/java/org/bouncycastle/crypto/hash2curve/impl/GenericSqrtRatioCalculator.java LICENSE.html > snapshots/bc-reference.tar.gz
+          cd snapshots
+          sha256sum *.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: mathematics-explanation-source-snapshot
+          retention-days: 3
+          compression-level: 0
+          path: snapshots/*

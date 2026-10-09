@@ -1,2 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<plugin><extension point="org.eclipse.help.toc"><toc file="toc.xml" primary="true"/></extension><extension point="org.eclipse.help.contexts"><contexts file="contexts.xml" plugin="sandbox_math_cleanup"/></extension></plugin>

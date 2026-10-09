@@ -1,6 +1,0 @@
-Fresh reconstructed-source execution; not recovered pre-incident data.
-javaRuntime=25.0.2+10-LTS
-parseSearchVerifyEmitElapsedNanos=148883406
-runtimeMeasurementsRun=false
-finiteExecutionChecksAreNotTheSymbolicProof=true
-Mathematics PRESERVE_JAVA; estimated operation work 2012 -> 1030; check work 0; proof java-numeric-independent/v3; assumptions [SemanticAssumption[kind=NON_NEGATIVE, subject=input0, parameter=, provenance=effectively final BigInteger.valueOf of nonnegative integral expression at 212], SemanticAssumption[kind=BIG_INTEGER_BIT_LENGTH_BOUND, subject=input0, parameter=64, provenance=effectively final BigInteger factory magnitude bound], SemanticAssumption[kind=BIG_INTEGER_BIT_LENGTH_BOUND, subject=input1, parameter=64, provenance=effectively final BigInteger factory magnitude bound], SemanticAssumption[kind=BIG_INTEGER_VALUE_SEMANTICS, subject=input0, parameter=, provenance=resolved exact BigInteger receiver and checked local value uses], SemanticAssumption[kind=BIG_INTEGER_VALUE_SEMANTICS, subject=input1, parameter=, provenance=resolved exact BigInteger receiver and checked local value uses]]

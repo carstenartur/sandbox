@@ -1,3 +1,0 @@
-org.eclipse.jface.resource.ResourceManager.$fImageManager.createImage($contributedImageDescriptor)
-=> $fImageManager.create($contributedImageDescriptor)
-;;

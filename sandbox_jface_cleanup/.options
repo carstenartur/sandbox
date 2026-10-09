@@ -1,4 +1,0 @@
-# Debugging options for sandbox_jface_cleanup
-
-# Enable detailed logging for JFace plugin transformations
-sandbox_jface_cleanup/debug/jfaceplugin = false

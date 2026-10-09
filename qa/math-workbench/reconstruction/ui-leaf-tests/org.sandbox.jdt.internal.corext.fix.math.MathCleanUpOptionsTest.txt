@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest
--------------------------------------------------------------------------------
-Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.071 s -- in org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest

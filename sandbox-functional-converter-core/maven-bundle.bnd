@@ -1,9 +1,0 @@
-Bundle-SymbolicName: org.sandbox.functional.core
-Bundle-Version: ${version_cleanup;${project.version}}
-Bundle-Name: Sandbox Functional Converter Core
-Bundle-Vendor: Carsten Hammer
-
-Export-Package: org.sandbox.functional.core.*
-
-# Keine Eclipse/JDT Abhängigkeiten
-Import-Package: *
