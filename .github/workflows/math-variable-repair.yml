@@ -33,9 +33,10 @@ jobs:
           set -o pipefail
           xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
             -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am \
-            -Dtest=MathVariableRegionsTest -DfailIfNoTests=false test 2>&1 | tee math-variable-tests.log
+            -Dtest=MathVariableRegionsTest -DfailIfNoTests=true verify 2>&1 | tee math-variable-tests.log
+          test -n "$(find sandbox_math_cleanup_test/target/surefire-reports -name '*MathVariableRegionsTest*.xml' -print -quit)"
       - name: Retain portable dependency cache and exact sources for offline repair
-        if: github.event.before == 'fb8d3e1da4c7b9d4766723b446033e31eada0cc3' || github.event.before == '0ecc4e6ef1942eaa54c5a75e41f25dd8c00d8445'
+        if: github.event.before == 'a0183b53023b2385a055310702acd30ac8216501'
         run: |
           set -euo pipefail
           mkdir -p offline
