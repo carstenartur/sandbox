@@ -1,0 +1,146 @@
+diff --git a/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaEmissionVerifier.java b/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaEmissionVerifier.java
+index 6ad61a0..82be355 100644
+--- a/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaEmissionVerifier.java
++++ b/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaEmissionVerifier.java
+@@ -61,2 +61,6 @@ final class JavaEmissionVerifier {
+ 
++      if (!emission.outputValues().keySet().equals(candidate.prepared().outputBindings().keySet())) {
++         throw new IllegalArgumentException("EMITTED_OUTPUT_BINDINGS_MISMATCH");
++      }
++
+       StringBuilder source = new StringBuilder("class MathRoundTrip { static void verify(");
+diff --git a/sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaEmissionVerifierTest.java b/sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaEmissionVerifierTest.java
+index f96be24..a720aca 100644
+--- a/sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaEmissionVerifierTest.java
++++ b/sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaEmissionVerifierTest.java
+@@ -33,3 +33,3 @@ class JavaEmissionVerifierTest {
+         Fixture fixture = fixture(NumericKind.INT, SafetyProfile.PRESERVE_JAVA, "(x+1)-1");
+-        var tampered = new JavaComputationEmitter.Emission(fixture.emission().statements(), Map.of("output0", "0"));
++        var tampered = withSingleOutput(fixture, "0");
+         assertThrows(IllegalArgumentException.class, () -> verify(fixture, tampered));
+@@ -40,6 +40,5 @@ class JavaEmissionVerifierTest {
+         Fixture fixture = fixture(NumericKind.INT, SafetyProfile.PRESERVE_JAVA, "(x+1)-1");
+-        String modified = fixture.emission().statements().replace(" = x;", " = -x;");
+-        assertNotEquals(fixture.emission().statements(), modified, "The mutation must alter emitted Java");
+-        assertThrows(IllegalArgumentException.class, () -> verify(fixture,
+-                new JavaComputationEmitter.Emission(modified, fixture.emission().outputValues())));
++        var tampered = withSingleOutput(fixture, "-x");
++        var rejected = assertThrows(IllegalArgumentException.class, () -> verify(fixture, tampered));
++        assertTrue(rejected.getMessage().startsWith("EMITTED_CANDIDATE_MISMATCH"), rejected.getMessage());
+     }
+@@ -67,6 +66,5 @@ class JavaEmissionVerifierTest {
+         Fixture fixture = fixture(NumericKind.INT, SafetyProfile.PRESERVE_JAVA, "(x+1)-1");
+-        String modified = fixture.emission().statements().replace(" = x;", " = x + (1 / 0) * 0;");
+-        assertNotEquals(fixture.emission().statements(), modified);
+-        assertThrows(IllegalArgumentException.class, () -> verify(fixture,
+-                new JavaComputationEmitter.Emission(modified, fixture.emission().outputValues())));
++        var tampered = withSingleOutput(fixture, "x + (1 / 0) * 0");
++        var rejected = assertThrows(IllegalArgumentException.class, () -> verify(fixture, tampered));
++        assertTrue(rejected.getMessage().contains("POSSIBLE_DIVISION_EXCEPTION"), rejected.getMessage());
+     }
+@@ -103,3 +101,3 @@ class JavaEmissionVerifierTest {
+         assertDoesNotThrow(() -> verify(fixture, fixture.emission()));
+-        var tampered = new JavaComputationEmitter.Emission(fixture.emission().statements(), Map.of("output0", "2.0"));
++        var tampered = withSingleOutput(fixture, "2.0");
+         var rejected = assertThrows(IllegalArgumentException.class, () -> verify(fixture, tampered));
+@@ -108,2 +106,29 @@ class JavaEmissionVerifierTest {
+ 
++    @Test
++    void unexpectedOutputBindingCannotBeIgnored() {
++        Fixture fixture = fixture(NumericKind.INT, SafetyProfile.PRESERVE_JAVA, "(x+1)-1");
++        assertDoesNotThrow(() -> verify(fixture, fixture.emission()));
++        var outputs = new java.util.HashMap<>(fixture.emission().outputValues());
++        outputs.put("unrequested", "x");
++        var tampered = new JavaComputationEmitter.Emission(fixture.emission().statements(), outputs);
++        var rejected = assertThrows(IllegalArgumentException.class, () -> verify(fixture, tampered));
++        assertEquals("EMITTED_OUTPUT_BINDINGS_MISMATCH", rejected.getMessage());
++    }
++
++    @Test
++    void missingOutputBindingIsDiagnosedBeforeJavaParsing() {
++        Fixture fixture = fixture(NumericKind.INT, SafetyProfile.PRESERVE_JAVA, "(x+1)-1");
++        var tampered = new JavaComputationEmitter.Emission(fixture.emission().statements(), Map.of());
++        var rejected = assertThrows(IllegalArgumentException.class, () -> verify(fixture, tampered));
++        assertEquals("EMITTED_OUTPUT_BINDINGS_MISMATCH", rejected.getMessage());
++    }
++
++    private static JavaComputationEmitter.Emission withSingleOutput(Fixture fixture, String replacement) {
++        assertDoesNotThrow(() -> verify(fixture, fixture.emission()), "Unmodified emission must be accepted");
++        assertEquals(1, fixture.emission().outputValues().size());
++        var original = fixture.emission().outputValues().entrySet().iterator().next();
++        assertNotEquals(original.getValue(), replacement, "The mutation must change actual emitted Java");
++        return new JavaComputationEmitter.Emission(fixture.emission().statements(), Map.of(original.getKey(), replacement));
++    }
++
+     private static void verify(Fixture fixture, JavaComputationEmitter.Emission emission) {
+diff --git a/sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationEmitterTest.java b/sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationEmitterTest.java
+index aa76e6b..3929329 100644
+--- a/sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationEmitterTest.java
++++ b/sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationEmitterTest.java
+@@ -94,5 +94,6 @@ class JavaComputationEmitterTest {
+         var emitted = plain(plan, 8);
+-        assertTrue(emitted.statements().contains(".multiply("));
+-        assertTrue(emitted.statements().contains(".mod("));
+-        assertFalse(emitted.statements().contains("regelsuche"));
++        String body = emitted.statements() + returns(emitted.outputValues().values());
++        assertTrue(body.contains(".multiply("));
++        assertTrue(body.contains(".mod("));
++        assertFalse(body.contains("regelsuche"));
+         BigInteger x = new BigInteger("123456789123456789"), y = BigInteger.valueOf(-11);
+diff --git a/sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationExtractorTest.java b/sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationExtractorTest.java
+index c5b8980..070a743 100644
+--- a/sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationExtractorTest.java
++++ b/sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationExtractorTest.java
+@@ -8,2 +8,4 @@ package org.sandbox.jdt.math.tests;
+ 
++import de.regelsuche.sdk.optimization.JavaExpressions;
++import de.regelsuche.sdk.optimization.NumericOperation;
+ import de.regelsuche.sdk.optimization.NumericKind;
+@@ -32,3 +34,3 @@ class JavaComputationExtractorTest {
+    @Test
+-   void retainsTwoOutputsAndOriginalOperationOccurrencesAcrossStatements() {
++   void projectsInternalValuesButRetainsTheirOriginalOperationOccurrences() {
+       String var1 = "class Calculation {\n  static int compute(int x) {\n    int a = x + 1;\n    int b = a - 1;\n    return a ^ b;\n  }\n}\n";
+@@ -38,5 +40,9 @@ class JavaComputationExtractorTest {
+       JavaComputationRegion var3 = (JavaComputationRegion)var2.regions().getFirst();
+-      Assertions.assertEquals(List.of("a", "b"), var3.outputs().stream().map(var0 -> var0.javaName()).toList());
+-      Assertions.assertEquals(2, var3.trace().occurrences().size());
+-      Assertions.assertEquals(2, var3.plan().outputs().size());
++      Assertions.assertEquals(List.of("a", "b"), var3.internalBindings().stream().map(var0 -> var0.javaName()).toList());
++      Assertions.assertEquals(1, var3.outputs().size());
++      Assertions.assertTrue(var3.outputs().getFirst().returnValue());
++      Assertions.assertEquals(3, var3.trace().occurrences().size());
++      Assertions.assertEquals(List.of(NumericOperation.ADD, NumericOperation.SUBTRACT, NumericOperation.XOR),
++            var3.trace().occurrences().stream().map(o -> JavaExpressions.operationOf(o.expression()).orElseThrow()).toList());
++      Assertions.assertEquals(1, var3.plan().outputs().size());
+       Assertions.assertEquals(Set.of("x"), Set.copyOf(var3.inputNames().values()));
+@@ -61,4 +67,10 @@ class JavaComputationExtractorTest {
+       Assertions.assertEquals(1, var2.regions().size(), var2.diagnostics().toString());
+-      List var3 = ((JavaComputationRegion)var2.regions().getFirst()).plan().outputExpressions();
+-      Assertions.assertNotEquals(var3.get(0), var3.get(1));
++      var returned = var2.regions().getFirst().plan().outputExpressions().getFirst();
++      Assertions.assertEquals(NumericOperation.XOR, JavaExpressions.operationOf(returned).orElseThrow());
++      var operands = JavaExpressions.operands(returned);
++      Assertions.assertNotEquals(operands.get(0), operands.get(1));
++      Assertions.assertEquals(NumericKind.INT, JavaExpressions.castSourceKind(operands.getFirst()).orElseThrow());
++      Assertions.assertEquals(NumericKind.INT, JavaExpressions.resultKind(JavaExpressions.operands(operands.getFirst()).getFirst()));
++      Assertions.assertEquals(NumericOperation.MULTIPLY, JavaExpressions.operationOf(operands.get(1)).orElseThrow());
++      Assertions.assertEquals(NumericKind.LONG, JavaExpressions.resultKind(operands.get(1)));
+       Assertions.assertTrue(
+@@ -101,4 +113,7 @@ class JavaComputationExtractorTest {
+       Assertions.assertEquals(
+-         NumericKind.BYTE, ((JavaComputationRegion.OutputBinding)((JavaComputationRegion)var2.regions().getFirst()).outputs().getFirst()).declaredKind()
++         NumericKind.BYTE, var2.regions().getFirst().internalBindings().getFirst().declaredKind()
+       );
++      Assertions.assertEquals(NumericKind.INT, var2.regions().getFirst().outputs().getFirst().declaredKind());
++      Assertions.assertTrue(var2.regions().getFirst().outputs().getFirst().returnValue());
++      Assertions.assertTrue(var2.regions().getFirst().trace().occurrences().stream().anyMatch(o -> o.evaluatedKind() == NumericKind.BYTE));
+       Assertions.assertTrue(
+@@ -115,3 +130,6 @@ class JavaComputationExtractorTest {
+       JavaComputationRegion var3 = (JavaComputationRegion)var2.regions().getFirst();
+-      Assertions.assertEquals(3, var3.outputs().size());
++      Assertions.assertEquals(3, var3.internalBindings().size());
++      Assertions.assertEquals(1, var3.outputs().size());
++      Assertions.assertTrue(var3.outputs().getFirst().returnValue());
++      Assertions.assertEquals(NumericKind.BYTE, var3.outputs().getFirst().declaredKind());
+       Assertions.assertTrue(var3.trace().occurrences().stream().anyMatch(var0 -> var0.evaluatedKind() == NumericKind.INT));
