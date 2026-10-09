@@ -3,7 +3,7 @@ on:
   push:
     branches: [diagnostic/runtime-math-bouncy-20261009]
 permissions:
-  contents: read
+  contents: write
 jobs:
   mathematics:
     runs-on: ubuntu-24.04
@@ -11,9 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: cf08533eaa7e1b438ccd3f9b02ec6c410325106c
+          ref: 12f3f112fa96fd71698bde701e8b5981fc4ee295
           path: verified-source
-          persist-credentials: false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: bcgit/bc-java
@@ -33,15 +32,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = cf08533eaa7e1b438ccd3f9b02ec6c410325106c
+          test "$(git rev-parse HEAD)" = 12f3f112fa96fd71698bde701e8b5981fc4ee295
           test -z "$(git status --porcelain)"
           if ! xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
             -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify \
             > "$RUNNER_TEMP/math-regressions.log" 2>&1; then
-            tail -75 "$RUNNER_TEMP/math-regressions.log"
-            exit 1
+            tail -90 "$RUNNER_TEMP/math-regressions.log"; exit 1
           fi
-          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/math-regressions.log" | tail -40
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/math-regressions.log" | tail -35
       - name: Retain complete default-suite reports before the external corpus run
         if: always()
         shell: bash
@@ -50,6 +48,7 @@ jobs:
             cp -a verified-source/sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/default-math-reports"
           fi
       - name: Qualify unchanged production files and original upstream digest tests
+        id: corpus
         if: ${{ !cancelled() }}
         working-directory: verified-source
         shell: bash
@@ -57,12 +56,34 @@ jobs:
           set -euo pipefail
           if ! bash qa/math-optimization/runtime-bouncy.sh "$GITHUB_WORKSPACE/bouncy-castle" "$RUNNER_TEMP/bc-runtime" \
             > "$RUNNER_TEMP/bc-runtime.log" 2>&1; then
-            tail -130 "$RUNNER_TEMP/bc-runtime.log"
-            exit 1
+            tail -130 "$RUNNER_TEMP/bc-runtime.log"; exit 1
           fi
           grep -E 'BC_RUNTIME_PASS|Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/bc-runtime.log"
           find "$RUNNER_TEMP/bc-runtime/results" -name qualification.properties -print -exec cat {} \;
           find "$RUNNER_TEMP/bc-runtime/results" -name '*.patch' -print -exec cat {} \;
+      - name: Retain source-bound successful evidence on an isolated result branch
+        if: ${{ success() && steps.default-tests.outcome == 'success' && steps.corpus.outcome == 'success' }}
+        working-directory: verified-source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          destination="qa/math-optimization/results/runtime-bouncy-12f3f112"
+          mkdir -p "$destination"
+          cp "$RUNNER_TEMP/bc-runtime/run.properties" "$destination/"
+          for name in MD4Digest RIPEMD160Digest SM3Digest SHA256Digest; do
+            mkdir -p "$destination/$name"
+            cp "$RUNNER_TEMP/bc-runtime/results/$name/qualification.properties" "$destination/$name/"
+            cp "$RUNNER_TEMP/bc-runtime/results/$name/$name.patch" "$destination/$name/"
+            cp "$RUNNER_TEMP/bc-runtime/results/$name/independent-proof-and-cost.txt" "$destination/$name/"
+          done
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$destination"
+          git diff --cached --check
+          git commit -m 'test: retain actual Bouncy Castle runtime patches and independent qualification'
+          git push origin "HEAD:refs/heads/build/runtime-math-accepted-${GITHUB_RUN_ID}"
+          git rev-parse HEAD
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
