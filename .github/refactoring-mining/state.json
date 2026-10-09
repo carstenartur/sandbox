@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "1629a6e4a78a208b678d91cc50e81b3f416ab5d0",
-      "lastProcessedDate": "2026-10-08T02:35:17.850016999Z",
-      "totalProcessed": 580,
+      "lastProcessedCommit": "8bd133add6a5d20059d50a4304150a01cfb9d90f",
+      "lastProcessedDate": "2026-10-09T02:37:27.629133131Z",
+      "totalProcessed": 652,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -4760,6 +4760,33 @@
           "deferredAt": "2026-10-04T03:11:10.639927733Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "696cc795317725ee09c4d12d59dba43bee17df40",
+          "message": "Bug 501127 - Remove outdated _buildnotes_text_*.html from org.eclipse.ui.editors",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-09T02:31:34.340856369Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "938ab5d592348f65249ed9cc454013850d035d32",
+          "message": "Bug 482354 - SVN checkout deadlocks Eclipse",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-09T02:32:32.974790696Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "99ff7fff218eaa5622857061285c3dcb0337730a",
+          "message": "Bug 508285 - Remove old build notes from org.eclipse.search",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-09T02:36:08.787302687Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -4773,7 +4800,7 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 4,
-        "API Modernization": 14,
+        "API Modernization": 16,
         "Performance": 6,
         "Redundant Code": 4,
         "API Misuse Correction": 1,
@@ -4814,7 +4841,15 @@
         "Unnecessary Annotation": 1,
         "Eclipse API Modernization": 1,
         "API Simplification": 1,
-        "JUnit Migration": 1
+        "JUnit Migration": 1,
+        "Image File Extension Update": 3,
+        "Deprecated API Usage": 1,
+        "DSL Limitation / Structural Refactoring": 1,
+        "Collection Modernization": 1,
+        "Preference Default": 1,
+        "Explicit Unboxing": 1,
+        "Constant Expression Simplification": 1,
+        "UI Style": 1
       },
       "exhaustedCategories": []
     },
@@ -4924,5 +4959,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52345
+  "globalTotalProcessed": 52417
 }
