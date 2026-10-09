@@ -12,6 +12,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  offline-toolchain:
+    if: github.event.before == '622bdc7896d99d5399cdb126b803c87184c6f5e9'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+      - name: Archive the exact test toolchain for the network-isolated repair workspace
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/math-toolchain"
+          java -version 2> "$RUNNER_TEMP/math-toolchain/java-version.txt"
+          tar -czf "$RUNNER_TEMP/math-toolchain/jdk-25.tar.gz" -C "$JAVA_HOME" .
+          cd "$RUNNER_TEMP/math-toolchain"
+          sha256sum jdk-25.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: math-java25-offline-${{ github.sha }}
+          retention-days: 3
+          compression-level: 0
+          path: ${{ runner.temp }}/math-toolchain/**
   region-regressions:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
