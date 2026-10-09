@@ -11,8 +11,14 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 499f10c3e6782336f5a899b4604f14676bc9156c
+          ref: cf08533eaa7e1b438ccd3f9b02ec6c410325106c
           path: verified-source
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: bcgit/bc-java
+          ref: c314b9cdffa3958a0eff5344f8fdcdb0181ed830
+          path: bouncy-castle
           persist-credentials: false
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
@@ -22,20 +28,41 @@ jobs:
           cache: maven
           cache-dependency-path: verified-source/**/pom.xml
       - name: Run the complete default mathematics module
+        id: default-tests
         working-directory: verified-source
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = 499f10c3e6782336f5a899b4604f14676bc9156c
+          test "$(git rev-parse HEAD)" = cf08533eaa7e1b438ccd3f9b02ec6c410325106c
           test -z "$(git status --porcelain)"
-          command -v xvfb-run
           if ! xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
             -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify \
             > "$RUNNER_TEMP/math-regressions.log" 2>&1; then
-            tail -200 "$RUNNER_TEMP/math-regressions.log"
+            tail -75 "$RUNNER_TEMP/math-regressions.log"
             exit 1
           fi
           grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/math-regressions.log" | tail -40
+      - name: Retain complete default-suite reports before the external corpus run
+        if: always()
+        shell: bash
+        run: |
+          if [ -d verified-source/sandbox_math_cleanup_test/target/surefire-reports ]; then
+            cp -a verified-source/sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/default-math-reports"
+          fi
+      - name: Qualify unchanged production files and original upstream digest tests
+        if: ${{ !cancelled() }}
+        working-directory: verified-source
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! bash qa/math-optimization/runtime-bouncy.sh "$GITHUB_WORKSPACE/bouncy-castle" "$RUNNER_TEMP/bc-runtime" \
+            > "$RUNNER_TEMP/bc-runtime.log" 2>&1; then
+            tail -130 "$RUNNER_TEMP/bc-runtime.log"
+            exit 1
+          fi
+          grep -E 'BC_RUNTIME_PASS|Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/bc-runtime.log"
+          find "$RUNNER_TEMP/bc-runtime/results" -name qualification.properties -print -exec cat {} \;
+          find "$RUNNER_TEMP/bc-runtime/results" -name '*.patch' -print -exec cat {} \;
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
@@ -43,6 +70,9 @@ jobs:
           retention-days: 7
           path: |
             ${{ runner.temp }}/math-regressions.log
+            ${{ runner.temp }}/default-math-reports/**
+            ${{ runner.temp }}/bc-runtime.log
+            ${{ runner.temp }}/bc-runtime/**
             verified-source/sandbox_math_cleanup_test/target/surefire-reports/**
             verified-source/sandbox_math_cleanup_test/target/work/data/.metadata/.log
             verified-source/**/hs_err_pid*.log
