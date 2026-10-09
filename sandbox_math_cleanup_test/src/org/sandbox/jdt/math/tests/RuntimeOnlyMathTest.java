@@ -11,7 +11,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Random;
+import java.util.SplittableRandom;
 import java.util.Set;
 import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -103,7 +103,7 @@ class RuntimeOnlyMathTest {
     }
 
     @Test void unknownCallsAndArrayReadsAreNotDuplicatedOrRemoved() {
-        String source = """
+        String calls = """
                 public class Calculation {
                     static int calls;
                     static int value() { return calls++; }
@@ -112,7 +112,15 @@ class RuntimeOnlyMathTest {
                     }
                 }
                 """;
-        assertFalse(analyze(source).changed());
+        String arrays = """
+                public class Calculation {
+                    public static int compute(int[] words,int i,int y,int z) {
+                        return (words[i++] & y) | (~words[i++] & z);
+                    }
+                }
+                """;
+        assertFalse(analyze(calls).changed());
+        assertFalse(analyze(arrays).changed());
     }
 
     private static String source(String body) {
@@ -144,7 +152,7 @@ class RuntimeOnlyMathTest {
         int[] edges = {0, 1, -1, Integer.MIN_VALUE, Integer.MAX_VALUE, 0x55555555, 0xaaaaaaaa};
         for (int x : edges) for (int y : edges) for (int z : edges)
             assertEquals(before.invoke(null, x, y, z), after.invoke(null, x, y, z));
-        Random random = new Random(1657);
+        SplittableRandom random = new SplittableRandom(1657);
         for (int i = 0; i < 256; i++) {
             int x = random.nextInt(), y = random.nextInt(), z = random.nextInt();
             assertEquals(before.invoke(null, x, y, z), after.invoke(null, x, y, z));
