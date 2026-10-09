@@ -91,11 +91,11 @@ edited remains unchanged and limits generated syntax and APIs. Unknown or
 unqualified target contracts are rejected.</p>
 
 <h2 id="examples">Examples and counterexamples</h2>
-<p><a href="examples.html"><strong>Four real before/after screenshots, from a
-constant product to nested calculations with multiple outputs</strong></a> show
+<p><a href="examples.html"><strong>Two real before/after screenshots, from a
+constant product to a value shared across assignments</strong></a> show
 the actual Eclipse cleanup preview, exact upstream sources and the required
-settings. They include Bouncy Castle production code and Eclipse JDT regression
-fixtures, with their different roles clearly identified.</p>
+settings. They include Bouncy Castle production code and an Eclipse JDT regression
+fixture, with their different roles clearly identified.</p>
 <p>An eligible shape uses a known BigInteger factory and value-only observations:</p>
 <pre>BigInteger input = BigInteger.valueOf(a * b);
 BigInteger sum = input.add(BigInteger.ONE);
@@ -155,7 +155,7 @@ specific analysis diagnostics. No analyzed user program is executed to infer
 its behavior.</p>
 <h2 id="qualification">Qualification status</h2>
 <p>The <a href="examples.html">real-source screenshot gallery</a> exercises the
-registered cleanup, native preview, application and byte-exact Undo for four
+registered cleanup, native preview, application and byte-exact Undo for two
 specific examples. Full corpus, installation and measured Java performance
 qualification remain separate work; these screenshots do not establish them.</p>
 <p>The source checkout separates new evidence under

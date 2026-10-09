@@ -12,8 +12,7 @@ class DHParametersHelper
          * We check for remainders: 0 => n|p, 1 => n|((p-1)/2)
          */
 
-        final int _math0 = 1078282205;
-        int m = _math0;
+        int m = 1078282205;
         int r = BigIntegers.intValueExact(x.mod(BigInteger.valueOf(m)));
         if ((r % 5) < 2 || (r % 7) < 2 || (r % 11) < 2 || (r % 13) < 2 || (r % 17) < 2 || (r % 19) < 2 || (r % 23) < 2
             || (r % 29) < 2)
