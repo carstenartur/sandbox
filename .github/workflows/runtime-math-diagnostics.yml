@@ -1,0 +1,48 @@
+name: Runtime mathematics exact-source qualification
+on:
+  push:
+    branches: [diagnostic/runtime-math-bouncy-20261009]
+permissions:
+  contents: read
+jobs:
+  mathematics:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: e4ffda7e732d3c1ec8611a6c488a91a1612b9b73
+          path: verified-source
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+          cache: maven
+          cache-dependency-path: verified-source/**/pom.xml
+      - name: Run the complete default mathematics module
+        working-directory: verified-source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = e4ffda7e732d3c1ec8611a6c488a91a1612b9b73
+          test -z "$(git status --porcelain)"
+          command -v xvfb-run
+          if ! xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
+            -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify \
+            > "$RUNNER_TEMP/math-regressions.log" 2>&1; then
+            tail -200 "$RUNNER_TEMP/math-regressions.log"
+            exit 1
+          fi
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/math-regressions.log" | tail -40
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: runtime-math-regressions-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/math-regressions.log
+            verified-source/sandbox_math_cleanup_test/target/surefire-reports/**
+            verified-source/sandbox_math_cleanup_test/target/work/data/.metadata/.log
+            verified-source/**/hs_err_pid*.log
