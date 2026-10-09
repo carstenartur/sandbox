@@ -79,11 +79,31 @@ class GeneralMathematicsRoundTripTest {
         compare(source,generated);
     }
 
-    @Test void integerDivisionDoesNotBecomeFieldDivision() {
-        String source="public class Calculation { public static int compute(int x,int a,int b) { return (x*2)/2; }}";
-        assertFalse(analyze(source).changed());
+    @Test void integerDivisionDoesNotBecomeFieldDivision() throws Exception {
+        String source=divisionSource();
+        var analysis=analyze(source);
+        Document document=new Document(source);
+        var undo=analysis.newEdit().apply(document,TextEdit.CREATE_UNDO);
+        String generated=document.get();
+        undo.apply(document);
+        assertEquals(source,document.get());
+        if(analysis.changed()) assertFalse(analysis.evidence().isEmpty());
+        System.out.println("DIVISION_BOUNDARY_GENERATED="+generated);
+        compare(source,generated);
+        Method actual=compile(generated);
+        // These values refute treating Java's overflowing product as rational arithmetic.
+        assertEquals(-1,actual.invoke(null,Integer.MAX_VALUE,0,0),generated);
+        assertEquals(0,actual.invoke(null,Integer.MIN_VALUE,0,0),generated);
     }
 
+    @Test void differentialCheckDetectsErasingTheOverflowSensitiveProductAndDivision() {
+        String wrong="public class Calculation { public static int compute(int x,int a,int b) { return x; }}";
+        assertThrows(AssertionError.class,()->compare(divisionSource(),wrong));
+    }
+
+    private static String divisionSource() {
+        return "public class Calculation { public static int compute(int x,int a,int b) { return (x*2)/2; }}";
+    }
     private static MathCleanUpOptions options() {
         return new MathCleanUpOptions(true,Set.of(NumericKind.INT,NumericKind.LONG),SafetyProfile.PRESERVE_JAVA,
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME,2_000_000L,20_000,false,17,List.of());
