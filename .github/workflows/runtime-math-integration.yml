@@ -1,0 +1,131 @@
+name: Runtime mathematics adapter integration
+on:
+  push:
+    branches: [diagnostic/runtime-math-edit-20261009]
+permissions:
+  contents: read
+jobs:
+  integrate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 0086e6b5c79bc988a1b1d21d0a528c705da83b8e
+          path: source
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+          cache: maven
+          cache-dependency-path: source/**/pom.xml
+      - name: Apply anchored source edits and the independently reconstructed SDK
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 0086e6b5c79bc988a1b1d21d0a528c705da83b8e
+          git fetch --depth=1 origin 8194c3d491b0a2bdd58c1db23ddc484813c59a93
+          git restore --source=8194c3d491b0a2bdd58c1db23ddc484813c59a93 -- sandbox_math_cleanup/lib
+          python3 - <<'PY'
+          from pathlib import Path
+          root = Path('sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math')
+          path = root/'JavaComputationExtractor.java'
+          text = path.read_text()
+          def replace(old, new, count=1):
+              global text
+              assert text.count(old) == count, (old, text.count(old), count)
+              text = text.replace(old, new)
+          replace('return this.extract(unit, source, options, false);', 'return this.extract(unit, source, options, false, false);')
+          replace('return this.extract(unit, source, options, true);', 'return this.extract(unit, source, options, true, false);')
+          replace('   JavaComputationExtractor.Extraction extractForVerification(', '''   /** Production source policy excludes constant-only statements, but not runtime cancellations. */
+             public JavaComputationExtractor.Extraction extractRuntime(CompilationUnit unit, String source, MathCleanUpOptions options) {
+                return this.extract(unit, source, options, false, true);
+             }
+
+             JavaComputationExtractor.Extraction extractForVerification(''')
+          replace('final MathCleanUpOptions options, final boolean includeValues) {', 'final MathCleanUpOptions options, final boolean includeValues, final boolean runtimeOnly) {')
+          replace('JavaComputationExtractor.eligibleBlock(block)', 'JavaComputationExtractor.eligibleBlock(block, runtimeOnly)')
+          replace('block, includeValues);', 'block, includeValues, runtimeOnly);', 3)
+          replace('''               if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)
+                               && !(statement instanceof ReturnStatement)) {'''.replace('                               ', '                     '), '''               if (runtimeOnly && RuntimeCalculationPolicy.preserve(statement, declarations)) {
+                            JavaComputationExtractor.finish(builder, regions, diagnostics);
+                            diagnostics.add(new Diagnostic("CONSTANT_EXPRESSION_PRESERVED", "Intentional constant source is outside runtime cleanup", statement.getStartPosition(), statement.getLength()));
+                            builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                         } else if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)
+                               && !(statement instanceof ReturnStatement)) {'''.replace('                            ', '                  ').replace('                         } else', '               } else').replace('                               ', '                     '))
+          replace('private static boolean eligibleBlock(Block block) {', 'private static boolean eligibleBlock(Block block, boolean runtimeOnly) {')
+          replace('''            || ancestor instanceof ForStatement
+                      || ancestor instanceof EnhancedForStatement
+                      || ancestor instanceof WhileStatement
+                      || ancestor instanceof DoStatement'''.replace('                      ', '            '), '''            || !runtimeOnly && (ancestor instanceof ForStatement
+                         || ancestor instanceof EnhancedForStatement
+                         || ancestor instanceof WhileStatement
+                         || ancestor instanceof DoStatement)'''.replace('                         ', '               '))
+          replace('      final boolean includeValues;', '      final boolean includeValues;\n      final boolean runtimeOnly;')
+          replace('Block block, boolean includeValues) {', 'Block block, boolean includeValues, boolean runtimeOnly) {')
+          replace('         this.includeValues = includeValues;', '         this.includeValues = includeValues;\n         this.runtimeOnly = runtimeOnly;')
+          replace('this.block, this.includeValues\n', 'this.block, this.includeValues, this.runtimeOnly\n')
+          replace('''                  if (binding.getConstantValue() != null) {
+                               return JavaComputationExtractor.literal(this.validatedConstant(expression), expression);
+                            }'''.replace('                               ', '                     ').replace('                            }', '                  }'), '''                  if (binding.getConstantValue() != null) {
+                               if (this.runtimeOnly && name instanceof SimpleName) {
+                                  // Retain the programmer's symbolic name. The independent checker
+                                  // proves the rewrite for every value of this additional input.
+                                  this.validatedConstant(expression);
+                                  String inputId = this.inputKeys.computeIfAbsent(binding.getKey(), key -> "input" + this.inputKeys.size());
+                                  this.inputNames.put(inputId, binding.getName());
+                                  this.inputTypes.put(inputId, resultKind.type());
+                                  return new VariableExpr(inputId);
+                               }
+                               return JavaComputationExtractor.literal(this.validatedConstant(expression), expression);
+                            }'''.replace('                                  ', '                        ').replace('                               ', '                     ').replace('                            }', '                  }'))
+          path.write_text(text)
+          path = root/'MathematicalAnalysis.java'
+          text = path.read_text()
+          replace('new JavaComputationExtractor().extract(ast, source, options)', 'new JavaComputationExtractor().extractRuntime(ast, source, options)')
+          replace('long remainingWork = options.workBudget();', 'long remainingWork = options.workBudget();\n      int unvisitedRegions = extraction.regions().size();')
+          replace('for (JavaComputationRegion region : extraction.regions()) {', 'for (JavaComputationRegion region : extraction.regions()) {\n            int regionsLeft = unvisitedRegions--;')
+          replace('               OptimizationRequest request = new OptimizationRequest(', '''               // One difficult method must not consume the search allocation of all later methods.
+                         long regionWork = selectionOffset >= 0 ? remainingWork : Math.max(1L, remainingWork / regionsLeft);
+                         OptimizationRequest request = new OptimizationRequest('''.replace('                         ', '               '))
+          replace('new OptimizationBudget(remainingWork, options.maxStates(), 64, 5000L)', 'new OptimizationBudget(regionWork, options.maxStates(), 64, 5000L)')
+          replace('remainingWork = 0L;', 'remainingWork -= regionWork;')
+          path.write_text(text)
+          PY
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add sandbox_math_cleanup
+          git commit -m 'feat: optimize runtime regions while preserving constant source' \
+            -m 'Independent SDK proofs; local loop blocks without loop rewrites; bounded search allocations. AI-assisted.'
+          git push origin HEAD:refs/heads/build/runtime-math-integration-20261009
+          git rev-parse HEAD
+          git show --stat --oneline HEAD
+          git diff HEAD^ HEAD -- sandbox_math_cleanup/src
+      - name: Verify the exact committed adapter and complete default mathematics suite
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain)"
+          if ! xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
+            -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify \
+            > "$RUNNER_TEMP/runtime-integration.log" 2>&1; then
+            tail -230 "$RUNNER_TEMP/runtime-integration.log"
+            exit 1
+          fi
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/runtime-integration.log" | tail -45
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: runtime-math-integration-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/runtime-integration.log
+            source/sandbox_math_cleanup_test/target/surefire-reports/**
+            source/sandbox_math_cleanup_test/target/work/data/.metadata/.log
+            source/**/hs_err_pid*.log
