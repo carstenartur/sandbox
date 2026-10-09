@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: e4ffda7e732d3c1ec8611a6c488a91a1612b9b73
+          ref: 499f10c3e6782336f5a899b4604f14676bc9156c
           path: verified-source
           persist-credentials: false
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = e4ffda7e732d3c1ec8611a6c488a91a1612b9b73
+          test "$(git rev-parse HEAD)" = 499f10c3e6782336f5a899b4604f14676bc9156c
           test -z "$(git status --porcelain)"
           command -v xvfb-run
           if ! xvfb-run --auto-servernum ./mvnw --batch-mode --no-transfer-progress \
