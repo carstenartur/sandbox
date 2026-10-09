@@ -1,0 +1,116 @@
+name: Runtime optimizer SDK reconstruction
+on:
+  push:
+    branches: [diagnostic/runtime-math-sdk-package-20261009]
+permissions:
+  contents: read
+jobs:
+  reconstruct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: carstenartur/Regelsuche
+          ref: 015a28cf9c4755bf3b8bd14c88c4bde2f44f4ede
+          path: optimizer
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: e4ffda7e732d3c1ec8611a6c488a91a1612b9b73
+          path: consumer
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+      - name: Build two clean distributions and execute both fresh consumers
+        working-directory: optimizer
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 015a28cf9c4755bf3b8bd14c88c4bde2f44f4ede
+          epoch="$(git show -s --format=%ct HEAD)"
+          for pass in 1 2; do
+            if ! mvn --batch-mode --no-transfer-progress -Psdk-release -pl regelsuche-optimization-sdk -am clean install \
+              -Dproject.build.outputTimestamp="$epoch" > "$RUNNER_TEMP/sdk-build-$pass.log" 2>&1; then
+              tail -160 "$RUNNER_TEMP/sdk-build-$pass.log"; exit 1
+            fi
+            mvn --batch-mode --no-transfer-progress -pl regelsuche-optimization-sdk dependency:copy-dependencies \
+              -DincludeScope=runtime -DexcludeGroupIds=de.regelsuche \
+              -DoutputDirectory="$RUNNER_TEMP/external-runtime" > "$RUNNER_TEMP/sdk-dependencies-$pass.log" 2>&1
+            python3 scripts/package-optimization-sdk.py --external-dependencies "$RUNNER_TEMP/external-runtime" \
+              --output "$RUNNER_TEMP/distribution-$pass" --java-home "$JAVA_HOME"
+            cp -a regelsuche-optimization-sdk/target/surefire-reports "$RUNNER_TEMP/sdk-reports-$pass"
+            grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/sdk-build-$pass.log" | tail -18
+          done
+          diff -qr "$RUNNER_TEMP/distribution-1" "$RUNNER_TEMP/distribution-2"
+      - name: Stage verified distribution with exact provenance on an isolated result branch
+        shell: bash
+        env:
+          QUALIFICATION_RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, shutil, xml.etree.ElementTree as ET
+          root = pathlib.Path(os.environ['RUNNER_TEMP'])
+          first, second = root/'distribution-1', root/'distribution-2'
+          files = sorted(p.relative_to(first) for p in first.rglob('*') if p.is_file())
+          assert files and files == sorted(p.relative_to(second) for p in second.rglob('*') if p.is_file())
+          for p in files:
+              assert (first/p).read_bytes() == (second/p).read_bytes(), str(p)
+          totals = []
+          for i in (1, 2):
+              reports = sorted((root/f'sdk-reports-{i}').glob('TEST-*.xml'))
+              assert reports
+              stats = dict.fromkeys(('tests', 'failures', 'errors', 'skipped'), 0)
+              for report in reports:
+                  element = ET.parse(report).getroot()
+                  for key in stats: stats[key] += int(element.get(key, '0'))
+              assert stats['tests'] >= 70 and not any(stats[k] for k in ('failures', 'errors', 'skipped')), stats
+              totals.append(stats)
+          assert totals[0] == totals[1]
+          jar, = first.rglob('*-all.jar')
+          qualification, = first.glob('*-qualification.json')
+          evidence = json.loads(qualification.read_text())
+          assert evidence['sourceRevision'] == '015a28cf9c4755bf3b8bd14c88c4bde2f44f4ede'
+          assert evidence['consumer']['freshDirectory'] and evidence['consumer']['emptyDependencyCache']
+          target = pathlib.Path('consumer/sandbox_math_cleanup/lib')
+          shutil.copy2(jar, target/'regelsuche-optimization-sdk.jar')
+          shutil.copy2(qualification, target/'qualification.json')
+          receipt = {'status': 'PASS', 'sourceRevision': evidence['sourceRevision'],
+              'sourceTree': '5d8fe572a8ccaa5e7ad2eb294d7d1cb829e5c45c', 'cleanBuilds': 2,
+              'sdkTestsPerBuild': totals[0]['tests'], 'freshConsumers': 2,
+              'identicalDistributionFiles': len(files), 'qualificationRun': os.environ['QUALIFICATION_RUN']}
+          (target/'reproducibility.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          (target/'README.md').write_text('# Pinned runtime optimizer SDK\n\n'
+              + 'Source: `carstenartur/Regelsuche@' + evidence['sourceRevision'] + '`.\n\n'
+              + 'This is a source-bound local distribution, not a public Maven release. '
+              + 'Two clean builds produced identical distribution bytes and each executed a fresh standalone consumer. '
+              + 'The ordinary optimization SDK suite passed in both builds. See `qualification.json` and '
+              + '`reproducibility.json` for hashes and execution provenance.\n\n'
+              + 'Runtime bitwise candidates are independently verified; reduced estimated operation counts are not measured speedups.\n')
+          print(json.dumps(receipt, indent=2))
+          print('SDK_SHA256=' + hashlib.sha256(jar.read_bytes()).hexdigest())
+          PY
+          cd consumer
+          test "$(git rev-parse HEAD)" = e4ffda7e732d3c1ec8611a6c488a91a1612b9b73
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add sandbox_math_cleanup/lib
+          git diff --cached --stat
+          git commit -m 'build: qualify and vendor runtime bitwise optimizer SDK' \
+            -m 'Two clean builds and two fresh consumers; exact source 015a28cf9c4755bf3b8bd14c88c4bde2f44f4ede. AI-assisted.'
+          git push origin HEAD:refs/heads/build/runtime-math-sdk-015a28cf
+          git rev-parse HEAD
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: runtime-sdk-reconstruction-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/sdk-*.log
+            ${{ runner.temp }}/sdk-reports-*/**
+            ${{ runner.temp }}/distribution-1/**
