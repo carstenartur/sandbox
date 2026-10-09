@@ -1,0 +1,22 @@
+diff --git a/core/src/main/java/org/bouncycastle/crypto/digests/MD4Digest.java b/core/src/main/java/org/bouncycastle/crypto/digests/MD4Digest.java
+index 579e06e..eafce1a 100644
+--- a/core/src/main/java/org/bouncycastle/crypto/digests/MD4Digest.java
++++ b/core/src/main/java/org/bouncycastle/crypto/digests/MD4Digest.java
+@@ -167,7 +167,7 @@ public class MD4Digest
+         int v,
+         int w)
+     {
+-        return (u & v) | (~u & w);
++        return (w ^ (u & (v ^ w)));
+     }
+ 
+     private int G(
+@@ -175,7 +175,7 @@ public class MD4Digest
+         int v,
+         int w)
+     {
+-        return (u & v) | (u & w) | (v & w);
++        return (((v | w) & u) | (v & w));
+     }
+ 
+     private int H(

@@ -122,12 +122,15 @@ The normal Maven/Tycho reactor validates bundle metadata and feature resolution.
 
 ## Mathematics source gallery
 
-The Mathematics Help TOC includes four native before/after previews, increasing
-in source-calculation complexity. One unchanged method comes from Bouncy Castle
-production code; three inputs come from the pinned JDT Core/UI regression suites.
-See `sandbox_eclipse_help_swtbot_test/fixtures/mathematics/README.md` for exact
-provenance and licensing. These are statically known calculations, not runtime
-performance evidence or claims of whole-project optimization.
+The Mathematics Help TOC includes four native runtime previews from six
+unchanged Bouncy Castle production methods. These are selection and shared-mask
+reductions with unknown inputs, not constant folding. The method excerpts are
+derived from qualified complete files; the actual generated output is never
+manually edited for a picture. `RuntimeHelpFixtureExportIT` requires identical
+transformations in the complete-file and preview-shell contexts. See
+`sandbox_eclipse_help_swtbot_test/fixtures/mathematics/README.md` for the pinned
+source, original upstream tests, reproducible command and licensing. Operation
+estimates do not establish measured speedups or whole-library optimization.
 
 The standard Help merge gate invokes `captureRealMathematicsExamples`. For a
 focused reproduction using the same native driver, add this property to the

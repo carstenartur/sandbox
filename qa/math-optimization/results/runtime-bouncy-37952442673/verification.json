@@ -1,0 +1,24 @@
+{
+  "defaultMathTests": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 169
+  },
+  "fixtureExportTests": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 1
+  },
+  "newExecutionClaimed": false,
+  "productionCorpusTests": {
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "tests": 4
+  },
+  "qualifiedSourceCommit": "e224357e0ecd09f5e799f1bb8d2de825629f3ae4",
+  "reusedFromRun": 37952442673,
+  "sourceArtifactId": 11627180929
+}

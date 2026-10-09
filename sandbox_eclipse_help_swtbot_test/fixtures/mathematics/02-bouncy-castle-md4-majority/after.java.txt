@@ -1,0 +1,12 @@
+package org.bouncycastle.crypto.digests;
+
+class MD4Digest
+{
+    private int G(
+        int u,
+        int v,
+        int w)
+    {
+        return (((v | w) & u) | (v & w));
+    }
+}

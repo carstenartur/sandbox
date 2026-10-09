@@ -1,0 +1,19 @@
+package org.bouncycastle.crypto.digests;
+
+class SM3Digest
+{
+    private int FF1(final int x, final int y, final int z)
+    {
+        return ((x & y) | (x & z) | (y & z));
+    }
+
+    private int GG0(final int x, final int y, final int z)
+    {
+        return (x ^ y ^ z);
+    }
+
+    private int GG1(final int x, final int y, final int z)
+    {
+        return ((x & y) | ((~x) & z));
+    }
+}

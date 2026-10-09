@@ -82,7 +82,8 @@ The supported strict contract requires a target Java level of at least 17.
 Rounding, signed zero, NaN and infinities are not interchangeable with real arithmetic. Only explicitly supported primitive or canonical-value observations qualify; raw-bit and object-identity observations require separate evidence.</td></tr>
 <tr><td>BigDecimal, arbitrary Number subclasses, unresolved bindings</td><td>No
 automatic BigInteger interpretation. Unsupported regions stay unchanged.</td></tr>
-<tr><td>Effects, loops, mutable arrays, unknown calls, identity observations</td><td>No
+<tr><td>Local loop-body calculations</td><td>Supported primitive regions can be analyzed inside loops without changing loop control, array effects or external writes.</td></tr>
+<tr><td>Effects, mutable arrays, unknown calls, identity observations</td><td>No
 general algorithm rewrite. A region must satisfy the extractor's explicit local
 binding, effect and value-semantics checks. External user-defined field constants are rejected because their defining source is not part of the local proof.</td></tr>
 </tbody></table>
@@ -91,11 +92,16 @@ edited remains unchanged and limits generated syntax and APIs. Unknown or
 unqualified target contracts are rejected.</p>
 
 <h2 id="examples">Examples and counterexamples</h2>
-<p><a href="examples.html"><strong>Four real before/after screenshots, from a
-constant product to nested calculations with multiple outputs</strong></a> show
-the actual Eclipse cleanup preview, exact upstream sources and the required
-settings. They include Bouncy Castle production code and Eclipse JDT regression
-fixtures, with their different roles clearly identified.</p>
+<p><a href="examples.html"><strong>Four native runtime Bouncy Castle previews</strong></a>
+show six independently verified production methods, not constant folding.
+Complete upstream files and their original digest tests are qualified separately
+from the readable method excerpts used in the native preview.</p>
+<p>Intentional constant statements, named constant formulas and effectively-final
+constant chains remain unchanged. A mixed statement whose constant subexpression
+cannot yet retain its original spelling is diagnosed as
+<code>CONSTANT_EXPRESSION_PRESERVED</code>. Eligible neighboring runtime statements
+remain analyzable. Runtime cancellation such as <code>x ^ x</code> may still
+legitimately produce a constant.</p>
 <p>An eligible shape uses a known BigInteger factory and value-only observations:</p>
 <pre>BigInteger input = BigInteger.valueOf(a * b);
 BigInteger sum = input.add(BigInteger.ONE);
@@ -156,8 +162,9 @@ its behavior.</p>
 <h2 id="qualification">Qualification status</h2>
 <p>The <a href="examples.html">real-source screenshot gallery</a> exercises the
 registered cleanup, native preview, application and byte-exact Undo for four
-specific examples. Full corpus, installation and measured Java performance
-qualification remain separate work; these screenshots do not establish them.</p>
+specific examples. The pinned runtime corpus command separately checks complete
+production files and original upstream digest tests. Whole-library, installation,
+measured Java performance and cryptographic side-channel qualification remain separate.</p>
 <p>The source checkout separates new evidence under
 <code>qa/math-optimization/results/</code> from incomplete historical recovery
 under <code>qa/math-optimization/history/pre-reset/</code>. Earlier corpus outputs
