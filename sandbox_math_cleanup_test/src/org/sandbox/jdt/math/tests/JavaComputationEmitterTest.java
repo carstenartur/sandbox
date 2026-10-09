@@ -92,9 +92,10 @@ class JavaComputationEmitterTest {
         var plan = plan(NumericKind.BIG_INTEGER, Map.of("x", NumericKind.BIG_INTEGER.type(), "y", NumericKind.BIG_INTEGER.type()),
                 op(NumericKind.BIG_INTEGER, NumericOperation.MOD_MULTIPLY, X, Y, modulus));
         var emitted = plain(plan, 8);
-        assertTrue(emitted.statements().contains(".multiply("));
-        assertTrue(emitted.statements().contains(".mod("));
-        assertFalse(emitted.statements().contains("regelsuche"));
+        String body = emitted.statements() + returns(emitted.outputValues().values());
+        assertTrue(body.contains(".multiply("));
+        assertTrue(body.contains(".mod("));
+        assertFalse(body.contains("regelsuche"));
         BigInteger x = new BigInteger("123456789123456789"), y = BigInteger.valueOf(-11);
         assertEquals(x.multiply(y).mod(BigInteger.valueOf(17)),
                 invoke(compile("java.math.BigInteger x, java.math.BigInteger y", emitted.statements() + returns(emitted.outputValues().values()),

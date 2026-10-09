@@ -217,6 +217,14 @@ public final class JavaComputationEmitter {
       }
 
       HashMap<Integer, String> values = new HashMap<>();
+      int[] uses = new int[nodes.size()];
+      for (int output : plan.outputBindings().values()) uses[output]++;
+      for (int index : required) {
+         Node node = nodes.get(index);
+         if (!JavaExpressions.isLiteral(node.expression())) {
+            for (int dependency : node.arguments()) uses[dependency]++;
+         }
+      }
 
       for (int index = 0; index < nodes.size(); index++) {
          if (required.contains(index)) {
@@ -238,7 +246,9 @@ public final class JavaComputationEmitter {
                }
             }
 
-            values.put(index, state.value(node.expression(), kind, arguments));
+            boolean inline = state.mode == Mode.PRESERVE && (node.expression() instanceof VariableExpr
+                  || uses[index] == 1 || kind != NumericKind.BIG_INTEGER && JavaExpressions.isLiteral(node.expression()));
+            values.put(index, state.value(node.expression(), kind, arguments, inline));
          }
       }
 
@@ -579,6 +589,10 @@ public final class JavaComputationEmitter {
       }
 
       String value(Expr expression, NumericKind kind, List<String> operands) {
+         return value(expression, kind, operands, false);
+      }
+
+      String value(Expr expression, NumericKind kind, List<String> operands, boolean inline) {
          if (kind.floatingPoint() && this.targetJava < 17) {
             throw JavaComputationEmitter.unsupported("MATH_FLOATING_POINT_REQUIRES_JAVA_17");
          }
@@ -622,6 +636,13 @@ public final class JavaComputationEmitter {
             if (kind.integral() && this.mode != JavaComputationEmitter.Mode.PRESERVE) {
                checks.addAll(JavaComputationEmitter.integralChecks(originalOperation, kind, operands, this.checkRange || JavaComputationEmitter.exact(originalOperation)));
             }
+         }
+
+         if (inline && this.mode == Mode.PRESERVE) {
+            if (!checks.isEmpty()) throw JavaComputationEmitter.unsupported("MATH_CHECK_CANNOT_BE_INLINED");
+            // Parentheses preserve grouping, promotions and casts. Shared arithmetic
+            // nodes still receive one temporary; checked source occurrences never inline.
+            return leaf ? javaExpression : "(" + javaExpression + ")";
          }
 
          String name = this.fresh();

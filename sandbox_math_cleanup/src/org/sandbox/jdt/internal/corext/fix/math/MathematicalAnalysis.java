@@ -286,37 +286,7 @@ public final class MathematicalAnalysis {
    }
 
    private static String rewriteValues(CompilationUnit ast, String source, JavaComputationRegion region, Map<String, String> values, Map<String, String> compilerOptions) {
-      ASTRewrite rewrite = ASTRewrite.create(ast.getAST());
-
-      for (JavaComputationRegion.OutputBinding output : region.outputs()) {
-         String expression = Objects.requireNonNull((String)values.get(output.id()), "MISSING_OUTPUT");
-         if (!output.declaration()) {
-            expression = output.javaName() + " = " + expression;
-         }
-
-         ASTNode initializer = NodeFinder.perform(ast, output.initializerStart(), output.initializerLength());
-         if (initializer == null || initializer.getStartPosition() != output.initializerStart() || initializer.getLength() != output.initializerLength()) {
-            throw new IllegalArgumentException("STALE_SOURCE_RANGE");
-         }
-
-         ASTParser parser = ASTParser.newParser(ast.getAST().apiLevel());
-         parser.setKind(1);
-         parser.setSource(expression.toCharArray());
-         rewrite.replace(initializer, ASTNode.copySubtree(ast.getAST(), parser.createAST(null)), null);
-      }
-
-      try {
-         Document document = new Document(source);
-         TextEdit edit = rewrite.rewriteAST(document, compilerOptions);
-         if (edit.getOffset() >= region.start() && edit.getExclusiveEnd() <= region.start() + region.length()) {
-            edit.apply(document);
-            return document.get(region.start(), region.length() + document.getLength() - source.length());
-         } else {
-            throw new IllegalArgumentException("REWRITE_OUTSIDE_REGION");
-         }
-      } catch (BadLocationException badLocation) {
-         throw new IllegalArgumentException("STALE_SOURCE_RANGE", badLocation);
-      }
+      return JavaRegionSourceRewriter.rewrite(ast, source, region, values, compilerOptions);
    }
 
    /** The first statement's indentation is outside the edit; only generated continuation lines need it. */
@@ -389,7 +359,8 @@ public final class MathematicalAnalysis {
       StringBuilder branch = new StringBuilder(emitted.statements());
 
       for (JavaComputationRegion.OutputBinding output : region.outputs()) {
-         branch.append(output.javaName()).append(" = ").append(emitted.outputValues().get(output.id())).append(";\n");
+         branch.append(output.returnValue() ? "return " : output.javaName() + " = ")
+               .append(emitted.outputValues().get(output.id())).append(";\n");
       }
 
       return indentGenerated(declarations + prelude + "if (" + guard + ") {\n" + branch + "} else {\n", source, region.start())

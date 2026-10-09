@@ -58,6 +58,7 @@ import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
@@ -116,7 +117,8 @@ public final class JavaComputationExtractor {
 
             for (Object child : block.statements()) {
                Statement statement = (Statement)child;
-               if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)) {
+               if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)
+                     && !(statement instanceof ReturnStatement)) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
                   builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues);
                } else {
@@ -164,7 +166,9 @@ public final class JavaComputationExtractor {
    private static void finish(JavaComputationExtractor.Builder builder, List<JavaComputationRegion> regions, List<JavaComputationExtractor.Diagnostic> diagnostics) {
       if (builder != null && !builder.outputs.isEmpty() && (builder.includeValues || !builder.trace.isEmpty())) {
          try {
-            regions.add(builder.finish());
+            JavaComputationRegion region = builder.finish();
+            if (!builder.includeValues) region = JavaRegionLiveness.project(region, builder.unit);
+            if (region != null) regions.add(region);
          } catch (JavaComputationExtractor.Rejected rejected) {
             diagnostics.add(diagnostic(rejected));
          }
@@ -337,6 +341,10 @@ public final class JavaComputationExtractor {
 
       void statement(Statement statement) {
          this.prior = this.snapshot();
+         if (statement instanceof ReturnStatement returned) {
+            returnStatement(returned);
+            return;
+         }
          if (this.outputs.size() >= 64) {
             throw JavaComputationExtractor.reject("REGION_SIZE_LIMIT", statement);
          }
@@ -422,6 +430,41 @@ public final class JavaComputationExtractor {
          } else {
             throw JavaComputationExtractor.reject("UNRESOLVED_OR_NONLOCAL_BINDING", statement);
          }
+      }
+
+      private void returnStatement(ReturnStatement returned) {
+         Expression expression = returned.getExpression();
+         if (expression == null) throw JavaComputationExtractor.reject("VOID_RETURN_BOUNDARY", returned);
+         MethodDeclaration method = null;
+         for (ASTNode node = returned.getParent(); node != null; node = node.getParent()) {
+            if (node instanceof MethodDeclaration declaration) { method = declaration; break; }
+         }
+         if (method == null || method.resolveBinding() == null || method.resolveBinding().isRecovered()) {
+            throw JavaComputationExtractor.reject("UNRESOLVED_RETURN_TYPE", returned);
+         }
+         NumericKind declared = kind(method.resolveBinding().getReturnType(), returned);
+         selected(declared, returned);
+         if (declared == NumericKind.BIG_INTEGER) {
+            throw JavaComputationExtractor.reject("BIG_INTEGER_IDENTITY_OR_ESCAPE", returned);
+         }
+         if (outputs.size() >= 64) throw JavaComputationExtractor.reject("REGION_SIZE_LIMIT", returned);
+         for (Object value : unit.getCommentList()) {
+            ASTNode comment = (ASTNode) value;
+            if (comment.getStartPosition() >= expression.getStartPosition()
+                  && comment.getStartPosition() < expression.getStartPosition() + expression.getLength()) {
+               throw JavaComputationExtractor.reject("COMMENT_IN_EXPRESSION", expression);
+            }
+         }
+         if (first < 0) first = returned.getStartPosition();
+         NumericKind evaluated = kind(expression.resolveTypeBinding(), expression);
+         Expr value = expression(expression, false, 0);
+         if (declared != evaluated) value = cast(value, evaluated, declared, expression);
+         String id = "output" + outputs.size();
+         planOutputs.add(new Output(id, declared.type(), value));
+         outputs.add(new JavaComputationRegion.OutputBinding(id, "", declared,
+               expression.getStartPosition(), expression.getLength(), returned.getStartPosition(),
+               returned.getLength(), false, "return@" + returned.getStartPosition(), true));
+         end = returned.getStartPosition() + returned.getLength();
       }
 
       Expr expression(Expression expression, boolean primitiveBoundary, int depth) {
@@ -892,7 +935,8 @@ public final class JavaComputationExtractor {
                }
             }
 
-            final boolean[] canonicalOnly = new boolean[]{true};
+            final boolean[] canonicalOnly = new boolean[]{this.outputs.stream()
+                  .noneMatch(output -> output.returnValue() && output.declaredKind().floatingPoint())};
             this.block
                .accept(
                   new ASTVisitor() {
