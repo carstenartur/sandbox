@@ -36,7 +36,7 @@ class BundleClassFingerprintTest {
         var entries = Map.of("a/A.class", new byte[]{1,2}, "a/B.class", new byte[]{3,4});
         Path directory = Files.createDirectory(temporary.resolve("classes"));
         for (var entry : entries.entrySet()) {
-            Path file = directory.resolve(entry.getKey()); Files.createDirectories(file.getParent());
+            Path file = directory.resolve(entry.getKey()); Files.createDirectories(java.util.Objects.requireNonNull(file.getParent()));
             Files.write(file, entry.getValue());
         }
         assertEquals(BundleClassFingerprint.sha256(jar(entries, 0, "v")), BundleClassFingerprint.sha256(directory));

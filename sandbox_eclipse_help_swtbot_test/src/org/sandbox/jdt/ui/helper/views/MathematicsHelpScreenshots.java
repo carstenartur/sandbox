@@ -168,7 +168,7 @@ final class MathematicsHelpScreenshots {
             evidence.put("before", before); evidence.put("after", after); evidence.put("afterSha256", sha256(after.getBytes(StandardCharsets.UTF_8))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
             var installedCleanup= Platform.getBundle("sandbox_math_cleanup"); //$NON-NLS-1$
             assertTrue(installedCleanup != null);
-            try (var sdk= installedCleanup.getEntry("lib/regelsuche-optimization-sdk.jar").openStream()) { //$NON-NLS-1$
+            try (var sdk= java.util.Objects.requireNonNull(installedCleanup.getEntry("lib/regelsuche-optimization-sdk.jar")).openStream()) { //$NON-NLS-1$
                 String sdkHash= sha256(sdk.readAllBytes());
                 assertEquals(properties.getProperty("sdkSha256"), sdkHash, "Preview must use the qualified SDK artifact"); //$NON-NLS-1$ //$NON-NLS-2$
                 evidence.put("sdkSha256", sdkHash); //$NON-NLS-1$
