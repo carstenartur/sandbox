@@ -1,0 +1,40 @@
+name: Exact mathematics development source
+on:
+  push:
+    branches: [diagnostic/math-offline-source-20261010]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 35b21aaabf474d9c46ca5a82ac7b41da75bbddd2
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+      - name: Archive the unchanged source and the repository-pinned Maven distribution
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 35b21aaabf474d9c46ca5a82ac7b41da75bbddd2
+          test -z "$(git status --porcelain)"
+          mkdir -p "$RUNNER_TEMP/math-development"
+          ./mvnw --batch-mode --no-transfer-progress --version > "$RUNNER_TEMP/math-development/maven-version.txt"
+          git archive --format=tar.gz HEAD > "$RUNNER_TEMP/math-development/sandbox.tar.gz"
+          git rev-parse HEAD > "$RUNNER_TEMP/math-development/commit.txt"
+          git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/math-development/tree.txt"
+          git cat-file commit HEAD > "$RUNNER_TEMP/math-development/commit-object.txt"
+          tar -czf "$RUNNER_TEMP/math-development/maven-wrapper.tar.gz" -C "$HOME/.m2" wrapper
+          cd "$RUNNER_TEMP/math-development"
+          sha256sum sandbox.tar.gz maven-wrapper.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: exact-mathematics-development-${{ github.run_id }}
+          retention-days: 3
+          compression-level: 0
+          path: ${{ runner.temp }}/math-development/**
