@@ -7,55 +7,49 @@ permissions:
   contents: read
   pull-requests: read
   checks: read
-  actions: read
 jobs:
   inspect:
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
-      - name: Read effective merge requirements without changing any repository setting
+      - name: Report the remaining approval gate without changing code or protection
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json, os, pathlib, urllib.request, urllib.error
-          root = 'https://api.github.com/repos/carstenartur/sandbox/'
-          out = pathlib.Path(os.environ['RUNNER_TEMP']) / 'merge-requirements'
+          import json, os, pathlib, urllib.request
+          out=pathlib.Path(os.environ['RUNNER_TEMP'])/'merge-requirements'
           out.mkdir()
-          headers = {'Authorization':'Bearer '+os.environ['GH_TOKEN'], 'Accept':'application/vnd.github+json',
-                     'X-GitHub-Api-Version':'2026-03-10', 'User-Agent':'sandbox-merge-diagnostics'}
-          def save(name, data):
-              (out/(name+'.json')).write_text(json.dumps(data,indent=2)+'\n')
-          for name, path in [('effective-rules','rules/branches/main'),('classic-protection','branches/main/protection'),
-                             ('pr','pulls/1676')]:
-              request=urllib.request.Request(root+path,headers=headers)
-              try:
-                  with urllib.request.urlopen(request,timeout=30) as response: data=json.load(response)
-              except urllib.error.HTTPError as error:
-                  data={'http_status':error.code,'message':error.read().decode('utf-8')}
-              save(name,data)
-              if name=='pr':
-                  assert data['head']['sha']=='35b21aaabf474d9c46ca5a82ac7b41da75bbddd2'
-                  assert data.get('stack') is None
-                  print('PR',json.dumps({k:data.get(k) for k in ('state','draft','mergeable','rebaseable','mergeable_state','stack')}))
-              else: print(name,json.dumps(data))
+          headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json',
+                   'X-GitHub-Api-Version':'2026-03-10','User-Agent':'sandbox-merge-diagnostics'}
           query='''query { repository(owner:"carstenartur",name:"sandbox") {
-            pullRequest(number:1676) { number headRefOid baseRefOid isDraft mergeable mergeStateStatus reviewDecision
+            mathematics: pullRequest(number:1676) { number url headRefOid baseRefOid isDraft mergeable mergeStateStatus reviewDecision
               commits(last:1) { nodes { commit { oid statusCheckRollup { state } } } }
               potentialMergeCommit { oid statusCheckRollup { state } }
-              baseRef { name branchProtectionRule { pattern requiresApprovingReviews requiredApprovingReviewCount
-                requiresStrictStatusChecks requiredStatusCheckContexts } }
+            }
+            onboarding: pullRequest(number:1675) { number url headRefOid isDraft mergeable mergeStateStatus reviewDecision
+              commits(last:1) { nodes { commit { oid statusCheckRollup { state } } } }
             }
           } }'''
           request=urllib.request.Request('https://api.github.com/graphql',data=json.dumps({'query':query}).encode(),
-                                        headers={**headers,'Content-Type':'application/json'},method='POST')
-          with urllib.request.urlopen(request,timeout=30) as response: data=json.load(response)
-          save('graphql-requirements',data)
-          print('GRAPHQL',json.dumps(data))
-          assert not data.get('errors'),data.get('errors')
-          print('READ_ONLY_DIAGNOSTICS_COMPLETE')
+                    headers={**headers,'Content-Type':'application/json'},method='POST')
+          with urllib.request.urlopen(request,timeout=30) as response: result=json.load(response)
+          (out/'effective-state.json').write_text(json.dumps(result,indent=2)+'\n')
+          assert not result.get('errors'),result.get('errors')
+          print('EFFECTIVE_STATE',json.dumps(result['data']['repository']))
+          request=urllib.request.Request('https://api.github.com/repos/carstenartur/sandbox/pulls/1676',headers=headers)
+          with urllib.request.urlopen(request,timeout=30) as response: pr=json.load(response)
+          assert pr['head']['sha']=='35b21aaabf474d9c46ca5a82ac7b41da75bbddd2','PR source moved; inspect anew'
+          assert pr.get('stack') is None,'Stack unexpectedly restored'
+          summary={'number':1676,'head':pr['head']['sha'],'base':pr['base']['ref'],'stack':pr.get('stack'),
+                   'merged':pr['merged'],'mergeable':pr['mergeable'],'mergeable_state':pr['mergeable_state'],
+                   'reviewDecision':result['data']['repository']['mathematics']['reviewDecision'],
+                   'administrativeProtectionConfiguration':'NOT_ACCESSIBLE_BY_INTEGRATION; not guessed or changed'}
+          (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          print('VERIFIED_SUMMARY',json.dumps(summary))
+          print('READ_ONLY_DIAGNOSTICS_COMPLETE: effective review state is known; administrative configuration remains unavailable.')
           PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
