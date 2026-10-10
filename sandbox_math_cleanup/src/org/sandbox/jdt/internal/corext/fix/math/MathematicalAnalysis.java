@@ -107,7 +107,7 @@ public final class MathematicalAnalysis {
          }
       }
 
-      JavaComputationExtractor.Extraction extraction = new JavaComputationExtractor().extract(ast, source, options);
+      JavaComputationExtractor.Extraction extraction = new JavaComputationExtractor().extractRuntime(ast, source, options);
 
       for (JavaComputationExtractor.Diagnostic diagnostic : extraction.diagnostics()) {
          diagnostics.add(new MathematicalAnalysis.Diagnostic(diagnostic.code(), diagnostic.message(), diagnostic.offset(), diagnostic.length()));
@@ -118,9 +118,11 @@ public final class MathematicalAnalysis {
       JavaComputationEmitter emitter = new JavaComputationEmitter();
       CancellationToken cancellation = monitor::isCanceled;
       long remainingWork = options.workBudget();
+      int unvisitedRegions = extraction.regions().size();
 
       try {
          for (JavaComputationRegion region : extraction.regions()) {
+            int regionsLeft = unvisitedRegions--;
             if (monitor.isCanceled()) {
                return cancelled(sourceDigest, compilerOptions);
             }
@@ -131,6 +133,8 @@ public final class MathematicalAnalysis {
                   break;
                }
 
+               // One difficult method must not consume the search allocation of all later methods.
+               long regionWork = selectionOffset >= 0 ? remainingWork : Math.max(1L, remainingWork / regionsLeft);
                OptimizationRequest request = new OptimizationRequest(
                   region.plan(),
                   region.trace(),
@@ -139,7 +143,7 @@ public final class MathematicalAnalysis {
                   region.assumptions(),
                   options.safety(),
                   options.goal(),
-                  new OptimizationBudget(remainingWork, options.maxStates(), 64, 5000L),
+                  new OptimizationBudget(regionWork, options.maxStates(), 64, 5000L),
                   options.safety() == SafetyProfile.CHECKED_THROW ? CheckedPolicy.EXPLICIT_DEFAULT : CheckedPolicy.NONE
                );
 
@@ -152,7 +156,7 @@ public final class MathematicalAnalysis {
                      }
 
                      if (result instanceof BudgetExceeded) {
-                        remainingWork = 0L;
+                        remainingWork -= regionWork;
                      }
                      continue;
                   }
@@ -286,37 +290,7 @@ public final class MathematicalAnalysis {
    }
 
    private static String rewriteValues(CompilationUnit ast, String source, JavaComputationRegion region, Map<String, String> values, Map<String, String> compilerOptions) {
-      ASTRewrite rewrite = ASTRewrite.create(ast.getAST());
-
-      for (JavaComputationRegion.OutputBinding output : region.outputs()) {
-         String expression = Objects.requireNonNull((String)values.get(output.id()), "MISSING_OUTPUT");
-         if (!output.declaration()) {
-            expression = output.javaName() + " = " + expression;
-         }
-
-         ASTNode initializer = NodeFinder.perform(ast, output.initializerStart(), output.initializerLength());
-         if (initializer == null || initializer.getStartPosition() != output.initializerStart() || initializer.getLength() != output.initializerLength()) {
-            throw new IllegalArgumentException("STALE_SOURCE_RANGE");
-         }
-
-         ASTParser parser = ASTParser.newParser(ast.getAST().apiLevel());
-         parser.setKind(1);
-         parser.setSource(expression.toCharArray());
-         rewrite.replace(initializer, ASTNode.copySubtree(ast.getAST(), parser.createAST(null)), null);
-      }
-
-      try {
-         Document document = new Document(source);
-         TextEdit edit = rewrite.rewriteAST(document, compilerOptions);
-         if (edit.getOffset() >= region.start() && edit.getExclusiveEnd() <= region.start() + region.length()) {
-            edit.apply(document);
-            return document.get(region.start(), region.length() + document.getLength() - source.length());
-         } else {
-            throw new IllegalArgumentException("REWRITE_OUTSIDE_REGION");
-         }
-      } catch (BadLocationException badLocation) {
-         throw new IllegalArgumentException("STALE_SOURCE_RANGE", badLocation);
-      }
+      return JavaRegionSourceRewriter.rewrite(ast, source, region, values, compilerOptions);
    }
 
    /** The first statement's indentation is outside the edit; only generated continuation lines need it. */
@@ -333,16 +307,23 @@ public final class MathematicalAnalysis {
    }
 
    private static boolean matchesAstSource(CompilationUnit original, String source, Map<String, String> options, int targetJava) {
-      ASTParser parser = ASTParser.newParser(original.getAST().apiLevel());
-      parser.setSource(source.toCharArray());
-      HashMap<String, String> compilerOptions = new HashMap<>(options);
-      if (compilerOptions.isEmpty()) {
-         JavaCore.setComplianceOptions(targetJava == 8 ? "1.8" : Integer.toString(targetJava), compilerOptions);
+      // Standalone clients can parse structured Javadoc with either setting.
+      // Retry only that parser setting: syntax, documented text and source
+      // positions must still match exactly; no stale-source guard is bypassed.
+      for (String documentation : List.of(JavaCore.ENABLED, JavaCore.DISABLED)) {
+         ASTParser parser = ASTParser.newParser(original.getAST().apiLevel());
+         parser.setSource(source.toCharArray());
+         HashMap<String, String> compilerOptions = new HashMap<>(options);
+         if (compilerOptions.isEmpty()) {
+            JavaCore.setComplianceOptions(targetJava == 8 ? "1.8" : Integer.toString(targetJava), compilerOptions);
+         }
+         compilerOptions.put(JavaCore.COMPILER_DOC_COMMENT_SUPPORT, documentation);
+         parser.setCompilerOptions(compilerOptions);
+         CompilationUnit parsed = (CompilationUnit) parser.createAST(null);
+         if (original.subtreeMatch(new ASTMatcher(true), parsed)
+               && sourcePositions(original).equals(sourcePositions(parsed))) return true;
       }
-
-      parser.setCompilerOptions(compilerOptions);
-      CompilationUnit parsed = (CompilationUnit)parser.createAST(null);
-      return !original.subtreeMatch(new ASTMatcher(true), parsed) ? false : sourcePositions(original).equals(sourcePositions(parsed));
+      return false;
    }
 
    private static List<Integer> sourcePositions(CompilationUnit ast) {
@@ -389,7 +370,8 @@ public final class MathematicalAnalysis {
       StringBuilder branch = new StringBuilder(emitted.statements());
 
       for (JavaComputationRegion.OutputBinding output : region.outputs()) {
-         branch.append(output.javaName()).append(" = ").append(emitted.outputValues().get(output.id())).append(";\n");
+         branch.append(output.returnValue() ? "return " : output.javaName() + " = ")
+               .append(emitted.outputValues().get(output.id())).append(";\n");
       }
 
       return indentGenerated(declarations + prelude + "if (" + guard + ") {\n" + branch + "} else {\n", source, region.start())

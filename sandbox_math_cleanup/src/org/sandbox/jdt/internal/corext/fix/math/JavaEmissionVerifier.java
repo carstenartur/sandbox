@@ -59,6 +59,10 @@ final class JavaEmissionVerifier {
          throw new IllegalArgumentException("CANCELLED");
       }
 
+      if (!emission.outputValues().keySet().equals(candidate.prepared().outputBindings().keySet())) {
+         throw new IllegalArgumentException("EMITTED_OUTPUT_BINDINGS_MISMATCH");
+      }
+
       StringBuilder source = new StringBuilder("class MathRoundTrip { static void verify(");
       ArrayList<String> parameters = new ArrayList<>();
       HashMap<String, String> originalInputIds = new HashMap<>();
