@@ -1,6 +1,12 @@
 # Pinned Regelsuche optimization SDK
 
-Source revision: `409083a58ab28d14fb3ce02adb2938dd9b92eb5f`.
-Standalone JAR SHA-256: `a6a7b5668f95a8abc13ff87b455cca4a44b29a3503a67c25d445ea312ba53081`.
+Source revision: `c48d160800a5d1ab82a7adbb0804be768256e94b`.
+Standalone JAR SHA-256: `66ca6bba75ca3feb528ad9f3022730d451330e4905fb59e0b3c9643b593426ea`.
 
-Two clean Maven SDK builds and two fresh consumers passed using the repository-owned distribution contract. Exact receipts are qualification.json and reproducibility.json. This is a development distribution, not a public Maven release. Generated Java needs no SDK at runtime. Existing license notices remain applicable.
+The repository-owned distribution contract passed two clean builds, 105 SDK tests
+per build, two freshly compiled consumers (including selected-path replay), and
+byte equality of all ten distribution files. Receipts are qualification.json and
+reproducibility.json. Source run: 38046991786; artifact 11668316074.
+
+This is a source-bound development distribution, not a public Maven release.
+Generated Java needs no SDK runtime. Existing license notices remain applicable.

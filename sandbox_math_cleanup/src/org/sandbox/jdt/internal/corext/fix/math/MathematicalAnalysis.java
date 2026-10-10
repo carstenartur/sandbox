@@ -9,6 +9,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 import de.regelsuche.sdk.optimization.CancellationToken;
 import de.regelsuche.sdk.optimization.CheckedPolicy;
 import de.regelsuche.sdk.optimization.ComputationOptimizer;
+import de.regelsuche.sdk.optimization.ComputationExplanations;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationBudget;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
@@ -38,6 +39,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTMatcher;
@@ -82,7 +84,7 @@ public final class MathematicalAnalysis {
          return new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions);
       }
 
-      if (monitor.isCanceled()) {
+      if (isCancelled(monitor)) {
          return cancelled(sourceDigest, compilerOptions);
       }
 
@@ -116,14 +118,14 @@ public final class MathematicalAnalysis {
       monitor.beginTask("Verify mathematics regions", extraction.regions().size());
       ComputationOptimizer optimizer = new ComputationOptimizer();
       JavaComputationEmitter emitter = new JavaComputationEmitter();
-      CancellationToken cancellation = monitor::isCanceled;
+      CancellationToken cancellation = () -> isCancelled(monitor);
       long remainingWork = options.workBudget();
       int unvisitedRegions = extraction.regions().size();
 
       try {
          for (JavaComputationRegion region : extraction.regions()) {
             int regionsLeft = unvisitedRegions--;
-            if (monitor.isCanceled()) {
+            if (isCancelled(monitor)) {
                return cancelled(sourceDigest, compilerOptions);
             }
 
@@ -162,7 +164,8 @@ public final class MathematicalAnalysis {
                   }
 
                   remainingWork -= candidate.work();
-                  if (!(optimizer.reverify(request, candidate, cancellation) instanceof Verified)) {
+                  var explanation = ComputationExplanations.describe(request, candidate, cancellation);
+                  if (!(explanation.verification() instanceof Verified)) {
                      diagnostics.add(diagnostic("REVERIFICATION_FAILED", "Candidate evidence did not pass independent checking", region));
                      continue;
                   }
@@ -171,6 +174,8 @@ public final class MathematicalAnalysis {
                   reserved.addAll(generatedNames);
                   JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava());
                   JavaEmissionVerifier.verify(request, candidate, plain, region, options, cancellation);
+                  MathExplanation explanationText = MathExplanation.render(explanation.explanation().orElseThrow(),
+                     request, candidate, region, plain, options, cancellation);
                   String replacement;
                   if (options.safety() == SafetyProfile.CHECKED_THROW) {
                      JavaComputationEmitter.Emission checked = emitter.emitChecked(request, candidate, region.inputNames(), reserved, options.targetJava());
@@ -197,6 +202,10 @@ public final class MathematicalAnalysis {
                      replacement = indentGenerated(plain.statements(), source, region.start()) + rewriteValues(ast, source, region, plain.outputValues(), compilerOptions);
                   }
 
+                  if (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
+                        || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial()) {
+                     replacement = indentGenerated(explanationText.sourceComment(), source, region.start()) + replacement;
+                  }
                   checkGeneratedSource(
                      ast,
                      source.substring(0, region.start()) + replacement + source.substring(region.start() + region.length()),
@@ -205,7 +214,7 @@ public final class MathematicalAnalysis {
                      (IProgressMonitor)monitor,
                      environment
                   );
-                  if (monitor.isCanceled()) {
+                  if (isCancelled(monitor)) {
                      return cancelled(sourceDigest, compilerOptions);
                   }
 
@@ -240,6 +249,7 @@ public final class MathematicalAnalysis {
                         + "; CHECKED_THROW changes the Java contract: numerical violations may throw ArithmeticException. Both the original and replacement operations must be checked.";
                   }
 
+                  description += "\n" + explanationText.detail();
                   replacements.add(new MathematicalAnalysis.Replacement(region.start(), region.length(), replacement, description));
                   ASTParser declarationParser = ASTParser.newParser(ast.getAST().apiLevel());
                   declarationParser.setKind(2);
@@ -270,7 +280,7 @@ public final class MathematicalAnalysis {
          monitor.done();
       }
 
-      if (monitor.isCanceled()) {
+      if (isCancelled(monitor)) {
          return cancelled(sourceDigest, compilerOptions);
       }
 
@@ -286,7 +296,15 @@ public final class MathematicalAnalysis {
          }
       }
 
-      return monitor.isCanceled() ? cancelled(sourceDigest, compilerOptions) : analysis;
+      return isCancelled(monitor) ? cancelled(sourceDigest, compilerOptions) : analysis;
+   }
+
+   /** Interrupts abort the entire invocation, never just the current candidate. */
+   private static boolean isCancelled(IProgressMonitor monitor) {
+      if (Thread.currentThread().isInterrupted()) {
+         throw new OperationCanceledException("Mathematics analysis interrupted");
+      }
+      return monitor.isCanceled();
    }
 
    private static String rewriteValues(CompilationUnit ast, String source, JavaComputationRegion region, Map<String, String> values, Map<String, String> compilerOptions) {

@@ -42,6 +42,7 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.corext.fix.CleanUpConstants;
+import org.eclipse.jdt.internal.corext.fix.CleanUpPreferenceUtil;
 import org.eclipse.jdt.internal.corext.fix.CleanUpRefactoring;
 import org.eclipse.jdt.internal.ui.JavaPlugin;
 import org.eclipse.jdt.internal.ui.fix.CleanUpRefactoringWizard;
@@ -127,6 +128,11 @@ final class MathematicsHelpScreenshots {
         Throwable primaryFailure= null;
         try {
             IJavaProject project= createProject(resource); Map<String, String> profile= profile(properties); persist(project, profile);
+            Map<String, String> effective= new TreeMap<>();
+            CleanUpPreferenceUtil.loadOptions(new ProjectScope(project.getProject())).forEach((key, value) -> {
+                if (key.equals(PREFIX) || key.startsWith(PREFIX + ".")) effective.put(key, value); //$NON-NLS-1$
+            });
+            assertEquals(effective, profile, "Provenance must contain every effective mathematics option"); //$NON-NLS-1$
             String bundles= properties.getProperty("bundles", ""); //$NON-NLS-1$ //$NON-NLS-2$
             if (!bundles.isBlank()) addCorpusBundles(project, bundles.split(",")); //$NON-NLS-1$
             var pack= project.getPackageFragmentRoot(resource.getFolder("src")).createPackageFragment(properties.getProperty("packageName"), true, MONITOR); //$NON-NLS-1$ //$NON-NLS-2$
@@ -221,12 +227,19 @@ final class MathematicsHelpScreenshots {
         Map<String, String> options= project.getOptions(true); JavaCore.setComplianceOptions("17", options); project.setOptions(options); return project; //$NON-NLS-1$
     }
 
-    private static Map<String, String> profile(Properties properties) {
-        Map<String, String> values= new TreeMap<>(); values.put(PREFIX, "true"); //$NON-NLS-1$
+    static Map<String, String> profile(Properties properties) {
+        Map<String, String> values= new TreeMap<>();
+        JavaPlugin.getDefault().getCleanUpRegistry().getDefaultOptions(CleanUpConstants.DEFAULT_CLEAN_UP_OPTIONS)
+                .getMap().forEach((key, value) -> {
+                    if (key.equals(PREFIX) || key.startsWith(PREFIX + ".")) values.put(key, value); //$NON-NLS-1$
+                });
+        values.put(PREFIX, "true"); //$NON-NLS-1$
         values.put(PREFIX + ".numericKinds", properties.getProperty("kinds")); values.put(PREFIX + ".goal", properties.getProperty("goal")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
         values.put(PREFIX + ".safetyProfile", "PRESERVE_JAVA"); values.put(PREFIX + ".checkedOptIn", "false"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
         values.put(PREFIX + ".workBudget", properties.getProperty("workBudget", "1000000")); values.put(PREFIX + ".maxStates", properties.getProperty("maxStates", "20000")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
-        values.put(PREFIX + ".exclusions", ""); values.put(PREFIX + ".underflowChecks", "false"); return values; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+        values.put(PREFIX + ".exclusions", ""); values.put(PREFIX + ".underflowChecks", "false");
+        values.put(PREFIX + ".explanations", properties.getProperty("explanations", values.get(PREFIX + ".explanations"))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        return values; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
     }
 
     private static void persist(IJavaProject project, Map<String, String> profile) throws Exception {
