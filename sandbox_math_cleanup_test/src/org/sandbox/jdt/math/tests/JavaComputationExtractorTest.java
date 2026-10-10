@@ -11,6 +11,8 @@ import de.regelsuche.sdk.optimization.NumericOperation;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.SafetyProfile;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -166,7 +168,7 @@ class JavaComputationExtractorTest {
    @Test
    void externalConstantsAreNotFrozenWithoutDependencyEvidence(@TempDir Path var1) throws Exception {
       Path var2 = var1.resolve("Other.java");
-      Files.writeString(var2, "public class Other { public static final int K=1; }");
+      Files.writeString(var2, "public class Other { public static final int K=1; }", StandardCharsets.UTF_8);
       Assertions.assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-d", var1.toString(), var2.toString()));
       String var3 = "class Calculation { int compute() { int result=Other.K+0; return result; }}";
       JavaComputationExtractor.Extraction var4 = new JavaComputationExtractor()
