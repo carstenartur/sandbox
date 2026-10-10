@@ -10,7 +10,10 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 40
+    permissions:
+      contents: write
+      actions: read
     env:
       MAVEN_OPTS: -Djava.awt.headless=false
       NO_AT_BRIDGE: '1'
@@ -20,27 +23,99 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ef3596b4622aa0c433fc86333477e08b45b20775
+          path: control
           persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ef3596b4622aa0c433fc86333477e08b45b20775
+          path: source
+          fetch-depth: 32
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
           java-version: '25'
           cache: maven
-      - uses: ./.github/actions/verify-eclipse-desktop-runtime
-      - name: Verify the exact-source mathematics module
+      - uses: ./source/.github/actions/verify-eclipse-desktop-runtime
+      - name: Stage source and adopt the exact independently qualified SDK
+        working-directory: source
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = ef3596b4622aa0c433fc86333477e08b45b20775
           test -z "$(git status --porcelain)"
-          xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/java-search-path.log" 2>&1 || { tail -100 "$RUNNER_TEMP/java-search-path.log"; exit 1; }
-          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/java-search-path.log" | tail -35
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags --depth=32 origin dc01b417f8d0437ca31dbeee96cfff9073a990bf
+          git merge --no-edit dc01b417f8d0437ca31dbeee96cfff9073a990bf
+          python3 ../control/qualification/import-verified-sdk.py .
+          python3 ../control/qualification/integrate-java-derivation.py .
+          git add sandbox_math_cleanup sandbox_math_cleanup_test sandbox_math_cleanup_help/html/cleanup.html sandbox_eclipse_help_swtbot_test/fixtures/mathematics docs/qa/selected-search-path.md
+          git diff --cached --check
+          git write-tree > "$RUNNER_TEMP/tested-source-tree.txt"
+      - name: Verify the complete mathematics module
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/java-search-path.log" 2>&1 || { tail -130 "$RUNNER_TEMP/java-search-path.log"; exit 1; }
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/java-search-path.log" | tail -38
+          cp -a sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/math-reports"
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as E
+          for p in Path('sandbox_math_cleanup_test/target/surefire-reports').glob('TEST-*MathematicalSearchDerivationTest.xml'):
+              root=E.parse(p).getroot()
+              for output in root.iter('system-out'):
+                  if 'ACTUAL_JAVA_SEARCH_PATH=' in (output.text or ''): print(output.text)
+          PY
+      - name: Verify every native mathematics workbench scenario
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a ./mvnw -B -ntp -Pswtbot -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am -Dtest=MathematicalWorkbenchSWTBotTest verify > "$RUNNER_TEMP/native-search-path.log" 2>&1 || { tail -100 "$RUNNER_TEMP/native-search-path.log"; exit 1; }
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/native-search-path.log" | tail -8
+          cp -a sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/native-reports"
+      - name: Reproduce source-bound Help previews twice without replacing PNGs
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in first repeat; do
+            xvfb-run -a --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp -Dsandbox.tycho.linux-only=true -Dtycho.localArtifacts=ignore -f sandbox_help_build/pom.xml -Phelp-screenshots -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest clean verify > "$RUNNER_TEMP/help-$attempt.log" 2>&1 || { tail -120 "$RUNNER_TEMP/help-$attempt.log"; exit 1; }
+            git diff --exit-code -- 'sandbox_math_cleanup_help/images/*.png'
+            if [ "$attempt" = first ]; then cp -a sandbox_math_cleanup_help/images "$RUNNER_TEMP/help-first-images"; else diff -r "$RUNNER_TEMP/help-first-images" sandbox_math_cleanup_help/images; fi
+            grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/help-$attempt.log" | tail -6
+          done
+          git add sandbox_math_cleanup_help/images/*.provenance.json
+          git diff --cached --check
+      - name: Publish only tested source without changing main or adding a stacked PR
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code
+          test -z "$(git ls-remote origin refs/heads/feat/recorded-search-path-20261010)"
+          git commit -m 'feat: show the actual selected mathematical search path in Java explanations'
+          git rev-parse HEAD > "$RUNNER_TEMP/source-commit.txt"
+          git rev-parse HEAD^{tree} > "$RUNNER_TEMP/source-tree.txt"
+          git push origin HEAD:refs/heads/feat/recorded-search-path-20261010
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
           name: java-selected-search-path-${{ github.run_id }}
           retention-days: 7
           path: |
+            ${{ runner.temp }}/*source*.txt
             ${{ runner.temp }}/java-search-path.log
-            sandbox_math_cleanup_test/target/surefire-reports/**
+            ${{ runner.temp }}/native-search-path.log
+            ${{ runner.temp }}/help-*.log
+            ${{ runner.temp }}/math-reports/**
+            ${{ runner.temp }}/native-reports/**
+            source/sandbox_math_cleanup_test/target/surefire-reports/**
+            source/sandbox_eclipse_help_swtbot_test/target/surefire-reports/**
+            source/sandbox_math_cleanup_help/images/**
+            source/sandbox_math_cleanup/lib/qualification.json
+            source/sandbox_math_cleanup/lib/reproducibility.json
