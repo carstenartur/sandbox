@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -86,8 +87,8 @@ class BouncyCastleRuntimeCorpusTest {
         }
         String export = System.getProperty("sandbox.math.production.output", System.getenv("MATH_BC_ARCHIVE_OUTPUT"));
         if (export != null) for (String name : FILES) {
-            write(Path.of(export).resolve("original/" + PACKAGE + name + ".java"), Files.readString(before.resolve(PACKAGE + name + ".java")));
-            write(Path.of(export).resolve("generated/" + PACKAGE + name + ".java"), Files.readString(after.resolve(PACKAGE + name + ".java")));
+            write(Path.of(export).resolve("original/" + PACKAGE + name + ".java"), Files.readString(before.resolve(PACKAGE + name + ".java"), StandardCharsets.UTF_8));
+            write(Path.of(export).resolve("generated/" + PACKAGE + name + ".java"), Files.readString(after.resolve(PACKAGE + name + ".java"), StandardCharsets.UTF_8));
         }
     }
 
@@ -99,12 +100,12 @@ class BouncyCastleRuntimeCorpusTest {
             assertEquals(4, fixtures.size());
             for (Path fixture : fixtures) {
                 var metadata = new java.util.Properties();
-                try (var reader = Files.newBufferedReader(fixture.resolve("example.properties"))) { metadata.load(reader); }
+                try (var reader = Files.newBufferedReader(fixture.resolve("example.properties"), StandardCharsets.UTF_8)) { metadata.load(reader); }
                 String file = metadata.getProperty("fileName");
                 assertNotNull(file);
                 String expected = sources.get(file.replace(".java", ""));
                 assertNotNull(expected, file);
-                assertEquals(expected, Files.readString(fixture.resolve("before.java.txt")), fixture.toString());
+                assertEquals(expected, Files.readString(fixture.resolve("before.java.txt"), StandardCharsets.UTF_8), fixture.toString());
             }
         }
     }
@@ -198,7 +199,7 @@ class BouncyCastleRuntimeCorpusTest {
     private static void write(Path path, String value) throws IOException {
         Path parent = path.getParent();
         if (parent != null) Files.createDirectories(parent);
-        Files.writeString(path, value);
+        Files.writeString(path, value, StandardCharsets.UTF_8);
     }
 
     /** Load every BC class in one isolated namespace. The fixture classes are unsigned

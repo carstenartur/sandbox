@@ -8,6 +8,7 @@ import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.SafetyProfile;
 import java.lang.reflect.Method;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -162,7 +163,7 @@ class RuntimeOnlyMathTest {
     private Method compile(String source) throws Exception {
         Path directory = Files.createTempDirectory(temporary, "compiled-");
         Path file = directory.resolve("Calculation.java");
-        Files.writeString(file, source);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
                 "--release", "17", "-d", directory.toString(), file.toString()), source);
         try (var loader = new URLClassLoader(new java.net.URL[] {directory.toUri().toURL()}, null)) {
