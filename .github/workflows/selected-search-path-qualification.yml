@@ -1,0 +1,46 @@
+name: Qualify Java selected search paths
+on:
+  push:
+    branches: [diagnostic/selected-search-path-20261010]
+permissions:
+  contents: read
+concurrency:
+  group: selected-java-search-path-qualification
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=false
+      NO_AT_BRIDGE: '1'
+      GDK_BACKEND: x11
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ef3596b4622aa0c433fc86333477e08b45b20775
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - uses: ./.github/actions/verify-eclipse-desktop-runtime
+      - name: Verify the exact-source mathematics module
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = ef3596b4622aa0c433fc86333477e08b45b20775
+          test -z "$(git status --porcelain)"
+          xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/java-search-path.log" 2>&1 || { tail -100 "$RUNNER_TEMP/java-search-path.log"; exit 1; }
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/java-search-path.log" | tail -35
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: java-selected-search-path-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/java-search-path.log
+            sandbox_math_cleanup_test/target/surefire-reports/**
