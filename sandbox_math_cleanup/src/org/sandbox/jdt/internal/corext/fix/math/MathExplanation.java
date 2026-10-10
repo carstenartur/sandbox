@@ -23,7 +23,8 @@ record MathExplanation(String detail, String sourceComment, boolean nontrivial) 
             MathCleanUpOptions options, CancellationToken cancellation) {
         checkCancellation(cancellation);
         if (!verified.proof().equals(candidate.evidence())
-                || !verified.assumptions().equals(request.assumptions())) {
+                || !verified.assumptions().equals(request.assumptions())
+                || !verified.derivation().equals(candidate.derivation())) {
             throw new IllegalArgumentException("EXPLANATION_BINDING_DIFFERS");
         }
         var original = new JavaComputationEmitter().emit(ComputationOptimizer.prepare(request.plan()),
@@ -33,7 +34,7 @@ record MathExplanation(String detail, String sourceComment, boolean nontrivial) 
         describeContract(lines, request, region);
         appendValues(lines, "Original values:", original, region);
         appendValues(lines, "Replacement values:", replacement, region);
-        lines.add("Value graphs are not a step-by-step search proof; the original trace still governs exceptions and evaluation order.");
+        MathSearchDerivation.append(lines, verified, request, region, options, cancellation, MAXIMUM_TEXT_LENGTH);
         lines.add("Independent numeric proof: " + String.join(", ", verified.proof().proofMethods()) + ".");
         lines.add("Estimated operation work: " + candidate.cost().sourceCost().operationWork() + " -> "
                 + candidate.cost().candidateCost().operationWork() + "; not a timing measurement.");

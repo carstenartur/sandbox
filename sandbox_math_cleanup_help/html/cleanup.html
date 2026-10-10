@@ -190,4 +190,19 @@ are disabled. Existing nine-argument programmatic option construction remains co
 source-trace and Java checks still govern evaluation order and exceptions. Checked
 arithmetic is an explicit contract change; operation estimates are not timing measurements.
 No source-comment setting re-enables constant-folding-only edits.</p>
+
+<h2>Recorded mathematical search steps</h2>
+<p>The explanation includes the selected Regelsuche search path: each step names the
+actual rule and displays the resulting computation using your Java variable names.
+The SDK checks the contiguous path, regenerates its rule applications and independently
+checks its numeric equivalence before Sandbox presents it. No target formula or
+source-specific mathematical task is supplied by this view.</p>
+<p>A compound proposal remains one recorded search step; it is not expanded into
+unrecorded primitive identities. Legacy candidates without a recorded path are explicitly
+identified. The original Java evaluation trace, numerical profile, guards and fallback
+remain authoritative. Estimated work is not a timing measurement.</p>
+<p>The existing Source explanations setting controls Java comments. Detailed diagnostics
+and JSON reports retain the same selected path when source comments are disabled.
+Cancellation or an oversized explanation never produces a silently truncated path.</p>
+
 </body></html>
