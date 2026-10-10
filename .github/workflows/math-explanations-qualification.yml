@@ -11,31 +11,63 @@ jobs:
   verify:
     runs-on: ubuntu-22.04
     timeout-minutes: 35
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: cebce220e376a402be1d4c0680f80c97ddadcced
+          path: control
           persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: cebce220e376a402be1d4c0680f80c97ddadcced
+          path: source
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
           java-version: '25'
           verify-signature: true
           cache: maven
-      - name: Provision the native test runtime
+      - name: Provision native prerequisites
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0
-      - name: Run the complete unchanged mathematics verification lifecycle
-        shell: bash
+      - name: Stage ordinary source changes on the exact test-only revision
+        working-directory: source
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = cebce220e376a402be1d4c0680f80c97ddadcced
           test -z "$(git status --porcelain)"
-          git rev-parse HEAD > "$RUNNER_TEMP/source-commit.txt"
-          git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/source-tree.txt"
-          xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/math-tests.log" 2>&1 || { tail -140 "$RUNNER_TEMP/math-tests.log"; exit 1; }
+          python3 ../control/qualification/integrate.py .
+          python3 ../control/qualification/finalize.py .
+          git add sandbox_math_cleanup sandbox_math_cleanup_test sandbox_math_cleanup_help/html/cleanup.html docs/qa/verified-mathematics-explanations.md
+          git diff --cached --check
+          git write-tree > "$RUNNER_TEMP/source-tree.txt"
+          git diff --cached --stat
+      - name: Verify the complete mathematics module
+        working-directory: source
+        run: |
+          set -euo pipefail
+          xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/math-tests.log" 2>&1 || { tail -130 "$RUNNER_TEMP/math-tests.log"; exit 1; }
           grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/math-tests.log" | tail -30
+          cp -a sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/math-reports"
+      - name: Verify all nine native workbench contracts including explanation persistence
+        working-directory: source
+        run: |
+          set -euo pipefail
+          xvfb-run -a ./mvnw -B -ntp -Pswtbot -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am -Dtest=MathematicalWorkbenchSWTBotTest verify > "$RUNNER_TEMP/native-tests.log" 2>&1 || { tail -100 "$RUNNER_TEMP/native-tests.log"; exit 1; }
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/native-tests.log" | tail -10
+      - name: Publish only the tested source to the independent main-based branch
+        working-directory: source
+        run: |
+          set -euo pipefail
+          git diff --exit-code
+          test "$(git write-tree)" = "$(cat "$RUNNER_TEMP/source-tree.txt")"
+          git fetch --no-tags origin refs/heads/feat/verified-math-explanations-20261010
+          test "$(git rev-parse FETCH_HEAD)" = cebce220e376a402be1d4c0680f80c97ddadcced
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'feat: explain verified mathematical value plans in Java and diagnostics'
+          git push origin HEAD:refs/heads/feat/verified-math-explanations-20261010
+          git rev-parse HEAD > "$RUNNER_TEMP/source-commit.txt"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
@@ -45,4 +77,7 @@ jobs:
             ${{ runner.temp }}/source-commit.txt
             ${{ runner.temp }}/source-tree.txt
             ${{ runner.temp }}/math-tests.log
-            sandbox_math_cleanup_test/target/surefire-reports/**
+            ${{ runner.temp }}/native-tests.log
+            ${{ runner.temp }}/math-reports/**
+            source/sandbox_math_cleanup_test/target/surefire-reports/**
+            source/sandbox_math_cleanup_test/target/screenshots/**
