@@ -118,6 +118,19 @@ class MathematicalExplanationTest {
         assertTrue(result.evidence().isEmpty());
     }
 
+    @Test void nontrivialModeActuallyControlsTheGeneratedSourceAtItsBoundary() throws Exception {
+        for (int work : new int[] {7, 8}) {
+            String source = source("x" + " + 0".repeat(work));
+            var result = analyze(source, "NONTRIVIAL", SafetyProfile.PRESERVE_JAVA);
+            assertTrue(result.changed(), result.diagnostics().toString());
+            assertEquals(work, result.evidence().getFirst().cost().sourceCost().operationWork());
+            String generated = applyAndUndo(source, result);
+            assertEquals(work >= 8, generated.contains("// Verified mathematics"), generated);
+            assertTrue(result.replacements().getFirst().description().contains("Original values:"));
+            compare(source, generated);
+        }
+    }
+
     private static String source(String expression) {
         return "public class Calculation { public static int compute(int x,int a,int b) { return " + expression + "; }}";
     }

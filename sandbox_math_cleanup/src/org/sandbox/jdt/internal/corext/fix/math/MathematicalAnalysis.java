@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTMatcher;
@@ -83,7 +84,7 @@ public final class MathematicalAnalysis {
          return new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions);
       }
 
-      if (monitor.isCanceled()) {
+      if (isCancelled(monitor)) {
          return cancelled(sourceDigest, compilerOptions);
       }
 
@@ -117,14 +118,14 @@ public final class MathematicalAnalysis {
       monitor.beginTask("Verify mathematics regions", extraction.regions().size());
       ComputationOptimizer optimizer = new ComputationOptimizer();
       JavaComputationEmitter emitter = new JavaComputationEmitter();
-      CancellationToken cancellation = monitor::isCanceled;
+      CancellationToken cancellation = () -> isCancelled(monitor);
       long remainingWork = options.workBudget();
       int unvisitedRegions = extraction.regions().size();
 
       try {
          for (JavaComputationRegion region : extraction.regions()) {
             int regionsLeft = unvisitedRegions--;
-            if (monitor.isCanceled()) {
+            if (isCancelled(monitor)) {
                return cancelled(sourceDigest, compilerOptions);
             }
 
@@ -213,7 +214,7 @@ public final class MathematicalAnalysis {
                      (IProgressMonitor)monitor,
                      environment
                   );
-                  if (monitor.isCanceled()) {
+                  if (isCancelled(monitor)) {
                      return cancelled(sourceDigest, compilerOptions);
                   }
 
@@ -279,7 +280,7 @@ public final class MathematicalAnalysis {
          monitor.done();
       }
 
-      if (monitor.isCanceled()) {
+      if (isCancelled(monitor)) {
          return cancelled(sourceDigest, compilerOptions);
       }
 
@@ -295,7 +296,15 @@ public final class MathematicalAnalysis {
          }
       }
 
-      return monitor.isCanceled() ? cancelled(sourceDigest, compilerOptions) : analysis;
+      return isCancelled(monitor) ? cancelled(sourceDigest, compilerOptions) : analysis;
+   }
+
+   /** Interrupts abort the entire invocation, never just the current candidate. */
+   private static boolean isCancelled(IProgressMonitor monitor) {
+      if (Thread.currentThread().isInterrupted()) {
+         throw new OperationCanceledException("Mathematics analysis interrupted");
+      }
+      return monitor.isCanceled();
    }
 
    private static String rewriteValues(CompilationUnit ast, String source, JavaComputationRegion region, Map<String, String> values, Map<String, String> compilerOptions) {

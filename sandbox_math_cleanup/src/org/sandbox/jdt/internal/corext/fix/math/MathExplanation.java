@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import org.eclipse.core.runtime.OperationCanceledException;
 
 /** Presentation of independently checked value graphs, never a mathematical rule or proof. */
 record MathExplanation(String detail, String sourceComment, boolean nontrivial) {
@@ -91,6 +92,6 @@ record MathExplanation(String detail, String sourceComment, boolean nontrivial) 
 
     private static void checkCancellation(CancellationToken cancellation) {
         if (cancellation.isCancelled() || Thread.currentThread().isInterrupted())
-            throw new IllegalArgumentException("EXPLANATION_CANCELLED");
+            throw new OperationCanceledException("EXPLANATION_CANCELLED");
     }
 }

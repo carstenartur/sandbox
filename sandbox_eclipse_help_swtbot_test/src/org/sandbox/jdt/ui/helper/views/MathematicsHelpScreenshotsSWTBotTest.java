@@ -35,16 +35,10 @@ public class MathematicsHelpScreenshotsSWTBotTest {
         properties.setProperty("maxStates", expected.get("cleanup.mathematics.maxStates")); //$NON-NLS-1$ //$NON-NLS-2$
         expected.put("cleanup.mathematics", "true"); //$NON-NLS-1$ //$NON-NLS-2$
         assertEquals("NONTRIVIAL", expected.get("cleanup.mathematics.explanations")); //$NON-NLS-1$ //$NON-NLS-2$
-        assertEquals(expected, profile(properties), "Provenance must record the complete effective profile"); //$NON-NLS-1$
+        assertEquals(expected, MathematicsHelpScreenshots.profile(properties), "Provenance must record the complete effective profile"); //$NON-NLS-1$
         properties.setProperty("explanations", "ALL"); //$NON-NLS-1$ //$NON-NLS-2$
         expected.put("cleanup.mathematics.explanations", "ALL"); //$NON-NLS-1$ //$NON-NLS-2$
-        assertEquals(expected, profile(properties), "Explicit fixture settings must be recorded as applied"); //$NON-NLS-1$
+        assertEquals(expected, MathematicsHelpScreenshots.profile(properties), "Explicit fixture settings must be recorded as applied"); //$NON-NLS-1$
     }
 
-    @SuppressWarnings("unchecked") //$NON-NLS-1$
-    private static Map<String, String> profile(Properties properties) throws Exception {
-        var method = MathematicsHelpScreenshots.class.getDeclaredMethod("profile", Properties.class); //$NON-NLS-1$
-        method.setAccessible(true);
-        return (Map<String, String>) method.invoke(null, properties);
-    }
 }
