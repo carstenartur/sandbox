@@ -17,8 +17,8 @@ final class MathematicalJavadoc {
     void add(CompilationUnit ast, JavaComputationRegion region, String note) {
         ASTNode node = NodeFinder.perform(ast, region.start(), region.length());
         while (node != null && !(node instanceof MethodDeclaration)) node = node.getParent();
-        if (!(node instanceof MethodDeclaration method)) throw new IllegalArgumentException("MISSING_CONTRACT_METHOD");
-        notes.computeIfAbsent(method, key -> new ArrayList<>()).add(note);
+        if (node == null) throw new IllegalArgumentException("MISSING_CONTRACT_METHOD");
+        notes.computeIfAbsent((MethodDeclaration) node, key -> new ArrayList<>()).add(note);
     }
 
     List<MathematicalAnalysis.Replacement> edits(String source) {
