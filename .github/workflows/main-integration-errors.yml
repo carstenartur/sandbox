@@ -1,40 +1,95 @@
-name: Inspect existing integration failures
+name: Qualify Help integration null guards
 on:
   push:
     branches: [diagnostic/main-integration-errors-20261010]
 permissions:
   contents: read
-  actions: read
 jobs:
-  inspect:
+  verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 25
+    permissions:
+      contents: write
     steps:
-      - name: Extract actual failures without rebuilding or mutating product source
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 1731722ffb5bfe852fbe09a26481a4dcdaae2c5a
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+          cache: maven
+      - uses: ./.github/actions/verify-eclipse-desktop-runtime
+      - name: Apply the two observed null-return corrections only
         shell: bash
         run: |
           set -euo pipefail
-          for job in 114144326961 114144327006; do
-            echo "READ_JOB=$job"
-            if ! gh api --allow-escape-sequences "repos/carstenartur/sandbox/actions/jobs/$job/logs" > "$RUNNER_TEMP/job-$job.log"; then
-              echo "LOG_UNAVAILABLE=$job"
-            fi
-          done
+          test "$(git rev-parse HEAD)" = 1731722ffb5bfe852fbe09a26481a4dcdaae2c5a
+          test -z "$(git status --porcelain)"
           python3 - <<'PY'
           from pathlib import Path
-          import os, re
-          found=False
-          for path in sorted(Path(os.environ['RUNNER_TEMP']).glob('job-*.log')):
-              text=re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]','',path.read_text(encoding='utf-8-sig'))
-              lines=text.splitlines()
-              print('\n=== '+path.name+' lines='+str(len(lines))+' ===')
-              hits=[i for i,s in enumerate(lines) if re.search(r'\[ERROR\]|COMPILATION ERROR|<<< FAILURE|BUILD FAILURE|Could not resolve|unresolved dependency',s)]
-              found=found or bool(hits)
-              wanted=set()
-              for i in hits[-35:]: wanted.update(range(max(0,i-2),min(len(lines),i+4)))
-              if not wanted: wanted.update(range(max(0,len(lines)-25),len(lines)))
-              for i in sorted(wanted): print(str(i+1)+': '+lines[i])
-          assert found, 'No actual failure evidence retrieved'
+          root=Path('sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views')
+          patches={
+              'BundleClassFingerprintTest.java': ('Files.createDirectories(file.getParent())', 'Files.createDirectories(java.util.Objects.requireNonNull(file.getParent()))'),
+              'MathematicsHelpScreenshots.java': ('installedCleanup.getEntry("lib/regelsuche-optimization-sdk.jar").openStream()', 'java.util.Objects.requireNonNull(installedCleanup.getEntry("lib/regelsuche-optimization-sdk.jar")).openStream()')
+          }
+          for name,(before,after) in patches.items():
+              path=root/name
+              text=path.read_text()
+              assert text.count(before)==1, name
+              path.write_text(text.replace(before,after))
           PY
+          git add sandbox_eclipse_help_swtbot_test/src
+          git diff --cached --check
+          git diff --cached > "$RUNNER_TEMP/null-guards.patch"
+          git write-tree > "$RUNNER_TEMP/tested-tree.txt"
+      - name: Run unchanged Help module tests and inherited SpotBugs check
+        shell: bash
+        env:
+          NO_AT_BRIDGE: '1'
+          GDK_BACKEND: x11
+          LANG: C.UTF-8
+          LC_ALL: C.UTF-8
+        run: |
+          set -euo pipefail
+          if ! xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_eclipse_help_swtbot_test -am verify > "$RUNNER_TEMP/verify.log" 2>&1; then
+            grep -E '\[ERROR\]|Failures:|<<< FAILURE|BUILD FAILURE' "$RUNNER_TEMP/verify.log" | tail -45
+            tail -65 "$RUNNER_TEMP/verify.log"
+            exit 1
+          fi
+          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size|Total bugs' "$RUNNER_TEMP/verify.log" | tail -40
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as E
+          files=list(Path('sandbox_eclipse_help_swtbot_test/target/surefire-reports').glob('TEST-*.xml'))
+          assert files
+          total=dict.fromkeys(('tests','failures','errors','skipped'),0)
+          for f in files:
+              e=E.parse(f).getroot()
+              for k in total: total[k]+=int(e.get(k,'0'))
+          assert total['tests']>=4 and not any(total[k] for k in ('failures','errors','skipped')), total
+          print('HELP_MODULE_TOTALS='+str(total))
+          PY
+      - name: Publish only the verified two-line correction to the existing PR
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code
+          test "$(git write-tree)" = "$(cat "$RUNNER_TEMP/tested-tree.txt")"
+          git fetch --no-tags origin refs/heads/fix/math-variable-regions-20261009
+          test "$(git rev-parse FETCH_HEAD)" = 1731722ffb5bfe852fbe09a26481a4dcdaae2c5a
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'fix: validate nullable Help evidence paths before dereferencing'
+          git push origin HEAD:refs/heads/fix/math-variable-regions-20261009
+          git rev-parse HEAD > "$RUNNER_TEMP/published-commit.txt"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: help-null-guards-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/verify.log
+            ${{ runner.temp }}/null-guards.patch
+            ${{ runner.temp }}/tested-tree.txt
+            ${{ runner.temp }}/published-commit.txt
+            sandbox_eclipse_help_swtbot_test/target/surefire-reports/**
