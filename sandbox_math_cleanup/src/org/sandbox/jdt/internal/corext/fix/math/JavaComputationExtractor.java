@@ -22,9 +22,11 @@ import de.regelsuche.search.program.JointComputationPlan.Output;
 import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -851,22 +853,32 @@ public final class JavaComputationExtractor {
 
       Expr operation(NumericKind kind, NumericOperation operation, ASTNode node, Expr... operands) {
          if (options.mathematicalOptIn() && kind == NumericKind.BIG_INTEGER) {
-            if (operation == NumericOperation.MOD) requireGuardedPositive(operands[1]);
+            if (operation == NumericOperation.MOD) requireGuardedPositive(operands[1], node);
             if (operation == NumericOperation.MOD_POW || operation == NumericOperation.MOD_MULTIPLY)
-               requireGuardedPositive(operands[2]);
-            if (operation == NumericOperation.MOD_POW) requireGuardedPositive(operands[1]);
+               requireGuardedPositive(operands[2], node);
+            if (operation == NumericOperation.MOD_POW) requireGuardedPositive(operands[1], node);
          }
          Expr expression = JavaExpressions.operation(kind, operation, operands);
          this.trace.add(new Occurrence("operation@" + node.getStartPosition() + ":" + this.trace.size(), expression, kind, kind));
          return expression;
       }
 
-      private void requireGuardedPositive(Expr expression) {
-         if (expression instanceof VariableExpr input) {
-            if (receiverGuards.contains(inputNames.get(input.name())))
-               assumptions.add(new SemanticAssumption(Kind.POSITIVE, input.name(), "", "explicit positive exact-receiver runtime guard"));
-         } else if (!JavaExpressions.isLiteral(expression)) {
-            JavaExpressions.operands(expression).forEach(this::requireGuardedPositive);
+      private void requireGuardedPositive(Expr expression, ASTNode source) {
+         // Reused locals share expression nodes. Structural hashing or recursive
+         // revisits can expand a short sequence of repeated doubling exponentially.
+         Set<Expr> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+         Deque<Expr> pending = new ArrayDeque<>();
+         pending.push(expression);
+         while (!pending.isEmpty()) {
+            Expr current = pending.pop();
+            if (!visited.add(current)) continue;
+            if (visited.size() > 4096) throw reject("GUARDED_POSITIVITY_SIZE_LIMIT", source);
+            if (current instanceof VariableExpr input) {
+               if (receiverGuards.contains(inputNames.get(input.name())))
+                  assumptions.add(new SemanticAssumption(Kind.POSITIVE, input.name(), "", "explicit positive exact-receiver runtime guard"));
+            } else if (!JavaExpressions.isLiteral(current)) {
+               JavaExpressions.operands(current).forEach(pending::push);
+            }
          }
       }
 

@@ -51,6 +51,11 @@ additional runtime improvements have been established by this scan.
 7. Native preview exposed a Javadoc insertion bug: zero-length replacement edits
    cannot contain the copied stale-source validation child. Documentation edits
    now retain one source character, preserving the generated text and the guard.
+8. Independent review found exponential traversal of shared expressions while
+   collecting positive-input guards (repeated `e=e.add(e)` before `modPow`).
+   An iterative identity-based traversal now visits each node once and rejects
+   graphs exceeding 4,096 distinct nodes before optimizer search. The regression
+   failed before the fix; a 60-doubling probe now respects a one-unit search budget.
 
 ## Exact additional locations
 
@@ -83,7 +88,7 @@ Java emission verification, combined source parsing and exact Undo. Settings:
 all numeric kinds, PRESERVE_JAVA, LOWER_ESTIMATED_RUNTIME, 1,000,000 work units per
 file, 20,000 states; mathematical opt-in is the only profile difference.
 
-125 local Maven/JUnit tests pass against that exact embedded JAR on Java 25.0.2
+126 local Maven/JUnit tests pass against that exact embedded JAR on Java 25.0.2
 and JDT 3.47.0. `BouncyCastleBigIntegerTest` reads hash-pinned complete original
 classes, requires all ten changes, compiles original and generated classes,
 checks second-pass stability and exact Undo, then compares actual executions:
@@ -98,7 +103,10 @@ checks second-pass stability and exact Undo, then compares actual executions:
 Focused regressions also cover null/recursive initialization, field shadowing,
 mutable fields, incoming assignments and unchanged subclass fallback behavior.
 The local standalone harness excludes the OSGi-only runtime corpus test; its
-pinned bundle requirement is preserved. SpotBugs reports no findings in the three changed analysis classes.
+pinned bundle requirement is preserved. A separate Tycho run compiles the plugin
+and test bundle but cannot launch that test offline because the target's
+`junit-jupiter-api.source_6.1.3.jar` is missing from the local cache.
+The earlier scoped SpotBugs run reported no findings in the three changed analysis classes.
 The native MathematicsHelpScreenshotsSWTBotTest passes through the registered
 cleanup, exact preview, Apply, source compilation and byte-exact Undo for all five
 fixtures. The new BigInteger PNG and its complete provenance are in the Help
