@@ -52,6 +52,53 @@ configuration requesting it is rejected.</td></tr>
 </tbody></table>
 
 <h2 id="safety">Safety profiles</h2>
+<p>The separate <em>Mathematical mode</em> checkbox explicitly permits changes to
+integer overflow behavior and the reference identity of BigInteger results. It
+is off by default and cannot be combined with checked or fallback profiles.
+Select All does not grant this consent.</p>
+<p>For supported integral calculations, Regelsuche still supplies and verifies
+the candidate. An additional exact affine proof compares the mathematical
+functions and computes the old and new local no-overflow domains. For example,
+<code>2*x/2</code> can become <code>x</code>: the former has an intermediate
+no-overflow domain of [-1073741824, 1073741823], while the latter covers the full
+int domain [-2147483648, 2147483647]. The old Java expression is also defined
+outside the smaller interval, but wraps and returns a different result there.
+This change therefore requires the explicit mathematical opt-in.</p>
+<p>The generated method Javadoc records both proven local domains and the
+changed contract, preserving existing documentation. These domains do not
+replace other method preconditions. The initial domain checker supports one
+integral input, affine arithmetic and exact division by a nonzero constant;
+it does not invent bounds for nonlinear arithmetic, variable divisors or
+floating point. Ordinary Java optimization runs first; a mathematical retry uses
+the reserved remainder of the same work budget. Unsupported expressions retain
+the ordinary Java proof rules.</p>
+<p>In mathematical mode, BigInteger return values may be optimized under value
+semantics. Unproved receivers use exact-type, positive-value and bit-length
+checks with unchanged original fallback. Guard costs count against the estimate.
+This makes additional expressions eligible; it does not establish that the
+current SDK has a useful rewrite for every such expression. No increase in
+BigInteger's supported range or constant-time execution is promised.</p>
+<p>A verified real-source example is Bouncy Castle 1.85.2's
+<code>SimplifiedShallueVanDeWoestijneMapToCurve.process</code>:</p>
+<pre>// Before
+BigInteger tv1 = u.modPow(BigInteger.valueOf(2), p);
+// Optimized branch (the emitted code also contains receiver checks and the original fallback)
+tv1 = u.multiply(u).mod(p);</pre>
+<p>The SDK proposes bounded binary multiplication chains for literal modular
+exponents from 2 through 16 and independently proves modular equivalence.
+The cleanup includes its receiver checks in the cost assessment. This example
+does not imply that every modular power, or every cryptographic use, should be
+rewritten. A fixed allowance for <code>modPow</code> setup is a ranking heuristic,
+not a measurement of the containing method.</p>
+<p><em>Lower estimated runtime</em> rejects candidates that only improve storage
+or ordering. Reports include the weighted estimate as well as operation work;
+sharing repeated evaluations can save work even when the prepared DAG has the
+same operation count. Neither measure is a benchmark result.</p>
+<p>If the SDK's preparation limit prevents a larger source region from entering
+the search, the cleanup retries smaller regions within the remaining file
+budget. The report distinguishes this from a completed search that found no
+improvement; source effects, independent verification and compilation checks
+still apply to every accepted fragment.</p>
 <table><thead><tr><th>Profile</th><th>Contract</th></tr></thead><tbody>
 <tr><td><code>PRESERVE_JAVA</code></td><td>Preserve Java values, integer wraparound,
 IEEE-754 behavior, relevant exception paths and evaluation effects. No new

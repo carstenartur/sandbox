@@ -149,6 +149,10 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 		CheckboxPreference optIn= createCheckboxPref(group, columns,
 				"I explicitly accept new ArithmeticException behavior", MathCleanUpOptions.CHECKED_OPT_IN, FALSE_TRUE); //$NON-NLS-1$
 		Label warning= wrappedLabel(columns, group, MathCleanUpOptions.CHECKED_WARNING);
+		CheckboxPreference mathematical= createCheckboxPref(group, columns,
+				"Mathematical mode: accept changed overflow behavior and BigInteger result identity", //$NON-NLS-1$
+				MathCleanUpOptions.MATHEMATICAL_OPT_IN, FALSE_TRUE);
+		wrappedLabel(columns, group, MathCleanUpOptions.MATHEMATICAL_WARNING);
 		ComboPreference goal= createComboPref(group, columns, "Optimization goal:", MathCleanUpOptions.GOAL, //$NON-NLS-1$
 				Arrays.stream(OptimizationGoal.values()).map(Enum::name).toArray(String[]::new),
 				new String[] { "Lower estimated runtime", "Lower allocation", "Readability" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -179,8 +183,9 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			boolean checked= safety.hasValue(SafetyProfile.CHECKED_THROW.name());
 			kindPreset.setEnabled(active);
 			kindButtons.values().forEach(button -> button.setEnabled(active));
-			setEnabledIfChanged(safety, active);
+			setEnabledIfChanged(safety, active && !mathematical.getChecked());
 			setEnabledIfChanged(optIn, active && checked);
+			setEnabledIfChanged(mathematical, active && safety.hasValue(SafetyProfile.PRESERVE_JAVA.name()));
 			warning.setVisible(checked);
 			((GridData) warning.getLayoutData()).exclude= !checked;
 			setEnabledIfChanged(goal, active);
@@ -198,6 +203,7 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 		enabled.addObserver((source, value) -> refresh.run());
 		safety.addObserver((source, value) -> refresh.run());
 		optIn.addObserver((source, value) -> refresh.run());
+		mathematical.addObserver((source, value) -> refresh.run());
 		// Only the master participates in Select All. Contract-changing consent stays explicit.
 		registerPreference(enabled);
 		// JDT registers contributed pages only after createContents has returned.
