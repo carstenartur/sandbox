@@ -10,6 +10,12 @@ does not acquire a Regelsuche dependency. The cleanup is disabled by default;
 its initial profile is <strong>Only BigInteger</strong> with
 <strong>Preserve Java behavior</strong>.</p>
 
+<h2 id="runtime-only">Runtime calculations, not constant folding</h2>
+<p>Authored constant declarations and constant-only changes are preserved.
+The diagnostic is <code>CONSTANT_COMPUTATION_PRESERVED</code>. Genuine runtime
+simplification and shared computations remain eligible. See the
+<a href="examples.html">source-bound runtime Bouncy Castle gallery</a>.</p>
+
 <h2 id="configure">Configure, preview and apply</h2>
 <ol>
 <li>Open <strong>Java &gt; Code Style &gt; Clean Up</strong>, edit a profile and

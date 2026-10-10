@@ -244,7 +244,7 @@ class JavaComputationRoundTripTest {
    }
 
    @Test
-   void generatedWrapperMustPreserveConstantVariableUseOutsideTheRegion() {
+   void constantVariableUsedBySwitchIsPreservedBeforeGeneration() {
       String var1 = "class Calculation { int compute(int x) { final int N=1+0; switch(x) { case N: return 5; default: return 7; } }}";
       MathematicalAnalysis.Analysis var2 = MathematicalAnalysis.analyze(
          MathTestSupport.parse(var1),
@@ -255,7 +255,7 @@ class JavaComputationRoundTripTest {
          0
       );
       Assertions.assertFalse(var2.changed());
-      Assertions.assertTrue(var2.diagnostics().stream().anyMatch(var0 -> var0.message().contains("GENERATED_REGION_INVALID")));
+      Assertions.assertTrue(var2.diagnostics().stream().anyMatch(var0 -> var0.code().equals("CONSTANT_EXPRESSION_PRESERVED")));
    }
 
    @Test
