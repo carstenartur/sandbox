@@ -1,0 +1,33 @@
+name: Inspect existing integration failures
+on:
+  push:
+    branches: [diagnostic/main-integration-errors-20261010]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Extract actual compiler and test failures from existing completed jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for job in 114144326961 114144327006; do
+            gh api "repos/carstenartur/sandbox/actions/jobs/$job/logs" > "$RUNNER_TEMP/job-$job.log"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import os, re
+          for path in sorted(Path(os.environ['RUNNER_TEMP']).glob('job-*.log')):
+              lines=path.read_text(encoding='utf-8-sig').splitlines()
+              print('\n=== '+path.name+' ===')
+              hits=[i for i,s in enumerate(lines) if re.search(r'\[ERROR\]|COMPILATION ERROR|<<< FAILURE|BUILD FAILURE|Could not resolve|unresolved dependency',s)]
+              wanted=set()
+              for i in hits[-40:]: wanted.update(range(max(0,i-2),min(len(lines),i+4)))
+              if not wanted: wanted.update(range(max(0,len(lines)-65),len(lines)))
+              for i in sorted(wanted): print(str(i+1)+': '+lines[i])
+          PY
