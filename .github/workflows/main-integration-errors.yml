@@ -21,7 +21,7 @@ jobs:
           verify-signature: true
           cache: maven
       - uses: ./.github/actions/verify-eclipse-desktop-runtime
-      - name: Apply the two observed null-return corrections only
+      - name: Correct observed null returns and register the two new shared Help sources
         shell: bash
         run: |
           set -euo pipefail
@@ -32,7 +32,8 @@ jobs:
           root=Path('sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views')
           patches={
               'BundleClassFingerprintTest.java': ('Files.createDirectories(file.getParent())', 'Files.createDirectories(java.util.Objects.requireNonNull(file.getParent()))'),
-              'MathematicsHelpScreenshots.java': ('installedCleanup.getEntry("lib/regelsuche-optimization-sdk.jar").openStream()', 'java.util.Objects.requireNonNull(installedCleanup.getEntry("lib/regelsuche-optimization-sdk.jar")).openStream()')
+              'MathematicsHelpScreenshots.java': ('installedCleanup.getEntry("lib/regelsuche-optimization-sdk.jar").openStream()', 'java.util.Objects.requireNonNull(installedCleanup.getEntry("lib/regelsuche-optimization-sdk.jar")).openStream()'),
+              'EclipseHelpTestModuleBoundaryTest.java': ('"AtomicPreviewScreenshotGeometryTest.java", //$NON-NLS-1$', '"AtomicPreviewScreenshotGeometryTest.java", //$NON-NLS-1$\n\t\t\t"BundleClassFingerprint.java", //$NON-NLS-1$\n\t\t\t"BundleClassFingerprintTest.java", //$NON-NLS-1$')
           }
           for name,(before,after) in patches.items():
               path=root/name
@@ -44,7 +45,7 @@ jobs:
           git diff --cached --check
           git diff --cached > "$RUNNER_TEMP/null-guards.patch"
           git write-tree > "$RUNNER_TEMP/tested-tree.txt"
-      - name: Run unchanged Help module tests and inherited SpotBugs check
+      - name: Run the complete default Help test module and inherited SpotBugs checks
         shell: bash
         env:
           NO_AT_BRIDGE: '1'
@@ -54,11 +55,11 @@ jobs:
         run: |
           set -euo pipefail
           if ! xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_common_core,sandbox_common,sandbox_test_commons,sandbox_eclipse_help_swtbot_test -am verify > "$RUNNER_TEMP/verify.log" 2>&1; then
-            grep -E '\[ERROR\]|Failures:|<<< FAILURE|BUILD FAILURE' "$RUNNER_TEMP/verify.log" | tail -45
-            tail -65 "$RUNNER_TEMP/verify.log"
+            grep -E '\[ERROR\]|Failures:|<<< FAILURE|BUILD FAILURE' "$RUNNER_TEMP/verify.log" | tail -25
+            tail -35 "$RUNNER_TEMP/verify.log"
             exit 1
           fi
-          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size|Total bugs' "$RUNNER_TEMP/verify.log" | tail -40
+          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size|Total bugs' "$RUNNER_TEMP/verify.log" | tail -25
           python3 - <<'PY'
           from pathlib import Path
           import xml.etree.ElementTree as E
@@ -68,10 +69,10 @@ jobs:
           for f in files:
               e=E.parse(f).getroot()
               for k in total: total[k]+=int(e.get(k,'0'))
-          assert total['tests']>=4 and not any(total[k] for k in ('failures','errors','skipped')), total
+          assert total['tests']==68 and not any(total[k] for k in ('failures','errors','skipped')), total
           print('HELP_MODULE_TOTALS='+str(total))
           PY
-      - name: Publish only the verified two-line correction to the existing PR
+      - name: Publish only the verified correction to the existing integration PR
         shell: bash
         run: |
           set -euo pipefail
@@ -79,7 +80,7 @@ jobs:
           test "$(git write-tree)" = "$(cat "$RUNNER_TEMP/tested-tree.txt")"
           git fetch --no-tags origin refs/heads/fix/math-variable-regions-20261009
           test "$(git rev-parse FETCH_HEAD)" = 1731722ffb5bfe852fbe09a26481a4dcdaae2c5a
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'fix: validate nullable Help evidence paths before dereferencing'
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'fix: validate nullable Help evidence and register fingerprint source ownership'
           git push origin HEAD:refs/heads/fix/math-variable-regions-20261009
           git rev-parse HEAD > "$RUNNER_TEMP/published-commit.txt"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
