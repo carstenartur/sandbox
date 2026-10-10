@@ -1,0 +1,51 @@
+name: Publish locally qualified scalar source adapter
+on:
+  push:
+    branches: [diagnostic/scalar-method-source-20261010]
+permissions:
+  contents: write
+jobs:
+  publish-tested-tree:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: control
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 488397eb9d33c8b399e41ffebbe4ec268f2f2fce
+          path: product
+      - name: Reconstruct exactly the locally tested six-file product change
+        working-directory: product
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 488397eb9d33c8b399e41ffebbe4ec268f2f2fce
+          test -z "$(git status --porcelain)"
+          test "$(git hash-object ../control/.github/scalar-existing.patch)" = ec6f2d50c86c55e52f6f769d0820f1343576f090
+          git apply --index ../control/.github/scalar-existing.patch
+          for path in \
+            docs/superpowers/plans/2026-10-10-general-scalar-methods.md \
+            sandbox_math_cleanup/README.md \
+            sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaScalarMethodBody.java \
+            sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/ScalarMethodExpansionTest.java; do
+            mkdir -p "$(dirname "$path")"
+            cp "../control/$path" "$path"
+            git add "$path"
+          done
+          # Local Maven/Tycho: 192 tests, 0 failures/errors/skips; unchanged SDK.
+          # The complete tree check prevents publishing even one byte not qualified locally.
+          test "$(git write-tree)" = 60b7bec3973f83ab2778f43c09b8f62ce4fd032e
+          git diff --exit-code
+          test "$(git diff --cached --name-only | wc -l)" = 6
+          git diff --cached --check
+          git diff --cached --stat
+          git fetch --no-tags origin refs/heads/feat/general-scalar-methods-20261010
+          test "$(git rev-parse FETCH_HEAD)" = 488397eb9d33c8b399e41ffebbe4ec268f2f2fce
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'feat: expose source helper computations to general Regelsuche optimization'
+          test "$(git rev-parse HEAD^{tree})" = 60b7bec3973f83ab2778f43c09b8f62ce4fd032e
+          test -z "$(git status --porcelain)"
+          git push origin HEAD:refs/heads/feat/general-scalar-methods-20261010
+          git log -1 --format='PUBLISHED_COMMIT=%H%nPUBLISHED_TREE=%T'
