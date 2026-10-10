@@ -38,6 +38,8 @@ public class EclipseHelpTestModuleBoundaryTest {
 
 	private static final Set<String> HELP_TEST_SOURCES= Set.of(
 			"AtomicPreviewScreenshotGeometryTest.java", //$NON-NLS-1$
+			"BundleClassFingerprint.java", //$NON-NLS-1$
+			"BundleClassFingerprintTest.java", //$NON-NLS-1$
 			"CleanupScenarioRunner.java", //$NON-NLS-1$
 			"CleanupScenarioRunnerTest.java", //$NON-NLS-1$
 			"CleanupScreenshotScenario.java", //$NON-NLS-1$
