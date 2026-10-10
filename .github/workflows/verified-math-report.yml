@@ -11,11 +11,12 @@ jobs:
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 39d299fd971f0175c8693af5f8aa4679bc733445
-          persist-credentials: false
+          ref: 214e782adb31541e5f4f6babf48dd2b68cbfdb8c
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
@@ -23,7 +24,59 @@ jobs:
           verify-signature: true
           cache: maven
       - uses: ./.github/actions/verify-eclipse-desktop-runtime
-      - name: Run complete standard mathematics module on exact test source
+      - name: Connect verified SDK plans to source evidence without a second mathematical implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 214e782adb31541e5f4f6babf48dd2b68cbfdb8c
+          test -z "$(git status --porcelain)"
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java')
+          text=p.read_text()
+          old='''                  if (!(optimizer.reverify(request, candidate, cancellation) instanceof Verified)) {
+                               diagnostics.add(diagnostic("REVERIFICATION_FAILED", "Candidate evidence did not pass independent checking", region));
+                               continue;
+                            }'''.replace('                               ','                     ').replace('                            }','                  }')
+          new='''                  var explained = de.regelsuche.sdk.optimization.ComputationExplanations.describe(request, candidate, cancellation);
+                            if (!(explained.verification() instanceof Verified) || explained.explanation().isEmpty()) {
+                               diagnostics.add(diagnostic("REVERIFICATION_FAILED", explained.verification().toString(), region));
+                               continue;
+                            }'''.replace('                            if','                  if').replace('                               ','                     ').replace('                            }','                  }')
+          assert text.count(old)==1, 'Expected original re-verification boundary'
+          text=text.replace(old,new)
+          old='''                        region.start(), region.length(), candidate.evidence(), cost, source.substring(region.start(), region.start() + region.length()), replacement'''
+          new=old+''',
+                                  ComputationExplanation.from(region, explained.explanation().orElseThrow())'''.replace('                                  ','                        ')
+          assert text.count(old)==1, 'Expected original evidence boundary'
+          text=text.replace(old,new)
+          old='''   public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost, String original, String replacement) {
+             }
+          }'''.replace('             }','   }').replace('          }','}')
+          new='''   public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+                String original, String replacement, ComputationExplanation explanation) {
+                public VerifiedRegion {
+                   if (explanation != null && !proof.equals(explanation.verified().proof())) {
+                      throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
+                   }
+                }
+
+                /** Compatibility for explicitly constructed historical report records. */
+                public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+                      String original, String replacement) {
+                   this(offset, length, proof, cost, original, replacement, null);
+                }
+             }
+          }'''.replace('                      ','            ').replace('                   ','         ').replace('                ','      ').replace('             }','   }').replace('          }','}')
+          assert text.count(old)==1, 'Expected original report record'
+          text=text.replace(old,new)
+          p.write_text(text)
+          PY
+          git add sandbox_math_cleanup/src
+          git diff --cached --check
+          git diff --cached > "$RUNNER_TEMP/report-integration.patch"
+          git write-tree > "$RUNNER_TEMP/tested-tree.txt"
+      - name: Run complete standard mathematics module with all report regressions
         env:
           NO_AT_BRIDGE: '1'
           GDK_BACKEND: x11
@@ -32,15 +85,35 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = 39d299fd971f0175c8693af5f8aa4679bc733445
-          test -z "$(git status --porcelain)"
-          git rev-parse HEAD > "$RUNNER_TEMP/product-source.txt"
           if ! xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/verify.log" 2>&1; then
-            tail -170 "$RUNNER_TEMP/verify.log"
+            grep -E '\[ERROR\]|Failures:|<<< FAILURE|BUILD FAILURE' "$RUNNER_TEMP/verify.log" | tail -45
+            tail -70 "$RUNNER_TEMP/verify.log"
             exit 1
           fi
           grep -E 'Tests run:|BUILD SUCCESS|BugInstance size' "$RUNNER_TEMP/verify.log" | tail -40
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as E
+          files=list(Path('sandbox_math_cleanup_test/target/surefire-reports').glob('TEST-*.xml'))
+          assert files
+          totals=dict.fromkeys(('tests','failures','errors','skipped'),0)
+          for file in files:
+              root=E.parse(file).getroot()
+              for k in totals: totals[k]+=int(root.get(k,'0'))
+          assert totals['tests']>=201 and not any(totals[k] for k in ('failures','errors','skipped')), totals
+          print('MATH_MODULE_TOTALS='+str(totals))
+          PY
+      - name: Publish only the tested ordinary source change
+        shell: bash
+        run: |
+          set -euo pipefail
           git diff --exit-code
+          test "$(git write-tree)" = "$(cat "$RUNNER_TEMP/tested-tree.txt")"
+          git fetch --no-tags origin refs/heads/feat/verified-math-report-explanations-20261010
+          test "$(git rev-parse FETCH_HEAD)" = 214e782adb31541e5f4f6babf48dd2b68cbfdb8c
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'feat: expose independently verified computation plans in analysis reports'
+          git push origin HEAD:refs/heads/feat/verified-math-report-explanations-20261010
+          git rev-parse HEAD > "$RUNNER_TEMP/product-source.txt"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
@@ -49,4 +122,6 @@ jobs:
           path: |
             ${{ runner.temp }}/verify.log
             ${{ runner.temp }}/product-source.txt
+            ${{ runner.temp }}/tested-tree.txt
+            ${{ runner.temp }}/report-integration.patch
             sandbox_math_cleanup_test/target/surefire-reports/**
