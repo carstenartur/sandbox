@@ -162,8 +162,9 @@ public final class MathematicalAnalysis {
                   }
 
                   remainingWork -= candidate.work();
-                  if (!(optimizer.reverify(request, candidate, cancellation) instanceof Verified)) {
-                     diagnostics.add(diagnostic("REVERIFICATION_FAILED", "Candidate evidence did not pass independent checking", region));
+                  var explained = de.regelsuche.sdk.optimization.ComputationExplanations.describe(request, candidate, cancellation);
+                  if (!(explained.verification() instanceof Verified) || explained.explanation().isEmpty()) {
+                     diagnostics.add(diagnostic("REVERIFICATION_FAILED", explained.verification().toString(), region));
                      continue;
                   }
 
@@ -223,6 +224,7 @@ public final class MathematicalAnalysis {
                      );
                   }
 
+                  ComputationExplanation explanation = ComputationExplanation.from(region, explained.explanation().orElseThrow());
                   String description = "Mathematics "
                      + options.safety()
                      + "; estimated operation work "
@@ -255,7 +257,7 @@ public final class MathematicalAnalysis {
                   });
                   evidence.add(
                      new MathematicalAnalysis.VerifiedRegion(
-                        region.start(), region.length(), candidate.evidence(), cost, source.substring(region.start(), region.start() + region.length()), replacement
+                        region.start(), region.length(), candidate.evidence(), cost, source.substring(region.start(), region.start() + region.length()), replacement, explanation
                      )
                   );
                   diagnostics.add(diagnostic("VERIFIED_CANDIDATE", description, region));
@@ -520,6 +522,17 @@ public final class MathematicalAnalysis {
       }
    }
 
-   public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost, String original, String replacement) {
+   public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+      String original, String replacement, ComputationExplanation explanation) {
+      public VerifiedRegion {
+         if (explanation != null && !proof.equals(explanation.verified().proof())) {
+            throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
+         }
+      }
+      /** Compatibility for explicitly constructed historical report records. */
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement) {
+         this(offset, length, proof, cost, original, replacement, null);
+      }
    }
 }

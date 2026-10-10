@@ -30,7 +30,11 @@ class VerifiedComputationExplanationTest {
         assertEquals(Set.of("position", "scale", "delta"), names);
         assertEquals("return value", explanation.path("outputNames").elements().next().asText());
         var verified = explanation.path("verified");
-        assertEquals(new ObjectMapper().valueToTree(analysis.evidence().getFirst().proof()), verified.path("proof"));
+        // Compare JSON with the same numeric-node construction on both sides;
+        // separately retain exact typed equality of the immutable proof records.
+        var mapper = new ObjectMapper();
+        assertEquals(mapper.readTree(mapper.writeValueAsString(analysis.evidence().getFirst().proof())), verified.path("proof"));
+        assertEquals(analysis.evidence().getFirst().proof(), analysis.evidence().getFirst().explanation().verified().proof());
         assertTrue(verified.path("original").path("steps").size() > verified.path("replacement").path("steps").size());
         assertFalse(verified.path("proof").path("proofMethods").isEmpty());
         assertFalse(explanation.toString().contains("BouncyCastle"));
