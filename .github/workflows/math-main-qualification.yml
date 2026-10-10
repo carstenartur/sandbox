@@ -1,0 +1,158 @@
+name: Mathematics main integration qualification
+on:
+  push:
+    branches: [diagnostic/math-main-qualification-20261010]
+permissions:
+  contents: read
+concurrency:
+  group: mathematics-main-qualification-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      NO_AT_BRIDGE: '1'
+      GDK_BACKEND: x11
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+      MAVEN_OPTS: -Djava.awt.headless=false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: controls
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 6dc33a833f187cdf89d3e99e7cfcf9e871cabf23
+          path: product
+          fetch-depth: 2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: carstenartur/Regelsuche
+          ref: 409083a58ab28d14fb3ce02adb2938dd9b92eb5f
+          path: sdk
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+          cache: maven
+      - uses: ./controls/.github/actions/verify-eclipse-desktop-runtime
+      - name: Qualify two clean exact-source SDK builds and two fresh consumers
+        working-directory: sdk
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 409083a58ab28d14fb3ce02adb2938dd9b92eb5f
+          test -z "$(git status --porcelain)"
+          mvn -B -ntp -Psdk-release -pl maven-build-contract -Dtest=MavenOptimizationSdkDistributionTest test > "$RUNNER_TEMP/sdk-distribution.log" 2>&1 || { tail -150 "$RUNNER_TEMP/sdk-distribution.log"; exit 1; }
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/sdk-distribution.log" | tail -15
+      - name: Prepare consumer changes and resolve the pinned production source
+        working-directory: product
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Distribution JARs are inside its Maven repository subdirectory.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('../controls/.github/math-main-controls/prepare.py')
+          text=p.read_text()
+          assert text.count("first.glob('*.jar')")==1
+          p.write_text(text.replace("first.glob('*.jar')","first.rglob('*.jar')"))
+          PY
+          python3 ../controls/.github/math-main-controls/prepare.py prepare
+          ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am test-compile > "$RUNNER_TEMP/source-resolution.log" 2>&1 || { tail -130 "$RUNNER_TEMP/source-resolution.log"; exit 1; }
+          python3 ../controls/.github/math-main-controls/prepare.py sources
+      - name: Run all standard mathematics tests and export only verified production results
+        working-directory: product
+        shell: bash
+        run: |
+          set -euo pipefail
+          export MATH_BC_ARCHIVE_OUTPUT="$RUNNER_TEMP/production-results"
+          test ! -e "$MATH_BC_ARCHIVE_OUTPUT"
+          xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/mathematics.log" 2>&1 || { tail -180 "$RUNNER_TEMP/mathematics.log"; exit 1; }
+          python3 ../controls/.github/math-main-controls/prepare.py results
+          cp -a sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/mathematics-reports"
+          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size' "$RUNNER_TEMP/mathematics.log" | tail -35
+      - name: Generate the four actual native previews using the qualified SDK
+        working-directory: product
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run --auto-servernum --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp \
+            -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore \
+            -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest \
+            -DfailIfNoTests=false -f sandbox_help_build/pom.xml -Phelp-screenshots verify > "$RUNNER_TEMP/native-help.log" 2>&1 || { tail -180 "$RUNNER_TEMP/native-help.log"; exit 1; }
+          cp -a sandbox_eclipse_help_swtbot_test/target/surefire-reports "$RUNNER_TEMP/native-help-reports"
+          mkdir "$RUNNER_TEMP/first-capture"
+          cp sandbox_math_cleanup_help/images/* "$RUNNER_TEMP/first-capture/"
+      - name: Verify native reproduction in a fresh Eclipse workspace and Help evidence
+        working-directory: product
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf sandbox_eclipse_help_swtbot_test/target/work
+          xvfb-run --auto-servernum --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp \
+            -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore \
+            -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest \
+            -DfailIfNoTests=false -f sandbox_help_build/pom.xml -Phelp-screenshots verify > "$RUNNER_TEMP/native-repeat.log" 2>&1 || { tail -160 "$RUNNER_TEMP/native-repeat.log"; exit 1; }
+          diff -qr "$RUNNER_TEMP/first-capture" sandbox_math_cleanup_help/images
+          cp -a sandbox_eclipse_help_swtbot_test/target/surefire-reports "$RUNNER_TEMP/native-repeat-reports"
+          xvfb-run --auto-servernum --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp \
+            -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore \
+            -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.EclipseHelpScreenshotEvidenceTest \
+            -DfailIfNoTests=false -f sandbox_help_build/pom.xml -Phelp-screenshots verify > "$RUNNER_TEMP/help-evidence.log" 2>&1 || { tail -140 "$RUNNER_TEMP/help-evidence.log"; exit 1; }
+          cp -a sandbox_eclipse_help_swtbot_test/target/surefire-reports "$RUNNER_TEMP/help-evidence-reports"
+      - name: Check executed test reports and publish only the ordinary qualified source tree
+        working-directory: product
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib, xml.etree.ElementTree as E
+          evidence=pathlib.Path(os.environ['RUNNER_TEMP'])
+          totals={}
+          for folder,minimum in [('mathematics-reports',196),('native-help-reports',1),('native-repeat-reports',1),('help-evidence-reports',5)]:
+              files=list((evidence/folder).glob('TEST-*.xml')); assert files,folder
+              total=dict.fromkeys(('tests','failures','errors','skipped'),0)
+              for file in files:
+                  root=E.parse(file).getroot()
+                  for key in total: total[key]+=int(root.get(key,'0'))
+              assert total['tests']>=minimum and not any(total[k] for k in ('failures','errors','skipped')),(folder,total)
+              totals[folder]=total
+          (evidence/'test-totals.json').write_text(json.dumps(totals,indent=2)+'\n')
+          print(json.dumps(totals,indent=2))
+          PY
+          git add docs/ECLIPSE_HELP_COVERAGE.md sandbox_math_cleanup/lib sandbox_math_cleanup_test \
+            sandbox_eclipse_help_swtbot_test sandbox_math_cleanup_help/html sandbox_math_cleanup_help/images
+          # Original upstream fixture whitespace is retained byte-for-byte.
+          git diff --cached --check -- . ':!**/fixtures/**'
+          git diff --cached --stat
+          git diff --exit-code
+          git write-tree > "$RUNNER_TEMP/qualified-product-tree.txt"
+          git fetch --no-tags origin refs/heads/candidate/math-main-20261010-409083a
+          test "$(git rev-parse FETCH_HEAD)" = 6dc33a833f187cdf89d3e99e7cfcf9e871cabf23
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'test: qualify the current general SDK with source-bound runtime Help previews'
+          test -z "$(git status --porcelain)"
+          git push origin HEAD:refs/heads/candidate/math-main-20261010-409083a
+          git rev-parse HEAD > "$RUNNER_TEMP/qualified-product-commit.txt"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: mathematics-main-qualification-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/*.log
+            ${{ runner.temp }}/*reports/**
+            ${{ runner.temp }}/production-results/**
+            ${{ runner.temp }}/test-totals.json
+            ${{ runner.temp }}/qualified-product-*.txt
+            product/sandbox_math_cleanup_help/images/**
+            product/sandbox_eclipse_help_swtbot_test/target/surefire-reports/**
+            product/sandbox_eclipse_help_swtbot_test/target/work/data/.metadata/.log
+            sdk/maven-build-contract/target/surefire-reports/**

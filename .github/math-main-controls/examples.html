@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Mathematics Cleanup: runtime Bouncy Castle examples</title>
+<style>body{font-family:system-ui,sans-serif;max-width:76em;margin:2em;line-height:1.5}img{display:block;width:100%;height:auto;border:1px solid #aaa}figure{margin:1.5em 0}figcaption{margin:.5em 0}table{border-collapse:collapse;width:100%}th,td{border:1px solid #aaa;padding:.6em;text-align:left}code,pre{font-family:monospace}pre{background:#eee;padding:1em;overflow:auto}.note{border-left:4px solid #936600;background:#fff7e8;padding:1em}</style></head>
+<body>
+<h1>Runtime mathematics in real Bouncy Castle code</h1>
+<p>These are actual Eclipse <strong>Clean Up</strong> previews for complete,
+unmodified Bouncy Castle production classes. The inputs <code>u, v, w</code>
+and <code>x, y, z</code> are unknown runtime values, not constants supplied by
+the demonstration. The registered cleanup calls Regelsuche, independently
+verifies the proposed computation, and emits the Java shown on the right.</p>
+<div class="note"><strong>Not constant folding.</strong> Purely static calculations
+are now left unchanged. A programmer's constant declaration such as
+<code>int m = 5 * 7 * 11;</code> is not replaced by a magic number.
+An unchanged runtime output does not justify simplifying a separate constant
+calculation. Constants can still be operands of a genuine runtime transformation.</div>
+<h2>What was verified</h2>
+<p>The production-corpus regression processes five complete source classes:
+<code>SHA1Digest</code>, <code>SHA256Digest</code>, <code>LongDigest</code>,
+<code>MD4Digest</code> and <code>MD5Digest</code>. It requires nine verified
+runtime rewrites, unchanged authored constants, compilable output, exact Undo
+and no further change on a second cleanup. Original and generated classes are
+then used in 90 complete digest comparisons across six digest implementations
+and block-boundary message lengths. Five implementations are additionally
+compared with the JDK. These execution checks supplement, rather than replace,
+the independent symbolic proof of each bitvector transformation.</p>
+<p>The screenshots have a separate native UI gate: exact full-file preview,
+visible original and replacement expressions, Apply, binding resolution and
+byte-exact Undo must all succeed before a PNG and its provenance are retained.
+The displayed source is not hand-edited after optimization.</p>
+<h2>Reproduce the profile</h2>
+<p>In <strong>Java &gt; Code Style &gt; Clean Up &gt; Mathematics (Sandbox)</strong>,
+enable the explicit cleanup, select <strong>int and long</strong>,
+<strong>Preserve Java behavior</strong> and <strong>Lower estimated runtime</strong>.
+The default <em>Only BigInteger</em> profile deliberately does not select these
+primitive calculations. The examples use 1,000,000 search-work units and 20,000
+states. Run <strong>Source &gt; Clean Up...</strong> and inspect the file preview.
+The target sources remain Java 17; the Eclipse host uses Java 25.</p>
+<table><thead><tr><th>Example</th><th>Production method</th><th>Primitive bit operations</th></tr></thead><tbody>
+<tr><td>Complementary masks</td><td>SHA1Digest.f</td><td>4 → 3</td></tr>
+<tr><td>Common-mask factoring</td><td>MD4Digest.G</td><td>5 → 4</td></tr>
+<tr><td>64-bit majority</td><td>LongDigest.Maj</td><td>5 → 4</td></tr>
+<tr><td>Different selector position</td><td>MD5Digest.G</td><td>4 → 3</td></tr>
+</tbody></table>
+<h2 id="choice">1. Select bits with complementary masks</h2>
+<pre>// SHA1Digest.f — all three parameters are runtime int values
+return ((u &amp; v) | ((~u) &amp; w));
+// Actual generated Java
+return (w ^ (u &amp; (v ^ w)));</pre>
+<p>The candidate uses XOR to express selection without an explicit complement.
+The independent checker proves equality for all 32-bit input values. The same
+full-file preview also shows the common-mask rewrite in <code>g</code>.</p>
+<figure><a href="../images/01-bouncy-castle-choice.png"><img src="../images/01-bouncy-castle-choice.png" alt="Real Eclipse cleanup preview of SHA1Digest runtime choice and majority functions"></a><figcaption>Complete SHA1Digest source as input; two verified changes. <a href="../images/01-bouncy-castle-choice.provenance.json">Source, profile and image provenance</a>.</figcaption></figure>
+<h2 id="majority">2. Factor a repeated bit mask</h2>
+<pre>// MD4Digest.G
+return (u &amp; v) | (u &amp; w) | (v &amp; w);
+// Actual generated Java
+return (((v | w) &amp; u) | (v &amp; w));</pre>
+<p>The repeated use of <code>u</code> is factored out of two terms. This is a
+generic bitwise rule; it is not a method-name or library-specific substitution.</p>
+<figure><a href="../images/02-bouncy-castle-majority.png"><img src="../images/02-bouncy-castle-majority.png" alt="Real Eclipse cleanup preview of the variable-dependent MD4 majority expression"></a><figcaption>Complete MD4Digest source, not a synthetic test expression. <a href="../images/02-bouncy-castle-majority.provenance.json">Provenance</a>.</figcaption></figure>
+<h2 id="long">3. Preserve all 64 bits</h2>
+<pre>// LongDigest.Maj — long parameters, used by SHA-384 and SHA-512
+return ((x &amp; y) ^ (x &amp; z) ^ (y &amp; z));
+// Actual generated Java
+return (((y ^ z) &amp; x) ^ (y &amp; z));</pre>
+<p>The SDK retains the long domain throughout extraction, proof and emission.
+There is no narrowing, floating-point conversion, new branch or table lookup.</p>
+<figure><a href="../images/03-bouncy-castle-long.png"><img src="../images/03-bouncy-castle-long.png" alt="Real Eclipse preview of the 64-bit LongDigest majority calculation"></a><figcaption>The shared LongDigest implementation is tested through complete SHA-384 and SHA-512 digest computations. <a href="../images/03-bouncy-castle-long.provenance.json">Provenance</a>.</figcaption></figure>
+<h2 id="selector">4. Recognize a differently positioned selector</h2>
+<pre>// MD5Digest.G
+return (u &amp; w) | (v &amp; ~w);
+// Actual generated Java
+return (v ^ (w &amp; (u ^ v)));</pre>
+<p>Here <code>w</code>, rather than the first parameter, selects the bits. Operand
+order and variable names do not supply the proof.</p>
+<figure><a href="../images/04-bouncy-castle-swapped-choice.png"><img src="../images/04-bouncy-castle-swapped-choice.png" alt="Real Eclipse preview of a complementary-mask rewrite with the selector in a different operand position"></a><figcaption>Complete MD5Digest source with runtime parameters. These legacy-digest examples are not recommendations for new cryptographic designs. <a href="../images/04-bouncy-castle-swapped-choice.provenance.json">Provenance</a>.</figcaption></figure>
+<h2>Source identity and upstream use</h2>
+<p>The frozen inputs come from the actual Eclipse target source archive
+<code>bcprov.source-1.85.2.jar</code>, with SHA-256
+<code>9b15d2ccb83c76f9f393cb8cb97d0cb971d04dee667cc3f9d7f4ac28f582cb91</code>.
+The archive entries are under <code>org/bouncycastle/crypto/digests/</code>.
+Each provenance file records the complete input hash. An archive release is
+not represented as a checkout of a different Git revision.
+<a href="bouncy-castle-license.html">Bouncy Castle copyright and MIT license</a>.</p>
+<div class="note"><strong>Review candidates, not measured speedups.</strong>
+Operation counts describe the emitted source, not generated machine code.
+A JVM may already recognize these identities. The SHA256Digest source even
+contains an alternative choice expression in a comment. Before an upstream
+PR, rebase the patch onto current upstream, run its own tests, benchmark the
+actual call path on supported JVMs, and review maintainability and side-channel
+properties. The absence of a newly introduced source-level branch is not a
+constant-time certification. No upstream submission or performance gain is
+claimed by this gallery.</div>
+<p>The cleanup still has a bounded supported fragment. Unknown calls, mutable
+memory, unsupported numerical contracts and exhausted budgets are diagnosed
+rather than rewritten speculatively. These examples do not claim that every
+Bouncy Castle method is optimized.</p>
+<p><a href="cleanup.html">Configuration, safety profiles and headless use</a>.</p>
+</body></html>
