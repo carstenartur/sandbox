@@ -6,6 +6,7 @@ import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.SafetyProfile;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -164,7 +165,7 @@ class MathematicalExplanationTest {
     private URLClassLoader compile(String source) throws Exception {
         Path directory = Files.createTempDirectory(temporary, "classes-");
         Path file = directory.resolve("Calculation.java");
-        Files.writeString(file, source, java.nio.charset.StandardCharsets.UTF_8);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
                 "--release", "17", "-d", directory.toString(), file.toString()), source);
         return new URLClassLoader(new java.net.URL[] {directory.toUri().toURL()}, null);
