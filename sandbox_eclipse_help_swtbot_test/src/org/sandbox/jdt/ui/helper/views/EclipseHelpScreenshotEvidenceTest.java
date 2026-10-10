@@ -95,8 +95,8 @@ public class EclipseHelpScreenshotEvidenceTest {
         Path repository= SandboxCheckout.locate(null);
         Path images= repository.resolve("sandbox_math_cleanup_help/images"); //$NON-NLS-1$
         Set<String> digests= new HashSet<>();
-        for (String id : List.of("01-bouncy-castle-prime-product", "02-jdt-core-shared-value", //$NON-NLS-1$ //$NON-NLS-2$
-                "03-jdt-ui-multiple-lines", "04-jdt-ui-nested-arithmetic")) { //$NON-NLS-1$ //$NON-NLS-2$
+        for (String id : List.of("01-bouncy-castle-choice", "02-bouncy-castle-majority", //$NON-NLS-1$ //$NON-NLS-2$
+                "03-bouncy-castle-long", "04-bouncy-castle-swapped-choice")) { //$NON-NLS-1$ //$NON-NLS-2$
             Path png= images.resolve(id + ".png"); //$NON-NLS-1$
             BufferedImage preview= requireImage(png);
             assertEquals(1280, preview.getWidth());

@@ -17,6 +17,7 @@ import java.util.Set;
 import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.Document;
+import org.eclipse.text.edits.TextEdit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
@@ -43,29 +44,59 @@ class CharacterLiteralRoundTripTest {
 
     @Test
     void byteAndShortConstantPromotionsSurviveIndependentReExtraction() throws Exception {
-        checkExpression("Byte.MIN_VALUE", -128, Set.of(NumericKind.BYTE, NumericKind.INT));
-        checkExpression("Byte.MAX_VALUE", 127, Set.of(NumericKind.BYTE, NumericKind.INT));
-        checkExpression("Short.MIN_VALUE", -32768, Set.of(NumericKind.SHORT, NumericKind.INT));
-        checkExpression("Short.MAX_VALUE", 32767, Set.of(NumericKind.SHORT, NumericKind.INT));
+        checkBound("byte", "Byte.MIN_VALUE", -128, Set.of(NumericKind.BYTE, NumericKind.INT));
+        checkBound("byte", "Byte.MAX_VALUE", 127, Set.of(NumericKind.BYTE, NumericKind.INT));
+        checkBound("short", "Short.MIN_VALUE", -32768, Set.of(NumericKind.SHORT, NumericKind.INT));
+        checkBound("short", "Short.MAX_VALUE", 32767, Set.of(NumericKind.SHORT, NumericKind.INT));
+    }
+
+    @Test
+    void explicitConstantCastsAndQualifiedNamesAreNotRewritten() throws Exception {
+        for (String expression : new String[] {"(int)'\\uffff'", "Byte.MIN_VALUE", "Short.MAX_VALUE"}) {
+            String source = "public class Calculation { public static int compute(int x) { return x+"
+                    + expression + "+0; }}";
+            var options = JavaComputationExtractorTest.options(Set.of(NumericKind.INT, NumericKind.CHAR,
+                    NumericKind.BYTE, NumericKind.SHORT), SafetyProfile.PRESERVE_JAVA);
+            var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options,
+                    new NullProgressMonitor(), -1, 0);
+            assertFalse(analysis.changed(), expression + ": " + analysis.diagnostics());
+            assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("CONSTANT_EXPRESSION_PRESERVED")));
+            Document document = new Document(source);
+            analysis.newEdit().apply(document);
+            assertEquals(source, document.get());
+        }
     }
 
     private void check(String literal, int expectedCodeUnit) throws Exception {
-        checkExpression("(int)" + literal, expectedCodeUnit, Set.of(NumericKind.INT, NumericKind.CHAR));
+        // The Java promotion still inserts char-to-int in the typed plan. Do not
+        // request rewriting a deliberately spelled constant cast in source.
+        checkExpression("", literal, expectedCodeUnit, Set.of(NumericKind.INT, NumericKind.CHAR), null);
     }
 
-    private void checkExpression(String literal, int expectedCodeUnit, Set<NumericKind> kinds) throws Exception {
-        String source = "public class Calculation { public static int compute(int x) { int r=x+"
-                + literal + "+0; return r; }}";
+    private void checkBound(String type, String constant, int value, Set<NumericKind> kinds) throws Exception {
+        String declaration = type + " bound=" + constant + ";";
+        checkExpression(declaration, "bound", value, kinds, declaration);
+    }
+
+    private void checkExpression(String declarations, String literal, int expectedCodeUnit,
+            Set<NumericKind> kinds, String preserved) throws Exception {
+        String source = "public class Calculation { public static int compute(int x) { " + declarations
+                + "int r=x+" + literal + "+0; return r; }}";
         var options = JavaComputationExtractorTest.options(kinds, SafetyProfile.PRESERVE_JAVA);
         var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options, new NullProgressMonitor(), -1, 0);
         assertTrue(analysis.changed(), literal + ": " + analysis.diagnostics());
+        assertFalse(analysis.evidence().isEmpty(), "The generated code must pass independent re-extraction");
         Document document = new Document(source);
-        analysis.newEdit().apply(document);
+        var undo = analysis.newEdit().apply(document, TextEdit.CREATE_UNDO);
+        String generated = document.get();
+        if (preserved != null) assertTrue(generated.contains(preserved), generated);
+        undo.apply(document);
+        assertEquals(source, document.get());
         Path output = Files.createTempDirectory(temporary, "char-");
         Path file = output.resolve("Calculation.java");
-        Files.writeString(file, document.get());
+        Files.writeString(file, generated);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
-                "--release", "8", "-Xlint:-options", "-d", output.toString(), file.toString()), document.get());
+                "--release", "8", "-Xlint:-options", "-d", output.toString(), file.toString()), generated);
         try (var loader = new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {
             var method = loader.loadClass("Calculation").getMethod("compute", int.class);
             for (int input : new int[] { 0, 1, -1, Integer.MIN_VALUE, Integer.MAX_VALUE })

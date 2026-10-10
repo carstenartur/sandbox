@@ -1,0 +1,12 @@
+{
+  "source": "Eclipse 2026-09 bcprov.source 1.85.2",
+  "sourceArchiveSha256": "9b15d2ccb83c76f9f393cb8cb97d0cb971d04dee667cc3f9d7f4ac28f582cb91",
+  "gitRevision": null,
+  "files": {
+    "SHA1Digest.java": "5818247460b60c2b93d9c52b081fb0dd1dab803df1720f54e1ca4f6d5efba534",
+    "SHA256Digest.java": "dc5d6fe54171af285b6779f37b01ca3839b383348d7ea5dfd71b57fd7246db65",
+    "LongDigest.java": "d1f4784bb7f6c668dcc40414bfd3e2556583d56ae2a7cdba7f426290b3072a8e",
+    "MD4Digest.java": "98b69ba1f337dd1208b6920e43a1aad6be5992763a48629954fbb11d162fc81f",
+    "MD5Digest.java": "65e341b50e57f21e3bfa0128af7a6bc6f9921662f0cc8135e22cd45743db1271"
+  }
+}
