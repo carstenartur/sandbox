@@ -24,7 +24,7 @@ jobs:
           verify-signature: true
           cache: maven
       - uses: ./.github/actions/verify-eclipse-desktop-runtime
-      - name: Connect verified SDK plans to source evidence without a second mathematical implementation
+      - name: Connect verified plans and compare serialized proof values consistently
         shell: bash
         run: |
           set -euo pipefail
@@ -34,49 +34,50 @@ jobs:
           from pathlib import Path
           p=Path('sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java')
           text=p.read_text()
-          old='''                  if (!(optimizer.reverify(request, candidate, cancellation) instanceof Verified)) {
-                               diagnostics.add(diagnostic("REVERIFICATION_FAILED", "Candidate evidence did not pass independent checking", region));
-                               continue;
-                            }'''.replace('                               ','                     ').replace('                            }','                  }')
-          new='''                  var explained = de.regelsuche.sdk.optimization.ComputationExplanations.describe(request, candidate, cancellation);
-                            if (!(explained.verification() instanceof Verified) || explained.explanation().isEmpty()) {
-                               diagnostics.add(diagnostic("REVERIFICATION_FAILED", explained.verification().toString(), region));
-                               continue;
-                            }'''.replace('                            if','                  if').replace('                               ','                     ').replace('                            }','                  }')
-          assert text.count(old)==1, 'Expected original re-verification boundary'
-          text=text.replace(old,new)
-          old='''                        region.start(), region.length(), candidate.evidence(), cost, source.substring(region.start(), region.start() + region.length()), replacement'''
-          new=old+''',
-                                  ComputationExplanation.from(region, explained.explanation().orElseThrow())'''.replace('                                  ','                        ')
-          assert text.count(old)==1, 'Expected original evidence boundary'
-          text=text.replace(old,new)
-          old='''   public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost, String original, String replacement) {
-             }
-          }'''.replace('             }','   }').replace('          }','}')
-          new='''   public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+          replacements=[
+            ('if (!(optimizer.reverify(request, candidate, cancellation) instanceof Verified)) {',
+             'var explained = de.regelsuche.sdk.optimization.ComputationExplanations.describe(request, candidate, cancellation);\n                  if (!(explained.verification() instanceof Verified) || explained.explanation().isEmpty()) {'),
+            ('diagnostics.add(diagnostic("REVERIFICATION_FAILED", "Candidate evidence did not pass independent checking", region));',
+             'diagnostics.add(diagnostic("REVERIFICATION_FAILED", explained.verification().toString(), region));'),
+            ('                  String description = "Mathematics "',
+             '                  ComputationExplanation explanation = ComputationExplanation.from(region, explained.explanation().orElseThrow());\n                  String description = "Mathematics "'),
+            ('region.start(), region.length(), candidate.evidence(), cost, source.substring(region.start(), region.start() + region.length()), replacement\n',
+             'region.start(), region.length(), candidate.evidence(), cost, source.substring(region.start(), region.start() + region.length()), replacement, explanation\n'),
+            ('   public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost, String original, String replacement) {\n   }',
+             '''   public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
                 String original, String replacement, ComputationExplanation explanation) {
                 public VerifiedRegion {
                    if (explanation != null && !proof.equals(explanation.verified().proof())) {
                       throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
                    }
                 }
-
                 /** Compatibility for explicitly constructed historical report records. */
                 public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
                       String original, String replacement) {
                    this(offset, length, proof, cost, original, replacement, null);
                 }
-             }
-          }'''.replace('                      ','            ').replace('                   ','         ').replace('                ','      ').replace('             }','   }').replace('          }','}')
-          assert text.count(old)==1, 'Expected original report record'
-          text=text.replace(old,new)
+             }''')
+          ]
+          for old,new in replacements:
+              assert text.count(old)==1, old
+              text=text.replace(old,new)
           p.write_text(text)
+          test=Path('sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/VerifiedComputationExplanationTest.java')
+          text=test.read_text()
+          old='assertEquals(new ObjectMapper().valueToTree(analysis.evidence().getFirst().proof()), verified.path("proof"));'
+          new='''// Compare JSON with the same numeric-node construction on both sides;
+                  // separately retain exact typed equality of the immutable proof records.
+                  var mapper = new ObjectMapper();
+                  assertEquals(mapper.readTree(mapper.writeValueAsString(analysis.evidence().getFirst().proof())), verified.path("proof"));
+                  assertEquals(analysis.evidence().getFirst().proof(), analysis.evidence().getFirst().explanation().verified().proof());'''
+          assert text.count(old)==1
+          test.write_text(text.replace(old,new))
           PY
-          git add sandbox_math_cleanup/src
+          git add sandbox_math_cleanup/src sandbox_math_cleanup_test/src
           git diff --cached --check
           git diff --cached > "$RUNNER_TEMP/report-integration.patch"
           git write-tree > "$RUNNER_TEMP/tested-tree.txt"
-      - name: Run complete standard mathematics module with all report regressions
+      - name: Run the entire standard mathematics module
         env:
           NO_AT_BRIDGE: '1'
           GDK_BACKEND: x11
@@ -86,11 +87,11 @@ jobs:
         run: |
           set -euo pipefail
           if ! xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/verify.log" 2>&1; then
-            grep -E '\[ERROR\]|Failures:|<<< FAILURE|BUILD FAILURE' "$RUNNER_TEMP/verify.log" | tail -45
-            tail -70 "$RUNNER_TEMP/verify.log"
+            grep -E '\[ERROR\]|Failures:|<<< FAILURE|BUILD FAILURE' "$RUNNER_TEMP/verify.log" | tail -25
+            tail -35 "$RUNNER_TEMP/verify.log"
             exit 1
           fi
-          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size' "$RUNNER_TEMP/verify.log" | tail -40
+          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size' "$RUNNER_TEMP/verify.log" | tail -35
           python3 - <<'PY'
           from pathlib import Path
           import xml.etree.ElementTree as E
