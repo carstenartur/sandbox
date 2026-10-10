@@ -10,25 +10,31 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Extract actual compiler and test failures from existing completed jobs
+      - name: Extract actual failures without rebuilding or mutating product source
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           for job in 114144326961 114144327006; do
-            gh api --allow-escape-sequences "repos/carstenartur/sandbox/actions/jobs/$job/logs" > "$RUNNER_TEMP/job-$job.log"
+            echo "READ_JOB=$job"
+            if ! gh api --allow-escape-sequences "repos/carstenartur/sandbox/actions/jobs/$job/logs" > "$RUNNER_TEMP/job-$job.log"; then
+              echo "LOG_UNAVAILABLE=$job"
+            fi
           done
           python3 - <<'PY'
           from pathlib import Path
           import os, re
+          found=False
           for path in sorted(Path(os.environ['RUNNER_TEMP']).glob('job-*.log')):
               text=re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]','',path.read_text(encoding='utf-8-sig'))
               lines=text.splitlines()
-              print('\n=== '+path.name+' ===')
+              print('\n=== '+path.name+' lines='+str(len(lines))+' ===')
               hits=[i for i,s in enumerate(lines) if re.search(r'\[ERROR\]|COMPILATION ERROR|<<< FAILURE|BUILD FAILURE|Could not resolve|unresolved dependency',s)]
+              found=found or bool(hits)
               wanted=set()
-              for i in hits[-40:]: wanted.update(range(max(0,i-2),min(len(lines),i+4)))
-              if not wanted: wanted.update(range(max(0,len(lines)-65),len(lines)))
+              for i in hits[-35:]: wanted.update(range(max(0,i-2),min(len(lines),i+4)))
+              if not wanted: wanted.update(range(max(0,len(lines)-25),len(lines)))
               for i in sorted(wanted): print(str(i+1)+': '+lines[i])
+          assert found, 'No actual failure evidence retrieved'
           PY
