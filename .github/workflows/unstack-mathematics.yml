@@ -1,93 +1,65 @@
-name: Dissolve obsolete mathematics stack
+name: Inspect mathematics merge requirements
 on:
   push:
     branches: [diagnostic/unstack-mathematics-20261010]
     paths: [.github/workflows/unstack-mathematics.yml]
 permissions:
   contents: read
-  pull-requests: write
+  pull-requests: read
   checks: read
   actions: read
-concurrency:
-  group: dissolve-mathematics-stack-1680
-  cancel-in-progress: false
 jobs:
-  unstack:
+  inspect:
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
-      - name: Remove only the stack relationship and verify unchanged branch identities
+      - name: Read effective merge requirements without changing any repository setting
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json, os, pathlib, urllib.request
+          import json, os, pathlib, urllib.request, urllib.error
           root = 'https://api.github.com/repos/carstenartur/sandbox/'
-          evidence = pathlib.Path(os.environ['RUNNER_TEMP']) / 'stack-repair-evidence'
-          evidence.mkdir()
-          headers = {'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
-                     'Accept': 'application/vnd.github+json',
-                     'X-GitHub-Api-Version': '2026-03-10',
-                     'User-Agent': 'sandbox-stack-maintenance'}
-          def api(path, method='GET'):
-              request = urllib.request.Request(root + path, headers=headers, method=method)
-              with urllib.request.urlopen(request, timeout=30) as response:
-                  body = response.read()
-                  return response.status, json.loads(body) if body else None
-          def save(name, value):
-              (evidence / (name + '.json')).write_text(json.dumps(value, indent=2) + '\n')
-          def identity(pr):
-              return (pr['number'], pr['state'], pr['head']['ref'], pr['head']['sha'],
-                      pr['base']['ref'], pr['base']['sha'], pr['merged'], pr['draft'])
-          _, target = api('pulls/1676')
-          _, main = api('git/ref/heads/main')
-          save('target-before', target)
-          save('main-before', main)
-          assert target['state'] == 'open' and not target['draft'] and not target['merged']
-          assert target['head']['sha'] == '35b21aaabf474d9c46ca5a82ac7b41da75bbddd2', 'PR head changed; re-audit required'
-          assert target['base']['ref'] == 'main'
-          assert target['stack']['id'] == 1960145 and target['stack']['number'] == 1680
-          _, stack = api('stacks/1680')
-          save('stack-before', stack)
-          assert stack['id'] == 1960145 and stack['number'] == 1680
-          numbers = [p['number'] for p in stack['pull_requests']]
-          assert len(numbers) == 2 and numbers[0] == 1676, ('Stack membership changed', numbers)
-          before = {}
-          for number in numbers:
-              _, pr = api('pulls/' + str(number))
-              assert not pr['merged'] and pr.get('auto_merge') is None, 'Do not interrupt an active merge'
-              before[number] = pr
-              save('pr-' + str(number) + '-before', pr)
-              print('BEFORE', number, pr['state'], pr['head']['sha'], 'base=' + pr['base']['ref'],
-                    'mergeable_state=' + str(pr.get('mergeable_state')), 'stack=' + str(pr.get('stack')))
-          # No branch, source file, review, status check or protection rule is changed.
-          status, remaining = api('stacks/1680/unstack', 'POST')
-          save('unstack-result', {'status': status, 'body': remaining})
-          print('UNSTACK_HTTP_STATUS', status)
-          for number, original in before.items():
-              _, current = api('pulls/' + str(number))
-              save('pr-' + str(number) + '-after', current)
-              assert identity(current) == identity(original), ('Unexpected PR identity change', number)
-              assert current.get('stack') is None, ('PR still belongs to a stack', number)
-              print('AFTER', number, 'stack=None', 'source_and_base_unchanged=True',
-                    'mergeable_state=' + str(current.get('mergeable_state')))
-          _, new_main = api('git/ref/heads/main')
-          save('main-after', new_main)
-          assert new_main['object']['sha'] == main['object']['sha'], 'Main moved during maintenance'
-          _, checks = api('commits/' + target['head']['sha'] + '/check-runs?per_page=100')
-          save('checks-after', checks)
-          for check in checks['check_runs']:
-              print('CHECK', check['name'], check['status'], check['conclusion'])
-          _, reviews = api('pulls/1676/reviews?per_page=100')
-          save('reviews-after', reviews)
-          print('REVIEWS', [(r['user']['login'], r['state']) for r in reviews])
-          print('VERIFIED: native stack removed; every PR branch/base/state unchanged; main unchanged.')
+          out = pathlib.Path(os.environ['RUNNER_TEMP']) / 'merge-requirements'
+          out.mkdir()
+          headers = {'Authorization':'Bearer '+os.environ['GH_TOKEN'], 'Accept':'application/vnd.github+json',
+                     'X-GitHub-Api-Version':'2026-03-10', 'User-Agent':'sandbox-merge-diagnostics'}
+          def save(name, data):
+              (out/(name+'.json')).write_text(json.dumps(data,indent=2)+'\n')
+          for name, path in [('effective-rules','rules/branches/main'),('classic-protection','branches/main/protection'),
+                             ('pr','pulls/1676')]:
+              request=urllib.request.Request(root+path,headers=headers)
+              try:
+                  with urllib.request.urlopen(request,timeout=30) as response: data=json.load(response)
+              except urllib.error.HTTPError as error:
+                  data={'http_status':error.code,'message':error.read().decode('utf-8')}
+              save(name,data)
+              if name=='pr':
+                  assert data['head']['sha']=='35b21aaabf474d9c46ca5a82ac7b41da75bbddd2'
+                  assert data.get('stack') is None
+                  print('PR',json.dumps({k:data.get(k) for k in ('state','draft','mergeable','rebaseable','mergeable_state','stack')}))
+              else: print(name,json.dumps(data))
+          query='''query { repository(owner:"carstenartur",name:"sandbox") {
+            pullRequest(number:1676) { number headRefOid baseRefOid isDraft mergeable mergeStateStatus reviewDecision
+              commits(last:1) { nodes { commit { oid statusCheckRollup { state } } } }
+              potentialMergeCommit { oid statusCheckRollup { state } }
+              baseRef { name branchProtectionRule { pattern requiresApprovingReviews requiredApprovingReviewCount
+                requiresStrictStatusChecks requiredStatusCheckContexts } }
+            }
+          } }'''
+          request=urllib.request.Request('https://api.github.com/graphql',data=json.dumps({'query':query}).encode(),
+                                        headers={**headers,'Content-Type':'application/json'},method='POST')
+          with urllib.request.urlopen(request,timeout=30) as response: data=json.load(response)
+          save('graphql-requirements',data)
+          print('GRAPHQL',json.dumps(data))
+          assert not data.get('errors'),data.get('errors')
+          print('READ_ONLY_DIAGNOSTICS_COMPLETE')
           PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: stack-repair-evidence-${{ github.run_id }}
+          name: merge-requirements-${{ github.run_id }}
           retention-days: 7
-          path: ${{ runner.temp }}/stack-repair-evidence/*.json
+          path: ${{ runner.temp }}/merge-requirements/*.json
