@@ -73,8 +73,9 @@ floating point. Ordinary Java optimization runs first; a mathematical retry uses
 the reserved remainder of the same work budget. Unsupported expressions retain
 the ordinary Java proof rules.</p>
 <p>In mathematical mode, BigInteger return values may be optimized under value
-semantics. Unproved receivers use exact-type, positive-value and bit-length
-checks with unchanged original fallback. Guard costs count against the estimate.
+semantics. Unproved receivers use exact-type and bit-length checks with
+unchanged original fallback. Positive-value checks apply to moduli and exponents
+where needed; zero and negative bases remain eligible. Guard costs count against the estimate.
 This makes additional expressions eligible; it does not establish that the
 current SDK has a useful rewrite for every such expression. No increase in
 BigInteger's supported range or constant-time execution is promised.</p>
@@ -90,6 +91,13 @@ The cleanup includes its receiver checks in the cost assessment. This example
 does not imply that every modular power, or every cryptographic use, should be
 rewritten. A fixed allowance for <code>modPow</code> setup is a ranking heuristic,
 not a measurement of the containing method.</p>
+<p>The complete Bouncy Castle scan now finds ten BigInteger changes: four in this
+curve map, three in <code>Primes</code>, and one each in
+<code>CramerShoupParametersGenerator</code>, <code>GenericSqrtRatioCalculator</code>
+and SQIsign's <code>Ibz</code>. Final named constants such as <code>TWO</code>,
+unshadowed final <code>this</code> fields and incoming local assignments are supported.
+Identical contract notes appear once per method.
+<a href="examples.html#modular-square">See the actual BigInteger preview</a>.</p>
 <p><em>Lower estimated runtime</em> rejects candidates that only improve storage
 or ordering. Reports include the weighted estimate as well as operation work;
 sharing repeated evaluations can save work even when the prepared DAG has the
@@ -189,7 +197,7 @@ Add <code>--apply</code> to request application. Applying
 <code>cleanup.mathematics.checkedOptIn=true</code> in the configuration and
 <code>--accept-checked</code> on the command line. A candidate and an applied
 change are distinct report outcomes. Estimated costs are not measured timings.</p>
-<p>The mathematics configuration has nine strict keys. This example explicitly
+<p>The mathematics configuration has ten strict keys. This example explicitly
 enables the otherwise disabled cleanup, selects the default numeric/safety
 profiles, and excludes generated files:</p>
 <pre>cleanup.mathematics=true
@@ -199,6 +207,7 @@ cleanup.mathematics.goal=LOWER_ESTIMATED_RUNTIME
 cleanup.mathematics.workBudget=100000
 cleanup.mathematics.maxStates=2000
 cleanup.mathematics.checkedOptIn=false
+cleanup.mathematics.mathematicalOptIn=false
 cleanup.mathematics.underflowChecks=false
 cleanup.mathematics.exclusions=**/generated/**</pre>
 <p>Invalid option names or values fail validation. Source/configuration mismatch
@@ -208,7 +217,7 @@ specific analysis diagnostics. No analyzed user program is executed to infer
 its behavior.</p>
 <h2 id="qualification">Qualification status</h2>
 <p>The <a href="examples.html">real-source screenshot gallery</a> exercises the
-registered cleanup, native preview, application and byte-exact Undo for four
+registered cleanup, native preview, application and byte-exact Undo for five
 specific examples. Full corpus, installation and measured Java performance
 qualification remain separate work; these screenshots do not establish them.</p>
 <p>The source checkout separates new evidence under

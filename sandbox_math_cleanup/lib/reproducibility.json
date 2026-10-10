@@ -1,9 +1,11 @@
 {
   "status": "PASS",
-  "sourceRevision": "73b81f1c60f13a5623af9351d7db7f64576858f1",
-  "sourceTree": "d8e90ee9e21a29248ee054124b38f04c9006f04f",
+  "sourceRevision": "86e86415196063366c5b48089d5d49ac451077d5",
+  "sourceTree": "2563b9b3410628222b22fe24a0318ab59dd47ab2",
   "cleanBuilds": 2,
-  "sdkTestsPerBuild": 92,
+  "sdkTestsPerBuild": 111,
+  "modularDomainTestsPerBuild": 7,
   "freshConsumers": 2,
-  "identicalDistributionFiles": 10
+  "identicalDistributionFiles": 10,
+  "recoveryNote": "Recovered distribution reproduces the previously qualified standalone JAR byte for byte."
 }

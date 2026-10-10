@@ -225,6 +225,7 @@ final class MathematicsHelpScreenshots {
         Map<String, String> values= new TreeMap<>(); values.put(PREFIX, "true"); //$NON-NLS-1$
         values.put(PREFIX + ".numericKinds", properties.getProperty("kinds")); values.put(PREFIX + ".goal", properties.getProperty("goal")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
         values.put(PREFIX + ".safetyProfile", "PRESERVE_JAVA"); values.put(PREFIX + ".checkedOptIn", "false"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+        values.put(PREFIX + ".mathematicalOptIn", properties.getProperty("mathematicalOptIn", "false")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
         values.put(PREFIX + ".workBudget", properties.getProperty("workBudget", "1000000")); values.put(PREFIX + ".maxStates", properties.getProperty("maxStates", "20000")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
         values.put(PREFIX + ".exclusions", ""); values.put(PREFIX + ".underflowChecks", "false"); return values; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
     }

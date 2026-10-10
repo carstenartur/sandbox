@@ -96,7 +96,7 @@ class BouncyCastleRuntimeCorpusTest {
         Path directory = checkout().resolve("sandbox_eclipse_help_swtbot_test/fixtures/mathematics");
         try (var entries = Files.list(directory)) {
             var fixtures = entries.filter(Files::isDirectory).sorted().toList();
-            assertEquals(4, fixtures.size());
+            assertEquals(5, fixtures.size());
             for (Path fixture : fixtures) {
                 var metadata = new java.util.Properties();
                 try (var reader = Files.newBufferedReader(fixture.resolve("example.properties"))) { metadata.load(reader); }
@@ -127,6 +127,12 @@ class BouncyCastleRuntimeCorpusTest {
                     assertEquals(provenance.get("files").get(name + ".java").asText(), digest(bytes), name);
                     sources.put(name, new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
                 }
+            }
+            String name = "SimplifiedShallueVanDeWoestijneMapToCurve";
+            try (var input = jar.getInputStream(jar.getJarEntry("org/bouncycastle/crypto/hash2curve/impl/" + name + ".java"))) {
+                byte[] bytes = input.readAllBytes();
+                assertEquals("6cd8fbd459615e6936bd8eeea7413ea6a85dc91e6dd558de7d6c118c4d523119", digest(bytes));
+                sources.put(name, new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
             }
         }
         return Map.copyOf(sources);

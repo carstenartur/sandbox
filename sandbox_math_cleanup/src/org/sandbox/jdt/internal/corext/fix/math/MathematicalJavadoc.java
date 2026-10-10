@@ -3,6 +3,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -12,13 +13,13 @@ import org.eclipse.jdt.core.dom.NodeFinder;
 
 /** Separate edits preserve one proof per computation and put contracts on the enclosing method. */
 final class MathematicalJavadoc {
-    private final Map<MethodDeclaration, List<String>> notes = new LinkedHashMap<>();
+    private final Map<MethodDeclaration, LinkedHashSet<String>> notes = new LinkedHashMap<>();
 
     void add(CompilationUnit ast, JavaComputationRegion region, String note) {
         ASTNode node = NodeFinder.perform(ast, region.start(), region.length());
         while (node != null && !(node instanceof MethodDeclaration)) node = node.getParent();
         if (node == null) throw new IllegalArgumentException("MISSING_CONTRACT_METHOD");
-        notes.computeIfAbsent((MethodDeclaration) node, key -> new ArrayList<>()).add(note);
+        notes.computeIfAbsent((MethodDeclaration) node, key -> new LinkedHashSet<>()).add(note);
     }
 
     List<MathematicalAnalysis.Replacement> edits(String source) {
@@ -33,10 +34,13 @@ final class MathematicalJavadoc {
             String note = newline + indentation + " * <p><strong>Mathematics cleanup:</strong> " + text + "</p>" + newline + indentation + " * ";
             // JDT can retain the declaration's comment start while doc-comment parsing is disabled.
             int commentStart = method.getJavadoc() == null ? start : method.getJavadoc().getStartPosition();
+            // The registered JDT change attaches its stale-source validation as
+            // a child of every selectable edit. A zero-length ReplaceEdit cannot
+            // contain that child: retain one original character in the replacement.
             if (source.startsWith("/**", commentStart)) {
-                edits.add(new MathematicalAnalysis.Replacement(commentStart + 3, 0, note, "Document mathematical contract"));
+                edits.add(new MathematicalAnalysis.Replacement(commentStart + 3, 1, note + source.charAt(commentStart + 3), "Document mathematical contract"));
             } else {
-                edits.add(new MathematicalAnalysis.Replacement(start, 0, "/**" + note.stripTrailing() + "/" + newline + indentation, "Document mathematical contract"));
+                edits.add(new MathematicalAnalysis.Replacement(start, 1, "/**" + note.stripTrailing() + "/" + newline + indentation + source.charAt(start), "Document mathematical contract"));
             }
         });
         return List.copyOf(edits);
