@@ -34,7 +34,7 @@
 		<djl.version>0.38.0</djl.version>
 		<!-- Pin ONNX Runtime native version: 1.21.1 (from DJL 0.36.0) fails
 		     DLL init on Windows; 1.19.0 (from DJL 0.31.1) works. -->
-		<onnxruntime.version>1.29.0</onnxruntime.version>
+		<onnxruntime.version>1.30.0</onnxruntime.version>
 		<!-- JDT Core 3.47.0 depends on ECJ 3.46.100; their versions are independent. -->
 		<eclipse-jdt-core.version>3.47.0</eclipse-jdt-core.version>
 		<eclipse-ecj.version>3.46.100</eclipse-ecj.version>
