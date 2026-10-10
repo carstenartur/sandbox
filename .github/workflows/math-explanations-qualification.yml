@@ -1,0 +1,48 @@
+name: Verify mathematics explanations
+on:
+  push:
+    branches: [diagnostic/math-explanations-20261010]
+permissions:
+  contents: read
+concurrency:
+  group: math-explanations-qualification
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: cebce220e376a402be1d4c0680f80c97ddadcced
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+          cache: maven
+      - name: Provision the native test runtime
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0
+      - name: Run the complete unchanged mathematics verification lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = cebce220e376a402be1d4c0680f80c97ddadcced
+          test -z "$(git status --porcelain)"
+          git rev-parse HEAD > "$RUNNER_TEMP/source-commit.txt"
+          git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/source-tree.txt"
+          xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/math-tests.log" 2>&1 || { tail -140 "$RUNNER_TEMP/math-tests.log"; exit 1; }
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/math-tests.log" | tail -30
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: math-explanations-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/source-commit.txt
+            ${{ runner.temp }}/source-tree.txt
+            ${{ runner.temp }}/math-tests.log
+            sandbox_math_cleanup_test/target/surefire-reports/**
