@@ -97,11 +97,11 @@ edited remains unchanged and limits generated syntax and APIs. Unknown or
 unqualified target contracts are rejected.</p>
 
 <h2 id="examples">Examples and counterexamples</h2>
-<p><a href="examples.html"><strong>Four real before/after screenshots, from a
-constant product to nested calculations with multiple outputs</strong></a> show
-the actual Eclipse cleanup preview, exact upstream sources and the required
-settings. They include Bouncy Castle production code and Eclipse JDT regression
-fixtures, with their different roles clearly identified.</p>
+<p><a href="examples.html"><strong>Four real before/after screenshots of
+runtime-dependent Bouncy Castle calculations</strong></a> show the actual Eclipse
+cleanup preview, complete pinned production inputs and the required settings.
+They replace the former constant-only examples. Expected fixture results are test
+data, never inputs to mathematical candidate generation.</p>
 <p>An eligible shape uses a known BigInteger factory and value-only observations:</p>
 <pre>BigInteger input = BigInteger.valueOf(a * b);
 BigInteger sum = input.add(BigInteger.ONE);
@@ -179,4 +179,15 @@ or unclassified cryptographic regions separately. An analysis result does not
 authorize automatic cryptographic changes. Public-parameter initialization needs
 explicit review; constructor arguments are not automatically public. A missing
 precondition or an unchanged already-optimized file is not a proof of optimality.</p>
+<h2 id="explanations">Explain a verified change</h2>
+<p><strong>Source explanations</strong> selects no source comments, comments for nontrivial
+changes (the new-profile default), or comments for every change. The description uses
+actual Java names and the independently checked original/replacement value graphs.
+It identifies premises and numerical policies, not a hand-written example template.
+Detailed diagnostics and the JSON report retain these plans even when source comments
+are disabled. Existing nine-argument programmatic option construction remains comment-free.</p>
+<p>A value-graph comparison is not a complete step-by-step search derivation. Existing
+source-trace and Java checks still govern evaluation order and exceptions. Checked
+arithmetic is an explicit contract change; operation estimates are not timing measurements.
+No source-comment setting re-enables constant-folding-only edits.</p>
 </body></html>

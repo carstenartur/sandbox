@@ -9,6 +9,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 import de.regelsuche.sdk.optimization.CancellationToken;
 import de.regelsuche.sdk.optimization.CheckedPolicy;
 import de.regelsuche.sdk.optimization.ComputationOptimizer;
+import de.regelsuche.sdk.optimization.ComputationExplanations;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationBudget;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
@@ -162,7 +163,8 @@ public final class MathematicalAnalysis {
                   }
 
                   remainingWork -= candidate.work();
-                  if (!(optimizer.reverify(request, candidate, cancellation) instanceof Verified)) {
+                  var explanation = ComputationExplanations.describe(request, candidate, cancellation);
+                  if (!(explanation.verification() instanceof Verified)) {
                      diagnostics.add(diagnostic("REVERIFICATION_FAILED", "Candidate evidence did not pass independent checking", region));
                      continue;
                   }
@@ -171,6 +173,8 @@ public final class MathematicalAnalysis {
                   reserved.addAll(generatedNames);
                   JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava());
                   JavaEmissionVerifier.verify(request, candidate, plain, region, options, cancellation);
+                  MathExplanation explanationText = MathExplanation.render(explanation.explanation().orElseThrow(),
+                     request, candidate, region, plain, options, cancellation);
                   String replacement;
                   if (options.safety() == SafetyProfile.CHECKED_THROW) {
                      JavaComputationEmitter.Emission checked = emitter.emitChecked(request, candidate, region.inputNames(), reserved, options.targetJava());
@@ -197,6 +201,10 @@ public final class MathematicalAnalysis {
                      replacement = indentGenerated(plain.statements(), source, region.start()) + rewriteValues(ast, source, region, plain.outputValues(), compilerOptions);
                   }
 
+                  if (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
+                        || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial()) {
+                     replacement = indentGenerated(explanationText.sourceComment(), source, region.start()) + replacement;
+                  }
                   checkGeneratedSource(
                      ast,
                      source.substring(0, region.start()) + replacement + source.substring(region.start() + region.length()),
@@ -240,6 +248,7 @@ public final class MathematicalAnalysis {
                         + "; CHECKED_THROW changes the Java contract: numerical violations may throw ArithmeticException. Both the original and replacement operations must be checked.";
                   }
 
+                  description += "\n" + explanationText.detail();
                   replacements.add(new MathematicalAnalysis.Replacement(region.start(), region.length(), replacement, description));
                   ASTParser declarationParser = ASTParser.newParser(ast.getAST().apiLevel());
                   declarationParser.setKind(2);

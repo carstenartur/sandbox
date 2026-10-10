@@ -40,6 +40,7 @@ class MathematicalExplanationTest {
         var result = analyze(source, "ALL", SafetyProfile.PRESERVE_JAVA);
         assertTrue(result.changed(), result.diagnostics().toString());
         String generated = applyAndUndo(source, result);
+        System.out.println("ACTUAL_EXPLAINED_JAVA=" + generated);
         assertTrue(generated.contains("// Verified mathematics"), generated);
         assertTrue(generated.contains("Original values:"), generated);
         assertTrue(generated.contains("Replacement values:"), generated);
@@ -95,7 +96,7 @@ class MathematicalExplanationTest {
         assertTrue(generated.contains("ArithmeticException"), generated);
         assertTrue(generated.contains("original and replacement"), generated);
         assertFalse(generated.contains("Java integral wraparound"), generated);
-        compile(generated);
+        try (var compiled = compile(generated)) { assertNotNull(compiled.loadClass("Calculation")); }
     }
 
     @Test void commentsRespectCrLfAndCanBeUndoneExactly() throws Exception {

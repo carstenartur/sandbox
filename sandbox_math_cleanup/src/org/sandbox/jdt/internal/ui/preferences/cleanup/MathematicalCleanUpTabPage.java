@@ -152,6 +152,10 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 		ComboPreference goal= createComboPref(group, columns, "Optimization goal:", MathCleanUpOptions.GOAL, //$NON-NLS-1$
 				Arrays.stream(OptimizationGoal.values()).map(Enum::name).toArray(String[]::new),
 				new String[] { "Lower estimated runtime", "Lower allocation", "Readability" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        ComboPreference explanations= createComboPref(group, columns, "Source explanations:", MathCleanUpOptions.EXPLANATIONS, //$NON-NLS-1$
+                Arrays.stream(MathCleanUpOptions.ExplanationMode.values()).map(Enum::name).toArray(String[]::new),
+                new String[] { "No source comments", "Nontrivial changes", "All changes" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+        wrappedLabel(columns, group, "Verified value plans remain in the detailed diagnostics and report even without source comments."); //$NON-NLS-1$
 		NumberPreference budget= createNumberPref(group, columns, "Search work budget:", MathCleanUpOptions.WORK_BUDGET, 1, 100_000_000); //$NON-NLS-1$
 		NumberPreference states= createNumberPref(group, columns, "Maximum search states:", MathCleanUpOptions.MAX_STATES, 1, 1_000_000); //$NON-NLS-1$
 		StringPreference exclusions= createStringPref(group, columns, "Exclude paths (semicolon-separated globs):", //$NON-NLS-1$
@@ -184,6 +188,7 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			warning.setVisible(checked);
 			((GridData) warning.getLayoutData()).exclude= !checked;
 			setEnabledIfChanged(goal, active);
+            setEnabledIfChanged(explanations, active);
 			setEnabledIfChanged(budget, active);
 			setEnabledIfChanged(states, active);
 			setEnabledIfChanged(exclusions, active);

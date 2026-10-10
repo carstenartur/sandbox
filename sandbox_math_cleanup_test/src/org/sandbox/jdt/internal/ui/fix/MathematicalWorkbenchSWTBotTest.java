@@ -166,6 +166,8 @@ public class MathematicalWorkbenchSWTBotTest {
   button(create.widget,"OK").click();SWTBotShell profile=bot.activeShell();profile.bot().tabItem(TAB).activate();size(profile.widget);
   var enabled=profile.bot().checkBox(ENABLE);assertFalse(enabled.isChecked());enabled.select();
   assertEquals("Only BigInteger",profile.bot().comboBoxWithLabel("Numeric type profile:").getText());
+  assertEquals("Nontrivial changes",profile.bot().comboBoxWithLabel("Source explanations:").getText());
+  profile.bot().comboBoxWithLabel("Source explanations:").setSelection("All changes");
   assertEquals("Preserve Java behavior",profile.bot().comboBoxWithLabel("Safety profile:").getText());
   assertFalse(profile.bot().checkBox(CONSENT).isChecked());assertFalse(profile.bot().checkBox(CONSENT).isEnabled());
   Label warning=label(profile.widget,MathCleanUpOptions.CHECKED_WARNING);
@@ -198,6 +200,7 @@ public class MathematicalWorkbenchSWTBotTest {
   top(profile.widget);capture(profile.widget,"mathematics-checked-options.png");
   button(profile.widget,"OK").click();button(preferences.widget,"Apply and Close","OK").click();
   Map<String,String> saved=CleanUpPreferenceUtil.loadOptions(InstanceScope.INSTANCE);
+  assertEquals("ALL",saved.get(MathCleanUpOptions.EXPLANATIONS));
   assertEquals("CHECKED_THROW",saved.get(MathCleanUpOptions.SAFETY));assertEquals("true",saved.get(MathCleanUpOptions.CHECKED_OPT_IN));
   preferences=openPreferences();selectCleanup(preferences);button(preferences.widget,"Edit...","Edit…").click();
   profile=bot.activeShell();profile.bot().tabItem(TAB).activate();assertTrue(profile.bot().checkBox(CONSENT).isChecked());
@@ -335,7 +338,8 @@ public class MathematicalWorkbenchSWTBotTest {
   args[5]=classpath.toString();assertEquals(Integer.valueOf(1),application.start(context));assertArrayEquals(classpathContents,Files.readAllBytes(classpath));
   args[5]=report.toString();
   assertEquals(IApplication.EXIT_OK,application.start(context));assertEquals(before,unit.getSource());
-  var json=new ObjectMapper().readTree(Files.readString(report));assertEquals("analysis",json.path("mode").asText());assertEquals(9,json.path("requestedOptions").size());
+  var json=new ObjectMapper().readTree(Files.readString(report));assertEquals("analysis",json.path("mode").asText());assertEquals(10,json.path("requestedOptions").size());
+  assertEquals("NONTRIVIAL",json.path("requestedOptions").path(MathCleanUpOptions.EXPLANATIONS).asText());
   var file=json.path("files").get(0);assertFalse(file.path("applied").asBoolean());assertTrue(file.path("changes").size()>0);assertTrue(file.path("evidence").size()>0);
   assertEquals(MathematicalEnvironment.digest(before),file.path("sourceSha256").asText());
   assertEquals(MathematicalEnvironment.digest(file.path("replacement").asText()),file.path("afterSha256").asText());
