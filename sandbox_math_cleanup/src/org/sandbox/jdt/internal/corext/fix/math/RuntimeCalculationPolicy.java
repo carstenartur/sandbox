@@ -62,6 +62,13 @@ final class RuntimeCalculationPolicy {
             Map<String, VariableDeclarationFragment> declarations) {
         if (!primitiveNumber(expression)) return false;
         if (constant(expression, declarations, new HashSet<>(), 0)) return true;
+        return containsComputedConstant(expression, declarations);
+    }
+
+    /** Also used when decoding a helper body; calls must not bypass source preservation. */
+    static boolean containsComputedConstant(Expression expression,
+            Map<String, VariableDeclarationFragment> declarations) {
+        if (!primitiveNumber(expression)) return false;
         // Until the emitter can preserve original subexpression spelling, keep
         // the entire containing statement. Other runtime statements remain
         // eligible. In particular, do not turn rotate distances (32 - 9) into

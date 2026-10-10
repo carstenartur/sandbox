@@ -20,7 +20,9 @@ import de.regelsuche.search.program.JointComputationPlan;
 import de.regelsuche.search.program.ComputationBackend.Type;
 import de.regelsuche.search.program.JointComputationPlan.Output;
 import java.math.BigInteger;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -60,6 +62,7 @@ import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.ThrowStatement;
@@ -318,6 +321,10 @@ public final class JavaComputationExtractor {
       final List<Occurrence> trace = new ArrayList<>();
       final Set<SemanticAssumption> assumptions = new LinkedHashSet<>();
       final Set<String> receiverGuards = new LinkedHashSet<>();
+      // Per-call Java frames. Never bind a helper's locals as caller inputs.
+      final Deque<Map<String, Expr>> methodFrames = new ArrayDeque<>();
+      final Set<String> activeMethods = new HashSet<>();
+      int expandedMethodStatements;
       JavaComputationExtractor.Builder prior;
       int first = -1;
       int end;
@@ -345,6 +352,7 @@ public final class JavaComputationExtractor {
          copy.trace.addAll(this.trace);
          copy.assumptions.addAll(this.assumptions);
          copy.receiverGuards.addAll(this.receiverGuards);
+         copy.expandedMethodStatements = this.expandedMethodStatements;
          copy.first = this.first;
          copy.end = this.end;
          return copy;
@@ -402,31 +410,7 @@ public final class JavaComputationExtractor {
                }
             }
 
-            Expr value;
-            NumericKind evaluatedKind;
-            if (initializer instanceof Assignment assignment) {
-               Expression right = assignment.getRightHandSide();
-               evaluatedKind = this.kind(right.resolveTypeBinding(), right);
-               value = this.expression(right, false, 0);
-               if (assignment.getOperator() != org.eclipse.jdt.core.dom.Assignment.Operator.ASSIGN) {
-                  NumericOperation operation = JavaComputationExtractor.compoundOperator(assignment);
-                  boolean shift = operation == NumericOperation.SHIFT_LEFT
-                     || operation == NumericOperation.SHIFT_RIGHT
-                     || operation == NumericOperation.UNSIGNED_SHIFT_RIGHT;
-                  NumericKind promotedKind = shift ? JavaComputationExtractor.promote(declaredKind) : JavaComputationExtractor.promote(declaredKind, evaluatedKind);
-                  Expr left = this.cast(this.values.get(binding.getKey()), declaredKind, promotedKind, assignment);
-                  value = this.cast(value, evaluatedKind, shift ? JavaComputationExtractor.promote(evaluatedKind) : promotedKind, right);
-                  value = this.operation(promotedKind, operation, assignment, left, value);
-                  evaluatedKind = promotedKind;
-               }
-            } else {
-               value = this.expression((Expression)initializer, false, 0);
-               evaluatedKind = this.kind(initializer.resolveTypeBinding(), (ASTNode)initializer);
-            }
-
-            if (declaredKind != evaluatedKind) {
-               value = this.cast(value, evaluatedKind, declaredKind, (ASTNode)initializer);
-            }
+            Expr value = assignedValue(binding, initializer, 0);
 
             this.values.put(binding.getKey(), value);
             String outputId = "output" + this.outputs.size();
@@ -441,6 +425,104 @@ public final class JavaComputationExtractor {
          } else {
             throw JavaComputationExtractor.reject("UNRESOLVED_OR_NONLOCAL_BINDING", statement);
          }
+      }
+
+      private Expr assignedValue(IVariableBinding binding, Expression initializer, int depth) {
+         NumericKind declaredKind = this.kind(binding.getType(), initializer);
+         this.selected(declaredKind, initializer);
+         Expr value;
+         NumericKind evaluatedKind;
+         if (initializer instanceof Assignment assignment) {
+            Expression right = assignment.getRightHandSide();
+            evaluatedKind = this.kind(right.resolveTypeBinding(), right);
+            value = this.expression(right, false, depth);
+            if (assignment.getOperator() != org.eclipse.jdt.core.dom.Assignment.Operator.ASSIGN) {
+               NumericOperation operation = JavaComputationExtractor.compoundOperator(assignment);
+               boolean shift = operation == NumericOperation.SHIFT_LEFT
+                  || operation == NumericOperation.SHIFT_RIGHT
+                  || operation == NumericOperation.UNSIGNED_SHIFT_RIGHT;
+               NumericKind promotedKind = shift ? JavaComputationExtractor.promote(declaredKind) : JavaComputationExtractor.promote(declaredKind, evaluatedKind);
+               Expr left = this.cast(localValue(binding, initializer), declaredKind, promotedKind, assignment);
+               value = this.cast(value, evaluatedKind, shift ? JavaComputationExtractor.promote(evaluatedKind) : promotedKind, right);
+               value = this.operation(promotedKind, operation, assignment, left, value);
+               evaluatedKind = promotedKind;
+            }
+         } else {
+            value = this.expression(initializer, false, depth);
+            evaluatedKind = this.kind(initializer.resolveTypeBinding(), (ASTNode)initializer);
+         }
+
+         if (declaredKind != evaluatedKind) {
+            value = this.cast(value, evaluatedKind, declaredKind, (ASTNode)initializer);
+         }
+
+         return value;
+      }
+
+      private Expr localValue(IVariableBinding binding, ASTNode source) {
+         Expr value = methodFrames.isEmpty() ? values.get(binding.getKey()) : methodFrames.peek().get(binding.getKey());
+         if (value == null) throw reject("UNBOUND_METHOD_LOCAL", source);
+         return value;
+      }
+
+      private Expr methodInvocation(MethodInvocation call, MethodDeclaration method, int depth) {
+         String key = method.resolveBinding().getMethodDeclaration().getKey();
+         if (activeMethods.contains(key) || methodFrames.size() >= 16)
+            throw reject("METHOD_EXPANSION_CYCLE_OR_DEPTH", call);
+         Map<String, Expr> frame = new HashMap<>();
+         // Java evaluates every argument before entering the callee, even unused arguments.
+         for (int i = 0; i < call.arguments().size(); i++) {
+            Expression argument = (Expression) call.arguments().get(i);
+            SingleVariableDeclaration parameter = (SingleVariableDeclaration) method.parameters().get(i);
+            IVariableBinding binding = parameter.resolveBinding();
+            Expr value = expression(argument, false, depth + 1);
+            value = cast(value, kind(argument.resolveTypeBinding(), argument), kind(binding.getType(), parameter), argument);
+            frame.put(binding.getKey(), value);
+         }
+         activeMethods.add(key);
+         methodFrames.push(frame);
+         try {
+            List<?> statements = method.getBody().statements();
+            for (int index = 0; index < statements.size(); index++) {
+               ASTNode node = (ASTNode) statements.get(index);
+               if (++expandedMethodStatements > 256) throw reject("METHOD_EXPANSION_WORK_LIMIT", call);
+               if (node instanceof ReturnStatement returned && index == statements.size() - 1
+                     && returned.getExpression() != null) {
+                  Expression expression = returned.getExpression();
+                  preserveMethodConstants(expression, call);
+                  Expr value = expression(expression, false, depth + 1);
+                  return cast(value, kind(expression.resolveTypeBinding(), expression),
+                        kind(method.resolveBinding().getReturnType(), returned), returned);
+               }
+               IVariableBinding binding;
+               Expression initializer;
+               if (node instanceof VariableDeclarationStatement declaration && declaration.fragments().size() == 1) {
+                  VariableDeclarationFragment fragment = (VariableDeclarationFragment) declaration.fragments().getFirst();
+                  binding = fragment.resolveBinding();
+                  initializer = fragment.getInitializer();
+               } else if (node instanceof ExpressionStatement statement && statement.getExpression() instanceof Assignment assignment
+                     && assignment.getLeftHandSide() instanceof SimpleName name
+                     && name.resolveBinding() instanceof IVariableBinding local && frame.containsKey(local.getKey())) {
+                  binding = local;
+                  initializer = assignment;
+               } else throw reject("METHOD_CONTROL_FLOW_OR_EFFECT", call);
+               if (binding == null || binding.isRecovered() || binding.isField() || initializer == null
+                     || !JavaScalarMethodBody.integral(binding.getType())) throw reject("METHOD_NONSCALAR_LOCAL", call);
+               preserveMethodConstants(initializer instanceof Assignment assignment ? assignment.getRightHandSide() : initializer, call);
+               frame.put(binding.getKey(), assignedValue(binding, initializer, depth + 1));
+            }
+            throw reject("METHOD_MISSING_RETURN", call);
+         } catch (Rejected unsupported) {
+            throw reject("METHOD_BODY_" + unsupported.getMessage(), call);
+         } finally {
+            methodFrames.pop();
+            activeMethods.remove(key);
+         }
+      }
+
+      private void preserveMethodConstants(Expression expression, ASTNode call) {
+         if (runtimeOnly && RuntimeCalculationPolicy.containsComputedConstant(expression, declarations))
+            throw reject("METHOD_CONSTANT_EXPRESSION_PRESERVED", call);
       }
 
       private void returnStatement(ReturnStatement returned) {
@@ -483,6 +565,8 @@ public final class JavaComputationExtractor {
             throw JavaComputationExtractor.reject("EXPRESSION_DEPTH_LIMIT", expression);
          }
 
+         if (!methodFrames.isEmpty() && !JavaScalarMethodBody.integral(expression.resolveTypeBinding()))
+            throw reject("METHOD_NONSCALAR_EXPRESSION", expression);
          NumericKind resultKind = this.kind(expression.resolveTypeBinding(), expression);
          if (!primitiveBoundary) {
             this.selected(resultKind, expression);
@@ -501,6 +585,10 @@ public final class JavaComputationExtractor {
                } else if (name instanceof QualifiedName qualifiedName && !(qualifiedName.getQualifier().resolveBinding() instanceof ITypeBinding)) {
                   throw JavaComputationExtractor.reject("EFFECTFUL_CONSTANT_QUALIFIER", expression);
                } else {
+                  if (!methodFrames.isEmpty()) {
+                     if (binding.isField()) throw reject("METHOD_FIELD_ACCESS", expression);
+                     return localValue(binding, expression);
+                  }
                   if (binding.getConstantValue() != null) {
                      if (this.runtimeOnly && name instanceof SimpleName) {
                         // Retain the programmer's symbolic name. The independent checker
@@ -633,6 +721,9 @@ public final class JavaComputationExtractor {
                   && (!(invocation.getExpression() instanceof Name qualifier) || !(qualifier.resolveBinding() instanceof ITypeBinding))) {
                   throw JavaComputationExtractor.reject("STATIC_CALL_EFFECTFUL_QUALIFIER", invocation);
                }
+
+               MethodDeclaration scalarMethod = JavaScalarMethodBody.resolve(this.unit, invocation);
+               if (scalarMethod != null) return methodInvocation(invocation, scalarMethod, depth + 1);
 
                if (method.getDeclaringClass().getQualifiedName().equals("java.math.BigInteger")
                   && method.getName().equals("valueOf")
