@@ -13,6 +13,7 @@ jobs:
     timeout-minutes: 90
     permissions:
       contents: write
+      actions: read
     env:
       NO_AT_BRIDGE: '1'
       GDK_BACKEND: x11
@@ -29,13 +30,6 @@ jobs:
           ref: 6dc33a833f187cdf89d3e99e7cfcf9e871cabf23
           path: product
           fetch-depth: 2
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          repository: carstenartur/Regelsuche
-          ref: 409083a58ab28d14fb3ce02adb2938dd9b92eb5f
-          path: sdk
-          fetch-depth: 2
-          persist-credentials: false
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
@@ -43,81 +37,81 @@ jobs:
           verify-signature: true
           cache: maven
       - uses: ./controls/.github/actions/verify-eclipse-desktop-runtime
-      - name: Qualify two clean exact-source SDK builds and two fresh consumers
-        working-directory: sdk
+      - name: Reuse the already successful exact-source two-build SDK qualification
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = 409083a58ab28d14fb3ce02adb2938dd9b92eb5f
-          test -z "$(git status --porcelain)"
-          mvn -B -ntp -Psdk-release -pl maven-build-contract -Dtest=MavenOptimizationSdkDistributionTest test > "$RUNNER_TEMP/sdk-distribution.log" 2>&1 || { tail -150 "$RUNNER_TEMP/sdk-distribution.log"; exit 1; }
-          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/sdk-distribution.log" | tail -15
-      - name: Prepare consumer changes and resolve the pinned production source
+          gh api repos/carstenartur/sandbox/actions/artifacts/11660502500/zip > "$RUNNER_TEMP/previous.zip"
+          echo '238ac0d315d9fc5e5c51f5ff2088ba8b105e4a7613d3b5b897ae5fc20f0245c5  '"$RUNNER_TEMP/previous.zip" | sha256sum -c -
+          unzip -q "$RUNNER_TEMP/previous.zip" -d retained
+          cp -a retained/sandbox/sandbox/sdk sdk
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, xml.etree.ElementTree as E
+          files=list(Path('sdk').glob('**/reproducibility.json')); assert len(files)==1
+          r=json.loads(files[0].read_text())
+          assert r['status']=='PASS' and r['sourceRevision']=='409083a58ab28d14fb3ce02adb2938dd9b92eb5f'
+          assert r['cleanBuilds']==2 and r['freshConsumers']==2 and r['sdkTestsPerBuild']==91
+          report=list(Path('sdk').glob('**/TEST-*MavenOptimizationSdkDistributionTest.xml')); assert len(report)==1
+          root=E.parse(report[0]).getroot(); assert root.get('tests')=='1' and all(root.get(k,'0')=='0' for k in ('failures','errors','skipped'))
+          print(r)
+          PY
+      - name: Prepare unchanged source-bound SDK integration and repair only volatile provenance identity
         working-directory: product
         shell: bash
         run: |
           set -euo pipefail
-          # Distribution JARs are inside its Maven repository subdirectory.
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('../controls/.github/math-main-controls/prepare.py')
-          text=p.read_text()
-          assert text.count("first.glob('*.jar')")==1
-          p.write_text(text.replace("first.glob('*.jar')","first.rglob('*.jar')"))
+          p=Path('../controls/.github/math-main-controls/prepare.py'); t=p.read_text()
+          assert t.count("first.glob('*.jar')")==1
+          p.write_text(t.replace("first.glob('*.jar')","first.rglob('*.jar')"))
           PY
           python3 ../controls/.github/math-main-controls/prepare.py prepare
+          python3 ../controls/.github/math-main-controls/recover.py
           ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am test-compile > "$RUNNER_TEMP/source-resolution.log" 2>&1 || { tail -130 "$RUNNER_TEMP/source-resolution.log"; exit 1; }
           python3 ../controls/.github/math-main-controls/prepare.py sources
-      - name: Run all standard mathematics tests and export only verified production results
+      - name: Run all standard mathematics tests and export verified production results
         working-directory: product
         shell: bash
         run: |
           set -euo pipefail
           export MATH_BC_ARCHIVE_OUTPUT="$RUNNER_TEMP/production-results"
-          test ! -e "$MATH_BC_ARCHIVE_OUTPUT"
-          xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/mathematics.log" 2>&1 || { tail -180 "$RUNNER_TEMP/mathematics.log"; exit 1; }
+          xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/mathematics.log" 2>&1 || { tail -150 "$RUNNER_TEMP/mathematics.log"; exit 1; }
           python3 ../controls/.github/math-main-controls/prepare.py results
           cp -a sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/mathematics-reports"
-          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size' "$RUNNER_TEMP/mathematics.log" | tail -35
-      - name: Generate the four actual native previews using the qualified SDK
+          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size' "$RUNNER_TEMP/mathematics.log" | tail -32
+      - name: Generate and reproduce the four native previews without relaxing any image comparisons
         working-directory: product
         shell: bash
         run: |
           set -euo pipefail
-          xvfb-run --auto-servernum --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp \
-            -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore \
-            -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest \
-            -DfailIfNoTests=false -f sandbox_help_build/pom.xml -Phelp-screenshots verify > "$RUNNER_TEMP/native-help.log" 2>&1 || { tail -180 "$RUNNER_TEMP/native-help.log"; exit 1; }
-          cp -a sandbox_eclipse_help_swtbot_test/target/surefire-reports "$RUNNER_TEMP/native-help-reports"
+          capture() {
+            xvfb-run -a --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp \
+              -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore \
+              -Dhelp.screenshot.testClass="org.sandbox.jdt.ui.helper.views.$1" \
+              -DfailIfNoTests=false -f sandbox_help_build/pom.xml -Phelp-screenshots verify > "$RUNNER_TEMP/$2.log" 2>&1 || { tail -160 "$RUNNER_TEMP/$2.log"; return 1; }
+            cp -a sandbox_eclipse_help_swtbot_test/target/surefire-reports "$RUNNER_TEMP/$2-reports"
+          }
+          capture BundleClassFingerprintTest fingerprint
+          capture MathematicsHelpScreenshotsSWTBotTest native-help
           mkdir "$RUNNER_TEMP/first-capture"
           cp sandbox_math_cleanup_help/images/* "$RUNNER_TEMP/first-capture/"
-      - name: Verify native reproduction in a fresh Eclipse workspace and Help evidence
-        working-directory: product
-        shell: bash
-        run: |
-          set -euo pipefail
           rm -rf sandbox_eclipse_help_swtbot_test/target/work
-          xvfb-run --auto-servernum --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp \
-            -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore \
-            -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest \
-            -DfailIfNoTests=false -f sandbox_help_build/pom.xml -Phelp-screenshots verify > "$RUNNER_TEMP/native-repeat.log" 2>&1 || { tail -160 "$RUNNER_TEMP/native-repeat.log"; exit 1; }
+          capture MathematicsHelpScreenshotsSWTBotTest native-repeat
           diff -qr "$RUNNER_TEMP/first-capture" sandbox_math_cleanup_help/images
-          cp -a sandbox_eclipse_help_swtbot_test/target/surefire-reports "$RUNNER_TEMP/native-repeat-reports"
-          xvfb-run --auto-servernum --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp \
-            -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore \
-            -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.EclipseHelpScreenshotEvidenceTest \
-            -DfailIfNoTests=false -f sandbox_help_build/pom.xml -Phelp-screenshots verify > "$RUNNER_TEMP/help-evidence.log" 2>&1 || { tail -140 "$RUNNER_TEMP/help-evidence.log"; exit 1; }
-          cp -a sandbox_eclipse_help_swtbot_test/target/surefire-reports "$RUNNER_TEMP/help-evidence-reports"
-      - name: Check executed test reports and publish only the ordinary qualified source tree
+          capture EclipseHelpScreenshotEvidenceTest help-evidence
+      - name: Validate reports and publish the ordinary tested consumer tree
         working-directory: product
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import json, os, pathlib, xml.etree.ElementTree as E
-          evidence=pathlib.Path(os.environ['RUNNER_TEMP'])
-          totals={}
-          for folder,minimum in [('mathematics-reports',196),('native-help-reports',1),('native-repeat-reports',1),('help-evidence-reports',5)]:
+          evidence=pathlib.Path(os.environ['RUNNER_TEMP']); totals={}
+          for folder,minimum in [('mathematics-reports',196),('fingerprint-reports',4),('native-help-reports',1),('native-repeat-reports',1),('help-evidence-reports',5)]:
               files=list((evidence/folder).glob('TEST-*.xml')); assert files,folder
               total=dict.fromkeys(('tests','failures','errors','skipped'),0)
               for file in files:
@@ -125,19 +119,17 @@ jobs:
                   for key in total: total[key]+=int(root.get(key,'0'))
               assert total['tests']>=minimum and not any(total[k] for k in ('failures','errors','skipped')),(folder,total)
               totals[folder]=total
-          (evidence/'test-totals.json').write_text(json.dumps(totals,indent=2)+'\n')
-          print(json.dumps(totals,indent=2))
+          (evidence/'test-totals.json').write_text(json.dumps(totals,indent=2)+'\n'); print(totals)
           PY
           git add docs/ECLIPSE_HELP_COVERAGE.md sandbox_math_cleanup/lib sandbox_math_cleanup_test \
             sandbox_eclipse_help_swtbot_test sandbox_math_cleanup_help/html sandbox_math_cleanup_help/images
-          # Original upstream fixture whitespace is retained byte-for-byte.
           git diff --cached --check -- . ':!**/fixtures/**'
           git diff --cached --stat
           git diff --exit-code
           git write-tree > "$RUNNER_TEMP/qualified-product-tree.txt"
           git fetch --no-tags origin refs/heads/candidate/math-main-20261010-409083a
           test "$(git rev-parse FETCH_HEAD)" = 6dc33a833f187cdf89d3e99e7cfcf9e871cabf23
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'test: qualify the current general SDK with source-bound runtime Help previews'
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'test: qualify the integrated general SDK and reproducible runtime Help previews'
           test -z "$(git status --porcelain)"
           git push origin HEAD:refs/heads/candidate/math-main-20261010-409083a
           git rev-parse HEAD > "$RUNNER_TEMP/qualified-product-commit.txt"
@@ -150,6 +142,7 @@ jobs:
             ${{ runner.temp }}/*.log
             ${{ runner.temp }}/*reports/**
             ${{ runner.temp }}/production-results/**
+            ${{ runner.temp }}/first-capture/**
             ${{ runner.temp }}/test-totals.json
             ${{ runner.temp }}/qualified-product-*.txt
             product/sandbox_math_cleanup_help/images/**
