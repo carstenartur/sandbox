@@ -12,7 +12,7 @@ its initial profile is <strong>Only BigInteger</strong> with
 
 <h2 id="runtime-only">Runtime calculations, not constant folding</h2>
 <p>Authored constant declarations and constant-only changes are preserved.
-The diagnostic is <code>CONSTANT_COMPUTATION_PRESERVED</code>. Genuine runtime
+The diagnostic is <code>CONSTANT_EXPRESSION_PRESERVED</code>. Genuine runtime
 simplification and shared computations remain eligible. See the
 <a href="examples.html">source-bound runtime Bouncy Castle gallery</a>.</p>
 
@@ -142,7 +142,7 @@ Add <code>--apply</code> to request application. Applying
 <code>cleanup.mathematics.checkedOptIn=true</code> in the configuration and
 <code>--accept-checked</code> on the command line. A candidate and an applied
 change are distinct report outcomes. Estimated costs are not measured timings.</p>
-<p>The mathematics configuration has nine strict keys. This example explicitly
+<p>The mathematics configuration has ten strict keys. This example explicitly
 enables the otherwise disabled cleanup, selects the default numeric/safety
 profiles, and excludes generated files:</p>
 <pre>cleanup.mathematics=true
@@ -153,6 +153,7 @@ cleanup.mathematics.workBudget=100000
 cleanup.mathematics.maxStates=2000
 cleanup.mathematics.checkedOptIn=false
 cleanup.mathematics.underflowChecks=false
+cleanup.mathematics.explanations=NONTRIVIAL
 cleanup.mathematics.exclusions=**/generated/**</pre>
 <p>Invalid option names or values fail validation. Source/configuration mismatch
 reports <code>STALE_ANALYSIS</code>. Unresolved bindings, excluded types, unknown
@@ -186,6 +187,9 @@ actual Java names and the independently checked original/replacement value graph
 It identifies premises and numerical policies, not a hand-written example template.
 Detailed diagnostics and the JSON report retain these plans even when source comments
 are disabled. Existing nine-argument programmatic option construction remains comment-free.</p>
+<p>The CLI key <code>cleanup.mathematics.explanations</code> accepts
+<code>NONE</code>, <code>NONTRIVIAL</code>, or <code>ALL</code> and defaults to
+<code>NONTRIVIAL</code>.</p>
 <p>A value-graph comparison is not a complete step-by-step search derivation. Existing
 source-trace and Java checks still govern evaluation order and exceptions. Checked
 arithmetic is an explicit contract change; operation estimates are not timing measurements.
