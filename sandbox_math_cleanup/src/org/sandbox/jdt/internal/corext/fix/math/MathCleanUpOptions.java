@@ -22,7 +22,12 @@ import de.regelsuche.sdk.optimization.SafetyProfile;
 /** Immutable explicit numerical contract, independent of the host Java level. */
 public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety,
         OptimizationGoal goal, long workBudget, int maxStates, boolean checkedOptIn,
+        int targetJava, List<String> exclusions, boolean mathematicalOptIn) {
+ public MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety,
+        OptimizationGoal goal, long workBudget, int maxStates, boolean checkedOptIn,
         int targetJava, List<String> exclusions) {
+  this(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,false);
+ }
  public static final String CLEANUP = "cleanup.mathematics";
  public static final String KINDS = "cleanup.mathematics.numericKinds";
  public static final String SAFETY = "cleanup.mathematics.safetyProfile";
@@ -32,8 +37,10 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
  public static final String CHECKED_OPT_IN = "cleanup.mathematics.checkedOptIn";
  public static final String EXCLUSIONS = "cleanup.mathematics.exclusions";
  public static final String UNDERFLOW = "cleanup.mathematics.underflowChecks";
+ public static final String MATHEMATICAL_OPT_IN = "cleanup.mathematics.mathematicalOptIn";
+ public static final String MATHEMATICAL_WARNING = "Mathematical mode may change overflow behavior and BigInteger result reference identity. Proven local ranges and contract changes are documented in Javadoc.";
  public static final String CHECKED_WARNING = "CHECKED_THROW changes the Java contract: numerical violations may throw ArithmeticException. Both the original and replacement operations must be checked.";
- private static final Set<String> KEYS= Set.of(CLEANUP,KINDS,SAFETY,GOAL,WORK_BUDGET,MAX_STATES,CHECKED_OPT_IN,EXCLUSIONS,UNDERFLOW);
+ private static final Set<String> KEYS= Set.of(CLEANUP,KINDS,SAFETY,GOAL,WORK_BUDGET,MAX_STATES,CHECKED_OPT_IN,EXCLUSIONS,UNDERFLOW,MATHEMATICAL_OPT_IN);
 
  public MathCleanUpOptions {
   Objects.requireNonNull(kinds,"kinds"); Objects.requireNonNull(safety,"safety");
@@ -44,6 +51,8 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
    throw new IllegalArgumentException("Work budget must be 1..100000000; maximum states must be 1..1000000");
   if(targetJava<8 || targetJava>25) throw new IllegalArgumentException("Unsupported target Java: "+targetJava);
   if(safety==SafetyProfile.CHECKED_THROW && !checkedOptIn) throw new IllegalArgumentException(CHECKED_WARNING);
+  if(mathematicalOptIn && safety!=SafetyProfile.PRESERVE_JAVA)
+   throw new IllegalArgumentException("Mathematical mode cannot be combined with checked or fallback safety profiles");
   exclusions=List.copyOf(exclusions);
   for(String exclusion:exclusions) {
    if(exclusion.isBlank() || exclusion.indexOf(';')>=0 || exclusion.indexOf('\n')>=0 || exclusion.indexOf('\r')>=0)
@@ -78,7 +87,8 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
     Long.parseLong(values.getOrDefault(WORK_BUDGET,Long.toString(defaults.workBudget))),
     Integer.parseInt(values.getOrDefault(MAX_STATES,Integer.toString(defaults.maxStates))),
     bool(values,CHECKED_OPT_IN,false),targetJava,
-    paths.isEmpty()?List.of():Arrays.stream(paths.split(";",-1)).map(String::trim).toList());
+    paths.isEmpty()?List.of():Arrays.stream(paths.split(";",-1)).map(String::trim).toList(),
+    bool(values,MATHEMATICAL_OPT_IN,false));
  }
 
  public Map<String,String> toMap() {
@@ -88,7 +98,7 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
   values.put(SAFETY,safety.name());values.put(GOAL,goal.name());
   values.put(WORK_BUDGET,Long.toString(workBudget));values.put(MAX_STATES,Integer.toString(maxStates));
   values.put(CHECKED_OPT_IN,Boolean.toString(checkedOptIn));values.put(EXCLUSIONS,String.join(";",exclusions));
-  values.put(UNDERFLOW,"false");return Map.copyOf(values);
+  values.put(UNDERFLOW,"false");values.put(MATHEMATICAL_OPT_IN,Boolean.toString(mathematicalOptIn));return Map.copyOf(values);
  }
 
  private static boolean bool(Map<String,String> values,String key,boolean fallback) {

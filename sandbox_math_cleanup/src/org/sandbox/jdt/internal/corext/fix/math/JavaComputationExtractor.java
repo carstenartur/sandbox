@@ -72,6 +72,7 @@ import org.eclipse.jdt.core.dom.WhileStatement;
 import org.eclipse.jdt.core.dom.InfixExpression.Operator;
 
 public final class JavaComputationExtractor {
+   static final String ORIGINAL_FALLBACK_MARKER = "Mathematics fallback: unchanged original Java behavior.";
    public JavaComputationExtractor.Extraction extract(CompilationUnit unit, String source, MathCleanUpOptions options) {
       return this.extract(unit, source, options, false, false);
    }
@@ -81,11 +82,20 @@ public final class JavaComputationExtractor {
       return this.extract(unit, source, options, false, true);
    }
 
+   Extraction extractRuntimeFragments(CompilationUnit unit, String source, MathCleanUpOptions options) {
+      return extract(unit, source, options, false, true, 4);
+   }
+
    JavaComputationExtractor.Extraction extractForVerification(CompilationUnit unit, String source, MathCleanUpOptions options) {
       return this.extract(unit, source, options, true, false);
    }
 
    private JavaComputationExtractor.Extraction extract(final CompilationUnit unit, String source, final MathCleanUpOptions options, final boolean includeValues, final boolean runtimeOnly) {
+      return extract(unit, source, options, includeValues, runtimeOnly, Integer.MAX_VALUE);
+   }
+
+   private JavaComputationExtractor.Extraction extract(final CompilationUnit unit, String source, final MathCleanUpOptions options,
+         final boolean includeValues, final boolean runtimeOnly, int maximumOutputs) {
       final ArrayList<JavaComputationRegion> regions = new ArrayList<>();
       final ArrayList<Diagnostic> diagnostics = new ArrayList<>();
       if (!options.enabled()) {
@@ -117,6 +127,10 @@ public final class JavaComputationExtractor {
       );
       unit.accept(new ASTVisitor() {
          public boolean visit(Block block) {
+            if (!block.statements().isEmpty()) {
+               int firstStatement = ((ASTNode) block.statements().getFirst()).getStartPosition();
+               if (source.substring(block.getStartPosition(), firstStatement).contains(ORIGINAL_FALLBACK_MARKER)) return false;
+            }
             if (!JavaComputationExtractor.eligibleBlock(block, runtimeOnly)) {
                return false;
             }
@@ -125,6 +139,10 @@ public final class JavaComputationExtractor {
 
             for (Object child : block.statements()) {
                Statement statement = (Statement)child;
+               if (builder.outputs.size() >= maximumOutputs) {
+                  JavaComputationExtractor.finish(builder, regions, diagnostics);
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+               }
                if (runtimeOnly && RuntimeCalculationPolicy.preserve(statement, declarations)) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
                   diagnostics.add(new Diagnostic("CONSTANT_EXPRESSION_PRESERVED", "Intentional constant source is outside runtime cleanup", statement.getStartPosition(), statement.getLength()));
@@ -537,7 +555,7 @@ public final class JavaComputationExtractor {
          }
          NumericKind declared = kind(method.resolveBinding().getReturnType(), returned);
          selected(declared, returned);
-         if (declared == NumericKind.BIG_INTEGER) {
+         if (declared == NumericKind.BIG_INTEGER && !options.mathematicalOptIn()) {
             throw JavaComputationExtractor.reject("BIG_INTEGER_IDENTITY_OR_ESCAPE", returned);
          }
          if (outputs.size() >= 64) throw JavaComputationExtractor.reject("REGION_SIZE_LIMIT", returned);
@@ -610,14 +628,14 @@ public final class JavaComputationExtractor {
                         case "TEN" -> JavaExpressions.literal(BigInteger.TEN);
                         default -> throw JavaComputationExtractor.reject("UNKNOWN_BIG_INTEGER_CONSTANT", expression);
                      };
-                  } else if (!binding.isField() && name instanceof SimpleName) {
+                  } else if ((!binding.isField() || resultKind == NumericKind.BIG_INTEGER && mathematicalField(binding)) && name instanceof SimpleName) {
                      Expr localValue = this.values.get(binding.getKey());
                      if (localValue != null) {
                         return localValue;
                      }
 
-                     if (resultKind == NumericKind.BIG_INTEGER && (!this.exactBigInteger(binding) || this.knownMagnitudeBound(binding) == null)) {
-                        if (this.options.safety() != SafetyProfile.GUARDED_FALLBACK) {
+                     if (resultKind == NumericKind.BIG_INTEGER && (binding.isField() || !this.exactBigInteger(binding) || this.knownMagnitudeBound(binding) == null)) {
+                        if (this.options.safety() != SafetyProfile.GUARDED_FALLBACK && !options.mathematicalOptIn()) {
                            throw JavaComputationExtractor.reject("UNPROVED_BIG_INTEGER_RECEIVER_OR_MAGNITUDE", expression);
                         }
 
@@ -836,8 +854,24 @@ public final class JavaComputationExtractor {
          }
       }
 
+      private boolean mathematicalField(IVariableBinding binding) {
+         if (!options.mathematicalOptIn() || !Modifier.isFinal(binding.getModifiers())
+               || !declarations.containsKey(binding.getKey())) return false;
+         // Reading another class's static field can initialize it before a receiver's
+         // original method invocation. Restrict new guarded inputs to the method's own class.
+         for (ASTNode node = block; node != null; node = node.getParent()) {
+            if (node instanceof MethodDeclaration method && method.resolveBinding() != null) {
+               return method.resolveBinding().getDeclaringClass().isEqualTo(binding.getDeclaringClass());
+            }
+         }
+         return false;
+      }
+
       void addBigIntegerRangeFacts(IVariableBinding binding, String inputId) {
-         Integer bound = this.knownMagnitudeBound(binding);
+         if (options.mathematicalOptIn() && receiverGuards.contains(binding.getName())) {
+            assumptions.add(new SemanticAssumption(Kind.POSITIVE, inputId, "", "explicit positive exact-receiver runtime guard"));
+         }
+         Integer bound = binding.isField() ? null : this.knownMagnitudeBound(binding);
          if (bound != null || this.receiverGuards.contains(binding.getName())) {
             this.assumptions
                .add(
@@ -853,7 +887,7 @@ public final class JavaComputationExtractor {
          }
 
          VariableDeclarationFragment declaration = this.declarations.get(binding.getKey());
-         if (declaration != null && binding.isEffectivelyFinal() && declaration.getStartPosition() < this.first) {
+         if (declaration != null && !binding.isField() && binding.isEffectivelyFinal() && declaration.getStartPosition() < this.first) {
             if (declaration.getInitializer() instanceof MethodInvocation factory) {
                IMethodBinding method = factory.resolveMethodBinding();
                if (method.getDeclaringClass().getQualifiedName().equals("java.math.BigInteger")
@@ -1021,7 +1055,7 @@ public final class JavaComputationExtractor {
             }
          }
 
-         if (!bigIntegerOutputs.isEmpty()) {
+         if (!bigIntegerOutputs.isEmpty() && !options.mathematicalOptIn()) {
             this.block.accept(new ASTVisitor() {
                public boolean visit(SimpleName name) {
                   if (!(name.resolveBinding() instanceof IVariableBinding binding && bigIntegerOutputs.contains(binding.getKey()))) {

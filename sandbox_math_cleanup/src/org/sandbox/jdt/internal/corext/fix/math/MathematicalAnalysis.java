@@ -116,13 +116,16 @@ public final class MathematicalAnalysis {
       monitor.beginTask("Verify mathematics regions", extraction.regions().size());
       ComputationOptimizer optimizer = new ComputationOptimizer();
       JavaComputationEmitter emitter = new JavaComputationEmitter();
+      MathematicalJavadoc documentation = new MathematicalJavadoc();
       CancellationToken cancellation = monitor::isCanceled;
       long remainingWork = options.workBudget();
-      int unvisitedRegions = extraction.regions().size();
+      List<JavaComputationRegion> pending = new ArrayList<>(extraction.regions());
+      List<JavaComputationRegion> fragments = null;
 
       try {
-         for (JavaComputationRegion region : extraction.regions()) {
-            int regionsLeft = unvisitedRegions--;
+         for (int regionIndex = 0; regionIndex < pending.size(); regionIndex++) {
+            JavaComputationRegion region = pending.get(regionIndex);
+            int regionsLeft = pending.size() - regionIndex;
             if (monitor.isCanceled()) {
                return cancelled(sourceDigest, compilerOptions);
             }
@@ -135,6 +138,11 @@ public final class MathematicalAnalysis {
 
                // One difficult method must not consume the search allocation of all later methods.
                long regionWork = selectionOffset >= 0 ? remainingWork : Math.max(1L, remainingWork / regionsLeft);
+               boolean mathematicalIntegral = false;
+               boolean canTryMathematical = options.mathematicalOptIn() && IntegralMathematicalDomain.supports(region);
+               long ordinaryWork = canTryMathematical ? Math.max(1L, regionWork / 2) : regionWork;
+               boolean mathematicalBigInteger = options.mathematicalOptIn()
+                     && region.trace().occurrences().stream().anyMatch(o -> o.evaluatedKind() == NumericKind.BIG_INTEGER);
                OptimizationRequest request = new OptimizationRequest(
                   region.plan(),
                   region.trace(),
@@ -143,13 +151,42 @@ public final class MathematicalAnalysis {
                   region.assumptions(),
                   options.safety(),
                   options.goal(),
-                  new OptimizationBudget(regionWork, options.maxStates(), 64, 5000L),
+                  new OptimizationBudget(ordinaryWork, options.maxStates(), 64, 5000L),
                   options.safety() == SafetyProfile.CHECKED_THROW ? CheckedPolicy.EXPLICIT_DEFAULT : CheckedPolicy.NONE
                );
 
                try {
                   OptimizationResult result = optimizer.optimize(request, cancellation);
+                  // Keep ordinary Java sharing improvements. A different overflow contract is
+                  // only needed after that search fails, and both attempts share one work budget.
+                  // Inconclusive does not report consumed work; conservatively debit its
+                  // whole allocation. Reserve half up front so that fallback stays bounded.
+                  long ordinarySpent = result instanceof NoImprovement ordinary ? ordinary.work() : ordinaryWork;
+                  if (canTryMathematical && (result instanceof NoImprovement || result instanceof OptimizationResult.Inconclusive)
+                        && ordinarySpent < regionWork) {
+                     remainingWork -= ordinarySpent;
+                     mathematicalIntegral = true;
+                     request = new OptimizationRequest(region.plan(), region.trace(), options.kinds(), "java25-numeric/v1",
+                           region.assumptions(), SafetyProfile.CHECKED_THROW, OptimizationGoal.READABILITY,
+                           new OptimizationBudget(regionWork - ordinarySpent, options.maxStates(), 64, 5000L), CheckedPolicy.EXPLICIT_DEFAULT);
+                     result = optimizer.optimize(request, cancellation);
+                  }
                   if (!(result instanceof Candidate candidate)) {
+                     if (result instanceof OptimizationResult.Unsupported unsupported
+                           && unsupported.toString().contains("plan preparation work bound exceeded")) {
+                        if (fragments == null) fragments = new JavaComputationExtractor().extractRuntimeFragments(ast, source, options).regions();
+                        var smaller = fragments.stream().filter(part -> part.start() >= region.start()
+                              && part.start() + part.length() <= region.start() + region.length() && part.length() < region.length()).toList();
+                        if (!smaller.isEmpty()) {
+                           // Failed preparation is bounded by the SDK structural cap; reserve
+                           // a conservative full-cap charge before scheduling smaller requests.
+                           remainingWork -= Math.min(remainingWork, 2L * de.regelsuche.search.program.JointComputationPlan.MAX_NODES);
+                           pending.addAll(regionIndex + 1, smaller);
+                           diagnostics.add(diagnostic("REGION_PREPARATION_SPLIT", "Preparation limit reached; retrying " + smaller.size()
+                                 + " smaller source regions within the remaining file budget", region));
+                           continue;
+                        }
+                     }
                      diagnostics.add(diagnostic(result.getClass().getSimpleName().toUpperCase(Locale.ROOT), result.toString(), region));
                      if (result instanceof NoImprovement noImprovement) {
                         remainingWork -= noImprovement.work();
@@ -167,12 +204,31 @@ public final class MathematicalAnalysis {
                      continue;
                   }
 
+                  String contract = mathematicalIntegral ? IntegralMathematicalDomain.verify(region, candidate.plan())
+                        : mathematicalBigInteger ? "BigInteger numerical values are preserved; result reference identity may change. "
+                              + "Where receivers are unproved, the optimized branch requires positive exact BigInteger instances "
+                              + "with bitLength() below 4096; otherwise the original calculation executes. "
+                              + "No extension of the BigInteger value range or constant-time execution is claimed." : null;
+
+                  if (options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME && !mathematicalIntegral
+                        && !candidate.cost().estimatedRuntimeImprovement()) {
+                     diagnostics.add(diagnostic("NO_RUNTIME_IMPROVEMENT", "Candidate improves storage or ordering only, not estimated runtime", region));
+                     continue;
+                  }
+                  if (mathematicalIntegral && options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME
+                        && candidate.cost().candidateCost().operationWork() >= candidate.cost().sourceCost().operationWork()) {
+                     diagnostics.add(diagnostic("NO_RUNTIME_IMPROVEMENT", "Mathematical candidate does not reduce operation work", region));
+                     continue;
+                  }
+
                   HashSet<String> reserved = new HashSet<>(region.reservedNames());
                   reserved.addAll(generatedNames);
                   JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava());
                   JavaEmissionVerifier.verify(request, candidate, plain, region, options, cancellation);
                   String replacement;
-                  if (options.safety() == SafetyProfile.CHECKED_THROW) {
+                  if (mathematicalIntegral) {
+                     replacement = indentGenerated(plain.statements(), source, region.start()) + rewriteValues(ast, source, region, plain.outputValues(), compilerOptions);
+                  } else if (options.safety() == SafetyProfile.CHECKED_THROW) {
                      JavaComputationEmitter.Emission checked = emitter.emitChecked(request, candidate, region.inputNames(), reserved, options.targetJava());
                      replacement = indentGenerated(checked.statements(), source, region.start()) + rewriteValues(ast, source, region, checked.outputValues(), compilerOptions);
                   } else if (!region.receiverGuards().isEmpty()) {
@@ -180,14 +236,16 @@ public final class MathematicalAnalysis {
                         throw new IllegalArgumentException("MIXED_RECEIVER_NUMERIC_GUARD_UNSUPPORTED");
                      }
 
-                     if (options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME) {
+                     if (options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME && (!mathematicalBigInteger
+                           || candidate.cost().sourceScore() - candidate.cost().candidateScore() <= 70L * region.receiverGuards().size())) {
                         throw new IllegalArgumentException("RECEIVER_GUARD_RUNTIME_COST_UNQUALIFIED");
                      }
 
                      String receiverGuard = region.receiverGuards()
                         .stream()
                         .sorted()
-                        .map(receiver -> "(" + receiver + " != null && " + receiver + ".getClass() == java.math.BigInteger.class && " + receiver + ".bitLength() < 4096)")
+                        .map(receiver -> "(" + receiver + " != null && " + receiver + ".getClass() == java.math.BigInteger.class && " + receiver + ".bitLength() < 4096"
+                              + (mathematicalBigInteger ? " && " + receiver + ".signum() > 0" : "") + ")")
                         .collect(Collectors.joining(" && "));
                      replacement = guardedSource(ast, source, region, "", receiverGuard, plain);
                   } else if (candidate.obligations().guard() != GuardKind.NONE) {
@@ -210,21 +268,36 @@ public final class MathematicalAnalysis {
                   }
 
                   CostAssessment cost = candidate.cost();
+                  if (mathematicalIntegral) {
+                     long workWeight = options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME ? 10 : 1;
+                     long storageWeight = options.goal() == OptimizationGoal.READABILITY ? 0
+                           : options.goal() == OptimizationGoal.LOWER_ALLOCATION ? 10 : 1;
+                     long sourceWork = Math.max(region.trace().occurrences().size(), cost.sourceCost().operationWork());
+                     cost = new CostAssessment(cost.sourceCost().weighted(workWeight, storageWeight, storageWeight, 1)
+                           + (sourceWork - cost.sourceCost().operationWork()) * workWeight,
+                           cost.candidateCost().weighted(workWeight, storageWeight, storageWeight, 1),
+                           0, 0, cost.sourceCost(), cost.candidateCost(), cost.candidateCost().operationWork() < sourceWork);
+                  }
                   if (!region.receiverGuards().isEmpty()) {
-                     long receiverCheckCost = 5L * region.receiverGuards().size();
+                     long receiverCheckCost = (mathematicalBigInteger ? 7L : 5L) * region.receiverGuards().size();
+                     long weightedChecks = receiverCheckCost * (options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME ? 10 : 1);
                      cost = new CostAssessment(
                         cost.sourceScore(),
-                        cost.candidateScore() + receiverCheckCost,
+                        cost.candidateScore() + weightedChecks,
                         cost.checkWork() + receiverCheckCost,
                         region.trace().occurrences().size(),
                         cost.sourceCost(),
                         cost.candidateCost(),
-                        false
+                        mathematicalBigInteger && cost.estimatedRuntimeImprovement() && cost.sourceScore() > cost.candidateScore() + weightedChecks
                      );
+                  }
+                  if (mathematicalBigInteger && cost.candidateScore() >= cost.sourceScore()) {
+                     diagnostics.add(diagnostic("GUARD_COST_EXCEEDS_BENEFIT", "Receiver checks erase the estimated improvement", region));
+                     continue;
                   }
 
                   String description = "Mathematics "
-                     + options.safety()
+                     + (contract == null ? options.safety() : "MATHEMATICAL")
                      + "; estimated operation work "
                      + cost.sourceCost().operationWork()
                      + " -> "
@@ -235,6 +308,12 @@ public final class MathematicalAnalysis {
                      + candidate.evidence().checkerRevision()
                      + "; assumptions "
                      + region.assumptions();
+                  description += "; estimated score " + cost.sourceScore() + " -> " + cost.candidateScore()
+                        + "; measured speedup: not assessed";
+                  if (contract != null) {
+                     description += "; " + contract;
+                     documentation.add(ast, region, contract);
+                  }
                   if (options.safety() == SafetyProfile.CHECKED_THROW) {
                      description = description
                         + "; CHECKED_THROW changes the Java contract: numerical violations may throw ArithmeticException. Both the original and replacement operations must be checked.";
@@ -274,8 +353,8 @@ public final class MathematicalAnalysis {
          return cancelled(sourceDigest, compilerOptions);
       }
 
-      MathematicalAnalysis.Analysis analysis = new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions, evidence);
-      if (replacements.size() > 1) {
+      MathematicalAnalysis.Analysis analysis = new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation.edits(source));
+      if (replacements.size() > 1 || !analysis.documentation().isEmpty()) {
          try {
             Document combined = new Document(source);
             analysis.newEdit().apply(combined);
@@ -375,6 +454,7 @@ public final class MathematicalAnalysis {
       }
 
       return indentGenerated(declarations + prelude + "if (" + guard + ") {\n" + branch + "} else {\n", source, region.start())
+            + indentGenerated("// " + JavaComputationExtractor.ORIGINAL_FALLBACK_MARKER + "\n", source, region.start())
             + fallback + indentGenerated("\n}", source, region.start());
    }
 
@@ -454,14 +534,16 @@ public final class MathematicalAnalysis {
       List<MathematicalAnalysis.Diagnostic> diagnostics,
       String sourceDigest,
       Map<String, String> compilerOptions,
-      List<MathematicalAnalysis.VerifiedRegion> evidence
+      List<MathematicalAnalysis.VerifiedRegion> evidence,
+      List<MathematicalAnalysis.Replacement> documentation
    ) {
       public Analysis(
          List<MathematicalAnalysis.Replacement> replacements,
          List<MathematicalAnalysis.Diagnostic> diagnostics,
          String sourceDigest,
          Map<String, String> compilerOptions,
-         List<MathematicalAnalysis.VerifiedRegion> evidence
+         List<MathematicalAnalysis.VerifiedRegion> evidence,
+         List<MathematicalAnalysis.Replacement> documentation
       ) {
          replacements = List.copyOf(replacements);
          diagnostics = List.copyOf(diagnostics);
@@ -472,6 +554,12 @@ public final class MathematicalAnalysis {
          this.sourceDigest = sourceDigest;
          this.compilerOptions = compilerOptions;
          this.evidence = evidence;
+         this.documentation = List.copyOf(documentation);
+      }
+
+      public Analysis(List<Replacement> replacements, List<Diagnostic> diagnostics, String sourceDigest,
+            Map<String, String> compilerOptions, List<VerifiedRegion> evidence) {
+         this(replacements, diagnostics, sourceDigest, compilerOptions, evidence, List.of());
       }
 
       public Analysis(List<MathematicalAnalysis.Replacement> replacements, List<MathematicalAnalysis.Diagnostic> diagnostics, String sourceDigest, Map<String, String> compilerOptions) {
@@ -491,6 +579,9 @@ public final class MathematicalAnalysis {
 
          for (MathematicalAnalysis.Replacement replacement : this.replacements) {
             edit.addChild(new ReplaceEdit(replacement.offset(), replacement.length(), replacement.replacement()));
+         }
+         for (MathematicalAnalysis.Replacement note : documentation) {
+            edit.addChild(new ReplaceEdit(note.offset(), note.length(), note.replacement()));
          }
 
          return edit;
