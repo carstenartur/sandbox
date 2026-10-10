@@ -10,13 +10,19 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 35
     permissions:
       contents: write
+    env:
+      NO_AT_BRIDGE: '1'
+      GDK_BACKEND: x11
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 214e782adb31541e5f4f6babf48dd2b68cbfdb8c
+          ref: f05e403075dfec7a8067da2bbd836090d427bd6e
+          fetch-depth: 50
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
@@ -24,95 +30,121 @@ jobs:
           verify-signature: true
           cache: maven
       - uses: ./.github/actions/verify-eclipse-desktop-runtime
-      - name: Connect verified plans and compare serialized proof values consistently
+      - name: Incorporate qualified integration fixes without reverting concurrent changes
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = 214e782adb31541e5f4f6babf48dd2b68cbfdb8c
+          test "$(git rev-parse HEAD)" = f05e403075dfec7a8067da2bbd836090d427bd6e
           test -z "$(git status --porcelain)"
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java')
-          text=p.read_text()
-          replacements=[
-            ('if (!(optimizer.reverify(request, candidate, cancellation) instanceof Verified)) {',
-             'var explained = de.regelsuche.sdk.optimization.ComputationExplanations.describe(request, candidate, cancellation);\n                  if (!(explained.verification() instanceof Verified) || explained.explanation().isEmpty()) {'),
-            ('diagnostics.add(diagnostic("REVERIFICATION_FAILED", "Candidate evidence did not pass independent checking", region));',
-             'diagnostics.add(diagnostic("REVERIFICATION_FAILED", explained.verification().toString(), region));'),
-            ('                  String description = "Mathematics "',
-             '                  ComputationExplanation explanation = ComputationExplanation.from(region, explained.explanation().orElseThrow());\n                  String description = "Mathematics "'),
-            ('region.start(), region.length(), candidate.evidence(), cost, source.substring(region.start(), region.start() + region.length()), replacement\n',
-             'region.start(), region.length(), candidate.evidence(), cost, source.substring(region.start(), region.start() + region.length()), replacement, explanation\n'),
-            ('   public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost, String original, String replacement) {\n   }',
-             '''   public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
-                String original, String replacement, ComputationExplanation explanation) {
-                public VerifiedRegion {
-                   if (explanation != null && !proof.equals(explanation.verified().proof())) {
-                      throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
-                   }
-                }
-                /** Compatibility for explicitly constructed historical report records. */
-                public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
-                      String original, String replacement) {
-                   this(offset, length, proof, cost, original, replacement, null);
-                }
-             }''')
-          ]
-          for old,new in replacements:
-              assert text.count(old)==1, old
-              text=text.replace(old,new)
-          p.write_text(text)
-          test=Path('sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/VerifiedComputationExplanationTest.java')
-          text=test.read_text()
-          old='assertEquals(new ObjectMapper().valueToTree(analysis.evidence().getFirst().proof()), verified.path("proof"));'
-          new='''// Compare JSON with the same numeric-node construction on both sides;
-                  // separately retain exact typed equality of the immutable proof records.
-                  var mapper = new ObjectMapper();
-                  assertEquals(mapper.readTree(mapper.writeValueAsString(analysis.evidence().getFirst().proof())), verified.path("proof"));
-                  assertEquals(analysis.evidence().getFirst().proof(), analysis.evidence().getFirst().explanation().verified().proof());'''
-          assert text.count(old)==1
-          test.write_text(text.replace(old,new))
-          PY
-          git add sandbox_math_cleanup/src sandbox_math_cleanup_test/src
-          git diff --cached --check
-          git diff --cached > "$RUNNER_TEMP/report-integration.patch"
-          git write-tree > "$RUNNER_TEMP/tested-tree.txt"
-      - name: Run the entire standard mathematics module
-        env:
-          NO_AT_BRIDGE: '1'
-          GDK_BACKEND: x11
-          LANG: C.UTF-8
-          LC_ALL: C.UTF-8
+          git fetch --no-tags --depth=50 origin 35b21aaabf474d9c46ca5a82ac7b41da75bbddd2
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' merge --no-commit --no-ff 35b21aaabf474d9c46ca5a82ac7b41da75bbddd2
+          mkdir "$RUNNER_TEMP/original-images"
+          cp sandbox_math_cleanup_help/images/* "$RUNNER_TEMP/original-images/"
+          cat > docs/qa/verified-computation-reports.md <<'DOC'
+          # Verified computation plans in mathematics reports
+
+          Each newly accepted mathematics edit now carries an `explanation` in its
+          analysis evidence. The workspace/CLI JSON report serializes this data using
+          the existing report writer; no additional mathematical optimizer is added.
+
+          `inputNames` and `outputNames` map SDK symbols to the actual Java source
+          names. `guardedReceivers` records adapter receiver checks separately from
+          numeric obligations. `verified` contains the independently reverified proof,
+          assumptions, runtime obligations, original and replacement computation DAGs,
+          shared intermediate nodes and separately labeled operation counts.
+
+          These are checked before/after computation plans, **not** a fabricated
+          step-by-step rewrite history. Counts are not timing measurements. Existing
+          source comments, source code, compact preview labels and Undo stay unchanged.
+          Optional generated Java comments and a human-readable derivation viewer are
+          future work. No constructor/halving recognizer or named example selector is
+          involved. Constant-only edits remain excluded.
+
+          Explanation generation replaces the previous standalone re-verification;
+          its SDK verification and rendering share one allowance and deadline. An
+          unverified, canceled or incomplete explanation cannot accompany an accepted
+          new edit. The original numeric/exception checks and emission verifier remain
+          authoritative. Historical test/report records may have no explanation; they
+          are not backfilled with invented proof data.
+
+          End-to-end tests serialize actual analysis evidence, compare exact typed and
+          JSON proof values, preserve checked-arithmetic obligations, exercise helper
+          calls, reject constant-only targets, and test cancellation and exact Undo.
+          The JSON proof comparison uses identical serialization/parsing on both sides
+          so Jackson's in-memory numeric-node width does not produce false failures.
+          DOC
+          git add docs/qa/verified-computation-reports.md
+          git diff --cached --check 35b21aaabf474d9c46ca5a82ac7b41da75bbddd2
+      - name: Run all standard mathematics regressions with inherited quality checks
         shell: bash
         run: |
           set -euo pipefail
-          if ! xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/verify.log" 2>&1; then
-            grep -E '\[ERROR\]|Failures:|<<< FAILURE|BUILD FAILURE' "$RUNNER_TEMP/verify.log" | tail -25
-            tail -35 "$RUNNER_TEMP/verify.log"
-            exit 1
+          if ! xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/math.log" 2>&1; then
+            tail -65 "$RUNNER_TEMP/math.log"; exit 1
           fi
-          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size' "$RUNNER_TEMP/verify.log" | tail -35
-          python3 - <<'PY'
-          from pathlib import Path
-          import xml.etree.ElementTree as E
-          files=list(Path('sandbox_math_cleanup_test/target/surefire-reports').glob('TEST-*.xml'))
-          assert files
-          totals=dict.fromkeys(('tests','failures','errors','skipped'),0)
-          for file in files:
-              root=E.parse(file).getroot()
-              for k in totals: totals[k]+=int(root.get(k,'0'))
-          assert totals['tests']>=201 and not any(totals[k] for k in ('failures','errors','skipped')), totals
-          print('MATH_MODULE_TOTALS='+str(totals))
-          PY
-      - name: Publish only the tested ordinary source change
+          cp -a sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/math-reports"
+          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size' "$RUNNER_TEMP/math.log" | tail -32
+      - name: Reproduce actual native previews and source-bound provenance
         shell: bash
         run: |
           set -euo pipefail
+          capture() {
+            xvfb-run -a --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp \
+              -Dsandbox.tycho.linux-only=true -Dspotbugs.skip=true -Dtycho.localArtifacts=ignore \
+              -Dhelp.screenshot.testClass="org.sandbox.jdt.ui.helper.views.$1" \
+              -DfailIfNoTests=false -f sandbox_help_build/pom.xml -Phelp-screenshots verify > "$RUNNER_TEMP/$2.log" 2>&1 || { tail -65 "$RUNNER_TEMP/$2.log"; return 1; }
+            cp -a sandbox_eclipse_help_swtbot_test/target/surefire-reports "$RUNNER_TEMP/$2-reports"
+          }
+          capture MathematicsHelpScreenshotsSWTBotTest native-help
+          mkdir "$RUNNER_TEMP/first-capture"
+          cp sandbox_math_cleanup_help/images/* "$RUNNER_TEMP/first-capture/"
+          rm -rf sandbox_eclipse_help_swtbot_test/target/work
+          capture MathematicsHelpScreenshotsSWTBotTest native-repeat
+          diff -qr "$RUNNER_TEMP/first-capture" sandbox_math_cleanup_help/images
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          original=Path(os.environ['RUNNER_TEMP'])/'original-images'
+          current=Path('sandbox_math_cleanup_help/images')
+          pngs=list(original.glob('*.png'))
+          assert len(pngs)==4, pngs
+          for p in pngs: assert p.read_bytes()==(current/p.name).read_bytes(),p.name
+          print('ALL_FOUR_PREVIEW_PNGS_UNCHANGED; provenance regenerated by real execution')
+          PY
+          capture EclipseHelpScreenshotEvidenceTest help-evidence
+      - name: Verify complete default Help module without disabling SpotBugs
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_common_core,sandbox_common,sandbox_test_commons,sandbox_eclipse_help_swtbot_test -am verify > "$RUNNER_TEMP/help-default.log" 2>&1; then
+            tail -65 "$RUNNER_TEMP/help-default.log"; exit 1
+          fi
+          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size' "$RUNNER_TEMP/help-default.log" | tail -20
+      - name: Validate evidence and publish only ordinary tested product files
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import os,xml.etree.ElementTree as E
+          root=Path(os.environ['RUNNER_TEMP'])
+          for folder,minimum in [('math-reports',201),('native-help-reports',1),('native-repeat-reports',1),('help-evidence-reports',5)]:
+              files=list((root/folder).glob('TEST-*.xml')); assert files,folder
+              totals=dict.fromkeys(('tests','failures','errors','skipped'),0)
+              for file in files:
+                  e=E.parse(file).getroot()
+                  for k in totals: totals[k]+=int(e.get(k,'0'))
+              assert totals['tests']>=minimum and not any(totals[k] for k in ('failures','errors','skipped')),(folder,totals)
+              print(folder,totals)
+          PY
+          git add sandbox_math_cleanup_help/images docs/qa/verified-computation-reports.md
           git diff --exit-code
-          test "$(git write-tree)" = "$(cat "$RUNNER_TEMP/tested-tree.txt")"
+          git diff --cached --check 35b21aaabf474d9c46ca5a82ac7b41da75bbddd2
+          git write-tree > "$RUNNER_TEMP/tested-tree.txt"
           git fetch --no-tags origin refs/heads/feat/verified-math-report-explanations-20261010
-          test "$(git rev-parse FETCH_HEAD)" = 214e782adb31541e5f4f6babf48dd2b68cbfdb8c
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'feat: expose independently verified computation plans in analysis reports'
+          test "$(git rev-parse FETCH_HEAD)" = f05e403075dfec7a8067da2bbd836090d427bd6e
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'test: qualify verified reports with unchanged native previews and refreshed provenance'
+          test -z "$(git status --porcelain)"
           git push origin HEAD:refs/heads/feat/verified-math-report-explanations-20261010
           git rev-parse HEAD > "$RUNNER_TEMP/product-source.txt"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
@@ -121,8 +153,9 @@ jobs:
           name: verified-math-report-${{ github.run_id }}
           retention-days: 7
           path: |
-            ${{ runner.temp }}/verify.log
+            ${{ runner.temp }}/*.log
+            ${{ runner.temp }}/*reports/**
             ${{ runner.temp }}/product-source.txt
             ${{ runner.temp }}/tested-tree.txt
-            ${{ runner.temp }}/report-integration.patch
-            sandbox_math_cleanup_test/target/surefire-reports/**
+            sandbox_math_cleanup_help/images/**
+            sandbox_eclipse_help_swtbot_test/target/surefire-reports/**
