@@ -83,7 +83,7 @@ class BouncyCastleBigIntegerTest {
     }
     private Path compile(String source, Path dependency) throws IOException {
         Path directory = Files.createTempDirectory(temporary, "compiled-"); Path file = directory.resolve(ENTRY);
-        Files.createDirectories(file.getParent()); Files.writeString(file, source);
+        Files.createDirectories(file.getParent()); Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-cp",
                 dependency.toString(), "-d", directory.toString(), file.toString()));
         return directory;

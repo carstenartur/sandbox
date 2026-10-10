@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.HashMap;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.net.URLClassLoader;
@@ -146,7 +147,7 @@ class MathematicalContractTest {
     private Method compile(String source, Class<?> parameter) throws Exception {
         Path directory = Files.createTempDirectory(temporary, "compiled-");
         Path file = directory.resolve("Calculation.java");
-        Files.writeString(file, source);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
                 "--release", "17", "-d", directory.toString(), file.toString()));
         try (var loader = new URLClassLoader(new java.net.URL[] {directory.toUri().toURL()}, null)) {
