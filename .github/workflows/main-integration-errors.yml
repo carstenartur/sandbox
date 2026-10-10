@@ -17,13 +17,14 @@ jobs:
         run: |
           set -euo pipefail
           for job in 114144326961 114144327006; do
-            gh api "repos/carstenartur/sandbox/actions/jobs/$job/logs" > "$RUNNER_TEMP/job-$job.log"
+            gh api --allow-escape-sequences "repos/carstenartur/sandbox/actions/jobs/$job/logs" > "$RUNNER_TEMP/job-$job.log"
           done
           python3 - <<'PY'
           from pathlib import Path
           import os, re
           for path in sorted(Path(os.environ['RUNNER_TEMP']).glob('job-*.log')):
-              lines=path.read_text(encoding='utf-8-sig').splitlines()
+              text=re.sub(r'\x1b\[[0-?]*[ -/]*[@-~]','',path.read_text(encoding='utf-8-sig'))
+              lines=text.splitlines()
               print('\n=== '+path.name+' ===')
               hits=[i for i,s in enumerate(lines) if re.search(r'\[ERROR\]|COMPILATION ERROR|<<< FAILURE|BUILD FAILURE|Could not resolve|unresolved dependency',s)]
               wanted=set()
