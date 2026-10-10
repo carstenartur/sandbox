@@ -103,8 +103,8 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Use runner Maven
-        uses: ./.github/actions/use-runner-maven
+      - name: Verify pinned Maven Wrapper
+        run: ./mvnw --batch-mode --no-transfer-progress --version
 
       - name: Install Linux desktop runtime
         run: |
@@ -124,7 +124,7 @@ jobs:
             handled before merge; tracked-tree and forbidden-automation checks
             remain active against the commit's first parent.
         run: >-
-          xvfb-run --auto-servernum mvn
+          xvfb-run --auto-servernum ./mvnw
           -Pdistribution
           --batch-mode
           -Dtycho.localArtifacts=ignore
