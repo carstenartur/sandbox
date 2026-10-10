@@ -1,0 +1,52 @@
+name: Verified mathematics report qualification
+on:
+  push:
+    branches: [diagnostic/verified-math-report-20261010]
+permissions:
+  contents: read
+concurrency:
+  group: verified-math-report-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 39d299fd971f0175c8693af5f8aa4679bc733445
+          persist-credentials: false
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+        with:
+          distribution: temurin
+          java-version: '25'
+          verify-signature: true
+          cache: maven
+      - uses: ./.github/actions/verify-eclipse-desktop-runtime
+      - name: Run complete standard mathematics module on exact test source
+        env:
+          NO_AT_BRIDGE: '1'
+          GDK_BACKEND: x11
+          LANG: C.UTF-8
+          LC_ALL: C.UTF-8
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 39d299fd971f0175c8693af5f8aa4679bc733445
+          test -z "$(git status --porcelain)"
+          git rev-parse HEAD > "$RUNNER_TEMP/product-source.txt"
+          if ! xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/verify.log" 2>&1; then
+            tail -170 "$RUNNER_TEMP/verify.log"
+            exit 1
+          fi
+          grep -E 'Tests run:|BUILD SUCCESS|BugInstance size' "$RUNNER_TEMP/verify.log" | tail -40
+          git diff --exit-code
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: verified-math-report-${{ github.run_id }}
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/verify.log
+            ${{ runner.temp }}/product-source.txt
+            sandbox_math_cleanup_test/target/surefire-reports/**
