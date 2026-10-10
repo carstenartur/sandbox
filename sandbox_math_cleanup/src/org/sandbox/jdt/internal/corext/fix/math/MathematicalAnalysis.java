@@ -163,6 +163,7 @@ public final class MathematicalAnalysis {
 
                   remainingWork -= candidate.work();
                   var explained = de.regelsuche.sdk.optimization.ComputationExplanations.describe(request, candidate, cancellation);
+                  remainingWork -= explained.explanation().map(de.regelsuche.sdk.optimization.ComputationExplanations.Explanation::presentationWork).orElse(0L);
                   if (!(explained.verification() instanceof Verified) || explained.explanation().isEmpty()) {
                      diagnostics.add(diagnostic("REVERIFICATION_FAILED", explained.verification().toString(), region));
                      continue;
