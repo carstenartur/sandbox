@@ -9,10 +9,17 @@ concurrency:
   cancel-in-progress: false
 jobs:
   verify:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     permissions:
       contents: write
+      actions: read
+    env:
+      MAVEN_OPTS: -Djava.awt.headless=false
+      NO_AT_BRIDGE: '1'
+      GDK_BACKEND: x11
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -28,12 +35,11 @@ jobs:
           java-version: '25'
           verify-signature: true
           cache: maven
-      - name: Provision native prerequisites
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends xvfb libgtk-3-0
-      - name: Stage ordinary source changes on the exact test-only revision
+      - uses: ./source/.github/actions/verify-eclipse-desktop-runtime
+      - name: Reconstruct the exact source that passed the complete module and native contracts
         working-directory: source
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = cebce220e376a402be1d4c0680f80c97ddadcced
@@ -43,33 +49,66 @@ jobs:
           git add sandbox_math_cleanup sandbox_math_cleanup_test sandbox_math_cleanup_help/html/cleanup.html docs/qa/verified-mathematics-explanations.md docs/ECLIPSE_HELP.md
           git diff --cached --check
           git write-tree > "$RUNNER_TEMP/source-tree.txt"
-          git diff --cached --stat
-      - name: Verify the complete mathematics module
+          python3 - <<'PY'
+          import hashlib, io, json, os, pathlib, subprocess, urllib.request, urllib.error, zipfile
+          import xml.etree.ElementTree as E
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+          url='https://api.github.com/repos/carstenartur/sandbox/actions/artifacts/11665427634/zip'
+          request=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+          try:
+              with urllib.request.build_opener(NoRedirect).open(request,timeout=60) as response:
+                  data=response.read(4_000_000)
+          except urllib.error.HTTPError as response:
+              if response.code not in (301,302,303,307,308): raise
+              location=response.headers['Location']
+              assert location.startswith('https://')
+              # The signed artifact URL is fetched WITHOUT forwarding the GitHub token.
+              with urllib.request.urlopen(location,timeout=60) as artifact:
+                  data=artifact.read(4_000_000)
+          assert hashlib.sha256(data).hexdigest()=='bfafea3e14f1413d000b87849b8b052b19ad611e2af77e11d3da96807c38aa8f'
+          with zipfile.ZipFile(io.BytesIO(data)) as archive:
+              names=archive.namelist()
+              tree=[name for name in names if name.endswith('/source-tree.txt')]
+              assert len(tree)==1
+              tested_tree=archive.read(tree[0]).decode().strip()
+              actual_tree=subprocess.check_output(['git','write-tree'],text=True).strip()
+              assert actual_tree==tested_tree,(actual_tree,tested_tree)
+              reports=[name for name in names if '/math-reports/TEST-' in name and name.endswith('.xml')]
+              assert reports
+              totals={key:0 for key in ('tests','failures','errors','skipped')}
+              for name in reports:
+                  suite=E.fromstring(archive.read(name))
+                  for key in totals: totals[key]+=int(suite.get(key,'0'))
+                  if 'MathematicalExplanationTest' in name:
+                      for output in suite.iter('system-out'):
+                          text=output.text or ''
+                          if 'ACTUAL_EXPLAINED_JAVA=' in text: print(text[:6000])
+              assert totals=={'tests':204,'failures':0,'errors':0,'skipped':0},totals
+              native=[name for name in names if '/native-reports/TEST-' in name and name.endswith('MathematicalWorkbenchSWTBotTest.xml')]
+              assert len(native)==1,native
+              suite=E.fromstring(archive.read(native[0]))
+              native_totals={key:int(suite.get(key,'0')) for key in totals}
+              assert native_totals=={'tests':9,'failures':0,'errors':0,'skipped':0},native_totals
+          receipt={'testedSourceTree':actual_tree,'qualificationRun':38040451091,'artifact':11665427634,
+                   'artifactSha256':hashlib.sha256(data).hexdigest(),'mathematics':totals,'nativeWorkbench':native_totals,
+                   'qualificationEnvironment':'Ubuntu 22.04; Java 25','helpEnvironment':'Ubuntu 24.04 canonical screenshot workflow environment'}
+          pathlib.Path(os.environ['RUNNER_TEMP'],'source-qualification.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          print('EXACT_TESTED_SOURCE',json.dumps(receipt))
+          PY
+      - name: Reproduce native runtime Help in its canonical environment twice
         working-directory: source
         run: |
           set -euo pipefail
-          xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/math-tests.log" 2>&1 || { tail -130 "$RUNNER_TEMP/math-tests.log"; exit 1; }
-          grep -E 'Tests run:|BUILD SUCCESS|ACTUAL_EXPLAINED_JAVA' "$RUNNER_TEMP/math-tests.log" | tail -35
-          cp -a sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/math-reports"
-      - name: Verify all nine native workbench contracts including explanation persistence
-        working-directory: source
-        run: |
-          set -euo pipefail
-          xvfb-run -a ./mvnw -B -ntp -Pswtbot -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am -Dtest=MathematicalWorkbenchSWTBotTest verify > "$RUNNER_TEMP/native-tests.log" 2>&1 || { tail -130 "$RUNNER_TEMP/native-tests.log"; exit 1; }
-          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/native-tests.log" | tail -10
-          cp -a sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/native-reports"
-      - name: Reproduce native runtime Help and bind it to the new adapter
-        working-directory: source
-        run: |
-          set -euo pipefail
-          xvfb-run -a --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp -Dtycho.localArtifacts=ignore -f sandbox_help_build/pom.xml -Phelp-screenshots -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest clean verify > "$RUNNER_TEMP/help-first.log" 2>&1 || { tail -130 "$RUNNER_TEMP/help-first.log"; exit 1; }
+          xvfb-run -a --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp -Dsandbox.tycho.linux-only=true -Dtycho.localArtifacts=ignore -f sandbox_help_build/pom.xml -Phelp-screenshots -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest clean verify > "$RUNNER_TEMP/help-first.log" 2>&1 || { tail -130 "$RUNNER_TEMP/help-first.log"; exit 1; }
           cp -a sandbox_math_cleanup_help/images "$RUNNER_TEMP/help-first-images"
-          # No changed screenshot is automatically accepted merely to get a green run.
           git diff --exit-code -- 'sandbox_math_cleanup_help/images/*.png'
-          git diff --name-only
-          xvfb-run -a --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp -Dtycho.localArtifacts=ignore -f sandbox_help_build/pom.xml -Phelp-screenshots -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest clean verify > "$RUNNER_TEMP/help-repeat.log" 2>&1 || { tail -130 "$RUNNER_TEMP/help-repeat.log"; exit 1; }
+          xvfb-run -a --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp -Dsandbox.tycho.linux-only=true -Dtycho.localArtifacts=ignore -f sandbox_help_build/pom.xml -Phelp-screenshots -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest clean verify > "$RUNNER_TEMP/help-repeat.log" 2>&1 || { tail -130 "$RUNNER_TEMP/help-repeat.log"; exit 1; }
           diff -r "$RUNNER_TEMP/help-first-images" sandbox_math_cleanup_help/images
-          # Only metadata generated by the actual preview/Apply/Undo driver is staged.
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/help-first.log" | tail -8
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/help-repeat.log" | tail -8
+          # Metadata is generated by the actual source-bound preview/Apply/Undo driver.
           git add sandbox_math_cleanup_help/images/*.provenance.json
           git diff --cached --check
           git write-tree > "$RUNNER_TEMP/source-tree.txt"
@@ -92,12 +131,7 @@ jobs:
           path: |
             ${{ runner.temp }}/source-commit.txt
             ${{ runner.temp }}/source-tree.txt
-            ${{ runner.temp }}/math-tests.log
-            ${{ runner.temp }}/native-tests.log
+            ${{ runner.temp }}/source-qualification.json
             ${{ runner.temp }}/help-*.log
-            ${{ runner.temp }}/math-reports/**
-            ${{ runner.temp }}/native-reports/**
-            source/sandbox_math_cleanup_test/target/surefire-reports/**
-            source/sandbox_math_cleanup_test/target/screenshots/**
             source/sandbox_math_cleanup_help/images/**
             source/sandbox_eclipse_help_swtbot_test/target/surefire-reports/**
