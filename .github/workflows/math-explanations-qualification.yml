@@ -10,7 +10,10 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
+    permissions:
+      contents: write
+      pull-requests: read
     env:
       MAVEN_OPTS: -Djava.awt.headless=false
       NO_AT_BRIDGE: '1'
@@ -20,38 +23,93 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 868076b95a050179121050c5fe5b323b4290fea7
+          path: control
           persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 868076b95a050179121050c5fe5b323b4290fea7
+          path: source
+          fetch-depth: 20
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
           java-version: '25'
           verify-signature: true
           cache: maven
-      - uses: ./.github/actions/verify-eclipse-desktop-runtime
-      - name: Verify exact source and full mathematics module
+          cache-dependency-path: source/pom.xml
+      - uses: ./source/.github/actions/verify-eclipse-desktop-runtime
+      - name: Integrate current main without publishing and apply the reviewed fixes
+        working-directory: source
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = 868076b95a050179121050c5fe5b323b4290fea7
           test -z "$(git status --porcelain)"
-          git rev-parse HEAD > "$RUNNER_TEMP/source-commit.txt"
-          xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/math-review.log" 2>&1 || { tail -95 "$RUNNER_TEMP/math-review.log"; exit 1; }
-          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/math-review.log" | tail -35
-      - name: Independently exercise the native effective profile regression
-        if: always()
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch --no-tags --depth=20 origin refs/heads/main
+          git rev-parse FETCH_HEAD > "$RUNNER_TEMP/integrated-main.txt"
+          git merge --no-ff --no-commit FETCH_HEAD
+          python3 ../control/qualification/pr1689-review.py .
+          git add sandbox_math_cleanup sandbox_math_cleanup_test sandbox_eclipse_help_swtbot_test
+          git diff --cached --check
+          git diff --cached --stat
+          git write-tree > "$RUNNER_TEMP/tested-tree.txt"
+      - name: Verify the complete mathematics module
+        working-directory: source
         shell: bash
         run: |
           set -euo pipefail
-          xvfb-run -a --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp -Dsandbox.tycho.linux-only=true -Dtycho.localArtifacts=ignore -f sandbox_help_build/pom.xml -Phelp-screenshots '-Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest#profileRecordsEveryRegisteredMathematicsOption' verify > "$RUNNER_TEMP/help-profile-review.log" 2>&1 || { tail -85 "$RUNNER_TEMP/help-profile-review.log"; exit 1; }
+          xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_math_cleanup,sandbox_math_cleanup_test -am verify > "$RUNNER_TEMP/math-review.log" 2>&1 || { tail -100 "$RUNNER_TEMP/math-review.log"; exit 1; }
+          grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/math-review.log" | tail -35
+          cp -a sandbox_math_cleanup_test/target/surefire-reports "$RUNNER_TEMP/math-reports"
+      - name: Verify native full-profile evidence and reproduce four previews twice
+        working-directory: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          for capture in first repeat; do
+            xvfb-run -a --server-args='-screen 0 1600x1200x24' ./mvnw -B -ntp -Dsandbox.tycho.linux-only=true -Dtycho.localArtifacts=ignore -f sandbox_help_build/pom.xml -Phelp-screenshots -Dhelp.screenshot.testClass=org.sandbox.jdt.ui.helper.views.MathematicsHelpScreenshotsSWTBotTest clean verify > "$RUNNER_TEMP/help-$capture.log" 2>&1 || { tail -100 "$RUNNER_TEMP/help-$capture.log"; exit 1; }
+            grep -E 'Tests run:|BUILD SUCCESS' "$RUNNER_TEMP/help-$capture.log" | tail -8
+            git diff --exit-code -- 'sandbox_math_cleanup_help/images/*.png'
+            if test "$capture" = first; then
+              cp -a sandbox_math_cleanup_help/images "$RUNNER_TEMP/first-images"
+            else
+              diff -r "$RUNNER_TEMP/first-images" sandbox_math_cleanup_help/images
+            fi
+          done
+          git add sandbox_math_cleanup_help/images/*.provenance.json
+          git diff --cached --check
+          git write-tree > "$RUNNER_TEMP/published-tree.txt"
+      - name: Publish verified fixes to the existing PR branch without force
+        working-directory: source
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/carstenartur/sandbox/pulls/1689 --jq .state)" = open
+          test "$(gh api repos/carstenartur/sandbox/pulls/1689 --jq .head.sha)" = 78ebb492627770c810293008c3f788c88824392d
+          git fetch --no-tags origin refs/heads/feat/verified-math-explanations-20261010
+          test "$(git rev-parse FETCH_HEAD)" = 78ebb492627770c810293008c3f788c88824392d
+          git diff --exit-code
+          test "$(git write-tree)" = "$(cat "$RUNNER_TEMP/published-tree.txt")"
+          git commit -m 'fix: propagate mathematics cancellation and record complete Help profiles'
+          git push origin HEAD:refs/heads/feat/verified-math-explanations-20261010
+          git rev-parse HEAD | tee "$RUNNER_TEMP/published-commit.txt"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: math-review-regressions-${{ github.run_id }}
+          name: math-review-qualified-${{ github.run_id }}
           retention-days: 7
           path: |
-            ${{ runner.temp }}/source-commit.txt
+            ${{ runner.temp }}/integrated-main.txt
+            ${{ runner.temp }}/tested-tree.txt
+            ${{ runner.temp }}/published-tree.txt
+            ${{ runner.temp }}/published-commit.txt
             ${{ runner.temp }}/math-review.log
-            ${{ runner.temp }}/help-profile-review.log
-            sandbox_math_cleanup_test/target/surefire-reports/**
-            sandbox_eclipse_help_swtbot_test/target/surefire-reports/**
+            ${{ runner.temp }}/help-*.log
+            ${{ runner.temp }}/math-reports/**
+            source/sandbox_math_cleanup_test/target/surefire-reports/**
+            source/sandbox_eclipse_help_swtbot_test/target/surefire-reports/**
+            source/sandbox_math_cleanup_help/images/**
