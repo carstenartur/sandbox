@@ -1,9 +1,6 @@
 # Pinned Regelsuche optimization SDK
 
-Source revision: `597d6eeb025595bac85078022c592e4312ecefa4`.
-Standalone JAR SHA-256: `00e20de7306862fa1fc4f42b188cd4ec4e2f8ed353ae74d5e4689ea6a3f90d6d`.
+Source revision: `409083a58ab28d14fb3ce02adb2938dd9b92eb5f`.
+Standalone JAR SHA-256: `a6a7b5668f95a8abc13ff87b455cca4a44b29a3503a67c25d445ea312ba53081`.
 
-The ordinary core algebra inventory is available through ComputationOptimizer; no source-specific mathematical task is selected by Sandbox. Every proposed Java rewrite retains independent numeric and execution-trace verification.
-
-Two clean Maven builds and two fresh consumers passed in run 38003364428. See qualification.json and reproducibility.json for exact source-bound receipts.
-Generated Java needs no Regelsuche runtime. This is a development distribution, not a public Maven release. Existing license and archive notices remain applicable.
+Two clean Maven SDK builds and two fresh consumers passed using the repository-owned distribution contract. Exact receipts are qualification.json and reproducibility.json. This is a development distribution, not a public Maven release. Generated Java needs no SDK at runtime. Existing license notices remain applicable.
