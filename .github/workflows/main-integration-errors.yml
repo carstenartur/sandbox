@@ -53,7 +53,7 @@ jobs:
           LC_ALL: C.UTF-8
         run: |
           set -euo pipefail
-          if ! xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_eclipse_help_swtbot_test -am verify > "$RUNNER_TEMP/verify.log" 2>&1; then
+          if ! xvfb-run -a ./mvnw -B -ntp -pl sandbox_target,sandbox_common_core,sandbox_common,sandbox_test_commons,sandbox_eclipse_help_swtbot_test -am verify > "$RUNNER_TEMP/verify.log" 2>&1; then
             grep -E '\[ERROR\]|Failures:|<<< FAILURE|BUILD FAILURE' "$RUNNER_TEMP/verify.log" | tail -45
             tail -65 "$RUNNER_TEMP/verify.log"
             exit 1
