@@ -83,8 +83,12 @@ public class RuleExternalResourceJUnitPlugin extends TriggerPatternCleanupPlugin
 		if (binding == null) {
 			return false;
 		}
-		String qualifiedName= binding.getErasure().getQualifiedName();
-		return !DEDICATED_RULE_TYPES.contains(qualifiedName) && isExternalResourceHierarchy(binding);
+		return !isDedicatedRuleType(binding) && isExternalResourceHierarchy(binding);
+	}
+
+	/** Whether an existing dedicated converter owns this exact rule type. */
+	public static boolean isDedicatedRuleType(ITypeBinding binding) {
+		return binding != null && DEDICATED_RULE_TYPES.contains(binding.getErasure().getQualifiedName());
 	}
 
 	private static boolean isExternalResourceHierarchy(ITypeBinding binding) {
