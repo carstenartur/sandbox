@@ -5,7 +5,7 @@
 - Link fresh final-pin corpus reports and generated-Java JMH raw samples when
   those runs finish. The earlier raw measurements were lost; recovered aggregate
   reports under `qa/math-optimization/history/pre-reset/` stay historical.
-- Check the documented CLI, checked-mode consent and ten option keys against
+- Check the documented CLI, checked-mode consent and eleven option keys against
   the reconstructed application and the installed-product verifier.
 - Keep numeric-kind, target-Java and safety-profile limits aligned with the
   actual proof/emission tests. Do not generalize local timing or equality to

@@ -16,7 +16,9 @@ The repository-owned qualification and reproducibility receipts in
 This revision binds the SDK generator change to revision v2 and uses the same
 modular operation cost model through both public optimizer entry points.
 
-All 118 standalone mathematics tests pass on Temurin 25.0.2, including the
+The integration retains #1683's typed computation reports and #1689's selected
+search-path explanations alongside #1690's mathematical contracts. All 171
+standalone mathematics/core tests pass on Temurin 25.0.2, including the
 complete Bouncy Castle class execution test. A new budget regression compares
 later-method analysis with an isolated analysis using the measured remaining
 file budget. It covers both exhausted and sufficient remaining budgets, without
@@ -24,12 +26,15 @@ assuming a fixed search-order-dependent admission threshold. Failed attempts
 consume their own allocation or greater reported work; a reserved, unused
 mathematical retry is not charged.
 
-The normalized profile has ten keys, including mathematical opt-in set to false
-by default. Report, initializer and native workbench assertions now check this
-contract explicitly.
+The normalized profile has eleven keys, including mathematical opt-in set to
+false and source explanations set to NONTRIVIAL by default. Report, initializer
+and native workbench assertions check both option families explicitly. Legacy
+nine-argument callers and both ten-argument constructors keep their existing
+contracts.
 
-The focused native Eclipse Help reactor also passed: its SWTBot test recaptured
-all four real Bouncy Castle previews, verified the exact replacements, applied
+The focused native Eclipse Help reactor also passed both SWTBot tests: the
+profile test verified all eleven effective options, and the capture test
+recaptured all four real Bouncy Castle previews, verified the exact replacements, applied
 them and undid them byte-for-byte. The image/provenance pairs now identify this
 SDK and the final compiled adapter. The separate full CI and distribution gates
 remain authoritative for merge qualification.
