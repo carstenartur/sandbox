@@ -212,6 +212,7 @@ jobs:
               index=$((index + 1))
             fi
           done
+          export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:+$JAVA_TOOL_OPTIONS }-Dsandbox.junit.scope.diagnostics=true"
           exec "${SANDBOX_PRODUCT_ECLIPSE:?}" --launcher.suppressErrors "${rewritten[@]}"
           EOF_LAUNCHER
           chmod +x "$launcher"
