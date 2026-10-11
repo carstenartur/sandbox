@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "8bd133add6a5d20059d50a4304150a01cfb9d90f",
-      "lastProcessedDate": "2026-10-09T02:37:27.629133131Z",
-      "totalProcessed": 652,
+      "lastProcessedCommit": "2d0ff3eec34063e43600e35080106473bc8df244",
+      "lastProcessedDate": "2026-10-11T02:39:40.616317243Z",
+      "totalProcessed": 724,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -4787,6 +4787,42 @@
           "deferredAt": "2026-10-09T02:36:08.787302687Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "88a51667c841267a5a7076c649890a356bde0822",
+          "message": "Bug 493304 - Prefer usage of enhanced for loop in eclipse.platform.text repo",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-11T02:32:12.286053471Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "92a0d5c389d95693544840b4f1c25f670ea4b0f7",
+          "message": "Bug 511101 - Enable quick fix on generic editor",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-11T02:33:48.515701990Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "dad356880b62128e58665dd3e641e51ab61e03c0",
+          "message": "Bug 511101: [Generic Editor] misses quick fix on error markers",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-11T02:34:22.218330861Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c07ac490577295e392ac81a6694b5629182694b2",
+          "message": "Bug 512525 - Editor actions in menus and Generic Editor",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-11T02:35:06.269543577Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -4800,8 +4836,8 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 4,
-        "API Modernization": 16,
-        "Performance": 6,
+        "API Modernization": 20,
+        "Performance": 9,
         "Redundant Code": 4,
         "API Misuse Correction": 1,
         "Lambda to Method Reference": 1,
@@ -4827,7 +4863,7 @@
         "Concurrency Performance": 1,
         "Modernization": 2,
         "Defensive Programming": 1,
-        "String Literal Replacement": 1,
+        "String Literal Replacement": 2,
         "Condition Improvement": 1,
         "Readability": 1,
         "Stream API Modernization": 1,
@@ -4849,7 +4885,12 @@
         "Preference Default": 1,
         "Explicit Unboxing": 1,
         "Constant Expression Simplification": 1,
-        "UI Style": 1
+        "UI Style": 1,
+        "Annotation": 1,
+        "SWT API Usage": 2,
+        "Type Widening": 1,
+        "Error Handling": 1,
+        "Eclipse UI Quick Assist": 1
       },
       "exhaustedCategories": []
     },
@@ -4959,5 +5000,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52417
+  "globalTotalProcessed": 52489
 }
