@@ -1785,18 +1785,25 @@ public class SandboxHelpScreenshotsSWTBotTest {
         Path imageDirectory = outputRoot.resolve(helpBundle).resolve("images");
         Files.createDirectories(imageDirectory);
         Path image = imageDirectory.resolve(fileName);
+        JFaceCaptureState diagnostic = JFaceCaptureState.forImage(helpBundle, fileName);
         Rectangle clientBounds = UIThreadRunnable.syncExec(shell.display,
                 new Result<Rectangle>() {
                     @Override
                     public Rectangle run() {
+                        if (diagnostic != null) diagnostic.beginSnapshot();
                         Rectangle clientArea = shell.widget.getClientArea();
-                        return shell.widget.getDisplay().map(shell.widget, null, clientArea);
+                        Rectangle bounds = shell.widget.getDisplay().map(shell.widget, null, clientArea);
+                        if (diagnostic != null) diagnostic.observe(shell.widget, bounds);
+                        return bounds;
                     }
                 });
-        assertTrue(SWTUtils.captureScreenshot(image.toString(), clientBounds),
-                () -> "Could not capture " + image);
+        if (diagnostic != null) diagnostic.beginCapture();
+        boolean captured = SWTUtils.captureScreenshot(image.toString(), clientBounds);
+        if (diagnostic != null) diagnostic.endCapture();
+        assertTrue(captured, () -> "Could not capture " + image);
         assertTrue(Files.isRegularFile(image) && Files.size(image) > 0,
                 () -> "Screenshot was not written: " + image);
+        if (diagnostic != null) diagnostic.log(image);
     }
 
     private static void prepareAtomicPreviewForScreenshot(SWTBotShell shell, int expectedFileCount) {

@@ -59,4 +59,30 @@ class MathCleanUpOptionsTest {
   var failure=assertThrows(IllegalArgumentException.class,()->MathCleanUpOptions.parse(Map.of(MathCleanUpOptions.UNDERFLOW,"true"),17));assertTrue(failure.getMessage().contains("UNSUPPORTED_UNDERFLOW_POLICY"));
   var options=assertDoesNotThrow(()->MathCleanUpOptions.parse(Map.of("cleanup.unrelated","true",MathCleanUpOptions.UNDERFLOW,"false"),17));assertFalse(options.enabled());
  }
+ @Test void optionFamiliesAndHistoricalConstructorsRemainIndependent() {
+  var defaults=MathCleanUpOptions.defaults(17);
+  assertEquals(11,defaults.toMap().size());
+  assertFalse(defaults.mathematicalOptIn());
+  assertEquals(MathCleanUpOptions.ExplanationMode.NONTRIVIAL,defaults.explanations());
+  var legacy=new MathCleanUpOptions(true,Set.of(NumericKind.INT),SafetyProfile.PRESERVE_JAVA,
+    OptimizationGoal.READABILITY,100000,2000,false,17,List.of());
+  var mathematical=new MathCleanUpOptions(true,Set.of(NumericKind.INT),SafetyProfile.PRESERVE_JAVA,
+    OptimizationGoal.READABILITY,100000,2000,false,17,List.of(),true);
+  var explained=new MathCleanUpOptions(true,Set.of(NumericKind.INT),SafetyProfile.PRESERVE_JAVA,
+    OptimizationGoal.READABILITY,100000,2000,false,17,List.of(),MathCleanUpOptions.ExplanationMode.ALL);
+  assertFalse(legacy.mathematicalOptIn());
+  assertEquals(MathCleanUpOptions.ExplanationMode.NONE,legacy.explanations());
+  assertTrue(mathematical.mathematicalOptIn());
+  assertEquals(MathCleanUpOptions.ExplanationMode.NONE,mathematical.explanations());
+  assertFalse(explained.mathematicalOptIn());
+  assertEquals(MathCleanUpOptions.ExplanationMode.ALL,explained.explanations());
+  for(var mode:MathCleanUpOptions.ExplanationMode.values()) for(boolean optIn:List.of(false,true)) {
+   var values=new HashMap<>(defaults.toMap());
+   values.put(MathCleanUpOptions.MATHEMATICAL_OPT_IN,Boolean.toString(optIn));
+   values.put(MathCleanUpOptions.EXPLANATIONS,mode.name());
+   var parsed=MathCleanUpOptions.parse(values,17);
+   assertEquals(optIn,parsed.mathematicalOptIn());assertEquals(mode,parsed.explanations());
+   assertEquals(parsed,MathCleanUpOptions.parse(parsed.toMap(),17));
+  }
+ }
 }

@@ -89,6 +89,7 @@ class StreamChainToLoopTest {
 		private ICompilationUnit cleanupUnit;
 		private String cleanupInput;
 		private String cleanupObserved;
+		private CleanupSourceReadSnapshot cleanupSourceReadSnapshot;
 
 		ConversionContext() {
 			super("testresources/rtstubs_22.jar", JavaCore.VERSION_22);
@@ -145,6 +146,7 @@ class StreamChainToLoopTest {
 					.append("\nOptions: ").append(cleanupOptions)
 					.append("\nCreated changes: ").append(cleanupEdits.size())
 					.append("\nObserved source after cleanup and validation:\n").append(cleanupObserved);
+			if (cleanupSourceReadSnapshot != null) diagnostic.append(cleanupSourceReadSnapshot.describe());
 			for (CleanupEditSnapshot edit : cleanupEdits) {
 				// Multiple fixpoint passes may use different intermediate sources.
 				// Do not compare those edits against the original input by mistake.
@@ -198,8 +200,13 @@ class StreamChainToLoopTest {
 		}
 
 		String convert(String source, String target, boolean allSources) throws CoreException {
+			return convert(source, target, allSources, false);
+		}
+
+		String convert(String source, String target, boolean allSources, boolean retainSourceReadSnapshot) throws CoreException {
 			cleanupInput = source;
 			cleanupObserved = null;
+			cleanupSourceReadSnapshot = null;
 			cleanupUnit = null;
 			ICompilationUnit unit = getSourceFolder().createPackageFragment("test1", false, null)
 					.createCompilationUnit("Example.java", source, true, null);
@@ -214,7 +221,9 @@ class StreamChainToLoopTest {
 			assertNoCompilationError(unit);
 			performRefactoring(new ICompilationUnit[] { unit }, null);
 			assertNoCompilationError(unit);
+			if (retainSourceReadSnapshot) cleanupSourceReadSnapshot = new CleanupSourceReadSnapshot(unit);
 			cleanupObserved = unit.getSource();
+			if (cleanupSourceReadSnapshot != null) cleanupSourceReadSnapshot.sourceReadFinished(unit);
 			return cleanupObserved;
 		}
 

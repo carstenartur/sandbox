@@ -21,6 +21,12 @@ record MathExplanation(String detail, String sourceComment, boolean nontrivial) 
     static MathExplanation render(Explanation verified, OptimizationRequest request, Candidate candidate,
             JavaComputationRegion region, JavaComputationEmitter.Emission replacement,
             MathCleanUpOptions options, CancellationToken cancellation) {
+        return render(verified, request, candidate, region, replacement, options, null, cancellation);
+    }
+
+    static MathExplanation render(Explanation verified, OptimizationRequest request, Candidate candidate,
+            JavaComputationRegion region, JavaComputationEmitter.Emission replacement,
+            MathCleanUpOptions options, String mathematicalContract, CancellationToken cancellation) {
         checkCancellation(cancellation);
         if (!verified.proof().equals(candidate.evidence())
                 || !verified.assumptions().equals(request.assumptions())
@@ -30,8 +36,8 @@ record MathExplanation(String detail, String sourceComment, boolean nontrivial) 
         var original = new JavaComputationEmitter().emit(ComputationOptimizer.prepare(request.plan()),
                 region.inputNames(), region.reservedNames(), options.targetJava());
         List<String> lines = new ArrayList<>();
-        lines.add("Verified mathematics (" + options.safety() + ").");
-        describeContract(lines, request, region);
+        lines.add("Verified mathematics (" + (mathematicalContract == null ? options.safety() : "MATHEMATICAL") + ").");
+        describeContract(lines, request, region, mathematicalContract);
         appendValues(lines, "Original values:", original, region);
         appendValues(lines, "Replacement values:", replacement, region);
         MathSearchDerivation.append(lines, verified, request, region, options, cancellation, MAXIMUM_TEXT_LENGTH);
@@ -47,14 +53,16 @@ record MathExplanation(String detail, String sourceComment, boolean nontrivial) 
         // do not let a rendered operand or provenance string inject executable lines.
         String comments = detail.lines().map(line -> "// " + line.replace("\\u", "\\ u"))
                 .collect(java.util.stream.Collectors.joining("\n", "", "\n"));
-        boolean nontrivial = options.safety() != SafetyProfile.PRESERVE_JAVA
+        boolean nontrivial = mathematicalContract != null || options.safety() != SafetyProfile.PRESERVE_JAVA
                 || !verified.assumptions().isEmpty() || region.outputs().size() > 1
                 || candidate.cost().sourceCost().operationWork() >= 8;
         return new MathExplanation(detail, comments, nontrivial);
     }
 
-    private static void describeContract(List<String> lines, OptimizationRequest request, JavaComputationRegion region) {
-        switch (request.safetyProfile()) {
+    private static void describeContract(List<String> lines, OptimizationRequest request, JavaComputationRegion region,
+            String mathematicalContract) {
+        if (mathematicalContract != null) lines.add(mathematicalContract);
+        else switch (request.safetyProfile()) {
             case CHECKED_THROW -> lines.add(MathCleanUpOptions.CHECKED_WARNING);
             case GUARDED_FALLBACK -> lines.add("The guarded replacement keeps the original calculation as fallback; retain all generated checks.");
             case PRESERVE_JAVA -> {

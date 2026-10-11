@@ -49,6 +49,7 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
     environments.put(project.getHandleIdentifier(),MathematicalEnvironment.capture(project));
     for(ICompilationUnit unit:units) originalSources.put(unit.getPrimary().getHandleIdentifier(),unit.getPrimary().getSource());
     if(options.safety()==SafetyProfile.CHECKED_THROW) diagnostics.addWarning(MathCleanUpOptions.CHECKED_WARNING);
+    if(options.mathematicalOptIn()) diagnostics.addWarning(MathCleanUpOptions.MATHEMATICAL_WARNING);
    }
   } catch(IllegalArgumentException | CoreException invalid) { diagnostics.addFatalError(invalid.getMessage()); }
   return diagnostics;
@@ -108,6 +109,8 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
  @Override public String getPreview() {
   try {
    MathCleanUpOptions options=MathCleanUpOptions.parse(values,25);
+   if(options.mathematicalOptIn()) return "// "+MathCleanUpOptions.MATHEMATICAL_WARNING+"\n"
+     +"// Example: int 2*x/2 may become x, with the proven local ranges in Javadoc.\n";
    return (options.safety()==SafetyProfile.CHECKED_THROW?"// "+MathCleanUpOptions.CHECKED_WARNING+"\n":"")
      +"// The standard file preview shows the verified edits, generated checks and diagnostics.\n"
      +"BigInteger input = BigInteger.valueOf(a * b);\nBigInteger sum = input.add(BigInteger.ONE);\n"
@@ -115,6 +118,7 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
   } catch(IllegalArgumentException invalid) { return "// Invalid mathematics options: "+invalid.getMessage()+"\n"; }
  }
  static String label(MathCleanUpOptions options) {
+  if(options.mathematicalOptIn()) return "Optimize mathematics (explicit mathematical contract; document local ranges)";
   return options.safety()==SafetyProfile.CHECKED_THROW?"Optimize mathematics (CHECKED_THROW: may add ArithmeticException)"
     :"Optimize verified mathematics ("+options.safety()+")";
  }
