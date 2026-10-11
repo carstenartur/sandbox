@@ -1,0 +1,278 @@
+{
+  "schema": "sandbox.math.standalone-test-qualification/v1",
+  "base": "d3a4721306a1b128f91d564d4e86f24170f67895",
+  "external_source_delta_sha256": "fa9109a3cb7049dfe1707fb8bac82b300411b18ea6f225d725f2e2231ec45fc3",
+  "sdk_source_revision": "ae1c39ea50cff685fe843b0357c818f38db6ec79",
+  "sdk_sha256": "20f6a81c83a894c595f5447c72bebfc4e83c0503f16285b22d45f506af5e4e2b",
+  "totals": {
+    "tests": 180,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "test_classes": 25,
+  "test_log_sha256": "6e903ea5158c86bcda43c99a038e9cb80550bd3db99cc7b4941652a344c54011",
+  "source_hashes_before_after_equal": true,
+  "source_hashes": {
+    "production": {
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/ComputationExplanation.java": "cf60ae3f952c09bd6f26a673ae7e4e2662b1e7b088edf9daa15362a816a6beba",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/IntegralMathematicalDomain.java": "ab9fc037ebae3f8e4181086754feeccf632a2eddbf3ee4760541436b4f1fdcde",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationEmitter.java": "ff19694f78d4d19c16e37d8bed9c119064070e8957322cc66c93c02614a3d052",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationExtractor.java": "327d4fca16cd3f0bbc3a3ba2e4589d729e5083bac472cacef662e984323e33a6",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationRegion.java": "27091a8c529f3aa2c76dfa1f46285dd8c9bbcb41a218895fb77d3ae64c2e4801",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaEmissionVerifier.java": "263a5e961eae608c6a33f69e5e59ac826dafd9cff42cf50a5788c3e08483e450",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaOperationRegistry.java": "3348454ea80e2d39e502f1b4f706391b3546256cc45a8b70b97e05c389f0306f",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaRegionLiveness.java": "03306fe5011f92f4b6f0e8a43f0507b95540387f33c73cadb109a243426bfa09",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaRegionSourceRewriter.java": "b7974258d878c3cb1774f7da74b7a30be84b89bb31a06b1425d2450bf5451bed",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaScalarMethodBody.java": "a54537c1b2dad5989eeb8ff9518d557b01b72ba2dbe27ed109fe203a3267c429",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathCleanUpOptions.java": "c10c4f2820ab373f60d41706fccb52fcbf1acbc75fbaaa026d8145b788616a78",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathExplanation.java": "85396e084e72118633373ea79fcffd96d6930e30ab4e1f47162504b7445e3956",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathSearchDerivation.java": "ba157548ee175b429913345f219fbbe9a3a832ec461048f19f270c41d7452e3d",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java": "298a3ac3d857ee8f3ea0088c979c1b57116a64e77aee1fa2926551846ff6db3c",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalJavadoc.java": "51a9f0814300e3e5d864f1bddeb272ade62313363b9a1f79b9a5b31cf341f053",
+      "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/RuntimeCalculationPolicy.java": "87dbbc79c51a58c8166d12f0b91c70aa5f90f922996964527b7f92deafeee987"
+    },
+    "test_sources": {
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaEmissionVerifierTest.java": "a6f8272e05cd710365af6c923f61ee31a0c4005c31561c2cf9646e434a0450d3",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/MathCleanUpOptionsTest.java": "f1aaab4a51c1e38cd0e282c41241d77a2f66a1e86569fcb3d6715e56f3640a82",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/MathExplanationReviewTest.java": "cf8b9b4b5825b19ddad2e51d3d01d209dcfad5b490a8c3ea69f65633aa41aacd",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleBigIntegerTest.java": "f5d71735432da076a099270772ff2ea5e42c75b030f3aec9eccfa0275acbe1b3",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastlePreparationBoundaryTest.java": "56c54e5c621fe5e39fda823ba1b53cdde9fdb6ae6b76eeb9bc63b6b019bbc13d",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleRuntimeCorpusTest.java": "11fdde4797bc6dd94b11a7473584afca9a1d3ad77dbaff0cd2cbc442d8bc0111",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/CharacterLiteralRoundTripTest.java": "a2f1c88d1174f76022d15e6db44c7e1e61cdec794f806c11bd069056f813fde4",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/DocumentedSourceSnapshotTest.java": "6b306ee08f0f7d5bb3ad6608471b74a55e5bd536937b3e05f9b41906d09bb951",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FloatingPointRoundTripTest.java": "dfa5e39788363621e8537b74ae1562181de61839243570452e2d07293f275e1a",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/GeneralMathematicsRoundTripTest.java": "7d501ecdcac67eab67b7a7af40c11c0f42379a61d44bfbeea85f26ad92169388",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationEmitterTest.java": "7c5e9feb94f005397d4b59183ff40cdcf9f621fe8df69546a97a664bdce827aa",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationExtractorTest.java": "8bdc3592d8b5bff21e5c8c2815e7af73bb41e1360ce91b5b76535aaa3208fa45",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationRoundTripTest.java": "e1f2d37c0c218420e8a437122549886af2955770e17c57a6d9149e1c5801559e",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathCorpusIntegrationTest.java": "bb10f8f761c0d5fe78af3fea6ae2b798112183047168c199b6412e1ba62cbf9a",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathTestSupport.java": "8b6014deea29d98331d46b20b5f192ea295fc515e5acab6e968ab14c56cf779b",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathVariableRegionsTest.java": "5cb50437ab72ef0886ff91b34b6de28c203c0a91c9daa20cde35a51fcfeff6af",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathematicalContractTest.java": "bd801ffbbaa899a136216dabe914de216afbfdddcc2e6cae800777328cfb9c04",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathematicalExplanationIntegrationTest.java": "95461d83d1a6addd69ac367758973fd1ff5aa3726e9116949bf5c2de75837569",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathematicalExplanationTest.java": "906ddcc01d6c0145de6a18a34c896b154aac06c2d51e4570b4c7bd5e7a5424bd",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathematicalInterruptionTest.java": "b73f564efaa3dc543bc62e0f53e60600efb41718a227bfb99f9a5eeb45548c45",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathematicalPresentationBudgetTest.java": "be14a874155215d554b97c79bf51fe41ef233762ace8e16da7a7beb8715c2b55",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathematicalRetryBudgetTest.java": "7c864fd0331f8372a3d8a29696d08e798833087048d385fe70b9349e185cd12a",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathematicalSearchDerivationTest.java": "b2661fc5a542d8ba99fcbaee84d5e755588fd9a6b137df926c9882fcf8777b3a",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/RuntimeConstantExpressionsTest.java": "43dd34f0e858aba2c9f56ea87954b02ea56aa98db9f540449c0e24d97947d776",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/RuntimeOnlyMathTest.java": "8b326b4bb9521a2e68c2816b32a73a7d4f25bd9528a8550f30743c26ea844133",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/ScalarMethodExpansionTest.java": "ba13ac482345ee809152396e966665c9b2315b54490a2de038fc4c500b858fac",
+      "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/VerifiedComputationExplanationTest.java": "0033dcb273ba648ac693e24738e59bc714b8668c27c1b697166717579a1c3435"
+    }
+  },
+  "runtime": {
+    "java": "Temurin25.0.2+10",
+    "maven": "3.9.16",
+    "JDT": "3.47.0",
+    "test_fixture_release": 17,
+    "standalone_compilation_release": 25
+  },
+  "completed_utc": "2026-10-11T03:04:17Z",
+  "scope": "Standalone mathematics/core harness; installed-OSGi runtime corpus and native UI/full distribution gates excluded.",
+  "excluded_test": "BouncyCastleRuntimeCorpusTest",
+  "scan_product_classfiles_byte_identical_to_this_compilation": 48,
+  "classes": [
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.JavaEmissionVerifierTest",
+      "tests": "12",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.27"
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.033"
+    },
+    {
+      "name": "org.sandbox.jdt.internal.corext.fix.math.MathExplanationReviewTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.281"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.BouncyCastleBigIntegerTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "5.511"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.BouncyCastlePreparationBoundaryTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.143"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.CharacterLiteralRoundTripTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "10.218"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.DocumentedSourceSnapshotTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.196"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.FloatingPointRoundTripTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.018"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.GeneralMathematicsRoundTripTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "5.113"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.JavaComputationEmitterTest",
+      "tests": "15",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "6.5"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.JavaComputationExtractorTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.574"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.JavaComputationRoundTripTest",
+      "tests": "17",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "10.933"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathCorpusIntegrationTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.999"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathVariableRegionsTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "1.27"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalContractTest",
+      "tests": "15",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "6.404"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalExplanationIntegrationTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.31"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalExplanationTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "10.567"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalInterruptionTest",
+      "tests": "3",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "7.06"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalPresentationBudgetTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.058"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalRetryBudgetTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.617"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.MathematicalSearchDerivationTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "1.253"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.RuntimeConstantExpressionsTest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.026"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.RuntimeOnlyMathTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "2.09"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.ScalarMethodExpansionTest",
+      "tests": "18",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "6.07"
+    },
+    {
+      "name": "org.sandbox.jdt.math.tests.VerifiedComputationExplanationTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "0.67"
+    }
+  ]
+}

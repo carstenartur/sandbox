@@ -123,6 +123,7 @@ public final class MathematicalAnalysis {
       long remainingWork = options.workBudget();
       List<JavaComputationRegion> pending = new ArrayList<>(extraction.regions());
       List<JavaComputationRegion> fragments = null;
+      List<JavaComputationRegion> statements = null;
 
       try {
          for (int regionIndex = 0; regionIndex < pending.size(); regionIndex++) {
@@ -161,9 +162,7 @@ public final class MathematicalAnalysis {
                   OptimizationResult result = optimizer.optimize(request, cancellation);
                   // Keep ordinary Java sharing improvements. A different overflow contract is
                   // only needed after that search fails, and both attempts share one work budget.
-                  // Inconclusive does not report consumed work; conservatively debit its
-                  // whole allocation. Reserve half up front so that fallback stays bounded.
-                  long ordinarySpent = result instanceof NoImprovement ordinary ? ordinary.work() : ordinaryWork;
+                  long ordinarySpent = consumedWork(result, ordinaryWork);
                   if (canTryMathematical && (result instanceof NoImprovement || result instanceof OptimizationResult.Inconclusive)
                         && ordinarySpent < regionWork) {
                      remainingWork -= ordinarySpent;
@@ -174,6 +173,18 @@ public final class MathematicalAnalysis {
                      result = optimizer.optimize(request, cancellation);
                   }
                   if (!(result instanceof Candidate candidate)) {
+                     if (mathematicalBigInteger && (result instanceof NoImprovement || result instanceof OptimizationResult.Inconclusive)
+                           && remainingWork > consumedWork(result, regionWork)) {
+                        if (statements == null) statements = new JavaComputationExtractor().extractRuntimeStatements(ast, source, options).regions();
+                        var smaller = statements.stream().filter(part -> part.start() >= region.start()
+                              && part.start() + part.length() <= region.start() + region.length() && part.length() < region.length()).toList();
+                        if (!smaller.isEmpty()) {
+                           remainingWork -= consumedWork(result, regionWork);
+                           pending.addAll(regionIndex + 1, smaller);
+                           diagnostics.add(diagnostic("MODULAR_STATEMENT_RETRY", "Retrying supported statements within the remaining file budget", region));
+                           continue;
+                        }
+                     }
                      if (result instanceof OptimizationResult.Unsupported unsupported
                            && unsupported.toString().contains("plan preparation work bound exceeded")) {
                         if (fragments == null) fragments = new JavaComputationExtractor().extractRuntimeFragments(ast, source, options).regions();
@@ -193,6 +204,7 @@ public final class MathematicalAnalysis {
                      if (result instanceof NoImprovement noImprovement) {
                         remainingWork -= noImprovement.work();
                      }
+                     if (result instanceof OptimizationResult.Inconclusive) remainingWork -= consumedWork(result, regionWork);
 
                      if (result instanceof BudgetExceeded exceeded) {
                         // Charge this attempt, including any reported overshoot. A preceding
@@ -212,8 +224,9 @@ public final class MathematicalAnalysis {
 
                   String contract = mathematicalIntegral ? IntegralMathematicalDomain.verify(region, candidate.plan())
                         : mathematicalBigInteger ? "BigInteger numerical values are preserved; result reference identity may change. "
-                              + "Where receivers are unproved, the optimized branch requires positive exact BigInteger instances "
-                              + "with bitLength() below 4096; otherwise the original calculation executes. "
+                              + "Where receivers are unproved, the optimized branch requires exact BigInteger instances "
+                              + "with bitLength() below 4096 and positive guarded moduli or exponents; signed bases are allowed. "
+                              + "Otherwise the original calculation executes. "
                               + "No extension of the BigInteger value range or constant-time execution is claimed." : null;
 
                   if (options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME && !mathematicalIntegral
@@ -253,7 +266,8 @@ public final class MathematicalAnalysis {
                         .stream()
                         .sorted()
                         .map(receiver -> "(" + receiver + " != null && " + receiver + ".getClass() == java.math.BigInteger.class && " + receiver + ".bitLength() < 4096"
-                              + (mathematicalBigInteger ? " && " + receiver + ".signum() > 0" : "") + ")")
+                              + (mathematicalBigInteger && region.assumptions().stream().anyMatch(a -> a.kind() == de.regelsuche.sdk.optimization.SemanticAssumption.Kind.POSITIVE
+                                    && receiver.equals(region.inputNames().get(a.subject()))) ? " && " + receiver + ".signum() > 0" : "") + ")")
                         .collect(Collectors.joining(" && "));
                      replacement = guardedSource(ast, source, region, "", receiverGuard, plain);
                   } else if (candidate.obligations().guard() != GuardKind.NONE) {
@@ -388,6 +402,12 @@ public final class MathematicalAnalysis {
          throw new OperationCanceledException("Mathematics analysis interrupted");
       }
       return monitor.isCanceled();
+   }
+
+   private static long consumedWork(OptimizationResult result, long allocation) {
+      if (result instanceof NoImprovement ordinary) return ordinary.work();
+      if (result instanceof OptimizationResult.Inconclusive inconclusive && inconclusive.work() >= 0) return inconclusive.work();
+      return allocation;
    }
 
    private static String rewriteValues(CompilationUnit ast, String source, JavaComputationRegion region, Map<String, String> values, Map<String, String> compilerOptions) {

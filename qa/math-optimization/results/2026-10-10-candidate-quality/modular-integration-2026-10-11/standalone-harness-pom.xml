@@ -1,0 +1,11 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><groupId>local.qa</groupId><artifactId>math-diagnosis</artifactId><version>1</version>
+<properties><maven.compiler.release>25</maven.compiler.release><project.build.sourceEncoding>UTF-8</project.build.sourceEncoding></properties>
+<dependencies>
+<dependency><groupId>org.eclipse.jdt</groupId><artifactId>org.eclipse.jdt.core</artifactId><version>3.47.0</version></dependency>
+<dependency><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.text</artifactId><version>3.14.800</version></dependency>
+<dependency><groupId>de.regelsuche</groupId><artifactId>regelsuche-optimization-sdk</artifactId><version>0.5.0-issue1657-ae1c39ea50cf</version><scope>system</scope><systemPath>/workspace/scratch/ab020fe78947/math-1691-integration/sandbox_math_cleanup/lib/regelsuche-optimization-sdk.jar</systemPath></dependency>
+<dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><version>5.13.4</version><scope>test</scope></dependency>
+</dependencies>
+<build><sourceDirectory>/workspace/scratch/ab020fe78947/math-1691-integration/sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math</sourceDirectory><testSourceDirectory>/workspace/scratch/ab020fe78947/math-1691-integration/sandbox_math_cleanup_test/src</testSourceDirectory>
+<plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.14.1</version><configuration><testIncludes><testInclude>**/math/tests/*.java</testInclude><testInclude>**/corext/fix/math/*.java</testInclude></testIncludes><testExcludes><testExclude>**/BouncyCastleRuntimeCorpusTest.java</testExclude></testExcludes></configuration></plugin>
+<plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.5.4</version><configuration><systemPropertyVariables><sandbox.math.bc.jar>/root/.m2/repository/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2.jar</sandbox.math.bc.jar><sandbox.math.bc.sourceArchive>/root/.m2/repository/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2-sources.jar</sandbox.math.bc.sourceArchive></systemPropertyVariables></configuration></plugin></plugins></build></project>

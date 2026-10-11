@@ -6,13 +6,93 @@ SDK source for these corpus measurements: `73b81f1c60f13a5623af9351d7db7f6457685
 in Regelsuche. The current SDK and its receipts were subsequently updated as
 described below; the historical corpus counts are not a new scan of that SDK.
 
-## Review qualification, 2026-10-11
+## Modular integration qualification, 2026-10-11
 
-The embedded SDK now pins `e3e795e009a35c88bcc7cdb4151408c147be0951`, merged
-upstream through Regelsuche #1084. Its JAR SHA-256 is
+The #1691 integration embeds source-bound SDK revision
+`ae1c39ea50cff685fe843b0357c818f38db6ec79`, standalone JAR SHA-256
+`20f6a81c83a894c595f5447c72bebfc4e83c0503f16285b22d45f506af5e4e2b`.
+The repository receipts `sandbox_math_cleanup/lib/qualification.json` and
+`reproducibility.json` record two clean SDK reactor builds (2,359 tests each,
+including 120 SDK tests and 11 modular tests), two fresh standalone consumers,
+and byte identity of all ten distribution files. This development distribution
+is distinct from the e3e795e SDK used for the historical #1690 qualification below.
+
+Completed full-source scans of the same Bouncy Castle 1.85.2 Maven source archive
+produce **104 strict Java replacements** and **114 mathematical replacements**,
+with 2,204 and 2,544 analyzed regions respectively (50 and 55 changed source
+classes). All 104 strict regions remain in the mathematical results. Both runs
+report 3,126 parsed
+source files and ten parse errors among the 3,136 archive entries. The ten
+additional accepted BigInteger regions are distinct from the one-hit historical
+scan below. These counts measure accepted regions, not ten additional classes,
+whole-library behavioral equivalence, optimality, or measured runtime speedups.
+Both scans use all numeric kinds, the runtime goal, Java 17 compliance,
+1,000,000 work units per file and 20,000 states. Scan inputs and completed
+strict/mathematical summaries are preserved beside this
+README under `modular-integration-2026-10-11/`.
+
+The first 180-test integration run had one failing test-only Javadoc counter:
+without enabled doc-comment parsing, JDT retained source spans but omitted the
+contract from `Javadoc.toString()`. The counter now reads those Javadoc source
+spans from the actual generated text. It still requires exactly one method
+contract and four region explanations; no assertion or production behavior was
+removed. The isolated complete Bouncy Castle class test passed all five tests.
+The corrected complete standalone mathematics/core suite passed all **180 tests**
+with zero failures, errors or skips on Temurin 25.0.2 and Maven 3.9.16, completing
+at 2026-10-11 03:04:17 UTC. Production/test source hashes remained unchanged
+throughout this isolated run. Its source-bound receipt and full-log hash are preserved
+beside the scan evidence; the full local log is retained in the isolated
+qualification workspace. The installed-OSGi
+`BouncyCastleRuntimeCorpusTest` is excluded by this standalone harness, as before.
+
+The focused 22-module native Help reactor passed both existing
+`MathematicsHelpScreenshotsSWTBotTest` tests on the current ae1c SDK and adapter,
+completing at 2026-10-11 03:11:38 UTC. All five fixtures verified exact preview,
+Apply, source compilation and byte-exact Undo. Fixture 05 uses the actual current
+output: four NONTRIVIAL inline explanations and one Javadoc contract. The capture
+verified the installed SDK hash and emitted each actual adapter fingerprint.
+The independently recomputed compiled-class fingerprint is recorded in
+`modular-integration-2026-10-11/native-qualification.json`.
+
+At reactor exit, fixture 05's PNG/provenance had reverted to historical files;
+the restoration cause remains unresolved. A bounded rerun of the same already
+built UI harness in a fresh workspace passed both tests at 03:19:47 UTC. An
+inotify observer independently archived the actual current 05 writes. Those
+files remained current after this direct UI exit and supplied the historical local
+05 capture (`b42c74f55f4a17af7ac56938b6e5f97a9e91e258d93bc218f6966a3234b81cf2`).
+No passing whole-CI screenshot byte reproduction is inferred from either run.
+
+For the first four images, the actual local render was byte-identical to the
+initial local baseline and differed from the completed #1690 CI artifact only
+by the known 1,172-pixel dialog-label variance (maximum RGB delta 140); the entire
+source area was identical. Those four PNGs therefore retain the exact CI bytes.
+Their new actual ae1c capture provenance explicitly distinguishes the current
+source execution from the retained e3e795e CI raster and records the native PNG
+hash separately. The fifth PNG now selects the exact native CI capture described
+below. No raster data or verifier was altered. Complete Tycho/P2, distribution
+installation and screenshot byte reproduction remain separate gates.
+
+Hosted Help [run 38127383284](https://github.com/carstenartur/sandbox/actions/runs/38127383284),
+attempt 2, job 114452137313, passed all nine native merge-gate tests on checkout
+`d55e2364011a052565e6f1a102816495f3843feb`, tree `681466e6b97af4ee8454b0b8480ee56c0f37eeba`
+(the exact tree of PR head `ab996442be2b92206a5516724e30463ef3c74423`). The selected fifth
+PNG/provenance are verbatim from [artifact 11699799777](https://github.com/carstenartur/sandbox/actions/runs/38127383284/artifacts/11699799777),
+archive SHA-256 `3a76ad082624f388afded4f5d350d56422b01e249e3e90071de5baa874fc5cf0`.
+PNG SHA-256 is `08e89ae29487e129406f1d7d2ff6ff7ccbded4621bb7d2b3cc68f4cf0fe961b7`.
+Before/after source and all provenance fields except screenshot hash are exact.
+The historical local image differs in 1,175 UI-icon pixels; source panels are
+pixel-identical. The technical rendering cause remains unproven. This attempt
+failed its byte gate against the local raster; selection is not a passing gate,
+and the updated head still requires fresh hosted byte reproduction.
+
+## Historical review qualification, 2026-10-11 (#1690)
+
+The historical #1690 review embedded SDK revision
+`e3e795e009a35c88bcc7cdb4151408c147be0951`, merged upstream through Regelsuche #1084.
+Its JAR SHA-256 was
 `26f90e5493a68564a89fb04c740fcb2f744fa032246b97ebbaa75ff5d6752b36`.
-The repository-owned qualification and reproducibility receipts in
-`sandbox_math_cleanup/lib/` record two clean builds and two fresh consumers.
+At that review, the repository-owned qualification and reproducibility receipts
+in `sandbox_math_cleanup/lib/` recorded two clean builds and two fresh consumers.
 This revision binds the SDK generator change to revision v2 and uses the same
 modular operation cost model through both public optimizer entry points.
 
@@ -35,8 +115,8 @@ contracts.
 The focused native Eclipse Help reactor also passed both SWTBot tests: the
 profile test verified all eleven effective options, and the capture test
 recaptured all four real Bouncy Castle previews, verified the exact replacements, applied
-them and undid them byte-for-byte. The image/provenance pairs now identify this
-SDK and the final compiled adapter. The separate full CI and distribution gates
+them and undid them byte-for-byte. At that review, the image/provenance pairs
+identified this SDK and its compiled adapter. The separate full CI and distribution gates
 remain authoritative for merge qualification.
 
 The four image/provenance pairs were subsequently copied byte-for-byte from

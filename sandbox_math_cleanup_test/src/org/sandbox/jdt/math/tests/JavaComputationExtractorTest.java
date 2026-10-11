@@ -13,6 +13,7 @@ import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.SafetyProfile;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 import javax.tools.ToolProvider;
@@ -27,6 +28,18 @@ import org.sandbox.jdt.internal.corext.fix.math.JavaComputationRegion;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 
 class JavaComputationExtractorTest {
+   @Test
+   void sharedModularExponentDoesNotExpandExponentiallyBeforeTheSearchBudget() {
+      String source = "import java.math.BigInteger; class Calculation { BigInteger f(BigInteger x, BigInteger exponent, BigInteger m) {"
+         + "BigInteger e=exponent;" + "e=e.add(e);".repeat(28) + "return x.modPow(e,m); }}";
+      CompilationUnit unit = MathTestSupport.parse(source);
+      MathCleanUpOptions options = new MathCleanUpOptions(true, Set.of(NumericKind.BIG_INTEGER),
+         SafetyProfile.PRESERVE_JAVA, OptimizationGoal.READABILITY, 1L, 2000, false, 17, List.of(), true);
+      var extraction = Assertions.assertTimeoutPreemptively(Duration.ofSeconds(2),
+         () -> new JavaComputationExtractor().extractRuntime(unit, source, options));
+      Assertions.assertFalse(extraction.regions().isEmpty(), extraction.diagnostics().toString());
+   }
+
    static MathCleanUpOptions options(Set<NumericKind> var0, SafetyProfile var1) {
       return new MathCleanUpOptions(true, var0, var1, OptimizationGoal.READABILITY, 100000L, 2000, var1 == SafetyProfile.CHECKED_THROW, 17, List.of());
    }

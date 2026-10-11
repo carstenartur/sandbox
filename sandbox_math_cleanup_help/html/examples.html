@@ -75,11 +75,28 @@ return (v ^ (w &amp; (u ^ v)));</pre>
 <p>Here <code>w</code>, rather than the first parameter, selects the bits. Operand
 order and variable names do not supply the proof.</p>
 <figure><a href="../images/04-bouncy-castle-swapped-choice.png"><img src="../images/04-bouncy-castle-swapped-choice.png" alt="Real Eclipse preview of a complementary-mask rewrite with the selector in a different operand position"></a><figcaption>Complete MD5Digest source with runtime parameters. These legacy-digest examples are not recommendations for new cryptographic designs. <a href="../images/04-bouncy-castle-swapped-choice.provenance.json">Provenance</a>.</figcaption></figure>
+<h2 id="modular-square">5. Replace modular powers by verified squares</h2>
+<pre>// SimplifiedShallueVanDeWoestijneMapToCurve.process
+BigInteger tv1 = u.modPow(BigInteger.valueOf(2), p);
+// Actual optimized branch
+tv1 = (u.multiply(u).mod(p));</pre>
+<p>Select <strong>Only BigInteger</strong> and explicitly enable mathematical
+optimization. The complete class contains four accepted modular squares.
+The generated Java includes exact-receiver and magnitude checks, a positive
+modulus check, and the unchanged original calculation as fallback. Signed bases
+are allowed. Generated method Javadoc documents the value-semantics contract.</p>
+<figure><a href="../images/05-bouncy-castle-modular-square.png"><img src="../images/05-bouncy-castle-modular-square.png" alt="Native Eclipse preview of the actual Bouncy Castle modular-square rewrite with receiver guards and original fallback"></a><figcaption>Complete production class, four verified changes. <a href="../images/05-bouncy-castle-modular-square.provenance.json">Source, profile and image provenance</a>.</figcaption></figure>
+<p>Complete original and generated classes are compiled and compared on 100
+curve-mapping inputs. Related real-source tests compare 210 sqrt-ratio results,
+460 Tonelli–Shanks inputs, 127 inputs through three primality APIs, and 96 seeded
+Cramer–Shoup generator calls. These execution checks supplement the independent
+proof; they do not replace it or establish a speedup or constant-time behavior.</p>
 <h2>Source identity and upstream use</h2>
 <p>The frozen inputs come from the actual Eclipse target source archive
 <code>bcprov.source-1.85.2.jar</code>, with SHA-256
 <code>9b15d2ccb83c76f9f393cb8cb97d0cb971d04dee667cc3f9d7f4ac28f582cb91</code>.
-The archive entries are under <code>org/bouncycastle/crypto/digests/</code>.
+The archive entries are under <code>org/bouncycastle/crypto/digests/</code> and
+<code>org/bouncycastle/crypto/hash2curve/impl/</code>.
 Each provenance file records the complete input hash. An archive release is
 not represented as a checkout of a different Git revision.
 <a href="bouncy-castle-license.html">Bouncy Castle copyright and MIT license</a>.</p>

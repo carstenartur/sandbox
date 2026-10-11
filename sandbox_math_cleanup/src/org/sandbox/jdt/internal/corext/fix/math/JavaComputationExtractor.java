@@ -22,9 +22,11 @@ import de.regelsuche.search.program.JointComputationPlan.Output;
 import java.math.BigInteger;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -66,6 +68,7 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.ThrowStatement;
+import org.eclipse.jdt.core.dom.ThisExpression;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.WhileStatement;
@@ -84,6 +87,10 @@ public final class JavaComputationExtractor {
 
    Extraction extractRuntimeFragments(CompilationUnit unit, String source, MathCleanUpOptions options) {
       return extract(unit, source, options, false, true, 4);
+   }
+
+   Extraction extractRuntimeStatements(CompilationUnit unit, String source, MathCleanUpOptions options) {
+      return extract(unit, source, options, false, true, 1);
    }
 
    JavaComputationExtractor.Extraction extractForVerification(CompilationUnit unit, String source, MathCleanUpOptions options) {
@@ -139,6 +146,13 @@ public final class JavaComputationExtractor {
 
             for (Object child : block.statements()) {
                Statement statement = (Statement)child;
+               boolean incomingAssignment = externalBigIntegerAssignment(statement, options)
+                     && !builder.values.containsKey(((IVariableBinding) ((SimpleName) ((Assignment)
+                           ((ExpressionStatement) statement).getExpression()).getLeftHandSide()).resolveBinding()).getKey());
+               if (incomingAssignment) {
+                  finish(builder, regions, diagnostics);
+                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+               }
                if (builder.outputs.size() >= maximumOutputs) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
                   builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
@@ -154,6 +168,10 @@ public final class JavaComputationExtractor {
                } else {
                   try {
                      builder.statement(statement);
+                     if (incomingAssignment) {
+                        finish(builder, regions, diagnostics);
+                        builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                     }
                   } catch (JavaComputationExtractor.Rejected rejected) {
                      JavaComputationExtractor.finish(builder.prior, regions, diagnostics);
                      diagnostics.add(JavaComputationExtractor.diagnostic(rejected));
@@ -167,6 +185,15 @@ public final class JavaComputationExtractor {
          }
       });
       return new JavaComputationExtractor.Extraction(regions, diagnostics);
+   }
+
+   private static boolean externalBigIntegerAssignment(Statement statement, MathCleanUpOptions options) {
+      return options.mathematicalOptIn() && statement instanceof ExpressionStatement expression
+            && expression.getExpression() instanceof Assignment assignment
+            && assignment.getOperator() == Assignment.Operator.ASSIGN
+            && assignment.getLeftHandSide() instanceof SimpleName name
+            && name.resolveBinding() instanceof IVariableBinding binding && !binding.isField()
+            && JavaOperationRegistry.kind(binding.getType()).orElse(null) == NumericKind.BIG_INTEGER;
    }
 
    private static boolean eligibleBlock(Block block, boolean runtimeOnly) {
@@ -406,7 +433,7 @@ public final class JavaComputationExtractor {
             }
 
             binding = assignedName.resolveBinding() instanceof IVariableBinding local ? local : null;
-            if (binding == null || !this.values.containsKey(binding.getKey())) {
+            if (binding == null || !this.values.containsKey(binding.getKey()) && !externalBigIntegerAssignment(statement, options)) {
                throw JavaComputationExtractor.reject("PARTIAL_OUTPUT_OR_EXTERNAL_WRITE", statement);
             }
 
@@ -597,6 +624,14 @@ public final class JavaComputationExtractor {
                return JavaComputationExtractor.literal(expression.resolveConstantExpressionValue(), expression);
             }
 
+            if (expression instanceof FieldAccess field && field.getExpression() instanceof ThisExpression receiver
+                  && receiver.getQualifier() == null && field.resolveFieldBinding() != null
+                  && mathematicalField(field.resolveFieldBinding()) && unshadowed(field.resolveFieldBinding())) {
+               // The emitter uses identifiers. Elide this only when the same binding is
+               // guaranteed throughout the method, including generated guards and locals.
+               return expression(field.getName(), primitiveBoundary, depth + 1);
+            }
+
             if (expression instanceof Name name) {
                if (!(name.resolveBinding() instanceof IVariableBinding binding && !binding.isRecovered())) {
                   throw JavaComputationExtractor.reject("UNRESOLVED_BINDING", expression);
@@ -629,6 +664,13 @@ public final class JavaComputationExtractor {
                         default -> throw JavaComputationExtractor.reject("UNKNOWN_BIG_INTEGER_CONSTANT", expression);
                      };
                   } else if ((!binding.isField() || resultKind == NumericKind.BIG_INTEGER && mathematicalField(binding)) && name instanceof SimpleName) {
+                     BigInteger fieldConstant = resultKind == NumericKind.BIG_INTEGER ? literalField(binding) : null;
+                     if (fieldConstant != null) {
+                        // A final field can still be null during recursive initialization.
+                        // The exact-receiver guard retains that original exception path.
+                        receiverGuards.add(binding.getName());
+                        return JavaExpressions.literal(fieldConstant);
+                     }
                      Expr localValue = this.values.get(binding.getKey());
                      if (localValue != null) {
                         return localValue;
@@ -810,9 +852,34 @@ public final class JavaComputationExtractor {
       }
 
       Expr operation(NumericKind kind, NumericOperation operation, ASTNode node, Expr... operands) {
+         if (options.mathematicalOptIn() && kind == NumericKind.BIG_INTEGER) {
+            if (operation == NumericOperation.MOD) requireGuardedPositive(operands[1], node);
+            if (operation == NumericOperation.MOD_POW || operation == NumericOperation.MOD_MULTIPLY)
+               requireGuardedPositive(operands[2], node);
+            if (operation == NumericOperation.MOD_POW) requireGuardedPositive(operands[1], node);
+         }
          Expr expression = JavaExpressions.operation(kind, operation, operands);
          this.trace.add(new Occurrence("operation@" + node.getStartPosition() + ":" + this.trace.size(), expression, kind, kind));
          return expression;
+      }
+
+      private void requireGuardedPositive(Expr expression, ASTNode source) {
+         // Reused locals share expression nodes. Structural hashing or recursive
+         // revisits can expand a short sequence of repeated doubling exponentially.
+         Set<Expr> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+         Deque<Expr> pending = new ArrayDeque<>();
+         pending.push(expression);
+         while (!pending.isEmpty()) {
+            Expr current = pending.pop();
+            if (!visited.add(current)) continue;
+            if (visited.size() > 4096) throw reject("GUARDED_POSITIVITY_SIZE_LIMIT", source);
+            if (current instanceof VariableExpr input) {
+               if (receiverGuards.contains(inputNames.get(input.name())))
+                  assumptions.add(new SemanticAssumption(Kind.POSITIVE, input.name(), "", "explicit positive exact-receiver runtime guard"));
+            } else if (!JavaExpressions.isLiteral(current)) {
+               JavaExpressions.operands(current).forEach(pending::push);
+            }
+         }
       }
 
       NumericKind kind(ITypeBinding binding, ASTNode node) {
@@ -867,10 +934,44 @@ public final class JavaComputationExtractor {
          return false;
       }
 
-      void addBigIntegerRangeFacts(IVariableBinding binding, String inputId) {
-         if (options.mathematicalOptIn() && receiverGuards.contains(binding.getName())) {
-            assumptions.add(new SemanticAssumption(Kind.POSITIVE, inputId, "", "explicit positive exact-receiver runtime guard"));
+      private boolean unshadowed(IVariableBinding binding) {
+         ASTNode enclosing = block;
+         while (enclosing != null && !(enclosing instanceof MethodDeclaration)) enclosing = enclosing.getParent();
+         if (enclosing == null) return false;
+         boolean[] shadowed = {false};
+         enclosing.accept(new ASTVisitor() {
+            @Override public boolean visit(SimpleName name) {
+               if (name.isDeclaration() && name.getIdentifier().equals(binding.getName())
+                     && name.resolveBinding() instanceof IVariableBinding other && !other.isField()) shadowed[0] = true;
+               return !shadowed[0];
+            }
+         });
+         return !shadowed[0];
+      }
+
+      private BigInteger literalField(IVariableBinding binding) {
+         if (!binding.isField() || !Modifier.isStatic(binding.getModifiers()) || !mathematicalField(binding)) return null;
+         Expression initializer = declarations.get(binding.getKey()).getInitializer();
+         if (initializer instanceof MethodInvocation factory && factory.resolveMethodBinding() != null
+               && factory.resolveMethodBinding().getDeclaringClass().getQualifiedName().equals("java.math.BigInteger")
+               && factory.getName().getIdentifier().equals("valueOf") && factory.arguments().size() == 1
+               && factory.getExpression() instanceof Name qualifier && qualifier.resolveBinding() instanceof ITypeBinding) {
+            Expression argument = (Expression) factory.arguments().getFirst();
+            if ((argument instanceof NumberLiteral || argument instanceof PrefixExpression prefix && prefix.getOperand() instanceof NumberLiteral)
+                  && argument.resolveConstantExpressionValue() instanceof Number value)
+               return BigInteger.valueOf(value.longValue());
          }
+         if (initializer instanceof ClassInstanceCreation construction && construction.getAnonymousClassDeclaration() == null
+               && construction.arguments().size() == 1 && construction.arguments().getFirst() instanceof StringLiteral text) {
+            try {
+               BigInteger value = new BigInteger(text.getLiteralValue());
+               return value.abs().bitLength() <= 4096 ? value : null;
+            } catch (NumberFormatException invalid) { return null; }
+         }
+         return null;
+      }
+
+      void addBigIntegerRangeFacts(IVariableBinding binding, String inputId) {
          Integer bound = binding.isField() ? null : this.knownMagnitudeBound(binding);
          if (bound != null || this.receiverGuards.contains(binding.getName())) {
             this.assumptions

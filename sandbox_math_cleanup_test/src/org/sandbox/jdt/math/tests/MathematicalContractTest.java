@@ -69,11 +69,48 @@ class MathematicalContractTest {
         MathTestSupport.parse(document.get());
     }
 
-    @Test void unsupportedNestedModulusIsDiagnosedRatherThanInventingAProof() {
+    @Test void nestedModulusMustPayForItsReceiverGuards() {
         String source = "import java.math.BigInteger; class Calculation { BigInteger f(BigInteger x, BigInteger m) { return x.mod(m).mod(m); }}";
         var result = analyze(source, true);
         assertFalse(result.changed());
-        assertTrue(result.diagnostics().stream().anyMatch(d -> d.code().equals("NOIMPROVEMENT")));
+        assertTrue(result.diagnostics().stream().anyMatch(d -> d.message().contains("RECEIVER_GUARD_RUNTIME_COST_UNQUALIFIED")), result.diagnostics().toString());
+    }
+
+    @Test void incomingLocalAssignmentIsOptimizedWithoutCrossingEffects() throws Exception {
+        String source = "public class Calculation { public static java.math.BigInteger compute(java.math.BigInteger x) { System.nanoTime(); x=x.modPow(java.math.BigInteger.TWO, java.math.BigInteger.valueOf(101)); return x; }}";
+        String generated = rewrite(source);
+        assertTrue(generated.contains("x.multiply(x).mod("), generated);
+        assertFalse(generated.contains("x.signum() > 0"), generated);
+        assertFalse(analyze(generated, true).changed(), generated);
+        Method before = compile(source, BigInteger.class), after = compile(generated, BigInteger.class);
+        for (int x=-30; x<=30; x++) assertEquals(before.invoke(null, BigInteger.valueOf(x)), after.invoke(null, BigInteger.valueOf(x)));
+    }
+
+    @Test void declaredBigIntegerConstantEnablesModularSquares() throws Exception {
+        String source = "public class Calculation { private static final java.math.BigInteger TWO=java.math.BigInteger.valueOf(2); public static java.math.BigInteger compute(java.math.BigInteger x) { return x.modPow(TWO, java.math.BigInteger.valueOf(101)); }}";
+        String generated = rewrite(source);
+        assertTrue(generated.contains("x.multiply(x)"), generated);
+        assertTrue(generated.contains("TWO != null"), generated);
+        Method before = compile(source, BigInteger.class), after = compile(generated, BigInteger.class);
+        for (int x=-101; x<=101; x++) assertEquals(before.invoke(null, BigInteger.valueOf(x)), after.invoke(null, BigInteger.valueOf(x)));
+        assertFalse(analyze(generated, true).changed(), generated);
+    }
+
+    @Test void constantBeforeItsInitializerStillUsesOriginalExceptionPath() throws Exception {
+        String source = "public class Calculation { static final java.math.BigInteger EARLY=compute(java.math.BigInteger.ONE); private static final java.math.BigInteger TWO=java.math.BigInteger.valueOf(2); public static java.math.BigInteger compute(java.math.BigInteger x) { return x.modPow(TWO, java.math.BigInteger.valueOf(101)); }}";
+        Method before = compile(source, BigInteger.class), after = compile(rewrite(source), BigInteger.class);
+        assertInstanceOf(NullPointerException.class, assertThrows(ExceptionInInitializerError.class, () -> before.invoke(null, BigInteger.ONE)).getCause());
+        assertInstanceOf(NullPointerException.class, assertThrows(ExceptionInInitializerError.class, () -> after.invoke(null, BigInteger.ONE)).getCause());
+    }
+
+    @Test void unshadowedFinalThisFieldCanBeUsedAsAModulus() throws Exception {
+        String source = "import java.math.BigInteger; class Calculation { final BigInteger modulus; Calculation(BigInteger m) { modulus=m; } BigInteger f(BigInteger x) { return x.modPow(BigInteger.TWO,this.modulus); }}";
+        String generated = rewrite(source);
+        assertTrue(generated.contains("x.multiply(x).mod(modulus)"), generated);
+        assertFalse(analyze(generated, true).changed(), generated);
+        String shadowed = source.replace("f(BigInteger x)", "f(BigInteger x, BigInteger modulus)");
+        assertFalse(analyze(shadowed, true).changed(), "A field must never be rebound to a shadowing parameter");
+        assertFalse(analyze(source.replace("final BigInteger modulus", "BigInteger modulus"), true).changed());
     }
 
     @Test void documentedIntBoundariesAndTheExtensionExecuteAsPromised() throws Exception {
