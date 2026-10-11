@@ -142,7 +142,7 @@ public final class MathematicalAnalysis {
                // One difficult method must not consume the search allocation of all later methods.
                long regionWork = selectionOffset >= 0 ? remainingWork : Math.max(1L, remainingWork / regionsLeft);
                boolean mathematicalIntegral = false;
-               boolean canTryMathematical = options.mathematicalOptIn() && IntegralMathematicalDomain.supports(region);
+               boolean canTryMathematical = options.mathematicalOptIn() && IntegralMathematicalDomain.supports(region, cancellation);
                long ordinaryWork = canTryMathematical ? Math.max(1L, regionWork / 2) : regionWork;
                boolean mathematicalBigInteger = options.mathematicalOptIn()
                      && region.trace().occurrences().stream().anyMatch(o -> o.evaluatedKind() == NumericKind.BIG_INTEGER);
@@ -222,7 +222,7 @@ public final class MathematicalAnalysis {
                      continue;
                   }
 
-                  String contract = mathematicalIntegral ? IntegralMathematicalDomain.verify(region, candidate.plan())
+                  String contract = mathematicalIntegral ? IntegralMathematicalDomain.verify(region, candidate.plan(), cancellation)
                         : mathematicalBigInteger ? "BigInteger numerical values are preserved; result reference identity may change. "
                               + "Where receivers are unproved, the optimized branch requires exact BigInteger instances "
                               + "with bitLength() below 4096 and positive guarded moduli or exponents; signed bases are allowed. "
