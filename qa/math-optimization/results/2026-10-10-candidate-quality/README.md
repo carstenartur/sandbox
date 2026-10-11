@@ -39,6 +39,17 @@ them and undid them byte-for-byte. The image/provenance pairs now identify this
 SDK and the final compiled adapter. The separate full CI and distribution gates
 remain authoritative for merge qualification.
 
+The four image/provenance pairs were subsequently copied byte-for-byte from
+the completed native CI verifier artifact `generated-help-screenshots-1351-38106062712`
+(artifact ID `11689872638`, source head
+`7e38cf55c6c64f067dbeaa3f7556397e048224c1`). The archive SHA-256 is
+`754bcb64d9bb5c7478ed298d901ac45fe1784c0cd6ce213f3d57c16f9160ef6f`.
+The native scenarios passed, but the final baseline comparison found differences
+in 1,172 dialog-label pixels per image. The source comparison area is pixel-identical;
+the corresponding provenance differs only in `screenshotSha256`. No source,
+profile, SDK, preview or Undo evidence changed, and the verifier remains unchanged.
+The next CI run must reproduce these committed artifact bytes.
+
 ## Causes and changes
 
 * The runtime goal accepted candidates whose SDK assessment explicitly reported
