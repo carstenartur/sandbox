@@ -24,6 +24,8 @@ class VerificationMavenWrapperContractTest {
         return Stream.of(
                 new Invocation("codacy.yml", "Build and run Maven analysis", "run: ./mvnw -B -DskipTests package"),
                 new Invocation("codeql.yml", "Build with Maven", "run: ./mvnw -B -DskipTests clean package"),
+                new Invocation("deploy-snapshot.yml", "Maven distribution build and verification",
+                        "xvfb-run --auto-servernum ./mvnw"),
                 new Invocation("distribution-smoke.yml", "Maven distribution build and verification",
                         "command=(./mvnw -Pdistribution,cli-dist,swtbot"),
                 new Invocation("distribution-smoke.yml", "Verify installed mathematics without a display",
@@ -91,8 +93,14 @@ class VerificationMavenWrapperContractTest {
                     "The nested LTK build must use the same pinned Maven");
             assertTrue(execution.contains("-Dtest=LtkRuntimePatchTest,LtkRuntimeMetadataTest,PinnedLtkRuntimeIT"));
         } else if (invocation.step().equals("Maven distribution build and verification")) {
-            assertTrue(execution.contains("-Dsandbox.math.retainHeadlessProbe=true clean verify"));
+            assertTrue(execution.contains("-Pdistribution"));
+            assertTrue(execution.contains("clean verify"));
             assertTrue(execution.contains("-Dtycho.localArtifacts=ignore"));
+            assertFalse(execution.contains("-DskipTests"), "Distribution verification must execute its tests");
+            assertFalse(execution.contains("-Dmaven.test.skip"), "Distribution tests must be compiled and executed");
+            if ("distribution-smoke.yml".equals(invocation.file())) {
+                assertTrue(execution.contains("-Dsandbox.math.retainHeadlessProbe=true clean verify"));
+            }
         } else if (invocation.step().equals("Verify installed mathematics without a display")) {
             assertTrue(execution.contains("exec:java@verify-installed-mathematics"));
         } else if (invocation.step().equals("Build Eclipse product")) {

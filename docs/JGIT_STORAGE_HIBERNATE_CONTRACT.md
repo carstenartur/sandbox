@@ -71,7 +71,7 @@ Candidate mode additionally requires the patched POM property and the resolved M
 
 ## What is verified
 
-The contract uses Java 21 and builds the two storage consumer modules independently from the unrelated Eclipse cleanup reactor.
+The contract requires Java 25 and builds the two storage consumer modules independently from the unrelated Eclipse cleanup reactor.
 
 It verifies:
 
