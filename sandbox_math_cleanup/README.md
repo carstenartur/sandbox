@@ -53,3 +53,16 @@ The original Bouncy Castle constructor's general loop/method/object contracts ar
 The [same-budget Bouncy Castle qualification](../qa/math-optimization/results/2026-10-11-biginteger-helpers/README.md)
 records the measured effect: two additional regions reach analysis, while
 accepted replacements remain 104 in strict mode and 114 in mathematical mode.
+
+## Shared integral domain analysis
+
+The mathematical opt-in delegates affine input-range analysis to the pinned
+Regelsuche SDK. The Java adapter passes its cancellation token and renders the
+separately verified original/candidate intervals in the existing local-range
+Javadoc contract. Unsupported nonlinear, bitwise, multi-input and inexact forms
+remain outside this range analysis; no caller premise is inferred from it.
+
+The pinned SDK also admits existing algebra rules whose premises follow from
+established typed facts, and bounded literal `BigInteger.shiftLeft(int)` terms in
+modular search. Java kinds, promotions, source trace and overflow policy remain
+explicit. Both capabilities are generic SDK features, not Java-source-name rules.
