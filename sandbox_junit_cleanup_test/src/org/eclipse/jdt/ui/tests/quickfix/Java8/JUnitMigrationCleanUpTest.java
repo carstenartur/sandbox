@@ -66,7 +66,7 @@ public class JUnitMigrationCleanUpTest {
 
 	@BeforeEach
 	public void setup() throws CoreException {
-		fRootJUnit3= context4junit3.createClasspathForJUnit(JUnitCore.JUNIT3_CONTAINER_PATH);
+		fRootJUnit3= JUnitMigrationFixtureClasspath.createJUnit3And5Root(context4junit3);
 		fRootJUnit4= JUnitMigrationFixtureClasspath.createJUnit4And5Root(context4junit4);
 		fRootJUnit5= context4junit5.createClasspathForJUnit(JUnitCore.JUNIT5_CONTAINER_PATH);
 	}
