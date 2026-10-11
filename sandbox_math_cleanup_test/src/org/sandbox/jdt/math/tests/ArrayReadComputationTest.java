@@ -205,6 +205,31 @@ class ArrayReadComputationTest {
         }
     }
 
+    @Test void rejectedCapturesRetainUsefulScalarAlternativesWithoutOverlappingEdits() throws Exception {
+        String source = source("int first = value ^ 0; int word = (words[i] & mask) ^ (other[j] & mask);"
+                + " int last = word ^ 0; return first ^ last;");
+        for (OptimizationGoal goal : List.of(OptimizationGoal.LOWER_ESTIMATED_RUNTIME, OptimizationGoal.LOWER_ALLOCATION)) {
+            var result = analyze(source, goal);
+            assertTrue(result.changed(), goal + ": " + result.diagnostics());
+            assertEquals(2, result.replacements().size(), result.diagnostics().toString());
+            assertTrue(result.diagnostics().stream().anyMatch(d -> d.code().equals("ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT")));
+            assertEquals(1, result.diagnostics().stream().filter(d -> d.code().equals("ARRAY_SCALAR_RETRY")).count());
+            assertTrue(result.evidence().stream().noneMatch(e -> e.original().contains("words[i]")));
+            Document document = new Document(source);
+            var undo = result.newEdit().apply(document, TextEdit.CREATE_UNDO);
+            String generated = document.get();
+            assertTrue(generated.contains("int word = (words[i] & mask) ^ (other[j] & mask);"), generated);
+            assertFalse(generated.contains("_mathRead"), generated);
+            undo.apply(document);
+            assertEquals(source, document.get());
+            try (var before = compile(source); var after = compile(generated)) {
+                compare(before, after, new int[] {Integer.MIN_VALUE}, new int[] {-1}, 0, 0, -1, 7);
+                assertEquals(NullPointerException.class, compare(before, after, null, new int[0], 0, 0, -1, 7));
+                assertEquals(ArrayIndexOutOfBoundsException.class, compare(before, after, new int[0], null, 0, 0, -1, 7));
+            }
+        }
+    }
+
     @Test void substantialScalarSavingsCanPayForCapturesUnderBothPerformanceGoals() throws Exception {
         String source = source("int current = words[i]; " + "current += 1; current -= 1; ".repeat(12) + "return current;");
         for (OptimizationGoal goal : List.of(OptimizationGoal.LOWER_ESTIMATED_RUNTIME, OptimizationGoal.LOWER_ALLOCATION)) {

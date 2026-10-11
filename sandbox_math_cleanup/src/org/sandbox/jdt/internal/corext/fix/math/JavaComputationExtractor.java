@@ -94,6 +94,11 @@ public final class JavaComputationExtractor {
       return extract(unit, source, options, false, true, 1);
    }
 
+   /** Retains the scalar regions available when memory reads were statement boundaries. */
+   Extraction extractRuntimeScalars(CompilationUnit unit, String source, MathCleanUpOptions options) {
+      return extract(unit, source, options, false, true, Integer.MAX_VALUE, false);
+   }
+
    JavaComputationExtractor.Extraction extractForVerification(CompilationUnit unit, String source, MathCleanUpOptions options) {
       return this.extract(unit, source, options, true, false);
    }
@@ -104,6 +109,11 @@ public final class JavaComputationExtractor {
 
    private JavaComputationExtractor.Extraction extract(final CompilationUnit unit, String source, final MathCleanUpOptions options,
          final boolean includeValues, final boolean runtimeOnly, int maximumOutputs) {
+      return extract(unit, source, options, includeValues, runtimeOnly, maximumOutputs, true);
+   }
+
+   private JavaComputationExtractor.Extraction extract(final CompilationUnit unit, String source, final MathCleanUpOptions options,
+         final boolean includeValues, final boolean runtimeOnly, int maximumOutputs, boolean arrayInputs) {
       final ArrayList<JavaComputationRegion> regions = new ArrayList<>();
       final ArrayList<Diagnostic> diagnostics = new ArrayList<>();
       if (!options.enabled()) {
@@ -143,45 +153,45 @@ public final class JavaComputationExtractor {
                return false;
             }
 
-            JavaComputationExtractor.Builder builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+            JavaComputationExtractor.Builder builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
 
             for (Object child : block.statements()) {
                Statement statement = (Statement)child;
                if (JavaArrayReadInputs.requiresBoundary(statement, builder.values.keySet(),
                      JavaArrayReadInputs.totalPrefix(builder.trace, builder.outputs))) {
                   finish(builder, regions, diagnostics);
-                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                }
                boolean incomingAssignment = externalBigIntegerAssignment(statement, options)
                      && !builder.values.containsKey(((IVariableBinding) ((SimpleName) ((Assignment)
                            ((ExpressionStatement) statement).getExpression()).getLeftHandSide()).resolveBinding()).getKey());
                if (incomingAssignment) {
                   finish(builder, regions, diagnostics);
-                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                }
                if (builder.outputs.size() >= maximumOutputs) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
-                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                }
                if (runtimeOnly && RuntimeCalculationPolicy.preserve(statement, declarations)) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
                   diagnostics.add(new Diagnostic("CONSTANT_EXPRESSION_PRESERVED", "Intentional constant source is outside runtime cleanup", statement.getStartPosition(), statement.getLength()));
-                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                } else if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)
                      && !(statement instanceof ReturnStatement)) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
-                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                } else {
                   try {
                      builder.statement(statement);
                      if (incomingAssignment) {
                         finish(builder, regions, diagnostics);
-                        builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                        builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                      }
                   } catch (JavaComputationExtractor.Rejected rejected) {
                      JavaComputationExtractor.finish(builder.prior, regions, diagnostics);
                      diagnostics.add(JavaComputationExtractor.diagnostic(rejected));
-                     builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                     builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                   }
                }
             }
@@ -363,6 +373,7 @@ public final class JavaComputationExtractor {
       final Block block;
       final boolean includeValues;
       final boolean runtimeOnly;
+      final boolean arrayInputs;
       final Map<String, Expr> values = new HashMap<>();
       final Map<String, String> inputKeys = new HashMap<>();
       final Map<String, String> inputNames = new LinkedHashMap<>();
@@ -381,7 +392,7 @@ public final class JavaComputationExtractor {
       int first = -1;
       int end;
 
-      Builder(CompilationUnit unit, MathCleanUpOptions options, Map<String, VariableDeclarationFragment> declarations, Set<String> reserved, Block block, boolean includeValues, boolean runtimeOnly) {
+      Builder(CompilationUnit unit, MathCleanUpOptions options, Map<String, VariableDeclarationFragment> declarations, Set<String> reserved, Block block, boolean includeValues, boolean runtimeOnly, boolean arrayInputs) {
          this.unit = unit;
          this.options = options;
          this.declarations = declarations;
@@ -389,11 +400,12 @@ public final class JavaComputationExtractor {
          this.block = block;
          this.includeValues = includeValues;
          this.runtimeOnly = runtimeOnly;
+         this.arrayInputs = arrayInputs;
       }
 
       JavaComputationExtractor.Builder snapshot() {
          JavaComputationExtractor.Builder copy = new JavaComputationExtractor.Builder(
-            this.unit, this.options, this.declarations, this.reserved, this.block, this.includeValues, this.runtimeOnly
+            this.unit, this.options, this.declarations, this.reserved, this.block, this.includeValues, this.runtimeOnly, this.arrayInputs
          );
          copy.values.putAll(this.values);
          copy.inputKeys.putAll(this.inputKeys);
@@ -560,7 +572,7 @@ public final class JavaComputationExtractor {
                   initializer = assignment;
                } else throw reject("METHOD_CONTROL_FLOW_OR_EFFECT", call);
                if (binding == null || binding.isRecovered() || binding.isField() || initializer == null
-                     || !JavaScalarMethodBody.integral(binding.getType())) throw reject("METHOD_NONSCALAR_LOCAL", call);
+                     || !JavaScalarMethodBody.scalar(binding.getType(), options.mathematicalOptIn())) throw reject("METHOD_NONSCALAR_LOCAL", call);
                preserveMethodConstants(initializer instanceof Assignment assignment ? assignment.getRightHandSide() : initializer, call);
                frame.put(binding.getKey(), assignedValue(binding, initializer, depth + 1));
             }
@@ -618,7 +630,7 @@ public final class JavaComputationExtractor {
             throw JavaComputationExtractor.reject("EXPRESSION_DEPTH_LIMIT", expression);
          }
 
-         if (!methodFrames.isEmpty() && !JavaScalarMethodBody.integral(expression.resolveTypeBinding()))
+         if (!methodFrames.isEmpty() && !JavaScalarMethodBody.scalar(expression.resolveTypeBinding(), options.mathematicalOptIn()))
             throw reject("METHOD_NONSCALAR_EXPRESSION", expression);
          NumericKind resultKind = this.kind(expression.resolveTypeBinding(), expression);
          if (!primitiveBoundary) {
@@ -646,7 +658,18 @@ public final class JavaComputationExtractor {
                } else if (name instanceof QualifiedName qualifiedName && !(qualifiedName.getQualifier().resolveBinding() instanceof ITypeBinding)) {
                   throw JavaComputationExtractor.reject("EFFECTFUL_CONSTANT_QUALIFIER", expression);
                } else {
+                  if (resultKind == NumericKind.BIG_INTEGER && binding.isField() && binding.getDeclaringClass().getQualifiedName().equals("java.math.BigInteger")) {
+                     return switch (binding.getName()) {
+                        case "ZERO" -> JavaExpressions.literal(BigInteger.ZERO);
+                        case "ONE" -> JavaExpressions.literal(BigInteger.ONE);
+                        case "TWO" -> JavaExpressions.literal(BigInteger.TWO);
+                        case "TEN" -> JavaExpressions.literal(BigInteger.TEN);
+                        default -> throw JavaComputationExtractor.reject("UNKNOWN_BIG_INTEGER_CONSTANT", expression);
+                     };
+                  }
                   if (!methodFrames.isEmpty()) {
+                     // Callee locals already denote caller graphs. Never create caller
+                     // input names or guards from the helper's parameter/field scope.
                      if (binding.isField()) throw reject("METHOD_FIELD_ACCESS", expression);
                      return localValue(binding, expression);
                   }
@@ -663,15 +686,7 @@ public final class JavaComputationExtractor {
                      return JavaComputationExtractor.literal(this.validatedConstant(expression), expression);
                   }
 
-                  if (resultKind == NumericKind.BIG_INTEGER && binding.isField() && binding.getDeclaringClass().getQualifiedName().equals("java.math.BigInteger")) {
-                     return switch (binding.getName()) {
-                        case "ZERO" -> JavaExpressions.literal(BigInteger.ZERO);
-                        case "ONE" -> JavaExpressions.literal(BigInteger.ONE);
-                        case "TWO" -> JavaExpressions.literal(BigInteger.TWO);
-                        case "TEN" -> JavaExpressions.literal(BigInteger.TEN);
-                        default -> throw JavaComputationExtractor.reject("UNKNOWN_BIG_INTEGER_CONSTANT", expression);
-                     };
-                  } else if ((!binding.isField() || resultKind == NumericKind.BIG_INTEGER && mathematicalField(binding)) && name instanceof SimpleName) {
+                  if ((!binding.isField() || resultKind == NumericKind.BIG_INTEGER && mathematicalField(binding)) && name instanceof SimpleName) {
                      BigInteger fieldConstant = resultKind == NumericKind.BIG_INTEGER ? literalField(binding) : null;
                      if (fieldConstant != null) {
                         // A final field can still be null during recursive initialization.
@@ -792,7 +807,7 @@ public final class JavaComputationExtractor {
                   throw JavaComputationExtractor.reject("STATIC_CALL_EFFECTFUL_QUALIFIER", invocation);
                }
 
-               MethodDeclaration scalarMethod = JavaScalarMethodBody.resolve(this.unit, invocation);
+               MethodDeclaration scalarMethod = JavaScalarMethodBody.resolve(this.unit, invocation, options.mathematicalOptIn());
                if (scalarMethod != null) return methodInvocation(invocation, scalarMethod, depth + 1);
 
                if (method.getDeclaringClass().getQualifiedName().equals("java.math.BigInteger")
@@ -880,7 +895,7 @@ public final class JavaComputationExtractor {
       private Expr arrayRead(ArrayAccess read, NumericKind kind) {
          // Checked evaluation and fallback need a separate ordered memory trace contract.
          // Keep those profiles and helper memory access outside this initial admission.
-         if (options.safety() != SafetyProfile.PRESERVE_JAVA || !methodFrames.isEmpty()
+         if (!arrayInputs || options.safety() != SafetyProfile.PRESERVE_JAVA || !methodFrames.isEmpty()
                || !JavaArrayReadInputs.integral(kind) || !JavaArrayReadInputs.supported(read, values.keySet()))
             throw reject("ARRAY_READ_DEPENDENCY_BOUNDARY", read); //$NON-NLS-1$
          if (!JavaArrayReadInputs.totalPrefix(trace, outputs))
@@ -1136,6 +1151,8 @@ public final class JavaComputationExtractor {
             new ASTVisitor() {
                public boolean visit(SimpleName expression) {
                   if (expression.resolveBinding() instanceof IVariableBinding binding && binding.getConstantValue() != null) {
+                     if (!methodFrames.isEmpty() && binding.isField())
+                        throw JavaComputationExtractor.reject("METHOD_FIELD_ACCESS", expression);
                      VariableDeclarationFragment declaration = Builder.this.declarations.get(binding.getKey());
                      if (declaration != null && declaration.getInitializer() != null) {
                         if (!visited.add(binding.getKey())) {

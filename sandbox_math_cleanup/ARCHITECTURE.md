@@ -43,3 +43,11 @@ claimed savings. The reported costs and runtime/allocation goal gates use this
 same assessment. Readability can accept a simpler formula with higher assessed
 cost, while its runtime-improvement flag includes all capture work. These are
 declared model units, not bytes, allocations, or measured timings.
+
+An unsuccessful connected array attempt can retry the contained scalar regions
+available when array reads are statement boundaries. This alternative extraction
+is lazy and cached per analysis. Only strictly smaller array-free regions are
+scheduled, excluding overlaps with accepted edits or pending regions; they cannot
+produce another array retry. The rejected attempt's search and presentation work
+stay charged, and all alternatives share the existing remaining file budget.
+Capture costs and proof requirements are unchanged.

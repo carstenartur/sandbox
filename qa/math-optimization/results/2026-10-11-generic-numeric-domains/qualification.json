@@ -1,0 +1,221 @@
+{
+  "schema": "sandbox.math.generic-numeric-domains-corpus/v1",
+  "source_revision": "63cdbd17ed3308ecfaf3643e6d4ee35cd0b3134d",
+  "source_tree": "17c20542063e98ea6e57f0bdc5a81e8df4b7c767",
+  "baseline_revision": "b7f0bd4b3e945c328b78d45b69d3aa07bf9cb1b1",
+  "baseline_tree": "9442e2b4d067a6153ce5b319190142516a5406e1",
+  "baseline_receipt": "../2026-10-11-biginteger-helpers/qualification.json",
+  "baseline_receipt_sha256": "66d618522c1014040fe4396a24cd3832fcc56151bc6d6182cfcec56c9f0aa308",
+  "baseline_recorded_production_hashes_checked_against_main": 16,
+  "first_attempt_revision": "296d18719a8b8fc694e81674e9f38f14321e1661",
+  "sdk_source_revision": "2452f1d679bf9e4de7641759efbe30c88af2588c",
+  "sdk_jar_sha256": "7e0b684189d1c9e97eacdd41a996aa87d7c84e1c7cb49da0f45fa245831b8a65",
+  "sdk_reproducibility_receipt": "sandbox_math_cleanup/lib/reproducibility.json in PR #1697",
+  "corpus_sha256": {
+    "bcprov-jdk18on-1.85.2.jar": "986b0fb92ec10e0c66b43e036ce0077e6150cfaecd1db9fb92b56672e157afe5",
+    "bcprov-jdk18on-1.85.2-sources.jar": "b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f"
+  },
+  "scanner_sha256": "10beb921eb6a9d4c1e893327728d0c4f7da56d0727fd674fd12068602cec4435",
+  "scanner_class_sha256": "355234bfed4ca1e45c57dc5c60d2602860200bb399c9e24af2d4200680a489f6",
+  "options": {
+    "numericKinds": "BYTE,SHORT,CHAR,INT,LONG,FLOAT,DOUBLE,BIG_INTEGER",
+    "safety": "PRESERVE_JAVA",
+    "goal": "LOWER_ESTIMATED_RUNTIME",
+    "workBudgetPerFile": 1000000,
+    "maxStates": 20000,
+    "maxCandidates": 64,
+    "requestTimeoutMillis": 5000,
+    "sourceJavaCompliance": 17,
+    "modesRunSequentially": true
+  },
+  "same_non_sdk_dependencies": 27,
+  "input_and_class_hashes_unchanged_during_final_scans": true,
+  "counts": {
+    "strict": {
+      "baseline": {
+        "files": 3126,
+        "parseErrors": 10,
+        "regions": 2204,
+        "replacements": 104,
+        "changed_generated_source_files": 50
+      },
+      "first_attempt": {
+        "files": 3126,
+        "parseErrors": 10,
+        "regions": 2707,
+        "replacements": 88
+      },
+      "final": {
+        "files": 3126,
+        "parseErrors": 10,
+        "regions": 2707,
+        "replacements": 101,
+        "changed_generated_source_files": 50
+      }
+    },
+    "mathematical": {
+      "baseline": {
+        "files": 3126,
+        "parseErrors": 10,
+        "regions": 2546,
+        "replacements": 114,
+        "changed_generated_source_files": 55
+      },
+      "first_attempt": {
+        "files": 3126,
+        "parseErrors": 10,
+        "regions": 3049,
+        "replacements": 98
+      },
+      "final": {
+        "files": 3126,
+        "parseErrors": 10,
+        "regions": 3049,
+        "replacements": 111,
+        "changed_generated_source_files": 55
+      }
+    }
+  },
+  "comparison": {
+    "strict": {
+      "new_keys": [
+        "org/bouncycastle/math/ec/rfc7748/X25519Field.java:596"
+      ],
+      "removed_keys": [
+        "org/bouncycastle/math/ec/rfc7748/X25519Field.java:608",
+        "org/bouncycastle/math/ec/rfc7748/X25519Field.java:672",
+        "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2471",
+        "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2575"
+      ],
+      "common_keys": 100,
+      "changed_common_keys": [
+        "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2763",
+        "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2952",
+        "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:3023"
+      ],
+      "generated_identical": 48,
+      "generated_changed": [
+        "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+        "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java"
+      ]
+    },
+    "mathematical": {
+      "new_keys": [
+        "org/bouncycastle/math/ec/rfc7748/X25519Field.java:596"
+      ],
+      "removed_keys": [
+        "org/bouncycastle/math/ec/rfc7748/X25519Field.java:608",
+        "org/bouncycastle/math/ec/rfc7748/X25519Field.java:672",
+        "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2471",
+        "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2575"
+      ],
+      "common_keys": 110,
+      "changed_common_keys": [
+        "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2763",
+        "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2952",
+        "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:3023"
+      ],
+      "generated_identical": 53,
+      "generated_changed": [
+        "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+        "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java"
+      ]
+    }
+  },
+  "mathematical_only_keys_unchanged": 10,
+  "runs": {
+    "strict": {
+      "startedUtc": "2026-10-11T18:19:52.818015+00:00",
+      "completedUtc": "2026-10-11T18:22:36.797314+00:00",
+      "exitCode": 0,
+      "wallSeconds": 163.97932451599627
+    },
+    "mathematical": {
+      "startedUtc": "2026-10-11T18:22:36.810777+00:00",
+      "completedUtc": "2026-10-11T18:24:50.411485+00:00",
+      "exitCode": 0,
+      "wallSeconds": 133.60110781200638
+    }
+  },
+  "tests": {
+    "integrated": {
+      "tests": 215,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "suites": 28,
+    "array_behavior_tests": 19,
+    "array_budget_tests": 2,
+    "excluded_standalone_class": "BouncyCastleRuntimeCorpusTest",
+    "command": "mvn -o -B -ntp clean test",
+    "harness_template": "../2026-10-10-candidate-quality/modular-integration-2026-10-11/standalone-harness-pom.xml",
+    "reproduction": "README.md#interpretation-and-reproduction",
+    "log_sha256": "f3a2a02cc1e7d6f48bd14b0bc8404ef0e6741c83137ff4cc5978fd884074c55a",
+    "xml_manifest_sha256": "7f90eb9613763071b3f72be82135339c87af9f667aa657346c90a300583be383"
+  },
+  "runtime": {
+    "java": "Temurin 25.0.2+10",
+    "maven": "3.9.16",
+    "heapMiB": 512,
+    "metaspaceMiB": 128,
+    "codeCacheMiB": 64,
+    "directMemoryMiB": 64,
+    "stackKiB": 512
+  },
+  "raw_output_sha256": {
+    "strict": {
+      "baseline": {
+        "summary.txt": "6d42cddd426cded877247933db1c9c5d0a411892f27707433332c0d09f99cd69",
+        "accepted.txt": "6f528e7a021a194539e86204b6b4c8089bf4347b04ce284cf12d9da8f258db01",
+        "diagnostics.tsv": "c8b2d0ca1bb5704e4355873d1c3a8f8561ff6ac9709bc42f07ce9087a44f30cb",
+        "calls.tsv": "01c7208ce6a286cabfbe02799efd2c08589986b266360f2442384c6ed6930201"
+      },
+      "first_attempt": {
+        "summary.txt": "d7ad3b45cb0a03ba033b43e1d479cd2f51b87608e48c45d29347045932113799",
+        "accepted.txt": "f779164194731a88c33d74efdf4902bb79c9f56d566440f1aeeec85576fa0a8e",
+        "diagnostics.tsv": "68f1649f8f0010c18a1c3033c7c3bb44d21ba52c035d4b81e92020d0d5423c75",
+        "calls.tsv": "404ad798d787c22d1ce20582f13592683f84bb6b8fa5cd099764917913040f97"
+      },
+      "final": {
+        "summary.txt": "2aebab9ad73274897f2ed02ad1594148b4fc8b1b1377f5ab6d71ed92b304291f",
+        "accepted.txt": "025441c68840b6c7c6ef339df3241804c066c8bb3da2363b0218d0141e0af312",
+        "diagnostics.tsv": "bfd7d2ed177a68e4abc444fdeac7702deeb8fdd29bb30a40ed9d59c5440d4331",
+        "calls.tsv": "404ad798d787c22d1ce20582f13592683f84bb6b8fa5cd099764917913040f97"
+      }
+    },
+    "mathematical": {
+      "baseline": {
+        "summary.txt": "3ab8d009da37fb825c3a839067c5f1d6e4b4e19f8643de7ef0367f9bdf853e7f",
+        "accepted.txt": "96557b1d482a11568cde26443a3cfc272c21e9f81cfd9e6d9555a72973393c64",
+        "diagnostics.tsv": "f490aaa4aa806dc1155bfc7677dced5353327b808c4da9b6c54ef94b1b35689f",
+        "calls.tsv": "36a27cc020667c5e113bb639c3b514baeaccf1118204e7c8857b0749415c1d73"
+      },
+      "first_attempt": {
+        "summary.txt": "dec9472efd5b9bad7d3cfaa4174c64bae6e84c95027845290edd0f9f4bc11734",
+        "accepted.txt": "cf702604e248da5e673a6521e02417ae0e79f0ce5cce7d38e5ddbd215d192424",
+        "diagnostics.tsv": "4e81367b77796b715a04f7ac02d472616a2e349337b99b16213c8fdccde47923",
+        "calls.tsv": "83a5bec2752df85f862d52ca3894f1c0e32497d9a91b624f63a146297e34611f"
+      },
+      "final": {
+        "summary.txt": "94b9c5e639558fa6882814ebf3cfa75cd3e28cb2bfeb7d18dd622c999fe607f9",
+        "accepted.txt": "18e068d8aeba5d71bcceffa2ab5e05420e6a13f1c4947017bb580c896ddb1078",
+        "diagnostics.tsv": "f12588e790b8436d01f6fcba44077daf513346ad2b1fa3c6db044e2def2063a4",
+        "calls.tsv": "83a5bec2752df85f862d52ca3894f1c0e32497d9a91b624f63a146297e34611f"
+      }
+    }
+  },
+  "manifests_sha256": {
+    "product-sources.sha256": "3ea674132782e436196cecc9e8994c960c96f153c571b29074eb21a41f271b92",
+    "product-classes.sha256": "549a92e89fa05f73a3a83295b3030f5c401b37ea692528d30d126c5108d85fe7",
+    "dependencies.sha256": "5902de5e9ecf2caa291dcee68bc916884effbafd78b41160eb294f633bacfb11",
+    "generated-strict.sha256": "c55981cbf6f70064e9e7ff124c8bbdd73ce36bed2971d48f7ee1f95d173ed26c",
+    "generated-mathematical.sha256": "5eb9e3d70c0a1a1654c553d1a27288df10c358246f8afa0bbae69e6baab67fce"
+  },
+  "limits": [
+    "Ten unchanged source parse failures; no whole-library execution or speedup claim.",
+    "Two earlier X25519 keys are included in one connected region; two Hawk candidates exceed their allocated final-preparation work.",
+    "Scan durations measure diagnostic processing; different region counts and allocations prevent an inference about generated-program speed.",
+    "The extra scalar extraction is cached once per analysis; AST traversal itself has no separate SDK work meter or intra-traversal cancellation bound."
+  ]
+}
