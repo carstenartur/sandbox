@@ -1,0 +1,1129 @@
+{
+  "schema": "sandbox.math.generic-numeric-domains-main-qualification/v1",
+  "profiles": {
+    "baseline": {
+      "repository": "carstenartur/sandbox",
+      "sourceRevision": "7e11fd618733a390268d38fbd7e12014b0948f23",
+      "sourceTree": "2ec64b3e4360bf48aca71efc07f79dc4c736784e",
+      "sourceParents": [
+        "b7f0bd4b3e945c328b78d45b69d3aa07bf9cb1b1"
+      ],
+      "sdk": {
+        "sourceRevision": "6a29154e217ea8748257cfda0340eb463ff157b2",
+        "sourceTree": "851eab2bb44d0f844416e8bf773752dff80af209",
+        "sha256": "d1efa15f487872ca46fab9b4d8640495f8df19ea9e354ee52d08f885e59afea7",
+        "receiptSha256": "8b1ca19a56cf267625f0bc702700daaa37eb0e59d5c581ef914ef8558f0bfd45"
+      },
+      "harnessPomSha256": "414685b3568b1fd96d8ef6c1f592e91cf6f1f6db03c8c24c3c1586d3296b0f9e",
+      "scannerSourceSha256": "10beb921eb6a9d4c1e893327728d0c4f7da56d0727fd674fd12068602cec4435",
+      "scannerClasses": {
+        "org/sandbox/math/qa/BigIntegerCorpusScan$1.class": "0f6081c26d6950d7c87858c40a60b0e49efe198ac7fa2b15ea98b36e9dbdccf9",
+        "org/sandbox/math/qa/BigIntegerCorpusScan.class": "355234bfed4ca1e45c57dc5c60d2602860200bb399c9e24af2d4200680a489f6"
+      },
+      "originalInputManifestSha256": "da53904d0ff03e19693b89d73d2db4336980165ee6212bd1880d5b687f067e1c",
+      "originalRunReceiptSha256": "b494af114e8e3b0ce244fa3c9ca13f03ac434da14acb8d67db2afd402dabfb25",
+      "runs": {
+        "strict": {
+          "startedUtc": "2026-10-11T21:18:57.772871+00:00",
+          "completedUtc": "2026-10-11T21:20:13.614388+00:00",
+          "exitCode": 0,
+          "wallSeconds": 75.84173438699509,
+          "counts": {
+            "files": 3126,
+            "parseErrors": 10,
+            "regions": 2204,
+            "replacements": 104
+          },
+          "generatedFiles": 50,
+          "inputsUnchanged": true,
+          "originalLogSha256": "6804a426888c3df8b93f03c6beacfdf74fe3355c24bcd8f374cfef6b696daf92",
+          "rawOutputSha256": {
+            "summary.txt": "5b7b773ff6e80cd23325627f5cd76c1b631cb9f5764e7c89cf7d9248be1545aa",
+            "accepted.txt": "6f528e7a021a194539e86204b6b4c8089bf4347b04ce284cf12d9da8f258db01",
+            "diagnostics.tsv": "833856eb5d1f5e329dfe6c4e9f3f6eb2bf282b10ec89bfa84ec2cc8fbb8a8fbd",
+            "calls.tsv": "1e0f7ff921723a882f9da1da4376a98f0aeabce8ed2d6c89fe16aae6011bdaac"
+          }
+        },
+        "mathematical": {
+          "startedUtc": "2026-10-11T21:20:14.494183+00:00",
+          "completedUtc": "2026-10-11T21:22:11.079972+00:00",
+          "exitCode": 0,
+          "wallSeconds": 116.58600278200174,
+          "counts": {
+            "files": 3126,
+            "parseErrors": 10,
+            "regions": 2546,
+            "replacements": 115
+          },
+          "generatedFiles": 56,
+          "inputsUnchanged": true,
+          "originalLogSha256": "0b1d8d21fdaeb9b3e0e243e5b5ee7a271bcbfbfb40c745f4b2745d4a346ec293",
+          "rawOutputSha256": {
+            "summary.txt": "98ca4d16e6fcd9fdc49a9e26b2e198f98c736f2e5067e2720e14d4858bf3db70",
+            "accepted.txt": "9dafd8620142f9fc7d2debe6982217e35917f0dff4cf5b72f60d47bde5d9ccfb",
+            "diagnostics.tsv": "7e2e47ca0a3ce7f1bcf37592d114f807875afc613530b1d0ed7a9abc34e5f5ec",
+            "calls.tsv": "6676fe7dc0467e34f6bec913bd75402faa18e493e45c0f93de2f056cc5dc5d23"
+          }
+        }
+      }
+    },
+    "candidate": {
+      "repository": "carstenartur/sandbox",
+      "sourceRevision": "193d1e9bb0e889002d633656b4567819aee3bddd",
+      "sourceTree": "bbf12060811496f2b21b7a66fc284b32c769a745",
+      "sourceParents": [
+        "f50597c96796cfb9008d61c5e2e0d598bff3a9a7",
+        "2f3d6c7c70eb6eaccbfb7c1679ae250a9ddcabf8"
+      ],
+      "sdk": {
+        "sourceRevision": "0bb2e6848693a37d7682da60f98129f5a3debe2a",
+        "sourceTree": "fe5a5ba161006e53d5a7ba51c33959e3b36627d8",
+        "sha256": "4f848eb5f7f6314689cd1c0e22c4b4bd69b5f6f9d8b5d9bea38c2860bf3140aa",
+        "receiptSha256": "e97d783eb5fa71b167213e36632dbf48d31177a5c5b85c54272ddf3326375e18"
+      },
+      "harnessPomSha256": "fa9912fbe8eace8f952898e647bd7e76a55e45ec9236dfea2be47b809f0a225f",
+      "scannerSourceSha256": "10beb921eb6a9d4c1e893327728d0c4f7da56d0727fd674fd12068602cec4435",
+      "scannerClasses": {
+        "org/sandbox/math/qa/BigIntegerCorpusScan$1.class": "0f6081c26d6950d7c87858c40a60b0e49efe198ac7fa2b15ea98b36e9dbdccf9",
+        "org/sandbox/math/qa/BigIntegerCorpusScan.class": "355234bfed4ca1e45c57dc5c60d2602860200bb399c9e24af2d4200680a489f6"
+      },
+      "originalInputManifestSha256": "58f18f1ad0f0476e804677ab9864fa2186bb7fc5ec95793b7863ca5f4549dcb5",
+      "originalRunReceiptSha256": "a3584f335d42ee85d8619b78992d6dee8366567612e069d3c8c6d2d295ec80da",
+      "runs": {
+        "strict": {
+          "startedUtc": "2026-10-11T21:22:13.037008+00:00",
+          "completedUtc": "2026-10-11T21:26:22.397089+00:00",
+          "exitCode": 0,
+          "wallSeconds": 249.36077222498716,
+          "counts": {
+            "files": 3126,
+            "parseErrors": 10,
+            "regions": 2707,
+            "replacements": 101
+          },
+          "generatedFiles": 50,
+          "inputsUnchanged": true,
+          "originalLogSha256": "bccf586c79ae0c49f60c19e84a3a2ece90fc1b1abf313677a701ef903bb004c0",
+          "rawOutputSha256": {
+            "summary.txt": "bc02f225d5b4a130ae5e7ea7ec42ee3053504256689c2880dc1174fcdb04a899",
+            "accepted.txt": "025441c68840b6c7c6ef339df3241804c066c8bb3da2363b0218d0141e0af312",
+            "diagnostics.tsv": "f1a4ddc9ed2ad8a772f5af87abdfbbe93ac330c396dbb33144f15ae3dead2845",
+            "calls.tsv": "3d69de0f1d455556e6536340d1c0f766033953f1124ad2f6e1b78b31ee00f4a6"
+          }
+        },
+        "mathematical": {
+          "startedUtc": "2026-10-11T21:26:23.847456+00:00",
+          "completedUtc": "2026-10-11T21:30:56.405581+00:00",
+          "exitCode": 0,
+          "wallSeconds": 272.5581601820013,
+          "counts": {
+            "files": 3126,
+            "parseErrors": 10,
+            "regions": 3049,
+            "replacements": 112
+          },
+          "generatedFiles": 56,
+          "inputsUnchanged": true,
+          "originalLogSha256": "92d9afcd1c43994a8b50dcea0194f33b187f464404303ca1f750037ba90cc7bf",
+          "rawOutputSha256": {
+            "summary.txt": "f618bd94411886fa55ed66fa2f2da0f47ac1448a672d03960cc76a2bc2425587",
+            "accepted.txt": "c4babec5ec70ad2158ea9718f990edaeafea7416bae2186fc3bad2fbcdd215c0",
+            "diagnostics.tsv": "212ec112e73e6ab428a9b06e38eba779c3cde5816b15ea4d20e5ca0766514881",
+            "calls.tsv": "258e504e6cad4e0cd96f01f2336d436cef9adf884de30a33b6fd6aa9433ff55d"
+          }
+        }
+      }
+    }
+  },
+  "comparison": {
+    "schema": "sandbox.math.generic-domains-main-comparison/v1",
+    "baselineRevision": "7e11fd618733a390268d38fbd7e12014b0948f23",
+    "baselineTree": "2ec64b3e4360bf48aca71efc07f79dc4c736784e",
+    "candidateRevision": "193d1e9bb0e889002d633656b4567819aee3bddd",
+    "candidateTree": "bbf12060811496f2b21b7a66fc284b32c769a745",
+    "baselineSdk": {
+      "sha256": "d1efa15f487872ca46fab9b4d8640495f8df19ea9e354ee52d08f885e59afea7",
+      "receiptSha256": "8b1ca19a56cf267625f0bc702700daaa37eb0e59d5c581ef914ef8558f0bfd45",
+      "sourceRevision": "6a29154e217ea8748257cfda0340eb463ff157b2",
+      "sourceTree": "851eab2bb44d0f844416e8bf773752dff80af209"
+    },
+    "candidateSdk": {
+      "sha256": "4f848eb5f7f6314689cd1c0e22c4b4bd69b5f6f9d8b5d9bea38c2860bf3140aa",
+      "receiptSha256": "e97d783eb5fa71b167213e36632dbf48d31177a5c5b85c54272ddf3326375e18",
+      "sourceRevision": "0bb2e6848693a37d7682da60f98129f5a3debe2a",
+      "sourceTree": "fe5a5ba161006e53d5a7ba51c33959e3b36627d8"
+    },
+    "sameNonSdkDependencies": 27,
+    "sameScannerSourceAndAllClasses": true,
+    "allFourRunsSequential": true,
+    "options": {
+      "sourceCompliance": 17,
+      "kinds": [
+        "BYTE",
+        "SHORT",
+        "CHAR",
+        "INT",
+        "LONG",
+        "FLOAT",
+        "DOUBLE",
+        "BIG_INTEGER"
+      ],
+      "semanticMode": "PRESERVE_JAVA",
+      "objective": "LOWER_ESTIMATED_RUNTIME",
+      "workBudgetPerFile": 1000000,
+      "maxStates": 20000,
+      "maxCandidates": 64,
+      "requestTimeoutMillis": 5000
+    },
+    "sourceInputsUnchanged": true,
+    "modes": {
+      "strict": {
+        "baseline": {
+          "files": 3126,
+          "parseErrors": 10,
+          "regions": 2204,
+          "replacements": 104,
+          "generatedFiles": 50
+        },
+        "candidate": {
+          "files": 3126,
+          "parseErrors": 10,
+          "regions": 2707,
+          "replacements": 101,
+          "generatedFiles": 50
+        },
+        "regionDelta": 503,
+        "commonKeys": 100,
+        "addedKeys": [
+          "org/bouncycastle/math/ec/rfc7748/X25519Field.java:596"
+        ],
+        "removedKeys": [
+          "org/bouncycastle/math/ec/rfc7748/X25519Field.java:608",
+          "org/bouncycastle/math/ec/rfc7748/X25519Field.java:672",
+          "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2471",
+          "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2575"
+        ],
+        "changedCommonKeys": [
+          "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2763",
+          "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2952",
+          "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:3023"
+        ],
+        "duplicateLineKeys": {
+          "baseline": {},
+          "candidate": {}
+        },
+        "identicalGeneratedFiles": 48,
+        "changedGeneratedFiles": [
+          "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+          "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java"
+        ],
+        "addedGeneratedFiles": [],
+        "removedGeneratedFiles": [],
+        "nearbyDiagnosticsForChangedKeys": {
+          "baseline": [
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "596",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "597",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "598",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "606",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "670",
+              "code": "PARTIAL_OUTPUT_OR_EXTERNAL_WRITE",
+              "message": "PARTIAL_OUTPUT_OR_EXTERNAL_WRITE"
+            },
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "608",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 81 -> 81; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 1331 -> 881; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final int _math0 = x1 * 2; final int _math1 = x2 * 2; final int _math2 = x3 * 2; final int _math3 = x4 * 2; final long _math4 = (long) x0; final long _math5 = _math4 * _math4; final long _math6 = (long) _math0; final long _math7 = _math4 * _math6; final long _math8 = (long) _math1; final long _math9 = (long) x1; final long _math10 = (_math4 * _math8) + (_math9 * _math9); final long _math11 = (long) _math2; final long _math12 = (_math6 * _math8) + (_math4 * _math11); final long _math13 = (long) _math3; final long _math14 = (_math6 * _math13) + (_math8 * _math11); final long _math15 = (long) x3; final long _math16 = (_math8 * _math13) + (_math15 * _math15); final long _math17 = _math15 * _math13; final long _math18 = ((long) x4) * _math13; final long _math19 = (long) (u2 * 2); final long _math20 = (long) u0; final long _math21 = (long) (u4 * 2); final long _math22 = (long) u1; final long _math23 = (long) (u3 * 2); final long _math24 = (long) (u1 * 2); final long _math25 = (long) 38; final long _math26 = (long) u3; x1_2 = _math0; x2_2 = _math1; x3_2 = _math2; x4_2 = _math3; a0 = _math5; a1 = _math7; a2 = _math10; a3 = _math12; a4 = (((((long) x2) * _math8) + (_math4 * _math13)) + (_math9 * _math11)); a5 = _math14; a6 = _math16; a7 = _math17; a8 = _math18; b4 = (((((long) u2) * _math19) + (_math20 * _math21)) + (_math22 * _math23)); a0 = (_math5 - (((_math24 * _math21) + (_math19 * _math23)) * _math25)); a1 = (_math7 - (((_math19 * _math21) + (_math26 * _math26)) * _math25)); a2 = (_math10 - ((_math26 * _math21) * _math25)); a3 = (_math12 - ((((long) u4) * _math21) * _math25)); a5 = (_math14 - (_math20 * _math20)); a6 = (_math16 - (_math20 * _math24)); a7 = (_math17 - ((_math20 * _math19) + (_math22 * _math22))); a8 = (_math18 - ((_math24 * _math19) + (_math20 * _math23))); Replacement values: final int _math18 = x1 * 2; final int _math19 = x2 * 2; final int _math20 = x3 * 2; final int _math21 = x4 * 2; final long _math22 = (long) x0; final long _math23 = _math22 * _math22; final long _math24 = (long) _math18; final long _math25 = _math22 * _math24; final long _math26 = (long) _math19; final long _math27 = (long) x1; final long _math28 = (_math22 * _math26) + (_math27 * _math27); final long _math29 = (long) _math20; final long _math30 = (_math24 * _math26) + (_math22 * _math29); final long _math31 = (long) _math21; final long _math32 = (_math24 * _math31) + (_math26 * _math29); final long _math33 = (long) x3; final long _math34 = (_math26 * _math31) + (_math33 * _math33); final long _math35 = _math33 * _math31; final long _math36 = ((long) x4) * _math31; final long _math37 = (long) (u2 * 2); final long _math38 = (long) u0; final long _math39 = (long) (u4 * 2); final long _math40 = (long) u1; final long _math41 = (long) (u3 * 2); final long _math42 = (long) (u1 * 2); final long _math43 = (long) 38; final long _math44 = (long) u3; x1_2 = _math18; x2_2 = _math19; x3_2 = _math20; x4_2 = _math21; a0 = _math23; a1 = _math25; a2 = _math28; a3 = _math30; a4 = (((((long) x2) * _math26) + (_math22 * _math31)) + (_math27 * _math29)); a5 = _math32; a6 = _math34; a7 = _math35; a8 = _math36; b4 = (((((long) u2) * _math37) + (_math38 * _math39)) + (_math40 * _math41)); a0 = (_math23 - (((_math42 * _math39) + (_math37 * _math41)) * _math43)); a1 = (_math25 - (((_math37 * _math39) + (_math44 * _math44)) * _math43)); a2 = (_math28 - ((_math44 * _math39) * _math43)); a3 = (_math30 - ((((long) u4) * _math39) * _math43)); a5 = (_math32 - (_math38 * _math38)); a6 = (_math34 - (_math38 * _math42)); a7 = (_math35 - ((_math38 * _math37) + (_math40 * _math40))); a8 = (_math36 - ((_math42 * _math37) + (_math38 * _math41))); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY, EXACT_PRIMITIVE_LITERAL_CAST. Estimated operation work: 81 -> 81; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "672",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 30 -> 30; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 540 -> 330; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final long _math0 = (long) x0; final long _math1 = (long) x1_2; final long _math2 = (long) x2_2; final long _math3 = (long) x1; final long _math4 = (long) x3_2; final long _math5 = (long) x4_2; final long _math6 = (long) x3; c0 = (_math0 * _math0); c1 = (_math0 * _math1); c2 = ((_math0 * _math2) + (_math3 * _math3)); c3 = ((_math1 * _math2) + (_math0 * _math4)); c4 = (((((long) x2) * _math2) + (_math0 * _math5)) + (_math3 * _math4)); c5 = ((_math1 * _math5) + (_math2 * _math4)); c6 = ((_math2 * _math5) + (_math6 * _math6)); c7 = (_math6 * _math5); c8 = (((long) x4) * _math5); Replacement values: final long _math45 = (long) x0; final long _math46 = (long) x1_2; final long _math47 = (long) x2_2; final long _math48 = (long) x1; final long _math49 = (long) x3_2; final long _math50 = (long) x4_2; final long _math51 = (long) x3; c0 = (_math45 * _math45); c1 = (_math45 * _math46); c2 = ((_math45 * _math47) + (_math48 * _math48)); c3 = ((_math46 * _math47) + (_math45 * _math49)); c4 = (((((long) x2) * _math47) + (_math45 * _math50)) + (_math48 * _math49)); c5 = ((_math46 * _math50) + (_math47 * _math49)); c6 = ((_math47 * _math50) + (_math51 * _math51)); c7 = (_math51 * _math50); c8 = (((long) x4) * _math50); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 30 -> 30; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2470",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2765",
+              "code": "SIDE_EFFECT_BOUNDARY",
+              "message": "SIDE_EFFECT_BOUNDARY"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2950",
+              "code": "SIDE_EFFECT_BOUNDARY",
+              "message": "SIDE_EFFECT_BOUNDARY"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "3021",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "3022",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2469",
+              "code": "NOIMPROVEMENT",
+              "message": "NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=2460]"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2471",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 12 -> 12; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 154 -> 134; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final int _math0 = len - sch; ws = ((-(lastWord >>> 30)) >>> 1); mask0 = (-(_math0 >>> 31)); mask1 = (-((_math0 - 1) >>> 31)); mask2 = (-((_math0 - 2) >>> 31)); Replacement values: final int _math16 = len - sch; ws = ((-(lastWord >>> 30)) >>> 1); mask0 = (-(_math16 >>> 31)); mask1 = (-((_math16 - 1) >>> 31)); mask2 = (-((_math16 - 2) >>> 31)); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 12 -> 12; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2575",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 12 -> 12; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 147 -> 127; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final long _math0 = x & 4294967295L; final long _math1 = (long) ((int) (x >>> 32)); return value = ((((_math0 * _math0) >>> 32) + ((_math0 * _math1) << 1)) + ((_math1 * _math1) << 32)); Replacement values: final long _math17 = x & 4294967295L; final long _math18 = (long) ((int) (x >>> 32)); return value = ((((_math17 * _math17) >>> 32) + ((_math17 * _math18) << 1)) + ((_math18 * _math18) << 32)); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 12 -> 12; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2763",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 3 -> 3; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 48 -> 38; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final int _math0 = u << logn; Fu = (fOff + _math0); Gu = (gOff + _math0); Replacement values: final int _math19 = u << logn; Fu = (fOff + _math19); Gu = (gOff + _math19); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 3 -> 3; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2952",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 3 -> 3; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 48 -> 38; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final int _math0 = u << logn; fs = (fOff + _math0); ff = (fk + _math0); Replacement values: final int _math20 = u << logn; fs = (fOff + _math20); ff = (fk + _math20); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 3 -> 3; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "3023",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 16 -> 16; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 212 -> 172; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final long _math0 = (long) fs0; final long _math1 = (long) k0; final long _math2 = (long) fs1; final long _math3 = (long) k1; z0 = (((((long) F0) + cc0) - (_math0 * _math1)) + (_math2 * _math3)); z1 = (((((long) F1) + cc1) - (_math0 * _math3)) - (_math2 * _math1)); Replacement values: final long _math21 = (long) fs0; final long _math22 = (long) k0; final long _math23 = (long) fs1; final long _math24 = (long) k1; z0 = (((((long) F0) + cc0) - (_math21 * _math22)) + (_math23 * _math24)); z1 = (((((long) F1) + cc1) - (_math21 * _math24)) - (_math23 * _math22)); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 16 -> 16; not a timing measurement."
+            }
+          ],
+          "candidate": [
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "596",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 120 -> 158; check work 0; proof java-numeric-independent/v8; assumptions []; estimated score 1947 -> 1677; measured speedup: not assessed; array capture work 38; additional peak storage 10 primitive values Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final long _math0 = (long) _mathRead17005; final long _math1 = _math0 * _math0; final long _math2 = (long) (_mathRead17028 * 2); final long _math3 = _math0 * _math2; final long _math4 = (long) (_mathRead17051 * 2); final long _math5 = (long) _mathRead17028; final long _math6 = (_math0 * _math4) + (_math5 * _math5); final long _math7 = (long) (_mathRead17074 * 2); final long _math8 = (_math2 * _math4) + (_math0 * _math7); final long _math9 = (long) (_mathRead17097 * 2); final long _math10 = (_math2 * _math9) + (_math4 * _math7); final long _math11 = (long) _mathRead17074; final long _math12 = (_math4 * _math9) + (_math11 * _math11); final long _math13 = _math11 * _math9; final long _math14 = ((long) _mathRead17097) * _math9; final long _math15 = (long) (_mathRead17167 * 2); final long _math16 = (long) _mathRead17121; final long _math17 = (long) (_mathRead17213 * 2); final long _math18 = (long) _mathRead17144; final long _math19 = (long) (_mathRead17190 * 2); final long _math20 = (long) (_mathRead17144 * 2); final long _math21 = (long) 38; final long _math22 = (long) _mathRead17190; final long _math23 = (long) (_mathRead17005 + _mathRead17121); final int _math24 = _mathRead17028 + _mathRead17144; final long _math25 = (long) (_math24 * 2); final int _math26 = _mathRead17051 + _mathRead17167; final long _math27 = (long) (_math26 * 2); final long _math28 = (long) _math24; final int _math29 = _mathRead17074 + _mathRead17190; final long _math30 = (long) (_math29 * 2); final int _math31 = _mathRead17097 + _mathRead17213; final long _math32 = (long) (_math31 * 2); final long _math33 = (long) _math29; a0 = _math1; a1 = _math3; a2 = _math6; a3 = _math8; a4 = (((((long) _mathRead17051) * _math4) + (_math0 * _math9)) + (_math5 * _math7)); a5 = _math10; a6 = _math12; a7 = _math13; a8 = _math14; b4 = (((((long) _mathRead17167) * _math15) + (_math16 * _math17)) + (_math18 * _math19)); a0 = (_math1 - (((_math20 * _math17) + (_math15 * _math19)) * _math21)); a1 = (_math3 - (((_math15 * _math17) + (_math22 * _math22)) * _math21)); a2 = (_math6 - ((_math22 * _math17) * _math21)); a3 = (_math8 - ((((long) _mathRead17213) * _math17) * _math21)); a5 = (_math10 - (_math16 * _math16)); a6 = (_math12 - (_math16 * _math20)); a7 = (_math13 - ((_math16 * _math15) + (_math18 * _math18))); a8 = (_math14 - ((_math20 * _math15) + (_math16 * _math19))); c0 = (_math23 * _math23); c1 = (_math23 * _math25); c2 = ((_math23 * _math27) + (_math28 * _math28)); c3 = ((_math25 * _math27) + (_math23 * _math30)); c4 = (((((long) _math26) * _math27) + (_math23 * _math32)) + (_math28 * _math30)); c5 = ((_math25 * _math32) + (_math27 * _math30)); c6 = ((_math27 * _math32) + (_math33 * _math33)); c7 = (_math33 * _math32); c8 = (((long) _math31) * _math32); Replacement values: final long _math18 = (long) _mathRead17005; final long _math19 = _math18 * _math18; final long _math20 = (long) (_mathRead17028 * 2); final long _math21 = _math18 * _math20; final long _math22 = (long) (_mathRead17051 * 2); final long _math23 = (long) _mathRead17028; final long _math24 = (_math18 * _math22) + (_math23 * _math23); final long _math25 = (long) (_mathRead17074 * 2); final long _math26 = (_math20 * _math22) + (_math18 * _math25); final long _math27 = (long) (_mathRead17097 * 2); final long _math28 = (_math20 * _math27) + (_math22 * _math25); final long _math29 = (long) _mathRead17074; final long _math30 = (_math22 * _math27) + (_math29 * _math29); final long _math31 = _math29 * _math27; final long _math32 = ((long) _mathRead17097) * _math27; final long _math33 = (long) (_mathRead17167 * 2); final long _math34 = (long) _mathRead17121; final long _math35 = (long) (_mathRead17213 * 2); final long _math36 = (long) _mathRead17144; final long _math37 = (long) (_mathRead17190 * 2); final long _math38 = (long) (_mathRead17144 * 2); final long _math39 = (long) 38; final long _math40 = (long) _mathRead17190; final long _math41 = (long) (_mathRead17005 + _mathRead17121); final int _math42 = _mathRead17028 + _mathRead17144; final long _math43 = (long) (_math42 * 2); final int _math44 = _mathRead17051 + _mathRead17167; final long _math45 = (long) (_math44 * 2); final long _math46 = (long) _math42; final int _math47 = _mathRead17074 + _mathRead17190; final long _math48 = (long) (_math47 * 2); final int _math49 = _mathRead17097 + _mathRead17213; final long _math50 = (long) (_math49 * 2); final long _math51 = (long) _math47; a0 = _math19; a1 = _math21; a2 = _math24; a3 = _math26; a4 = (((((long) _mathRead17051) * _math22) + (_math18 * _math27)) + (_math23 * _math25)); a5 = _math28; a6 = _math30; a7 = _math31; a8 = _math32; b4 = (((((long) _mathRead17167) * _math33) + (_math34 * _math35)) + (_math36 * _math37)); a0 = (_math19 - (((_math38 * _math35) + (_math33 * _math37)) * _math39)); a1 = (_math21 - (((_math33 * _math35) + (_math40 * _math40)) * _math39)); a2 = (_math24 - ((_math40 * _math35) * _math39)); a3 = (_math26 - ((((long) _mathRead17213) * _math35) * _math39)); a5 = (_math28 - (_math34 * _math34)); a6 = (_math30 - (_math34 * _math38)); a7 = (_math31 - ((_math34 * _math33) + (_math36 * _math36))); a8 = (_math32 - ((_math38 * _math33) + (_math34 * _math37))); c0 = (_math41 * _math41); c1 = (_math41 * _math43); c2 = ((_math41 * _math45) + (_math46 * _math46)); c3 = ((_math43 * _math45) + (_math41 * _math48)); c4 = (((((long) _math44) * _math45) + (_math41 * _math50)) + (_math46 * _math48)); c5 = ((_math43 * _math50) + (_math45 * _math48)); c6 = ((_math45 * _math50) + (_math51 * _math51)); c7 = (_math51 * _math50); c8 = (((long) _math49) * _math50); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY, EXACT_PRIMITIVE_LITERAL_CAST. Estimated scalar arithmetic work: 120 -> 120; not a timing measurement. All 10 array reads remain in source order. Capture stores, references and held values are additional costs in the reported assessment."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2765",
+              "code": "SIDE_EFFECT_BOUNDARY",
+              "message": "SIDE_EFFECT_BOUNDARY"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2950",
+              "code": "SIDE_EFFECT_BOUNDARY",
+              "message": "SIDE_EFFECT_BOUNDARY"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2469",
+              "code": "NOIMPROVEMENT",
+              "message": "NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=2460]"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2470",
+              "code": "BUDGETEXCEEDED",
+              "message": "BudgetExceeded[diagnostic=FINAL_PREPARATION_BUDGET_EXCEEDED, work=8919]"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2470",
+              "code": "ARRAY_SCALAR_RETRY",
+              "message": "Retrying contained scalar regions within the remaining file budget"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2471",
+              "code": "BUDGETEXCEEDED",
+              "message": "BudgetExceeded[diagnostic=FINAL_PREPARATION_BUDGET_EXCEEDED, work=8904]"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2575",
+              "code": "BUDGETEXCEEDED",
+              "message": "BudgetExceeded[diagnostic=FINAL_PREPARATION_BUDGET_EXCEEDED, work=9974]"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2763",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 3 -> 3; check work 0; proof java-numeric-independent/v8; assumptions []; estimated score 48 -> 38; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final int _math0 = u << logn; Fu = (fOff + _math0); Gu = (gOff + _math0); Replacement values: final int _math16 = u << logn; Fu = (fOff + _math16); Gu = (gOff + _math16); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 3 -> 3; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2952",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 3 -> 3; check work 0; proof java-numeric-independent/v8; assumptions []; estimated score 48 -> 38; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final int _math0 = u << logn; fs = (fOff + _math0); ff = (fk + _math0); Replacement values: final int _math17 = u << logn; fs = (fOff + _math17); ff = (fk + _math17); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 3 -> 3; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "3021",
+              "code": "ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT",
+              "message": "Capture stores, references and retained values erase the estimated benefit"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "3021",
+              "code": "ARRAY_SCALAR_RETRY",
+              "message": "Retrying contained scalar regions within the remaining file budget"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "3023",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 16 -> 16; check work 0; proof java-numeric-independent/v8; assumptions []; estimated score 212 -> 172; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final long _math0 = (long) fs0; final long _math1 = (long) k0; final long _math2 = (long) fs1; final long _math3 = (long) k1; z0 = (((((long) F0) + cc0) - (_math0 * _math1)) + (_math2 * _math3)); z1 = (((((long) F1) + cc1) - (_math0 * _math3)) - (_math2 * _math1)); Replacement values: final long _math18 = (long) fs0; final long _math19 = (long) k0; final long _math20 = (long) fs1; final long _math21 = (long) k1; z0 = (((((long) F0) + cc0) - (_math18 * _math19)) + (_math20 * _math21)); z1 = (((((long) F1) + cc1) - (_math18 * _math21)) - (_math20 * _math19)); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 16 -> 16; not a timing measurement."
+            }
+          ]
+        },
+        "runTimes": {
+          "baseline": {
+            "startedUtc": "2026-10-11T21:18:57.772871+00:00",
+            "completedUtc": "2026-10-11T21:20:13.614388+00:00",
+            "wallSeconds": 75.84173438699509,
+            "exitCode": 0
+          },
+          "candidate": {
+            "startedUtc": "2026-10-11T21:22:13.037008+00:00",
+            "completedUtc": "2026-10-11T21:26:22.397089+00:00",
+            "wallSeconds": 249.36077222498716,
+            "exitCode": 0
+          }
+        },
+        "rawOutputSha256": {
+          "baseline": {
+            "summary.txt": "5b7b773ff6e80cd23325627f5cd76c1b631cb9f5764e7c89cf7d9248be1545aa",
+            "accepted.txt": "6f528e7a021a194539e86204b6b4c8089bf4347b04ce284cf12d9da8f258db01",
+            "diagnostics.tsv": "833856eb5d1f5e329dfe6c4e9f3f6eb2bf282b10ec89bfa84ec2cc8fbb8a8fbd",
+            "calls.tsv": "1e0f7ff921723a882f9da1da4376a98f0aeabce8ed2d6c89fe16aae6011bdaac"
+          },
+          "candidate": {
+            "summary.txt": "bc02f225d5b4a130ae5e7ea7ec42ee3053504256689c2880dc1174fcdb04a899",
+            "accepted.txt": "025441c68840b6c7c6ef339df3241804c066c8bb3da2363b0218d0141e0af312",
+            "diagnostics.tsv": "f1a4ddc9ed2ad8a772f5af87abdfbbe93ac330c396dbb33144f15ae3dead2845",
+            "calls.tsv": "3d69de0f1d455556e6536340d1c0f766033953f1124ad2f6e1b78b31ee00f4a6"
+          }
+        }
+      },
+      "mathematical": {
+        "baseline": {
+          "files": 3126,
+          "parseErrors": 10,
+          "regions": 2546,
+          "replacements": 115,
+          "generatedFiles": 56
+        },
+        "candidate": {
+          "files": 3126,
+          "parseErrors": 10,
+          "regions": 3049,
+          "replacements": 112,
+          "generatedFiles": 56
+        },
+        "regionDelta": 503,
+        "commonKeys": 111,
+        "addedKeys": [
+          "org/bouncycastle/math/ec/rfc7748/X25519Field.java:596"
+        ],
+        "removedKeys": [
+          "org/bouncycastle/math/ec/rfc7748/X25519Field.java:608",
+          "org/bouncycastle/math/ec/rfc7748/X25519Field.java:672",
+          "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2471",
+          "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2575"
+        ],
+        "changedCommonKeys": [
+          "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2763",
+          "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:2952",
+          "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java:3023"
+        ],
+        "duplicateLineKeys": {
+          "baseline": {},
+          "candidate": {}
+        },
+        "identicalGeneratedFiles": 54,
+        "changedGeneratedFiles": [
+          "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+          "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java"
+        ],
+        "addedGeneratedFiles": [],
+        "removedGeneratedFiles": [],
+        "nearbyDiagnosticsForChangedKeys": {
+          "baseline": [
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "596",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "597",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "598",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "606",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "670",
+              "code": "PARTIAL_OUTPUT_OR_EXTERNAL_WRITE",
+              "message": "PARTIAL_OUTPUT_OR_EXTERNAL_WRITE"
+            },
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "608",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 81 -> 81; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 1331 -> 881; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final int _math0 = x1 * 2; final int _math1 = x2 * 2; final int _math2 = x3 * 2; final int _math3 = x4 * 2; final long _math4 = (long) x0; final long _math5 = _math4 * _math4; final long _math6 = (long) _math0; final long _math7 = _math4 * _math6; final long _math8 = (long) _math1; final long _math9 = (long) x1; final long _math10 = (_math4 * _math8) + (_math9 * _math9); final long _math11 = (long) _math2; final long _math12 = (_math6 * _math8) + (_math4 * _math11); final long _math13 = (long) _math3; final long _math14 = (_math6 * _math13) + (_math8 * _math11); final long _math15 = (long) x3; final long _math16 = (_math8 * _math13) + (_math15 * _math15); final long _math17 = _math15 * _math13; final long _math18 = ((long) x4) * _math13; final long _math19 = (long) (u2 * 2); final long _math20 = (long) u0; final long _math21 = (long) (u4 * 2); final long _math22 = (long) u1; final long _math23 = (long) (u3 * 2); final long _math24 = (long) (u1 * 2); final long _math25 = (long) 38; final long _math26 = (long) u3; x1_2 = _math0; x2_2 = _math1; x3_2 = _math2; x4_2 = _math3; a0 = _math5; a1 = _math7; a2 = _math10; a3 = _math12; a4 = (((((long) x2) * _math8) + (_math4 * _math13)) + (_math9 * _math11)); a5 = _math14; a6 = _math16; a7 = _math17; a8 = _math18; b4 = (((((long) u2) * _math19) + (_math20 * _math21)) + (_math22 * _math23)); a0 = (_math5 - (((_math24 * _math21) + (_math19 * _math23)) * _math25)); a1 = (_math7 - (((_math19 * _math21) + (_math26 * _math26)) * _math25)); a2 = (_math10 - ((_math26 * _math21) * _math25)); a3 = (_math12 - ((((long) u4) * _math21) * _math25)); a5 = (_math14 - (_math20 * _math20)); a6 = (_math16 - (_math20 * _math24)); a7 = (_math17 - ((_math20 * _math19) + (_math22 * _math22))); a8 = (_math18 - ((_math24 * _math19) + (_math20 * _math23))); Replacement values: final int _math18 = x1 * 2; final int _math19 = x2 * 2; final int _math20 = x3 * 2; final int _math21 = x4 * 2; final long _math22 = (long) x0; final long _math23 = _math22 * _math22; final long _math24 = (long) _math18; final long _math25 = _math22 * _math24; final long _math26 = (long) _math19; final long _math27 = (long) x1; final long _math28 = (_math22 * _math26) + (_math27 * _math27); final long _math29 = (long) _math20; final long _math30 = (_math24 * _math26) + (_math22 * _math29); final long _math31 = (long) _math21; final long _math32 = (_math24 * _math31) + (_math26 * _math29); final long _math33 = (long) x3; final long _math34 = (_math26 * _math31) + (_math33 * _math33); final long _math35 = _math33 * _math31; final long _math36 = ((long) x4) * _math31; final long _math37 = (long) (u2 * 2); final long _math38 = (long) u0; final long _math39 = (long) (u4 * 2); final long _math40 = (long) u1; final long _math41 = (long) (u3 * 2); final long _math42 = (long) (u1 * 2); final long _math43 = (long) 38; final long _math44 = (long) u3; x1_2 = _math18; x2_2 = _math19; x3_2 = _math20; x4_2 = _math21; a0 = _math23; a1 = _math25; a2 = _math28; a3 = _math30; a4 = (((((long) x2) * _math26) + (_math22 * _math31)) + (_math27 * _math29)); a5 = _math32; a6 = _math34; a7 = _math35; a8 = _math36; b4 = (((((long) u2) * _math37) + (_math38 * _math39)) + (_math40 * _math41)); a0 = (_math23 - (((_math42 * _math39) + (_math37 * _math41)) * _math43)); a1 = (_math25 - (((_math37 * _math39) + (_math44 * _math44)) * _math43)); a2 = (_math28 - ((_math44 * _math39) * _math43)); a3 = (_math30 - ((((long) u4) * _math39) * _math43)); a5 = (_math32 - (_math38 * _math38)); a6 = (_math34 - (_math38 * _math42)); a7 = (_math35 - ((_math38 * _math37) + (_math40 * _math40))); a8 = (_math36 - ((_math42 * _math37) + (_math38 * _math41))); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY, EXACT_PRIMITIVE_LITERAL_CAST. Estimated operation work: 81 -> 81; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "672",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 30 -> 30; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 540 -> 330; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final long _math0 = (long) x0; final long _math1 = (long) x1_2; final long _math2 = (long) x2_2; final long _math3 = (long) x1; final long _math4 = (long) x3_2; final long _math5 = (long) x4_2; final long _math6 = (long) x3; c0 = (_math0 * _math0); c1 = (_math0 * _math1); c2 = ((_math0 * _math2) + (_math3 * _math3)); c3 = ((_math1 * _math2) + (_math0 * _math4)); c4 = (((((long) x2) * _math2) + (_math0 * _math5)) + (_math3 * _math4)); c5 = ((_math1 * _math5) + (_math2 * _math4)); c6 = ((_math2 * _math5) + (_math6 * _math6)); c7 = (_math6 * _math5); c8 = (((long) x4) * _math5); Replacement values: final long _math45 = (long) x0; final long _math46 = (long) x1_2; final long _math47 = (long) x2_2; final long _math48 = (long) x1; final long _math49 = (long) x3_2; final long _math50 = (long) x4_2; final long _math51 = (long) x3; c0 = (_math45 * _math45); c1 = (_math45 * _math46); c2 = ((_math45 * _math47) + (_math48 * _math48)); c3 = ((_math46 * _math47) + (_math45 * _math49)); c4 = (((((long) x2) * _math47) + (_math45 * _math50)) + (_math48 * _math49)); c5 = ((_math46 * _math50) + (_math47 * _math49)); c6 = ((_math47 * _math50) + (_math51 * _math51)); c7 = (_math51 * _math50); c8 = (((long) x4) * _math50); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 30 -> 30; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2470",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2765",
+              "code": "SIDE_EFFECT_BOUNDARY",
+              "message": "SIDE_EFFECT_BOUNDARY"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2950",
+              "code": "SIDE_EFFECT_BOUNDARY",
+              "message": "SIDE_EFFECT_BOUNDARY"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "3021",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "3022",
+              "code": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION",
+              "message": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2469",
+              "code": "NOIMPROVEMENT",
+              "message": "NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=2460]"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2471",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 12 -> 12; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 154 -> 134; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final int _math0 = len - sch; ws = ((-(lastWord >>> 30)) >>> 1); mask0 = (-(_math0 >>> 31)); mask1 = (-((_math0 - 1) >>> 31)); mask2 = (-((_math0 - 2) >>> 31)); Replacement values: final int _math16 = len - sch; ws = ((-(lastWord >>> 30)) >>> 1); mask0 = (-(_math16 >>> 31)); mask1 = (-((_math16 - 1) >>> 31)); mask2 = (-((_math16 - 2) >>> 31)); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 12 -> 12; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2575",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 12 -> 12; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 147 -> 127; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final long _math0 = x & 4294967295L; final long _math1 = (long) ((int) (x >>> 32)); return value = ((((_math0 * _math0) >>> 32) + ((_math0 * _math1) << 1)) + ((_math1 * _math1) << 32)); Replacement values: final long _math17 = x & 4294967295L; final long _math18 = (long) ((int) (x >>> 32)); return value = ((((_math17 * _math17) >>> 32) + ((_math17 * _math18) << 1)) + ((_math18 * _math18) << 32)); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 12 -> 12; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2763",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 3 -> 3; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 48 -> 38; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final int _math0 = u << logn; Fu = (fOff + _math0); Gu = (gOff + _math0); Replacement values: final int _math19 = u << logn; Fu = (fOff + _math19); Gu = (gOff + _math19); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 3 -> 3; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2952",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 3 -> 3; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 48 -> 38; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final int _math0 = u << logn; fs = (fOff + _math0); ff = (fk + _math0); Replacement values: final int _math20 = u << logn; fs = (fOff + _math20); ff = (fk + _math20); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 3 -> 3; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "3023",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 16 -> 16; check work 0; proof java-numeric-independent/v7; assumptions []; estimated score 212 -> 172; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final long _math0 = (long) fs0; final long _math1 = (long) k0; final long _math2 = (long) fs1; final long _math3 = (long) k1; z0 = (((((long) F0) + cc0) - (_math0 * _math1)) + (_math2 * _math3)); z1 = (((((long) F1) + cc1) - (_math0 * _math3)) - (_math2 * _math1)); Replacement values: final long _math21 = (long) fs0; final long _math22 = (long) k0; final long _math23 = (long) fs1; final long _math24 = (long) k1; z0 = (((((long) F0) + cc0) - (_math21 * _math22)) + (_math23 * _math24)); z1 = (((((long) F1) + cc1) - (_math21 * _math24)) - (_math23 * _math22)); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 16 -> 16; not a timing measurement."
+            }
+          ],
+          "candidate": [
+            {
+              "file": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+              "line": "596",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 120 -> 158; check work 0; proof java-numeric-independent/v8; assumptions []; estimated score 1947 -> 1677; measured speedup: not assessed; array capture work 38; additional peak storage 10 primitive values Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final long _math0 = (long) _mathRead17005; final long _math1 = _math0 * _math0; final long _math2 = (long) (_mathRead17028 * 2); final long _math3 = _math0 * _math2; final long _math4 = (long) (_mathRead17051 * 2); final long _math5 = (long) _mathRead17028; final long _math6 = (_math0 * _math4) + (_math5 * _math5); final long _math7 = (long) (_mathRead17074 * 2); final long _math8 = (_math2 * _math4) + (_math0 * _math7); final long _math9 = (long) (_mathRead17097 * 2); final long _math10 = (_math2 * _math9) + (_math4 * _math7); final long _math11 = (long) _mathRead17074; final long _math12 = (_math4 * _math9) + (_math11 * _math11); final long _math13 = _math11 * _math9; final long _math14 = ((long) _mathRead17097) * _math9; final long _math15 = (long) (_mathRead17167 * 2); final long _math16 = (long) _mathRead17121; final long _math17 = (long) (_mathRead17213 * 2); final long _math18 = (long) _mathRead17144; final long _math19 = (long) (_mathRead17190 * 2); final long _math20 = (long) (_mathRead17144 * 2); final long _math21 = (long) 38; final long _math22 = (long) _mathRead17190; final long _math23 = (long) (_mathRead17005 + _mathRead17121); final int _math24 = _mathRead17028 + _mathRead17144; final long _math25 = (long) (_math24 * 2); final int _math26 = _mathRead17051 + _mathRead17167; final long _math27 = (long) (_math26 * 2); final long _math28 = (long) _math24; final int _math29 = _mathRead17074 + _mathRead17190; final long _math30 = (long) (_math29 * 2); final int _math31 = _mathRead17097 + _mathRead17213; final long _math32 = (long) (_math31 * 2); final long _math33 = (long) _math29; a0 = _math1; a1 = _math3; a2 = _math6; a3 = _math8; a4 = (((((long) _mathRead17051) * _math4) + (_math0 * _math9)) + (_math5 * _math7)); a5 = _math10; a6 = _math12; a7 = _math13; a8 = _math14; b4 = (((((long) _mathRead17167) * _math15) + (_math16 * _math17)) + (_math18 * _math19)); a0 = (_math1 - (((_math20 * _math17) + (_math15 * _math19)) * _math21)); a1 = (_math3 - (((_math15 * _math17) + (_math22 * _math22)) * _math21)); a2 = (_math6 - ((_math22 * _math17) * _math21)); a3 = (_math8 - ((((long) _mathRead17213) * _math17) * _math21)); a5 = (_math10 - (_math16 * _math16)); a6 = (_math12 - (_math16 * _math20)); a7 = (_math13 - ((_math16 * _math15) + (_math18 * _math18))); a8 = (_math14 - ((_math20 * _math15) + (_math16 * _math19))); c0 = (_math23 * _math23); c1 = (_math23 * _math25); c2 = ((_math23 * _math27) + (_math28 * _math28)); c3 = ((_math25 * _math27) + (_math23 * _math30)); c4 = (((((long) _math26) * _math27) + (_math23 * _math32)) + (_math28 * _math30)); c5 = ((_math25 * _math32) + (_math27 * _math30)); c6 = ((_math27 * _math32) + (_math33 * _math33)); c7 = (_math33 * _math32); c8 = (((long) _math31) * _math32); Replacement values: final long _math18 = (long) _mathRead17005; final long _math19 = _math18 * _math18; final long _math20 = (long) (_mathRead17028 * 2); final long _math21 = _math18 * _math20; final long _math22 = (long) (_mathRead17051 * 2); final long _math23 = (long) _mathRead17028; final long _math24 = (_math18 * _math22) + (_math23 * _math23); final long _math25 = (long) (_mathRead17074 * 2); final long _math26 = (_math20 * _math22) + (_math18 * _math25); final long _math27 = (long) (_mathRead17097 * 2); final long _math28 = (_math20 * _math27) + (_math22 * _math25); final long _math29 = (long) _mathRead17074; final long _math30 = (_math22 * _math27) + (_math29 * _math29); final long _math31 = _math29 * _math27; final long _math32 = ((long) _mathRead17097) * _math27; final long _math33 = (long) (_mathRead17167 * 2); final long _math34 = (long) _mathRead17121; final long _math35 = (long) (_mathRead17213 * 2); final long _math36 = (long) _mathRead17144; final long _math37 = (long) (_mathRead17190 * 2); final long _math38 = (long) (_mathRead17144 * 2); final long _math39 = (long) 38; final long _math40 = (long) _mathRead17190; final long _math41 = (long) (_mathRead17005 + _mathRead17121); final int _math42 = _mathRead17028 + _mathRead17144; final long _math43 = (long) (_math42 * 2); final int _math44 = _mathRead17051 + _mathRead17167; final long _math45 = (long) (_math44 * 2); final long _math46 = (long) _math42; final int _math47 = _mathRead17074 + _mathRead17190; final long _math48 = (long) (_math47 * 2); final int _math49 = _mathRead17097 + _mathRead17213; final long _math50 = (long) (_math49 * 2); final long _math51 = (long) _math47; a0 = _math19; a1 = _math21; a2 = _math24; a3 = _math26; a4 = (((((long) _mathRead17051) * _math22) + (_math18 * _math27)) + (_math23 * _math25)); a5 = _math28; a6 = _math30; a7 = _math31; a8 = _math32; b4 = (((((long) _mathRead17167) * _math33) + (_math34 * _math35)) + (_math36 * _math37)); a0 = (_math19 - (((_math38 * _math35) + (_math33 * _math37)) * _math39)); a1 = (_math21 - (((_math33 * _math35) + (_math40 * _math40)) * _math39)); a2 = (_math24 - ((_math40 * _math35) * _math39)); a3 = (_math26 - ((((long) _mathRead17213) * _math35) * _math39)); a5 = (_math28 - (_math34 * _math34)); a6 = (_math30 - (_math34 * _math38)); a7 = (_math31 - ((_math34 * _math33) + (_math36 * _math36))); a8 = (_math32 - ((_math38 * _math33) + (_math34 * _math37))); c0 = (_math41 * _math41); c1 = (_math41 * _math43); c2 = ((_math41 * _math45) + (_math46 * _math46)); c3 = ((_math43 * _math45) + (_math41 * _math48)); c4 = (((((long) _math44) * _math45) + (_math41 * _math50)) + (_math46 * _math48)); c5 = ((_math43 * _math50) + (_math45 * _math48)); c6 = ((_math45 * _math50) + (_math51 * _math51)); c7 = (_math51 * _math50); c8 = (((long) _math49) * _math50); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY, EXACT_PRIMITIVE_LITERAL_CAST. Estimated scalar arithmetic work: 120 -> 120; not a timing measurement. All 10 array reads remain in source order. Capture stores, references and held values are additional costs in the reported assessment."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2765",
+              "code": "SIDE_EFFECT_BOUNDARY",
+              "message": "SIDE_EFFECT_BOUNDARY"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2950",
+              "code": "SIDE_EFFECT_BOUNDARY",
+              "message": "SIDE_EFFECT_BOUNDARY"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2469",
+              "code": "NOIMPROVEMENT",
+              "message": "NoImprovement[diagnostic=NO_IMPROVEMENT_WITH_FULL_POLICY_COST, searchCompletion=EXHAUSTED_BOUNDED_SPACE, work=2460]"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2470",
+              "code": "BUDGETEXCEEDED",
+              "message": "BudgetExceeded[diagnostic=FINAL_PREPARATION_BUDGET_EXCEEDED, work=8918]"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2470",
+              "code": "ARRAY_SCALAR_RETRY",
+              "message": "Retrying contained scalar regions within the remaining file budget"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2471",
+              "code": "BUDGETEXCEEDED",
+              "message": "BudgetExceeded[diagnostic=FINAL_PREPARATION_BUDGET_EXCEEDED, work=8884]"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2575",
+              "code": "BUDGETEXCEEDED",
+              "message": "BudgetExceeded[diagnostic=FINAL_PREPARATION_BUDGET_EXCEEDED, work=9960]"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2763",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 3 -> 3; check work 0; proof java-numeric-independent/v8; assumptions []; estimated score 48 -> 38; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final int _math0 = u << logn; Fu = (fOff + _math0); Gu = (gOff + _math0); Replacement values: final int _math16 = u << logn; Fu = (fOff + _math16); Gu = (gOff + _math16); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 3 -> 3; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "2952",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 3 -> 3; check work 0; proof java-numeric-independent/v8; assumptions []; estimated score 48 -> 38; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final int _math0 = u << logn; fs = (fOff + _math0); ff = (fk + _math0); Replacement values: final int _math17 = u << logn; fs = (fOff + _math17); ff = (fk + _math17); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 3 -> 3; not a timing measurement."
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "3021",
+              "code": "ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT",
+              "message": "Capture stores, references and retained values erase the estimated benefit"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "3021",
+              "code": "ARRAY_SCALAR_RETRY",
+              "message": "Retrying contained scalar regions within the remaining file budget"
+            },
+            {
+              "file": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+              "line": "3023",
+              "code": "VERIFIED_CANDIDATE",
+              "message": "Mathematics PRESERVE_JAVA; estimated operation work 16 -> 16; check work 0; proof java-numeric-independent/v8; assumptions []; estimated score 212 -> 172; measured speedup: not assessed Verified mathematics (PRESERVE_JAVA). Java integral wraparound and explicit conversions are preserved. Original values: final long _math0 = (long) fs0; final long _math1 = (long) k0; final long _math2 = (long) fs1; final long _math3 = (long) k1; z0 = (((((long) F0) + cc0) - (_math0 * _math1)) + (_math2 * _math3)); z1 = (((((long) F1) + cc1) - (_math0 * _math3)) - (_math2 * _math1)); Replacement values: final long _math18 = (long) fs0; final long _math19 = (long) k0; final long _math20 = (long) fs1; final long _math21 = (long) k1; z0 = (((((long) F0) + cc0) - (_math18 * _math19)) + (_math20 * _math21)); z1 = (((((long) F1) + cc1) - (_math18 * _math21)) - (_math20 * _math19)); Recorded search path: No expression rewrite was selected; the value graph is unchanged and only its prepared computation may differ. Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied. Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order. Independent numeric proof: TYPED_STRUCTURAL_IDENTITY. Estimated operation work: 16 -> 16; not a timing measurement."
+            }
+          ]
+        },
+        "runTimes": {
+          "baseline": {
+            "startedUtc": "2026-10-11T21:20:14.494183+00:00",
+            "completedUtc": "2026-10-11T21:22:11.079972+00:00",
+            "wallSeconds": 116.58600278200174,
+            "exitCode": 0
+          },
+          "candidate": {
+            "startedUtc": "2026-10-11T21:26:23.847456+00:00",
+            "completedUtc": "2026-10-11T21:30:56.405581+00:00",
+            "wallSeconds": 272.5581601820013,
+            "exitCode": 0
+          }
+        },
+        "rawOutputSha256": {
+          "baseline": {
+            "summary.txt": "98ca4d16e6fcd9fdc49a9e26b2e198f98c736f2e5067e2720e14d4858bf3db70",
+            "accepted.txt": "9dafd8620142f9fc7d2debe6982217e35917f0dff4cf5b72f60d47bde5d9ccfb",
+            "diagnostics.tsv": "7e2e47ca0a3ce7f1bcf37592d114f807875afc613530b1d0ed7a9abc34e5f5ec",
+            "calls.tsv": "6676fe7dc0467e34f6bec913bd75402faa18e493e45c0f93de2f056cc5dc5d23"
+          },
+          "candidate": {
+            "summary.txt": "f618bd94411886fa55ed66fa2f2da0f47ac1448a672d03960cc76a2bc2425587",
+            "accepted.txt": "c4babec5ec70ad2158ea9718f990edaeafea7416bae2186fc3bad2fbcdd215c0",
+            "diagnostics.tsv": "212ec112e73e6ab428a9b06e38eba779c3cde5816b15ea4d20e5ca0766514881",
+            "calls.tsv": "258e504e6cad4e0cd96f01f2336d436cef9adf884de30a33b6fd6aa9433ff55d"
+          }
+        }
+      }
+    },
+    "mathematicalOnly": {
+      "baseline": [
+        "org/bouncycastle/crypto/bls/BLS12_381Serialization.java:118",
+        "org/bouncycastle/crypto/generators/CramerShoupParametersGenerator.java:104",
+        "org/bouncycastle/crypto/hash2curve/impl/GenericSqrtRatioCalculator.java:87",
+        "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:56",
+        "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:58",
+        "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:64",
+        "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:65",
+        "org/bouncycastle/math/Primes.java:201",
+        "org/bouncycastle/math/Primes.java:222",
+        "org/bouncycastle/math/Primes.java:458",
+        "org/bouncycastle/pqc/crypto/sqisign/Ibz.java:552"
+      ],
+      "candidate": [
+        "org/bouncycastle/crypto/bls/BLS12_381Serialization.java:118",
+        "org/bouncycastle/crypto/generators/CramerShoupParametersGenerator.java:104",
+        "org/bouncycastle/crypto/hash2curve/impl/GenericSqrtRatioCalculator.java:87",
+        "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:56",
+        "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:58",
+        "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:64",
+        "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:65",
+        "org/bouncycastle/math/Primes.java:201",
+        "org/bouncycastle/math/Primes.java:222",
+        "org/bouncycastle/math/Primes.java:458",
+        "org/bouncycastle/pqc/crypto/sqisign/Ibz.java:552"
+      ],
+      "common": [
+        "org/bouncycastle/crypto/bls/BLS12_381Serialization.java:118",
+        "org/bouncycastle/crypto/generators/CramerShoupParametersGenerator.java:104",
+        "org/bouncycastle/crypto/hash2curve/impl/GenericSqrtRatioCalculator.java:87",
+        "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:56",
+        "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:58",
+        "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:64",
+        "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:65",
+        "org/bouncycastle/math/Primes.java:201",
+        "org/bouncycastle/math/Primes.java:222",
+        "org/bouncycastle/math/Primes.java:458",
+        "org/bouncycastle/pqc/crypto/sqisign/Ibz.java:552"
+      ],
+      "added": [],
+      "removed": []
+    }
+  },
+  "controls": {
+    "options": {
+      "sourceCompliance": 17,
+      "kinds": [
+        "BYTE",
+        "SHORT",
+        "CHAR",
+        "INT",
+        "LONG",
+        "FLOAT",
+        "DOUBLE",
+        "BIG_INTEGER"
+      ],
+      "semanticMode": "PRESERVE_JAVA",
+      "objective": "LOWER_ESTIMATED_RUNTIME",
+      "workBudgetPerFile": 1000000,
+      "maxStates": 20000,
+      "maxCandidates": 64,
+      "requestTimeoutMillis": 5000
+    },
+    "nonSdkDependenciesIdentical": 27,
+    "scannerSourceAndAllClassesIdentical": true,
+    "allFourScansSequential": true,
+    "noConcurrentLocalProductBuildsDuringScans": true,
+    "sourceAndRuntimeFingerprintsCheckedBeforeAndAfterEachMode": true,
+    "sdkClasspathSourceJarAndReceiptHashesEqualForEachProfile": true,
+    "javaVersion": "openjdk version \"25.0.2\" 2026-01-20 LTS\nOpenJDK Runtime Environment Temurin-25.0.2+10 (build 25.0.2+10-LTS)\nOpenJDK 64-Bit Server VM Temurin-25.0.2+10 (build 25.0.2+10-LTS, mixed mode, sharing)",
+    "mavenVersion": "3.9.16",
+    "javaSourceCompliance": 17,
+    "bouncyCastle": {
+      "bcprov-jdk18on-1.85.2.jar": "986b0fb92ec10e0c66b43e036ce0077e6150cfaecd1db9fb92b56672e157afe5",
+      "bcprov-jdk18on-1.85.2-sources.jar": "b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f"
+    },
+    "jvmArguments": [
+      "-Xmx512m",
+      "-XX:MaxMetaspaceSize=128m",
+      "-XX:ReservedCodeCacheSize=64m",
+      "-XX:MaxDirectMemorySize=64m",
+      "-Xss512k",
+      "-Djava.io.tmpdir=${MATH_RUN}/tmp"
+    ]
+  },
+  "combinedStandaloneQualification": {
+    "sourceTree": "bbf12060811496f2b21b7a66fc284b32c769a745",
+    "sourceParents": [
+      "f50597c96796cfb9008d61c5e2e0d598bff3a9a7",
+      "2f3d6c7c70eb6eaccbfb7c1679ae250a9ddcabf8"
+    ],
+    "sourceChangedDuringTests": false,
+    "testSuites": 32,
+    "tests": 225,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "startedUtc": "2026-10-11T21:15:43.342548+00:00",
+    "completedUtc": "2026-10-11T21:16:58.108402+00:00",
+    "wallSeconds": 74.76559771900065,
+    "mavenExitCode": 0,
+    "logSha256": "652af07a202f5ffb10f0d36eccc286e34380fcfaad1d67152b30062b97636b0a",
+    "harnessPomSha256": "fa9912fbe8eace8f952898e647bd7e76a55e45ec9236dfea2be47b809f0a225f",
+    "sdkJarSha256": "4f848eb5f7f6314689cd1c0e22c4b4bd69b5f6f9d8b5d9bea38c2860bf3140aa",
+    "suiteResults": [
+      {
+        "name": "org.sandbox.jdt.internal.corext.fix.math.JavaEmissionVerifierTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.internal.corext.fix.math.JavaEmissionVerifierTest.xml",
+        "xmlSha256": "b274b4a6896d47c9d48508fce0bdfb09ae2381c0c1e5483c473e37e2ded86c71"
+      },
+      {
+        "name": "org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptionsTest.xml",
+        "xmlSha256": "d38dc049c049269bcf070e80eb30c991bc02ed506da4f929a0e10eb98a9681d1"
+      },
+      {
+        "name": "org.sandbox.jdt.internal.corext.fix.math.MathExplanationReviewTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.internal.corext.fix.math.MathExplanationReviewTest.xml",
+        "xmlSha256": "f3cbbbfa9827d163d38b241c5e9dea77e0d866f888e456d2acb1a15114cb4a04"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.ArrayReadComputationTest",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.ArrayReadComputationTest.xml",
+        "xmlSha256": "3c2e76a26a974f97c1cc8159f83b9a17d1764144014ef78d0428580f2e28a215"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.ArrayScalarRetryBudgetTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.ArrayScalarRetryBudgetTest.xml",
+        "xmlSha256": "60a70265f2365e36bf09173078b8dc46530bb6e72fdecf27b7ea929b319521fa"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.BigIntegerMagnitudeFactsTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.BigIntegerMagnitudeFactsTest.xml",
+        "xmlSha256": "afac5743bbed32a84bd721e868d5ae8639f6a4d387fcba0e00c76dce7118565c"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.BigIntegerMethodExpansionTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.BigIntegerMethodExpansionTest.xml",
+        "xmlSha256": "6c8614e57d746dcc297a7ca12c25bada6dae319fc84db385410f02285099d030"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.BouncyCastleBigIntegerTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.BouncyCastleBigIntegerTest.xml",
+        "xmlSha256": "ff9b8a965f80cd01eaffb3cf8a7afa40b3cab89405c80b52be0d3e64bb8781dd"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.BouncyCastleModularResidueTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.BouncyCastleModularResidueTest.xml",
+        "xmlSha256": "6e2ebae3fd0e23a2783e36e6810979e4af328a84235d8f12070cfaa0ed4b14b9"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.BouncyCastlePreparationBoundaryTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.BouncyCastlePreparationBoundaryTest.xml",
+        "xmlSha256": "4cc339c4ff66a5eb1a1c9f8b52a4a40a4a673aa729a0b894c28c9f8e7774626f"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.CharacterLiteralRoundTripTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.CharacterLiteralRoundTripTest.xml",
+        "xmlSha256": "f253f0314034fead33a6eef3eb179ae3330568b34b7bae61647274b3ca13992d"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.DocumentedSourceSnapshotTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.DocumentedSourceSnapshotTest.xml",
+        "xmlSha256": "2d889c1048d7f7b1e577874176329a35aca3d1478674b994bf9e9c0da141570f"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.FloatingPointRoundTripTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.FloatingPointRoundTripTest.xml",
+        "xmlSha256": "431a5cede556b00fdc2306dbf96ef4e599c3a2b49a0af84a023ee1dbcd3165f9"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.GeneralMathematicsRoundTripTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.GeneralMathematicsRoundTripTest.xml",
+        "xmlSha256": "d7a0171e005b8e62f666061f2ddd43b1b7f70c6fc54fa4a67b6b53280516248c"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.JavaComputationEmitterTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.JavaComputationEmitterTest.xml",
+        "xmlSha256": "e51dab048afe2636d19f86ca501e69c48fa1ac419e60163ba345495b4d0c171f"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.JavaComputationExtractorTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.JavaComputationExtractorTest.xml",
+        "xmlSha256": "48c5b6f6ec18c605b47532e0f72485069f896287f4c2cd6d57622413a3afa952"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.JavaComputationRoundTripTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.JavaComputationRoundTripTest.xml",
+        "xmlSha256": "f16302db6d6b5e212062b4afdba8ca0295d52c41c7f95b24adcb16cfd393527c"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.MathCorpusIntegrationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.MathCorpusIntegrationTest.xml",
+        "xmlSha256": "1dedaa008c358556c82dd06eddee93fcd3483c1e0a509fa60acf3b95bde521f6"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.MathVariableRegionsTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.MathVariableRegionsTest.xml",
+        "xmlSha256": "c7e47c3a12bc73b4ebcedb56c3624e172a50f595c202c1745c65c8049def38c0"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.MathematicalContractTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.MathematicalContractTest.xml",
+        "xmlSha256": "e1b2019477c5d95fb84bfb771872e754ff2770fab592253694343fc8bdf2d723"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.MathematicalExplanationIntegrationTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.MathematicalExplanationIntegrationTest.xml",
+        "xmlSha256": "94162e3de4d7e45e29e9da4c8eb23ed21978d5b7f0b850da6e00e49936756a62"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.MathematicalExplanationTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.MathematicalExplanationTest.xml",
+        "xmlSha256": "e70e5b16d421913874e864dd43ebff6ba7cc4ecd198e87931e0307345b0f6a3b"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.MathematicalInterruptionTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.MathematicalInterruptionTest.xml",
+        "xmlSha256": "a9032d6345e189831d7a2fd03331aff2f7b9311730fd7dd613d488e7dc0df4aa"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.MathematicalPreparationBudgetTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.MathematicalPreparationBudgetTest.xml",
+        "xmlSha256": "548828afa4637ba4b999841c10754c6e2652f2c0a29f2bd1c1823dcec86c2e46"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.MathematicalPresentationBudgetTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.MathematicalPresentationBudgetTest.xml",
+        "xmlSha256": "69449cfdaa82416f31b3a76e17dcc6924df8bd0ebe7d86b48d3c46a4516c50f1"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.MathematicalRetryBudgetTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.MathematicalRetryBudgetTest.xml",
+        "xmlSha256": "df3fe904c09f1bdf153093add0c137f9ec4970879756d8b23453673b8cc065b8"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.MathematicalSearchDerivationTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.MathematicalSearchDerivationTest.xml",
+        "xmlSha256": "246d778fd9fcd566277913a6aee326c1d5b8db76e0434e13965ec266dc5ab50d"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.MathematicalUnsupportedRetryTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.MathematicalUnsupportedRetryTest.xml",
+        "xmlSha256": "b2f1afa58f8c22661db47df42d5c009d743c7ca4b827cb912edabd30a7622e75"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.RuntimeConstantExpressionsTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.RuntimeConstantExpressionsTest.xml",
+        "xmlSha256": "b6a4b672e6dee8c9ca14ff3c7997dc1cf738ac993edcec5dc140bc638df11184"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.RuntimeOnlyMathTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.RuntimeOnlyMathTest.xml",
+        "xmlSha256": "8675629d531bdb9d80de248b58675a72a6f152c28bb72d559759f40c90f0d5f8"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.ScalarMethodExpansionTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.ScalarMethodExpansionTest.xml",
+        "xmlSha256": "3c003406413e22712a424e213ee140436255c3e8f3a1153922d88f5827d5146c"
+      },
+      {
+        "name": "org.sandbox.jdt.math.tests.VerifiedComputationExplanationTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "xmlFile": "target/surefire-reports/TEST-org.sandbox.jdt.math.tests.VerifiedComputationExplanationTest.xml",
+        "xmlSha256": "eec98282da784757c67874fd539fe8e6aa93ebf964835ddd7559f39f87f209dc"
+      }
+    ],
+    "rootReviewSha256": "72bb9f54abaa2e1e1e0c9d3114fe6856d7a46d6823f8e11e3543ab9940049cb5",
+    "independentReviewSha256": "1d42ffb552d222cef3b47e295c6b643ad5500c8368635db850ba7c183789f662",
+    "scope": "Existing standalone mathematics includes; existing OSGi-only BouncyCastleRuntimeCorpusTest exclusion retained. Native Eclipse/Tycho and hosted distribution are separate authorities.",
+    "publishedSourceRevision": "193d1e9bb0e889002d633656b4567819aee3bddd",
+    "originalReceiptSha256": "5ebc853b884640c55e0d6911d012eca4c67a4180fd687c88c2695ca83e76ccf8",
+    "publishedSourceBindingSha256": "2719291f4370f36a3a2b97e80ae3f294f6adc99a4b6dcc5abcd8b834e5dd7721",
+    "command": [
+      "mvn",
+      "-o",
+      "--batch-mode",
+      "--no-transfer-progress",
+      "clean",
+      "test",
+      "dependency:build-classpath",
+      "-Dmdep.outputFile=${MATH_RUN}/dependencies.classpath"
+    ]
+  },
+  "originalComparisonSha256": "3fcfe7a0c7783f55cf4b4c0f62f7b2bffb9e9dd781f79d85bc3945ca54055db5",
+  "sequentialInvocationSha256": "2722fc03c2b5d58e3e356fd10130b180ea4f8f179d8309eba31b3c26b96b6a8c",
+  "limitations": [
+    "Region and replacement counts are source-analysis measurements under fixed budgets, not generated-program speed measurements.",
+    "The same 10 source parse failures remain outside analyzed coverage.",
+    "No whole-library behavioral execution, constant-time proof or global optimization claim is made.",
+    "IntegralDomainAnalysis is bounded one-input primitive affine analysis; Java numeric kinds and evaluation traces remain explicit.",
+    "The existing standalone test inclusion and OSGi-only runtime-corpus exclusion are unchanged; native Eclipse and hosted distribution are separate authorities.",
+    "The cached extra scalar AST extraction has no separate SDK work meter or measured cancellation-latency bound."
+  ]
+}

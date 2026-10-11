@@ -1,0 +1,54 @@
+{
+  "x25519OriginalFragmentsContained": {
+    "strict": [
+      "608",
+      "672"
+    ],
+    "mathematical": [
+      "608",
+      "672"
+    ]
+  },
+  "hawkReplacementRenamings": {
+    "strict": {
+      "2763": {
+        "_math19": "_math16"
+      },
+      "2952": {
+        "_math20": "_math17"
+      },
+      "3023": {
+        "_math21": "_math18",
+        "_math22": "_math19",
+        "_math23": "_math20",
+        "_math24": "_math21"
+      }
+    },
+    "mathematical": {
+      "2763": {
+        "_math19": "_math16"
+      },
+      "2952": {
+        "_math20": "_math17"
+      },
+      "3023": {
+        "_math21": "_math18",
+        "_math22": "_math19",
+        "_math23": "_math20",
+        "_math24": "_math21"
+      }
+    }
+  },
+  "hawkBudgetWork": {
+    "strict": {
+      "2471": 8904,
+      "2575": 9974
+    },
+    "mathematical": {
+      "2471": 8884,
+      "2575": 9960
+    }
+  },
+  "blsGeneratedClassByteIdentical": true,
+  "blsGeneratedClassSha256": "e2767b40c65f6daaca2c23606c71d7a75e91d0609c47ba31e8e55556db73e8b5"
+}
