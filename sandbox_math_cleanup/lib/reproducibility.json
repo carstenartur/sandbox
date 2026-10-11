@@ -1,9 +1,86 @@
 {
-  "status": "PASS",
-  "sourceRevision": "73b81f1c60f13a5623af9351d7db7f64576858f1",
-  "sourceTree": "d8e90ee9e21a29248ee054124b38f04c9006f04f",
+  "buildCommand": "mvn -o -B -ntp -Psdk-release -pl regelsuche-optimization-sdk -am clean install -Dproject.build.outputTimestamp=1791663999",
+  "buildLogSha256": {
+    "build-1.log": "38bdeef768b8cb6446767b34489ca06b68189490412f08d2a54e352f7ff597f7",
+    "build-2.log": "b6bcbe115f88bfc2b1ca5453881d7488e839ccd259e9c9fa3139a74cfd8fe401"
+  },
+  "cleanBuildAttempts": 3,
   "cleanBuilds": 2,
-  "sdkTestsPerBuild": 92,
+  "comparison": "Exact byte comparison of all distribution files; matching SHA-256 digests recorded below.",
+  "distributionFiles": {
+    "regelsuche-optimization-sdk-0.5.0-issue1657-e3e795e009a3-qualification.json": {
+      "bytes": 1841,
+      "sha256": "bb08253d9a008c13d50cf92888b62e00f5717cce9a8acaf53dfc876f1004a4cf"
+    },
+    "regelsuche-optimization-sdk-0.5.0-issue1657-e3e795e009a3.zip": {
+      "bytes": 7661189,
+      "sha256": "3836671b9637f59ef0781688ccad802ae4ad99e5011ecba27dbe8cbe194d42db"
+    },
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-e3e795e009a3/regelsuche-optimization-sdk-0.5.0-issue1657-e3e795e009a3-all.jar": {
+      "bytes": 6689749,
+      "sha256": "26f90e5493a68564a89fb04c740fcb2f744fa032246b97ebbaa75ff5d6752b36"
+    },
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-e3e795e009a3/regelsuche-optimization-sdk-0.5.0-issue1657-e3e795e009a3-all.jar.sha256": {
+      "bytes": 65,
+      "sha256": "a69b312e27c52ab07821c25388eac62448bf0d44d04c9e0b06028cdc5f365e27"
+    },
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-e3e795e009a3/regelsuche-optimization-sdk-0.5.0-issue1657-e3e795e009a3-javadoc.jar": {
+      "bytes": 371487,
+      "sha256": "d912ef68e1115d28951fd8837fe636ad8b5d3b0fac771a1588ad77867e97319b"
+    },
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-e3e795e009a3/regelsuche-optimization-sdk-0.5.0-issue1657-e3e795e009a3-javadoc.jar.sha256": {
+      "bytes": 65,
+      "sha256": "d328468e7f51e2ffc0e4cbc9cb09c255fbe83ac224bd005c410d00d3efee0449"
+    },
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-e3e795e009a3/regelsuche-optimization-sdk-0.5.0-issue1657-e3e795e009a3-sources.jar": {
+      "bytes": 1178343,
+      "sha256": "b54f8a2ca2d24bad01cd338aeaf2008fd1d3ccea9a0cf8dd7c64a5186711a39c"
+    },
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-e3e795e009a3/regelsuche-optimization-sdk-0.5.0-issue1657-e3e795e009a3-sources.jar.sha256": {
+      "bytes": 65,
+      "sha256": "840f8d788bec9b2dea2cfd7f76084de59e3f7c538e7d3b772ede160603011abf"
+    },
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-e3e795e009a3/regelsuche-optimization-sdk-0.5.0-issue1657-e3e795e009a3.pom": {
+      "bytes": 458,
+      "sha256": "1ff970fcb70f0ebffea85d8d245265c015bf7da1d9afc0c13f394f7d0d0fea25"
+    },
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-e3e795e009a3/regelsuche-optimization-sdk-0.5.0-issue1657-e3e795e009a3.pom.sha256": {
+      "bytes": 65,
+      "sha256": "b18bdb2e5e2f1f8389c20e221456a3a403eee5ac80af48d81b8e8db6dc611ac6"
+    }
+  },
+  "errorsPerBuild": 0,
+  "failuresPerBuild": 0,
   "freshConsumers": 2,
-  "identicalDistributionFiles": 10
+  "identicalDistributionFiles": 10,
+  "integrationStatus": "qualified-exact-source",
+  "mathAlgorithmsTestsPerBuild": 321,
+  "modularDomainTestsPerBuild": 5,
+  "modularProductResidueTestsPerBuild": 4,
+  "modularTestsPerBuild": 9,
+  "outputTimestamp": 1791663999,
+  "packager": "scripts/package-optimization-sdk.py",
+  "priorFailedBuildAttempts": [
+    {
+      "log": "build-2-failed-sync-discovery.log",
+      "reason": "Surefire discovery encountered a transient filesystem synchronization class path; unchanged clean retry passed.",
+      "sha256": "3bc28233bec0da80da6a91df6dee6a816931deb1ce3b99d446b20d6345859ace"
+    }
+  ],
+  "publiclyPublished": false,
+  "qualificationScope": "Two clean SDK dependency reactor builds and two standalone consumers at the exact source revision.",
+  "reactorTestsPerBuild": 2320,
+  "sdkTestsPerBuild": 110,
+  "skippedPerBuild": 0,
+  "sourceCleanAfterQualification": true,
+  "sourceRevision": "e3e795e009a35c88bcc7cdb4151408c147be0951",
+  "sourceTree": "1556ed85b768b5a2ed59c2c46747e331369d4a0d",
+  "standaloneJarSha256": "26f90e5493a68564a89fb04c740fcb2f744fa032246b97ebbaa75ff5d6752b36",
+  "status": "PASS",
+  "toolchain": {
+    "java": "Temurin 25.0.2+10",
+    "jdkJavaOptions": "-XX:-UsePerfData",
+    "maven": "3.9.16"
+  },
+  "version": "0.5.0-issue1657-e3e795e009a3"
 }

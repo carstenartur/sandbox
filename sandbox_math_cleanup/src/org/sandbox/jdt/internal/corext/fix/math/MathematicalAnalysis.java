@@ -192,8 +192,10 @@ public final class MathematicalAnalysis {
                         remainingWork -= noImprovement.work();
                      }
 
-                     if (result instanceof BudgetExceeded) {
-                        remainingWork -= regionWork;
+                     if (result instanceof BudgetExceeded exceeded) {
+                        // Charge this attempt, including any reported overshoot. A preceding
+                        // ordinary attempt was already charged before the retry.
+                        remainingWork -= Math.max(request.budget().maximumWork(), exceeded.work());
                      }
                      continue;
                   }

@@ -1,9 +1,38 @@
 # Candidate quality, mathematical contracts and a real BigInteger hit
 
-Local qualification on Java 25.0.4.1, JDT 3.47.0 and Java 17 source/target.
+Historical corpus qualification on Java 25.0.4.1, JDT 3.47.0 and Java 17 source/target.
 Sandbox base: `dc01b417f8d0437ca31dbeee96cfff9073a990bf`.
-SDK source: `73b81f1c60f13a5623af9351d7db7f64576858f1` in Regelsuche;
-the standalone distribution receipts are in `sandbox_math_cleanup/lib/`.
+SDK source for these corpus measurements: `73b81f1c60f13a5623af9351d7db7f64576858f1`
+in Regelsuche. The current SDK and its receipts were subsequently updated as
+described below; the historical corpus counts are not a new scan of that SDK.
+
+## Review qualification, 2026-10-11
+
+The embedded SDK now pins `e3e795e009a35c88bcc7cdb4151408c147be0951`, merged
+upstream through Regelsuche #1084. Its JAR SHA-256 is
+`26f90e5493a68564a89fb04c740fcb2f744fa032246b97ebbaa75ff5d6752b36`.
+The repository-owned qualification and reproducibility receipts in
+`sandbox_math_cleanup/lib/` record two clean builds and two fresh consumers.
+This revision binds the SDK generator change to revision v2 and uses the same
+modular operation cost model through both public optimizer entry points.
+
+All 118 standalone mathematics tests pass on Temurin 25.0.2, including the
+complete Bouncy Castle class execution test. A new budget regression compares
+later-method analysis with an isolated analysis using the measured remaining
+file budget. It covers both exhausted and sufficient remaining budgets, without
+assuming a fixed search-order-dependent admission threshold. Failed attempts
+consume their own allocation or greater reported work; a reserved, unused
+mathematical retry is not charged.
+
+The normalized profile has ten keys, including mathematical opt-in set to false
+by default. Report, initializer and native workbench assertions now check this
+contract explicitly.
+
+The focused native Eclipse Help reactor also passed: its SWTBot test recaptured
+all four real Bouncy Castle previews, verified the exact replacements, applied
+them and undid them byte-for-byte. The image/provenance pairs now identify this
+SDK and the final compiled adapter. The separate full CI and distribution gates
+remain authoritative for merge qualification.
 
 ## Causes and changes
 

@@ -189,7 +189,7 @@ Add <code>--apply</code> to request application. Applying
 <code>cleanup.mathematics.checkedOptIn=true</code> in the configuration and
 <code>--accept-checked</code> on the command line. A candidate and an applied
 change are distinct report outcomes. Estimated costs are not measured timings.</p>
-<p>The mathematics configuration has nine strict keys. This example explicitly
+<p>The mathematics configuration has ten strict keys. This example explicitly
 enables the otherwise disabled cleanup, selects the default numeric/safety
 profiles, and excludes generated files:</p>
 <pre>cleanup.mathematics=true
@@ -199,6 +199,7 @@ cleanup.mathematics.goal=LOWER_ESTIMATED_RUNTIME
 cleanup.mathematics.workBudget=100000
 cleanup.mathematics.maxStates=2000
 cleanup.mathematics.checkedOptIn=false
+cleanup.mathematics.mathematicalOptIn=false
 cleanup.mathematics.underflowChecks=false
 cleanup.mathematics.exclusions=**/generated/**</pre>
 <p>Invalid option names or values fail validation. Source/configuration mismatch
