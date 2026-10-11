@@ -13,6 +13,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
@@ -265,7 +266,7 @@ class BigIntegerMethodExpansionTest {
     private Method compile(String source) throws Exception {
         Path output = Files.createTempDirectory(temporary, "compiled-");
         Path file = output.resolve("Calculation.java");
-        Files.writeString(file, source);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
                 "--release", "17", "-d", output.toString(), file.toString()), source);
         try (var loader = new URLClassLoader(new java.net.URL[] {output.toUri().toURL()}, null)) {
