@@ -94,6 +94,11 @@ public final class JavaComputationExtractor {
       return extract(unit, source, options, false, true, 1);
    }
 
+   /** Retains the scalar regions available when memory reads were statement boundaries. */
+   Extraction extractRuntimeScalars(CompilationUnit unit, String source, MathCleanUpOptions options) {
+      return extract(unit, source, options, false, true, Integer.MAX_VALUE, false);
+   }
+
    JavaComputationExtractor.Extraction extractForVerification(CompilationUnit unit, String source, MathCleanUpOptions options) {
       return this.extract(unit, source, options, true, false);
    }
@@ -104,6 +109,11 @@ public final class JavaComputationExtractor {
 
    private JavaComputationExtractor.Extraction extract(final CompilationUnit unit, String source, final MathCleanUpOptions options,
          final boolean includeValues, final boolean runtimeOnly, int maximumOutputs) {
+      return extract(unit, source, options, includeValues, runtimeOnly, maximumOutputs, true);
+   }
+
+   private JavaComputationExtractor.Extraction extract(final CompilationUnit unit, String source, final MathCleanUpOptions options,
+         final boolean includeValues, final boolean runtimeOnly, int maximumOutputs, boolean arrayInputs) {
       final ArrayList<JavaComputationRegion> regions = new ArrayList<>();
       final ArrayList<Diagnostic> diagnostics = new ArrayList<>();
       if (!options.enabled()) {
@@ -143,45 +153,45 @@ public final class JavaComputationExtractor {
                return false;
             }
 
-            JavaComputationExtractor.Builder builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+            JavaComputationExtractor.Builder builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
 
             for (Object child : block.statements()) {
                Statement statement = (Statement)child;
                if (JavaArrayReadInputs.requiresBoundary(statement, builder.values.keySet(),
                      JavaArrayReadInputs.totalPrefix(builder.trace, builder.outputs))) {
                   finish(builder, regions, diagnostics);
-                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                }
                boolean incomingAssignment = externalBigIntegerAssignment(statement, options)
                      && !builder.values.containsKey(((IVariableBinding) ((SimpleName) ((Assignment)
                            ((ExpressionStatement) statement).getExpression()).getLeftHandSide()).resolveBinding()).getKey());
                if (incomingAssignment) {
                   finish(builder, regions, diagnostics);
-                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                }
                if (builder.outputs.size() >= maximumOutputs) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
-                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                }
                if (runtimeOnly && RuntimeCalculationPolicy.preserve(statement, declarations)) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
                   diagnostics.add(new Diagnostic("CONSTANT_EXPRESSION_PRESERVED", "Intentional constant source is outside runtime cleanup", statement.getStartPosition(), statement.getLength()));
-                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                } else if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)
                      && !(statement instanceof ReturnStatement)) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
-                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                } else {
                   try {
                      builder.statement(statement);
                      if (incomingAssignment) {
                         finish(builder, regions, diagnostics);
-                        builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                        builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                      }
                   } catch (JavaComputationExtractor.Rejected rejected) {
                      JavaComputationExtractor.finish(builder.prior, regions, diagnostics);
                      diagnostics.add(JavaComputationExtractor.diagnostic(rejected));
-                     builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                     builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                   }
                }
             }
@@ -363,6 +373,7 @@ public final class JavaComputationExtractor {
       final Block block;
       final boolean includeValues;
       final boolean runtimeOnly;
+      final boolean arrayInputs;
       final Map<String, Expr> values = new HashMap<>();
       final Map<String, String> inputKeys = new HashMap<>();
       final Map<String, String> inputNames = new LinkedHashMap<>();
@@ -381,7 +392,7 @@ public final class JavaComputationExtractor {
       int first = -1;
       int end;
 
-      Builder(CompilationUnit unit, MathCleanUpOptions options, Map<String, VariableDeclarationFragment> declarations, Set<String> reserved, Block block, boolean includeValues, boolean runtimeOnly) {
+      Builder(CompilationUnit unit, MathCleanUpOptions options, Map<String, VariableDeclarationFragment> declarations, Set<String> reserved, Block block, boolean includeValues, boolean runtimeOnly, boolean arrayInputs) {
          this.unit = unit;
          this.options = options;
          this.declarations = declarations;
@@ -389,11 +400,12 @@ public final class JavaComputationExtractor {
          this.block = block;
          this.includeValues = includeValues;
          this.runtimeOnly = runtimeOnly;
+         this.arrayInputs = arrayInputs;
       }
 
       JavaComputationExtractor.Builder snapshot() {
          JavaComputationExtractor.Builder copy = new JavaComputationExtractor.Builder(
-            this.unit, this.options, this.declarations, this.reserved, this.block, this.includeValues, this.runtimeOnly
+            this.unit, this.options, this.declarations, this.reserved, this.block, this.includeValues, this.runtimeOnly, this.arrayInputs
          );
          copy.values.putAll(this.values);
          copy.inputKeys.putAll(this.inputKeys);
@@ -883,7 +895,7 @@ public final class JavaComputationExtractor {
       private Expr arrayRead(ArrayAccess read, NumericKind kind) {
          // Checked evaluation and fallback need a separate ordered memory trace contract.
          // Keep those profiles and helper memory access outside this initial admission.
-         if (options.safety() != SafetyProfile.PRESERVE_JAVA || !methodFrames.isEmpty()
+         if (!arrayInputs || options.safety() != SafetyProfile.PRESERVE_JAVA || !methodFrames.isEmpty()
                || !JavaArrayReadInputs.integral(kind) || !JavaArrayReadInputs.supported(read, values.keySet()))
             throw reject("ARRAY_READ_DEPENDENCY_BOUNDARY", read); //$NON-NLS-1$
          if (!JavaArrayReadInputs.totalPrefix(trace, outputs))
