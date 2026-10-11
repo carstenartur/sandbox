@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "30b54647999bbc7b672bf1d4d86a85094329e496066a616430f1f62746180c70",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: stringbuffer.to.stringbuilder.local\u003e\n\u003c!description: Replace new StringBuffer() with new StringBuilder() when assigned to a local variable for performance, as StringBuilder is not synchronized and StringBuffer is rarely needed for local, unshared instances.\u003e\n\u003c!severity: INFO\u003e\nnew java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "import java.lang.StringBuffer;\n\npublic class Example {\n    public void method() {\n        StringBuffer localBuffer \u003d new StringBuffer();\n        localBuffer.append(\"test\");\n        String s \u003d localBuffer.toString();\n\n        StringBuffer anotherLocal \u003d new StringBuffer(10);\n        anotherLocal.append(\"hello\");\n    }\n\n    private StringBuffer fieldBuffer \u003d new StringBuffer(); // Should not match\n    public static StringBuffer staticFieldBuffer \u003d new StringBuffer(\"static\"); // Should not match\n\n    public StringBuffer createBuffer() {\n        return new StringBuffer(\"created\"); // Should not match\n    }\n}",
+  "afterExample": "import java.lang.StringBuffer;\nimport java.lang.StringBuilder;\n\npublic class Example {\n    public void method() {\n        StringBuilder localBuffer \u003d new StringBuilder();\n        localBuffer.append(\"test\");\n        String s \u003d localBuffer.toString();\n\n        StringBuilder anotherLocal \u003d new StringBuilder(10);\n        anotherLocal.append(\"hello\");\n    }\n\n    private StringBuffer fieldBuffer \u003d new StringBuffer(); // Still StringBuffer\n    public static StringBuffer staticFieldBuffer \u003d new StringBuffer(\"static\"); // Still StringBuffer\n\n    public StringBuffer createBuffer() {\n        return new StringBuffer(\"created\"); // Still StringBuffer\n    }\n}",
+  "negativeExample": "import java.lang.StringBuffer;\n\npublic class NegativeExample {\n    // Field initialization - should not be converted due to potential thread-safety issues\n    private StringBuffer instanceBuffer \u003d new StringBuffer();\n\n    // Static field initialization - should not be converted\n    public static StringBuffer sharedBuffer \u003d new StringBuffer(\"Shared Data\");\n\n    // Method return value - not an assignment to a local variable\n    public StringBuffer getNewBuffer(String initial) {\n        return new StringBuffer(initial);\n    }\n\n    public void processBuffer(StringBuffer bufferParam) {\n        // No new StringBuffer call, so no match\n        System.out.println(bufferParam.toString());\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "a111e3ded59c144bea983a849a1316df021e00b4",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-11T02:39:45.591295958Z",
+  "ruleFingerprint": "sha256:b249609b378096fb4b378ab4dc1b773b3a3abc863f74057ceacfeedd3604a6dc",
+  "behaviorFingerprint": "sha256:71d4c5f4d7f8a8a33d89003d8081e37d00b3e809b7ef5d57ee13957e0d8d89f3",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-11T02:39:55.003236728Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "fb263f50f34aa49f45b5a5419a328d609ff4b7f642608c79ff49e081388eb227",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "public interface org.eclipse.jface.text.hyperlink.IHyperlinkDetector\n\u003d\u003e @java.lang.FunctionalInterface public interface org.eclipse.jface.text.hyperlink.IHyperlinkDetector\n;;",
+  "beforeExample": "package org.eclipse.jface.text.hyperlink;\n\n/**\n * An IHyperlinkDetector is responsible for detecting hyperlinks\n * in a given text region.\n */\npublic interface IHyperlinkDetector {\n\n    /**\n     * Detects hyperlinks in the given region.\n     */\n    org.eclipse.jface.text.hyperlink.IHyperlink[] detectHyperlinks(org.eclipse.jface.text.ITextViewer textViewer, org.eclipse.jface.text.IRegion region, boolean canShowMultipleHyperlinks);\n}",
+  "afterExample": "package org.eclipse.jface.text.hyperlink;\n\nimport java.lang.FunctionalInterface;\n\n/**\n * An IHyperlinkDetector is responsible for detecting hyperlinks\n * in a given text region.\n */\n@FunctionalInterface\npublic interface IHyperlinkDetector {\n\n    /**\n     * Detects hyperlinks in the given region.\n     */\n    org.eclipse.jface.text.hyperlink.IHyperlink[] detectHyperlinks(org.eclipse.jface.text.ITextViewer textViewer, org.eclipse.jface.text.IRegion region, boolean canShowMultipleHyperlinks);\n}",
+  "negativeExample": "package com.example;\n\n// This interface is not org.eclipse.jface.text.hyperlink.IHyperlinkDetector\n// and therefore should not be matched by the rule.\npublic interface SomeOtherInterface {\n    void method1();\n    void method2(); // Not a functional interface even if it were matched by a generic rule\n}",
+  "targetHintFile": "annotations.sandbox-hint",
+  "sourceCommit": "4e55c8746357dbe04de91c0a787a062c2bc77735",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Annotation",
+  "summary": "Adds @FunctionalInterface annotation to org.eclipse.jface.text.hyperlink.IHyperlinkDetector.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-11T02:39:45.439652309Z",
+  "ruleFingerprint": "sha256:1dba42cd2c2d306ae039c73a6782ade7bbf329a5c5f73026a383e40ae27febe9",
+  "behaviorFingerprint": "sha256:907ab77012c842a3d047c180ac49adf3f46c5d7772e48accda08db8125687c38",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type IHyperlinkDetector must be defined in its own file",
+    "verifiedAt": "2026-10-11T02:39:54.919652317Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

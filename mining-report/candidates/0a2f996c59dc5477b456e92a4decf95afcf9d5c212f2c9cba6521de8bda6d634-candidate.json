@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0a2f996c59dc5477b456e92a4decf95afcf9d5c212f2c9cba6521de8bda6d634",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: field.type.widen.list.to.collection\u003e\n\u003c!description: Widen private field type from java.util.List\u003cIMarker\u003e to java.util.Collection\u003cIMarker\u003e.\nThis is a safe refactoring as List is a subtype of Collection.\u003e\n\u003c!severity: HINT\u003e\n\nprivate java.util.List\u003corg.eclipse.core.resources.IMarker\u003e $name;\n\u003d\u003e\nprivate java.util.Collection\u003corg.eclipse.core.resources.IMarker\u003e $name;\n;;",
+  "beforeExample": "package org.eclipse.ui.internal.genericeditor.markers;\n\nimport java.util.List;\nimport org.eclipse.core.resources.IMarker;\n\npublic class MarkerInformationControl {\n    private List\u003cIMarker\u003e markers;\n\n    public void setInput(Object input) {\n        this.markers \u003d (List\u003cIMarker\u003e)input;\n    }\n}\n",
+  "afterExample": "package org.eclipse.ui.internal.genericeditor.markers;\n\nimport java.util.Collection;\nimport org.eclipse.core.resources.IMarker;\n\npublic class MarkerInformationControl {\n    private Collection\u003cIMarker\u003e markers;\n\n    public void setInput(Object input) {\n        this.markers \u003d (List\u003cIMarker\u003e)input;\n    }\n}\n",
+  "negativeExample": "package org.eclipse.ui.internal.genericeditor.markers;\n\nimport java.util.List;\nimport org.eclipse.core.resources.IMarker;\n\npublic class AnotherMarkerControl {\n    // Should not match: field is public\n    public List\u003cIMarker\u003e publicMarkers;\n\n    // Should not match: generic type is String, not IMarker\n    private List\u003cString\u003e stringMarkers;\n\n    // Should not match: has an initializer, which is not part of the pattern\n    private List\u003cIMarker\u003e initializedMarkers \u003d new java.util.ArrayList\u003c\u003e();\n\n    public void someMethod(Object input) {\n        // Example usage that would be valid with either List or Collection type for markers\n        // The rule only targets the declaration, not its usages.\n    }\n}\n",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "5985a1edc5adad4a81892f9229e3269c8b25e794",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Type Widening",
+  "summary": "Widen private field type from List\u003cIMarker\u003e to Collection\u003cIMarker\u003e",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-11T02:39:45.473637633Z",
+  "ruleFingerprint": "sha256:454aee95d2d47499ff2d01eae63391aa14d19721105a33b920b3b6bd904ed290",
+  "behaviorFingerprint": "sha256:f3131cbb5761ef6ed5a9654ed9a3fcc6d982262a2141717e094dcb022ba13034",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-11T02:39:54.930971101Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
