@@ -12,6 +12,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -336,7 +337,7 @@ class ArrayReadComputationTest {
     private Compiled compile(String source) throws Exception {
         Path folder = Files.createTempDirectory(temporary, "array-computation");
         Path file = folder.resolve("Calculation.java");
-        Files.writeString(file, source);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
                 "--release", "17", "-d", folder.toString(), file.toString()), source);
         var loader = new URLClassLoader(new java.net.URL[] {folder.toUri().toURL()}, getClass().getClassLoader());
