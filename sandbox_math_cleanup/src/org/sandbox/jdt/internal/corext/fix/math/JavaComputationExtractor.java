@@ -35,6 +35,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CastExpression;
@@ -146,6 +147,11 @@ public final class JavaComputationExtractor {
 
             for (Object child : block.statements()) {
                Statement statement = (Statement)child;
+               if (JavaArrayReadInputs.requiresBoundary(statement, builder.values.keySet(),
+                     JavaArrayReadInputs.totalPrefix(builder.trace, builder.outputs))) {
+                  finish(builder, regions, diagnostics);
+                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+               }
                boolean incomingAssignment = externalBigIntegerAssignment(statement, options)
                      && !builder.values.containsKey(((IVariableBinding) ((SimpleName) ((Assignment)
                            ((ExpressionStatement) statement).getExpression()).getLeftHandSide()).resolveBinding()).getKey());
@@ -364,6 +370,7 @@ public final class JavaComputationExtractor {
       final List<Output> planOutputs = new ArrayList<>();
       final List<JavaComputationRegion.OutputBinding> outputs = new ArrayList<>();
       final List<Occurrence> trace = new ArrayList<>();
+      final List<JavaComputationRegion.ArrayRead> arrayReads = new ArrayList<>();
       final Set<SemanticAssumption> assumptions = new LinkedHashSet<>();
       final Set<String> receiverGuards = new LinkedHashSet<>();
       // Per-call Java frames. Never bind a helper's locals as caller inputs.
@@ -395,6 +402,7 @@ public final class JavaComputationExtractor {
          copy.planOutputs.addAll(this.planOutputs);
          copy.outputs.addAll(this.outputs);
          copy.trace.addAll(this.trace);
+         copy.arrayReads.addAll(this.arrayReads);
          copy.assumptions.addAll(this.assumptions);
          copy.receiverGuards.addAll(this.receiverGuards);
          copy.expandedMethodStatements = this.expandedMethodStatements;
@@ -702,6 +710,8 @@ public final class JavaComputationExtractor {
                      throw JavaComputationExtractor.reject("FIELD_OR_VOLATILE_INPUT", expression);
                   }
                }
+            } else if (expression instanceof ArrayAccess read && !primitiveBoundary) {
+               return arrayRead(read, resultKind);
             } else if (primitiveBoundary) {
                throw JavaComputationExtractor.reject("PRIMITIVE_PRECOMPUTATION_BOUNDARY", expression);
             } else if (expression instanceof CastExpression cast) {
@@ -847,6 +857,8 @@ public final class JavaComputationExtractor {
          this.selected(from, node);
          this.selected(to, node);
          Expr cast = JavaExpressions.cast(from, to, expression);
+         if (!arrayReads.isEmpty() && !JavaArrayReadInputs.total(to, cast))
+            throw reject("ARRAY_READ_ARITHMETIC_BOUNDARY", node); //$NON-NLS-1$
          this.trace.add(new Occurrence("cast@" + node.getStartPosition() + ":" + this.trace.size(), cast, to, to));
          return cast;
       }
@@ -859,8 +871,29 @@ public final class JavaComputationExtractor {
             if (operation == NumericOperation.MOD_POW) requireGuardedPositive(operands[1], node);
          }
          Expr expression = JavaExpressions.operation(kind, operation, operands);
+         if (!arrayReads.isEmpty() && !JavaArrayReadInputs.total(kind, expression))
+            throw reject("ARRAY_READ_ARITHMETIC_BOUNDARY", node); //$NON-NLS-1$
          this.trace.add(new Occurrence("operation@" + node.getStartPosition() + ":" + this.trace.size(), expression, kind, kind));
          return expression;
+      }
+
+      private Expr arrayRead(ArrayAccess read, NumericKind kind) {
+         // Checked evaluation and fallback need a separate ordered memory trace contract.
+         // Keep those profiles and helper memory access outside this initial admission.
+         if (options.safety() != SafetyProfile.PRESERVE_JAVA || !methodFrames.isEmpty()
+               || !JavaArrayReadInputs.integral(kind) || !JavaArrayReadInputs.supported(read, values.keySet()))
+            throw reject("ARRAY_READ_DEPENDENCY_BOUNDARY", read); //$NON-NLS-1$
+         if (!JavaArrayReadInputs.totalPrefix(trace, outputs))
+            throw reject("ARRAY_READ_ARITHMETIC_BOUNDARY", read); //$NON-NLS-1$
+         if (arrayReads.size() >= 64) throw reject("ARRAY_READ_COUNT_LIMIT", read); //$NON-NLS-1$
+         String inputId = "input" + inputKeys.size(); //$NON-NLS-1$
+         inputKeys.put("array@" + read.getStartPosition() + ":" + arrayReads.size(), inputId); //$NON-NLS-1$ //$NON-NLS-2$
+         String javaName = "_mathRead" + read.getStartPosition(); //$NON-NLS-1$
+         while (reserved.contains(javaName)) javaName += "_"; //$NON-NLS-1$
+         inputNames.put(inputId, javaName);
+         inputTypes.put(inputId, kind.type());
+         arrayReads.add(new JavaComputationRegion.ArrayRead(inputId, javaName, kind, read.getStartPosition(), read.getLength()));
+         return new VariableExpr(inputId);
       }
 
       private void requireGuardedPositive(Expr expression, ASTNode source) {
@@ -887,6 +920,8 @@ public final class JavaComputationExtractor {
       }
 
       void selected(NumericKind kind, ASTNode node) {
+         if (!arrayReads.isEmpty() && !JavaArrayReadInputs.integral(kind))
+            throw reject("ARRAY_READ_ARITHMETIC_BOUNDARY", node); //$NON-NLS-1$
          if (!this.options.kinds().contains(kind)) {
             throw JavaComputationExtractor.reject("EXCLUDED_NUMERIC_KIND", node);
          }
@@ -1217,7 +1252,9 @@ public final class JavaComputationExtractor {
             this.reserved,
             this.receiverGuards,
             this.first,
-            this.end - this.first
+            this.end - this.first,
+            List.of(),
+            this.arrayReads
          );
       }
 

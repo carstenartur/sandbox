@@ -42,8 +42,11 @@ record MathExplanation(String detail, String sourceComment, boolean nontrivial) 
         appendValues(lines, "Replacement values:", replacement, region);
         MathSearchDerivation.append(lines, verified, request, region, options, cancellation, MAXIMUM_TEXT_LENGTH);
         lines.add("Independent numeric proof: " + String.join(", ", verified.proof().proofMethods()) + ".");
-        lines.add("Estimated operation work: " + candidate.cost().sourceCost().operationWork() + " -> "
+        lines.add((region.arrayReads().isEmpty() ? "Estimated operation work: " : "Estimated scalar arithmetic work: ") //$NON-NLS-1$ //$NON-NLS-2$
+                + candidate.cost().sourceCost().operationWork() + " -> "
                 + candidate.cost().candidateCost().operationWork() + "; not a timing measurement.");
+        if (!region.arrayReads().isEmpty()) lines.add("All " + region.arrayReads().size() //$NON-NLS-1$
+                + " array reads remain in source order. Capture stores, references and held values are additional costs in the reported assessment."); //$NON-NLS-1$
         String detail = String.join("\n", lines);
         if (detail.length() > MAXIMUM_TEXT_LENGTH) {
             throw new IllegalArgumentException("EXPLANATION_TEXT_BOUND_EXCEEDED");

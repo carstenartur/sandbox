@@ -19,7 +19,7 @@ public record JavaComputationRegion(
       JointComputationPlan plan, SourceEvaluationTrace trace, List<OutputBinding> outputs,
       Map<String, String> inputNames, Set<SemanticAssumption> assumptions,
       Set<String> reservedNames, Set<String> receiverGuards, int start, int length,
-      List<OutputBinding> internalBindings) {
+      List<OutputBinding> internalBindings, List<ArrayRead> arrayReads) {
    public JavaComputationRegion {
       outputs = List.copyOf(outputs);
       inputNames = Map.copyOf(inputNames);
@@ -27,6 +27,15 @@ public record JavaComputationRegion(
       reservedNames = Set.copyOf(reservedNames);
       receiverGuards = Set.copyOf(receiverGuards);
       internalBindings = List.copyOf(internalBindings);
+      arrayReads = List.copyOf(arrayReads);
+   }
+
+   public JavaComputationRegion(JointComputationPlan plan, SourceEvaluationTrace trace,
+         List<OutputBinding> outputs, Map<String, String> inputNames,
+         Set<SemanticAssumption> assumptions, Set<String> reservedNames,
+         Set<String> receiverGuards, int start, int length, List<OutputBinding> internalBindings) {
+      this(plan, trace, outputs, inputNames, assumptions, reservedNames, receiverGuards,
+            start, length, internalBindings, List.of());
    }
 
    public JavaComputationRegion(JointComputationPlan plan, SourceEvaluationTrace trace,
@@ -34,8 +43,11 @@ public record JavaComputationRegion(
          Set<SemanticAssumption> assumptions, Set<String> reservedNames,
          Set<String> receiverGuards, int start, int length) {
       this(plan, trace, outputs, inputNames, assumptions, reservedNames, receiverGuards,
-            start, length, List.of());
+            start, length, List.of(), List.of());
    }
+
+   /** Ordered source reads, captured once even when their scalar values become dead. */
+   public record ArrayRead(String inputId, String javaName, NumericKind kind, int start, int length) { }
 
    public record OutputBinding(String id, String javaName, NumericKind declaredKind,
          int initializerStart, int initializerLength, int statementStart, int statementLength,
