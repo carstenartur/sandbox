@@ -38,7 +38,7 @@ Additional routes include:
 
 ## Released-library consumer scope
 
-The server and its storage bridge currently consume `jgit-storage-hibernate-core` only. The selected version is defined by `jgit-storage-hibernate.version` in `sandbox-jgit-storage-hibernate/pom.xml` (currently `0.1.18`).
+The server and its storage bridge currently consume `jgit-storage-hibernate-core` only. The selected version is defined by `jgit-storage-hibernate.version` in `sandbox-jgit-storage-hibernate/pom.xml`; both consumer module POMs must select the same version. The migration ledger records that selection separately from immutable compatibility evidence.
 
 The real-consumer contract deliberately rejects upstream Search and Java Analysis modules until their dedicated Sandbox migration slices exist. Current search, Java projection, REST composition, and embedding behavior therefore remains Sandbox-owned or copied transitional code; it is not evidence that the external modules have already been integrated.
 

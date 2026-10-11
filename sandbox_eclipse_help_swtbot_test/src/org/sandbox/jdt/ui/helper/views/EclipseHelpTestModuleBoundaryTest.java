@@ -56,6 +56,7 @@ public class EclipseHelpTestModuleBoundaryTest {
 			"EclipseHelpStructureTest.java", //$NON-NLS-1$
 			"EclipseHelpTestModuleBoundaryTest.java", //$NON-NLS-1$
 			"FocusedCleanupConfigurationScreenshots.java", //$NON-NLS-1$
+			"JFaceCaptureState.java", //$NON-NLS-1$
 			"JUnitBestEffortCleanupDialogSWTBotTest.java", //$NON-NLS-1$
 			"MathematicsHelpScreenshots.java", //$NON-NLS-1$
 			"MathematicsHelpScreenshotsSWTBotTest.java", //$NON-NLS-1$

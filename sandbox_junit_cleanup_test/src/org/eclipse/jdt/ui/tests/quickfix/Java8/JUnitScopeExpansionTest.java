@@ -11,6 +11,7 @@
 package org.eclipse.jdt.ui.tests.quickfix.Java8;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collection;
@@ -22,6 +23,8 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.eclipse.core.runtime.CoreException;
 
@@ -32,6 +35,8 @@ import org.eclipse.jdt.junit.JUnitCore;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 
 import org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCleanUpDiagnostics;
+import org.sandbox.jdt.cleanup.multifile.MultiFileCandidateOutcome;
 import org.sandbox.jdt.internal.ui.fix.JUnitCleanUpCore;
 import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava17;
@@ -157,6 +162,89 @@ public class JUnitScopeExpansionTest {
 		assertEquals(Set.of(selected.getHandleIdentifier(), related.getHandleIdentifier()), expandedHandles,
 				"The exact closure must add the Rule user without broadening to unrelated source");
 		assertTrue(!expanded.contains(unrelated));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "TestName", "TemporaryFolder" })
+	public void localDedicatedRuleDoesNotBlockRequiredSourceClosure(String ruleType) throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null);
+		ICompilationUnit resource= ruleUnit(pack, "SharedResource",
+				"extends org.junit.rules.ExternalResource", "");
+		ICompilationUnit user= ruleUnit(pack, "RuleUser", "",
+				"@org.junit.Rule public SharedResource resource = new SharedResource();");
+		ICompilationUnit local= ruleUnit(pack, "LocalRule", "",
+				"@org.junit.Rule public org.junit.rules." + ruleType + " rule = new org.junit.rules." + ruleType + "();");
+		ICompilationUnit unrelated= createUnit(pack, "Unrelated.java");
+		ReportedCleanup cleanup= new ReportedCleanup();
+
+		Collection<ICompilationUnit> expanded= cleanup.expandCleanUpScope(user.getJavaProject(), List.of(user, local), null);
+		assertEquals(Set.of(resource, user, local), Set.copyOf(expanded),
+				"A local Rule must not prevent admission of the required source fixture");
+		assertFalse(expanded.contains(unrelated));
+		cleanup.checkPreConditions(user.getJavaProject(), expanded.toArray(ICompilationUnit[]::new), null);
+		MultiFileCleanUpDiagnostics diagnostics= cleanup.diagnostics(user);
+		assertTrue(diagnostics.scope().complete(), diagnostics.toJson());
+		assertTrue(diagnostics.candidates().stream().anyMatch(candidate ->
+				candidate.outcome() == MultiFileCandidateOutcome.TRANSFORMED
+						&& candidate.candidateId().equals("external-resource:test.SharedResource")), diagnostics.toJson());
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "factory", "anonymous", "different-subtype", "mixed-fragments" })
+	public void unprovedDedicatedRuleInitializerRetainsConservativeScope(String variant) throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null);
+		ICompilationUnit resource= ruleUnit(pack, "SharedResource", "extends org.junit.rules.ExternalResource", "");
+		ICompilationUnit user= ruleUnit(pack, "RuleUser", "",
+				"@org.junit.Rule public SharedResource resource = new SharedResource();");
+		String body= switch (variant) {
+			case "factory" -> "@org.junit.Rule public org.junit.rules.TestName rule = make(); "
+					+ "static org.junit.rules.TestName make() { return new org.junit.rules.TestName(); }";
+			case "anonymous" -> "@org.junit.Rule public org.junit.rules.TestName rule = new org.junit.rules.TestName() {};";
+			case "different-subtype" -> "@org.junit.Rule public org.junit.rules.TemporaryFolder rule = new CustomFolder(); "
+					+ "static class CustomFolder extends org.junit.rules.TemporaryFolder {}";
+			default -> "@org.junit.Rule public org.junit.rules.TestName first = new org.junit.rules.TestName(), second = make(); "
+					+ "static org.junit.rules.TestName make() { return new org.junit.rules.TestName(); }";
+		};
+		ICompilationUnit local= ruleUnit(pack, "UnprovedRule", "", body);
+		ReportedCleanup cleanup= new ReportedCleanup();
+		List<ICompilationUnit> units= List.of(resource, user, local);
+
+		assertTrue(cleanup.expandCleanUpScope(user.getJavaProject(), units, null).isEmpty());
+		cleanup.checkPreConditions(user.getJavaProject(), units.toArray(ICompilationUnit[]::new), null);
+		assertFalse(cleanup.diagnostics(user).scope().complete(), cleanup.diagnostics(user).toJson());
+		assertFalse(cleanup.diagnostics(user).candidates().stream().anyMatch(candidate ->
+				candidate.outcome() == MultiFileCandidateOutcome.TRANSFORMED));
+	}
+
+	@Test
+	public void binaryIntermediateExternalResourceRemainsOutsideEditableClosure() throws CoreException {
+		IPackageFragment pack= root.createPackageFragment("test", true, null);
+		ICompilationUnit resource= ruleUnit(pack, "CustomFolder", "extends org.junit.rules.TemporaryFolder", "");
+		ICompilationUnit user= ruleUnit(pack, "RuleUser", "",
+				"@org.junit.Rule public CustomFolder resource = new CustomFolder();");
+		ReportedCleanup cleanup= new ReportedCleanup();
+		ICompilationUnit[] units= { resource, user };
+
+		assertTrue(cleanup.expandCleanUpScope(user.getJavaProject(), List.of(units), null).isEmpty());
+		cleanup.checkPreConditions(user.getJavaProject(), units, null);
+		assertFalse(cleanup.diagnostics(user).scope().complete(), cleanup.diagnostics(user).toJson());
+	}
+
+	private static ICompilationUnit ruleUnit(IPackageFragment pack, String name, String superclass, String body)
+			throws CoreException {
+		return pack.createCompilationUnit(name + ".java", "package test; public class " + name + " "
+				+ superclass + " { " + body + " }", false, null);
+	}
+
+	private static final class ReportedCleanup extends JUnitCleanUpCore {
+		ReportedCleanup() {
+			super(Map.of(MYCleanUpConstants.JUNIT_CLEANUP, CleanUpOptions.TRUE,
+					MYCleanUpConstants.JUNIT_CLEANUP_4_RULEEXTERNALRESOURCE, CleanUpOptions.TRUE));
+		}
+
+		MultiFileCleanUpDiagnostics diagnostics(ICompilationUnit unit) {
+			return getPlanningDiagnostics(unit.getJavaProject());
+		}
 	}
 
 	private static JUnitCleanUpCore assertionCleanup() {

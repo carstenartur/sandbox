@@ -12,7 +12,7 @@ The selected released version is defined only by:
 <jgit-storage-hibernate.version>...</jgit-storage-hibernate.version>
 ```
 
-in [`pom.xml`](pom.xml). At the time of this documentation update it is `0.1.18`; automated candidate runs replace that property with the same-run library version and verify the resolved dependency tree.
+in [`pom.xml`](pom.xml). Both consumer module POMs must select the same version; automated candidate runs replace that property with the same-run library version and verify the resolved dependency tree. The migration ledger records the selected release without relabelling historical compatibility evidence.
 
 New Sandbox code must enter generic database-backed Git storage through `org.sandbox.jgit.storage.integration.JGitStorageLibraryBoundary` or another explicitly reviewed public adapter. It must not add new dependencies on copied `org.eclipse.jgit.storage.hibernate` implementation packages.
 

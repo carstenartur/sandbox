@@ -34,6 +34,7 @@ import org.eclipse.jdt.core.dom.ASTRequestor;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
@@ -43,8 +44,11 @@ import org.eclipse.jdt.core.dom.NormalAnnotation;
 import org.eclipse.jdt.core.dom.SingleMemberAnnotation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.internal.corext.dom.IASTSharedValues;
 import org.eclipse.jdt.internal.corext.refactoring.util.RefactoringASTParser;
+
+import org.sandbox.jdt.internal.corext.fix.helper.RuleExternalResourceJUnitPlugin;
 
 /** Lightweight selected-scope detector for coordinated JUnit migration. */
 public final class JUnitScopeCandidateDetector {
@@ -141,6 +145,7 @@ public final class JUnitScopeCandidateDetector {
 							return true;
 						}
 						boolean ruleField= false;
+						boolean exactRuleAnnotation= true;
 						boolean unresolvedRuleAnnotation= false;
 						for (Object modifier : node.modifiers()) {
 							if (!(modifier instanceof Annotation annotation)) {
@@ -151,6 +156,9 @@ public final class JUnitScopeCandidateDetector {
 								String qualifiedName= annotationBinding.getQualifiedName();
 								ruleField|= ORG_JUNIT_RULE.equals(qualifiedName)
 										|| ORG_JUNIT_CLASS_RULE.equals(qualifiedName);
+								if (ORG_JUNIT_RULE.equals(qualifiedName) || ORG_JUNIT_CLASS_RULE.equals(qualifiedName)) {
+									exactRuleAnnotation&= !annotationBinding.isRecovered();
+								}
 							} else if (isSyntacticRuleName(annotation.getTypeName().getFullyQualifiedName())) {
 								ruleField= true;
 								unresolvedRuleAnnotation= true;
@@ -159,11 +167,14 @@ public final class JUnitScopeCandidateDetector {
 						if (!ruleField) {
 							return true;
 						}
+						ITypeBinding fieldType= node.getType().resolveBinding();
+						if (exactRuleAnnotation && !unresolvedRuleAnnotation && hasOnlyExactDedicatedInitializers(node, fieldType)) {
+							return true;
+						}
 						candidateFound[0]= true;
 						if (unresolvedRuleAnnotation) {
 							complete[0]= false;
 						}
-						ITypeBinding fieldType= node.getType().resolveBinding();
 						complete[0]&= addJavaElement(fieldType, elements);
 						if (fieldType != null && extendsExternalResource(fieldType)) {
 							complete[0]&= addExternalResourceSuperTypes(fieldType, elements);
@@ -228,6 +239,26 @@ public final class JUnitScopeCandidateDetector {
 			return complete;
 		}
 		return false;
+	}
+
+	private static boolean hasOnlyExactDedicatedInitializers(FieldDeclaration field, ITypeBinding fieldType) {
+		if (fieldType == null || fieldType.isRecovered() || !RuleExternalResourceJUnitPlugin.isDedicatedRuleType(fieldType)
+				|| field.fragments().isEmpty()) {
+			return false;
+		}
+		for (Object fragment : field.fragments()) {
+			if (!(fragment instanceof VariableDeclarationFragment variable)
+					|| !(variable.getInitializer() instanceof ClassInstanceCreation creation)
+					|| creation.getAnonymousClassDeclaration() != null) {
+				return false;
+			}
+			ITypeBinding initializerType= creation.resolveTypeBinding();
+			if (initializerType == null || initializerType.isRecovered()
+					|| !fieldType.getErasure().isEqualTo(initializerType.getErasure())) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static boolean isSyntacticRuleName(String name) {

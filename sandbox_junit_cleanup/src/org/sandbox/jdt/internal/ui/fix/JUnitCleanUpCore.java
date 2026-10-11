@@ -247,8 +247,10 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 
 		Set<String> currentHandles= handles(currentScope);
 		Set<String> pendingScope= pendingExpandedScopes.remove(project);
+		JUnitScopeDiagnostics.Expansion trace= JUnitScopeDiagnostics.expansion(project, currentHandles, pendingScope);
 		if (pendingScope != null && currentHandles.containsAll(pendingScope)) {
 			verifiedClosedScopes.put(project, pendingScope);
+			trace.finish("pending-verified", null, null, null, null, null); //$NON-NLS-1$
 			return List.of();
 		}
 		rejectedScopes.remove(project);
@@ -266,37 +268,47 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 						migrateAssertionHelpers, migrateAssumptionHelpers, monitor);
 		JUnitScopeCandidateDetector.SearchSeeds seeds= mergeSeeds(
 				mergeSeeds(mergeSeeds(standardSeeds, junit3Seeds), lifecycleSeeds), helperSeeds);
+		trace.seeds(standardSeeds, junit3Seeds, lifecycleSeeds, helperSeeds, seeds);
 		if (!seeds.candidateFound()) {
 			clearScopeDecision(project);
+			trace.finish("no-candidate", null, null, null, null, null); //$NON-NLS-1$
 			return List.of();
 		}
 
 		List<IJavaProject> coordinatedProjects= coordinatedProjects(project, seeds);
-		if (!JavaProjectCompilationUnits.readOnlyProjects(coordinatedProjects).isEmpty()) {
+		List<IJavaProject> readOnlyProjects= JavaProjectCompilationUnits.readOnlyProjects(coordinatedProjects);
+		if (!readOnlyProjects.isEmpty()) {
 			clearScopeDecision(project);
 			rejectedScopes.add(project);
+			trace.finish("read-only", coordinatedProjects, readOnlyProjects, null, null, null); //$NON-NLS-1$
 			return List.of();
 		}
 		List<ICompilationUnit> allowedUnits= JavaProjectCompilationUnits.collect(coordinatedProjects, currentScope,
 				SourceRootPolicy.TEST_ROOTS_AND_SELECTED_SUPPORT);
 		List<ICompilationUnit> requiredUnits;
+		RelatedCompilationUnitSearch.Result related= null;
 		if (!seeds.complete()) {
 			requiredUnits= allowedUnits;
 		} else {
 			Set<ICompilationUnit> required= new LinkedHashSet<>(seeds.directCompilationUnits());
 			if (!seeds.elements().isEmpty()) {
-				RelatedCompilationUnitSearch.Result related= RelatedCompilationUnitSearch.findReferences(
+				related= RelatedCompilationUnitSearch.findReferences(
 						coordinatedProjects, seeds.elements(), currentScope, allowedUnits, monitor);
 				if (!related.complete()) {
 					clearScopeDecision(project);
 					rejectedScopes.add(project);
+					trace.finish("search-rejected", coordinatedProjects, readOnlyProjects, allowedUnits, null, related); //$NON-NLS-1$
 					return List.of();
 				}
 				required.addAll(related.compilationUnits());
 			}
 			requiredUnits= new ArrayList<>(required);
 		}
-		return registerRequiredScope(project, currentHandles, requiredUnits);
+		Collection<ICompilationUnit> expanded= registerRequiredScope(project, currentHandles, requiredUnits);
+		trace.finish((seeds.complete() ? "search-" : "fallback-") //$NON-NLS-1$ //$NON-NLS-2$
+				+ (expanded.isEmpty() ? "verified" : "pending"), //$NON-NLS-1$ //$NON-NLS-2$
+				coordinatedProjects, readOnlyProjects, allowedUnits, requiredUnits, related);
+		return expanded;
 	}
 
 	/**
@@ -470,6 +482,7 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 	private Boolean consumeClosedScopeDecision(IJavaProject project, ICompilationUnit[] compilationUnits) {
 		if (rejectedScopes.remove(project)) {
 			clearScopeDecision(project);
+			JUnitScopeDiagnostics.consumed(project, compilationUnits, null, null, null, Boolean.FALSE, "rejected"); //$NON-NLS-1$
 			return Boolean.FALSE;
 		}
 		Set<String> expected= verifiedClosedScopes.remove(project);
@@ -477,7 +490,11 @@ public class JUnitCleanUpCore extends AbstractPlannedMultiFileCleanUp<JUnitMigra
 		if (expected == null) {
 			expected= pending;
 		}
-		return expected == null ? null : Boolean.valueOf(handles(List.of(compilationUnits)).containsAll(expected));
+		Set<String> selected= expected == null ? null : handles(List.of(compilationUnits));
+		Boolean decision= expected == null ? null : Boolean.valueOf(selected.containsAll(expected));
+		JUnitScopeDiagnostics.consumed(project, compilationUnits, selected, expected, pending, decision,
+				expected == null ? "undecided" : "expected"); //$NON-NLS-1$ //$NON-NLS-2$
+		return decision;
 	}
 
 	private void clearScopeDecision(IJavaProject project) {
