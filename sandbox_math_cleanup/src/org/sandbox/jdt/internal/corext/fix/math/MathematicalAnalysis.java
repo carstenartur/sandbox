@@ -195,7 +195,7 @@ public final class MathematicalAnalysis {
                         }
                      }
                      if (mathematicalBigInteger && (result instanceof NoImprovement || result instanceof OptimizationResult.Inconclusive
-                           || result instanceof OptimizationResult.Unsupported) && remainingWork > attemptSpent) {
+                           || result instanceof OptimizationResult.Unsupported || result instanceof BudgetExceeded) && remainingWork > attemptSpent) {
                         if (statements == null) statements = new JavaComputationExtractor().extractRuntimeStatements(ast, source, options).regions();
                         var smaller = statements.stream().filter(part -> part.start() >= region.start()
                               && part.start() + part.length() <= region.start() + region.length() && part.length() < region.length()).toList();
@@ -415,6 +415,7 @@ public final class MathematicalAnalysis {
    private static long consumedWork(OptimizationResult result, long allocation) {
       if (result instanceof NoImprovement ordinary) return ordinary.work();
       if (result instanceof OptimizationResult.Inconclusive inconclusive && inconclusive.work() >= 0) return inconclusive.work();
+      if (result instanceof BudgetExceeded exceeded) return Math.max(allocation, exceeded.work());
       return allocation;
    }
 

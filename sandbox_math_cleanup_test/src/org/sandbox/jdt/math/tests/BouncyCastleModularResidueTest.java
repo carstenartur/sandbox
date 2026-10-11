@@ -12,6 +12,7 @@ import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.jar.JarFile;
 import javax.tools.ToolProvider;
@@ -108,7 +109,8 @@ class BouncyCastleModularResidueTest {
     }
     private Path compile(String source, Path dependency) throws IOException {
         Path directory = Files.createTempDirectory(temporary, "compiled-"); Path file = directory.resolve(ENTRY);
-        Files.createDirectories(file.getParent()); Files.writeString(file, source);
+        Files.createDirectories(Objects.requireNonNull(file.getParent(), "The fixture source must have a parent directory"));
+        Files.writeString(file, source);
         assertNotNull(ToolProvider.getSystemJavaCompiler(), "A full JDK is required");
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-cp",
                 dependency.toString(), "-d", directory.toString(), file.toString()));

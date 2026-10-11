@@ -15,7 +15,8 @@ A magnitude bound supplies no sign or modulus-positivity premise.
 In mathematical mode, a failed combined BigInteger request can retry strictly
 smaller source statements within the shared file budget. Unsupported requests
 consume their full allocation; structural preparation failures retain the SDK
-cap charge. Regelsuche owns modular candidates and independent arithmetic proof.
+cap charge. Budget-exhausted requests also retain any reported work overshoot
+before retrying. Regelsuche owns modular candidates and independent arithmetic proof.
 The adapter still verifies emitted Java and requires an estimated runtime saving
 after all receiver checks and fallback costs.
 
