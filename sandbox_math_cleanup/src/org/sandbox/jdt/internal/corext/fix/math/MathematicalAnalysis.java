@@ -9,6 +9,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 import de.regelsuche.sdk.optimization.CancellationToken;
 import de.regelsuche.sdk.optimization.CheckedPolicy;
 import de.regelsuche.sdk.optimization.ComputationOptimizer;
+import de.regelsuche.sdk.optimization.ComputationExplanations;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationBudget;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
@@ -38,6 +39,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.ASTMatcher;
@@ -82,7 +84,7 @@ public final class MathematicalAnalysis {
          return new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions);
       }
 
-      if (monitor.isCanceled()) {
+      if (isCancelled(monitor)) {
          return cancelled(sourceDigest, compilerOptions);
       }
 
@@ -117,7 +119,7 @@ public final class MathematicalAnalysis {
       ComputationOptimizer optimizer = new ComputationOptimizer();
       JavaComputationEmitter emitter = new JavaComputationEmitter();
       MathematicalJavadoc documentation = new MathematicalJavadoc();
-      CancellationToken cancellation = monitor::isCanceled;
+      CancellationToken cancellation = () -> isCancelled(monitor);
       long remainingWork = options.workBudget();
       List<JavaComputationRegion> pending = new ArrayList<>(extraction.regions());
       List<JavaComputationRegion> fragments = null;
@@ -127,7 +129,7 @@ public final class MathematicalAnalysis {
          for (int regionIndex = 0; regionIndex < pending.size(); regionIndex++) {
             JavaComputationRegion region = pending.get(regionIndex);
             int regionsLeft = pending.size() - regionIndex;
-            if (monitor.isCanceled()) {
+            if (isCancelled(monitor)) {
                return cancelled(sourceDigest, compilerOptions);
             }
 
@@ -204,15 +206,19 @@ public final class MathematicalAnalysis {
                      }
                      if (result instanceof OptimizationResult.Inconclusive) remainingWork -= consumedWork(result, regionWork);
 
-                     if (result instanceof BudgetExceeded) {
-                        remainingWork -= regionWork;
+                     if (result instanceof BudgetExceeded exceeded) {
+                        // Charge this attempt, including any reported overshoot. A preceding
+                        // ordinary attempt was already charged before the retry.
+                        remainingWork -= Math.max(request.budget().maximumWork(), exceeded.work());
                      }
                      continue;
                   }
 
                   remainingWork -= candidate.work();
-                  if (!(optimizer.reverify(request, candidate, cancellation) instanceof Verified)) {
-                     diagnostics.add(diagnostic("REVERIFICATION_FAILED", "Candidate evidence did not pass independent checking", region));
+                  var explained = ComputationExplanations.describe(request, candidate, cancellation);
+                  remainingWork -= explained.explanation().map(ComputationExplanations.Explanation::presentationWork).orElse(0L);
+                  if (!(explained.verification() instanceof Verified) || explained.explanation().isEmpty()) {
+                     diagnostics.add(diagnostic("REVERIFICATION_FAILED", explained.verification().toString(), region));
                      continue;
                   }
 
@@ -238,6 +244,8 @@ public final class MathematicalAnalysis {
                   reserved.addAll(generatedNames);
                   JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava());
                   JavaEmissionVerifier.verify(request, candidate, plain, region, options, cancellation);
+                  MathExplanation explanationText = MathExplanation.render(explained.explanation().orElseThrow(),
+                     request, candidate, region, plain, options, contract, cancellation);
                   String replacement;
                   if (mathematicalIntegral) {
                      replacement = indentGenerated(plain.statements(), source, region.start()) + rewriteValues(ast, source, region, plain.outputValues(), compilerOptions);
@@ -269,6 +277,10 @@ public final class MathematicalAnalysis {
                      replacement = indentGenerated(plain.statements(), source, region.start()) + rewriteValues(ast, source, region, plain.outputValues(), compilerOptions);
                   }
 
+                  if (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
+                        || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial()) {
+                     replacement = indentGenerated(explanationText.sourceComment(), source, region.start()) + replacement;
+                  }
                   checkGeneratedSource(
                      ast,
                      source.substring(0, region.start()) + replacement + source.substring(region.start() + region.length()),
@@ -277,7 +289,7 @@ public final class MathematicalAnalysis {
                      (IProgressMonitor)monitor,
                      environment
                   );
-                  if (monitor.isCanceled()) {
+                  if (isCancelled(monitor)) {
                      return cancelled(sourceDigest, compilerOptions);
                   }
 
@@ -310,6 +322,7 @@ public final class MathematicalAnalysis {
                      continue;
                   }
 
+                  ComputationExplanation explanation = ComputationExplanation.from(region, explained.explanation().orElseThrow());
                   String description = "Mathematics "
                      + (contract == null ? options.safety() : "MATHEMATICAL")
                      + "; estimated operation work "
@@ -333,6 +346,7 @@ public final class MathematicalAnalysis {
                         + "; CHECKED_THROW changes the Java contract: numerical violations may throw ArithmeticException. Both the original and replacement operations must be checked.";
                   }
 
+                  description += "\n" + explanationText.detail();
                   replacements.add(new MathematicalAnalysis.Replacement(region.start(), region.length(), replacement, description));
                   ASTParser declarationParser = ASTParser.newParser(ast.getAST().apiLevel());
                   declarationParser.setKind(2);
@@ -348,7 +362,7 @@ public final class MathematicalAnalysis {
                   });
                   evidence.add(
                      new MathematicalAnalysis.VerifiedRegion(
-                        region.start(), region.length(), candidate.evidence(), cost, source.substring(region.start(), region.start() + region.length()), replacement
+                        region.start(), region.length(), candidate.evidence(), cost, source.substring(region.start(), region.start() + region.length()), replacement, explanation
                      )
                   );
                   diagnostics.add(diagnostic("VERIFIED_CANDIDATE", description, region));
@@ -363,7 +377,7 @@ public final class MathematicalAnalysis {
          monitor.done();
       }
 
-      if (monitor.isCanceled()) {
+      if (isCancelled(monitor)) {
          return cancelled(sourceDigest, compilerOptions);
       }
 
@@ -379,7 +393,15 @@ public final class MathematicalAnalysis {
          }
       }
 
-      return monitor.isCanceled() ? cancelled(sourceDigest, compilerOptions) : analysis;
+      return isCancelled(monitor) ? cancelled(sourceDigest, compilerOptions) : analysis;
+   }
+
+   /** Interrupts abort the entire invocation, never just the current candidate. */
+   private static boolean isCancelled(IProgressMonitor monitor) {
+      if (Thread.currentThread().isInterrupted()) {
+         throw new OperationCanceledException("Mathematics analysis interrupted");
+      }
+      return monitor.isCanceled();
    }
 
    private static long consumedWork(OptimizationResult result, long allocation) {
@@ -631,6 +653,17 @@ public final class MathematicalAnalysis {
       }
    }
 
-   public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost, String original, String replacement) {
+   public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+      String original, String replacement, ComputationExplanation explanation) {
+      public VerifiedRegion {
+         if (explanation != null && !proof.equals(explanation.verified().proof())) {
+            throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
+         }
+      }
+      /** Compatibility for explicitly constructed historical report records. */
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement) {
+         this(offset, length, proof, cost, original, replacement, null);
+      }
    }
 }

@@ -1,0 +1,68 @@
+{
+  "schema": "sandbox.math.modular-integration-scan/v1",
+  "source_revision_base": "d3a4721306a1b128f91d564d4e86f24170f67895",
+  "source_delta_sha256": "fa9109a3cb7049dfe1707fb8bac82b300411b18ea6f225d725f2e2231ec45fc3",
+  "sdk_source_revision": "ae1c39ea50cff685fe843b0357c818f38db6ec79",
+  "sdk_sha256": "20f6a81c83a894c595f5447c72bebfc4e83c0503f16285b22d45f506af5e4e2b",
+  "production_sources_sha256": {
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/ComputationExplanation.java": "cf60ae3f952c09bd6f26a673ae7e4e2662b1e7b088edf9daa15362a816a6beba",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/IntegralMathematicalDomain.java": "ab9fc037ebae3f8e4181086754feeccf632a2eddbf3ee4760541436b4f1fdcde",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationEmitter.java": "ff19694f78d4d19c16e37d8bed9c119064070e8957322cc66c93c02614a3d052",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationExtractor.java": "327d4fca16cd3f0bbc3a3ba2e4589d729e5083bac472cacef662e984323e33a6",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationRegion.java": "27091a8c529f3aa2c76dfa1f46285dd8c9bbcb41a218895fb77d3ae64c2e4801",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaEmissionVerifier.java": "263a5e961eae608c6a33f69e5e59ac826dafd9cff42cf50a5788c3e08483e450",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaOperationRegistry.java": "3348454ea80e2d39e502f1b4f706391b3546256cc45a8b70b97e05c389f0306f",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaRegionLiveness.java": "03306fe5011f92f4b6f0e8a43f0507b95540387f33c73cadb109a243426bfa09",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaRegionSourceRewriter.java": "b7974258d878c3cb1774f7da74b7a30be84b89bb31a06b1425d2450bf5451bed",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaScalarMethodBody.java": "a54537c1b2dad5989eeb8ff9518d557b01b72ba2dbe27ed109fe203a3267c429",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathCleanUpOptions.java": "c10c4f2820ab373f60d41706fccb52fcbf1acbc75fbaaa026d8145b788616a78",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathExplanation.java": "85396e084e72118633373ea79fcffd96d6930e30ab4e1f47162504b7445e3956",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathSearchDerivation.java": "ba157548ee175b429913345f219fbbe9a3a832ec461048f19f270c41d7452e3d",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java": "298a3ac3d857ee8f3ea0088c979c1b57116a64e77aee1fa2926551846ff6db3c",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalJavadoc.java": "51a9f0814300e3e5d864f1bddeb272ade62313363b9a1f79b9a5b31cf341f053",
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/RuntimeCalculationPolicy.java": "87dbbc79c51a58c8166d12f0b91c70aa5f90f922996964527b7f92deafeee987"
+  },
+  "strict_replacements": 104,
+  "mathematical_replacements": 114,
+  "strict_regions": 2204,
+  "mathematical_regions": 2544,
+  "parsed_files": 3126,
+  "parse_errors": 10,
+  "strict_regions_retained_in_math": true,
+  "additional_regions": [
+    "org/bouncycastle/crypto/generators/CramerShoupParametersGenerator.java:104",
+    "org/bouncycastle/crypto/hash2curve/impl/GenericSqrtRatioCalculator.java:87",
+    "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:56",
+    "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:58",
+    "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:64",
+    "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java:65",
+    "org/bouncycastle/math/Primes.java:201",
+    "org/bouncycastle/math/Primes.java:222",
+    "org/bouncycastle/math/Primes.java:458",
+    "org/bouncycastle/pqc/crypto/sqisign/Ibz.java:552"
+  ],
+  "changed_generated_classes": {
+    "strict": 50,
+    "mathematical": 55
+  },
+  "external_product_classfiles_byte_identical_to_isolated_compilation": 48,
+  "evidence_sha256": {
+    "additional-big-integer-regions.txt": "53eec04f91596f4fd4c47bfe29e6395aeb58232e7621eeff9156ee4fe849acdf",
+    "mathematical-summary.txt": "7044d8d7035a2a3ed5d97b8999ecd640cc73cbd0b65da7ded88024f93a0bda1a",
+    "scan-inputs.json": "5a4781fd815a536daa37b3714d93745287b2898f8c643e36dc0346021ac4a5ab",
+    "strict-summary.txt": "6d42cddd426cded877247933db1c9c5d0a411892f27707433332c0d09f99cd69"
+  },
+  "qualification_limits": [
+    "Accepted-region counts and byte-exact Undo; not a claim of whole-library behavioral equivalence.",
+    "Ten source entries have parse errors in this Java17 setup.",
+    "No new whole-library compile or runtime-performance result is claimed."
+  ],
+  "sourceJavaCompliance": 17,
+  "scanOptions": {
+    "numericKinds": "BYTE,SHORT,CHAR,INT,LONG,FLOAT,DOUBLE,BIG_INTEGER",
+    "workBudgetPerFile": 1000000,
+    "maxStates": 20000,
+    "goal": "LOWER_ESTIMATED_RUNTIME",
+    "mathematicalOptIn": "false for strict; true for mathematical"
+  }
+}

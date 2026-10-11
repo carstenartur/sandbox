@@ -12,6 +12,7 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.jar.JarFile;
 import javax.tools.ToolProvider;
@@ -22,6 +23,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Javadoc;
 import org.eclipse.jface.text.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -56,7 +58,18 @@ class BouncyCastleBigIntegerTest {
         assertTrue(generated.contains("u.multiply(u).mod(p)"), generated);
         assertEquals(original.split("/\\*\\*", -1).length, generated.split("/\\*\\*", -1).length);
         assertTrue(generated.contains("reference identity"));
-        assertEquals(1, generated.split("reference identity", -1).length - 1, generated);
+        int documentedContracts = 0;
+        for (Object comment : parse(generated, dependency).getCommentList()) {
+            if (comment instanceof Javadoc documentation) {
+                String documentationSource = generated.substring(documentation.getStartPosition(),
+                        documentation.getStartPosition() + documentation.getLength());
+                documentedContracts += documentationSource.split("reference identity", -1).length - 1;
+            }
+        }
+        assertEquals(1, documentedContracts, "The method contract remains deduplicated in Javadoc");
+        assertEquals(4, generated.lines().filter(line -> line.stripLeading()
+                .startsWith("// Verified mathematics (MATHEMATICAL).")).count(),
+                "NONTRIVIAL explanations retain each verified region's changed contract");
         assertFalse(MathematicalAnalysis.analyze(parse(generated, dependency), generated, options,
                 new NullProgressMonitor(), -1, 0, environment).changed());
         try (var before = new IsolatedBC(compile(original, dependency), dependency);
@@ -185,7 +198,8 @@ class BouncyCastleBigIntegerTest {
     }
     private Path compile(String source, Path dependency, String entry) throws IOException {
         Path directory = Files.createTempDirectory(temporary, "compiled-"); Path file = directory.resolve(entry);
-        Files.createDirectories(file.getParent()); Files.writeString(file, source);
+        Files.createDirectories(Objects.requireNonNull(file.getParent(), "The fixture source must have a parent directory"));
+        Files.writeString(file, source);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-cp",
                 dependency.toString(), "-d", directory.toString(), file.toString()));
         return directory;

@@ -117,7 +117,7 @@ class StreamCoverageTest {
 		String original = source("Arrays.stream(new double[] {-0.0, Double.NaN, Double.POSITIVE_INFINITY})"
 				+ ".mapToLong(Double::doubleToRawLongBits).forEach(v -> result.add(label(v)));");
 		String target = repetition.getCurrentRepetition() % 2 == 0 ? "iterator_while" : "enhanced_for";
-		String converted = context.convert(original, target);
+		String converted = context.convert(original, target, false, true);
 		assertNotEquals(original, converted, context::cleanupDiagnostics);
 		assertEquals(converted, context.convert(converted, target), "A second cleanup pass is stable");
 	}

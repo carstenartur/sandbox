@@ -1,5 +1,13 @@
 # BigInteger coverage: inventory, causes and ten verified changes
 
+This report records the initial qualification of the BigInteger coverage follow-up
+with SDK revision `86e86415196063366c5b48089d5d49ac451077d5`. Its compile,
+native capture and 126-test results below are historical evidence for that
+revision. The current ae1c SDK, repeated corpus scan and 180-test qualification
+are recorded in the [current integration report](../2026-10-10-candidate-quality/README.md#modular-integration-qualification-2026-10-11).
+A passing native capture from the earlier revision does not qualify the current
+SDK/adapter.
+
 This follow-up investigates the concern that five BigInteger changes are too few.
 The result is **ten BigInteger computation replacements in five complete classes**,
 with 114 total replacements under mathematical opt-in. The default strict profile
@@ -75,9 +83,9 @@ has 114 replacements in 55 classes, versus 104 in 50 classes in strict mode.
 Every strict before/after replacement also appears unchanged in the mathematical
 scan. All 55 generated complete classes compile with `javac --release 17`.
 
-## Verification
+## Initial qualification (historical)
 
-The exact embedded SDK is built from Regelsuche
+At the initial qualification, the exact embedded SDK was built from Regelsuche
 `86e86415196063366c5b48089d5d49ac451077d5`, standalone SHA-256
 `34975f3f3fbd2096c654a0e7b80679d53cde6cf2b7242d2380f5380a1059c073`.
 Its recovered distribution is byte-identical to the previously qualified artifact;
@@ -107,7 +115,8 @@ pinned bundle requirement is preserved. A separate Tycho run compiles the plugin
 and test bundle but cannot launch that test offline because the target's
 `junit-jupiter-api.source_6.1.3.jar` is missing from the local cache.
 The earlier scoped SpotBugs run reported no findings in the three changed analysis classes.
-The native MathematicsHelpScreenshotsSWTBotTest passes through the registered
+At the initial qualification, the native MathematicsHelpScreenshotsSWTBotTest
+passed through the registered
 cleanup, exact preview, Apply, source compilation and byte-exact Undo for all five
 fixtures. The new BigInteger PNG and its complete provenance are in the Help
 plugin. Unrelated raster differences in the four existing images are not accepted.

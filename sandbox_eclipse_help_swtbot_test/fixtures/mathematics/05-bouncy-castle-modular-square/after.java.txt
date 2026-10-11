@@ -55,6 +55,25 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         final BigInteger B = this.curve.getB().toBigInteger();
         final BigInteger p = this.curve.getField().getCharacteristic();
 
+        // Verified mathematics (MATHEMATICAL).
+        // BigInteger numerical values are preserved; result reference identity may change. Where receivers are unproved, the optimized branch requires exact BigInteger instances with bitLength() below 4096 and positive guarded moduli or exponents; signed bases are allowed. Otherwise the original calculation executes. No extension of the BigInteger value range or constant-time execution is claimed.
+        // Premise: BIG_INTEGER_BIT_LENGTH_BOUND(u, 4096).
+        // Premise: BIG_INTEGER_BIT_LENGTH_BOUND(p, 4096).
+        // Premise: BIG_INTEGER_VALUE_SEMANTICS(u).
+        // Premise: BIG_INTEGER_VALUE_SEMANTICS(p).
+        // Premise: POSITIVE(p).
+        // Retain exact-receiver, non-null and magnitude guards for: p, u.
+        // Original values:
+        // tv1 = (u.modPow(new java.math.BigInteger("2"), p));
+        // Replacement values:
+        // tv1 = (u.multiply(u).mod(p));
+        // Recorded search path:
+        // Search step 1/1 [modpow-small-binary-chain]:
+        // tv1 = (u.multiply(u).mod(p));
+        // Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied.
+        // Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order.
+        // Independent numeric proof: AFFINE_MODULAR_NORMAL_FORM.
+        // Estimated operation work: 36 -> 10; not a timing measurement.
         BigInteger tv1;
         if ((p != null && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (u != null && u.getClass() == java.math.BigInteger.class && u.bitLength() < 4096)) {
         tv1 = (u.multiply(u).mod(p));
@@ -63,6 +82,25 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         tv1 = u.modPow(BigInteger.valueOf(2), p);
         }
         tv1 = this.z.multiply(tv1).mod(p);
+        // Verified mathematics (MATHEMATICAL).
+        // BigInteger numerical values are preserved; result reference identity may change. Where receivers are unproved, the optimized branch requires exact BigInteger instances with bitLength() below 4096 and positive guarded moduli or exponents; signed bases are allowed. Otherwise the original calculation executes. No extension of the BigInteger value range or constant-time execution is claimed.
+        // Premise: BIG_INTEGER_BIT_LENGTH_BOUND(tv1, 4096).
+        // Premise: BIG_INTEGER_BIT_LENGTH_BOUND(p, 4096).
+        // Premise: BIG_INTEGER_VALUE_SEMANTICS(tv1).
+        // Premise: BIG_INTEGER_VALUE_SEMANTICS(p).
+        // Premise: POSITIVE(p).
+        // Retain exact-receiver, non-null and magnitude guards for: p, tv1.
+        // Original values:
+        // tv2 = (tv1.modPow(new java.math.BigInteger("2"), p));
+        // Replacement values:
+        // tv2 = (tv1.multiply(tv1).mod(p));
+        // Recorded search path:
+        // Search step 1/1 [modpow-small-binary-chain]:
+        // tv2 = (tv1.multiply(tv1).mod(p));
+        // Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied.
+        // Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order.
+        // Independent numeric proof: AFFINE_MODULAR_NORMAL_FORM.
+        // Estimated operation work: 36 -> 10; not a timing measurement.
         BigInteger tv2;
         if ((p != null && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (tv1 != null && tv1.getClass() == java.math.BigInteger.class && tv1.bitLength() < 4096)) {
         tv2 = (tv1.multiply(tv1).mod(p));
@@ -75,12 +113,58 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         tv3 = B.multiply(tv3).mod(p);
         BigInteger tv4 = H2cUtils.cmov(this.z, tv2.negate(), !tv2.equals(BigInteger.ZERO));
         tv4 = A.multiply(tv4).mod(p);
+        // Verified mathematics (MATHEMATICAL).
+        // BigInteger numerical values are preserved; result reference identity may change. Where receivers are unproved, the optimized branch requires exact BigInteger instances with bitLength() below 4096 and positive guarded moduli or exponents; signed bases are allowed. Otherwise the original calculation executes. No extension of the BigInteger value range or constant-time execution is claimed.
+        // Premise: BIG_INTEGER_BIT_LENGTH_BOUND(tv3, 4096).
+        // Premise: BIG_INTEGER_BIT_LENGTH_BOUND(p, 4096).
+        // Premise: BIG_INTEGER_VALUE_SEMANTICS(tv3).
+        // Premise: BIG_INTEGER_VALUE_SEMANTICS(p).
+        // Premise: POSITIVE(p).
+        // Retain exact-receiver, non-null and magnitude guards for: p, tv3.
+        // Original values:
+        // tv2 = (tv3.modPow(new java.math.BigInteger("2"), p));
+        // Replacement values:
+        // tv2 = (tv3.multiply(tv3).mod(p));
+        // Recorded search path:
+        // Search step 1/1 [modpow-small-binary-chain]:
+        // tv2 = (tv3.multiply(tv3).mod(p));
+        // Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied.
+        // Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order.
+        // Independent numeric proof: AFFINE_MODULAR_NORMAL_FORM.
+        // Estimated operation work: 36 -> 10; not a timing measurement.
         if ((p != null && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (tv3 != null && tv3.getClass() == java.math.BigInteger.class && tv3.bitLength() < 4096)) {
         tv2 = (tv3.multiply(tv3).mod(p));
         } else {
         // Mathematics fallback: unchanged original Java behavior.
         tv2 = tv3.modPow(BigInteger.valueOf(2), p);
         }
+        // Verified mathematics (MATHEMATICAL).
+        // BigInteger numerical values are preserved; result reference identity may change. Where receivers are unproved, the optimized branch requires exact BigInteger instances with bitLength() below 4096 and positive guarded moduli or exponents; signed bases are allowed. Otherwise the original calculation executes. No extension of the BigInteger value range or constant-time execution is claimed.
+        // Premise: BIG_INTEGER_BIT_LENGTH_BOUND(tv4, 4096).
+        // Premise: BIG_INTEGER_BIT_LENGTH_BOUND(p, 4096).
+        // Premise: BIG_INTEGER_BIT_LENGTH_BOUND(A, 4096).
+        // Premise: BIG_INTEGER_VALUE_SEMANTICS(tv4).
+        // Premise: BIG_INTEGER_VALUE_SEMANTICS(p).
+        // Premise: BIG_INTEGER_VALUE_SEMANTICS(A).
+        // Premise: POSITIVE(p).
+        // Retain exact-receiver, non-null and magnitude guards for: A, p, tv4.
+        // Original values:
+        // final java.math.BigInteger _math0 = tv4.modPow(new java.math.BigInteger("2"), p);
+        // tv6 = _math0;
+        // tv5 = ((A.multiply(_math0)).mod(p));
+        // Replacement values:
+        // final java.math.BigInteger _math0 = tv4.multiply(tv4).mod(p);
+        // tv6 = _math0;
+        // tv5 = (A.multiply(_math0).mod(p));
+        // Recorded search path:
+        // Search step 1/1 [modpow-small-binary-chain]:
+        // final java.math.BigInteger _math0 = tv4.multiply(tv4).mod(p);
+        // tv6 = _math0;
+        // tv5 = (A.multiply(_math0).mod(p));
+        // Each compound proposal is one recorded search step; no unrecorded primitive expansion is implied.
+        // Selected edges were regenerated and independently checked; the original trace still governs exceptions and evaluation order.
+        // Independent numeric proof: AFFINE_MODULAR_NORMAL_FORM.
+        // Estimated operation work: 44 -> 20; not a timing measurement.
         BigInteger tv6;
         BigInteger tv5;
         if ((A != null && A.getClass() == java.math.BigInteger.class && A.bitLength() < 4096) && (p != null && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (tv4 != null && tv4.getClass() == java.math.BigInteger.class && tv4.bitLength() < 4096)) {
