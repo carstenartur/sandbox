@@ -1,51 +1,51 @@
 {
-  "buildCommand": "mvn -B -ntp -Psdk-release -pl regelsuche-optimization-sdk -am clean install -Dproject.build.outputTimestamp=1791685443",
+  "buildCommand": "mvn --batch-mode --no-transfer-progress -Psdk-release -pl regelsuche-optimization-sdk -am clean install -Dproject.build.outputTimestamp=1791737415",
   "buildLogSha256": {
-    "build-1.log": "c59fae93d0640d445e60d5da36d245cec954462237e4ba11f47dca5ae153cdb8",
-    "build-2.log": "998441d859aee89cd424565a1a68440ea8fe2b531c7918e06f908e1d45e5e1bb"
+    "first-maven.log": "6e44e05660be90dde367e5f4d78f71f1d5ed42c057a954304de1d554e3e7b30e",
+    "second-maven.log": "4ba3de7eea01558db882b81b8d390a01696ac735bb6f712a0836739033a274e5"
   },
   "cleanBuilds": 2,
   "comparison": "Exact byte comparison of all distribution files; matching SHA-256 digests recorded below.",
   "distributionFiles": {
-    "regelsuche-optimization-sdk-0.5.0-issue1657-ae1c39ea50cf-qualification.json": {
+    "regelsuche-optimization-sdk-0.5.0-issue1657-6a29154e217e-qualification.json": {
       "bytes": 1841,
-      "sha256": "4ecc906c25346605a234d33f06e29d33c6109d12903146b15aacbf98b75e0879"
+      "sha256": "799d84b1a10ae2e70d6922e09d9714c8d0de0c0e032111b56ef8d09cb87f0b13"
     },
-    "regelsuche-optimization-sdk-0.5.0-issue1657-ae1c39ea50cf.zip": {
-      "bytes": 7677812,
-      "sha256": "977e84997901f3611a223a4ded1b980fb5a639980ca60d6b1e9cd17203751827"
+    "regelsuche-optimization-sdk-0.5.0-issue1657-6a29154e217e.zip": {
+      "bytes": 7685331,
+      "sha256": "0691790530fe0400361e661fead96466bb99d9e1875ab77177981c37b5be45ee"
     },
-    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-ae1c39ea50cf/regelsuche-optimization-sdk-0.5.0-issue1657-ae1c39ea50cf-all.jar": {
-      "bytes": 6701504,
-      "sha256": "20f6a81c83a894c595f5447c72bebfc4e83c0503f16285b22d45f506af5e4e2b"
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-6a29154e217e/regelsuche-optimization-sdk-0.5.0-issue1657-6a29154e217e-all.jar": {
+      "bytes": 6708193,
+      "sha256": "d1efa15f487872ca46fab9b4d8640495f8df19ea9e354ee52d08f885e59afea7"
     },
-    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-ae1c39ea50cf/regelsuche-optimization-sdk-0.5.0-issue1657-ae1c39ea50cf-all.jar.sha256": {
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-6a29154e217e/regelsuche-optimization-sdk-0.5.0-issue1657-6a29154e217e-all.jar.sha256": {
       "bytes": 65,
-      "sha256": "d026449eeb390bf8fc633e6c69f2a57043feda22a1efde720d27df2b8c4a1fc4"
+      "sha256": "8d57b1978be853308e3bb1cd5e1a84aa70d534218b67130918ec25c7a6a866c6"
     },
-    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-ae1c39ea50cf/regelsuche-optimization-sdk-0.5.0-issue1657-ae1c39ea50cf-javadoc.jar": {
-      "bytes": 371816,
-      "sha256": "98355a820435a7d27cad3c73b4501aa8282a24f4867e5edc788d3923c2376428"
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-6a29154e217e/regelsuche-optimization-sdk-0.5.0-issue1657-6a29154e217e-javadoc.jar": {
+      "bytes": 372000,
+      "sha256": "84092b22906241c5ffda52ea9fee205fc9d6cbdcccb5c3cb5f986246aa00e6ec"
     },
-    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-ae1c39ea50cf/regelsuche-optimization-sdk-0.5.0-issue1657-ae1c39ea50cf-javadoc.jar.sha256": {
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-6a29154e217e/regelsuche-optimization-sdk-0.5.0-issue1657-6a29154e217e-javadoc.jar.sha256": {
       "bytes": 65,
-      "sha256": "1075c3c5aa051508b5941095ef8ce72a7b0f8c41f19b49adb0bec3b00e226575"
+      "sha256": "14ce6b8577362bb3be496a1915e21ac55cb60e2738896b0aff14326f4884784a"
     },
-    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-ae1c39ea50cf/regelsuche-optimization-sdk-0.5.0-issue1657-ae1c39ea50cf-sources.jar": {
-      "bytes": 1183428,
-      "sha256": "56c61cc82af57a5ce81e0bbaf7659da290e2bc68d2883503a58c8971c4fe1667"
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-6a29154e217e/regelsuche-optimization-sdk-0.5.0-issue1657-6a29154e217e-sources.jar": {
+      "bytes": 1184553,
+      "sha256": "83f3959115fe40caef801a32b0048716d432938af23d3a58d9d3863404cc6bee"
     },
-    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-ae1c39ea50cf/regelsuche-optimization-sdk-0.5.0-issue1657-ae1c39ea50cf-sources.jar.sha256": {
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-6a29154e217e/regelsuche-optimization-sdk-0.5.0-issue1657-6a29154e217e-sources.jar.sha256": {
       "bytes": 65,
-      "sha256": "f56d5d7d5f4dbe0fe887dd08db6596cdd1b29b1e402ae2acbe650c13f9aba3b9"
+      "sha256": "6ad258eaaaf9e48b919f79e66f6391a8b58129abecdb6e611de449d874c11d89"
     },
-    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-ae1c39ea50cf/regelsuche-optimization-sdk-0.5.0-issue1657-ae1c39ea50cf.pom": {
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-6a29154e217e/regelsuche-optimization-sdk-0.5.0-issue1657-6a29154e217e.pom": {
       "bytes": 458,
-      "sha256": "d5c99bd2eba11d39b48a08a2f77dcaaef33ab4f4777d36eb5022c02dd52249ea"
+      "sha256": "e2570c5c3a619e250cf83f168a4499be6ac8edb45d4df88e4c37f9dc44676eec"
     },
-    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-ae1c39ea50cf/regelsuche-optimization-sdk-0.5.0-issue1657-ae1c39ea50cf.pom.sha256": {
+    "repository/de/regelsuche/regelsuche-optimization-sdk/0.5.0-issue1657-6a29154e217e/regelsuche-optimization-sdk-0.5.0-issue1657-6a29154e217e.pom.sha256": {
       "bytes": 65,
-      "sha256": "2b2849d44ec1e083db6502e1d32910fc2caefeae7adafc04a43385f43d98d301"
+      "sha256": "c81e149c3741d58848b02927dc62b32382d013b92b06a90f899cdedad766eeda"
     }
   },
   "errorsPerBuild": 0,
@@ -53,27 +53,30 @@
   "freshConsumers": 2,
   "identicalDistributionFiles": 10,
   "integrationStatus": "qualified-published-source-ready-for-sandbox-review",
-  "mathAlgorithmsTestsPerBuild": 323,
-  "modularDomainTestsPerBuild": 7,
-  "modularProductResidueTestsPerBuild": 4,
-  "modularTestsPerBuild": 11,
-  "outputTimestamp": 1791685443,
+  "mathAlgorithmsTestsPerBuild": 333,
+  "modularTestClassesPerBuild": {
+    "de.regelsuche.math.algorithms.modular.ModularArithmeticCongruenceTest": 10,
+    "de.regelsuche.math.algorithms.modular.ModularComputationDomainTest": 7,
+    "de.regelsuche.math.algorithms.modular.ModularProductResidueTest": 4
+  },
+  "modularTestsPerBuild": 21,
+  "outputTimestamp": 1791737415,
   "packager": "scripts/package-optimization-sdk.py",
   "publiclyPublished": false,
   "qualificationScope": "Two clean SDK dependency reactor builds and two standalone consumers at the exact published source revision.",
-  "reactorTestsPerBuild": 2359,
-  "sdkTestsPerBuild": 120,
+  "reactorTestsPerBuild": 2378,
+  "sdkTestsPerBuild": 129,
   "skippedPerBuild": 0,
   "sourceCleanAfterQualification": true,
-  "sourceRevision": "ae1c39ea50cff685fe843b0357c818f38db6ec79",
-  "sourceTree": "676a5f1f13c624c2b73dede19830a72c20ad5543",
-  "standaloneJarSha256": "20f6a81c83a894c595f5447c72bebfc4e83c0503f16285b22d45f506af5e4e2b",
+  "sourceRevision": "6a29154e217ea8748257cfda0340eb463ff157b2",
+  "sourceTree": "851eab2bb44d0f844416e8bf773752dff80af209",
+  "standaloneJarSha256": "d1efa15f487872ca46fab9b4d8640495f8df19ea9e354ee52d08f885e59afea7",
   "status": "PASS",
   "toolchain": {
     "consumerJdkJavaOptions": "-XX:-UsePerfData",
     "java": "Temurin 25.0.2+10",
     "maven": "3.9.16",
-    "mavenJdkJavaOptions": "-XX:-UsePerfData -Djavax.net.ssl.trustStore=/etc/ssl/certs/java/cacerts"
+    "mavenJdkJavaOptions": "-XX:-UsePerfData"
   },
-  "version": "0.5.0-issue1657-ae1c39ea50cf"
+  "version": "0.5.0-issue1657-6a29154e217e"
 }

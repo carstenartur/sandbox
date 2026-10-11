@@ -36,6 +36,8 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.ArrayCreation;
+import org.eclipse.jdt.core.dom.ArrayInitializer;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CastExpression;
@@ -1086,6 +1088,8 @@ public final class JavaComputationExtractor {
                } catch (NumberFormatException invalidNumber) {
                   return null;
                }
+            } else if (initializer instanceof ClassInstanceCreation construction) {
+               return byteArrayMagnitudeBound(construction);
             } else {
                return initializer instanceof Name name
                      && name.resolveBinding() instanceof IVariableBinding constant
@@ -1098,6 +1102,50 @@ public final class JavaComputationExtractor {
          } else {
             return null;
          }
+      }
+
+      /** Array contents may change, but a captured array's length bounds either byte-array constructor. */
+      private Integer byteArrayMagnitudeBound(ClassInstanceCreation construction) {
+         IMethodBinding constructor = construction.resolveConstructorBinding();
+         if (construction.getAnonymousClassDeclaration() != null || constructor == null || constructor.isRecovered()
+               || !constructor.getDeclaringClass().getQualifiedName().equals("java.math.BigInteger")) return null;
+         ITypeBinding[] parameters = constructor.getParameterTypes();
+         int magnitudeIndex = parameters.length == 1 ? 0
+               : parameters.length == 2 && parameters[0].getQualifiedName().equals("int") ? 1 : -1;
+         if (magnitudeIndex < 0 || !byteArray(parameters[magnitudeIndex])) return null;
+         Expression magnitude = (Expression) construction.arguments().get(magnitudeIndex);
+         while (magnitude instanceof ParenthesizedExpression parenthesized) magnitude = parenthesized.getExpression();
+         if (magnitude instanceof Name name && name.resolveBinding() instanceof IVariableBinding array) {
+            if (array.isRecovered() || array.isField() || !array.isEffectivelyFinal() || !byteArray(array.getType())) return null;
+            VariableDeclarationFragment declaration = declarations.get(array.getKey());
+            if (declaration == null || declaration.getStartPosition() >= construction.getStartPosition()) return null;
+            magnitude = declaration.getInitializer();
+            while (magnitude instanceof ParenthesizedExpression parenthesized) magnitude = parenthesized.getExpression();
+         }
+         long length;
+         if (magnitude instanceof ArrayInitializer initializer) {
+            length = initializer.expressions().size();
+         } else if (magnitude instanceof ArrayCreation allocation && byteArray(allocation.resolveTypeBinding())) {
+            if (allocation.getInitializer() != null) {
+               length = allocation.getInitializer().expressions().size();
+            } else if (allocation.dimensions().size() == 1) {
+               Object constant;
+               try {
+                  constant = validatedConstant((Expression) allocation.dimensions().getFirst());
+               } catch (Rejected unprovedOrigin) {
+                  return null;
+               }
+               if (constant instanceof Number number) length = number.longValue();
+               else if (constant instanceof Character character) length = character.charValue();
+               else return null;
+            } else return null;
+         } else return null;
+         return length >= 0 && length <= 512 ? (int) length * 8 : null;
+      }
+
+      private static boolean byteArray(ITypeBinding type) {
+         return type != null && !type.isRecovered() && type.isArray() && type.getDimensions() == 1
+               && type.getElementType().getQualifiedName().equals("byte");
       }
 
       boolean nonnegativeIntegral(Expression expression) {
