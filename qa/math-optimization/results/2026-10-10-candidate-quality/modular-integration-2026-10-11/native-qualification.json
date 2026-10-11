@@ -1,6 +1,7 @@
 {
   "schema": "sandbox.math.native-five-fixture-qualification/v1",
   "status": "PASS",
+  "statusScope": "Historical local native qualification; current hosted screenshot byte gate recorded separately below.",
   "test": "MathematicsHelpScreenshotsSWTBotTest",
   "tests": 2,
   "failures": 0,
@@ -32,12 +33,35 @@
     "02-bouncy-castle-majority": "9fe1c1111cbef3fe0ff138aa8dfd725c9f3497257d160fe9fe8b2d0866bd93a4",
     "03-bouncy-castle-long": "92d47a8c164483fc55fbb653ed445b789653acc3a08a6209a9279987bb86159d",
     "04-bouncy-castle-swapped-choice": "094362aab9b6cea4ad134d318d187159fb3aed3a966b8fd73612b21c3364b793",
-    "05-bouncy-castle-modular-square": "b42c74f55f4a17af7ac56938b6e5f97a9e91e258d93bc218f6966a3234b81cf2"
+    "05-bouncy-castle-modular-square": "08e89ae29487e129406f1d7d2ff6ff7ccbded4621bb7d2b3cc68f4cf0fe961b7"
   },
   "retainedCIArtifact": "artifact 11689872638 / run 38106062712 / source head 7e38cf55c6c64f067dbeaa3f7556397e048224c1 / retained baseline 20082ff2c4ab23d07223749fcca7cdd66c15197e",
   "retainedCISelection": "First4images only; exact1172pixelDialogLabelVariance,maxdelta140. Original native captures retained separately; JSONs distinguish render and current source execution origins.",
   "fixture05AfterSha256": "b24d94aa44673134034d8f1c541f3433498b387dca0e24c5e22fd20de9f1d0cd",
   "fixture05Contract": "4InlineExplanations+1JavadocContract; actualnativePNGused",
-  "qualificationObservation": "The first successful Maven reactor left historical05files at exit; root cause of restoration remains unresolved. Fresh-workspace directUI recheck wrote current05files, observed and archived via inotify; selected05files equal those actual writes.",
-  "fullCIScreenshotByteReproduction": "Separate finalCIgate; no fullCIbytePASSclaimed."
+  "qualificationObservation": "The first successful Maven reactor left historical fixture 05 files at exit; the restoration cause remains unresolved. The fresh-workspace direct UI recheck wrote current fixture 05 files, observed and archived via inotify. Historical local native files equal those writes; the current selection uses the verbatim hosted capture below.",
+  "fullCIScreenshotByteReproduction": "Run 38127383284, attempt 2, FAILED against the historical local fixture 05 PNG. The corrected selection requires hosted byte reproduction on the updated head; no PASS is claimed.",
+  "currentCICapture": {
+    "runId": 38127383284,
+    "attempt": 2,
+    "jobId": 114452137313,
+    "artifactId": 11699799777,
+    "artifactURL": "https://github.com/carstenartur/sandbox/actions/runs/38127383284/artifacts/11699799777",
+    "artifactArchiveSha256": "3a76ad082624f388afded4f5d350d56422b01e249e3e90071de5baa874fc5cf0",
+    "sourceHead": "ab996442be2b92206a5516724e30463ef3c74423",
+    "actualCheckout": "d55e2364011a052565e6f1a102816495f3843feb",
+    "actualTree": "681466e6b97af4ee8454b0b8480ee56c0f37eeba",
+    "checkoutTreeEqualsSourceHeadTree": true,
+    "nativeMergeGateTests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "selected05PngSha256": "08e89ae29487e129406f1d7d2ff6ff7ccbded4621bb7d2b3cc68f4cf0fe961b7",
+    "pngAndProvenanceVerbatimFromArtifact": true,
+    "beforeAfterSourceByteExact": true,
+    "provenanceSemanticDelta": "Only evidence.screenshotSha256 differs from historical local fixture 05 provenance.",
+    "localToCIPixelDifference": "1,175 UI icon pixels; exclusive bounding box [13, 13, 1267, 796]; maximum channel delta 140; zero source panel differences and zero differences outside the icon regions.",
+    "technicalRenderingCause": "Unproven. This selection uses verbatim CI bytes; source fixtures, SDK and verifier are unchanged.",
+    "byteGateStatus": "FAILED on the source head; the new selection awaits the updated head's hosted byte gate."
+  }
 }

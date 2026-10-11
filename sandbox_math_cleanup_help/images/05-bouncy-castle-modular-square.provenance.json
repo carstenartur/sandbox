@@ -28,7 +28,7 @@
     "kinds": "BIG_INTEGER",
     "mathematicalOptIn": "true",
     "packageName": "org.bouncycastle.crypto.hash2curve.impl",
-    "screenshotSha256": "b42c74f55f4a17af7ac56938b6e5f97a9e91e258d93bc218f6966a3234b81cf2",
+    "screenshotSha256": "08e89ae29487e129406f1d7d2ff6ff7ccbded4621bb7d2b3cc68f4cf0fe961b7",
     "sdkOptimizationSourceRevision": "ae1c39ea50cff685fe843b0357c818f38db6ec79",
     "sdkSha256": "20f6a81c83a894c595f5447c72bebfc4e83c0503f16285b22d45f506af5e4e2b",
     "sourceArchive": "bcprov.source-1.85.2.jar",

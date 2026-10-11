@@ -58,7 +58,8 @@ At reactor exit, fixture 05's PNG/provenance had reverted to historical files;
 the restoration cause remains unresolved. A bounded rerun of the same already
 built UI harness in a fresh workspace passed both tests at 03:19:47 UTC. An
 inotify observer independently archived the actual current 05 writes. Those
-files remained current after this direct UI exit and are the selected 05 capture.
+files remained current after this direct UI exit and supplied the historical local
+05 capture (`b42c74f55f4a17af7ac56938b6e5f97a9e91e258d93bc218f6966a3234b81cf2`).
 No passing whole-CI screenshot byte reproduction is inferred from either run.
 
 For the first four images, the actual local render was byte-identical to the
@@ -67,9 +68,22 @@ by the known 1,172-pixel dialog-label variance (maximum RGB delta 140); the enti
 source area was identical. Those four PNGs therefore retain the exact CI bytes.
 Their new actual ae1c capture provenance explicitly distinguishes the current
 source execution from the retained e3e795e CI raster and records the native PNG
-hash separately. The fifth PNG is the new actual native capture. No raster data
-or verifier was altered. Final full-CI screenshot byte reproduction, complete
-Tycho/P2 and distribution installation gates remain separate.
+hash separately. The fifth PNG now selects the exact native CI capture described
+below. No raster data or verifier was altered. Complete Tycho/P2, distribution
+installation and screenshot byte reproduction remain separate gates.
+
+Hosted Help [run 38127383284](https://github.com/carstenartur/sandbox/actions/runs/38127383284),
+attempt 2, job 114452137313, passed all nine native merge-gate tests on checkout
+`d55e2364011a052565e6f1a102816495f3843feb`, tree `681466e6b97af4ee8454b0b8480ee56c0f37eeba`
+(the exact tree of PR head `ab996442be2b92206a5516724e30463ef3c74423`). The selected fifth
+PNG/provenance are verbatim from [artifact 11699799777](https://github.com/carstenartur/sandbox/actions/runs/38127383284/artifacts/11699799777),
+archive SHA-256 `3a76ad082624f388afded4f5d350d56422b01e249e3e90071de5baa874fc5cf0`.
+PNG SHA-256 is `08e89ae29487e129406f1d7d2ff6ff7ccbded4621bb7d2b3cc68f4cf0fe961b7`.
+Before/after source and all provenance fields except screenshot hash are exact.
+The historical local image differs in 1,175 UI-icon pixels; source panels are
+pixel-identical. The technical rendering cause remains unproven. This attempt
+failed its byte gate against the local raster; selection is not a passing gate,
+and the updated head still requires fresh hosted byte reproduction.
 
 ## Historical review qualification, 2026-10-11 (#1690)
 
