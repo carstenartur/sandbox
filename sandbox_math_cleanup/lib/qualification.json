@@ -3,26 +3,26 @@
   "consumer": {
     "emptyDependencyCache": true,
     "freshDirectory": true,
-    "output": "optimization=VERIFIED\nchecked=ORIGINAL_OVERFLOW_DETECTED"
+    "output": "optimization=VERIFIED\nderivation=REPLAYED_SELECTED_PATH\nchecked=ORIGINAL_OVERFLOW_DETECTED"
   },
   "inputs": {
     "jackson-annotations-2.22.jar": "21ddb598807d3a51a876704eb979d9296e1c6a6f47ab1826ff88c6d6a127a2d0",
     "jackson-core-2.22.3.jar": "8a501126a385b25841915d839508f8a66e2a0dbc8a6709d055ef3b3e852b094c",
     "jackson-databind-2.22.3.jar": "556db5439e206114346043f68d200497dc96a0bca62a360a81784092ebd0e0a9",
     "jackson-dataformat-yaml-2.22.3.jar": "2bcbc3b9abaefbeba11409b9e30ec35ed7071a61a47c8c2a9c688e40e45b90f9",
-    "regelsuche-core-0.5.0-SNAPSHOT.jar": "fa5210454a611493ab924a949d4894d7b4284e362beda22d6be8158ea508ac6d",
-    "regelsuche-egraph-0.5.0-SNAPSHOT.jar": "b761a36129d2f9f702cd1cd84da6b719cec5f62f366a1f66c571e58dd10e7054",
-    "regelsuche-math-algorithms-0.5.0-SNAPSHOT.jar": "4b98dc46587bb3555dd3a1504f20e75b0f309d4e998b9768d826eda50944452c",
-    "regelsuche-optimization-sdk-0.5.0-SNAPSHOT.jar": "c46abdcbe506be8d150f81fafe44e30fd383a3278a63c1fa3d71070350199fd5",
-    "regelsuche-search-0.5.0-SNAPSHOT.jar": "b7d92a72208dd2aa2946f95be9de9346f259390fd1f73a26319f5bdcc16a41c6",
-    "regelsuche-validation-0.5.0-SNAPSHOT.jar": "47b9b0848beedfdac920a793066d39859c90621bc66db3f5f51b2b7f3a081300",
+    "regelsuche-core-0.5.0-SNAPSHOT.jar": "b6c6b70eaf9e166a751e08316ff25e4911b2f1a510e1e64930f3fcf5fa2808a7",
+    "regelsuche-egraph-0.5.0-SNAPSHOT.jar": "70ed8763f645aa7997e9d151c007b09702b315be57e733090056b7e628ff4230",
+    "regelsuche-math-algorithms-0.5.0-SNAPSHOT.jar": "bef63b53bfae7c4552eeb87f10aa8c3b3e8caefa36be80e7edde7bbe5e179080",
+    "regelsuche-optimization-sdk-0.5.0-SNAPSHOT.jar": "1c8f4db8de00936699fb26d00b2a892eda6d33071dd6b97bcd7dba3d21769771",
+    "regelsuche-search-0.5.0-SNAPSHOT.jar": "6f799e9ec176f2c39b33ef4daf36130a29c40343b06816a8805b4cdeba4a2d26",
+    "regelsuche-validation-0.5.0-SNAPSHOT.jar": "27092d66163443ac6ba2f58049cd69be26e11af85fd3493d482923d0ff5227ef",
     "snakeyaml-2.5.jar": "e6682acf1ace77508ef13649cbf4f8d09d2cf5457bdb61d25ffb6ac0233d78dd"
   },
   "javaRelease": 25,
   "publiclyPublished": false,
   "schema": "regelsuche.optimization-distribution/v1",
   "semanticsRevision": "java25-numeric/v1",
-  "sourceRevision": "409083a58ab28d14fb3ce02adb2938dd9b92eb5f",
-  "standaloneJarSha256": "a6a7b5668f95a8abc13ff87b455cca4a44b29a3503a67c25d445ea312ba53081",
-  "version": "0.5.0-issue1657-409083a58ab2"
+  "sourceRevision": "c48d160800a5d1ab82a7adbb0804be768256e94b",
+  "standaloneJarSha256": "66ca6bba75ca3feb528ad9f3022730d451330e4905fb59e0b3c9643b593426ea",
+  "version": "0.5.0-issue1657-c48d160800a5"
 }

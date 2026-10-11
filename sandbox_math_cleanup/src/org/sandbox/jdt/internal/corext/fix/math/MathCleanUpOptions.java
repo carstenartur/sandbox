@@ -22,7 +22,9 @@ import de.regelsuche.sdk.optimization.SafetyProfile;
 /** Immutable explicit numerical contract, independent of the host Java level. */
 public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety,
         OptimizationGoal goal, long workBudget, int maxStates, boolean checkedOptIn,
-        int targetJava, List<String> exclusions) {
+        int targetJava, List<String> exclusions, ExplanationMode explanations) {
+ public enum ExplanationMode { NONE, NONTRIVIAL, ALL }
+ public static final String EXPLANATIONS = "cleanup.mathematics.explanations";
  public static final String CLEANUP = "cleanup.mathematics";
  public static final String KINDS = "cleanup.mathematics.numericKinds";
  public static final String SAFETY = "cleanup.mathematics.safetyProfile";
@@ -33,9 +35,16 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
  public static final String EXCLUSIONS = "cleanup.mathematics.exclusions";
  public static final String UNDERFLOW = "cleanup.mathematics.underflowChecks";
  public static final String CHECKED_WARNING = "CHECKED_THROW changes the Java contract: numerical violations may throw ArithmeticException. Both the original and replacement operations must be checked.";
- private static final Set<String> KEYS= Set.of(CLEANUP,KINDS,SAFETY,GOAL,WORK_BUDGET,MAX_STATES,CHECKED_OPT_IN,EXCLUSIONS,UNDERFLOW);
+ private static final Set<String> KEYS= Set.of(CLEANUP,KINDS,SAFETY,GOAL,WORK_BUDGET,MAX_STATES,CHECKED_OPT_IN,EXCLUSIONS,UNDERFLOW,EXPLANATIONS);
 
+ /** Existing programmatic callers retain their explicitly comment-free output. */
+ public MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety,
+   OptimizationGoal goal, long workBudget, int maxStates, boolean checkedOptIn,
+   int targetJava, List<String> exclusions) {
+  this(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,ExplanationMode.NONE);
+ }
  public MathCleanUpOptions {
+  Objects.requireNonNull(explanations,"explanations");
   Objects.requireNonNull(kinds,"kinds"); Objects.requireNonNull(safety,"safety");
   Objects.requireNonNull(goal,"goal"); Objects.requireNonNull(exclusions,"exclusions");
   if(kinds.isEmpty()) throw new IllegalArgumentException("Select at least one numeric kind");
@@ -54,7 +63,7 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
 
  public static MathCleanUpOptions defaults(int targetJava) {
   return new MathCleanUpOptions(false,Set.of(NumericKind.BIG_INTEGER),SafetyProfile.PRESERVE_JAVA,
-    OptimizationGoal.LOWER_ESTIMATED_RUNTIME,100_000,2000,false,targetJava,List.of());
+    OptimizationGoal.LOWER_ESTIMATED_RUNTIME,100_000,2000,false,targetJava,List.of(),ExplanationMode.NONTRIVIAL);
  }
 
  public static MathCleanUpOptions parse(Map<String,String> values,int targetJava) {
@@ -78,7 +87,8 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
     Long.parseLong(values.getOrDefault(WORK_BUDGET,Long.toString(defaults.workBudget))),
     Integer.parseInt(values.getOrDefault(MAX_STATES,Integer.toString(defaults.maxStates))),
     bool(values,CHECKED_OPT_IN,false),targetJava,
-    paths.isEmpty()?List.of():Arrays.stream(paths.split(";",-1)).map(String::trim).toList());
+    paths.isEmpty()?List.of():Arrays.stream(paths.split(";",-1)).map(String::trim).toList(),
+    ExplanationMode.valueOf(values.getOrDefault(EXPLANATIONS,defaults.explanations.name())));
  }
 
  public Map<String,String> toMap() {
@@ -88,7 +98,7 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
   values.put(SAFETY,safety.name());values.put(GOAL,goal.name());
   values.put(WORK_BUDGET,Long.toString(workBudget));values.put(MAX_STATES,Integer.toString(maxStates));
   values.put(CHECKED_OPT_IN,Boolean.toString(checkedOptIn));values.put(EXCLUSIONS,String.join(";",exclusions));
-  values.put(UNDERFLOW,"false");return Map.copyOf(values);
+  values.put(UNDERFLOW,"false");values.put(EXPLANATIONS,explanations.name());return Map.copyOf(values);
  }
 
  private static boolean bool(Map<String,String> values,String key,boolean fallback) {
