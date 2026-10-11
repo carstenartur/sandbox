@@ -10,9 +10,10 @@ import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 
 class MathematicalOptionsInitializerTest {
- @Test void defaultsSupplyExactlyTheNineNormalizedDisabledOptions() {
+ @Test void defaultsSupplyExactlyTheTenNormalizedDisabledOptions() {
   CleanUpOptions options=new CleanUpOptions();new MathematicalOptionsInitializer().setDefaultOptions(options);
-  assertEquals(9,options.getKeys().size());
+  assertEquals(10,options.getKeys().size());
+  assertEquals("NONTRIVIAL",options.getValue(MathCleanUpOptions.EXPLANATIONS));
   MathCleanUpOptions.defaults(25).toMap().forEach((key,value)->assertEquals(value,options.getValue(key)));
   assertEquals(CleanUpOptions.FALSE,options.getValue(MathCleanUpOptions.CLEANUP));
   assertEquals("BIG_INTEGER",options.getValue(MathCleanUpOptions.KINDS));
