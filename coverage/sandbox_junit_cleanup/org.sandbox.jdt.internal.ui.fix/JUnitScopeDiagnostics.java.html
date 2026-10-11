@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JUnitScopeDiagnostics.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_junit_cleanup</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.fix</a> &gt; <span class="el_source">JUnitScopeDiagnostics.java</span></div><h1>JUnitScopeDiagnostics.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.fix;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IJavaElement;
+import org.eclipse.jdt.core.IJavaProject;
+
+import org.sandbox.jdt.cleanup.multifile.RelatedCompilationUnitSearch;
+import org.sandbox.jdt.internal.corext.fix.multifile.JUnitScopeCandidateDetector.SearchSeeds;
+
+/** Optional stderr observations of decisions already made by the normal scope path. */
+final class JUnitScopeDiagnostics {
+	private static final String PROPERTY= &quot;sandbox.junit.scope.diagnostics&quot;; //$NON-NLS-1$
+<span class="fc" id="L24">	private static final Expansion DISABLED= new Expansion(null, null, null);</span>
+
+	private JUnitScopeDiagnostics() {
+	}
+
+	private static boolean enabled() {
+		try {
+<span class="fc" id="L31">			return Boolean.getBoolean(PROPERTY);</span>
+<span class="nc" id="L32">		} catch (RuntimeException error) {</span>
+<span class="nc" id="L33">			diagnosticError(&quot;property&quot;, error); //$NON-NLS-1$</span>
+<span class="nc" id="L34">			return false;</span>
+		}
+	}
+
+	static Expansion expansion(IJavaProject project, Set&lt;String&gt; selected, Set&lt;String&gt; pending) {
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">		return enabled() ? new Expansion(project, selected, pending) : DISABLED;</span>
+	}
+
+	static final class Expansion {
+		private final IJavaProject project;
+		private final Set&lt;String&gt; selected;
+		private final Set&lt;String&gt; pending;
+		private List&lt;SearchSeeds&gt; seeds;
+		private SearchSeeds merged;
+
+<span class="fc" id="L49">		private Expansion(IJavaProject project, Set&lt;String&gt; selected, Set&lt;String&gt; pending) {</span>
+<span class="fc" id="L50">			this.project= project;</span>
+<span class="fc" id="L51">			this.selected= selected;</span>
+<span class="fc" id="L52">			this.pending= pending;</span>
+<span class="fc" id="L53">		}</span>
+
+		void seeds(SearchSeeds standard, SearchSeeds junit3, SearchSeeds lifecycle, SearchSeeds helper,
+				SearchSeeds combined) {
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">			if (project != null) {</span>
+<span class="nc" id="L58">				seeds= List.of(standard, junit3, lifecycle, helper);</span>
+<span class="nc" id="L59">				merged= combined;</span>
+			}
+<span class="fc" id="L61">		}</span>
+
+		void finish(String branch, Collection&lt;IJavaProject&gt; projects, Collection&lt;IJavaProject&gt; readOnly,
+				Collection&lt;ICompilationUnit&gt; allowed, Collection&lt;ICompilationUnit&gt; required,
+				RelatedCompilationUnitSearch.Result related) {
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">			if (project == null) {</span>
+<span class="fc" id="L67">				return;</span>
+			}
+			try {
+<span class="nc" id="L70">				StringBuilder text= new StringBuilder(&quot;[sandbox.junit.scope] expansion projectLabel=&quot;) //$NON-NLS-1$</span>
+<span class="nc" id="L71">						.append(label(project)).append(&quot; branch=&quot;).append(branch) //$NON-NLS-1$</span>
+<span class="nc" id="L72">						.append(&quot; selected=&quot;).append(sorted(selected)).append(&quot; pending=&quot;).append(sorted(pending)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">				if (seeds != null) {</span>
+<span class="nc" id="L74">					List&lt;String&gt; names= List.of(&quot;standard&quot;, &quot;junit3&quot;, &quot;lifecycle&quot;, &quot;helper&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">					for (int i= 0; i &lt; seeds.size(); i++) {</span>
+<span class="nc" id="L76">						SearchSeeds seed= seeds.get(i);</span>
+<span class="nc" id="L77">						text.append(' ').append(names.get(i)).append(&quot;={candidate=&quot;).append(seed.candidateFound()) //$NON-NLS-1$</span>
+<span class="nc" id="L78">								.append(&quot;,complete=&quot;).append(seed.complete()).append(&quot;,elements=&quot;).append(labels(seed.elements())) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L79">								.append(&quot;,direct=&quot;).append(labels(seed.directCompilationUnits())).append('}'); //$NON-NLS-1$</span>
+					}
+<span class="nc" id="L81">					text.append(&quot; mergedCandidate=&quot;).append(merged.candidateFound()).append(&quot; mergedComplete=&quot;).append(merged.complete()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+				}
+<span class="nc" id="L83">				text.append(&quot; projectLabels=&quot;).append(labels(projects)).append(&quot; readOnlyLabels=&quot;).append(labels(readOnly)) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L84">						.append(&quot; allowedLabels=&quot;).append(labels(allowed)).append(&quot; requiredLabels=&quot;).append(labels(required)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">				if (related != null) {</span>
+<span class="nc" id="L86">					text.append(&quot; relatedComplete=&quot;).append(related.complete()).append(&quot; relatedUnitLabels=&quot;).append(labels(related.compilationUnits())) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L87">							.append(&quot; relatedReasons=&quot;).append(related.rejectionReasons()); //$NON-NLS-1$</span>
+				}
+<span class="nc" id="L89">				System.err.println(text);</span>
+<span class="nc" id="L90">			} catch (RuntimeException error) {</span>
+<span class="nc" id="L91">				diagnosticError(&quot;expansion&quot;, error); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L93">		}</span>
+	}
+
+	static void consumed(IJavaProject project, ICompilationUnit[] units, Set&lt;String&gt; selected,
+			Set&lt;String&gt; expected, Set&lt;String&gt; pending, Boolean decision, String branch) {
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		if (!enabled()) {</span>
+<span class="fc" id="L99">			return;</span>
+		}
+		try {
+<span class="nc bnc" id="L102" title="All 4 branches missed.">			Set&lt;String&gt; missing= expected == null || selected == null ? null : new TreeSet&lt;&gt;(expected);</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">			if (missing != null) {</span>
+<span class="nc" id="L104">				missing.removeAll(selected);</span>
+			}
+<span class="nc" id="L106">			System.err.println(&quot;[sandbox.junit.scope] consume projectLabel=&quot; + label(project) //$NON-NLS-1$</span>
+<span class="nc" id="L107">					+ &quot; branch=&quot; + branch + &quot; decision=&quot; + decision + &quot; selected=&quot; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">					+ (selected == null ? &quot;not-computed&quot; : sorted(selected)) //$NON-NLS-1$</span>
+<span class="nc" id="L109">					+ &quot; expected=&quot; + sorted(expected) + &quot; pending=&quot; + sorted(pending) + &quot; missingExpected=&quot; + missing //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L110">					+ &quot; unitLabels=&quot; + labels(List.of(units))); //$NON-NLS-1$</span>
+<span class="nc" id="L111">		} catch (RuntimeException error) {</span>
+<span class="nc" id="L112">			diagnosticError(&quot;consume&quot;, error); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L114">	}</span>
+
+	private static List&lt;String&gt; labels(Collection&lt;? extends IJavaElement&gt; elements) {
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		if (elements == null) {</span>
+<span class="nc" id="L118">			return null;</span>
+		}
+<span class="nc" id="L120">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">		for (IJavaElement element : elements) {</span>
+<span class="nc" id="L122">			result.add(label(element));</span>
+		}
+<span class="nc" id="L124">		Collections.sort(result);</span>
+<span class="nc" id="L125">		return result;</span>
+	}
+
+	private static String label(IJavaElement element) {
+<span class="nc" id="L129">		StringBuilder result= new StringBuilder();</span>
+		// Do not create handle mementos: a root memento can resolve its classpath entry.
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		for (IJavaElement current= element; current != null; current= current.getParent()) {</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">			if (result.length() &gt; 0) {</span>
+<span class="nc" id="L133">				result.append('/');</span>
+			}
+<span class="nc" id="L135">			result.append(current.getClass().getName()).append('(').append(current.getElementName()).append(')');</span>
+		}
+<span class="nc" id="L137">		return result.toString();</span>
+	}
+
+	private static void diagnosticError(String phase, RuntimeException error) {
+<span class="nc" id="L141">		System.err.println(&quot;[sandbox.junit.scope] diagnostic-error phase=&quot; + phase //$NON-NLS-1$</span>
+<span class="nc" id="L142">				+ &quot; type=&quot; + error.getClass().getName()); //$NON-NLS-1$</span>
+<span class="nc" id="L143">	}</span>
+
+	private static Set&lt;String&gt; sorted(Set&lt;String&gt; handles) {
+<span class="nc bnc" id="L146" title="All 2 branches missed.">		return handles == null ? null : new TreeSet&lt;&gt;(handles);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -645,7 +645,7 @@ public final class JUnitBestEffortSupport {
 	}
 
 	private static ITypeBinding resourceTypeBinding(FieldDeclaration field) {
-<span class="pc bpc" id="L648" title="1 of 2 branches missed.">		if (field.fragments().size() == 1</span>
+<span class="fc bfc" id="L648" title="All 2 branches covered.">		if (field.fragments().size() == 1</span>
 <span class="pc bpc" id="L649" title="1 of 2 branches missed.">				&amp;&amp; field.fragments().get(0) instanceof VariableDeclarationFragment fragment) {</span>
 <span class="fc bfc" id="L650" title="All 2 branches covered.">			if (fragment.getInitializer() instanceof ClassInstanceCreation creation) {</span>
 <span class="fc" id="L651">				ITypeBinding created= creation.resolveTypeBinding();</span>
@@ -658,7 +658,7 @@ public final class JUnitBestEffortSupport {
 <span class="fc" id="L658">				return variable.getType();</span>
 			}
 		}
-<span class="nc" id="L661">		return field.getType().resolveBinding();</span>
+<span class="fc" id="L661">		return field.getType().resolveBinding();</span>
 	}
 
 	private static boolean extendsExternalResource(ITypeBinding binding) {

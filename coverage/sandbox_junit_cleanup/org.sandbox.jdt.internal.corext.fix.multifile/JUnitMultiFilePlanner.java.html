@@ -191,14 +191,14 @@ public final class JUnitMultiFilePlanner {
 <span class="pc bpc" id="L191" title="2 of 4 branches missed.">		if (!options.hasPlanningWork() || selectedUnits.length == 0) {</span>
 <span class="nc" id="L192">			return MultiFileCleanUpPlanResult.success(emptyPlan(selectedScope));</span>
 		}
-<span class="pc bpc" id="L194" title="1 of 4 branches missed.">		if (!closedScope &amp;&amp; !options.diagnoseParameterizedCandidates()) {</span>
-<span class="nc bnc" id="L195" title="All 2 branches missed.">			JUnitTestTypeInventory inventory= options.migrateJUnit3Hierarchies()</span>
+<span class="fc bfc" id="L194" title="All 4 branches covered.">		if (!closedScope &amp;&amp; !options.diagnoseParameterizedCandidates()) {</span>
+<span class="pc bpc" id="L195" title="1 of 2 branches missed.">			JUnitTestTypeInventory inventory= options.migrateJUnit3Hierarchies()</span>
 <span class="nc" id="L196">					? JUnitTestTypeInventory.capture(project, monitor)</span>
-<span class="nc" id="L197">					: new JUnitTestTypeInventory(List.of());</span>
-<span class="nc" id="L198">			MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, false, List.of());</span>
-<span class="nc" id="L199">			JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, List.of(), List.of(), inventory);</span>
-<span class="nc" id="L200">			return MultiFileCleanUpPlanResult.success(plan, new RefactoringStatus(),</span>
-<span class="nc" id="L201">					MultiFilePlanningMetrics.empty(), diagnostics);</span>
+<span class="fc" id="L197">					: new JUnitTestTypeInventory(List.of());</span>
+<span class="fc" id="L198">			MultiFileCleanUpDiagnostics diagnostics= diagnostics(selectedUnits, false, List.of());</span>
+<span class="fc" id="L199">			JUnitMigrationPlan plan= new JUnitMigrationPlan(selectedScope, List.of(), List.of(), inventory);</span>
+<span class="fc" id="L200">			return MultiFileCleanUpPlanResult.success(plan, new RefactoringStatus(),</span>
+<span class="fc" id="L201">					MultiFilePlanningMetrics.empty(), diagnostics);</span>
 		}
 <span class="fc" id="L203">		MultiFilePlanningBudget.checkCanceled(monitor);</span>
 

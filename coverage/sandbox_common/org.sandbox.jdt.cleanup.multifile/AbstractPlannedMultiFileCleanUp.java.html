@@ -94,10 +94,10 @@ public abstract class AbstractPlannedMultiFileCleanUp&lt;P&gt; extends AbstractC
 <span class="fc" id="L94">		}</span>
 
 		MultiFileScopeDiagnostic merge(MultiFileScopeDiagnostic existing) {
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			if (addedHandles.isEmpty()) {</span>
-<span class="nc" id="L98">				return new MultiFileScopeDiagnostic(List.copyOf(selectedHandles),</span>
-<span class="nc" id="L99">						existing.addedCompilationUnitHandles(), existing.reasonCode(), existing.explanation(),</span>
-<span class="nc" id="L100">						existing.complete());</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">			if (addedHandles.isEmpty()) {</span>
+<span class="fc" id="L98">				return new MultiFileScopeDiagnostic(List.copyOf(selectedHandles),</span>
+<span class="fc" id="L99">						existing.addedCompilationUnitHandles(), existing.reasonCode(), existing.explanation(),</span>
+<span class="fc" id="L100">						existing.complete());</span>
 			}
 <span class="fc" id="L102">			Set&lt;String&gt; allAdded= new LinkedHashSet&lt;&gt;(existing.addedCompilationUnitHandles());</span>
 <span class="fc" id="L103">			allAdded.addAll(addedHandles);</span>
@@ -372,8 +372,8 @@ public abstract class AbstractPlannedMultiFileCleanUp&lt;P&gt; extends AbstractC
 	 * @return retained diagnostics or empty diagnostics when no planning run exists
 	 */
 	protected final MultiFileCleanUpDiagnostics getPlanningDiagnostics(IJavaProject project) {
-<span class="nc" id="L375">		synchronized (lifecycleLock) {</span>
-<span class="nc" id="L376">			return diagnosticsByProject.getOrDefault(project, MultiFileCleanUpDiagnostics.empty());</span>
+<span class="fc" id="L375">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L376">			return diagnosticsByProject.getOrDefault(project, MultiFileCleanUpDiagnostics.empty());</span>
 		}
 	}
 

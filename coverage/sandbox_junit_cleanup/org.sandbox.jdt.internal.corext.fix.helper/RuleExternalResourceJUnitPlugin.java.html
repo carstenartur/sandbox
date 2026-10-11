@@ -83,44 +83,48 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 <span class="pc bpc" id="L83" title="1 of 2 branches missed.">		if (binding == null) {</span>
 <span class="nc" id="L84">			return false;</span>
 		}
-<span class="fc" id="L86">		String qualifiedName= binding.getErasure().getQualifiedName();</span>
-<span class="fc bfc" id="L87" title="All 4 branches covered.">		return !DEDICATED_RULE_TYPES.contains(qualifiedName) &amp;&amp; isExternalResourceHierarchy(binding);</span>
+<span class="fc bfc" id="L86" title="All 4 branches covered.">		return !isDedicatedRuleType(binding) &amp;&amp; isExternalResourceHierarchy(binding);</span>
+	}
+
+	/** Whether an existing dedicated converter owns this exact rule type. */
+	public static boolean isDedicatedRuleType(ITypeBinding binding) {
+<span class="pc bpc" id="L91" title="1 of 4 branches missed.">		return binding != null &amp;&amp; DEDICATED_RULE_TYPES.contains(binding.getErasure().getQualifiedName());</span>
 	}
 
 	private static boolean isExternalResourceHierarchy(ITypeBinding binding) {
-<span class="fc" id="L91">		ITypeBinding current= binding.getErasure();</span>
-<span class="fc bfc" id="L92" title="All 2 branches covered.">		while (current != null) {</span>
-<span class="fc bfc" id="L93" title="All 2 branches covered.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getQualifiedName())) {</span>
-<span class="fc" id="L94">				return true;</span>
+<span class="fc" id="L95">		ITypeBinding current= binding.getErasure();</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		while (current != null) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">			if (ORG_JUNIT_RULES_EXTERNAL_RESOURCE.equals(current.getQualifiedName())) {</span>
+<span class="fc" id="L98">				return true;</span>
 			}
-<span class="fc" id="L96">			current= current.getSuperclass();</span>
+<span class="fc" id="L100">			current= current.getSuperclass();</span>
 		}
-<span class="fc" id="L98">		return false;</span>
+<span class="fc" id="L102">		return false;</span>
 	}
 
 	@Override
 	protected void process2Rewrite(TextEditGroup group, ASTRewrite rewriter, AST ast, ImportRewrite importRewriter,
 			JunitHolder junitHolder) {
-<span class="fc" id="L104">		FieldDeclaration fieldDeclaration = junitHolder.getFieldDeclaration();</span>
-<span class="fc" id="L105">		boolean fieldStatic = isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);</span>
-<span class="fc" id="L106">		CompilationUnit cu = (CompilationUnit) fieldDeclaration.getRoot();</span>
+<span class="fc" id="L108">		FieldDeclaration fieldDeclaration = junitHolder.getFieldDeclaration();</span>
+<span class="fc" id="L109">		boolean fieldStatic = isFieldAnnotatedWith(fieldDeclaration, ORG_JUNIT_CLASS_RULE);</span>
+<span class="fc" id="L110">		CompilationUnit cu = (CompilationUnit) fieldDeclaration.getRoot();</span>
 
-<span class="fc" id="L108">		ASTNode node2 = ExternalResourceRefactorer.getTypeDefinitionForField(fieldDeclaration, cu);</span>
+<span class="fc" id="L112">		ASTNode node2 = ExternalResourceRefactorer.getTypeDefinitionForField(fieldDeclaration, cu);</span>
 
-<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		if (node2 instanceof TypeDeclaration) {</span>
-<span class="nc" id="L111">			ExternalResourceRefactorer.modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration,</span>
-<span class="nc" id="L112">					fieldStatic, rewriter, ast, group, importRewriter);</span>
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">		} else if (node2 instanceof AnonymousClassDeclaration typeNode) {</span>
-<span class="fc" id="L114">			ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration,</span>
-<span class="fc" id="L115">					fieldStatic, rewriter, ast, group, importRewriter);</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">		if (node2 instanceof TypeDeclaration) {</span>
+<span class="nc" id="L115">			ExternalResourceRefactorer.modifyExternalResourceClass((TypeDeclaration) node2, fieldDeclaration,</span>
+<span class="nc" id="L116">					fieldStatic, rewriter, ast, group, importRewriter);</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">		} else if (node2 instanceof AnonymousClassDeclaration typeNode) {</span>
+<span class="fc" id="L118">			ExternalResourceRefactorer.refactorAnonymousClassToImplementCallbacks(typeNode, fieldDeclaration,</span>
+<span class="fc" id="L119">					fieldStatic, rewriter, ast, group, importRewriter);</span>
 		}
 		// If no matching type definition found, no action needed
-<span class="fc" id="L118">	}</span>
+<span class="fc" id="L122">	}</span>
 
 	@Override
 	public String getPreview(boolean afterRefactoring) {
-<span class="nc bnc" id="L122" title="All 2 branches missed.">		if (afterRefactoring) {</span>
-<span class="nc" id="L123">			return &quot;&quot;&quot;</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (afterRefactoring) {</span>
+<span class="nc" id="L127">			return &quot;&quot;&quot;</span>
 					ExtendWith(MyTest.MyExternalResource.class)
 					public class MyTest {
 
@@ -136,7 +140,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 					}
 					&quot;&quot;&quot;; //$NON-NLS-1$
 		}
-<span class="nc" id="L139">		return &quot;&quot;&quot;</span>
+<span class="nc" id="L143">		return &quot;&quot;&quot;</span>
 				public class MyTest {
 
 					final class MyExternalResource extends ExternalResource {
@@ -157,7 +161,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 
 	@Override
 	public String toString() {
-<span class="fc" id="L160">		return &quot;RuleExternalResource&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L164">		return &quot;RuleExternalResource&quot;; //$NON-NLS-1$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

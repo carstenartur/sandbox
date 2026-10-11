@@ -75,9 +75,9 @@ public final class RelatedCompilationUnitSearch {
 
 		void addTarget(IJavaElement target) {
 <span class="fc" id="L77">			ICompilationUnit declarationUnit= compilationUnit(target);</span>
-<span class="pc bpc" id="L78" title="1 of 2 branches missed.">			if (declarationUnit == null) {</span>
-<span class="nc" id="L79">				reasons.add(&quot;A search target is declared outside an editable source compilation unit.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L80">				return;</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">			if (declarationUnit == null) {</span>
+<span class="fc" id="L79">				reasons.add(&quot;A search target is declared outside an editable source compilation unit.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L80">				return;</span>
 			}
 <span class="fc" id="L82">			addUnit(projectHandles, declarationUnit, allowedByHandle, resultByHandle, reasons,</span>
 <span class="fc" id="L83">					&quot;A search-target declaration is outside the permitted source-root policy.&quot;); //$NON-NLS-1$</span>
