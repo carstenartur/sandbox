@@ -138,6 +138,12 @@ and cannot be combined with primitive numerical guard obligations.</td></tr>
 <tr><td>byte, short, char, int, long</td><td>Promotions, concrete widths, casts and
 operation order remain part of the proof. Existing exact-arithmetic exceptions
 cannot disappear.</td></tr>
+<tr><td>Own private static helper methods</td><td>Same-class, straight-line helpers
+with primitive integral parameters and locals can participate in the caller's
+calculation. With explicit mathematical opt-in, BigInteger parameters, locals
+and return values are also supported. Nested calls, overloads and local
+reassignments use their resolved Java bindings. Select every numeric kind used
+by the helper, including int for an int exponent.</td></tr>
 <tr><td>float, double</td><td>Only concrete IEEE-equivalent transformations qualify.
 The supported strict contract requires a target Java level of at least 17.
 Rounding, signed zero, NaN and infinities are not interchangeable with real arithmetic. Only explicitly supported primitive or canonical-value observations qualify; raw-bit and object-identity observations require separate evidence.</td></tr>
@@ -147,6 +153,21 @@ automatic BigInteger interpretation. Unsupported regions stay unchanged.</td></t
 general algorithm rewrite. A region must satisfy the extractor's explicit local
 binding, effect and value-semantics checks. External user-defined field constants are rejected because their defining source is not part of the local proof.</td></tr>
 </tbody></table>
+<p>BigInteger helper expansion uses the original helper body as input to
+Regelsuche. For example, a helper returning
+<code>value.modPow(BigInteger.TWO, modulus)</code> can expose a modular square
+inside its caller. The generated caller checks the required input conditions
+and retains the original helper call in its fallback. The helper declaration
+and its comments remain unchanged when only the caller is selected. Ordinary
+Java mode does not enable the identity-changing BigInteger helper contract.</p>
+<p>Helper arguments are evaluated in their original order, including unused
+arguments. Unused operations inside a helper remain part of the exception
+analysis. The JDK constants <code>BigInteger.ZERO</code>, <code>ONE</code>,
+<code>TWO</code> and <code>TEN</code> are supported; other helper field accesses,
+arrays, synchronization, recursive calls and general control flow still require
+additional semantic support. Expanding a helper alone is not sufficient reason
+to offer a cleanup: the selected optimization goal must improve after counting
+the required guards.</p>
 <p>Host Eclipse bundles require Java 25. The Java level of the project being
 edited remains unchanged and limits generated syntax and APIs. Unknown or
 unqualified target contracts are rejected.</p>
