@@ -2,6 +2,7 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import java.util.List;
+import de.regelsuche.sdk.optimization.NumericKind;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.IMethodBinding;
@@ -15,12 +16,12 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 final class JavaScalarMethodBody {
     private JavaScalarMethodBody() { }
 
-    static MethodDeclaration resolve(CompilationUnit unit, MethodInvocation call) {
+    static MethodDeclaration resolve(CompilationUnit unit, MethodInvocation call, boolean mathematical) {
         IMethodBinding binding = call.resolveMethodBinding();
         if (binding == null || binding.isRecovered() || !Modifier.isPrivate(binding.getModifiers())
                 || !Modifier.isStatic(binding.getModifiers()) || Modifier.isSynchronized(binding.getModifiers())
                 || Modifier.isNative(binding.getModifiers()) || binding.isVarargs()
-                || binding.isGenericMethod() || !integral(binding.getReturnType())) return null;
+                || binding.isGenericMethod() || !scalar(binding.getReturnType(), mathematical)) return null;
         // Same type: removing the call must not remove another class's initialization.
         MethodDeclaration caller = enclosingMethod(call);
         if (caller == null || caller.resolveBinding() == null
@@ -31,7 +32,7 @@ final class JavaScalarMethodBody {
                 || method.getBody().statements().size() > 64) return null;
         for (Object value : method.parameters()) {
             var parameter = (SingleVariableDeclaration) value;
-            if (parameter.resolveBinding() == null || !integral(parameter.resolveBinding().getType())) return null;
+            if (parameter.resolveBinding() == null || !scalar(parameter.resolveBinding().getType(), mathematical)) return null;
         }
         return method;
     }
@@ -39,6 +40,11 @@ final class JavaScalarMethodBody {
     static boolean integral(ITypeBinding type) {
         return type != null && type.isPrimitive()
                 && List.of("byte", "short", "char", "int", "long").contains(type.getName()); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+    }
+
+    static boolean scalar(ITypeBinding type, boolean mathematical) {
+        return integral(type) || mathematical
+                && JavaOperationRegistry.kind(type).orElse(null) == NumericKind.BIG_INTEGER;
     }
 
     private static MethodDeclaration enclosingMethod(ASTNode node) {
