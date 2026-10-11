@@ -143,9 +143,11 @@ public final class MathematicalAnalysis {
                long regionWork = selectionOffset >= 0 ? remainingWork : Math.max(1L, remainingWork / regionsLeft);
                boolean mathematicalIntegral = false;
                boolean canTryMathematical = options.mathematicalOptIn() && IntegralMathematicalDomain.supports(region);
-               long ordinaryWork = canTryMathematical ? Math.max(1L, regionWork / 2) : regionWork;
                boolean mathematicalBigInteger = options.mathematicalOptIn()
                      && region.trace().occurrences().stream().anyMatch(o -> o.evaluatedKind() == NumericKind.BIG_INTEGER);
+               boolean canRetryBigInteger = mathematicalBigInteger && region.outputs().size() + region.internalBindings().size() > 1;
+               // Reserve work for individual statements if a combined BigInteger request is unsupported.
+               long ordinaryWork = canTryMathematical || canRetryBigInteger ? Math.max(1L, regionWork / 2) : regionWork;
                OptimizationRequest request = new OptimizationRequest(
                   region.plan(),
                   region.trace(),
@@ -173,30 +175,35 @@ public final class MathematicalAnalysis {
                      result = optimizer.optimize(request, cancellation);
                   }
                   if (!(result instanceof Candidate candidate)) {
-                     if (mathematicalBigInteger && (result instanceof NoImprovement || result instanceof OptimizationResult.Inconclusive)
-                           && remainingWork > consumedWork(result, regionWork)) {
-                        if (statements == null) statements = new JavaComputationExtractor().extractRuntimeStatements(ast, source, options).regions();
-                        var smaller = statements.stream().filter(part -> part.start() >= region.start()
-                              && part.start() + part.length() <= region.start() + region.length() && part.length() < region.length()).toList();
-                        if (!smaller.isEmpty()) {
-                           remainingWork -= consumedWork(result, regionWork);
-                           pending.addAll(regionIndex + 1, smaller);
-                           diagnostics.add(diagnostic("MODULAR_STATEMENT_RETRY", "Retrying supported statements within the remaining file budget", region));
-                           continue;
-                        }
-                     }
-                     if (result instanceof OptimizationResult.Unsupported unsupported
-                           && unsupported.toString().contains("plan preparation work bound exceeded")) {
+                     boolean preparationLimit = result instanceof OptimizationResult.Unsupported unsupported
+                           && unsupported.toString().contains("plan preparation work bound exceeded");
+                     long attemptSpent = preparationLimit
+                           ? Math.min(remainingWork, 2L * de.regelsuche.search.program.JointComputationPlan.MAX_NODES)
+                           : consumedWork(result, request.budget().maximumWork());
+                     if (preparationLimit) {
                         if (fragments == null) fragments = new JavaComputationExtractor().extractRuntimeFragments(ast, source, options).regions();
                         var smaller = fragments.stream().filter(part -> part.start() >= region.start()
                               && part.start() + part.length() <= region.start() + region.length() && part.length() < region.length()).toList();
                         if (!smaller.isEmpty()) {
                            // Failed preparation is bounded by the SDK structural cap; reserve
                            // a conservative full-cap charge before scheduling smaller requests.
-                           remainingWork -= Math.min(remainingWork, 2L * de.regelsuche.search.program.JointComputationPlan.MAX_NODES);
+                           remainingWork -= attemptSpent;
                            pending.addAll(regionIndex + 1, smaller);
                            diagnostics.add(diagnostic("REGION_PREPARATION_SPLIT", "Preparation limit reached; retrying " + smaller.size()
                                  + " smaller source regions within the remaining file budget", region));
+                           continue;
+                        }
+                     }
+                     if (mathematicalBigInteger && (result instanceof NoImprovement || result instanceof OptimizationResult.Inconclusive
+                           || result instanceof OptimizationResult.Unsupported || result instanceof BudgetExceeded) && remainingWork > attemptSpent) {
+                        if (statements == null) statements = new JavaComputationExtractor().extractRuntimeStatements(ast, source, options).regions();
+                        var smaller = statements.stream().filter(part -> part.start() >= region.start()
+                              && part.start() + part.length() <= region.start() + region.length() && part.length() < region.length()).toList();
+                        if (!smaller.isEmpty()) {
+                           // Unsupported carries no work counter, so charge the full failed request allocation.
+                           remainingWork -= attemptSpent;
+                           pending.addAll(regionIndex + 1, smaller);
+                           diagnostics.add(diagnostic("MODULAR_STATEMENT_RETRY", "Retrying supported statements within the remaining file budget", region));
                            continue;
                         }
                      }
@@ -204,7 +211,8 @@ public final class MathematicalAnalysis {
                      if (result instanceof NoImprovement noImprovement) {
                         remainingWork -= noImprovement.work();
                      }
-                     if (result instanceof OptimizationResult.Inconclusive) remainingWork -= consumedWork(result, regionWork);
+                     if (result instanceof OptimizationResult.Inconclusive || result instanceof OptimizationResult.Unsupported)
+                        remainingWork -= attemptSpent;
 
                      if (result instanceof BudgetExceeded exceeded) {
                         // Charge this attempt, including any reported overshoot. A preceding
@@ -407,6 +415,7 @@ public final class MathematicalAnalysis {
    private static long consumedWork(OptimizationResult result, long allocation) {
       if (result instanceof NoImprovement ordinary) return ordinary.work();
       if (result instanceof OptimizationResult.Inconclusive inconclusive && inconclusive.work() >= 0) return inconclusive.work();
+      if (result instanceof BudgetExceeded exceeded) return Math.max(allocation, exceeded.work());
       return allocation;
    }
 
