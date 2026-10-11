@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a8a137ca8a0de9a147f0aab8e2d128f3cd81f3f75c7671e6b44bad09c5a4ec87",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: modernize.asyncContentAssistant\u003e\n\u003c!description: Replace the constructor call for the removed AsyncContentAssistant class with the new ContentAssistant(true) constructor for asynchronous behavior.\u003e\n\u003c!severity: WARNING\u003e\n\nnew org.eclipse.jface.text.contentassist.AsyncContentAssistant()\n\u003d\u003e\nnew org.eclipse.jface.text.contentassist.ContentAssistant(true)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.contentassist.AsyncContentAssistant;\nimport org.eclipse.jface.text.contentassist.ContentAssistant;\n\npublic class Example {\n    void method() {\n        AsyncContentAssistant assistant \u003d new AsyncContentAssistant();\n        // Additional usages of \u0027assistant\u0027 if any, e.g., assistant.install(viewer);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.contentassist.ContentAssistant;\n\npublic class Example {\n    void method() {\n        ContentAssistant assistant \u003d new ContentAssistant(true);\n        // Additional usages of \u0027assistant\u0027 if any, e.g., assistant.install(viewer);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.contentassist.ContentAssistant;\n\npublic class Example {\n    void method() {\n        ContentAssistant assistant \u003d new ContentAssistant();\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "889d3c82bc8592914b11549d395f58ae6fb3d8ab",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces direct instantiation of the removed `AsyncContentAssistant` class with the `ContentAssistant(true)` constructor, which now manages asynchronous behavior.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-11T02:39:45.410959571Z",
+  "ruleFingerprint": "sha256:0b79f7b8076cd43a654f433ae57d021702a48a60ee036d974e0a26d256def30a",
+  "behaviorFingerprint": "sha256:6805fdb188e5d3de7f806669544195e4a9c79feb633b7400cd2235738516295d",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-11T02:39:54.905373994Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f6e476ea771e98b98f7cdf92165a6fc2ef5cd7f9fde19ba1097c645c01f0bb72",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.StringBuffer $var \u003d new java.lang.StringBuffer($args$);\n\u003d\u003e java.lang.StringBuilder $var \u003d new java.lang.StringBuilder($args$);\n;;",
+  "beforeExample": "public class Example {\n    void method() {\n        java.lang.StringBuffer sb \u003d new java.lang.StringBuffer();\n        sb.append(\"Hello\");\n        String result \u003d sb.toString();\n    }\n    void anotherMethod(int capacity) {\n        java.lang.StringBuffer anotherSb \u003d new java.lang.StringBuffer(capacity);\n        anotherSb.reverse();\n    }\n}",
+  "afterExample": "public class Example {\n    void method() {\n        java.lang.StringBuilder sb \u003d new java.lang.StringBuilder();\n        sb.append(\"Hello\");\n        String result \u003d sb.toString();\n    }\n    void anotherMethod(int capacity) {\n        java.lang.StringBuilder anotherSb \u003d new java.lang.StringBuilder(capacity);\n        anotherSb.reverse();\n    }\n}",
+  "negativeExample": "public class NegativeExample {\n    // This should not match because it\u0027s a field, not a local variable declaration.\n    // Replacing fields requires deeper thread-safety analysis not available to the DSL.\n    private java.lang.StringBuffer fieldBuffer \u003d new java.lang.StringBuffer();\n\n    void method() {\n        java.lang.String s \u003d \"test\";\n        // This should not match because it\u0027s an assignment, not a declaration.\n        fieldBuffer \u003d new java.lang.StringBuffer(s);\n\n        // This should not match because the variable type is not explicitly StringBuffer.\n        // The rule targets explicit \u0027java.lang.StringBuffer $var \u003d ...\u0027\n        var inferredSb \u003d new java.lang.StringBuffer();\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "941655d6b1b3144ca2df6f2ff9352ded3ce9c8ff",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "summary": "Replace local variable declarations of StringBuffer initialized with new StringBuffer() with StringBuilder for performance. This rule is restricted to local variables for thread-safety reasons.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-11T02:39:45.553176892Z",
+  "ruleFingerprint": "sha256:31c4878e060471aa182ee16ed03fbf4bdd591a4478b00e1d50d4e0386977f3c5",
+  "behaviorFingerprint": "sha256:05b5d547170e59cc08d98eb06b904d4d8fab2a928c6f52caf9c33f681f88dbce",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-11T02:39:54.971222604Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

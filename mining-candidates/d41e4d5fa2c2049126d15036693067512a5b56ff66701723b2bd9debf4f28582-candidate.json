@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d41e4d5fa2c2049126d15036693067512a5b56ff66701723b2bd9debf4f28582",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\"$nl$/icons/template.gif\"\n\u003d\u003e\n\"$nl$/icons/template.png\"\n;;",
+  "beforeExample": "package org.eclipse.ui.examples.templateeditor.template;\n\npublic class XMLCompletionProcessor {\n\tprivate static final String DEFAULT_IMAGE\u003d \"$nl$/icons/template.gif\";\n\n\tpublic void someMethod() {\n\t\tSystem.out.println(DEFAULT_IMAGE);\n\t}\n}",
+  "afterExample": "package org.eclipse.ui.examples.templateeditor.template;\n\npublic class XMLCompletionProcessor {\n\tprivate static final String DEFAULT_IMAGE\u003d \"$nl$/icons/template.png\";\n\n\tpublic void someMethod() {\n\t\tSystem.out.println(DEFAULT_IMAGE);\n\t}\n}",
+  "negativeExample": "package org.eclipse.ui.examples.templateeditor.template;\n\npublic class XMLCompletionProcessor {\n\tprivate static final String ANOTHER_IMAGE_PATH \u003d \"$nl$/icons/another.gif\";\n\tprivate static final String ALREADY_PNG_PATH \u003d \"$nl$/icons/template.png\";\n\n\tpublic void someMethod() {\n\t\tSystem.out.println(ANOTHER_IMAGE_PATH);\n\t}\n}",
+  "targetHintFile": "image-migrations.sandbox-hint",
+  "sourceCommit": "2d934aa3b24f3b875d57839f7eb527d26059d2bb",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "String Literal Replacement",
+  "summary": "Replace specific GIF image path with PNG path in string literal.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-11T02:39:45.526989805Z",
+  "ruleFingerprint": "sha256:6bcc49b8348984578efdc4b7bd656d596835e8e56a0bdeddb8a888215b03f6eb",
+  "behaviorFingerprint": "sha256:0e784c5fc51af52e06d6cc24d535e4ddc83a0b6b1e7df74f3f27ab8f7909d4bb",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type XMLCompletionProcessor must be defined in its own file",
+    "verifiedAt": "2026-10-11T02:39:54.956960251Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

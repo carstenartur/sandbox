@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6d6e39bbc544171a09d4c6cd3537596f3073b2d5616ccaed0bcc3b56654f9627",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.Integer($arg$)\n\u003d\u003e\njava.lang.Integer.valueOf($arg$)\n;;",
+  "beforeExample": "public class Example { \n    public void test(int value) {\n        java.lang.Integer i \u003d new java.lang.Integer(value);\n        System.out.println(i);\n    }\n}",
+  "afterExample": "public class Example { \n    public void test(int value) {\n        java.lang.Integer i \u003d java.lang.Integer.valueOf(value);\n        System.out.println(i);\n    }\n}",
+  "negativeExample": "public class Example { \n    public void test(long value) {\n        // Should not match new Long(value)\n        java.lang.Long l \u003d new java.lang.Long(value);\n        System.out.println(l);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "aed6bdd1b13c0cebea2a20b280911a70d0b226d5",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces direct Integer constructor calls with Integer.valueOf() factory method for efficiency and adherence to modern Java practices.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-11T02:39:45.374258885Z",
+  "ruleFingerprint": "sha256:441b6e74a00c26c5df20b327d0a5279ad368d2c166cdcc9f6b64282bd046b6aa",
+  "behaviorFingerprint": "sha256:2cf917461aa9bfe7509c82d0e0de1972f7efaf810413252aa99482fd4b0f7661",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-11T02:39:54.894082691Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
