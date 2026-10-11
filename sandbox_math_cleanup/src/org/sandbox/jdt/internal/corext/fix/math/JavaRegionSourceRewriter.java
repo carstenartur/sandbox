@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
@@ -19,6 +20,18 @@ import org.eclipse.text.edits.TextEdit;
 /** Applies the verified output projection without deleting adjacent source comments. */
 final class JavaRegionSourceRewriter {
    private JavaRegionSourceRewriter() {}
+
+   /** Captures are source obligations, separate from the freely scheduled scalar computation. */
+   static String arrayCaptures(CompilationUnit ast, String source, JavaComputationRegion region) {
+      StringBuilder prefix = new StringBuilder();
+      for (var read : region.arrayReads()) {
+         if (!(exactNode(ast, read.start(), read.length()) instanceof ArrayAccess))
+            throw new IllegalArgumentException("ARRAY_READ_SOURCE_CHANGED"); //$NON-NLS-1$
+         prefix.append("final ").append(MathematicalAnalysis.javaType(read.kind())).append(' ') //$NON-NLS-1$
+               .append(read.javaName()).append(" = ").append(source, read.start(), read.start() + read.length()).append(";\n"); //$NON-NLS-1$ //$NON-NLS-2$
+      }
+      return prefix.toString();
+   }
 
    static String rewrite(CompilationUnit ast, String source, JavaComputationRegion region,
          Map<String, String> values, Map<String, String> compilerOptions) {

@@ -142,7 +142,7 @@ public final class MathematicalAnalysis {
                // One difficult method must not consume the search allocation of all later methods.
                long regionWork = selectionOffset >= 0 ? remainingWork : Math.max(1L, remainingWork / regionsLeft);
                boolean mathematicalIntegral = false;
-               boolean canTryMathematical = options.mathematicalOptIn() && IntegralMathematicalDomain.supports(region);
+               boolean canTryMathematical = options.mathematicalOptIn() && IntegralMathematicalDomain.supports(region, cancellation);
                long ordinaryWork = canTryMathematical ? Math.max(1L, regionWork / 2) : regionWork;
                boolean mathematicalBigInteger = options.mathematicalOptIn()
                      && region.trace().occurrences().stream().anyMatch(o -> o.evaluatedKind() == NumericKind.BIG_INTEGER);
@@ -222,7 +222,7 @@ public final class MathematicalAnalysis {
                      continue;
                   }
 
-                  String contract = mathematicalIntegral ? IntegralMathematicalDomain.verify(region, candidate.plan())
+                  String contract = mathematicalIntegral ? IntegralMathematicalDomain.verify(region, candidate.plan(), cancellation)
                         : mathematicalBigInteger ? "BigInteger numerical values are preserved; result reference identity may change. "
                               + "Where receivers are unproved, the optimized branch requires exact BigInteger instances "
                               + "with bitLength() below 4096 and positive guarded moduli or exponents; signed bases are allowed. "
@@ -277,6 +277,7 @@ public final class MathematicalAnalysis {
                      replacement = indentGenerated(plain.statements(), source, region.start()) + rewriteValues(ast, source, region, plain.outputValues(), compilerOptions);
                   }
 
+                  replacement = indentGenerated(JavaRegionSourceRewriter.arrayCaptures(ast, source, region), source, region.start()) + replacement;
                   if (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
                         || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial()) {
                      replacement = indentGenerated(explanationText.sourceComment(), source, region.start()) + replacement;
@@ -321,6 +322,15 @@ public final class MathematicalAnalysis {
                      diagnostics.add(diagnostic("GUARD_COST_EXCEEDS_BENEFIT", "Receiver checks erase the estimated improvement", region));
                      continue;
                   }
+                  long arithmeticWork = cost.candidateCost().operationWork();
+                  cost = JavaArrayCaptureCost.assess(region, plain, cost, options.goal());
+                  if (!region.arrayReads().isEmpty() && options.goal() != OptimizationGoal.READABILITY
+                        && (cost.candidateScore() >= cost.sourceScore()
+                              || options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME && !cost.estimatedRuntimeImprovement())) {
+                     diagnostics.add(diagnostic("ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT", //$NON-NLS-1$
+                           "Capture stores, references and retained values erase the estimated benefit", region)); //$NON-NLS-1$
+                     continue;
+                  }
 
                   ComputationExplanation explanation = ComputationExplanation.from(region, explained.explanation().orElseThrow());
                   String description = "Mathematics "
@@ -337,6 +347,9 @@ public final class MathematicalAnalysis {
                      + region.assumptions();
                   description += "; estimated score " + cost.sourceScore() + " -> " + cost.candidateScore()
                         + "; measured speedup: not assessed";
+                  if (!region.arrayReads().isEmpty()) description += "; array capture work " //$NON-NLS-1$
+                        + (cost.candidateCost().operationWork() - arithmeticWork)
+                        + "; additional peak storage " + region.arrayReads().size() + " primitive values"; //$NON-NLS-1$ //$NON-NLS-2$
                   if (contract != null) {
                      description += "; " + contract;
                      documentation.add(ast, region, contract);

@@ -1,18 +1,20 @@
 # Pinned Regelsuche optimization SDK
 
-Source revision: `ae1c39ea50cff685fe843b0357c818f38db6ec79`.
-Standalone JAR SHA-256: `20f6a81c83a894c595f5447c72bebfc4e83c0503f16285b22d45f506af5e4e2b`.
+Source revision: `2452f1d679bf9e4de7641759efbe30c88af2588c`.
+Standalone JAR SHA-256: `7e0b684189d1c9e97eacdd41a996aa87d7c84e1c7cb49da0f45fa245831b8a65`.
 
-The repository-owned SDK release profile and distribution contract passed two
-clean builds with 2,359 tests per build, including 120 SDK tests, 323 mathematics
-algorithm tests and 11 modular-domain tests. Two freshly compiled consumers
-verified optimization, selected-path replay and checked overflow. All ten
-distribution files matched byte for byte. The exact qualification and
-reproducibility receipts are in qualification.json and reproducibility.json.
+The complete SDK dependency reactor passed 2,403 tests with no failures, errors
+or skips, including 164 SDK tests and 323 mathematical-algorithm tests. After
+that test run, two clean release builds skipped tests and produced byte-identical
+versions of all ten distribution files. Two freshly compiled external consumers
+verified optimization, selected-path replay, checked overflow, and the public
+original/candidate domain API. Qualification and reproducibility receipts retain
+the exact commands, source tree, toolchain and input/output hashes.
 
-This revision combines selected search-path explanations, modular transport and
-proof composition, bounded literal-power candidates, generator revision binding
-and consistent modular operation costs through both public optimizer entry points.
+This revision adds shared affine integral domains, established core-rule premises
+and bounded typed BigInteger modular shifts to the existing search and independent
+proof pipeline. Every archive includes the original EPL-2.0 notice for the affine
+analysis migrated from Sandbox, alongside the existing Regelsuche license.
 
 This is a source-bound development distribution, not a public Maven release.
-Generated Java needs no SDK runtime. Existing license notices remain applicable.
+Generated Java needs no SDK runtime. Cost improvements are estimates, not timings.
