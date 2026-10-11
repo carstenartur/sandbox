@@ -50,6 +50,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -67,6 +68,10 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.ITextFileBufferManager;
+import org.eclipse.core.filebuffers.LocationKind;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFolder;
@@ -152,6 +157,12 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	/** The temporary Java project created for the test */
 	private IJavaProject javaProject;
 
+	/** Workspace project owned by the fixture, independent of the public Java-project setter. */
+	private IProject ownedProject;
+
+	/** Connections owned by this fixture, retained through source and undo assertions. */
+	private final Map<IPath, ITextFileBufferManager> retainedBuffers = new LinkedHashMap<>();
+
 	/**
 	 * Constructs a new test environment with the specified runtime stubs and compiler version.
 	 * 
@@ -181,20 +192,36 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	@Override
 	public void beforeEach(final ExtensionContext context) throws CoreException {
-		setJavaProject(createJavaProject(TEST_SETUP_PROJECT, DEFAULT_BIN_FOLDER));
-		getJavaProject().setRawClasspath(getDefaultClasspath(), null);
-		final Map<String, String> options = getJavaProject().getOptions(false);
-		JavaCore.setComplianceOptions(complianceLevel, options);
-		getJavaProject().setOptions(options);
-		setSourceFolder(addSourceContainer(getProject(TEST_SETUP_PROJECT), DEFAULT_SRC_FOLDER, new Path[0],
-				new Path[0], null, new IClasspathAttribute[0]));
-		final Map<String, String> settings = new HashMap<>();
-		cleanUpProfile = new ProfileManager.CustomProfile("testProfile", settings, CleanUpProfileVersioner.CURRENT_VERSION, //$NON-NLS-1$
-				CleanUpProfileVersioner.PROFILE_KIND);
-		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.CLEANUP_PROFILE, cleanUpProfile.getID());
-		InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.SAVE_PARTICIPANT_PROFILE,
-				cleanUpProfile.getID());
-		disableAll();
+		String projectName;
+		do {
+			projectName = TEST_SETUP_PROJECT + "_" + UUID.randomUUID(); //$NON-NLS-1$
+		} while (ResourcesPlugin.getWorkspace().getRoot().getProject(projectName).exists());
+		// Record ownership before creation so partial setup can also be removed.
+		ownedProject = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
+		setJavaProject(JavaCore.create(ownedProject));
+		try {
+			setJavaProject(createJavaProject(projectName, DEFAULT_BIN_FOLDER));
+			getJavaProject().setRawClasspath(getDefaultClasspath(), null);
+			final Map<String, String> options = getJavaProject().getOptions(false);
+			JavaCore.setComplianceOptions(complianceLevel, options);
+			getJavaProject().setOptions(options);
+			setSourceFolder(addSourceContainer(getJavaProject(), DEFAULT_SRC_FOLDER, new Path[0],
+					new Path[0], null, new IClasspathAttribute[0]));
+			final Map<String, String> settings = new HashMap<>();
+			cleanUpProfile = new ProfileManager.CustomProfile("testProfile", settings, CleanUpProfileVersioner.CURRENT_VERSION, //$NON-NLS-1$
+					CleanUpProfileVersioner.PROFILE_KIND);
+			InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.CLEANUP_PROFILE, cleanUpProfile.getID());
+			InstanceScope.INSTANCE.getNode(JavaUI.ID_PLUGIN).put(CleanUpConstants.SAVE_PARTICIPANT_PROFILE,
+					cleanUpProfile.getID());
+			disableAll();
+		} catch (CoreException | RuntimeException | Error failure) {
+			try {
+				afterEach(context);
+			} catch (CoreException | RuntimeException cleanupFailure) {
+				failure.addSuppressed(cleanupFailure);
+			}
+			throw failure;
+		}
 	}
 	/**
 	 * Creates a classpath for JUnit testing by adding the specified JUnit container to the project.
@@ -216,7 +243,7 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	/**
 	 * Cleans up resources after each test execution.
 	 * <p>
-	 * This method deletes the source folder and related resources created during test setup.
+	 * This method closes and deletes the owned project and releases its file-buffer connections.
 	 * </p>
 	 * 
 	 * @param context the extension context (provided by JUnit)
@@ -224,7 +251,35 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	@Override
 	public void afterEach(final ExtensionContext context) throws CoreException {
-		delete(getSourceFolder());
+		RefactoringCore.getUndoManager().flush();
+		CoreException failure = null;
+		IProject projectToDelete = ownedProject;
+		ownedProject = null;
+		javaProject = null;
+		sourceFolder = null;
+		if (projectToDelete != null && projectToDelete.exists()) {
+			try {
+				JavaCore.create(projectToDelete).close();
+			} catch (CoreException closeFailure) {
+				failure = closeFailure;
+			}
+			try {
+				delete(projectToDelete);
+			} catch (CoreException deleteFailure) {
+				if (failure == null) failure = deleteFailure;
+				else failure.addSuppressed(deleteFailure);
+			}
+		}
+		for (Map.Entry<IPath, ITextFileBufferManager> lease : retainedBuffers.entrySet()) {
+			try {
+				lease.getValue().disconnect(lease.getKey(), LocationKind.IFILE, new NullProgressMonitor());
+			} catch (CoreException disconnectFailure) {
+				if (failure == null) failure = disconnectFailure;
+				else failure.addSuppressed(disconnectFailure);
+			}
+		}
+		retainedBuffers.clear();
+		if (failure != null) throw failure;
 	}
 
 	/**
@@ -1052,6 +1107,17 @@ public class AbstractEclipseJava implements AfterEachCallback, BeforeEachCallbac
 	 */
 	protected RefactoringStatus performRefactoring(final CleanUpRefactoring ref, final ICompilationUnit[] cus,
 			final ICleanUp[] cleanUps, final Set<String> setOfExpectedGroupCategories) throws CoreException {
+		// A canonical connection must survive the temporary cleanup working copy.
+		// Otherwise an opener that loaded earlier can publish stale contents after
+		// JDT releases its document, before the test reads source or checks undo.
+		for (ICompilationUnit cu : cus) {
+			IPath path = cu.getPath();
+			if (!retainedBuffers.containsKey(path)) {
+				ITextFileBufferManager manager = FileBuffers.getTextFileBufferManager();
+				manager.connect(path, LocationKind.IFILE, new NullProgressMonitor());
+				retainedBuffers.put(path, manager);
+			}
+		}
 		for (final ICompilationUnit cu : cus) {
 			ref.addCompilationUnit(cu);
 		}
