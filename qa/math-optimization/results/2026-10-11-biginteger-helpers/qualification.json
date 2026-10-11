@@ -1,0 +1,141 @@
+{
+  "schema": "sandbox.math.big-integer-helper-expansion-scan/v1",
+  "status": "QUALIFIED_CURRENT_R2",
+  "publication_eligible": true,
+  "qualified_at_utc": "2026-10-11T15:27:21.009954+00:00",
+  "source_revision_base": "aca02bfb0509653ce5b5c9dedf7685e3f5698eb7",
+  "current_source_kind": "Frozen current-r2 worktree production-source snapshot after the reviewed admission fix",
+  "source_delta_sha256": "823462f57e7b5e32ce6810e045311e9ac93e76bd1c1d901a47adbe0665cb17e5",
+  "source_delta_definition": {
+    "content": "Concatenated Python difflib.unified_diff output for the changed production files listed below, in sorted relative-path order; baseline immutable commit bytes versus frozen current worktree bytes.",
+    "encoding": "UTF-8",
+    "context_lines": 3,
+    "fromfile_prefix": "a/",
+    "tofile_prefix": "b/",
+    "input_lines": "Path.read_text().splitlines(keepends=True)",
+    "includes": ["JavaComputationExtractor.java", "JavaScalarMethodBody.java", "RuntimeCalculationPolicy.java"],
+    "excludes": ["tests", "documentation", "QA reports", "git index staging state"]
+  },
+  "inputs_sha256": {"corpus/bcprov-jdk18on-1.85.2.jar": "986b0fb92ec10e0c66b43e036ce0077e6150cfaecd1db9fb92b56672e157afe5", "corpus/bcprov-jdk18on-1.85.2-sources.jar": "b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f", "sandbox_math_cleanup/lib/regelsuche-optimization-sdk.jar": "20f6a81c83a894c595f5447c72bebfc4e83c0503f16285b22d45f506af5e4e2b", "qa/math-optimization/src/main/java/org/sandbox/math/qa/BigIntegerCorpusScan.java": "10beb921eb6a9d4c1e893327728d0c4f7da56d0727fd674fd12068602cec4435"},
+  "production_sources_sha256": {
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/ComputationExplanation.java": {"baseline": "cf60ae3f952c09bd6f26a673ae7e4e2662b1e7b088edf9daa15362a816a6beba", "current": "cf60ae3f952c09bd6f26a673ae7e4e2662b1e7b088edf9daa15362a816a6beba"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/IntegralMathematicalDomain.java": {"baseline": "ab9fc037ebae3f8e4181086754feeccf632a2eddbf3ee4760541436b4f1fdcde", "current": "ab9fc037ebae3f8e4181086754feeccf632a2eddbf3ee4760541436b4f1fdcde"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationEmitter.java": {"baseline": "ff19694f78d4d19c16e37d8bed9c119064070e8957322cc66c93c02614a3d052", "current": "ff19694f78d4d19c16e37d8bed9c119064070e8957322cc66c93c02614a3d052"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationExtractor.java": {"baseline": "327d4fca16cd3f0bbc3a3ba2e4589d729e5083bac472cacef662e984323e33a6", "current": "ba540def3060f10aba67bc7e394ac6bf1a677d0a33e20ca17927207bdf8ab976"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationRegion.java": {"baseline": "27091a8c529f3aa2c76dfa1f46285dd8c9bbcb41a218895fb77d3ae64c2e4801", "current": "27091a8c529f3aa2c76dfa1f46285dd8c9bbcb41a218895fb77d3ae64c2e4801"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaEmissionVerifier.java": {"baseline": "263a5e961eae608c6a33f69e5e59ac826dafd9cff42cf50a5788c3e08483e450", "current": "263a5e961eae608c6a33f69e5e59ac826dafd9cff42cf50a5788c3e08483e450"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaOperationRegistry.java": {"baseline": "3348454ea80e2d39e502f1b4f706391b3546256cc45a8b70b97e05c389f0306f", "current": "3348454ea80e2d39e502f1b4f706391b3546256cc45a8b70b97e05c389f0306f"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaRegionLiveness.java": {"baseline": "03306fe5011f92f4b6f0e8a43f0507b95540387f33c73cadb109a243426bfa09", "current": "03306fe5011f92f4b6f0e8a43f0507b95540387f33c73cadb109a243426bfa09"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaRegionSourceRewriter.java": {"baseline": "b7974258d878c3cb1774f7da74b7a30be84b89bb31a06b1425d2450bf5451bed", "current": "b7974258d878c3cb1774f7da74b7a30be84b89bb31a06b1425d2450bf5451bed"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaScalarMethodBody.java": {"baseline": "a54537c1b2dad5989eeb8ff9518d557b01b72ba2dbe27ed109fe203a3267c429", "current": "702aa9f5651ecdcae63c26b94c2ec7f9e4b3f6468f126b6a19aeac8b1696c92a"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathCleanUpOptions.java": {"baseline": "c10c4f2820ab373f60d41706fccb52fcbf1acbc75fbaaa026d8145b788616a78", "current": "c10c4f2820ab373f60d41706fccb52fcbf1acbc75fbaaa026d8145b788616a78"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathExplanation.java": {"baseline": "85396e084e72118633373ea79fcffd96d6930e30ab4e1f47162504b7445e3956", "current": "85396e084e72118633373ea79fcffd96d6930e30ab4e1f47162504b7445e3956"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathSearchDerivation.java": {"baseline": "ba157548ee175b429913345f219fbbe9a3a832ec461048f19f270c41d7452e3d", "current": "ba157548ee175b429913345f219fbbe9a3a832ec461048f19f270c41d7452e3d"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java": {"baseline": "298a3ac3d857ee8f3ea0088c979c1b57116a64e77aee1fa2926551846ff6db3c", "current": "298a3ac3d857ee8f3ea0088c979c1b57116a64e77aee1fa2926551846ff6db3c"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalJavadoc.java": {"baseline": "51a9f0814300e3e5d864f1bddeb272ade62313363b9a1f79b9a5b31cf341f053", "current": "51a9f0814300e3e5d864f1bddeb272ade62313363b9a1f79b9a5b31cf341f053"},
+    "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/RuntimeCalculationPolicy.java": {"baseline": "87dbbc79c51a58c8166d12f0b91c70aa5f90f922996964527b7f92deafeee987", "current": "34ed930a78d26c4953aa5264d0bc4465ff4c96b24564f7214a8a0491a6d0e6d1"}
+  },
+  "source_hashes_unchanged_during_scans": true,
+  "dependencies": {"jars": 28, "manifest_file": "helper-expansion-dependencies.sha256", "canonical_sorted_manifest_sha256": "835812318adcca08911587b9c0615bab8af3dcaebda9b31b96f38d67e7460864", "canonicalization": "UTF-8 lines: lowercase sha256, two spaces, normalized relative path, LF; sorted by relative path.", "classpath_order_sha256": "4b29c4d386c6daaf81ae2c8e06f44a4df1bb6edf1537964c2effd8f4ba4e411d", "same_jar_bytes_and_order_for_baseline_and_current": true, "same_jar_bytes_as_historical_modular_integration": true, "same_final_test_and_scan_jar_bytes_and_order": true},
+  "runtime": {"java": "Temurin 25.0.2+10", "maven": "3.9.16", "jdt_core": "3.47.0", "ecj": "3.46.100", "eclipse_text": "3.14.800", "standalone_compilation_release": 25, "corpus_java_compliance": 17},
+  "sdk": {"source_revision": "ae1c39ea50cff685fe843b0357c818f38db6ec79", "sha256": "20f6a81c83a894c595f5447c72bebfc4e83c0503f16285b22d45f506af5e4e2b"},
+  "scan_options": {"numericKinds": "BYTE,SHORT,CHAR,INT,LONG,FLOAT,DOUBLE,BIG_INTEGER", "workBudgetPerFile": 1000000, "maxStates": 20000, "goal": "LOWER_ESTIMATED_RUNTIME", "sourceJavaCompliance": 17},
+  "profiles": {
+    "strict": {"mathematicalOptIn": false},
+    "mathematical": {"mathematicalOptIn": true}
+  },
+  "counts": {
+    "strict": {
+      "baseline": {"files": 3126, "parseErrors": 10, "regions": 2204, "replacements": 104, "changed_generated_source_files": 50},
+      "current": {"files": 3126, "parseErrors": 10, "regions": 2204, "replacements": 104, "changed_generated_source_files": 50}
+    },
+    "mathematical": {
+      "baseline": {"files": 3126, "parseErrors": 10, "regions": 2544, "replacements": 114, "changed_generated_source_files": 55},
+      "current": {"files": 3126, "parseErrors": 10, "regions": 2546, "replacements": 114, "changed_generated_source_files": 55}
+    }
+  },
+  "accepted_and_generated_comparison": {
+    "strict": {
+      "accepted_original_regions_added": 0,
+      "accepted_original_regions_removed": 0,
+      "replacement_changes_at_same_original_region": 0,
+      "accepted_evidence_byte_identical": true,
+      "accepted_evidence_sha256": "6f528e7a021a194539e86204b6b4c8089bf4347b04ce284cf12d9da8f258db01",
+      "generated_source_files_added": 0,
+      "generated_source_files_removed": 0,
+      "generated_source_files_changed": 0,
+      "generated_source_files_byte_identical": 50,
+      "generated_source_manifest_file": "helper-expansion-generated-strict.sha256",
+      "generated_source_manifest_sha256": "116e51a62b87e1f496542c9b83aa64e5238dc2feadff4c28ca4269c45d478a38",
+      "manifest_applies_to": "Both baseline and current-r2 generated source trees",
+      "summary_sha256": {"baseline": "6d42cddd426cded877247933db1c9c5d0a411892f27707433332c0d09f99cd69", "current": "6d42cddd426cded877247933db1c9c5d0a411892f27707433332c0d09f99cd69"}
+    },
+    "mathematical": {
+      "accepted_original_regions_added": 0,
+      "accepted_original_regions_removed": 0,
+      "replacement_changes_at_same_original_region": 0,
+      "accepted_evidence_byte_identical": true,
+      "accepted_evidence_sha256": "96557b1d482a11568cde26443a3cfc272c21e9f81cfd9e6d9555a72973393c64",
+      "generated_source_files_added": 0,
+      "generated_source_files_removed": 0,
+      "generated_source_files_changed": 0,
+      "generated_source_files_byte_identical": 55,
+      "generated_source_manifest_file": "helper-expansion-generated-mathematical.sha256",
+      "generated_source_manifest_sha256": "5495bd3194efd60334a880b7c4d590505385650a07d684d3fce344f12a0b2647",
+      "manifest_applies_to": "Both baseline and current-r2 generated source trees",
+      "summary_sha256": {"baseline": "7044d8d7035a2a3ed5d97b8999ecd640cc73cbd0b65da7ded88024f93a0bda1a", "current": "3ab8d009da37fb825c3a839067c5f1d6e4b4e19f8643de7ef0367f9bdf853e7f"}
+    }
+  },
+  "mathematical_only_accepted_regions": {"baseline": 10, "current": 10, "locations_unchanged": true},
+  "newly_recognized_regions": [
+    {"file": "org/bouncycastle/crypto/agreement/ecjpake/ECJPAKECurve.java", "line": 85, "source_sha256": "33c97d683146b806f8420bf45bd160d4d4ba5be843bf176cb56864252ced58bb", "call": "calculateDeterminant(q, a, b)", "helper_declaration_line": 162, "baseline_diagnostic": "UNSUPPORTED_METHOD_OR_DISPATCH", "current_diagnostic": "NOIMPROVEMENT", "search_diagnostic": "NO_IMPROVEMENT_WITH_FULL_POLICY_COST", "search_completion": "EXHAUSTED_BOUNDED_SPACE", "work": 31107},
+    {"file": "org/bouncycastle/crypto/agreement/owl/OwlCurve.java", "line": 93, "source_sha256": "742b03c526666c0a45f490d14eb1d8769bd49cc1061017dca6b3bd0598ecd3a3", "call": "calculateDeterminant(q, a, b)", "helper_declaration_line": 195, "baseline_diagnostic": "UNSUPPORTED_METHOD_OR_DISPATCH", "current_diagnostic": "NOIMPROVEMENT", "search_diagnostic": "NO_IMPROVEMENT_WITH_FULL_POLICY_COST", "search_completion": "EXHAUSTED_BOUNDED_SPACE", "work": 31107}
+  ],
+  "deeper_rejections": [
+    {"file": "org/bouncycastle/crypto/bls/BLS12_381Serialization.java", "line": 68, "baseline_diagnostic": "UNSUPPORTED_METHOD_OR_DISPATCH", "current_diagnostic": "METHOD_BODY_SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"},
+    {"file": "org/bouncycastle/crypto/hash2curve/H2cUtils.java", "line": 67, "baseline_diagnostic": "UNSUPPORTED_METHOD_OR_DISPATCH", "current_diagnostic": "METHOD_BODY_METHOD_CONTROL_FLOW_OR_EFFECT"},
+    {"file": "org/bouncycastle/math/ec/tools/DiscoverEndomorphisms.java", "line": 267, "baseline_diagnostic": "UNSUPPORTED_METHOD_OR_DISPATCH", "current_diagnostic": "FIELD_OR_VOLATILE_INPUT"},
+    {"file": "org/bouncycastle/math/ec/tools/DiscoverEndomorphisms.java", "line": 295, "baseline_diagnostic": "UNSUPPORTED_METHOD_OR_DISPATCH", "current_diagnostic": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"},
+    {"file": "org/bouncycastle/math/ec/tools/DiscoverEndomorphisms.java", "line": 296, "baseline_diagnostic": "UNSUPPORTED_METHOD_OR_DISPATCH", "current_diagnostic": "SIDE_EFFECT_OR_UNSUPPORTED_EXPRESSION"},
+    {"file": "org/bouncycastle/math/ec/tools/DiscoverEndomorphisms.java", "line": 470, "baseline_diagnostic": "UNSUPPORTED_METHOD_OR_DISPATCH", "current_diagnostic": "METHOD_BODY_METHOD_CONTROL_FLOW_OR_EFFECT"},
+    {"file": "org/bouncycastle/math/ec/tools/DiscoverEndomorphisms.java", "line": 557, "baseline_diagnostic": "UNSUPPORTED_METHOD_OR_DISPATCH", "current_diagnostic": "METHOD_BODY_METHOD_BODY_METHOD_CONTROL_FLOW_OR_EFFECT"},
+    {"file": "org/bouncycastle/math/ec/tools/DiscoverEndomorphisms.java", "line": 568, "baseline_diagnostic": "UNSUPPORTED_METHOD_OR_DISPATCH", "current_diagnostic": "METHOD_BODY_METHOD_CONTROL_FLOW_OR_EFFECT"}
+  ],
+  "diagnostic_comparison_key": ["file", "line", "code"],
+  "compiled_product_classes": {
+    "baseline": {"files": 48, "manifest_file": "helper-expansion-product-classes-baseline.sha256", "canonical_manifest_sha256": "3d548998ffb1f4e4cb1dc7eb86550c79727d700b599d1043625ab46921279124", "unchanged_during_scans": true},
+    "current": {"files": 48, "manifest_file": "helper-expansion-product-classes-current.sha256", "canonical_manifest_sha256": "29d4e39bbf6c03432a14283af4720afaed56e811c2698dd2428c7bf7c1fa2a6d", "unchanged_during_scans": true}
+  },
+  "scanner_classfiles_identical_between_runs": true,
+  "runs": [
+    {"run": "baseline-test", "exit_code": 0, "started_utc": "2026-10-11T14:55:25.248989+00:00", "completed_utc": "2026-10-11T14:57:10.369170+00:00", "wall_seconds": 105.120227},
+    {"run": "baseline-scanner-compile", "exit_code": 0, "started_utc": "2026-10-11T14:57:39.067096+00:00", "completed_utc": "2026-10-11T14:57:41.622600+00:00", "wall_seconds": 2.555491},
+    {"run": "baseline-strict", "exit_code": 0, "started_utc": "2026-10-11T14:57:41.755185+00:00", "completed_utc": "2026-10-11T14:59:24.362173+00:00", "scan_wall_seconds": 102.607155},
+    {"run": "baseline-mathematical", "exit_code": 0, "started_utc": "2026-10-11T14:59:24.384618+00:00", "completed_utc": "2026-10-11T15:01:02.156464+00:00", "scan_wall_seconds": 97.772083},
+    {"run": "current-r2-compile", "exit_code": 0, "started_utc": "2026-10-11T15:18:30.033243+00:00", "completed_utc": "2026-10-11T15:18:40.850585+00:00", "wall_seconds": 10.817351},
+    {"run": "current-r2-scanner-compile", "exit_code": 0, "started_utc": "2026-10-11T15:18:41.081279+00:00", "completed_utc": "2026-10-11T15:18:45.013725+00:00", "wall_seconds": 3.932513},
+    {"run": "current-r2-strict", "exit_code": 0, "started_utc": "2026-10-11T15:18:45.156445+00:00", "completed_utc": "2026-10-11T15:20:17.995559+00:00", "scan_wall_seconds": 92.839289},
+    {"run": "current-r2-mathematical", "exit_code": 0, "started_utc": "2026-10-11T15:20:18.015830+00:00", "completed_utc": "2026-10-11T15:21:40.388848+00:00", "scan_wall_seconds": 82.372927}
+  ],
+  "timing_scope": "Scan wall times describe this diagnostic process only; they are not before/after Bouncy Castle program performance measurements.",
+  "jvm_memory_limits": {"scan_heap_mib": 512, "scan_metaspace_mib": 128, "scan_code_cache_mib": 64, "scan_direct_memory_mib": 64, "maven_heap_mib": 384, "test_heap_mib": 512},
+  "qualification_limits": ["Accepted-region counts and exact Undo verification; no whole-library behavioral-equivalence claim.", "Ten source archive entries have parse errors in the unchanged Java 17 corpus setup.", "No new whole-library compilation or runtime-performance result is claimed."],
+  "changed_production_sources": ["sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationExtractor.java", "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaScalarMethodBody.java", "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/RuntimeCalculationPolicy.java"],
+  "tests": {
+    "baseline_standalone": {"tests": 180, "failures": 0, "errors": 0, "skipped": 0, "test_classes": 25, "test_log_sha256": "375bac4c7424535ce43e16d3a06178311f5bdda52fb515063d8a4d6f69fe71b6", "scope": "Historical standalone mathematics/core harness", "excluded_test": "BouncyCastleRuntimeCorpusTest"},
+    "initial_helper_red": {"tests": 11, "failures": 7, "errors": 0, "skipped": 0, "test_classes": 1, "build_success_reported": false, "build_failure_reported": true, "log_sha256": "84a82543e95f6fe7a5917876d9b77326e147e7ff403d1ecfa77a3a4c9167fb1f", "xml_sha256": "d5c26d218d9da51b9cd3bad382a9a61367aba44d37e5f7f35c7325f471384551"},
+    "initial_helper_green": {"tests": 11, "failures": 0, "errors": 0, "skipped": 0, "build_success_reported": true, "build_failure_reported": false, "log_sha256": "7b5b4137c018c78d10f663cde60a01d7689b5a097664c6bd3d268b96a0d62e84"},
+    "review_red": {"tests": 14, "failures": 2, "errors": 0, "skipped": 0, "test_classes": 1, "build_success_reported": false, "build_failure_reported": true, "log_sha256": "b4c5c4e6a489a6bc3c23543638af9781a700758dff33481dd1b8d71401e71e89", "maven_reported_wall_seconds": 27.049, "xml_sha256": "9d51cc246054191d00bd9a1d77a26340c5b628cdc2ccd29cb471e5d21c1ecb3f"},
+    "review_green": {"tests": 14, "failures": 0, "errors": 0, "skipped": 0, "build_success_reported": true, "build_failure_reported": false, "log_sha256": "548896224983a093b0a9fb269f0c1ad62053a3e6b716ed17da74dbe5267a9247", "maven_reported_wall_seconds": 28.879},
+    "final_standalone": {"maven_exit_code": 0, "tests": 194, "failures": 0, "errors": 0, "skipped": 0, "test_classes": 26, "build_success_reported": true, "build_failure_reported": false, "log_sha256": "8cb62bdbf6d71dfd05367bca49aad4cd19167d522fa65a6612e4a1cf07bece2a", "maven_reported_wall_seconds": 59.464, "xml_manifest_sha256": "289d30f23dc7492731433437331da6ef06d2fe21259daaac05496ce7653d413e"},
+    "final_log": "full-math-final-isolated.log",
+    "common_scope": "Standalone mathematics/core Maven harness; installed-OSGi runtime corpus and native UI/full distribution gates excluded.",
+    "explicit_test_exclusions": ["**/BouncyCastleRuntimeCorpusTest.java"],
+    "build_output_isolation": {"only_pom_change": "build.directory", "test_scope_unchanged": true, "reason": "Avoid temporary synchronized-output staging files during class discovery"}
+  },
+  "current_repository_source_bytes_match_snapshot": true,
+  "test_sources_sha256": {"sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BigIntegerMethodExpansionTest.java": "7d2626f29153da214946f17f69fabca56083a11bde0439f2ffa21dc1a5a0649e"},
+  "strict_regions_retained_in_mathematical": true,
+  "scan_product_classfiles_byte_identical_to_final_test_build": 48,
+  "manifest_sha256": {"helper-expansion-dependencies.sha256": "835812318adcca08911587b9c0615bab8af3dcaebda9b31b96f38d67e7460864", "helper-expansion-generated-strict.sha256": "116e51a62b87e1f496542c9b83aa64e5238dc2feadff4c28ca4269c45d478a38", "helper-expansion-generated-mathematical.sha256": "5495bd3194efd60334a880b7c4d590505385650a07d684d3fce344f12a0b2647", "helper-expansion-product-classes-baseline.sha256": "3d548998ffb1f4e4cb1dc7eb86550c79727d700b599d1043625ab46921279124", "helper-expansion-product-classes-current.sha256": "29d4e39bbf6c03432a14283af4720afaed56e811c2698dd2428c7bf7c1fa2a6d"}
+}

@@ -68,7 +68,9 @@ final class RuntimeCalculationPolicy {
     /** Also used when decoding a helper body; calls must not bypass source preservation. */
     static boolean containsComputedConstant(Expression expression,
             Map<String, VariableDeclarationFragment> declarations) {
-        if (!primitiveNumber(expression)) return false;
+        if (expression == null) return false;
+        // BigInteger helper expressions can contain primitive constant formulas
+        // inside factory calls. Inspect those before any literal fast path.
         // Until the emitter can preserve original subexpression spelling, keep
         // the entire containing statement. Other runtime statements remain
         // eligible. In particular, do not turn rotate distances (32 - 9) into
