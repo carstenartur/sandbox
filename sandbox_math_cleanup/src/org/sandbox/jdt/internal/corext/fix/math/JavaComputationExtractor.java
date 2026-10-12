@@ -35,6 +35,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.ArrayCreation;
 import org.eclipse.jdt.core.dom.ArrayInitializer;
 import org.eclipse.jdt.core.dom.Assignment;
@@ -95,6 +96,11 @@ public final class JavaComputationExtractor {
       return extract(unit, source, options, false, true, 1);
    }
 
+   /** Retains the scalar regions available when memory reads were statement boundaries. */
+   Extraction extractRuntimeScalars(CompilationUnit unit, String source, MathCleanUpOptions options) {
+      return extract(unit, source, options, false, true, Integer.MAX_VALUE, false);
+   }
+
    JavaComputationExtractor.Extraction extractForVerification(CompilationUnit unit, String source, MathCleanUpOptions options) {
       return this.extract(unit, source, options, true, false);
    }
@@ -105,6 +111,11 @@ public final class JavaComputationExtractor {
 
    private JavaComputationExtractor.Extraction extract(final CompilationUnit unit, String source, final MathCleanUpOptions options,
          final boolean includeValues, final boolean runtimeOnly, int maximumOutputs) {
+      return extract(unit, source, options, includeValues, runtimeOnly, maximumOutputs, true);
+   }
+
+   private JavaComputationExtractor.Extraction extract(final CompilationUnit unit, String source, final MathCleanUpOptions options,
+         final boolean includeValues, final boolean runtimeOnly, int maximumOutputs, boolean arrayInputs) {
       final ArrayList<JavaComputationRegion> regions = new ArrayList<>();
       final ArrayList<Diagnostic> diagnostics = new ArrayList<>();
       if (!options.enabled()) {
@@ -144,40 +155,45 @@ public final class JavaComputationExtractor {
                return false;
             }
 
-            JavaComputationExtractor.Builder builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+            JavaComputationExtractor.Builder builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
 
             for (Object child : block.statements()) {
                Statement statement = (Statement)child;
+               if (JavaArrayReadInputs.requiresBoundary(statement, builder.values.keySet(),
+                     JavaArrayReadInputs.totalPrefix(builder.trace, builder.outputs))) {
+                  finish(builder, regions, diagnostics);
+                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
+               }
                boolean incomingAssignment = externalBigIntegerAssignment(statement, options)
                      && !builder.values.containsKey(((IVariableBinding) ((SimpleName) ((Assignment)
                            ((ExpressionStatement) statement).getExpression()).getLeftHandSide()).resolveBinding()).getKey());
                if (incomingAssignment) {
                   finish(builder, regions, diagnostics);
-                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                }
                if (builder.outputs.size() >= maximumOutputs) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
-                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                }
                if (runtimeOnly && RuntimeCalculationPolicy.preserve(statement, declarations)) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
                   diagnostics.add(new Diagnostic("CONSTANT_EXPRESSION_PRESERVED", "Intentional constant source is outside runtime cleanup", statement.getStartPosition(), statement.getLength()));
-                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                } else if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)
                      && !(statement instanceof ReturnStatement)) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
-                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                } else {
                   try {
                      builder.statement(statement);
                      if (incomingAssignment) {
                         finish(builder, regions, diagnostics);
-                        builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                        builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                      }
                   } catch (JavaComputationExtractor.Rejected rejected) {
                      JavaComputationExtractor.finish(builder.prior, regions, diagnostics);
                      diagnostics.add(JavaComputationExtractor.diagnostic(rejected));
-                     builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly);
+                     builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                   }
                }
             }
@@ -359,6 +375,7 @@ public final class JavaComputationExtractor {
       final Block block;
       final boolean includeValues;
       final boolean runtimeOnly;
+      final boolean arrayInputs;
       final Map<String, Expr> values = new HashMap<>();
       final Map<String, String> inputKeys = new HashMap<>();
       final Map<String, String> inputNames = new LinkedHashMap<>();
@@ -366,6 +383,7 @@ public final class JavaComputationExtractor {
       final List<Output> planOutputs = new ArrayList<>();
       final List<JavaComputationRegion.OutputBinding> outputs = new ArrayList<>();
       final List<Occurrence> trace = new ArrayList<>();
+      final List<JavaComputationRegion.ArrayRead> arrayReads = new ArrayList<>();
       final Set<SemanticAssumption> assumptions = new LinkedHashSet<>();
       final Set<String> receiverGuards = new LinkedHashSet<>();
       // Per-call Java frames. Never bind a helper's locals as caller inputs.
@@ -376,7 +394,7 @@ public final class JavaComputationExtractor {
       int first = -1;
       int end;
 
-      Builder(CompilationUnit unit, MathCleanUpOptions options, Map<String, VariableDeclarationFragment> declarations, Set<String> reserved, Block block, boolean includeValues, boolean runtimeOnly) {
+      Builder(CompilationUnit unit, MathCleanUpOptions options, Map<String, VariableDeclarationFragment> declarations, Set<String> reserved, Block block, boolean includeValues, boolean runtimeOnly, boolean arrayInputs) {
          this.unit = unit;
          this.options = options;
          this.declarations = declarations;
@@ -384,11 +402,12 @@ public final class JavaComputationExtractor {
          this.block = block;
          this.includeValues = includeValues;
          this.runtimeOnly = runtimeOnly;
+         this.arrayInputs = arrayInputs;
       }
 
       JavaComputationExtractor.Builder snapshot() {
          JavaComputationExtractor.Builder copy = new JavaComputationExtractor.Builder(
-            this.unit, this.options, this.declarations, this.reserved, this.block, this.includeValues, this.runtimeOnly
+            this.unit, this.options, this.declarations, this.reserved, this.block, this.includeValues, this.runtimeOnly, this.arrayInputs
          );
          copy.values.putAll(this.values);
          copy.inputKeys.putAll(this.inputKeys);
@@ -397,6 +416,7 @@ public final class JavaComputationExtractor {
          copy.planOutputs.addAll(this.planOutputs);
          copy.outputs.addAll(this.outputs);
          copy.trace.addAll(this.trace);
+         copy.arrayReads.addAll(this.arrayReads);
          copy.assumptions.addAll(this.assumptions);
          copy.receiverGuards.addAll(this.receiverGuards);
          copy.expandedMethodStatements = this.expandedMethodStatements;
@@ -707,6 +727,8 @@ public final class JavaComputationExtractor {
                      throw JavaComputationExtractor.reject("FIELD_OR_VOLATILE_INPUT", expression);
                   }
                }
+            } else if (expression instanceof ArrayAccess read && !primitiveBoundary) {
+               return arrayRead(read, resultKind);
             } else if (primitiveBoundary) {
                throw JavaComputationExtractor.reject("PRIMITIVE_PRECOMPUTATION_BOUNDARY", expression);
             } else if (expression instanceof CastExpression cast) {
@@ -852,6 +874,8 @@ public final class JavaComputationExtractor {
          this.selected(from, node);
          this.selected(to, node);
          Expr cast = JavaExpressions.cast(from, to, expression);
+         if (!arrayReads.isEmpty() && !JavaArrayReadInputs.total(to, cast))
+            throw reject("ARRAY_READ_ARITHMETIC_BOUNDARY", node); //$NON-NLS-1$
          this.trace.add(new Occurrence("cast@" + node.getStartPosition() + ":" + this.trace.size(), cast, to, to));
          return cast;
       }
@@ -864,8 +888,29 @@ public final class JavaComputationExtractor {
             if (operation == NumericOperation.MOD_POW) requireGuardedPositive(operands[1], node);
          }
          Expr expression = JavaExpressions.operation(kind, operation, operands);
+         if (!arrayReads.isEmpty() && !JavaArrayReadInputs.total(kind, expression))
+            throw reject("ARRAY_READ_ARITHMETIC_BOUNDARY", node); //$NON-NLS-1$
          this.trace.add(new Occurrence("operation@" + node.getStartPosition() + ":" + this.trace.size(), expression, kind, kind));
          return expression;
+      }
+
+      private Expr arrayRead(ArrayAccess read, NumericKind kind) {
+         // Checked evaluation and fallback need a separate ordered memory trace contract.
+         // Keep those profiles and helper memory access outside this initial admission.
+         if (!arrayInputs || options.safety() != SafetyProfile.PRESERVE_JAVA || !methodFrames.isEmpty()
+               || !JavaArrayReadInputs.integral(kind) || !JavaArrayReadInputs.supported(read, values.keySet()))
+            throw reject("ARRAY_READ_DEPENDENCY_BOUNDARY", read); //$NON-NLS-1$
+         if (!JavaArrayReadInputs.totalPrefix(trace, outputs))
+            throw reject("ARRAY_READ_ARITHMETIC_BOUNDARY", read); //$NON-NLS-1$
+         if (arrayReads.size() >= 64) throw reject("ARRAY_READ_COUNT_LIMIT", read); //$NON-NLS-1$
+         String inputId = "input" + inputKeys.size(); //$NON-NLS-1$
+         inputKeys.put("array@" + read.getStartPosition() + ":" + arrayReads.size(), inputId); //$NON-NLS-1$ //$NON-NLS-2$
+         String javaName = "_mathRead" + read.getStartPosition(); //$NON-NLS-1$
+         while (reserved.contains(javaName)) javaName += "_"; //$NON-NLS-1$
+         inputNames.put(inputId, javaName);
+         inputTypes.put(inputId, kind.type());
+         arrayReads.add(new JavaComputationRegion.ArrayRead(inputId, javaName, kind, read.getStartPosition(), read.getLength()));
+         return new VariableExpr(inputId);
       }
 
       private void requireGuardedPositive(Expr expression, ASTNode source) {
@@ -892,6 +937,8 @@ public final class JavaComputationExtractor {
       }
 
       void selected(NumericKind kind, ASTNode node) {
+         if (!arrayReads.isEmpty() && !JavaArrayReadInputs.integral(kind))
+            throw reject("ARRAY_READ_ARITHMETIC_BOUNDARY", node); //$NON-NLS-1$
          if (!this.options.kinds().contains(kind)) {
             throw JavaComputationExtractor.reject("EXCLUDED_NUMERIC_KIND", node);
          }
@@ -1270,7 +1317,9 @@ public final class JavaComputationExtractor {
             this.reserved,
             this.receiverGuards,
             this.first,
-            this.end - this.first
+            this.end - this.first,
+            List.of(),
+            this.arrayReads
          );
       }
 

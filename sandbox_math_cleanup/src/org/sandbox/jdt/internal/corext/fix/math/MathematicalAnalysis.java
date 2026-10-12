@@ -124,6 +124,7 @@ public final class MathematicalAnalysis {
       List<JavaComputationRegion> pending = new ArrayList<>(extraction.regions());
       List<JavaComputationRegion> fragments = null;
       List<JavaComputationRegion> statements = null;
+      List<JavaComputationRegion> scalarAlternatives = null;
 
       try {
          for (int regionIndex = 0; regionIndex < pending.size(); regionIndex++) {
@@ -160,6 +161,8 @@ public final class MathematicalAnalysis {
                   options.safety() == SafetyProfile.CHECKED_THROW ? CheckedPolicy.EXPLICIT_DEFAULT : CheckedPolicy.NONE
                );
 
+               boolean retryArrayScalars = false;
+               int replacementsBefore = replacements.size();
                try {
                   OptimizationResult result = optimizer.optimize(request, cancellation);
                   // Keep ordinary Java sharing improvements. A different overflow contract is
@@ -219,6 +222,8 @@ public final class MathematicalAnalysis {
                         // ordinary attempt was already charged before the retry.
                         remainingWork -= Math.max(request.budget().maximumWork(), exceeded.work());
                      }
+                     retryArrayScalars = result instanceof NoImprovement || result instanceof OptimizationResult.Inconclusive
+                           || result instanceof BudgetExceeded;
                      continue;
                   }
 
@@ -229,6 +234,7 @@ public final class MathematicalAnalysis {
                      diagnostics.add(diagnostic("REVERIFICATION_FAILED", explained.verification().toString(), region));
                      continue;
                   }
+                  retryArrayScalars = true;
 
                   String contract = mathematicalIntegral ? IntegralMathematicalDomain.verify(region, candidate.plan())
                         : mathematicalBigInteger ? "BigInteger numerical values are preserved; result reference identity may change. "
@@ -285,6 +291,7 @@ public final class MathematicalAnalysis {
                      replacement = indentGenerated(plain.statements(), source, region.start()) + rewriteValues(ast, source, region, plain.outputValues(), compilerOptions);
                   }
 
+                  replacement = indentGenerated(JavaRegionSourceRewriter.arrayCaptures(ast, source, region), source, region.start()) + replacement;
                   if (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
                         || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial()) {
                      replacement = indentGenerated(explanationText.sourceComment(), source, region.start()) + replacement;
@@ -329,6 +336,15 @@ public final class MathematicalAnalysis {
                      diagnostics.add(diagnostic("GUARD_COST_EXCEEDS_BENEFIT", "Receiver checks erase the estimated improvement", region));
                      continue;
                   }
+                  long arithmeticWork = cost.candidateCost().operationWork();
+                  cost = JavaArrayCaptureCost.assess(region, plain, cost, options.goal());
+                  if (!region.arrayReads().isEmpty() && options.goal() != OptimizationGoal.READABILITY
+                        && (cost.candidateScore() >= cost.sourceScore()
+                              || options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME && !cost.estimatedRuntimeImprovement())) {
+                     diagnostics.add(diagnostic("ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT", //$NON-NLS-1$
+                           "Capture stores, references and retained values erase the estimated benefit", region)); //$NON-NLS-1$
+                     continue;
+                  }
 
                   ComputationExplanation explanation = ComputationExplanation.from(region, explained.explanation().orElseThrow());
                   String description = "Mathematics "
@@ -345,6 +361,9 @@ public final class MathematicalAnalysis {
                      + region.assumptions();
                   description += "; estimated score " + cost.sourceScore() + " -> " + cost.candidateScore()
                         + "; measured speedup: not assessed";
+                  if (!region.arrayReads().isEmpty()) description += "; array capture work " //$NON-NLS-1$
+                        + (cost.candidateCost().operationWork() - arithmeticWork)
+                        + "; additional peak storage " + region.arrayReads().size() + " primitive values"; //$NON-NLS-1$ //$NON-NLS-2$
                   if (contract != null) {
                      description += "; " + contract;
                      documentation.add(ast, region, contract);
@@ -376,6 +395,26 @@ public final class MathematicalAnalysis {
                   diagnostics.add(diagnostic("VERIFIED_CANDIDATE", description, region));
                } catch (IllegalArgumentException | UnsupportedOperationException unsupported) {
                   diagnostics.add(diagnostic("UNSUPPORTED_OR_UNPROVED", unsupported.getMessage(), region));
+               } finally {
+                  // A connected memory region must not hide a useful scalar calculation.
+                  // Both search and presentation have already consumed their file budget.
+                  if (retryArrayScalars && !region.arrayReads().isEmpty() && remainingWork > 0
+                        && replacements.size() == replacementsBefore && !isCancelled(monitor)) {
+                     if (scalarAlternatives == null)
+                        scalarAlternatives = new JavaComputationExtractor().extractRuntimeScalars(ast, source, options).regions();
+                     var future = pending.subList(regionIndex + 1, pending.size());
+                     var smaller = scalarAlternatives.stream().filter(part -> part.arrayReads().isEmpty()
+                           && part.start() >= region.start() && part.start() + part.length() <= region.start() + region.length()
+                           && part.length() < region.length()
+                           && future.stream().noneMatch(other -> overlaps(part.start(), part.length(), other.start(), other.length()))
+                           && replacements.stream().noneMatch(other -> overlaps(part.start(), part.length(), other.offset(), other.length())))
+                           .toList();
+                     if (!smaller.isEmpty()) {
+                        pending.addAll(regionIndex + 1, smaller);
+                        diagnostics.add(diagnostic("ARRAY_SCALAR_RETRY", //$NON-NLS-1$
+                              "Retrying contained scalar regions within the remaining file budget", region)); //$NON-NLS-1$
+                     }
+                  }
                }
 
                monitor.worked(1);
@@ -417,6 +456,10 @@ public final class MathematicalAnalysis {
       if (result instanceof OptimizationResult.Inconclusive inconclusive && inconclusive.work() >= 0) return inconclusive.work();
       if (result instanceof BudgetExceeded exceeded) return Math.max(allocation, exceeded.work());
       return allocation;
+   }
+
+   private static boolean overlaps(int leftStart, int leftLength, int rightStart, int rightLength) {
+      return leftStart < (long) rightStart + rightLength && rightStart < (long) leftStart + leftLength;
    }
 
    private static String rewriteValues(CompilationUnit ast, String source, JavaComputationRegion region, Map<String, String> values, Map<String, String> compilerOptions) {
