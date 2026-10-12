@@ -5,9 +5,28 @@
 
  <dependencies><dependency><groupId>org.sandbox</groupId><artifactId>sandbox_math_cleanup</artifactId><version>${project.version}</version></dependency></dependencies>
  <properties><sandbox.math.retainHeadlessProbe>false</sandbox.math.retainHeadlessProbe></properties>
- <build><testSourceDirectory>src</testSourceDirectory><plugins><plugin>
+ <build><testSourceDirectory>src</testSourceDirectory><plugins>
+ <plugin>
+  <groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.8.1</version>
+  <executions><execution><id>pinned-mathematics-corpora</id><phase>generate-test-resources</phase><goals><goal>copy</goal></goals>
+   <configuration><outputDirectory>${project.build.directory}/corpus-inputs</outputDirectory><artifactItems>
+    <artifactItem><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId><version>3.135.0</version><type>jar</type><destFileName>swt-binary.jar</destFileName></artifactItem>
+    <artifactItem><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId><version>3.135.0</version><type>jar</type><classifier>sources</classifier><destFileName>swt-sources.jar</destFileName></artifactItem>
+    <artifactItem><groupId>org.bouncycastle</groupId><artifactId>bcprov-jdk18on</artifactId><version>1.85.2</version><type>jar</type><destFileName>bc-binary.jar</destFileName></artifactItem>
+    <artifactItem><groupId>org.bouncycastle</groupId><artifactId>bcprov-jdk18on</artifactId><version>1.85.2</version><type>jar</type><classifier>sources</classifier><destFileName>bc-sources.jar</destFileName></artifactItem>
+   </artifactItems></configuration>
+  </execution></executions>
+ </plugin>
+ <plugin>
   <groupId>org.eclipse.tycho</groupId><artifactId>tycho-surefire-plugin</artifactId><version>${tycho-version}</version>
   <configuration><useJDK>BREE</useJDK><useUIHarness>true</useUIHarness><useUIThread>false</useUIThread><showEclipseLog>true</showEclipseLog><providerHint>junit6</providerHint><failIfNoTests>true</failIfNoTests><forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
+   <systemProperties>
+    <sandbox.math.swt.binary>${project.build.directory}/corpus-inputs/swt-binary.jar</sandbox.math.swt.binary>
+    <sandbox.math.swt.sources>${project.build.directory}/corpus-inputs/swt-sources.jar</sandbox.math.swt.sources>
+    <sandbox.math.bc.mavenBinary>${project.build.directory}/corpus-inputs/bc-binary.jar</sandbox.math.bc.mavenBinary>
+    <sandbox.math.bc.mavenSources>${project.build.directory}/corpus-inputs/bc-sources.jar</sandbox.math.bc.mavenSources>
+    <sandbox.math.corpus.evidence>${project.build.directory}/surefire-reports/practical-corpus</sandbox.math.corpus.evidence>
+   </systemProperties>
    <excludes><exclude>**/*SWTBotTest.class</exclude></excludes>
   </configuration>
  </plugin></plugins></build>
