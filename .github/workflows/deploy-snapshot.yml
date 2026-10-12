@@ -212,6 +212,7 @@ jobs:
 
       - name: Wait for the selected GitHub Pages deployment
         id: wait_snapshot_pages
+        timeout-minutes: 32
         uses: actions/github-script@v9
         env:
           GH_PAGES_SHA: ${{ steps.gh_pages_after.outputs.sha }}
@@ -221,14 +222,15 @@ jobs:
             if (!/^[0-9a-f]{40}$/.test(sha || '')) {
               throw new Error('The published gh-pages commit was not captured.');
             }
-            const deadline = Date.now() + 10 * 60 * 1000;
+            const deadline = Date.now() + 30 * 60 * 1000;
             while (Date.now() < deadline) {
               const { data } = await github.rest.actions.listWorkflowRunsForRepo({
                 ...context.repo,
                 branch: 'gh-pages',
                 head_sha: sha,
                 event: 'dynamic',
-                per_page: 100
+                per_page: 100,
+                request: { signal: AbortSignal.timeout(30_000) }
               });
               const run = data.workflow_runs.find(candidate =>
                 candidate.head_sha === sha && candidate.name === 'pages build and deployment');
