@@ -42,6 +42,8 @@ class SwtImageDataRuntimeCorpusTest {
         Path binary = configured("sandbox.math.swt.binary");
         Path sources = configured("sandbox.math.swt.sources");
         Path evidence = configuredDirectory("sandbox.math.corpus.evidence");
+        assertEquals("8f96c6e714b55ecd0868bfd42cfcd4eeb8a19c4bbee34d6bbb17cb6e593f7f19", hash(Files.readAllBytes(sources)));
+        assertEquals("0799e4475b8937e05a0f13c6cbeadbf066ca56dd3622bfd8c7a4ba133b2db2e2", hash(Files.readAllBytes(binary)));
         int java = sourceLevel(binary);
         var values = new HashMap<>(MathCleanUpOptions.defaults(java).toMap());
         values.put(MathCleanUpOptions.CLEANUP, "true");
@@ -115,6 +117,41 @@ class SwtImageDataRuntimeCorpusTest {
         new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(evidence.resolve("bc-inputs.json").toFile(), Map.of(
                 "sourcesSha256", BC_SOURCE_SHA256, "binarySha256", hash(Files.readAllBytes(binary)),
                 "scope", "Pinned source acquisition only; complete corpus optimization is a separate manual run"));
+    }
+
+    @Test
+    void intentionalConstantPrefixesArePreservedInCompleteUpstreamFiles() throws Exception {
+        String[][] cases = {
+                {"sandbox.math.swt.binary", "sandbox.math.swt.sources", "org/eclipse/swt/internal/image/TIFFDirectory.java",
+                        "int numBytes = 3 * 2 * numColors;", "21"},
+                {"sandbox.math.bc.mavenBinary", "sandbox.math.bc.mavenSources", "org/bouncycastle/pqc/crypto/faest/BF192.java",
+                        "int o = xsOff + (192 - 1 - i) * LIMBS;", "17"},
+                {"sandbox.math.bc.mavenBinary", "sandbox.math.bc.mavenSources", "org/bouncycastle/pqc/crypto/faest/BF256.java",
+                        "int o = xsOff + (256 - 1 - i) * LIMBS;", "17"}
+        };
+        for (String[] item : cases) {
+            Path binary = configured(item[0]), archive = configured(item[1]);
+            assertEquals(item[0].contains("swt")
+                    ? "8f96c6e714b55ecd0868bfd42cfcd4eeb8a19c4bbee34d6bbb17cb6e593f7f19" : BC_SOURCE_SHA256,
+                    hash(Files.readAllBytes(archive)));
+            String source = StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(entry(archive, item[2]))).toString();
+            int offset = source.indexOf(item[3]), java = Integer.parseInt(item[4]);
+            assertTrue(offset >= 0, item[2]);
+            assertEquals(-1, source.indexOf(item[3], offset + 1), "The original formula must be unique");
+            var ast = parse(source, item[2], binary, java);
+            var values = new HashMap<>(MathCleanUpOptions.defaults(java).toMap());
+            values.put(MathCleanUpOptions.CLEANUP, "true");
+            values.put(MathCleanUpOptions.KINDS, "BYTE,SHORT,CHAR,INT,LONG");
+            values.put(MathCleanUpOptions.WORK_BUDGET, "1000000");
+            values.put(MathCleanUpOptions.MAX_STATES, "20000");
+            var options = MathCleanUpOptions.parse(values, java);
+            var extraction = new JavaComputationExtractor().extractRuntime(ast, source, options);
+            assertTrue(extraction.diagnostics().stream().anyMatch(d -> d.code().equals("CONSTANT_EXPRESSION_PRESERVED")
+                    && d.offset() == offset && d.length() == item[3].length()), item[2]);
+            var environment = new MathematicalAnalysis.SourceEnvironment(item[2], List.of(binary.toString()), List.of(), List.of());
+            var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), offset, item[3].length(), environment);
+            assertFalse(analysis.changed(), "Compiler-folded constant prefixes are not a runtime benefit: " + item[2]);
+        }
     }
 
     private static int sourceLevel(Path binary) throws Exception {
