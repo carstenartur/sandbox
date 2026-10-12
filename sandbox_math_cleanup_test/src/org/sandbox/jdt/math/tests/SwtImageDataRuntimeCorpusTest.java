@@ -94,8 +94,8 @@ class SwtImageDataRuntimeCorpusTest {
         report.put("generatedSha256", hash(generated.getBytes(StandardCharsets.UTF_8)));
         report.put("scope", "Complete ImageData source analysis and Apply/Undo; no SWT-wide scan, image execution or speedup claim");
         new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(evidence.resolve("swt-imagedata-review.json").toFile(), report);
-        Files.writeString(evidence.resolve("ImageData.before.java"), source);
-        Files.writeString(evidence.resolve("ImageData.after.java"), generated);
+        Files.writeString(evidence.resolve("ImageData.before.java"), source, StandardCharsets.UTF_8);
+        Files.writeString(evidence.resolve("ImageData.after.java"), generated, StandardCharsets.UTF_8);
         copy(binary, evidence.resolve("swt-binary.jar"));
         copy(sources, evidence.resolve("swt-sources.jar"));
         System.out.printf("SWT_MATH_CORPUS targetJava=%d extracted=%d accepted=%d source=%s generated=%s%n",

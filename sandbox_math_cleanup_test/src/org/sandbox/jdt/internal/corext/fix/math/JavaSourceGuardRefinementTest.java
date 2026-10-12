@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
@@ -108,7 +109,7 @@ class JavaSourceGuardRefinementTest {
     }
     private URLClassLoader compile(String source, String name) throws Exception {
         Path directory = Files.createDirectory(temporary.resolve(name)), file = directory.resolve("Sample.java");
-        Files.writeString(file, source);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         var compiler = ToolProvider.getSystemJavaCompiler(); assertNotNull(compiler, "Run under the required JDK");
         assertEquals(0, compiler.run(null, null, null, "--release", "17", "-d", directory.toString(), file.toString()));
         return new URLClassLoader(new java.net.URL[]{directory.toUri().toURL()}, getClass().getClassLoader());
