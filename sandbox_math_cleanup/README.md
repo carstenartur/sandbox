@@ -66,3 +66,12 @@ The pinned SDK also admits existing algebra rules whose premises follow from
 established typed facts, and bounded literal `BigInteger.shiftLeft(int)` terms in
 modular search. Java kinds, promotions, source trace and overflow policy remain
 explicit. Both capabilities are generic SDK features, not Java-source-name rules.
+
+## Practical review and established source guards
+
+The headless JSON report exposes an additive `reviewCandidates` list, keeping
+advisory benefit/diff/guard assessments separate from verified edits. Complete
+binding-checked guards in enclosing true branches can remove duplicate receiver
+checks without changing the numerical premises or explicit opt-in boundaries.
+See [practical review and repeatable BC/SWT profiles](../qa/math-optimization/PRACTICAL_REVIEW.md)
+for the supported fragment, remaining limits and exact archive-run commands.

@@ -61,8 +61,10 @@ final class JavaRegionLiveness {
          }
       }
       if (outputs.isEmpty()) return null; // No observable value is not permission to delete computations.
-      return new JavaComputationRegion(new JointComputationPlan(region.plan().inputs(), Map.of(), planOutputs),
+      var projected = new JavaComputationRegion(new JointComputationPlan(region.plan().inputs(), Map.of(), planOutputs),
             region.trace(), outputs, region.inputNames(), region.assumptions(), region.reservedNames(),
             region.receiverGuards(), region.start(), region.length(), internal, region.arrayReads());
+      // The projected region is the source boundary for both facts and emitted checks.
+      return JavaSourceGuardRefinement.refine(projected, unit);
    }
 }

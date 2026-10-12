@@ -14,6 +14,8 @@ import java.util.Map;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
+import org.sandbox.jdt.internal.corext.fix.math.MathReviewReport;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis.Analysis;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis.Diagnostic;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis.Replacement;
@@ -55,6 +57,11 @@ record MathematicalReport(int schemaVersion,String project,String mode,Map<Strin
    String original,String replacement,Map<String,String> compilerOptions,String environmentDigest,List<Diagnostic> diagnostics,
    List<Replacement> changes,List<VerifiedRegion> evidence,boolean applied,String observedSourceSha256,String applicationStatus) {
   FileReport { options=Map.copyOf(options);compilerOptions=Map.copyOf(compilerOptions);diagnostics=List.copyOf(diagnostics);changes=List.copyOf(changes);evidence=List.copyOf(evidence); }
+  /** Additive advisory metadata; the original evidence and application state remain unchanged. */
+  @JsonProperty(value="reviewCandidates", access=JsonProperty.Access.READ_ONLY) //$NON-NLS-1$
+  public List<MathReviewReport.Entry> reviewCandidates() {
+   return MathReviewReport.ranked(evidence, MathCleanUpOptions.parse(options, targetJava));
+  }
   FileReport withObserved(String source) {
    String hash=source==null?null:MathematicalEnvironment.digest(source);
    String state=source==null?"UNAVAILABLE":source.equals(original)?"ORIGINAL":source.equals(replacement)?"REPLACEMENT":"OTHER";
