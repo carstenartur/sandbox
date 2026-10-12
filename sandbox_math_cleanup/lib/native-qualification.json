@@ -1,0 +1,72 @@
+{
+  "schema": "sandbox.sdk-native-qualification/v1",
+  "sourceRepository": "carstenartur/Regelsuche",
+  "sourceRevision": "8f39dfe5f52fb0610164e18dac624a4bbfaaa49d",
+  "sourceTree": "06f7db51f0eebddeb1ee0ea85da8e69488d457dd",
+  "standaloneJarSha256": "2bbb776435a09a0bc61339312ae4f58c3b4f8dde67c2925f7b1c8ee686aee52c",
+  "standaloneJarGitBlob": "3c8895d8709a1e94ce4aebf2a7b90c00327f7451",
+  "qualificationRepository": "carstenartur/sandbox",
+  "workflowRun": 38200207089,
+  "runAttempt": 1,
+  "workflowUrl": "https://github.com/carstenartur/sandbox/actions/runs/38200207089",
+  "prepareJob": 114651707564,
+  "stageJob": 114652559719,
+  "stageCommit": "5a55746f2a7218bb0ff912080313f39b4854fa59",
+  "command": "mvn --batch-mode --no-transfer-progress -Psdk-release -pl maven-build-contract -Dtest=MavenOptimizationSdkDistributionTest test",
+  "javaVersion": "openjdk version \"25.0.4.1\" 2026-08-18 LTS\nOpenJDK Runtime Environment Temurin-25.0.4.1+1 (build 25.0.4.1+1-LTS)\nOpenJDK 64-Bit Server VM Temurin-25.0.4.1+1 (build 25.0.4.1+1-LTS, mixed mode, sharing)",
+  "mavenVersion": "Apache Maven 3.10.0 (c43a36b8d67be7e0805a411bc0898af1a51f5472)\nMaven home: /usr/share/apache-maven-3.10.0\nJava version: 25.0.4.1, vendor: Eclipse Adoptium, runtime: /usr/lib/jvm/temurin-25-jdk-amd64\nDefault locale: en, platform encoding: UTF-8, time zone: Etc/UTC\nOS name: \"linux\", version: \"6.8.0-1064-azure\", arch: \"amd64\", family: \"unix\"",
+  "sdkJUnitPerBuild": {
+    "first": {
+      "suites": 33,
+      "tests": 176,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "second": {
+      "suites": 33,
+      "tests": 176,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "reproducibility": {
+    "status": "PASS",
+    "sourceRevision": "8f39dfe5f52fb0610164e18dac624a4bbfaaa49d",
+    "sourceTree": "06f7db51f0eebddeb1ee0ea85da8e69488d457dd",
+    "cleanBuilds": 2,
+    "sdkTestsPerBuild": 176,
+    "freshConsumers": 2,
+    "identicalDistributionFiles": 10
+  },
+  "regression": {
+    "class": "de.regelsuche.sdk.optimization.FinalPreparationReuseBudgetTest",
+    "fixedWorkAllowance": 1092,
+    "first": "PASS",
+    "second": "PASS"
+  },
+  "artifacts": [
+    {
+      "id": 11725281181,
+      "name": "verified-sdk-transfer-38200207089-1",
+      "sha256": "733541a1f0c9ecbbff1f62f960adaf320ff39332bbb6417a7d5f5407d295648d"
+    },
+    {
+      "id": 11725890142,
+      "name": "sdk-transfer-evidence-38200207089-1",
+      "sha256": "71571c8ada61e1ecd92726755ca4f33f875d11ed5e5830aa393f15a9dc2587fa"
+    }
+  ],
+  "eplNotice": {
+    "path": "META-INF/licenses/Sandbox-EPL-2.0.txt",
+    "sha256": "8c349f80764d0648e645f41ef23772a70c995a0924b5235f735f4a3d09df127c",
+    "verifiedIn": [
+      "standalone JAR",
+      "sources JAR",
+      "Javadoc JAR",
+      "distribution ZIP"
+    ]
+  },
+  "scope": "Native SDK qualification only. Integrated Hawk acceptance and whole-corpus measurements are separate checks."
+}
