@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Established receiver checks</title></head>
+<body>
+<h1>Established receiver checks and early exits</h1>
+<p>The mathematics cleanup can reuse conditions already established by the Java
+source rather than insert duplicate BigInteger receiver checks. This does not
+remove the original checks, change the mathematical rules or enable mathematical
+mode automatically. See <a href="cleanup.html#safety">the safety profiles</a>.</p>
+<h2>Supported conditions</h2>
+<p>All conditions needed for the receiver must hold throughout the selected
+calculation: non-null, exact BigInteger class, the supported magnitude bound,
+and positive sign where required. Only resolved final or effectively final local
+references qualify. A missing fact retains the entire existing receiver guard.</p>
+<p>Besides enclosing true branches, a preceding guard clause can establish facts
+for the remainder of its block:</p>
+<pre>if (x == null || x.getClass() != BigInteger.class
+        || x.bitLength() &gt;= 4096) {
+    return originalCalculation(x);
+}
+// Here x has the established receiver properties.</pre>
+<p>The example illustrates source facts, not a guaranteed optimization of
+<code>originalCalculation</code>. A modulus would also need a positive-sign fact.
+For the subsequent calculation, the original return remains untouched.</p>
+<p>The early-exit branch must have no <code>else</code> and contain only an
+unconditional return or throw, optionally wrapped in single-statement blocks.
+Negated conditions are supported. A true conjunction or false disjunction
+establishes each term; a false conjunction or true disjunction does not.</p>
+<h2>Conservative boundaries</h2>
+<p>Fields, reassigned references, conditional exits, caught throws, try/finally,
+and arbitrary calls that might terminate are not accepted as continuation proofs.
+Facts do not cross lambda, method or anonymous-class boundaries. Analysis shares
+the existing bounded traversal and returns no partial proof when interrupted or
+exhausted. Independent numerical and generated-Java verification remain required.</p>
+<p>This support is not general control-flow analysis or permission to move
+BigInteger operations across side effects. Estimated savings are not a measured
+speedup or a cryptographic constant-time guarantee.</p>
+<p><a href="cleanup.html">Back to Mathematics Cleanup</a></p>
+</body>
+</html>

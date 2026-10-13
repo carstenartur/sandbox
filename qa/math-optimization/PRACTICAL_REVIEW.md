@@ -31,19 +31,33 @@ unassessed. No verified edit or evidence is removed or reordered for application
 
 ## Existing guards as proven facts
 
-The adapter can remove a duplicate receiver guard when enclosing true `if`
-branches establish its complete conjunction for the whole selected region:
-non-null, exact `BigInteger` class, `bitLength() < 4096` or a stronger integer
-bound, and positive sign when required. Nested `&&` conditions can contribute.
-Only binding-resolved, effectively final local variables/parameters qualify.
+The adapter can remove a duplicate receiver guard when dominating source checks
+establish its complete conjunction for the whole selected region: non-null, exact
+`BigInteger` class, `bitLength() < 4096` or a stronger integer bound, and positive
+sign when required. Only binding-resolved final or effectively final locals and
+parameters qualify; the mathematical opt-in contract remains unchanged.
 
-Fields, reassigned variables, `instanceof`, `||`, false branches, comments and
-conditions outside the enclosing execution path do not prove these facts. No fact
-crosses a lambda, method or anonymous-class boundary. Fractional limits do not
-silently become integer bounds. All numerical premises remain in the SDK request,
-with source-bound provenance, and independent emitted-Java verification remains.
-This does not infer general loop invariants, early-return conditions or arbitrary
-interprocedural facts, and does not activate mathematical mode implicitly.
+Facts can come from enclosing true `if` branches or an earlier guard clause in
+an enclosing block: `if (invalid) return ...;` or `if (invalid) throw ...;`.
+The early-exit branch must have no `else` and must consist of a return/throw,
+optionally wrapped in single-statement blocks. A negated valid conjunction or
+an invalid-condition disjunction is supported. A true `&&` or false `||`
+establishes each term; a false `&&` or true `||` does not. Previous guards and
+enclosing conditions can contribute different parts of the complete conjunction.
+
+Fields, reassigned variables, `instanceof`, conditional exits, caught throws,
+`try/finally`, arbitrary terminating calls and unrelated branches do not establish
+continuation facts. An unproved receiver retains its full existing guard, not
+merely the unproved individual checks. No fact crosses a lambda, method or
+anonymous-class boundary. Fractional limits are not converted to integer bounds.
+The existing 4,096-node and 128-ancestor limits include early-exit discovery;
+exhaustion or interruption yields no partially established guard proof.
+
+All numerical premises remain in the SDK request with source-bound provenance.
+Independent emitted-Java verification remains mandatory. Original guard clauses,
+return/throw statements and side effects stay in place. This does not infer
+general loop invariants or arbitrary interprocedural facts, permit BigInteger
+code motion, or activate mathematical mode implicitly.
 
 ## Reproducible archive runs
 
