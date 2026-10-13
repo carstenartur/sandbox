@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "23791df4c09dd5f848299486692a876af3a3785cb9508d005ced33ab29e2cd36",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: modernize.stringbufferToBuilder\u003e\n\u003c!description: Replace StringBuffer with StringBuilder for local variables for performance, as StringBuilder is not synchronized. This is only safe for local variables not shared across threads.\u003e\n\u003c!severity: WARNING\u003e\nnew java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "public class Example {\n    public static void main(String[] args) {\n        java.util.Set\u003cString\u003e strings \u003d new java.util.HashSet\u003c\u003e();\n        strings.add(\"hello\");\n        strings.add(\"world\");\n        // This should match and be transformed\n        java.lang.StringBuffer buf \u003d new java.lang.StringBuffer(strings.size() * 20);\n        for (String s : strings) {\n            buf.append(s);\n        }\n        System.out.println(buf.toString());\n\n        // This should match and be transformed\n        java.lang.StringBuffer local \u003d new java.lang.StringBuffer();\n        local.append(\"local var\");\n\n        // This StringBuffer is not assigned to a local variable declaration and should NOT match for this rule\n        new java.lang.StringBuffer(\"temp\").append(\"foo\");\n    }\n\n    // This StringBuffer is a field and should NOT match\n    private java.lang.StringBuffer fieldBuffer \u003d new java.lang.StringBuffer(\"field\");\n}",
+  "afterExample": "public class Example {\n    public static void main(String[] args) {\n        java.util.Set\u003cString\u003e strings \u003d new java.util.HashSet\u003c\u003e();\n        strings.add(\"hello\");\n        strings.add(\"world\");\n        // This should match and be transformed\n        java.lang.StringBuilder buf \u003d new java.lang.StringBuilder(strings.size() * 20);\n        for (String s : strings) {\n            buf.append(s);\n        }\n        System.out.println(buf.toString());\n\n        // This should match and be transformed\n        java.lang.StringBuilder local \u003d new java.lang.StringBuilder();\n        local.append(\"local var\");\n\n        // This StringBuffer is not assigned to a local variable declaration and should NOT match for this rule\n        new java.lang.StringBuffer(\"temp\").append(\"foo\");\n    }\n\n    // This StringBuffer is a field and should NOT match\n    private java.lang.StringBuffer fieldBuffer \u003d new java.lang.StringBuffer(\"field\");\n}",
+  "negativeExample": "public class NegativeExample {\n    // This StringBuffer is a field initializer, so it should NOT be transformed by the rule.\n    private final java.lang.StringBuffer fBuffer \u003d new java.lang.StringBuffer();\n\n    // This StringBuffer is returned, not assigned to a local variable in its declaration, so it should NOT be transformed by the rule.\n    public java.lang.StringBuffer createBuffer(int capacity) {\n        return new java.lang.StringBuffer(capacity);\n    }\n\n    // This StringBuffer is part of a method chain, not a local variable assignment, so it should NOT be transformed.\n    public String processString(String input) {\n        return new java.lang.StringBuffer(input).append(\"processed\").toString();\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "281c15cf322e33112a7e1d3b8bab687db4f3c2a4",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "summary": "Replaced new StringBuffer() with new StringBuilder() for local variable initializations to improve performance.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:04.748082639Z",
+  "ruleFingerprint": "sha256:dfbcb1c130753dd9d8db5ac574f3113d869821d28a50f6b0431daefd08ad4a06",
+  "behaviorFingerprint": "sha256:79f3b6e98ef44a0b9185a688dfd791e0e94ed33b33b4445f92ff9560df54b270",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-13T02:52:14.163356217Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

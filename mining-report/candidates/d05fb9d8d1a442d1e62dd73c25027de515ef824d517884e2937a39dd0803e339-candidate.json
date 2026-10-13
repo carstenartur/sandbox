@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d05fb9d8d1a442d1e62dd73c25027de515ef824d517884e2937a39dd0803e339",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$widget.getLineHeight($offset$)\n\u003d\u003e org.eclipse.jface.text.JFaceTextUtil.computeLineHeight($widget, $offset, $offset + 1, 1)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.SWT;\n\npublic class Example {\n    public void calculateLineHeight(StyledText textWidget, int offset) {\n        int height \u003d textWidget.getLineHeight(offset);\n        System.out.println(\"Line height: \" + height);\n    }\n\n    public static void main(String[] args) {\n        Shell shell \u003d new Shell();\n        StyledText styledText \u003d new StyledText(shell, SWT.NONE);\n        Example example \u003d new Example();\n        example.calculateLineHeight(styledText, 0);\n        shell.dispose();\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.jface.text.JFaceTextUtil;\n\npublic class Example {\n    public void calculateLineHeight(StyledText textWidget, int offset) {\n        int height \u003d JFaceTextUtil.computeLineHeight(textWidget, offset, offset + 1, 1);\n        System.out.println(\"Line height: \" + height);\n    }\n\n    public static void main(String[] args) {\n        Shell shell \u003d new Shell();\n        StyledText styledText \u003d new StyledText(shell, SWT.NONE);\n        Example example \u003d new Example();\n        example.calculateLineHeight(styledText, 0);\n        shell.dispose();\n    }\n}",
+  "negativeExample": "package test;\n\nimport java.awt.Component;\n\npublic class NegativeExample {\n    // This should not match, as Component does not have getLineHeight, \n    // and even if it did, it\u0027s not a StyledText.\n    public int someOtherMethod(Component comp, int value) {\n        // int height \u003d comp.getLineHeight(value); // This would not compile\n        return value;\n    }\n\n    // This should not match, as it\u0027s a different method name\n    public int getOtherHeight(Object obj, int offset) {\n        return 10; // obj.getLineHeight(offset) would not match\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "af04cf1999227a7e74d86c687b4289e27cd594fd",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API usage improvement",
+  "summary": "Use JFaceTextUtil.computeLineHeight instead of StyledText.getLineHeight to account for line spacing.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:05.109921383Z",
+  "ruleFingerprint": "sha256:00c5dc610e5abe26194bd7006a1119049f8a3b702c32817efd529ae87d2e9667",
+  "behaviorFingerprint": "sha256:cfb3262962e6c79728db411fdece8bd18b2a761ff5a3cb433aff0ffa2bcd8676",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-13T02:52:14.404779186Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

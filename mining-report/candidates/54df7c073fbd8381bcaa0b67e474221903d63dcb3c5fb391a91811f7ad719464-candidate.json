@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "54df7c073fbd8381bcaa0b67e474221903d63dcb3c5fb391a91811f7ad719464",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "class MyClass {\n    void foo() {\n        java.lang.StringBuffer buf \u003d new java.lang.StringBuffer(\"test\");\n        buf.append(1);\n    }\n}",
+  "afterExample": "class MyClass {\n    void foo() {\n        java.lang.StringBuilder buf \u003d new java.lang.StringBuilder(\"test\");\n        buf.append(1);\n    }\n}",
+  "negativeExample": "class MyClass {\n    private java.lang.StringBuffer fieldBuf \u003d new java.lang.StringBuffer(); // Should not match: not a local variable\n    java.lang.StringBuffer createBuffer() {\n        return new java.lang.StringBuffer(\"return\"); // Should not match: not a local variable assignment\n    }\n    void useBuffer(java.lang.StringBuffer paramBuf) { // Should not match: not a local variable\n        paramBuf.append(\"param\");\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "2da5c4c44f32c6db2c1b5c27c49a93846ee7eefb",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "summary": "Replaces StringBuffer with StringBuilder for local variable declarations for improved performance, ensuring thread-safety is not compromised.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:04.815000317Z",
+  "ruleFingerprint": "sha256:52ef1fd9bf1ad95f1f0de9ba3173c2edfb9f1fa3141c9853875b3da50ac736f0",
+  "behaviorFingerprint": "sha256:4a917806107f4ef719d778d29ec19e8b2abce7c8c5b08ddd48472ea27bcb7e09",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed source is invalid: Java compile error at line 3: Type mismatch: cannot convert from StringBuilder to StringBuffer",
+    "verifiedAt": "2026-10-13T02:52:14.186259521Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4a779794d4b6eff5e83fd1cab987e827b6e66d71d0567d1affeff5eb949c712e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.StringBuffer $var \u003d new java.lang.StringBuffer($args$);\n\u003d\u003e java.lang.StringBuilder $var \u003d new java.lang.StringBuilder($args$);\n;;",
+  "beforeExample": "import java.io.BufferedReader;\nimport java.io.IOException;\nimport java.io.InputStream;\nimport java.io.InputStreamReader;\n\npublic class Example {\n    void readFile(InputStream contentStream, String encoding, int BUFFER_SIZE) throws IOException {\n        BufferedReader in \u003d new BufferedReader(new InputStreamReader(contentStream, encoding), BUFFER_SIZE);\n        java.lang.StringBuffer buffer \u003d new java.lang.StringBuffer(BUFFER_SIZE);\n        char[] readBuffer \u003d new char[1024];\n        int n \u003d in.read(readBuffer);\n        while (n \u003e 0) {\n            buffer.append(readBuffer, 0, n);\n            n \u003d in.read(readBuffer);\n        }\n        in.close();\n    }\n}",
+  "afterExample": "import java.io.BufferedReader;\nimport java.io.IOException;\nimport java.io.InputStream;\nimport java.io.InputStreamReader;\n\npublic class Example {\n    void readFile(InputStream contentStream, String encoding, int BUFFER_SIZE) throws IOException {\n        BufferedReader in \u003d new BufferedReader(new InputStreamReader(contentStream, encoding), BUFFER_SIZE);\n        java.lang.StringBuilder buffer \u003d new java.lang.StringBuilder(BUFFER_SIZE);\n        char[] readBuffer \u003d new char[1024];\n        int n \u003d in.read(readBuffer);\n        while (n \u003e 0) {\n            buffer.append(readBuffer, 0, n);\n            n \u003d in.read(readBuffer);\n        }\n        in.close();\n    }\n}",
+  "negativeExample": "public class NegativeExample {\n    private java.lang.StringBuffer fieldBuffer \u003d new java.lang.StringBuffer(\"field\"); // Should not match: field declaration\n\n    void process(java.lang.StringBuffer paramBuffer) { // Should not match: method parameter\n        paramBuffer.append(\"stuff\");\n    }\n\n    void lateInit() {\n        java.lang.StringBuffer tempBuffer;\n        tempBuffer \u003d new java.lang.StringBuffer(\"later\"); // Should not match: assignment, not declaration with initializer\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "4aef24b8f49e9f9dba86fa84193acd60ac96d360",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Modernization",
+  "summary": "Replaces local variable declarations initializing StringBuffer with a new StringBuffer() constructor to StringBuilder equivalents.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:04.875504611Z",
+  "ruleFingerprint": "sha256:31c4878e060471aa182ee16ed03fbf4bdd591a4478b00e1d50d4e0386977f3c5",
+  "behaviorFingerprint": "sha256:5b3decdb5a255e9e0016e3ea797d9e6115b6cb34e6e07eb6ccbb12fe1680af7f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-13T02:52:14.221029069Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

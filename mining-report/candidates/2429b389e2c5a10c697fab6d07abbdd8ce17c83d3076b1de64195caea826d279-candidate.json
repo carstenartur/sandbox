@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2429b389e2c5a10c697fab6d07abbdd8ce17c83d3076b1de64195caea826d279",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: prefer-valueOf-for-wrappers\u003e\n\u003c!description: Replace primitive wrapper constructors with their static valueOf factory methods for improved performance (caching) and to avoid deprecated API usage.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: performance, modern-java\u003e\n\u003c!map WRAPPER_TYPES: \"java.lang.Long\" \u003d\u003e \"java.lang.Long\", \"java.lang.Integer\" \u003d\u003e \"java.lang.Integer\", \"java.lang.Double\" \u003d\u003e \"java.lang.Double\", \"java.lang.Float\" \u003d\u003e \"java.lang.Float\", \"java.lang.Character\" \u003d\u003e \"java.lang.Character\"\u003e\n\nnew #{WRAPPER_TYPES}( $arg )\n\u003d\u003e\n#{WRAPPER_TYPES_VALUE}.valueOf( $arg )\n;;",
+  "beforeExample": "public class MyClass {\n    public void method1() {\n        long l \u003d 100L;\n        Long objL \u003d new Long(l);\n        int i \u003d 200;\n        Integer objI \u003d new Integer(i);\n        double d \u003d 3.14;\n        Double objD \u003d new Double(d);\n        float f \u003d 1.618f;\n        Float objF \u003d new Float(f);\n        char c \u003d \u0027A\u0027;\n        Character objC \u003d new Character(c);\n\n        System.out.println(objL);\n        System.out.println(objI);\n        System.out.println(objD);\n        System.out.println(objF);\n        System.out.println(objC);\n    }\n}",
+  "afterExample": "public class MyClass {\n    public void method1() {\n        long l \u003d 100L;\n        Long objL \u003d Long.valueOf(l);\n        int i \u003d 200;\n        Integer objI \u003d Integer.valueOf(i);\n        double d \u003d 3.14;\n        Double objD \u003d Double.valueOf(d);\n        float f \u003d 1.618f;\n        Float objF \u003d Float.valueOf(f);\n        char c \u003d \u0027A\u0027;\n        Character objC \u003d Character.valueOf(c);\n\n        System.out.println(objL);\n        System.out.println(objI);\n        System.out.println(objD);\n        System.out.println(objF);\n        System.out.println(objC);\n    }\n}",
+  "negativeExample": "public class MyClass {\n    public void method2() {\n        // Not a primitive wrapper constructor\n        java.lang.String s \u003d new java.lang.String(\"test\");\n        java.math.BigDecimal bd \u003d new java.math.BigDecimal(123.45);\n\n        // Boolean is handled by separate deprecation rules, not this generic numeric/char wrapper rule\n        java.lang.Boolean b \u003d new java.lang.Boolean(true);\n\n        System.out.println(s);\n        System.out.println(bd);\n        System.out.println(b);\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "8127b32ac942fb77fe4edda6ef5e1a982ec1c04a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace primitive wrapper constructors with valueOf factory methods.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:05.164624359Z",
+  "ruleFingerprint": "sha256:4ebfc51d7f9ebc05cce7676fa3fe71b604d809939642d0cf3bb6e86873dcc25f",
+  "behaviorFingerprint": "sha256:8220dc81ec8363b961c008c3764e9b172541a4bcf517302685c2616114e74816",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-13T02:52:14.453886984Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9dc025b6aed3d7e90fa9dd304bcca0821b9f39d521ecaebcf6649d430cf40f0b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$expr !\u003d null ? $expr.$method$($args$) : null\n\u003d\u003e $expr.$method$($args$)\n;;",
+  "beforeExample": "import java.util.Objects;\nimport java.nio.file.Path;\n\npublic class Example {\n    public Path getPathOrNull(String name) {\n        Path p \u003d Path.of(name);\n        Objects.requireNonNull(p); // Make p non-null for static analysis\n        Path result \u003d p !\u003d null ? p.toAbsolutePath() : null;\n        return result;\n    }\n\n    public String getNameOrNull(Object obj) {\n        Objects.requireNonNull(obj); // Make obj non-null\n        String result \u003d obj !\u003d null ? obj.getClass().getName() : null;\n        return result;\n    }\n}",
+  "afterExample": "import java.util.Objects;\nimport java.nio.file.Path;\n\npublic class Example {\n    public Path getPathOrNull(String name) {\n        Path p \u003d Path.of(name);\n        Objects.requireNonNull(p); // Make p non-null for static analysis\n        Path result \u003d p.toAbsolutePath();\n        return result;\n    }\n\n    public String getNameOrNull(Object obj) {\n        Objects.requireNonNull(obj); // Make obj non-null\n        String result \u003d obj.getClass().getName();\n        return result;\n    }\n}",
+  "negativeExample": "import java.nio.file.Path;\n\npublic class NegativeExample {\n    public Path getPathOrNull(String name, boolean makeNull) {\n        Path p \u003d null;\n        if (!makeNull) {\n            p \u003d Path.of(name);\n        }\n        // \u0027p\u0027 can be null here, so the check is not redundant.\n        // The rule must NOT apply here.\n        Path result \u003d p !\u003d null ? p.toAbsolutePath() : null;\n        return result;\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "e341a61b8c18b906a60eee6886b5d0fc452797e1",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Redundant null check",
+  "summary": "Remove redundant null check in ternary operator when expression is proven non-null and the \u0027false\u0027 branch is null.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:05.089684297Z",
+  "ruleFingerprint": "sha256:bfba688ee5f2113be8ccfdacf00578add5efff1300a8f0385aaec165db65fe04",
+  "behaviorFingerprint": "sha256:4901f95945d43f32eed9f8b4fa22ff721d26bb160e292fb1e3b4b723fa755908",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-13T02:52:14.389038627Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

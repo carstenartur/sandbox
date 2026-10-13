@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "59687868766ab44ecc88b6fff247f56819a9607b570007a3b2f098df70c68853",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "public $ReturnType $methodName($params$) :: methodNameMatches($methodName, \"createDelegate\")\n\u003d\u003e\n@java.lang.SuppressWarnings(\"unchecked\") public $ReturnType $methodName($params$)\n;;",
+  "beforeExample": "package org.eclipse.ui.internal.genericeditor;\n\nimport org.eclipse.core.runtime.IConfigurationElement;\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.content.IContentType;\n\npublic class GenericContentTypeRelatedExtension\u003cT\u003e {\n    private IConfigurationElement extension;\n    private static final String CLASS_ATTRIBUTE \u003d \"class\";\n\n    public GenericContentTypeRelatedExtension(IConfigurationElement element) {\n        this.extension \u003d element;\n    }\n\n    public T createDelegate() {\n        try {\n            return (T) extension.createExecutableExtension(CLASS_ATTRIBUTE);\n        } catch (Exception e) {\n            return null; // Simplified exception handling for example\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.ui.internal.genericeditor;\n\nimport org.eclipse.core.runtime.IConfigurationElement;\nimport org.eclipse.core.runtime.Platform;\nimport org.eclipse.core.runtime.content.IContentType;\n\npublic class GenericContentTypeRelatedExtension\u003cT\u003e {\n    private IConfigurationElement extension;\n    private static final String CLASS_ATTRIBUTE \u003d \"class\";\n\n    public GenericContentTypeRelatedExtension(IConfigurationElement element) {\n        this.extension \u003d element;\n    }\n\n    @java.lang.SuppressWarnings(\"unchecked\")\n    public T createDelegate() {\n        try {\n            return (T) extension.createExecutableExtension(CLASS_ATTRIBUTE);\n        } catch (Exception e) {\n            return null; // Simplified exception handling for example\n        }\n    }\n}",
+  "negativeExample": "package org.eclipse.ui.internal.genericeditor;\n\npublic class GenericContentTypeRelatedExtension\u003cT\u003e {\n\n    public T createAnotherDelegate() { // Different method name, should not match\n        return null;\n    }\n\n    public void someOtherMethod(String arg) { // Different signature, should not match\n        System.out.println(arg);\n    }\n}",
+  "targetHintFile": "java-warning-suppression.sandbox-hint",
+  "sourceCommit": "6332700c91974929c72b945b8dc2b34deb378a21",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Warning Suppression",
+  "summary": "Add @SuppressWarnings(\"unchecked\") to createDelegate() method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:05.017349852Z",
+  "ruleFingerprint": "sha256:639686c7d7eace6a4495238a81ace0ef001b463803bb3d83fe7f40bff4fd1c0a",
+  "behaviorFingerprint": "sha256:ec024130d47f85a6120d2992a46ae04a37df920cb5f917df700313d17e1f27cd",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type GenericContentTypeRelatedExtension must be defined in its own file",
+    "verifiedAt": "2026-10-13T02:52:14.312142402Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

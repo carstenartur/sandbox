@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "706443962add5ad97a8764db2d6e881392b6d13f7e0bccf9359500b0ea900fcb",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.swt.graphics.Color(org.eclipse.swt.widgets.Display.getCurrent(), new org.eclipse.swt.graphics.RGB(0,0,255))\n\u003d\u003e\norg.eclipse.swt.widgets.Display.getCurrent().getSystemColor(org.eclipse.swt.SWT.COLOR_BLUE)\n;;",
+  "beforeExample": "package org.eclipse.ui.genericeditor.examples.dotproject;\n\nimport org.eclipse.jface.text.TextAttribute;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.graphics.RGB;\nimport org.eclipse.swt.widgets.Display;\n\npublic class TestClass {\n    public void method() {\n        TextAttribute tagAttribute \u003d new TextAttribute(new Color(Display.getCurrent(), new RGB(0,0, 255)));\n    }\n}",
+  "afterExample": "package org.eclipse.ui.genericeditor.examples.dotproject;\n\nimport org.eclipse.jface.text.TextAttribute;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Display;\n\npublic class TestClass {\n    public void method() {\n        TextAttribute tagAttribute \u003d new TextAttribute(Display.getCurrent().getSystemColor(SWT.COLOR_BLUE));\n    }\n}",
+  "negativeExample": "package org.eclipse.ui.genericeditor.examples.dotproject;\n\nimport org.eclipse.jface.text.TextAttribute;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.graphics.RGB;\nimport org.eclipse.swt.widgets.Display;\n\npublic class TestClass {\n    public void method() {\n        TextAttribute differentColorAttribute \u003d new TextAttribute(new Color(Display.getCurrent(), new RGB(255,0, 0))); // Red, should not match\n        Color customColor \u003d new Color(Display.getCurrent(), 10, 20, 30); // Different constructor, should not match\n    }\n}",
+  "targetHintFile": "swt-color-system-colors.sandbox-hint",
+  "sourceCommit": "30c01e1e4b9f3f6feb22bf12a7248de589b24b9b",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "SWT API Cleanup",
+  "summary": "Replace direct Color instantiation with system color for blue.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:04.993564955Z",
+  "ruleFingerprint": "sha256:6a408ea7710abe8b7c2fb514de5b86346833958df061311b18a31bb9d3438b9c",
+  "behaviorFingerprint": "sha256:42b74957e2ea7676e1c8490c4764abc2632f99805bba9fc17bdab3f73d8e1d5a",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.text.TextAttribute cannot be resolved",
+    "verifiedAt": "2026-10-13T02:52:14.294730697Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

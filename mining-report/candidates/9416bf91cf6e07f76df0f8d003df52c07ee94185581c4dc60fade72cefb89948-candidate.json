@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9416bf91cf6e07f76df0f8d003df52c07ee94185581c4dc60fade72cefb89948",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: string.substring_negative_start_index_check\u003e\n\u003c!description: Add bounds check for substring start index to prevent StringIndexOutOfBoundsException. Ensures the offset is not less than the substring length, for expressions like string.substring(offset - length, offset).\u003e\n\u003c!severity: WARNING\u003e\n$str.length() \u003e\u003d $len \u0026\u0026 $str.substring($offset - $len, $offset).equals($compareTo) :: isLiteral($len)\n\u003d\u003e\n$str.length() \u003e\u003d $len \u0026\u0026 $offset \u003e\u003d $len \u0026\u0026 $str.substring($offset - $len, $offset).equals($compareTo)\n;;",
+  "beforeExample": "class Example {\n    void process(String text, int offset) {\n        if (text.length() \u003e\u003d 3 \u0026\u0026 text.substring(offset - 3, offset).equals(\"bar\")) {\n            System.out.println(\"Matched\");\n        }\n    }\n}\n",
+  "afterExample": "class Example {\n    void process(String text, int offset) {\n        if (text.length() \u003e\u003d 3 \u0026\u0026 offset \u003e\u003d 3 \u0026\u0026 text.substring(offset - 3, offset).equals(\"bar\")) {\n            System.out.println(\"Matched\");\n        }\n    }\n}\n",
+  "negativeExample": "class Example {\n    void otherMethod(String s, int i) {\n        // This should not be matched by the rule, as it uses .startsWith instead of .equals\n        if (s.length() \u003e\u003d 5 \u0026\u0026 s.substring(i - 5, i).startsWith(\"test\")) {\n            System.out.println(\"Other condition\");\n        }\n    }\n\n    void safeMethod(String s, int i) {\n        // Already safe, should not be matched\n        if (s.length() \u003e\u003d 3 \u0026\u0026 i \u003e\u003d 3 \u0026\u0026 s.substring(i - 3, i).equals(\"foo\")) {\n            System.out.println(\"Already safe\");\n        }\n    }\n\n    void nonLiteralLen(String s, int i, int len) {\n        // len is not a literal, should not be matched by a rule with isLiteral($len) guard\n        if (s.length() \u003e\u003d len \u0026\u0026 s.substring(i - len, i).equals(\"abc\")) {\n            System.out.println(\"Non-literal length\");\n        }\n    }\n\n    void differentSubstringArgs(String s, int i) {\n        // Different substring arguments, should not be matched\n        if (s.length() \u003e\u003d 3 \u0026\u0026 s.substring(0, i).equals(\"def\")) {\n            System.out.println(\"Different substring args\");\n        }\n    }\n}\n",
+  "targetHintFile": "string.sandbox-hint",
+  "sourceCommit": "436cf72b5d16b64ce88662e468a4839ed8dd99e9",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Defensive Programming",
+  "summary": "Adds a missing bounds check \u0027offset \u003e\u003d length\u0027 to String.substring calls within an \u0027if\u0027 condition where \u0027substring(offset - length, offset)\u0027 is used, preventing StringIndexOutOfBoundsException.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:05.069972715Z",
+  "ruleFingerprint": "sha256:f88d63844bbcd1b582deefddf2b5c380ce55abad42e3bfab2e6b75e4d1338f76",
+  "behaviorFingerprint": "sha256:997ab9dc67a3c364b30b1fe8ddf5660934faf7aea0dba233efb5156afb950f5f",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-13T02:52:14.369540319Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

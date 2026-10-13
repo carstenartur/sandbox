@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a2f08e111b1b3bffd1b9f0b5babcccd9f01a77ab1b2f92da313b867a91c73f77",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.core.runtime.Assert.isLegal($var \u003d\u003d null || $var instanceof java.lang.String || $var instanceof org.eclipse.jface.internal.text.html.BrowserInformationControlInput)\n\u003d\u003e org.eclipse.core.runtime.Assert.isLegal($var \u003d\u003d null || $var instanceof java.lang.String || $var instanceof org.eclipse.jface.internal.text.html.BrowserInformationControlInput, $var !\u003d null ? $var.getClass().getName() : \"null\")\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.core.runtime.Assert;\n\npublic class Example {\n    public static class CustomInput {}\n\n    public void validateInput(Object input) {\n        Assert.isLegal(input \u003d\u003d null || input instanceof String || input instanceof CustomInput);\n    }\n\n    public void anotherValidation(Object param) {\n        // This should not match, as it has a different condition.\n        Assert.isLegal(param !\u003d null);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.core.runtime.Assert;\n\npublic class Example {\n    public static class CustomInput {}\n\n    public void validateInput(Object input) {\n        Assert.isLegal(input \u003d\u003d null || input instanceof String || input instanceof CustomInput, input !\u003d null ? input.getClass().getName() : \"null\");\n    }\n\n    public void anotherValidation(Object param) {\n        // This should not match, as it has a different condition.\n        Assert.isLegal(param !\u003d null);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.core.runtime.Assert;\n\npublic class NegativeExample {\n    public void validateDifferentCondition(Object someObj) {\n        // Condition is different, so this should not match.\n        Assert.isLegal(someObj !\u003d null \u0026\u0026 someObj instanceof Integer);\n    }\n\n    public void validateWithExistingMessage(Object input) {\n        // Already has a message argument, so this should not match.\n        Assert.isLegal(input \u003d\u003d null || input instanceof String, \"Input cannot be null\");\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "9bd6b4bc5f92f9582dadc1ccf23a7f02cbe4d637",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Logging improvement",
+  "summary": "Add a class name to Assert.isLegal message for specific input validation.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:05.125559247Z",
+  "ruleFingerprint": "sha256:5e7cddef97e1e977089cc03258c3197e2646e10ebf65ec88eb0c386144d8baa9",
+  "behaviorFingerprint": "sha256:d10544da2d66209fbb7fadfd3f52c0504adcc79e7148814a4813a940298785b3",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 5: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-13T02:52:14.427538533Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

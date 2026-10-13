@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2cecd23a6e609093670f0cd1cd095132ad431a48fff2f56d9b66ea65321f3550",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$expr \u003d\u003d null :: instanceof($expr, \"org.eclipse.jface.text.ISourceViewer\")\n\u003d\u003e $expr \u003d\u003d null || $expr.getTextWidget() \u003d\u003d null\n;;",
+  "beforeExample": "package org.eclipse.ui.texteditor;\nimport org.eclipse.jface.text.ISourceViewer;\nimport org.eclipse.swt.custom.StyledText;\n\npublic class AbstractTextEditor {\n    private ISourceViewer fSourceViewer;\n\n    private void updateCaret() {\n        if (fSourceViewer \u003d\u003d null) { // This line is targeted\n            return;\n        }\n        StyledText styledText \u003d fSourceViewer.getTextWidget();\n    }\n}",
+  "afterExample": "package org.eclipse.ui.texteditor;\nimport org.eclipse.jface.text.ISourceViewer;\nimport org.eclipse.swt.custom.StyledText;\n\npublic class AbstractTextEditor {\n    private ISourceViewer fSourceViewer;\n\n    private void updateCaret() {\n        if (fSourceViewer \u003d\u003d null || fSourceViewer.getTextWidget() \u003d\u003d null) { // This is the replacement\n            return;\n        }\n        StyledText styledText \u003d fSourceViewer.getTextWidget();\n    }\n}",
+  "negativeExample": "package com.example;\n\npublic class MyClass {\n    private Object myObject;\n\n    public void check() {\n        if (myObject \u003d\u003d null) { // Should not match due to type guard\n            System.out.println(\"Object is null\");\n        }\n    }\n}",
+  "targetHintFile": "eclipse-editor.sandbox-hint",
+  "sourceCommit": "b3ee795c0b366f5254afb46c633640b78bb06a0a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Null Safety",
+  "summary": "Add null check for getTextWidget() when checking ISourceViewer.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:05.056374143Z",
+  "ruleFingerprint": "sha256:af879e53216c985eae0c1a205c127d33265f9284df33827df4d21be2b867ad77",
+  "behaviorFingerprint": "sha256:d6b7753294aa2e3dc9ca7d57fc15f34ec90b5b957e9c5b6b73054765fbcc8ed1",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.jface.text.ISourceViewer cannot be resolved",
+    "verifiedAt": "2026-10-13T02:52:14.351714097Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
