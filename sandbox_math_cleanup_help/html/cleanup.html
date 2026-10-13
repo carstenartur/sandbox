@@ -200,6 +200,30 @@ mode must still observe an original overflowing addition.</li>
 <code>strictfp</code>, or an arbitrary epsilon does not prove this rewrite.</li>
 </ul>
 
+<h2 id="source-slices">Connected local calculations and source provenance</h2>
+<p>Whole-file analysis in <code>PRESERVE_JAVA</code> can connect up to four
+original calculation regions across unchanged call statements in the same block.
+Select the primitive integral types involved, with mathematical mode off. Only
+initialized, effectively final local values and total integral expressions qualify;
+array/field accesses, division/remainder, mutation and general control-flow
+changes retain their boundaries. A call that observes a produced intermediate
+prevents connection. The call itself is not assumed pure and remains in its
+original order, even when it throws.</p>
+<p>Accepted connected computations carry one proof and an atomic group of small
+JDT edits. Unchanged call statements and comments are not swallowed by a large
+replacement edit. Recorded <code>sourcePlan</code> data contain source-version
+hashes, node and binding descriptors, original occurrence IDs and exact edits;
+Eclipse node objects are resolved only within the adapter, not stored in the
+mathematical AST. A changed source or project environment requires reanalysis.
+Selection-only Quick Assist retains its existing region boundaries.</p>
+<p>Source discovery and search share the file work allowance. When a joint
+proposal cannot be applied, the original regions are retried within the remaining
+allowance; unsupported connections never authorize a fallback that repeats side
+effects. Diagnostics now carry a <code>stage</code> distinguishing source,
+search, proof, emission, cost and budget boundaries. An ambiguous SDK rejection
+remains <code>SEARCH_OR_PROOF</code>, not a fabricated cause. This first fragment
+is not general SSA, alias analysis, loop optimization or BigInteger motion.</p>
+
 <h2 id="headless">Headless use and diagnostics</h2>
 <p>For a strictly read-only analysis, use the separate application with an
 existing, open Java project in an Eclipse workspace:</p>

@@ -35,6 +35,18 @@ final class JavaRegionSourceRewriter {
 
    static String rewrite(CompilationUnit ast, String source, JavaComputationRegion region,
          Map<String, String> values, Map<String, String> compilerOptions) {
+      try {
+         Document document = new Document(source);
+         TextEdit edit = edits(ast, source, region, values, compilerOptions);
+         edit.apply(document);
+         return document.get(region.start(), region.length() + document.getLength() - source.length());
+      } catch (BadLocationException invalid) {
+         throw new IllegalArgumentException("STALE_SOURCE_RANGE", invalid);
+      }
+   }
+
+   static TextEdit edits(CompilationUnit ast, String source, JavaComputationRegion region,
+         Map<String, String> values, Map<String, String> compilerOptions) {
       ASTRewrite rewrite = ASTRewrite.create(ast.getAST());
       rewrite.setTargetSourceRangeComputer(new TargetSourceRangeComputer() {
          @Override public SourceRange computeSourceRange(ASTNode node) {
@@ -55,17 +67,11 @@ final class JavaRegionSourceRewriter {
          rewrite.replace(exactNode(ast, output.initializerStart(), output.initializerLength()),
                ASTNode.copySubtree(ast.getAST(), parser.createAST(null)), null);
       }
-      try {
-         Document document = new Document(source);
-         TextEdit edit = rewrite.rewriteAST(document, compilerOptions);
-         if (edit.getOffset() < region.start() || edit.getExclusiveEnd() > region.start() + region.length()) {
-            throw new IllegalArgumentException("REWRITE_OUTSIDE_REGION");
-         }
-         edit.apply(document);
-         return document.get(region.start(), region.length() + document.getLength() - source.length());
-      } catch (BadLocationException invalid) {
-         throw new IllegalArgumentException("STALE_SOURCE_RANGE", invalid);
+      TextEdit edit = rewrite.rewriteAST(new Document(source), compilerOptions);
+      if (edit.getOffset() < region.start() || edit.getExclusiveEnd() > region.start() + region.length()) {
+         throw new IllegalArgumentException("REWRITE_OUTSIDE_REGION");
       }
+      return edit;
    }
 
    private static ASTNode exactNode(CompilationUnit ast, int start, int length) {
