@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -94,7 +95,7 @@ class CharacterLiteralRoundTripTest {
         assertEquals(source, document.get());
         Path output = Files.createTempDirectory(temporary, "char-");
         Path file = output.resolve("Calculation.java");
-        Files.writeString(file, generated);
+        Files.writeString(file, generated, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
                 "--release", "8", "-Xlint:-options", "-d", output.toString(), file.toString()), generated);
         try (var loader = new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {

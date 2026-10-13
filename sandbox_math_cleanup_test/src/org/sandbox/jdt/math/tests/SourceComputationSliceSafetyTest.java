@@ -4,6 +4,7 @@ package org.sandbox.jdt.math.tests;
 import static org.junit.jupiter.api.Assertions.*;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -107,7 +108,7 @@ class SourceComputationSliceSafetyTest {
     }
 
     private URLClassLoader compile(String source,String name) throws Exception {
-        Path dir=Files.createDirectory(temporary.resolve(name));Path file=dir.resolve("Sample.java");Files.writeString(file,source);
+        Path dir=Files.createDirectory(temporary.resolve(name));Path file=dir.resolve("Sample.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         var compiler=ToolProvider.getSystemJavaCompiler();assertNotNull(compiler);
         assertEquals(0,compiler.run(null,null,null,"--release","17","-d",dir.toString(),file.toString()));
         return new URLClassLoader(new java.net.URL[]{dir.toUri().toURL()},ClassLoader.getPlatformClassLoader());

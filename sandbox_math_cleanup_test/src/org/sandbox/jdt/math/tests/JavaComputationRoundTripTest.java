@@ -12,6 +12,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigInteger;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -370,7 +371,7 @@ class JavaComputationRoundTripTest {
    private Object invoke(String var1, Class<?> var2, Object var3, int targetJava) throws Exception {
       Path var4 = Files.createTempDirectory(this.temporary, "compiled-");
       Path var5 = var4.resolve("Calculation.java");
-      Files.writeString(var5, var1);
+      Files.writeString(var5, var1, StandardCharsets.UTF_8);
       Assertions.assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", Integer.toString(targetJava), "-d", var4.toString(), var5.toString()));
 
       try (URLClassLoader var6 = new URLClassLoader(new URL[]{var4.toUri().toURL()}, null)) {

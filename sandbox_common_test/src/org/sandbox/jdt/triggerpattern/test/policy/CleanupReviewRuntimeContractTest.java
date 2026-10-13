@@ -25,8 +25,8 @@ class CleanupReviewRuntimeContractTest {
     void suppliedJdkIsReadOnlyAndUsedByBothJavaHomeAndPathLaunchers() throws Exception {
         Path home = Files.createDirectories(temporary.resolve("JDK with spaces"));
         Files.createDirectories(home.resolve("bin"));
-        Files.writeString(home.resolve("release"), "JAVA_VERSION=\"25\"\n");
-        Path java = Files.writeString(home.resolve("bin/java"), "#!/bin/sh\nexit 0\n");
+        Files.writeString(home.resolve("release"), "JAVA_VERSION=\"25\"\n", StandardCharsets.UTF_8);
+        Path java = Files.writeString(home.resolve("bin/java"), "#!/bin/sh\\nexit 0\\n", StandardCharsets.UTF_8);
         assertTrue(java.toFile().setExecutable(true));
         Run run = runAdapter(home.toString());
         assertEquals(0, run.exitCode(), run.output());
@@ -35,7 +35,7 @@ class CleanupReviewRuntimeContractTest {
         assertArgumentPair(args, "--env", "JAVA_HOME=/opt/sandbox-review-jdk");
         assertArgumentPair(args, "--env", "PATH=/opt/sandbox-review-jdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
         assertFalse(args.contains("--java-home"), "Host runtime selection is not a cleanup application argument");
-        assertEquals("JAVA_VERSION=\"25\"\n", Files.readString(home.resolve("release")));
+        assertEquals("JAVA_VERSION=\"25\"\n", Files.readString(home.resolve("release"), StandardCharsets.UTF_8));
     }
 
     @Test
@@ -57,13 +57,13 @@ class CleanupReviewRuntimeContractTest {
     @Test
     void repositoryReviewProvisionsAndForwardsTheSupportedRuntime() throws Exception {
         Path root = root();
-        String workflow = Files.readString(root.resolve(".github/workflows/pr-auto-cleanup.yml"));
+        String workflow = Files.readString(root.resolve(".github/workflows/pr-auto-cleanup.yml"), StandardCharsets.UTF_8);
         int setup = workflow.indexOf("name: Set up review JDK");
         int action = workflow.indexOf("name: Analyze changed Java source and publish suggestions");
         assertTrue(setup >= 0 && setup < action, "The JDK must be provisioned before the cleanup action");
         assertTrue(workflow.substring(setup, action).contains("java-version: '25'"));
         assertTrue(workflow.substring(action).contains("java-home: ${{ env.JAVA_HOME }}"));
-        String composite = Files.readString(root.resolve(".github/actions/cleanup-review/action.yml"));
+        String composite = Files.readString(root.resolve(".github/actions/cleanup-review/action.yml"), StandardCharsets.UTF_8);
         assertTrue(composite.contains("REVIEW_JAVA_HOME: ${{ inputs.java-home }}"));
         assertTrue(composite.contains("--java-home \"${REVIEW_JAVA_HOME:-}\""));
     }
@@ -71,16 +71,19 @@ class CleanupReviewRuntimeContractTest {
     private Run runAdapter(String javaHome) throws Exception {
         Path repository = Files.createDirectory(temporary.resolve("repository"));
         Path source = Files.createDirectories(repository.resolve("project/src"));
-        Files.writeString(source.getParent().resolve(".project"), "<projectDescription><name>fixture</name><natures>"
-                + "<nature>org.eclipse.jdt.core.javanature</nature></natures></projectDescription>");
-        Path java = Files.writeString(source.resolve("A.java"), "class A {}\n");
-        Files.writeString(repository.resolve("cleanup.properties"), "cleanup.explicit_encoding=true\n");
+        Files.writeString(source.getParent().resolve(".project"),
+				"<projectDescription><name>fixture</name><natures>"
+						+ "<nature>org.eclipse.jdt.core.javanature</nature></natures></projectDescription>",
+				StandardCharsets.UTF_8);
+        Path java = Files.writeString(source.resolve("A.java"), "class A {}\\n", StandardCharsets.UTF_8);
+        Files.writeString(repository.resolve("cleanup.properties"), "cleanup.explicit_encoding=true\\n",
+				StandardCharsets.UTF_8);
         git(repository, "init");
         git(repository, "config", "user.name", "Sandbox test");
         git(repository, "config", "user.email", "sandbox@example.invalid");
         git(repository, "add", ".");
         git(repository, "commit", "-m", "base");
-        Files.writeString(java, "class A {} // selected change\n");
+        Files.writeString(java, "class A {} // selected change\\n", StandardCharsets.UTF_8);
         git(repository, "add", ".");
         git(repository, "commit", "-m", "head");
         Path arguments = temporary.resolve("docker-arguments");
@@ -89,7 +92,7 @@ class CleanupReviewRuntimeContractTest {
                 set -euo pipefail
                 if [[ "$1" == image ]]; then printf 'fixture@sha256:identity\n'; fi
                 if [[ "$1" == run ]]; then printf '%s\0' "$@" > "$DOCKER_ARGUMENTS"; fi
-                """.replace("\0", "\\0"));
+                """.replace("\0", "\\0"), StandardCharsets.UTF_8);
         assertTrue(docker.toFile().setExecutable(true));
         List<String> command = new ArrayList<>(List.of("bash",
                 root().resolve(".github/actions/cleanup-review/run-cleanup-review.sh").toString(),
@@ -118,14 +121,14 @@ class CleanupReviewRuntimeContractTest {
                 .redirectErrorStream(true).redirectOutput(output.toFile()).start();
         try {
             assertTrue(process.waitFor(20, TimeUnit.SECONDS));
-            assertEquals(0, process.exitValue(), Files.readString(output));
+            assertEquals(0, process.exitValue(), Files.readString(output, StandardCharsets.UTF_8));
         } finally {
             if (process.isAlive()) process.destroyForcibly();
         }
     }
 
     private static List<String> arguments(Path file) throws Exception {
-        return Arrays.asList(Files.readString(file).split("\0"));
+        return Arrays.asList(Files.readString(file, StandardCharsets.UTF_8).split("\0"));
     }
 
     private static void assertArgumentPair(List<String> arguments, String key, String value) {

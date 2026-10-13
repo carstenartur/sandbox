@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.sandbox.jdt.ui.tests.quickfix.XMLTestUtils.assertXmlSemanticallyEqual;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -36,7 +37,7 @@ public class XMLIndentationPreferenceTest {
 	public void testIndentPreferenceChangesSerializedLayout() throws Exception {
 		Path input= Files.createTempFile("xml-indent-preference", ".xml");
 		try {
-			Files.writeString(input, COMPACT_XML);
+			Files.writeString(input, COMPACT_XML, StandardCharsets.UTF_8);
 
 			String compact= SchemaTransformationUtils.transform(input, false);
 			String indented= SchemaTransformationUtils.transform(input, true);
@@ -56,7 +57,7 @@ public class XMLIndentationPreferenceTest {
 	public void testDefaultTransformationUsesCompactMode() throws Exception {
 		Path input= Files.createTempFile("xml-default-indent", ".xml");
 		try {
-			Files.writeString(input, COMPACT_XML);
+			Files.writeString(input, COMPACT_XML, StandardCharsets.UTF_8);
 
 			assertEquals(SchemaTransformationUtils.transform(input, false),
 					SchemaTransformationUtils.transform(input),
@@ -77,7 +78,7 @@ public class XMLIndentationPreferenceTest {
 				""".replace("\n", lineDelimiter); //$NON-NLS-1$
 		Path input= Files.createTempFile("xml-meaningful-whitespace", ".xml");
 		try {
-			Files.writeString(input, xml);
+			Files.writeString(input, xml, StandardCharsets.UTF_8);
 
 			String transformed= SchemaTransformationUtils.transform(input, false);
 

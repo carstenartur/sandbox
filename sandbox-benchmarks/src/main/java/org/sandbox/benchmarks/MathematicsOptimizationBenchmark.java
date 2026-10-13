@@ -2,6 +2,7 @@
 package org.sandbox.benchmarks;
 
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -79,14 +80,14 @@ public class MathematicsOptimizationBenchmark {
 
         private Computation compile(String variant) throws Exception {
             Path sourceFile = Path.of(fixtureDirectory).resolve(variant).resolve("Calculation.java");
-            String source = Files.readString(sourceFile);
+            String source = Files.readString(sourceFile, StandardCharsets.UTF_8);
             // Only the harness entry signature changes; the emitted numeric body is untouched.
             source = source.replace("public class Calculation {", "public class Calculation implements "
                     + MathematicsOptimizationBenchmark.class.getCanonicalName() + ".Computation {")
                     .replace("public static long[] compute(", "public long[] compute(");
             Path output = Files.createDirectories(compiledDirectory.resolve(variant));
             Path file = output.resolve("Calculation.java");
-            Files.writeString(file, source);
+            Files.writeString(file, source, StandardCharsets.UTF_8);
             var compiler = ToolProvider.getSystemJavaCompiler();
             if (compiler == null) throw new IllegalStateException("The benchmark setup requires a JDK compiler");
             int status = compiler.run(null, null, null, "--release", "17", "-classpath",

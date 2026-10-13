@@ -13,6 +13,7 @@ import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
@@ -299,7 +300,7 @@ class JavaComputationEmitterTest {
         Path output = Files.createTempDirectory(temporary, "compiled-");
         Path file = output.resolve("Calculation.java");
         String source = "public class Calculation { public static Object[] compute(" + parameters + ") {" + body + "}}";
-        Files.writeString(file, source);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", Integer.toString(target),
                 "-Xlint:-options", "-d", output.toString(), file.toString()), source);
         try (var loader = new URLClassLoader(new URL[] { output.toUri().toURL() }, null)) {

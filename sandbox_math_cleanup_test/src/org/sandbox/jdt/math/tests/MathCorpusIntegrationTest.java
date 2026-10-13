@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.lang.reflect.Method;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -108,7 +109,7 @@ class MathCorpusIntegrationTest {
     private Method compile(String source) throws Exception {
         Path directory = Files.createTempDirectory(temporary, "compiled-");
         Path file = directory.resolve("Calculation.java");
-        Files.writeString(file, source);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         var compiler = ToolProvider.getSystemJavaCompiler();
         assertNotNull(compiler, "A full JDK is required");
         assertEquals(0, compiler.run(null, null, null, "--release", "17", "-d", directory.toString(), file.toString()), source);
@@ -162,7 +163,7 @@ class MathCorpusIntegrationTest {
 
     private static void writeNewOrIdentical(Path path, String content) throws Exception {
         Files.createDirectories(Objects.requireNonNull(path.getParent(), "Fixture file must have a parent directory"));
-        if (Files.exists(path)) assertEquals(content, Files.readString(path), "Refusing to overwrite earlier fixture: " + path);
+        if (Files.exists(path)) assertEquals(content, Files.readString(path, StandardCharsets.UTF_8), "Refusing to overwrite earlier fixture: " + path);
         else Files.writeString(path, content, StandardOpenOption.CREATE_NEW);
     }
 

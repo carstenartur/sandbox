@@ -67,7 +67,7 @@ class CleanupReviewEvidenceContractTest {
         Process process = builder.redirectErrorStream(true).redirectOutput(console.toFile()).start();
         try {
             assertTrue(process.waitFor(20, TimeUnit.SECONDS), "Action adapter did not terminate");
-            assertEquals(exitCode, process.exitValue(), Files.readString(console));
+            assertEquals(exitCode, process.exitValue(), Files.readString(console, StandardCharsets.UTF_8));
         } finally {
             if (process.isAlive()) process.destroyForcibly();
         }
@@ -77,10 +77,10 @@ class CleanupReviewEvidenceContractTest {
         assertTrue(diagnostic.contains("fixture stdout"));
         assertTrue(diagnostic.contains("fixture stderr"));
         if (exitCode != 23) {
-            assertEquals("partial report\n", Files.readString(output.resolve("manifests/project-0.files")));
+            assertEquals("partial report\n", Files.readString(output.resolve("manifests/project-0.files"), StandardCharsets.UTF_8));
         }
         if (exitCode != 0) {
-            assertFalse(Files.readString(githubOutput).contains("has_changes=true"),
+            assertFalse(Files.readString(githubOutput, StandardCharsets.UTF_8).contains("has_changes=true"),
                     "A failure must not manufacture publishable changes");
         }
     }

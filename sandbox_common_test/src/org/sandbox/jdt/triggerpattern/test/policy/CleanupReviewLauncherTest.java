@@ -40,8 +40,10 @@ class CleanupReviewLauncherTest {
         while (root != null && !Files.isRegularFile(root.resolve(LAUNCHER))) root = root.getParent();
         assertTrue(root != null, "Cannot find the shipped cleanup launcher");
         Files.copy(root.resolve(LAUNCHER), install.resolve("bin/sandbox-cleanup"));
-        Files.writeString(install.resolve("plugins/org.eclipse.equinox.launcher_test.jar"), "fixture");
-        Files.writeString(install.resolve("configuration/config.ini"), "fixture.shared.configuration=true\n");
+        Files.writeString(install.resolve("plugins/org.eclipse.equinox.launcher_test.jar"), "fixture",
+				StandardCharsets.UTF_8);
+        Files.writeString(install.resolve("configuration/config.ini"), "fixture.shared.configuration=true\\n",
+				StandardCharsets.UTF_8);
         Files.setPosixFilePermissions(install.resolve("configuration"), PosixFilePermissions.fromString("r-xr-xr-x"));
         javaHome = Files.createDirectories(temporary.resolve("test jdk/bin")).getParent();
         Path java = javaHome.resolve("bin/java");
@@ -81,7 +83,7 @@ class CleanupReviewLauncherTest {
         Path first = runAndReadConfiguration(workspaceVariable, "first workspace");
         Path second = runAndReadConfiguration(workspaceVariable, "second workspace");
         assertFalse(first.equals(second), "Independent workspaces must not share Equinox state");
-        assertEquals("fixture.shared.configuration=true\n", Files.readString(install.resolve("configuration/config.ini")));
+        assertEquals("fixture.shared.configuration=true\n", Files.readString(install.resolve("configuration/config.ini"), StandardCharsets.UTF_8));
         assertFalse(Files.exists(install.resolve("configuration/started.marker")), "The installation must stay untouched");
     }
 
@@ -99,7 +101,7 @@ class CleanupReviewLauncherTest {
         builder.environment().put("TEST_JAVA_VERSION", "21");
         assertEquals(1, execute(builder, temporary.resolve("unsupported.log")));
         assertFalse(Files.exists(capture), "Unsupported Java must not start Equinox");
-        assertTrue(Files.readString(temporary.resolve("unsupported.log")).contains("requires the supported Java 25 runtime"));
+        assertTrue(Files.readString(temporary.resolve("unsupported.log"), StandardCharsets.UTF_8).contains("requires the supported Java 25 runtime"));
     }
 
     private Path runAndReadConfiguration(String variable, String name) throws Exception {
@@ -107,7 +109,7 @@ class CleanupReviewLauncherTest {
         Path capture = temporary.resolve(name + ".args");
         Path log = temporary.resolve(name + ".log");
         assertEquals(0, execute(process(variable, workspace, capture), log), () -> readLog(log));
-        List<String> args = Files.readAllLines(capture);
+        List<String> args = Files.readAllLines(capture, StandardCharsets.UTF_8);
         Path data = Path.of(argumentAfter(args, "-data"));
         Path configuration = Path.of(argumentAfter(args, "-configuration"));
         if (variable.equals("TMPDIR")) assertEquals(workspace, data.getParent());
@@ -150,7 +152,7 @@ class CleanupReviewLauncherTest {
     }
 
     private static String readLog(Path log) {
-        try { return Files.readString(log); }
+        try { return Files.readString(log, StandardCharsets.UTF_8); }
         catch (java.io.IOException exception) { return exception.toString(); }
     }
 }
