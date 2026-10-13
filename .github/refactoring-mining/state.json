@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "2d0ff3eec34063e43600e35080106473bc8df244",
-      "lastProcessedDate": "2026-10-11T02:39:40.616317243Z",
-      "totalProcessed": 724,
+      "lastProcessedCommit": "2592611ebda83d3b2388eea8eea8bac3c83babaf",
+      "lastProcessedDate": "2026-10-13T02:52:00.616563040Z",
+      "totalProcessed": 792,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -4823,6 +4823,96 @@
           "deferredAt": "2026-10-11T02:35:06.269543577Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "a960a556bb97303083f87165350bdc44c55d701e",
+          "message": "Bug 508677 - [Generic Editor] Extension point for auto edit strategies",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-13T02:44:32.836885006Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "87a89a1a9f0e2a2845c59de13a43807d8c093938",
+          "message": "Bug 519786 - Remove trailing whitespace from org.,eclipse.search.tests (edit)",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-13T02:46:55.112059214Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "798ba99e71d97835741ac91d068afc2130c66bcc",
+          "message": "Bug 508829 - [Generic Editor] provide a way to customize reconciler",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-13T02:47:12.274985738Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "1ba9040176a1bdaf3c47df85728ae4ab5b0d2a93",
+          "message": "Bug 520685 - [Generic Editor] Sort ext. by most specialized content-type",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-13T02:47:37.108290604Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "55c3acdef4f74ecddae3e3f6c89fdb691c2c64ad",
+          "message": "Bug 513321 - Aggregate mutliple hover sources",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-13T02:48:46.103625070Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "c40615d48f10a760873dd7857883fac588438d39",
+          "message": "Revert \"Bug 513321 - Aggregate mutliple hover sources\"",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-13T02:48:46.108439189Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4c519144c9f59cb4c5b40bc9b375d94fdf9fd285",
+          "message": "Bug 513321 - Aggregate mutliple hover sources",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-13T02:48:46.112856799Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d9b4c1b5fa395ecc797e2b66c23885ca6e88f31d",
+          "message": "Bug 522255 - Filter/restart completion session only uses 1st processor",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-13T02:49:54.331533811Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "aaab23b17c73ac1bdd89b5c499e158b9c3275fec",
+          "message": "Bug 521382 - [generic editor] Default highlighter for generic editor",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-13T02:50:03.872398755Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b3b9006b1a0f94086ab1779ab14d8b5ae950b741",
+          "message": "Bug 527257 - Remove trailing whitespace from org.eclipse.jface.text\n\nAlso activates the save actions to prevent that add",
+          "diffLines": 315,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-13T02:51:26.157212944Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -4835,9 +4925,9 @@
       "categoryHitCounts": {
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
-        "Null Safety": 4,
-        "API Modernization": 20,
-        "Performance": 9,
+        "Null Safety": 5,
+        "API Modernization": 22,
+        "Performance": 13,
         "Redundant Code": 4,
         "API Misuse Correction": 1,
         "Lambda to Method Reference": 1,
@@ -4861,8 +4951,8 @@
         "Uncategorized": 2,
         "Logging Cleanup": 1,
         "Concurrency Performance": 1,
-        "Modernization": 2,
-        "Defensive Programming": 1,
+        "Modernization": 4,
+        "Defensive Programming": 2,
         "String Literal Replacement": 2,
         "Condition Improvement": 1,
         "Readability": 1,
@@ -4890,7 +4980,14 @@
         "SWT API Usage": 2,
         "Type Widening": 1,
         "Error Handling": 1,
-        "Eclipse UI Quick Assist": 1
+        "Eclipse UI Quick Assist": 1,
+        "Varargs usage": 1,
+        "SWT API Cleanup": 1,
+        "Warning Suppression": 1,
+        "Redundant null check": 1,
+        "API usage improvement": 1,
+        "Logging improvement": 1,
+        "Collection Processing": 1
       },
       "exhaustedCategories": []
     },
@@ -5000,5 +5097,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52489
+  "globalTotalProcessed": 52557
 }
