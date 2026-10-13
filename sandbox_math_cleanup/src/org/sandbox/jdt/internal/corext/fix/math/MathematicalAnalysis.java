@@ -112,7 +112,7 @@ public final class MathematicalAnalysis {
       JavaComputationExtractor.Extraction extraction = new JavaComputationExtractor().extractRuntime(ast, source, options);
 
       for (JavaComputationExtractor.Diagnostic diagnostic : extraction.diagnostics()) {
-         diagnostics.add(new MathematicalAnalysis.Diagnostic(diagnostic.code(), diagnostic.message(), diagnostic.offset(), diagnostic.length()));
+         diagnostics.add(new MathematicalAnalysis.Diagnostic(diagnostic.code(), diagnostic.message(), diagnostic.offset(), diagnostic.length(), Stage.SOURCE));
       }
 
       monitor.beginTask("Verify mathematics regions", extraction.regions().size());
@@ -120,8 +120,18 @@ public final class MathematicalAnalysis {
       JavaComputationEmitter emitter = new JavaComputationEmitter();
       MathematicalJavadoc documentation = new MathematicalJavadoc();
       CancellationToken cancellation = () -> isCancelled(monitor);
-      long remainingWork = options.workBudget();
-      List<JavaComputationRegion> pending = new ArrayList<>(extraction.regions());
+      var connections = selectionOffset >= 0
+            ? new JavaComputationSlices.Discovery(extraction.regions(), Map.of(), List.of(), 0)
+            : JavaComputationSlices.discover(ast, extraction.regions(), options, cancellation);
+      var pinnedOffsets = connections.slices().values().stream().flatMap(slice -> slice.pinned().stream())
+            .map(ASTNode::getStartPosition).collect(Collectors.toSet());
+      diagnostics.removeIf(diagnostic -> diagnostic.code().equals("SIDE_EFFECT_BOUNDARY") && pinnedOffsets.contains(diagnostic.offset())); //$NON-NLS-1$
+      connections.slices().values().forEach(slice -> slice.pinned().forEach(node -> diagnostics.add(new Diagnostic(
+            "PINNED_SOURCE_EFFECT", "Call retained in its original order; only total local arithmetic crosses it", //$NON-NLS-1$ //$NON-NLS-2$
+            node.getStartPosition(), node.getLength(), Stage.SOURCE))));
+      diagnostics.addAll(connections.diagnostics());
+      long remainingWork = options.workBudget() - connections.work();
+      List<JavaComputationRegion> pending = new ArrayList<>(connections.regions());
       List<JavaComputationRegion> fragments = null;
       List<JavaComputationRegion> statements = null;
       List<JavaComputationRegion> scalarAlternatives = null;
@@ -129,6 +139,7 @@ public final class MathematicalAnalysis {
       try {
          for (int regionIndex = 0; regionIndex < pending.size(); regionIndex++) {
             JavaComputationRegion region = pending.get(regionIndex);
+            var slice = connections.slices().get(region);
             int regionsLeft = pending.size() - regionIndex;
             if (isCancelled(monitor)) {
                return cancelled(sourceDigest, compilerOptions);
@@ -148,7 +159,7 @@ public final class MathematicalAnalysis {
                      && region.trace().occurrences().stream().anyMatch(o -> o.evaluatedKind() == NumericKind.BIG_INTEGER);
                boolean canRetryBigInteger = mathematicalBigInteger && region.outputs().size() + region.internalBindings().size() > 1;
                // Reserve work for individual statements if a combined BigInteger request is unsupported.
-               long ordinaryWork = canTryMathematical || canRetryBigInteger ? Math.max(1L, regionWork / 2) : regionWork;
+               long ordinaryWork = canTryMathematical || canRetryBigInteger || slice != null ? Math.max(1L, regionWork / 2) : regionWork;
                OptimizationRequest request = new OptimizationRequest(
                   region.plan(),
                   region.trace(),
@@ -163,6 +174,7 @@ public final class MathematicalAnalysis {
 
                boolean retryArrayScalars = false;
                int replacementsBefore = replacements.size();
+               Stage failureStage = Stage.SEARCH_OR_PROOF;
                try {
                   OptimizationResult result = optimizer.optimize(request, cancellation);
                   // Keep ordinary Java sharing improvements. A different overflow contract is
@@ -183,7 +195,7 @@ public final class MathematicalAnalysis {
                      long attemptSpent = preparationLimit
                            ? Math.min(remainingWork, 2L * de.regelsuche.search.program.JointComputationPlan.MAX_NODES)
                            : consumedWork(result, request.budget().maximumWork());
-                     if (preparationLimit) {
+                     if (preparationLimit && slice == null) {
                         if (fragments == null) fragments = new JavaComputationExtractor().extractRuntimeFragments(ast, source, options).regions();
                         var smaller = fragments.stream().filter(part -> part.start() >= region.start()
                               && part.start() + part.length() <= region.start() + region.length() && part.length() < region.length()).toList();
@@ -228,6 +240,7 @@ public final class MathematicalAnalysis {
                   }
 
                   remainingWork -= candidate.work();
+                  failureStage = Stage.PROOF;
                   var explained = ComputationExplanations.describe(request, candidate, cancellation);
                   remainingWork -= explained.explanation().map(ComputationExplanations.Explanation::presentationWork).orElse(0L);
                   if (!(explained.verification() instanceof Verified) || explained.explanation().isEmpty()) {
@@ -254,10 +267,13 @@ public final class MathematicalAnalysis {
                      continue;
                   }
 
+                  failureStage = Stage.EMISSION;
                   HashSet<String> reserved = new HashSet<>(region.reservedNames());
                   reserved.addAll(generatedNames);
                   JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava());
+                  failureStage = Stage.PROOF;
                   JavaEmissionVerifier.verify(request, candidate, plain, region, options, cancellation);
+                  failureStage = Stage.EMISSION;
                   MathExplanation explanationText = MathExplanation.render(explained.explanation().orElseThrow(),
                      request, candidate, region, plain, options, contract, cancellation);
                   String replacement;
@@ -296,6 +312,19 @@ public final class MathematicalAnalysis {
                         || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial()) {
                      replacement = indentGenerated(explanationText.sourceComment(), source, region.start()) + replacement;
                   }
+                  JavaSourceRewritePlan sourcePlan = null;
+                  if (slice != null) {
+                     String prefix = indentGenerated(plain.statements(), source, region.start());
+                     if (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
+                           || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial())
+                        prefix = indentGenerated(explanationText.sourceComment(), source, region.start()) + prefix;
+                     String unitName = ast.getJavaElement() != null ? ast.getJavaElement().getPath().toPortableString()
+                           : environment != null ? environment.unitName() : "source@" + sourceDigest; //$NON-NLS-1$
+                     sourcePlan = JavaSourceRewritePlan.capture(ast, source, unitName, region, slice.pinned(),
+                           JavaRegionSourceRewriter.edits(ast, source, region, plain.outputValues(), compilerOptions), prefix);
+                     if (!replacement.equals(sourcePlan.replacement(source)))
+                        throw new IllegalArgumentException("SOURCE_PLAN_REPLACEMENT_DIFFERS"); //$NON-NLS-1$
+                  }
                   checkGeneratedSource(
                      ast,
                      source.substring(0, region.start()) + replacement + source.substring(region.start() + region.length()),
@@ -308,6 +337,7 @@ public final class MathematicalAnalysis {
                      return cancelled(sourceDigest, compilerOptions);
                   }
 
+                  failureStage = Stage.COST;
                   CostAssessment cost = candidate.cost();
                   if (mathematicalIntegral) {
                      long workWeight = options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME ? 10 : 1;
@@ -346,6 +376,7 @@ public final class MathematicalAnalysis {
                      continue;
                   }
 
+                  failureStage = Stage.EMISSION;
                   ComputationExplanation explanation = ComputationExplanation.from(region, explained.explanation().orElseThrow());
                   String description = "Mathematics "
                      + (contract == null ? options.safety() : "MATHEMATICAL")
@@ -389,13 +420,18 @@ public final class MathematicalAnalysis {
                   });
                   evidence.add(
                      new MathematicalAnalysis.VerifiedRegion(
-                        region.start(), region.length(), candidate.evidence(), cost, source.substring(region.start(), region.start() + region.length()), replacement, explanation
+                        region.start(), region.length(), candidate.evidence(), cost, source.substring(region.start(), region.start() + region.length()), replacement, explanation, sourcePlan
                      )
                   );
                   diagnostics.add(diagnostic("VERIFIED_CANDIDATE", description, region));
                } catch (IllegalArgumentException | UnsupportedOperationException unsupported) {
-                  diagnostics.add(diagnostic("UNSUPPORTED_OR_UNPROVED", unsupported.getMessage(), region));
+                  diagnostics.add(new Diagnostic("UNSUPPORTED_OR_UNPROVED", unsupported.getMessage(), region.start(), region.length(), failureStage));
                } finally {
+                  if (slice != null && remainingWork > 0 && replacements.size() == replacementsBefore && !isCancelled(monitor)) {
+                     pending.addAll(regionIndex + 1, slice.parts());
+                     diagnostics.add(diagnostic("SOURCE_SLICE_LOCAL_RETRY", //$NON-NLS-1$
+                           "Joint search produced no applicable edit; retrying the original regions within the file budget", region)); //$NON-NLS-1$
+                  }
                   // A connected memory region must not hide a useful scalar calculation.
                   // Both search and presentation have already consumed their file budget.
                   if (retryArrayScalars && !region.arrayReads().isEmpty() && remainingWork > 0
@@ -672,7 +708,12 @@ public final class MathematicalAnalysis {
          MultiTextEdit edit = new MultiTextEdit();
 
          for (MathematicalAnalysis.Replacement replacement : this.replacements) {
-            edit.addChild(new ReplaceEdit(replacement.offset(), replacement.length(), replacement.replacement()));
+            var plan = evidence.stream().filter(e -> e.offset() == replacement.offset() && e.length() == replacement.length()
+                  && e.replacement().equals(replacement.replacement())).map(VerifiedRegion::sourcePlan).filter(Objects::nonNull).findFirst();
+            if (plan.isPresent()) {
+               if (!plan.get().sourceSha256().equals(sourceDigest)) throw new IllegalArgumentException("SOURCE_PLAN_VERSION_DIFFERS"); //$NON-NLS-1$
+               edit.addChild(plan.get().newEdit());
+            } else edit.addChild(new ReplaceEdit(replacement.offset(), replacement.length(), replacement.replacement()));
          }
          for (MathematicalAnalysis.Replacement note : documentation) {
             edit.addChild(new ReplaceEdit(note.offset(), note.length(), note.replacement()));
@@ -682,7 +723,32 @@ public final class MathematicalAnalysis {
       }
    }
 
-   public record Diagnostic(String code, String message, int offset, int length) {
+   public enum Stage { SOURCE, SEARCH, SEARCH_OR_PROOF, PROOF, EMISSION, COST, BUDGET, CANCELLATION, RESULT, UNKNOWN }
+
+   public record Diagnostic(String code, String message, int offset, int length, Stage stage) {
+      public Diagnostic {
+         Objects.requireNonNull(code);
+         if (stage == null) stage = stageFor(code);
+      }
+      /** Old reports and source clients remain readable; unknown categories are not guessed. */
+      public Diagnostic(String code, String message, int offset, int length) {
+         this(code, message, offset, length, stageFor(code));
+      }
+      private static Stage stageFor(String code) {
+         return switch (code) {
+            case "SIDE_EFFECT_BOUNDARY", "SOURCE_SLICE_CONNECTED", "SOURCE_SLICE_LIMIT", "SOURCE_SLICE_LOCAL_RETRY", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+                 "PINNED_SOURCE_EFFECT", "STALE_AST_SOURCE", "EXCLUDED_FILE", "EXCLUSION_REQUIRES_FILE_CONTEXT" -> Stage.SOURCE; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+            case "NOIMPROVEMENT" -> Stage.SEARCH; //$NON-NLS-1$
+            case "INCONCLUSIVE", "UNSUPPORTED" -> Stage.SEARCH_OR_PROOF; //$NON-NLS-1$ //$NON-NLS-2$
+            case "REVERIFICATION_FAILED" -> Stage.PROOF; //$NON-NLS-1$
+            case "COMBINED_EDITS_INVALID" -> Stage.EMISSION; //$NON-NLS-1$
+            case "NO_RUNTIME_IMPROVEMENT", "GUARD_COST_EXCEEDS_BENEFIT", "ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT" -> Stage.COST; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+            case "BUDGET_EXCEEDED", "BUDGETEXCEEDED" -> Stage.BUDGET; //$NON-NLS-1$ //$NON-NLS-2$
+            case "CANCELLED" -> Stage.CANCELLATION; //$NON-NLS-1$
+            case "VERIFIED_CANDIDATE" -> Stage.RESULT; //$NON-NLS-1$
+            default -> Stage.UNKNOWN;
+         };
+      }
    }
 
    public record Replacement(int offset, int length, String replacement, String description) {
@@ -706,11 +772,16 @@ public final class MathematicalAnalysis {
    }
 
    public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
-      String original, String replacement, ComputationExplanation explanation) {
+      String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan) {
       public VerifiedRegion {
+         if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {
             throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
          }
+      }
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation) {
+         this(offset, length, proof, cost, original, replacement, explanation, null);
       }
       /** Compatibility for explicitly constructed historical report records. */
       public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,

@@ -159,6 +159,16 @@ It is an Equinox CLI application for running Eclipse JDT cleanup operations on J
 
 ---
 
+### Mathematics Cleanup (`sandbox_math_cleanup`)
+
+Experimental, Regelsuche-backed optimization of method-local Java calculations. The adapter supplies typed computations and original evaluation occurrences to the independent numeric checker, then previews ordinary Java replacements. Strict Java behavior and explicitly enabled mathematical semantics remain separate; estimated savings are not measured speedups or cryptographic constant-time guarantees.
+
+Whole-file strict integral analysis can connect a bounded set of immutable local calculations across unchanged call statements. Source-version-bound provenance and grouped JDT edits keep those calls and comments intact; uncertain effects, memory dependencies and arithmetic exceptions remain conservative boundaries. The cleanup is disabled by default and initially selects BigInteger only; select primitive integral types to use the new connected-slice fragment.
+
+**Documentation:** [Plugin README](sandbox_math_cleanup/README.md) | [Source slices and limits](sandbox_math_cleanup/SOURCE_SLICES.md) | [Practical BC/SWT review profiles](qa/math-optimization/PRACTICAL_REVIEW.md) | [Installed Help source](sandbox_math_cleanup_help/html/cleanup.html)
+
+---
+
 ### Encoding Cleanup (`sandbox_encoding_quickfix`)
 
 Replaces platform-dependent or implicit encoding usage with explicit, safe alternatives using `StandardCharsets.UTF_8` or equivalent constants. Improves code portability and prevents encoding-related bugs across different platforms. Supports three cleanup strategies with Java version-aware transformations for FileReader, FileWriter, Files methods, Scanner, PrintWriter, and more.
