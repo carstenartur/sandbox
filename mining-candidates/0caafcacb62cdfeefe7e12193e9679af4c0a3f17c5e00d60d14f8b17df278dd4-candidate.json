@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0caafcacb62cdfeefe7e12193e9679af4c0a3f17c5e00d60d14f8b17df278dd4",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: collections.filterNullsOnAssignment\u003e\n\u003c!description: Filter null elements from a List assigned to a field from a constructor parameter using streams and Objects.nonNull. This makes the field\u0027s list robust against potential null entries in the input list.\u003e\n\u003c!severity: HINT\u003e\n$field \u003d $param; :: isField($field) \u0026\u0026 isParameter($param) \u0026\u0026 instanceof($field, \"java.util.List\") \u0026\u0026 instanceof($param, \"java.util.List\")\n\u003d\u003e $field \u003d $param.stream().filter(java.util.Objects.nonNull).collect(java.util.stream.Collectors.toList());\n;;",
+  "beforeExample": "import java.util.List;\nimport java.util.Objects;\nimport java.util.stream.Collectors;\n\nclass MyClass {\n    private List\u003cString\u003e myList;\n\n    public MyClass(List\u003cString\u003e inputList) {\n        myList \u003d inputList;\n    }\n\n    public void doSomething() {\n        System.out.println(myList);\n    }\n}",
+  "afterExample": "import java.util.List;\nimport java.util.Objects;\nimport java.util.stream.Collectors;\n\nclass MyClass {\n    private List\u003cString\u003e myList;\n\n    public MyClass(List\u003cString\u003e inputList) {\n        myList \u003d inputList.stream().filter(java.util.Objects.nonNull).collect(java.util.stream.Collectors.toList());\n    }\n\n    public void doSomething() {\n        System.out.println(myList);\n    }\n}",
+  "negativeExample": "import java.util.List;\nimport java.util.Objects;\nimport java.util.stream.Collectors;\n\nclass AnotherClass {\n    private List\u003cString\u003e anotherList;\n\n    public AnotherClass(List\u003cString\u003e inputList) {\n        List\u003cString\u003e localList \u003d inputList; // This is a local variable declaration, not a field assignment to a field\n        if (localList !\u003d null) {\n            anotherList \u003d localList; // This is a field assignment, but the right-hand side is a local variable, not a parameter\n        }\n    }\n}",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "3c1fd5a3277074256b6d3f1bf2aa9a6b41f8b094",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Collection Processing",
+  "summary": "Filter nulls from a List assigned to a field from a constructor parameter.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:05.143276034Z",
+  "ruleFingerprint": "sha256:91a9fce68d826084be3b940dd75eb17f014569f7396a1221ae1576cb5aa5a3de",
+  "behaviorFingerprint": "sha256:77d35f5ae8d0dd0677893c780447d465311d3e69c21ea9cd8a70cdbac801030f",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-13T02:52:14.441667176Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

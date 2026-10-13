@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1cfa5b6e0169bae64a581cc60848582e5f8a538f5c0d18a208207884d9a8b1ff",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "class TestClass {\n    public String concat(String s1, String s2) {\n        StringBuffer buf \u003d new StringBuffer(s1); // Should match\n        buf.append(s2);\n        return buf.toString();\n    }\n\n    public void log(Object... messages) {\n        StringBuffer logBuffer \u003d new StringBuffer(); // Should match\n        for (Object msg : messages) {\n            logBuffer.append(msg);\n        }\n        System.out.println(logBuffer.toString());\n    }\n\n    private StringBuffer fieldBuffer \u003d new StringBuffer(\"field\"); // Should NOT match - not local variable\n    public void modifyField() {\n        fieldBuffer.append(\" modified\");\n    }\n\n    public void processExternalBuffer(StringBuffer externalBuf) { // Should NOT match - parameter\n        externalBuf.append(\" processed\");\n    }\n\n    public void passDirectly() {\n        someMethod(new StringBuffer(\"direct\")); // Should NOT match - not assigned to a local variable\n    }\n\n    private void someMethod(StringBuffer b) {}\n}",
+  "afterExample": "class TestClass {\n    public String concat(String s1, String s2) {\n        StringBuilder buf \u003d new StringBuilder(s1); // Transformed\n        buf.append(s2);\n        return buf.toString();\n    }\n\n    public void log(Object... messages) {\n        StringBuilder logBuffer \u003d new StringBuilder(); // Transformed\n        for (Object msg : messages) {\n            logBuffer.append(msg);\n        }\n        System.out.println(logBuffer.toString());\n    }\n\n    private StringBuffer fieldBuffer \u003d new StringBuffer(\"field\"); // No change\n    public void modifyField() {\n        fieldBuffer.append(\" modified\");\n    }\n\n    public void processExternalBuffer(StringBuffer externalBuf) { // No change\n        externalBuf.append(\" processed\");\n    }\n\n    public void passDirectly() {\n        someMethod(new StringBuffer(\"direct\")); // No change\n    }\n\n    private void someMethod(StringBuffer b) {}\n}",
+  "negativeExample": "class NegativeTestClass {\n    // StringBuffer as a field - should not be converted\n    private StringBuffer fieldBuffer \u003d new StringBuffer(\"field\");\n    public void modifyField() {\n        fieldBuffer.append(\" modified\");\n    }\n\n    // StringBuffer as a method parameter - should not be converted\n    public void processExternalBuffer(StringBuffer externalBuf) {\n        externalBuf.append(\" processed\");\n    }\n\n    // StringBuffer instantiated and passed directly to a method - should not be converted\n    public void passDirectly() {\n        someMethod(new StringBuffer(\"direct\"));\n    }\n\n    private void someMethod(StringBuffer b) {}\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "919d2124f32722d0b093ff5c2adb2b98c1799340",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "summary": "Replace local \u0027new StringBuffer()\u0027 with \u0027new StringBuilder()\u0027 for performance.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:04.903189554Z",
+  "ruleFingerprint": "sha256:52ef1fd9bf1ad95f1f0de9ba3173c2edfb9f1fa3141c9853875b3da50ac736f0",
+  "behaviorFingerprint": "sha256:8ae329e54b2a49532e6fe000ba44e846fbd0a7d28c81d96d2b51ff888504be80",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example is ambiguous: expected one replacement but got 2",
+    "verifiedAt": "2026-10-13T02:52:14.252599683Z",
+    "verifierVersion": "7",
+    "matches": 2,
+    "replacements": 2
+  },
+  "transitions": []
+}

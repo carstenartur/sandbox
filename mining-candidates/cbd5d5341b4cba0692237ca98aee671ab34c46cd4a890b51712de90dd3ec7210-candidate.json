@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "cbd5d5341b4cba0692237ca98aee671ab34c46cd4a890b51712de90dd3ec7210",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: stringbuffer.to.stringbuilder.local\u003e\n\u003c!description: Replace StringBuffer with StringBuilder for local variables for better performance, as StringBuilder is not thread-safe and should not be used in shared contexts.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: performance, java5, thread-safety\u003e\n\nnew java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "class Example {\n    void process() {\n        StringBuffer buffer \u003d new StringBuffer(100);\n        buffer.append(\"Hello\");\n        buffer.append(\"World\");\n        String result \u003d buffer.toString();\n        System.out.println(result);\n    }\n\n    void processWithEmptyConstructor() {\n        StringBuffer sb \u003d new StringBuffer();\n        sb.append(\"A\");\n        String s \u003d sb.toString();\n        System.out.println(s);\n    }\n}",
+  "afterExample": "class Example {\n    void process() {\n        StringBuilder buffer \u003d new StringBuilder(100);\n        buffer.append(\"Hello\");\n        buffer.append(\"World\");\n        String result \u003d buffer.toString();\n        System.out.println(result);\n    }\n\n    void processWithEmptyConstructor() {\n        StringBuilder sb \u003d new StringBuilder();\n        sb.append(\"A\");\n        String s \u003d sb.toString();\n        System.out.println(s);\n    }\n}",
+  "negativeExample": "class MySharedState {\n    // This field should not be converted as it could be shared between threads\n    private StringBuffer sharedBuffer \u003d new StringBuffer();\n\n    // This parameter should not be converted as it could be an alias to a shared object\n    void processSharedBuffer(StringBuffer externalBuffer) {\n        externalBuffer.append(\"xyz\");\n    }\n\n    public StringBuffer getSharedBuffer() {\n        return sharedBuffer;\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "e736e1c522e77d536e332c65ec2f0cbc8bd70d5d",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "summary": "Replaces StringBuffer constructor calls with StringBuilder for local variables.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:04.944194277Z",
+  "ruleFingerprint": "sha256:268e5063adfb264141a6e03cbd12148e2da5f9fef4e0964c7bbb7a3275faf001",
+  "behaviorFingerprint": "sha256:96478f836d578e5d69013768203cbccc971c3e245c7c72aaa44aaf63bc49bfbf",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-13T02:52:14.267057764Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

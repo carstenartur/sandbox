@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "177ba7df6c55d6c2ef7f80ef4d49b842bce333be4792234282e76b28d68ca7c9",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: jfacetext.getformattedstring.varargs\u003e\n\u003c!description: Replace explicit array creation for varargs method call org.eclipse.jface.text.source.JFaceTextMessages.getFormattedString.\u003e\n\u003c!severity: HINT\u003e\n\norg.eclipse.jface.text.source.JFaceTextMessages.getFormattedString($key$, new $ArrayType$[] { $args$ })\n\u003d\u003e\norg.eclipse.jface.text.source.JFaceTextMessages.getFormattedString($key$, $args$)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.source.JFaceTextMessages;\n\npublic class Test {\n    public void method(int lineNumber, Object annotationTypeLabel) {\n        // Example 1: String[]\n        String message1 \u003d JFaceTextMessages.getFormattedString(\"key1\", new String[] { Integer.toString(lineNumber + 1) });\n\n        // Example 2: Object[] with multiple args\n        Integer arg2 \u003d Integer.valueOf(10);\n        String message2 \u003d JFaceTextMessages.getFormattedString(\"key2\", new Object[] { annotationTypeLabel, arg2 });\n\n        // Example 3: Object[] with single arg\n        String message3 \u003d JFaceTextMessages.getFormattedString(\"key3\", new Object[] { \"single\" });\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.source.JFaceTextMessages;\n\npublic class Test {\n    public void method(int lineNumber, Object annotationTypeLabel) {\n        // Example 1: String[]\n        String message1 \u003d JFaceTextMessages.getFormattedString(\"key1\", Integer.toString(lineNumber + 1));\n\n        // Example 2: Object[] with multiple args\n        Integer arg2 \u003d Integer.valueOf(10);\n        String message2 \u003d JFaceTextMessages.getFormattedString(\"key2\", annotationTypeLabel, arg2);\n\n        // Example 3: Object[] with single arg\n        String message3 \u003d JFaceTextMessages.getFormattedString(\"key3\", \"single\");\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.source.JFaceTextMessages;\n\npublic class Test {\n    public void method() {\n        // Should not match if already using varargs style\n        String message1 \u003d JFaceTextMessages.getFormattedString(\"key1\", \"arg1\", \"arg2\");\n\n        // Should not match if the method is not JFaceTextMessages.getFormattedString\n        String[] args \u003d { \"a\", \"b\" };\n        java.lang.String.format(\"format\", args);\n\n        // Should not match if the array is not a direct argument of the method call\n        String[] anArray \u003d new String[]{\"test\"};\n        System.out.println(anArray.length);\n    }\n}\n",
+  "targetHintFile": "modernize-java.sandbox-hint",
+  "sourceCommit": "8773dabab911ce83b5a7a4d9a5661e932a3fea4d",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Varargs usage",
+  "summary": "Replaces explicit array creation for varargs method call org.eclipse.jface.text.source.JFaceTextMessages.getFormattedString.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:04.969852516Z",
+  "ruleFingerprint": "sha256:3ee410cf993e61f80dd2120ff3be525722091c0bf871349cf0f25af4e971ebf2",
+  "behaviorFingerprint": "sha256:704342f4e554a08c290ebd8fd354936150a7c08b18b33e335933185cf08df27c",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-13T02:52:14.279280126Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

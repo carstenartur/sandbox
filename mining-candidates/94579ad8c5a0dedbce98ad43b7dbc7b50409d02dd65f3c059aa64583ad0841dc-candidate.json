@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "94579ad8c5a0dedbce98ad43b7dbc7b50409d02dd65f3c059aa64583ad0841dc",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.StringBuffer $var \u003d new java.lang.StringBuffer($args$);\n\u003d\u003e java.lang.StringBuilder $var \u003d new java.lang.StringBuilder($args$);\n;;",
+  "beforeExample": "public class Example {\n    void foo() {\n        java.lang.StringBuffer sb \u003d new java.lang.StringBuffer(\"hello\");\n        sb.append(\" world\");\n        System.out.println(sb.toString());\n    }\n    void bar(int capacity) {\n        java.lang.StringBuffer buf \u003d new java.lang.StringBuffer(capacity);\n        buf.append(\"buffer content\");\n    }\n}",
+  "afterExample": "public class Example {\n    void foo() {\n        java.lang.StringBuilder sb \u003d new java.lang.StringBuilder(\"hello\");\n        sb.append(\" world\");\n        System.out.println(sb.toString());\n    }\n    void bar(int capacity) {\n        java.lang.StringBuilder buf \u003d new java.lang.StringBuilder(capacity);\n        buf.append(\"buffer content\");\n    }\n}",
+  "negativeExample": "public class NegativeExample {\n    private java.lang.StringBuffer fieldBuffer \u003d new java.lang.StringBuffer(\"field\"); // Should not match: field declaration\n\n    void process(java.lang.StringBuffer paramBuffer) { // Should not match: method parameter\n        paramBuffer.append(\"stuff\");\n    }\n\n    void lateInit() {\n        java.lang.StringBuffer tempBuffer;\n        tempBuffer \u003d new java.lang.StringBuffer(\"later\"); // Should not match: assignment, not declaration with initializer\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "f609baac33285bc3256b35fc12ec1c9cf76d4beb",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Modernization",
+  "summary": "Replaces local variable declarations initializing StringBuffer with a new StringBuffer() constructor to StringBuilder equivalents.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:04.847782723Z",
+  "ruleFingerprint": "sha256:31c4878e060471aa182ee16ed03fbf4bdd591a4478b00e1d50d4e0386977f3c5",
+  "behaviorFingerprint": "sha256:f605bc5622b61879c54d67486889d34836502009f9d6c08e674a35fca18149d5",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-13T02:52:14.202179431Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

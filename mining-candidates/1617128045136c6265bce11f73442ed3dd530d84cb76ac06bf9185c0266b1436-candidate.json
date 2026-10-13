@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1617128045136c6265bce11f73442ed3dd530d84cb76ac06bf9185c0266b1436",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$list.get(0) :: instanceof($list, \"java.util.List\")\n\u003d\u003e new org.eclipse.ui.internal.genericeditor.CompositeReconciler($list)\n;;",
+  "beforeExample": "package org.eclipse.ui.internal.genericeditor;\nimport java.util.ArrayList;\nimport java.util.List;\nimport org.eclipse.jface.text.reconciler.IReconciler;\n\npublic class ExtensionBasedTextViewerConfiguration {\n    List\u003cIReconciler\u003e getReconcilers() {\n        List\u003cIReconciler\u003e reconcilers \u003d new ArrayList\u003c\u003e();\n        // Assume reconcilers list is populated\n        return reconcilers.get(0); // This line is targeted\n    }\n}",
+  "afterExample": "package org.eclipse.ui.internal.genericeditor;\nimport java.util.ArrayList;\nimport java.util.List;\nimport org.eclipse.jface.text.reconciler.IReconciler;\n\npublic class ExtensionBasedTextViewerConfiguration {\n    List\u003cIReconciler\u003e getReconcilers() {\n        List\u003cIReconciler\u003e reconcilers \u003d new ArrayList\u003c\u003e();\n        // Assume reconcilers list is populated\n        return new org.eclipse.ui.internal.genericeditor.CompositeReconciler(reconcilers); // This line is the replacement\n    }\n}",
+  "negativeExample": "package com.example;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class MyClass {\n    List\u003cString\u003e getStrings() {\n        List\u003cString\u003e strings \u003d new ArrayList\u003c\u003e();\n        strings.add(\"hello\");\n        strings.add(\"world\");\n        return strings.get(0); // Should not match due to type guard\n    }\n}",
+  "targetHintFile": "eclipse-editor.sandbox-hint",
+  "sourceCommit": "15d0d12802084f3141bfdff8fe9136d1e3d691bb",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace direct access to the first reconciler with a new CompositeReconciler.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-13T02:52:05.041270005Z",
+  "ruleFingerprint": "sha256:7985878080a494e268ed8a00e8648d11fb62cc1de58328490a7b356f08c809ca",
+  "behaviorFingerprint": "sha256:92cb42708dc1437bb587c86b1e6207d9087a7f49d7610a0aacb020bd16fc8592",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jface.text.reconciler cannot be resolved",
+    "verifiedAt": "2026-10-13T02:52:14.329407255Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
