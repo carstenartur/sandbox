@@ -19,6 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 class SourceComputationSliceSafetyTest {
     @TempDir Path temporary;
+    // A fresh seeded generator belongs to each JUnit test instance.
+    private final Random random = new Random(4711);
     private static final String PURE = "int left=a*b; audit(); int right=a*c; return left+right;";
     private static final String HEADER = "public class Sample { public static int visits; public static boolean fail; "
             + "static void audit() { visits++; if(fail) throw new IllegalStateException(\"audit\"); } "
@@ -60,7 +62,6 @@ class SourceComputationSliceSafetyTest {
             int[] edges = {Integer.MIN_VALUE, Integer.MAX_VALUE, -1, 0, 1, 0x40000000};
             for (boolean failure : new boolean[]{false,true}) for (int a : edges) for (int b : edges) for (int c : edges)
                 assertEquals(outcome(left,a,b,c,failure), outcome(right,a,b,c,failure));
-            var random = new Random(4711);
             for(int n=0;n<500;n++) {
                 int a=random.nextInt(),b=random.nextInt(),c=random.nextInt();
                 assertEquals(outcome(left,a,b,c,false), outcome(right,a,b,c,false));
