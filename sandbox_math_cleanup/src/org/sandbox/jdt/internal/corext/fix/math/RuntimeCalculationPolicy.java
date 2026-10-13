@@ -84,6 +84,15 @@ final class RuntimeCalculationPolicy {
                 if (node instanceof PrefixExpression prefix && prefix.getOperand() instanceof NumberLiteral
                         && (prefix.getOperator() == PrefixExpression.Operator.MINUS
                                 || prefix.getOperator() == PrefixExpression.Operator.PLUS)) return false;
+                // JDT stores 3 * 2 * runtime as one n-ary infix expression.
+                // Its left-associative constant prefix is still an intentional
+                // formula even though no separate child node represents 3 * 2.
+                if (node instanceof InfixExpression chain && !chain.extendedOperands().isEmpty()
+                        && constant(chain.getLeftOperand(), declarations, new HashSet<>(), 0)
+                        && constant(chain.getRightOperand(), declarations, new HashSet<>(), 0)) {
+                    found[0] = true;
+                    return false;
+                }
                 if (node instanceof Expression child
                         && (child instanceof InfixExpression || child instanceof CastExpression
                                 || child instanceof PrefixExpression || child instanceof QualifiedName)
