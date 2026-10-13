@@ -13,7 +13,7 @@
         "rules": 9
       },
       "eclipse.platform.ui": {
-        "files": 1141,
+        "files": 1140,
         "matches": 62,
         "rules": 8
       },
@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1616,
+        "files": 1637,
         "matches": 86,
         "rules": 11
       }
@@ -965,7 +965,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java9.unmodifiable-list-arrays-aslist.consider-list-of",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java",
-      "line": 356,
+      "line": 372,
       "matchedCode": "Collections.unmodifiableList(Arrays.asList(\"Spacer Glue\",\"SearchField\",\"Search-PS Glue\"))"
     },
     {
