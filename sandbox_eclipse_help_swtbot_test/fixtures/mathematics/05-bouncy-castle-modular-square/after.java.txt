@@ -66,7 +66,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Original values:
         // tv1 = (u.modPow(new java.math.BigInteger("2"), p));
         // Replacement values:
-        // tv1 = (u.multiply(u).mod(p));
+        // tv1 = u.multiply(u).mod(p);
         // Recorded search path:
         // Search step 1/1 [modpow-small-binary-chain]:
         // tv1 = (u.multiply(u).mod(p));
@@ -76,7 +76,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Estimated operation work: 36 -> 10; not a timing measurement.
         BigInteger tv1;
         if ((p != null && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (u != null && u.getClass() == java.math.BigInteger.class && u.bitLength() < 4096)) {
-        tv1 = (u.multiply(u).mod(p));
+        tv1 = u.multiply(u).mod(p);
         } else {
         // Mathematics fallback: unchanged original Java behavior.
         tv1 = u.modPow(BigInteger.valueOf(2), p);
@@ -93,7 +93,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Original values:
         // tv2 = (tv1.modPow(new java.math.BigInteger("2"), p));
         // Replacement values:
-        // tv2 = (tv1.multiply(tv1).mod(p));
+        // tv2 = tv1.multiply(tv1).mod(p);
         // Recorded search path:
         // Search step 1/1 [modpow-small-binary-chain]:
         // tv2 = (tv1.multiply(tv1).mod(p));
@@ -103,7 +103,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Estimated operation work: 36 -> 10; not a timing measurement.
         BigInteger tv2;
         if ((p != null && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (tv1 != null && tv1.getClass() == java.math.BigInteger.class && tv1.bitLength() < 4096)) {
-        tv2 = (tv1.multiply(tv1).mod(p));
+        tv2 = tv1.multiply(tv1).mod(p);
         } else {
         // Mathematics fallback: unchanged original Java behavior.
         tv2 = tv1.modPow(BigInteger.valueOf(2), p);
@@ -124,7 +124,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Original values:
         // tv2 = (tv3.modPow(new java.math.BigInteger("2"), p));
         // Replacement values:
-        // tv2 = (tv3.multiply(tv3).mod(p));
+        // tv2 = tv3.multiply(tv3).mod(p);
         // Recorded search path:
         // Search step 1/1 [modpow-small-binary-chain]:
         // tv2 = (tv3.multiply(tv3).mod(p));
@@ -133,7 +133,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Independent numeric proof: AFFINE_MODULAR_NORMAL_FORM.
         // Estimated operation work: 36 -> 10; not a timing measurement.
         if ((p != null && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (tv3 != null && tv3.getClass() == java.math.BigInteger.class && tv3.bitLength() < 4096)) {
-        tv2 = (tv3.multiply(tv3).mod(p));
+        tv2 = tv3.multiply(tv3).mod(p);
         } else {
         // Mathematics fallback: unchanged original Java behavior.
         tv2 = tv3.modPow(BigInteger.valueOf(2), p);
@@ -155,7 +155,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         // Replacement values:
         // final java.math.BigInteger _math0 = tv4.multiply(tv4).mod(p);
         // tv6 = _math0;
-        // tv5 = (A.multiply(_math0).mod(p));
+        // tv5 = A.multiply(_math0).mod(p);
         // Recorded search path:
         // Search step 1/1 [modpow-small-binary-chain]:
         // final java.math.BigInteger _math0 = tv4.multiply(tv4).mod(p);
@@ -170,7 +170,7 @@ public class SimplifiedShallueVanDeWoestijneMapToCurve implements MapToCurve
         if ((A != null && A.getClass() == java.math.BigInteger.class && A.bitLength() < 4096) && (p != null && p.getClass() == java.math.BigInteger.class && p.bitLength() < 4096 && p.signum() > 0) && (tv4 != null && tv4.getClass() == java.math.BigInteger.class && tv4.bitLength() < 4096)) {
         final java.math.BigInteger _math0 = tv4.multiply(tv4).mod(p);
         tv6 = _math0;
-        tv5 = (A.multiply(_math0).mod(p));
+        tv5 = A.multiply(_math0).mod(p);
         } else {
         // Mathematics fallback: unchanged original Java behavior.
         tv6 = tv4.modPow(BigInteger.valueOf(2), p);
