@@ -1,4 +1,4 @@
-name: Diagnose pinned JDT parent resolution
+name: Qualify pinned release parent for JDT
 on:
   push:
     branches: [maintenance/help-1387-import-20261014]
@@ -6,9 +6,9 @@ on:
 permissions:
   contents: read
 jobs:
-  diagnose:
+  qualify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
         with:
@@ -19,38 +19,49 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
-      - name: Record current parent metadata and artifact availability
+      - name: Restore the matching release parent from verified immutable source
         shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p target/jdt-parent-diagnostic
-          base=https://repo.eclipse.org/content/repositories/eclipse/org/eclipse/eclipse-platform-parent/4.41.0-SNAPSHOT
-          for name in maven-metadata.xml eclipse-platform-parent-4.41.0-20260909.115535-202.pom; do
-            code=$(curl --location --silent --show-error --max-time 60 -o "target/jdt-parent-diagnostic/$name" --write-out '%{http_code}' "$base/$name")
-            printf '%s %s\n' "$code" "$base/$name" | tee -a target/jdt-parent-diagnostic/http-status.txt
-          done
-          if grep -q '<metadata' target/jdt-parent-diagnostic/maven-metadata.xml; then
-            cat target/jdt-parent-diagnostic/maven-metadata.xml
-          fi
-      - name: Reproduce the unchanged pinned source build with forced snapshot refresh
-        shell: bash
-        env:
-          MAVEN_ARGS: -ntp -U
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = b10dddc069de86305950c8ad59b3fb8e0daa82bf
+          root="$RUNNER_TEMP/pinned-release-parent-build"
+          mkdir -p "$root" target/jdt-parent-qualification
+          git -C "$root" init -q
+          git -C "$root" remote add origin https://github.com/eclipse-platform/eclipse.platform.releng.aggregator.git
+          git -C "$root" fetch --depth=1 origin 10be605e8924c917d5f0013930278a2b1cb756f5
+          actual=$(git -C "$root" rev-parse FETCH_HEAD)
+          test "$actual" = 10be605e8924c917d5f0013930278a2b1cb756f5
+          test "$(git -C "$root" rev-parse FETCH_HEAD:eclipse-platform-parent/pom.xml)" = 7eeea7d0a3db85fc06bc2e400b64d0fd54168c49
+          git -C "$root" archive FETCH_HEAD eclipse-platform-parent | tar -xf - -C "$root"
+          printf '%s\n' "$actual" > target/jdt-parent-qualification/parent-commit.txt
+          git -C "$root" hash-object eclipse-platform-parent/pom.xml > target/jdt-parent-qualification/parent-blob.txt
+          cp "$root/eclipse-platform-parent/pom.xml" target/jdt-parent-qualification/parent-pom.xml
+          echo "PATCHED_JDT_UI_WORK_DIR=$root/eclipse.jdt.ui" >> "$GITHUB_ENV"
+      - name: Build the unchanged pinned patch against the existing September release target
+        shell: bash
+        env:
+          MAVEN_ARGS: -ntp -Declipse-p2-repo.url=https://download.eclipse.org/releases/2026-09/
+        run: |
+          set -euo pipefail
           set +e
-          bash .github/scripts/build_patched_jdt_ui.sh "$RUNNER_TEMP/patched-jdt-ui" 2>&1 | tee target/jdt-parent-diagnostic/build-with-U.log
+          bash .github/scripts/build_patched_jdt_ui.sh "$RUNNER_TEMP/patched-jdt-ui" 2>&1 | tee target/jdt-parent-qualification/build.log
           result=${PIPESTATUS[0]}
           set -e
-          printf '%s\n' "$result" > target/jdt-parent-diagnostic/build-exit.txt
+          printf '%s\n' "$result" > target/jdt-parent-qualification/build-exit.txt
           test -z "$(git status --porcelain --untracked-files=no)"
+          test -z "$(git -C "$PATCHED_JDT_UI_WORK_DIR" status --porcelain --untracked-files=no)"
           exit "$result"
+      - name: Verify unchanged patch compatibility with stock target
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash .github/scripts/compare_patched_jdt_ui_with_target.sh "$RUNNER_TEMP/patched-jdt-ui" "$RUNNER_TEMP/patched-jdt-ui-compatibility" 2>&1 | tee target/jdt-parent-qualification/compatibility.log
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: pinned-jdt-parent-diagnostic-${{ github.run_id }}
+          name: pinned-jdt-parent-qualification-${{ github.run_id }}
           path: |
-            target/jdt-parent-diagnostic
+            target/jdt-parent-qualification
             ${{ runner.temp }}/patched-jdt-ui/provenance.json
+            ${{ runner.temp }}/patched-jdt-ui-compatibility/compatibility.json
           retention-days: 3
