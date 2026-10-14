@@ -74,7 +74,7 @@ public final class MathematicalQuickAssist implements IQuickAssistProcessor {
      synchronized(cache) {
       if(monitor.isCanceled()) return Status.CANCEL_STATUS;
       CachedAnalysis existing=cache.get(key);
-      if(existing!=null && existing.environment().equals(environment)) return Status.OK_STATUS;
+      if(existing!=null && existing.matches(environment,source,key.compilerOptions())) return Status.OK_STATUS;
       cache.remove(key);
      }
      ASTParser parser=ASTParser.newParser(AST.getJLSLatest());
@@ -127,5 +127,10 @@ public final class MathematicalQuickAssist implements IQuickAssistProcessor {
    int offset,int length,MathematicalEnvironment.Snapshot environment) {
   Key { compilerOptions=Map.copyOf(compilerOptions); }
  }
- private record CachedAnalysis(Analysis analysis,MathematicalEnvironment.Snapshot environment) { }
+ record CachedAnalysis(Analysis analysis,MathematicalEnvironment.Snapshot environment) {
+  boolean matches(MathematicalEnvironment.Snapshot current, String source, Map<String,String> compilerOptions) {
+   // Initializer-only changes need not alter JDT signatures or the binding snapshot.
+   return environment.equals(current) && analysis.matches(source,compilerOptions);
+  }
+ }
 }

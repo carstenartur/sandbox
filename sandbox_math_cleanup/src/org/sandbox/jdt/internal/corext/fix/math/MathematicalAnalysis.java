@@ -73,6 +73,21 @@ public final class MathematicalAnalysis {
       Objects.requireNonNull(ast);
       Objects.requireNonNull(source);
       Objects.requireNonNull(options);
+      try (var context = JavaSourceContext.open(ast, source, environment, progress, options)) {
+         Analysis result = analyzeWithin(ast, source, options, progress, selectionOffset, selectionLength, environment, context);
+         var dependencies = context.checkpoint();
+         if (!dependencies.current()) {
+            var diagnostics = new ArrayList<>(result.diagnostics());
+            diagnostics.add(new Diagnostic("SOURCE_DEPENDENCY_CHANGED", "Referenced source changed during analysis", 0, 0, Stage.SOURCE)); //$NON-NLS-1$ //$NON-NLS-2$
+            return new Analysis(List.of(), diagnostics, result.sourceDigest(), result.compilerOptions());
+         }
+         return new Analysis(result.replacements(), result.diagnostics(), result.sourceDigest(), result.compilerOptions(),
+               result.evidence(), result.documentation(), dependencies);
+      }
+   }
+
+   private static Analysis analyzeWithin(CompilationUnit ast, String source, MathCleanUpOptions options,
+         IProgressMonitor progress, int selectionOffset, int selectionLength, SourceEnvironment environment, JavaSourceContext sourceContext) {
       IProgressMonitor monitor = progress == null ? new NullProgressMonitor() : progress;
       Map<String, String> compilerOptions = ast.getJavaElement() == null ? Map.of() : ast.getJavaElement().getJavaProject().getOptions(true);
       String sourceDigest = digest(source);
@@ -130,7 +145,7 @@ public final class MathematicalAnalysis {
             "PINNED_SOURCE_EFFECT", "Call retained in its original order; only total local arithmetic crosses it", //$NON-NLS-1$ //$NON-NLS-2$
             node.getStartPosition(), node.getLength(), Stage.SOURCE))));
       diagnostics.addAll(connections.diagnostics());
-      long remainingWork = options.workBudget() - connections.work();
+      long remainingWork = options.workBudget() - connections.work() - sourceContext.takeWork();
       List<JavaComputationRegion> pending = new ArrayList<>(connections.regions());
       List<JavaComputationRegion> fragments = null;
       List<JavaComputationRegion> statements = null;
@@ -138,6 +153,7 @@ public final class MathematicalAnalysis {
 
       try {
          for (int regionIndex = 0; regionIndex < pending.size(); regionIndex++) {
+            remainingWork -= sourceContext.takeWork();
             JavaComputationRegion region = pending.get(regionIndex);
             var slice = connections.slices().get(region);
             int regionsLeft = pending.size() - regionIndex;
@@ -271,6 +287,7 @@ public final class MathematicalAnalysis {
                   HashSet<String> reserved = new HashSet<>(region.reservedNames());
                   reserved.addAll(generatedNames);
                   JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava());
+                  if (mathematicalBigInteger) plain = JavaOriginalExpressions.restore(ast, source, region, plain);
                   failureStage = Stage.PROOF;
                   JavaEmissionVerifier.verify(request, candidate, plain, region, options, cancellation);
                   failureStage = Stage.EMISSION;
@@ -665,7 +682,9 @@ public final class MathematicalAnalysis {
       String sourceDigest,
       Map<String, String> compilerOptions,
       List<MathematicalAnalysis.VerifiedRegion> evidence,
-      List<MathematicalAnalysis.Replacement> documentation
+      List<MathematicalAnalysis.Replacement> documentation,
+      @com.fasterxml.jackson.annotation.JsonIgnore JavaSourceContext.Checkpoint sourceDependencies,
+      List<JavaSourceContext.Receipt> sourceDependencyReceipts
    ) {
       public Analysis(
          List<MathematicalAnalysis.Replacement> replacements,
@@ -673,7 +692,9 @@ public final class MathematicalAnalysis {
          String sourceDigest,
          Map<String, String> compilerOptions,
          List<MathematicalAnalysis.VerifiedRegion> evidence,
-         List<MathematicalAnalysis.Replacement> documentation
+         List<MathematicalAnalysis.Replacement> documentation,
+         JavaSourceContext.Checkpoint sourceDependencies,
+         List<JavaSourceContext.Receipt> sourceDependencyReceipts
       ) {
          replacements = List.copyOf(replacements);
          diagnostics = List.copyOf(diagnostics);
@@ -685,6 +706,25 @@ public final class MathematicalAnalysis {
          this.compilerOptions = compilerOptions;
          this.evidence = evidence;
          this.documentation = List.copyOf(documentation);
+         sourceDependencyReceipts = sourceDependencyReceipts == null ? List.of() : List.copyOf(sourceDependencyReceipts);
+         this.sourceDependencies = sourceDependencies == null
+               ? (sourceDependencyReceipts.isEmpty() ? JavaSourceContext.Checkpoint.EMPTY
+                     : JavaSourceContext.Checkpoint.detached(sourceDependencyReceipts)) : sourceDependencies;
+         if (!sourceDependencyReceipts.equals(this.sourceDependencies.receipts()))
+            throw new IllegalArgumentException("SOURCE_RECEIPTS_DIFFER_FROM_CONTEXT"); //$NON-NLS-1$
+         this.sourceDependencyReceipts = sourceDependencyReceipts;
+      }
+
+      public Analysis(List<Replacement> replacements, List<Diagnostic> diagnostics, String sourceDigest,
+            Map<String, String> compilerOptions, List<VerifiedRegion> evidence, List<Replacement> documentation,
+            JavaSourceContext.Checkpoint sourceDependencies) {
+         this(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation, sourceDependencies,
+               sourceDependencies == null ? List.of() : sourceDependencies.receipts());
+      }
+
+      public Analysis(List<Replacement> replacements, List<Diagnostic> diagnostics, String sourceDigest,
+            Map<String, String> compilerOptions, List<VerifiedRegion> evidence, List<Replacement> documentation) {
+         this(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation, JavaSourceContext.Checkpoint.EMPTY);
       }
 
       public Analysis(List<Replacement> replacements, List<Diagnostic> diagnostics, String sourceDigest,
@@ -701,10 +741,11 @@ public final class MathematicalAnalysis {
       }
 
       public boolean matches(String source, Map<String, String> options) {
-         return this.sourceDigest.equals(MathematicalAnalysis.digest(source)) && this.compilerOptions.equals(options);
+         return this.sourceDigest.equals(MathematicalAnalysis.digest(source)) && this.compilerOptions.equals(options) && sourceDependencies.current();
       }
 
       public TextEdit newEdit() {
+         sourceDependencies.requireCurrent();
          MultiTextEdit edit = new MultiTextEdit();
 
          for (MathematicalAnalysis.Replacement replacement : this.replacements) {

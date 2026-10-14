@@ -63,7 +63,9 @@ final class JavaEmissionVerifier {
          throw new IllegalArgumentException("EMITTED_OUTPUT_BINDINGS_MISMATCH");
       }
 
-      StringBuilder source = new StringBuilder("class MathRoundTrip { static void verify(");
+      // The renderer may retain a binding-checked source BigInteger factory spelling.
+      // Import the actual JDK type; extraction and all three independent proofs still run.
+      StringBuilder source = new StringBuilder("import java.math.BigInteger;\nclass MathRoundTrip { static void verify(");
       ArrayList<String> parameters = new ArrayList<>();
       HashMap<String, String> originalInputIds = new HashMap<>();
 
