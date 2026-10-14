@@ -44,44 +44,12 @@ final class JavaOriginalExpressions {
             ASTNode tree = parser.createAST(null);
             if (!(tree instanceof Expression expression) || (tree.getFlags() & ASTNode.MALFORMED) != 0)
                 throw new IllegalArgumentException("GENERATED_EXPRESSION_UNPARSED"); //$NON-NLS-1$
-            Expression normalized = (Expression)normalize(expression, literals, 0);
+            Expression normalized = JavaExpressionNormalizer.normalize(expression, literals);
             ASTNode original = NodeFinder.perform(unit, output.initializerStart(), output.initializerLength());
             String rendered = original instanceof Expression old ? render(unit, source, old, normalized, 0) : normalized.toString();
             outputs.put(output.id(), rendered);
         }
         return new JavaComputationEmitter.Emission(emission.statements(), outputs);
-    }
-    @SuppressWarnings("unchecked")
-    private static ASTNode normalize(ASTNode input, Map<BigInteger, Expression> literals, int depth) {
-        if (depth > 128) throw new IllegalArgumentException("SOURCE_RENDERING_BOUND"); //$NON-NLS-1$
-        AST ast = input.getAST();
-        if (input instanceof ClassInstanceCreation creation && creation.getAnonymousClassDeclaration() == null
-                && "java.math.BigInteger".equals(creation.getType().toString()) && creation.arguments().size() == 1 //$NON-NLS-1$
-                && creation.arguments().getFirst() instanceof StringLiteral literal) {
-            try {
-                Expression original = literals.get(new BigInteger(literal.getLiteralValue()));
-                if (original != null) return ASTNode.copySubtree(ast, original);
-            } catch (NumberFormatException unsupported) { /* Keep the original emitted node. */ }
-        }
-        ASTNode copy = ASTNode.copySubtree(ast, input);
-        for (Object property : input.structuralPropertiesForType()) {
-            StructuralPropertyDescriptor descriptor = (StructuralPropertyDescriptor)property;
-            if (descriptor instanceof ChildPropertyDescriptor) {
-                var child = (ASTNode)input.getStructuralProperty(descriptor);
-                if (child != null) copy.setStructuralProperty(descriptor, normalize(child, literals, depth+1));
-            } else if (descriptor instanceof ChildListPropertyDescriptor) {
-                var original = (java.util.List<ASTNode>)input.getStructuralProperty(descriptor);
-                var children = (java.util.List<ASTNode>)copy.getStructuralProperty(descriptor); children.clear();
-                for (var child : original) children.add(normalize(child,literals,depth+1));
-            }
-        }
-        if (copy instanceof ParenthesizedExpression parentheses) {
-            Expression inner = parentheses.getExpression();
-            if (inner instanceof MethodInvocation || inner instanceof Name || inner instanceof ClassInstanceCreation
-                    || inner instanceof NumberLiteral || inner instanceof StringLiteral)
-                return ASTNode.copySubtree(ast, inner);
-        }
-        return copy;
     }
     private static String render(CompilationUnit unit, String source, Expression original, Expression target, int depth) {
         if (depth > 128) throw new IllegalArgumentException("SOURCE_RENDERING_BOUND"); //$NON-NLS-1$

@@ -51,3 +51,30 @@ scheduled, excluding overlaps with accepted edits or pending regions; they canno
 produce another array retry. The rejected attempt's search and presentation work
 stay charged, and all alternatives share the existing remaining file budget.
 Capture costs and proof requirements are unchanged.
+
+## Generated-expression normalization
+
+`JavaOriginalExpressions` parses each generated output expression into a private
+AST before restoring suitable original literal spellings. It transfers ownership
+of that disposable expression to `JavaExpressionNormalizer`. This helper visits
+its generated nodes once and retains unchanged nodes instead of recursively
+copying every subtree at every ancestor. A long generated receiver chain therefore
+no longer causes quadratic subtree-copy work in this normalization step.
+
+The original compilation unit is never consumed. Literal forms taken from it are
+copied into the generated AST, retaining their source AST and parent links. A
+redundant generated parenthesis wrapper is discarded only for the existing
+whitelist of expression forms; precedence-sensitive parentheses remain. Replaced
+children are detached before reattachment, and unchanged children are not reset.
+There is no shared mutable AST cache or transfer of source-node ownership.
+
+The existing rendering depth and expression-length limits remain in force, as do
+comment preservation, source-dependency validation, numerical obligations and
+independent emitted-Java verification. This is a rendering implementation change,
+not another optimizer, a new mathematical rule or an increase in search budgets.
+
+`JavaExpressionNormalizerTest` checks node identity, parent links, literal-source
+isolation, child-list ordering, unsupported forms and the depth boundary. These
+are deterministic regression checks rather than timing assertions. Normalizer
+microbenchmarks describe only that component; they do not establish a whole-plugin
+speedup, new corpus findings or faster execution of the transformed Java program.
