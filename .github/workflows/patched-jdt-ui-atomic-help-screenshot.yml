@@ -74,6 +74,34 @@ jobs:
       - name: Verify preinstalled Eclipse desktop runtime
         uses: ./.github/actions/verify-eclipse-desktop-runtime
 
+      # This independent preview uses the frozen R4_41 patch, not R4_40.
+      # Resolve its removed parent SNAPSHOT from the matching immutable source.
+      - name: Checkout the frozen R4_41 platform parent
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-platform/eclipse.platform.releng.aggregator
+          ref: 10be605e8924c917d5f0013930278a2b1cb756f5
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: eclipse-platform-parent
+          path: target/atomic-platform-releng
+
+      - name: Verify and expose the frozen R4_41 parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          parent="$GITHUB_WORKSPACE/target/atomic-platform-releng/eclipse-platform-parent"
+          test "$(git -C target/atomic-platform-releng rev-parse HEAD)" = "10be605e8924c917d5f0013930278a2b1cb756f5"
+          test "$(git hash-object "$parent/pom.xml")" = "7eeea7d0a3db85fc06bc2e400b64d0fd54168c49"
+          ln -s "$parent" "$RUNNER_TEMP/eclipse-platform-parent"
+          test -f "$RUNNER_TEMP/eclipse-platform-parent/pom.xml"
+          {
+            printf 'repository=eclipse-platform/eclipse.platform.releng.aggregator\n'
+            printf 'release=R4_41\ncommit=10be605e8924c917d5f0013930278a2b1cb756f5\n'
+            printf 'pomGitBlob=7eeea7d0a3db85fc06bc2e400b64d0fd54168c49\n'
+            printf 'coordinate=org.eclipse:eclipse-platform-parent:4.41.0-SNAPSHOT\n'
+          } > "$RUNNER_TEMP/atomic-platform-parent.txt"
+
       - name: Build the pinned JDT UI replacement bundle
         shell: bash
         run: |
@@ -223,6 +251,7 @@ jobs:
             sandbox_int_to_enum_help/images/int-to-enum-coordinated-preview.png
             sandbox_junit_cleanup_help/images/junit-coordinated-preview.png
             ${{ runner.temp }}/patched-jdt-ui/provenance.json
+            ${{ runner.temp }}/atomic-platform-parent.txt
             ${{ runner.temp }}/patched-jdt-ui-compatibility/compatibility.json
             ${{ runner.temp }}/patched-jdt-ui-p2/evidence/repository-provenance.json
             ${{ runner.temp }}/patched-ltk/provenance.json

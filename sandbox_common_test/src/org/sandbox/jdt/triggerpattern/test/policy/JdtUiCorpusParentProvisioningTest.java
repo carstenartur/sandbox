@@ -43,10 +43,45 @@ class JdtUiCorpusParentProvisioningTest {
         assertTrue(workflow.contains("VERIFYING_WHITESPACE_REGRESSIONS")); //$NON-NLS-1$
     }
 
+    @Test void patchedUiUsesItsMatching441ParentInsteadOfTheFrozen440CorpusParent() throws Exception {
+        String workflow = workflow("patched-jdt-ui-atomic-help-screenshot.yml"); //$NON-NLS-1$
+        assertTrue(workflow.contains("repository: eclipse-platform/eclipse.platform.releng.aggregator")); //$NON-NLS-1$
+        assertTrue(workflow.contains("ref: 10be605e8924c917d5f0013930278a2b1cb756f5")); //$NON-NLS-1$
+        assertTrue(workflow.contains("sparse-checkout: eclipse-platform-parent")); //$NON-NLS-1$
+        assertTrue(workflow.contains("path: target/atomic-platform-releng")); //$NON-NLS-1$
+    }
+
+    @Test void patchedParentIsVerifiedAndExposedBeforeTheUnchangedBundleBuild() throws Exception {
+        String workflow = workflow("patched-jdt-ui-atomic-help-screenshot.yml"); //$NON-NLS-1$
+        int start = workflow.indexOf("- name: Verify and expose the frozen R4_41 parent"); //$NON-NLS-1$
+        int end = workflow.indexOf("- name: Build the pinned JDT UI replacement bundle"); //$NON-NLS-1$
+        assertTrue(start >= 0 && start < end);
+        String step = workflow.substring(start, end);
+        assertTrue(step.contains("set -euo pipefail")); //$NON-NLS-1$
+        assertTrue(step.contains("7eeea7d0a3db85fc06bc2e400b64d0fd54168c49")); //$NON-NLS-1$
+        assertTrue(step.contains("git -C target/atomic-platform-releng rev-parse HEAD")); //$NON-NLS-1$
+        assertTrue(step.contains("git hash-object \"$parent/pom.xml\"")); //$NON-NLS-1$
+        assertTrue(step.contains("ln -s \"$parent\" \"$RUNNER_TEMP/eclipse-platform-parent\"")); //$NON-NLS-1$
+        assertTrue(step.contains("test -f \"$RUNNER_TEMP/eclipse-platform-parent/pom.xml\"")); //$NON-NLS-1$
+    }
+
+    @Test void patchedParentProvenanceAndOriginalScreenshotChecksAreRetained() throws Exception {
+        String workflow = workflow("patched-jdt-ui-atomic-help-screenshot.yml"); //$NON-NLS-1$
+        assertTrue(workflow.contains("coordinate=org.eclipse:eclipse-platform-parent:4.41.0-SNAPSHOT")); //$NON-NLS-1$
+        assertTrue(workflow.contains("${{ runner.temp }}/atomic-platform-parent.txt")); //$NON-NLS-1$
+        assertTrue(workflow.contains("build_patched_jdt_ui.sh")); //$NON-NLS-1$
+        assertTrue(workflow.contains("VerifyAtomicPreviewScreenshotDiff.java")); //$NON-NLS-1$
+        assertTrue(workflow.contains("coordinatedJUnitCandidatesAreAtomicAndIndependentlySelectable")); //$NON-NLS-1$
+    }
+
     private static String workflow() throws Exception {
+        return workflow("jdt-ui-junit4-strict-qa.yml"); //$NON-NLS-1$
+    }
+
+    private static String workflow(String name) throws Exception {
         Path root = Path.of("").toAbsolutePath(); //$NON-NLS-1$
         while (root != null) {
-            Path file = root.resolve(".github/workflows/jdt-ui-junit4-strict-qa.yml"); //$NON-NLS-1$
+            Path file = root.resolve(".github/workflows").resolve(name); //$NON-NLS-1$
             if (Files.isRegularFile(file)) return Files.readString(file, StandardCharsets.UTF_8);
             root = root.getParent();
         }
