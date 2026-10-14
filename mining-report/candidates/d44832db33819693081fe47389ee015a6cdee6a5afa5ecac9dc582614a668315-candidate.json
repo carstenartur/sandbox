@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d44832db33819693081fe47389ee015a6cdee6a5afa5ecac9dc582614a668315",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jface.internal.text.codemining.CodeMiningManager.goupByLines($symbols, $providers)\n\u003d\u003e\norg.eclipse.jface.internal.text.codemining.CodeMiningManager.groupByLines($symbols, $providers)\n;;",
+  "beforeExample": "package org.eclipse.jface.internal.text.codemining;\n\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Collections;\nimport java.util.Comparator;\nimport org.eclipse.jface.text.Position;\n\ninterface ICodeMining {}\ninterface ICodeMiningProvider {}\n\npublic class CodeMiningManager {\n\n    private static Map\u003cPosition, List\u003cICodeMining\u003e\u003e goupByLines(List\u003c? extends ICodeMining\u003e codeMinings,\n            List\u003cICodeMiningProvider\u003e providers) {\n        Collections.sort(codeMinings, new Comparator\u003cICodeMining\u003e() {\n            @Override\n            public int compare(ICodeMining a, ICodeMining b) { return 0; }\n        });\n        return Collections.emptyMap();\n    }\n\n    public void someMethod(List\u003c? extends ICodeMining\u003e symbols, List\u003cICodeMiningProvider\u003e fCodeMiningProviders) {\n        // This is the target call site\n        Map\u003cPosition, List\u003cICodeMining\u003e\u003e groups \u003d goupByLines(symbols, fCodeMiningProviders);\n        System.out.println(groups.size());\n    }\n\n    public static void main(String[] args) {\n        new CodeMiningManager().someMethod(Collections.emptyList(), Collections.emptyList());\n    }\n}",
+  "afterExample": "package org.eclipse.jface.internal.text.codemining;\n\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Collections;\nimport java.util.Comparator;\nimport org.eclipse.jface.text.Position;\n\ninterface ICodeMining {}\ninterface ICodeMiningProvider {}\n\npublic class CodeMiningManager {\n\n    private static Map\u003cPosition, List\u003cICodeMining\u003e\u003e groupByLines(List\u003c? extends ICodeMining\u003e codeMinings,\n            List\u003cICodeMiningProvider\u003e providers) {\n        Collections.sort(codeMinings, new Comparator\u003cICodeMining\u003e() {\n            @Override\n            public int compare(ICodeMining a, ICodeMining b) { return 0; }\n        });\n        return Collections.emptyMap();\n    }\n\n    public void someMethod(List\u003c? extends ICodeMining\u003e symbols, List\u003cICodeMiningProvider\u003e fCodeMiningProviders) {\n        // This is the target call site\n        Map\u003cPosition, List\u003cICodeMining\u003e\u003e groups \u003d groupByLines(symbols, fCodeMiningProviders);\n        System.out.println(groups.size());\n    }\n\n    public static void main(String[] args) {\n        new CodeMiningManager().someMethod(Collections.emptyList(), Collections.emptyList());\n    }\n}",
+  "negativeExample": "package org.eclipse.jface.internal.text.codemining;\n\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Collections;\nimport java.util.Comparator;\nimport org.eclipse.jface.text.Position;\n\ninterface ICodeMining {}\ninterface ICodeMiningProvider {}\n\npublic class CodeMiningManager {\n\n    // This method has a different name\n    private static Map\u003cPosition, List\u003cICodeMining\u003e\u003e anotherMethodName(List\u003c? extends ICodeMining\u003e codeMinings,\n            List\u003cICodeMiningProvider\u003e providers) {\n        return Collections.emptyMap();\n    }\n\n    // This is the target call site\n    public void someMethod(List\u003c? extends ICodeMining\u003e symbols, List\u003cICodeMiningProvider\u003e fCodeMiningProviders) {\n        // This should not be matched as the method name is different\n        Map\u003cPosition, List\u003cICodeMining\u003e\u003e groups \u003d anotherMethodName(symbols, fCodeMiningProviders);\n        System.out.println(groups.size());\n    }\n\n    // This is not a method call\n    String goupByLines \u003d \"a typo\";\n\n    public static void main(String[] args) {\n        new CodeMiningManager().someMethod(Collections.emptyList(), Collections.emptyList());\n    }\n}",
+  "targetHintFile": "codemining.sandbox-hint",
+  "sourceCommit": "bcee8f82e20ee309201c99262f321029606659c6",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Typo Fix",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-14T02:26:51.813231911Z",
+  "ruleFingerprint": "sha256:80ee2f68c5c2a3b2c006dfd56aebdf5bec713e2386fdb3afe70bf700f6cf11f3",
+  "behaviorFingerprint": "sha256:2b03a76bab1348b501f8180701c83593df9caf797344959650411605a201568c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 12: The public type CodeMiningManager must be defined in its own file",
+    "verifiedAt": "2026-10-14T02:27:00.940705979Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

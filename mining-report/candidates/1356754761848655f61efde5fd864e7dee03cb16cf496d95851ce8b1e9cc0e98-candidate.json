@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1356754761848655f61efde5fd864e7dee03cb16cf496d95851ce8b1e9cc0e98",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "class Example {\n    void foo() {\n        java.lang.StringBuffer sb \u003d new java.lang.StringBuffer(\"hello\");\n        sb.append(\" world\");\n        System.out.println(sb.toString());\n    }\n    public java.lang.StringBuffer fieldBuffer \u003d new java.lang.StringBuffer(\"field\");\n}",
+  "afterExample": "class Example {\n    void foo() {\n        java.lang.StringBuilder sb \u003d new java.lang.StringBuilder(\"hello\");\n        sb.append(\" world\");\n        System.out.println(sb.toString());\n    }\n    public java.lang.StringBuffer fieldBuffer \u003d new java.lang.StringBuffer(\"field\");\n}",
+  "negativeExample": "class Example {\n    void bar(java.lang.StringBuffer sbParam) {\n        // Should not match parameters\n        sbParam.append(\"test\");\n    }\n    public static java.lang.StringBuffer staticBuffer \u003d new java.lang.StringBuffer(); // Should not match fields\n}",
+  "targetHintFile": "stringbuffer-to-stringbuilder.sandbox-hint",
+  "sourceCommit": "432db08619cda4364032721bf730f48194237ce6",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Migration",
+  "summary": "Migrate StringBuffer constructor calls to StringBuilder for local variables.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-14T02:26:51.689465782Z",
+  "ruleFingerprint": "sha256:52ef1fd9bf1ad95f1f0de9ba3173c2edfb9f1fa3141c9853875b3da50ac736f0",
+  "behaviorFingerprint": "sha256:2d7ac60341f79252a40d7094e488390b10ff054966f9a4e387d024ee69623d69",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed source is invalid: Java compile error at line 3: Type mismatch: cannot convert from StringBuilder to StringBuffer",
+    "verifiedAt": "2026-10-14T02:27:00.840876359Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

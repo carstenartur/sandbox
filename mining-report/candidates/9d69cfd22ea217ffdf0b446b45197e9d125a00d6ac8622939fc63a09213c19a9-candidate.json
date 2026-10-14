@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9d69cfd22ea217ffdf0b446b45197e9d125a00d6ac8622939fc63a09213c19a9",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n@id: eclipse.jface.text.printStackTrace\n@description: Replace e.printStackTrace() with System.err.println(e) for cleaner error reporting, especially in example code.\n@severity: HINT\n*/\n$e.printStackTrace() :: instanceof($e, \"java.lang.Throwable\")\n\u003d\u003e\njava.lang.System.err.println($e)\n;;",
+  "beforeExample": "public class Example {\n    public void foo() {\n        try {\n            int x \u003d 1 / 0;\n        } catch (ArithmeticException e) {\n            e.printStackTrace();\n        }\n    }\n}",
+  "afterExample": "public class Example {\n    public void foo() {\n        try {\n            int x \u003d 1 / 0;\n        } catch (ArithmeticException e) {\n            java.lang.System.err.println(e);\n        }\n    }\n}",
+  "negativeExample": "public class NegativeExample {\n    public void foo() {\n        MyCustomLogger logger \u003d new MyCustomLogger();\n        try {\n            int x \u003d 1 / 0;\n        } catch (ArithmeticException e) {\n            logger.logError(e); // Should not match\n        }\n    }\n}\nclass MyCustomLogger {\n    public void logError(Throwable t) {\n        // custom logging logic, not printStackTrace\n    }\n}",
+  "targetHintFile": "error-handling.sandbox-hint",
+  "sourceCommit": "f1942faa93537121ccad39ea194f1b5c04583065",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Error Handling",
+  "summary": "Replace direct \u0027e.printStackTrace()\u0027 with \u0027System.err.println(e)\u0027.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-14T02:26:51.618073124Z",
+  "ruleFingerprint": "sha256:68563075cf3677c8ba4eb68d4d416715ae97069ba05dc6c4cf8c4d0604fe025e",
+  "behaviorFingerprint": "sha256:041be821692e164ec4b89fa342837707a6bb6c7d0089b9103b9b0033092dd0a9",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-14T02:27:00.791713099Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

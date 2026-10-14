@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 2: The import org.eclipse.jface.text.contentassist cannot be resolved",
-    "verifiedAt": "2026-10-13T02:52:12.966020067Z",
+    "verifiedAt": "2026-10-14T02:26:59.445530394Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

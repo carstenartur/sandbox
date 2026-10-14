@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b88d2c23a006d5bc38efdfeb6bc32099b653c04003ae3d4f79ad14d166069de6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new $SubAnnotationType($pos, $sourceViewer.getTextWidget()) :: subtypeOf($SubAnnotationType, \"org.eclipse.jface.text.source.inlined.AbstractInlinedAnnotation\")\n\u003d\u003e new $SubAnnotationType($pos, $sourceViewer)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.Position;\nimport org.eclipse.jface.text.source.ISourceViewer;\nimport org.eclipse.jface.text.source.inlined.AbstractInlinedAnnotation;\nimport org.eclipse.swt.custom.StyledText;\n\n// Minimal mock to simulate the hierarchy and types\nclass MockAbstractInlinedAnnotation extends AbstractInlinedAnnotation {\n    // Assuming the old constructor signature for the \u0027before\u0027 state\n    public MockAbstractInlinedAnnotation(Position position, StyledText textWidget) {\n        super(position, textWidget);\n    }\n}\n\nclass MockColorAnnotation extends MockAbstractInlinedAnnotation {\n    public MockColorAnnotation(Position pos, StyledText styledText) {\n        super(pos, styledText);\n    }\n}\n\npublic class MyClass {\n    public void test(Position pos, ISourceViewer viewer) {\n        // Original code\n        MockColorAnnotation annotation \u003d new MockColorAnnotation(pos, viewer.getTextWidget());\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.Position;\nimport org.eclipse.jface.text.source.ISourceViewer;\nimport org.eclipse.jface.text.source.inlined.AbstractInlinedAnnotation;\nimport org.eclipse.swt.custom.StyledText;\n\n// Minimal mock to simulate the hierarchy and types\nclass MockAbstractInlinedAnnotation extends AbstractInlinedAnnotation {\n    // Assuming the new constructor signature for the \u0027after\u0027 state, changed in the same commit\n    public MockAbstractInlinedAnnotation(Position position, ISourceViewer viewer) {\n        super(position, viewer);\n    }\n}\n\nclass MockColorAnnotation extends MockAbstractInlinedAnnotation {\n    // Constructor updated to match the new super type expectation\n    public MockColorAnnotation(Position pos, ISourceViewer viewer) {\n        super(pos, viewer);\n    }\n}\n\npublic class MyClass {\n    public void test(Position pos, ISourceViewer viewer) {\n        // Cleaned up code\n        MockColorAnnotation annotation \u003d new MockColorAnnotation(pos, viewer);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.Position;\nimport org.eclipse.jface.text.source.ISourceViewer;\nimport org.eclipse.swt.custom.StyledText;\n\n// Some other class not inheriting from AbstractInlinedAnnotation\nclass OtherAnnotation {\n    public OtherAnnotation(Position pos, StyledText styledText) {\n        // Does something else\n    }\n}\n\npublic class MyClass {\n    public void test(Position pos, ISourceViewer viewer) {\n        // This should not be matched, as OtherAnnotation is not a subtype of AbstractInlinedAnnotation\n        OtherAnnotation annotation \u003d new OtherAnnotation(pos, viewer.getTextWidget());\n\n        // This should not be matched, as the second argument is not viewer.getTextWidget() literally\n        StyledText anotherWidget \u003d viewer.getTextWidget();\n        OtherAnnotation anotherAnnotation \u003d new OtherAnnotation(pos, anotherWidget);\n\n        // This should not be matched, as the type is not a subclass of AbstractInlinedAnnotation\n        new java.awt.Point(10, 20);\n    }\n}",
+  "targetHintFile": "modernize-jface.sandbox-hint",
+  "sourceCommit": "68448cfb817307ad9b35f97b62b87b02389cf0e8",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces constructor calls of AbstractInlinedAnnotation subclasses from `new Foo(pos, viewer.getTextWidget())` to `new Foo(pos, viewer)`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-14T02:26:51.646470295Z",
+  "ruleFingerprint": "sha256:324674c53ff77b2de3b30246f663636b5659b69328a21c21d3473d56254bd64d",
+  "behaviorFingerprint": "sha256:c51243650156822cc5be150671a99e49e9309848947fb677d4e6c65cfc25fbe4",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The import org.eclipse.jface.text.source.ISourceViewer cannot be resolved",
+    "verifiedAt": "2026-10-14T02:27:00.807364672Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

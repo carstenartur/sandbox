@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "155b6446af68b488f4a5a556d0de428614a17f75650f20bfa9113dd95b89faa3",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: redundant.instanceof.to.notnull\u003e\n\u003c!description: Replaces a redundant \u0027instanceof\u0027 check with \u0027!\u003d null\u0027 when the variable\u0027s static type is already a subtype of the checked type.\u003e\n\u003c!severity: HINT\u003e\nif ($x instanceof $Type) :: subtypeOf($x, $Type)\n\u003d\u003e\nif ($x !\u003d null)\n;;",
+  "beforeExample": "import org.eclipse.swt.widgets.Listener;\nimport org.eclipse.swt.widgets.Event;\n\npublic class MyClass {\n    public void myMethod(Listener someListener) {\n        if (someListener instanceof Listener) {\n            System.out.println(\"Listener is not null\");\n            someListener.handleEvent(new Event());\n        }\n    }\n}",
+  "afterExample": "import org.eclipse.swt.widgets.Listener;\nimport org.eclipse.swt.widgets.Event;\n\npublic class MyClass {\n    public void myMethod(Listener someListener) {\n        if (someListener !\u003d null) {\n            System.out.println(\"Listener is not null\");\n            someListener.handleEvent(new Event());\n        }\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.widgets.Listener;\nimport org.eclipse.swt.widgets.Event;\n\npublic class MyClass {\n    public void myMethod(Object someObject) {\n        // Here, someObject is not statically known to be a Listener, so instanceof is not redundant.\n        if (someObject instanceof Listener) {\n            System.out.println(\"Object is a Listener\");\n            ((Listener) someObject).handleEvent(new Event());\n        }\n    }\n}",
+  "targetHintFile": "redundant-checks.sandbox-hint",
+  "sourceCommit": "71eeeb63bd19b1263f0378d09b7d92a5108e3b44",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Redundant Code",
+  "summary": "Replaces redundant \u0027instanceof\u0027 checks with \u0027!\u003d null\u0027 for variables whose static type already guarantees the check.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-14T02:26:51.668844471Z",
+  "ruleFingerprint": "sha256:b19660152faf4b10e067c2cde0be491f990d20406ce440cacffb9cfefca64793",
+  "behaviorFingerprint": "sha256:a3084a94bb299747e8987d88d25c30eaa7730ac03751cad8f9b2742a2408e323",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-14T02:27:00.818980769Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

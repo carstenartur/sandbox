@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2d878450ea495bce9c67bf50fc74dffbc4059a6ed0f0cd1a287f752ee69d307b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: sourceviewer.useHasCodeMiningProviders\u003e\n\u003c!description: Encapsulate null check for fCodeMiningManager by using the hasCodeMiningProviders() method.\nThis improves encapsulation and readability, making the code less dependent on internal field access.\u003e\n\u003c!severity: HINT\u003e\n\nfCodeMiningManager !\u003d null :: inClass(\"org.eclipse.jface.text.source.SourceViewer\")\n\u003d\u003e hasCodeMiningProviders()\n;;",
+  "beforeExample": "package org.eclipse.jface.text.source;\n\nclass CodeMiningManager {\n    public void uninstall() {}\n    public void setCodeMiningProviders(Object[] providers) {}\n    public void run() {}\n}\n\npublic class SourceViewer {\n    protected CodeMiningManager fCodeMiningManager;\n\n    public void someMethod() {\n        // Target match\n        if (fCodeMiningManager !\u003d null) {\n            fCodeMiningManager.uninstall();\n            fCodeMiningManager \u003d null;\n        }\n    }\n\n    public void anotherMethod() {\n        // Another usage\n        if (fCodeMiningManager !\u003d null) {\n            fCodeMiningManager.run();\n        }\n    }\n}\n",
+  "afterExample": "package org.eclipse.jface.text.source;\n\nclass CodeMiningManager {\n    public void uninstall() {}\n    public void setCodeMiningProviders(Object[] providers) {}\n    public void run() {}\n}\n\npublic class SourceViewer {\n    protected CodeMiningManager fCodeMiningManager;\n\n    // Method added in the commit to encapsulate the check\n    public boolean hasCodeMiningProviders() {\n        return fCodeMiningManager !\u003d null;\n    }\n\n    public void someMethod() {\n        // Replaced usage\n        if (hasCodeMiningProviders()) {\n            fCodeMiningManager.uninstall();\n            fCodeMiningManager \u003d null;\n        }\n    }\n\n    public void anotherMethod() {\n        // Replaced usage\n        if (hasCodeMiningProviders()) {\n            fCodeMiningManager.run();\n        }\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jface.text.source;\n\nclass CodeMiningManager {\n    public void uninstall() {}\n    public void setCodeMiningProviders(Object[] providers) {}\n    public void run() {}\n}\n\nclass AnotherClass {\n    private CodeMiningManager fCodeMiningManager;\n    private Object otherManager;\n\n    public void test() {\n        // Should not match: different class\n        if (fCodeMiningManager !\u003d null) {\n            System.out.println(\"This should not be touched.\");\n        }\n        // Should not match: different field\n        if (otherManager !\u003d null) {\n            System.out.println(\"Nor this.\");\n        }\n    }\n}\n",
+  "targetHintFile": "encapsulation.sandbox-hint",
+  "sourceCommit": "d9ab254b705aa2b86247b7fbbe657f8fba9147a7",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Encapsulation",
+  "summary": "Replaced direct field null check (fCodeMiningManager !\u003d null) with a call to the encapsulating method (hasCodeMiningProviders()) within the SourceViewer class.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-14T02:26:51.788559505Z",
+  "ruleFingerprint": "sha256:67075509857a467fa21800c030bd0eb22b0f9aab42d2a50c17344290f156c11f",
+  "behaviorFingerprint": "sha256:59e5ccfe2c39393ccb66ea8f6b12040552659a7a2eaac1596b3c155978234ce7",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-14T02:27:00.906722415Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

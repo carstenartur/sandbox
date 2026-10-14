@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "14cdfbce99b32043a350d2f873d7d3beb7782b32895b1cfe787cf0519b7a72d8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: use-stringbuilder-for-local\u003e\n\u003c!description: Replace StringBuffer with StringBuilder for local variables for performance, when thread-safety is not required.\u003e\n\u003c!severity: HINT\u003e\nnew java.lang.StringBuffer($arg$)\n:: isAssignedToLocalVariable()\n\u003d\u003e\nnew java.lang.StringBuilder($arg$)\n;;",
+  "beforeExample": "public class Test {\n    public void foo() {\n        java.lang.StringBuffer sb \u003d new java.lang.StringBuffer(\"hello\");\n        sb.append(\"world\");\n        System.out.println(sb.toString());\n    }\n}",
+  "afterExample": "public class Test {\n    public void foo() {\n        java.lang.StringBuilder sb \u003d new java.lang.StringBuilder(\"hello\");\n        sb.append(\"world\");\n        System.out.println(sb.toString());\n    }\n}",
+  "negativeExample": "public class Test {\n    // Not a local variable initializer (field)\n    private java.lang.StringBuffer fieldBuffer \u003d new java.lang.StringBuffer(\"field\");\n\n    // Not a local variable initializer (method return)\n    public java.lang.StringBuffer createBuffer() {\n        return new java.lang.StringBuffer(\"shared\");\n    }\n\n    // Not a local variable initializer (method argument)\n    public void processBuffer(java.lang.StringBuffer buffer) {\n        buffer.append(\"processed\");\n    }\n    public void callProcessBuffer() {\n        processBuffer(new java.lang.StringBuffer(\"param\"));\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "ce56a0e12ccc495fa9319cadecf18e2bf7d6a9b6",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "summary": "Replaces `new StringBuffer()` with `new StringBuilder()` when assigned to a local variable.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-14T02:26:51.770259689Z",
+  "ruleFingerprint": "sha256:5a7ac63e56d33a63c72ddc6c7d2dc7155a3d376863d7a1be963230685226c0b8",
+  "behaviorFingerprint": "sha256:131957b00afb3c60b4bdeb6d5a4ad490bd7c3ea4050116f6c15def964955d54d",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-14T02:27:00.896362143Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

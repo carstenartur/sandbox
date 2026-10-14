@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "542ba4c3d71ea2c711b858cbd2b4d0baf6f4e4d3a4a26460f8ada9172c381481",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$display.asyncExec(new java.lang.Runnable() { @java.lang.Override public void run() { $statements$ } });\n\u003d\u003e\n$display.asyncExec(() -\u003e { $statements$ });\n;;",
+  "beforeExample": "import org.eclipse.swt.widgets.Display;\n\npublic class Test {\n    Display display;\n\n    void foo() {\n        display.asyncExec(new java.lang.Runnable() {\n            @java.lang.Override\n            public void run() {\n                System.out.println(\"Hello from Runnable\");\n            }\n        });\n    }\n}",
+  "afterExample": "import org.eclipse.swt.widgets.Display;\n\npublic class Test {\n    Display display;\n\n    void foo() {\n        display.asyncExec(() -\u003e {\n            System.out.println(\"Hello from Runnable\");\n        });\n    }\n}",
+  "negativeExample": "import java.util.concurrent.Callable;\nimport org.eclipse.swt.widgets.Display;\n\npublic class Test {\n    Display display;\n\n    void bar() {\n        // This Callable should not match the Runnable rule\n        Callable\u003cString\u003e c \u003d new Callable\u003cString\u003e() {\n            @java.lang.Override\n            public String call() throws Exception {\n                return \"Hello from Callable\";\n            }\n        };\n        System.out.println(c.toString());\n\n        // Another anonymous class not implementing Runnable\n        Object o \u003d new Object() {\n            public void doWork() {\n                System.out.println(\"Doing work\");\n            }\n        };\n    }\n}",
+  "targetHintFile": "modernize-java.sandbox-hint",
+  "sourceCommit": "b7a0de702cc68c0768dca3f44f97a4fce211c693",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-14T02:26:51.563526637Z",
+  "ruleFingerprint": "sha256:aca5bd67a589a89bdc5c916c6d7cf1b6c295e5a4eb41689bbdc9bf2632874ce4",
+  "behaviorFingerprint": "sha256:5b8b06a0e572861b4273c2dc98bef585f3dabb02bdab8dca2a3c7aa34874cd1c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-14T02:27:00.777717129Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
