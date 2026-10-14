@@ -1,135 +1,163 @@
-name: One-time verified native Help import
+name: One-time reviewed source fix publication
 on:
   push:
     branches: [maintenance/help-1387-import-20261014]
     paths: [.github/workflows/native-help-import-1387.yml]
 permissions:
   contents: write
-  actions: read
 jobs:
-  prepare:
+  publish:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: 03af3afe33434ca5e9b5d1f095b4615799ee428f
           fetch-depth: 0
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '25'
-      - name: Import only independently validated native baseline files
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Publish only the exact locally tested source blobs
         shell: bash
         run: |
           set -euo pipefail
           test "$GITHUB_REPOSITORY" = carstenartur/sandbox
           test "$GITHUB_REF_NAME" = maintenance/help-1387-import-20261014
-          test "$(git rev-parse HEAD)" = 03af3afe33434ca5e9b5d1f095b4615799ee428f
+          tests='sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math'
+          cp "$tests/JavaRegionSourceRewriterTest.java" "$RUNNER_TEMP/JavaRegionSourceRewriterTest.java"
+          cp "$tests/SharedSourceReceiptTest.java" "$RUNNER_TEMP/SharedSourceReceiptTest.java"
+          git checkout --detach e8f3f9f7f2d4ca3a0c30ebbfaf701b14ff97880c
+          test "$(git rev-parse HEAD^{tree})" = 65d25b99b3de44994ef7370b341bbc6d83d15556
+          cp "$RUNNER_TEMP/JavaRegionSourceRewriterTest.java" "$tests/JavaRegionSourceRewriterTest.java"
+          cp "$RUNNER_TEMP/SharedSourceReceiptTest.java" "$tests/SharedSourceReceiptTest.java"
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          base = Path('sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math')
+          tests = Path('sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math')
+          def replace(path, before, after):
+              text = path.read_text()
+              if text.count(before) != 1:
+                  raise ValueError('Unexpected source before replacement: ' + str(path))
+              path.write_text(text.replace(before, after))
+          p = base / 'JavaRegionSourceRewriter.java'
+          replace(p, '         if (edit.hasChildren() || edit.getLength() > 0) combined.addChild(edit);', '         appendEdits(combined, edit);')
+          replace(p, '   private static ASTNode exactNode(', '''   /** Only grouping edits are transparent; copy/move/delete edits keep their nested semantics. */
+             private static void appendEdits(MultiTextEdit target, TextEdit edit) {
+                if (edit instanceof MultiTextEdit) {
+                   for (TextEdit child : edit.removeChildren()) appendEdits(target, child);
+                } else target.addChild(edit);
+             }
+          
+             private static ASTNode exactNode(''')
+          p = base / 'JavaSourceContext.java'
+          replace(p, '''        if (depth > MAX_DEPTH || key == null || field.isRecovered() || !field.isField()
+                          || !Modifier.isStatic(field.getModifiers()) || !Modifier.isFinal(field.getModifiers())
+                          || !BIG_INTEGER.equals(field.getType().getQualifiedName())) return Optional.empty();''',
+              '''        if (depth > MAX_DEPTH || key == null || !constantField(field)) return Optional.empty();''')
+          replace(p, '            value = declaration instanceof VariableDeclarationFragment fragment && fragment.resolveBinding() != null',
+              '            value = declaration instanceof VariableDeclarationFragment fragment && constantField(fragment.resolveBinding())')
+          replace(p, '    private Optional<BigInteger> expression(Expression expression, Set<String> active, int depth) {', '''    /** Binding keys survive modifier changes; both the caller and the fresh definition must qualify. */
+              private static boolean constantField(IVariableBinding field) {
+                  return field != null && !field.isRecovered() && field.isField()
+                      && Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())
+                      && !field.getType().isRecovered() && BIG_INTEGER.equals(field.getType().getQualifiedName());
+              }
+              private Optional<BigInteger> expression(Expression expression, Set<String> active, int depth) {''')
+          replace(p, '            dependencies.put(identity, new Dependency(identity, digest, read));', '''            var previous = dependencies.putIfAbsent(identity, new Dependency(identity, digest, read));
+                      if (previous != null && !previous.sha256().equals(digest)) throw new Unavailable();''')
+          replace(base / 'MathematicalAnalysis.java', '            return new Analysis(List.of(), diagnostics, result.sourceDigest(), result.compilerOptions());', '''            return new Analysis(List.of(), diagnostics, result.sourceDigest(), result.compilerOptions(),
+                            List.of(), List.of(), dependencies);''')
+          p = tests / 'SourceBackedConstantTest.java'
+          anchor = '    @Test void aShortCircuitRhsDoesNotProveNonnull() throws Exception {'
+          replace(p, anchor, '''    @Test void fieldLosingFinalAfterCallerParsingCannotProveAConstant() throws Exception {
+                  sources("new BigInteger(\\"1fffffff\\", 16)");
+                  String source = SOURCE.replace("Bridge.P", "Constants.Q");
+                  var roots = List.of(directory.toString());
+                  var ast = parse(source, roots);
+                  Path definition = directory.resolve("sample/Constants.java");
+                  Files.writeString(definition, Files.readString(definition).replace("static final", "static"));
+                  var result = analyze(ast, source, roots);
+                  assertTrue(!result.changed() || result.replacements().stream().allMatch(r -> r.replacement().contains("getClass()")),
+                      "The fresh declaration is mutable even though the caller's old binding was final: " + result.replacements());
+              }
+          ''' + anchor)
+          replace(p, '''    private MathematicalAnalysis.Analysis analyze(String source,List<String> roots) {
+                  var parser''', '''    private MathematicalAnalysis.Analysis analyze(String source,List<String> roots) {
+                  return analyze(parse(source, roots), source, roots);
+              }
+              private CompilationUnit parse(String source, List<String> roots) {
+                  var parser''')
+          replace(p, '        var options = new MathCleanUpOptions(true, EnumSet.of', '''        return ast;
+              }
+              private MathematicalAnalysis.Analysis analyze(CompilationUnit ast, String source, List<String> roots) {
+                  var options = new MathCleanUpOptions(true, EnumSet.of''')
+          p = Path('sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalSourceContextCacheTest.java')
+          replace(p, '''    private MathematicalQuickAssist.CachedAnalysis cached() throws Exception {
+                  Path sources''', '''    @Test void aMidAnalysisSourceChangeIsNotCachedAsAnIndependentEmptyResult() throws Exception {
+                  createSources();
+                  var changed = analyze(new NullProgressMonitor() {
+                      @Override public void done() {
+                          Path definition = directory.resolve("sample/Constants.java");
+                          try {
+                              Files.writeString(definition, Files.readString(definition).replace("1fffffff", "1ffffffd"));
+                          } catch (java.io.IOException failure) { throw new java.io.UncheckedIOException(failure); }
+                      }
+                  });
+                  assertFalse(changed.changed());
+                  assertTrue(changed.diagnostics().stream().anyMatch(d -> "SOURCE_DEPENDENCY_CHANGED".equals(d.code())),
+                          changed.diagnostics().toString());
+                  var cached = new MathematicalQuickAssist.CachedAnalysis(changed, ENVIRONMENT);
+                  assertFalse(cached.matches(ENVIRONMENT, SOURCE, Map.of()), "An invalid dependency checkpoint must survive the empty result");
+                  assertEquals(1, changed.sourceDependencies().receipts().size());
+                  assertThrows(IllegalArgumentException.class, changed::newEdit);
+                  var fresh = analyze(new NullProgressMonitor());
+                  assertTrue(fresh.changed(), fresh.diagnostics().toString());
+                  assertTrue(new MathematicalQuickAssist.CachedAnalysis(fresh, ENVIRONMENT).matches(ENVIRONMENT, SOURCE, Map.of()));
+              }
+              private MathematicalQuickAssist.CachedAnalysis cached() throws Exception {
+                  createSources();
+                  var analysis = analyze(new NullProgressMonitor());
+                  assertTrue(analysis.changed(), analysis.diagnostics().toString());
+                  assertEquals(1, analysis.sourceDependencies().receipts().size());
+                  assertTrue(analysis.matches(SOURCE, Map.of()));
+                  return new MathematicalQuickAssist.CachedAnalysis(analysis, ENVIRONMENT);
+              }
+              private void createSources() throws Exception {
+                  Path sources''')
+          replace(p, '        var parser = ASTParser.newParser(AST.getJLSLatest());', '''    }
+              private MathematicalAnalysis.Analysis analyze(NullProgressMonitor monitor) {
+                  var parser = ASTParser.newParser(AST.getJLSLatest());''')
+          replace(p, '        var analysis = MathematicalAnalysis.analyze(ast, SOURCE, options, new NullProgressMonitor(), start,',
+              '        return MathematicalAnalysis.analyze(ast, SOURCE, options, monitor, start,')
+          replace(p, '''        assertTrue(analysis.changed(), analysis.diagnostics().toString());
+                  assertEquals(1, analysis.sourceDependencies().receipts().size());
+                  assertTrue(analysis.matches(SOURCE, Map.of()));
+                  return new MathematicalQuickAssist.CachedAnalysis(analysis, ENVIRONMENT);
+              }
+          }''', '''    }
+          }''')
+          expected = {
+              str(base / 'JavaRegionSourceRewriter.java'): 'acde9f9ca026bccf292750a52a032f9a55288680',
+              str(base / 'JavaSourceContext.java'): '722a16172340fcdc7c9f3fddaa52e89ed656011e',
+              str(base / 'MathematicalAnalysis.java'): '6be311a182862065ab7bb25ef304bf512747b8bb',
+              str(tests / 'JavaRegionSourceRewriterTest.java'): '0fb38e6d80dbee7614928c6b5e132a426cdf8ff2',
+              str(tests / 'SharedSourceReceiptTest.java'): '60ff00e7ca9142a1e4c788d80a8041b0cabdb95f',
+              str(tests / 'SourceBackedConstantTest.java'): '570da7dc038c3a846dd74dcca4695e8d2ec10d11',
+              str(p): 'e4b7fcdc0e67837c892bbd612e30601de5ff34cb',
+          }
+          for name, digest in expected.items():
+              actual = subprocess.check_output(['git', 'hash-object', name], text=True).strip()
+              if actual != digest:
+                  raise ValueError('Does not match the locally compiled and tested blob: ' + name + ': ' + actual)
+              print(actual, name)
+          subprocess.run(['git', 'add', '--', *expected], check=True)
+          actual = set(subprocess.check_output(['git', 'diff', '--cached', '--name-only'], text=True).splitlines())
+          if actual != set(expected):
+              raise ValueError('Unexpected changed paths')
+          PY
+          git diff --cached --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git fetch origin main
-          test "$(git rev-parse origin/main)" = 15fdb896c0fa13a6dd00c365d089cc32f629a1cc
-          git merge --no-commit --no-ff origin/main
-          test "$(git write-tree)" = e2b9ca314a75ac3acdd05962a4a8d6d874680e4d
-          python3 - <<'PY'
-          import hashlib, io, json, os, struct, urllib.error, urllib.parse, urllib.request, zipfile
-          from pathlib import Path
-          import xml.etree.ElementTree as ET
-          def require(condition, message):
-              if not condition:
-                  raise ValueError(message)
-          class NoRedirect(urllib.request.HTTPRedirectHandler):
-              def redirect_request(self, request, response, code, message, headers, newurl):
-                  return None
-          def artifact(identifier, digest):
-              request = urllib.request.Request(
-                  'https://api.github.com/repos/carstenartur/sandbox/actions/artifacts/' + str(identifier) + '/zip',
-                  headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'], 'Accept': 'application/vnd.github+json'})
-              try:
-                  with urllib.request.build_opener(NoRedirect).open(request, timeout=60) as response:
-                      data = response.read(8_000_001)
-              except urllib.error.HTTPError as response:
-                  require(response.code in (301, 302, 303, 307, 308), 'artifact download status')
-                  location = response.headers['Location']
-                  parsed = urllib.parse.urlparse(location)
-                  require(parsed.scheme == 'https' and parsed.hostname is not None
-                          and (parsed.hostname.endswith('.blob.core.windows.net')
-                               or parsed.hostname.endswith('.githubusercontent.com')
-                               or parsed.hostname.endswith('.actions.githubusercontent.com')), 'artifact redirect host')
-                  # Never forward the GitHub token to the signed artifact-storage URL.
-                  with urllib.request.urlopen(location, timeout=120) as content:
-                      data = content.read(8_000_001)
-              require(len(data) <= 8_000_000, 'artifact size limit')
-              require(hashlib.sha256(data).hexdigest() == digest, 'artifact digest')
-              return data
-          generated = artifact(11929423745, '772f5af11c37d51030f3501447b1c9edbb08b22dabcb508cde1172080021f76a')
-          diagnostics = artifact(11929053988, '25b0d734aa60692d71882e1fe3287ff26a2e184cb3bc454e6eeec2400bd85288')
-          with zipfile.ZipFile(io.BytesIO(diagnostics)) as archive:
-              reports = [name for name in archive.namelist() if name.endswith(
-                  'TEST-org.sandbox.jdt.ui.helper.views.SandboxHelpScreenshotsMergeGateSWTBotTest.xml')]
-              require(len(reports) == 1, 'one native test report')
-              suite = ET.fromstring(archive.read(reports[0]))
-              require(suite.get('tests') == '9', 'nine native tests')
-              require(all(suite.get(key) == '0' for key in ('failures', 'errors', 'skipped')), 'native tests clean')
-              require(any(test.get('name') == 'captureRealMathematicsExamples' for test in suite.iter('testcase')),
-                      'mathematics scenario executed')
-          identities = ('01-bouncy-castle-choice', '02-bouncy-castle-majority', '03-bouncy-castle-long',
-                        '04-bouncy-castle-swapped-choice', '05-bouncy-castle-modular-square')
-          image_root = 'sandbox_math_cleanup_help/images/'
-          fixture_root = 'sandbox_eclipse_help_swtbot_test/fixtures/mathematics/'
-          pending = {}
-          with zipfile.ZipFile(io.BytesIO(generated)) as archive:
-              require(len(archive.namelist()) == len(set(archive.namelist())), 'unique archive paths')
-              for identity in identities:
-                  prefix = 'generated-help-screenshot-evidence/files/' + image_root + identity
-                  image = archive.read(prefix + '.png')
-                  raw = archive.read(prefix + '.provenance.json')
-                  evidence = json.loads(raw)['evidence']
-                  require(evidence['id'] == identity, 'fixture identity')
-                  require(evidence['screenshotSha256'] == hashlib.sha256(image).hexdigest(), 'image digest')
-                  require(image[:8] == b'\x89PNG\r\n\x1a\n' and struct.unpack('>II', image[16:24]) == (1280, 900),
-                          'native image dimensions')
-                  for phase, key in (('before', 'excerptSha256'), ('after', 'afterSha256')):
-                      source = Path(fixture_root, identity, phase + '.java.txt').read_bytes()
-                      require(source.decode('utf-8') == evidence[phase], identity + ' ' + phase + ' source')
-                      require(hashlib.sha256(source).hexdigest() == evidence[key], identity + ' source digest')
-                  require(evidence['verification'] == 'AST clean; native preview exact; apply exact; undo byte exact',
-                          'native boundary evidence')
-                  require(evidence['sdkSha256'] == '2bbb776435a09a0bc61339312ae4f58c3b4f8dde67c2925f7b1c8ee686aee52c',
-                          'SDK identity')
-                  if identity != identities[-1]:
-                      require(Path(image_root, identity + '.png').read_bytes() == image, 'unrelated image unchanged')
-                  else:
-                      require(evidence['afterFragment'] == '\n        tv1 = u.multiply(u).mod(p);', 'actual assignment viewport')
-                      pending[image_root + identity + '.png'] = image
-                  pending[image_root + identity + '.provenance.json'] = raw
-          require(len(pending) == 6, 'six allowed baseline files')
-          for name in pending:
-              require(Path(name).is_file() and not Path(name).is_symlink(), 'existing regular baseline')
-          for name, data in pending.items():
-              Path(name).write_bytes(data)
-              print(hashlib.sha256(data).hexdigest(), name)
-          PY
-          git add -- sandbox_math_cleanup_help/images/*.provenance.json sandbox_math_cleanup_help/images/05-bouncy-castle-modular-square.png
-          git diff --cached --check
-          git commit -m 'Refresh the native mathematics Help baseline on merged #1703' -m 'Import exactly six files from hash-verified native Help run 38638468094 at source 03af3afe. Its nine JUnit tests pass, with exact Preview/Apply/Undo checks. The original fixture sources and all four unrelated mathematics images must match. No source code, safety checks or CI verifier is changed.'
-          result=maintenance/help-1387-import-result-20261014
+          git commit -m 'Fix source snapshot races and mixed multiline mathematics edits' -m 'Preserve only transparent TextEdit grouping, recheck fresh constant modifiers and type, retain the first compilation-unit receipt, and keep invalid checkpoints on empty results. Seven exact source blobs match the locally compiled and tested files. Six new regression executions cover the four review findings; five fail on the old implementation and all pass after repair. The final local headless Equinox group passes 134 tests, including the pinned complete BLS source. This is a source-overlay qualification, not a full Tycho or distribution build.'
+          result=maintenance/source-review-fixes-result-20261014
           test -z "$(git ls-remote --heads origin "refs/heads/$result")"
           git push origin "HEAD:refs/heads/$result"
-          mkdir -p "$RUNNER_TEMP/native-review-workbench"
-          git rev-parse HEAD | tee "$RUNNER_TEMP/native-review-workbench/import-commit.txt"
-          git archive --format=tar HEAD sandbox_math_cleanup sandbox_math_cleanup_test qa/math-optimization/src sandbox_eclipse_help_swtbot_test/fixtures/mathematics .github/scripts .github/repository-policy | gzip -1 > "$RUNNER_TEMP/native-review-workbench/source.tar.gz"
-      - name: Retain a local Java 25 verification runtime
-        shell: bash
-        run: |
-          set -euo pipefail
-          tar --exclude='lib/src.zip' --exclude='*.ttf' --exclude='*.otf' --exclude='*.woff' --exclude='*.woff2' -czf "$RUNNER_TEMP/native-review-workbench/java25.tar.gz" -C "$JAVA_HOME" bin lib conf release
-          sha256sum "$RUNNER_TEMP/native-review-workbench/"*.tar.gz > "$RUNNER_TEMP/native-review-workbench/sha256.txt"
-      - uses: actions/upload-artifact@v7
-        with:
-          name: native-review-workbench-${{ github.run_id }}
-          path: ${{ runner.temp }}/native-review-workbench
-          retention-days: 3
+          git rev-parse HEAD
+          git diff --stat 15fdb896c0fa13a6dd00c365d089cc32f629a1cc HEAD
