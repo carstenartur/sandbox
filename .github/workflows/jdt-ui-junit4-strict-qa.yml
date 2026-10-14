@@ -49,6 +49,37 @@ jobs:
           fetch-depth: 0
           path: upstream/eclipse.jdt.ui
 
+      # The R4_40 parent SNAPSHOT has been removed from the remote Maven
+      # repository. Use that release's unchanged parent through the relativePath
+      # already declared in the frozen JDT UI POM, for BOTH comparison phases.
+      - name: Checkout the frozen R4_40 platform parent
+        uses: actions/checkout@v7
+        with:
+          repository: eclipse-platform/eclipse.platform.releng.aggregator
+          ref: 0cc158ecd52bb57974704dc74dbacd81dbc01b99
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: eclipse-platform-parent
+          path: upstream/platform-releng
+
+      - name: Verify and expose the frozen platform parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          parent=upstream/platform-releng/eclipse-platform-parent
+          test "$(git -C upstream/platform-releng rev-parse HEAD)" = "0cc158ecd52bb57974704dc74dbacd81dbc01b99"
+          test "$(git hash-object "$parent/pom.xml")" = "e115e24efa7fb500bd6494bae1e8642205ca512e"
+          ln -s platform-releng/eclipse-platform-parent upstream/eclipse-platform-parent
+          test -f upstream/eclipse-platform-parent/pom.xml
+          mkdir -p jdt-ui-strict-evidence
+          {
+            printf 'repository=eclipse-platform/eclipse.platform.releng.aggregator\n'
+            printf 'release=R4_40\ncommit=%s\n' "$(git -C upstream/platform-releng rev-parse HEAD)"
+            printf 'pomGitBlob=%s\n' "$(git hash-object "$parent/pom.xml")"
+            printf 'coordinate=org.eclipse:eclipse-platform-parent:4.40.0-SNAPSHOT\n'
+            printf 'resolution=../eclipse-platform-parent/pom.xml\n'
+          } > jdt-ui-strict-evidence/platform-parent.txt
+
       - name: Set up Java 25
         uses: actions/setup-java@v6
         with:
