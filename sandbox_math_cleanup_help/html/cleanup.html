@@ -133,8 +133,11 @@ division, modulus and exponent requirements must be justified. Magnitudes must b
 bounded; mathematically unbounded identities alone cannot justify removing Java
 implementation-range exceptions. Derived receiver chains must end in a supported
 value observation. Unknown receivers need supported guards or are rejected;
-receiver guards are currently unavailable for the lower-estimated-runtime goal
-and cannot be combined with primitive numerical guard obligations.</td></tr>
+for the lower-estimated-runtime goal, receiver guards are supported only with
+explicit mathematical opt-in and a verified candidate whose estimated benefit
+exceeds their cost. Receiver guards cannot be combined with primitive numerical
+guard obligations. Established source conditions may remove duplicate checks;
+see <a href="source-guards.html">receiver guards from the Java source</a>.</td></tr>
 <tr><td>byte, short, char, int, long</td><td>Promotions, concrete widths, casts and
 operation order remain part of the proof. Existing exact-arithmetic exceptions
 cannot disappear.</td></tr>

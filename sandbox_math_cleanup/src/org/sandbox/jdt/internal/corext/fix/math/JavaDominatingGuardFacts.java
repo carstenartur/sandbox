@@ -9,6 +9,7 @@ import java.util.Set;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
+import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.IfStatement;
@@ -17,15 +18,20 @@ import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Modifier;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.NullLiteral;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.ReturnStatement;
 import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 
 /**
- * Bounded, binding-based facts from enclosing true branches. Never infers facts
+ * Bounded, binding-based facts from dominating branches and early exits. Never infers facts
  * from a name, comment, unrelated branch, field or a different execution frame.
  * This proves the complete existing receiver guard; it does not weaken one.
  */
@@ -54,7 +60,8 @@ final class JavaDominatingGuardFacts {
             @Override public boolean visit(SimpleName name) {
                 if (name.isDeclaration() || !requirePositive.containsKey(name.getIdentifier())) return true;
                 if (!(name.resolveBinding() instanceof IVariableBinding binding) || binding.isRecovered()
-                        || binding.isField() || !binding.isEffectivelyFinal() || binding.getType().isRecovered()
+                        || binding.isField() || !(Modifier.isFinal(binding.getModifiers()) || binding.isEffectivelyFinal())
+                        || binding.getType().isRecovered()
                         || !BIG_INTEGER.equals(binding.getType().getQualifiedName())) {
                     rejectedNames.add(name.getIdentifier());
                     return true;
@@ -75,8 +82,21 @@ final class JavaDominatingGuardFacts {
             if (node instanceof IfStatement condition) {
                 var branch = condition.getThenStatement();
                 if (start >= branch.getStartPosition() && end <= (long) branch.getStartPosition() + branch.getLength()) {
-                    if (!collectTrueFacts(condition.getExpression(), bindings, facts, inspected)) return Set.of();
+                    if (!collectFacts(condition.getExpression(), true, bindings, facts, inspected)) return Set.of();
                 }
+            }
+            if (node instanceof Block block) {
+                for (Object value : block.statements()) {
+                    if (++inspected[0] > MAX_NODES || Thread.currentThread().isInterrupted()) return Set.of();
+                    Statement previous = (Statement) value;
+                    if ((long) previous.getStartPosition() + previous.getLength() > start) break;
+                    // Only a directly preceding guard without else proves its false
+                    // condition on every path to the remainder of this block.
+                    if (previous instanceof IfStatement guard && guard.getElseStatement() == null
+                            && exits(guard.getThenStatement(), inspected)
+                            && !collectFacts(guard.getExpression(), false, bindings, facts, inspected)) return Set.of();
+                }
+                if (inspected[0] > MAX_NODES || Thread.currentThread().isInterrupted()) return Set.of();
             }
         }
         var proven = new HashSet<String>();
@@ -87,26 +107,47 @@ final class JavaDominatingGuardFacts {
         return Set.copyOf(proven);
     }
 
-    private static boolean collectTrueFacts(Expression condition, Map<String, IVariableBinding> bindings,
+    /** Do not guess whether calls, loops, try/finally or nested conditions terminate. */
+    private static boolean exits(Statement statement, int[] inspected) {
+        while (statement instanceof Block block) {
+            if (++inspected[0] > MAX_NODES || Thread.currentThread().isInterrupted()) return false;
+            if (block.statements().size() != 1) return false;
+            statement = (Statement) block.statements().getFirst();
+        }
+        return statement instanceof ReturnStatement || statement instanceof ThrowStatement;
+    }
+
+    private record KnownCondition(Expression expression, boolean truth) { }
+
+    private static boolean collectFacts(Expression condition, boolean truth, Map<String, IVariableBinding> bindings,
             Map<String, Integer> facts, int[] inspected) {
-        var pending = new ArrayDeque<Expression>();
-        pending.push(condition);
+        var pending = new ArrayDeque<KnownCondition>();
+        pending.push(new KnownCondition(condition, truth));
         while (!pending.isEmpty()) {
             if (++inspected[0] > MAX_NODES || Thread.currentThread().isInterrupted()) return false;
-            Expression expression = pending.pop();
+            var known = pending.pop();
+            Expression expression = known.expression();
             if (expression instanceof ParenthesizedExpression parentheses) {
-                pending.push(parentheses.getExpression());
+                pending.push(new KnownCondition(parentheses.getExpression(), known.truth()));
+                continue;
+            }
+            if (expression instanceof PrefixExpression prefix && prefix.getOperator() == PrefixExpression.Operator.NOT) {
+                pending.push(new KnownCondition(prefix.getOperand(), !known.truth()));
                 continue;
             }
             if (!(expression instanceof InfixExpression infix)) continue;
             var operator = infix.getOperator();
-            if (operator == InfixExpression.Operator.CONDITIONAL_AND) {
-                pending.push(infix.getLeftOperand()); pending.push(infix.getRightOperand());
-                for (Object operand : infix.extendedOperands()) pending.push((Expression) operand);
+            if (known.truth() && operator == InfixExpression.Operator.CONDITIONAL_AND
+                    || !known.truth() && operator == InfixExpression.Operator.CONDITIONAL_OR) {
+                pending.push(new KnownCondition(infix.getLeftOperand(), known.truth()));
+                pending.push(new KnownCondition(infix.getRightOperand(), known.truth()));
+                for (Object operand : infix.extendedOperands()) pending.push(new KnownCondition((Expression) operand, known.truth()));
                 continue;
             }
-            // A true disjunction/negation says nothing about each individual term.
+            // False conjunctions and true disjunctions establish no individual term.
             if (!infix.extendedOperands().isEmpty()) continue;
+            if (!known.truth()) operator = opposite(operator);
+            if (operator == null) continue;
             Expression left = unwrap(infix.getLeftOperand()), right = unwrap(infix.getRightOperand());
             if (operator == InfixExpression.Operator.NOT_EQUALS && right instanceof NullLiteral) {
                 record(left, NON_NULL, bindings, facts);
@@ -133,6 +174,16 @@ final class JavaDominatingGuardFacts {
             }
         }
         return true;
+    }
+
+    private static InfixExpression.Operator opposite(InfixExpression.Operator operator) {
+        if (operator == InfixExpression.Operator.EQUALS) return InfixExpression.Operator.NOT_EQUALS;
+        if (operator == InfixExpression.Operator.NOT_EQUALS) return InfixExpression.Operator.EQUALS;
+        if (operator == InfixExpression.Operator.LESS) return InfixExpression.Operator.GREATER_EQUALS;
+        if (operator == InfixExpression.Operator.LESS_EQUALS) return InfixExpression.Operator.GREATER;
+        if (operator == InfixExpression.Operator.GREATER) return InfixExpression.Operator.LESS_EQUALS;
+        if (operator == InfixExpression.Operator.GREATER_EQUALS) return InfixExpression.Operator.LESS;
+        return null;
     }
 
     private static Expression unwrap(Expression expression) {
