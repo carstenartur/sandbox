@@ -50,8 +50,9 @@ class BouncyCastleSourceContextTest {
         String generated = document.get();
         assertTrue(generated.contains("result reference identity may change"), "Normal Apply retains the explicit mathematical contract");
         undo.apply(document); assertEquals(source, document.get());
+        Files.createDirectories(temporary.resolve("generated").resolve(PREFIX));
         Path generatedFile = temporary.resolve("generated").resolve(ENTRY);
-        Files.createDirectories(generatedFile.getParent()); Files.writeString(generatedFile, generated);
+        Files.writeString(generatedFile, generated);
         Path classes = Files.createDirectory(temporary.resolve("classes"));
         var compiler = ToolProvider.getSystemJavaCompiler(); assertNotNull(compiler, "A full JDK is required");
         assertEquals(0, compiler.run(null, null, null, "--release", "17", "-cp", binary.toString(), "-d",
@@ -67,9 +68,10 @@ class BouncyCastleSourceContextTest {
     private String sources() throws Exception {
         Path root = temporary.resolve("sources");
         try (var archive = new JarFile(dependency("sandbox.math.bc.sourceArchive", "bcprov.source").toFile())) {
+            Files.createDirectories(root.resolve(PREFIX));
             for (String name : List.of("BLS12_381Serialization", "Fp2Element", "BLS12_381G1")) {
                 var entry = archive.getJarEntry(PREFIX + name + ".java"); assertNotNull(entry, name);
-                Path file = root.resolve(entry.getName()); Files.createDirectories(file.getParent());
+                Path file = root.resolve(entry.getName());
                 try (var input = archive.getInputStream(entry)) { Files.write(file, input.readAllBytes()); }
             }
         }
