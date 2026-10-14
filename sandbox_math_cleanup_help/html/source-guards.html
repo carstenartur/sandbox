@@ -11,7 +11,7 @@ mode automatically. See <a href="cleanup.html#safety">the safety profiles</a>.</
 <p>All conditions needed for the receiver must hold throughout the selected
 calculation: non-null, exact BigInteger class, the supported magnitude bound,
 and positive sign where required. Only resolved final or effectively final local
-references qualify. A missing fact retains the entire existing receiver guard.</p>
+variables and parameters qualify. A missing fact retains the entire existing receiver guard.</p>
 <p>Besides enclosing true branches, a preceding guard clause can establish facts
 for the remainder of its block:</p>
 <pre>if (x == null || x.getClass() != BigInteger.class
