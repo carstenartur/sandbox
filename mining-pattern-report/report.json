@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1637,
+        "files": 1646,
         "matches": 86,
         "rules": 11
       }
@@ -965,7 +965,7 @@
       "hintFile": "modernize-java9",
       "rule": "modernize-java9.unmodifiable-list-arrays-aslist.consider-list-of",
       "file": "bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java",
-      "line": 372,
+      "line": 374,
       "matchedCode": "Collections.unmodifiableList(Arrays.asList(\"Spacer Glue\",\"SearchField\",\"Search-PS Glue\"))"
     },
     {
