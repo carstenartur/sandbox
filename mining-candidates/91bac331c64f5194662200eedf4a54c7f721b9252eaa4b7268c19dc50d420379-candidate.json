@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "91bac331c64f5194662200eedf4a54c7f721b9252eaa4b7268c19dc50d420379",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: integer.constructor.to.factory\u003e\n\u003c!description: Replace new Integer(int) with Integer.valueOf(int). The valueOf() factory method reuses cached Integer objects for common values, leading to better performance and reduced memory footprint.\u003e\n\u003c!severity: HINT\u003e\nnew java.lang.Integer($x)\n\u003d\u003e\njava.lang.Integer.valueOf($x)\n;;",
+  "beforeExample": "class MyClass {\n    public String format(int size) {\n        return java.text.MessageFormat.format(\"Count: {0}\", new java.lang.Integer(size));\n    }\n}",
+  "afterExample": "class MyClass {\n    public String format(int size) {\n        return java.text.MessageFormat.format(\"Count: {0}\", java.lang.Integer.valueOf(size));\n    }\n}",
+  "negativeExample": "class MyClass {\n    public String parse(String s) {\n        return java.lang.String.valueOf(s);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "03da00cb808b575e1264016659ed328f7d9c3472",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Modernization",
+  "summary": "Replaces `new Integer(int)` with `Integer.valueOf(int)` for improved performance and adherence to modern Java practices.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-14T02:26:51.748156512Z",
+  "ruleFingerprint": "sha256:af4a0afef7526998e0ae08d75f3da0571f8ac9ba27f8b4bb15fea6430bc91ae8",
+  "behaviorFingerprint": "sha256:d82b6557a2b4e141332ae382a86394b1b1559a9741ac6082d9071ed81d524ba9",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-14T02:27:00.885858037Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

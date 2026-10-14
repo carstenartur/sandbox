@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The public type HTMLPrinter must be defined in its own file",
-    "verifiedAt": "2026-10-13T02:52:13.189885411Z",
+    "verifiedAt": "2026-10-14T02:26:59.682183127Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

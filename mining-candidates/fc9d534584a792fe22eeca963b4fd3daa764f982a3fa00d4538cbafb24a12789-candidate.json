@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "fc9d534584a792fe22eeca963b4fd3daa764f982a3fa00d4538cbafb24a12789",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "class Example {\n    void foo() {\n        // The restored HTMLPrinter methods are deprecated, still encouraging migration\n        java.lang.StringBuffer sb \u003d new java.lang.StringBuffer(\"hello\");\n        sb.append(\" world\");\n        System.out.println(sb.toString());\n    }\n    public java.lang.StringBuffer fieldBuffer \u003d new java.lang.StringBuffer(\"field\");\n}",
+  "afterExample": "class Example {\n    void foo() {\n        java.lang.StringBuilder sb \u003d new java.lang.StringBuilder(\"hello\");\n        sb.append(\" world\");\n        System.out.println(sb.toString());\n    }\n    public java.lang.StringBuffer fieldBuffer \u003d new java.lang.StringBuffer(\"field\");\n}",
+  "negativeExample": "class Example {\n    void bar(java.lang.StringBuffer sbParam) {\n        // Should not match parameters\n        sbParam.append(\"test\");\n    }\n    public static java.lang.StringBuffer staticBuffer \u003d new java.lang.StringBuffer(); // Should not match fields\n}",
+  "targetHintFile": "stringbuffer-to-stringbuilder.sandbox-hint",
+  "sourceCommit": "a459e2a20bf5ed48006f65af62fdd7b7b049f818",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Migration",
+  "summary": "Migrate StringBuffer constructor calls to StringBuilder for local variables due to continued deprecation of StringBuffer APIs.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-14T02:26:51.709274434Z",
+  "ruleFingerprint": "sha256:52ef1fd9bf1ad95f1f0de9ba3173c2edfb9f1fa3141c9853875b3da50ac736f0",
+  "behaviorFingerprint": "sha256:07ea76f5cce4eb5df480c9c41944f9627f9db7d7b41bdfaffdf404660e093295",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed source is invalid: Java compile error at line 4: Type mismatch: cannot convert from StringBuilder to StringBuffer",
+    "verifiedAt": "2026-10-14T02:27:00.861492912Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

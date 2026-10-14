@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ec20fd49aeab5a1c44bb24e4b116c05f023fb77ea7c380c88e17fa7f2edba02a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.String.getBytes()\n\u003d\u003e\njava.lang.String.getBytes(java.nio.charset.StandardCharsets.UTF_8)\n;;",
+  "beforeExample": "import java.io.ByteArrayInputStream;\nimport java.io.IOException;\n\npublic class MyClass {\n    public void process(String data) throws IOException {\n        // Old way, uses platform default charset\n        ByteArrayInputStream is \u003d new ByteArrayInputStream(data.getBytes());\n        is.close();\n    }\n}",
+  "afterExample": "import java.io.ByteArrayInputStream;\nimport java.io.IOException;\nimport java.nio.charset.StandardCharsets;\n\npublic class MyClass {\n    public void process(String data) throws IOException {\n        // Modern way, explicitly uses UTF-8\n        ByteArrayInputStream is \u003d new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));\n        is.close();\n    }\n}",
+  "negativeExample": "import java.io.ByteArrayInputStream;\nimport java.io.IOException;\nimport java.nio.charset.StandardCharsets;\n\npublic class MyClass {\n    public void process(String data) throws IOException {\n        // Already uses a specific charset (should not match)\n        ByteArrayInputStream is1 \u003d new ByteArrayInputStream(data.getBytes(\"ISO-8859-1\"));\n        ByteArrayInputStream is2 \u003d new ByteArrayInputStream(data.getBytes(StandardCharsets.US_ASCII));\n        \n        // Not a getBytes() call (should not match)\n        String s \u003d data.trim();\n    }\n}",
+  "targetHintFile": "string-charsets.sandbox-hint",
+  "sourceCommit": "6a35da449d6559dcb0988c0ba842177eef7e27f0",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Charset Modernization",
+  "summary": "Replaces implicit default charset in String.getBytes() with explicit StandardCharsets.UTF_8.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-14T02:26:51.728638449Z",
+  "ruleFingerprint": "sha256:223ba54f3844cb42464cecd91639756f0e3b10012f4deee2e8abeb4a004b3147",
+  "behaviorFingerprint": "sha256:830ea3fdd6ec8cb48c22f1ebf979b51371a47e4608571596f714942433680f3c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-10-14T02:27:00.875261636Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
