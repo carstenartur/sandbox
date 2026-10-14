@@ -51,12 +51,13 @@ class BouncyCastleSourceContextTest {
         assertTrue(generated.contains("result reference identity may change"), "Normal Apply retains the explicit mathematical contract");
         undo.apply(document); assertEquals(source, document.get());
         Path generatedFile = temporary.resolve("generated").resolve(ENTRY);
-        Files.createDirectories(generatedFile.getParent()); Files.writeString(generatedFile, generated);
+        Files.createDirectories(generatedFile.getParent()); Files.writeString(generatedFile, generated, StandardCharsets.UTF_8);
         Path classes = Files.createDirectory(temporary.resolve("classes"));
         var compiler = ToolProvider.getSystemJavaCompiler(); assertNotNull(compiler, "A full JDK is required");
         assertEquals(0, compiler.run(null, null, null, "--release", "17", "-cp", binary.toString(), "-d",
                 classes.toString(), generatedFile.toString()));
-        Files.writeString(temporary.resolve("sources").resolve(PREFIX + "BLS12_381G1.java"), "// changed source\n");
+        Files.writeString(temporary.resolve("sources").resolve(PREFIX + "BLS12_381G1.java"), "// changed source\\n",
+				StandardCharsets.UTF_8);
         assertThrows(IllegalArgumentException.class, analysis::newEdit);
     }
     @Test void availableDefinitionsDoNotEnableMathematicalModeImplicitly() throws Exception {
