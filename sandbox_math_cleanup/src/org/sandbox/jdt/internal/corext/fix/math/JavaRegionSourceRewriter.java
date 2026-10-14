@@ -81,7 +81,7 @@ final class JavaRegionSourceRewriter {
       TextEdit edit = rewrite.rewriteAST(new Document(source), compilerOptions);
       if (!preservedExpressions.isEmpty()) {
          MultiTextEdit combined = new MultiTextEdit();
-         if (edit.hasChildren() || edit.getLength() > 0) combined.addChild(edit);
+         appendEdits(combined, edit);
          for (var expression : preservedExpressions) combined.addChild(expression);
          edit = combined;
       }
@@ -89,6 +89,13 @@ final class JavaRegionSourceRewriter {
          throw new IllegalArgumentException("REWRITE_OUTSIDE_REGION");
       }
       return edit;
+   }
+
+   /** Only grouping edits are transparent; copy/move/delete edits keep their nested semantics. */
+   private static void appendEdits(MultiTextEdit target, TextEdit edit) {
+      if (edit instanceof MultiTextEdit) {
+         for (TextEdit child : edit.removeChildren()) appendEdits(target, child);
+      } else target.addChild(edit);
    }
 
    private static ASTNode exactNode(CompilationUnit ast, int start, int length) {

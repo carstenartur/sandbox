@@ -68,7 +68,36 @@ class MathematicalSourceContextCacheTest {
         var cached = cached();
         assertFalse(cached.matches(new MathematicalEnvironment.Snapshot("different", Map.of()), SOURCE, Map.of()));
     }
+    @Test void aMidAnalysisSourceChangeIsNotCachedAsAnIndependentEmptyResult() throws Exception {
+        createSources();
+        var changed = analyze(new NullProgressMonitor() {
+            @Override public void done() {
+                Path definition = directory.resolve("sample/Constants.java");
+                try {
+                    Files.writeString(definition, Files.readString(definition).replace("1fffffff", "1ffffffd"));
+                } catch (java.io.IOException failure) { throw new java.io.UncheckedIOException(failure); }
+            }
+        });
+        assertFalse(changed.changed());
+        assertTrue(changed.diagnostics().stream().anyMatch(d -> "SOURCE_DEPENDENCY_CHANGED".equals(d.code())),
+                changed.diagnostics().toString());
+        var cached = new MathematicalQuickAssist.CachedAnalysis(changed, ENVIRONMENT);
+        assertFalse(cached.matches(ENVIRONMENT, SOURCE, Map.of()), "An invalid dependency checkpoint must survive the empty result");
+        assertEquals(1, changed.sourceDependencies().receipts().size());
+        assertThrows(IllegalArgumentException.class, changed::newEdit);
+        var fresh = analyze(new NullProgressMonitor());
+        assertTrue(fresh.changed(), fresh.diagnostics().toString());
+        assertTrue(new MathematicalQuickAssist.CachedAnalysis(fresh, ENVIRONMENT).matches(ENVIRONMENT, SOURCE, Map.of()));
+    }
     private MathematicalQuickAssist.CachedAnalysis cached() throws Exception {
+        createSources();
+        var analysis = analyze(new NullProgressMonitor());
+        assertTrue(analysis.changed(), analysis.diagnostics().toString());
+        assertEquals(1, analysis.sourceDependencies().receipts().size());
+        assertTrue(analysis.matches(SOURCE, Map.of()));
+        return new MathematicalQuickAssist.CachedAnalysis(analysis, ENVIRONMENT);
+    }
+    private void createSources() throws Exception {
         Path sources = Files.createDirectories(directory.resolve("sample"));
         Files.writeString(sources.resolve("Sample.java"), SOURCE);
         Files.writeString(sources.resolve("Constants.java"), """
@@ -76,6 +105,8 @@ class MathematicalSourceContextCacheTest {
             import java.math.BigInteger;
             class Constants { static final BigInteger Q = new BigInteger("1fffffff", 16); }
             """);
+    }
+    private MathematicalAnalysis.Analysis analyze(NullProgressMonitor monitor) {
         var parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setSource(SOURCE.toCharArray()); parser.setUnitName("sample/Sample.java");
         parser.setEnvironment(new String[0], new String[] { directory.toString() }, new String[] { "UTF-8" }, true);
@@ -86,12 +117,8 @@ class MathematicalSourceContextCacheTest {
         var options = new MathCleanUpOptions(true, Set.of(NumericKind.BIG_INTEGER, NumericKind.INT),
             SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000L, 20_000, false, 17, List.of(), true);
         int start = SOURCE.indexOf("BigInteger result");
-        var analysis = MathematicalAnalysis.analyze(ast, SOURCE, options, new NullProgressMonitor(), start,
+        return MathematicalAnalysis.analyze(ast, SOURCE, options, monitor, start,
             SOURCE.indexOf(';', start) + 1 - start,
             new MathematicalAnalysis.SourceEnvironment("sample/Sample.java", List.of(), List.of(directory.toString()), List.of("UTF-8")));
-        assertTrue(analysis.changed(), analysis.diagnostics().toString());
-        assertEquals(1, analysis.sourceDependencies().receipts().size());
-        assertTrue(analysis.matches(SOURCE, Map.of()));
-        return new MathematicalQuickAssist.CachedAnalysis(analysis, ENVIRONMENT);
     }
 }

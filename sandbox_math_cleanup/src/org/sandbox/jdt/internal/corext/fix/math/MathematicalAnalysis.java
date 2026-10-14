@@ -79,7 +79,8 @@ public final class MathematicalAnalysis {
          if (!dependencies.current()) {
             var diagnostics = new ArrayList<>(result.diagnostics());
             diagnostics.add(new Diagnostic("SOURCE_DEPENDENCY_CHANGED", "Referenced source changed during analysis", 0, 0, Stage.SOURCE)); //$NON-NLS-1$ //$NON-NLS-2$
-            return new Analysis(List.of(), diagnostics, result.sourceDigest(), result.compilerOptions());
+            return new Analysis(List.of(), diagnostics, result.sourceDigest(), result.compilerOptions(),
+                  List.of(), List.of(), dependencies);
          }
          return new Analysis(result.replacements(), result.diagnostics(), result.sourceDigest(), result.compilerOptions(),
                result.evidence(), result.documentation(), dependencies);

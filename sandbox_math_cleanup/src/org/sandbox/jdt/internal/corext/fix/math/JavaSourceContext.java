@@ -131,21 +131,25 @@ public final class JavaSourceContext implements AutoCloseable {
     private Optional<BigInteger> constant(IVariableBinding field, Set<String> active, int depth) {
         charge(1);
         String key = field.getVariableDeclaration().getKey();
-        if (depth > MAX_DEPTH || key == null || field.isRecovered() || !field.isField()
-                || !Modifier.isStatic(field.getModifiers()) || !Modifier.isFinal(field.getModifiers())
-                || !BIG_INTEGER.equals(field.getType().getQualifiedName())) return Optional.empty();
+        if (depth > MAX_DEPTH || key == null || !constantField(field)) return Optional.empty();
         if (values.containsKey(key)) return values.get(key);
         if (!active.add(key)) return Optional.empty();
         Optional<BigInteger> value;
         try {
             CompilationUnit ast = definitionUnit(field);
             ASTNode declaration = ast == null ? null : ast.findDeclaringNode(key);
-            value = declaration instanceof VariableDeclarationFragment fragment && fragment.resolveBinding() != null
+            value = declaration instanceof VariableDeclarationFragment fragment && constantField(fragment.resolveBinding())
                 && key.equals(fragment.resolveBinding().getVariableDeclaration().getKey())
                 ? expression(fragment.getInitializer(), active, depth + 1) : Optional.empty();
         } finally { active.remove(key); }
         values.put(key, value);
         return value;
+    }
+    /** Binding keys survive modifier changes; both the caller and the fresh definition must qualify. */
+    private static boolean constantField(IVariableBinding field) {
+        return field != null && !field.isRecovered() && field.isField()
+            && Modifier.isStatic(field.getModifiers()) && Modifier.isFinal(field.getModifiers())
+            && !field.getType().isRecovered() && BIG_INTEGER.equals(field.getType().getQualifiedName());
     }
     private Optional<BigInteger> expression(Expression expression, Set<String> active, int depth) {
         charge(1);
@@ -235,7 +239,8 @@ public final class JavaSourceContext implements AutoCloseable {
             if (source == null || (long)sourceChars + source.length() > MAX_SOURCE_CHARS) throw new Unavailable();
             sourceChars += source.length(); charge(1 + source.length() / 32);
             String digest = hash(source);
-            dependencies.put(identity, new Dependency(identity, digest, read));
+            var previous = dependencies.putIfAbsent(identity, new Dependency(identity, digest, read));
+            if (previous != null && !previous.sha256().equals(digest)) throw new Unavailable();
             if (root.getJavaElement() == null) {
                 parser.setSource(source.toCharArray());
                 var compiler = new HashMap<String,String>(); JavaCore.setComplianceOptions(targetJava == 8 ? "1.8" : Integer.toString(targetJava), compiler); //$NON-NLS-1$

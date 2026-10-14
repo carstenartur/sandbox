@@ -113,6 +113,17 @@ class SourceBackedConstantTest {
         var result=analyze(SOURCE);
         assertTrue(!result.changed() || result.replacements().stream().allMatch(r -> r.replacement().contains("getClass()")));
     }
+    @Test void fieldLosingFinalAfterCallerParsingCannotProveAConstant() throws Exception {
+        sources("new BigInteger(\"1fffffff\", 16)");
+        String source = SOURCE.replace("Bridge.P", "Constants.Q");
+        var roots = List.of(directory.toString());
+        var ast = parse(source, roots);
+        Path definition = directory.resolve("sample/Constants.java");
+        Files.writeString(definition, Files.readString(definition).replace("static final", "static"));
+        var result = analyze(ast, source, roots);
+        assertTrue(!result.changed() || result.replacements().stream().allMatch(r -> r.replacement().contains("getClass()")),
+            "The fresh declaration is mutable even though the caller's old binding was final: " + result.replacements());
+    }
     @Test void aShortCircuitRhsDoesNotProveNonnull() throws Exception {
         sources("new BigInteger(\"1fffffff\", 16)");
         var result=analyze(SOURCE.replace("if (x.compareTo(P)", "if (digit > 0 && x.compareTo(P)"));
@@ -209,6 +220,9 @@ class SourceBackedConstantTest {
         return analyze(source,List.of(directory.toString()));
     }
     private MathematicalAnalysis.Analysis analyze(String source,List<String> roots) {
+        return analyze(parse(source, roots), source, roots);
+    }
+    private CompilationUnit parse(String source, List<String> roots) {
         var parser = ASTParser.newParser(AST.getJLSLatest());
         parser.setSource(source.toCharArray()); parser.setUnitName("sample/Sample.java");
         parser.setEnvironment(new String[0], roots.toArray(String[]::new), java.util.Collections.nCopies(roots.size(),"UTF-8").toArray(String[]::new), true);
@@ -216,6 +230,9 @@ class SourceBackedConstantTest {
         var compiler = new HashMap<String,String>(); JavaCore.setComplianceOptions("17", compiler); parser.setCompilerOptions(compiler);
         var ast = (CompilationUnit)parser.createAST(null);
         for (var problem : ast.getProblems()) assertFalse(problem.isError(), problem.toString());
+        return ast;
+    }
+    private MathematicalAnalysis.Analysis analyze(CompilationUnit ast, String source, List<String> roots) {
         var options = new MathCleanUpOptions(true, EnumSet.of(NumericKind.BIG_INTEGER, NumericKind.INT), SafetyProfile.PRESERVE_JAVA,
             OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000, 20_000, false, 17, List.of(), true);
         var config = new HashMap<>(options.toMap()); config.put(MathCleanUpOptions.EXPLANATIONS, "NONE");
