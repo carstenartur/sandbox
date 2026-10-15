@@ -22,6 +22,8 @@ import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.TextEdit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
@@ -112,6 +114,63 @@ class MathVariableRegionsTest {
         String source = "public class Calculation { public static int compute(int x,int a,int b) { int unused=x/0; return x*a+x*b; }}";
         var analysis = analyze(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME));
         assertFalse(analysis.changed(), analysis.diagnostics().toString());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "int", "var" })
+    void overwrittenVersionsDoNotHideFactoringAndTheEscapingLocalRemainsDeclared(String type) throws Exception {
+        String source = observedSource(type + " result=x*a; result=result+x*b; consume(result);");
+        String generated = rewrite(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME));
+        assertEquals(1, multiplicationCount(generated), generated);
+        assertTrue(hasDeclaration(generated, "result"), generated);
+        compare(source, generated);
+    }
+
+    @Test
+    void unsupportedParameterWritesRemainUntouched() {
+        String source = observedSource("a=x*a; a=a+x*b; consume(a);");
+        assertFalse(analyze(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME)).changed());
+    }
+
+    @Test
+    void overwrittenThrowingEvaluationCannotDisappear() {
+        String source = observedSource("int result=x/0; result=x*a+x*b; consume(result);");
+        assertFalse(analyze(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME)).changed());
+    }
+
+    @Test
+    void overwrittenOverflowStillThrowsInTheCheckedProfile() throws Exception {
+        String source = observedSource("int result=x+1; result=x*a+x*b; consume(result);");
+        String generated = rewrite(source, options(SafetyProfile.CHECKED_THROW, OptimizationGoal.READABILITY));
+        Method method = compile(generated);
+        assertEquals(85, method.invoke(null, 17, 2, 3));
+        var failure = assertThrows(InvocationTargetException.class, () -> method.invoke(null, Integer.MAX_VALUE, 0, 0));
+        assertInstanceOf(ArithmeticException.class, failure.getCause());
+    }
+
+    @Test
+    void anEmbeddedCommentPinsTheOverwrittenDeclaration() throws Exception {
+        String source = observedSource("int result=x/* keep this explanation */*a; result=result+x*b; consume(result);");
+        var analysis = analyze(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME));
+        Document document = new Document(source);
+        var undo = analysis.newEdit().apply(document, TextEdit.CREATE_UNDO);
+        assertTrue(document.get().contains("/* keep this explanation */"));
+        compare(source, document.get());
+        undo.apply(document);
+        assertEquals(source, document.get());
+    }
+
+    private static String observedSource(String body) {
+        return """
+                public class Calculation {
+                    static int observed;
+                    static void consume(int value) { observed=value; }
+                    public static int compute(int x,int a,int b) {
+                        $BODY
+                        return observed;
+                    }
+                }
+                """.replace("$BODY", body);
     }
 
     private String rewrite(String source, MathCleanUpOptions options) throws Exception {

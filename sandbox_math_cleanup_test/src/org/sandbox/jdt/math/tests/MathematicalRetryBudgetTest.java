@@ -32,7 +32,8 @@ class MathematicalRetryBudgetTest {
         for (long budget = 2800; budget <= 3800; budget += 20) {
             var options = options(budget);
             var first = new JavaComputationExtractor().extractRuntime(ast, source, options).regions().getFirst();
-            long ordinaryAllowance = budget / 4;
+            // Two trace operations versus one receive two thirds; reserve half for the alternate domain.
+            long ordinaryAllowance = budget / 3;
             var request = new OptimizationRequest(first.plan(), first.trace(), options.kinds(),
                     "java25-numeric/v1", first.assumptions(), options.safety(), options.goal(),
                     new OptimizationBudget(ordinaryAllowance, options.maxStates(), 64, 5000L), CheckedPolicy.NONE);

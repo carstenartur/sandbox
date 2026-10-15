@@ -51,7 +51,8 @@ class ArrayScalarRetryBudgetTest {
 
     @Test void boundedArrayAttemptLeavesOnlyUnspentWorkForScalarRetryAndLaterMethod() {
         String source = "class Calculation { int compute(int[] words, int i) { int word = "
-                + "words[i] + ".repeat(15) + "words[i]; return word ^ 0; } int later(int value) { return value + 0; }}";
+                + "words[i] + ".repeat(31) + "words[i]; return word ^ 0; } int later(int value) { return value"
+                + " + 0".repeat(32) + "; }}";
         var ast = MathTestSupport.parse(source);
         var options = options(100_000L);
         var region = new JavaComputationExtractor().extractRuntime(ast, source, options).regions().getFirst();
@@ -70,6 +71,7 @@ class ArrayScalarRetryBudgetTest {
             } else upper = probe;
         }
         assertNotNull(bounded);
+        // Both original regions contain thirty-two operations and receive equal shares.
         long budget = allowance * 2;
         long remaining = budget - Math.max(allowance, bounded.work());
         assertTrue(remaining > 0);
@@ -78,7 +80,8 @@ class ArrayScalarRetryBudgetTest {
         assertTrue(result.diagnostics().stream().anyMatch(d -> d.code().equals("BUDGETEXCEEDED") && d.offset() == region.start()));
         var retried = result.evidence().stream().filter(e -> e.original().equals("return word ^ 0;")).findFirst()
                 .orElseThrow(() -> new AssertionError(result.diagnostics()));
-        assertEquals(remaining / 2, retried.explanation().verified().derivation().orElseThrow().generationBudget());
+        // The scalar retry shares the remainder with the thirty-two-operation later method.
+        assertEquals(remaining / 33, retried.explanation().verified().derivation().orElseThrow().generationBudget());
         assertEquals(1, result.diagnostics().stream().filter(d -> d.code().equals("ARRAY_SCALAR_RETRY")).count());
     }
 

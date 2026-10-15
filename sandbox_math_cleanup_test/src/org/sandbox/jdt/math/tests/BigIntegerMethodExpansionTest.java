@@ -26,6 +26,8 @@ import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.TextEdit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationExtractor;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationRegion;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
@@ -35,6 +37,33 @@ import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 class BigIntegerMethodExpansionTest {
     private static final String CALLER = "public static BigInteger compute";
     @TempDir Path temporary;
+
+    @ParameterizedTest
+    @ValueSource(strings = { "BigInteger", "var", "parameter" })
+    void overwrittenDeclarationEscapesBothGuardBranchesAndFallbackRetainsOriginalBehavior(String type) throws Exception {
+        String local = type.equals("parameter") ? "x" : "result";
+        String declaration = type.equals("parameter") ? "" : type + " ";
+        String original = source("static BigInteger observed; static void consume(BigInteger value) { observed=value; }",
+                declaration + local + "=x.modPow(BigInteger.TWO,m);\n"
+                + local + "=" + local + ".multiply(" + local + ").mod(m);\nconsume(" + local + ");\nreturn observed;");
+        var analysis = analyzeCaller(original, options(true));
+        if (!type.equals("parameter")) {
+            assertTrue(analysis.evidence().stream().anyMatch(e -> e.original().contains("modPow")
+                    && e.original().contains(local + ".multiply(" + local + ")")), analysis.diagnostics().toString());
+        }
+        String generated = qualify(original, true);
+        Method before = compile(original), after = compile(generated);
+        BigInteger overridden = new BigInteger("3") {
+            private static final long serialVersionUID = 1L;
+            @Override public BigInteger modPow(BigInteger exponent, BigInteger modulus) { return BigInteger.valueOf(73); }
+        };
+        for (BigInteger x : new BigInteger[] {null, overridden, BigInteger.ZERO, BigInteger.valueOf(-19),
+                BigInteger.ONE.shiftLeft(5000)}) {
+            for (BigInteger m : new BigInteger[] {null, BigInteger.ZERO, BigInteger.valueOf(-101), BigInteger.valueOf(101)}) {
+                assertEquals(outcome(before, x, m), outcome(after, x, m));
+            }
+        }
+    }
 
     @Test void modularHelperUsesCallerGuardsAndKeepsTheOriginalCallAsFallback() throws Exception {
         String helpers = """

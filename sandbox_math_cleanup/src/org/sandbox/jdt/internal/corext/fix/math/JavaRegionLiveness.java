@@ -6,6 +6,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.eclipse.jdt.core.dom.ASTNode;
@@ -25,6 +26,10 @@ final class JavaRegionLiveness {
          if (!output.returnValue()) locals.add(output.bindingKey());
       }
       Set<String> visible = new HashSet<>();
+      var lastVersions = new HashMap<String, JavaComputationRegion.OutputBinding>();
+      for (var output : region.outputs()) {
+         if (!output.returnValue()) lastVersions.put(output.bindingKey(), output);
+      }
       int end = region.start() + region.length();
       unit.accept(new ASTVisitor() {
          @Override public boolean visit(SimpleName name) {
@@ -39,12 +44,13 @@ final class JavaRegionLiveness {
       });
       // Never remove a comment embedded in a declaration or assignment. Inter-statement
       // comments are retained by the exact source-range rewrite instead.
+      Set<String> commented = new HashSet<>();
       for (var output : region.outputs()) {
          for (Object value : unit.getCommentList()) {
             ASTNode comment = (ASTNode) value;
             if (comment.getStartPosition() >= output.statementStart()
                   && comment.getStartPosition() < output.statementStart() + output.statementLength()) {
-               visible.add(output.bindingKey());
+               commented.add(output.bindingKey());
             }
          }
       }
@@ -53,7 +59,8 @@ final class JavaRegionLiveness {
       var planOutputs = new ArrayList<JointComputationPlan.Output>();
       for (int index = 0; index < region.outputs().size(); index++) {
          var output = region.outputs().get(index);
-         if (output.returnValue() || visible.contains(output.bindingKey())) {
+         if (output.returnValue() || commented.contains(output.bindingKey())
+               || visible.contains(output.bindingKey()) && output == lastVersions.get(output.bindingKey())) {
             outputs.add(output);
             planOutputs.add(region.plan().outputs().get(index));
          } else {
