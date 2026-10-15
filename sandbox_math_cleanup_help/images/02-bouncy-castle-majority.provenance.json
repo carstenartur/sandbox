@@ -27,7 +27,7 @@
     "id": "02-bouncy-castle-majority",
     "kinds": "INT",
     "packageName": "org.bouncycastle.crypto.digests",
-    "screenshotSha256": "be9eb3a7b99169ee0b463627be2154f2446a084e7c19345f52d3643bb9f4100d",
+    "screenshotSha256": "9fe1c1111cbef3fe0ff138aa8dfd725c9f3497257d160fe9fe8b2d0866bd93a4",
     "sdkOptimizationSourceRevision": "8f39dfe5f52fb0610164e18dac624a4bbfaaa49d",
     "sdkSha256": "2bbb776435a09a0bc61339312ae4f58c3b4f8dde67c2925f7b1c8ee686aee52c",
     "sourceArchive": "bcprov.source-1.85.2.jar",
