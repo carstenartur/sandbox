@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "9204fdd1b4753f6f2a2a76a954574584604c1ddd",
-      "lastProcessedDate": "2026-10-14T02:26:43.723213556Z",
-      "totalProcessed": 864,
+      "lastProcessedCommit": "30061a13a03c470c959f108a39b9d4f9d4ad01c0",
+      "lastProcessedDate": "2026-10-15T02:30:12.735141263Z",
+      "totalProcessed": 936,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -4967,6 +4967,33 @@
           "deferredAt": "2026-10-14T02:23:35.531017002Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "2c46f0a21f3a27b35898ca47d062ac7cf375c4b9",
+          "message": "Bug 532774 - [GenericEditor] Support \u003cenabledWhen\u003e for the all genereric editor extension points",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-15T02:24:43.030233234Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "2137b10f5fa34ac875370405f798b8a8f3550f61",
+          "message": "Bug 532774 - [GenericEditor] Fix warnings in \u003cenabledWhen\u003e descriptions",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-15T02:25:22.573415682Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "d353d2648d4e1313a0c76cbd2333ead791caa3bb",
+          "message": "Bug 533837 - Direct use of IStructuredSelection",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-15T02:26:24.083760359Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -4980,7 +5007,7 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 5,
-        "API Modernization": 24,
+        "API Modernization": 26,
         "Performance": 14,
         "Redundant Code": 5,
         "API Misuse Correction": 1,
@@ -4993,7 +5020,7 @@
         "Resource Management": 2,
         "Structural Change": 1,
         "Deprecation": 2,
-        "API Usage": 1,
+        "API Usage": 2,
         "JUnit Assertion": 1,
         "API Migration": 4,
         "Configuration Default Update": 1,
@@ -5031,7 +5058,7 @@
         "Constant Expression Simplification": 1,
         "UI Style": 1,
         "Annotation": 1,
-        "SWT API Usage": 2,
+        "SWT API Usage": 3,
         "Type Widening": 1,
         "Error Handling": 2,
         "Eclipse UI Quick Assist": 1,
@@ -5046,7 +5073,11 @@
         "Unsupported Syntax": 1,
         "Charset Modernization": 1,
         "Encapsulation": 1,
-        "Typo Fix": 1
+        "Typo Fix": 1,
+        "SWT Graphics": 1,
+        "Code Mining": 1,
+        "Inlining": 1,
+        "Arithmetic Precision": 1
       },
       "exhaustedCategories": []
     },
@@ -5156,5 +5187,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52629
+  "globalTotalProcessed": 52701
 }
