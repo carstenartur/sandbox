@@ -36,6 +36,7 @@ class PatchedJdtUiBuildTest {
     private static final String TARGET = "eclipse.platform.releng.prereqs.sdk/eclipse-sdk-prereqs.target";
     @TempDir Path temporary;
     private Path root;
+    private Path source;
     private Path releng;
     private Path config;
     private Path work;
@@ -46,7 +47,7 @@ class PatchedJdtUiBuildTest {
         root = Path.of("").toAbsolutePath();
         while (root != null && !Files.isRegularFile(root.resolve(SCRIPT))) root = root.getParent();
         assertTrue(root != null, "Cannot locate the actual build script");
-        Path source = temporary.resolve("source");
+        source = temporary.resolve("source");
         releng = temporary.resolve("releng");
         String parent;
         String patch;
@@ -66,6 +67,7 @@ class PatchedJdtUiBuildTest {
             write(releng, PARENT, "<project><artifactId>eclipse-platform-parent</artifactId></project>");
             write(releng, TARGET, "<target name='eclipse-sdk-prereqs'/>");
             write(releng, "eclipse.platform.releng.prereqs.sdk/pom.xml", "<project><artifactId>eclipse-sdk-prereqs</artifactId></project>");
+            git.submoduleAdd().setPath("eclipse.jdt.ui").setURI(source.toUri().toString()).call().close();
             relengCommit = commit(git);
         }
         config = temporary.resolve("build.env");
@@ -117,7 +119,53 @@ class PatchedJdtUiBuildTest {
     void rejectsChangedBuildDescriptorsBeforeStartingMaven(String pin) throws Exception {
         Files.writeString(config, Files.readString(config).replaceAll(pin + "=[0-9a-f]+", pin + "=" + "0".repeat(64)));
         assertNotEquals(73, run());
+        assertNotEquals(73, runRelease());
         assertFalse(Files.exists(arguments), "Unverified build descriptors must not reach Maven");
+    }
+
+    @Test
+    void releaseBuildPreservesSourceLocationAndCleansOnlyItsOwnDescriptors() throws Exception {
+        Path parent = temporary.resolve(PARENT);
+        Files.createDirectories(parent.getParent());
+        Files.copy(releng.resolve(PARENT), parent);
+        assertEquals(73, runRelease(), Files.readString(temporary.resolve("release.log")));
+        List<String> args = Files.readAllLines(arguments);
+        Path reactor = Path.of(args.get(args.indexOf("-f") + 1));
+        assertTrue(Files.isSameFile(source, reactor.getParent().resolve(args.stream()
+                .filter(arg -> arg.startsWith("-Djdt-ui-source=")).findFirst().orElseThrow().split("=", 2)[1])));
+        assertTrue(args.contains("-Declipse-sdk-repo=https://download.eclipse.org/eclipse/updates/4.41/R-4.41-202608281142/"));
+        assertArrayEquals(Files.readAllBytes(releng.resolve(PARENT)), Files.readAllBytes(parent));
+        assertFalse(Files.exists(temporary.resolve("eclipse.platform.releng.prereqs.sdk")));
+        try (Git git = Git.open(source.toFile())) { assertTrue(git.status().call().isClean()); }
+        Files.delete(arguments);
+        Files.writeString(parent, "Existing unrelated parent");
+        assertNotEquals(73, runRelease());
+        assertFalse(Files.exists(arguments));
+        assertEquals("Existing unrelated parent", Files.readString(parent));
+        Files.delete(parent);
+        Files.delete(parent.getParent());
+        assertEquals(73, runRelease());
+        assertFalse(Files.exists(parent.getParent()));
+    }
+
+    @Test
+    void releaseBuildRejectsSourceOutsideThePinnedRelease() throws Exception {
+        write(source, "unrelated.txt", "different source");
+        try (Git git = Git.open(source.toFile())) { commit(git); }
+        assertNotEquals(73, runRelease());
+        assertFalse(Files.exists(arguments));
+    }
+
+    private int runRelease() throws Exception {
+        var builder = new ProcessBuilder("bash", root.resolve("qa/upstream-jdt/run-jdt-ui-release-build.sh").toString(),
+                source.toString(), temporary.resolve("release build").toString(), temporary.resolve("bin/mvn").toString());
+        builder.environment().put("JDT_UI_BUILD_CONFIG", config.toString());
+        builder.environment().put("TEST_MAVEN_ARGUMENTS", arguments.toString());
+        Process process = builder.redirectErrorStream(true).redirectOutput(temporary.resolve("release.log").toFile()).start();
+        try {
+            assertTrue(process.waitFor(30, TimeUnit.SECONDS), "Release staging timed out");
+            return process.exitValue();
+        } finally { if (process.isAlive()) process.destroyForcibly(); }
     }
 
     private int run() throws Exception {

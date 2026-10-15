@@ -240,7 +240,11 @@ bash qa/upstream-jdt/run-jdt-ui-before-after.sh \
 
 The runner verifies the exact JDT UI repository, `R4_40` ref and commit before
 reading source. It executes the same pinned Maven reactor before and after one
-project-wide cleanup. The runner delegates comparison of the baseline and migrated
+project-wide cleanup. `jdt-ui-build.env` pins matching R4_40 parent/target
+descriptors and the SDK repository, independent of expired Maven snapshots.
+The adapter verifies the release gitlink and descriptor hashes, preserves the
+source location, and removes only descriptor directories it created beside it.
+The runner delegates comparison of the baseline and migrated
 JUnit XML inventories to `JUnitXmlInventoryComparatorTest` through Maven, then
 requires check/apply agreement, records the named corpus and emits provenance.
 The strict GitHub workflow additionally builds the exact Sandbox product under
