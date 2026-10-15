@@ -18,7 +18,8 @@ import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import java.util.Objects;
+import java.util.SplittableRandom;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarFile;
@@ -65,7 +66,7 @@ class NewUpstreamMathPilotTest {
                     }
                 }
             }
-            Random random = new Random(0x5041455448L);
+            SplittableRandom random = new SplittableRandom(0x5041455448L);
             Method oldUnfilter = oldType.getMethod("unfilter", byte[].class, byte[].class, byte[].class);
             Method newUnfilter = newType.getMethod("unfilter", byte[].class, byte[].class, byte[].class);
             int scanlines = 0;
@@ -101,7 +102,7 @@ class NewUpstreamMathPilotTest {
             Class<?> oldType = before.loadClass(className(IDCT)), newType = after.loadClass(className(IDCT));
             Object oldDecoder = oldType.getConstructor().newInstance(), newDecoder = newType.getConstructor().newInstance();
             Method oldDecode = oldType.getMethod("decode", int[].class), newDecode = newType.getMethod("decode", int[].class);
-            Random random = new Random(0x49444354L);
+            SplittableRandom random = new SplittableRandom(0x49444354L);
             int blocks = 0;
             for (int sample = 0; sample < 512; sample++) {
                 int[] input = new int[64];
@@ -164,8 +165,8 @@ class NewUpstreamMathPilotTest {
         undo.apply(document);
         assertEquals(source, document.get(), "Exact Undo of the complete upstream class");
         Path directory = Files.createDirectories(Path.of(System.getProperty("sandbox.math.corpus.evidence"), "new-upstream", id));
-        Files.writeString(directory.resolve("original.java"), source);
-        Files.writeString(directory.resolve("generated.java"), generated);
+        Files.writeString(directory.resolve("original.java"), source, StandardCharsets.UTF_8);
+        Files.writeString(directory.resolve("generated.java"), generated, StandardCharsets.UTF_8);
         var report = new TreeMap<String, Object>();
         report.put("coordinates", coordinates);
         report.put("sourceEntry", entry);
@@ -211,9 +212,8 @@ class NewUpstreamMathPilotTest {
         Path directory = Files.createTempDirectory(temporary, "compiled-");
         Path file = directory.resolve(entry);
         Files.createDirectories(file.getParent());
-        Files.writeString(file, source);
-        var compiler = ToolProvider.getSystemJavaCompiler();
-        assertNotNull(compiler, "A complete JDK is required");
+        Files.writeString(file, source, StandardCharsets.UTF_8);
+        var compiler = Objects.requireNonNull(ToolProvider.getSystemJavaCompiler(), "A complete JDK is required");
         assertEquals(0, compiler.run(null, null, null, "--release", "8", "-proc:none", "-cp",
                 binary.toString(), "-d", directory.toString(), file.toString()), entry);
         return directory;
