@@ -69,8 +69,10 @@ class PinnedLtkRuntimeIT {
                     LtkRuntimePatch.sha256(reactor.resolve("eclipse-platform-parent/pom.xml"))), "Changed release parent");
             LtkRuntimePatch.require(pin(buildPins, "PATCHED_JDT_UI_PREREQS_SHA256").equals(LtkRuntimePatch.sha256(
                     reactor.resolve("eclipse.platform.releng.prereqs.sdk/eclipse-sdk-prereqs.target"))), "Changed SDK target");
-            Files.writeString(reactor.resolve("pom.xml"), Files.readString(root.resolve(".github/patched-jdt-ui-reactor.xml"))
-                    .replace("<module>eclipse.jdt.ui</module>", "<module>eclipse.platform.ui</module>"));
+            Files.writeString(reactor.resolve("pom.xml"),
+					Files.readString(root.resolve(".github/patched-jdt-ui-reactor.xml"))
+							.replace("<module>eclipse.jdt.ui</module>", "<module>eclipse.platform.ui</module>"),
+					StandardCharsets.UTF_8);
             Files.deleteIfExists(reactor.resolve("eclipse.platform.ui")); // Empty, uninitialized release gitlink.
             try (PinnedGitRepository checkout = PinnedGitRepository.cloneAt(reactor.resolve("eclipse.platform.ui"), remote, ref, commit)) {
                 Path source = checkout.directory();
@@ -139,10 +141,14 @@ class PinnedLtkRuntimeIT {
                 provenance.put("patchTargetFeatureId", LtkRuntimePatch.TARGET_FEATURE);
                 provenance.put("patchTargetFeatureVersion", LtkRuntimePatch.TARGET_VERSION);
                 provenance.put("tests", tests);
-                Files.writeString(output.resolve("provenance.json"), new GsonBuilder().setPrettyPrinting().create().toJson(provenance) + "\n");
+                Files.writeString(output.resolve("provenance.json"),
+						new GsonBuilder().setPrettyPrinting().create().toJson(provenance) + "\\n",
+						StandardCharsets.UTF_8);
                 // Tiny deterministic properties file is also readable from the OSGi test without a JSON dependency.
-                Files.writeString(output.resolve("runtime.properties"), "sourceCommit=" + commit + "\n"
-                        + "bundleVersion=" + version + "\nimplementationClassSha256=" + classDigest + "\n");
+                Files.writeString(
+						output.resolve("runtime.properties"), "sourceCommit=" + commit + "\\n" + "bundleVersion="
+								+ version + "\\nimplementationClassSha256=" + classDigest + "\\n",
+						StandardCharsets.UTF_8);
             }
         } finally {
             Files.deleteIfExists(temporary);
@@ -239,6 +245,6 @@ class PinnedLtkRuntimeIT {
                     </configuration>
                   </plugin></plugins></build>
                 </project>
-                """.formatted(tycho));
+                """.formatted(tycho), StandardCharsets.UTF_8);
     }
 }
