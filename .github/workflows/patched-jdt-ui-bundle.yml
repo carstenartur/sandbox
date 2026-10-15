@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/actions/use-runner-maven/**'
       - '.github/patched-jdt-ui.env'
+      - '.github/patched-jdt-ui-reactor.xml'
       - '.github/probes/patched-jdt-ui/**'
       - '.github/scripts/add_p2_sha256_checksums.py'
       - '.github/scripts/build_patched_jdt_ui.sh'
@@ -25,6 +26,7 @@ on:
     paths:
       - '.github/actions/use-runner-maven/**'
       - '.github/patched-jdt-ui.env'
+      - '.github/patched-jdt-ui-reactor.xml'
       - '.github/probes/patched-jdt-ui/**'
       - '.github/scripts/add_p2_sha256_checksums.py'
       - '.github/scripts/build_patched_jdt_ui.sh'

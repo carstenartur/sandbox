@@ -19,6 +19,8 @@ This delivery path is separate from the ordinary update site. It proves source p
 
 The commit has the official Eclipse 4.41/JDT UI release commit as its sole parent. The build verifies this parent directly from the immutable Git commit object, including in the depth-one checkout, and records the verified `sourceParent` in `provenance.json`.
 
+The build also pins the matching releng release commit `10be605e8924c917d5f0013930278a2b1cb756f5` from `eclipse-platform/eclipse.platform.releng.aggregator`. Its JDT UI gitlink is the expected source parent above. The unmodified `eclipse-platform-parent` POM and `eclipse-sdk-prereqs` target are SHA-256 checked and included in a small local reactor with JDT UI. This avoids the deleted `4.41.0-SNAPSHOT` Maven artifacts. The SDK repository is the exact `R-4.41-202608281142` release, rather than the upstream parent's rolling I-build repository. Provenance records the releng repository, commit, both descriptor hashes and SDK repository.
+
 The retained patch includes scope expansion and coordinated-preview support. The synchronization manifest preserves the fork-specific files. Before compilation, the build checks the scope-expansion source and test against that manifest:
 
 - `CleanUpRefactoring.java`;

@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - '.github/patched-jdt-ui.env'
+      - '.github/patched-jdt-ui-reactor.xml'
       - '.github/patched-ltk.properties'
       - '.github/actions/use-runner-maven/**'
       - '.github/actions/verify-eclipse-desktop-runtime/**'

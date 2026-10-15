@@ -4,7 +4,9 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 CONFIG_FILE=${PATCHED_JDT_UI_CONFIG:-"$ROOT_DIR/.github/patched-jdt-ui.env"}
 OUTPUT_DIR=${1:-"$ROOT_DIR/target/patched-jdt-ui"}
-WORK_DIR=${PATCHED_JDT_UI_WORK_DIR:-"${RUNNER_TEMP:-${TMPDIR:-/tmp}}/patched-jdt-ui-source"}
+BUILD_DIR=${PATCHED_JDT_UI_WORK_DIR:-"${RUNNER_TEMP:-${TMPDIR:-/tmp}}/patched-jdt-ui-source"}
+WORK_DIR="$BUILD_DIR/eclipse.jdt.ui"
+RELENG_DIR="$BUILD_DIR/releng"
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
   echo "Missing patch configuration: $CONFIG_FILE" >&2
@@ -18,6 +20,11 @@ source "$CONFIG_FILE"
 : "${PATCHED_JDT_UI_EXPECTED_PARENT:?missing PATCHED_JDT_UI_EXPECTED_PARENT}"
 : "${PATCHED_JDT_UI_BUNDLE:?missing PATCHED_JDT_UI_BUNDLE}"
 : "${PATCHED_JDT_UI_EXPECTED_BASE_VERSION:?missing PATCHED_JDT_UI_EXPECTED_BASE_VERSION}"
+: "${PATCHED_JDT_UI_RELENG_REPOSITORY:?missing PATCHED_JDT_UI_RELENG_REPOSITORY}"
+: "${PATCHED_JDT_UI_RELENG_COMMIT:?missing PATCHED_JDT_UI_RELENG_COMMIT}"
+: "${PATCHED_JDT_UI_PARENT_SHA256:?missing PATCHED_JDT_UI_PARENT_SHA256}"
+: "${PATCHED_JDT_UI_PREREQS_SHA256:?missing PATCHED_JDT_UI_PREREQS_SHA256}"
+: "${PATCHED_JDT_UI_SDK_REPOSITORY:?missing PATCHED_JDT_UI_SDK_REPOSITORY}"
 
 if [[ ! "$PATCHED_JDT_UI_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
   echo "PATCHED_JDT_UI_COMMIT must be an immutable 40-character SHA" >&2
@@ -27,13 +34,30 @@ if [[ ! "$PATCHED_JDT_UI_EXPECTED_PARENT" =~ ^[0-9a-f]{40}$ ]]; then
   echo "PATCHED_JDT_UI_EXPECTED_PARENT must be an immutable 40-character SHA" >&2
   exit 1
 fi
+if [[ ! "$PATCHED_JDT_UI_RELENG_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "PATCHED_JDT_UI_RELENG_COMMIT must be an immutable 40-character SHA" >&2
+  exit 1
+fi
 
 for command in git mvn javap python3 sha256sum; do
   command -v "$command" >/dev/null || { echo "Missing required command: $command" >&2; exit 1; }
 done
 
-rm -rf "$WORK_DIR" "$OUTPUT_DIR"
-mkdir -p "$WORK_DIR" "$OUTPUT_DIR/plugins"
+rm -rf "$BUILD_DIR" "$OUTPUT_DIR"
+mkdir -p "$WORK_DIR" "$RELENG_DIR" "$OUTPUT_DIR/plugins"
+
+# Keep the release parent and target in the reactor, independent of snapshot retention.
+git -C "$RELENG_DIR" init -q
+git -C "$RELENG_DIR" remote add origin "$PATCHED_JDT_UI_RELENG_REPOSITORY"
+git -C "$RELENG_DIR" fetch --depth=1 origin "$PATCHED_JDT_UI_RELENG_COMMIT"
+git -C "$RELENG_DIR" checkout --detach -q FETCH_HEAD
+[[ $(git -C "$RELENG_DIR" rev-parse HEAD) == "$PATCHED_JDT_UI_RELENG_COMMIT" ]] || exit 1
+cp -R "$RELENG_DIR/eclipse-platform-parent" "$RELENG_DIR/eclipse.platform.releng.prereqs.sdk" "$BUILD_DIR/"
+printf '%s  %s\n' \
+  "$PATCHED_JDT_UI_PARENT_SHA256" "$BUILD_DIR/eclipse-platform-parent/pom.xml" \
+  "$PATCHED_JDT_UI_PREREQS_SHA256" "$BUILD_DIR/eclipse.platform.releng.prereqs.sdk/eclipse-sdk-prereqs.target" \
+  | sha256sum --check --strict
+cp "$ROOT_DIR/.github/patched-jdt-ui-reactor.xml" "$BUILD_DIR/pom.xml"
 
 git -C "$WORK_DIR" init -q
 git -C "$WORK_DIR" remote add origin "$PATCHED_JDT_UI_REPOSITORY"
@@ -63,9 +87,12 @@ grep -Fq 'MultiFileCleanUpScopeExpansionTest' "$WORK_DIR/$SCOPE_TEST"
 grep -Fq "$PRODUCTION_SOURCE" "$WORK_DIR/$SYNC_MANIFEST"
 grep -Fq "$SCOPE_TEST" "$WORK_DIR/$SYNC_MANIFEST"
 
-mvn --batch-mode -ntp -f "$WORK_DIR/pom.xml" \
+# Retain upstream's Tycho bootstrap for bundles whose POMs are generated.
+cp -R "$WORK_DIR/.mvn" "$BUILD_DIR/"
+mvn --batch-mode -ntp -f "$BUILD_DIR/pom.xml" \
   -Pbuild-individual-bundles \
-  -pl "$PATCHED_JDT_UI_BUNDLE" -am \
+  -pl ":$PATCHED_JDT_UI_BUNDLE" -am \
+  -Declipse-sdk-repo="$PATCHED_JDT_UI_SDK_REPOSITORY" \
   -DskipTests \
   clean verify
 
@@ -139,6 +166,8 @@ MAVEN_VERSION=$(mvn --version | head -n 1)
 export OUTPUT_DIR PATCHED_JDT_UI_REPOSITORY PATCHED_JDT_UI_COMMIT PATCHED_JDT_UI_BUNDLE
 export SYMBOLIC_NAME BUNDLE_VERSION BUNDLE_SHA256 JAVA_VERSION MAVEN_VERSION
 export PRODUCTION_SOURCE SCOPE_TEST ACTUAL_PARENT
+export PATCHED_JDT_UI_RELENG_REPOSITORY PATCHED_JDT_UI_RELENG_COMMIT PATCHED_JDT_UI_SDK_REPOSITORY
+export PATCHED_JDT_UI_PARENT_SHA256 PATCHED_JDT_UI_PREREQS_SHA256
 python3 <<'PY'
 import json
 import os
@@ -151,6 +180,11 @@ payload = {
     'sourceRepository': os.environ['PATCHED_JDT_UI_REPOSITORY'],
     'sourceCommit': os.environ['PATCHED_JDT_UI_COMMIT'],
     'sourceParent': os.environ['ACTUAL_PARENT'],
+    'relengRepository': os.environ['PATCHED_JDT_UI_RELENG_REPOSITORY'],
+    'relengCommit': os.environ['PATCHED_JDT_UI_RELENG_COMMIT'],
+    'platformParentSha256': os.environ['PATCHED_JDT_UI_PARENT_SHA256'],
+    'sdkPrereqsSha256': os.environ['PATCHED_JDT_UI_PREREQS_SHA256'],
+    'sdkRepository': os.environ['PATCHED_JDT_UI_SDK_REPOSITORY'],
     'bundleSymbolicName': os.environ['SYMBOLIC_NAME'],
     'bundleVersion': version,
     'bundleFile': f'plugins/{bundle}_{version}.jar',
