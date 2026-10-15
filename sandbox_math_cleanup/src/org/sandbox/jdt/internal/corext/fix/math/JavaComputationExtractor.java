@@ -164,16 +164,16 @@ public final class JavaComputationExtractor {
                   finish(builder, regions, diagnostics);
                   builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                }
-               boolean incomingAssignment = externalBigIntegerAssignment(statement, options)
+               if (builder.outputs.size() >= maximumOutputs) {
+                  JavaComputationExtractor.finish(builder, regions, diagnostics);
+                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
+               }
+               boolean incomingAssignment = externalValueAssignment(statement, options)
                      && !builder.values.containsKey(((IVariableBinding) ((SimpleName) ((Assignment)
                            ((ExpressionStatement) statement).getExpression()).getLeftHandSide()).resolveBinding()).getKey());
                if (incomingAssignment) {
                   finish(builder, regions, diagnostics);
                   builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
-               }
-               if (builder.outputs.size() >= maximumOutputs) {
-                  JavaComputationExtractor.finish(builder, regions, diagnostics);
-                  builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                }
                if (runtimeOnly && RuntimeCalculationPolicy.preserve(statement, declarations)) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
@@ -205,13 +205,16 @@ public final class JavaComputationExtractor {
       return new JavaComputationExtractor.Extraction(regions, diagnostics);
    }
 
-   private static boolean externalBigIntegerAssignment(Statement statement, MathCleanUpOptions options) {
-      return options.mathematicalOptIn() && statement instanceof ExpressionStatement expression
+   /** Each incoming assignment stays isolated so prior writes and the incoming value keep their order. */
+   private static boolean externalValueAssignment(Statement statement, MathCleanUpOptions options) {
+      if (!(statement instanceof ExpressionStatement expression
             && expression.getExpression() instanceof Assignment assignment
             && assignment.getOperator() == Assignment.Operator.ASSIGN
             && assignment.getLeftHandSide() instanceof SimpleName name
-            && name.resolveBinding() instanceof IVariableBinding binding && !binding.isField()
-            && JavaOperationRegistry.kind(binding.getType()).orElse(null) == NumericKind.BIG_INTEGER;
+            && name.resolveBinding() instanceof IVariableBinding binding && !binding.isRecovered() && !binding.isField())) return false;
+      NumericKind kind = JavaOperationRegistry.kind(binding.getType()).orElse(null);
+      return kind == NumericKind.BIG_INTEGER ? options.mathematicalOptIn()
+            : kind != null && kind.integral() && options.safety() == SafetyProfile.PRESERVE_JAVA;
    }
 
    private static boolean eligibleBlock(Block block, boolean runtimeOnly) {
@@ -455,7 +458,7 @@ public final class JavaComputationExtractor {
             }
 
             binding = assignedName.resolveBinding() instanceof IVariableBinding local ? local : null;
-            if (binding == null || !this.values.containsKey(binding.getKey()) && !externalBigIntegerAssignment(statement, options)) {
+            if (binding == null || !this.values.containsKey(binding.getKey()) && !externalValueAssignment(statement, options)) {
                throw JavaComputationExtractor.reject("PARTIAL_OUTPUT_OR_EXTERNAL_WRITE", statement);
             }
 

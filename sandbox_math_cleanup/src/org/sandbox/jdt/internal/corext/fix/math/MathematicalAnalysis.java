@@ -137,9 +137,17 @@ public final class MathematicalAnalysis {
       JavaComputationEmitter emitter = new JavaComputationEmitter();
       MathematicalJavadoc documentation = new MathematicalJavadoc();
       CancellationToken cancellation = () -> isCancelled(monitor);
+      // New singleton assignments must not dilute the established regions' work shares.
+      // Explicit selections still receive the whole available file budget immediately.
+      var deferredAssignments = new ArrayList<JavaComputationRegion>();
+      var primaryRegions = new ArrayList<JavaComputationRegion>();
+      for (var region : extraction.regions()) {
+         if (selectionOffset < 0 && incomingIntegralAssignment(region)) deferredAssignments.add(region);
+         else primaryRegions.add(region);
+      }
       var connections = selectionOffset >= 0
-            ? new JavaComputationSlices.Discovery(extraction.regions(), Map.of(), List.of(), 0)
-            : JavaComputationSlices.discover(ast, extraction.regions(), options, cancellation);
+            ? new JavaComputationSlices.Discovery(primaryRegions, Map.of(), List.of(), 0)
+            : JavaComputationSlices.discover(ast, primaryRegions, options, cancellation);
       var pinnedOffsets = connections.slices().values().stream().flatMap(slice -> slice.pinned().stream())
             .map(ASTNode::getStartPosition).collect(Collectors.toSet());
       diagnostics.removeIf(diagnostic -> diagnostic.code().equals("SIDE_EFFECT_BOUNDARY") && pinnedOffsets.contains(diagnostic.offset())); //$NON-NLS-1$
@@ -154,7 +162,11 @@ public final class MathematicalAnalysis {
       List<JavaComputationRegion> scalarAlternatives = null;
 
       try {
-         for (int regionIndex = 0; regionIndex < pending.size(); regionIndex++) {
+         for (int regionIndex = 0; regionIndex < pending.size() || !deferredAssignments.isEmpty(); regionIndex++) {
+            if (regionIndex == pending.size()) {
+               pending.addAll(deferredAssignments);
+               deferredAssignments.clear();
+            }
             remainingWork -= sourceContext.takeWork();
             JavaComputationRegion region = pending.get(regionIndex);
             var slice = connections.slices().get(region);
@@ -222,7 +234,7 @@ public final class MathematicalAnalysis {
                            // Failed preparation is bounded by the SDK structural cap; reserve
                            // a conservative full-cap charge before scheduling smaller requests.
                            remainingWork -= attemptSpent;
-                           pending.addAll(regionIndex + 1, smaller);
+                           scheduleRetries(pending, regionIndex + 1, smaller, deferredAssignments, selectionOffset < 0);
                            diagnostics.add(diagnostic("REGION_PREPARATION_SPLIT", "Preparation limit reached; retrying " + smaller.size()
                                  + " smaller source regions within the remaining file budget", region));
                            continue;
@@ -236,7 +248,7 @@ public final class MathematicalAnalysis {
                         if (!smaller.isEmpty()) {
                            // Unsupported carries no work counter, so charge the full failed request allocation.
                            remainingWork -= attemptSpent;
-                           pending.addAll(regionIndex + 1, smaller);
+                           scheduleRetries(pending, regionIndex + 1, smaller, deferredAssignments, selectionOffset < 0);
                            diagnostics.add(diagnostic("MODULAR_STATEMENT_RETRY", "Retrying supported statements within the remaining file budget", region));
                            continue;
                         }
@@ -358,6 +370,13 @@ public final class MathematicalAnalysis {
                   }
 
                   failureStage = Stage.COST;
+                  if (incomingIntegralAssignment(region) && options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME
+                        && RuntimeCalculationPolicy.arithmeticOperations(replacement)
+                              >= RuntimeCalculationPolicy.arithmeticOperations(source.substring(region.start(), region.start() + region.length()))) {
+                     diagnostics.add(diagnostic("NO_RUNTIME_IMPROVEMENT", //$NON-NLS-1$
+                           "Incoming assignment does not reduce source arithmetic; helper expansion or cast sharing alone is insufficient", region)); //$NON-NLS-1$
+                     continue;
+                  }
                   CostAssessment cost = candidate.cost();
                   if (mathematicalIntegral) {
                      long workWeight = options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME ? 10 : 1;
@@ -463,10 +482,11 @@ public final class MathematicalAnalysis {
                            && part.start() >= region.start() && part.start() + part.length() <= region.start() + region.length()
                            && part.length() < region.length()
                            && future.stream().noneMatch(other -> overlaps(part.start(), part.length(), other.start(), other.length()))
+                           && deferredAssignments.stream().noneMatch(other -> overlaps(part.start(), part.length(), other.start(), other.length()))
                            && replacements.stream().noneMatch(other -> overlaps(part.start(), part.length(), other.offset(), other.length())))
                            .toList();
                      if (!smaller.isEmpty()) {
-                        pending.addAll(regionIndex + 1, smaller);
+                        scheduleRetries(pending, regionIndex + 1, smaller, deferredAssignments, selectionOffset < 0);
                         diagnostics.add(diagnostic("ARRAY_SCALAR_RETRY", //$NON-NLS-1$
                               "Retrying contained scalar regions within the remaining file budget", region)); //$NON-NLS-1$
                      }
@@ -518,6 +538,23 @@ public final class MathematicalAnalysis {
       long total = 0;
       for (int i = index; i < pending.size(); i++) total += regionWeight(pending.get(i));
       return Math.max(1L, remainingWork * regionWeight(pending.get(index)) / total);
+   }
+
+   private static void scheduleRetries(List<JavaComputationRegion> pending, int index, List<JavaComputationRegion> retries,
+         List<JavaComputationRegion> deferredAssignments, boolean wholeFile) {
+      var immediate = new ArrayList<JavaComputationRegion>();
+      for (var retry : retries) {
+         if (wholeFile && incomingIntegralAssignment(retry)) deferredAssignments.add(retry);
+         else immediate.add(retry);
+      }
+      pending.addAll(index, immediate);
+   }
+
+   private static boolean incomingIntegralAssignment(JavaComputationRegion region) {
+      if (region.outputs().size() != 1 || !region.internalBindings().isEmpty()) return false;
+      var output = region.outputs().getFirst();
+      return !output.declaration() && !output.returnValue() && output.declaredKind().integral()
+            && output.declaredKind() != NumericKind.BIG_INTEGER;
    }
 
    private static int regionWeight(JavaComputationRegion region) {

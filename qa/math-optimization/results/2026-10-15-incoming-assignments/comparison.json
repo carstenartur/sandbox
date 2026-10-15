@@ -1,0 +1,335 @@
+{
+  "schema": "sandbox.incoming-assignment-comparison/v1",
+  "baselineCommit": "6d7545d38b013a95becdd54437478988f584c1ae",
+  "sdkSha256": "2bbb776435a09a0bc61339312ae4f58c3b4f8dde67c2925f7b1c8ee686aee52c",
+  "adapterSources": [
+    {
+      "path": "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/JavaComputationExtractor.java",
+      "beforeSha256": "d6f6f90135080c43fb3b22c7fc7beff621f397d0bc7c49d83a99097013a6c290",
+      "afterSha256": "06cbb7d316b42ed54e1ee5cedc38333c3dbd35289e7b3ae95a39c7ed0fc5b082"
+    },
+    {
+      "path": "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/MathematicalAnalysis.java",
+      "beforeSha256": "4a9c4a1ef7ad042ab15dbeeace79e45d5aeb30aac612a9d94b39d0564426e98f",
+      "afterSha256": "995669e67767e00ba63abab48e660e62fcc7529ada1ec01b2eb0c3bbdf9f3bf5"
+    },
+    {
+      "path": "sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/RuntimeCalculationPolicy.java",
+      "beforeSha256": "f4e8402e11b9a5ec1467cb51a423c9e4bbbdde8b916e7e6457c1beccc7921d89",
+      "afterSha256": "e1f7f08d477061b91481d398967601bb73f4e94633c6ae51cac140b738236950"
+    }
+  ],
+  "runs": [
+    {
+      "profile": "swt-strict",
+      "profileSha256": "0135b09fe1b6bf28eb570f7e63d854084f32a8c215e08e84e4a6b9edd4b23cec",
+      "sourcesSha256": "8f96c6e714b55ecd0868bfd42cfcd4eeb8a19c4bbee34d6bbb17cb6e593f7f19",
+      "binarySha256": "0799e4475b8937e05a0f13c6cbeadbf066ca56dd3622bfd8c7a4ba133b2db2e2",
+      "targetJava": 21,
+      "javaRuntime": "25.0.4.1+1-LTS",
+      "workPerFile": "1000000",
+      "maxStates": "20000",
+      "before": {
+        "status": "COMPLETED",
+        "startedAt": "2026-10-15T17:44:43.501930298Z",
+        "finishedAt": "2026-10-15T17:45:16.810305797Z",
+        "reviewSha256": "df39d5e8157c73fedd322c73f58eb6a27e069964f01451b303b925ae09c28ff0",
+        "parsedFiles": 473,
+        "parseErrorFiles": 0,
+        "sourceContextFiles": 473,
+        "extractedRegions": 374,
+        "acceptedRegions": 7
+      },
+      "after": {
+        "status": "COMPLETED",
+        "startedAt": "2026-10-15T18:51:35.620207384Z",
+        "finishedAt": "2026-10-15T18:52:30.379324086Z",
+        "reviewSha256": "1e2ed506b83bbd2957472d3f8958cbd70e328ca906e05b6a7bd18ed0ea9adccf",
+        "parsedFiles": 473,
+        "parseErrorFiles": 0,
+        "sourceContextFiles": 473,
+        "extractedRegions": 686,
+        "acceptedRegions": 10
+      },
+      "retainedRegions": 7,
+      "changedRetainedReplacements": 0,
+      "removedRegions": [],
+      "addedRegions": [
+        {
+          "path": "org/eclipse/swt/custom/StyledTextRenderer.java",
+          "offset": 7088
+        },
+        {
+          "path": "org/eclipse/swt/custom/StyledTextRenderer.java",
+          "offset": 8723
+        },
+        {
+          "path": "org/eclipse/swt/custom/StyledTextRenderer.java",
+          "offset": 46283
+        }
+      ]
+    },
+    {
+      "profile": "bc-strict",
+      "profileSha256": "4484d7efb7a8f2d69e1f484dfa031d1af61837a0fc2e0585849c26af3a8de6e6",
+      "sourcesSha256": "b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f",
+      "binarySha256": "986b0fb92ec10e0c66b43e036ce0077e6150cfaecd1db9fb92b56672e157afe5",
+      "targetJava": 17,
+      "javaRuntime": "25.0.4.1+1-LTS",
+      "workPerFile": "1000000",
+      "maxStates": "20000",
+      "before": {
+        "status": "COMPLETED_WITH_PARSE_ERRORS",
+        "startedAt": "2026-10-15T18:13:44.485517566Z",
+        "finishedAt": "2026-10-15T18:15:45.007791768Z",
+        "reviewSha256": "4d5265b2db7fbca366127da1ccd25d43793ee2791383531e6b7ee52274602006",
+        "parsedFiles": 3126,
+        "parseErrorFiles": 10,
+        "sourceContextFiles": 3136,
+        "extractedRegions": 2706,
+        "acceptedRegions": 109
+      },
+      "after": {
+        "status": "COMPLETED_WITH_PARSE_ERRORS",
+        "startedAt": "2026-10-15T18:51:35.662123633Z",
+        "finishedAt": "2026-10-15T18:53:19.219098504Z",
+        "reviewSha256": "c92e511526841645fedf594c7c15f3bc4c9395aab1ee99c7effb20bb0f3632b8",
+        "parsedFiles": 3126,
+        "parseErrorFiles": 10,
+        "sourceContextFiles": 3136,
+        "extractedRegions": 4887,
+        "acceptedRegions": 115
+      },
+      "retainedRegions": 109,
+      "changedRetainedReplacements": 0,
+      "removedRegions": [],
+      "addedRegions": [
+        {
+          "path": "org/bouncycastle/crypto/kems/cmce/CMCEEngine.java",
+          "offset": 25945
+        },
+        {
+          "path": "org/bouncycastle/crypto/kems/cmce/CMCEEngine.java",
+          "offset": 26171
+        },
+        {
+          "path": "org/bouncycastle/pqc/crypto/cmce/CMCEEngine.java",
+          "offset": 23542
+        },
+        {
+          "path": "org/bouncycastle/pqc/crypto/cmce/CMCEEngine.java",
+          "offset": 23768
+        },
+        {
+          "path": "org/bouncycastle/pqc/crypto/faest/Faest.java",
+          "offset": 8899
+        },
+        {
+          "path": "org/bouncycastle/pqc/crypto/hawk/HawkVerifier.java",
+          "offset": 14935
+        }
+      ]
+    },
+    {
+      "profile": "bc-mathematical",
+      "profileSha256": "1965b8e699e818cb2edc1e45a12e3f95e301bbd5ead762ba8b0cd032a2efa4b8",
+      "sourcesSha256": "b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f",
+      "binarySha256": "986b0fb92ec10e0c66b43e036ce0077e6150cfaecd1db9fb92b56672e157afe5",
+      "targetJava": 17,
+      "javaRuntime": "25.0.4.1+1-LTS",
+      "workPerFile": "1000000",
+      "maxStates": "20000",
+      "before": {
+        "status": "COMPLETED_WITH_PARSE_ERRORS",
+        "startedAt": "2026-10-15T17:44:43.694514597Z",
+        "finishedAt": "2026-10-15T17:45:57.788636306Z",
+        "reviewSha256": "c5c7fdf97d18b0cb5d7148f83790343e1f59537bcbde6fdd3c7f72ffa06963ad",
+        "parsedFiles": 3126,
+        "parseErrorFiles": 10,
+        "sourceContextFiles": 3136,
+        "extractedRegions": 3048,
+        "acceptedRegions": 118
+      },
+      "after": {
+        "status": "COMPLETED_WITH_PARSE_ERRORS",
+        "startedAt": "2026-10-15T18:51:35.677182343Z",
+        "finishedAt": "2026-10-15T18:53:19.011461125Z",
+        "reviewSha256": "f0a9b7c0d78b1199edc2559a3d9c4964096b8bdc84cfbc8100e54d548f18c9a9",
+        "parsedFiles": 3126,
+        "parseErrorFiles": 10,
+        "sourceContextFiles": 3136,
+        "extractedRegions": 5229,
+        "acceptedRegions": 124
+      },
+      "retainedRegions": 118,
+      "changedRetainedReplacements": 0,
+      "removedRegions": [],
+      "addedRegions": [
+        {
+          "path": "org/bouncycastle/crypto/kems/cmce/CMCEEngine.java",
+          "offset": 25945
+        },
+        {
+          "path": "org/bouncycastle/crypto/kems/cmce/CMCEEngine.java",
+          "offset": 26171
+        },
+        {
+          "path": "org/bouncycastle/pqc/crypto/cmce/CMCEEngine.java",
+          "offset": 23542
+        },
+        {
+          "path": "org/bouncycastle/pqc/crypto/cmce/CMCEEngine.java",
+          "offset": 23768
+        },
+        {
+          "path": "org/bouncycastle/pqc/crypto/faest/Faest.java",
+          "offset": 8899
+        },
+        {
+          "path": "org/bouncycastle/pqc/crypto/hawk/HawkVerifier.java",
+          "offset": 14935
+        }
+      ]
+    }
+  ],
+  "additions": [
+    {
+      "path": "org/eclipse/swt/custom/StyledTextRenderer.java",
+      "sourceSha256": "5910abe8810f42aac74f8da514a81ca242821c98a2e39fb7e75f8dba735e1a6b",
+      "offset": 7088,
+      "length": 53,
+      "original": "grow = (j - modifyStart) - (modifyEnd - modifyStart);",
+      "replacement": "grow = (j - modifyEnd);",
+      "proofMethods": [
+        "BITVECTOR_POLYNOMIAL_MOD_2_32"
+      ],
+      "sourceOperationWork": 3,
+      "candidateOperationWork": 1,
+      "estimatedRuntimeImprovement": true
+    },
+    {
+      "path": "org/eclipse/swt/custom/StyledTextRenderer.java",
+      "sourceSha256": "5910abe8810f42aac74f8da514a81ca242821c98a2e39fb7e75f8dba735e1a6b",
+      "offset": 8723,
+      "length": 53,
+      "original": "grow = (j - modifyStart) - (modifyEnd - modifyStart);",
+      "replacement": "grow = (j - modifyEnd);",
+      "proofMethods": [
+        "BITVECTOR_POLYNOMIAL_MOD_2_32"
+      ],
+      "sourceOperationWork": 3,
+      "candidateOperationWork": 1,
+      "estimatedRuntimeImprovement": true
+    },
+    {
+      "path": "org/eclipse/swt/custom/StyledTextRenderer.java",
+      "sourceSha256": "5910abe8810f42aac74f8da514a81ca242821c98a2e39fb7e75f8dba735e1a6b",
+      "offset": 46283,
+      "length": 79,
+      "original": "newVerticalScrollOffset = (topIndex - 1) * lineHeight + lineHeight - topIndexY;",
+      "replacement": "newVerticalScrollOffset = ((topIndex * lineHeight) - topIndexY);",
+      "proofMethods": [
+        "BITVECTOR_POLYNOMIAL_MOD_2_32",
+        "TYPED_STRUCTURAL_IDENTITY",
+        "TYPED_OPERATION_CONGRUENCE"
+      ],
+      "sourceOperationWork": 4,
+      "candidateOperationWork": 2,
+      "estimatedRuntimeImprovement": true
+    },
+    {
+      "path": "org/bouncycastle/crypto/kems/cmce/CMCEEngine.java",
+      "sourceSha256": "8c9b7715dc6997af581007ecec7245e4f693ba4bf46f4448cccdf0fd6f4b1174",
+      "offset": 25945,
+      "length": 46,
+      "original": "L = (short)((L & ~mle) | ((N + 1 - L) & mle));",
+      "replacement": "final int _math0 = (int) L;\n            L = ((short) (_math0 ^ (((int) mle) & (((((int) N) + 1) - _math0) ^ _math0))));",
+      "proofMethods": [
+        "BITVECTOR_TRUTH_TABLE",
+        "TYPED_OPERATION_CONGRUENCE"
+      ],
+      "sourceOperationWork": 10,
+      "candidateOperationWork": 9,
+      "estimatedRuntimeImprovement": true
+    },
+    {
+      "path": "org/bouncycastle/crypto/kems/cmce/CMCEEngine.java",
+      "sourceSha256": "8c9b7715dc6997af581007ecec7245e4f693ba4bf46f4448cccdf0fd6f4b1174",
+      "offset": 26171,
+      "length": 36,
+      "original": "b = (short)((b & ~mle) | (d & mle));",
+      "replacement": "final int _math1 = (int) b;\n            b = ((short) (_math1 ^ (((int) mle) & (((int) d) ^ _math1))));",
+      "proofMethods": [
+        "BITVECTOR_TRUTH_TABLE",
+        "TYPED_OPERATION_CONGRUENCE"
+      ],
+      "sourceOperationWork": 8,
+      "candidateOperationWork": 7,
+      "estimatedRuntimeImprovement": true
+    },
+    {
+      "path": "org/bouncycastle/pqc/crypto/cmce/CMCEEngine.java",
+      "sourceSha256": "aab6dd0572e43beb413a659e4544bc96c9ff7385a84bd12a738b887d05fa7540",
+      "offset": 23542,
+      "length": 46,
+      "original": "L = (short)((L & ~mle) | ((N + 1 - L) & mle));",
+      "replacement": "final int _math0 = (int) L;\n            L = ((short) (_math0 ^ (((int) mle) & (((((int) N) + 1) - _math0) ^ _math0))));",
+      "proofMethods": [
+        "BITVECTOR_TRUTH_TABLE",
+        "TYPED_OPERATION_CONGRUENCE"
+      ],
+      "sourceOperationWork": 10,
+      "candidateOperationWork": 9,
+      "estimatedRuntimeImprovement": true
+    },
+    {
+      "path": "org/bouncycastle/pqc/crypto/cmce/CMCEEngine.java",
+      "sourceSha256": "aab6dd0572e43beb413a659e4544bc96c9ff7385a84bd12a738b887d05fa7540",
+      "offset": 23768,
+      "length": 36,
+      "original": "b = (short)((b & ~mle) | (d & mle));",
+      "replacement": "final int _math1 = (int) b;\n            b = ((short) (_math1 ^ (((int) mle) & (((int) d) ^ _math1))));",
+      "proofMethods": [
+        "BITVECTOR_TRUTH_TABLE",
+        "TYPED_OPERATION_CONGRUENCE"
+      ],
+      "sourceOperationWork": 8,
+      "candidateOperationWork": 7,
+      "estimatedRuntimeImprovement": true
+    },
+    {
+      "path": "org/bouncycastle/pqc/crypto/faest/Faest.java",
+      "sourceSha256": "f2079d5225fb898b3a3c487e85e22226fe367a08b0c2de8076377c897e66eecd",
+      "offset": 8899,
+      "length": 28,
+      "original": "lo = tau1 * k + t * (k - 1);",
+      "replacement": "lo = ((k * (tau1 + t)) - t);",
+      "proofMethods": [
+        "BITVECTOR_POLYNOMIAL_MOD_2_32"
+      ],
+      "sourceOperationWork": 4,
+      "candidateOperationWork": 3,
+      "estimatedRuntimeImprovement": true
+    },
+    {
+      "path": "org/bouncycastle/pqc/crypto/hawk/HawkVerifier.java",
+      "sourceSha256": "7a039107812a544f4e40efb114b4c546045600ec809cb313e7ffa25701f96d3e",
+      "offset": 14935,
+      "length": 71,
+      "original": "lpp1 = (lpp1 << (32 - 3 * low)) | ((lpp0 & 0xFFFFFFFFL) >>> (3 * low));",
+      "replacement": "final int _math4 = 3 * low;\n                lpp1 = ((lpp1 << (32 - _math4)) | ((((long) lpp0) & 4294967295L) >>> _math4));",
+      "proofMethods": [
+        "TYPED_STRUCTURAL_IDENTITY"
+      ],
+      "sourceOperationWork": 7,
+      "candidateOperationWork": 7,
+      "estimatedRuntimeImprovement": true
+    }
+  ],
+  "notes": [
+    "Fixed full-file budgets; unchanged profiles, SDK, numeric proofs and emitted-source checks.",
+    "Accepted-region counts are not runtime benchmarks.",
+    "Replacements omit generated explanation comments in this comparison only.",
+    "The two CMCE package copies contain the same two source patterns."
+  ]
+}

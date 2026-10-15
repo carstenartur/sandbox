@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CastExpression;
@@ -32,6 +34,27 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 /** Source-selection policy, not an alternative evaluator or equivalence checker. */
 final class RuntimeCalculationPolicy {
     private RuntimeCalculationPolicy() { }
+
+    /** Conservative source-quality gate, separate from the SDK's proof and weighted cost model. */
+    static int arithmeticOperations(String statements) {
+        var parser = ASTParser.newParser(AST.getJLSLatest());
+        parser.setKind(ASTParser.K_STATEMENTS); parser.setSource(statements.toCharArray());
+        int[] count = {0};
+        parser.createAST(null).accept(new ASTVisitor() {
+            @Override public boolean visit(InfixExpression expression) {
+                if (JavaOperationRegistry.infix(expression.getOperator()).isPresent())
+                    count[0] += 1 + expression.extendedOperands().size();
+                return true;
+            }
+            @Override public boolean visit(PrefixExpression expression) {
+                if (expression.getOperator() == PrefixExpression.Operator.COMPLEMENT
+                        || expression.getOperator() == PrefixExpression.Operator.MINUS
+                              && !(expression.getOperand() instanceof NumberLiteral)) count[0]++;
+                return true;
+            }
+        });
+        return count[0];
+    }
 
     /** Constants form boundaries: their spelling, declarations and comments stay in the source. */
     static boolean preserve(Statement statement, Map<String, VariableDeclarationFragment> declarations) {
