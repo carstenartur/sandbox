@@ -47,21 +47,40 @@ class PinnedLtkRuntimeIT {
         try (var reader = Files.newBufferedReader(root.resolve(".github/patched-ltk.properties"), StandardCharsets.UTF_8)) {
             pins.load(reader);
         }
+        Properties buildPins = new Properties();
+        try (var reader = Files.newBufferedReader(root.resolve(".github/patched-jdt-ui.env"), StandardCharsets.UTF_8)) {
+            buildPins.load(reader);
+        }
         URI remote = URI.create(pin(pins, "sourceRepository"));
         String ref = pin(pins, "sourceRef");
         String commit = pin(pins, "sourceCommit");
         String parent = pin(pins, "sourceParent");
         Path stock = LtkRuntimePatch.findStockBundle(resolvedJars);
         Path temporary = Files.createTempDirectory("sandbox-ltk-source-");
-        try {
-            try (PinnedGitRepository checkout = PinnedGitRepository.cloneAt(temporary.resolve("checkout"), remote, ref, commit)) {
+        try (PinnedGitRepository releng = PinnedGitRepository.cloneAt(temporary.resolve("releng"),
+                URI.create(pin(buildPins, "PATCHED_JDT_UI_RELENG_REPOSITORY")), "refs/tags/R4_41",
+                pin(buildPins, "PATCHED_JDT_UI_RELENG_COMMIT"))) {
+            Path reactor = releng.directory();
+            try (Git git = Git.open(reactor.toFile())) {
+                LtkRuntimePatch.require(parent.equals(git.getRepository().resolve("HEAD:eclipse.platform.ui").name()),
+                        "LTK source parent does not match the pinned release");
+            }
+            LtkRuntimePatch.require(pin(buildPins, "PATCHED_JDT_UI_PARENT_SHA256").equals(
+                    LtkRuntimePatch.sha256(reactor.resolve("eclipse-platform-parent/pom.xml"))), "Changed release parent");
+            LtkRuntimePatch.require(pin(buildPins, "PATCHED_JDT_UI_PREREQS_SHA256").equals(LtkRuntimePatch.sha256(
+                    reactor.resolve("eclipse.platform.releng.prereqs.sdk/eclipse-sdk-prereqs.target"))), "Changed SDK target");
+            Files.writeString(reactor.resolve("pom.xml"), Files.readString(root.resolve(".github/patched-jdt-ui-reactor.xml"))
+                    .replace("<module>eclipse.jdt.ui</module>", "<module>eclipse.platform.ui</module>"));
+            Files.deleteIfExists(reactor.resolve("eclipse.platform.ui")); // Empty, uninitialized release gitlink.
+            try (PinnedGitRepository checkout = PinnedGitRepository.cloneAt(reactor.resolve("eclipse.platform.ui"), remote, ref, commit)) {
                 Path source = checkout.directory();
                 verifySource(checkout, parent, pins);
                 Exception buildFailure = null;
                 try {
-                    runMaven(source, output.resolve("build.log"), Duration.ofMinutes(35),
+                    runMaven(reactor, output.resolve("build.log"), Duration.ofMinutes(35),
                             "-Pbuild-individual-bundles", "-pl",
-                            ":org.eclipse.ltk.core.refactoring,:org.eclipse.ltk.core.refactoring.tests",
+                            ":org.eclipse.ltk.core.refactoring,:org.eclipse.ltk.core.refactoring.tests", "-am",
+                            "-Declipse-sdk-repo=" + pin(buildPins, "PATCHED_JDT_UI_SDK_REPOSITORY"),
                             "-Dtycho.surefire.useUIHarness=false", "-Dtycho.surefire.useUIThread=false", "clean", "verify");
                 } catch (Exception failure) {
                     buildFailure = failure;
@@ -107,6 +126,9 @@ class PinnedLtkRuntimeIT {
                 provenance.put("sourceRef", ref);
                 provenance.put("sourceCommit", checkout.headCommit());
                 provenance.put("sourceParent", parent);
+                provenance.put("releaseBuildRepository", pin(buildPins, "PATCHED_JDT_UI_RELENG_REPOSITORY"));
+                provenance.put("releaseBuildCommit", releng.headCommit());
+                provenance.put("sdkRepository", pin(buildPins, "PATCHED_JDT_UI_SDK_REPOSITORY"));
                 provenance.put("upstreamFix", pin(pins, "upstreamFix"));
                 provenance.put("bundleSymbolicName", LtkRuntimePatch.BUNDLE);
                 provenance.put("bundleVersion", version);

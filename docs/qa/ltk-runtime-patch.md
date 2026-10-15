@@ -12,6 +12,11 @@ commit, the official R4_41 parent, and all three reviewed source blobs.
 rejects a moved ref, changed parent, altered patch files or unrelated changes.
 SWTBot does not fetch any source repository.
 
+The build reuses the pinned R4_41 releng coordinates, descriptor hashes and SDK
+repository from `.github/patched-jdt-ui.env`; it also verifies that the release
+gitlink matches the LTK source parent. Parent and target artifacts stay in the
+local reactor, independent of remote Maven snapshot retention.
+
 The IT runs Maven/Tycho for the LTK core and its complete test bundle, preserving
 logs and XML before the disposable checkout closes. All 13 new regression
 methods must occur without failures, errors or skips. The bundle must retain

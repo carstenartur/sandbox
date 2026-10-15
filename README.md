@@ -165,7 +165,7 @@ Experimental, Regelsuche-backed optimization of method-local Java calculations. 
 
 Whole-file strict integral analysis can connect a bounded set of immutable local calculations across unchanged call statements. Source-version-bound provenance and grouped JDT edits keep those calls and comments intact; uncertain effects, memory dependencies and arithmetic exceptions remain conservative boundaries. The cleanup is disabled by default and initially selects BigInteger only; select primitive integral types to use the new connected-slice fragment.
 
-**Documentation:** [Plugin README](sandbox_math_cleanup/README.md) | [Source slices and limits](sandbox_math_cleanup/SOURCE_SLICES.md) | [Practical BC/SWT review profiles](qa/math-optimization/PRACTICAL_REVIEW.md) | [Installed Help source](sandbox_math_cleanup_help/html/cleanup.html)
+**Documentation:** [Plugin README](sandbox_math_cleanup/README.md) | [Source slices and limits](sandbox_math_cleanup/SOURCE_SLICES.md) | [Source-backed BigInteger rewrites](sandbox_math_cleanup/SOURCE_BACKED_REWRITES.md) | [Practical BC/SWT review profiles](qa/math-optimization/PRACTICAL_REVIEW.md) | [Installed Help source](sandbox_math_cleanup_help/html/cleanup.html)
 
 ---
 

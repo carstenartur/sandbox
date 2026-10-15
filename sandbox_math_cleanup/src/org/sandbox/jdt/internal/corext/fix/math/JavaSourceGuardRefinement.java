@@ -19,7 +19,9 @@ final class JavaSourceGuardRefinement {
             String name = region.inputNames().get(assumption.subject());
             if (assumption.kind() == Kind.POSITIVE && requirements.containsKey(name)) requirements.put(name, true);
         }
-        var proven = JavaDominatingGuardFacts.provenReceivers(unit, region.start(), region.length(), requirements);
+        var proven = new HashSet<>(JavaDominatingGuardFacts.provenReceivers(unit, region.start(), region.length(), requirements));
+        var sourceFacts = JavaSourceContext.proveReceivers(unit, region, requirements);
+        proven.addAll(sourceFacts.keySet());
         if (proven.isEmpty()) return region;
         var guards = new HashSet<>(region.receiverGuards());
         guards.removeAll(proven);
@@ -27,11 +29,12 @@ final class JavaSourceGuardRefinement {
         for (var assumption : region.assumptions()) {
             String receiver = region.inputNames().get(assumption.subject());
             boolean sourceProven = receiver != null && proven.contains(receiver);
-            // Preserve tighter constructor-derived bounds and their original provenance.
             boolean guardFact = assumption.kind() == Kind.BIG_INTEGER_VALUE_SEMANTICS || assumption.kind() == Kind.POSITIVE
                     || (assumption.kind() == Kind.BIG_INTEGER_BIT_LENGTH_BOUND && "4096".equals(assumption.parameter())); //$NON-NLS-1$
+            String provenance = receiver != null && sourceFacts.containsKey(receiver) ? sourceFacts.get(receiver).provenance()
+                : "binding-checked dominating source guard for effectively final local at " + region.start(); //$NON-NLS-1$
             assumptions.add(sourceProven && guardFact ? new SemanticAssumption(assumption.kind(), assumption.subject(),
-                    assumption.parameter(), "binding-checked dominating source guard for effectively final local at " + region.start()) : assumption); //$NON-NLS-1$
+                    assumption.parameter(), provenance) : assumption);
         }
         return new JavaComputationRegion(region.plan(), region.trace(), region.outputs(), region.inputNames(),
                 assumptions, region.reservedNames(), guards, region.start(), region.length(), region.internalBindings(), region.arrayReads());

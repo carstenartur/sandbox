@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Supply both upstream snapshot coordinates from the pinned release checkout. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.sandbox.build</groupId>
+  <artifactId>patched-jdt-ui-reactor</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <modules>
+    <module>eclipse-platform-parent</module>
+    <module>eclipse.platform.releng.prereqs.sdk</module>
+    <module>eclipse.jdt.ui</module>
+  </modules>
+</project>

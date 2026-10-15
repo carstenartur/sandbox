@@ -32,6 +32,8 @@ class VerificationMavenWrapperContractTest {
                         "./mvnw -Pdistribution --batch-mode -pl sandbox_distribution_verify"),
                 new Invocation("publish-cleanup-image.yml", "Build Eclipse product",
                         "xvfb-run --auto-servernum ./mvnw -e -V --batch-mode"),
+                new Invocation("patched-jdt-ui-bundle.yml", "Build the independent stock product",
+                        "run: ./mvnw -Pproduct -T 1C --batch-mode clean package -DskipTests"),
                 new Invocation("eclipse-help-screenshots.yml", "Reproduce Eclipse Help screenshots",
                         "          ./mvnw\n"),
                 new Invocation("patched-jdt-ui-atomic-help-screenshot.yml", "Reproduce the atomic Cleanup previews",

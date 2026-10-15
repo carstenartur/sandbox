@@ -14,7 +14,7 @@ CORPUS_VERIFIER="$SCRIPT_DIR/run-jdt-ui-corpus-verifier.sh"
 MAPPING="$SCRIPT_DIR/expected-test-mapping.json"
 PROJECT="org.eclipse.jdt.ui.tests"
 BCOVIEW_PROJECT="org.eclipse.jdt.bcoview"
-REACTOR_PROJECTS="$PROJECT,$BCOVIEW_PROJECT"
+REACTOR_PROJECTS=":$PROJECT,:$BCOVIEW_PROJECT"
 ROOT_POM="pom.xml"
 
 JDT_UI=""
@@ -289,14 +289,14 @@ run_tests() {
   local tmp="$OUTPUT/tmp/$phase"
   mkdir -p "$tmp"
   local -a command=(
-    "$MAVEN_BIN"
+    bash "$SCRIPT_DIR/run-jdt-ui-release-build.sh"
+    "$JDT_UI" "$OUTPUT/tmp/release-build" "$MAVEN_BIN"
     --batch-mode
     --no-transfer-progress
     -U
     -DskipTests=false
     -Djava.io.tmpdir="$tmp"
     -Pbuild-individual-bundles
-    -f "$ROOT_POM"
     -pl "$REACTOR_PROJECTS"
     -am
     clean verify
@@ -532,6 +532,7 @@ provenance = {
     "corpus": corpus,
     "testInventory": inventory,
     "artifacts": {
+        "releaseBuildInputsSha256": digest(out / "tmp/release-build/build-inputs.env"),
         "cleanupProfile": profile.name,
         "cleanupProfileSha256": digest(profile),
         "checkReportSha256": digest(out / "cleanup-check-report.json"),

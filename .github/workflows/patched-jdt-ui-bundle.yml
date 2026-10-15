@@ -7,6 +7,7 @@ on:
     paths:
       - '.github/actions/use-runner-maven/**'
       - '.github/patched-jdt-ui.env'
+      - '.github/patched-jdt-ui-reactor.xml'
       - '.github/probes/patched-jdt-ui/**'
       - '.github/scripts/add_p2_sha256_checksums.py'
       - '.github/scripts/build_patched_jdt_ui.sh'
@@ -25,6 +26,7 @@ on:
     paths:
       - '.github/actions/use-runner-maven/**'
       - '.github/patched-jdt-ui.env'
+      - '.github/patched-jdt-ui-reactor.xml'
       - '.github/probes/patched-jdt-ui/**'
       - '.github/scripts/add_p2_sha256_checksums.py'
       - '.github/scripts/build_patched_jdt_ui.sh'
@@ -214,8 +216,8 @@ jobs:
           distribution: temurin
           java-version: '25'
           cache: maven
-      - name: Use runner Maven
-        uses: ./.github/actions/use-runner-maven
+      - name: Verify pinned Maven Wrapper
+        run: ./mvnw --batch-mode --no-transfer-progress --version
       - name: Install Linux product runtime libraries
         run: |
           sudo apt-get update
@@ -226,7 +228,7 @@ jobs:
           name: patched-jdt-ui-p2-${{ github.sha }}
           path: ${{ runner.temp }}/patched-jdt-ui-p2
       - name: Build the independent stock product
-        run: mvn -Pproduct -T 1C --batch-mode clean package -DskipTests
+        run: ./mvnw -Pproduct -T 1C --batch-mode clean package -DskipTests
       - name: Install exact patch feature and start the product
         shell: bash
         run: |

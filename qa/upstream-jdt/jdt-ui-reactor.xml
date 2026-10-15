@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.sandbox.build</groupId>
+  <artifactId>jdt-ui-migration-reactor</artifactId>
+  <version>1.0.0</version>
+  <packaging>pom</packaging>
+  <modules>
+    <module>${jdt-ui-source}/../eclipse-platform-parent</module>
+    <module>${jdt-ui-source}/../eclipse.platform.releng.prereqs.sdk</module>
+    <module>${jdt-ui-source}</module>
+  </modules>
+</project>
