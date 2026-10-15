@@ -126,7 +126,7 @@ class SwtAssignmentRegionTest {
     }
     private Path compile(String source, Path binary) throws IOException {
         Path directory = Files.createTempDirectory(temporary, "compiled-"); Path file = directory.resolve(ENTRY);
-        Files.createDirectories(java.util.Objects.requireNonNull(file.getParent())); Files.writeString(file, source);
+        Files.createDirectories(java.util.Objects.requireNonNull(file.getParent())); Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "21", "-cp",
                 binary.toString(), "-d", directory.toString(), file.toString()));
         return directory;
