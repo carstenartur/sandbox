@@ -127,9 +127,133 @@ class MathVariableRegionsTest {
     }
 
     @Test
-    void unsupportedParameterWritesRemainUntouched() {
+    void separateIncomingAssignmentsAreNotCombined() {
         String source = observedSource("a=x*a; a=a+x*b; consume(a);");
         assertFalse(analyze(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME)).changed());
+    }
+
+    @Test
+    void anIncomingParameterAssignmentExposesItsOwnCommonFactor() throws Exception {
+        String source = observedSource("a=x*a+x*b; consume(a);");
+        String generated = rewrite(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME));
+        assertEquals(1, multiplicationCount(generated), generated);
+        assertFalse(hasDeclaration(generated, "a"), generated);
+        compare(source, generated);
+    }
+
+    @Test
+    void anAssignmentInsideABranchPreservesTheOuterLocalAndWraparound() throws Exception {
+        String source = observedSource("int result=a; if (x != 0) { result=(a-x)-(b-x); } consume(result);");
+        String generated = rewrite(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME));
+        assertTrue(hasDeclaration(generated, "result"), generated);
+        assertFalse(generated.contains("(a-x)-(b-x)"), generated);
+        compare(source, generated);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "byte", "short", "char", "int", "long" })
+    void incomingIntegralAssignmentsPreserveTheirConversion(String type) throws Exception {
+        String source = observedSource(type + " result; result=(" + type + ")(x*a+x*b); consume((int)result);");
+        var options = new MathCleanUpOptions(true, Set.of(NumericKind.BYTE, NumericKind.SHORT, NumericKind.CHAR,
+                NumericKind.INT, NumericKind.LONG), SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME,
+                1_000_000L, 20_000, false, 17, List.of());
+        String generated = rewrite(source, options);
+        assertEquals(1, multiplicationCount(generated), generated);
+        compare(source, generated);
+    }
+
+    @Test
+    void anAssignmentCannotMoveAcrossAnObservedWriteOrAThrow() throws Exception {
+        String source = observedSource("a=x*a+x*b; consume(a); a=x/0; consume(a);");
+        String generated = rewrite(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME));
+        assertTrue(generated.contains("a=x/0;"), generated);
+        for (String variant : List.of(source, generated)) {
+            Method method = compile(variant);
+            var failure = assertThrows(InvocationTargetException.class, () -> method.invoke(null, 17, 2, 3));
+            assertInstanceOf(ArithmeticException.class, failure.getCause());
+            var observed = method.getDeclaringClass().getDeclaredField("observed");
+            observed.setAccessible(true);
+            assertEquals(85, observed.getInt(null));
+        }
+    }
+
+    @Test
+    void fieldWritesAndIncomingCompoundAssignmentsRemainBoundaries() {
+        for (String body : List.of("observed=x*a+x*b;", "a+=x*a+x*b; consume(a);")) {
+            String source = observedSource(body);
+            assertFalse(analyze(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME)).changed());
+        }
+    }
+
+    @Test
+    void incomingPrimitiveAssignmentsDoNotBroadenOtherSafetyProfiles() {
+        String source = observedSource("a=(x+1)-1; consume(a);");
+        for (var safety : List.of(SafetyProfile.CHECKED_THROW, SafetyProfile.GUARDED_FALLBACK)) {
+            assertFalse(analyze(source, options(safety, OptimizationGoal.READABILITY)).changed());
+        }
+    }
+
+    @Test
+    void expandingAnIncomingHelperCallAloneIsNotAUsefulRuntimeRewrite() {
+        String source = observedSource("a=rotate(x,8); consume(a);").replace("static int observed;",
+                "private static int rotate(int value,int distance) { return (value >>> distance) | (value << -distance); } static int observed;");
+        assertFalse(analyze(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME)).changed());
+    }
+
+    @Test
+    void sharingOnlyImplicitPromotionsDoesNotJustifyNewLocals() {
+        String source = observedSource("short result=(short)x; consume(result); "
+                + "result=(short)(((result&0x00ff)<<8)|((result&0xff00)>>8)); consume(result);");
+        var options = new MathCleanUpOptions(true, Set.of(NumericKind.SHORT, NumericKind.INT),
+                SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000L, 20_000, false, 17, List.of());
+        assertFalse(analyze(source, options).changed());
+    }
+
+    @Test
+    void newIncomingRegionsDoNotDiluteTheEstablishedSearchBudget() {
+        var options = new MathCleanUpOptions(true, Set.of(NumericKind.INT), SafetyProfile.PRESERVE_JAVA,
+                OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 20_000L, 20_000, false, 17, List.of());
+        String source = "class Calculation { int compute(int x,int a,int b) { return x*a+x*b; } $NOISE }";
+        assertTrue(analyze(source.replace("$NOISE", ""), options).changed(), "Qualify the baseline at this same budget");
+        String withNoise = source.replace("$NOISE", "void noise(int x) { " + "x=x+1; ".repeat(100) + "}");
+        var result = analyze(withNoise, options);
+        assertTrue(result.evidence().stream().anyMatch(e -> e.original().equals("return x*a+x*b;")),
+                "New incoming assignments must use remaining work after the established regions");
+    }
+
+    @Test
+    void preparationRetriesPreserveTheIncomingValueAfterAnAssignment() throws Exception {
+        String source = "public class Calculation { public static int compute(int x,int a,int b) {"
+                + "int value=x+1; int c=" + balancedSum(0, 256) + "; int d=x+3; int e=x+4;"
+                + "value=value+1; int result=value-1; return result+c+d+e; }}";
+        var analysis = analyze(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME));
+        assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("REGION_PREPARATION_SPLIT")));
+        Document document = new Document(source);
+        var undo = analysis.newEdit().apply(document, TextEdit.CREATE_UNDO);
+        compare(source, document.get());
+        undo.apply(document); assertEquals(source, document.get());
+    }
+
+    private static String balancedSum(int first, int count) {
+        if (count == 1) return "(x+" + first + ")";
+        return "(" + balancedSum(first, count / 2) + "+" + balancedSum(first + count / 2, count - count / 2) + ")";
+    }
+
+    @Test
+    void incomingAssignmentsDiscoveredByRetriesAlsoWaitForEstablishedRegions() {
+        String incoming = "value=(value-x)-(b-x);";
+        String existing = "return x*a+x*b;";
+        String source = "class Calculation { int compute(int x,int a,int b) { int value=x+1; int c="
+                + balancedSum(0, 256) + "; int d=x+3; int e=x+4;" + incoming
+                + "int result=value-1; return result+c+d+e; } int established(int x,int a,int b) {" + existing + "}}";
+        var analysis = analyze(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME));
+        assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("REGION_PREPARATION_SPLIT")));
+        var acceptedOffsets = analysis.diagnostics().stream().filter(d -> d.code().equals("VERIFIED_CANDIDATE"))
+                .map(d -> d.offset()).toList();
+        assertTrue(acceptedOffsets.contains(source.indexOf(incoming)), acceptedOffsets.toString());
+        assertTrue(acceptedOffsets.contains(source.indexOf(existing)), acceptedOffsets.toString());
+        assertTrue(acceptedOffsets.indexOf(source.indexOf(existing)) < acceptedOffsets.indexOf(source.indexOf(incoming)),
+                "Incoming retry regions must not consume established regions' work shares: " + acceptedOffsets);
     }
 
     @Test

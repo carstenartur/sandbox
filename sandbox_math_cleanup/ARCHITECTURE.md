@@ -51,3 +51,35 @@ scheduled, excluding overlaps with accepted edits or pending regions; they canno
 produce another array retry. The rejected attempt's search and presentation work
 stay charged, and all alternatives share the existing remaining file budget.
 Capture costs and proof requirements are unchanged.
+
+## Incoming primitive assignments
+
+Under `PRESERVE_JAVA`, a simple assignment to a resolved primitive integral local
+or parameter may expose its own arithmetic even when the declaration is outside
+the current block. Such an assignment is a singleton region: preceding writes
+finish before it, and following reads start after it. This also applies after a
+preparation retry reaches its fragment output limit. The incoming value must
+never be confused with the value written by the replacement. Field writes,
+incoming compound assignments, floating-point assignments, and the checked and
+guarded-fallback profiles retain their existing boundaries.
+
+Whole-file analysis schedules these additional regions after established regions
+and their retries, spending only the remaining file work. They do not dilute the
+existing regions' weighted search shares. An explicit selection still receives
+the available budget directly. The SDK and its independent proof, emission and
+cost checks are unchanged.
+
+For the runtime goal, an additional conservative source-quality check requires
+fewer arithmetic operators in the replacement of an incoming assignment. Infix
+operations and nonliteral negation/complement count; casts and method calls do
+not. This rejects helper expansion and sharing of implicit promotions alone,
+even when the SDK reports a saving. Equal-operator-count strength reductions may
+therefore remain unchanged. Readability and allocation goals retain their own
+existing cost policies. This check is a source-quality filter, not a proof or a
+measurement of runtime performance.
+
+`SwtAssignmentRegionTest` analyzes the complete hash-pinned SWT 3.135.0
+`StyledTextRenderer`, compiles both complete versions and compares both actual
+`addMerge` overloads across 96 style/range cases. Additional tests cover narrow
+conversions, wraparound, observable writes before exceptions, search-budget
+starvation and the fragment-retry incoming-value regression.
