@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-10-14
+# Refactoring Mining Report — 2026-10-15
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 62 | 3 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1646 | 86 | 11 |
+| sandbox | 1648 | 86 | 11 |
 
 ## Details
 ### eclipse.jdt.ui
