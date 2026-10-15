@@ -2,6 +2,8 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -50,7 +52,8 @@ class MathematicalSourceContextCacheTest {
     @Test void dependencyInitializerChangeRequiresNewAnalysisEvenBeforeAJdtDelta() throws Exception {
         var cached = cached();
         Path definition = directory.resolve("sample/Constants.java");
-        Files.writeString(definition, Files.readString(definition).replace("1fffffff", "1ffffffd"));
+        Files.writeString(definition, Files.readString(definition).replace("1fffffff", "1ffffffd"),
+				StandardCharsets.UTF_8);
         assertFalse(cached.matches(ENVIRONMENT, SOURCE, Map.of()));
         assertThrows(IllegalArgumentException.class, () -> cached.analysis().newEdit());
     }
@@ -74,7 +77,8 @@ class MathematicalSourceContextCacheTest {
             @Override public void done() {
                 Path definition = directory.resolve("sample/Constants.java");
                 try {
-                    Files.writeString(definition, Files.readString(definition).replace("1fffffff", "1ffffffd"));
+                    Files.writeString(definition, Files.readString(definition).replace("1fffffff", "1ffffffd"),
+							StandardCharsets.UTF_8);
                 } catch (java.io.IOException failure) { throw new java.io.UncheckedIOException(failure); }
             }
         });
@@ -99,12 +103,12 @@ class MathematicalSourceContextCacheTest {
     }
     private void createSources() throws Exception {
         Path sources = Files.createDirectories(directory.resolve("sample"));
-        Files.writeString(sources.resolve("Sample.java"), SOURCE);
+        Files.writeString(sources.resolve("Sample.java"), SOURCE, StandardCharsets.UTF_8);
         Files.writeString(sources.resolve("Constants.java"), """
-            package sample;
-            import java.math.BigInteger;
-            class Constants { static final BigInteger Q = new BigInteger("1fffffff", 16); }
-            """);
+				package sample;
+				import java.math.BigInteger;
+				class Constants { static final BigInteger Q = new BigInteger("1fffffff", 16); }
+				""", StandardCharsets.UTF_8);
     }
     private MathematicalAnalysis.Analysis analyze(NullProgressMonitor monitor) {
         var parser = ASTParser.newParser(AST.getJLSLatest());

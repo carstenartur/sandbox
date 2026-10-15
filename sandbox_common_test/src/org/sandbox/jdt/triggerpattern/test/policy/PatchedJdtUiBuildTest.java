@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -70,18 +71,18 @@ class PatchedJdtUiBuildTest {
         }
         config = temporary.resolve("build.env");
         Files.writeString(config, """
-                PATCHED_JDT_UI_REPOSITORY='%s'
-                PATCHED_JDT_UI_COMMIT=%s
-                PATCHED_JDT_UI_EXPECTED_PARENT=%s
-                PATCHED_JDT_UI_BUNDLE=org.eclipse.jdt.ui
-                PATCHED_JDT_UI_EXPECTED_BASE_VERSION=3.39.0
-                PATCHED_JDT_UI_RELENG_REPOSITORY='%s'
-                PATCHED_JDT_UI_RELENG_COMMIT=%s
-                PATCHED_JDT_UI_PARENT_SHA256=%s
-                PATCHED_JDT_UI_PREREQS_SHA256=%s
-                PATCHED_JDT_UI_SDK_REPOSITORY=https://download.eclipse.org/eclipse/updates/4.41/R-4.41-202608281142/
-                """.formatted(source.toUri(), patch, parent, releng.toUri(), relengCommit,
-                        digest(releng.resolve(PARENT)), digest(releng.resolve(TARGET))));
+				PATCHED_JDT_UI_REPOSITORY='%s'
+				PATCHED_JDT_UI_COMMIT=%s
+				PATCHED_JDT_UI_EXPECTED_PARENT=%s
+				PATCHED_JDT_UI_BUNDLE=org.eclipse.jdt.ui
+				PATCHED_JDT_UI_EXPECTED_BASE_VERSION=3.39.0
+				PATCHED_JDT_UI_RELENG_REPOSITORY='%s'
+				PATCHED_JDT_UI_RELENG_COMMIT=%s
+				PATCHED_JDT_UI_PARENT_SHA256=%s
+				PATCHED_JDT_UI_PREREQS_SHA256=%s
+				PATCHED_JDT_UI_SDK_REPOSITORY=https://download.eclipse.org/eclipse/updates/4.41/R-4.41-202608281142/
+				""".formatted(source.toUri(), patch, parent, releng.toUri(), relengCommit,
+				digest(releng.resolve(PARENT)), digest(releng.resolve(TARGET))), StandardCharsets.UTF_8);
         work = temporary.resolve("build with spaces");
         arguments = temporary.resolve("maven.args");
         Path maven = temporary.resolve("bin/mvn");
@@ -91,8 +92,8 @@ class PatchedJdtUiBuildTest {
 
     @Test
     void suppliesBothSnapshotDescriptorsFromThePinnedCheckoutBeforeMaven() throws Exception {
-        assertEquals(73, run(), Files.readString(temporary.resolve("build.log")));
-        List<String> args = Files.readAllLines(arguments);
+        assertEquals(73, run(), Files.readString(temporary.resolve("build.log"), StandardCharsets.UTF_8));
+        List<String> args = Files.readAllLines(arguments, StandardCharsets.UTF_8);
         Path reactor = Path.of(args.get(args.indexOf("-f") + 1));
         var factory = DocumentBuilderFactory.newInstance();
         factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
@@ -106,7 +107,7 @@ class PatchedJdtUiBuildTest {
         }
         assertArrayEquals(Files.readAllBytes(releng.resolve(PARENT)), Files.readAllBytes(work.resolve(PARENT)));
         assertArrayEquals(Files.readAllBytes(releng.resolve(TARGET)), Files.readAllBytes(work.resolve(TARGET)));
-        assertEquals("<extensions/>", Files.readString(work.resolve(".mvn/extensions.xml")));
+        assertEquals("<extensions/>", Files.readString(work.resolve(".mvn/extensions.xml"), StandardCharsets.UTF_8));
         assertTrue(args.contains(":org.eclipse.jdt.ui"));
         assertTrue(args.contains("-am"));
         assertTrue(args.contains("-Declipse-sdk-repo=https://download.eclipse.org/eclipse/updates/4.41/R-4.41-202608281142/"));
@@ -115,7 +116,8 @@ class PatchedJdtUiBuildTest {
     @ParameterizedTest
     @ValueSource(strings = { "PATCHED_JDT_UI_PARENT_SHA256", "PATCHED_JDT_UI_PREREQS_SHA256" })
     void rejectsChangedBuildDescriptorsBeforeStartingMaven(String pin) throws Exception {
-        Files.writeString(config, Files.readString(config).replaceAll(pin + "=[0-9a-f]+", pin + "=" + "0".repeat(64)));
+        Files.writeString(config, Files.readString(config).replaceAll(pin + "=[0-9a-f]+", pin + "=" + "0".repeat(64)),
+				StandardCharsets.UTF_8);
         assertNotEquals(73, run());
         assertFalse(Files.exists(arguments), "Unverified build descriptors must not reach Maven");
     }
@@ -139,7 +141,7 @@ class PatchedJdtUiBuildTest {
     private static void write(Path root, String name, String contents) throws Exception {
         Path path = root.resolve(name);
         Files.createDirectories(path.getParent());
-        Files.writeString(path, contents);
+        Files.writeString(path, contents, StandardCharsets.UTF_8);
     }
 
     private static String commit(Git git) throws Exception {

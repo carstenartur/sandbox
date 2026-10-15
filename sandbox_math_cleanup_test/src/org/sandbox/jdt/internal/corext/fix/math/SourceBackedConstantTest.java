@@ -2,6 +2,8 @@
 package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
@@ -41,11 +43,14 @@ class SourceBackedConstantTest {
         """;
     private void sources(String constant) throws Exception {
         Files.createDirectories(directory.resolve("sample"));
-        Files.writeString(directory.resolve("sample/Sample.java"), SOURCE);
+        Files.writeString(directory.resolve("sample/Sample.java"), SOURCE, StandardCharsets.UTF_8);
         Files.writeString(directory.resolve("sample/Bridge.java"),
-            "package sample; import java.math.BigInteger; public class Bridge { public static final BigInteger P = Constants.Q; }");
+				"package sample; import java.math.BigInteger; public class Bridge { public static final BigInteger P = Constants.Q; }",
+				StandardCharsets.UTF_8);
         Files.writeString(directory.resolve("sample/Constants.java"),
-            "package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = " + constant + "; }");
+				"package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = "
+						+ constant + "; }",
+				StandardCharsets.UTF_8);
     }
     @Test void emitsMinimalModularRewriteFromThreeRealSourceUnits() throws Exception {
         sources("new BigInteger(\"1fffffff\", 16)");
@@ -68,14 +73,16 @@ class SourceBackedConstantTest {
         assertTrue(result.changed(), result.diagnostics().toString());
         assertTrue(result.matches(SOURCE, Map.of()));
         Files.writeString(directory.resolve("sample/Constants.java"),
-            "package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = BigInteger.ZERO; }");
+				"package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = BigInteger.ZERO; }",
+				StandardCharsets.UTF_8);
         assertFalse(result.matches(SOURCE, Map.of()), "External source changes must invalidate source-proved assumptions");
         assertThrows(IllegalArgumentException.class, result::newEdit);
     }
     @Test void incompleteDefinitionDoesNotPermitAnUnguardedRewrite() throws Exception {
         sources("make()");
         Files.writeString(directory.resolve("sample/Constants.java"),
-            "package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = make(); private static BigInteger make() { return BigInteger.TEN; } }");
+				"package sample; import java.math.BigInteger; public class Constants { public static final BigInteger Q = make(); private static BigInteger make() { return BigInteger.TEN; } }",
+				StandardCharsets.UTF_8);
         var result = analyze(SOURCE);
         assertTrue(!result.changed() || result.replacements().stream().allMatch(r -> r.replacement().contains("getClass()")));
     }
@@ -109,7 +116,7 @@ class SourceBackedConstantTest {
     @Test void mutableAliasTargetsDoNotEstablishAValue() throws Exception {
         sources("new BigInteger(\"1fffffff\", 16)");
         Path path=directory.resolve("sample/Constants.java");
-        Files.writeString(path,Files.readString(path).replace("static final", "static"));
+        Files.writeString(path, Files.readString(path).replace("static final", "static"), StandardCharsets.UTF_8);
         var result=analyze(SOURCE);
         assertTrue(!result.changed() || result.replacements().stream().allMatch(r -> r.replacement().contains("getClass()")));
     }
@@ -119,7 +126,8 @@ class SourceBackedConstantTest {
         var roots = List.of(directory.toString());
         var ast = parse(source, roots);
         Path definition = directory.resolve("sample/Constants.java");
-        Files.writeString(definition, Files.readString(definition).replace("static final", "static"));
+        Files.writeString(definition, Files.readString(definition).replace("static final", "static"),
+				StandardCharsets.UTF_8);
         var result = analyze(ast, source, roots);
         assertTrue(!result.changed() || result.replacements().stream().allMatch(r -> r.replacement().contains("getClass()")),
             "The fresh declaration is mutable even though the caller's old binding was final: " + result.replacements());
