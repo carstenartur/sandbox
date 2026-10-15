@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "GUARD_RESOLUTION",
     "message": "Unknown guard function: handlePreferenceStoreChanged",
-    "verifiedAt": "2026-10-14T02:26:59.331683995Z",
+    "verifiedAt": "2026-10-15T02:30:26.495749863Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

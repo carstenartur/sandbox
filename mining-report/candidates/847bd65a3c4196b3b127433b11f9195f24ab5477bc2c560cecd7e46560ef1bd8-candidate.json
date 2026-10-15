@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "847bd65a3c4196b3b127433b11f9195f24ab5477bc2c560cecd7e46560ef1bd8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: styledtext.drawbackground.to.gc.fillrectangle\u003e\n\u003c!description: Replace StyledText.drawBackground with GC.fillRectangle for direct drawing, particularly when GC background is already set. This addresses rendering issues and clarifies intent.\nEnsure the StyledText and GC instances are correctly identified by their types.\u003e\n\u003c!severity: INFO\u003e\n\u003c!tags: swt, drawing, api-modernization\u003e\n\n$styledText.drawBackground($gc, $x, $y, $width, $height) :: instanceof($styledText, \"org.eclipse.swt.custom.StyledText\") \u0026\u0026 instanceof($gc, \"org.eclipse.swt.graphics.GC\")\n\u003d\u003e $gc.fillRectangle($x, $y, $width, $height)\n;;",
+  "beforeExample": "import org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Rectangle;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.SWT;\n\npublic class DrawingExample {\n    public void draw(StyledText textWidget, GC gc) {\n        gc.setBackground(textWidget.getBackground());\n        Rectangle client \u003d textWidget.getClientArea();\n        int y \u003d 5;\n        // Original code\n        textWidget.drawBackground(gc, 0, y, client.width, 20);\n    }\n\n    // Minimal setup for StyledText and GC context\n    public static void main(String[] args) {\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        StyledText styledText \u003d new StyledText(shell, SWT.NONE);\n        GC gc \u003d new GC(styledText);\n        DrawingExample example \u003d new DrawingExample();\n        example.draw(styledText, gc);\n        gc.dispose();\n        shell.dispose();\n        display.dispose();\n    }\n}",
+  "afterExample": "import org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Rectangle;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.SWT;\n\npublic class DrawingExample {\n    public void draw(StyledText textWidget, GC gc) {\n        gc.setBackground(textWidget.getBackground());\n        Rectangle client \u003d textWidget.getClientArea();\n        int y \u003d 5;\n        // Transformed code\n        gc.fillRectangle(0, y, client.width, 20);\n    }\n\n    // Minimal setup for StyledText and GC context\n    public static void main(String[] args) {\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        StyledText styledText \u003d new StyledText(shell, SWT.NONE);\n        GC gc \u003d new GC(styledText);\n        DrawingExample example \u003d new DrawingExample();\n        example.draw(styledText, gc);\n        gc.dispose();\n        shell.dispose();\n        display.dispose();\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Rectangle;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.SWT;\n\nclass CustomWidget {\n    // A custom widget with a similar method, but not StyledText\n    public void drawBackground(GC gc, int x, int y, int width, int height) {\n        System.out.println(\"CustomWidget drawing background\");\n    }\n}\n\npublic class DrawingExampleNegative {\n    public void draw(CustomWidget myWidget, GC gc) {\n        // Should not match as myWidget is not org.eclipse.swt.custom.StyledText\n        myWidget.drawBackground(gc, 0, 0, 100, 50);\n    }\n\n    public void drawWithWrongGC(StyledText textWidget, Object other) {\n        // Should not match as \u0027other\u0027 is not org.eclipse.swt.graphics.GC\n        // textWidget.drawBackground(other, 0, 0, 100, 50);\n    }\n\n    public static void main(String[] args) {\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        StyledText styledText \u003d new StyledText(shell, SWT.NONE);\n        GC gc \u003d new GC(styledText);\n        new DrawingExampleNegative().draw(new CustomWidget(), gc);\n        new DrawingExampleNegative().drawWithWrongGC(styledText, new Object());\n        gc.dispose();\n        shell.dispose();\n        display.dispose();\n    }\n}",
+  "targetHintFile": "swt.sandbox-hint",
+  "sourceCommit": "f430604e34b66e51471aa26c0c61053408afeac2",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces calls to `StyledText.drawBackground()` with `GC.fillRectangle()` when the target is `StyledText` and `GC` for direct background filling, as `GC.setBackground()` is typically called before.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-15T02:30:17.852420360Z",
+  "ruleFingerprint": "sha256:651fca4b143299181a0451c28563c1db0d4d291b114985c2d9dcbf7c8fb8148d",
+  "behaviorFingerprint": "sha256:7a91ee29d56856ead15d572d229ec88fea30cdf015e09ee9d3ac53ab5e95968d",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-15T02:30:28.537780917Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

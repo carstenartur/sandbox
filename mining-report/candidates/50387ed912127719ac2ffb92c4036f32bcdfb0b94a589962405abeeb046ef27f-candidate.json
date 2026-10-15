@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 5: The import org.eclipse.search.internal.ui.SearchPlugin cannot be resolved",
-    "verifiedAt": "2026-10-14T02:27:00.123051896Z",
+    "verifiedAt": "2026-10-15T02:30:27.442983943Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
