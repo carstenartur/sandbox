@@ -164,8 +164,8 @@ class NewUpstreamMathPilotTest {
         undo.apply(document);
         assertEquals(source, document.get(), "Exact Undo of the complete upstream class");
         Path directory = Files.createDirectories(Path.of(System.getProperty("sandbox.math.corpus.evidence"), "new-upstream", id));
-        Files.writeString(directory.resolve("original.java"), source);
-        Files.writeString(directory.resolve("generated.java"), generated);
+        Files.writeString(directory.resolve("original.java"), source, StandardCharsets.UTF_8);
+        Files.writeString(directory.resolve("generated.java"), generated, StandardCharsets.UTF_8);
         var report = new TreeMap<String, Object>();
         report.put("coordinates", coordinates);
         report.put("sourceEntry", entry);
@@ -211,7 +211,7 @@ class NewUpstreamMathPilotTest {
         Path directory = Files.createTempDirectory(temporary, "compiled-");
         Path file = directory.resolve(entry);
         Files.createDirectories(file.getParent());
-        Files.writeString(file, source);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         var compiler = ToolProvider.getSystemJavaCompiler();
         assertNotNull(compiler, "A complete JDK is required");
         assertEquals(0, compiler.run(null, null, null, "--release", "8", "-proc:none", "-cp",
