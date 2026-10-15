@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.HexFormat;
@@ -157,7 +158,6 @@ public final class MathematicalAnalysis {
             remainingWork -= sourceContext.takeWork();
             JavaComputationRegion region = pending.get(regionIndex);
             var slice = connections.slices().get(region);
-            int regionsLeft = pending.size() - regionIndex;
             if (isCancelled(monitor)) {
                return cancelled(sourceDigest, compilerOptions);
             }
@@ -168,15 +168,17 @@ public final class MathematicalAnalysis {
                   break;
                }
 
-               // One difficult method must not consume the search allocation of all later methods.
-               long regionWork = selectionOffset >= 0 ? remainingWork : Math.max(1L, remainingWork / regionsLeft);
+               // Larger source traces need more search, while every later region retains a share.
+               long regionWork = selectionOffset >= 0 ? remainingWork : regionAllowance(pending, regionIndex, remainingWork);
                boolean mathematicalIntegral = false;
                boolean canTryMathematical = options.mathematicalOptIn() && IntegralMathematicalDomain.supports(region, cancellation);
                boolean mathematicalBigInteger = options.mathematicalOptIn()
                      && region.trace().occurrences().stream().anyMatch(o -> o.evaluatedKind() == NumericKind.BIG_INTEGER);
                boolean canRetryBigInteger = mathematicalBigInteger && region.outputs().size() + region.internalBindings().size() > 1;
-               // Reserve work for individual statements if a combined BigInteger request is unsupported.
-               long ordinaryWork = canTryMathematical || canRetryBigInteger || slice != null ? Math.max(1L, regionWork / 2) : regionWork;
+               // Alternate domains share the allocation equally. Keep a quarter for smaller
+               // BigInteger requests: an Unsupported result has no counter and costs its full allowance.
+               long ordinaryWork = canTryMathematical || slice != null ? Math.max(1L, regionWork / 2)
+                     : canRetryBigInteger ? Math.max(1L, regionWork - Math.max(1L, regionWork / 4)) : regionWork;
                OptimizationRequest request = new OptimizationRequest(
                   region.plan(),
                   region.trace(),
@@ -512,6 +514,16 @@ public final class MathematicalAnalysis {
       return allocation;
    }
 
+   private static long regionAllowance(List<JavaComputationRegion> pending, int index, long remainingWork) {
+      long total = 0;
+      for (int i = index; i < pending.size(); i++) total += regionWeight(pending.get(i));
+      return Math.max(1L, remainingWork * regionWeight(pending.get(index)) / total);
+   }
+
+   private static int regionWeight(JavaComputationRegion region) {
+      return Math.clamp(region.trace().occurrences().size(), 1, 64);
+   }
+
    private static boolean overlaps(int leftStart, int leftLength, int rightStart, int rightLength) {
       return leftStart < (long) rightStart + rightLength && rightStart < (long) leftStart + leftLength;
    }
@@ -571,8 +583,13 @@ public final class MathematicalAnalysis {
       String original = source.substring(region.start(), region.start() + region.length());
       StringBuilder fallback = new StringBuilder(original);
 
-      for (JavaComputationRegion.OutputBinding output : region.outputs().reversed()) {
-         if (output.declaration()) {
+      var escaping = region.outputs().stream().filter(output -> !output.returnValue())
+            .map(JavaComputationRegion.OutputBinding::bindingKey).collect(Collectors.toSet());
+      var bindings = new ArrayList<>(region.outputs());
+      bindings.addAll(region.internalBindings());
+      bindings.sort(Comparator.comparingInt(JavaComputationRegion.OutputBinding::statementStart).reversed());
+      for (JavaComputationRegion.OutputBinding output : bindings) {
+         if (output.declaration() && escaping.contains(output.bindingKey())) {
             String declarationPrefix = source.substring(output.statementStart(), output.initializerStart());
             int equalsOffset = declarationPrefix.lastIndexOf(61);
             if (equalsOffset < 0) {

@@ -12,6 +12,9 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.NodeFinder;
+import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.TargetSourceRangeComputer;
 import org.eclipse.jface.text.BadLocationException;
@@ -58,7 +61,21 @@ final class JavaRegionSourceRewriter {
          }
       });
       for (var internal : region.internalBindings()) {
-         rewrite.remove(exactNode(ast, internal.statementStart(), internal.statementLength()), null);
+         ASTNode statement = exactNode(ast, internal.statementStart(), internal.statementLength());
+         boolean escapes = region.outputs().stream().anyMatch(output -> !output.returnValue()
+               && output.bindingKey().equals(internal.bindingKey()));
+         if (internal.declaration() && escapes && statement instanceof VariableDeclarationStatement declaration) {
+            // The value can die while the binding still has to remain in scope.
+            var fragment = (VariableDeclarationFragment) declaration.fragments().getFirst();
+            rewrite.set(fragment, VariableDeclarationFragment.INITIALIZER_PROPERTY, null, null);
+            if (declaration.getType().isVar()) {
+               String type = MathematicalAnalysis.javaType(internal.declaredKind());
+               var primitive = PrimitiveType.toCode(type);
+               rewrite.replace(declaration.getType(), primitive == null
+                     ? ast.getAST().newSimpleType(ast.getAST().newName(type))
+                     : ast.getAST().newPrimitiveType(primitive), null);
+            }
+         } else rewrite.remove(statement, null);
       }
       for (var output : region.outputs()) {
          String expression = Objects.requireNonNull(values.get(output.id()), "MISSING_OUTPUT");

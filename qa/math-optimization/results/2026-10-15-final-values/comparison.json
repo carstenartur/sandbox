@@ -1,0 +1,115 @@
+{
+  "schema": "sandbox.math-final-value-comparison/v1",
+  "baselineRevision": "f8a7ed63a8faee2093c7723ebe69e0611c96610f",
+  "javaRuntime": "25.0.4.1+1-LTS",
+  "targetJava": 17,
+  "binarySha256": "986b0fb92ec10e0c66b43e036ce0077e6150cfaecd1db9fb92b56672e157afe5",
+  "sourcesSha256": "b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f",
+  "sdkSha256": "2bbb776435a09a0bc61339312ae4f58c3b4f8dde67c2925f7b1c8ee686aee52c",
+  "sourceContextFiles": 3136,
+  "options": {
+    "cleanup.mathematics.checkedOptIn": "false",
+    "cleanup.mathematics.workBudget": "1000000",
+    "cleanup.mathematics": "true",
+    "cleanup.mathematics.exclusions": "",
+    "cleanup.mathematics.explanations": "NONTRIVIAL",
+    "cleanup.mathematics.mathematicalOptIn": "true",
+    "cleanup.mathematics.safetyProfile": "PRESERVE_JAVA",
+    "cleanup.mathematics.numericKinds": "BIG_INTEGER,BYTE,SHORT,CHAR,INT,LONG,FLOAT,DOUBLE",
+    "cleanup.mathematics.goal": "LOWER_ESTIMATED_RUNTIME",
+    "cleanup.mathematics.underflowChecks": "false",
+    "cleanup.mathematics.maxStates": "20000"
+  },
+  "runs": {
+    "mathematicalBefore": {
+      "status": "COMPLETED_WITH_PARSE_ERRORS",
+      "startedAt": "2026-10-15T04:07:48.514124352Z",
+      "finishedAt": "2026-10-15T04:08:57.697847430Z",
+      "parsedFiles": 3126,
+      "parseErrorFiles": 10,
+      "extractedRegions": 3048,
+      "acceptedRegions": 112,
+      "profileSha256": "1965b8e699e818cb2edc1e45a12e3f95e301bbd5ead762ba8b0cd032a2efa4b8",
+      "reviewSha256": "4a7105ab074512277d3321ff7e1dd04e3dec670110425d93129fbbcb6447914e"
+    },
+    "mathematicalAfter": {
+      "status": "COMPLETED_WITH_PARSE_ERRORS",
+      "startedAt": "2026-10-15T04:41:07.896471055Z",
+      "finishedAt": "2026-10-15T04:42:16.024290469Z",
+      "parsedFiles": 3126,
+      "parseErrorFiles": 10,
+      "extractedRegions": 3048,
+      "acceptedRegions": 118,
+      "profileSha256": "1965b8e699e818cb2edc1e45a12e3f95e301bbd5ead762ba8b0cd032a2efa4b8",
+      "reviewSha256": "4eea91ebf7174815794d55ad7773bab24a0359ceab8bbee3aae6d83ab02a8993"
+    },
+    "strictBefore": {
+      "status": "COMPLETED_WITH_PARSE_ERRORS",
+      "startedAt": "2026-10-15T04:34:18.806013497Z",
+      "finishedAt": "2026-10-15T04:35:36.029793874Z",
+      "parsedFiles": 3126,
+      "parseErrorFiles": 10,
+      "extractedRegions": 2706,
+      "acceptedRegions": 101,
+      "profileSha256": "4484d7efb7a8f2d69e1f484dfa031d1af61837a0fc2e0585849c26af3a8de6e6",
+      "reviewSha256": "0b563c846aa88b3af1d93d240229a77776a26e9465712d75b41889baf649c3cb"
+    },
+    "strictAfter": {
+      "status": "COMPLETED_WITH_PARSE_ERRORS",
+      "startedAt": "2026-10-15T04:34:19.514114593Z",
+      "finishedAt": "2026-10-15T04:35:37.350131370Z",
+      "parsedFiles": 3126,
+      "parseErrorFiles": 10,
+      "extractedRegions": 2706,
+      "acceptedRegions": 109,
+      "profileSha256": "4484d7efb7a8f2d69e1f484dfa031d1af61837a0fc2e0585849c26af3a8de6e6",
+      "reviewSha256": "9978b39c695df91443decfd9a026e0f2d44d7312a6e8ff3373860e7b7746f757"
+    }
+  },
+  "mathematicalCountChanges": [
+    {
+      "path": "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java",
+      "before": 4,
+      "after": 3
+    },
+    {
+      "path": "org/bouncycastle/math/ec/rfc7748/X25519Field.java",
+      "before": 2,
+      "after": 3
+    },
+    {
+      "path": "org/bouncycastle/pqc/crypto/hawk/HawkEngine.java",
+      "before": 15,
+      "after": 20
+    },
+    {
+      "path": "org/bouncycastle/pqc/crypto/hawk/HawkSigner.java",
+      "before": 7,
+      "after": 8
+    },
+    {
+      "path": "org/bouncycastle/pqc/legacy/rainbow/GF2Field.java",
+      "before": 10,
+      "after": 9
+    },
+    {
+      "path": "org/bouncycastle/pqc/math/ntru/Polynomial.java",
+      "before": 1,
+      "after": 2
+    }
+  ],
+  "parseErrorPaths": [
+    "META-INF/versions/11/org/bouncycastle/jcajce/provider/asymmetric/edec/BC11XDHPrivateKey.java",
+    "META-INF/versions/11/org/bouncycastle/jcajce/provider/asymmetric/edec/XDHKeys.java",
+    "META-INF/versions/15/org/bouncycastle/jcajce/provider/asymmetric/edec/BC15EdDSAPrivateKey.java",
+    "META-INF/versions/15/org/bouncycastle/jcajce/provider/asymmetric/edec/EdDSAKeys.java",
+    "META-INF/versions/17/org/bouncycastle/jcajce/provider/asymmetric/mlkem/MLKEMSpi.java",
+    "META-INF/versions/17/org/bouncycastle/pqc/jcajce/provider/hqc/HQCKEMSpi.java",
+    "META-INF/versions/17/org/bouncycastle/pqc/jcajce/provider/ntru/NTRUKEMSpi.java",
+    "META-INF/versions/17/org/bouncycastle/pqc/jcajce/provider/ntruprime/SNTRUPrimeKEMSpi.java",
+    "META-INF/versions/25/org/bouncycastle/jcajce/provider/kdf/scrypt/ScryptSpi.java",
+    "META-INF/versions/9/module-info.java"
+  ],
+  "scope": "Source analysis and exact Apply/Undo only; no whole-library behavior, timing or constant-time qualification.",
+  "strictAfterQualification": "The strict run predates the BigInteger-only retry reserve. With mathematicalOptIn=false that branch is disabled; all enabled code is identical."
+}

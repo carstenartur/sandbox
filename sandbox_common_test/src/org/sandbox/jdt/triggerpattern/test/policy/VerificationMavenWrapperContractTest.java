@@ -64,10 +64,13 @@ class VerificationMavenWrapperContractTest {
 
     @ParameterizedTest
     @ValueSource(strings = { "codacy.yml", "codeql.yml", "distribution-smoke.yml", "publish-cleanup-image.yml",
-            "eclipse-help-screenshots.yml", "patched-jdt-ui-atomic-help-screenshot.yml" })
+            "eclipse-help-screenshots.yml", "patched-jdt-ui-atomic-help-screenshot.yml", "patched-jdt-ui-bundle.yml" })
     void wrapperChangesTriggerVerification(String file) throws IOException {
         String workflow = workflow(file);
-        int pathLists = "distribution-smoke.yml".equals(file) ? 2 : 1;
+        int pathLists = switch (file) {
+            case "distribution-smoke.yml", "patched-jdt-ui-bundle.yml" -> 2;
+            default -> 1;
+        };
         for (String path : new String[] { "mvnw", "mvnw.cmd", ".mvn/**" }) {
             assertEquals(pathLists, workflow.lines().filter(line -> line.strip().equals("- '" + path + "'")).count(), path);
         }

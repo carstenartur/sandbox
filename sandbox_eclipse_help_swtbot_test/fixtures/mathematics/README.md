@@ -6,4 +6,4 @@ The same registered cleanup is then exercised in the native Clean Up wizard: exa
 
 Run the standard mathematics module first, then the documented help-screenshots profile with MathematicsHelpScreenshotsSWTBotTest. Keep intentional constants unchanged. Operator counts do not establish measured throughput or cryptographic constant-time behavior.
 
-The fifth fixture is the complete hash-to-curve class, with mathematical opt-in and four independently verified BigInteger modular squares. Its actual native preview includes receiver guards, original fallback and one method contract note.
+The fifth fixture is the complete hash-to-curve class, with mathematical opt-in and three independently verified BigInteger regions. The first combines the overwritten values into three escaping results, removes two modular-square exponentiations and reduces six modular reductions to three. Its actual native preview includes receiver guards, original fallback and one method contract note.
