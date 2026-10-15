@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "dcdd5df038f6709c6fbfff46248c8a83d2a42623010f1e7bc690439f5f3dfbd2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: gc.drawText-to-drawString-transparent\u003e\n\u003c!description: Replace GC.drawText(String, int, int) with GC.drawString(String, int, int, boolean) for transparent drawing. This typically makes text render on a transparent background, respecting underlying content.\u003e \n\u003c!severity: INFO\u003e\n\n$gc.drawText($string, $x, $y)\n\u003d\u003e $gc.drawString($string, $x, $y, true)\n;;",
+  "beforeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.custom.StyledText;\n\npublic class GCTextDrawingBefore {\n    public static void main(String[] args) {\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        shell.setText(\"GC Draw Text Example\");\n        shell.setSize(300, 200);\n\n        StyledText textWidget \u003d new StyledText(shell, SWT.NONE);\n        textWidget.setBounds(10, 10, 200, 50);\n        textWidget.setText(\"Hello World\");\n        \n        shell.open();\n\n        GC gc \u003d new GC(shell);\n        try {\n            Color red \u003d display.getSystemColor(SWT.COLOR_RED);\n            gc.setForeground(red);\n            int x \u003d 50;\n            int y \u003d 100;\n            String title \u003d \"Test String\";\n            \n            // The code to be transformed\n            gc.drawText(title, x, y);\n\n        } finally {\n            gc.dispose();\n        }\n\n        while (!shell.isDisposed()) {\n            if (!display.readAndDispatch()) {\n                display.sleep();\n            }\n        }\n        display.dispose();\n    }\n}",
+  "afterExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.custom.StyledText;\n\npublic class GCTextDrawingAfter {\n    public static void main(String[] args) {\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        shell.setText(\"GC Draw Text Example\");\n        shell.setSize(300, 200);\n\n        StyledText textWidget \u003d new StyledText(shell, SWT.NONE);\n        textWidget.setBounds(10, 10, 200, 50);\n        textWidget.setText(\"Hello World\");\n        \n        shell.open();\n\n        GC gc \u003d new GC(shell);\n        try {\n            Color red \u003d display.getSystemColor(SWT.COLOR_RED);\n            gc.setForeground(red);\n            int x \u003d 50;\n            int y \u003d 100;\n            String title \u003d \"Test String\";\n            \n            // The code after transformation\n            gc.drawString(title, x, y, true);\n\n        } finally {\n            gc.dispose();\n        }\n\n        while (!shell.isDisposed()) {\n            if (!display.readAndDispatch()) {\n                display.sleep();\n            }\n        }\n        display.dispose();\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.custom.StyledText;\n\npublic class GCTextDrawingNegative {\n    public static void main(String[] args) {\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        shell.setText(\"GC Draw Text Example\");\n        shell.setSize(300, 200);\n\n        StyledText textWidget \u003d new StyledText(shell, SWT.NONE);\n        textWidget.setBounds(10, 10, 200, 50);\n        textWidget.setText(\"Hello World\");\n        \n        shell.open();\n\n        GC gc \u003d new GC(shell);\n        try {\n            Color red \u003d display.getSystemColor(SWT.COLOR_RED);\n            gc.setForeground(red);\n            int x \u003d 50;\n            int y \u003d 100;\n            String title \u003d \"Test String\";\n            \n            // This should not be transformed\n            gc.drawString(title, x, y, false); \n\n        } finally {\n            gc.dispose();\n        }\n\n        while (!shell.isDisposed()) {\n            if (!display.readAndDispatch()) {\n                display.sleep();\n            }\n        }\n        display.dispose();\n    }\n}",
+  "targetHintFile": "swt-graphics.sandbox-hint",
+  "sourceCommit": "a2350cfe776b5a00973350637e238cf622e336a4",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "SWT Graphics",
+  "summary": "Replaces GC.drawText(String, int, int) with GC.drawString(String, int, int, true) for transparent text rendering.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-15T02:30:17.680790517Z",
+  "ruleFingerprint": "sha256:51aa0bf4ff1bb047003dd5b4ec5ee2c6b86fb7f57e22f3342a91980f17f77d1f",
+  "behaviorFingerprint": "sha256:b9154c3d025df3d2783f5cafaa22bc00e5799a3ffbf01026822c9309c7a953d7",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-15T02:30:28.460272939Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

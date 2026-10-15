@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "20b360f5036dbf870cbae93e25f2f3a73a7c561ba8860e801afa76b00944a0d1",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$annotation.isMarkedDeleted() :: instanceof($annotation, \"org.eclipse.jface.text.source.Annotation\")\n\u003d\u003e\n$annotation.isMarkedDeleted() || $annotation.getPosition().isDeleted()\n;;",
+  "beforeExample": "package com.example;\n\n// These imports assume the respective types are available on the classpath\nimport org.eclipse.jface.text.Position;\nimport org.eclipse.jface.text.source.Annotation;\n\npublic class TestClass {\n    public void checkAnnotationStatus(Annotation annotation) {\n        if (annotation.isMarkedDeleted()) {\n            System.out.println(\"Annotation is marked for deletion.\");\n        }\n    }\n}",
+  "afterExample": "package com.example;\n\n// These imports assume the respective types are available on the classpath\nimport org.eclipse.jface.text.Position;\nimport org.eclipse.jface.text.source.Annotation;\n\npublic class TestClass {\n    public void checkAnnotationStatus(Annotation annotation) {\n        if (annotation.isMarkedDeleted() || annotation.getPosition().isDeleted()) {\n            System.out.println(\"Annotation is marked for deletion.\");\n        }\n    }\n}",
+  "negativeExample": "package com.example;\n\n// These imports assume the respective types are available on the classpath\nimport org.eclipse.jface.text.Position;\nimport org.eclipse.jface.text.source.Annotation;\n\npublic class TestClass {\n\n    // This class has a similar method name, but is not org.eclipse.jface.text.source.Annotation\n    static class CustomItem {\n        public boolean isMarkedDeleted() { return true; }\n        // It does not have getPosition() method that returns org.eclipse.jface.text.Position\n    }\n\n    public void processCustomItem(CustomItem item) {\n        // This should NOT match because \u0027item\u0027 is not an instance of org.eclipse.jface.text.source.Annotation\n        // and the chained call item.getPosition().isDeleted() would be invalid if it had a getPosition().\n        if (item.isMarkedDeleted()) {\n            System.out.println(\"Custom item marked deleted.\");\n        }\n    }\n\n    public void anotherMethod(String someString) {\n        if (someString.isEmpty()) { // This is a different expression and should not match\n            System.out.println(\"String is empty.\");\n        }\n    }\n}",
+  "targetHintFile": "eclipse.sandbox-hint",
+  "sourceCommit": "f8e67cd6a6fd622d5f002565139b3e2f6181edb5",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Usage",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-15T02:30:17.720780695Z",
+  "ruleFingerprint": "sha256:5972010d9b31b68ad301cb64b702ec8c1b0d94ae6d02d022ef38b1849ae7db4d",
+  "behaviorFingerprint": "sha256:2832d86036fa332951d77344705a6095416dd5b84f4fc54b89942788a176ed24",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-10-15T02:30:28.478635593Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

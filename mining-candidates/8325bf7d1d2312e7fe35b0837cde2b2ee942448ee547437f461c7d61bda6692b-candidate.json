@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "8325bf7d1d2312e7fe35b0837cde2b2ee942448ee547437f461c7d61bda6692b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$receiver.hasCodeMiningProviders() :: instanceof($receiver, \"org.eclipse.jface.text.source.SourceViewer\")\n\u003d\u003e $receiver.fCodeMiningManager !\u003d null\n;;",
+  "beforeExample": "package org.eclipse.jface.text.source;\n\nimport org.eclipse.jface.text.codemining.ICodeMiningProvider;\nimport org.eclipse.jface.text.codemining.CodeMiningManager;\n\npublic class SourceViewer {\n    private CodeMiningManager fCodeMiningManager;\n    private ICodeMiningProvider[] fCodeMiningProviders;\n\n    public void setCodeMiningProviders(ICodeMiningProvider[] codeMiningProviders) {\n        boolean enable \u003d codeMiningProviders !\u003d null \u0026\u0026 codeMiningProviders.length \u003e 0;\n        fCodeMiningProviders \u003d codeMiningProviders;\n        if (enable) {\n            if (this.hasCodeMiningProviders()) { // Match here\n                fCodeMiningManager.setCodeMiningProviders(fCodeMiningProviders);\n            }\n            ensureCodeMiningManagerInstalled();\n        } else {\n            if (this.hasCodeMiningProviders()) // Match here\n                fCodeMiningManager.uninstall();\n            fCodeMiningManager \u003d null;\n        }\n    }\n\n    protected void ensureCodeMiningManagerInstalled() { /* ... */ }\n    public boolean hasCodeMiningProviders() {\n        return fCodeMiningManager !\u003d null;\n    }\n    public void updateCodeMinings() { /* ... */ }\n}\n",
+  "afterExample": "package org.eclipse.jface.text.source;\n\nimport org.eclipse.jface.text.codemining.ICodeMiningProvider;\nimport org.eclipse.jface.text.codemining.CodeMiningManager;\n\npublic class SourceViewer {\n    private CodeMiningManager fCodeMiningManager;\n    private ICodeMiningProvider[] fCodeMiningProviders;\n\n    public void setCodeMiningProviders(ICodeMiningProvider[] codeMiningProviders) {\n        boolean enable \u003d codeMiningProviders !\u003d null \u0026\u0026 codeMiningProviders.length \u003e 0;\n        fCodeMiningProviders \u003d codeMiningProviders;\n        if (enable) {\n            if (this.fCodeMiningManager !\u003d null) { // Replaced\n                fCodeMiningManager.setCodeMiningProviders(fCodeMiningProviders);\n            }\n            ensureCodeMiningManagerInstalled();\n        } else {\n            if (this.fCodeMiningManager !\u003d null) // Replaced\n                fCodeMiningManager.uninstall();\n            fCodeMiningManager \u003d null;\n        }\n    }\n\n    protected void ensureCodeMiningManagerInstalled() { /* ... */ }\n    public boolean hasCodeMiningProviders() {\n        return fCodeMiningManager !\u003d null;\n    }\n    public void updateCodeMinings() { /* ... */ }\n}\n",
+  "negativeExample": "package com.example;\n\npublic class OtherClassWithSimilarMethod {\n    private Object fCodeMiningManager;\n\n    public boolean hasCodeMiningProviders() {\n        // This method has different, more complex logic not just a field check\n        return fCodeMiningManager !\u003d null \u0026\u0026 System.currentTimeMillis() \u003e 0;\n    }\n\n    public void useProviders() {\n        // This call should not be replaced because the receiver is not SourceViewer\n        if (this.hasCodeMiningProviders()) {\n            System.out.println(\"Providers available\");\n        }\n    }\n}\n",
+  "targetHintFile": "jface.text.sandbox-hint",
+  "sourceCommit": "6e3500bbb912961be9724d506486bb4c65180477",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Inlining",
+  "summary": "Inline SourceViewer.hasCodeMiningProviders() with direct field access for improved clarity and micro-performance.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-15T02:30:17.789188193Z",
+  "ruleFingerprint": "sha256:82c845502098b8f16036f22a687463f33a3eef894b69c84a67da04589222454a",
+  "behaviorFingerprint": "sha256:18317a118098694ab855ea91bb99e5db8d08bd54f4b6b6bd60921ba3edd0d578",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.text.codemining cannot be resolved",
+    "verifiedAt": "2026-10-15T02:30:28.512316374Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

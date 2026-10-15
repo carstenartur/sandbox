@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0f922c6abeb6ab2e5767d561dc2f72779bc45f3128a900c0758c982070c48938",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$styledText.drawBackground($gc, $xCoord, $yCoord, $widthVal, $heightVal) :: instanceof($styledText, \"org.eclipse.swt.custom.StyledText\") \u0026\u0026 instanceof($gc, \"org.eclipse.swt.graphics.GC\")\n\u003d\u003e $styledText.drawBackground($gc, 0, $yCoord, $widthVal, $heightVal)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Rectangle;\n\ninterface AbstractInlinedAnnotation { int getHeight(); }\n\nclass Example {\n    void foo(GC gc, StyledText textWidget, int x, int y, Rectangle client, AbstractInlinedAnnotation annotation) {\n        textWidget.drawBackground(gc, x, y, client.width, annotation.getHeight());\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Rectangle;\n\ninterface AbstractInlinedAnnotation { int getHeight(); }\n\nclass Example {\n    void foo(GC gc, StyledText textWidget, int x, int y, Rectangle client, AbstractInlinedAnnotation annotation) {\n        textWidget.drawBackground(gc, 0, y, client.width, annotation.getHeight());\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.GC;\n\nclass Example {\n    void anotherMethod(GC gc, StyledText textWidget, int x, int y, int width, int height) {\n        textWidget.drawBackground(gc, x + 5, y, width, height);\n    }\n}",
+  "targetHintFile": "swt.sandbox-hint",
+  "sourceCommit": "1259eb4e4e8e7936d3dbdbd2b15f1a3eb38d50c1",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "SWT API Usage",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-15T02:30:17.755390642Z",
+  "ruleFingerprint": "sha256:2b7f80967986f063032c84eae8c94cc2954b7245e6dd37c0e60cbc3f04759fd2",
+  "behaviorFingerprint": "sha256:2d6aa35928c888fce7fae8983ffcdc8f0326e72dc540d89d33319484599fd893",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-15T02:30:28.494892771Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
