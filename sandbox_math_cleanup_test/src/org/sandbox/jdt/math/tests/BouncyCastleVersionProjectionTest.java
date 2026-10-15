@@ -106,7 +106,7 @@ class BouncyCastleVersionProjectionTest {
     private Path compile(String source, Path binary) throws IOException {
         Path directory = Files.createTempDirectory(temporary, "compiled-"); Path file = directory.resolve(ENTRY);
         Files.createDirectories(directory.resolve(ENTRY.substring(0, ENTRY.lastIndexOf('/'))));
-        Files.writeString(file, source);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-cp",
                 binary.toString(), "-d", directory.toString(), file.toString()));
         return directory;
