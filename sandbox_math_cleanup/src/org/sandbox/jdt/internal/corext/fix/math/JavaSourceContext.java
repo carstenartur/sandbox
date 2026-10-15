@@ -230,7 +230,8 @@ public final class JavaSourceContext implements AutoCloseable {
                     if (!selected.equals(locateSource(lookupEnvironment, relative))) throw new IOException("SOURCE_RESOLUTION_CHANGED"); //$NON-NLS-1$
                     return readBounded(selected.path(), selected.encoding());
                 };
-                identity = selected.path().toString(); unitName = relative;
+                // Match the source-path compiler's filename, including native separators used in Windows binding keys.
+                identity = selected.path().toString(); unitName = identity;
                 parser.setEnvironment(environment.classpath().toArray(String[]::new), environment.sourcepath().toArray(String[]::new),
                     environment.encodings().isEmpty() ? null : environment.encodings().toArray(String[]::new), true);
                 parser.setUnitName(unitName); parser.setResolveBindings(true);

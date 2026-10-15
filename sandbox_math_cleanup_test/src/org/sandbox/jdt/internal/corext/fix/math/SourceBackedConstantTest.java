@@ -149,11 +149,17 @@ class SourceBackedConstantTest {
         assertFalse(result.matches(SOURCE,Map.of()));
         assertThrows(IllegalArgumentException.class,result::newEdit);
     }
-    @Test void dependenciesAreBoundToTheirRealSources() throws Exception {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void dependenciesAreBoundToTheirRealSources(boolean portableSourceRoot) throws Exception {
         sources("new BigInteger(\"1fffffff\", 16)");
-        var result=analyze(SOURCE);assertTrue(result.changed());
+        String sourceRoot = directory.toString();
+        if (portableSourceRoot) sourceRoot = sourceRoot.replace('\\', '/');
+        var result=analyze(SOURCE, List.of(sourceRoot));assertTrue(result.changed());
         var receipts=result.sourceDependencies().receipts();
         assertEquals(2,receipts.size());
+        assertFalse(result.replacements().getFirst().replacement().contains("getClass()"),
+            "Reparsed declarations must match source-path bindings for both native and portable root paths");
         for(var receipt:receipts) assertEquals(java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
             .digest(Files.readAllBytes(Path.of(receipt.identity())))),receipt.sha256());
     }
