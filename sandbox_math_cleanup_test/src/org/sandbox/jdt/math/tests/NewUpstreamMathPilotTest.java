@@ -211,7 +211,8 @@ class NewUpstreamMathPilotTest {
     private Path compile(String source, String entry, Path binary) throws Exception {
         Path directory = Files.createTempDirectory(temporary, "compiled-");
         Path file = directory.resolve(entry);
-        Files.createDirectories(file.getParent());
+        Path parent = Objects.requireNonNull(file.getParent(), "Source file must have a parent directory");
+        Files.createDirectories(parent);
         Files.writeString(file, source, StandardCharsets.UTF_8);
         var compiler = Objects.requireNonNull(ToolProvider.getSystemJavaCompiler(), "A complete JDK is required");
         assertEquals(0, compiler.run(null, null, null, "--release", "8", "-proc:none", "-cp",
