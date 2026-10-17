@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "30061a13a03c470c959f108a39b9d4f9d4ad01c0",
-      "lastProcessedDate": "2026-10-15T02:30:12.735141263Z",
-      "totalProcessed": 936,
+      "lastProcessedCommit": "bfe82f0bb31a47bcf040d4e0520058a382daff1c",
+      "lastProcessedDate": "2026-10-17T02:27:44.981243312Z",
+      "totalProcessed": 1008,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -4994,6 +4994,60 @@
           "deferredAt": "2026-10-15T02:26:24.083760359Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "c5634157c7edff6df694a2a3ff06a61cff67b81f",
+          "message": "Bug 535318 - Update license to EPL-2.0 for platform.text for about.html",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-17T02:20:10.117440081Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "883e4bcb4c17378f820408e38311de62afbdf4a9",
+          "message": "Bug 321410 - [EditorMgmt][navigation] Provide Mini-map of text in editor",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-17T02:21:11.007581874Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "987f29d0e8c9ef768ad4c357c2ff839ce547944e",
+          "message": "DisposeListener to lambda.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-17T02:22:11.321716510Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "fe1f173989deb9f16974d0c78d55f68c04a07462",
+          "message": "Bug 520659 - [generic editor] Default Code folding for generic editor should use IndentFoldingStrategy",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-17T02:24:35.731957297Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "6c6aae6bed242e6de3183a4a53c8851573c91b74",
+          "message": "Bug 535964 - Move some non UI classes from jface.text to o.e.text.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-17T02:24:35.736425044Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "762fdeb324379150150e696639fd967baee29b97",
+          "message": "Bug 538111 - [generic editor] Extension point for ICharacterPairMatcher",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-17T02:26:33.189326098Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5006,8 +5060,8 @@
       "categoryHitCounts": {
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
-        "Null Safety": 5,
-        "API Modernization": 26,
+        "Null Safety": 7,
+        "API Modernization": 28,
         "Performance": 14,
         "Redundant Code": 5,
         "API Misuse Correction": 1,
@@ -5022,7 +5076,7 @@
         "Deprecation": 2,
         "API Usage": 2,
         "JUnit Assertion": 1,
-        "API Migration": 4,
+        "API Migration": 6,
         "Configuration Default Update": 1,
         "API Deprecation": 1,
         "String API Usage": 2,
@@ -5041,7 +5095,7 @@
         "JUnit Assert Modernization": 1,
         "Java 16 Modernization": 1,
         "JUnit Assertion Improvement": 1,
-        "Structural Refactoring": 2,
+        "Structural Refactoring": 3,
         "Conditional Logic Refinement": 1,
         "Bug Fix": 1,
         "Assertion Improvement": 1,
@@ -5077,7 +5131,15 @@
         "SWT Graphics": 1,
         "Code Mining": 1,
         "Inlining": 1,
-        "Arithmetic Precision": 1
+        "Arithmetic Precision": 1,
+        "Style": 1,
+        "Lambda Conversion": 1,
+        "JUnit Refactoring": 2,
+        "JUnit Assertion Modernization": 1,
+        "DSL limitation (structural changes)": 1,
+        "DSL limitation (parameter binding)": 1,
+        "DSL limitation (control flow insertion)": 1,
+        "Stylistic": 1
       },
       "exhaustedCategories": []
     },
@@ -5187,5 +5249,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52701
+  "globalTotalProcessed": 52773
 }
