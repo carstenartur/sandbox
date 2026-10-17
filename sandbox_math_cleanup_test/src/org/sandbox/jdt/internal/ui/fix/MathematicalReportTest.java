@@ -38,13 +38,17 @@ class MathematicalReportTest {
   assertThrows(IllegalArgumentException.class,()->MathematicalReport.planned("C.java","source",Map.of(),MathCleanUpOptions.defaults(17),new MathematicalEnvironment.Snapshot("environment",Map.of()),analysis,false));
  }
  @Test void jsonCarriesTheExactNormalizedOptionsAndStructuredArrays(@TempDir Path temporary) throws Exception {
-  var options=MathCleanUpOptions.defaults(17).toMap();String source="class C {}";
+  var values=new java.util.HashMap<>(MathCleanUpOptions.defaults(17).toMap());
+  values.put(MathCleanUpOptions.TIMEOUT_SECONDS,"30");
+  var configured=MathCleanUpOptions.parse(values,17);
+  var options=configured.toMap();String source="class C {}";
   var analysis=new MathematicalAnalysis.Analysis(List.of(),List.of(new MathematicalAnalysis.Diagnostic("NO_CHANGE","unchanged",0,source.length())),MathematicalEnvironment.digest(source),Map.of());
-  var file=MathematicalReport.planned("C.java",source,Map.of(),MathCleanUpOptions.defaults(17),new MathematicalEnvironment.Snapshot("environment",Map.of()),analysis,false);
+  var file=MathematicalReport.planned("C.java",source,Map.of(),configured,new MathematicalEnvironment.Snapshot("environment",Map.of()),analysis,false);
   var report=new MathematicalReport(1,"Example","analysis",options,options,"sdk","adapter",List.of(file));
   Path output=temporary.resolve("report.json");report.write(output);
   var json=new ObjectMapper().readTree(Files.readString(output));
-  assertEquals(1,json.path("schemaVersion").asInt());assertEquals(11,json.path("requestedOptions").size());
+  assertEquals(1,json.path("schemaVersion").asInt());assertEquals(12,json.path("requestedOptions").size());
+  assertEquals("30",json.path("requestedOptions").path(MathCleanUpOptions.TIMEOUT_SECONDS).asText());
   assertEquals("NONTRIVIAL",json.path("requestedOptions").path(MathCleanUpOptions.EXPLANATIONS).asText());
   assertEquals("false",json.path("requestedOptions").path(MathCleanUpOptions.MATHEMATICAL_OPT_IN).asText());
   assertEquals(json.path("requestedOptions"),json.path("configProperties"));assertEquals(json.path("requestedOptions"),json.path("files").get(0).path("options"));
