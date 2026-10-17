@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Ordered source inputs</title></head>
+<body><h1>Ordered source inputs and authored formulas</h1>
+<p>In <strong>Preserve Java behavior</strong>, the mathematics adapter can capture
+one-dimensional primitive integral array reads, final primitive integral fields,
+and absolute indexed <code>get(int)</code> calls on <code>ByteBuffer</code>,
+<code>ShortBuffer</code>, <code>CharBuffer</code>, <code>IntBuffer</code> and
+<code>LongBuffer</code>. Select every involved primitive numeric type.</p>
+<p>Each original occurrence is a distinct input. The source operation executes
+exactly once and in its original order, even if its value becomes unused or the
+same expression appears twice. Only the captured numbers enter the shared
+Regelsuche search. No equality of memory reads, non-null receiver, index range,
+field value or purity of a virtual call is inferred.</p>
+<pre>final int _mathRead = buffer.get(STRIDE * 2);</pre>
+<p>The capture retains the original expression, including the spelling of its
+index formula. The adapter no longer excludes the entire surrounding arithmetic
+merely because this opaque index contains a constant calculation. It does not
+fold the formula or change the constant declaration. Constant formulas outside
+admitted captures retain the existing protection.</p>
+<h2>Safety boundaries</h2>
+<p>Array and buffer receivers must be resolved local variables or parameters.
+A final field may use its original lexical name, an unqualified <code>this</code>,
+a local receiver, or a type qualifier for a static field. Mutable and volatile
+fields, nested receiver chains and computed receivers are not admitted. Static
+field initialization and its exceptions are retained by executing the original
+field access, not by substituting its presumed value.</p>
+<p>Indices can contain primitive integral locals, compile-time constant names,
+literals, casts, and total arithmetic. Calls, mutation, division, remainder,
+nested reads and runtime field values in indices remain boundaries. A read which
+depends on a local produced earlier in the current region starts a new region.
+Potentially throwing arithmetic, observable writes and control flow also prevent
+unsafe motion. Relative <code>get()</code>, bulk reads, writes, floating buffers,
+checked/fallback profiles and helper-body reads require separate support.</p>
+<h2>Costs and verification</h2>
+<p>The existing capture cost assessment charges capture stores, references and
+conservative peak storage. The unchanged original loads and indices are not
+counted as savings. Readability may accept a clearer expression which is not a
+runtime win; runtime and allocation goals keep their existing cost gates.
+Legacy report names <code>ArrayRead</code> and <code>arrayReads</code> identify
+this same ordered-capture obligation, including the added field/buffer forms.</p>
+<p>JUnit coverage uses resolved JDT bindings, actual extraction and numerical
+proof, exact source edits and Undo, complete-class compilation, and execution
+comparisons including null/bounds precedence, repeated/dead reads and buffer
+state. Whole-project hit counts and measured speedups remain separate evidence;
+source admission alone does not establish either.</p>
+<p><a href="cleanup.html">Mathematics cleanup configuration</a></p>
+</body></html>

@@ -4,4 +4,5 @@
   <topic label="Real before/after examples: Bouncy Castle and Eclipse JDT" href="html/examples.html"/>
   <topic label="Report destinations and protected workspace files" href="html/report-paths.html"/>
   <topic label="Established receiver checks and early exits" href="html/source-guards.html"/>
+  <topic label="Ordered array, field and buffer inputs" href="html/ordered-inputs.html"/>
 </toc>
