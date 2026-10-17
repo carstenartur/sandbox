@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6541e170c0aad442346bcd106e43350b5aa8e50074af91393663b8371c9d08e5",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.api.TemplatePersistenceData.migrate\u003e\n\u003c!description: Migrate from deprecated org.eclipse.jface.text.templates.persistence.TemplatePersistenceData to org.eclipse.text.templates.TemplatePersistenceData.\u003e\n\u003c!severity: INFO\u003e\norg.eclipse.jface.text.templates.persistence.TemplatePersistenceData\n\u003d\u003e\norg.eclipse.text.templates.TemplatePersistenceData\n;;",
+  "beforeExample": "package com.example;\n\nimport org.eclipse.jface.text.templates.persistence.TemplatePersistenceData;\n\npublic class MyClass {\n    TemplatePersistenceData data;\n    void method(TemplatePersistenceData param) {}\n    TemplatePersistenceData factory() { return null; }\n}",
+  "afterExample": "package com.example;\n\nimport org.eclipse.text.templates.TemplatePersistenceData;\n\npublic class MyClass {\n    TemplatePersistenceData data;\n    void method(TemplatePersistenceData param) {}\n    TemplatePersistenceData factory() { return null; }\n}",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.jface.text.templates.Template; // Different class, should not match\n\npublic class MyClass {\n    Template template;\n}",
+  "targetHintFile": "eclipse-api-migrations.sandbox-hint",
+  "sourceCommit": "f48c8fc3b0bc80f01d45d51ad62d31851805005a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Migration",
+  "summary": "Migrate `TemplatePersistenceData` from deprecated `org.eclipse.jface.text.templates.persistence` package to `org.eclipse.text.templates` package.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-17T02:27:50.027261506Z",
+  "ruleFingerprint": "sha256:63a384a7ba5ce4a4598b7ea29ae66ff9ef803740b5c7870d13ca2f25a32e7ab9",
+  "behaviorFingerprint": "sha256:fafdeeaf10db699f6fa6880a8bd4c5a63ffccb2d1f12f02fa1fd87b6270a4fec",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-17T02:28:00.345978819Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

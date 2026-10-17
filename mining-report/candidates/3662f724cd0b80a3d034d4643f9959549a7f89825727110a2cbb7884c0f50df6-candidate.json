@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3662f724cd0b80a3d034d4643f9959549a7f89825727110a2cbb7884c0f50df6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.api.EditorsPluginToEditorsUIPreferenceStore\u003e\n\u003c!description: Replace internal EditorsPlugin.getDefault().getPreferenceStore() with public EditorsUI.getPreferenceStore().\u003e\n\u003c!severity: WARNING\u003e\norg.eclipse.ui.internal.editors.text.EditorsPlugin.getDefault().getPreferenceStore()\n\u003d\u003e\norg.eclipse.ui.editors.text.EditorsUI.getPreferenceStore()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.ui.texteditor.ChainedPreferenceStore;\nimport org.eclipse.ui.internal.editors.text.EditorsPlugin;\n\npublic class EditorInitialization {\n    protected void initializeEditor() {\n        IPreferenceStore[] stores \u003d new IPreferenceStore[] {\n                org.eclipse.ui.internal.genericeditor.preferences.GenericEditorPreferenceConstants.getPreferenceStore(),\n                EditorsPlugin.getDefault().getPreferenceStore()\n        };\n        setPreferenceStore(new ChainedPreferenceStore(stores));\n    }\n    private void setPreferenceStore(IPreferenceStore store) {}\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.ui.editors.text.EditorsUI;\nimport org.eclipse.ui.texteditor.ChainedPreferenceStore;\n\npublic class EditorInitialization {\n    protected void initializeEditor() {\n        IPreferenceStore[] stores \u003d new IPreferenceStore[] {\n                org.eclipse.ui.internal.genericeditor.preferences.GenericEditorPreferenceConstants.getPreferenceStore(),\n                EditorsUI.getPreferenceStore()\n        };\n        setPreferenceStore(new ChainedPreferenceStore(stores));\n    }\n    private void setPreferenceStore(IPreferenceStore store) {}\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.preference.IPreferenceStore;\nimport org.eclipse.ui.editors.text.EditorsUI;\nimport org.eclipse.ui.texteditor.ChainedPreferenceStore;\n\npublic class EditorInitialization {\n    protected void initializeEditor() {\n        // This should not match, as it\u0027s already using the correct API\n        IPreferenceStore[] stores \u003d new IPreferenceStore[] {\n                org.eclipse.ui.internal.genericeditor.preferences.GenericEditorPreferenceConstants.getPreferenceStore(),\n                EditorsUI.getPreferenceStore()\n        };\n        setPreferenceStore(new ChainedPreferenceStore(stores));\n    }\n    private void setPreferenceStore(IPreferenceStore store) {}\n}\n",
+  "targetHintFile": "eclipse-api.sandbox-hint",
+  "sourceCommit": "8e88a7750afd7970304adb66ceb736a6f3d24afe",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Migration",
+  "summary": "Replace internal Eclipse API for preference store with public API.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-17T02:27:50.010479325Z",
+  "ruleFingerprint": "sha256:0576bacaaf5adf37ca08f028f451591da0a1ef171019a546c67f542a18e6467d",
+  "behaviorFingerprint": "sha256:d0f7587a9712484d2345d3983a7e134997546a0c11a9332aab18b3d2a8cae538",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-17T02:28:00.333424548Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

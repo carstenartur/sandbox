@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3654fd1ddd26539d822fa5e27f1af23f5492b8320ab743b3a53cf9c58634b0b9",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: reorder.method.modifiers.finalPublicToPublicFinal\u003e\n\u003c!description: Reorder \u0027final public\u0027 to \u0027public final\u0027 for method declarations, according to Java code style conventions.\u003e\n\u003c!severity: HINT\u003e\nfinal public $returnType $methodName($parameters$)\n\u003d\u003e\npublic final $returnType $methodName($parameters$)\n;;",
+  "beforeExample": "import org.eclipse.jface.action.IAction;\n\npublic class MyClass {\n    @Override\n    final public void run(IAction action) {\n        System.out.println(\"Running action: \" + action);\n    }\n\n    final public static String helper(Object arg) {\n        return String.valueOf(arg);\n    }\n}",
+  "afterExample": "import org.eclipse.jface.action.IAction;\n\npublic class MyClass {\n    @Override\n    public final void run(IAction action) {\n        System.out.println(\"Running action: \" + action);\n    }\n\n    public final static String helper(Object arg) {\n        return String.valueOf(arg);\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.action.IAction;\n\npublic class MyClass {\n    @Override\n    public final void run(IAction action) { // Already correct order\n        System.out.println(\"Running action: \" + action);\n    }\n\n    protected final String anotherMethod() { // Different modifiers\n        return \"test\";\n    }\n\n    public static final String staticHelper() { // Public static final, not final public\n        return \"static\";\n    }\n\n    final protected void protectedFinalMethod() { // Different modifiers\n        System.out.println(\"Protected final\");\n    }\n}",
+  "targetHintFile": "style.sandbox-hint",
+  "sourceCommit": "a202214894ad5cc81bd46910abef14c27ef41893",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Style",
+  "summary": "Reorder \u0027final public\u0027 to \u0027public final\u0027 for method declarations.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-17T02:27:49.794860277Z",
+  "ruleFingerprint": "sha256:749c5e5c6f392d473fd2900f9282416b9e796c253b3c162bbe3314a94223670a",
+  "behaviorFingerprint": "sha256:fb042b614c51c419526979fd1281ce74b28d9b9ff7f5e526629c38358c5eca14",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-17T02:28:00.220286007Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f8ca5659abee676a7a40a439321b8c194a22a12021743e1f662e104b62a9f228",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: org.eclipse.swt.graphics.FontMetrics.getAverageCharWidth\u003e\n\u003c!description: Replace deprecated org.eclipse.swt.graphics.FontMetrics.getAverageCharWidth() with getAverageCharacterWidth(), adding an explicit cast to int.\nThis applies when the result of the call is immediately used in an int context.\nNote: This cleanup is applicable only when the enclosing class\u0027s Java source level is 9 or higher.\u003e\n\u003c!severity: WARNING\u003e\n\u003c!tags: deprecated, java9\u003e\n\n$gcFontMetrics.getAverageCharWidth() :: sourceVersionGE(9)\n\u003d\u003e\n(int) $gcFontMetrics.getAverageCharacterWidth()\n;;",
+  "beforeExample": "import org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.FontMetrics;\nimport org.eclipse.swt.graphics.Point;\nimport org.eclipse.swt.widgets.Shell; \nimport org.eclipse.swt.widgets.Display;\n\npublic class Example {\n    public Point computeSize(GC gc, int widthInChars, int heightInChars) {\n        FontMetrics fm \u003d gc.getFontMetrics();\n        int width \u003d fm.getAverageCharWidth(); // This line should match\n        int height \u003d gc.getFontMetrics().getHeight(); // Placeholder for line height\n        return new Point(widthInChars * width, heightInChars * height);\n    }\n\n    public static void main(String[] args) {\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        GC gc \u003d new GC(shell);\n        Example ex \u003d new Example();\n        System.out.println(ex.computeSize(gc, 10, 5));\n        gc.dispose();\n        shell.dispose();\n        display.dispose();\n    }\n}\n",
+  "afterExample": "import org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.FontMetrics;\nimport org.eclipse.swt.graphics.Point;\nimport org.eclipse.swt.widgets.Shell; \nimport org.eclipse.swt.widgets.Display;\n\npublic class Example {\n    public Point computeSize(GC gc, int widthInChars, int heightInChars) {\n        FontMetrics fm \u003d gc.getFontMetrics();\n        int width \u003d (int) fm.getAverageCharacterWidth(); // This line should match\n        int height \u003d gc.getFontMetrics().getHeight(); // Placeholder for line height\n        return new Point(widthInChars * width, heightInChars * height);\n    }\n\n    public static void main(String[] args) {\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        GC gc \u003d new GC(shell);\n        Example ex \u003d new Example();\n        System.out.println(ex.computeSize(gc, 10, 5));\n        gc.dispose();\n        shell.dispose();\n        display.dispose();\n    }\n}\n",
+  "negativeExample": "import org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.FontMetrics;\nimport org.eclipse.swt.graphics.Point;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.Display;\n\npublic class NegativeExample {\n    public Point computeSizeAlternative(GC gc, int widthInChars, int heightInChars) {\n        FontMetrics fm \u003d gc.getFontMetrics();\n        double width \u003d fm.getAverageCharacterWidth(); // Already uses the new API\n        int height \u003d gc.getFontMetrics().getHeight();\n        return new Point((int) (widthInChars * width), heightInChars * height);\n    }\n     public Point computeOtherSize(GC gc, int widthInChars, int heightInChars) {\n        int width \u003d 5; // not related to FontMetrics\n        int height \u003d 10;\n        return new Point(widthInChars * width, heightInChars * height);\n    }\n    public static void main(String[] args) {\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        GC gc \u003d new GC(shell);\n        NegativeExample ex \u003d new NegativeExample();\n        System.out.println(ex.computeSizeAlternative(gc, 10, 5));\n        System.out.println(ex.computeOtherSize(gc, 10, 5));\n        gc.dispose();\n        shell.dispose();\n        display.dispose();\n    }\n}\n",
+  "targetHintFile": "deprecated-api.sandbox-hint",
+  "sourceCommit": "8f5e34a7b9e0b614db5554cdc0d42a24e4cd9912",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces the deprecated `FontMetrics.getAverageCharWidth()` method call with `getAverageCharacterWidth()`, adding an explicit `(int)` cast. This rule applies when the method call is part of an expression evaluated to an `int`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-17T02:27:49.870216019Z",
+  "ruleFingerprint": "sha256:52f09641eebd63f88cd5dfe0c0cbcd60f5c318925cece7cce5c8d468a7c85709",
+  "behaviorFingerprint": "sha256:c0a9b005119956c5078e9cf929b9e2d9e45a9474162c66084baaceccb88e5ea9",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-17T02:28:00.245124775Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

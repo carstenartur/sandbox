@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "80ade68e538d35984ecc9c01956d89bafd07f2c3c57315f9a38d9bb3770767cf",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "(org.eclipse.jface.text.source.ISourceViewer) $expr\n\u003d\u003e\n(org.eclipse.jface.text.ITextViewer) $expr\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.ITextOperationTarget;\nimport org.eclipse.jface.text.source.ISourceViewer;\nimport org.eclipse.ui.texteditor.ITextEditor;\n\npublic class Example {\n    ITextEditor editor;\n    void method() {\n        // Assuming editor.getAdapter returns ITextOperationTarget, which might be an ISourceViewer\n        Object adapter \u003d editor.getAdapter(ITextOperationTarget.class);\n        ISourceViewer viewer \u003d (ISourceViewer) adapter;\n        System.out.println(viewer);\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.ITextOperationTarget;\nimport org.eclipse.jface.text.ITextViewer;\nimport org.eclipse.ui.texteditor.ITextEditor;\n\npublic class Example {\n    ITextEditor editor;\n    void method() {\n        Object adapter \u003d editor.getAdapter(ITextOperationTarget.class);\n        ITextViewer viewer \u003d (ITextViewer) adapter;\n        System.out.println(viewer);\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.ITextViewer;\nimport org.eclipse.jface.text.source.ISourceViewer;\nimport org.eclipse.ui.texteditor.ITextEditor;\n\npublic class Example {\n    ITextEditor editor;\n    void method() {\n        // Not a cast to ISourceViewer\n        ITextOperationTarget target \u003d editor.getAdapter(ITextOperationTarget.class);\n        ITextViewer viewer2 \u003d (ITextViewer) editor.getAdapter(ITextOperationTarget.class); // Already ITextViewer\n        String s \u003d (String) editor.getAdapter(String.class); // Different type\n        // Not a cast expression\n        ISourceViewer someOtherViewer \u003d null;\n    }\n}\n",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "c57ecc40192949a008423009363558df39cf5452",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Widen cast from ISourceViewer to ITextViewer.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-17T02:27:49.957937768Z",
+  "ruleFingerprint": "sha256:6bac4da4c6de2b6f23bccb835b09541858d9e50aaf747ced3405bde3d95ae79a",
+  "behaviorFingerprint": "sha256:5222e4676dfe96aed3bcf160513a2a759d8703a2ee4f093341c8e95f47f0f93e",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.text.ITextOperationTarget cannot be resolved",
+    "verifiedAt": "2026-10-17T02:28:00.293073236Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

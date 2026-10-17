@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "81b29fac3caba00e6bf3458cace21a3cdd4a6802db1120c7af8ef027aebf3708",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: junit.simplify.assertTrue.equals\u003e\n\u003c!description: Replace org.junit.Assert.assertTrue(a \u003d\u003d b) with org.junit.Assert.assertSame(a, b) for reference types or org.junit.Assert.assertEquals(a, b) for primitive types.\u003e\n\u003c!severity: INFO\u003e\norg.junit.Assert.assertTrue($a \u003d\u003d $b)\n\u003d\u003e org.junit.Assert.assertSame($a, $b) :: instanceof($a, \"java.lang.Object\") \u0026\u0026 instanceof($b, \"java.lang.Object\")\n\u003d\u003e org.junit.Assert.assertEquals($a, $b) :: otherwise\n;;",
+  "beforeExample": "import org.junit.Assert;\n\npublic class TestAssertions {\n    private int count \u003d 0;\n    private Object buffer \u003d new Object();\n    private Object fileBuffer \u003d new Object();\n\n    public void setUp() {\n        count \u003d 1;\n        fileBuffer \u003d buffer; // Assign for test\n    }\n\n    @org.junit.Test\n    public void testCountsAndBuffers() {\n        // Primitive equality check\n        Assert.assertTrue(count \u003d\u003d 1);\n\n        // Reference equality check\n        Assert.assertTrue(buffer \u003d\u003d fileBuffer);\n\n        // Another primitive check with different order\n        Assert.assertTrue(1 \u003d\u003d count);\n\n        // Boxed primitive equality check\n        Integer num1 \u003d 10;\n        Integer num2 \u003d 10;\n        Assert.assertTrue(num1 \u003d\u003d num2); // Object comparison for boxed types\n    }\n}",
+  "afterExample": "import org.junit.Assert;\n\npublic class TestAssertions {\n    private int count \u003d 0;\n    private Object buffer \u003d new Object();\n    private Object fileBuffer \u003d new Object();\n\n    public void setUp() {\n        count \u003d 1;\n        fileBuffer \u003d buffer; // Assign for test\n    }\n\n    @org.junit.Test\n    public void testCountsAndBuffers() {\n        // Primitive equality check\n        Assert.assertEquals(count, 1);\n\n        // Reference equality check\n        Assert.assertSame(buffer, fileBuffer);\n\n        // Another primitive check with different order\n        Assert.assertEquals(1, count);\n\n        // Boxed primitive equality check\n        Integer num1 \u003d 10;\n        Integer num2 \u003d 10;\n        Assert.assertSame(num1, num2); // Object comparison for boxed types\n    }\n}",
+  "negativeExample": "import org.junit.Assert;\n\npublic class TestAssertions {\n    private int count \u003d 0;\n    private Object buffer \u003d new Object();\n\n    @org.junit.Test\n    public void testOtherAssertions() {\n        // Not \u0027\u003d\u003d\u0027 operator\n        Assert.assertTrue(count \u003e 0);\n        Assert.assertTrue(buffer instanceof Object);\n        Assert.assertTrue(true);\n\n        // Other Assert methods\n        Assert.assertFalse(count \u003d\u003d 1);\n        Assert.assertNull(buffer);\n\n        // Not an Assert.assertTrue call\n        boolean result \u003d (count \u003d\u003d 1);\n    }\n}",
+  "targetHintFile": "junit.sandbox-hint",
+  "sourceCommit": "97ddfd50df364aeecf50475f6d45cb04c81ea46c",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "JUnit Assertion Modernization",
+  "summary": "Replaces JUnit Assert.assertTrue for \u0027\u003d\u003d\u0027 comparisons with Assert.assertSame for reference types and Assert.assertEquals for primitive types.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-17T02:27:49.975759001Z",
+  "ruleFingerprint": "sha256:f0c7edbdb1d329a34e287eb27ca8782c8d2eca67826fbf0fa50ac1de682575ce",
+  "behaviorFingerprint": "sha256:af16875556a0608b8de8b1b83f7d0217c82e42ecb78cea98083cad6b6e93b212",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-17T02:28:00.308120019Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
