@@ -14,6 +14,10 @@
     <artifactItem><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId><version>3.135.0</version><type>jar</type><classifier>sources</classifier><destFileName>swt-sources.jar</destFileName></artifactItem>
     <artifactItem><groupId>org.bouncycastle</groupId><artifactId>bcprov-jdk18on</artifactId><version>1.85.2</version><type>jar</type><destFileName>bc-binary.jar</destFileName></artifactItem>
     <artifactItem><groupId>org.bouncycastle</groupId><artifactId>bcprov-jdk18on</artifactId><version>1.85.2</version><type>jar</type><classifier>sources</classifier><destFileName>bc-sources.jar</destFileName></artifactItem>
+    <artifactItem><groupId>org.apache.commons</groupId><artifactId>commons-imaging</artifactId><version>1.0.0-alpha6</version><type>jar</type><destFileName>imaging-binary.jar</destFileName></artifactItem>
+    <artifactItem><groupId>org.apache.commons</groupId><artifactId>commons-imaging</artifactId><version>1.0.0-alpha6</version><type>jar</type><classifier>sources</classifier><destFileName>imaging-sources.jar</destFileName></artifactItem>
+    <artifactItem><groupId>org.jcodec</groupId><artifactId>jcodec</artifactId><version>0.2.3</version><type>jar</type><destFileName>jcodec-binary.jar</destFileName></artifactItem>
+    <artifactItem><groupId>org.jcodec</groupId><artifactId>jcodec</artifactId><version>0.2.3</version><type>jar</type><classifier>sources</classifier><destFileName>jcodec-sources.jar</destFileName></artifactItem>
    </artifactItems></configuration>
   </execution></executions>
  </plugin>
@@ -25,6 +29,10 @@
     <sandbox.math.swt.sources>${project.build.directory}/corpus-inputs/swt-sources.jar</sandbox.math.swt.sources>
     <sandbox.math.bc.mavenBinary>${project.build.directory}/corpus-inputs/bc-binary.jar</sandbox.math.bc.mavenBinary>
     <sandbox.math.bc.mavenSources>${project.build.directory}/corpus-inputs/bc-sources.jar</sandbox.math.bc.mavenSources>
+    <sandbox.math.imaging.binary>${project.build.directory}/corpus-inputs/imaging-binary.jar</sandbox.math.imaging.binary>
+    <sandbox.math.imaging.sources>${project.build.directory}/corpus-inputs/imaging-sources.jar</sandbox.math.imaging.sources>
+    <sandbox.math.jcodec.binary>${project.build.directory}/corpus-inputs/jcodec-binary.jar</sandbox.math.jcodec.binary>
+    <sandbox.math.jcodec.sources>${project.build.directory}/corpus-inputs/jcodec-sources.jar</sandbox.math.jcodec.sources>
     <sandbox.math.corpus.evidence>${project.build.directory}/surefire-reports/practical-corpus</sandbox.math.corpus.evidence>
    </systemProperties>
    <excludes><exclude>**/*SWTBotTest.class</exclude></excludes>
