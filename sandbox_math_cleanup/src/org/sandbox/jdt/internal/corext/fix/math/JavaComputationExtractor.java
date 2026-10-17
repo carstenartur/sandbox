@@ -649,6 +649,10 @@ public final class JavaComputationExtractor {
                return JavaComputationExtractor.literal(expression.resolveConstantExpressionValue(), expression);
             }
 
+            // Source effects remain ordered captures, not operations in the mathematical DAG.
+            if (!primitiveBoundary && JavaSourceReadShape.additionalRead(expression))
+               return sourceRead(expression, resultKind);
+
             if (expression instanceof FieldAccess field && field.getExpression() instanceof ThisExpression receiver
                   && receiver.getQualifier() == null && field.resolveFieldBinding() != null
                   && mathematicalField(field.resolveFieldBinding()) && unshadowed(field.resolveFieldBinding())) {
@@ -731,7 +735,7 @@ public final class JavaComputationExtractor {
                   }
                }
             } else if (expression instanceof ArrayAccess read && !primitiveBoundary) {
-               return arrayRead(read, resultKind);
+               return sourceRead(read, resultKind);
             } else if (primitiveBoundary) {
                throw JavaComputationExtractor.reject("PRIMITIVE_PRECOMPUTATION_BOUNDARY", expression);
             } else if (expression instanceof CastExpression cast) {
@@ -897,7 +901,7 @@ public final class JavaComputationExtractor {
          return expression;
       }
 
-      private Expr arrayRead(ArrayAccess read, NumericKind kind) {
+      private Expr sourceRead(Expression read, NumericKind kind) {
          // Checked evaluation and fallback need a separate ordered memory trace contract.
          // Keep those profiles and helper memory access outside this initial admission.
          if (!arrayInputs || options.safety() != SafetyProfile.PRESERVE_JAVA || !methodFrames.isEmpty()

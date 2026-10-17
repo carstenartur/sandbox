@@ -102,6 +102,9 @@ final class RuntimeCalculationPolicy {
         expression.accept(new ASTVisitor() {
             @Override public boolean preVisit2(ASTNode node) {
                 if (found[0]) return false;
+                // Captures reproduce the complete source read, including its index formula.
+                // Their independent admission checks still reject unsupported receivers/effects.
+                if (node instanceof Expression read && JavaSourceReadShape.read(read)) return false;
                 // A sign is part of a numeric literal's spelling, not a derived
                 // constant formula such as (32 - 9). Do not exclude x * -2.
                 if (node instanceof PrefixExpression prefix && prefix.getOperand() instanceof NumberLiteral
