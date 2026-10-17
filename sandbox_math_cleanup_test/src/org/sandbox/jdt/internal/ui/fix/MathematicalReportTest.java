@@ -1,6 +1,8 @@
 package org.sandbox.jdt.internal.ui.fix;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -46,7 +48,7 @@ class MathematicalReportTest {
   var file=MathematicalReport.planned("C.java",source,Map.of(),configured,new MathematicalEnvironment.Snapshot("environment",Map.of()),analysis,false);
   var report=new MathematicalReport(1,"Example","analysis",options,options,"sdk","adapter",List.of(file));
   Path output=temporary.resolve("report.json");report.write(output);
-  var json=new ObjectMapper().readTree(Files.readString(output));
+  var json=new ObjectMapper().readTree(Files.readString(output, StandardCharsets.UTF_8));
   assertEquals(1,json.path("schemaVersion").asInt());assertEquals(12,json.path("requestedOptions").size());
   assertEquals("30",json.path("requestedOptions").path(MathCleanUpOptions.TIMEOUT_SECONDS).asText());
   assertEquals("NONTRIVIAL",json.path("requestedOptions").path(MathCleanUpOptions.EXPLANATIONS).asText());
