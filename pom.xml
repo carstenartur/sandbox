@@ -19,7 +19,7 @@
 		<tycho.platformArgLine />
 		<!-- JaCoCo prepends its agent before Tycho reads this execution-time property. -->
 		<tycho.testArgLine>${tycho.platformArgLine}</tycho.testArgLine>
-		<spotbugs-version>4.10.4.1</spotbugs-version>
+		<spotbugs-version>4.10.5.0</spotbugs-version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>${java-version}</maven.compiler.source>
 		<maven.compiler.target>${java-version}</maven.compiler.target>
