@@ -37,8 +37,10 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.osgi.util.NLS;
@@ -251,6 +253,24 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 			project.open(monitor);
 		}
 		project.refreshLocal(IResource.DEPTH_INFINITE, monitor);
+		awaitWorkspaceSettled(monitor);
+	}
+
+	/**
+	 * Importing schedules auto-build and refresh jobs. Their Java model deltas can
+	 * close the primary compilation unit (and its buffer) while cleanup reads it,
+	 * so cleanup only starts once those background jobs have finished.
+	 */
+	static void awaitWorkspaceSettled(IProgressMonitor monitor) throws IOException {
+		try {
+			Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_REFRESH, monitor);
+			Job.getJobManager().join(ResourcesPlugin.FAMILY_MANUAL_REFRESH, monitor);
+			Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
+			Job.getJobManager().join(ResourcesPlugin.FAMILY_MANUAL_BUILD, monitor);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IOException("Interrupted while waiting for the imported project to settle.", e); //$NON-NLS-1$
+		}
 	}
 
 	@Override

@@ -10,10 +10,11 @@ import org.eclipse.jdt.core.dom.*;
 import org.junit.jupiter.api.Test;
 
 class JavaSourceReadShapeTest {
-    @Test void supportsOnlyOneDimensionalLocalArraysAndTotalIndices() {
-        for (String expression : List.of("values[i]", "values[CONST * 2]", "values[Calculation.CONST << 1]", "values[(int)((long)i + 1)]"))
+    @Test void supportsOnlyOneDimensionalLocalOrUnqualifiedFieldArraysAndTotalIndices() {
+        for (String expression : List.of("values[i]", "values[CONST * 2]", "values[Calculation.CONST << 1]", "values[(int)((long)i + 1)]",
+                "data[i]", "this.data[i]"))
             assertTrue(supported(expression), expression);
-        for (String expression : List.of("data[i]", "owner.data[i]", "values[i++]", "values[next()]", "values[i / j]", "values[i % j]", "values[volatileIndex]", "values[STATIC_FINAL]", "values[owner.CONST]"))
+        for (String expression : List.of("owner.data[i]", "values[i++]", "values[next()]", "values[i / j]", "values[i % j]", "values[volatileIndex]", "values[STATIC_FINAL]", "values[owner.CONST]"))
             assertFalse(supported(expression), expression);
     }
     @Test void recognizesOnlyTheBoundJdkAbsoluteGetSignature() {
