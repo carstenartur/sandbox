@@ -41,15 +41,32 @@ custom selection of BigInteger, byte, short, char, int, long, float and double.
 Both declared and actually promoted operation types must be selected.</td></tr>
 <tr><td>Goal</td><td>Lower estimated runtime, lower allocation, or readability.
 An estimated improvement is not a measured speedup.</td></tr>
-<tr><td>Work budget / states</td><td>Default 100,000 units of search work and 2,000
-states. Allowed maxima are 100,000,000 and 1,000,000. Cancellation and budget
-exhaustion leave unverified candidates unapplied.</td></tr>
+<tr><td>Work budget / states</td><td>Default 100,000 units of work per file and 2,000
+states per search. Allowed ranges are 1..100,000,000 and 1..1,000,000.
+Regions, retries and charged explanations share the file work allowance.
+Cancellation and budget exhaustion leave unverified candidates unapplied.</td></tr>
+<tr><td>Time limit per optimizer invocation</td><td>Default 5 seconds; configurable
+from 1 to 300 seconds in the same profile. This is a best-effort interruption
+bound per optimizer invocation, not a deadline for the whole file. Parsing,
+source generation and independent verification can require additional time.
+Older profiles and programmatic callers retain the five-second default.</td></tr>
 <tr><td>Exclusions</td><td>Semicolon-separated path globs, for example
 <code>**/generated/**;org/example/Secret.java</code>. Excluded files remain unchanged.</td></tr>
 <tr><td>Underflow checks</td><td>Explicitly unsupported. A zero test cannot detect
 the required tiny-and-inexact event. The disabled control cannot enable it;
 configuration requesting it is rejected.</td></tr>
 </tbody></table>
+<p>All three resource settings are saved and exported with the cleanup profile;
+the headless configuration uses the same validated keys. Increasing one limit
+does not disable the others, prove that a better candidate exists, or relax any
+numerical or source-safety requirement. A selection-only Quick Assist focuses
+the available work on the selected region instead of unrelated methods.</p>
+<p>After an unsuccessful connected array attempt, contained scalar retries receive
+at least an equal share of the remaining pending-region allowance, even when their
+arithmetic is small. This covers fixed preparation and derivation overhead without
+raising the file budget. Work already spent on failed searches and explanations,
+including reported overshoot, remains charged; the original regions retain their
+existing proportional allocation.</p>
 
 <h2 id="safety">Safety profiles</h2>
 <p>The separate <em>Mathematical mode</em> checkbox explicitly permits changes to
@@ -245,7 +262,7 @@ Add <code>--apply</code> to request application. Applying
 <code>cleanup.mathematics.checkedOptIn=true</code> in the configuration and
 <code>--accept-checked</code> on the command line. A candidate and an applied
 change are distinct report outcomes. Estimated costs are not measured timings.</p>
-<p>The mathematics configuration has eleven strict keys. This example explicitly
+<p>The mathematics configuration has twelve strict keys. This example explicitly
 enables the otherwise disabled cleanup, selects the default numeric/safety
 profiles, and excludes generated files:</p>
 <pre>cleanup.mathematics=true
@@ -254,6 +271,7 @@ cleanup.mathematics.safetyProfile=PRESERVE_JAVA
 cleanup.mathematics.goal=LOWER_ESTIMATED_RUNTIME
 cleanup.mathematics.workBudget=100000
 cleanup.mathematics.maxStates=2000
+cleanup.mathematics.timeoutSeconds=5
 cleanup.mathematics.checkedOptIn=false
 cleanup.mathematics.mathematicalOptIn=false
 cleanup.mathematics.underflowChecks=false

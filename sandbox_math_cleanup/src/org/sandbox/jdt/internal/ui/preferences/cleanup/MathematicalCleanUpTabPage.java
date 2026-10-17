@@ -162,10 +162,16 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
         wrappedLabel(columns, group, "Verified value plans remain in the detailed diagnostics and report even without source comments."); //$NON-NLS-1$
 		NumberPreference budget= createNumberPref(group, columns, "Search work budget:", MathCleanUpOptions.WORK_BUDGET, 1, 100_000_000); //$NON-NLS-1$
 		NumberPreference states= createNumberPref(group, columns, "Maximum search states:", MathCleanUpOptions.MAX_STATES, 1, 1_000_000); //$NON-NLS-1$
+		NumberPreference timeout= createNumberPref(group, columns, "Time limit per optimizer invocation (seconds):", //$NON-NLS-1$
+				MathCleanUpOptions.TIMEOUT_SECONDS, 1, MathCleanUpOptions.MAX_TIMEOUT_SECONDS);
+		wrappedLabel(columns, group, "Work is shared by all regions and retries in one file; search states are limited per search. " //$NON-NLS-1$
+				+ "The time limit is best-effort per optimizer invocation, not a deadline for the whole file or its verification. " //$NON-NLS-1$
+				+ "Larger limits may find more candidates but never relax the proof or safety requirements."); //$NON-NLS-1$
 		StringPreference exclusions= createStringPref(group, columns, "Exclude paths (semicolon-separated globs):", //$NON-NLS-1$
 				MathCleanUpOptions.EXCLUSIONS, value -> validateExclusions(value));
 		textValues.put(MathCleanUpOptions.WORK_BUDGET, (Text) budget.getControl());
 		textValues.put(MathCleanUpOptions.MAX_STATES, (Text) states.getControl());
+		textValues.put(MathCleanUpOptions.TIMEOUT_SECONDS, (Text) timeout.getControl());
 		textValues.put(MathCleanUpOptions.EXCLUSIONS, (Text) exclusions.getControl());
 		createLabel(columns, group, "Example exclusions: **/generated/**;org/example/Secret.java"); //$NON-NLS-1$
 		Button underflow= new Button(group, SWT.CHECK);
@@ -196,6 +202,7 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
             setEnabledIfChanged(explanations, active);
 			setEnabledIfChanged(budget, active);
 			setEnabledIfChanged(states, active);
+			setEnabledIfChanged(timeout, active);
 			setEnabledIfChanged(exclusions, active);
 			syncKinds();
 			group.layout(true, true);
