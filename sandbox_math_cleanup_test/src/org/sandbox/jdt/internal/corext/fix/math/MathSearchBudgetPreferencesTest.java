@@ -57,4 +57,21 @@ class MathSearchBudgetPreferencesTest {
         assertEquals("5", options.toMap().get(TIMEOUT));
         assertEquals(MathCleanUpOptions.ExplanationMode.NONE, options.explanations());
     }
+
+    @Test void optimizerRequestsUseAllConfiguredLimitsWithoutRefillingWork() {
+        var options = MathCleanUpOptions.parse(Map.of(TIMEOUT, "17",
+                MathCleanUpOptions.WORK_BUDGET, "750000", MathCleanUpOptions.MAX_STATES, "12000"), 25);
+        var budget = options.optimizationBudget(1234);
+        assertEquals(1234, budget.maximumWork());
+        assertEquals(12000, budget.maximumStates());
+        assertEquals(64, budget.maximumCandidates());
+        assertEquals(17000, budget.timeoutMillis());
+        assertEquals(1, options.optimizationBudget(1).maximumWork());
+        assertEquals(750000, options.optimizationBudget(options.workBudget()).maximumWork());
+        assertThrows(IllegalArgumentException.class, () -> options.optimizationBudget(0));
+        assertThrows(IllegalArgumentException.class, () -> options.optimizationBudget(750001));
+        assertEquals(5000, MathCleanUpOptions.defaults(25).optimizationBudget(1).timeoutMillis());
+        assertEquals(300000, MathCleanUpOptions.parse(Map.of(TIMEOUT, "300"), 25)
+                .optimizationBudget(1).timeoutMillis());
+    }
 }

@@ -61,7 +61,8 @@ class MathCleanUpOptionsTest {
  }
  @Test void optionFamiliesAndHistoricalConstructorsRemainIndependent() {
   var defaults=MathCleanUpOptions.defaults(17);
-  assertEquals(11,defaults.toMap().size());
+  assertEquals(12,defaults.toMap().size());
+  assertEquals(5,defaults.timeoutSeconds());
   assertFalse(defaults.mathematicalOptIn());
   assertEquals(MathCleanUpOptions.ExplanationMode.NONTRIVIAL,defaults.explanations());
   var legacy=new MathCleanUpOptions(true,Set.of(NumericKind.INT),SafetyProfile.PRESERVE_JAVA,
