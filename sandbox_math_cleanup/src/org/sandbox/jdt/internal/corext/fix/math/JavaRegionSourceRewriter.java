@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Objects;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
-import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.NodeFinder;
 import org.eclipse.jdt.core.dom.PrimitiveType;
@@ -31,7 +31,9 @@ final class JavaRegionSourceRewriter {
    static String arrayCaptures(CompilationUnit ast, String source, JavaComputationRegion region) {
       StringBuilder prefix = new StringBuilder();
       for (var read : region.arrayReads()) {
-         if (!(exactNode(ast, read.start(), read.length()) instanceof ArrayAccess))
+         if (!(exactNode(ast, read.start(), read.length()) instanceof Expression expression)
+               || !JavaSourceReadShape.supported(expression, java.util.Set.of())
+               || JavaOperationRegistry.kind(expression.resolveTypeBinding()).orElse(null) != read.kind())
             throw new IllegalArgumentException("ARRAY_READ_SOURCE_CHANGED"); //$NON-NLS-1$
          prefix.append("final ").append(MathematicalAnalysis.javaType(read.kind())).append(' ') //$NON-NLS-1$
                .append(read.javaName()).append(" = ").append(source, read.start(), read.start() + read.length()).append(";\n"); //$NON-NLS-1$ //$NON-NLS-2$
