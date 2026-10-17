@@ -17,12 +17,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
+import de.regelsuche.sdk.optimization.OptimizationBudget;
 import de.regelsuche.sdk.optimization.SafetyProfile;
 
 /** Immutable explicit numerical contract, independent of the host Java level. */
 public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety,
         OptimizationGoal goal, long workBudget, int maxStates, boolean checkedOptIn,
-        int targetJava, List<String> exclusions, boolean mathematicalOptIn, ExplanationMode explanations) {
+        int targetJava, List<String> exclusions, boolean mathematicalOptIn, ExplanationMode explanations, int timeoutSeconds) {
  public enum ExplanationMode { NONE, NONTRIVIAL, ALL }
  public static final String EXPLANATIONS = "cleanup.mathematics.explanations";
  public static final String CLEANUP = "cleanup.mathematics";
@@ -30,6 +31,9 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
  public static final String SAFETY = "cleanup.mathematics.safetyProfile";
  public static final String GOAL = "cleanup.mathematics.goal";
  public static final String WORK_BUDGET = "cleanup.mathematics.workBudget";
+ public static final String TIMEOUT_SECONDS = "cleanup.mathematics.timeoutSeconds";
+ public static final int DEFAULT_TIMEOUT_SECONDS = 5;
+ public static final int MAX_TIMEOUT_SECONDS = 300;
  public static final String MAX_STATES = "cleanup.mathematics.maxStates";
  public static final String CHECKED_OPT_IN = "cleanup.mathematics.checkedOptIn";
  public static final String EXCLUSIONS = "cleanup.mathematics.exclusions";
@@ -37,7 +41,7 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
  public static final String MATHEMATICAL_OPT_IN = "cleanup.mathematics.mathematicalOptIn";
  public static final String MATHEMATICAL_WARNING = "Mathematical mode may change overflow behavior and BigInteger result reference identity. Proven local ranges and contract changes are documented in Javadoc.";
  public static final String CHECKED_WARNING = "CHECKED_THROW changes the Java contract: numerical violations may throw ArithmeticException. Both the original and replacement operations must be checked.";
- private static final Set<String> KEYS= Set.of(CLEANUP,KINDS,SAFETY,GOAL,WORK_BUDGET,MAX_STATES,CHECKED_OPT_IN,EXCLUSIONS,UNDERFLOW,MATHEMATICAL_OPT_IN,EXPLANATIONS);
+ private static final Set<String> KEYS= Set.of(CLEANUP,KINDS,SAFETY,GOAL,WORK_BUDGET,MAX_STATES,CHECKED_OPT_IN,EXCLUSIONS,UNDERFLOW,MATHEMATICAL_OPT_IN,EXPLANATIONS,TIMEOUT_SECONDS);
 
  /** Existing programmatic callers retain their explicitly comment-free output. */
  public MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety,
@@ -57,6 +61,13 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
    int targetJava, List<String> exclusions, ExplanationMode explanations) {
   this(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,false,explanations);
  }
+ /** Profiles and callers predating configurable timeouts keep the five-second bound. */
+ public MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, SafetyProfile safety,
+   OptimizationGoal goal, long workBudget, int maxStates, boolean checkedOptIn,
+   int targetJava, List<String> exclusions, boolean mathematicalOptIn, ExplanationMode explanations) {
+  this(enabled,kinds,safety,goal,workBudget,maxStates,checkedOptIn,targetJava,exclusions,
+    mathematicalOptIn,explanations,DEFAULT_TIMEOUT_SECONDS);
+ }
  public MathCleanUpOptions {
   Objects.requireNonNull(explanations,"explanations");
   Objects.requireNonNull(kinds,"kinds"); Objects.requireNonNull(safety,"safety");
@@ -65,6 +76,8 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
   kinds=Set.copyOf(kinds);
   if(workBudget<1 || workBudget>100_000_000 || maxStates<1 || maxStates>1_000_000)
    throw new IllegalArgumentException("Work budget must be 1..100000000; maximum states must be 1..1000000");
+  if(timeoutSeconds<1 || timeoutSeconds>MAX_TIMEOUT_SECONDS)
+   throw new IllegalArgumentException("Time limit must be 1..300 seconds per optimizer invocation");
   if(targetJava<8 || targetJava>25) throw new IllegalArgumentException("Unsupported target Java: "+targetJava);
   if(safety==SafetyProfile.CHECKED_THROW && !checkedOptIn) throw new IllegalArgumentException(CHECKED_WARNING);
   if(mathematicalOptIn && safety!=SafetyProfile.PRESERVE_JAVA)
@@ -105,7 +118,15 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
     bool(values,CHECKED_OPT_IN,false),targetJava,
     paths.isEmpty()?List.of():Arrays.stream(paths.split(";",-1)).map(String::trim).toList(),
     bool(values,MATHEMATICAL_OPT_IN,false),
-    ExplanationMode.valueOf(values.getOrDefault(EXPLANATIONS,defaults.explanations.name())));
+    ExplanationMode.valueOf(values.getOrDefault(EXPLANATIONS,defaults.explanations.name())),
+    Integer.parseInt(values.getOrDefault(TIMEOUT_SECONDS,Integer.toString(defaults.timeoutSeconds))));
+ }
+
+ /** Allocate only the caller's remaining work; time is a separate best-effort bound. */
+ public OptimizationBudget optimizationBudget(long permittedWork) {
+  if(permittedWork<1 || permittedWork>workBudget)
+   throw new IllegalArgumentException("Search allocation must fit the remaining file work budget");
+  return new OptimizationBudget(permittedWork,maxStates,64,timeoutSeconds*1000L);
  }
 
  public Map<String,String> toMap() {
@@ -116,6 +137,7 @@ public record MathCleanUpOptions(boolean enabled, Set<NumericKind> kinds, Safety
   values.put(WORK_BUDGET,Long.toString(workBudget));values.put(MAX_STATES,Integer.toString(maxStates));
   values.put(CHECKED_OPT_IN,Boolean.toString(checkedOptIn));values.put(EXCLUSIONS,String.join(";",exclusions));
   values.put(UNDERFLOW,"false");values.put(MATHEMATICAL_OPT_IN,Boolean.toString(mathematicalOptIn));
+  values.put(TIMEOUT_SECONDS,Integer.toString(timeoutSeconds));
   values.put(EXPLANATIONS,explanations.name());return Map.copyOf(values);
  }
 

@@ -11,7 +11,6 @@ import de.regelsuche.sdk.optimization.CheckedPolicy;
 import de.regelsuche.sdk.optimization.ComputationOptimizer;
 import de.regelsuche.sdk.optimization.ComputationExplanations;
 import de.regelsuche.sdk.optimization.NumericKind;
-import de.regelsuche.sdk.optimization.OptimizationBudget;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.OptimizationRequest;
 import de.regelsuche.sdk.optimization.OptimizationResult;
@@ -160,6 +159,9 @@ public final class MathematicalAnalysis {
       List<JavaComputationRegion> fragments = null;
       List<JavaComputationRegion> statements = null;
       List<JavaComputationRegion> scalarAlternatives = null;
+      // Only retries receive a minimum fair share; primary region weighting is unchanged.
+      var scalarRetries = java.util.Collections.newSetFromMap(
+            new java.util.IdentityHashMap<JavaComputationRegion, Boolean>());
 
       try {
          for (int regionIndex = 0; regionIndex < pending.size() || !deferredAssignments.isEmpty(); regionIndex++) {
@@ -169,6 +171,7 @@ public final class MathematicalAnalysis {
             }
             remainingWork -= sourceContext.takeWork();
             JavaComputationRegion region = pending.get(regionIndex);
+            boolean scalarRetry = scalarRetries.remove(region);
             var slice = connections.slices().get(region);
             if (isCancelled(monitor)) {
                return cancelled(sourceDigest, compilerOptions);
@@ -182,6 +185,10 @@ public final class MathematicalAnalysis {
 
                // Larger source traces need more search, while every later region retains a share.
                long regionWork = selectionOffset >= 0 ? remainingWork : regionAllowance(pending, regionIndex, remainingWork);
+               // A small fallback still has fixed preparation, proof and replay costs.
+               // Reserve at least an equal share of the actual remainder, never a new budget.
+               if (selectionOffset < 0 && scalarRetry)
+                  regionWork = Math.max(regionWork, remainingWork / (pending.size() - regionIndex));
                boolean mathematicalIntegral = false;
                boolean canTryMathematical = options.mathematicalOptIn() && IntegralMathematicalDomain.supports(region, cancellation);
                boolean mathematicalBigInteger = options.mathematicalOptIn()
@@ -199,7 +206,7 @@ public final class MathematicalAnalysis {
                   region.assumptions(),
                   options.safety(),
                   options.goal(),
-                  new OptimizationBudget(ordinaryWork, options.maxStates(), 64, 5000L),
+                  options.optimizationBudget(ordinaryWork),
                   options.safety() == SafetyProfile.CHECKED_THROW ? CheckedPolicy.EXPLICIT_DEFAULT : CheckedPolicy.NONE
                );
 
@@ -217,7 +224,7 @@ public final class MathematicalAnalysis {
                      mathematicalIntegral = true;
                      request = new OptimizationRequest(region.plan(), region.trace(), options.kinds(), "java25-numeric/v1",
                            region.assumptions(), SafetyProfile.CHECKED_THROW, OptimizationGoal.READABILITY,
-                           new OptimizationBudget(regionWork - ordinarySpent, options.maxStates(), 64, 5000L), CheckedPolicy.EXPLICIT_DEFAULT);
+                           options.optimizationBudget(regionWork - ordinarySpent), CheckedPolicy.EXPLICIT_DEFAULT);
                      result = optimizer.optimize(request, cancellation);
                   }
                   if (!(result instanceof Candidate candidate)) {
@@ -486,6 +493,7 @@ public final class MathematicalAnalysis {
                            && replacements.stream().noneMatch(other -> overlaps(part.start(), part.length(), other.offset(), other.length())))
                            .toList();
                      if (!smaller.isEmpty()) {
+                        scalarRetries.addAll(smaller);
                         scheduleRetries(pending, regionIndex + 1, smaller, deferredAssignments, selectionOffset < 0);
                         diagnostics.add(diagnostic("ARRAY_SCALAR_RETRY", //$NON-NLS-1$
                               "Retrying contained scalar regions within the remaining file budget", region)); //$NON-NLS-1$

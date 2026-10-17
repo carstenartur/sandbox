@@ -80,8 +80,9 @@ class ArrayScalarRetryBudgetTest {
         assertTrue(result.diagnostics().stream().anyMatch(d -> d.code().equals("BUDGETEXCEEDED") && d.offset() == region.start()));
         var retried = result.evidence().stream().filter(e -> e.original().equals("return word ^ 0;")).findFirst()
                 .orElseThrow(() -> new AssertionError(result.diagnostics()));
-        // The scalar retry shares the remainder with the thirty-two-operation later method.
-        assertEquals(remaining / 33, retried.explanation().verified().derivation().orElseThrow().generationBudget());
+        // Fixed preparation and derivation costs need a fair share even for a one-operation retry.
+        // Half the remainder stays available to the later method; no failed work is refunded.
+        assertEquals(remaining / 2, retried.explanation().verified().derivation().orElseThrow().generationBudget());
         assertEquals(1, result.diagnostics().stream().filter(d -> d.code().equals("ARRAY_SCALAR_RETRY")).count());
     }
 
