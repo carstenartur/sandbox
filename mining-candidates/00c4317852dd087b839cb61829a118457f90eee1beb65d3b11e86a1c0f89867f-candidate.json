@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "00c4317852dd087b839cb61829a118457f90eee1beb65d3b11e86a1c0f89867f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: remove-space-before-assignment-in-declaration\u003e\n\u003c!description: Removes an extra space before the assignment operator (\u003d) in variable declarations (local or field).\nThis transforms `Type var \u003d init;` into `Type var\u003d init;` for stylistic consistency.\n\u003e\n\u003c!severity: INFO\u003e\n\n$Type $var \u003d $init;\n\u003d\u003e\n$Type $var\u003d $init;\n;;",
+  "beforeExample": "import org.junit.Rule;\nimport org.junit.rules.TestName;\nimport java.util.ArrayList;\n\npublic class MyClass {\n    @Rule\n    public TestName testName \u003d new TestName(); // Field declaration\n    \n    public void myMethod() {\n        int x \u003d 0; // Local variable declaration\n        String s \u003d \"hello\"; // Local variable declaration\n        java.util.List\u003cString\u003e list \u003d new ArrayList\u003c\u003e(); // Local variable declaration\n    }\n}",
+  "afterExample": "import org.junit.Rule;\nimport org.junit.rules.TestName;\nimport java.util.ArrayList;\n\npublic class MyClass {\n    @Rule\n    public TestName testName\u003d new TestName(); // Field declaration\n    \n    public void myMethod() {\n        int x\u003d 0; // Local variable declaration\n        String s\u003d \"hello\"; // Local variable declaration\n        java.util.List\u003cString\u003e list\u003d new ArrayList\u003c\u003e(); // Local variable declaration\n    }\n}",
+  "negativeExample": "import org.junit.Rule;\nimport org.junit.rules.TestName;\nimport java.util.ArrayList;\n\npublic class MyClass {\n    @Rule\n    public TestName anotherField\u003d new TestName(); // Already without space, should not match\n\n    public void myMethod() {\n        int x; // No initializer, should not match\n        x \u003d 5; // Assignment expression, not a declaration statement\n        int y\u003d 20; // Already without space, should not match\n        if (x \u003d\u003d 5) { // Comparison, should not match\n            System.out.println(\"x is 5\");\n        }\n    }\n}",
+  "targetHintFile": "style.sandbox-hint",
+  "sourceCommit": "16bb876f5de4fab50e3b7b5328553fff76166ef0",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Stylistic",
+  "summary": "Remove extra space before the assignment operator in variable declarations.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-17T02:27:49.993783224Z",
+  "ruleFingerprint": "sha256:54bcbf9d5c8b68ace7146f899d60238353f84d8841dbd4f7893a69f19f7f3bc1",
+  "behaviorFingerprint": "sha256:39f8f86fc02ecececda66d2fa69750e92b0b003af1c986485f853a759084be34",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-17T02:28:00.321016771Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

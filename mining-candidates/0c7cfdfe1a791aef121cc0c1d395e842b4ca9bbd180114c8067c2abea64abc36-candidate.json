@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0c7cfdfe1a791aef121cc0c1d395e842b4ca9bbd180114c8067c2abea64abc36",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add-null-check-field-comparison\u003e\n\u003c!description: Add null check for object field before comparison to prevent NullPointerException.\u003e\n\u003c!severity: WARNING\u003e\n\u003c!tags: null-safety, defensive-coding\u003e\n\n$field \u003d\u003d $session :: isField($field) \u0026\u0026 instanceof($field, \"java.lang.Object\")\n\u003d\u003e\n$field !\u003d null \u0026\u0026 $field \u003d\u003d $session\n;;",
+  "beforeExample": "class MyClass {\n    private Object fDocumentRewriteSession;\n\n    public MyClass(Object session) {\n        fDocumentRewriteSession \u003d session;\n    }\n\n    public boolean checkSession(Object session) {\n        if (fDocumentRewriteSession \u003d\u003d session) { // Match here\n            return true;\n        }\n        return false;\n    }\n}",
+  "afterExample": "class MyClass {\n    private Object fDocumentRewriteSession;\n\n    public MyClass(Object session) {\n        fDocumentRewriteSession \u003d session;\n    }\n\n    public boolean checkSession(Object session) {\n        if (fDocumentRewriteSession !\u003d null \u0026\u0026 fDocumentRewriteSession \u003d\u003d session) { // Replaced\n            return true;\n        }\n        return false;\n    }\n}",
+  "negativeExample": "class MyClass {\n    private int fPrimitiveField;\n    private static Object sStaticField;\n\n    public MyClass(int value) {\n        fPrimitiveField \u003d value;\n    }\n\n    public boolean checkPrimitive(int value) {\n        if (fPrimitiveField \u003d\u003d value) { // Should not match (primitive field)\n            return true;\n        }\n        Object localVariable \u003d null;\n        if (localVariable \u003d\u003d value) { // Should not match (local variable)\n            return false;\n        }\n        if (sStaticField \u003d\u003d value) { // Should match (static field, object type)\n            return true;\n        }\n        return false;\n    }\n\n    public boolean checkNullLiteral(Object session) {\n        if (null \u003d\u003d session) { // Should not match (null literal on LHS)\n            return true;\n        }\n        return false;\n    }\n}",
+  "targetHintFile": "nullability.sandbox-hint",
+  "sourceCommit": "982b689404fbe86e68a1a36dd5460d4183fe9097",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Null Safety",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-17T02:27:49.834633163Z",
+  "ruleFingerprint": "sha256:5aa660a2d6afed534670a578c0467f802f01402e73d14d917b88006d3fb51f6b",
+  "behaviorFingerprint": "sha256:eddbf1b08ff6d58b72cfd584917b312529dd6c72e3ccc2258c07e985409a7886",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-17T02:28:00.232683244Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

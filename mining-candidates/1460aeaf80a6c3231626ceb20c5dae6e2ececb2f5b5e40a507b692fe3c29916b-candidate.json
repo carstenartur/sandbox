@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1460aeaf80a6c3231626ceb20c5dae6e2ececb2f5b5e40a507b692fe3c29916b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add-null-check-for-list-access\u003e\n\u003c!description: Adds a null check for a list expression before accessing its size and first element to prevent NullPointerException.\u003e\n\u003c!severity: WARNING\u003e\n\n$list.size() \u003e 0 \u0026\u0026 $list.get(0) instanceof $type :: instanceof($list, \"java.util.List\")\n\u003d\u003e\n$list !\u003d null \u0026\u0026 $list.size() \u003e 0 \u0026\u0026 $list.get(0) instanceof $type\n;;",
+  "beforeExample": "import java.util.List;\nimport java.util.Collections;\nimport java.util.Set;\nimport java.util.HashSet;\nimport java.util.concurrent.CompletableFuture;\n\n// Placeholder classes for the example\nclass MyProposal { /* ... */ }\nclass ComputingProposal extends MyProposal { /* ... */ }\n\npublic class Example {\n    List\u003cMyProposal\u003e fComputedProposals \u003d Collections.emptyList();\n    Set\u003cCompletableFuture\u003cList\u003cMyProposal\u003e\u003e\u003e fFutures \u003d new HashSet\u003c\u003e();\n\n    public List\u003cMyProposal\u003e computeFilteredProposals(int offset) {\n        // The target line for the cleanup\n        if(fComputedProposals.size() \u003e 0 \u0026\u0026 fComputedProposals.get(0) instanceof ComputingProposal) {\n            Set\u003cCompletableFuture\u003cList\u003cMyProposal\u003e\u003e\u003e remaining \u003d Collections.synchronizedSet(new HashSet\u003c\u003e(fFutures));\n            for (CompletableFuture\u003cList\u003cMyProposal\u003e\u003e future : fFutures) {\n                future.thenRun(() -\u003e {\n                    // ... logic related to futures\n                });\n            }\n        }\n        return fComputedProposals;\n    }\n}\n",
+  "afterExample": "import java.util.List;\nimport java.util.Collections;\nimport java.util.Set;\nimport java.util.HashSet;\nimport java.util.concurrent.CompletableFuture;\n\n// Placeholder classes for the example\nclass MyProposal { /* ... */ }\nclass ComputingProposal extends MyProposal { /* ... */ }\n\npublic class Example {\n    List\u003cMyProposal\u003e fComputedProposals \u003d Collections.emptyList();\n    Set\u003cCompletableFuture\u003cList\u003cMyProposal\u003e\u003e\u003e fFutures \u003d new HashSet\u003c\u003e();\n\n    public List\u003cMyProposal\u003e computeFilteredProposals(int offset) {\n        // The target line after cleanup\n        if(fComputedProposals !\u003d null \u0026\u0026 fComputedProposals.size() \u003e 0 \u0026\u0026 fComputedProposals.get(0) instanceof ComputingProposal) {\n            Set\u003cCompletableFuture\u003cList\u003cMyProposal\u003e\u003e\u003e remaining \u003d Collections.synchronizedSet(new HashSet\u003c\u003e(fFutures));\n            for (CompletableFuture\u003cList\u003cMyProposal\u003e\u003e future : fFutures) {\n                future.thenRun(() -\u003e {\n                    // ... logic related to futures\n                });\n            }\n        }\n        return fComputedProposals;\n    }\n}\n",
+  "negativeExample": "import java.util.List;\nimport java.util.Collections;\n\npublic class NegativeExample {\n    List\u003cString\u003e myStrings \u003d null;\n\n    public void foo() {\n        // Should not match: lacks the get(0) instanceof $type part\n        if (myStrings.size() \u003e 0) {\n            System.out.println(\"List is not empty.\");\n        }\n        \n        // Should not match: different conditions\n        if (myStrings !\u003d null \u0026\u0026 myStrings.isEmpty()) {\n            System.out.println(\"List is empty.\");\n        }\n    }\n}\n",
+  "targetHintFile": "nullchecks.sandbox-hint",
+  "sourceCommit": "99347f38d99618b7999146fc0deec0de2f5dd632",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Null Safety",
+  "summary": "Adds a null check to a list expression that is checked for size \u003e 0 and element type to prevent NPE.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-17T02:27:49.714378837Z",
+  "ruleFingerprint": "sha256:6f7debca71991654cb4ba5098743da014029b3f117483f4a3025ab999f927061",
+  "behaviorFingerprint": "sha256:4e56ec5a95734c32f94add358fe23b6f864f73ba781227188235d5f450b808dc",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-17T02:28:00.207571305Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

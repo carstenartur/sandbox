@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "02fa0633209a3d18f52ce33329460821652c6de53a0b1ccd777f867e72c792ce",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.junit.Assert.assertEquals(true, $expr)\n\u003d\u003e\norg.junit.Assert.assertTrue($expr)\n;;",
+  "beforeExample": "package test;\n\nimport static org.junit.Assert.assertEquals;\nimport org.junit.Test;\n\npublic class MyTest {\n    public boolean someMethod() { return true; }\n\n    @Test\n    public void testSomething() {\n        boolean condition \u003d true;\n        assertEquals(true, condition);\n        assertEquals(true, someMethod());\n    }\n}\n",
+  "afterExample": "package test;\n\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.assertTrue;\nimport org.junit.Test;\n\npublic class MyTest {\n    public boolean someMethod() { return true; }\n\n    @Test\n    public void testSomething() {\n        boolean condition \u003d true;\n        assertTrue(condition);\n        assertTrue(someMethod());\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport static org.junit.Assert.assertEquals;\nimport org.junit.Test;\n\npublic class MyTest {\n    public boolean someMethod() { return true; }\n\n    @Test\n    public void testSomethingElse() {\n        assertEquals(\"message\", true, true); // Has 3 args\n        assertEquals(\"message\", someMethod(), true); // true is not the first arg (2nd argument)\n        assertEquals(1, 1); // Not assertEquals(true, ...)\n        assertEquals(false, someMethod()); // different literal\n    }\n}\n",
+  "targetHintFile": "junit.sandbox-hint",
+  "sourceCommit": "6e3a367007787031d82b4f744c03466d52bbef03",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "JUnit Refactoring",
+  "summary": "Replace assertEquals(true, ...) with assertTrue(...).",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-17T02:27:49.903939409Z",
+  "ruleFingerprint": "sha256:74e3b401e2ad51727c65c83496969e3e3fb98c8ca5322257e1ec162f135f24d9",
+  "behaviorFingerprint": "sha256:2d4060cb6c7833bb56800ec06be3a37663ea76f9e73e3c2bbc1d51e3ff609a21",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.junit cannot be resolved",
+    "verifiedAt": "2026-10-17T02:28:00.261161539Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
