@@ -28,7 +28,10 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.TextEdit;
 import org.junit.jupiter.api.Test;
@@ -40,7 +43,7 @@ import org.sandbox.jdt.internal.corext.fix.math.MathReviewReport;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-/** Exploratory production-adapter runs: zero edits is reported, not disguised as a hit. */
+/** Paeth requires an actual improvement; JCodec remains an explicitly adapted historical pilot. */
 class NewUpstreamMathPilotTest {
     private static final String PAETH = "org/apache/commons/imaging/formats/png/scanlinefilters/ScanlineFilterPaeth.java";
     private static final String IDCT = "org/jcodec/common/dct/IntDCT.java";
@@ -50,6 +53,7 @@ class NewUpstreamMathPilotTest {
     @Timeout(value = 120, unit = TimeUnit.SECONDS)
     void commonsImagingPaethPreservesEveryByteTripleAndRealScanlines() throws Throwable {
         Pilot pilot = analyze("imaging", PAETH, "org.apache.commons:commons-imaging:1.0.0-alpha6", 8);
+        requirePaethImprovement(pilot);
         try (var before = loader(pilot.originalClasses(), pilot.binary());
                 var after = loader(pilot.generatedClasses(), pilot.binary())) {
             Class<?> oldType = before.loadClass(className(PAETH));
@@ -89,6 +93,42 @@ class NewUpstreamMathPilotTest {
             finish(pilot, Map.of("predictorByteTriples", cases, "scanlines", scanlines,
                     "scope", "Complete Paeth class; exhaustive byte-domain comparison and scanline samples; no timing claim"));
         }
+    }
+
+    /** Count only the predictor, so an unrelated edit elsewhere cannot satisfy this regression. */
+    private static void requirePaethImprovement(Pilot pilot) throws Exception {
+        String original = Files.readString(pilot.directory().resolve("original.java"), StandardCharsets.UTF_8);
+        String generated = Files.readString(pilot.directory().resolve("generated.java"), StandardCharsets.UTF_8);
+        int before = predictorAddSubtractCount(original, pilot.binary());
+        int after = predictorAddSubtractCount(generated, pilot.binary());
+        pilot.report().put("predictorAddSubtractOperationsBefore", before);
+        pilot.report().put("predictorAddSubtractOperationsAfter", after);
+        pilot.report().put("requiredPredictorAddSubtractMaximum", 3);
+        writeReport(pilot.directory(), pilot.report());
+        System.out.printf("PAETH_REQUIRED_OPTIMIZATION sourceAddSubtract=%d generatedAddSubtract=%d%n", before, after);
+        assertEquals(5, before, "The pinned upstream predictor changed; review its baseline");
+        assertTrue(after <= 3, "The production adapter must reduce Paeth's five additions/subtractions to at most three; actual=" + after);
+    }
+
+    private static int predictorAddSubtractCount(String source, Path binary) {
+        int[] counts = new int[2];
+        parse(source, PAETH, binary).accept(new ASTVisitor() {
+            @Override public boolean visit(MethodDeclaration method) {
+                if (!method.getName().getIdentifier().equals("paethPredictor")) return false;
+                counts[0]++;
+                method.accept(new ASTVisitor() {
+                    @Override public boolean visit(InfixExpression expression) {
+                        if (expression.getOperator() == InfixExpression.Operator.PLUS
+                                || expression.getOperator() == InfixExpression.Operator.MINUS)
+                            counts[1] += 1 + expression.extendedOperands().size();
+                        return true;
+                    }
+                });
+                return false;
+            }
+        });
+        assertEquals(1, counts[0], "Expected exactly one paethPredictor method");
+        return counts[1];
     }
 
     @Test
