@@ -63,6 +63,7 @@ import org.sandbox.jdt.triggerpattern.internal.EmbeddedJavaCompiler.CompilationR
 import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 import org.sandbox.jdt.triggerpattern.internal.HintFileRegistry;
+import org.sandbox.jdt.triggerpattern.internal.JavaSourceMask;
 
 /**
  * Fix core that creates rewrite operations from {@code .sandbox-hint} files.
@@ -427,6 +428,10 @@ public class HintFileFixCore {
 							|| parseExpression(replacement, cuRewrite) == null)) {
 				return;
 			}
+			if (matchedNode instanceof org.eclipse.jdt.core.dom.MethodDeclaration
+					&& parseReplacementAsMethodDeclaration(replacement, cuRewrite.getCu().getJavaProject().getOptions(true)) == null) {
+				return;
+			}
 
 			// Check for embedded fix function reference: <?fixName?>
 			// These are dispatched to EmbeddedFixExecutor instead of text-based replacement.
@@ -452,7 +457,9 @@ public class HintFileFixCore {
 				// by other nodes in the compilation unit that are NOT being transformed.
 				// ImportRemover scans the AST and only removes the import when ALL
 				// references to the type are gone (see eclipse-jdt/eclipse.jdt.ui#121).
-				if (!imports.getRemoveImports().isEmpty()) {
+				// Parsed replacement statements have no bindings for reused simple names.
+				// Retain their original dependencies instead of removing still-needed imports.
+				if (!imports.getRemoveImports().isEmpty() && !sequence && !ordinaryStatement) {
 					ImportRemover remover = cuRewrite.getImportRemover();
 					remover.registerRemovedNode(matchedNode);
 					remover.applyRemoves(importRewrite);
@@ -508,8 +515,7 @@ public class HintFileFixCore {
 				rewriteStatementSequence(cuRewrite, group);
 			} else if (matchedNode instanceof Expression) {
 				// Shorten FQNs to simple names (imports are already added above)
-				String shortenedReplacement = shortenFqns(replacement, result,
-						cuRewrite.getCu().getJavaProject().getOptions(true));
+				String shortenedReplacement = shortenFqns(replacement, result, cuRewrite.getImportRewrite());
 
 				// Try to parse the replacement as an expression
 				Expression newNode = parseExpression(shortenedReplacement, cuRewrite);
@@ -638,8 +644,7 @@ public class HintFileFixCore {
 					|| originals.getLast().getStartPosition() + originals.getLast().getLength() != end) {
 				return;
 			}
-			Block parsed= parseStatements(shortenFqns(result.replacement(), result,
-					cuRewrite.getCu().getJavaProject().getOptions(true)), cuRewrite);
+			Block parsed= parseStatements(shortenFqns(result.replacement(), result, cuRewrite.getImportRewrite()), cuRewrite);
 			if (parsed == null) {
 				return;
 			}
@@ -709,10 +714,11 @@ public class HintFileFixCore {
 		}
 
 		/**
-		 * Returns an annotation's parsed name, retaining any qualification.
+		 * Returns the simple name of an annotation (without package prefix).
 		 */
-		private static String getAnnotationName(Annotation annotation) {
-			return annotation.getTypeName().getFullyQualifiedName();
+		private static String getAnnotationSimpleName(Annotation annotation) {
+			String qualified= annotation.getTypeName().getFullyQualifiedName();
+			return qualified.substring(qualified.lastIndexOf('.') + 1);
 		}
 
 		/**
@@ -792,36 +798,29 @@ public class HintFileFixCore {
 
 			// Parse the replacement as a method declaration to extract annotations
 			org.eclipse.jdt.core.dom.MethodDeclaration replacementMethod =
-					parseReplacementAsMethodDeclaration(replacement,
-							cuRewrite.getCu().getJavaProject().getOptions(true));
+					parseReplacementAsMethodDeclaration(replacement, cuRewrite.getCu().getJavaProject().getOptions(true));
 			if (replacementMethod == null) {
 				return;
 			}
 
-			// Keep qualified annotation identity until ImportRewrite chooses the rendered name.
+			// Preserve parsed qualified identities until rendering each added annotation.
 			java.util.Set<String> replacementAnnotationNames = new java.util.LinkedHashSet<>();
-			java.util.Map<String, String> annotationFqnMap = new java.util.LinkedHashMap<>();
 			for (Object modifier : replacementMethod.modifiers()) {
 				if (modifier instanceof Annotation ann) {
-					String annotationName = getAnnotationName(ann);
-					replacementAnnotationNames.add(annotationName);
-					if (annotationName.indexOf('.') >= 0) {
-						annotationFqnMap.put(annotationName, annotationName);
-					}
+					replacementAnnotationNames.add(ann.getTypeName().getFullyQualifiedName());
 				}
 			}
 
-			// Collect annotation simple names from the source pattern (pattern text, not actual code)
+			// Diff against the declared source pattern, retaining distinct qualified types.
 			String sourcePatternText = result.rule() != null
 					? result.rule().sourcePattern().getValue() : ""; //$NON-NLS-1$
 			java.util.Set<String> sourceAnnotationNames = new java.util.LinkedHashSet<>();
 			org.eclipse.jdt.core.dom.MethodDeclaration sourceMethod =
-					parseReplacementAsMethodDeclaration(sourcePatternText,
-							cuRewrite.getCu().getJavaProject().getOptions(true));
+					parseReplacementAsMethodDeclaration(sourcePatternText, cuRewrite.getCu().getJavaProject().getOptions(true));
 			if (sourceMethod != null) {
 				for (Object modifier : sourceMethod.modifiers()) {
 					if (modifier instanceof Annotation ann) {
-						sourceAnnotationNames.add(getAnnotationName(ann));
+						sourceAnnotationNames.add(ann.getTypeName().getFullyQualifiedName());
 					}
 				}
 			}
@@ -839,7 +838,8 @@ public class HintFileFixCore {
 			java.util.Set<String> existingAnnotationTypes = new java.util.LinkedHashSet<>();
 			for (Object modifier : methodDecl.modifiers()) {
 				if (modifier instanceof Annotation ann) {
-					existingAnnotationNames.add(getAnnotationName(ann));
+					existingAnnotationNames.add(getAnnotationSimpleName(ann));
+					existingAnnotationTypes.add(ann.getTypeName().getFullyQualifiedName());
 					var binding= ann.resolveTypeBinding();
 					if (binding != null && !binding.isRecovered()) {
 						existingAnnotationTypes.add(binding.getQualifiedName());
@@ -851,13 +851,9 @@ public class HintFileFixCore {
 			ListRewrite modifiersRewrite = rewrite.getListRewrite(
 					methodDecl, org.eclipse.jdt.core.dom.MethodDeclaration.MODIFIERS2_PROPERTY);
 			ImportRewrite importRewrite = cuRewrite.getImportRewrite();
-			boolean changed = false;
-
 			for (String annotationName : annotationsToAdd) {
-				String fqn = annotationFqnMap.get(annotationName);
-				if (fqn != null
-						? existingAnnotationTypes.contains(fqn) || existingAnnotationNames.contains(annotationName)
-						: existingAnnotationNames.contains(annotationName)) {
+				String fqn = annotationName.indexOf('.') < 0 ? null : annotationName;
+				if (fqn != null ? existingAnnotationTypes.contains(fqn) : existingAnnotationNames.contains(annotationName)) {
 					continue; // Already present on the actual method — skip
 				}
 				// Use createStringPlaceholder so the annotation appears on its own
@@ -865,17 +861,6 @@ public class HintFileFixCore {
 				ASTNode newAnnotation = rewrite.createStringPlaceholder(
 						"@" + (fqn == null ? annotationName : importRewrite.addImport(fqn)) + "\n", ASTNode.MARKER_ANNOTATION); //$NON-NLS-1$ //$NON-NLS-2$
 				modifiersRewrite.insertFirst(newAnnotation, group);
-				changed = true;
-
-				// Add import for the FQN if available
-				if (fqn != null) {
-					importRewrite.addImport(fqn);
-				}
-			}
-
-			// If nothing changed (all annotations already present), skip
-			if (!changed) {
-				return;
 			}
 		}
 
@@ -883,6 +868,7 @@ public class HintFileFixCore {
 		 * Parses a string as a method declaration by wrapping it in a class context.
 		 *
 		 * @param methodSnippet the method snippet (e.g., {@code "@Test void $name($params$)"})
+		 * @param options compiler options of the target project
 		 * @return the parsed MethodDeclaration, or {@code null} if parsing fails
 		 */
 		private static org.eclipse.jdt.core.dom.MethodDeclaration parseReplacementAsMethodDeclaration(
@@ -899,9 +885,9 @@ public class HintFileFixCore {
 			normalized = normalized.replaceAll(
 					"\\(\\s*\\$([a-zA-Z_][a-zA-Z0-9_]*)\\$\\s*\\)", //$NON-NLS-1$
 					"(Object... \\$$1\\$)"); //$NON-NLS-1$
-			// Handle single placeholders as method names (replace $name with _name for parsing)
-			// We just need the annotations, so the method body doesn't matter
-			String source = "class _Pattern { " + normalized + " }"; //$NON-NLS-1$ //$NON-NLS-2$
+			// Validate the whole normalized declaration before extracting annotations.
+			String prefix= "class _Pattern { "; //$NON-NLS-1$
+			String source = prefix + normalized + " }"; //$NON-NLS-1$
 			org.eclipse.jdt.core.dom.ASTParser parser = org.eclipse.jdt.core.dom.ASTParser
 					.newParser(AST.getJLSLatest());
 			parser.setSource(source.toCharArray());
@@ -921,29 +907,30 @@ public class HintFileFixCore {
 				}
 			});
 			if (recovered[0] || cu.types().size() != 1
-					|| !(cu.types().get(0) instanceof org.eclipse.jdt.core.dom.TypeDeclaration typeDecl)
-					|| typeDecl.bodyDeclarations().size() != 1 || typeDecl.getMethods().length != 1) {
+					|| !(cu.types().getFirst() instanceof org.eclipse.jdt.core.dom.TypeDeclaration type)
+					|| type.bodyDeclarations().size() != 1 || type.getMethods().length != 1) {
 				return null;
 			}
-			return typeDecl.getMethods()[0];
+			org.eclipse.jdt.core.dom.MethodDeclaration method= type.getMethods()[0];
+			return method.getStartPosition() == prefix.length() && method.getLength() == normalized.length() ? method : null;
 		}
 
 		/**
-		 * Shortens fully qualified names in the replacement text to simple names.
+		 * Shortens fully qualified Java names without changing literals or comments.
 		 *
 		 * <p>Uses the already-inferred {@link ImportDirective#getAddImports()} to know
 		 * which FQNs to shorten. For example, {@code java.nio.charset.StandardCharsets.UTF_8}
 		 * becomes {@code StandardCharsets.UTF_8} since the import for
 		 * {@code java.nio.charset.StandardCharsets} is already being added.</p>
 		 *
-		 * <p>Only parsed Java names are shortened; literal contents remain untouched.</p>
+		 * <p>FQNs are processed longest-first to avoid partial-match issues.</p>
 		 *
 		 * @param replacement the raw replacement text containing FQNs
 		 * @param result the transformation result with import directives
-		 * @return the replacement text with imported Java names shortened
+		 * @param imports import rewriter that decides whether a name must stay qualified
+		 * @return the replacement text using the import rewriter's rendering names
 		 */
-		private static String shortenFqns(String replacement, TransformationResult result,
-				Map<String, String> options) {
+		private static String shortenFqns(String replacement, TransformationResult result, ImportRewrite imports) {
 			if (!result.hasImportDirective()) {
 				return replacement;
 			}
@@ -951,51 +938,26 @@ public class HintFileFixCore {
 			if (addImports.isEmpty()) {
 				return replacement;
 			}
-			String prefix= "class __Hint { void __hint() {\n"; //$NON-NLS-1$
-			String wrapped= prefix + replacement + "\n} }"; //$NON-NLS-1$
-			org.eclipse.jdt.core.dom.ASTParser parser= org.eclipse.jdt.core.dom.ASTParser.newParser(AST.getJLSLatest());
-			parser.setKind(org.eclipse.jdt.core.dom.ASTParser.K_COMPILATION_UNIT);
-			parser.setSource(wrapped.toCharArray());
-			parser.setCompilerOptions(options);
-			CompilationUnit parsed= (CompilationUnit) parser.createAST(null);
-			java.util.Map<Integer, String> replacements= new java.util.LinkedHashMap<>();
-			parsed.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
-				@Override
-				public void preVisit(ASTNode node) {
-					if (!(node instanceof org.eclipse.jdt.core.dom.Name name)) {
-						return;
-					}
-					int sourceOffset= name.getStartPosition() - prefix.length();
-					if (sourceOffset < 0 || sourceOffset >= replacement.length()) {
-						return;
-					}
-					for (String fqn : addImports) {
-						if (name.getFullyQualifiedName().startsWith(fqn + ".") //$NON-NLS-1$
-								|| name.getFullyQualifiedName().equals(fqn)) {
-							String current= replacements.get(sourceOffset);
-							if (current == null || fqn.length() > current.length()) {
-								replacements.put(sourceOffset, fqn);
-							}
-						}
-					}
+			// Sort by length (longest first) to avoid partial replacement issues
+			List<String> sorted = new java.util.ArrayList<>(addImports);
+			sorted.sort((a, b) -> Integer.compare(b.length(), a.length()));
+
+			String shortened = replacement;
+			for (String fqn : sorted) {
+				String renderedName= imports.addImport(fqn);
+				java.util.regex.Matcher names= java.util.regex.Pattern.compile(
+						"(?<![\\p{javaJavaIdentifierPart}.])" + java.util.regex.Pattern.quote(fqn) //$NON-NLS-1$
+								+ "(?![\\p{javaJavaIdentifierPart}])") //$NON-NLS-1$
+						.matcher(JavaSourceMask.codeOnly(shortened));
+				StringBuilder rewritten= new StringBuilder();
+				int copiedUntil= 0;
+				while (names.find()) {
+					rewritten.append(shortened, copiedUntil, names.start()).append(renderedName);
+					copiedUntil= names.end();
 				}
-			});
-			if (replacements.isEmpty()) {
-				return replacement;
+				shortened= rewritten.append(shortened, copiedUntil, shortened.length()).toString();
 			}
-			List<Map.Entry<Integer, String>> edits= new java.util.ArrayList<>(replacements.entrySet());
-			edits.sort((first, second) -> Integer.compare(second.getKey(), first.getKey()));
-			StringBuilder shortened= new StringBuilder(replacement);
-			for (Map.Entry<Integer, String> edit : edits) {
-				int start= edit.getKey();
-				String fqn= edit.getValue();
-				if (start + fqn.length() <= shortened.length()
-						&& shortened.substring(start, start + fqn.length()).equals(fqn)) {
-					shortened.replace(start, start + fqn.length(),
-							fqn.substring(fqn.lastIndexOf('.') + 1));
-				}
-			}
-			return shortened.toString();
+			return shortened;
 		}
 
 		/**

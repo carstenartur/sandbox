@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 
+import org.sandbox.jdt.triggerpattern.internal.JavaSourceMask;
+
 /**
  * Represents import directives for a rewrite alternative.
  * 
@@ -240,7 +242,7 @@ public final class ImportDirective {
 		}
 		
 		Set<String> detected = new HashSet<>();
-		Matcher matcher = FQN_PATTERN.matcher(replacementPattern);
+		Matcher matcher = FQN_PATTERN.matcher(JavaSourceMask.codeOnly(replacementPattern));
 		
 		while (matcher.find()) {
 			String fqn = matcher.group(1);
@@ -381,7 +383,7 @@ public final class ImportDirective {
 		if (pattern == null || pattern.isEmpty()) {
 			return result;
 		}
-		Matcher matcher = FQN_METHOD_PATTERN.matcher(pattern);
+		Matcher matcher = FQN_METHOD_PATTERN.matcher(JavaSourceMask.codeOnly(pattern));
 		while (matcher.find()) {
 			String fullMatch = matcher.group(1); // e.g., "org.junit.Assert.assertEquals"
 			if (fullMatch.contains("$")) { //$NON-NLS-1$
@@ -413,7 +415,7 @@ public final class ImportDirective {
 		if (pattern == null || pattern.isEmpty()) {
 			return fqns;
 		}
-		java.util.regex.Matcher matcher = FQN_PATTERN.matcher(pattern);
+		java.util.regex.Matcher matcher = FQN_PATTERN.matcher(JavaSourceMask.codeOnly(pattern));
 		while (matcher.find()) {
 			String fqn = matcher.group(1);
 			if (fqn.contains("$")) { //$NON-NLS-1$
