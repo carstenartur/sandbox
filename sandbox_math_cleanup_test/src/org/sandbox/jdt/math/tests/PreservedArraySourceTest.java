@@ -112,7 +112,7 @@ class PreservedArraySourceTest {
         }
     }
 
-    @Test void actualBouncyCastleKeccakRoundConstantIsBoundedByTheExternalWriteNotItsFieldReceiver() throws Exception {
+    @Test void actualBouncyCastleKeccakRoundConstantIsCapturedInItsIncomingCompoundAssignment() throws Exception {
         Path binary = Path.of(Objects.requireNonNull(System.getProperty("sandbox.math.bc.mavenBinary")));
         Path sources = Path.of(Objects.requireNonNull(System.getProperty("sandbox.math.bc.mavenSources")));
         String entry = "org/bouncycastle/crypto/digests/KeccakDigest.java";
@@ -140,16 +140,15 @@ class PreservedArraySourceTest {
             return binding != null && binding.isField();
         }).count();
         System.out.println("PRESERVED_BC_KECCAK_FIELD_READS=" + fieldReads + " regions=" + extraction.regions().size());
-        // Keccak's only field-array read is the round constant inside an incoming compound
-        // write to a loop-carried local. That external write remains its own boundary; the
-        // admitted field receiver itself must never be the reported rejection.
+        assertTrue(fieldReads > 0, extraction.diagnostics().toString());
         String roundConstant = "a00 ^= KeccakRoundConstants[i];";
         int statement = source.indexOf(roundConstant);
         assertTrue(statement >= 0, entry);
-        assertTrue(extraction.diagnostics().stream().anyMatch(diagnostic -> diagnostic.offset() == statement
-                && diagnostic.length() == roundConstant.length()
-                && diagnostic.code().equals("PARTIAL_OUTPUT_OR_EXTERNAL_WRITE")), extraction.diagnostics().toString());
         int read = statement + roundConstant.indexOf("KeccakRoundConstants[i]");
+        assertTrue(extraction.regions().stream().anyMatch(region -> region.start() == statement
+                && region.length() == roundConstant.length()
+                && region.arrayReads().stream().anyMatch(input -> input.start() == read)),
+                extraction.toString());
         assertFalse(extraction.diagnostics().stream().anyMatch(diagnostic -> diagnostic.offset() == read
                 && diagnostic.code().startsWith("ARRAY_READ_")), extraction.diagnostics().toString());
     }

@@ -33,10 +33,10 @@ goal. It records hashes, normalized options, admitted field-read counts,
 accepted changes, independent proof evidence, diagnostics, complete compilation
 and byte-exact Undo under the existing test-report artifact directory.
 
-HC128 and CAST5 supply admitted field-array reads. Keccak's only field-array
+HC128, CAST5 and Keccak supply admitted field-array reads. Keccak's only field-array
 read, `a00 ^= KeccakRoundConstants[i]`, is an incoming compound write to a
-loop-carried local; that existing external-write boundary still applies, so
-Keccak legitimately reports zero admitted field reads.
+loop-carried local; it is now admitted as an isolated region that captures the
+old local value before the field-array read.
 
 An admitted input is not an optimization hit. No accepted change is fabricated
 when a class produces zero. These reports are not a cipher-wide execution test,
