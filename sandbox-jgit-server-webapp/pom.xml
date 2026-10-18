@@ -20,15 +20,15 @@
 	<properties>
 		<tycho.mode>maven</tycho.mode>
 		<!-- Keep the server's direct ORM dependency aligned with the storage module's independent mapper stack. -->
-		<jgit.hibernate-orm.version>7.4.11.Final</jgit.hibernate-orm.version>
+		<jgit.hibernate-orm.version>7.4.13.Final</jgit.hibernate-orm.version>
 		<jgit.hibernate-search.version>8.4.0.Final</jgit.hibernate-search.version>
 		<jgit-storage-hibernate.version>0.11.3</jgit-storage-hibernate.version>
 	</properties>
 
 	<!--
 		The parent reactor now manages a general ORM 7.4 / Search 8.4 default, but
-		the executable server must stay aligned with the published JGit storage bridge
-		at ORM 7.4.7 / Search 8.4. Maven dependency management rewrites transitive
+		the executable server must stay aligned with the storage module's independently
+		pinned ORM/Search stack. Maven dependency management rewrites transitive
 		versions, so the server still overrides every managed ORM/Search artifact it
 		consumes to preserve that exact module boundary instead of inheriting later
 		parent defaults.
