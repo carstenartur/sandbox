@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.internal;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -65,7 +66,7 @@ public final class BindingSubstitution {
 				if (token != ITerminalSymbols.TokenNameIdentifier || start < copiedUntil) {
 					continue;
 				}
-				String name = new String(scanner.getCurrentTokenSource());
+				String name = new String(scanner.getCurrentTokenSource(), Charset.defaultCharset());
 				Object value = match.getBindings().get(name);
 				if (value == null) {
 					continue;
