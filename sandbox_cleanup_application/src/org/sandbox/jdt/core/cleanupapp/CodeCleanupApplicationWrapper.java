@@ -25,9 +25,12 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
@@ -37,8 +40,11 @@ import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.jobs.IJobManager;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.osgi.util.NLS;
@@ -251,6 +257,39 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 			project.open(monitor);
 		}
 		project.refreshLocal(IResource.DEPTH_INFINITE, monitor);
+		awaitWorkspaceSettled(monitor);
+	}
+
+	/**
+	 * Importing schedules auto-build and refresh jobs. Their Java model deltas can
+	 * close the primary compilation unit (and its buffer) while cleanup reads it,
+	 * so cleanup only starts once their pending runs have finished. A family-wide
+	 * join can keep waiting for a periodic job's future runs. Join each job only
+	 * once instead, including delayed jobs and work scheduled by the pending runs.
+	 */
+	static void awaitWorkspaceSettled(IProgressMonitor monitor) throws IOException {
+		IJobManager manager= Job.getJobManager();
+		Set<Job> observed= Collections.newSetFromMap(new IdentityHashMap<>());
+		try {
+			List<Job> pending;
+			do {
+				pending= new ArrayList<>();
+				for (Object family : List.of(ResourcesPlugin.FAMILY_AUTO_REFRESH, ResourcesPlugin.FAMILY_MANUAL_REFRESH,
+						ResourcesPlugin.FAMILY_AUTO_BUILD, ResourcesPlugin.FAMILY_MANUAL_BUILD)) {
+					for (Job job : manager.find(family)) {
+						if (job != manager.currentJob() && observed.add(job)) {
+							pending.add(job);
+						}
+					}
+				}
+				for (Job job : pending) {
+					job.join(0, monitor);
+				}
+			} while (!pending.isEmpty());
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IOException("Interrupted while waiting for the imported project to settle.", e); //$NON-NLS-1$
+		}
 	}
 
 	@Override
