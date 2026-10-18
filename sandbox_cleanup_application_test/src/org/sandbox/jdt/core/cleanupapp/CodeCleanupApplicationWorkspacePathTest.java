@@ -45,6 +45,8 @@ class CodeCleanupApplicationWorkspacePathTest {
 
 	@BeforeEach
 	void createProject() throws Exception {
+		// Platform temporary directories may themselves be symbolic links.
+		temporary= temporary.toRealPath();
 		project= javaProject();
 	}
 
@@ -102,6 +104,32 @@ class CodeCleanupApplicationWorkspacePathTest {
 		link(otherProject, input);
 		assertEquals(2, ResourcesPlugin.getWorkspace().getRoot().findFilesForLocationURI(input.toUri()).length);
 		Path patch= temporary.resolve("ambiguous.patch"); //$NON-NLS-1$
+
+		Object result= run(project.getLocation().toOSString(), input, "apply", patch); //$NON-NLS-1$
+
+		assertEquals(Integer.valueOf(CodeCleanupApplication.EXIT_ERROR), result);
+		assertArrayEquals(ORIGINAL.getBytes(StandardCharsets.UTF_8), Files.readAllBytes(input));
+		assertEquals(0, Files.size(patch));
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "Sample.java", "Other.java" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void aSourceAliasDoesNotHideAnotherLinkedProjectContext(String otherFileName) throws Exception {
+		assumeTrue(Platform.OS_LINUX.equals(Platform.getOS()), "This fixture uses unprivileged Linux symbolic links"); //$NON-NLS-1$
+		Path physical= Files.writeString(temporary.resolve("Sample.java"), ORIGINAL, StandardCharsets.UTF_8); //$NON-NLS-1$
+		Path alias= Files.createSymbolicLink(temporary.resolve("source-alias"), temporary); //$NON-NLS-1$
+		Path input= alias.resolve("Sample.java"); //$NON-NLS-1$
+		link(project, input);
+		otherProject= javaProject();
+		IFile second= otherProject.getFile("src/" + otherFileName); //$NON-NLS-1$
+		second.createLink(input.toUri(), IResource.NONE, monitor);
+		IFile first= project.getFile("src/Sample.java"); //$NON-NLS-1$
+		assertNotEquals(first, second);
+		assertTrue(first.isAccessible());
+		assertTrue(second.isAccessible());
+		assertTrue(Files.isSameFile(first.getLocation().toFile().toPath(), second.getLocation().toFile().toPath()));
+		assertTrue(Files.isSameFile(physical, first.getLocation().toFile().toPath()));
+		Path patch= temporary.resolve("ambiguous-alias.patch"); //$NON-NLS-1$
 
 		Object result= run(project.getLocation().toOSString(), input, "apply", patch); //$NON-NLS-1$
 

@@ -36,11 +36,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -155,20 +157,42 @@ public class CodeCleanupApplication implements IApplication {
 
 	private int filesProcessed = 0;
 
-	private static IFile findWorkspaceFile(File file) throws IOException {
+	private static IFile findWorkspaceFile(File file) throws IOException, CoreException {
 		var root = ResourcesPlugin.getWorkspace().getRoot();
 		IPath filePath = Path.fromOSString(file.getAbsolutePath());
 		IFile direct = root.getFileForLocation(filePath);
 		if (direct != null && direct.exists()) {
 			return direct;
 		}
-		List<IFile> matches = Arrays.stream(root.findFilesForLocationURI(file.toURI()))
-				.filter(IFile::isAccessible).toList();
+		var matches = new LinkedHashSet<>(Arrays.stream(root.findFilesForLocationURI(file.toURI()))
+				.filter(IFile::isAccessible).toList());
 		if (matches.isEmpty()) {
 			// Import canonicalizes its directory, but source arguments may retain
 			// a symbolic link or Windows short-name alias. Keep direct links first.
-			matches = Arrays.stream(root.findFilesForLocationURI(file.getCanonicalFile().toURI()))
-					.filter(IFile::isAccessible).toList();
+			matches.addAll(Arrays.stream(root.findFilesForLocationURI(file.getCanonicalFile().toURI()))
+					.filter(IFile::isAccessible).toList());
+		}
+		if (matches.size() < 2) {
+			// URI lookup can hide links indexed under a noncanonical alias.
+			// Fallback cost is a metadata traversal plus canonical linked-file paths;
+			// do not refresh resources or retain a potentially stale context cache.
+			List<IFile> linkedFiles = new ArrayList<>();
+			root.accept(proxy -> {
+				if (!proxy.isAccessible()) return false;
+				if (proxy.getType() == IResource.FILE) {
+					IFile candidate = (IFile) proxy.requestResource();
+					if (candidate.isLinked(IResource.CHECK_ANCESTORS)) linkedFiles.add(candidate);
+				}
+				return true;
+			}, IResource.NONE);
+			File canonicalFile = file.getCanonicalFile();
+			for (IFile candidate : linkedFiles) {
+				IPath location = candidate.getLocation();
+				if (location != null && canonicalFile.equals(location.toFile().getCanonicalFile())) {
+					matches.add(candidate);
+					if (matches.size() > 1) break;
+				}
+			}
 		}
 		if (matches.size() > 1) {
 			throw new IOException("Multiple accessible workspace files match source location: " + file.getAbsolutePath()); //$NON-NLS-1$
