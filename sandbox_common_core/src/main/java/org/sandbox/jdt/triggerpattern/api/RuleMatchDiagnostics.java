@@ -37,6 +37,13 @@ import org.sandbox.jdt.triggerpattern.api.GuardExpression.TruthValue;
  * processor; this service never authorizes a change that processor rejected.
  * Guard success is not a proof of behavioral equivalence, compilation, or a
  * completed project migration.</p>
+ *
+ * <p>The caller owns the current AST and hint configuration and must keep both
+ * unchanged during {@link #explain}. Candidates retain the original match and
+ * AST references so node identity and resolved bindings remain available. The
+ * returned lists and excerpts are bounded snapshots; they do not isolate or
+ * freeze the underlying JDT tree. The service reads the current configuration
+ * for each call and does not rewrite that tree.</p>
  */
 public final class RuleMatchDiagnostics {
 	private static final int MAX_DESCRIPTION_CHARS= 2048;

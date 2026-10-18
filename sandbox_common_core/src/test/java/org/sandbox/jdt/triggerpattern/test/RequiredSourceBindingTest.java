@@ -14,16 +14,50 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.GuardExpression;
+import org.sandbox.jdt.triggerpattern.api.GuardFunction;
+import org.sandbox.jdt.triggerpattern.internal.BuiltInGuards;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 
 /** A concrete API identity must be resolved before a required-binding rewrite. */
 class RequiredSourceBindingTest {
+
+	@Test
+	void sourceVersionExclusionPrecedesUnresolvedApiDiagnostic() throws Exception {
+		var previousResolver = GuardExpression.getGuardFunctionResolver();
+		try {
+			var guards = new HashMap<String, GuardFunction>();
+			BuiltInGuards.registerAll(guards);
+			GuardExpression.setGuardFunctionResolver(guards::get);
+			var hints = new HintFileParser().parse("""
+					new java.util.ArrayList<>() :: sourceVersionGE(9)
+					=> new java.util.LinkedList<>()
+					;;
+					""");
+			ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
+			parser.setSource("import java.util.ArrayList; class Example { Object make() { return new ArrayList<>(); } }".toCharArray());
+			CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+			var processor = new BatchTransformationProcessor(hints);
+
+			assertTrue(processor.process(cu, Map.of(JavaCore.COMPILER_SOURCE, "1.8")).isEmpty());
+			var eligible = processor.process(cu, Map.of(JavaCore.COMPILER_SOURCE, "21"));
+			assertEquals(1, eligible.size());
+			assertTrue(eligible.getFirst().isSemanticUnknown());
+			assertFalse(eligible.getFirst().hasRewrite());
+		} finally {
+			GuardExpression.setGuardFunctionResolver(previousResolver);
+		}
+	}
 
 	@Test
 	void requiredConstructorIdentityProducesDiagnosticWhenBindingsAreUnavailable() throws Exception {

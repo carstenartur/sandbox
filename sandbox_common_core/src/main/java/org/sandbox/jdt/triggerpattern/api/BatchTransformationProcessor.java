@@ -86,10 +86,7 @@ public final class BatchTransformationProcessor {
 			for (Match match : entry.getValue()) {
 				SemanticRewritePlanContext.checkCanceled();
 				GuardContext guardCtx= GuardContext.fromMatch(match, cu, compilerOptions, effectivePlan);
-				if (strictBindings && guardCtx.hasUnknownSemanticRequirements()) {
-					results.add(unknownResult(rule, match, guardCtx, cu));
-					continue;
-				}
+				boolean unresolvedSource= guardCtx.hasUnknownSemanticRequirements();
 				if (rule.sourceGuard() != null) {
 					Evaluation sourceEvaluation= rule.sourceGuard().evaluateDetailed(guardCtx);
 					if (strictBindings && sourceEvaluation.truthValue() == TruthValue.UNKNOWN) {
@@ -100,7 +97,7 @@ public final class BatchTransformationProcessor {
 						continue;
 					}
 				}
-				if (strictBindings && !match.getUnknownSemanticRequirements().isEmpty()) {
+				if (strictBindings && (unresolvedSource || !match.getUnknownSemanticRequirements().isEmpty())) {
 					results.add(unknownResult(rule, match, guardCtx, cu));
 					continue;
 				}
