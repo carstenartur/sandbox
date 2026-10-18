@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 /** Exercises the production rewrite path without opening the preview wizard. */
@@ -197,6 +198,66 @@ public class ProjectRuleRefactoringTest {
 		var status= refactoring.checkInitialConditions(null);
 		assertFalse(status.hasFatalError(), status::toString);
 		assertEquals(0, ((CompositeChange) refactoring.createChange(null)).getChildren().length);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {
+			"@java.lang.Deprecated void $name($params$) {} int ignored;",
+			"@java.lang.Deprecated void $name($params$) {} int ignored = ;" })
+	public void methodReplacementMustContainExactlyOneCompleteDeclaration(String replacement) throws Exception {
+		unit("package trial; public class Sample { void old() {} }");
+		ProjectRuleRefactoring refactoring= new ProjectRuleRefactoring(context.getJavaProject(),
+				"<!id: method>\nvoid $name($params$) {}\n=> " + replacement + "\n;;\n");
+		assertFalse(refactoring.checkInitialConditions(null).hasFatalError());
+		assertEquals(0, ((CompositeChange) refactoring.createChange(null)).getChildren().length);
+	}
+
+	@Test
+	public void statementReplacementDoesNotShortenNamesInsideStringLiterals() throws Exception {
+		unit("package trial; public class Sample { void print() { System.out.println(\"old\"); } }");
+		ProjectRuleRefactoring refactoring= new ProjectRuleRefactoring(context.getJavaProject(),
+				"<!id: literal>\nSystem.out.println(\"old\");\n"
+						+ "=> System.out.println(\"java.util.List\");\n;;\n");
+		var status= refactoring.checkInitialConditions(null);
+		assertFalse(status.hasFatalError(), status::toString);
+		CompositeChange change= (CompositeChange) refactoring.createChange(null);
+		assertEquals(1, change.getChildren().length);
+		String preview= ((CompilationUnitChange) change.getChildren()[0]).getPreviewContent(null);
+		assertTrue(preview.contains("System.out.println(\"java.util.List\");"), preview);
+		assertFalse(preview.contains("System.out.println(\"List\");"), preview);
+	}
+
+	@Test
+	public void sequenceReplacementRetainsImportsUsedByInsertedStatements() throws Exception {
+		unit("package trial; import java.util.List; public class Sample { void names() { List<String> names = null; } }");
+		ProjectRuleRefactoring refactoring= new ProjectRuleRefactoring(context.getJavaProject(),
+				"<!id: list>\nList<String> names = null;\n"
+						+ "=> List<String> names = java.util.Collections.emptyList();\n;;\n");
+		var status= refactoring.checkInitialConditions(null);
+		assertFalse(status.hasFatalError(), status::toString);
+		CompositeChange change= (CompositeChange) refactoring.createChange(null);
+		assertEquals(1, change.getChildren().length);
+		String preview= ((CompilationUnitChange) change.getChildren()[0]).getPreviewContent(null);
+		assertTrue(preview.contains("List<String> names = Collections.emptyList();"), preview);
+		assertTrue(preview.contains("import java.util.List;"), preview);
+	}
+
+	@Test
+	public void annotationDiffPreservesQualifiedAndNestedAnnotationIdentity() throws Exception {
+		unit("package trial; public class Sample { void old() {} } "
+				+ "class First { @interface Flag {} } class Second { @interface Flag {} } "
+				+ "class Annotations { @interface Enabled {} }");
+		ProjectRuleRefactoring refactoring= new ProjectRuleRefactoring(context.getJavaProject(),
+				"<!id: annotation-identities>\nvoid $name($params$)\n"
+						+ "=> @trial.First.Flag @trial.Second.Flag @trial.Annotations.Enabled "
+						+ "void $name($params$)\n;;\n");
+		assertFalse(refactoring.checkInitialConditions(null).hasFatalError());
+		CompositeChange change= (CompositeChange) refactoring.createChange(null);
+		assertEquals(1, change.getChildren().length);
+		String preview= ((CompilationUnitChange) change.getChildren()[0]).getPreviewContent(null);
+		assertTrue(preview.contains("First.Flag"), preview);
+		assertTrue(preview.contains("Second.Flag"), preview);
+		assertTrue(preview.contains("Annotations.Enabled"), preview);
 	}
 
 	@ParameterizedTest

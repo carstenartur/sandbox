@@ -102,6 +102,9 @@
       <command
             id="org.sandbox.jdt.triggerpattern.commands.newHintFromSelection"
             name="New Hint File from Selection" />
+      <command
+            id="org.sandbox.jdt.triggerpattern.commands.tryHintOnProject"
+            name="Try Hint on Project" />
    </extension>
 
    <extension point="org.eclipse.ui.handlers">
@@ -114,6 +117,9 @@
       <handler
             class="org.sandbox.jdt.internal.ui.handlers.NewHintFromSelectionHandler"
             commandId="org.sandbox.jdt.triggerpattern.commands.newHintFromSelection" />
+      <handler
+            class="org.sandbox.jdt.internal.ui.handlers.TryHintOnProjectHandler"
+            commandId="org.sandbox.jdt.triggerpattern.commands.tryHintOnProject" />
    </extension>
 
    <extension point="org.eclipse.ui.newWizards">
@@ -150,6 +156,17 @@
                <visibleWhen>
                   <with variable="activeEditorId">
                      <equals value="org.eclipse.jdt.ui.CompilationUnitEditor"/>
+                  </with>
+               </visibleWhen>
+            </command>
+            <command commandId="org.sandbox.jdt.triggerpattern.commands.tryHintOnProject"
+                     label="Try hint on project..."
+                     style="push">
+               <visibleWhen>
+                  <with variable="activeEditorInput">
+                     <adapt type="org.eclipse.core.resources.IFile">
+                        <test property="org.eclipse.core.resources.extension" value="sandbox-hint"/>
+                     </adapt>
                   </with>
                </visibleWhen>
             </command>
