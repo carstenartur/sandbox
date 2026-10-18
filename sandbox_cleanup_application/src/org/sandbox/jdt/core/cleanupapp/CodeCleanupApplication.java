@@ -21,12 +21,15 @@ package org.sandbox.jdt.core.cleanupapp;
  */
 
 import java.io.BufferedInputStream;
+import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.security.MessageDigest;
@@ -695,8 +698,8 @@ public class CodeCleanupApplication implements IApplication {
 	}
 
 	private void writeJsonReport(Instant startTime, Instant endTime) {
-		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
-				Files.newOutputStream(new File(this.reportFile).toPath()), StandardCharsets.UTF_8))) {
+		try (PrintWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(new OutputStreamWriter(
+				Files.newOutputStream(new File(this.reportFile).toPath()), StandardCharsets.UTF_8)), Charset.defaultCharset()))) {
 			Map<String, Object> report = new LinkedHashMap<>();
 			report.put("tool", "sandbox-cleanup"); //$NON-NLS-1$ //$NON-NLS-2$
 			report.put("version", getToolVersion()); //$NON-NLS-1$
