@@ -24,8 +24,12 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.sandbox.jdt.triggerpattern.api.PatternIndex;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.analysis.InferredRule;
+import org.sandbox.jdt.triggerpattern.internal.DslValidator.ValidationResult;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
+import org.sandbox.jdt.triggerpattern.internal.HintProgramParser;
 
 /**
  * Detail panel showing inferred rules or AI evaluations for a selected commit.
@@ -122,7 +126,8 @@ public class InferredRuleDetailPanel extends Composite {
 			for (CommitEvaluation eval : evals) {
 				if (eval.dslRule() != null && !eval.dslRule().isBlank()) {
 					if (checkIndex < ruleCheckboxes.size()
-							&& ruleCheckboxes.get(checkIndex).getSelection()) {
+							&& ruleCheckboxes.get(checkIndex).getSelection()
+							&& validateDsl(eval.dslRule()).valid()) {
 						selected.add(eval.dslRule());
 					}
 					checkIndex++;
@@ -139,7 +144,7 @@ public class InferredRuleDetailPanel extends Composite {
 		}
 		List<InferredRule> rules = currentEntry.getInferredRules();
 		for (int i = 0; i < ruleCheckboxes.size() && i < rules.size(); i++) {
-			if (ruleCheckboxes.get(i).getSelection()) {
+			if (ruleCheckboxes.get(i).getSelection() && validateDsl(asDsl(rules.get(i))).valid()) {
 				selected.add(rules.get(i));
 			}
 		}
@@ -152,14 +157,16 @@ public class InferredRuleDetailPanel extends Composite {
 		ruleComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
 		Button checkbox = new Button(ruleComposite, SWT.CHECK);
-		checkbox.setSelection(true);
+		ValidationResult validation = validateDsl(eval.dslRule());
+		checkbox.setSelection(false);
+		checkbox.setEnabled(validation.valid());
 		String trafficIcon = switch (eval.trafficLight()) {
 		case GREEN -> "\uD83D\uDFE2"; //$NON-NLS-1$
 		case YELLOW -> "\uD83D\uDFE1"; //$NON-NLS-1$
 		case RED -> "\uD83D\uDD34"; //$NON-NLS-1$
 		case NOT_APPLICABLE -> "\u2B55"; //$NON-NLS-1$
 		};
-		checkbox.setText("Rule " + index + "  " + trafficIcon + "  " //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		checkbox.setText("Rule " + index + "  AI assessment: " + trafficIcon + "  " //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				+ (eval.category() != null ? eval.category() : "")); //$NON-NLS-1$
 		checkbox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		ruleCheckboxes.add(checkbox);
@@ -175,14 +182,7 @@ public class InferredRuleDetailPanel extends Composite {
 		ruleText.setText(eval.dslRule());
 		ruleText.setEditable(false);
 
-		if (eval.dslValidationResult() != null) {
-			Label validationLabel = new Label(ruleComposite, SWT.NONE);
-			String validationText = "VALID".equals(eval.dslValidationResult()) //$NON-NLS-1$
-					? "\u2705 Valid DSL" //$NON-NLS-1$
-					: "\u26A0\uFE0F " + eval.dslValidationResult(); //$NON-NLS-1$
-			validationLabel.setText(validationText);
-			validationLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
-		}
+		createValidationLabels(ruleComposite, validation);
 	}
 
 	private void createRuleWidget(Composite parent, InferredRule rule, int index) {
@@ -191,9 +191,11 @@ public class InferredRuleDetailPanel extends Composite {
 		ruleComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
 
 		Button checkbox = new Button(ruleComposite, SWT.CHECK);
-		checkbox.setSelection(true);
+		ValidationResult validation = validateDsl(asDsl(rule));
+		checkbox.setSelection(false);
+		checkbox.setEnabled(validation.valid());
 		int confidencePercent = (int) (rule.confidence() * 100);
-		checkbox.setText("Rule " + index + ":  Confidence: " + confidencePercent + "%"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		checkbox.setText("Rule " + index + ":  Inference confidence: " + confidencePercent + "%"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		checkbox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 		ruleCheckboxes.add(checkbox);
 
@@ -204,6 +206,41 @@ public class InferredRuleDetailPanel extends Composite {
 		sb.append("=> ").append(rule.replacementPattern()); //$NON-NLS-1$
 		patternText.setText(sb.toString());
 		patternText.setEditable(false);
+		createValidationLabels(ruleComposite, validation);
+	}
+
+	private static String asDsl(InferredRule rule) {
+		return rule.sourcePattern() + "\n=> " + rule.replacementPattern() + "\n;;"; //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	/** Rechecks actual content; an inference provider's VALID flag is not evidence. */
+	private static ValidationResult validateDsl(String dsl) {
+		try {
+			var hint = new HintProgramParser().parseHintFile(dsl);
+			if (hint.getRules().isEmpty()) {
+				return new ValidationResult(false, "No rules found"); //$NON-NLS-1$
+			}
+			if (new PatternIndex(hint.getRules()).size() != hint.getRules().size()) {
+				return new ValidationResult(false, "A source pattern cannot be parsed by TriggerPattern"); //$NON-NLS-1$
+			}
+			return new ValidationResult(true, "Language checked"); //$NON-NLS-1$
+		} catch (HintFileParser.HintParseException | RuntimeException e) {
+			return new ValidationResult(false, e.getMessage() == null ? "Invalid DSL" : e.getMessage()); //$NON-NLS-1$
+		}
+	}
+
+	private static void createValidationLabels(Composite parent, ValidationResult validation) {
+		Label language = new Label(parent, SWT.WRAP);
+		language.setText(validation.valid() ? "Draft — language checked" //$NON-NLS-1$
+				: "Draft — Language check failed: " + validation.message()); //$NON-NLS-1$
+		language.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		Label scope = new Label(parent, SWT.WRAP);
+		scope.setText("Examples: not checked; project: not checked. Language checking does not establish behavioral safety."); //$NON-NLS-1$
+		scope.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+		Label selection = new Label(parent, SWT.WRAP);
+		selection.setText(validation.valid() ? "Select explicitly to export this draft for review." //$NON-NLS-1$
+				: "Correct the rule before exporting it as a project rule."); //$NON-NLS-1$
+		selection.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
 	}
 
 	private void finishLayout() {

@@ -266,7 +266,7 @@ Provides shared utilities, constants, and base classes used across all sandbox c
 
 Provides a powerful pattern matching engine for code transformations in Eclipse. Allows defining code patterns using simple syntax with placeholder support (`$x` for any expression), `.sandbox-hint` DSL file format for rule definitions with `match`/`replace` blocks and guard expressions, annotation-based hints using `@TriggerPattern` and `@Hint`, batch processing of rules against compilation units, and automatic integration with Eclipse Quick Assist for creating custom hints and quick fixes with minimal boilerplate.
 
-📖 **Full Documentation**: [Plugin README](sandbox_triggerpattern/README.md) | [Architecture](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO](sandbox_triggerpattern/TODO.md)
+📖 **Full Documentation**: [Change to project rule](docs/triggerpattern-change-to-rule.md) | [Plugin README](sandbox_triggerpattern/README.md) | [Architecture](sandbox_triggerpattern/ARCHITECTURE.md) | [TODO](sandbox_triggerpattern/TODO.md)
 
 ---
 ### Fluent AST API (`sandbox-ast-api`)

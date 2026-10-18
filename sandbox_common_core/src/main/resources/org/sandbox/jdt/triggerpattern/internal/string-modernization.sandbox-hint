@@ -28,6 +28,9 @@ $x.length() > 0
 => !$x.isEmpty()
 ;;
 
-$str.substring($start, $str.length()) :: hasNoSideEffect($str)
+// Exact String signatures, stable original receivers and passive start index.
+// Internal comments are retained by declining text replacements containing them.
+@id: string-modernization.substring-to-end
+$str.substring($start, $str.length()) :: stringSubstringSafe()
 => $str.substring($start)
 ;;

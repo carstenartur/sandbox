@@ -45,6 +45,8 @@ public final class BuiltInGuardRegistration {
 	/** Registers built-in guards with strict plan-aware migration guards. */
 	public static void registerAll(Map<String, GuardFunction> guards) {
 		BuiltInGuards.registerAll(guards);
+		guards.put("stringSubstringSafe", StringCleanupGuards::substringSafe); //$NON-NLS-1$
+		guards.put("stringIsBlankSafe", StringCleanupGuards::isBlankSafe); //$NON-NLS-1$
 		guards.put("instanceof", BuiltInGuardRegistration::evaluateInstanceOf); //$NON-NLS-1$
 		guards.put("subtypeOf", BuiltInGuardRegistration::evaluateSubtypeOf); //$NON-NLS-1$
 		guards.put("genericTypeIs", BuiltInGuardRegistration::evaluateGenericTypeIs); //$NON-NLS-1$

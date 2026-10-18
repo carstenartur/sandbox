@@ -70,7 +70,10 @@ public final class HintLanguageVocabulary {
 			Map.entry("plannedIncomingRelation", "A node has an incoming semantic-plan relation of a kind"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("plannedRelationCount", "A node has the exact number of outgoing planned relations"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("referencedIn", "A variable is referenced in another bound node"), //$NON-NLS-1$ //$NON-NLS-2$
-			Map.entry("hasNoSideEffect", "Expression is side-effect free"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("hasNoSideEffect", "No writes, explicit calls/allocation or volatile reads; does not prove safe reordering or exception freedom"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("stringSubstringSafe", "Resolved String substring/length calls with stable local receiver and passive start index; declines internal comments"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("stringIsBlankSafe", "Resolved String Unicode strip/emptiness calls eligible for isBlank; declines internal comments"), //$NON-NLS-1$ //$NON-NLS-2$
+			Map.entry("isStableValue", "Literal or resolved final local/parameter read; no field/array access or implicit conversion proof"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("sourceVersionBetween", "Source version is within the supplied range"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("genericTypeIs", "Generic type argument at an index matches a type"), //$NON-NLS-1$ //$NON-NLS-2$
 			Map.entry("subtypeOf", "Bound node has the supplied type in its resolved supertype hierarchy"), //$NON-NLS-1$ //$NON-NLS-2$
