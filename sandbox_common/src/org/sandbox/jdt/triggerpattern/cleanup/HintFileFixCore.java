@@ -18,7 +18,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
@@ -26,6 +29,7 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
@@ -41,11 +45,14 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.util.JavaModelUtil;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.jdt.internal.corext.util.TypeWideningAnalyzer;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
@@ -296,11 +303,28 @@ public class HintFileFixCore {
 						|| statement && HintFileRewriteOperation.parseBody(result.replacement(), options) == null)) {
 			return false;
 		}
-		if (node instanceof org.eclipse.jdt.core.dom.MethodDeclaration
-				&& HintFileRewriteOperation.parseReplacementAsMethodDeclaration(result.replacement(), options) == null) {
-			return false;
+		Map<String, String> annotationTypes= new java.util.LinkedHashMap<>();
+		if (node instanceof org.eclipse.jdt.core.dom.MethodDeclaration method) {
+			var replacement= HintFileRewriteOperation.parseReplacementAsMethodDeclaration(result.replacement(), options);
+			if (replacement == null) {
+				return false;
+			}
+			for (Object modifier : replacement.modifiers()) {
+				if (modifier instanceof Annotation annotation) {
+					// Method rewrites currently render marker annotations only.
+					if (!(annotation instanceof MarkerAnnotation)) {
+						return false;
+					}
+					String name= annotation.getTypeName().getFullyQualifiedName();
+					String type= HintFileRewriteOperation.resolveAnnotationType(method, name);
+					if (type == null) {
+						return false;
+					}
+					annotationTypes.put(name, type);
+				}
+			}
 		}
-		operations.add(new HintFileRewriteOperation(result));
+		operations.add(new HintFileRewriteOperation(result, annotationTypes));
 		return true;
 	}
 
@@ -394,9 +418,11 @@ public class HintFileFixCore {
 	private static class HintFileRewriteOperation extends CompilationUnitRewriteOperation {
 
 		private final TransformationResult result;
+		private final Map<String, String> annotationTypes;
 
-		public HintFileRewriteOperation(TransformationResult result) {
+		public HintFileRewriteOperation(TransformationResult result, Map<String, String> annotationTypes) {
 			this.result = result;
+			this.annotationTypes= Map.copyOf(annotationTypes);
 		}
 
 		@Override
@@ -714,14 +740,6 @@ public class HintFileFixCore {
 		}
 
 		/**
-		 * Returns the simple name of an annotation (without package prefix).
-		 */
-		private static String getAnnotationSimpleName(Annotation annotation) {
-			String qualified= annotation.getTypeName().getFullyQualifiedName();
-			return qualified.substring(qualified.lastIndexOf('.') + 1);
-		}
-
-		/**
 		 * Handles DECLARATION rewrite with {@code $widestType} support.
 		 *
 		 * <p>The widest type FQN was pre-computed by {@link #isNonWidenableDeclaration}
@@ -833,12 +851,10 @@ public class HintFileFixCore {
 				return;
 			}
 
-			// Collect existing annotation simple names on the actual matched method
-			java.util.Set<String> existingAnnotationNames = new java.util.LinkedHashSet<>();
+			// Compare resolved identities so different types sharing a simple name remain distinct.
 			java.util.Set<String> existingAnnotationTypes = new java.util.LinkedHashSet<>();
 			for (Object modifier : methodDecl.modifiers()) {
 				if (modifier instanceof Annotation ann) {
-					existingAnnotationNames.add(getAnnotationSimpleName(ann));
 					existingAnnotationTypes.add(ann.getTypeName().getFullyQualifiedName());
 					var binding= ann.resolveTypeBinding();
 					if (binding != null && !binding.isRecovered()) {
@@ -851,16 +867,73 @@ public class HintFileFixCore {
 			ListRewrite modifiersRewrite = rewrite.getListRewrite(
 					methodDecl, org.eclipse.jdt.core.dom.MethodDeclaration.MODIFIERS2_PROPERTY);
 			ImportRewrite importRewrite = cuRewrite.getImportRewrite();
+			var importContext= new ContextSensitiveImportRewriteContext(methodDecl, importRewrite);
 			for (String annotationName : annotationsToAdd) {
-				String fqn = annotationName.indexOf('.') < 0 ? null : annotationName;
-				if (fqn != null ? existingAnnotationTypes.contains(fqn) : existingAnnotationNames.contains(annotationName)) {
+				String targetType= annotationTypes.get(annotationName);
+				if (existingAnnotationTypes.contains(targetType)) {
 					continue; // Already present on the actual method — skip
 				}
 				// Use createStringPlaceholder so the annotation appears on its own
 				// line above the method declaration (proper formatting).
 				ASTNode newAnnotation = rewrite.createStringPlaceholder(
-						"@" + (fqn == null ? annotationName : importRewrite.addImport(fqn)) + "\n", ASTNode.MARKER_ANNOTATION); //$NON-NLS-1$ //$NON-NLS-2$
+						"@" + importRewrite.addImport(targetType, importContext) + "\n", ASTNode.MARKER_ANNOTATION); //$NON-NLS-1$ //$NON-NLS-2$
 				modifiersRewrite.insertFirst(newAnnotation, group);
+			}
+		}
+
+		/** Resolves an annotation from original bindings before falling back to project lookup. */
+		private static String resolveAnnotationType(org.eclipse.jdt.core.dom.MethodDeclaration method, String name) {
+			var binding= method.resolveBinding();
+			if (binding == null || binding.isRecovered() || binding.getDeclaringClass() == null
+					|| binding.getDeclaringClass().isRecovered()) {
+				return null;
+			}
+			// Retain visible secondary and member types already resolved in this AST.
+			var analyzer= new ScopeAnalyzer((CompilationUnit) method.getRoot());
+			boolean qualified= name.indexOf('.') >= 0;
+			String resolvedType= null;
+			for (var declaration : analyzer.getDeclarationsInScope(method.getStartPosition(),
+					ScopeAnalyzer.TYPES | ScopeAnalyzer.CHECK_VISIBILITY)) {
+				if (declaration instanceof ITypeBinding type
+						&& name.equals(qualified ? type.getQualifiedName() : type.getName())) {
+					String qualifiedName= type.getQualifiedName();
+					if (type.isRecovered() || !type.isAnnotation() || qualifiedName.isEmpty()
+							|| resolvedType != null && !resolvedType.equals(qualifiedName)) {
+						return null;
+					}
+					resolvedType= qualifiedName;
+				}
+			}
+			if (resolvedType != null) {
+				return resolvedType;
+			}
+			if (!(binding.getDeclaringClass().getJavaElement() instanceof IType contextType)) {
+				return null;
+			}
+			try {
+				IType annotation;
+				if (qualified) {
+					annotation= contextType.getJavaProject().findType(name, (IProgressMonitor) null);
+				} else {
+					String[][] matches= contextType.resolveType(name);
+					if (matches == null || matches.length != 1) {
+						return null;
+					}
+					// The monitor overload also includes secondary source types in the lookup.
+					annotation= contextType.getJavaProject().findType(matches[0][0], matches[0][1], (IProgressMonitor) null);
+				}
+				if (annotation == null || !annotation.isAnnotation()) {
+					return null;
+				}
+				// Model lookup alone does not establish access to the type or its enclosing types.
+				for (IType enclosing= annotation; enclosing != null; enclosing= enclosing.getDeclaringType()) {
+					if (!JavaModelUtil.isVisible(enclosing, contextType.getPackageFragment())) {
+						return null;
+					}
+				}
+				return annotation.getFullyQualifiedName('.');
+			} catch (JavaModelException exception) {
+				return null;
 			}
 		}
 
@@ -938,13 +1011,40 @@ public class HintFileFixCore {
 			if (addImports.isEmpty()) {
 				return replacement;
 			}
+			ASTNode original= result.match().getMatchedNode();
+			CompilationUnit root= (CompilationUnit) original.getRoot();
+			Map<String, String> options= root.getJavaElement() == null
+					? org.sandbox.jdt.triggerpattern.api.SemanticRewritePlanContext.currentCompilerOptions()
+					: root.getJavaElement().getJavaProject().getOptions(true);
+			ASTNode parsed= original instanceof Expression
+					? parseExpression(replacement, options) : parseBody(replacement, options);
+			if (parsed == null) {
+				return replacement;
+			}
+			java.util.Set<String> declarations= new java.util.HashSet<>();
+			parsed.accept(new org.eclipse.jdt.core.dom.ASTVisitor() {
+				@Override
+				public boolean visit(org.eclipse.jdt.core.dom.SimpleName name) {
+					if (name.isDeclaration()) {
+						declarations.add(name.getIdentifier());
+					}
+					return true;
+				}
+			});
 			// Sort by length (longest first) to avoid partial replacement issues
 			List<String> sorted = new java.util.ArrayList<>(addImports);
 			sorted.sort((a, b) -> Integer.compare(b.length(), a.length()));
 
 			String shortened = replacement;
+			var context= new ContextSensitiveImportRewriteContext(result.match().getMatchedNode(), imports);
 			for (String fqn : sorted) {
-				String renderedName= imports.addImport(fqn);
+				String renderedName= imports.addImport(fqn, context);
+				int dot= renderedName.indexOf('.');
+				String firstName= dot < 0 ? renderedName : renderedName.substring(0, dot);
+				if (declarations.contains(firstName)) {
+					// Original scope analysis cannot see names introduced by this replacement.
+					renderedName= fqn;
+				}
 				java.util.regex.Matcher names= java.util.regex.Pattern.compile(
 						"(?<![\\p{javaJavaIdentifierPart}.])" + java.util.regex.Pattern.quote(fqn) //$NON-NLS-1$
 								+ "(?![\\p{javaJavaIdentifierPart}])") //$NON-NLS-1$

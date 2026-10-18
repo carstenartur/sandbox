@@ -200,6 +200,18 @@ public class ProjectRuleRefactoringTest {
 		assertEquals(0, ((CompositeChange) refactoring.createChange(null)).getChildren().length);
 	}
 
+	@Test
+	public void anUnqualifiedAnnotationTargetRecognizesAnExistingFullyQualifiedAnnotation() throws Exception {
+		ICompilationUnit unit= unit("package trial; public class Sample { @java.lang.Deprecated void old() {} }");
+		String before= unit.getSource();
+		ProjectRuleRefactoring refactoring= new ProjectRuleRefactoring(context.getJavaProject(),
+				"<!id: annotation>\nvoid $name($params$)\n=> @Deprecated void $name($params$)\n;;\n");
+		var status= refactoring.checkInitialConditions(null);
+		assertFalse(status.hasFatalError(), status::toString);
+		assertEquals(0, ((CompositeChange) refactoring.createChange(null)).getChildren().length);
+		assertEquals(before, unit.getSource());
+	}
+
 	@ParameterizedTest
 	@ValueSource(strings= {
 			"@java.lang.Deprecated void $name($params$) {} int ignored;",

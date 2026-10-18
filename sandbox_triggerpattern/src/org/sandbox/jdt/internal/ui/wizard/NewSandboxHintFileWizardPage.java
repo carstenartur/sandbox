@@ -60,6 +60,7 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 	private Text tagsText;
 	private SandboxHintTemplates selectedTemplate = SandboxHintTemplates.SIMPLE;
 	private final Map<String, String> metadataEdits = new LinkedHashMap<>();
+	private Runnable containerChangeListener;
 
 	private final IStructuredSelection selection;
 
@@ -89,7 +90,12 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 
 		containerText = new Text(container, SWT.BORDER | SWT.SINGLE);
 		containerText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		containerText.addModifyListener(modifyListener);
+		containerText.addModifyListener(event -> {
+			dialogChanged();
+			if (containerChangeListener != null) {
+				containerChangeListener.run();
+			}
+		});
 
 		Button browseButton = new Button(container, SWT.PUSH);
 		browseButton.setText("&Browse..."); //$NON-NLS-1$
@@ -273,6 +279,11 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 		setPageComplete(message == null);
 	}
 
+	/** Keeps the wizard's project preview scope in sync with destination edits. */
+	void setContainerChangeListener(Runnable listener) {
+		containerChangeListener = listener;
+	}
+
 	// --- Public accessors for the wizard ---
 
 	/** Metadata fields the author explicitly changed; unedited imports stay intact. */
@@ -282,7 +293,7 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 
 	/** Returns the container path entered by the user. */
 	public String getContainerPath() {
-		return containerText.getText();
+		return containerText == null || containerText.isDisposed() ? "" : containerText.getText(); //$NON-NLS-1$
 	}
 
 	/** Returns the file name entered by the user. */

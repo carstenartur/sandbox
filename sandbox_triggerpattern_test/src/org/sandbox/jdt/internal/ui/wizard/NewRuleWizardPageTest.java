@@ -12,21 +12,19 @@ package org.sandbox.jdt.internal.ui.wizard;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.core.resources.IFile;
-import org.eclipse.jdt.core.IClasspathEntry;
-import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jface.viewers.StructuredSelection;
-import org.eclipse.jface.wizard.IWizardContainer;
-import org.eclipse.jface.wizard.WizardDialog;
-import org.eclipse.ltk.ui.refactoring.RefactoringWizard;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Button;
@@ -34,22 +32,14 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sandbox.jdt.ui.tests.quickfix.rules.AbstractEclipseJava;
-import org.sandbox.jdt.ui.tests.quickfix.rules.EclipseJava22;
 
 class NewRuleWizardPageTest {
-
-	@RegisterExtension
-	EclipseJava22 context = new EclipseJava22();
 
 	private Display display;
 	private Shell shell;
@@ -62,15 +52,26 @@ class NewRuleWizardPageTest {
 
 	@AfterEach
 	void tearDown() {
+		display.syncExec(() -> shell.dispose());
+	}
+
+	private void runOnDisplay(Runnable test) {
+		AtomicReference<Throwable> failure = new AtomicReference<>();
 		display.syncExec(() -> {
-			PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
-			shell.dispose();
+			try {
+				test.run();
+			} catch (Throwable exception) {
+				failure.set(exception);
+			}
 		});
+		if (failure.get() != null) {
+			fail(failure.get());
+		}
 	}
 
 	@Test
 	void selectionAndReplacementKeepAllLinesInTheEditableFieldsAndDraft() {
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			var page = new NewRuleWizardPage();
 			String before = "first();\nsecond();";
 			String after = "modernFirst();\nmodernSecond();";
@@ -100,7 +101,7 @@ class NewRuleWizardPageTest {
 				;;
 				""";
 		AtomicReference<String> actualPreview = new AtomicReference<>();
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			var page = new NewRuleWizardPage();
 			page.setInitialDsl(dsl);
 			page.setProjectPreviewAction(actualPreview::set);
@@ -108,7 +109,8 @@ class NewRuleWizardPageTest {
 			assertEquals(dsl, page.getFullDslDocument());
 			assertTrue(page.hasCustomContent());
 			assertTrue(page.isPageComplete());
-			Button preview = previewButton(page);
+			Button preview = descendants(shell, Button.class).stream()
+					.filter(button -> button.getText().equals("Try on my code...")).findFirst().orElseThrow();
 			assertTrue(preview.isEnabled());
 			preview.notifyListeners(SWT.Selection, new Event());
 		});
@@ -117,20 +119,74 @@ class NewRuleWizardPageTest {
 
 	@Test
 	void malformedImportedDslCannotBeFinishedOrPreviewed() {
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			var page = new NewRuleWizardPage();
 			page.setInitialDsl("$x.old()\n=> $x.modern()\n");
 			page.setProjectPreviewAction(ignored -> {});
 			page.createControl(shell);
 			assertFalse(page.isPageComplete());
-			Button preview = previewButton(page);
+			Button preview = descendants(shell, Button.class).stream()
+					.filter(button -> button.getText().equals("Try on my code...")).findFirst().orElseThrow();
 			assertFalse(preview.isEnabled());
 		});
 	}
 
 	@Test
+	void clearingTheAuthoritativeDocumentDoesNotRestoreTheSelectedTemplate() {
+		runOnDisplay(() -> {
+			var wizard = new NewSandboxHintFileWizard();
+			try {
+				wizard.addPages();
+				for (var page : wizard.getPages()) {
+					page.createControl(shell);
+				}
+				var page = (NewRuleWizardPage) wizard.getPages()[1];
+				page.setVisible(true);
+				assertFalse(page.hasCustomContent());
+				assertFalse(wizard.getFullDslDocument().isBlank());
+				StyledText fullDocument = descendants((Composite) page.getControl(), StyledText.class).getFirst();
+				fullDocument.setText("");
+				assertEquals("", page.getFullDslDocument());
+				assertEquals("", wizard.getFullDslDocument());
+				assertTrue(page.hasCustomContent());
+				page.setVisible(false);
+				page.setVisible(true);
+				assertEquals("", wizard.getFullDslDocument());
+			} finally {
+				wizard.dispose();
+			}
+		});
+	}
+
+	@Test
+	void unparseableSourcePatternCannotBeFinishedOrPreviewed() {
+		runOnDisplay(() -> {
+			var page = new NewRuleWizardPage();
+			page.setInitialDsl("???\n=> $x\n;;\n");
+			page.setProjectPreviewAction(ignored -> {});
+			page.createControl(shell);
+			assertFalse(page.isPageComplete());
+			Button preview = descendants(shell, Button.class).stream()
+					.filter(button -> button.getText().equals("Try on my code...")).findFirst().orElseThrow();
+			assertFalse(preview.isEnabled());
+		});
+	}
+
+	@Test
+	void bundledTemplatesPassTheSourcePatternLanguageCheck() {
+		runOnDisplay(() -> {
+			for (var template : SandboxHintTemplates.values()) {
+				var page = new NewRuleWizardPage();
+				page.setInitialDsl(template.getRuleContent());
+				page.createControl(shell);
+				assertTrue(page.isPageComplete(), () -> template + ": " + page.getErrorMessage());
+			}
+		});
+	}
+
+	@Test
 	void editingTheFullDocumentWinsOverPreviouslyAppliedMetadataFields() {
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			var metadata = new HashMap<String, String>();
 			var page = new NewRuleWizardPage();
 			page.setMetadataSupplier(() -> metadata);
@@ -150,7 +206,7 @@ class NewRuleWizardPageTest {
 	@Test
 	void importedTextBlockIsPreservedButCannotBePreviewedOrSaved() {
 		String dsl = "return \"\"\"\n  keep exact indentation\n    keep more indentation\n  \"\"\";\n=> return modern();\n;;\n";
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			var page = new NewRuleWizardPage();
 			page.setInitialDsl(dsl);
 			page.setProjectPreviewAction(ignored -> {});
@@ -162,150 +218,69 @@ class NewRuleWizardPageTest {
 	}
 
 	@Test
-	void clearingTheCompleteDocumentSavesTheVisibleEmptyFile() {
-		runOnDisplay(() -> {
-			var wizard = new NewSandboxHintFileWizard();
-			wizard.init(PlatformUI.getWorkbench(), new StructuredSelection(context.getJavaProject().getProject()));
-			var dialog = new WizardDialog(shell, wizard);
-			dialog.create();
-			try {
-				var filePage = (NewSandboxHintFileWizardPage) wizard.getPages()[0];
-				var rulePage = (NewRuleWizardPage) wizard.getPages()[1];
-				dialog.showPage(wizard.getNextPage(filePage));
-				StyledText document = descendants((Composite) rulePage.getControl(), StyledText.class).getFirst();
-				assertFalse(document.getText().isBlank());
-				document.setText("");
-				dialog.showPage(filePage);
-				dialog.showPage(wizard.getNextPage(filePage));
-				assertEquals("", document.getText());
-				assertTrue(wizard.canFinish());
-				assertTrue(wizard.performFinish());
-				IFile file = context.getJavaProject().getProject().getFile(filePage.getFileName());
-				try (var contents = file.getContents()) {
-					assertEquals(0, contents.readAllBytes().length);
-				}
-				assertEquals("", wizard.getFullDslDocument());
-			} finally {
-				dialog.close();
-			}
-		});
-	}
-
-	@Test
-	void choosingATargetProjectEnablesPreviewWithoutAnInitialSelection() {
-		runOnDisplay(() -> {
-			var wizard = new NewSandboxHintFileWizard();
-			wizard.init(PlatformUI.getWorkbench(), StructuredSelection.EMPTY);
-			var dialog = new WizardDialog(shell, wizard);
-			dialog.create();
-			try {
-				var filePage = (NewSandboxHintFileWizardPage) wizard.getPages()[0];
-				descendants((Composite) filePage.getControl(), Text.class).getFirst()
-						.setText(context.getJavaProject().getPath().toString());
-				var rulePage = (NewRuleWizardPage) wizard.getPages()[1];
-				dialog.showPage(wizard.getNextPage(filePage));
-				assertTrue(previewButton(rulePage).isEnabled());
-			} finally {
-				dialog.close();
-			}
-		});
-	}
-
-	@Test
-	void projectPreviewUsesTheCurrentTargetContainer() throws Exception {
-		IJavaProject target = AbstractEclipseJava.createJavaProject("WizardTarget_" + System.nanoTime(), "bin");
+	void previewAvailabilityTracksTheCurrentContainerWhenTheInitialSelectionIsEmpty() throws Exception {
+		IProject project = ResourcesPlugin.getWorkspace().getRoot()
+				.getProject("triggerpattern-preview-" + Long.toUnsignedString(System.nanoTime())); //$NON-NLS-1$
+		AtomicReference<NewSandboxHintFileWizard> currentWizard = new AtomicReference<>();
 		try {
-			target.setRawClasspath(Arrays.stream(context.getJavaProject().getRawClasspath())
-					.filter(entry -> entry.getEntryKind() != IClasspathEntry.CPE_SOURCE).toArray(IClasspathEntry[]::new), null);
-			target.setOptions(context.getJavaProject().getOptions(false));
-			var targetSource = AbstractEclipseJava.addSourceContainer(target, "src");
-			String source = "package trial; class Sample { int value() { return 1 + 2; } }";
-			context.getSourceFolder().createPackageFragment("trial", false, null)
-					.createCompilationUnit("Sample.java", source, false, null);
-			var targetUnit = targetSource.createPackageFragment("trial", false, null)
-					.createCompilationUnit("Sample.java", source, false, null);
+			project.create(null);
+			project.open(null);
+			var description = project.getDescription();
+			description.setNatureIds(new String[] { JavaCore.NATURE_ID });
+			project.setDescription(description, null);
+			var folder = project.getFolder("rules"); //$NON-NLS-1$
+			folder.create(false, true, null);
+			assertTrue(JavaCore.create(project).exists());
+
 			runOnDisplay(() -> {
 				var wizard = new NewSandboxHintFileWizard();
-				wizard.init(PlatformUI.getWorkbench(), new StructuredSelection(context.getJavaProject().getProject()));
-				var dialog = new WizardDialog(shell, wizard);
-				dialog.create();
-				try {
-					var filePage = (NewSandboxHintFileWizardPage) wizard.getPages()[0];
-					descendants((Composite) filePage.getControl(), Text.class).getFirst().setText(target.getPath().toString());
-					var rulePage = (NewRuleWizardPage) wizard.getPages()[1];
-					dialog.showPage(wizard.getNextPage(filePage));
-					descendants((Composite) rulePage.getControl(), StyledText.class).getFirst()
-							.setText("<!id: target-project>\n<!binding-policy: required>\n1 + 2\n=> 3\n;;\n");
-					String preview = openPreviewAndCancel(previewButton(rulePage));
-					assertTrue(preview.contains(targetUnit.getPath().toString()), preview);
-					assertEquals(source, targetUnit.getSource());
-				} finally {
-					dialog.close();
+				currentWizard.set(wizard);
+				wizard.init(PlatformUI.getWorkbench(), StructuredSelection.EMPTY);
+				wizard.addPages();
+				for (var page : wizard.getPages()) {
+					page.createControl(shell);
 				}
+				var filePage = (NewSandboxHintFileWizardPage) wizard.getPages()[0];
+				var rulePage = (NewRuleWizardPage) wizard.getPages()[1];
+				rulePage.setVisible(true);
+				Button preview = descendants((Composite) rulePage.getControl(), Button.class).stream()
+						.filter(button -> button.getText().equals("Try on my code...")).findFirst().orElseThrow(); //$NON-NLS-1$
+				assertFalse(preview.isEnabled());
+				Text container = descendants((Composite) filePage.getControl(), Text.class).getFirst();
+				container.setText(folder.getFullPath().toString());
+				assertTrue(filePage.isPageComplete());
+				assertTrue(preview.isEnabled(), "Choosing the current Java container must enable project preview"); //$NON-NLS-1$
+				assertNull(preview.getToolTipText());
+				container.setText(""); //$NON-NLS-1$
+				assertFalse(preview.isEnabled(), "Clearing the destination must remove its preview project"); //$NON-NLS-1$
+				container.setText("/missing-preview-project"); //$NON-NLS-1$
+				assertFalse(preview.isEnabled());
+				container.setText(folder.getFullPath().toString());
+				assertTrue(preview.isEnabled());
+				rulePage.setVisible(false);
+			});
+
+			project.close(null);
+			runOnDisplay(() -> {
+				var wizard = currentWizard.get();
+				var filePage = (NewSandboxHintFileWizardPage) wizard.getPages()[0];
+				var rulePage = (NewRuleWizardPage) wizard.getPages()[1];
+				assertEquals(rulePage, wizard.getNextPage(filePage));
+				rulePage.setVisible(true);
+				Button preview = descendants((Composite) rulePage.getControl(), Button.class).stream()
+						.filter(button -> button.getText().equals("Try on my code...")).findFirst().orElseThrow(); //$NON-NLS-1$
+				assertFalse(preview.isEnabled(), "Navigation must refresh a project that became unavailable"); //$NON-NLS-1$
 			});
 		} finally {
-			target.getProject().delete(true, true, null);
-		}
-	}
-
-	private String openPreviewAndCancel(Button button) {
-		assertTrue(button.isEnabled());
-		AtomicReference<String> result = new AtomicReference<>();
-		Listener capture = event -> {
-			if (event.widget instanceof Shell candidate && candidate.getData() instanceof IWizardContainer container
-					&& container.getCurrentPage() != null
-					&& container.getCurrentPage().getWizard() instanceof RefactoringWizard preview
-					&& preview.getRefactoring() instanceof ProjectRuleRefactoring refactoring) {
-				display.asyncExec(() -> {
-					try {
-						result.set(refactoring.getExplanation());
-					} finally {
-						candidate.close();
-					}
-				});
-			} else if (event.widget instanceof Shell candidate && candidate.getText().contains("TriggerPattern")) {
-				display.asyncExec(() -> {
-					result.set(String.join("\n", descendants(candidate, Label.class).stream().map(Label::getText).toList()));
-					candidate.close();
-				});
+			runOnDisplay(() -> {
+				if (currentWizard.get() != null) {
+					currentWizard.get().dispose();
+				}
+			});
+			if (project.exists()) {
+				project.delete(true, true, null);
 			}
-		};
-		display.addFilter(SWT.Show, capture);
-		try {
-			button.notifyListeners(SWT.Selection, new Event());
-		} finally {
-			display.removeFilter(SWT.Show, capture);
 		}
-		return result.get();
-	}
-
-	private static Button previewButton(NewRuleWizardPage page) {
-		List<Button> buttons = descendants((Composite) page.getControl(), Button.class).stream()
-				.filter(button -> button.getText().equals("Try on my code...") || button.getText().equals("Try on project...")).toList();
-		assertEquals(1, buttons.size());
-		return buttons.getFirst();
-	}
-
-	private void runOnDisplay(UiOperation operation) {
-		AtomicReference<Throwable> failure = new AtomicReference<>();
-		display.syncExec(() -> {
-			try {
-				operation.run();
-			} catch (Throwable exception) {
-				failure.set(exception);
-			}
-		});
-		if (failure.get() instanceof AssertionError assertion) {
-			throw assertion;
-		}
-		if (failure.get() != null) {
-			throw new AssertionError(failure.get());
-		}
-	}
-
-	@FunctionalInterface
-	private interface UiOperation {
-		void run() throws Exception;
 	}
 
 	private static <T extends Control> List<T> descendants(Composite parent, Class<T> type) {

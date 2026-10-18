@@ -29,6 +29,7 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.analysis.InferredRule;
 import org.sandbox.jdt.triggerpattern.internal.DslValidator.ValidationResult;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
+import org.sandbox.jdt.triggerpattern.internal.HintProgramParser;
 
 /**
  * Detail panel showing inferred rules or AI evaluations for a selected commit.
@@ -215,7 +216,7 @@ public class InferredRuleDetailPanel extends Composite {
 	/** Rechecks actual content; an inference provider's VALID flag is not evidence. */
 	private static ValidationResult validateDsl(String dsl) {
 		try {
-			var hint = new HintFileParser().parse(dsl);
+			var hint = new HintProgramParser().parseHintFile(dsl);
 			if (hint.getRules().isEmpty()) {
 				return new ValidationResult(false, "No rules found"); //$NON-NLS-1$
 			}

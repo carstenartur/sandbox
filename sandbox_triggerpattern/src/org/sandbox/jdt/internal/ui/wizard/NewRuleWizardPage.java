@@ -26,7 +26,6 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ArrayContentProvider;
@@ -56,6 +55,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.eclipse.ui.dialogs.ListSelectionDialog;
 import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
+import org.sandbox.jdt.triggerpattern.api.PatternIndex;
 import org.sandbox.jdt.triggerpattern.internal.DslValidator.ValidationResult;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
 import org.sandbox.jdt.triggerpattern.internal.HintProgramParser;
@@ -101,8 +101,6 @@ public class NewRuleWizardPage extends WizardPage {
 	private boolean requiresReplacement;
 	private String authoringError;
 	private Consumer<String> projectPreviewAction;
-	private Supplier<IJavaProject> projectSupplier;
-	private Supplier<String> draftSupplier;
 	private Supplier<Map<String, String>> metadataSupplier = Map::of;
 	private Supplier<String> defaultContentSupplier = () -> ""; //$NON-NLS-1$
 	private final Map<String, String> appliedMetadata = new LinkedHashMap<>();
@@ -137,13 +135,11 @@ public class NewRuleWizardPage extends WizardPage {
 
 	/** Supplies a real project-run action. A DSL preview alone is not a project check. */
 	public void setProjectPreviewAction(Consumer<String> action) {
+		boolean availabilityChanged = (projectPreviewAction == null) != (action == null);
 		projectPreviewAction = action;
-	}
-
-	/** Resolves the target container's project when a trial is requested. */
-	public void setProjectTrialContext(Supplier<IJavaProject> projectSupplier, Supplier<String> draftSupplier) {
-		this.projectSupplier = projectSupplier;
-		this.draftSupplier = draftSupplier;
+		if (availabilityChanged && projectPreviewButton != null && !projectPreviewButton.isDisposed()) {
+			validateDocument();
+		}
 	}
 
 	/** Shares explicit metadata edits with copy, document preview and file saving. */
@@ -169,7 +165,6 @@ public class NewRuleWizardPage extends WizardPage {
 			} finally {
 				updatingDocument = false;
 			}
-			validateDocument();
 		}
 		super.setVisible(visible);
 	}
@@ -277,16 +272,9 @@ public class NewRuleWizardPage extends WizardPage {
 		projectPreviewButton = new Button(documentActions, SWT.PUSH);
 		projectPreviewButton.setText("Try on my code..."); //$NON-NLS-1$
 		projectPreviewButton.addListener(SWT.Selection, event -> {
-			if (isPageComplete()) {
+			if (projectPreviewAction != null && isPageComplete()) {
 				applyPendingMetadata();
-				if (projectPreviewAction != null) {
-					projectPreviewAction.accept(getFullDslDocument());
-				} else if (projectSupplier != null && draftSupplier != null) {
-					IJavaProject project = projectSupplier.get();
-					if (project != null && project.exists()) {
-						ProjectRulePreview.open(getShell(), project, draftSupplier.get());
-					}
-				}
+				projectPreviewAction.accept(getFullDslDocument());
 			}
 		});
 		Button copyButton = new Button(documentActions, SWT.PUSH);
@@ -544,8 +532,10 @@ public class NewRuleWizardPage extends WizardPage {
 			result = new ValidationResult(false, RuleAuthoringDocument.textBlockDiagnostic());
 		} else if (!content.isBlank()) {
 			try {
-				validator.parse(content);
-				result = new ValidationResult(true, "Language check passed"); //$NON-NLS-1$
+				var hint = validator.parseHintFile(content);
+				result = new PatternIndex(hint.getRules()).size() == hint.getRules().size()
+						? new ValidationResult(true, "Language check passed") //$NON-NLS-1$
+						: new ValidationResult(false, "A source pattern cannot be parsed by TriggerPattern"); //$NON-NLS-1$
 			} catch (HintParseException exception) {
 				result = new ValidationResult(false, "Line " + exception.getLineNumber() + ": " + exception.getMessage()); //$NON-NLS-1$ //$NON-NLS-2$
 			}
@@ -556,11 +546,9 @@ public class NewRuleWizardPage extends WizardPage {
 						: "Language check failed: " + result.message()); //$NON-NLS-1$
 		setErrorMessage(valid ? null : result.message());
 		setPageComplete(valid);
-		IJavaProject project = projectSupplier == null ? null : projectSupplier.get();
-		boolean hasProject = projectPreviewAction != null
-				|| draftSupplier != null && project != null && project.exists();
-		projectPreviewButton.setEnabled(hasProject && result != null && valid);
-		projectPreviewButton.setToolTipText(hasProject ? null : "Choose a Java project to try the rule on real code"); //$NON-NLS-1$
+		projectPreviewButton.setEnabled(projectPreviewAction != null && result != null && valid);
+		projectPreviewButton.setToolTipText(projectPreviewAction == null
+				? "Choose a Java project to try the rule on real code" : null); //$NON-NLS-1$
 	}
 
 	// --- Helper methods for AI section ---
@@ -619,7 +607,7 @@ public class NewRuleWizardPage extends WizardPage {
 	// --- Public API for the wizard ---
 
 	/**
-	 * Returns {@code true} after the user edited the document, including clearing it.
+	 * Returns {@code true} once the user edits this page, including clearing the document.
 	 */
 	public boolean hasCustomContent() {
 		return customContentEntered;

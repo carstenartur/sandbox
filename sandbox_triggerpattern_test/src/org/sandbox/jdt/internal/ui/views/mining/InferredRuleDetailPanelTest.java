@@ -16,6 +16,7 @@ package org.sandbox.jdt.internal.ui.views.mining;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -47,7 +48,7 @@ public class InferredRuleDetailPanelTest {
 	@BeforeEach
 	public void setUp() {
 		display = Display.getDefault();
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			shell = new Shell(display);
 			panel = new InferredRuleDetailPanel(shell);
 		});
@@ -55,11 +56,26 @@ public class InferredRuleDetailPanelTest {
 
 	@AfterEach
 	public void tearDown() {
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			if (shell != null && !shell.isDisposed()) {
 				shell.dispose();
 			}
 		});
+	}
+
+
+	private void runOnDisplay(Runnable test) {
+		AtomicReference<Throwable> failure = new AtomicReference<>();
+		display.syncExec(() -> {
+			try {
+				test.run();
+			} catch (Throwable exception) {
+				failure.set(exception);
+			}
+		});
+		if (failure.get() != null) {
+			fail(failure.get());
+		}
 	}
 
 	@Test
@@ -69,7 +85,7 @@ public class InferredRuleDetailPanelTest {
 		CommitTableEntry entry = entry("one", firstRule, secondRule); //$NON-NLS-1$
 		AtomicReference<List<String>> selected = new AtomicReference<>();
 
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			panel.showRules(entry);
 			List<Button> checkboxes = checkboxes(panel);
 			assertEquals(2, checkboxes.size());
@@ -88,7 +104,7 @@ public class InferredRuleDetailPanelTest {
 		CommitTableEntry second = entry("two", "$x * 1\n=> $x\n;;"); //$NON-NLS-1$ //$NON-NLS-2$
 		AtomicReference<List<String>> selected = new AtomicReference<>();
 
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			panel.showRules(first);
 			checkboxes(panel).getFirst().setSelection(true);
 			panel.showRules(second);
@@ -100,7 +116,7 @@ public class InferredRuleDetailPanelTest {
 
 	@Test
 	public void invalidDslCannotBeExportedEvenWhenEvaluationClaimsValid() {
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			panel.showRules(entry("invalid", "not a terminated DSL rule")); //$NON-NLS-1$ //$NON-NLS-2$
 			Button checkbox = checkboxes(panel).getFirst();
 			assertFalse(checkbox.getSelection());
@@ -112,8 +128,20 @@ public class InferredRuleDetailPanelTest {
 	}
 
 	@Test
+	public void unknownSemanticActionCannotBeExportedAsALanguageCheckedRule() {
+		runOnDisplay(() -> {
+			panel.showRules(entry("invalid-action", "$x + 0\n=>! unknownAction()\n;;")); //$NON-NLS-1$ //$NON-NLS-2$
+			Button checkbox = checkboxes(panel).getFirst();
+			assertFalse(checkbox.getEnabled());
+			checkbox.setSelection(true);
+			assertTrue(panel.getSelectedDslRules().isEmpty());
+			assertTrue(labels(panel).stream().anyMatch(text -> text.contains("Language check failed"))); //$NON-NLS-1$
+		});
+	}
+
+	@Test
 	public void languageCheckNeverClaimsExamplesOrProjectHaveBeenChecked() {
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			panel.showRules(entry("draft", "$x + 0\n=> $x\n;;")); //$NON-NLS-1$ //$NON-NLS-2$
 			List<String> labels = labels(panel);
 			assertTrue(labels.stream().anyMatch(text -> text.contains("Draft — language checked"))); //$NON-NLS-1$
@@ -123,7 +151,7 @@ public class InferredRuleDetailPanelTest {
 
 	@Test
 	public void unparseableSourcePatternIsNotAnExportableDraft() {
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			panel.showRules(entry("invalid-source", "???\n=> $x\n;;")); //$NON-NLS-1$ //$NON-NLS-2$
 			assertFalse(checkboxes(panel).getFirst().getEnabled());
 			checkboxes(panel).getFirst().setSelection(true);
@@ -133,7 +161,7 @@ public class InferredRuleDetailPanelTest {
 
 	@Test
 	public void metadataWithoutRulesIsNotAnExportableDraft() {
-		display.syncExec(() -> {
+		runOnDisplay(() -> {
 			panel.showRules(entry("metadata", "<!id: empty-document>")); //$NON-NLS-1$ //$NON-NLS-2$
 			assertFalse(checkboxes(panel).getFirst().getEnabled());
 			checkboxes(panel).getFirst().setSelection(true);

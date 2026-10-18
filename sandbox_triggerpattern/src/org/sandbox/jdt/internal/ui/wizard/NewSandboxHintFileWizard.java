@@ -32,10 +32,9 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
@@ -43,6 +42,8 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
 import org.sandbox.jdt.triggerpattern.internal.RuleAuthoringDocument;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
@@ -104,16 +105,16 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 	/** Overrides the project preview entry point, for embedding in another context. */
 	public void setProjectPreviewAction(Consumer<String> action) {
 		projectPreviewAction = action;
+		refreshProjectPreviewAction();
 	}
 
 	@Override
 	public void addPages() {
 		filePage = new NewSandboxHintFileWizardPage(selection);
 		rulePage = new NewRuleWizardPage();
+		filePage.setContainerChangeListener(this::refreshProjectPreviewAction);
 		rulePage.setMetadataSupplier(filePage::getEditedMetadata);
 		rulePage.setDefaultContentSupplier(this::getTemplateContent);
-		rulePage.setProjectTrialContext(this::getTargetJavaProject, this::getFullDslDocument);
-		rulePage.setProjectPreviewAction(projectPreviewAction);
 
 		if (initialCodeSnippet != null && (!initialCodeSnippet.isBlank() || initialReplacement != null)) {
 			if (initialReplacement == null) {
@@ -130,8 +131,40 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 			}
 		}
 
+		refreshProjectPreviewAction();
+
 		addPage(filePage);
 		addPage(rulePage);
+	}
+
+	@Override
+	public IWizardPage getNextPage(IWizardPage page) {
+		if (page == filePage) {
+			refreshProjectPreviewAction();
+		}
+		return super.getNextPage(page);
+	}
+
+	private void refreshProjectPreviewAction() {
+		if (rulePage == null) {
+			return;
+		}
+		if (projectPreviewAction == null && selectedJavaProject() == null) {
+			rulePage.setProjectPreviewAction(null);
+			return;
+		}
+		rulePage.setProjectPreviewAction(ignored -> {
+			if (projectPreviewAction != null) {
+				projectPreviewAction.accept(getFullDslDocument());
+				return;
+			}
+			IJavaProject project = selectedJavaProject();
+			if (project == null) {
+				refreshProjectPreviewAction();
+				return;
+			}
+			ProjectRulePreview.open(getShell(), project, getFullDslDocument());
+		});
 	}
 
 	@Override
@@ -201,14 +234,19 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		return content;
 	}
 
-	private IJavaProject getTargetJavaProject() {
-		IResource resource = ResourcesPlugin.getWorkspace().getRoot()
-				.findMember(new Path(filePage.getContainerPath()));
-		if (resource == null || resource.getProject() == null) {
+	/** Resolves preview scope from the destination currently entered on the first page. */
+	private IJavaProject selectedJavaProject() {
+		if (filePage == null || filePage.getContainerPath().isEmpty()) {
 			return null;
 		}
-		IJavaProject project = JavaCore.create(resource.getProject());
-		return project.exists() ? project : null;
+		IResource resource = ResourcesPlugin.getWorkspace().getRoot()
+				.findMember(new Path(filePage.getContainerPath()));
+		if (!(resource instanceof IContainer container) || !container.isAccessible()
+				|| container.getProject() == null) {
+			return null;
+		}
+		IJavaProject project = JavaCore.create(container.getProject());
+		return project != null && project.exists() ? project : null;
 	}
 
 	private void createFile(String containerPath, String fileName, String content,

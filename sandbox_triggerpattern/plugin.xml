@@ -94,6 +94,9 @@
 
    <extension point="org.eclipse.ui.commands">
       <command
+            id="org.sandbox.jdt.triggerpattern.commands.tryHintOnProject"
+            name="Try Hint on My Project" />
+      <command
             id="org.sandbox.jdt.triggerpattern.commands.mineDiff"
             name="Mine DSL Rule from Diff" />
       <command
@@ -103,14 +106,14 @@
             id="org.sandbox.jdt.triggerpattern.commands.newHintFromSelection"
             name="New Hint File from Selection" />
       <command
-            id="org.sandbox.jdt.triggerpattern.commands.tryHintOnProject"
-            name="Try Hint on Project" />
-      <command
             id="org.sandbox.jdt.triggerpattern.commands.generalizeChange"
             name="Generalize This Change" />
    </extension>
 
    <extension point="org.eclipse.ui.handlers">
+      <handler
+            class="org.sandbox.jdt.internal.ui.handlers.TryHintOnProjectHandler"
+            commandId="org.sandbox.jdt.triggerpattern.commands.tryHintOnProject" />
       <handler
             class="org.sandbox.jdt.internal.ui.handlers.MineDiffHandler"
             commandId="org.sandbox.jdt.triggerpattern.commands.mineDiff" />
@@ -120,9 +123,6 @@
       <handler
             class="org.sandbox.jdt.internal.ui.handlers.NewHintFromSelectionHandler"
             commandId="org.sandbox.jdt.triggerpattern.commands.newHintFromSelection" />
-      <handler
-            class="org.sandbox.jdt.internal.ui.handlers.TryHintOnProjectHandler"
-            commandId="org.sandbox.jdt.triggerpattern.commands.tryHintOnProject" />
       <handler
             class="org.sandbox.jdt.internal.ui.handlers.GeneralizeChangeHandler"
             commandId="org.sandbox.jdt.triggerpattern.commands.generalizeChange" />
@@ -156,6 +156,17 @@
       <menuContribution locationURI="popup:#AbstractTextEditorContext">
          <menu id="org.sandbox.triggerpattern.menu"
                label="Sandbox TriggerPattern">
+            <command commandId="org.sandbox.jdt.triggerpattern.commands.tryHintOnProject"
+                     label="Try on my code..."
+                     style="push">
+               <visibleWhen>
+                  <with variable="activeEditorInput">
+                     <adapt type="org.eclipse.core.resources.IFile">
+                        <test property="org.eclipse.core.resources.extension" value="sandbox-hint"/>
+                     </adapt>
+                  </with>
+               </visibleWhen>
+            </command>
             <command commandId="org.sandbox.jdt.triggerpattern.commands.generalizeChange"
                      label="Generalize this change..."
                      style="push">
@@ -171,17 +182,6 @@
                <visibleWhen>
                   <with variable="activeEditorId">
                      <equals value="org.eclipse.jdt.ui.CompilationUnitEditor"/>
-                  </with>
-               </visibleWhen>
-            </command>
-            <command commandId="org.sandbox.jdt.triggerpattern.commands.tryHintOnProject"
-                     label="Try hint on project..."
-                     style="push">
-               <visibleWhen>
-                  <with variable="activeEditorInput">
-                     <adapt type="org.eclipse.core.resources.IFile">
-                        <test property="org.eclipse.core.resources.extension" value="sandbox-hint"/>
-                     </adapt>
                   </with>
                </visibleWhen>
             </command>
