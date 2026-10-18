@@ -125,7 +125,7 @@ class CodeCleanupApplicationWrapperPersistedClasspathTest {
 			Object result= new CodeCleanupApplicationWrapper().start(context);
 			assertEquals(Integer.valueOf(CodeCleanupApplication.EXIT_OK), result);
 			assertTrue(parsed.get());
-			assertNotEquals(original, Files.readString(source));
+			assertNotEquals(original, Files.readString(source, StandardCharsets.UTF_8));
 			assertTrue(Files.size(patch) > 0);
 			assertArrayEquals(persistedClasspath, Files.readAllBytes(classpathFile));
 		} finally {
