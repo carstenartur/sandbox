@@ -78,13 +78,13 @@ class NewRuleWizardPageTest {
 			page.setInitialChange(before, after);
 			page.createControl(shell);
 			List<Text> fields = descendants(shell, Text.class);
-			String nativeBefore = before.replace("\n", fields.get(0).getLineDelimiter());
-			String nativeAfter = after.replace("\n", fields.get(2).getLineDelimiter());
-			assertEquals(nativeBefore, fields.get(0).getText());
-			assertEquals(nativeAfter, fields.get(2).getText());
+			String actualBefore = fields.get(0).getText();
+			String actualAfter = fields.get(2).getText();
+			assertEquals(before, actualBefore.replace("\r\n", "\n").replace('\r', '\n'));
+			assertEquals(after, actualAfter.replace("\r\n", "\n").replace('\r', '\n'));
 			assertTrue((fields.get(0).getStyle() & SWT.MULTI) != 0);
 			assertTrue((fields.get(2).getStyle() & SWT.MULTI) != 0);
-			assertEquals("<!binding-policy: required>\n\n" + nativeBefore + "\n=> " + nativeAfter + "\n;;\n",
+			assertEquals("<!binding-policy: required>\n\n" + actualBefore + "\n=> " + actualAfter + "\n;;\n",
 					page.getFullDslDocument());
 			assertTrue(page.isPageComplete());
 		});
