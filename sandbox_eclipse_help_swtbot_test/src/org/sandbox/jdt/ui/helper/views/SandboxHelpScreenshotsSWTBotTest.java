@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.Date;
 import java.util.List;
@@ -949,9 +950,9 @@ public class SandboxHelpScreenshotsSWTBotTest {
         SWTBotShell hintWizard = bot.activeShell();
         clickButton(hintWizard, "Next >");
         hintWizard = bot.activeShell();
-        hintWizard.bot().textWithLabel("Source Pattern:").setText("$s.getBytes(\"UTF-8\")");
+        hintWizard.bot().textWithLabel("Before / source pattern:").setText("$s.getBytes(\"UTF-8\")");
         hintWizard.bot().textWithLabel("Guard (optional):").setText("sourceVersionGE(7)");
-        hintWizard.bot().textWithLabel("Replacement:")
+        hintWizard.bot().textWithLabel("After / replacement:")
                 .setText("$s.getBytes(java.nio.charset.StandardCharsets.UTF_8)");
         bot.sleep(300);
 
@@ -1765,10 +1766,47 @@ public class SandboxHelpScreenshotsSWTBotTest {
         })) {
             waitForPreparedAtomicPreviewShell(shell);
             captureAtomicPreview(shell, helpBundle, fileName);
+        } else if ("sandbox_jface_cleanup_help".equals(helpBundle)) {
+            captureStableJFacePreview(shell, helpBundle, fileName);
         } else {
             capture(shell, helpBundle, fileName);
         }
         System.out.println("[help-screenshots] Captured real Clean Up preview: " + fileName);
+    }
+
+    private static void captureStableJFacePreview(SWTBotShell shell, String helpBundle, String fileName) {
+        UIThreadRunnable.syncExec(shell.display, new VoidResult() {
+            @Override
+            public void run() {
+                shell.display.setCursorLocation(0, 0);
+                // Flush the complete native dialog, including the button shadows
+                // outside the child widget bounds, before observing paint stability.
+                shell.widget.redraw(0, 0, shell.widget.getClientArea().width,
+                        shell.widget.getClientArea().height, true);
+                shell.widget.update();
+            }
+        });
+        bot.sleep(GTK_SETTLE_MILLIS);
+        Path image = outputRoot.resolve(helpBundle).resolve("images").resolve(fileName);
+        bot.waitUntil(new DefaultCondition() {
+            private byte[] previous;
+            private int identicalCaptures;
+
+            @Override
+            public boolean test() throws Exception {
+                capture(shell, helpBundle, fileName);
+                byte[] current = Files.readAllBytes(image);
+                identicalCaptures = Arrays.equals(previous, current) ? identicalCaptures + 1 : 1;
+                previous = current;
+                return identicalCaptures >= 3;
+            }
+
+            @Override
+            public String getFailureMessage() {
+                return "JFace preview native painting did not produce three identical complete images: " + image;
+            }
+        }, 10_000, 500);
+        System.out.println("[help-screenshots] Verified three identical native JFace captures: " + fileName);
     }
 
     private static void deleteGeneratedScreenshot(String helpBundle, String fileName) throws IOException {

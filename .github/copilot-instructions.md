@@ -32,6 +32,14 @@ mvn test -pl sandbox-functional-converter-core
 7. **Add `//$NON-NLS-1$` markers where required** in Eclipse plug-in Java sources.
 8. **Keep save-action support explicit** — project-wide or structural transformations must not become save actions implicitly.
 
+## Pull request integration
+
+- Create ordinary pull requests directly against the current `main` branch.
+- Do not create native GitHub stacks or pull requests targeting feature branches unless the user explicitly requests that workflow.
+- If a change needs an unmerged prerequisite, finish and merge that prerequisite first, then start from the updated `main`.
+- Keep review fixes, test corrections, and CI repairs on the existing pull request branch.
+- Before reporting a pull request as mergeable, check its actual GitHub base, stack membership, required checks, review threads, and whether it contains current `main`.
+
 ## Reviewable Maven/JUnit change policy
 
 - Keep review PRs at or below about 1,500 changed text lines. Stop and split at 2,000 lines unless the PR contains a substantive `## Repository policy exception` section before further implementation.

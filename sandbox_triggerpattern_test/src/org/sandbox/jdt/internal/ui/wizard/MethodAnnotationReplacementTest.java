@@ -34,6 +34,39 @@ public class MethodAnnotationReplacementTest {
 	EclipseJava22 context= new EclipseJava22();
 
 	@Test
+	public void ambiguousInheritedAnnotationTargetIsDeclined() throws Exception {
+		ICompilationUnit unit= unit("package trial; interface A { @interface Flag {} } "
+				+ "interface B { @interface Flag {} } public class Sample implements A, B { void old() {} }");
+		CompilationUnitChange change= change(unit, "Flag");
+		try {
+			assertNull(change, "An ambiguous inherited member annotation must not produce a cleanup");
+		} finally {
+			if (change != null) {
+				change.dispose();
+			}
+		}
+	}
+
+	@Test
+	public void aUniqueInheritedAnnotationTargetRetainsItsBinding() throws Exception {
+		ICompilationUnit unit= unit("package trial; interface A { @interface Flag {} } "
+				+ "public class Sample implements A { void old() {} }");
+		CompilationUnitChange change= change(unit, "Flag");
+		assertNotNull(change);
+		try {
+			CompilationUnit after= parse(unit, change.getPreviewContent(null));
+			var method= ((TypeDeclaration) after.types().getLast()).getMethods()[0];
+			Annotation annotation= (Annotation) method.modifiers().getFirst();
+			var type= annotation.resolveTypeBinding();
+			assertNotNull(type);
+			assertFalse(type.isRecovered());
+			assertEquals("trial.A.Flag", type.getQualifiedName());
+		} finally {
+			change.dispose();
+		}
+	}
+
+	@Test
 	public void anUnqualifiedTargetDoesNotDuplicateItsFullyQualifiedExistingType() throws Exception {
 		ICompilationUnit unit= unit("package trial; public class Sample { @java.lang.Deprecated void old() {} }");
 		assertNull(change(unit, "Deprecated"));

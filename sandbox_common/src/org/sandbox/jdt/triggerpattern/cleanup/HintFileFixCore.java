@@ -881,44 +881,43 @@ public class HintFileFixCore {
 			}
 		}
 
-		/** Resolves an annotation from original bindings before falling back to project lookup. */
+		/** Resolves unambiguous annotation names while retaining secondary and member type bindings. */
 		private static String resolveAnnotationType(org.eclipse.jdt.core.dom.MethodDeclaration method, String name) {
 			var binding= method.resolveBinding();
 			if (binding == null || binding.isRecovered() || binding.getDeclaringClass() == null
 					|| binding.getDeclaringClass().isRecovered()) {
 				return null;
 			}
-			// Retain visible secondary and member types already resolved in this AST.
-			var analyzer= new ScopeAnalyzer((CompilationUnit) method.getRoot());
 			boolean qualified= name.indexOf('.') >= 0;
-			String resolvedType= null;
-			for (var declaration : analyzer.getDeclarationsInScope(method.getStartPosition(),
-					ScopeAnalyzer.TYPES | ScopeAnalyzer.CHECK_VISIBILITY)) {
-				if (declaration instanceof ITypeBinding type
-						&& name.equals(qualified ? type.getQualifiedName() : type.getName())) {
-					String qualifiedName= type.getQualifiedName();
-					if (type.isRecovered() || !type.isAnnotation() || qualifiedName.isEmpty()
-							|| resolvedType != null && !resolvedType.equals(qualifiedName)) {
+			IType contextType= binding.getDeclaringClass().getJavaElement() instanceof IType type ? type : null;
+			try {
+				String[][] matches= null;
+				String resolvedType= name;
+				if (!qualified) {
+					if (contextType == null) {
 						return null;
 					}
-					resolvedType= qualifiedName;
+					// ScopeAnalyzer hides same-name types; require unique Java-model resolution first.
+					matches= contextType.resolveType(name);
+					if (matches == null || matches.length != 1) {
+						return null;
+					}
+					resolvedType= matches[0][0].isEmpty() ? matches[0][1] : matches[0][0] + '.' + matches[0][1];
 				}
-			}
-			if (resolvedType != null) {
-				return resolvedType;
-			}
-			if (!(binding.getDeclaringClass().getJavaElement() instanceof IType contextType)) {
-				return null;
-			}
-			try {
+				var analyzer= new ScopeAnalyzer((CompilationUnit) method.getRoot());
+				for (var declaration : analyzer.getDeclarationsInScope(method.getStartPosition(),
+						ScopeAnalyzer.TYPES | ScopeAnalyzer.CHECK_VISIBILITY)) {
+					if (declaration instanceof ITypeBinding type && resolvedType.equals(type.getQualifiedName())) {
+						return !type.isRecovered() && type.isAnnotation() ? resolvedType : null;
+					}
+				}
+				if (contextType == null) {
+					return null;
+				}
 				IType annotation;
 				if (qualified) {
 					annotation= contextType.getJavaProject().findType(name, (IProgressMonitor) null);
 				} else {
-					String[][] matches= contextType.resolveType(name);
-					if (matches == null || matches.length != 1) {
-						return null;
-					}
 					// The monitor overload also includes secondary source types in the lookup.
 					annotation= contextType.getJavaProject().findType(matches[0][0], matches[0][1], (IProgressMonitor) null);
 				}
