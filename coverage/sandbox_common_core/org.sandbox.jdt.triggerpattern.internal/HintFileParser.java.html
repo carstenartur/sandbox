@@ -27,7 +27,14 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.ToolFactory;
+import org.eclipse.jdt.core.compiler.IScanner;
+import org.eclipse.jdt.core.compiler.ITerminalSymbols;
+import org.eclipse.jdt.core.compiler.InvalidInputException;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
 import org.sandbox.jdt.triggerpattern.api.EmbeddedJavaBlock;
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
@@ -108,27 +115,27 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
  * 
  * @since 1.3.2
  */
-<span class="fc" id="L111">public final class HintFileParser {</span>
+<span class="fc" id="L118">public final class HintFileParser {</span>
 	
-<span class="fc" id="L113">	private static final Logger LOGGER = Logger.getLogger(HintFileParser.class.getName());</span>
+<span class="fc" id="L120">	private static final Logger LOGGER = Logger.getLogger(HintFileParser.class.getName());</span>
 
 	/**
 	 * Set of recognized value-less directive names (directives without ':' or '=').
 	 */
-<span class="fc" id="L118">	private static final Set&lt;String&gt; VALUELESS_DIRECTIVES = Set.of(&quot;caseInsensitive&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L125">	private static final Set&lt;String&gt; VALUELESS_DIRECTIVES = Set.of(&quot;caseInsensitive&quot;); //$NON-NLS-1$</span>
 	
-<span class="fc" id="L120">	private record GuardSplit(String patternText, String guardText) {</span>
-<span class="fc bfc" id="L121" title="All 2 branches covered.">		boolean hasGuard() { return guardText != null; }</span>
+<span class="fc" id="L127">	private record GuardSplit(String patternText, String guardText) {</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">		boolean hasGuard() { return guardText != null; }</span>
 	}
 	
-<span class="fc" id="L124">	private final GuardExpressionParser guardParser = new GuardExpressionParser();</span>
+<span class="fc" id="L131">	private final GuardExpressionParser guardParser = new GuardExpressionParser();</span>
 	
 	/**
 	 * Foreach variable definitions: variable name → ordered map of key→value pairs.
 	 * &lt;p&gt;Example: {@code &lt;!foreach CHARSET: &quot;UTF-8&quot; -&gt; UTF_8, &quot;ISO-8859-1&quot; -&gt; ISO_8859_1&gt;}
 	 * creates a mapping {@code CHARSET → {&quot;UTF-8&quot; → &quot;UTF_8&quot;, &quot;ISO-8859-1&quot; → &quot;ISO_8859_1&quot;}}.&lt;/p&gt;
 	 */
-<span class="fc" id="L131">	private final Map&lt;String, Map&lt;String, String&gt;&gt; foreachVariables = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L138">	private final Map&lt;String, Map&lt;String, String&gt;&gt; foreachVariables = new HashMap&lt;&gt;();</span>
 
 	/**
 	 * Map variable definitions: map name → ordered map of key→value pairs.
@@ -137,7 +144,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * &lt;p&gt;In rules, {@code #{charsetNames}} is replaced with the key and the corresponding value
 	 * replaces {@code #{charsetNames_VALUE}}.&lt;/p&gt;
 	 */
-<span class="fc" id="L140">	private final Map&lt;String, Map&lt;String, String&gt;&gt; mapVariables = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L147">	private final Map&lt;String, Map&lt;String, String&gt;&gt; mapVariables = new HashMap&lt;&gt;();</span>
 	
 	/**
 	 * Parses a {@code .sandbox-hint} file from a string.
@@ -147,13 +154,13 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @throws HintParseException if the content cannot be parsed
 	 */
 	public HintFile parse(String content) throws HintParseException {
-<span class="fc bfc" id="L150" title="All 4 branches covered.">		if (content == null || content.isBlank()) {</span>
-<span class="fc" id="L151">			throw new HintParseException(&quot;Hint file content is empty&quot;, 0); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L157" title="All 4 branches covered.">		if (content == null || content.isBlank()) {</span>
+<span class="fc" id="L158">			throw new HintParseException(&quot;Hint file content is empty&quot;, 0); //$NON-NLS-1$</span>
 		}
 		try {
-<span class="fc" id="L154">			return parse(new StringReader(content));</span>
-<span class="nc" id="L155">		} catch (IOException e) {</span>
-<span class="nc" id="L156">			throw new HintParseException(&quot;I/O error reading hint file: &quot; + e.getMessage(), 0, e); //$NON-NLS-1$</span>
+<span class="fc" id="L161">			return parse(new StringReader(content));</span>
+<span class="nc" id="L162">		} catch (IOException e) {</span>
+<span class="nc" id="L163">			throw new HintParseException(&quot;I/O error reading hint file: &quot; + e.getMessage(), 0, e); //$NON-NLS-1$</span>
 		}
 	}
 	
@@ -166,43 +173,43 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @throws IOException if an I/O error occurs
 	 */
 	public HintFile parse(Reader reader) throws HintParseException, IOException {
-<span class="fc" id="L169">		HintFile hintFile = new HintFile();</span>
-<span class="fc" id="L170">		foreachVariables.clear();</span>
-<span class="fc" id="L171">		mapVariables.clear();</span>
-<span class="fc" id="L172">		List&lt;String&gt; lines = readAndStripComments(reader, hintFile);</span>
+<span class="fc" id="L176">		HintFile hintFile = new HintFile();</span>
+<span class="fc" id="L177">		foreachVariables.clear();</span>
+<span class="fc" id="L178">		mapVariables.clear();</span>
+<span class="fc" id="L179">		List&lt;String&gt; lines = readAndStripComments(reader, hintFile);</span>
 		
-<span class="fc" id="L174">		int i = 0;</span>
-<span class="fc bfc" id="L175" title="All 2 branches covered.">		while (i &lt; lines.size()) {</span>
-<span class="fc" id="L176">			String line = lines.get(i).trim();</span>
+<span class="fc" id="L181">		int i = 0;</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">		while (i &lt; lines.size()) {</span>
+<span class="fc" id="L183">			String line = lines.get(i).trim();</span>
 			
-<span class="fc bfc" id="L178" title="All 2 branches covered.">			if (line.isEmpty()) {</span>
-<span class="fc" id="L179">				i++;</span>
-<span class="fc" id="L180">				continue;</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">			if (line.isEmpty()) {</span>
+<span class="fc" id="L186">				i++;</span>
+<span class="fc" id="L187">				continue;</span>
 			}
 			
 			// Metadata directive: &lt;!key: value&gt; (may span multiple lines)
-<span class="fc bfc" id="L184" title="All 2 branches covered.">			if (line.startsWith(&quot;&lt;!&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L185">				StringBuilder metaBuilder = new StringBuilder(line);</span>
-<span class="fc" id="L186">				int metaStart = i;</span>
-<span class="fc" id="L187">				boolean foundClosingBracket = line.endsWith(&quot;&gt;&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L188" title="1 of 4 branches missed.">				while (!foundClosingBracket &amp;&amp; i + 1 &lt; lines.size()) {</span>
-<span class="fc" id="L189">					i++;</span>
-<span class="fc" id="L190">					String nextLine = lines.get(i).trim();</span>
-<span class="fc" id="L191">					metaBuilder.append(' ').append(nextLine);</span>
-<span class="fc bfc" id="L192" title="All 2 branches covered.">					if (nextLine.endsWith(&quot;&gt;&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L193">						foundClosingBracket = true;</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">			if (line.startsWith(&quot;&lt;!&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L192">				StringBuilder metaBuilder = new StringBuilder(line);</span>
+<span class="fc" id="L193">				int metaStart = i;</span>
+<span class="fc" id="L194">				boolean foundClosingBracket = line.endsWith(&quot;&gt;&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L195" title="1 of 4 branches missed.">				while (!foundClosingBracket &amp;&amp; i + 1 &lt; lines.size()) {</span>
+<span class="fc" id="L196">					i++;</span>
+<span class="fc" id="L197">					String nextLine = lines.get(i).trim();</span>
+<span class="fc" id="L198">					metaBuilder.append(' ').append(nextLine);</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">					if (nextLine.endsWith(&quot;&gt;&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L200">						foundClosingBracket = true;</span>
 					}
-<span class="fc" id="L195">				}</span>
-<span class="fc" id="L196">				parseMetadata(hintFile, metaBuilder.toString().trim(), metaStart + 1);</span>
-<span class="fc" id="L197">				i++;</span>
-<span class="fc" id="L198">				continue;</span>
+<span class="fc" id="L202">				}</span>
+<span class="fc" id="L203">				parseMetadata(hintFile, metaBuilder.toString().trim(), metaStart + 1);</span>
+<span class="fc" id="L204">				i++;</span>
+<span class="fc" id="L205">				continue;</span>
 			}
 			
 			// Rule: collect lines until ;;
-<span class="fc" id="L202">			i = parseRule(hintFile, lines, i);</span>
-<span class="fc" id="L203">		}</span>
+<span class="fc" id="L209">			i = parseRule(hintFile, lines, i);</span>
+<span class="fc" id="L210">		}</span>
 		
-<span class="fc" id="L205">		return hintFile;</span>
+<span class="fc" id="L212">		return hintFile;</span>
 	}
 	
 	/**
@@ -213,158 +220,175 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * {@link HintFile} for compilation and execution.&lt;/p&gt;
 	 */
 	private List&lt;String&gt; readAndStripComments(Reader reader, HintFile hintFile) throws IOException {
-<span class="fc" id="L216">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L217">		boolean inBlockComment = false;</span>
-<span class="fc" id="L218">		boolean inCustomCodeBlock = false;</span>
-<span class="fc" id="L219">		int customCodeStartLine = 0;</span>
-<span class="fc" id="L220">		int customCodeStartOffset = 0;</span>
-<span class="fc" id="L221">		StringBuilder customCodeBuilder = null;</span>
+<span class="fc" id="L223">		List&lt;String&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L224">		boolean inBlockComment = false;</span>
+<span class="fc" id="L225">		boolean inCustomCodeBlock = false;</span>
+<span class="fc" id="L226">		int customCodeStartLine = 0;</span>
+<span class="fc" id="L227">		int customCodeStartOffset = 0;</span>
+<span class="fc" id="L228">		StringBuilder customCodeBuilder = null;</span>
 
 		// Read entire content to compute actual line offsets (handles CRLF vs LF)
 		String fullContent;
-<span class="fc" id="L225">		try (BufferedReader br = new BufferedReader(reader)) {</span>
-<span class="fc" id="L226">			StringBuilder contentBuilder = new StringBuilder();</span>
-<span class="fc" id="L227">			char[] buffer = new char[4096];</span>
+<span class="fc" id="L232">		try (BufferedReader br = new BufferedReader(reader)) {</span>
+<span class="fc" id="L233">			StringBuilder contentBuilder = new StringBuilder();</span>
+<span class="fc" id="L234">			char[] buffer = new char[4096];</span>
 			int read;
-<span class="fc bfc" id="L229" title="All 2 branches covered.">			while ((read = br.read(buffer)) != -1) {</span>
-<span class="fc" id="L230">				contentBuilder.append(buffer, 0, read);</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">			while ((read = br.read(buffer)) != -1) {</span>
+<span class="fc" id="L237">				contentBuilder.append(buffer, 0, read);</span>
 			}
-<span class="fc" id="L232">			fullContent = contentBuilder.toString();</span>
+<span class="fc" id="L239">			fullContent = contentBuilder.toString();</span>
 		}
 
 		// Split into lines preserving delimiter info for offset computation
-<span class="fc" id="L236">		List&lt;String&gt; rawLines = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L237">		List&lt;Integer&gt; lineStartOffsets = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L238">		int pos = 0;</span>
-<span class="pc bpc" id="L239" title="1 of 2 branches missed.">		while (pos &lt;= fullContent.length()) {</span>
-<span class="fc" id="L240">			lineStartOffsets.add(pos);</span>
-<span class="fc" id="L241">			int nextLF = fullContent.indexOf('\n', pos);</span>
-<span class="fc" id="L242">			int nextCR = fullContent.indexOf('\r', pos);</span>
+<span class="fc" id="L243">		List&lt;String&gt; rawLines = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L244">		List&lt;Integer&gt; lineStartOffsets = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L245">		int pos = 0;</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">		while (pos &lt;= fullContent.length()) {</span>
+<span class="fc" id="L247">			lineStartOffsets.add(pos);</span>
+<span class="fc" id="L248">			int nextLF = fullContent.indexOf('\n', pos);</span>
+<span class="fc" id="L249">			int nextCR = fullContent.indexOf('\r', pos);</span>
 			int lineEnd;
 			int nextLineStart;
-<span class="pc bpc" id="L245" title="1 of 4 branches missed.">			if (nextLF == -1 &amp;&amp; nextCR == -1) {</span>
+<span class="pc bpc" id="L252" title="1 of 4 branches missed.">			if (nextLF == -1 &amp;&amp; nextCR == -1) {</span>
 				// Last line without trailing newline
-<span class="fc" id="L247">				rawLines.add(fullContent.substring(pos));</span>
-<span class="fc" id="L248">				break;</span>
-<span class="pc bpc" id="L249" title="5 of 6 branches missed.">			} else if (nextCR &gt;= 0 &amp;&amp; (nextLF == -1 || nextCR &lt; nextLF)) {</span>
-<span class="nc" id="L250">				lineEnd = nextCR;</span>
+<span class="fc" id="L254">				rawLines.add(fullContent.substring(pos));</span>
+<span class="fc" id="L255">				break;</span>
+<span class="pc bpc" id="L256" title="5 of 6 branches missed.">			} else if (nextCR &gt;= 0 &amp;&amp; (nextLF == -1 || nextCR &lt; nextLF)) {</span>
+<span class="nc" id="L257">				lineEnd = nextCR;</span>
 				// CRLF or just CR
-<span class="nc bnc" id="L252" title="All 4 branches missed.">				nextLineStart = (nextCR + 1 &lt; fullContent.length() &amp;&amp; fullContent.charAt(nextCR + 1) == '\n')</span>
-<span class="nc" id="L253">						? nextCR + 2 : nextCR + 1;</span>
+<span class="nc bnc" id="L259" title="All 4 branches missed.">				nextLineStart = (nextCR + 1 &lt; fullContent.length() &amp;&amp; fullContent.charAt(nextCR + 1) == '\n')</span>
+<span class="nc" id="L260">						? nextCR + 2 : nextCR + 1;</span>
 			} else {
-<span class="fc" id="L255">				lineEnd = nextLF;</span>
-<span class="fc" id="L256">				nextLineStart = nextLF + 1;</span>
+<span class="fc" id="L262">				lineEnd = nextLF;</span>
+<span class="fc" id="L263">				nextLineStart = nextLF + 1;</span>
 			}
-<span class="fc" id="L258">			rawLines.add(fullContent.substring(pos, lineEnd));</span>
-<span class="fc" id="L259">			pos = nextLineStart;</span>
-<span class="fc" id="L260">		}</span>
+<span class="fc" id="L265">			rawLines.add(fullContent.substring(pos, lineEnd));</span>
+<span class="fc" id="L266">			pos = nextLineStart;</span>
+<span class="fc" id="L267">		}</span>
 
-<span class="fc bfc" id="L262" title="All 2 branches covered.">		for (int lineIdx = 0; lineIdx &lt; rawLines.size(); lineIdx++) {</span>
-<span class="fc" id="L263">			String rawLine = rawLines.get(lineIdx);</span>
-<span class="fc" id="L264">			int lineNumber = lineIdx + 1;</span>
-<span class="fc" id="L265">			int lineStartOffset = lineStartOffsets.get(lineIdx);</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">		for (int lineIdx = 0; lineIdx &lt; rawLines.size(); lineIdx++) {</span>
+<span class="fc" id="L270">			String rawLine = rawLines.get(lineIdx);</span>
+<span class="fc" id="L271">			int lineNumber = lineIdx + 1;</span>
+<span class="fc" id="L272">			int lineStartOffset = lineStartOffsets.get(lineIdx);</span>
 				
 				// Handle &lt;? ?&gt; custom code blocks (continuation)
-<span class="fc bfc" id="L268" title="All 2 branches covered.">				if (inCustomCodeBlock) {</span>
-<span class="fc bfc" id="L269" title="All 2 branches covered.">					if (rawLine.contains(&quot;?&gt;&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L270">						int endIdx = rawLine.indexOf(&quot;?&gt;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L271">						customCodeBuilder.append(rawLine, 0, endIdx);</span>
-<span class="fc" id="L272">						int blockEndOffset = lineStartOffset + endIdx + 2;</span>
-<span class="fc" id="L273">						hintFile.addEmbeddedJavaBlock(new EmbeddedJavaBlock(</span>
-<span class="fc" id="L274">								customCodeBuilder.toString(),</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">				if (inCustomCodeBlock) {</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">					if (rawLine.contains(&quot;?&gt;&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L277">						int endIdx = rawLine.indexOf(&quot;?&gt;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L278">						customCodeBuilder.append(rawLine, 0, endIdx);</span>
+<span class="fc" id="L279">						int blockEndOffset = lineStartOffset + endIdx + 2;</span>
+<span class="fc" id="L280">						hintFile.addEmbeddedJavaBlock(new EmbeddedJavaBlock(</span>
+<span class="fc" id="L281">								customCodeBuilder.toString(),</span>
 								customCodeStartLine, lineNumber,
 								customCodeStartOffset, blockEndOffset));
-<span class="fc" id="L277">						LOGGER.log(Level.FINE, &quot;Extracted embedded Java block (multi-line, lines {0}-{1})&quot;, //$NON-NLS-1$</span>
-<span class="fc" id="L278">								new Object[] { customCodeStartLine, lineNumber });</span>
-<span class="fc" id="L279">						inCustomCodeBlock = false;</span>
-<span class="fc" id="L280">						customCodeBuilder = null;</span>
-<span class="fc" id="L281">						rawLine = rawLine.substring(endIdx + 2);</span>
-<span class="fc" id="L282">					} else {</span>
-<span class="fc" id="L283">						customCodeBuilder.append(rawLine).append('\n');</span>
-<span class="fc" id="L284">						result.add(&quot;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L285">						continue;</span>
+<span class="fc" id="L284">						LOGGER.log(Level.FINE, &quot;Extracted embedded Java block (multi-line, lines {0}-{1})&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L285">								new Object[] { customCodeStartLine, lineNumber });</span>
+<span class="fc" id="L286">						inCustomCodeBlock = false;</span>
+<span class="fc" id="L287">						customCodeBuilder = null;</span>
+<span class="fc" id="L288">						rawLine = rawLine.substring(endIdx + 2);</span>
+<span class="fc" id="L289">					} else {</span>
+<span class="fc" id="L290">						customCodeBuilder.append(rawLine).append('\n');</span>
+<span class="fc" id="L291">						result.add(&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L292">						continue;</span>
 					}
 				}
 				
 				// Check for start of &lt;? ?&gt; block(s) on this line
-<span class="fc" id="L290">				int searchFrom = 0;</span>
-<span class="fc bfc" id="L291" title="All 2 branches covered.">				while (!inBlockComment) {</span>
-<span class="fc" id="L292">					int startIdx = rawLine.indexOf(&quot;&lt;?&quot;, searchFrom); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L293" title="All 2 branches covered.">					if (startIdx &lt; 0) {</span>
-<span class="fc" id="L294">						break;</span>
+<span class="fc" id="L297">				int searchFrom = 0;</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">				while (!inBlockComment) {</span>
+<span class="fc" id="L299">					int startIdx = rawLine.indexOf(&quot;&lt;?&quot;, searchFrom); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">					if (startIdx &lt; 0) {</span>
+<span class="fc" id="L301">						break;</span>
 					}
-<span class="fc" id="L296">					int endIdx = rawLine.indexOf(&quot;?&gt;&quot;, startIdx + 2); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L297" title="All 2 branches covered.">					if (endIdx &gt;= 0) {</span>
+<span class="fc" id="L303">					int endIdx = rawLine.indexOf(&quot;?&gt;&quot;, startIdx + 2); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">					if (endIdx &gt;= 0) {</span>
 						// Single-line &lt;? ?&gt; block
-<span class="fc" id="L299">						String javaSource = rawLine.substring(startIdx + 2, endIdx);</span>
+<span class="fc" id="L306">						String javaSource = rawLine.substring(startIdx + 2, endIdx);</span>
 						// Skip fix function references: &lt;?identifier?&gt; is kept as-is
 						// (a simple Java identifier without whitespace, semicolons, or braces).
 						// These are replacement references like =&gt; &lt;?customFix?&gt; and should
 						// NOT be extracted as embedded Java blocks.
-<span class="fc bfc" id="L304" title="All 2 branches covered.">						if (isFixFunctionReference(javaSource)) {</span>
+<span class="fc bfc" id="L311" title="All 2 branches covered.">						if (isFixFunctionReference(javaSource)) {</span>
 							// Advance past this ?&gt; and continue scanning for further blocks
-<span class="fc" id="L306">							searchFrom = endIdx + 2;</span>
-<span class="fc" id="L307">							continue;</span>
+<span class="fc" id="L313">							searchFrom = endIdx + 2;</span>
+<span class="fc" id="L314">							continue;</span>
 						}
-<span class="fc" id="L309">						int blockStartOffset = lineStartOffset + startIdx;</span>
-<span class="fc" id="L310">						int blockEndOffset = lineStartOffset + endIdx + 2;</span>
-<span class="fc" id="L311">						hintFile.addEmbeddedJavaBlock(new EmbeddedJavaBlock(</span>
+<span class="fc" id="L316">						int blockStartOffset = lineStartOffset + startIdx;</span>
+<span class="fc" id="L317">						int blockEndOffset = lineStartOffset + endIdx + 2;</span>
+<span class="fc" id="L318">						hintFile.addEmbeddedJavaBlock(new EmbeddedJavaBlock(</span>
 								javaSource, lineNumber, lineNumber,
 								blockStartOffset, blockEndOffset));
-<span class="fc" id="L314">						LOGGER.log(Level.FINE, &quot;Extracted embedded Java block (single line {0})&quot;, lineNumber); //$NON-NLS-1$</span>
-<span class="fc" id="L315">						rawLine = rawLine.substring(0, startIdx) + rawLine.substring(endIdx + 2);</span>
-<span class="fc" id="L316">						searchFrom = startIdx; // Reset: content at startIdx changed</span>
+<span class="fc" id="L321">						LOGGER.log(Level.FINE, &quot;Extracted embedded Java block (single line {0})&quot;, lineNumber); //$NON-NLS-1$</span>
+<span class="fc" id="L322">						rawLine = rawLine.substring(0, startIdx) + rawLine.substring(endIdx + 2);</span>
+<span class="fc" id="L323">						searchFrom = startIdx; // Reset: content at startIdx changed</span>
 						// Continue loop to check for further blocks on the same line
-<span class="fc" id="L318">					} else {</span>
+<span class="fc" id="L325">					} else {</span>
 						// Multi-line &lt;? ?&gt; block
-<span class="fc" id="L320">						customCodeStartLine = lineNumber;</span>
-<span class="fc" id="L321">						customCodeStartOffset = lineStartOffset + startIdx;</span>
-<span class="fc" id="L322">						customCodeBuilder = new StringBuilder();</span>
-<span class="fc" id="L323">						customCodeBuilder.append(rawLine.substring(startIdx + 2)).append('\n');</span>
-<span class="fc" id="L324">						LOGGER.log(Level.FINE, &quot;Start of embedded Java block (multi-line, line {0})&quot;, lineNumber); //$NON-NLS-1$</span>
-<span class="fc" id="L325">						inCustomCodeBlock = true;</span>
-<span class="fc" id="L326">						rawLine = rawLine.substring(0, startIdx);</span>
-<span class="fc" id="L327">						break;</span>
+<span class="fc" id="L327">						customCodeStartLine = lineNumber;</span>
+<span class="fc" id="L328">						customCodeStartOffset = lineStartOffset + startIdx;</span>
+<span class="fc" id="L329">						customCodeBuilder = new StringBuilder();</span>
+<span class="fc" id="L330">						customCodeBuilder.append(rawLine.substring(startIdx + 2)).append('\n');</span>
+<span class="fc" id="L331">						LOGGER.log(Level.FINE, &quot;Start of embedded Java block (multi-line, line {0})&quot;, lineNumber); //$NON-NLS-1$</span>
+<span class="fc" id="L332">						inCustomCodeBlock = true;</span>
+<span class="fc" id="L333">						rawLine = rawLine.substring(0, startIdx);</span>
+<span class="fc" id="L334">						break;</span>
 					}
-<span class="fc" id="L329">				}</span>
+<span class="fc" id="L336">				}</span>
 				
-<span class="fc bfc" id="L331" title="All 2 branches covered.">				if (inBlockComment) {</span>
-<span class="fc" id="L332">					int endIdx = rawLine.indexOf(&quot;*/&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L333" title="1 of 2 branches missed.">					if (endIdx &gt;= 0) {</span>
-<span class="fc" id="L334">						inBlockComment = false;</span>
-<span class="fc" id="L335">						rawLine = rawLine.substring(endIdx + 2);</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">				if (inBlockComment) {</span>
+<span class="fc" id="L339">					int endIdx = rawLine.indexOf(&quot;*/&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L340" title="All 2 branches covered.">					if (endIdx &gt;= 0) {</span>
+<span class="fc" id="L341">						inBlockComment = false;</span>
+<span class="fc" id="L342">						rawLine = rawLine.substring(endIdx + 2);</span>
 					} else {
-<span class="nc" id="L337">						result.add(&quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L338">						continue;</span>
+<span class="fc" id="L344">						result.add(&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L345">						continue;</span>
 					}
 				}
 				
 				// Process the line: strip line comments and start of block comments
-<span class="fc" id="L343">				StringBuilder sb = new StringBuilder();</span>
-<span class="fc" id="L344">				int len = rawLine.length();</span>
-<span class="fc bfc" id="L345" title="All 2 branches covered.">				for (int c = 0; c &lt; len; c++) {</span>
-<span class="fc" id="L346">					char ch = rawLine.charAt(c);</span>
-<span class="fc bfc" id="L347" title="All 2 branches covered.">					if (c + 1 &lt; len) {</span>
-<span class="fc bfc" id="L348" title="All 4 branches covered.">						if (ch == '/' &amp;&amp; rawLine.charAt(c + 1) == '/') {</span>
-<span class="fc" id="L349">							break; // Line comment</span>
-						}
-<span class="fc bfc" id="L351" title="All 4 branches covered.">						if (ch == '/' &amp;&amp; rawLine.charAt(c + 1) == '*') {</span>
-<span class="fc" id="L352">							int endIdx = rawLine.indexOf(&quot;*/&quot;, c + 2); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L353" title="All 2 branches covered.">							if (endIdx &gt;= 0) {</span>
-<span class="fc" id="L354">								c = endIdx + 1;</span>
-<span class="fc" id="L355">								continue;</span>
+<span class="fc" id="L350">				StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L351">				int len = rawLine.length();</span>
+<span class="fc bfc" id="L352" title="All 2 branches covered.">				for (int c = 0; c &lt; len; c++) {</span>
+<span class="fc" id="L353">					char ch = rawLine.charAt(c);</span>
+<span class="fc bfc" id="L354" title="All 4 branches covered.">					if (ch == '\&quot;' || ch == '\'') {</span>
+						// Comment markers inside Java literals are ordinary source text.
+						// Copy escapes together so an escaped quote does not end the literal.
+<span class="fc" id="L357">						int literalStart = c;</span>
+<span class="fc" id="L358">						char quote = ch;</span>
+<span class="fc bfc" id="L359" title="All 2 branches covered.">						while (++c &lt; len) {</span>
+<span class="fc" id="L360">							char literalCharacter = rawLine.charAt(c);</span>
+<span class="pc bpc" id="L361" title="1 of 4 branches missed.">							if (literalCharacter == '\\' &amp;&amp; c + 1 &lt; len) {</span>
+<span class="fc" id="L362">								c++;</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">							} else if (literalCharacter == quote) {</span>
+<span class="fc" id="L364">								break;</span>
 							}
-<span class="fc" id="L357">							inBlockComment = true;</span>
-<span class="fc" id="L358">							break;</span>
+<span class="fc" id="L366">						}</span>
+<span class="fc" id="L367">						sb.append(rawLine, literalStart, Math.min(c + 1, len));</span>
+<span class="fc" id="L368">						continue;</span>
+					}
+<span class="fc bfc" id="L370" title="All 2 branches covered.">					if (c + 1 &lt; len) {</span>
+<span class="fc bfc" id="L371" title="All 4 branches covered.">						if (ch == '/' &amp;&amp; rawLine.charAt(c + 1) == '/') {</span>
+<span class="fc" id="L372">							break; // Line comment</span>
+						}
+<span class="fc bfc" id="L374" title="All 4 branches covered.">						if (ch == '/' &amp;&amp; rawLine.charAt(c + 1) == '*') {</span>
+<span class="fc" id="L375">							int endIdx = rawLine.indexOf(&quot;*/&quot;, c + 2); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">							if (endIdx &gt;= 0) {</span>
+<span class="fc" id="L377">								sb.append(' ');</span>
+<span class="fc" id="L378">								c = endIdx + 1;</span>
+<span class="fc" id="L379">								continue;</span>
+							}
+<span class="fc" id="L381">							inBlockComment = true;</span>
+<span class="fc" id="L382">							break;</span>
 						}
 					}
-<span class="fc" id="L361">					sb.append(ch);</span>
+<span class="fc" id="L385">					sb.append(ch);</span>
 				}
 				
-<span class="fc" id="L364">				result.add(sb.toString());</span>
+<span class="fc" id="L388">				result.add(sb.toString());</span>
 			}
 		
-<span class="fc" id="L367">		return result;</span>
+<span class="fc" id="L391">		return result;</span>
 	}
 	
 	/**
@@ -375,102 +399,102 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 */
 	private void parseMetadata(HintFile hintFile, String line, int lineNumber) throws HintParseException {
 		// &lt;!key: value&gt; or &lt;!key=&quot;value&quot;&gt;
-<span class="pc bpc" id="L378" title="1 of 2 branches missed.">		if (!line.endsWith(&quot;&gt;&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L379">			throw new HintParseException(&quot;Invalid metadata directive (missing '&gt;'): &quot; + line, lineNumber); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L402" title="1 of 2 branches missed.">		if (!line.endsWith(&quot;&gt;&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L403">			throw new HintParseException(&quot;Invalid metadata directive (missing '&gt;'): &quot; + line, lineNumber); //$NON-NLS-1$</span>
 		}
 		
-<span class="fc" id="L382">		String inner = line.substring(2, line.length() - 1).trim();</span>
+<span class="fc" id="L406">		String inner = line.substring(2, line.length() - 1).trim();</span>
 		
 		// Prefer colon format for backward compatibility; fall back to equals format
-<span class="fc" id="L385">		int colonIdx = inner.indexOf(':');</span>
-<span class="fc" id="L386">		int equalsIdx = inner.indexOf('=');</span>
+<span class="fc" id="L409">		int colonIdx = inner.indexOf(':');</span>
+<span class="fc" id="L410">		int equalsIdx = inner.indexOf('=');</span>
 		
 		String key;
 		String value;
 		
-<span class="pc bpc" id="L391" title="1 of 4 branches missed.">		if (colonIdx &gt;= 0 &amp;&amp; !inner.substring(0, colonIdx).contains(&quot;=&quot;)) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L415" title="1 of 4 branches missed.">		if (colonIdx &gt;= 0 &amp;&amp; !inner.substring(0, colonIdx).contains(&quot;=&quot;)) { //$NON-NLS-1$</span>
 			// Sandbox format: key: value (preferred for backward compatibility)
-<span class="fc" id="L393">			key = inner.substring(0, colonIdx).trim();</span>
-<span class="fc" id="L394">			value = inner.substring(colonIdx + 1).trim();</span>
-<span class="fc bfc" id="L395" title="All 2 branches covered.">		} else if (equalsIdx &gt; 0) {</span>
+<span class="fc" id="L417">			key = inner.substring(0, colonIdx).trim();</span>
+<span class="fc" id="L418">			value = inner.substring(colonIdx + 1).trim();</span>
+<span class="fc bfc" id="L419" title="All 2 branches covered.">		} else if (equalsIdx &gt; 0) {</span>
 			// NetBeans format: key=&quot;value&quot; or key=value
-<span class="fc" id="L397">			key = inner.substring(0, equalsIdx).trim();</span>
-<span class="fc" id="L398">			value = inner.substring(equalsIdx + 1).trim();</span>
+<span class="fc" id="L421">			key = inner.substring(0, equalsIdx).trim();</span>
+<span class="fc" id="L422">			value = inner.substring(equalsIdx + 1).trim();</span>
 			// Strip surrounding quotes if present
-<span class="pc bpc" id="L400" title="2 of 6 branches missed.">			if (value.length() &gt;= 2 &amp;&amp; value.startsWith(&quot;\&quot;&quot;) &amp;&amp; value.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L401">				value = value.substring(1, value.length() - 1);</span>
+<span class="pc bpc" id="L424" title="2 of 6 branches missed.">			if (value.length() &gt;= 2 &amp;&amp; value.startsWith(&quot;\&quot;&quot;) &amp;&amp; value.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L425">				value = value.substring(1, value.length() - 1);</span>
 			}
 		} else {
 			// Check for known value-less directives (e.g., &lt;!caseInsensitive&gt;)
-<span class="fc bfc" id="L405" title="All 2 branches covered.">			if (VALUELESS_DIRECTIVES.contains(inner.trim())) {</span>
-<span class="fc" id="L406">				key = inner.trim();</span>
-<span class="fc" id="L407">				value = &quot;&quot;; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L429" title="All 2 branches covered.">			if (VALUELESS_DIRECTIVES.contains(inner.trim())) {</span>
+<span class="fc" id="L430">				key = inner.trim();</span>
+<span class="fc" id="L431">				value = &quot;&quot;; //$NON-NLS-1$</span>
 			} else {
-<span class="fc" id="L409">				throw new HintParseException(&quot;Invalid metadata directive (missing ':' or '='): &quot; + line, lineNumber); //$NON-NLS-1$</span>
+<span class="fc" id="L433">				throw new HintParseException(&quot;Invalid metadata directive (missing ':' or '='): &quot; + line, lineNumber); //$NON-NLS-1$</span>
 			}
 		}
 		
-<span class="fc bfc" id="L413" title="All 11 branches covered.">		switch (key) {</span>
+<span class="fc bfc" id="L437" title="All 11 branches covered.">		switch (key) {</span>
 			case &quot;id&quot;: //$NON-NLS-1$
-<span class="fc" id="L415">				hintFile.setId(value);</span>
-<span class="fc" id="L416">				break;</span>
+<span class="fc" id="L439">				hintFile.setId(value);</span>
+<span class="fc" id="L440">				break;</span>
 			case &quot;description&quot;: //$NON-NLS-1$
-<span class="fc" id="L418">				hintFile.setDescription(value);</span>
-<span class="fc" id="L419">				break;</span>
+<span class="fc" id="L442">				hintFile.setDescription(value);</span>
+<span class="fc" id="L443">				break;</span>
 			case &quot;severity&quot;: //$NON-NLS-1$
-<span class="fc" id="L421">				hintFile.setSeverity(value);</span>
-<span class="fc" id="L422">				break;</span>
+<span class="fc" id="L445">				hintFile.setSeverity(value);</span>
+<span class="fc" id="L446">				break;</span>
 			case &quot;minJavaVersion&quot;: //$NON-NLS-1$
 				try {
-<span class="fc" id="L425">					hintFile.setMinJavaVersion(Integer.parseInt(value));</span>
-<span class="nc" id="L426">				} catch (NumberFormatException e) {</span>
-<span class="nc" id="L427">					throw new HintParseException(&quot;Invalid minJavaVersion: &quot; + value, lineNumber, e); //$NON-NLS-1$</span>
-<span class="fc" id="L428">				}</span>
+<span class="fc" id="L449">					hintFile.setMinJavaVersion(Integer.parseInt(value));</span>
+<span class="nc" id="L450">				} catch (NumberFormatException e) {</span>
+<span class="nc" id="L451">					throw new HintParseException(&quot;Invalid minJavaVersion: &quot; + value, lineNumber, e); //$NON-NLS-1$</span>
+<span class="fc" id="L452">				}</span>
 				break;
 			case &quot;binding-policy&quot;: //$NON-NLS-1$
 				HintBindingPolicy bindingPolicy;
 				try {
-<span class="fc" id="L433">					bindingPolicy= HintBindingPolicy.valueOf(value.trim().toUpperCase(java.util.Locale.ROOT));</span>
-<span class="fc" id="L434">				} catch (IllegalArgumentException exception) {</span>
-<span class="fc" id="L435">					throw new HintParseException(</span>
+<span class="fc" id="L457">					bindingPolicy= HintBindingPolicy.valueOf(value.trim().toUpperCase(java.util.Locale.ROOT));</span>
+<span class="fc" id="L458">				} catch (IllegalArgumentException exception) {</span>
+<span class="fc" id="L459">					throw new HintParseException(</span>
 							&quot;Invalid binding-policy: &quot; + value + &quot;; expected optional or required&quot;, //$NON-NLS-1$ //$NON-NLS-2$
 							lineNumber, exception);
-<span class="fc" id="L438">				}</span>
-<span class="fc bfc" id="L439" title="All 4 branches covered.">				if (hintFile.getBindingPolicy() != null &amp;&amp; hintFile.getBindingPolicy() != bindingPolicy) {</span>
-<span class="fc" id="L440">					throw new HintParseException(&quot;Conflicting binding-policy declarations&quot;, lineNumber); //$NON-NLS-1$</span>
+<span class="fc" id="L462">				}</span>
+<span class="fc bfc" id="L463" title="All 4 branches covered.">				if (hintFile.getBindingPolicy() != null &amp;&amp; hintFile.getBindingPolicy() != bindingPolicy) {</span>
+<span class="fc" id="L464">					throw new HintParseException(&quot;Conflicting binding-policy declarations&quot;, lineNumber); //$NON-NLS-1$</span>
 				}
-<span class="fc" id="L442">				hintFile.setBindingPolicy(bindingPolicy);</span>
-<span class="fc" id="L443">				break;</span>
+<span class="fc" id="L466">				hintFile.setBindingPolicy(bindingPolicy);</span>
+<span class="fc" id="L467">				break;</span>
 			case &quot;tags&quot;: //$NON-NLS-1$
-<span class="fc" id="L445">				hintFile.setTags(Arrays.asList(value.split(&quot;\\s*,\\s*&quot;))); //$NON-NLS-1$</span>
-<span class="fc" id="L446">				break;</span>
+<span class="fc" id="L469">				hintFile.setTags(Arrays.asList(value.split(&quot;\\s*,\\s*&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L470">				break;</span>
 			case &quot;include&quot;: //$NON-NLS-1$
-<span class="fc" id="L448">				hintFile.addInclude(value);</span>
-<span class="fc" id="L449">				break;</span>
+<span class="fc" id="L472">				hintFile.addInclude(value);</span>
+<span class="fc" id="L473">				break;</span>
 			case &quot;caseInsensitive&quot;: //$NON-NLS-1$
-<span class="fc" id="L451">				hintFile.setCaseInsensitive(true);</span>
-<span class="fc" id="L452">				break;</span>
+<span class="fc" id="L475">				hintFile.setCaseInsensitive(true);</span>
+<span class="fc" id="L476">				break;</span>
 			case &quot;suppressWarnings&quot;: //$NON-NLS-1$
-<span class="fc bfc" id="L454" title="All 2 branches covered.">				for (String sw : value.split(&quot;\\s*,\\s*&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L455">					hintFile.addSuppressWarnings(sw);</span>
+<span class="fc bfc" id="L478" title="All 2 branches covered.">				for (String sw : value.split(&quot;\\s*,\\s*&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L479">					hintFile.addSuppressWarnings(sw);</span>
 				}
-<span class="fc" id="L457">				break;</span>
+<span class="fc" id="L481">				break;</span>
 			case &quot;treeKind&quot;: //$NON-NLS-1$
-<span class="fc" id="L459">				parseTreeKindDirective(hintFile, value, lineNumber);</span>
-<span class="fc" id="L460">				break;</span>
+<span class="fc" id="L483">				parseTreeKindDirective(hintFile, value, lineNumber);</span>
+<span class="fc" id="L484">				break;</span>
 			default:
 				// Check for foreach directive: &lt;!foreach VARNAME: key1 -&gt; val1, key2 -&gt; val2&gt;
-<span class="fc bfc" id="L463" title="All 2 branches covered.">				if (key.startsWith(&quot;foreach &quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L464">					parseForeachDirective(key, value, lineNumber);</span>
+<span class="fc bfc" id="L487" title="All 2 branches covered.">				if (key.startsWith(&quot;foreach &quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L488">					parseForeachDirective(key, value, lineNumber);</span>
 				}
 				// Check for map directive: &lt;!map MAPNAME: &quot;key1&quot; =&gt; &quot;val1&quot;, &quot;key2&quot; =&gt; &quot;val2&quot;&gt;
-<span class="fc bfc" id="L467" title="All 2 branches covered.">				else if (key.startsWith(&quot;map &quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L468">					parseMapDirective(key, value, lineNumber);</span>
+<span class="fc bfc" id="L491" title="All 2 branches covered.">				else if (key.startsWith(&quot;map &quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L492">					parseMapDirective(key, value, lineNumber);</span>
 				}
 				// Unknown metadata key is ignored for forward compatibility
 				break;
 		}
-<span class="fc" id="L473">	}</span>
+<span class="fc" id="L497">	}</span>
 	
 	/**
 	 * AST node type name to {@link ASTNode} node type constant mapping.
@@ -482,14 +506,14 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * Returns the AST node type constant map, initializing it lazily.
 	 */
 	private static Map&lt;String, Integer&gt; getAstNodeTypeMap() {
-<span class="fc bfc" id="L485" title="All 2 branches covered.">		if (astNodeTypeMap == null) {</span>
-<span class="fc" id="L486">			synchronized (HintFileParser.class) {</span>
-<span class="pc bpc" id="L487" title="1 of 2 branches missed.">				if (astNodeTypeMap == null) {</span>
-<span class="fc" id="L488">					astNodeTypeMap = buildAstNodeTypeMap();</span>
+<span class="fc bfc" id="L509" title="All 2 branches covered.">		if (astNodeTypeMap == null) {</span>
+<span class="fc" id="L510">			synchronized (HintFileParser.class) {</span>
+<span class="pc bpc" id="L511" title="1 of 2 branches missed.">				if (astNodeTypeMap == null) {</span>
+<span class="fc" id="L512">					astNodeTypeMap = buildAstNodeTypeMap();</span>
 				}
-<span class="fc" id="L490">			}</span>
+<span class="fc" id="L514">			}</span>
 		}
-<span class="fc" id="L492">		return astNodeTypeMap;</span>
+<span class="fc" id="L516">		return astNodeTypeMap;</span>
 	}
 
 	/**
@@ -497,20 +521,20 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * their integer constants using reflection on {@link ASTNode}.
 	 */
 	private static Map&lt;String, Integer&gt; buildAstNodeTypeMap() {
-<span class="fc" id="L500">		Map&lt;String, Integer&gt; map = new HashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L501" title="All 2 branches covered.">		for (java.lang.reflect.Field field : ASTNode.class.getDeclaredFields()) {</span>
-<span class="fc bfc" id="L502" title="All 2 branches covered.">			if (field.getType() == int.class</span>
-<span class="fc bfc" id="L503" title="All 2 branches covered.">					&amp;&amp; java.lang.reflect.Modifier.isPublic(field.getModifiers())</span>
-<span class="pc bpc" id="L504" title="1 of 2 branches missed.">					&amp;&amp; java.lang.reflect.Modifier.isStatic(field.getModifiers())</span>
-<span class="pc bpc" id="L505" title="1 of 2 branches missed.">					&amp;&amp; java.lang.reflect.Modifier.isFinal(field.getModifiers())) {</span>
+<span class="fc" id="L524">		Map&lt;String, Integer&gt; map = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L525" title="All 2 branches covered.">		for (java.lang.reflect.Field field : ASTNode.class.getDeclaredFields()) {</span>
+<span class="fc bfc" id="L526" title="All 2 branches covered.">			if (field.getType() == int.class</span>
+<span class="fc bfc" id="L527" title="All 2 branches covered.">					&amp;&amp; java.lang.reflect.Modifier.isPublic(field.getModifiers())</span>
+<span class="pc bpc" id="L528" title="1 of 2 branches missed.">					&amp;&amp; java.lang.reflect.Modifier.isStatic(field.getModifiers())</span>
+<span class="pc bpc" id="L529" title="1 of 2 branches missed.">					&amp;&amp; java.lang.reflect.Modifier.isFinal(field.getModifiers())) {</span>
 				try {
-<span class="fc" id="L507">					map.put(field.getName(), field.getInt(null));</span>
-<span class="nc" id="L508">				} catch (IllegalAccessException e) {</span>
-<span class="nc" id="L509">					LOGGER.log(Level.FINE, &quot;Cannot access ASTNode field: &quot; + field.getName(), e); //$NON-NLS-1$</span>
-<span class="fc" id="L510">				}</span>
+<span class="fc" id="L531">					map.put(field.getName(), field.getInt(null));</span>
+<span class="nc" id="L532">				} catch (IllegalAccessException e) {</span>
+<span class="nc" id="L533">					LOGGER.log(Level.FINE, &quot;Cannot access ASTNode field: &quot; + field.getName(), e); //$NON-NLS-1$</span>
+<span class="fc" id="L534">				}</span>
 			}
 		}
-<span class="fc" id="L513">		return map;</span>
+<span class="fc" id="L537">		return map;</span>
 	}
 
 	/**
@@ -523,27 +547,27 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @param lineNumber the line number for error reporting
 	 */
 	private void parseTreeKindDirective(HintFile hintFile, String value, int lineNumber) throws HintParseException {
-<span class="pc bpc" id="L526" title="1 of 4 branches missed.">		if (value == null || value.isBlank()) {</span>
-<span class="fc" id="L527">			throw new HintParseException(&quot;treeKind directive requires at least one node type&quot;, lineNumber); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L550" title="1 of 4 branches missed.">		if (value == null || value.isBlank()) {</span>
+<span class="fc" id="L551">			throw new HintParseException(&quot;treeKind directive requires at least one node type&quot;, lineNumber); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L529">		Map&lt;String, Integer&gt; typeMap = getAstNodeTypeMap();</span>
-<span class="fc" id="L530">		List&lt;Integer&gt; nodeTypes = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L531" title="All 2 branches covered.">		for (String name : value.split(&quot;\\s*,\\s*&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L532">			String trimmed = name.trim();</span>
-<span class="pc bpc" id="L533" title="1 of 2 branches missed.">			if (trimmed.isEmpty()) {</span>
-<span class="nc" id="L534">				continue;</span>
+<span class="fc" id="L553">		Map&lt;String, Integer&gt; typeMap = getAstNodeTypeMap();</span>
+<span class="fc" id="L554">		List&lt;Integer&gt; nodeTypes = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L555" title="All 2 branches covered.">		for (String name : value.split(&quot;\\s*,\\s*&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L556">			String trimmed = name.trim();</span>
+<span class="pc bpc" id="L557" title="1 of 2 branches missed.">			if (trimmed.isEmpty()) {</span>
+<span class="nc" id="L558">				continue;</span>
 			}
-<span class="fc" id="L536">			Integer nodeType = typeMap.get(trimmed);</span>
-<span class="fc bfc" id="L537" title="All 2 branches covered.">			if (nodeType == null) {</span>
-<span class="fc" id="L538">				throw new HintParseException(&quot;Unknown AST node type: &quot; + trimmed, lineNumber); //$NON-NLS-1$</span>
+<span class="fc" id="L560">			Integer nodeType = typeMap.get(trimmed);</span>
+<span class="fc bfc" id="L561" title="All 2 branches covered.">			if (nodeType == null) {</span>
+<span class="fc" id="L562">				throw new HintParseException(&quot;Unknown AST node type: &quot; + trimmed, lineNumber); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L540">			nodeTypes.add(nodeType);</span>
+<span class="fc" id="L564">			nodeTypes.add(nodeType);</span>
 		}
-<span class="pc bpc" id="L542" title="1 of 2 branches missed.">		if (nodeTypes.isEmpty()) {</span>
-<span class="nc" id="L543">			throw new HintParseException(&quot;treeKind directive requires at least one node type&quot;, lineNumber); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L566" title="1 of 2 branches missed.">		if (nodeTypes.isEmpty()) {</span>
+<span class="nc" id="L567">			throw new HintParseException(&quot;treeKind directive requires at least one node type&quot;, lineNumber); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L545">		hintFile.setTreeKindNodeTypes(nodeTypes);</span>
-<span class="fc" id="L546">	}</span>
+<span class="fc" id="L569">		hintFile.setTreeKindNodeTypes(nodeTypes);</span>
+<span class="fc" id="L570">	}</span>
 
 	/**
 	 * Parses a {@code &lt;!foreach&gt;} directive and stores the variable mapping.
@@ -557,38 +581,38 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @param lineNumber the line number for error reporting
 	 */
 	private void parseForeachDirective(String key, String value, int lineNumber) throws HintParseException {
-<span class="fc" id="L560">		String varName = key.substring(&quot;foreach &quot;.length()).trim(); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L561" title="1 of 2 branches missed.">		if (varName.isEmpty()) {</span>
-<span class="nc" id="L562">			throw new HintParseException(&quot;foreach directive requires a variable name&quot;, lineNumber); //$NON-NLS-1$</span>
+<span class="fc" id="L584">		String varName = key.substring(&quot;foreach &quot;.length()).trim(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L585" title="1 of 2 branches missed.">		if (varName.isEmpty()) {</span>
+<span class="nc" id="L586">			throw new HintParseException(&quot;foreach directive requires a variable name&quot;, lineNumber); //$NON-NLS-1$</span>
 		}
 		
-<span class="fc" id="L565">		Map&lt;String, String&gt; mappings = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L566">		List&lt;String&gt; entries = splitForeachEntries(value);</span>
-<span class="fc bfc" id="L567" title="All 2 branches covered.">		for (String entry : entries) {</span>
-<span class="fc" id="L568">			entry = entry.trim();</span>
-<span class="pc bpc" id="L569" title="1 of 2 branches missed.">			if (entry.isEmpty()) {</span>
-<span class="nc" id="L570">				continue;</span>
+<span class="fc" id="L589">		Map&lt;String, String&gt; mappings = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L590">		List&lt;String&gt; entries = splitForeachEntries(value);</span>
+<span class="fc bfc" id="L591" title="All 2 branches covered.">		for (String entry : entries) {</span>
+<span class="fc" id="L592">			entry = entry.trim();</span>
+<span class="pc bpc" id="L593" title="1 of 2 branches missed.">			if (entry.isEmpty()) {</span>
+<span class="nc" id="L594">				continue;</span>
 			}
-<span class="fc" id="L572">			int arrowIdx = entry.indexOf(&quot;-&gt;&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L573" title="All 2 branches covered.">			if (arrowIdx &lt; 0) {</span>
-<span class="fc" id="L574">				throw new HintParseException(</span>
+<span class="fc" id="L596">			int arrowIdx = entry.indexOf(&quot;-&gt;&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L597" title="All 2 branches covered.">			if (arrowIdx &lt; 0) {</span>
+<span class="fc" id="L598">				throw new HintParseException(</span>
 						&quot;foreach entry must use 'key -&gt; value' syntax: &quot; + entry, lineNumber); //$NON-NLS-1$
 			}
-<span class="fc" id="L577">			String entryKey = entry.substring(0, arrowIdx).trim();</span>
-<span class="fc" id="L578">			String entryValue = entry.substring(arrowIdx + 2).trim();</span>
+<span class="fc" id="L601">			String entryKey = entry.substring(0, arrowIdx).trim();</span>
+<span class="fc" id="L602">			String entryValue = entry.substring(arrowIdx + 2).trim();</span>
 			// Strip quotes from key if present
-<span class="pc bpc" id="L580" title="1 of 4 branches missed.">			if (entryKey.startsWith(&quot;\&quot;&quot;) &amp;&amp; entryKey.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L581">				entryKey = entryKey.substring(1, entryKey.length() - 1);</span>
+<span class="pc bpc" id="L604" title="1 of 4 branches missed.">			if (entryKey.startsWith(&quot;\&quot;&quot;) &amp;&amp; entryKey.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L605">				entryKey = entryKey.substring(1, entryKey.length() - 1);</span>
 			}
-<span class="fc" id="L583">			mappings.put(entryKey, entryValue);</span>
-<span class="fc" id="L584">		}</span>
+<span class="fc" id="L607">			mappings.put(entryKey, entryValue);</span>
+<span class="fc" id="L608">		}</span>
 		
-<span class="fc bfc" id="L586" title="All 2 branches covered.">		if (mappings.isEmpty()) {</span>
-<span class="fc" id="L587">			throw new HintParseException(&quot;foreach directive has no entries&quot;, lineNumber); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L610" title="All 2 branches covered.">		if (mappings.isEmpty()) {</span>
+<span class="fc" id="L611">			throw new HintParseException(&quot;foreach directive has no entries&quot;, lineNumber); //$NON-NLS-1$</span>
 		}
 		
-<span class="fc" id="L590">		foreachVariables.put(varName, mappings);</span>
-<span class="fc" id="L591">	}</span>
+<span class="fc" id="L614">		foreachVariables.put(varName, mappings);</span>
+<span class="fc" id="L615">	}</span>
 
 	/**
 	 * Parses a {@code &lt;!map&gt;} directive and stores the variable mapping.
@@ -606,41 +630,41 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @since 1.4.2
 	 */
 	private void parseMapDirective(String key, String value, int lineNumber) throws HintParseException {
-<span class="fc" id="L609">		String mapName = key.substring(&quot;map &quot;.length()).trim(); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L610" title="1 of 2 branches missed.">		if (mapName.isEmpty()) {</span>
-<span class="nc" id="L611">			throw new HintParseException(&quot;map directive requires a name&quot;, lineNumber); //$NON-NLS-1$</span>
+<span class="fc" id="L633">		String mapName = key.substring(&quot;map &quot;.length()).trim(); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L634" title="1 of 2 branches missed.">		if (mapName.isEmpty()) {</span>
+<span class="nc" id="L635">			throw new HintParseException(&quot;map directive requires a name&quot;, lineNumber); //$NON-NLS-1$</span>
 		}
 
-<span class="fc" id="L614">		Map&lt;String, String&gt; mappings = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L615">		List&lt;String&gt; entries = splitForeachEntries(value); // reuse comma-respecting split</span>
-<span class="fc bfc" id="L616" title="All 2 branches covered.">		for (String entry : entries) {</span>
-<span class="fc" id="L617">			entry = entry.trim();</span>
-<span class="pc bpc" id="L618" title="1 of 2 branches missed.">			if (entry.isEmpty()) {</span>
-<span class="nc" id="L619">				continue;</span>
+<span class="fc" id="L638">		Map&lt;String, String&gt; mappings = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L639">		List&lt;String&gt; entries = splitForeachEntries(value); // reuse comma-respecting split</span>
+<span class="fc bfc" id="L640" title="All 2 branches covered.">		for (String entry : entries) {</span>
+<span class="fc" id="L641">			entry = entry.trim();</span>
+<span class="pc bpc" id="L642" title="1 of 2 branches missed.">			if (entry.isEmpty()) {</span>
+<span class="nc" id="L643">				continue;</span>
 			}
-<span class="fc" id="L621">			int arrowIdx = entry.indexOf(&quot;=&gt;&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L622" title="All 2 branches covered.">			if (arrowIdx &lt; 0) {</span>
-<span class="fc" id="L623">				throw new HintParseException(</span>
+<span class="fc" id="L645">			int arrowIdx = entry.indexOf(&quot;=&gt;&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L646" title="All 2 branches covered.">			if (arrowIdx &lt; 0) {</span>
+<span class="fc" id="L647">				throw new HintParseException(</span>
 						&quot;map entry must use 'key =&gt; value' syntax: &quot; + entry, lineNumber); //$NON-NLS-1$
 			}
-<span class="fc" id="L626">			String entryKey = entry.substring(0, arrowIdx).trim();</span>
-<span class="fc" id="L627">			String entryValue = entry.substring(arrowIdx + 2).trim();</span>
+<span class="fc" id="L650">			String entryKey = entry.substring(0, arrowIdx).trim();</span>
+<span class="fc" id="L651">			String entryValue = entry.substring(arrowIdx + 2).trim();</span>
 			// Strip quotes from key and value if present
-<span class="pc bpc" id="L629" title="1 of 4 branches missed.">			if (entryKey.startsWith(&quot;\&quot;&quot;) &amp;&amp; entryKey.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L630">				entryKey = entryKey.substring(1, entryKey.length() - 1);</span>
+<span class="pc bpc" id="L653" title="1 of 4 branches missed.">			if (entryKey.startsWith(&quot;\&quot;&quot;) &amp;&amp; entryKey.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L654">				entryKey = entryKey.substring(1, entryKey.length() - 1);</span>
 			}
-<span class="fc bfc" id="L632" title="All 4 branches covered.">			if (entryValue.startsWith(&quot;\&quot;&quot;) &amp;&amp; entryValue.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L633">				entryValue = entryValue.substring(1, entryValue.length() - 1);</span>
+<span class="fc bfc" id="L656" title="All 4 branches covered.">			if (entryValue.startsWith(&quot;\&quot;&quot;) &amp;&amp; entryValue.endsWith(&quot;\&quot;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L657">				entryValue = entryValue.substring(1, entryValue.length() - 1);</span>
 			}
-<span class="fc" id="L635">			mappings.put(entryKey, entryValue);</span>
-<span class="fc" id="L636">		}</span>
+<span class="fc" id="L659">			mappings.put(entryKey, entryValue);</span>
+<span class="fc" id="L660">		}</span>
 
-<span class="fc bfc" id="L638" title="All 2 branches covered.">		if (mappings.isEmpty()) {</span>
-<span class="fc" id="L639">			throw new HintParseException(&quot;map directive has no entries&quot;, lineNumber); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L662" title="All 2 branches covered.">		if (mappings.isEmpty()) {</span>
+<span class="fc" id="L663">			throw new HintParseException(&quot;map directive has no entries&quot;, lineNumber); //$NON-NLS-1$</span>
 		}
 
-<span class="fc" id="L642">		mapVariables.put(mapName, mappings);</span>
-<span class="fc" id="L643">	}</span>
+<span class="fc" id="L666">		mapVariables.put(mapName, mappings);</span>
+<span class="fc" id="L667">	}</span>
 	
 	/**
 	 * Splits foreach entries at commas, respecting quoted strings.
@@ -650,24 +674,24 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @return list of entry strings
 	 */
 	private List&lt;String&gt; splitForeachEntries(String value) {
-<span class="fc" id="L653">		List&lt;String&gt; entries = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L654">		boolean inQuotes = false;</span>
-<span class="fc" id="L655">		int start = 0;</span>
-<span class="fc bfc" id="L656" title="All 2 branches covered.">		for (int c = 0; c &lt; value.length(); c++) {</span>
-<span class="fc" id="L657">			char ch = value.charAt(c);</span>
-<span class="fc bfc" id="L658" title="All 2 branches covered.">			if (ch == '&quot;') {</span>
-<span class="fc bfc" id="L659" title="All 2 branches covered.">				inQuotes = !inQuotes;</span>
-<span class="pc bpc" id="L660" title="1 of 4 branches missed.">			} else if (ch == ',' &amp;&amp; !inQuotes) {</span>
-<span class="fc" id="L661">				entries.add(value.substring(start, c).trim());</span>
-<span class="fc" id="L662">				start = c + 1;</span>
+<span class="fc" id="L677">		List&lt;String&gt; entries = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L678">		boolean inQuotes = false;</span>
+<span class="fc" id="L679">		int start = 0;</span>
+<span class="fc bfc" id="L680" title="All 2 branches covered.">		for (int c = 0; c &lt; value.length(); c++) {</span>
+<span class="fc" id="L681">			char ch = value.charAt(c);</span>
+<span class="fc bfc" id="L682" title="All 2 branches covered.">			if (ch == '&quot;') {</span>
+<span class="fc bfc" id="L683" title="All 2 branches covered.">				inQuotes = !inQuotes;</span>
+<span class="pc bpc" id="L684" title="1 of 4 branches missed.">			} else if (ch == ',' &amp;&amp; !inQuotes) {</span>
+<span class="fc" id="L685">				entries.add(value.substring(start, c).trim());</span>
+<span class="fc" id="L686">				start = c + 1;</span>
 			}
 		}
 		// Add last entry
-<span class="fc" id="L666">		String last = value.substring(start).trim();</span>
-<span class="fc bfc" id="L667" title="All 2 branches covered.">		if (!last.isEmpty()) {</span>
-<span class="fc" id="L668">			entries.add(last);</span>
+<span class="fc" id="L690">		String last = value.substring(start).trim();</span>
+<span class="fc bfc" id="L691" title="All 2 branches covered.">		if (!last.isEmpty()) {</span>
+<span class="fc" id="L692">			entries.add(last);</span>
 		}
-<span class="fc" id="L670">		return entries;</span>
+<span class="fc" id="L694">		return entries;</span>
 	}
 	
 	/**
@@ -677,51 +701,51 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 */
 	private int parseRule(HintFile hintFile, List&lt;String&gt; lines, int startIndex) throws HintParseException {
 		// Collect all lines until ;;
-<span class="fc" id="L680">		List&lt;String&gt; ruleLines = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L681">		int i = startIndex;</span>
-<span class="fc" id="L682">		boolean foundTerminator = false;</span>
+<span class="fc" id="L704">		List&lt;String&gt; ruleLines = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L705">		int i = startIndex;</span>
+<span class="fc" id="L706">		boolean foundTerminator = false;</span>
 		
-<span class="fc bfc" id="L684" title="All 2 branches covered.">		while (i &lt; lines.size()) {</span>
-<span class="fc" id="L685">			String line = lines.get(i).trim();</span>
-<span class="fc" id="L686">			i++;</span>
+<span class="fc bfc" id="L708" title="All 2 branches covered.">		while (i &lt; lines.size()) {</span>
+<span class="fc" id="L709">			String line = lines.get(i).trim();</span>
+<span class="fc" id="L710">			i++;</span>
 			
-<span class="fc bfc" id="L688" title="All 2 branches covered.">			if (line.isEmpty()) {</span>
-<span class="fc" id="L689">				continue;</span>
+<span class="fc bfc" id="L712" title="All 2 branches covered.">			if (line.isEmpty()) {</span>
+<span class="fc" id="L713">				continue;</span>
 			}
 			
-<span class="fc bfc" id="L692" title="All 2 branches covered.">			if (&quot;;;&quot;.equals(line)) { //$NON-NLS-1$</span>
-<span class="fc" id="L693">				foundTerminator = true;</span>
-<span class="fc" id="L694">				break;</span>
+<span class="fc bfc" id="L716" title="All 2 branches covered.">			if (&quot;;;&quot;.equals(line)) { //$NON-NLS-1$</span>
+<span class="fc" id="L717">				foundTerminator = true;</span>
+<span class="fc" id="L718">				break;</span>
 			}
 			
-<span class="fc" id="L697">			ruleLines.add(line);</span>
-<span class="fc" id="L698">		}</span>
+<span class="fc" id="L721">			ruleLines.add(line);</span>
+<span class="fc" id="L722">		}</span>
 		
-<span class="pc bpc" id="L700" title="1 of 2 branches missed.">		if (ruleLines.isEmpty()) {</span>
-<span class="nc" id="L701">			return i;</span>
+<span class="pc bpc" id="L724" title="1 of 2 branches missed.">		if (ruleLines.isEmpty()) {</span>
+<span class="nc" id="L725">			return i;</span>
 		}
 		
-<span class="fc bfc" id="L704" title="All 2 branches covered.">		if (!foundTerminator) {</span>
-<span class="fc" id="L705">			throw new HintParseException(</span>
+<span class="fc bfc" id="L728" title="All 2 branches covered.">		if (!foundTerminator) {</span>
+<span class="fc" id="L729">			throw new HintParseException(</span>
 					&quot;Rule starting at line &quot; + (startIndex + 1) + &quot; is missing ';;' terminator&quot;, //$NON-NLS-1$ //$NON-NLS-2$
 					startIndex + 1);
 		}
 		
 		// Check if the rule uses foreach variables — expand if so
-<span class="fc" id="L711">		String foreachVar = findForeachVariable(ruleLines);</span>
-<span class="fc bfc" id="L712" title="All 2 branches covered.">		if (foreachVar != null) {</span>
-<span class="fc" id="L713">			expandForeachRule(hintFile, ruleLines, foreachVar, startIndex);</span>
+<span class="fc" id="L735">		String foreachVar = findForeachVariable(ruleLines);</span>
+<span class="fc bfc" id="L736" title="All 2 branches covered.">		if (foreachVar != null) {</span>
+<span class="fc" id="L737">			expandForeachRule(hintFile, ruleLines, foreachVar, startIndex);</span>
 		} else {
 			// Check if the rule uses map variables — expand if so
-<span class="fc" id="L716">			String mapVar = findMapVariable(ruleLines);</span>
-<span class="fc bfc" id="L717" title="All 2 branches covered.">			if (mapVar != null) {</span>
-<span class="fc" id="L718">				expandMapRule(hintFile, ruleLines, mapVar, startIndex);</span>
+<span class="fc" id="L740">			String mapVar = findMapVariable(ruleLines);</span>
+<span class="fc bfc" id="L741" title="All 2 branches covered.">			if (mapVar != null) {</span>
+<span class="fc" id="L742">				expandMapRule(hintFile, ruleLines, mapVar, startIndex);</span>
 			} else {
-<span class="fc" id="L720">				buildRule(hintFile, ruleLines, startIndex);</span>
+<span class="fc" id="L744">				buildRule(hintFile, ruleLines, startIndex);</span>
 			}
 		}
 		
-<span class="fc" id="L724">		return i;</span>
+<span class="fc" id="L748">		return i;</span>
 	}
 	
 	/**
@@ -730,14 +754,14 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @return the variable name if found, or {@code null}
 	 */
 	private String findForeachVariable(List&lt;String&gt; ruleLines) {
-<span class="fc bfc" id="L733" title="All 2 branches covered.">		for (String line : ruleLines) {</span>
-<span class="fc bfc" id="L734" title="All 2 branches covered.">			for (String varName : foreachVariables.keySet()) {</span>
-<span class="pc bpc" id="L735" title="1 of 4 branches missed.">				if (line.contains(&quot;${&quot; + varName + &quot;}&quot;) || line.contains(&quot;${&quot; + varName + &quot;_CONSTANT}&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
-<span class="fc" id="L736">					return varName;</span>
+<span class="fc bfc" id="L757" title="All 2 branches covered.">		for (String line : ruleLines) {</span>
+<span class="fc bfc" id="L758" title="All 2 branches covered.">			for (String varName : foreachVariables.keySet()) {</span>
+<span class="pc bpc" id="L759" title="1 of 4 branches missed.">				if (line.contains(&quot;${&quot; + varName + &quot;}&quot;) || line.contains(&quot;${&quot; + varName + &quot;_CONSTANT}&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L760">					return varName;</span>
 				}
-<span class="fc" id="L738">			}</span>
-<span class="fc" id="L739">		}</span>
-<span class="fc" id="L740">		return null;</span>
+<span class="fc" id="L762">			}</span>
+<span class="fc" id="L763">		}</span>
+<span class="fc" id="L764">		return null;</span>
 	}
 	
 	/**
@@ -748,20 +772,20 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 */
 	private void expandForeachRule(HintFile hintFile, List&lt;String&gt; ruleLines, 
 			String varName, int startIndex) throws HintParseException {
-<span class="fc" id="L751">		Map&lt;String, String&gt; mappings = foreachVariables.get(varName);</span>
-<span class="fc" id="L752">		String keyPlaceholder = &quot;${&quot; + varName + &quot;}&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L753">		String valuePlaceholder = &quot;${&quot; + varName + &quot;_CONSTANT}&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L775">		Map&lt;String, String&gt; mappings = foreachVariables.get(varName);</span>
+<span class="fc" id="L776">		String keyPlaceholder = &quot;${&quot; + varName + &quot;}&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L777">		String valuePlaceholder = &quot;${&quot; + varName + &quot;_CONSTANT}&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		
-<span class="fc bfc" id="L755" title="All 2 branches covered.">		for (Map.Entry&lt;String, String&gt; entry : mappings.entrySet()) {</span>
-<span class="fc" id="L756">			List&lt;String&gt; expandedLines = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L757" title="All 2 branches covered.">			for (String line : ruleLines) {</span>
-<span class="fc" id="L758">				String expanded = line.replace(keyPlaceholder, entry.getKey())</span>
-<span class="fc" id="L759">						.replace(valuePlaceholder, entry.getValue());</span>
-<span class="fc" id="L760">				expandedLines.add(expanded);</span>
-<span class="fc" id="L761">			}</span>
-<span class="fc" id="L762">			buildRule(hintFile, expandedLines, startIndex);</span>
-<span class="fc" id="L763">		}</span>
-<span class="fc" id="L764">	}</span>
+<span class="fc bfc" id="L779" title="All 2 branches covered.">		for (Map.Entry&lt;String, String&gt; entry : mappings.entrySet()) {</span>
+<span class="fc" id="L780">			List&lt;String&gt; expandedLines = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L781" title="All 2 branches covered.">			for (String line : ruleLines) {</span>
+<span class="fc" id="L782">				String expanded = line.replace(keyPlaceholder, entry.getKey())</span>
+<span class="fc" id="L783">						.replace(valuePlaceholder, entry.getValue());</span>
+<span class="fc" id="L784">				expandedLines.add(expanded);</span>
+<span class="fc" id="L785">			}</span>
+<span class="fc" id="L786">			buildRule(hintFile, expandedLines, startIndex);</span>
+<span class="fc" id="L787">		}</span>
+<span class="fc" id="L788">	}</span>
 	
 	/**
 	 * Checks if any rule line contains a {@code #{MAP}} reference to a defined map variable.
@@ -770,14 +794,14 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @since 1.4.2
 	 */
 	private String findMapVariable(List&lt;String&gt; ruleLines) {
-<span class="fc bfc" id="L773" title="All 2 branches covered.">		for (String line : ruleLines) {</span>
-<span class="fc bfc" id="L774" title="All 2 branches covered.">			for (String mapName : mapVariables.keySet()) {</span>
-<span class="pc bpc" id="L775" title="1 of 4 branches missed.">				if (line.contains(&quot;#{&quot; + mapName + &quot;}&quot;) || line.contains(&quot;#{&quot; + mapName + &quot;_VALUE}&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
-<span class="fc" id="L776">					return mapName;</span>
+<span class="fc bfc" id="L797" title="All 2 branches covered.">		for (String line : ruleLines) {</span>
+<span class="fc bfc" id="L798" title="All 2 branches covered.">			for (String mapName : mapVariables.keySet()) {</span>
+<span class="pc bpc" id="L799" title="1 of 4 branches missed.">				if (line.contains(&quot;#{&quot; + mapName + &quot;}&quot;) || line.contains(&quot;#{&quot; + mapName + &quot;_VALUE}&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L800">					return mapName;</span>
 				}
-<span class="fc" id="L778">			}</span>
-<span class="fc" id="L779">		}</span>
-<span class="fc" id="L780">		return null;</span>
+<span class="fc" id="L802">			}</span>
+<span class="fc" id="L803">		}</span>
+<span class="fc" id="L804">		return null;</span>
 	}
 
 	/**
@@ -790,187 +814,191 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 */
 	private void expandMapRule(HintFile hintFile, List&lt;String&gt; ruleLines,
 			String mapName, int startIndex) throws HintParseException {
-<span class="fc" id="L793">		Map&lt;String, String&gt; mappings = mapVariables.get(mapName);</span>
-<span class="fc" id="L794">		String keyPlaceholder = &quot;#{&quot; + mapName + &quot;}&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L795">		String valuePlaceholder = &quot;#{&quot; + mapName + &quot;_VALUE}&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L817">		Map&lt;String, String&gt; mappings = mapVariables.get(mapName);</span>
+<span class="fc" id="L818">		String keyPlaceholder = &quot;#{&quot; + mapName + &quot;}&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L819">		String valuePlaceholder = &quot;#{&quot; + mapName + &quot;_VALUE}&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 
-<span class="fc bfc" id="L797" title="All 2 branches covered.">		for (Map.Entry&lt;String, String&gt; entry : mappings.entrySet()) {</span>
-<span class="fc" id="L798">			List&lt;String&gt; expandedLines = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L799" title="All 2 branches covered.">			for (String line : ruleLines) {</span>
-<span class="fc" id="L800">				String expanded = line.replace(keyPlaceholder, entry.getKey())</span>
-<span class="fc" id="L801">						.replace(valuePlaceholder, entry.getValue());</span>
-<span class="fc" id="L802">				expandedLines.add(expanded);</span>
-<span class="fc" id="L803">			}</span>
-<span class="fc" id="L804">			buildRule(hintFile, expandedLines, startIndex);</span>
-<span class="fc" id="L805">		}</span>
-<span class="fc" id="L806">	}</span>
+<span class="fc bfc" id="L821" title="All 2 branches covered.">		for (Map.Entry&lt;String, String&gt; entry : mappings.entrySet()) {</span>
+<span class="fc" id="L822">			List&lt;String&gt; expandedLines = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L823" title="All 2 branches covered.">			for (String line : ruleLines) {</span>
+<span class="fc" id="L824">				String expanded = line.replace(keyPlaceholder, entry.getKey())</span>
+<span class="fc" id="L825">						.replace(valuePlaceholder, entry.getValue());</span>
+<span class="fc" id="L826">				expandedLines.add(expanded);</span>
+<span class="fc" id="L827">			}</span>
+<span class="fc" id="L828">			buildRule(hintFile, expandedLines, startIndex);</span>
+<span class="fc" id="L829">		}</span>
+<span class="fc" id="L830">	}</span>
 
 	/**
 	 * Builds a single transformation rule from the given rule lines and adds it to the hint file.
 	 */
 	private void buildRule(HintFile hintFile, List&lt;String&gt; ruleLines, int startIndex) throws HintParseException {
 		// Parse the rule lines
-<span class="fc" id="L813">		String description = null;</span>
-<span class="fc" id="L814">		String ruleId = null;</span>
-<span class="fc" id="L815">		Severity ruleSeverity = null;</span>
+<span class="fc" id="L837">		String description = null;</span>
+<span class="fc" id="L838">		String ruleId = null;</span>
+<span class="fc" id="L839">		Severity ruleSeverity = null;</span>
 		String sourcePatternText;
-<span class="fc" id="L817">		GuardExpression sourceGuard = null;</span>
-<span class="fc" id="L818">		List&lt;RewriteAlternative&gt; alternatives = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L841">		GuardExpression sourceGuard = null;</span>
+<span class="fc" id="L842">		List&lt;RewriteAlternative&gt; alternatives = new ArrayList&lt;&gt;();</span>
 		
-<span class="fc" id="L820">		int ruleLineIdx = 0;</span>
+<span class="fc" id="L844">		int ruleLineIdx = 0;</span>
 		
 		// Check for per-rule metadata annotations: @id:, @severity:
-<span class="pc bpc" id="L823" title="1 of 2 branches missed.">		while (ruleLineIdx &lt; ruleLines.size()) {</span>
-<span class="fc" id="L824">			String metaLine = ruleLines.get(ruleLineIdx).trim();</span>
-<span class="fc bfc" id="L825" title="All 2 branches covered.">			if (metaLine.startsWith(&quot;@id:&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L826">				ruleId = metaLine.substring(4).trim();</span>
-<span class="fc bfc" id="L827" title="All 2 branches covered.">				if (ruleId.isBlank()) {</span>
-<span class="fc" id="L828">					throw new HintParseException(&quot;Per-rule id must not be blank&quot;, startIndex + ruleLineIdx + 1); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L847" title="1 of 2 branches missed.">		while (ruleLineIdx &lt; ruleLines.size()) {</span>
+<span class="fc" id="L848">			String metaLine = ruleLines.get(ruleLineIdx).trim();</span>
+<span class="fc bfc" id="L849" title="All 2 branches covered.">			if (metaLine.startsWith(&quot;@id:&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L850">				ruleId = metaLine.substring(4).trim();</span>
+<span class="fc bfc" id="L851" title="All 2 branches covered.">				if (ruleId.isBlank()) {</span>
+<span class="fc" id="L852">					throw new HintParseException(&quot;Per-rule id must not be blank&quot;, startIndex + ruleLineIdx + 1); //$NON-NLS-1$</span>
 				}
-<span class="fc" id="L830">				ruleLineIdx++;</span>
-<span class="fc bfc" id="L831" title="All 2 branches covered.">			} else if (metaLine.startsWith(&quot;@severity:&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L832">				String severityStr = metaLine.substring(10).trim();</span>
+<span class="fc" id="L854">				ruleLineIdx++;</span>
+<span class="fc bfc" id="L855" title="All 2 branches covered.">			} else if (metaLine.startsWith(&quot;@severity:&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L856">				String severityStr = metaLine.substring(10).trim();</span>
 				try {
-<span class="fc" id="L834">					ruleSeverity = Severity.valueOf(severityStr.toUpperCase(java.util.Locale.ROOT));</span>
-<span class="fc" id="L835">				} catch (IllegalArgumentException e) {</span>
-<span class="fc" id="L836">					throw new HintParseException(</span>
+<span class="fc" id="L858">					ruleSeverity = Severity.valueOf(severityStr.toUpperCase(java.util.Locale.ROOT));</span>
+<span class="fc" id="L859">				} catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L860">					throw new HintParseException(</span>
 							&quot;Invalid per-rule severity: &quot; + severityStr, startIndex + ruleLineIdx + 1, e); //$NON-NLS-1$
-<span class="fc" id="L838">				}</span>
-<span class="fc" id="L839">				ruleLineIdx++;</span>
+<span class="fc" id="L862">				}</span>
+<span class="fc" id="L863">				ruleLineIdx++;</span>
 			} else {
 				break;
 			}
-<span class="fc" id="L843">		}</span>
+<span class="fc" id="L867">		}</span>
 		
-<span class="pc bpc" id="L845" title="1 of 2 branches missed.">		if (ruleLineIdx &gt;= ruleLines.size()) {</span>
-<span class="nc" id="L846">			throw new HintParseException(&quot;Rule has metadata annotations but no pattern&quot;, startIndex + 1); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L869" title="1 of 2 branches missed.">		if (ruleLineIdx &gt;= ruleLines.size()) {</span>
+<span class="nc" id="L870">			throw new HintParseException(&quot;Rule has metadata annotations but no pattern&quot;, startIndex + 1); //$NON-NLS-1$</span>
 		}
 		
 		// Check for description prefix: &quot;text&quot;:
-<span class="fc" id="L850">		String firstLine = ruleLines.get(ruleLineIdx);</span>
-<span class="fc bfc" id="L851" title="All 4 branches covered.">		if (firstLine.startsWith(&quot;\&quot;&quot;) &amp;&amp; firstLine.endsWith(&quot;\&quot;:&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L852">			description = firstLine.substring(1, firstLine.length() - 2);</span>
-<span class="fc" id="L853">			ruleLineIdx++;</span>
-<span class="pc bpc" id="L854" title="1 of 2 branches missed.">			if (ruleLineIdx &gt;= ruleLines.size()) {</span>
-<span class="nc" id="L855">				throw new HintParseException(&quot;Rule has description but no pattern&quot;, startIndex + 1); //$NON-NLS-1$</span>
+<span class="fc" id="L874">		String firstLine = ruleLines.get(ruleLineIdx);</span>
+<span class="fc bfc" id="L875" title="All 4 branches covered.">		if (firstLine.startsWith(&quot;\&quot;&quot;) &amp;&amp; firstLine.endsWith(&quot;\&quot;:&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L876">			description = firstLine.substring(1, firstLine.length() - 2);</span>
+<span class="fc" id="L877">			ruleLineIdx++;</span>
+<span class="pc bpc" id="L878" title="1 of 2 branches missed.">			if (ruleLineIdx &gt;= ruleLines.size()) {</span>
+<span class="nc" id="L879">				throw new HintParseException(&quot;Rule has description but no pattern&quot;, startIndex + 1); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L857">			firstLine = ruleLines.get(ruleLineIdx);</span>
+<span class="fc" id="L881">			firstLine = ruleLines.get(ruleLineIdx);</span>
 		}
 		
-		// Parse source pattern line (may have :: guard)
-<span class="fc" id="L861">		GuardSplit sourceAndGuard = splitGuard(firstLine);</span>
-<span class="fc" id="L862">		sourcePatternText = sourceAndGuard.patternText().trim();</span>
-<span class="fc bfc" id="L863" title="All 2 branches covered.">		if (sourceAndGuard.hasGuard()) {</span>
-<span class="fc" id="L864">			sourceGuard = guardParser.parse(sourceAndGuard.guardText().trim());</span>
+		// Keep the complete source, just as replacements already retain their
+		// continuation lines. A source guard can follow the final Java line or
+		// appear on its own :: line; multiple guards remain conjunctive.
+<span class="fc" id="L887">		StringBuilder sourceText = new StringBuilder();</span>
+<span class="fc bfc" id="L888" title="All 4 branches covered.">		while (ruleLineIdx &lt; ruleLines.size() &amp;&amp; !ruleLines.get(ruleLineIdx).startsWith(&quot;=&gt;&quot;)) { //$NON-NLS-1$</span>
+<span class="fc bfc" id="L889" title="All 2 branches covered.">			if (sourceText.length() &gt; 0) {</span>
+<span class="fc" id="L890">				sourceText.append('\n');</span>
+			}
+<span class="fc" id="L892">			sourceText.append(ruleLines.get(ruleLineIdx));</span>
+<span class="fc" id="L893">			ruleLineIdx++;</span>
 		}
-<span class="fc" id="L866">		ruleLineIdx++;</span>
-		
-		// Check for continuation lines with guard expressions (start with ::)
-<span class="fc bfc" id="L869" title="All 2 branches covered.">		while (ruleLineIdx &lt; ruleLines.size()) {</span>
-<span class="fc" id="L870">			String nextLine = ruleLines.get(ruleLineIdx).trim();</span>
-<span class="fc bfc" id="L871" title="All 2 branches covered.">			if (!nextLine.startsWith(&quot;::&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L872">				break;</span>
+<span class="fc bfc" id="L895" title="All 2 branches covered.">		if (RuleAuthoringDocument.containsJavaTextBlock(sourceText.toString())) {</span>
+<span class="fc" id="L896">			throw new HintParseException(RuleAuthoringDocument.textBlockDiagnostic(), startIndex + 1);</span>
+		}
+<span class="fc" id="L898">		GuardSplit sourceAndGuard = splitGuard(sourceText.toString());</span>
+<span class="fc" id="L899">		sourcePatternText = sourceAndGuard.patternText().trim();</span>
+<span class="fc bfc" id="L900" title="All 2 branches covered.">		if (sourceAndGuard.hasGuard()) {</span>
+<span class="fc bfc" id="L901" title="All 2 branches covered.">			for (String guardPart : sourceAndGuard.guardText().split(&quot;\\R\\s*::&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L902">				GuardExpression lineGuard = guardParser.parse(guardPart.trim());</span>
+<span class="fc bfc" id="L903" title="All 2 branches covered.">				sourceGuard = sourceGuard == null ? lineGuard : new GuardExpression.And(sourceGuard, lineGuard);</span>
 			}
-<span class="fc" id="L874">			String guardText = nextLine.substring(2).trim();</span>
-<span class="fc bfc" id="L875" title="All 2 branches covered.">			if (sourceGuard != null) {</span>
-				// Combine with existing guard using AND
-<span class="fc" id="L877">				sourceGuard = new GuardExpression.And(</span>
-<span class="fc" id="L878">						sourceGuard, guardParser.parse(guardText));</span>
-			} else {
-<span class="fc" id="L880">				sourceGuard = guardParser.parse(guardText);</span>
-			}
-<span class="fc" id="L882">			ruleLineIdx++;</span>
-<span class="fc" id="L883">		}</span>
+		}
+<span class="pc bpc" id="L906" title="1 of 2 branches missed.">		if (sourcePatternText.isBlank()) {</span>
+<span class="nc" id="L907">			throw new HintParseException(&quot;Rule has no source pattern&quot;, startIndex + 1); //$NON-NLS-1$</span>
+		}
 		
 		// Parse rewrite alternatives (lines starting with =&gt;)
-<span class="fc bfc" id="L886" title="All 2 branches covered.">		while (ruleLineIdx &lt; ruleLines.size()) {</span>
-<span class="fc" id="L887">			String altLine = ruleLines.get(ruleLineIdx);</span>
+<span class="fc bfc" id="L911" title="All 2 branches covered.">		while (ruleLineIdx &lt; ruleLines.size()) {</span>
+<span class="fc" id="L912">			String altLine = ruleLines.get(ruleLineIdx);</span>
 			
-<span class="pc bpc" id="L889" title="1 of 2 branches missed.">			if (!altLine.startsWith(&quot;=&gt;&quot;)) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L914" title="1 of 2 branches missed.">			if (!altLine.startsWith(&quot;=&gt;&quot;)) { //$NON-NLS-1$</span>
 				// Might be continuation of source pattern - for now, error
-<span class="nc" id="L891">				throw new HintParseException(</span>
+<span class="nc" id="L916">				throw new HintParseException(</span>
 						&quot;Expected '=&gt;' or ';;' but found: &quot; + altLine, //$NON-NLS-1$
 						startIndex + ruleLineIdx + 1);
 			}
 			
-<span class="fc" id="L896">			String altContent = altLine.substring(2).trim();</span>
+<span class="fc" id="L921">			String altContent = altLine.substring(2).trim();</span>
 			
 			// Handle =&gt; on its own line: read replacement from the next line(s)
-<span class="fc bfc" id="L899" title="All 4 branches covered.">			if (altContent.isEmpty() &amp;&amp; ruleLineIdx + 1 &lt; ruleLines.size()) {</span>
-<span class="fc" id="L900">				ruleLineIdx++;</span>
-<span class="fc" id="L901">				altContent = ruleLines.get(ruleLineIdx).trim();</span>
+<span class="fc bfc" id="L924" title="All 4 branches covered.">			if (altContent.isEmpty() &amp;&amp; ruleLineIdx + 1 &lt; ruleLines.size()) {</span>
+<span class="fc" id="L925">				ruleLineIdx++;</span>
+<span class="fc" id="L926">				altContent = ruleLines.get(ruleLineIdx).trim();</span>
 			}
 			
 			// Accumulate multiline replacement: continuation lines that don't
 			// start with '=&gt;' are part of the current replacement text.
 			// This enables NetBeans-compatible multiline expressions.
-<span class="fc" id="L907">			StringBuilder altContentBuilder = new StringBuilder(altContent);</span>
-<span class="fc bfc" id="L908" title="All 2 branches covered.">			while (ruleLineIdx + 1 &lt; ruleLines.size()) {</span>
-<span class="fc" id="L909">				String nextLine = ruleLines.get(ruleLineIdx + 1);</span>
-<span class="fc bfc" id="L910" title="All 2 branches covered.">				if (nextLine.startsWith(&quot;=&gt;&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L911">					break; // Next alternative — stop accumulating</span>
+<span class="fc" id="L932">			StringBuilder altContentBuilder = new StringBuilder(altContent);</span>
+<span class="fc bfc" id="L933" title="All 2 branches covered.">			while (ruleLineIdx + 1 &lt; ruleLines.size()) {</span>
+<span class="fc" id="L934">				String nextLine = ruleLines.get(ruleLineIdx + 1);</span>
+<span class="fc bfc" id="L935" title="All 2 branches covered.">				if (nextLine.startsWith(&quot;=&gt;&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L936">					break; // Next alternative — stop accumulating</span>
 				}
-<span class="fc" id="L913">				ruleLineIdx++;</span>
-<span class="fc" id="L914">				altContentBuilder.append('\n').append(nextLine.trim());</span>
-<span class="fc" id="L915">			}</span>
-<span class="fc" id="L916">			altContent = altContentBuilder.toString();</span>
+<span class="fc" id="L938">				ruleLineIdx++;</span>
+<span class="fc" id="L939">				altContentBuilder.append('\n').append(nextLine.trim());</span>
+<span class="fc" id="L940">			}</span>
+<span class="fc" id="L941">			altContent = altContentBuilder.toString();</span>
 			
-<span class="fc bfc" id="L918" title="All 2 branches covered.">			if (altContent.isEmpty()) {</span>
-<span class="fc" id="L919">				throw new HintParseException(</span>
+<span class="fc bfc" id="L943" title="All 2 branches covered.">			if (altContent.isEmpty()) {</span>
+<span class="fc" id="L944">				throw new HintParseException(</span>
 						&quot;Missing replacement after '=&gt;'&quot;, //$NON-NLS-1$
 						startIndex + ruleLineIdx + 1);
 			}
 			
-<span class="fc" id="L924">			GuardSplit altAndGuard = splitGuard(altContent);</span>
-<span class="fc" id="L925">			String replacementPattern = altAndGuard.patternText().trim();</span>
-<span class="fc" id="L926">			GuardExpression altGuard = null;</span>
-<span class="fc" id="L927">			String embeddedFixName = null;</span>
+<span class="fc bfc" id="L949" title="All 2 branches covered.">			if (RuleAuthoringDocument.containsJavaTextBlock(altContent)) {</span>
+<span class="fc" id="L950">				throw new HintParseException(RuleAuthoringDocument.textBlockDiagnostic(), startIndex + ruleLineIdx + 1);</span>
+			}
+<span class="fc" id="L952">			GuardSplit altAndGuard = splitGuard(altContent);</span>
+<span class="fc" id="L953">			String replacementPattern = altAndGuard.patternText().trim();</span>
+<span class="fc" id="L954">			GuardExpression altGuard = null;</span>
+<span class="fc" id="L955">			String embeddedFixName = null;</span>
 
 			// Check for embedded fix function reference: =&gt; &lt;?fixName?&gt;
 			// Use the same validation as isFixFunctionReference() to distinguish
 			// fix refs (&lt;?identifier?&gt;) from embedded Java blocks (&lt;? code ?&gt;)
-<span class="pc bpc" id="L932" title="1 of 4 branches missed.">			if (replacementPattern.startsWith(&quot;&lt;?&quot;) &amp;&amp; replacementPattern.endsWith(&quot;?&gt;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L933">				String inner = replacementPattern.substring(2, replacementPattern.length() - 2);</span>
-<span class="fc" id="L934">				String trimmedInner = inner.trim();</span>
-<span class="pc bpc" id="L935" title="2 of 4 branches missed.">				if (!trimmedInner.isEmpty() &amp;&amp; inner.equals(trimmedInner)</span>
-<span class="pc bpc" id="L936" title="1 of 2 branches missed.">						&amp;&amp; isValidJavaIdentifier(trimmedInner)) {</span>
-<span class="fc" id="L937">					embeddedFixName = trimmedInner;</span>
+<span class="pc bpc" id="L960" title="1 of 4 branches missed.">			if (replacementPattern.startsWith(&quot;&lt;?&quot;) &amp;&amp; replacementPattern.endsWith(&quot;?&gt;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L961">				String inner = replacementPattern.substring(2, replacementPattern.length() - 2);</span>
+<span class="fc" id="L962">				String trimmedInner = inner.trim();</span>
+<span class="pc bpc" id="L963" title="2 of 4 branches missed.">				if (!trimmedInner.isEmpty() &amp;&amp; inner.equals(trimmedInner)</span>
+<span class="pc bpc" id="L964" title="1 of 2 branches missed.">						&amp;&amp; isValidJavaIdentifier(trimmedInner)) {</span>
+<span class="fc" id="L965">					embeddedFixName = trimmedInner;</span>
 				}
 			}
 			
-<span class="fc bfc" id="L941" title="All 2 branches covered.">			if (altAndGuard.hasGuard()) {</span>
-<span class="fc" id="L942">				String guardText = altAndGuard.guardText().trim();</span>
-<span class="fc bfc" id="L943" title="All 2 branches covered.">				if (&quot;otherwise&quot;.equals(guardText)) { //$NON-NLS-1$</span>
-<span class="fc" id="L944">					altGuard = null; // otherwise = unconditional</span>
+<span class="fc bfc" id="L969" title="All 2 branches covered.">			if (altAndGuard.hasGuard()) {</span>
+<span class="fc" id="L970">				String guardText = altAndGuard.guardText().trim();</span>
+<span class="fc bfc" id="L971" title="All 2 branches covered.">				if (&quot;otherwise&quot;.equals(guardText)) { //$NON-NLS-1$</span>
+<span class="fc" id="L972">					altGuard = null; // otherwise = unconditional</span>
 				} else {
-<span class="fc" id="L946">					altGuard = guardParser.parse(guardText);</span>
+<span class="fc" id="L974">					altGuard = guardParser.parse(guardText);</span>
 				}
 			}
 			
-<span class="fc" id="L950">			alternatives.add(new RewriteAlternative(replacementPattern, altGuard, embeddedFixName));</span>
-<span class="fc" id="L951">			ruleLineIdx++;</span>
-<span class="fc" id="L952">		}</span>
+<span class="fc" id="L978">			alternatives.add(new RewriteAlternative(replacementPattern, altGuard, embeddedFixName));</span>
+<span class="fc" id="L979">			ruleLineIdx++;</span>
+<span class="fc" id="L980">		}</span>
 		
 		// Determine PatternKind from the source pattern text
-<span class="fc" id="L955">		PatternKind kind = inferPatternKind(sourcePatternText);</span>
-<span class="fc" id="L956">		Pattern sourcePattern = Pattern.of(sourcePatternText, kind);</span>
+<span class="fc" id="L983">		PatternKind kind = inferPatternKind(sourcePatternText);</span>
+<span class="fc" id="L984">		Pattern sourcePattern = Pattern.of(sourcePatternText, kind);</span>
 		
 		// FQN-based import inference: automatically derive imports from
 		// fully qualified names in source and replacement patterns
-<span class="fc" id="L960">		ImportDirective currentImports = new ImportDirective();</span>
-<span class="fc bfc" id="L961" title="All 2 branches covered.">		if (!alternatives.isEmpty()) {</span>
-<span class="fc" id="L962">			List&lt;String&gt; replacementTexts = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L963" title="All 2 branches covered.">			for (RewriteAlternative alt : alternatives) {</span>
-<span class="fc" id="L964">				replacementTexts.add(alt.replacementPattern());</span>
-<span class="fc" id="L965">			}</span>
-<span class="fc" id="L966">			currentImports = ImportDirective.inferFromFqnPatterns(sourcePatternText, replacementTexts);</span>
+<span class="fc" id="L988">		ImportDirective currentImports = new ImportDirective();</span>
+<span class="fc bfc" id="L989" title="All 2 branches covered.">		if (!alternatives.isEmpty()) {</span>
+<span class="fc" id="L990">			List&lt;String&gt; replacementTexts = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L991" title="All 2 branches covered.">			for (RewriteAlternative alt : alternatives) {</span>
+<span class="fc" id="L992">				replacementTexts.add(alt.replacementPattern());</span>
+<span class="fc" id="L993">			}</span>
+<span class="fc" id="L994">			currentImports = ImportDirective.inferFromFqnPatterns(sourcePatternText, replacementTexts);</span>
 		}
 		
-<span class="fc" id="L969">		TransformationRule rule = new TransformationRule(</span>
+<span class="fc" id="L997">		TransformationRule rule = new TransformationRule(</span>
 				ruleId, description, sourcePattern, sourceGuard, alternatives, 
-<span class="fc bfc" id="L971" title="All 2 branches covered.">				currentImports.isEmpty() ? null : currentImports, ruleSeverity);</span>
-<span class="fc" id="L972">		hintFile.addRule(rule);</span>
-<span class="fc" id="L973">	}</span>
+<span class="fc bfc" id="L999" title="All 2 branches covered.">				currentImports.isEmpty() ? null : currentImports, ruleSeverity);</span>
+<span class="fc" id="L1000">		hintFile.addRule(rule);</span>
+<span class="fc" id="L1001">	}</span>
 	
 	/**
 	 * Splits a line into pattern text and guard expression at the {@code ::} separator.
@@ -978,79 +1006,177 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @param line the line to split
 	 * @return a {@link GuardSplit} with the pattern text and optional guard text
 	 */
-	private GuardSplit splitGuard(String line) {
-		// Find :: that is not inside parentheses or quotes
-<span class="fc" id="L983">		int depth = 0;</span>
-<span class="fc" id="L984">		boolean inQuote = false;</span>
-<span class="fc bfc" id="L985" title="All 2 branches covered.">		for (int c = 0; c &lt; line.length() - 1; c++) {</span>
-<span class="fc" id="L986">			char ch = line.charAt(c);</span>
-<span class="fc bfc" id="L987" title="All 2 branches covered.">			if (ch == '&quot;') {</span>
-<span class="fc bfc" id="L988" title="All 2 branches covered.">				inQuote = !inQuote;</span>
-<span class="fc bfc" id="L989" title="All 2 branches covered.">			} else if (!inQuote) {</span>
-<span class="fc bfc" id="L990" title="All 2 branches covered.">				if (ch == '(') {</span>
-<span class="fc" id="L991">					depth++;</span>
-<span class="fc bfc" id="L992" title="All 2 branches covered.">				} else if (ch == ')') {</span>
-<span class="fc" id="L993">					depth--;</span>
-<span class="fc bfc" id="L994" title="All 6 branches covered.">				} else if (depth == 0 &amp;&amp; ch == ':' &amp;&amp; line.charAt(c + 1) == ':') {</span>
-<span class="fc" id="L995">					return new GuardSplit(</span>
-<span class="fc" id="L996">							line.substring(0, c),</span>
-<span class="fc" id="L997">							line.substring(c + 2));</span>
+	private GuardSplit splitGuard(String line) throws HintParseException {
+<span class="fc" id="L1010">		IScanner scanner = ToolFactory.createScanner(false, false, false, JavaCore.VERSION_25);</span>
+<span class="fc" id="L1011">		scanner.setSource(line.toCharArray());</span>
+<span class="fc" id="L1012">		int parentheses = 0;</span>
+<span class="fc" id="L1013">		int brackets = 0;</span>
+<span class="fc" id="L1014">		int braces = 0;</span>
+		try {
+<span class="fc bfc" id="L1016" title="All 2 branches covered.">			for (int token = scanner.getNextToken(); token != ITerminalSymbols.TokenNameEOF;</span>
+<span class="fc" id="L1017">					token = scanner.getNextToken()) {</span>
+<span class="fc bfc" id="L1018" title="All 8 branches covered.">				switch (token) {</span>
+<span class="fc" id="L1019">				case ITerminalSymbols.TokenNameLPAREN -&gt; parentheses++;</span>
+<span class="fc" id="L1020">				case ITerminalSymbols.TokenNameRPAREN -&gt; parentheses--;</span>
+<span class="fc" id="L1021">				case ITerminalSymbols.TokenNameLBRACKET -&gt; brackets++;</span>
+<span class="fc" id="L1022">				case ITerminalSymbols.TokenNameRBRACKET -&gt; brackets--;</span>
+<span class="fc" id="L1023">				case ITerminalSymbols.TokenNameLBRACE -&gt; braces++;</span>
+<span class="fc" id="L1024">				case ITerminalSymbols.TokenNameRBRACE -&gt; braces--;</span>
+				case ITerminalSymbols.TokenNameCOLON_COLON -&gt; {
+<span class="fc" id="L1026">					int start = scanner.getCurrentTokenStartPosition();</span>
+<span class="pc bpc" id="L1027" title="2 of 6 branches missed.">					if (parentheses == 0 &amp;&amp; brackets == 0 &amp;&amp; braces == 0</span>
+<span class="fc bfc" id="L1028" title="All 2 branches covered.">							&amp;&amp; !isMethodReference(line, start)) {</span>
+<span class="fc" id="L1029">						return new GuardSplit(line.substring(0, start), line.substring(start + 2));</span>
+					}
+<span class="fc" id="L1031">				}</span>
+				default -&gt; { }
 				}
 			}
+<span class="nc" id="L1035">		} catch (InvalidInputException invalidJava) {</span>
+<span class="nc" id="L1036">			throw new HintParseException(&quot;Invalid Java token in rule pattern: &quot; + invalidJava.getMessage(), 0, invalidJava); //$NON-NLS-1$</span>
+<span class="fc" id="L1037">		}</span>
+<span class="fc" id="L1038">		return new GuardSplit(line, null);</span>
+	}
+
+	/**
+	 * A Java method-reference name is not followed by an argument list. Guard
+	 * calls are, while a standalone {@code ::} line always introduces a guard.
+	 * Whitespace around an ambiguous bare name preserves the existing inline
+	 * zero-argument guard syntax; compact {@code Type::name} is a Java reference.
+	 */
+	private static boolean isMethodReference(String text, int separator) throws InvalidInputException {
+<span class="fc" id="L1048">		int lineStart = Math.max(text.lastIndexOf('\n', separator), text.lastIndexOf('\r', separator)) + 1;</span>
+<span class="fc bfc" id="L1049" title="All 2 branches covered.">		if (text.substring(lineStart, separator).isBlank()) {</span>
+<span class="fc" id="L1050">			return false;</span>
 		}
-<span class="fc" id="L1001">		return new GuardSplit(line, null);</span>
+<span class="fc" id="L1052">		IScanner lookahead = ToolFactory.createScanner(false, false, false, JavaCore.VERSION_25);</span>
+<span class="fc" id="L1053">		lookahead.setSource(text.toCharArray());</span>
+<span class="fc" id="L1054">		lookahead.resetTo(separator + 2, text.length() - 1);</span>
+<span class="fc" id="L1055">		int token = lookahead.getNextToken();</span>
+<span class="pc bpc" id="L1056" title="1 of 2 branches missed.">		if (token == ITerminalSymbols.TokenNameLESS) {</span>
+<span class="nc" id="L1057">			int typeArguments = 1;</span>
+<span class="nc bnc" id="L1058" title="All 2 branches missed.">			while (typeArguments &gt; 0) {</span>
+<span class="nc" id="L1059">				token = lookahead.getNextToken();</span>
+<span class="nc bnc" id="L1060" title="All 6 branches missed.">				switch (token) {</span>
+<span class="nc" id="L1061">				case ITerminalSymbols.TokenNameLESS -&gt; typeArguments++;</span>
+<span class="nc" id="L1062">				case ITerminalSymbols.TokenNameGREATER -&gt; typeArguments--;</span>
+<span class="nc" id="L1063">				case ITerminalSymbols.TokenNameRIGHT_SHIFT -&gt; typeArguments -= 2;</span>
+<span class="nc" id="L1064">				case ITerminalSymbols.TokenNameUNSIGNED_RIGHT_SHIFT -&gt; typeArguments -= 3;</span>
+<span class="nc" id="L1065">				case ITerminalSymbols.TokenNameEOF -&gt; { return false; }</span>
+<span class="nc" id="L1066">				default -&gt; { }</span>
+				}
+			}
+<span class="nc" id="L1069">			token = lookahead.getNextToken();</span>
+		}
+<span class="pc bpc" id="L1071" title="1 of 4 branches missed.">		if (token != ITerminalSymbols.TokenNameIdentifier &amp;&amp; token != ITerminalSymbols.TokenNamenew) {</span>
+<span class="fc" id="L1072">			return false;</span>
+		}
+<span class="fc bfc" id="L1074" title="All 2 branches covered.">		if (&quot;otherwise&quot;.equals(new String(lookahead.getCurrentTokenSource()))) { //$NON-NLS-1$</span>
+<span class="fc" id="L1075">			return false;</span>
+		}
+<span class="fc" id="L1077">		int following = lookahead.getNextToken();</span>
+<span class="pc bpc" id="L1078" title="2 of 10 branches missed.">		if (following == ITerminalSymbols.TokenNameLPAREN || following == ITerminalSymbols.TokenNameinstanceof</span>
+				|| following == ITerminalSymbols.TokenNameAND_AND || following == ITerminalSymbols.TokenNameOR_OR
+				|| following == ITerminalSymbols.TokenNameCOMMA) {
+<span class="fc" id="L1081">			return false;</span>
+		}
+<span class="pc bpc" id="L1083" title="2 of 4 branches missed.">		return separator &gt; 0 &amp;&amp; separator + 2 &lt; text.length()</span>
+<span class="fc bfc" id="L1084" title="All 2 branches covered.">				&amp;&amp; !Character.isWhitespace(text.charAt(separator - 1))</span>
+<span class="pc bpc" id="L1085" title="1 of 2 branches missed.">				&amp;&amp; !Character.isWhitespace(text.charAt(separator + 2));</span>
 	}
 	
 	/**
 	 * Infers the {@link PatternKind} from the source pattern text.
 	 * 
-	 * &lt;p&gt;Heuristics:&lt;/p&gt;
+	 * &lt;p&gt;Declaration syntax and parsed statement/expression roots determine the kind:&lt;/p&gt;
 	 * &lt;ul&gt;
 	 *   &lt;li&gt;Starts with {@code @} → ANNOTATION&lt;/li&gt;
 	 *   &lt;li&gt;Starts with {@code import } → IMPORT&lt;/li&gt;
-	 *   &lt;li&gt;Starts with {@code new } → CONSTRUCTOR&lt;/li&gt;
+	 *   &lt;li&gt;Class-instance creation root → CONSTRUCTOR&lt;/li&gt;
 	 *   &lt;li&gt;Starts with {@code {}} → BLOCK&lt;/li&gt;
 	 *   &lt;li&gt;Looks like a method declaration (return type + name + parens) → METHOD_DECLARATION&lt;/li&gt;
-	 *   &lt;li&gt;Contains name + parens → METHOD_CALL&lt;/li&gt;
+	 *   &lt;li&gt;Multiple parsed statements → STATEMENT_SEQUENCE&lt;/li&gt;
+	 *   &lt;li&gt;Method-invocation root → METHOD_CALL&lt;/li&gt;
 	 *   &lt;li&gt;Ends with {@code ;} → STATEMENT&lt;/li&gt;
 	 *   &lt;li&gt;Default → EXPRESSION&lt;/li&gt;
 	 * &lt;/ul&gt;
 	 */
-	private PatternKind inferPatternKind(String patternText) {
-<span class="fc" id="L1020">		String trimmed = patternText.trim();</span>
-		
-<span class="fc bfc" id="L1022" title="All 2 branches covered.">		if (trimmed.startsWith(&quot;@&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1023">			return PatternKind.ANNOTATION;</span>
+	private PatternKind inferPatternKind(String patternText) throws HintParseException {
+<span class="fc" id="L1105">		String trimmed = patternText.trim();</span>
+<span class="fc bfc" id="L1106" title="All 2 branches covered.">		if (trimmed.startsWith(&quot;@&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1107">			return PatternKind.ANNOTATION;</span>
 		}
-<span class="fc bfc" id="L1025" title="All 2 branches covered.">		if (trimmed.startsWith(&quot;import &quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1026">			return PatternKind.IMPORT;</span>
+<span class="fc bfc" id="L1109" title="All 2 branches covered.">		if (trimmed.startsWith(&quot;import &quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1110">			return PatternKind.IMPORT;</span>
 		}
-<span class="fc bfc" id="L1028" title="All 2 branches covered.">		if (trimmed.startsWith(&quot;new &quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1029">			return PatternKind.CONSTRUCTOR;</span>
+<span class="fc" id="L1112">		PatternParser syntax = new PatternParser();</span>
+<span class="fc bfc" id="L1113" title="All 2 branches covered.">		if (trimmed.startsWith(&quot;{&quot;)) { //$NON-NLS-1$</span>
+			// PatternParser preserves existing leading braces and can otherwise
+			// recover only that first block while ignoring following statements.
+			// Require one complete block rather than authorizing a partial match.
+<span class="pc bpc" id="L1117" title="1 of 2 branches missed.">			if (syntax.parse(Pattern.of(trimmed, PatternKind.BLOCK)) instanceof Block block</span>
+<span class="fc bfc" id="L1118" title="All 2 branches covered.">					&amp;&amp; block.getLength() == trimmed.length()) {</span>
+<span class="fc" id="L1119">				return PatternKind.BLOCK;</span>
+			}
+<span class="fc" id="L1121">			throw new HintParseException(&quot;Source pattern must be one complete block; trailing statements are not supported after a leading block&quot;, 0); //$NON-NLS-1$</span>
 		}
-<span class="fc bfc" id="L1031" title="All 2 branches covered.">		if (trimmed.startsWith(&quot;{&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1032">			return PatternKind.BLOCK;</span>
+		// A method signature can recover as several statements in a method
+		// body. Recognize the actual declaration before inspecting that recovery.
+<span class="fc bfc" id="L1125" title="All 2 branches covered.">		if (looksLikeMethodDeclaration(trimmed)</span>
+<span class="fc bfc" id="L1126" title="All 2 branches covered.">				&amp;&amp; syntax.parse(Pattern.of(trimmed, PatternKind.METHOD_DECLARATION))</span>
+<span class="fc" id="L1127">						instanceof org.eclipse.jdt.core.dom.MethodDeclaration declaration</span>
+<span class="pc bpc" id="L1128" title="1 of 2 branches missed.">				&amp;&amp; (declaration.getFlags() &amp; (ASTNode.MALFORMED | ASTNode.RECOVERED)) == 0) {</span>
+<span class="fc" id="L1129">			return PatternKind.METHOD_DECLARATION;</span>
 		}
-		// Method declaration: starts with a return type keyword followed by name and parens
-		// e.g., &quot;void $name($params$)&quot;, &quot;String getName()&quot;, &quot;int $name()&quot;
-<span class="fc bfc" id="L1036" title="All 2 branches covered.">		if (looksLikeMethodDeclaration(trimmed)) {</span>
-<span class="fc" id="L1037">			return PatternKind.METHOD_DECLARATION;</span>
+		// Inspect actual statement roots. Parentheses may occur in initializers,
+		// strings or nested calls and do not identify a method declaration.
+<span class="fc" id="L1133">		ASTNode statements = syntax.parse(Pattern.of(trimmed, PatternKind.BLOCK));</span>
+<span class="pc bpc" id="L1134" title="1 of 4 branches missed.">		if (statements instanceof Block block &amp;&amp; hasCompleteStatementRange(block, trimmed.length())) {</span>
+<span class="fc bfc" id="L1135" title="All 2 branches covered.">			if (block.statements().size() &gt; 1) {</span>
+<span class="fc" id="L1136">				return PatternKind.STATEMENT_SEQUENCE;</span>
+			}
+<span class="pc bpc" id="L1138" title="1 of 2 branches missed.">			if (block.statements().size() == 1</span>
+<span class="fc bfc" id="L1139" title="All 2 branches covered.">					&amp;&amp; block.statements().getFirst() instanceof VariableDeclarationStatement) {</span>
+<span class="fc" id="L1140">				return PatternKind.DECLARATION;</span>
+			}
 		}
-		// Method call: contains '(' and '.' or is a simple name with parens
-<span class="fc bfc" id="L1040" title="All 6 branches covered.">		if (trimmed.contains(&quot;(&quot;) &amp;&amp; trimmed.contains(&quot;)&quot;) &amp;&amp; !trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="fc" id="L1041">			return PatternKind.METHOD_CALL;</span>
+<span class="fc" id="L1143">		ASTNode expression = syntax.parse(Pattern.of(trimmed, PatternKind.EXPRESSION));</span>
+		// PatternParser embeds expressions in a method and may return just the
+		// leading expression of a statement list. Never classify that prefix as
+		// if it represented the complete source pattern.
+<span class="fc bfc" id="L1147" title="All 4 branches covered.">		if (expression != null &amp;&amp; expression.getLength() != trimmed.length()) {</span>
+<span class="pc bpc" id="L1148" title="2 of 4 branches missed.">			if (statements instanceof Block block &amp;&amp; hasCompleteStatementRange(block, trimmed.length())</span>
+<span class="pc bpc" id="L1149" title="1 of 2 branches missed.">					&amp;&amp; block.statements().size() == 1) {</span>
+<span class="fc" id="L1150">				return PatternKind.STATEMENT;</span>
+			}
+<span class="nc" id="L1152">			throw new HintParseException(&quot;Source pattern is not a complete Java expression or statement sequence&quot;, 0); //$NON-NLS-1$</span>
 		}
-		// Variable declaration: &quot;$Type $var = $init;&quot; or &quot;$Type $var;&quot;
-		// Must be checked before generic STATEMENT to distinguish declarations
-<span class="fc bfc" id="L1045" title="All 2 branches covered.">		if (looksLikeDeclaration(trimmed)) {</span>
-<span class="fc" id="L1046">			return PatternKind.DECLARATION;</span>
+<span class="fc bfc" id="L1154" title="All 2 branches covered.">		if (expression instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {</span>
+<span class="fc" id="L1155">			return PatternKind.CONSTRUCTOR;</span>
 		}
-<span class="fc bfc" id="L1048" title="All 2 branches covered.">		if (trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1049">			return PatternKind.STATEMENT;</span>
+<span class="pc bpc" id="L1157" title="1 of 4 branches missed.">		if (expression == null &amp;&amp; statements instanceof Block block</span>
+<span class="pc bpc" id="L1158" title="1 of 4 branches missed.">				&amp;&amp; hasCompleteStatementRange(block, trimmed.length()) &amp;&amp; block.statements().size() == 1) {</span>
+<span class="fc" id="L1159">			return PatternKind.STATEMENT;</span>
 		}
-<span class="fc" id="L1051">		return PatternKind.EXPRESSION;</span>
+<span class="pc bpc" id="L1161" title="1 of 2 branches missed.">		if (trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1162" title="All 2 branches missed.">			return looksLikeDeclaration(trimmed) ? PatternKind.DECLARATION : PatternKind.STATEMENT;</span>
+		}
+<span class="fc bfc" id="L1164" title="All 2 branches covered.">		return expression instanceof org.eclipse.jdt.core.dom.MethodInvocation</span>
+<span class="fc" id="L1165">				? PatternKind.METHOD_CALL : PatternKind.EXPRESSION;</span>
 	}
-	
+
+	/** Checks the complete Java source range, excluding PatternParser's synthetic braces. */
+	private static boolean hasCompleteStatementRange(Block block, int sourceLength) {
+<span class="pc bpc" id="L1170" title="1 of 4 branches missed.">		if (block.getLength() != sourceLength + 4 || block.statements().isEmpty()) {</span>
+<span class="fc" id="L1171">			return false;</span>
+		}
+<span class="fc" id="L1173">		ASTNode first = (ASTNode) block.statements().getFirst();</span>
+<span class="fc" id="L1174">		ASTNode last = (ASTNode) block.statements().getLast();</span>
+<span class="fc" id="L1175">		int sourceStart = block.getStartPosition() + 2;</span>
+<span class="pc bpc" id="L1176" title="1 of 2 branches missed.">		return first.getStartPosition() == sourceStart</span>
+<span class="fc bfc" id="L1177" title="All 2 branches covered.">				&amp;&amp; last.getStartPosition() + last.getLength() == sourceStart + sourceLength;</span>
+	}
+
 	/**
 	 * Checks if a pattern looks like a method declaration.
 	 * 
@@ -1070,35 +1196,36 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 */
 	private static boolean looksLikeMethodDeclaration(String trimmed) {
 		// Must contain parens
-<span class="fc bfc" id="L1073" title="All 4 branches covered.">		if (!trimmed.contains(&quot;(&quot;) || !trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L1074">			return false;</span>
+<span class="fc bfc" id="L1199" title="All 4 branches covered.">		if (!trimmed.contains(&quot;(&quot;) || !trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L1200">			return false;</span>
 		}
 		// Must not contain '.' (method calls have receiver.method())
 		// Method declarations don't have dots in the signature part before '('
-<span class="fc" id="L1078">		String beforeParens = trimmed.substring(0, trimmed.indexOf('(')).trim();</span>
-<span class="fc bfc" id="L1079" title="All 2 branches covered.">		if (beforeParens.contains(&quot;.&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1080">			return false;</span>
+<span class="fc" id="L1204">		String beforeParens = trimmed.substring(0, trimmed.indexOf('(')).trim();</span>
+<span class="fc bfc" id="L1205" title="All 6 branches covered.">		if (beforeParens.contains(&quot;.&quot;) || beforeParens.contains(&quot;=&quot;) || beforeParens.contains(&quot;;&quot;) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="pc bpc" id="L1206" title="1 of 4 branches missed.">				|| beforeParens.contains(&quot;{&quot;) || beforeParens.contains(&quot;}&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L1207">			return false;</span>
 		}
 		// Split into space-separated tokens before '('
-<span class="fc" id="L1083">		String[] tokens = beforeParens.split(&quot;\\s+&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L1210">		String[] tokens = beforeParens.split(&quot;\\s+&quot;); //$NON-NLS-1$</span>
 		// Need at least 2 tokens: return type and method name
 		// e.g., &quot;void $name&quot; or &quot;public void setUp&quot;
-<span class="fc bfc" id="L1086" title="All 2 branches covered.">		if (tokens.length &lt; 2) {</span>
-<span class="fc" id="L1087">			return false;</span>
+<span class="fc bfc" id="L1213" title="All 2 branches covered.">		if (tokens.length &lt; 2) {</span>
+<span class="fc" id="L1214">			return false;</span>
 		}
 		// Check if any token is a primitive type or 'void' — strong indicator
-<span class="fc bfc" id="L1090" title="All 2 branches covered.">		for (String token : tokens) {</span>
-<span class="fc bfc" id="L1091" title="All 2 branches covered.">			if (RETURN_TYPE_KEYWORDS.contains(token)) {</span>
-<span class="fc" id="L1092">				return true;</span>
+<span class="fc bfc" id="L1217" title="All 2 branches covered.">		for (String token : tokens) {</span>
+<span class="fc bfc" id="L1218" title="All 2 branches covered.">			if (RETURN_TYPE_KEYWORDS.contains(token)) {</span>
+<span class="fc" id="L1219">				return true;</span>
 			}
 		}
 		// Heuristic: if the second-to-last token looks like a type (starts with uppercase
 		// or is a placeholder) and the last token looks like a name, treat as declaration
-<span class="fc" id="L1097">		String possibleType = tokens[tokens.length - 2];</span>
-<span class="fc bfc" id="L1098" title="All 4 branches covered.">		if (Character.isUpperCase(possibleType.charAt(0)) || possibleType.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1099">			return true;</span>
+<span class="fc" id="L1224">		String possibleType = tokens[tokens.length - 2];</span>
+<span class="fc bfc" id="L1225" title="All 4 branches covered.">		if (Character.isUpperCase(possibleType.charAt(0)) || possibleType.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1226">			return true;</span>
 		}
-<span class="fc" id="L1101">		return false;</span>
+<span class="fc" id="L1228">		return false;</span>
 	}
 
 	/**
@@ -1120,43 +1247,43 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 */
 	private static boolean looksLikeDeclaration(String trimmed) {
 		// Must end with semicolon
-<span class="fc bfc" id="L1123" title="All 2 branches covered.">		if (!trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1124">			return false;</span>
+<span class="nc bnc" id="L1250" title="All 2 branches missed.">		if (!trimmed.endsWith(&quot;;&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L1251">			return false;</span>
 		}
 		// Must NOT contain parens (those are method calls/declarations)
-<span class="pc bpc" id="L1127" title="1 of 4 branches missed.">		if (trimmed.contains(&quot;(&quot;) || trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L1128">			return false;</span>
+<span class="nc bnc" id="L1254" title="All 4 branches missed.">		if (trimmed.contains(&quot;(&quot;) || trimmed.contains(&quot;)&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L1255">			return false;</span>
 		}
 		// Check for &quot;= &quot; indicating an initializer
 		// Pattern: &quot;$Type $var = $init;&quot; or &quot;$Type $var;&quot;
-<span class="fc" id="L1132">		String withoutSemicolon = trimmed.substring(0, trimmed.length() - 1).trim();</span>
+<span class="nc" id="L1259">		String withoutSemicolon = trimmed.substring(0, trimmed.length() - 1).trim();</span>
 		String declarationPart;
-<span class="fc bfc" id="L1134" title="All 2 branches covered.">		if (withoutSemicolon.contains(&quot;=&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1135">			declarationPart = withoutSemicolon.substring(0, withoutSemicolon.indexOf('=')).trim();</span>
+<span class="nc bnc" id="L1261" title="All 2 branches missed.">		if (withoutSemicolon.contains(&quot;=&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L1262">			declarationPart = withoutSemicolon.substring(0, withoutSemicolon.indexOf('=')).trim();</span>
 		} else {
-<span class="fc" id="L1137">			declarationPart = withoutSemicolon;</span>
+<span class="nc" id="L1264">			declarationPart = withoutSemicolon;</span>
 		}
 		// Must have exactly 2 space-separated tokens: type and name
-<span class="fc" id="L1140">		String[] tokens = declarationPart.split(&quot;\\s+&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L1141" title="1 of 2 branches missed.">		if (tokens.length != 2) {</span>
-<span class="nc" id="L1142">			return false;</span>
+<span class="nc" id="L1267">		String[] tokens = declarationPart.split(&quot;\\s+&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1268" title="All 2 branches missed.">		if (tokens.length != 2) {</span>
+<span class="nc" id="L1269">			return false;</span>
 		}
 		// First token must be a type: placeholder ($Type), FQN, or uppercase identifier
-<span class="fc" id="L1145">		String typeToken = tokens[0];</span>
+<span class="nc" id="L1272">		String typeToken = tokens[0];</span>
 		// Second token must be a variable name: placeholder ($var) or lowercase identifier
-<span class="fc" id="L1147">		String nameToken = tokens[1];</span>
-<span class="fc" id="L1148">		boolean typeIsPlaceholder = typeToken.startsWith(&quot;$&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L1149" title="1 of 4 branches missed.">		boolean typeIsUppercase = !typeToken.isEmpty() &amp;&amp; Character.isUpperCase(typeToken.charAt(0));</span>
-<span class="fc" id="L1150">		boolean typeIsFqn = typeToken.contains(&quot;.&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L1151">		boolean nameIsPlaceholder = nameToken.startsWith(&quot;$&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L1152" title="All 8 branches covered.">		return (typeIsPlaceholder || typeIsUppercase || typeIsFqn)</span>
-<span class="pc bpc" id="L1153" title="1 of 2 branches missed.">				&amp;&amp; (nameIsPlaceholder || !nameToken.isEmpty());</span>
+<span class="nc" id="L1274">		String nameToken = tokens[1];</span>
+<span class="nc" id="L1275">		boolean typeIsPlaceholder = typeToken.startsWith(&quot;$&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1276" title="All 4 branches missed.">		boolean typeIsUppercase = !typeToken.isEmpty() &amp;&amp; Character.isUpperCase(typeToken.charAt(0));</span>
+<span class="nc" id="L1277">		boolean typeIsFqn = typeToken.contains(&quot;.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L1278">		boolean nameIsPlaceholder = nameToken.startsWith(&quot;$&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1279" title="All 8 branches missed.">		return (typeIsPlaceholder || typeIsUppercase || typeIsFqn)</span>
+<span class="nc bnc" id="L1280" title="All 2 branches missed.">				&amp;&amp; (nameIsPlaceholder || !nameToken.isEmpty());</span>
 	}
 	
 	/**
 	 * Java primitive types and void — used to detect method declaration patterns.
 	 */
-<span class="fc" id="L1159">	private static final Set&lt;String&gt; RETURN_TYPE_KEYWORDS = Set.of(</span>
+<span class="fc" id="L1286">	private static final Set&lt;String&gt; RETURN_TYPE_KEYWORDS = Set.of(</span>
 			&quot;void&quot;, &quot;int&quot;, &quot;long&quot;, &quot;short&quot;, &quot;byte&quot;, //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
 			&quot;float&quot;, &quot;double&quot;, &quot;boolean&quot;, &quot;char&quot; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	);
@@ -1176,16 +1303,16 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @return {@code true} if the content is a fix function reference
 	 */
 	private static boolean isFixFunctionReference(String content) {
-<span class="pc bpc" id="L1179" title="1 of 2 branches missed.">		if (content.isEmpty()) {</span>
-<span class="nc" id="L1180">			return false;</span>
+<span class="pc bpc" id="L1306" title="1 of 2 branches missed.">		if (content.isEmpty()) {</span>
+<span class="nc" id="L1307">			return false;</span>
 		}
 		// Fix function references must not have leading/trailing whitespace
 		// This distinguishes &lt;?fixName?&gt; from &lt;? code ?&gt; (embedded Java)
-<span class="fc bfc" id="L1184" title="All 2 branches covered.">		if (Character.isWhitespace(content.charAt(0))</span>
-<span class="pc bpc" id="L1185" title="1 of 2 branches missed.">				|| Character.isWhitespace(content.charAt(content.length() - 1))) {</span>
-<span class="fc" id="L1186">			return false;</span>
+<span class="fc bfc" id="L1311" title="All 2 branches covered.">		if (Character.isWhitespace(content.charAt(0))</span>
+<span class="pc bpc" id="L1312" title="1 of 2 branches missed.">				|| Character.isWhitespace(content.charAt(content.length() - 1))) {</span>
+<span class="fc" id="L1313">			return false;</span>
 		}
-<span class="fc" id="L1188">		return isValidJavaIdentifier(content);</span>
+<span class="fc" id="L1315">		return isValidJavaIdentifier(content);</span>
 	}
 
 	/**
@@ -1195,18 +1322,18 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 	 * @return {@code true} if the text is a valid Java identifier
 	 */
 	static boolean isValidJavaIdentifier(String text) {
-<span class="pc bpc" id="L1198" title="2 of 4 branches missed.">		if (text == null || text.isEmpty()) {</span>
-<span class="nc" id="L1199">			return false;</span>
+<span class="pc bpc" id="L1325" title="2 of 4 branches missed.">		if (text == null || text.isEmpty()) {</span>
+<span class="nc" id="L1326">			return false;</span>
 		}
-<span class="pc bpc" id="L1201" title="1 of 2 branches missed.">		if (!Character.isJavaIdentifierStart(text.charAt(0))) {</span>
-<span class="nc" id="L1202">			return false;</span>
+<span class="pc bpc" id="L1328" title="1 of 2 branches missed.">		if (!Character.isJavaIdentifierStart(text.charAt(0))) {</span>
+<span class="nc" id="L1329">			return false;</span>
 		}
-<span class="fc bfc" id="L1204" title="All 2 branches covered.">		for (int i = 1; i &lt; text.length(); i++) {</span>
-<span class="pc bpc" id="L1205" title="1 of 2 branches missed.">			if (!Character.isJavaIdentifierPart(text.charAt(i))) {</span>
-<span class="nc" id="L1206">				return false;</span>
+<span class="fc bfc" id="L1331" title="All 2 branches covered.">		for (int i = 1; i &lt; text.length(); i++) {</span>
+<span class="pc bpc" id="L1332" title="1 of 2 branches missed.">			if (!Character.isJavaIdentifierPart(text.charAt(i))) {</span>
+<span class="nc" id="L1333">				return false;</span>
 			}
 		}
-<span class="fc" id="L1209">		return true;</span>
+<span class="fc" id="L1336">		return true;</span>
 	}
 	
 	/**
@@ -1223,8 +1350,8 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 		 * @param lineNumber the line number where the error occurred
 		 */
 		public HintParseException(String message, int lineNumber) {
-<span class="fc" id="L1226">			this(message, lineNumber, null);</span>
-<span class="fc" id="L1227">		}</span>
+<span class="fc" id="L1353">			this(message, lineNumber, null);</span>
+<span class="fc" id="L1354">		}</span>
 
 		/**
 		 * Creates a new parse exception and preserves the originating failure.
@@ -1234,9 +1361,9 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 		 * @param cause the originating failure, or {@code null}
 		 */
 		public HintParseException(String message, int lineNumber, Throwable cause) {
-<span class="fc" id="L1237">			super(message + &quot; (line &quot; + lineNumber + &quot;)&quot;, cause); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L1238">			this.lineNumber = lineNumber;</span>
-<span class="fc" id="L1239">		}</span>
+<span class="fc" id="L1364">			super(message + &quot; (line &quot; + lineNumber + &quot;)&quot;, cause); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L1365">			this.lineNumber = lineNumber;</span>
+<span class="fc" id="L1366">		}</span>
 		
 		/**
 		 * Returns the line number where the error occurred.
@@ -1244,7 +1371,7 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 		 * @return the line number
 		 */
 		public int getLineNumber() {
-<span class="fc" id="L1247">			return lineNumber;</span>
+<span class="fc" id="L1374">			return lineNumber;</span>
 		}
 	}
 }

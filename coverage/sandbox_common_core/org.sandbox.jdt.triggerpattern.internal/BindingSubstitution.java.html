@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>BindingSubstitution.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">BindingSubstitution.java</span></div><h1>BindingSubstitution.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.ToolFactory;
+import org.eclipse.jdt.core.compiler.IScanner;
+import org.eclipse.jdt.core.compiler.ITerminalSymbols;
+import org.eclipse.jdt.core.compiler.InvalidInputException;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ExpressionStatement;
+import org.eclipse.jdt.core.dom.ForStatement;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.InstanceofExpression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodReference;
+import org.eclipse.jdt.core.dom.PatternInstanceofExpression;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.SwitchExpression;
+import org.sandbox.jdt.triggerpattern.api.Match;
+
+/** Substitutes Java identifier tokens once, preserving literals and expression grouping. */
+public final class BindingSubstitution {
+
+	private BindingSubstitution() {
+	}
+
+<span class="fc" id="L50">	private record ExpressionRange(int start, int end) {</span>
+	}
+
+	public static String substitute(String pattern, Match match) {
+<span class="pc bpc" id="L54" title="2 of 4 branches missed.">		if (pattern == null || match.getBindings().isEmpty()) {</span>
+<span class="nc" id="L55">			return pattern;</span>
+		}
+<span class="fc" id="L57">		IScanner scanner = ToolFactory.createScanner(false, false, false, JavaCore.VERSION_25);</span>
+<span class="fc" id="L58">		scanner.setSource(pattern.toCharArray());</span>
+<span class="fc" id="L59">		StringBuilder result = new StringBuilder();</span>
+<span class="fc" id="L60">		List&lt;ExpressionRange&gt; groupedExpressions = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L61">		int copiedUntil = 0;</span>
+		try {
+<span class="fc bfc" id="L63" title="All 2 branches covered.">			for (int token = scanner.getNextToken(); token != ITerminalSymbols.TokenNameEOF; token = scanner.getNextToken()) {</span>
+<span class="fc" id="L64">				int start = scanner.getCurrentTokenStartPosition();</span>
+<span class="pc bpc" id="L65" title="1 of 4 branches missed.">				if (token != ITerminalSymbols.TokenNameIdentifier || start &lt; copiedUntil) {</span>
+<span class="nc" id="L66">					continue;</span>
+				}
+<span class="fc" id="L68">				String name = new String(scanner.getCurrentTokenSource());</span>
+<span class="fc" id="L69">				Object value = match.getBindings().get(name);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">				if (value == null) {</span>
+<span class="fc" id="L71">					continue;</span>
+				}
+<span class="fc" id="L73">				int end = scanner.getCurrentTokenEndPosition() + 1;</span>
+<span class="fc" id="L74">				StringBuilder replacement = new StringBuilder();</span>
+<span class="fc" id="L75">				int replacementOffset = result.length() + start - copiedUntil;</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">				if (value instanceof List&lt;?&gt; nodes) {</span>
+<span class="pc bpc" id="L77" title="3 of 4 branches missed.">					if (pattern.startsWith(&quot;.length&quot;, end) &amp;&amp; (end + 7 == pattern.length() //$NON-NLS-1$</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">							|| !Character.isJavaIdentifierPart(pattern.charAt(end + 7)))) {</span>
+<span class="nc" id="L79">						replacement.append(nodes.size());</span>
+<span class="nc" id="L80">						end += 7;</span>
+<span class="pc bpc" id="L81" title="2 of 4 branches missed.">					} else if (end &lt; pattern.length() &amp;&amp; pattern.charAt(end) == '[') {</span>
+<span class="nc" id="L82">						int closing = pattern.indexOf(']', end);</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">						if (closing &lt; 0) {</span>
+<span class="nc" id="L84">							continue;</span>
+						}
+						try {
+<span class="nc" id="L87">							int index = Integer.parseInt(pattern.substring(end + 1, closing));</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">							if (index &lt; 0) {</span>
+<span class="nc" id="L89">								index += nodes.size();</span>
+							}
+<span class="nc bnc" id="L91" title="All 4 branches missed.">							if (index &lt; 0 || index &gt;= nodes.size()) {</span>
+<span class="nc" id="L92">								continue;</span>
+							}
+<span class="nc" id="L94">							appendValue(replacement, nodes.get(index), groupedExpressions, replacementOffset);</span>
+<span class="nc" id="L95">							end = closing + 1;</span>
+<span class="nc" id="L96">						} catch (NumberFormatException invalidIndex) {</span>
+<span class="nc" id="L97">							continue;</span>
+<span class="nc" id="L98">						}</span>
+<span class="nc" id="L99">					} else {</span>
+<span class="fc" id="L100">						boolean statements = nodes.stream().allMatch(Statement.class::isInstance);</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">						for (Object node : nodes) {</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">							if (!replacement.isEmpty()) {</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">								replacement.append(statements ? &quot;\n&quot; : &quot;, &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+							}
+<span class="fc" id="L105">							appendValue(replacement, node, groupedExpressions, replacementOffset);</span>
+<span class="fc" id="L106">						}</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">						if (statements) {</span>
+<span class="fc" id="L108">							int semicolon = end;</span>
+<span class="pc bpc" id="L109" title="2 of 4 branches missed.">							while (semicolon &lt; pattern.length() &amp;&amp; Character.isWhitespace(pattern.charAt(semicolon))) {</span>
+<span class="nc" id="L110">								semicolon++;</span>
+							}
+<span class="pc bpc" id="L112" title="2 of 4 branches missed.">							if (semicolon &lt; pattern.length() &amp;&amp; pattern.charAt(semicolon) == ';') {</span>
+<span class="fc" id="L113">								end = semicolon + 1;</span>
+							}
+						}
+<span class="fc" id="L116">					}</span>
+				} else {
+<span class="fc" id="L118">					appendValue(replacement, value, groupedExpressions, replacementOffset);</span>
+				}
+<span class="fc" id="L120">				result.append(pattern, copiedUntil, start).append(replacement);</span>
+<span class="fc" id="L121">				copiedUntil = end;</span>
+			}
+<span class="nc" id="L123">		} catch (InvalidInputException invalidJava) {</span>
+<span class="nc" id="L124">			throw new IllegalArgumentException(&quot;Replacement is not lexically valid Java&quot;, invalidJava); //$NON-NLS-1$</span>
+<span class="fc" id="L125">		}</span>
+<span class="fc" id="L126">		return groupExpressionBindings(result.append(pattern, copiedUntil, pattern.length()).toString(),</span>
+				groupedExpressions, match);
+	}
+
+	private static void appendValue(StringBuilder target, Object value, List&lt;ExpressionRange&gt; groupedExpressions,
+			int offset) {
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">		String text = value instanceof ASTNode node ? node.toString().stripTrailing() : String.valueOf(value);</span>
+<span class="fc bfc" id="L133" title="All 4 branches covered.">		if (value instanceof Expression expression &amp;&amp; requiresGrouping(expression)) {</span>
+<span class="fc" id="L134">			groupedExpressions.add(new ExpressionRange(offset + target.length(), offset + target.length() + text.length()));</span>
+		}
+<span class="fc" id="L136">		target.append(text);</span>
+<span class="fc" id="L137">	}</span>
+
+	private static String groupExpressionBindings(String source, List&lt;ExpressionRange&gt; groupedExpressions, Match match) {
+<span class="fc bfc" id="L140" title="All 2 branches covered.">		if (groupedExpressions.isEmpty()) {</span>
+<span class="fc" id="L141">			return source;</span>
+		}
+		// Parse the substituted text before grouping: a parenthesized assignment or
+		// update is not a legal StatementExpression. Exact source ranges distinguish
+		// a whole statement/for-update from a binding nested inside that expression.
+<span class="fc" id="L146">		Set&lt;ExpressionRange&gt; statementExpressions = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L147">		var destination = match.getMatchedNode().getLocationInParent();</span>
+<span class="fc bfc" id="L148" title="All 8 branches covered.">		boolean statementExpressionDestination = destination == ExpressionStatement.EXPRESSION_PROPERTY</span>
+				|| destination == ForStatement.INITIALIZERS_PROPERTY || destination == ForStatement.UPDATERS_PROPERTY
+				|| destination == LambdaExpression.BODY_PROPERTY;
+<span class="fc" id="L151">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L152">		parser.setKind(ASTParser.K_EXPRESSION);</span>
+<span class="fc" id="L153">		parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L154">		var options = JavaCore.getOptions();</span>
+<span class="fc" id="L155">		JavaCore.setComplianceOptions(JavaCore.VERSION_25, options);</span>
+<span class="fc" id="L156">		parser.setCompilerOptions(options);</span>
+<span class="fc" id="L157">		ASTNode context = parser.createAST(null);</span>
+<span class="pc bpc" id="L158" title="1 of 4 branches missed.">		if (!(context instanceof Expression) || !hasCompleteSourceRange(context, source)</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">				|| (context.getFlags() &amp; (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {</span>
+			// Lambdas are expressions, not standalone statements: statement recovery
+			// can drop their bodies. Use statements only when the whole template
+			// cannot be parsed as one complete expression.
+<span class="fc" id="L163">			parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L164">			parser.setKind(ASTParser.K_STATEMENTS);</span>
+<span class="fc" id="L165">			parser.setSource(source.toCharArray());</span>
+<span class="fc" id="L166">			parser.setCompilerOptions(options);</span>
+<span class="fc" id="L167">			parser.setStatementsRecovery(true);</span>
+<span class="fc" id="L168">			context = parser.createAST(null);</span>
+		}
+<span class="fc" id="L170">		context.accept(new ASTVisitor() {</span>
+			@Override
+			public void preVisit(ASTNode node) {
+				// A bare expression needs its original AST destination; parser recovery
+				// alone must not turn a nested replacement into a statement expression.
+<span class="fc bfc" id="L175" title="All 4 branches covered.">				if (statementExpressionDestination &amp;&amp; node instanceof Expression expression</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">						&amp;&amp; hasCompleteSourceRange(expression, source)) {</span>
+<span class="fc" id="L177">					addStatementExpression(expression);</span>
+				}
+<span class="fc" id="L179">			}</span>
+
+			@Override
+			public boolean visit(ExpressionStatement node) {
+<span class="fc" id="L183">				int end = node.getStartPosition() + node.getLength();</span>
+<span class="pc bpc" id="L184" title="3 of 6 branches missed.">				if (end &gt; 0 &amp;&amp; end &lt;= source.length() &amp;&amp; source.charAt(end - 1) == ';') {</span>
+<span class="fc" id="L185">					addStatementExpression(node.getExpression());</span>
+				}
+<span class="fc" id="L187">				return true;</span>
+			}
+
+			@Override
+			public boolean visit(ForStatement node) {
+<span class="fc bfc" id="L192" title="All 2 branches covered.">				for (Object initializer : node.initializers()) {</span>
+<span class="fc" id="L193">					addStatementExpression((Expression) initializer);</span>
+<span class="fc" id="L194">				}</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">				for (Object updater : node.updaters()) {</span>
+<span class="fc" id="L196">					addStatementExpression((Expression) updater);</span>
+<span class="fc" id="L197">				}</span>
+<span class="fc" id="L198">				return true;</span>
+			}
+
+			@Override
+			public boolean visit(LambdaExpression node) {
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">				if (node.getBody() instanceof Expression body) {</span>
+<span class="fc" id="L204">					addStatementExpression(body);</span>
+				}
+<span class="fc" id="L206">				return true;</span>
+			}
+
+			private void addStatementExpression(Expression expression) {
+<span class="fc bfc" id="L210" title="All 6 branches covered.">				if (expression instanceof Assignment || expression instanceof PostfixExpression</span>
+<span class="fc" id="L211">						|| expression instanceof PrefixExpression prefix</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">								&amp;&amp; (prefix.getOperator() == PrefixExpression.Operator.INCREMENT</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">										|| prefix.getOperator() == PrefixExpression.Operator.DECREMENT)) {</span>
+<span class="fc" id="L214">					statementExpressions.add(new ExpressionRange(expression.getStartPosition(),</span>
+<span class="fc" id="L215">							expression.getStartPosition() + expression.getLength()));</span>
+				}
+<span class="fc" id="L217">			}</span>
+		});
+<span class="fc" id="L219">		StringBuilder result = new StringBuilder();</span>
+<span class="fc" id="L220">		int copiedUntil = 0;</span>
+<span class="fc bfc" id="L221" title="All 2 branches covered.">		for (ExpressionRange expression : groupedExpressions) {</span>
+<span class="fc" id="L222">			result.append(source, copiedUntil, expression.start());</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">			if (statementExpressions.contains(expression)) {</span>
+<span class="fc" id="L224">				result.append(source, expression.start(), expression.end());</span>
+			} else {
+<span class="fc" id="L226">				result.append('(').append(source, expression.start(), expression.end()).append(')');</span>
+			}
+<span class="fc" id="L228">			copiedUntil = expression.end();</span>
+<span class="fc" id="L229">		}</span>
+<span class="fc" id="L230">		return result.append(source, copiedUntil, source.length()).toString();</span>
+	}
+
+	private static boolean hasCompleteSourceRange(ASTNode node, String source) {
+<span class="fc" id="L234">		int start = node.getStartPosition();</span>
+<span class="fc" id="L235">		int end = start + node.getLength();</span>
+<span class="pc bpc" id="L236" title="2 of 6 branches missed.">		return start &gt;= 0 &amp;&amp; end &lt;= source.length() &amp;&amp; isJavaTrivia(source.substring(0, start))</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">				&amp;&amp; isJavaTrivia(source.substring(end));</span>
+	}
+
+	private static boolean isJavaTrivia(String text) {
+<span class="fc" id="L241">		IScanner scanner = ToolFactory.createScanner(false, false, false, JavaCore.VERSION_25);</span>
+<span class="fc" id="L242">		scanner.setSource(text.toCharArray());</span>
+		try {
+<span class="fc bfc" id="L244" title="All 2 branches covered.">			return scanner.getNextToken() == ITerminalSymbols.TokenNameEOF;</span>
+<span class="nc" id="L245">		} catch (InvalidInputException invalidJava) {</span>
+<span class="nc" id="L246">			return false;</span>
+		}
+	}
+
+	private static boolean requiresGrouping(Expression expression) {
+<span class="pc bpc" id="L251" title="4 of 22 branches missed.">		return expression instanceof InfixExpression || expression instanceof ConditionalExpression</span>
+				|| expression instanceof Assignment || expression instanceof CastExpression
+				|| expression instanceof InstanceofExpression || expression instanceof LambdaExpression
+				|| expression instanceof PatternInstanceofExpression
+				|| expression instanceof PrefixExpression || expression instanceof PostfixExpression
+				|| expression instanceof MethodReference || expression instanceof SwitchExpression;
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

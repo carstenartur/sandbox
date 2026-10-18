@@ -427,8 +427,8 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	private Block parseBlock(String blockSnippet) {
 		// Ensure the block is wrapped in braces
 <span class="fc" id="L429">		String normalizedSnippet = blockSnippet.trim();</span>
-<span class="pc bpc" id="L430" title="1 of 2 branches missed.">		if (!normalizedSnippet.startsWith(&quot;{&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L431">			normalizedSnippet = &quot;{ &quot; + normalizedSnippet + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L430" title="All 2 branches covered.">		if (!normalizedSnippet.startsWith(&quot;{&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L431">			normalizedSnippet = &quot;{ &quot; + normalizedSnippet + &quot; }&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 		}
 		
 		// Extract placeholder names (starting with $) from the snippet and declare them

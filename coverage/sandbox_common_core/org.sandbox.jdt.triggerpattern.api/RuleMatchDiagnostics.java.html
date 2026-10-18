@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RuleMatchDiagnostics.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">RuleMatchDiagnostics.java</span></div><h1>RuleMatchDiagnostics.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0, available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.Name;
+import org.eclipse.jdt.core.dom.Type;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.GuardContext.UnknownSemanticRequirement;
+import org.sandbox.jdt.triggerpattern.api.GuardExpression.Evaluation;
+import org.sandbox.jdt.triggerpattern.api.GuardExpression.TruthValue;
+
+/**
+ * Read-only explanations of structurally matching candidates on a current AST.
+ *
+ * &lt;p&gt;Only structurally similar candidates are considered, and selection and count
+ * limits bound the returned details. Replacements come from the ordinary batch
+ * processor; this service never authorizes a change that processor rejected.
+ * Guard success is not a proof of behavioral equivalence, compilation, or a
+ * completed project migration.&lt;/p&gt;
+ *
+ * &lt;p&gt;The caller owns the current AST and hint configuration and must keep both
+ * unchanged during {@link #explain}. Candidates retain the original match and
+ * AST references so node identity and resolved bindings remain available. The
+ * returned lists and excerpts are bounded snapshots; they do not isolate or
+ * freeze the underlying JDT tree. The service reads the current configuration
+ * for each call and does not rewrite that tree.&lt;/p&gt;
+ */
+public final class RuleMatchDiagnostics {
+	private static final int MAX_DESCRIPTION_CHARS= 2048;
+	private static final int MAX_SOURCE_CHARS= 1200;
+	private static final int MAX_BINDING_CHARS= 240;
+	private static final int MAX_ENTRIES= 64;
+	private static final String TRUNCATED= &quot;… [truncated]&quot;; //$NON-NLS-1$
+
+	/** One evaluated guard, or an alternative not reached by ordered selection. */
+	public record GuardCheck(String condition, TruthValue truthValue, boolean evaluated) {
+<span class="fc" id="L57">		public GuardCheck {</span>
+<span class="fc" id="L58">			condition= clip(condition, MAX_BINDING_CHARS);</span>
+<span class="fc" id="L59">		}</span>
+	}
+
+	/** A placeholder's original node/range and bounded source/semantic excerpts. */
+	public record BindingDetail(String placeholder, ASTNode originalNode, String source,
+			int offset, int length, String resolvedType, String resolvedMethod) {
+<span class="fc" id="L65">		public BindingDetail {</span>
+<span class="fc" id="L66">			placeholder= clip(placeholder, MAX_BINDING_CHARS);</span>
+<span class="fc" id="L67">			source= clip(source, MAX_BINDING_CHARS);</span>
+<span class="fc" id="L68">			resolvedType= clip(resolvedType, MAX_BINDING_CHARS);</span>
+<span class="fc" id="L69">			resolvedMethod= clip(resolvedMethod, MAX_BINDING_CHARS);</span>
+<span class="fc" id="L70">		}</span>
+	}
+
+	/**
+	 * One structural candidate, including rejected and unknown cases. Source and
+	 * diagnostic fields are bounded excerpts; the match retains original ranges
+	 * and {@code plannedReplacement} remains the exact batch processor result.
+	 */
+	public record Candidate(TransformationRule rule, Match match, String originalSource,
+			String plannedReplacement, GuardCheck sourceGuard, List&lt;GuardCheck&gt; alternatives,
+			List&lt;BindingDetail&gt; bindings, String matchedMethod,
+			List&lt;UnknownSemanticRequirement&gt; unknownSemanticRequirements, boolean batchAccepted) {
+<span class="fc" id="L82">		public Candidate {</span>
+<span class="fc" id="L83">			originalSource= clip(originalSource, MAX_SOURCE_CHARS);</span>
+<span class="fc" id="L84">			matchedMethod= clip(matchedMethod, MAX_BINDING_CHARS);</span>
+<span class="fc" id="L85">			alternatives= List.copyOf(alternatives.subList(0, Math.min(MAX_ENTRIES, alternatives.size())));</span>
+<span class="fc" id="L86">			bindings= List.copyOf(bindings.subList(0, Math.min(MAX_ENTRIES, bindings.size())));</span>
+<span class="fc" id="L87">			unknownSemanticRequirements= unknownSemanticRequirements.stream().limit(MAX_ENTRIES)</span>
+<span class="fc" id="L88">					.map(unknown -&gt; new UnknownSemanticRequirement(clip(unknown.guardName(), MAX_BINDING_CHARS),</span>
+<span class="fc" id="L89">							clip(unknown.detail(), MAX_BINDING_CHARS))).toList();</span>
+<span class="fc" id="L90">		}</span>
+
+		/** Explanation limited to 2048 characters, including explicit truncation markers. */
+		public String describe() {
+<span class="fc" id="L94">			BoundedText text= new BoundedText(MAX_DESCRIPTION_CHARS);</span>
+<span class="fc" id="L95">			text.append(&quot;Source requirement: &quot;).append(sourceGuard.truthValue()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc" id="L96">			text.append(sourceGuard.condition()).append('\n');</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">			if (matchedMethod != null) {</span>
+<span class="fc" id="L98">				text.append(&quot;Resolved method: &quot;).append(matchedMethod).append('\n'); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L100">			text.append(&quot;Before:\n&quot;).append(clip(originalSource, 480)).append('\n'); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">			if (plannedReplacement != null) {</span>
+<span class="fc" id="L102">				text.append(&quot;Planned replacement:\n&quot;).append(clip(plannedReplacement, 480)).append('\n'); //$NON-NLS-1$</span>
+			} else {
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">				text.append(batchAccepted ? &quot;No text replacement selected.\n&quot; : &quot;No change authorized by the batch processor.\n&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+			}
+<span class="fc bfc" id="L106" title="All 2 branches covered.">			for (UnknownSemanticRequirement unknown : unknownSemanticRequirements) {</span>
+<span class="fc" id="L107">				text.append(&quot;UNKNOWN: &quot;).append(unknown.guardName()).append(&quot;: &quot;).append(unknown.detail()).append('\n'); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">				if (text.isFull()) {</span>
+<span class="nc" id="L109">					break;</span>
+				}
+<span class="fc" id="L111">			}</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">			for (BindingDetail binding : bindings) {</span>
+<span class="fc" id="L113">				text.append(binding.placeholder()).append(&quot; = &quot;).append(binding.source()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">				text.append(&quot;; type: &quot;).append(binding.resolvedType() == null ? &quot;unresolved&quot; : binding.resolvedType()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">				if (binding.resolvedMethod() != null) {</span>
+<span class="fc" id="L116">					text.append(&quot;; method: &quot;).append(binding.resolvedMethod()); //$NON-NLS-1$</span>
+				}
+<span class="fc" id="L118">				text.append('\n');</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">				if (text.isFull()) {</span>
+<span class="fc" id="L120">					break;</span>
+				}
+<span class="fc" id="L122">			}</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">			for (int i= 0; i &lt; alternatives.size(); i++) {</span>
+<span class="fc" id="L124">				GuardCheck check= alternatives.get(i);</span>
+<span class="fc" id="L125">				text.append(&quot;Alternative &quot;).append(i + 1).append(&quot;: &quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">						.append(check.evaluated() ? check.truthValue() : &quot;not reached&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L127">						.append(&quot; — &quot;).append(check.condition()).append('\n'); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">				if (text.isFull()) {</span>
+<span class="fc" id="L129">					break;</span>
+				}
+			}
+<span class="pc bpc" id="L132" title="1 of 4 branches missed.">			if (batchAccepted &amp;&amp; !unknownSemanticRequirements.isEmpty()) {</span>
+<span class="nc" id="L133">				text.append(&quot;Unresolved observations are listed above; each guard's truth state determines selection.\n&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L135">			return text.toString();</span>
+		}
+	}
+
+	private final HintFile hintFile;
+
+<span class="fc" id="L141">	public RuleMatchDiagnostics(HintFile hintFile) {</span>
+<span class="fc" id="L142">		this.hintFile= Objects.requireNonNull(hintFile);</span>
+<span class="fc" id="L143">	}</span>
+
+	/**
+	 * Explains at most {@code maxCandidates} structural candidates, in source order.
+	 * A negative selection offset selects the whole compilation unit; zero length
+	 * selects candidates containing the cursor. Source must be the snapshot used
+	 * to parse {@code cu}. Compiler options and semantic plan must match execution.
+	 */
+	public List&lt;Candidate&gt; explain(CompilationUnit cu, String source, int selectionOffset,
+			int selectionLength, int maxCandidates, Map&lt;String, String&gt; compilerOptions,
+			SemanticRewritePlan semanticPlan) {
+<span class="pc bpc" id="L154" title="1 of 4 branches missed.">		if (cu == null || maxCandidates &lt;= 0) {</span>
+<span class="fc" id="L155">			return List.of();</span>
+		}
+<span class="fc" id="L157">		Objects.requireNonNull(source, &quot;Original source snapshot is required&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">		if (selectionLength &lt; 0) {</span>
+<span class="nc" id="L159">			throw new IllegalArgumentException(&quot;Selection length cannot be negative&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">		SemanticRewritePlan plan= semanticPlan == null ? SemanticRewritePlan.empty() : semanticPlan;</span>
+<span class="fc" id="L162">		BatchTransformationProcessor processor= new BatchTransformationProcessor(hintFile);</span>
+<span class="fc" id="L163">		var structural= processor.getPatternIndex().findAllMatches(cu);</span>
+<span class="fc" id="L164">		List&lt;Map.Entry&lt;TransformationRule, Match&gt;&gt; candidates= new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L165">		structural.forEach((rule, matches) -&gt; matches.stream()</span>
+<span class="fc" id="L166">				.filter(match -&gt; selected(match, selectionOffset, selectionLength))</span>
+<span class="fc" id="L167">				.forEach(match -&gt; candidates.add(Map.entry(rule, match))));</span>
+<span class="fc" id="L168">		candidates.sort(Comparator.comparingInt(entry -&gt; entry.getValue().getOffset()));</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">		if (candidates.isEmpty()) {</span>
+<span class="nc" id="L170">			return List.of();</span>
+		}
+<span class="fc" id="L172">		List&lt;TransformationResult&gt; transformations= processor.process(cu, compilerOptions, plan);</span>
+<span class="pc bpc" id="L173" title="1 of 4 branches missed.">		boolean requiredBindings= hintFile.getBindingPolicy() == HintBindingPolicy.REQUIRED || !plan.isEmpty();</span>
+<span class="fc" id="L174">		List&lt;Candidate&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">		for (var entry : candidates.subList(0, Math.min(maxCandidates, candidates.size()))) {</span>
+<span class="fc" id="L176">			TransformationRule rule= entry.getKey();</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">			boolean strict= requiredBindings || rule.alternatives().stream()</span>
+<span class="pc bpc" id="L178" title="3 of 6 branches missed.">					.anyMatch(alternative -&gt; alternative.hasRewrite() || alternative.isEmbeddedFix());</span>
+<span class="fc" id="L179">			Match match= entry.getValue();</span>
+<span class="fc" id="L180">			GuardContext context= GuardContext.fromMatch(match, cu, compilerOptions, plan);</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">			boolean unknownSource= !match.getUnknownSemanticRequirements().isEmpty();</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">			if (strict) {</span>
+<span class="fc" id="L183">				match.getUnknownSemanticRequirements().forEach(unknown -&gt; context.markUnknown(unknown.guardName(), unknown.detail()));</span>
+			}
+<span class="fc bfc" id="L185" title="All 2 branches covered.">			Evaluation sourceEvaluation= rule.sourceGuard() == null ? new Evaluation(TruthValue.MATCH, true)</span>
+<span class="fc" id="L186">							: rule.sourceGuard().evaluateDetailed(context);</span>
+<span class="fc bfc" id="L187" title="All 4 branches covered.">			if (unknownSource &amp;&amp; sourceEvaluation.truthValue() == TruthValue.MATCH) {</span>
+<span class="fc" id="L188">				sourceEvaluation= new Evaluation(TruthValue.UNKNOWN, sourceEvaluation.compatibilityValue());</span>
+			}
+<span class="fc bfc" id="L190" title="All 2 branches covered.">			String sourceCondition= rule.sourceGuard() == null ? &quot;No source guard&quot; : guardText(rule.sourceGuard()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">			if (unknownSource) {</span>
+<span class="fc" id="L192">				sourceCondition= &quot;Concrete source API identity unresolved; &quot; + sourceCondition; //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L194">			GuardCheck sourceCheck= new GuardCheck(sourceCondition, sourceEvaluation.truthValue(), true);</span>
+<span class="fc bfc" id="L195" title="All 4 branches covered.">			boolean reached= sourceEvaluation.compatibilityValue()</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">					&amp;&amp; !(strict &amp;&amp; sourceEvaluation.truthValue() == TruthValue.UNKNOWN);</span>
+<span class="fc" id="L197">			List&lt;GuardCheck&gt; alternatives= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">			for (RewriteAlternative alternative : rule.alternatives().subList(0, Math.min(MAX_ENTRIES, rule.alternatives().size()))) {</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">				String condition= alternative.isOtherwise() ? &quot;otherwise&quot; : guardText(alternative.condition()); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">				if (!reached) {</span>
+<span class="fc" id="L201">					alternatives.add(new GuardCheck(condition, TruthValue.UNKNOWN, false));</span>
+<span class="fc" id="L202">					continue;</span>
+				}
+<span class="fc bfc" id="L204" title="All 2 branches covered.">				Evaluation evaluation= alternative.isOtherwise() ? new Evaluation(TruthValue.MATCH, true)</span>
+<span class="fc" id="L205">						: alternative.condition().evaluateDetailed(context);</span>
+<span class="fc" id="L206">				alternatives.add(new GuardCheck(condition, evaluation.truthValue(), true));</span>
+<span class="pc bpc" id="L207" title="1 of 6 branches missed.">				if (evaluation.compatibilityValue() || strict &amp;&amp; evaluation.truthValue() == TruthValue.UNKNOWN) {</span>
+<span class="fc" id="L208">					reached= false;</span>
+				}
+<span class="fc" id="L210">			}</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">			TransformationResult actual= transformations.stream().filter(transformation -&gt; transformation.rule() == rule</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">					&amp;&amp; transformation.match().getOffset() == match.getOffset()</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">					&amp;&amp; transformation.match().getLength() == match.getLength()).findFirst().orElse(null);</span>
+<span class="fc" id="L214">			List&lt;UnknownSemanticRequirement&gt; unknowns= new ArrayList&lt;&gt;(match.getUnknownSemanticRequirements().stream().limit(MAX_ENTRIES).toList());</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">			context.getUnknownSemanticRequirements().stream().filter(unknown -&gt; !unknowns.contains(unknown))</span>
+<span class="fc" id="L216">					.limit(MAX_ENTRIES - unknowns.size()).forEach(unknowns::add);</span>
+<span class="fc bfc" id="L217" title="All 2 branches covered.">			if (actual != null) {</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">				for (UnknownSemanticRequirement unknown : actual.unknownSemanticRequirements()) {</span>
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">					if (unknowns.size() == MAX_ENTRIES) {</span>
+<span class="nc" id="L220">						break;</span>
+					}
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">					if (!unknowns.contains(unknown)) {</span>
+<span class="nc" id="L223">						unknowns.add(unknown);</span>
+					}
+<span class="fc" id="L225">				}</span>
+			}
+<span class="fc" id="L227">			result.add(new Candidate(rule, match, snippet(source, match.getOffset(), match.getLength(), MAX_SOURCE_CHARS),</span>
+<span class="fc bfc" id="L228" title="All 2 branches covered.">					actual == null ? null : actual.replacement(), sourceCheck, alternatives,</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">					bindingDetails(match, source), methodSignature(resolveMethod(match.getMatchedNode())),</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">					unknowns, actual != null &amp;&amp; !actual.isSemanticUnknown()));</span>
+<span class="fc" id="L231">		}</span>
+<span class="fc" id="L232">		return List.copyOf(result);</span>
+	}
+
+	private static String guardText(GuardExpression guard) {
+<span class="fc" id="L236">		BoundedText text= new BoundedText(MAX_BINDING_CHARS);</span>
+<span class="fc" id="L237">		appendGuard(text, guard);</span>
+<span class="fc" id="L238">		return text.toString();</span>
+	}
+
+	private static void appendGuard(BoundedText text, GuardExpression guard) {
+<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		if (text.isFull()) {</span>
+<span class="nc" id="L243">			return;</span>
+		}
+<span class="pc bpc" id="L245" title="2 of 4 branches missed.">		switch (guard) {</span>
+<span class="fc" id="L246">		case GuardExpression.FunctionCall call -&gt; {</span>
+<span class="pc bpc" id="L247" title="1 of 4 branches missed.">			if (&quot;instanceof&quot;.equals(call.name()) &amp;&amp; call.args().size() == 2) { //$NON-NLS-1$</span>
+<span class="fc" id="L248">				text.append(call.args().get(0)).append(&quot; instanceof &quot;).append(call.args().get(1)); //$NON-NLS-1$</span>
+			} else {
+<span class="fc" id="L250">				text.append(call.name()).append('(');</span>
+<span class="pc bpc" id="L251" title="1 of 4 branches missed.">				for (int i= 0; i &lt; call.args().size() &amp;&amp; !text.isFull(); i++) {</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">					if (i &gt; 0) {</span>
+<span class="nc" id="L253">						text.append(&quot;, &quot;); //$NON-NLS-1$</span>
+					}
+<span class="fc" id="L255">					text.append(call.args().get(i));</span>
+				}
+<span class="fc" id="L257">				text.append(')');</span>
+			}
+<span class="fc" id="L259">		}</span>
+<span class="nc" id="L260">		case GuardExpression.And and -&gt; {</span>
+<span class="nc" id="L261">			text.append('(');</span>
+<span class="nc" id="L262">			appendGuard(text, and.left());</span>
+<span class="nc" id="L263">			text.append(&quot; &amp;&amp; &quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L264">			appendGuard(text, and.right());</span>
+<span class="nc" id="L265">			text.append(')');</span>
+<span class="nc" id="L266">		}</span>
+<span class="nc" id="L267">		case GuardExpression.Or or -&gt; {</span>
+<span class="nc" id="L268">			text.append('(');</span>
+<span class="nc" id="L269">			appendGuard(text, or.left());</span>
+<span class="nc" id="L270">			text.append(&quot; || &quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L271">			appendGuard(text, or.right());</span>
+<span class="nc" id="L272">			text.append(')');</span>
+<span class="nc" id="L273">		}</span>
+<span class="fc" id="L274">		case GuardExpression.Not not -&gt; {</span>
+<span class="fc" id="L275">			text.append(&quot;!(&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L276">			appendGuard(text, not.operand());</span>
+<span class="fc" id="L277">			text.append(')');</span>
+		}
+		}
+<span class="fc" id="L280">	}</span>
+
+	private static boolean selected(Match match, int offset, int length) {
+<span class="fc bfc" id="L283" title="All 2 branches covered.">		if (offset &lt; 0) {</span>
+<span class="fc" id="L284">			return true;</span>
+		}
+<span class="fc" id="L286">		long end= (long) match.getOffset() + match.getLength();</span>
+<span class="pc bpc" id="L287" title="5 of 6 branches missed.">		return length == 0 ? match.getOffset() &lt;= offset &amp;&amp; offset &lt; end</span>
+<span class="pc bpc" id="L288" title="1 of 4 branches missed.">				: match.getOffset() &lt; (long) offset + length &amp;&amp; offset &lt; end;</span>
+	}
+
+	private static List&lt;BindingDetail&gt; bindingDetails(Match match, String source) {
+<span class="fc" id="L292">		List&lt;BindingDetail&gt; details= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">		for (var binding : match.getBindings().entrySet().stream().sorted(Map.Entry.comparingByKey()).limit(MAX_ENTRIES).toList()) {</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">			if (details.size() == MAX_ENTRIES) {</span>
+<span class="fc" id="L295">				break;</span>
+			}
+<span class="fc bfc" id="L297" title="All 2 branches covered.">			if (binding.getValue() instanceof ASTNode node) {</span>
+<span class="fc" id="L298">				details.add(bindingDetail(binding.getKey(), node, source));</span>
+<span class="pc bpc" id="L299" title="1 of 2 branches missed.">			} else if (binding.getValue() instanceof List&lt;?&gt; nodes) {</span>
+<span class="pc bpc" id="L300" title="1 of 4 branches missed.">				for (int i= 0; i &lt; nodes.size() &amp;&amp; details.size() &lt; MAX_ENTRIES; i++) {</span>
+<span class="pc bpc" id="L301" title="1 of 2 branches missed.">					if (nodes.get(i) instanceof ASTNode node) {</span>
+<span class="fc" id="L302">						details.add(bindingDetail(binding.getKey() + &quot;[&quot; + i + &quot;]&quot;, node, source)); //$NON-NLS-1$ //$NON-NLS-2$</span>
+					}
+				}
+			}
+<span class="fc" id="L306">		}</span>
+<span class="fc" id="L307">		return details;</span>
+	}
+
+	private static BindingDetail bindingDetail(String name, ASTNode node, String source) {
+<span class="pc bpc" id="L311" title="2 of 5 branches missed.">		ITypeBinding type= switch (node) {</span>
+<span class="fc" id="L312">		case AbstractTypeDeclaration value -&gt; value.resolveBinding();</span>
+<span class="fc" id="L313">		case Name value -&gt; value.resolveTypeBinding();</span>
+<span class="fc" id="L314">		case Expression value -&gt; value.resolveTypeBinding();</span>
+<span class="nc" id="L315">		case Type value -&gt; value.resolveBinding();</span>
+<span class="nc" id="L316">		default -&gt; null;</span>
+<span class="fc" id="L317">		};</span>
+<span class="pc bpc" id="L318" title="1 of 4 branches missed.">		String excerpt= &quot;$this&quot;.equals(name) &amp;&amp; node instanceof AbstractTypeDeclaration enclosing //$NON-NLS-1$</span>
+<span class="pc bpc" id="L319" title="1 of 4 branches missed.">				? &quot;enclosing type &quot; + clip(type == null || type.isRecovered() ? enclosing.getName().getIdentifier() //$NON-NLS-1$</span>
+<span class="fc" id="L320">						: type.getErasure().getQualifiedName(), MAX_BINDING_CHARS - 15)</span>
+<span class="fc" id="L321">				: snippet(source, node.getStartPosition(), node.getLength(), MAX_BINDING_CHARS);</span>
+<span class="fc" id="L322">		return new BindingDetail(name, node, excerpt,</span>
+<span class="pc bpc" id="L323" title="1 of 4 branches missed.">				node.getStartPosition(), node.getLength(), type == null || type.isRecovered() ? null : type.getQualifiedName(),</span>
+<span class="fc" id="L324">				methodSignature(resolveMethod(node)));</span>
+	}
+
+	private static IMethodBinding resolveMethod(ASTNode node) {
+<span class="pc bpc" id="L328" title="1 of 4 branches missed.">		return switch (node) {</span>
+<span class="fc" id="L329">		case MethodInvocation invocation -&gt; invocation.resolveMethodBinding();</span>
+<span class="fc" id="L330">		case ClassInstanceCreation creation -&gt; creation.resolveConstructorBinding();</span>
+<span class="nc" id="L331">		case MethodDeclaration declaration -&gt; declaration.resolveBinding();</span>
+<span class="fc" id="L332">		default -&gt; null;</span>
+		};
+	}
+
+	private static String methodSignature(IMethodBinding binding) {
+<span class="pc bpc" id="L337" title="1 of 4 branches missed.">		if (binding == null || binding.isRecovered()) {</span>
+<span class="fc" id="L338">			return null;</span>
+		}
+<span class="fc" id="L340">		IMethodBinding declaration= binding.getMethodDeclaration();</span>
+<span class="fc" id="L341">		ITypeBinding declaringClass= declaration.getDeclaringClass();</span>
+<span class="fc" id="L342">		BoundedText text= new BoundedText(MAX_BINDING_CHARS);</span>
+<span class="pc bpc" id="L343" title="1 of 2 branches missed.">		text.append(declaringClass == null ? &quot;?&quot; : declaringClass.getErasure().getQualifiedName()) //$NON-NLS-1$</span>
+<span class="fc" id="L344">				.append('#').append(declaration.getName()).append('(');</span>
+<span class="fc" id="L345">		ITypeBinding[] parameters= declaration.getParameterTypes();</span>
+<span class="pc bpc" id="L346" title="3 of 4 branches missed.">		for (int i= 0; i &lt; parameters.length &amp;&amp; !text.isFull(); i++) {</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">			if (i &gt; 0) {</span>
+<span class="nc" id="L348">				text.append(&quot;, &quot;); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L350">			text.append(parameters[i].getQualifiedName());</span>
+		}
+<span class="fc" id="L352">		return text.append(')').toString();</span>
+	}
+
+	private static String snippet(String source, int offset, int length, int limit) {
+<span class="pc bpc" id="L356" title="3 of 6 branches missed.">		if (offset &lt; 0 || length &lt; 0 || (long) offset + length &gt; source.length()) {</span>
+<span class="nc" id="L357">			return &quot;[source unavailable for this AST node]&quot;; //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L359">		return new BoundedText(limit).append(source, offset, offset + length).toString();</span>
+	}
+
+	private static String clip(String value, int limit) {
+<span class="fc bfc" id="L363" title="All 4 branches covered.">		return value == null || value.length() &lt;= limit ? value : new BoundedText(limit).append(value).toString();</span>
+	}
+
+	/** Appends only a bounded range, without allocating the full source substring. */
+	private static final class BoundedText {
+		private final int limit;
+		private final StringBuilder value;
+		private boolean truncated;
+
+<span class="fc" id="L372">		BoundedText(int limit) {</span>
+<span class="fc" id="L373">			this.limit= limit;</span>
+<span class="fc" id="L374">			value= new StringBuilder(limit);</span>
+<span class="fc" id="L375">		}</span>
+
+		BoundedText append(Object text) {
+<span class="fc" id="L378">			String string= String.valueOf(text);</span>
+<span class="fc" id="L379">			return append(string, 0, string.length());</span>
+		}
+
+		BoundedText append(CharSequence source, int start, int end) {
+<span class="fc bfc" id="L383" title="All 2 branches covered.">			if (truncated) {</span>
+<span class="fc" id="L384">				return this;</span>
+			}
+<span class="fc" id="L386">			int remaining= limit - value.length();</span>
+<span class="fc bfc" id="L387" title="All 2 branches covered.">			if (end - start &lt;= remaining) {</span>
+<span class="fc" id="L388">				value.append(source, start, end);</span>
+			} else {
+<span class="fc" id="L390">				int prefix= Math.max(0, remaining - TRUNCATED.length());</span>
+<span class="fc" id="L391">				value.append(source, start, start + prefix);</span>
+<span class="fc" id="L392">				value.setLength(Math.min(value.length(), limit - TRUNCATED.length()));</span>
+<span class="fc" id="L393">				value.append(TRUNCATED);</span>
+<span class="fc" id="L394">				truncated= true;</span>
+			}
+<span class="fc" id="L396">			return this;</span>
+		}
+
+		boolean isFull() {
+<span class="fc" id="L400">			return truncated;</span>
+		}
+
+		@Override
+		public String toString() {
+<span class="fc" id="L405">			return value.toString();</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

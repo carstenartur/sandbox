@@ -60,8 +60,8 @@ public sealed interface GuardExpression
 	 * @param resolver a function that maps guard function names to implementations
 	 */
 	static void setGuardFunctionResolver(Function&lt;String, GuardFunction&gt; resolver) {
-<span class="nc" id="L63">		GuardFunctionResolverHolder.setResolver(resolver);</span>
-<span class="nc" id="L64">	}</span>
+<span class="fc" id="L63">		GuardFunctionResolverHolder.setResolver(resolver);</span>
+<span class="fc" id="L64">	}</span>
 	
 	/**
 	 * Returns the current guard function resolver.
@@ -69,7 +69,7 @@ public sealed interface GuardExpression
 	 * @return the resolver, or {@code null} if not set
 	 */
 	static Function&lt;String, GuardFunction&gt; getGuardFunctionResolver() {
-<span class="nc" id="L72">		return GuardFunctionResolverHolder.getResolver();</span>
+<span class="fc" id="L72">		return GuardFunctionResolverHolder.getResolver();</span>
 	}
 	
 	/**
@@ -137,10 +137,10 @@ public sealed interface GuardExpression
 
 	private static Evaluation evaluateNot(Not not, GuardContext ctx) {
 <span class="fc" id="L139">		Evaluation operand= not.operand().evaluateDetailed(ctx);</span>
-<span class="pc bpc" id="L140" title="2 of 3 branches missed.">		TruthValue truth= switch (operand.truthValue()) {</span>
+<span class="pc bpc" id="L140" title="1 of 3 branches missed.">		TruthValue truth= switch (operand.truthValue()) {</span>
 <span class="fc" id="L141">		case MATCH -&gt; TruthValue.NO_MATCH;</span>
 <span class="nc" id="L142">		case NO_MATCH -&gt; TruthValue.MATCH;</span>
-<span class="nc" id="L143">		case UNKNOWN -&gt; TruthValue.UNKNOWN;</span>
+<span class="fc" id="L143">		case UNKNOWN -&gt; TruthValue.UNKNOWN;</span>
 		};
 <span class="pc bpc" id="L145" title="1 of 2 branches missed.">		return new Evaluation(truth, !operand.compatibilityValue());</span>
 	}

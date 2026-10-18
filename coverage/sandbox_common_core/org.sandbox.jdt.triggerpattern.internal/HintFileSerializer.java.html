@@ -155,8 +155,8 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 		// Rewrite alternatives
 <span class="fc bfc" id="L156" title="All 2 branches covered.">		for (RewriteAlternative alt : rule.alternatives()) {</span>
 <span class="fc" id="L157">			sb.append(&quot;=&gt; &quot;).append(alt.replacementPattern()); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L158" title="1 of 2 branches missed.">			if (!alt.isOtherwise()) {</span>
-<span class="nc" id="L159">				sb.append(&quot; :: &quot;).append(formatGuard(alt.condition())); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">			if (!alt.isOtherwise()) {</span>
+<span class="fc" id="L159">				sb.append(&quot; :: &quot;).append(formatGuard(alt.condition())); //$NON-NLS-1$</span>
 			}
 <span class="fc" id="L161">			sb.append(LINE_SEP);</span>
 <span class="fc" id="L162">		}</span>

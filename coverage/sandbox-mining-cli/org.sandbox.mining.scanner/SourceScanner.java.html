@@ -112,7 +112,7 @@ public class SourceScanner {
 	 */
 	public MiningReport scan(String repoName, Path rootDir, List&lt;String&gt; subPaths, List&lt;HintFile&gt; hintFiles)
 			throws IOException {
-<span class="nc" id="L115">		return scan(repoName, rootDir, subPaths, hintFiles, NO_COMPILER_OPTIONS);</span>
+<span class="fc" id="L115">		return scan(repoName, rootDir, subPaths, hintFiles, NO_COMPILER_OPTIONS);</span>
 	}
 
 	/**
@@ -145,25 +145,28 @@ public class SourceScanner {
 <span class="fc" id="L145">				List&lt;TransformationResult&gt; results = processor.process(cu, effectiveCompilerOptions);</span>
 
 <span class="fc bfc" id="L147" title="All 2 branches covered.">				for (TransformationResult result : results) {</span>
-<span class="fc" id="L148">					String relativePath = rootDir.relativize(javaFile).toString();</span>
-<span class="fc" id="L149">					int line = cu.getLineNumber(result.match().getOffset());</span>
-<span class="pc bpc" id="L150" title="1 of 2 branches missed.">					String hintFileName = hintFile.getId() != null ? hintFile.getId() : &quot;unknown&quot;; //$NON-NLS-1$</span>
-<span class="fc" id="L151">					TransformationRule rule = result.rule();</span>
-<span class="fc" id="L152">					String ruleName = rule.getRuleId();</span>
-<span class="pc bpc" id="L153" title="2 of 4 branches missed.">					if (ruleName == null || ruleName.isBlank()) {</span>
-<span class="nc" id="L154">						ruleName = rule.getDescription();</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">					if (result.isSemanticUnknown()) {</span>
+<span class="fc" id="L149">						continue;</span>
 					}
+<span class="fc" id="L151">					String relativePath = rootDir.relativize(javaFile).toString();</span>
+<span class="fc" id="L152">					int line = cu.getLineNumber(result.match().getOffset());</span>
+<span class="pc bpc" id="L153" title="1 of 2 branches missed.">					String hintFileName = hintFile.getId() != null ? hintFile.getId() : &quot;unknown&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L154">					TransformationRule rule = result.rule();</span>
+<span class="fc" id="L155">					String ruleName = rule.getRuleId();</span>
 <span class="pc bpc" id="L156" title="2 of 4 branches missed.">					if (ruleName == null || ruleName.isBlank()) {</span>
-<span class="nc" id="L157">						int ruleIndex = hintFile.getRules().indexOf(rule);</span>
-<span class="nc bnc" id="L158" title="All 2 branches missed.">						ruleName = ruleIndex &gt;= 0 ? hintFileName + (ruleIndex + 1) : hintFileName;</span>
+<span class="nc" id="L157">						ruleName = rule.getDescription();</span>
 					}
-<span class="fc" id="L160">					report.addMatch(repoName, hintFileName, ruleName, relativePath, line, result.matchedText(),</span>
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">							result.hasReplacement() ? result.replacement() : null);</span>
-<span class="fc" id="L162">				}</span>
-<span class="fc" id="L163">			}</span>
-<span class="fc" id="L164">		}</span>
+<span class="pc bpc" id="L159" title="2 of 4 branches missed.">					if (ruleName == null || ruleName.isBlank()) {</span>
+<span class="nc" id="L160">						int ruleIndex = hintFile.getRules().indexOf(rule);</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">						ruleName = ruleIndex &gt;= 0 ? hintFileName + (ruleIndex + 1) : hintFileName;</span>
+					}
+<span class="fc" id="L163">					report.addMatch(repoName, hintFileName, ruleName, relativePath, line, result.matchedText(),</span>
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">							result.hasReplacement() ? result.replacement() : null);</span>
+<span class="fc" id="L165">				}</span>
+<span class="fc" id="L166">			}</span>
+<span class="fc" id="L167">		}</span>
 
-<span class="fc" id="L166">		return report;</span>
+<span class="fc" id="L169">		return report;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
