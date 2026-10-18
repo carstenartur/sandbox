@@ -14,6 +14,8 @@
 package org.sandbox.jdt.internal.ui.views.mining;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -25,6 +27,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,33 +64,94 @@ public class InferredRuleDetailPanelTest {
 
 	@Test
 	public void selectedDslRulesFollowVisibleCheckboxSelection() {
-		CommitTableEntry entry = entry("one", "rule-one", "rule-two"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		String firstRule = "$x + 0\n=> $x\n;;"; //$NON-NLS-1$
+		String secondRule = "$x * 1\n=> $x\n;;"; //$NON-NLS-1$
+		CommitTableEntry entry = entry("one", firstRule, secondRule); //$NON-NLS-1$
 		AtomicReference<List<String>> selected = new AtomicReference<>();
 
 		display.syncExec(() -> {
 			panel.showRules(entry);
 			List<Button> checkboxes = checkboxes(panel);
 			assertEquals(2, checkboxes.size());
-			checkboxes.get(1).setSelection(false);
+			assertFalse(checkboxes.get(0).getSelection());
+			assertFalse(checkboxes.get(1).getSelection());
+			checkboxes.get(0).setSelection(true);
 			selected.set(panel.getSelectedDslRules());
 		});
 
-		assertEquals(List.of("rule-one"), selected.get()); //$NON-NLS-1$
+		assertEquals(List.of(firstRule), selected.get());
 	}
 
 	@Test
 	public void changingCommitReplacesTheExportSelectionScope() {
-		CommitTableEntry first = entry("one", "rule-one"); //$NON-NLS-1$ //$NON-NLS-2$
-		CommitTableEntry second = entry("two", "rule-two"); //$NON-NLS-1$ //$NON-NLS-2$
+		CommitTableEntry first = entry("one", "$x + 0\n=> $x\n;;"); //$NON-NLS-1$ //$NON-NLS-2$
+		CommitTableEntry second = entry("two", "$x * 1\n=> $x\n;;"); //$NON-NLS-1$ //$NON-NLS-2$
 		AtomicReference<List<String>> selected = new AtomicReference<>();
 
 		display.syncExec(() -> {
 			panel.showRules(first);
+			checkboxes(panel).getFirst().setSelection(true);
 			panel.showRules(second);
 			selected.set(panel.getSelectedDslRules());
 		});
 
-		assertEquals(List.of("rule-two"), selected.get()); //$NON-NLS-1$
+		assertEquals(List.of(), selected.get());
+	}
+
+	@Test
+	public void invalidDslCannotBeExportedEvenWhenEvaluationClaimsValid() {
+		display.syncExec(() -> {
+			panel.showRules(entry("invalid", "not a terminated DSL rule")); //$NON-NLS-1$ //$NON-NLS-2$
+			Button checkbox = checkboxes(panel).getFirst();
+			assertFalse(checkbox.getSelection());
+			assertFalse(checkbox.getEnabled());
+			checkbox.setSelection(true);
+			assertTrue(panel.getSelectedDslRules().isEmpty());
+			assertTrue(labels(panel).stream().anyMatch(text -> text.contains("Language check failed"))); //$NON-NLS-1$
+		});
+	}
+
+	@Test
+	public void languageCheckNeverClaimsExamplesOrProjectHaveBeenChecked() {
+		display.syncExec(() -> {
+			panel.showRules(entry("draft", "$x + 0\n=> $x\n;;")); //$NON-NLS-1$ //$NON-NLS-2$
+			List<String> labels = labels(panel);
+			assertTrue(labels.stream().anyMatch(text -> text.contains("Draft — language checked"))); //$NON-NLS-1$
+			assertTrue(labels.stream().anyMatch(text -> text.contains("Examples: not checked; project: not checked"))); //$NON-NLS-1$
+		});
+	}
+
+	@Test
+	public void unparseableSourcePatternIsNotAnExportableDraft() {
+		display.syncExec(() -> {
+			panel.showRules(entry("invalid-source", "???\n=> $x\n;;")); //$NON-NLS-1$ //$NON-NLS-2$
+			assertFalse(checkboxes(panel).getFirst().getEnabled());
+			checkboxes(panel).getFirst().setSelection(true);
+			assertTrue(panel.getSelectedDslRules().isEmpty());
+		});
+	}
+
+	@Test
+	public void metadataWithoutRulesIsNotAnExportableDraft() {
+		display.syncExec(() -> {
+			panel.showRules(entry("metadata", "<!id: empty-document>")); //$NON-NLS-1$ //$NON-NLS-2$
+			assertFalse(checkboxes(panel).getFirst().getEnabled());
+			checkboxes(panel).getFirst().setSelection(true);
+			assertTrue(panel.getSelectedDslRules().isEmpty());
+		});
+	}
+
+	private static List<String> labels(Composite root) {
+		List<String> result = new ArrayList<>();
+		for (Control child : root.getChildren()) {
+			if (child instanceof Label label) {
+				result.add(label.getText());
+			}
+			if (child instanceof Composite composite) {
+				result.addAll(labels(composite));
+			}
+		}
+		return result;
 	}
 
 	private static CommitTableEntry entry(String id, String... rules) {

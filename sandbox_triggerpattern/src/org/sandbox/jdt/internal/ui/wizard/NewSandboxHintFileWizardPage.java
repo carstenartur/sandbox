@@ -13,6 +13,9 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.wizard;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -56,6 +59,7 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 	private Combo bindingPolicyCombo;
 	private Text tagsText;
 	private SandboxHintTemplates selectedTemplate = SandboxHintTemplates.SIMPLE;
+	private final Map<String, String> metadataEdits = new LinkedHashMap<>();
 
 	private final IStructuredSelection selection;
 
@@ -120,6 +124,7 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 		new Label(metadataGroup, SWT.NONE).setText("D&escription:"); //$NON-NLS-1$
 		descriptionText = new Text(metadataGroup, SWT.BORDER | SWT.SINGLE);
 		descriptionText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		descriptionText.addModifyListener(modifyListener);
 
 		new Label(metadataGroup, SWT.NONE).setText("&Severity:"); //$NON-NLS-1$
 		severityCombo = new Combo(metadataGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
@@ -129,20 +134,21 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 
 		new Label(metadataGroup, SWT.NONE).setText("Min &Java:"); //$NON-NLS-1$
 		minJavaCombo = new Combo(metadataGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
-		minJavaCombo.setItems(new String[] { "", "11", "17", "21" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+		minJavaCombo.setItems(new String[] { "", "7", "8", "11", "17", "21", "25" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
 		minJavaCombo.select(0);
 		minJavaCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		new Label(metadataGroup, SWT.NONE).setText("&Binding policy:"); //$NON-NLS-1$
 		bindingPolicyCombo = new Combo(metadataGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
 		bindingPolicyCombo.setItems(new String[] { "optional", "required" }); //$NON-NLS-1$ //$NON-NLS-2$
-		bindingPolicyCombo.select(0);
+		bindingPolicyCombo.select(1);
 		bindingPolicyCombo.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 
 		new Label(metadataGroup, SWT.NONE).setText("&Tags:"); //$NON-NLS-1$
 		tagsText = new Text(metadataGroup, SWT.BORDER | SWT.SINGLE);
 		tagsText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		tagsText.setMessage("encoding, modernization"); //$NON-NLS-1$
+		tagsText.addModifyListener(modifyListener);
 
 		// --- Template group ---
 		Group templateGroup = new Group(container, SWT.NONE);
@@ -166,6 +172,7 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 						boolean planAware = selectedTemplate == SandboxHintTemplates.PLAN_AWARE;
 						if (planAware) {
 							bindingPolicyCombo.select(1);
+							metadataEdits.put("binding-policy", "required"); //$NON-NLS-1$ //$NON-NLS-2$
 						}
 						bindingPolicyCombo.setEnabled(!planAware);
 					}
@@ -175,6 +182,13 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 
 		// --- Initialize from selection ---
 		initializeFromSelection();
+		// Imported documents keep their own metadata until the author edits a field.
+		idText.addModifyListener(e -> metadataEdits.put("id", idText.getText().trim())); //$NON-NLS-1$
+		descriptionText.addModifyListener(e -> metadataEdits.put("description", descriptionText.getText().trim())); //$NON-NLS-1$
+		tagsText.addModifyListener(e -> metadataEdits.put("tags", tagsText.getText().trim())); //$NON-NLS-1$
+		severityCombo.addListener(SWT.Selection, e -> metadataEdits.put("severity", severityCombo.getText())); //$NON-NLS-1$
+		minJavaCombo.addListener(SWT.Selection, e -> metadataEdits.put("minJavaVersion", minJavaCombo.getText())); //$NON-NLS-1$
+		bindingPolicyCombo.addListener(SWT.Selection, e -> metadataEdits.put("binding-policy", bindingPolicyCombo.getText())); //$NON-NLS-1$
 
 		dialogChanged();
 		setControl(container);
@@ -241,6 +255,16 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 			updateStatus("File name must not contain path separators"); //$NON-NLS-1$
 			return;
 		}
+		if (((IContainer) resource).getFile(new Path(file)).exists()) {
+			updateStatus("A file with this name already exists; choose a new name"); //$NON-NLS-1$
+			return;
+		}
+		for (Text metadata : new Text[] { idText, descriptionText, tagsText }) {
+			if (metadata.getText().indexOf('>') >= 0) {
+				updateStatus("Metadata must not contain the directive terminator '>'"); //$NON-NLS-1$
+				return;
+			}
+		}
 		updateStatus(null);
 	}
 
@@ -250,6 +274,11 @@ public class NewSandboxHintFileWizardPage extends WizardPage {
 	}
 
 	// --- Public accessors for the wizard ---
+
+	/** Metadata fields the author explicitly changed; unedited imports stay intact. */
+	public Map<String, String> getEditedMetadata() {
+		return Map.copyOf(metadataEdits);
+	}
 
 	/** Returns the container path entered by the user. */
 	public String getContainerPath() {

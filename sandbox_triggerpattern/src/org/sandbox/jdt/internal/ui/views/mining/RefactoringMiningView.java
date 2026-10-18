@@ -20,6 +20,8 @@ import java.util.List;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.Separator;
@@ -40,6 +42,7 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 import org.eclipse.ui.part.ViewPart;
+import org.sandbox.jdt.internal.ui.wizard.ProjectRulePreview;
 import org.sandbox.jdt.triggerpattern.mining.analysis.CommitInfo;
 import org.sandbox.jdt.triggerpattern.mining.git.CommandLineGitProvider;
 import org.sandbox.jdt.triggerpattern.mining.git.GitHistoryProvider;
@@ -155,6 +158,12 @@ public class RefactoringMiningView extends ViewPart {
 		mgr.add(stopAction);
 
 		mgr.add(new Separator());
+		mgr.add(new Action("Try selected rule on my code...") { //$NON-NLS-1$
+			@Override
+			public void run() {
+				trySelectedRule();
+			}
+		});
 
 		Action exportAction = new Action("Export selected as .sandbox-hint") { //$NON-NLS-1$
 			@Override
@@ -254,9 +263,9 @@ public class RefactoringMiningView extends ViewPart {
 
 	private void exportAsHintFile() {
 		List<String> selectedDslRules = detailPanel.getSelectedDslRules();
-		if (selectedDslRules.isEmpty()) {
+		if (selectedDslRules.size() != 1) {
 			setContentDescription("Repository: " + activeRepositoryName //$NON-NLS-1$
-					+ " — select a commit and check the rules to export"); //$NON-NLS-1$
+					+ " — select one language-checked draft to preserve its complete file metadata"); //$NON-NLS-1$
 			return;
 		}
 
@@ -277,16 +286,39 @@ public class RefactoringMiningView extends ViewPart {
 		}
 	}
 
-	private static String buildHintFileContent(List<String> dslRules) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("<!id: ai-inferred-rules>\n"); //$NON-NLS-1$
-		sb.append("<!description: Rules inferred by AI from code changes>\n"); //$NON-NLS-1$
-		sb.append("<!severity: info>\n"); //$NON-NLS-1$
-		sb.append("<!tags: ai-inferred, mining>\n\n"); //$NON-NLS-1$
-		for (String rule : dslRules) {
-			sb.append(rule).append("\n;;\n\n"); //$NON-NLS-1$
+	static String buildHintFileContent(List<String> dslRules) {
+		if (dslRules.size() != 1) {
+			throw new IllegalArgumentException("Export one complete draft at a time."); //$NON-NLS-1$
 		}
-		return sb.toString();
+		return dslRules.getFirst();
+	}
+
+	private void trySelectedRule() {
+		List<String> rules= detailPanel.getSelectedDslRules();
+		if (rules.size() != 1) {
+			setContentDescription("Select one language-checked draft to try on a Java project."); //$NON-NLS-1$
+			return;
+		}
+		List<IJavaProject> projects= new ArrayList<>();
+		for (IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
+			IJavaProject javaProject= JavaCore.create(project);
+			if (project.isOpen() && javaProject.exists()) {
+				projects.add(javaProject);
+			}
+		}
+		ElementListSelectionDialog dialog= new ElementListSelectionDialog(getSite().getShell(), new LabelProvider() {
+			@Override
+			public String getText(Object element) {
+				return element instanceof IJavaProject project ? project.getElementName() : super.getText(element);
+			}
+		});
+		dialog.setTitle("Try rule on my code"); //$NON-NLS-1$
+		dialog.setMessage("Select an open Java project. The trial does not save or install the rule."); //$NON-NLS-1$
+		dialog.setMultipleSelection(false);
+		dialog.setElements(projects.toArray());
+		if (dialog.open() == Window.OK && dialog.getFirstResult() instanceof IJavaProject project) {
+			ProjectRulePreview.open(getSite().getShell(), project, rules.getFirst());
+		}
 	}
 
 	static boolean isGitBackedLocation(Path location) {
