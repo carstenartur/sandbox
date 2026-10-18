@@ -126,12 +126,12 @@ public class SandboxHintCodeScanner extends RuleBasedScanner {
 	 * SWT native libraries.
 	 */
 	static Color managedColor(RGB rgb) {
-<span class="pc bpc" id="L129" title="1 of 2 branches missed.">		if (!Platform.isRunning()) {</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">		if (!Platform.isRunning()) {</span>
 <span class="fc" id="L130">			return null;</span>
 		}
-<span class="nc" id="L132">		JavaPlugin plugin= JavaPlugin.getDefault();</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">		if (plugin != null) {</span>
-<span class="nc" id="L134">			return plugin.getJavaTextTools().getColorManager().getColor(rgb);</span>
+<span class="fc" id="L132">		JavaPlugin plugin= JavaPlugin.getDefault();</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">		if (plugin != null) {</span>
+<span class="fc" id="L134">			return plugin.getJavaTextTools().getColorManager().getColor(rgb);</span>
 		}
 <span class="nc" id="L136">		ColorRegistry registry= JFaceResources.getColorRegistry();</span>
 <span class="nc" id="L137">		String key= FALLBACK_COLOR_PREFIX + rgb.red + '.' + rgb.green + '.' + rgb.blue;</span>

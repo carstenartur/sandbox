@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ProjectRuleRefactoring.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.wizard</a> &gt; <span class="el_source">ProjectRuleRefactoring.java</span></div><h1>ProjectRuleRefactoring.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0, https://www.eclipse.org/legal/epl-2.0/
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.wizard;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.io.IOException;
+
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.core.ICompilationUnit;
+import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.IPackageFragment;
+import org.eclipse.jdt.core.IPackageFragmentRoot;
+import org.eclipse.jdt.core.WorkingCopyOwner;
+import org.eclipse.jdt.core.compiler.IProblem;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
+import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
+import org.eclipse.ltk.core.refactoring.Change;
+import org.eclipse.ltk.core.refactoring.CompositeChange;
+import org.eclipse.ltk.core.refactoring.Refactoring;
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
+import org.eclipse.text.edits.TextEditGroup;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.HintFile;
+import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
+import org.sandbox.jdt.triggerpattern.api.RuleMatchDiagnostics;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlanContext;
+import org.sandbox.jdt.triggerpattern.cleanup.HintFileFixCore;
+import org.sandbox.jdt.triggerpattern.cleanup.NlsAwareCleanUpFix;
+import org.sandbox.jdt.triggerpattern.internal.GuardRegistry;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
+
+/** Prepares an unsaved rule with the ordinary cleanup backend and project context. */
+final class ProjectRuleRefactoring extends Refactoring {
+
+	private static final String NAME= &quot;Try TriggerPattern on my project&quot;; //$NON-NLS-1$
+	private static final int MAX_DIAGNOSTICS= 200;
+	private final IJavaProject project;
+	private final String dsl;
+<span class="fc" id="L62">	private final Map&lt;ICompilationUnit, String&gt; snapshots= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L63">	private final Set&lt;ICompilationUnit&gt; compilableUnits= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L64">	private final StringBuilder explanation= new StringBuilder();</span>
+<span class="fc" id="L65">	private final List&lt;CompilationUnitChange&gt; preparedChanges= new ArrayList&lt;&gt;();</span>
+	private RefactoringStatus preparationStatus;
+	private Map&lt;String, String&gt; optionsSnapshot;
+	private List&lt;IClasspathEntry&gt; classpathSnapshot;
+	private Map&lt;String, String&gt; contextSnapshot;
+	private boolean prepared;
+
+<span class="fc" id="L72">	ProjectRuleRefactoring(IJavaProject project, String dsl) {</span>
+<span class="fc" id="L73">		this.project= project;</span>
+<span class="fc" id="L74">		this.dsl= dsl;</span>
+<span class="fc" id="L75">	}</span>
+
+	@Override
+	public String getName() {
+<span class="fc" id="L79">		return NAME;</span>
+	}
+
+	String getExplanation() {
+<span class="fc" id="L83">		return explanation.toString();</span>
+	}
+
+	@Override
+	public RefactoringStatus checkInitialConditions(IProgressMonitor monitor) throws CoreException {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">		if (prepared) {</span>
+<span class="fc" id="L89">			return preparationStatus;</span>
+		}
+		try {
+<span class="fc" id="L92">			RefactoringStatus status= prepare(monitor);</span>
+<span class="fc" id="L93">			prepared= true;</span>
+<span class="fc" id="L94">			return status;</span>
+<span class="fc" id="L95">		} catch (CoreException | RuntimeException exception) {</span>
+<span class="fc" id="L96">			preparedChanges.forEach(Change::dispose);</span>
+<span class="fc" id="L97">			preparedChanges.clear();</span>
+<span class="fc" id="L98">			snapshots.clear();</span>
+<span class="fc" id="L99">			compilableUnits.clear();</span>
+<span class="fc" id="L100">			explanation.setLength(0);</span>
+<span class="fc" id="L101">			preparationStatus= null;</span>
+<span class="fc" id="L102">			optionsSnapshot= null;</span>
+<span class="fc" id="L103">			classpathSnapshot= null;</span>
+<span class="fc" id="L104">			contextSnapshot= null;</span>
+<span class="fc" id="L105">			throw exception;</span>
+		}
+	}
+
+	private RefactoringStatus prepare(IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L110">		SubMonitor progress= SubMonitor.convert(monitor, NAME, 100);</span>
+<span class="fc" id="L111">		progress.checkCanceled();</span>
+<span class="fc" id="L112">		preparationStatus= new RefactoringStatus();</span>
+<span class="pc bpc" id="L113" title="3 of 6 branches missed.">		if (project == null || !project.exists() || !project.getProject().isOpen()) {</span>
+<span class="nc" id="L114">			preparationStatus.addFatalError(&quot;Select an open Java project.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L115">			return preparationStatus;</span>
+		}
+		HintFile hint;
+		try {
+<span class="fc" id="L119">			hint= new HintFileParser().parse(dsl);</span>
+<span class="pc" id="L120">		} catch (HintParseException exception) {</span>
+<span class="nc" id="L121">			preparationStatus.addFatalError(exception.getMessage());</span>
+<span class="nc" id="L122">			return preparationStatus;</span>
+		}
+		// A trial can apply changes, so compatibility fallbacks cannot authorize it.
+<span class="fc" id="L125">		hint.setBindingPolicy(HintBindingPolicy.REQUIRED);</span>
+<span class="pc bpc" id="L126" title="1 of 4 branches missed.">		if (hint.getRules().isEmpty() || !hint.getIncludes().isEmpty()</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">				|| !hint.getEmbeddedJavaBlocks().isEmpty()</span>
+<span class="fc" id="L128">				|| hint.getRules().stream().flatMap(rule -&gt; rule.alternatives().stream())</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">						.anyMatch(alternative -&gt; !alternative.structuredActions().isEmpty()</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">								|| alternative.hasTextReplacement()</span>
+<span class="pc bpc" id="L131" title="2 of 4 branches missed.">										&amp;&amp; alternative.replacementPattern().contains(&quot;&lt;?&quot;))) { //$NON-NLS-1$</span>
+<span class="fc" id="L132">			preparationStatus.addFatalError(&quot;This trial supports self-contained text rules. &quot; //$NON-NLS-1$</span>
+					+ &quot;Resolve includes and use the coordinated cleanup for semantic plans or embedded Java.&quot;); //$NON-NLS-1$
+<span class="fc" id="L134">			return preparationStatus;</span>
+		}
+<span class="fc" id="L136">		GuardRegistry.getInstance();</span>
+<span class="fc" id="L137">		List&lt;ICompilationUnit&gt; units= new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">		for (IPackageFragmentRoot root : project.getPackageFragmentRoots()) {</span>
+<span class="fc" id="L139">			progress.checkCanceled();</span>
+<span class="pc bpc" id="L140" title="1 of 4 branches missed.">			if (root.getKind() == IPackageFragmentRoot.K_SOURCE &amp;&amp; root.getJavaProject().equals(project)) {</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">				for (var child : root.getChildren()) {</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">					if (child instanceof IPackageFragment fragment) {</span>
+<span class="fc" id="L143">						units.addAll(List.of(fragment.getCompilationUnits()));</span>
+					}
+				}
+			}
+		}
+<span class="fc" id="L148">		Map&lt;String, String&gt; options= project.getOptions(true);</span>
+<span class="fc" id="L149">		optionsSnapshot= Map.copyOf(options);</span>
+<span class="fc" id="L150">		classpathSnapshot= List.of(project.getResolvedClasspath(true));</span>
+<span class="fc" id="L151">		contextSnapshot= contextFingerprint(progress);</span>
+<span class="fc" id="L152">		int diagnosticCount= 0;</span>
+<span class="fc" id="L153">		Map&lt;ICompilationUnit, String&gt; proposedSources= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L154">		SubMonitor files= progress.split(95).setWorkRemaining(units.size());</span>
+<span class="fc" id="L155">		try (var scope= SemanticRewritePlanContext.install(SemanticRewritePlan.empty(), options, files::checkCanceled)) {</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">			for (ICompilationUnit unit : units) {</span>
+<span class="fc" id="L157">				files.checkCanceled();</span>
+<span class="fc" id="L158">				files.subTask(unit.getElementName());</span>
+<span class="fc" id="L159">				String before= unit.getSource();</span>
+<span class="fc" id="L160">				snapshots.put(unit, before);</span>
+<span class="fc" id="L161">				CompilationUnit ast= parse(unit, null, files.split(1));</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">				if (hasErrors(ast)) {</span>
+<span class="nc" id="L163">					preparationStatus.addWarning(&quot;Skipped file with compiler errors: &quot; + unit.getPath()); //$NON-NLS-1$</span>
+<span class="nc" id="L164">					continue;</span>
+				}
+<span class="fc" id="L166">				compilableUnits.add(unit);</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">				if (diagnosticCount &lt; MAX_DIAGNOSTICS) {</span>
+<span class="fc" id="L168">					var candidates= new RuleMatchDiagnostics(hint).explain(ast, before, -1, 0,</span>
+<span class="fc" id="L169">							Math.min(30, MAX_DIAGNOSTICS - diagnosticCount), options, SemanticRewritePlan.empty());</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">					for (var candidate : candidates) {</span>
+<span class="fc" id="L171">						explanation.append(unit.getPath()).append('\n').append(candidate.describe()).append(&quot;\n\n&quot;); //$NON-NLS-1$</span>
+					}
+<span class="fc" id="L173">					diagnosticCount+= candidates.size();</span>
+				}
+<span class="fc" id="L175">				List&lt;TransformationResult&gt; results= new BatchTransformationProcessor(hint)</span>
+<span class="fc" id="L176">						.process(ast, options).stream().filter(TransformationResult::hasReplacement).toList();</span>
+<span class="pc bpc" id="L177" title="1 of 2 branches missed.">				if (overlap(results)) {</span>
+<span class="nc" id="L178">					preparationStatus.addFatalError(&quot;Overlapping rule changes in &quot; + unit.getPath() //$NON-NLS-1$</span>
+							+ &quot;. Narrow the rules and try again.&quot;); //$NON-NLS-1$
+<span class="nc" id="L180">					return preparationStatus;</span>
+				}
+<span class="fc" id="L182">				Set&lt;CompilationUnitRewriteOperation&gt; operations= new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L183">				HintFileFixCore.findOperationsFromHint(ast, hint, operations);</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">				if (operations.isEmpty()) {</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">					if (!results.isEmpty()) {</span>
+<span class="fc" id="L186">						explanation.append(unit.getPath()).append(&quot;: backend withheld unsupported text or comments.\n&quot;); //$NON-NLS-1$</span>
+					}
+<span class="fc" id="L188">					continue;</span>
+				}
+<span class="fc" id="L190">				CompilationUnitChange generated= new NlsAwareCleanUpFix(NAME, ast,</span>
+<span class="fc" id="L191">						operations.toArray(CompilationUnitRewriteOperation[]::new)).createOptionalChange(files);</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">				if (generated == null) {</span>
+<span class="fc" id="L193">					explanation.append(unit.getPath()).append(&quot;: the rule is already applied or the backend withheld this change.\n&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L194">					continue;</span>
+				}
+<span class="fc" id="L196">				String after= generated.getPreviewContent(files);</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">				if (before.equals(after)) {</span>
+<span class="nc" id="L198">					explanation.append(unit.getPath()).append(&quot;: backend withheld the replacement; &quot; //$NON-NLS-1$</span>
+							+ &quot;unsupported syntax or comments were preserved without modification.\n&quot;); //$NON-NLS-1$
+<span class="nc" id="L200">					generated.dispose();</span>
+<span class="nc" id="L201">					continue;</span>
+				}
+				// Type-check after all proposed sources are installed in the private overlay:
+				// a related rule may change the API that this replacement references.
+				// One selection per file keeps imports and exception follow-up edits together.
+<span class="fc" id="L206">				CompilationUnitChange coherent= new CompilationUnitChange(unit.getElementName(), unit);</span>
+<span class="fc" id="L207">				coherent.setEdit(generated.getEdit().copy());</span>
+<span class="fc" id="L208">				coherent.addTextEditGroup(new TextEditGroup(&quot;Complete rule changes in this file&quot;, coherent.getEdit())); //$NON-NLS-1$</span>
+<span class="fc" id="L209">				preparedChanges.add(coherent);</span>
+<span class="fc" id="L210">				proposedSources.put(unit, after);</span>
+<span class="fc" id="L211">				generated.dispose();</span>
+			}
+		}
+<span class="fc bfc" id="L214" title="All 2 branches covered.">		if (!proposedSources.isEmpty()) {</span>
+<span class="fc" id="L215">			preparationStatus.merge(validateProposedProject(proposedSources, progress.split(5)));</span>
+		}
+<span class="fc" id="L217">		explanation.insert(0, &quot;Language checked; project bindings and replacement compiler diagnostics checked. &quot; //$NON-NLS-1$</span>
+				+ &quot;Behavioral equivalence and examples still require review.\n&quot; //$NON-NLS-1$
+				+ &quot;Each file is selected as a complete change, including imports and follow-up edits.\n\n&quot;); //$NON-NLS-1$
+<span class="pc bpc" id="L220" title="1 of 2 branches missed.">		if (diagnosticCount &gt;= MAX_DIAGNOSTICS) {</span>
+<span class="nc" id="L221">			explanation.append(&quot;Further diagnostics omitted; the diff includes all prepared changes.\n&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L223" title="All 2 branches covered.">		if (preparedChanges.isEmpty()) {</span>
+<span class="fc" id="L224">			preparationStatus.addWarning(&quot;No applicable changes. Inspect the candidate explanations.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L226">		return preparationStatus;</span>
+	}
+
+	/** Resolves unchanged callers against all proposed files, using private unsaved copies. */
+	private RefactoringStatus validateProposedProject(Map&lt;ICompilationUnit, String&gt; proposedSources,
+			IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L232">		RefactoringStatus status= new RefactoringStatus();</span>
+<span class="fc" id="L233">		WorkingCopyOwner owner= new WorkingCopyOwner() { };</span>
+<span class="fc" id="L234">		Map&lt;ICompilationUnit, ICompilationUnit&gt; copies= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L235">		SubMonitor progress= SubMonitor.convert(monitor, snapshots.size() * 2);</span>
+		try {
+<span class="fc bfc" id="L237" title="All 2 branches covered.">			for (var entry : snapshots.entrySet()) {</span>
+<span class="fc" id="L238">				progress.checkCanceled();</span>
+<span class="fc" id="L239">				ICompilationUnit copy= entry.getKey().getWorkingCopy(owner, progress.split(1));</span>
+<span class="fc" id="L240">				copies.put(entry.getKey(), copy);</span>
+<span class="fc" id="L241">				copy.getBuffer().setContents(proposedSources.getOrDefault(entry.getKey(), entry.getValue()));</span>
+			}
+<span class="fc bfc" id="L243" title="All 2 branches covered.">			for (var entry : copies.entrySet()) {</span>
+<span class="fc" id="L244">				progress.checkCanceled();</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">				if (compilableUnits.contains(entry.getKey())</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">						&amp;&amp; hasErrors(parse(entry.getValue(), null, progress.split(1), owner))) {</span>
+<span class="fc" id="L247">					status.addFatalError(&quot;The selected changes break compilation in &quot; + entry.getKey().getPath() //$NON-NLS-1$</span>
+							+ &quot;. Keep dependent changes together.&quot;); //$NON-NLS-1$
+<span class="fc" id="L249">					return status;</span>
+				}
+			}
+<span class="fc" id="L252">		} finally {</span>
+<span class="fc" id="L253">			CoreException cleanupFailure= null;</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">			for (ICompilationUnit copy : copies.values()) {</span>
+				try {
+<span class="fc" id="L256">					copy.discardWorkingCopy();</span>
+<span class="pc" id="L257">				} catch (CoreException exception) {</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">					if (cleanupFailure == null) {</span>
+<span class="nc" id="L259">						cleanupFailure= exception;</span>
+<span class="nc" id="L260">					} else {</span>
+<span class="nc" id="L261">						cleanupFailure.addSuppressed(exception);</span>
+					}
+				}
+			}
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">			if (cleanupFailure != null) {</span>
+<span class="nc" id="L266">				throw cleanupFailure;</span>
+			}
+		}
+<span class="fc" id="L269">		return status;</span>
+	}
+
+	/** Revalidates the actual LTK selection, including disabled complete-file edit groups. */
+	private RefactoringStatus validateSelection(IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L274">		Map&lt;ICompilationUnit, String&gt; selected= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">		for (CompilationUnitChange change : preparedChanges) {</span>
+<span class="fc bfc" id="L276" title="All 4 branches covered.">			if (change.isEnabled() &amp;&amp; List.of(change.getTextEditChangeGroups()).stream().anyMatch(group -&gt; group.isEnabled())) {</span>
+<span class="fc" id="L277">				selected.put(change.getCompilationUnit(), change.getPreviewContent(monitor));</span>
+			}
+		}
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">		return selected.isEmpty() ? new RefactoringStatus() : validateProposedProject(selected, monitor);</span>
+	}
+
+	@Override
+	public RefactoringStatus checkFinalConditions(IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L285">		RefactoringStatus status= checkInitialConditions(monitor);</span>
+<span class="pc bpc" id="L286" title="2 of 4 branches missed.">		if (optionsSnapshot != null &amp;&amp; (!optionsSnapshot.equals(project.getOptions(true))</span>
+<span class="pc bpc" id="L287" title="1 of 2 branches missed.">				|| !classpathSnapshot.equals(List.of(project.getResolvedClasspath(true)))</span>
+<span class="fc bfc" id="L288" title="All 2 branches covered.">				|| !contextSnapshot.equals(contextFingerprint(monitor)))) {</span>
+<span class="fc" id="L289">			status.addFatalError(&quot;The project's compiler options or classpath changed. Run the trial again.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc bfc" id="L291" title="All 2 branches covered.">		for (var entry : snapshots.entrySet()) {</span>
+<span class="pc bpc" id="L292" title="1 of 4 branches missed.">			if (!entry.getKey().exists() || !entry.getValue().equals(entry.getKey().getSource())) {</span>
+<span class="fc" id="L293">				status.addFatalError(&quot;Source changed after preview: &quot; + entry.getKey().getPath() //$NON-NLS-1$</span>
+						+ &quot;. Run the project trial again.&quot;); //$NON-NLS-1$
+			}
+		}
+<span class="fc" id="L297">		return status;</span>
+	}
+
+	/** Includes new/deleted dependency sources and replacement jars at the same path. */
+	private Map&lt;String, String&gt; contextFingerprint(IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L302">		SubMonitor progress= SubMonitor.convert(monitor);</span>
+<span class="fc" id="L303">		Map&lt;String, String&gt; state= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L304" title="All 2 branches covered.">		for (IPackageFragmentRoot root : project.getAllPackageFragmentRoots()) {</span>
+<span class="fc" id="L305">			progress.checkCanceled();</span>
+<span class="fc" id="L306">			IResource resource= root.getResource();</span>
+<span class="pc bpc" id="L307" title="1 of 4 branches missed.">			if (resource != null &amp;&amp; resource.exists()) {</span>
+<span class="fc" id="L308">				resource.accept(child -&gt; {</span>
+<span class="fc" id="L309">					progress.checkCanceled();</span>
+<span class="fc" id="L310">					state.put(child.getFullPath().toString(), Long.toString(child.getModificationStamp()));</span>
+<span class="fc" id="L311">					return true;</span>
+				});
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">			} else if (root.isExternal()) {</span>
+<span class="fc" id="L314">				Path path= root.getPath().toFile().toPath();</span>
+				try {
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">					if (Files.isRegularFile(path)) {</span>
+<span class="fc" id="L317">						state.put(path.toString(), Files.getLastModifiedTime(path) + &quot;:&quot; + Files.size(path)); //$NON-NLS-1$</span>
+<span class="pc bnc" id="L318" title="All 2 branches missed.">					} else if (Files.isDirectory(path)) {</span>
+<span class="nc" id="L319">						try (var files= Files.walk(path)) {</span>
+<span class="nc" id="L320">						var iterator= files.filter(Files::isRegularFile).iterator();</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">						while (iterator.hasNext()) {</span>
+<span class="nc" id="L322">								progress.checkCanceled();</span>
+<span class="nc" id="L323">							Path entry= iterator.next();</span>
+<span class="nc" id="L324">								state.put(entry.toString(), Files.getLastModifiedTime(entry) + &quot;:&quot; + Files.size(entry)); //$NON-NLS-1$</span>
+							}
+						}
+					}
+<span class="nc" id="L328">				} catch (IOException exception) {</span>
+<span class="nc" id="L329">					throw new CoreException(Status.error(&quot;Cannot snapshot dependency &quot; + path, exception)); //$NON-NLS-1$</span>
+				}
+			}
+<span class="fc bfc" id="L332" title="All 2 branches covered.">			if (root.getKind() == IPackageFragmentRoot.K_SOURCE) {</span>
+<span class="fc bfc" id="L333" title="All 2 branches covered.">				for (var child : root.getChildren()) {</span>
+<span class="pc bpc" id="L334" title="1 of 2 branches missed.">					if (child instanceof IPackageFragment fragment) {</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">						for (ICompilationUnit unit : fragment.getCompilationUnits()) {</span>
+<span class="fc" id="L336">							progress.checkCanceled();</span>
+<span class="fc" id="L337">							state.put(&quot;source:&quot; + unit.getHandleIdentifier(), sourceFingerprint(unit.getSource())); //$NON-NLS-1$</span>
+						}
+					}
+				}
+			}
+		}
+<span class="fc" id="L343">		return Map.copyOf(state);</span>
+	}
+
+	private static String sourceFingerprint(String source) {
+		try {
+<span class="fc" id="L348">			return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance(&quot;SHA-256&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L349">					.digest(source.getBytes(java.nio.charset.StandardCharsets.UTF_8)));</span>
+<span class="nc" id="L350">		} catch (java.security.NoSuchAlgorithmException exception) {</span>
+<span class="nc" id="L351">			throw new IllegalStateException(exception);</span>
+		}
+	}
+
+	@Override
+	public Change createChange(IProgressMonitor monitor) throws CoreException {
+<span class="pc bpc" id="L357" title="1 of 2 branches missed.">		if (checkFinalConditions(monitor).hasFatalError()) {</span>
+<span class="nc" id="L358">			throw new CoreException(Status.error(&quot;The rule trial is invalid. Rebuild the preview.&quot;)); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L360">		return new CompositeChange(NAME, preparedChanges.toArray(Change[]::new)) {</span>
+			@Override
+			public RefactoringStatus isValid(IProgressMonitor progress) throws CoreException {
+<span class="fc" id="L363">				RefactoringStatus status= super.isValid(progress);</span>
+<span class="fc" id="L364">				status.merge(checkFinalConditions(progress));</span>
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">				if (!status.hasFatalError()) {</span>
+<span class="fc" id="L366">					status.merge(validateSelection(progress));</span>
+				}
+<span class="fc" id="L368">				return status;</span>
+			}
+
+			@Override
+			public Change perform(IProgressMonitor progress) throws CoreException {
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">				if (checkFinalConditions(progress).hasFatalError()) {</span>
+<span class="nc" id="L374">					throw new CoreException(Status.error(&quot;Source changed after the project trial.&quot;)); //$NON-NLS-1$</span>
+				}
+<span class="fc" id="L376">				RefactoringStatus selection= validateSelection(progress);</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">				if (selection.hasFatalError()) {</span>
+<span class="fc" id="L378">					throw new CoreException(Status.error(selection.getMessageMatchingSeverity(RefactoringStatus.FATAL)));</span>
+				}
+<span class="fc" id="L380">				return super.perform(progress);</span>
+			}
+		};
+	}
+
+	private CompilationUnit parse(ICompilationUnit unit, String changedSource, IProgressMonitor monitor) {
+<span class="fc" id="L386">		return parse(unit, changedSource, monitor, null);</span>
+	}
+
+	private CompilationUnit parse(ICompilationUnit unit, String changedSource, IProgressMonitor monitor, WorkingCopyOwner owner) {
+<span class="fc" id="L390">		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">		if (changedSource == null) {</span>
+<span class="fc" id="L392">			parser.setSource(unit);</span>
+<span class="fc" id="L393">		} else {</span>
+<span class="nc" id="L394">			parser.setSource(changedSource.toCharArray());</span>
+<span class="nc" id="L395">			parser.setProject(project);</span>
+<span class="nc" id="L396">			parser.setUnitName(unit.getPath().toString());</span>
+		}
+<span class="fc" id="L398">		parser.setCompilerOptions(project.getOptions(true));</span>
+<span class="fc bfc" id="L399" title="All 2 branches covered.">		if (owner != null) {</span>
+<span class="fc" id="L400">			parser.setWorkingCopyOwner(owner);</span>
+		}
+<span class="fc" id="L402">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L403">		parser.setBindingsRecovery(false);</span>
+<span class="fc" id="L404">		return (CompilationUnit) parser.createAST(monitor);</span>
+	}
+
+	private static boolean hasErrors(CompilationUnit root) {
+<span class="fc bfc" id="L408" title="All 2 branches covered.">		for (IProblem problem : root.getProblems()) {</span>
+<span class="fc bfc" id="L409" title="All 2 branches covered.">			if (problem.isError()) {</span>
+<span class="fc" id="L410">				return true;</span>
+			}
+		}
+<span class="fc" id="L413">		return false;</span>
+	}
+
+	private static boolean overlap(List&lt;TransformationResult&gt; results) {
+<span class="pc" id="L417">		var ordered= results.stream().sorted(Comparator.comparingInt(result -&gt; result.match().getOffset())).toList();</span>
+<span class="fc" id="L418">		int end= -1;</span>
+<span class="fc bfc" id="L419" title="All 2 branches covered.">		for (TransformationResult result : ordered) {</span>
+<span class="pc bpc" id="L420" title="1 of 2 branches missed.">			if (result.match().getOffset() &lt; end) {</span>
+<span class="nc" id="L421">				return true;</span>
+			}
+<span class="fc" id="L423">			end= result.match().getOffset() + result.match().getLength();</span>
+		}
+<span class="fc" id="L425">		return false;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

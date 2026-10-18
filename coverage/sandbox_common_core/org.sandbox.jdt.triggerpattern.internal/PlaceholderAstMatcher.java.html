@@ -960,7 +960,7 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 <span class="fc bfc" id="L960" title="All 2 branches covered.">			if (patternArgs.get(i) instanceof SimpleName) {</span>
 <span class="fc" id="L961">				SimpleName name = (SimpleName) patternArgs.get(i);</span>
 <span class="fc" id="L962">				String id = name.getIdentifier();</span>
-<span class="pc bpc" id="L963" title="2 of 4 branches missed.">				if (id != null &amp;&amp; id.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
+<span class="pc bpc" id="L963" title="1 of 4 branches missed.">				if (id != null &amp;&amp; id.startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
 <span class="fc" id="L964">					PlaceholderInfo info = parsePlaceholder(id);</span>
 <span class="fc bfc" id="L965" title="All 2 branches covered.">					if (info.isMulti()) {</span>
 <span class="fc" id="L966">						return i;</span>

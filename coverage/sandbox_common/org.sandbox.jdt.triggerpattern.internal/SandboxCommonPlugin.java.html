@@ -62,7 +62,7 @@ import org.osgi.framework.BundleContext;
 
 	private static void handleResourceChange(IResourceChangeEvent event) {
 <span class="fc" id="L64">		IResource eventResource= event.getResource();</span>
-<span class="pc bpc" id="L65" title="1 of 2 branches missed.">		if ((event.getType() == IResourceChangeEvent.PRE_CLOSE</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">		if ((event.getType() == IResourceChangeEvent.PRE_CLOSE</span>
 <span class="fc bfc" id="L66" title="All 2 branches covered.">				|| event.getType() == IResourceChangeEvent.PRE_DELETE)</span>
 <span class="pc bpc" id="L67" title="1 of 2 branches missed.">				&amp;&amp; eventResource instanceof IProject project) {</span>
 <span class="fc" id="L68">			invalidateProjectRules(project);</span>

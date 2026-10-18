@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JavaSourceMask.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">JavaSourceMask.java</span></div><h1>JavaSourceMask.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import java.util.Arrays;
+
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.ToolFactory;
+import org.eclipse.jdt.core.compiler.IScanner;
+import org.eclipse.jdt.core.compiler.ITerminalSymbols;
+import org.eclipse.jdt.core.compiler.InvalidInputException;
+
+/** Preserves source offsets while hiding literals and comments from Java name searches. */
+public final class JavaSourceMask {
+
+	private JavaSourceMask() {
+	}
+
+	public static String codeOnly(String source) {
+<span class="fc" id="L22">		char[] code= source.toCharArray();</span>
+<span class="fc" id="L23">		IScanner scanner= ToolFactory.createScanner(true, false, false, JavaCore.VERSION_25);</span>
+<span class="fc" id="L24">		scanner.setSource(code);</span>
+		try {
+<span class="fc bfc" id="L26" title="All 2 branches covered.">			for (int token= scanner.getNextToken(); token != ITerminalSymbols.TokenNameEOF; token= scanner.getNextToken()) {</span>
+<span class="pc bpc" id="L27" title="3 of 16 branches missed.">				if (token == ITerminalSymbols.TokenNameStringLiteral || token == ITerminalSymbols.TokenNameTextBlock</span>
+						|| token == ITerminalSymbols.TokenNameCharacterLiteral
+						|| token == ITerminalSymbols.TokenNameSingleQuoteStringLiteral
+						|| token == ITerminalSymbols.TokenNameCOMMENT_LINE || token == ITerminalSymbols.TokenNameCOMMENT_BLOCK
+						|| token == ITerminalSymbols.TokenNameCOMMENT_JAVADOC || token == ITerminalSymbols.TokenNameCOMMENT_MARKDOWN) {
+<span class="fc" id="L32">					Arrays.fill(code, scanner.getCurrentTokenStartPosition(), scanner.getCurrentTokenEndPosition() + 1, ' ');</span>
+				}
+			}
+<span class="nc" id="L35">		} catch (InvalidInputException invalidJava) {</span>
+			// A recovered token stream must never authorize an import or a textual rewrite.
+<span class="nc" id="L37">			Arrays.fill(code, ' ');</span>
+<span class="fc" id="L38">		}</span>
+<span class="fc" id="L39">		return new String(code);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

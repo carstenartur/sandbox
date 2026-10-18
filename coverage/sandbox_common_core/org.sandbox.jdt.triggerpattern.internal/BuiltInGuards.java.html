@@ -93,116 +93,117 @@ public final class BuiltInGuards {
 <span class="fc" id="L93">		guards.put(&quot;matchesAny&quot;, BuiltInGuards::evaluateMatchesAny); //$NON-NLS-1$</span>
 <span class="fc" id="L94">		guards.put(&quot;matchesNone&quot;, BuiltInGuards::evaluateMatchesNone); //$NON-NLS-1$</span>
 <span class="fc" id="L95">		guards.put(&quot;hasNoSideEffect&quot;, BuiltInGuards::evaluateHasNoSideEffect); //$NON-NLS-1$</span>
-<span class="fc" id="L96">		guards.put(&quot;referencedIn&quot;, BuiltInGuards::evaluateReferencedIn); //$NON-NLS-1$</span>
+<span class="fc" id="L96">		guards.put(&quot;isStableValue&quot;, BuiltInGuards::evaluateIsStableValue); //$NON-NLS-1$</span>
+<span class="fc" id="L97">		guards.put(&quot;referencedIn&quot;, BuiltInGuards::evaluateReferencedIn); //$NON-NLS-1$</span>
 
 		// Java version guards
-<span class="fc" id="L99">		guards.put(&quot;sourceVersionGE&quot;, BuiltInGuards::evaluateSourceVersionGE); //$NON-NLS-1$</span>
-<span class="fc" id="L100">		guards.put(&quot;sourceVersionLE&quot;, BuiltInGuards::evaluateSourceVersionLE); //$NON-NLS-1$</span>
-<span class="fc" id="L101">		guards.put(&quot;sourceVersionBetween&quot;, BuiltInGuards::evaluateSourceVersionBetween); //$NON-NLS-1$</span>
+<span class="fc" id="L100">		guards.put(&quot;sourceVersionGE&quot;, BuiltInGuards::evaluateSourceVersionGE); //$NON-NLS-1$</span>
+<span class="fc" id="L101">		guards.put(&quot;sourceVersionLE&quot;, BuiltInGuards::evaluateSourceVersionLE); //$NON-NLS-1$</span>
+<span class="fc" id="L102">		guards.put(&quot;sourceVersionBetween&quot;, BuiltInGuards::evaluateSourceVersionBetween); //$NON-NLS-1$</span>
 
 		// Element kind guards
-<span class="fc" id="L104">		guards.put(&quot;isStatic&quot;, BuiltInGuards::evaluateIsStatic); //$NON-NLS-1$</span>
-<span class="fc" id="L105">		guards.put(&quot;isFinal&quot;, BuiltInGuards::evaluateIsFinal); //$NON-NLS-1$</span>
-<span class="fc" id="L106">		guards.put(&quot;elementKindMatches&quot;, BuiltInGuards::evaluateElementKindMatches); //$NON-NLS-1$</span>
+<span class="fc" id="L105">		guards.put(&quot;isStatic&quot;, BuiltInGuards::evaluateIsStatic); //$NON-NLS-1$</span>
+<span class="fc" id="L106">		guards.put(&quot;isFinal&quot;, BuiltInGuards::evaluateIsFinal); //$NON-NLS-1$</span>
+<span class="fc" id="L107">		guards.put(&quot;elementKindMatches&quot;, BuiltInGuards::evaluateElementKindMatches); //$NON-NLS-1$</span>
 
 		// Annotation guards
-<span class="fc" id="L109">		guards.put(&quot;hasAnnotation&quot;, BuiltInGuards::evaluateHasAnnotation); //$NON-NLS-1$</span>
-<span class="fc" id="L110">		guards.put(&quot;isDeprecated&quot;, BuiltInGuards::evaluateIsDeprecated); //$NON-NLS-1$</span>
+<span class="fc" id="L110">		guards.put(&quot;hasAnnotation&quot;, BuiltInGuards::evaluateHasAnnotation); //$NON-NLS-1$</span>
+<span class="fc" id="L111">		guards.put(&quot;isDeprecated&quot;, BuiltInGuards::evaluateIsDeprecated); //$NON-NLS-1$</span>
 
 		// Negated pattern guards
-<span class="fc" id="L113">		guards.put(&quot;contains&quot;, BuiltInGuards::evaluateContains); //$NON-NLS-1$</span>
-<span class="fc" id="L114">		guards.put(&quot;notContains&quot;, BuiltInGuards::evaluateNotContains); //$NON-NLS-1$</span>
+<span class="fc" id="L114">		guards.put(&quot;contains&quot;, BuiltInGuards::evaluateContains); //$NON-NLS-1$</span>
+<span class="fc" id="L115">		guards.put(&quot;notContains&quot;, BuiltInGuards::evaluateNotContains); //$NON-NLS-1$</span>
 
 		// Nullability guards
-<span class="fc" id="L117">		guards.put(&quot;isNullable&quot;, BuiltInGuards::evaluateIsNullable); //$NON-NLS-1$</span>
-<span class="fc" id="L118">		guards.put(&quot;isNonNull&quot;, BuiltInGuards::evaluateIsNonNull); //$NON-NLS-1$</span>
+<span class="fc" id="L118">		guards.put(&quot;isNullable&quot;, BuiltInGuards::evaluateIsNullable); //$NON-NLS-1$</span>
+<span class="fc" id="L119">		guards.put(&quot;isNonNull&quot;, BuiltInGuards::evaluateIsNonNull); //$NON-NLS-1$</span>
 
 		// NetBeans compatibility: otherwise guard (always true)
-<span class="fc" id="L121">		guards.put(&quot;otherwise&quot;, (ctx, args) -&gt; true); //$NON-NLS-1$</span>
+<span class="fc" id="L122">		guards.put(&quot;otherwise&quot;, (ctx, args) -&gt; true); //$NON-NLS-1$</span>
 
 		// Literal and type guards
-<span class="fc" id="L124">		guards.put(&quot;isLiteral&quot;, BuiltInGuards::evaluateIsLiteral); //$NON-NLS-1$</span>
-<span class="fc" id="L125">		guards.put(&quot;isNullLiteral&quot;, BuiltInGuards::evaluateIsNullLiteral); //$NON-NLS-1$</span>
-<span class="fc" id="L126">		guards.put(&quot;isCharsetString&quot;, BuiltInGuards::evaluateIsCharsetString); //$NON-NLS-1$</span>
-<span class="fc" id="L127">		guards.put(&quot;isSingleCharacter&quot;, BuiltInGuards::evaluateIsSingleCharacter); //$NON-NLS-1$</span>
-<span class="fc" id="L128">		guards.put(&quot;isRegexp&quot;, BuiltInGuards::evaluateIsRegexp); //$NON-NLS-1$</span>
+<span class="fc" id="L125">		guards.put(&quot;isLiteral&quot;, BuiltInGuards::evaluateIsLiteral); //$NON-NLS-1$</span>
+<span class="fc" id="L126">		guards.put(&quot;isNullLiteral&quot;, BuiltInGuards::evaluateIsNullLiteral); //$NON-NLS-1$</span>
+<span class="fc" id="L127">		guards.put(&quot;isCharsetString&quot;, BuiltInGuards::evaluateIsCharsetString); //$NON-NLS-1$</span>
+<span class="fc" id="L128">		guards.put(&quot;isSingleCharacter&quot;, BuiltInGuards::evaluateIsSingleCharacter); //$NON-NLS-1$</span>
+<span class="fc" id="L129">		guards.put(&quot;isRegexp&quot;, BuiltInGuards::evaluateIsRegexp); //$NON-NLS-1$</span>
 
 		// Context guards
-<span class="fc" id="L131">		guards.put(&quot;isInTryWithResourceBlock&quot;, BuiltInGuards::evaluateIsInTryWithResourceBlock); //$NON-NLS-1$</span>
-<span class="fc" id="L132">		guards.put(&quot;isPassedToMethod&quot;, BuiltInGuards::evaluateIsPassedToMethod); //$NON-NLS-1$</span>
-<span class="fc" id="L133">		guards.put(&quot;inSerializableClass&quot;, BuiltInGuards::evaluateInSerializableClass); //$NON-NLS-1$</span>
-<span class="fc" id="L134">		guards.put(&quot;containsAnnotation&quot;, BuiltInGuards::evaluateContainsAnnotation); //$NON-NLS-1$</span>
-<span class="fc" id="L135">		guards.put(&quot;parentMatches&quot;, BuiltInGuards::evaluateParentMatches); //$NON-NLS-1$</span>
+<span class="fc" id="L132">		guards.put(&quot;isInTryWithResourceBlock&quot;, BuiltInGuards::evaluateIsInTryWithResourceBlock); //$NON-NLS-1$</span>
+<span class="fc" id="L133">		guards.put(&quot;isPassedToMethod&quot;, BuiltInGuards::evaluateIsPassedToMethod); //$NON-NLS-1$</span>
+<span class="fc" id="L134">		guards.put(&quot;inSerializableClass&quot;, BuiltInGuards::evaluateInSerializableClass); //$NON-NLS-1$</span>
+<span class="fc" id="L135">		guards.put(&quot;containsAnnotation&quot;, BuiltInGuards::evaluateContainsAnnotation); //$NON-NLS-1$</span>
+<span class="fc" id="L136">		guards.put(&quot;parentMatches&quot;, BuiltInGuards::evaluateParentMatches); //$NON-NLS-1$</span>
 
 		// Scope guards
-<span class="fc" id="L138">		guards.put(&quot;inClass&quot;, BuiltInGuards::evaluateInClass); //$NON-NLS-1$</span>
-<span class="fc" id="L139">		guards.put(&quot;inPackage&quot;, BuiltInGuards::evaluateInPackage); //$NON-NLS-1$</span>
+<span class="fc" id="L139">		guards.put(&quot;inClass&quot;, BuiltInGuards::evaluateInClass); //$NON-NLS-1$</span>
+<span class="fc" id="L140">		guards.put(&quot;inPackage&quot;, BuiltInGuards::evaluateInPackage); //$NON-NLS-1$</span>
 
 		// Modifier guard
-<span class="fc" id="L142">		guards.put(&quot;hasModifier&quot;, BuiltInGuards::evaluateHasModifier); //$NON-NLS-1$</span>
+<span class="fc" id="L143">		guards.put(&quot;hasModifier&quot;, BuiltInGuards::evaluateHasModifier); //$NON-NLS-1$</span>
 
 		// Cleanup mode guard — checks sandbox.cleanup.mode compiler option
-<span class="fc" id="L145">		guards.put(&quot;mode&quot;, BuiltInGuards::evaluateMode); //$NON-NLS-1$</span>
+<span class="fc" id="L146">		guards.put(&quot;mode&quot;, BuiltInGuards::evaluateMode); //$NON-NLS-1$</span>
 
 		// Method name pattern guard — checks if method name matches a regex pattern
-<span class="fc" id="L148">		guards.put(&quot;methodNameMatches&quot;, BuiltInGuards::evaluateMethodNameMatches); //$NON-NLS-1$</span>
+<span class="fc" id="L149">		guards.put(&quot;methodNameMatches&quot;, BuiltInGuards::evaluateMethodNameMatches); //$NON-NLS-1$</span>
 
 		// Type hierarchy guard — checks if enclosing class extends a given type
-<span class="fc" id="L151">		guards.put(&quot;enclosingClassExtends&quot;, BuiltInGuards::evaluateEnclosingClassExtends); //$NON-NLS-1$</span>
+<span class="fc" id="L152">		guards.put(&quot;enclosingClassExtends&quot;, BuiltInGuards::evaluateEnclosingClassExtends); //$NON-NLS-1$</span>
 
 		// SuppressWarnings guard — checks if enclosing element has @SuppressWarnings with given key
-<span class="fc" id="L154">		guards.put(&quot;hasSuppressWarnings&quot;, BuiltInGuards::evaluateHasSuppressWarnings); //$NON-NLS-1$</span>
+<span class="fc" id="L155">		guards.put(&quot;hasSuppressWarnings&quot;, BuiltInGuards::evaluateHasSuppressWarnings); //$NON-NLS-1$</span>
 
 		// Field guard — checks if enclosing class has a field with a given name
-<span class="fc" id="L157">		guards.put(&quot;hasField&quot;, BuiltInGuards::evaluateHasField); //$NON-NLS-1$</span>
+<span class="fc" id="L158">		guards.put(&quot;hasField&quot;, BuiltInGuards::evaluateHasField); //$NON-NLS-1$</span>
 
 		// Loop guard — checks if the matched node is inside a loop
-<span class="fc" id="L160">		guards.put(&quot;isInLoop&quot;, BuiltInGuards::evaluateIsInLoop); //$NON-NLS-1$</span>
+<span class="fc" id="L161">		guards.put(&quot;isInLoop&quot;, BuiltInGuards::evaluateIsInLoop); //$NON-NLS-1$</span>
 
 		// Parameter count guard — checks if enclosing method has expected param count
-<span class="fc" id="L163">		guards.put(&quot;paramCount&quot;, BuiltInGuards::evaluateParamCount); //$NON-NLS-1$</span>
+<span class="fc" id="L164">		guards.put(&quot;paramCount&quot;, BuiltInGuards::evaluateParamCount); //$NON-NLS-1$</span>
 
 		// Return type guard — checks if enclosing method's return type matches
-<span class="fc" id="L166">		guards.put(&quot;hasReturnType&quot;, BuiltInGuards::evaluateHasReturnType); //$NON-NLS-1$</span>
+<span class="fc" id="L167">		guards.put(&quot;hasReturnType&quot;, BuiltInGuards::evaluateHasReturnType); //$NON-NLS-1$</span>
 
 		// String literal guard — checks if a placeholder is a StringLiteral node
-<span class="fc" id="L169">		guards.put(&quot;isStringLiteral&quot;, BuiltInGuards::evaluateIsStringLiteral); //$NON-NLS-1$</span>
+<span class="fc" id="L170">		guards.put(&quot;isStringLiteral&quot;, BuiltInGuards::evaluateIsStringLiteral); //$NON-NLS-1$</span>
 
 		// Access modifier guards — check visibility of enclosing declaration
-<span class="fc" id="L172">		guards.put(&quot;isPublic&quot;, BuiltInGuards::evaluateIsPublic); //$NON-NLS-1$</span>
-<span class="fc" id="L173">		guards.put(&quot;isPrivate&quot;, BuiltInGuards::evaluateIsPrivate); //$NON-NLS-1$</span>
-<span class="fc" id="L174">		guards.put(&quot;isProtected&quot;, BuiltInGuards::evaluateIsProtected); //$NON-NLS-1$</span>
+<span class="fc" id="L173">		guards.put(&quot;isPublic&quot;, BuiltInGuards::evaluateIsPublic); //$NON-NLS-1$</span>
+<span class="fc" id="L174">		guards.put(&quot;isPrivate&quot;, BuiltInGuards::evaluateIsPrivate); //$NON-NLS-1$</span>
+<span class="fc" id="L175">		guards.put(&quot;isProtected&quot;, BuiltInGuards::evaluateIsProtected); //$NON-NLS-1$</span>
 
 		// Throws guard — checks if enclosing method declares a throws clause
-<span class="fc" id="L177">		guards.put(&quot;throwsException&quot;, BuiltInGuards::evaluateThrowsException); //$NON-NLS-1$</span>
+<span class="fc" id="L178">		guards.put(&quot;throwsException&quot;, BuiltInGuards::evaluateThrowsException); //$NON-NLS-1$</span>
 
 		// Variable kind guards — check if a binding is a parameter or field
-<span class="fc" id="L180">		guards.put(&quot;isParameter&quot;, BuiltInGuards::evaluateIsParameter); //$NON-NLS-1$</span>
-<span class="fc" id="L181">		guards.put(&quot;isField&quot;, BuiltInGuards::evaluateIsField); //$NON-NLS-1$</span>
-<span class="fc" id="L182">		guards.put(&quot;isLocalVariable&quot;, BuiltInGuards::evaluateIsLocalVariable); //$NON-NLS-1$</span>
+<span class="fc" id="L181">		guards.put(&quot;isParameter&quot;, BuiltInGuards::evaluateIsParameter); //$NON-NLS-1$</span>
+<span class="fc" id="L182">		guards.put(&quot;isField&quot;, BuiltInGuards::evaluateIsField); //$NON-NLS-1$</span>
+<span class="fc" id="L183">		guards.put(&quot;isLocalVariable&quot;, BuiltInGuards::evaluateIsLocalVariable); //$NON-NLS-1$</span>
 
 		// Assignment context guards — check if matched expression is in a local variable initializer
-<span class="fc" id="L185">		guards.put(&quot;isAssignedToLocalVariable&quot;, BuiltInGuards::evaluateIsAssignedToLocalVariable); //$NON-NLS-1$</span>
+<span class="fc" id="L186">		guards.put(&quot;isAssignedToLocalVariable&quot;, BuiltInGuards::evaluateIsAssignedToLocalVariable); //$NON-NLS-1$</span>
 
 		// Type hierarchy guard — checks if a variable's type implements AutoCloseable
-<span class="fc" id="L188">		guards.put(&quot;isAutoCloseable&quot;, BuiltInGuards::evaluateIsAutoCloseable); //$NON-NLS-1$</span>
+<span class="fc" id="L189">		guards.put(&quot;isAutoCloseable&quot;, BuiltInGuards::evaluateIsAutoCloseable); //$NON-NLS-1$</span>
 
 		// Constructor context guard — checks if matched node is inside a constructor
-<span class="fc" id="L191">		guards.put(&quot;isInConstructor&quot;, BuiltInGuards::evaluateIsInConstructor); //$NON-NLS-1$</span>
+<span class="fc" id="L192">		guards.put(&quot;isInConstructor&quot;, BuiltInGuards::evaluateIsInConstructor); //$NON-NLS-1$</span>
 
 		// Method override guard — checks if enclosing class overrides a given method
-<span class="fc" id="L194">		guards.put(&quot;classOverrides&quot;, BuiltInGuards::evaluateClassOverrides); //$NON-NLS-1$</span>
+<span class="fc" id="L195">		guards.put(&quot;classOverrides&quot;, BuiltInGuards::evaluateClassOverrides); //$NON-NLS-1$</span>
 
 		// Generic type parameter guard — checks if a binding's generic type parameter matches
-<span class="fc" id="L197">		guards.put(&quot;genericTypeIs&quot;, BuiltInGuards::evaluateGenericTypeIs); //$NON-NLS-1$</span>
+<span class="fc" id="L198">		guards.put(&quot;genericTypeIs&quot;, BuiltInGuards::evaluateGenericTypeIs); //$NON-NLS-1$</span>
 
 		// Variadic argument count guard — checks number of matched variadic args
-<span class="fc" id="L200">		guards.put(&quot;argsCount&quot;, BuiltInGuards::evaluateArgsCount); //$NON-NLS-1$</span>
+<span class="fc" id="L201">		guards.put(&quot;argsCount&quot;, BuiltInGuards::evaluateArgsCount); //$NON-NLS-1$</span>
 
 		// Resource variable guard — checks if a variable declaration is a resource
 		// that could be wrapped in try-with-resources
-<span class="fc" id="L204">		guards.put(&quot;isResourceVariable&quot;, BuiltInGuards::evaluateIsResourceVariable); //$NON-NLS-1$</span>
-<span class="fc" id="L205">	}</span>
+<span class="fc" id="L205">		guards.put(&quot;isResourceVariable&quot;, BuiltInGuards::evaluateIsResourceVariable); //$NON-NLS-1$</span>
+<span class="fc" id="L206">	}</span>
 
 	/**
 	 * Checks if the bound node's type matches a given type name via ITypeBinding.
@@ -218,34 +219,34 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName, typeName]
 	 */
 	private static boolean evaluateInstanceOf(GuardContext ctx, Object... args) {
-<span class="fc bfc" id="L221" title="All 2 branches covered.">		if (args.length &lt; 2) {</span>
-<span class="fc" id="L222">			return false;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">		if (args.length &lt; 2) {</span>
+<span class="fc" id="L223">			return false;</span>
 		}
-<span class="fc" id="L224">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L225">		String typeName = args[1].toString();</span>
+<span class="fc" id="L225">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L226">		String typeName = args[1].toString();</span>
 
-<span class="fc" id="L227">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="fc bfc" id="L228" title="All 2 branches covered.">		if (node == null) {</span>
-<span class="fc" id="L229">			return false;</span>
+<span class="fc" id="L228">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">		if (node == null) {</span>
+<span class="fc" id="L230">			return false;</span>
 		}
 
-<span class="fc" id="L232">		ITypeBinding typeBinding = resolveTypeBinding(node);</span>
-<span class="pc bpc" id="L233" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="fc" id="L233">		ITypeBinding typeBinding = resolveTypeBinding(node);</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
 			// Graceful degradation: if bindings are not available,
 			// assume the guard matches (allows the rule to apply).
-<span class="fc" id="L236">			return true;</span>
+<span class="fc" id="L237">			return true;</span>
 		}
 
 		// Handle array types: &quot;Type[]&quot;
-<span class="nc bnc" id="L240" title="All 4 branches missed.">		if (typeName.endsWith(&quot;[]&quot;) &amp;&amp; typeName.length() &gt; 2) { //$NON-NLS-1$</span>
-<span class="nc bnc" id="L241" title="All 2 branches missed.">			if (!typeBinding.isArray()) {</span>
-<span class="nc" id="L242">				return false;</span>
+<span class="nc bnc" id="L241" title="All 4 branches missed.">		if (typeName.endsWith(&quot;[]&quot;) &amp;&amp; typeName.length() &gt; 2) { //$NON-NLS-1$</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">			if (!typeBinding.isArray()) {</span>
+<span class="nc" id="L243">				return false;</span>
 			}
-<span class="nc" id="L244">			String elementTypeName = typeName.substring(0, typeName.length() - 2);</span>
-<span class="nc" id="L245">			return matchesTypeName(typeBinding.getElementType(), elementTypeName);</span>
+<span class="nc" id="L245">			String elementTypeName = typeName.substring(0, typeName.length() - 2);</span>
+<span class="nc" id="L246">			return matchesTypeName(typeBinding.getElementType(), elementTypeName);</span>
 		}
 
-<span class="nc" id="L248">		return matchesTypeName(typeBinding, typeName);</span>
+<span class="nc" id="L249">		return matchesTypeName(typeBinding, typeName);</span>
 	}
 
 	/**
@@ -260,24 +261,24 @@ public final class BuiltInGuards {
 	 * @since 1.4.0
 	 */
 	private static boolean evaluateSubtypeOf(GuardContext ctx, Object... args) {
-<span class="fc bfc" id="L263" title="All 2 branches covered.">		if (args.length &lt; 2) {</span>
-<span class="fc" id="L264">			return false;</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">		if (args.length &lt; 2) {</span>
+<span class="fc" id="L265">			return false;</span>
 		}
-<span class="fc" id="L266">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L267">		String targetFqn = stripQuotes(args[1].toString());</span>
+<span class="fc" id="L267">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L268">		String targetFqn = stripQuotes(args[1].toString());</span>
 
-<span class="fc" id="L269">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="fc bfc" id="L270" title="All 2 branches covered.">		if (node == null) {</span>
-<span class="fc" id="L271">			return false;</span>
+<span class="fc" id="L270">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">		if (node == null) {</span>
+<span class="fc" id="L272">			return false;</span>
 		}
 
-<span class="fc" id="L274">		ITypeBinding typeBinding = resolveTypeBinding(node);</span>
-<span class="pc bpc" id="L275" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="fc" id="L275">		ITypeBinding typeBinding = resolveTypeBinding(node);</span>
+<span class="pc bpc" id="L276" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
 			// Graceful degradation: assume match if bindings not available
-<span class="fc" id="L277">			return true;</span>
+<span class="fc" id="L278">			return true;</span>
 		}
 
-<span class="nc" id="L280">		return isSubtypeOf(typeBinding, targetFqn, new java.util.HashSet&lt;&gt;());</span>
+<span class="nc" id="L281">		return isSubtypeOf(typeBinding, targetFqn, new java.util.HashSet&lt;&gt;());</span>
 	}
 
 	/**
@@ -285,27 +286,27 @@ public final class BuiltInGuards {
 	 * walking the superclass chain and all interfaces.
 	 */
 	private static boolean isSubtypeOf(ITypeBinding typeBinding, String targetFqn, java.util.Set&lt;String&gt; visited) {
-<span class="nc bnc" id="L288" title="All 4 branches missed.">		if (typeBinding == null || typeBinding.isRecovered()) {</span>
-<span class="nc" id="L289">			return false;</span>
+<span class="nc bnc" id="L289" title="All 4 branches missed.">		if (typeBinding == null || typeBinding.isRecovered()) {</span>
+<span class="nc" id="L290">			return false;</span>
 		}
-<span class="nc" id="L291">		String qualifiedName = typeBinding.getQualifiedName();</span>
-<span class="nc bnc" id="L292" title="All 2 branches missed.">		if (!visited.add(qualifiedName)) {</span>
-<span class="nc" id="L293">			return false; // Already visited — break potential cycle</span>
+<span class="nc" id="L292">		String qualifiedName = typeBinding.getQualifiedName();</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">		if (!visited.add(qualifiedName)) {</span>
+<span class="nc" id="L294">			return false; // Already visited — break potential cycle</span>
 		}
-<span class="nc bnc" id="L295" title="All 2 branches missed.">		if (targetFqn.equals(qualifiedName)) {</span>
-<span class="nc" id="L296">			return true;</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">		if (targetFqn.equals(qualifiedName)) {</span>
+<span class="nc" id="L297">			return true;</span>
 		}
 		// Check superclass
-<span class="nc bnc" id="L299" title="All 2 branches missed.">		if (isSubtypeOf(typeBinding.getSuperclass(), targetFqn, visited)) {</span>
-<span class="nc" id="L300">			return true;</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">		if (isSubtypeOf(typeBinding.getSuperclass(), targetFqn, visited)) {</span>
+<span class="nc" id="L301">			return true;</span>
 		}
 		// Check interfaces
-<span class="nc bnc" id="L303" title="All 2 branches missed.">		for (ITypeBinding iface : typeBinding.getInterfaces()) {</span>
-<span class="nc bnc" id="L304" title="All 2 branches missed.">			if (isSubtypeOf(iface, targetFqn, visited)) {</span>
-<span class="nc" id="L305">				return true;</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">		for (ITypeBinding iface : typeBinding.getInterfaces()) {</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">			if (isSubtypeOf(iface, targetFqn, visited)) {</span>
+<span class="nc" id="L306">				return true;</span>
 			}
 		}
-<span class="nc" id="L308">		return false;</span>
+<span class="nc" id="L309">		return false;</span>
 	}
 
 	/**
@@ -319,33 +320,33 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName] or [placeholderName, literal1, literal2, ...]
 	 */
 	private static boolean evaluateMatchesAny(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L322" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L323">			return false;</span>
+<span class="pc bpc" id="L323" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L324">			return false;</span>
 		}
-<span class="fc" id="L325">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L326">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="fc" id="L326">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L327">		ASTNode node = ctx.getBinding(placeholderName);</span>
 
 		// If only placeholder name given, check existence
-<span class="fc bfc" id="L329" title="All 2 branches covered.">		if (args.length == 1) {</span>
-<span class="pc bpc" id="L330" title="1 of 2 branches missed.">			if (node != null) {</span>
-<span class="fc" id="L331">				return true;</span>
+<span class="fc bfc" id="L330" title="All 2 branches covered.">		if (args.length == 1) {</span>
+<span class="pc bpc" id="L331" title="1 of 2 branches missed.">			if (node != null) {</span>
+<span class="fc" id="L332">				return true;</span>
 			}
-<span class="nc" id="L333">			List&lt;ASTNode&gt; listBinding = ctx.getListBinding(placeholderName);</span>
-<span class="nc bnc" id="L334" title="All 2 branches missed.">			return !listBinding.isEmpty();</span>
+<span class="nc" id="L334">			List&lt;ASTNode&gt; listBinding = ctx.getListBinding(placeholderName);</span>
+<span class="nc bnc" id="L335" title="All 2 branches missed.">			return !listBinding.isEmpty();</span>
 		}
 
 		// Multiple arguments: check if node value matches any literal
-<span class="pc bpc" id="L338" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L339">			return false;</span>
+<span class="pc bpc" id="L339" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L340">			return false;</span>
 		}
-<span class="fc" id="L341">		String nodeText = extractNodeText(node);</span>
-<span class="fc bfc" id="L342" title="All 2 branches covered.">		for (int i = 1; i &lt; args.length; i++) {</span>
-<span class="fc" id="L343">			String literal = stripQuotes(args[i].toString());</span>
-<span class="fc bfc" id="L344" title="All 2 branches covered.">			if (nodeText.equals(literal)) {</span>
-<span class="fc" id="L345">				return true;</span>
+<span class="fc" id="L342">		String nodeText = extractNodeText(node);</span>
+<span class="fc bfc" id="L343" title="All 2 branches covered.">		for (int i = 1; i &lt; args.length; i++) {</span>
+<span class="fc" id="L344">			String literal = stripQuotes(args[i].toString());</span>
+<span class="fc bfc" id="L345" title="All 2 branches covered.">			if (nodeText.equals(literal)) {</span>
+<span class="fc" id="L346">				return true;</span>
 			}
 		}
-<span class="fc" id="L348">		return false;</span>
+<span class="fc" id="L349">		return false;</span>
 	}
 
 	/**
@@ -359,51 +360,66 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName] or [placeholderName, literal1, literal2, ...]
 	 */
 	private static boolean evaluateMatchesNone(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L362" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L363">			return true;</span>
+<span class="pc bpc" id="L363" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L364">			return true;</span>
 		}
-<span class="fc" id="L365">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L366">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="fc" id="L366">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L367">		ASTNode node = ctx.getBinding(placeholderName);</span>
 
 		// If only placeholder name given, check non-existence
-<span class="fc bfc" id="L369" title="All 2 branches covered.">		if (args.length == 1) {</span>
-<span class="pc bpc" id="L370" title="1 of 2 branches missed.">			if (node != null) {</span>
-<span class="nc" id="L371">				return false;</span>
+<span class="fc bfc" id="L370" title="All 2 branches covered.">		if (args.length == 1) {</span>
+<span class="pc bpc" id="L371" title="1 of 2 branches missed.">			if (node != null) {</span>
+<span class="nc" id="L372">				return false;</span>
 			}
-<span class="fc" id="L373">			List&lt;ASTNode&gt; listBinding = ctx.getListBinding(placeholderName);</span>
-<span class="fc" id="L374">			return listBinding.isEmpty();</span>
+<span class="fc" id="L374">			List&lt;ASTNode&gt; listBinding = ctx.getListBinding(placeholderName);</span>
+<span class="fc" id="L375">			return listBinding.isEmpty();</span>
 		}
 
 		// Multiple arguments: check that node value matches none of the literals
-<span class="pc bpc" id="L378" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L379">			return true;</span>
+<span class="pc bpc" id="L379" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L380">			return true;</span>
 		}
-<span class="fc" id="L381">		String nodeText = extractNodeText(node);</span>
-<span class="fc bfc" id="L382" title="All 2 branches covered.">		for (int i = 1; i &lt; args.length; i++) {</span>
-<span class="fc" id="L383">			String literal = stripQuotes(args[i].toString());</span>
-<span class="fc bfc" id="L384" title="All 2 branches covered.">			if (nodeText.equals(literal)) {</span>
-<span class="fc" id="L385">				return false;</span>
+<span class="fc" id="L382">		String nodeText = extractNodeText(node);</span>
+<span class="fc bfc" id="L383" title="All 2 branches covered.">		for (int i = 1; i &lt; args.length; i++) {</span>
+<span class="fc" id="L384">			String literal = stripQuotes(args[i].toString());</span>
+<span class="fc bfc" id="L385" title="All 2 branches covered.">			if (nodeText.equals(literal)) {</span>
+<span class="fc" id="L386">				return false;</span>
 			}
 		}
-<span class="fc" id="L388">		return true;</span>
+<span class="fc" id="L389">		return true;</span>
 	}
 
 	/**
-	 * Checks if an expression has no side effects.
-	 * Currently checks that the node is not a method invocation (conservative check).
+	 * Conservatively proves the absence of writes, explicit calls/allocation, volatile
+	 * reads and potentially initializing static reads throughout an expression.
+	 * This does not establish exception freedom or permission to duplicate, drop
+	 * or reorder its evaluation. Unresolved reads are recorded as unknown.
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateHasNoSideEffect(GuardContext ctx, Object... args) {
-<span class="nc bnc" id="L397" title="All 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L398">			return true;</span>
+<span class="pc bpc" id="L400" title="1 of 4 branches missed.">		if (args.length != 1 || args[0] == null) {</span>
+<span class="fc" id="L401">			return false;</span>
 		}
-<span class="nc" id="L400">		String placeholderName = args[0].toString();</span>
-<span class="nc" id="L401">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="nc bnc" id="L402" title="All 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L403">			return true;</span>
+<span class="fc" id="L403">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L404">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">		if (node == null) {</span>
+<span class="fc" id="L406">			ctx.markUnknown(&quot;hasNoSideEffect&quot;, &quot;Missing expression binding: &quot; + placeholderName); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L407">			return false;</span>
 		}
-		// Conservative: method invocations may have side effects
-<span class="nc bnc" id="L406" title="All 2 branches missed.">		return !(node instanceof MethodInvocation);</span>
+<span class="fc bfc" id="L409" title="All 4 branches covered.">		return node instanceof Expression expression &amp;&amp; SideEffectAnalysis.hasNoSideEffect(expression, ctx);</span>
+	}
+
+	/** Proves only literal values or resolved final local/parameter reads, possibly parenthesized. */
+	private static boolean evaluateIsStableValue(GuardContext ctx, Object... args) {
+<span class="pc bpc" id="L414" title="2 of 4 branches missed.">		if (args.length != 1 || args[0] == null) {</span>
+<span class="nc" id="L415">			return false;</span>
+		}
+<span class="fc" id="L417">		ASTNode node= ctx.getBinding(args[0].toString());</span>
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L419">			ctx.markUnknown(&quot;isStableValue&quot;, &quot;Missing expression binding: &quot; + args[0]); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L420">			return false;</span>
+		}
+<span class="pc bpc" id="L422" title="1 of 4 branches missed.">		return node instanceof Expression expression &amp;&amp; SideEffectAnalysis.isStableValue(expression, ctx);</span>
 	}
 
 	/**
@@ -411,12 +427,12 @@ public final class BuiltInGuards {
 	 * Args: [version]
 	 */
 	private static boolean evaluateSourceVersionGE(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L414" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L415">			return false;</span>
+<span class="pc bpc" id="L430" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L431">			return false;</span>
 		}
-<span class="fc" id="L417">		double requiredVersion = parseVersion(args[0].toString());</span>
-<span class="fc" id="L418">		double sourceVersion = parseVersion(ctx.getSourceVersion());</span>
-<span class="fc bfc" id="L419" title="All 2 branches covered.">		return sourceVersion &gt;= requiredVersion;</span>
+<span class="fc" id="L433">		double requiredVersion = parseVersion(args[0].toString());</span>
+<span class="fc" id="L434">		double sourceVersion = parseVersion(ctx.getSourceVersion());</span>
+<span class="fc bfc" id="L435" title="All 2 branches covered.">		return sourceVersion &gt;= requiredVersion;</span>
 	}
 
 	/**
@@ -424,12 +440,12 @@ public final class BuiltInGuards {
 	 * Args: [version]
 	 */
 	private static boolean evaluateSourceVersionLE(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L427" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L428">			return false;</span>
+<span class="pc bpc" id="L443" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L444">			return false;</span>
 		}
-<span class="fc" id="L430">		double requiredVersion = parseVersion(args[0].toString());</span>
-<span class="fc" id="L431">		double sourceVersion = parseVersion(ctx.getSourceVersion());</span>
-<span class="fc bfc" id="L432" title="All 2 branches covered.">		return sourceVersion &lt;= requiredVersion;</span>
+<span class="fc" id="L446">		double requiredVersion = parseVersion(args[0].toString());</span>
+<span class="fc" id="L447">		double sourceVersion = parseVersion(ctx.getSourceVersion());</span>
+<span class="fc bfc" id="L448" title="All 2 branches covered.">		return sourceVersion &lt;= requiredVersion;</span>
 	}
 
 	/**
@@ -437,13 +453,13 @@ public final class BuiltInGuards {
 	 * Args: [minVersion, maxVersion]
 	 */
 	private static boolean evaluateSourceVersionBetween(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L440" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
-<span class="nc" id="L441">			return false;</span>
+<span class="pc bpc" id="L456" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
+<span class="nc" id="L457">			return false;</span>
 		}
-<span class="fc" id="L443">		double minVersion = parseVersion(args[0].toString());</span>
-<span class="fc" id="L444">		double maxVersion = parseVersion(args[1].toString());</span>
-<span class="fc" id="L445">		double sourceVersion = parseVersion(ctx.getSourceVersion());</span>
-<span class="pc bpc" id="L446" title="2 of 4 branches missed.">		return sourceVersion &gt;= minVersion &amp;&amp; sourceVersion &lt;= maxVersion;</span>
+<span class="fc" id="L459">		double minVersion = parseVersion(args[0].toString());</span>
+<span class="fc" id="L460">		double maxVersion = parseVersion(args[1].toString());</span>
+<span class="fc" id="L461">		double sourceVersion = parseVersion(ctx.getSourceVersion());</span>
+<span class="pc bpc" id="L462" title="2 of 4 branches missed.">		return sourceVersion &gt;= minVersion &amp;&amp; sourceVersion &lt;= maxVersion;</span>
 	}
 
 	/**
@@ -451,16 +467,16 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateIsStatic(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L454" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L455">			return false;</span>
+<span class="pc bpc" id="L470" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L471">			return false;</span>
 		}
-<span class="fc" id="L457">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L458">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="pc bpc" id="L459" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L460">			return false;</span>
+<span class="fc" id="L473">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L474">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L475" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L476">			return false;</span>
 		}
-<span class="fc" id="L462">		int modifiers = resolveModifiers(node);</span>
-<span class="fc" id="L463">		return Modifier.isStatic(modifiers);</span>
+<span class="fc" id="L478">		int modifiers = resolveModifiers(node);</span>
+<span class="fc" id="L479">		return Modifier.isStatic(modifiers);</span>
 	}
 
 	/**
@@ -468,16 +484,16 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateIsFinal(GuardContext ctx, Object... args) {
-<span class="nc bnc" id="L471" title="All 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L472">			return false;</span>
+<span class="nc bnc" id="L487" title="All 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L488">			return false;</span>
 		}
-<span class="nc" id="L474">		String placeholderName = args[0].toString();</span>
-<span class="nc" id="L475">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="nc bnc" id="L476" title="All 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L477">			return false;</span>
+<span class="nc" id="L490">		String placeholderName = args[0].toString();</span>
+<span class="nc" id="L491">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="nc bnc" id="L492" title="All 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L493">			return false;</span>
 		}
-<span class="nc" id="L479">		int modifiers = resolveModifiers(node);</span>
-<span class="nc" id="L480">		return Modifier.isFinal(modifiers);</span>
+<span class="nc" id="L495">		int modifiers = resolveModifiers(node);</span>
+<span class="nc" id="L496">		return Modifier.isFinal(modifiers);</span>
 	}
 
 	/**
@@ -486,31 +502,31 @@ public final class BuiltInGuards {
 	 */
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static boolean evaluateHasAnnotation(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L489" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
-<span class="nc" id="L490">			return false;</span>
+<span class="pc bpc" id="L505" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
+<span class="nc" id="L506">			return false;</span>
 		}
-<span class="fc" id="L492">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L493">		String annotationName = args[1].toString();</span>
+<span class="fc" id="L508">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L509">		String annotationName = args[1].toString();</span>
 
-<span class="fc" id="L495">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="pc bpc" id="L496" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L497">			return false;</span>
+<span class="fc" id="L511">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L512" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L513">			return false;</span>
 		}
 
 		// Navigate to the enclosing body declaration to check annotations
-<span class="fc" id="L501">		BodyDeclaration bodyDecl = findEnclosingBodyDeclaration(node);</span>
-<span class="pc bpc" id="L502" title="1 of 2 branches missed.">		if (bodyDecl != null) {</span>
-<span class="fc bfc" id="L503" title="All 2 branches covered.">			for (Object modifier : bodyDecl.modifiers()) {</span>
-<span class="fc bfc" id="L504" title="All 2 branches covered.">				if (modifier instanceof Annotation annotation) {</span>
-<span class="fc" id="L505">					String name = getAnnotationName(annotation);</span>
-<span class="fc bfc" id="L506" title="All 2 branches covered.">					if (annotationName.equals(name)) {</span>
-<span class="fc" id="L507">						return true;</span>
+<span class="fc" id="L517">		BodyDeclaration bodyDecl = findEnclosingBodyDeclaration(node);</span>
+<span class="pc bpc" id="L518" title="1 of 2 branches missed.">		if (bodyDecl != null) {</span>
+<span class="fc bfc" id="L519" title="All 2 branches covered.">			for (Object modifier : bodyDecl.modifiers()) {</span>
+<span class="fc bfc" id="L520" title="All 2 branches covered.">				if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L521">					String name = getAnnotationName(annotation);</span>
+<span class="fc bfc" id="L522" title="All 2 branches covered.">					if (annotationName.equals(name)) {</span>
+<span class="fc" id="L523">						return true;</span>
 					}
 				}
-<span class="fc" id="L510">			}</span>
+<span class="fc" id="L526">			}</span>
 		}
 
-<span class="fc" id="L513">		return false;</span>
+<span class="fc" id="L529">		return false;</span>
 	}
 
 	/**
@@ -518,22 +534,22 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateIsDeprecated(GuardContext ctx, Object... args) {
-<span class="nc bnc" id="L521" title="All 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L522">			return false;</span>
+<span class="nc bnc" id="L537" title="All 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L538">			return false;</span>
 		}
-<span class="nc" id="L524">		String placeholderName = args[0].toString();</span>
-<span class="nc" id="L525">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="nc bnc" id="L526" title="All 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L527">			return false;</span>
+<span class="nc" id="L540">		String placeholderName = args[0].toString();</span>
+<span class="nc" id="L541">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="nc bnc" id="L542" title="All 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L543">			return false;</span>
 		}
 
 		// Check via binding
-<span class="nc" id="L531">		IBinding binding = resolveBinding(node);</span>
-<span class="nc bnc" id="L532" title="All 2 branches missed.">		if (binding != null) {</span>
-<span class="nc" id="L533">			return binding.isDeprecated();</span>
+<span class="nc" id="L547">		IBinding binding = resolveBinding(node);</span>
+<span class="nc bnc" id="L548" title="All 2 branches missed.">		if (binding != null) {</span>
+<span class="nc" id="L549">			return binding.isDeprecated();</span>
 		}
 
-<span class="nc" id="L536">		return false;</span>
+<span class="nc" id="L552">		return false;</span>
 	}
 
 	/**
@@ -541,38 +557,38 @@ public final class BuiltInGuards {
 	 * Args: [variablePlaceholderName, expressionPlaceholderName]
 	 */
 	private static boolean evaluateReferencedIn(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L544" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
-<span class="nc" id="L545">			return false;</span>
+<span class="pc bpc" id="L560" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
+<span class="nc" id="L561">			return false;</span>
 		}
-<span class="fc" id="L547">		String varName = args[0].toString();</span>
-<span class="fc" id="L548">		String exprName = args[1].toString();</span>
+<span class="fc" id="L563">		String varName = args[0].toString();</span>
+<span class="fc" id="L564">		String exprName = args[1].toString();</span>
 
-<span class="fc" id="L550">		ASTNode varNode = ctx.getBinding(varName);</span>
-<span class="fc" id="L551">		ASTNode exprNode = ctx.getBinding(exprName);</span>
-<span class="pc bpc" id="L552" title="2 of 4 branches missed.">		if (varNode == null || exprNode == null) {</span>
-<span class="nc" id="L553">			return false;</span>
+<span class="fc" id="L566">		ASTNode varNode = ctx.getBinding(varName);</span>
+<span class="fc" id="L567">		ASTNode exprNode = ctx.getBinding(exprName);</span>
+<span class="pc bpc" id="L568" title="2 of 4 branches missed.">		if (varNode == null || exprNode == null) {</span>
+<span class="nc" id="L569">			return false;</span>
 		}
 
 		// Get the identifier text of the variable
 		String varIdentifier;
-<span class="pc bpc" id="L558" title="1 of 2 branches missed.">		if (varNode instanceof SimpleName simpleName) {</span>
-<span class="fc" id="L559">			varIdentifier = simpleName.getIdentifier();</span>
+<span class="pc bpc" id="L574" title="1 of 2 branches missed.">		if (varNode instanceof SimpleName simpleName) {</span>
+<span class="fc" id="L575">			varIdentifier = simpleName.getIdentifier();</span>
 		} else {
-<span class="nc" id="L561">			varIdentifier = varNode.toString().trim();</span>
+<span class="nc" id="L577">			varIdentifier = varNode.toString().trim();</span>
 		}
 
 		// Walk the expression subtree looking for a SimpleName with the same identifier
-<span class="fc" id="L565">		boolean[] found = { false };</span>
-<span class="fc" id="L566">		exprNode.accept(new ASTVisitor() {</span>
+<span class="fc" id="L581">		boolean[] found = { false };</span>
+<span class="fc" id="L582">		exprNode.accept(new ASTVisitor() {</span>
 			@Override
 			public boolean visit(SimpleName name) {
-<span class="fc bfc" id="L569" title="All 2 branches covered.">				if (name.getIdentifier().equals(varIdentifier)) {</span>
-<span class="fc" id="L570">					found[0] = true;</span>
+<span class="fc bfc" id="L585" title="All 2 branches covered.">				if (name.getIdentifier().equals(varIdentifier)) {</span>
+<span class="fc" id="L586">					found[0] = true;</span>
 				}
-<span class="fc bfc" id="L572" title="All 2 branches covered.">				return !found[0]; // stop visiting once found</span>
+<span class="fc bfc" id="L588" title="All 2 branches covered.">				return !found[0]; // stop visiting once found</span>
 			}
 		});
-<span class="fc" id="L575">		return found[0];</span>
+<span class="fc" id="L591">		return found[0];</span>
 	}
 
 	/**
@@ -581,18 +597,18 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName, elementKind]
 	 */
 	private static boolean evaluateElementKindMatches(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L584" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
-<span class="nc" id="L585">			return false;</span>
+<span class="pc bpc" id="L600" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
+<span class="nc" id="L601">			return false;</span>
 		}
-<span class="fc" id="L587">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L588">		String elementKind = args[1].toString();</span>
+<span class="fc" id="L603">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L604">		String elementKind = args[1].toString();</span>
 
-<span class="fc" id="L590">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="pc bpc" id="L591" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L592">			return false;</span>
+<span class="fc" id="L606">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L607" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L608">			return false;</span>
 		}
 
-<span class="fc" id="L595">		return matchesElementKind(node, elementKind);</span>
+<span class="fc" id="L611">		return matchesElementKind(node, elementKind);</span>
 	}
 
 	/**
@@ -605,34 +621,34 @@ public final class BuiltInGuards {
 	 * Args: [textToFind] or [placeholderName, textToFind]
 	 */
 	private static boolean evaluateContains(GuardContext ctx, Object... args) {
-<span class="nc bnc" id="L608" title="All 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L609">			return false;</span>
+<span class="nc bnc" id="L624" title="All 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L625">			return false;</span>
 		}
 
 		String textToFind;
 		ASTNode contextNode;
 
-<span class="nc bnc" id="L615" title="All 2 branches missed.">		if (args.length &gt;= 2) {</span>
+<span class="nc bnc" id="L631" title="All 2 branches missed.">		if (args.length &gt;= 2) {</span>
 			// contains($x, &quot;text&quot;) - search in $x's enclosing method
-<span class="nc" id="L617">			String placeholderName = args[0].toString();</span>
-<span class="nc" id="L618">			textToFind = stripQuotes(args[1].toString());</span>
-<span class="nc" id="L619">			contextNode = ctx.getBinding(placeholderName);</span>
-<span class="nc" id="L620">		} else {</span>
+<span class="nc" id="L633">			String placeholderName = args[0].toString();</span>
+<span class="nc" id="L634">			textToFind = stripQuotes(args[1].toString());</span>
+<span class="nc" id="L635">			contextNode = ctx.getBinding(placeholderName);</span>
+<span class="nc" id="L636">		} else {</span>
 			// contains(&quot;text&quot;) - search in matched node's enclosing method
-<span class="nc" id="L622">			textToFind = stripQuotes(args[0].toString());</span>
-<span class="nc" id="L623">			contextNode = ctx.getMatchedNode();</span>
+<span class="nc" id="L638">			textToFind = stripQuotes(args[0].toString());</span>
+<span class="nc" id="L639">			contextNode = ctx.getMatchedNode();</span>
 		}
 
-<span class="nc bnc" id="L626" title="All 2 branches missed.">		if (contextNode == null) {</span>
-<span class="nc" id="L627">			return false;</span>
+<span class="nc bnc" id="L642" title="All 2 branches missed.">		if (contextNode == null) {</span>
+<span class="nc" id="L643">			return false;</span>
 		}
 
-<span class="nc" id="L630">		Block methodBody = findEnclosingMethodBody(contextNode);</span>
-<span class="nc bnc" id="L631" title="All 2 branches missed.">		if (methodBody == null) {</span>
-<span class="nc" id="L632">			return false;</span>
+<span class="nc" id="L646">		Block methodBody = findEnclosingMethodBody(contextNode);</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">		if (methodBody == null) {</span>
+<span class="nc" id="L648">			return false;</span>
 		}
 
-<span class="nc" id="L635">		return methodBody.toString().contains(textToFind);</span>
+<span class="nc" id="L651">		return methodBody.toString().contains(textToFind);</span>
 	}
 
 	/**
@@ -644,7 +660,7 @@ public final class BuiltInGuards {
 	 * Args: [textToFind] or [placeholderName, textToFind]
 	 */
 	private static boolean evaluateNotContains(GuardContext ctx, Object... args) {
-<span class="nc bnc" id="L647" title="All 2 branches missed.">		return !evaluateContains(ctx, args);</span>
+<span class="nc bnc" id="L663" title="All 2 branches missed.">		return !evaluateContains(ctx, args);</span>
 	}
 
 	/**
@@ -663,38 +679,38 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName] or [placeholderName, minScore]
 	 */
 	private static boolean evaluateIsNullable(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L666" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L667">			return false;</span>
+<span class="pc bpc" id="L682" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L683">			return false;</span>
 		}
-<span class="fc" id="L669">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L670">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="fc bfc" id="L671" title="All 2 branches covered.">		if (node == null) {</span>
-<span class="fc" id="L672">			return false;</span>
+<span class="fc" id="L685">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L686">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="fc bfc" id="L687" title="All 2 branches covered.">		if (node == null) {</span>
+<span class="fc" id="L688">			return false;</span>
 		}
 
 		// Cast to Expression, return false if not
-<span class="pc bpc" id="L676" title="1 of 2 branches missed.">		if (!(node instanceof Expression expression)) {</span>
-<span class="nc" id="L677">			return false;</span>
+<span class="pc bpc" id="L692" title="1 of 2 branches missed.">		if (!(node instanceof Expression expression)) {</span>
+<span class="nc" id="L693">			return false;</span>
 		}
 
 		// Analyze nullability
-<span class="fc" id="L681">		NullabilityResult result = NULLABILITY_GUARD.analyze(expression);</span>
+<span class="fc" id="L697">		NullabilityResult result = NULLABILITY_GUARD.analyze(expression);</span>
 
 		// Map NullStatus to score
-<span class="fc" id="L684">		int score = mapNullStatusToScore(result.status());</span>
+<span class="fc" id="L700">		int score = mapNullStatusToScore(result.status());</span>
 
 		// With one argument: return true if NOT NON_NULL
-<span class="fc bfc" id="L687" title="All 2 branches covered.">		if (args.length == 1) {</span>
-<span class="fc bfc" id="L688" title="All 2 branches covered.">			return result.status() != NullStatus.NON_NULL;</span>
+<span class="fc bfc" id="L703" title="All 2 branches covered.">		if (args.length == 1) {</span>
+<span class="fc bfc" id="L704" title="All 2 branches covered.">			return result.status() != NullStatus.NON_NULL;</span>
 		}
 
 		// With two arguments: compare score with minScore
 		try {
-<span class="fc" id="L693">			int minScore = Integer.parseInt(args[1].toString());</span>
-<span class="fc bfc" id="L694" title="All 2 branches covered.">			return score &gt;= minScore;</span>
-<span class="nc" id="L695">		} catch (NumberFormatException e) {</span>
+<span class="fc" id="L709">			int minScore = Integer.parseInt(args[1].toString());</span>
+<span class="fc bfc" id="L710" title="All 2 branches covered.">			return score &gt;= minScore;</span>
+<span class="nc" id="L711">		} catch (NumberFormatException e) {</span>
 			// Invalid minScore, fall back to single-argument behavior
-<span class="nc bnc" id="L697" title="All 2 branches missed.">			return result.status() != NullStatus.NON_NULL;</span>
+<span class="nc bnc" id="L713" title="All 2 branches missed.">			return result.status() != NullStatus.NON_NULL;</span>
 		}
 	}
 
@@ -707,24 +723,24 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateIsNonNull(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L710" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L711">			return false;</span>
+<span class="pc bpc" id="L726" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L727">			return false;</span>
 		}
-<span class="fc" id="L713">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L714">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="fc bfc" id="L715" title="All 2 branches covered.">		if (node == null) {</span>
-<span class="fc" id="L716">			return false;</span>
+<span class="fc" id="L729">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L730">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="fc bfc" id="L731" title="All 2 branches covered.">		if (node == null) {</span>
+<span class="fc" id="L732">			return false;</span>
 		}
 
 		// Cast to Expression, return false if not
-<span class="pc bpc" id="L720" title="1 of 2 branches missed.">		if (!(node instanceof Expression expression)) {</span>
-<span class="nc" id="L721">			return false;</span>
+<span class="pc bpc" id="L736" title="1 of 2 branches missed.">		if (!(node instanceof Expression expression)) {</span>
+<span class="nc" id="L737">			return false;</span>
 		}
 
 		// Analyze nullability
-<span class="fc" id="L725">		NullabilityResult result = NULLABILITY_GUARD.analyze(expression);</span>
+<span class="fc" id="L741">		NullabilityResult result = NULLABILITY_GUARD.analyze(expression);</span>
 
-<span class="fc bfc" id="L727" title="All 2 branches covered.">		return result.status() == NullStatus.NON_NULL;</span>
+<span class="fc bfc" id="L743" title="All 2 branches covered.">		return result.status() == NullStatus.NON_NULL;</span>
 	}
 
 	/**
@@ -734,11 +750,11 @@ public final class BuiltInGuards {
 	 * @return score from 0 (definitely non-null) to 10 (definitely nullable)
 	 */
 	private static int mapNullStatusToScore(NullStatus status) {
-<span class="pc bpc" id="L737" title="2 of 4 branches missed.">		return switch (status) {</span>
-<span class="fc" id="L738">			case NON_NULL -&gt; 0;</span>
-<span class="fc" id="L739">			case UNKNOWN -&gt; 5;</span>
-<span class="nc" id="L740">			case POTENTIALLY_NULLABLE -&gt; 7;</span>
-<span class="nc" id="L741">			case NULLABLE -&gt; 10;</span>
+<span class="pc bpc" id="L753" title="2 of 4 branches missed.">		return switch (status) {</span>
+<span class="fc" id="L754">			case NON_NULL -&gt; 0;</span>
+<span class="fc" id="L755">			case UNKNOWN -&gt; 5;</span>
+<span class="nc" id="L756">			case POTENTIALLY_NULLABLE -&gt; 7;</span>
+<span class="nc" id="L757">			case NULLABLE -&gt; 10;</span>
 		};
 	}
 
@@ -747,7 +763,7 @@ public final class BuiltInGuards {
 	/**
 	 * Standard charsets supported by {@link java.nio.charset.StandardCharsets}.
 	 */
-<span class="fc" id="L750">	private static final Set&lt;String&gt; STANDARD_CHARSETS = Set.of(</span>
+<span class="fc" id="L766">	private static final Set&lt;String&gt; STANDARD_CHARSETS = Set.of(</span>
 			&quot;UTF-8&quot;, &quot;UTF-16&quot;, &quot;UTF-16BE&quot;, &quot;UTF-16LE&quot;, &quot;ISO-8859-1&quot;, &quot;US-ASCII&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
 
 	/**
@@ -760,14 +776,14 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateIsLiteral(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L763" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L764">			return false;</span>
+<span class="pc bpc" id="L779" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L780">			return false;</span>
 		}
-<span class="fc" id="L766">		ASTNode node = ctx.getBinding(args[0].toString());</span>
-<span class="pc bpc" id="L767" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L768">			return false;</span>
+<span class="fc" id="L782">		ASTNode node = ctx.getBinding(args[0].toString());</span>
+<span class="pc bpc" id="L783" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L784">			return false;</span>
 		}
-<span class="pc bpc" id="L770" title="4 of 10 branches missed.">		return node instanceof StringLiteral</span>
+<span class="pc bpc" id="L786" title="4 of 10 branches missed.">		return node instanceof StringLiteral</span>
 				|| node instanceof NumberLiteral
 				|| node instanceof CharacterLiteral
 				|| node instanceof BooleanLiteral
@@ -779,11 +795,11 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateIsNullLiteral(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L782" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L783">			return false;</span>
+<span class="pc bpc" id="L798" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L799">			return false;</span>
 		}
-<span class="fc" id="L785">		ASTNode node = ctx.getBinding(args[0].toString());</span>
-<span class="fc" id="L786">		return node instanceof NullLiteral;</span>
+<span class="fc" id="L801">		ASTNode node = ctx.getBinding(args[0].toString());</span>
+<span class="fc" id="L802">		return node instanceof NullLiteral;</span>
 	}
 
 	/**
@@ -792,14 +808,14 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateIsCharsetString(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L795" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L796">			return false;</span>
+<span class="pc bpc" id="L811" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L812">			return false;</span>
 		}
-<span class="fc" id="L798">		ASTNode node = ctx.getBinding(args[0].toString());</span>
-<span class="pc bpc" id="L799" title="1 of 2 branches missed.">		if (!(node instanceof StringLiteral stringLiteral)) {</span>
-<span class="nc" id="L800">			return false;</span>
+<span class="fc" id="L814">		ASTNode node = ctx.getBinding(args[0].toString());</span>
+<span class="pc bpc" id="L815" title="1 of 2 branches missed.">		if (!(node instanceof StringLiteral stringLiteral)) {</span>
+<span class="nc" id="L816">			return false;</span>
 		}
-<span class="fc" id="L802">		return STANDARD_CHARSETS.contains(stringLiteral.getLiteralValue());</span>
+<span class="fc" id="L818">		return STANDARD_CHARSETS.contains(stringLiteral.getLiteralValue());</span>
 	}
 
 	/**
@@ -807,14 +823,14 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateIsSingleCharacter(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L810" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L811">			return false;</span>
+<span class="pc bpc" id="L826" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L827">			return false;</span>
 		}
-<span class="fc" id="L813">		ASTNode node = ctx.getBinding(args[0].toString());</span>
-<span class="pc bpc" id="L814" title="1 of 2 branches missed.">		if (!(node instanceof StringLiteral stringLiteral)) {</span>
-<span class="nc" id="L815">			return false;</span>
+<span class="fc" id="L829">		ASTNode node = ctx.getBinding(args[0].toString());</span>
+<span class="pc bpc" id="L830" title="1 of 2 branches missed.">		if (!(node instanceof StringLiteral stringLiteral)) {</span>
+<span class="nc" id="L831">			return false;</span>
 		}
-<span class="fc bfc" id="L817" title="All 2 branches covered.">		return stringLiteral.getLiteralValue().length() == 1;</span>
+<span class="fc bfc" id="L833" title="All 2 branches covered.">		return stringLiteral.getLiteralValue().length() == 1;</span>
 	}
 
 	/**
@@ -822,20 +838,20 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateIsRegexp(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L825" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L826">			return false;</span>
+<span class="pc bpc" id="L841" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L842">			return false;</span>
 		}
-<span class="fc" id="L828">		ASTNode node = ctx.getBinding(args[0].toString());</span>
-<span class="pc bpc" id="L829" title="1 of 2 branches missed.">		if (!(node instanceof StringLiteral stringLiteral)) {</span>
-<span class="nc" id="L830">			return false;</span>
+<span class="fc" id="L844">		ASTNode node = ctx.getBinding(args[0].toString());</span>
+<span class="pc bpc" id="L845" title="1 of 2 branches missed.">		if (!(node instanceof StringLiteral stringLiteral)) {</span>
+<span class="nc" id="L846">			return false;</span>
 		}
-<span class="fc" id="L832">		String value = stringLiteral.getLiteralValue();</span>
-<span class="fc bfc" id="L833" title="All 2 branches covered.">		for (int i = 0; i &lt; value.length(); i++) {</span>
-<span class="fc bfc" id="L834" title="All 2 branches covered.">			if (REGEX_META_CHARS.indexOf(value.charAt(i)) &gt;= 0) {</span>
-<span class="fc" id="L835">				return true;</span>
+<span class="fc" id="L848">		String value = stringLiteral.getLiteralValue();</span>
+<span class="fc bfc" id="L849" title="All 2 branches covered.">		for (int i = 0; i &lt; value.length(); i++) {</span>
+<span class="fc bfc" id="L850" title="All 2 branches covered.">			if (REGEX_META_CHARS.indexOf(value.charAt(i)) &gt;= 0) {</span>
+<span class="fc" id="L851">				return true;</span>
 			}
 		}
-<span class="fc" id="L838">		return false;</span>
+<span class="fc" id="L854">		return false;</span>
 	}
 
 	/**
@@ -845,27 +861,27 @@ public final class BuiltInGuards {
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static boolean evaluateIsInTryWithResourceBlock(GuardContext ctx, Object... args) {
 		ASTNode node;
-<span class="pc bpc" id="L848" title="1 of 2 branches missed.">		if (args.length &gt;= 1) {</span>
-<span class="fc" id="L849">			node = ctx.getBinding(args[0].toString());</span>
+<span class="pc bpc" id="L864" title="1 of 2 branches missed.">		if (args.length &gt;= 1) {</span>
+<span class="fc" id="L865">			node = ctx.getBinding(args[0].toString());</span>
 		} else {
-<span class="nc" id="L851">			node = ctx.getMatchedNode();</span>
+<span class="nc" id="L867">			node = ctx.getMatchedNode();</span>
 		}
-<span class="pc bpc" id="L853" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L854">			return false;</span>
+<span class="pc bpc" id="L869" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L870">			return false;</span>
 		}
-<span class="fc" id="L856">		ASTNode current = node.getParent();</span>
-<span class="fc bfc" id="L857" title="All 2 branches covered.">		while (current != null) {</span>
-<span class="pc bpc" id="L858" title="1 of 2 branches missed.">			if (current instanceof TryStatement tryStmt) {</span>
-<span class="nc" id="L859">				List&lt;Expression&gt; resources = tryStmt.resources();</span>
-<span class="nc bnc" id="L860" title="All 2 branches missed.">				for (Expression resource : resources) {</span>
-<span class="nc bnc" id="L861" title="All 2 branches missed.">					if (isAncestorOrSelf(resource, node)) {</span>
-<span class="nc" id="L862">						return true;</span>
+<span class="fc" id="L872">		ASTNode current = node.getParent();</span>
+<span class="fc bfc" id="L873" title="All 2 branches covered.">		while (current != null) {</span>
+<span class="pc bpc" id="L874" title="1 of 2 branches missed.">			if (current instanceof TryStatement tryStmt) {</span>
+<span class="nc" id="L875">				List&lt;Expression&gt; resources = tryStmt.resources();</span>
+<span class="nc bnc" id="L876" title="All 2 branches missed.">				for (Expression resource : resources) {</span>
+<span class="nc bnc" id="L877" title="All 2 branches missed.">					if (isAncestorOrSelf(resource, node)) {</span>
+<span class="nc" id="L878">						return true;</span>
 					}
-<span class="nc" id="L864">				}</span>
+<span class="nc" id="L880">				}</span>
 			}
-<span class="fc" id="L866">			current = current.getParent();</span>
+<span class="fc" id="L882">			current = current.getParent();</span>
 		}
-<span class="fc" id="L868">		return false;</span>
+<span class="fc" id="L884">		return false;</span>
 	}
 
 	/**
@@ -876,22 +892,22 @@ public final class BuiltInGuards {
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static boolean evaluateIsPassedToMethod(GuardContext ctx, Object... args) {
 		ASTNode node;
-<span class="nc bnc" id="L879" title="All 2 branches missed.">		if (args.length &gt;= 1) {</span>
-<span class="nc" id="L880">			node = ctx.getBinding(args[0].toString());</span>
+<span class="nc bnc" id="L895" title="All 2 branches missed.">		if (args.length &gt;= 1) {</span>
+<span class="nc" id="L896">			node = ctx.getBinding(args[0].toString());</span>
 		} else {
-<span class="nc" id="L882">			node = ctx.getMatchedNode();</span>
+<span class="nc" id="L898">			node = ctx.getMatchedNode();</span>
 		}
-<span class="nc bnc" id="L884" title="All 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L885">			return false;</span>
+<span class="nc bnc" id="L900" title="All 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L901">			return false;</span>
 		}
-<span class="nc" id="L887">		ASTNode parent = node.getParent();</span>
-<span class="nc bnc" id="L888" title="All 2 branches missed.">		if (parent instanceof MethodInvocation mi) {</span>
-<span class="nc" id="L889">			return mi.arguments().contains(node);</span>
+<span class="nc" id="L903">		ASTNode parent = node.getParent();</span>
+<span class="nc bnc" id="L904" title="All 2 branches missed.">		if (parent instanceof MethodInvocation mi) {</span>
+<span class="nc" id="L905">			return mi.arguments().contains(node);</span>
 		}
-<span class="nc bnc" id="L891" title="All 2 branches missed.">		if (parent instanceof ClassInstanceCreation cic) {</span>
-<span class="nc" id="L892">			return cic.arguments().contains(node);</span>
+<span class="nc bnc" id="L907" title="All 2 branches missed.">		if (parent instanceof ClassInstanceCreation cic) {</span>
+<span class="nc" id="L908">			return cic.arguments().contains(node);</span>
 		}
-<span class="nc" id="L894">		return false;</span>
+<span class="nc" id="L910">		return false;</span>
 	}
 
 	/**
@@ -900,23 +916,23 @@ public final class BuiltInGuards {
 	 */
 	private static boolean evaluateInSerializableClass(GuardContext ctx, Object... args) {
 		ASTNode node;
-<span class="nc bnc" id="L903" title="All 2 branches missed.">		if (args.length &gt;= 1) {</span>
-<span class="nc" id="L904">			node = ctx.getBinding(args[0].toString());</span>
+<span class="nc bnc" id="L919" title="All 2 branches missed.">		if (args.length &gt;= 1) {</span>
+<span class="nc" id="L920">			node = ctx.getBinding(args[0].toString());</span>
 		} else {
-<span class="nc" id="L906">			node = ctx.getMatchedNode();</span>
+<span class="nc" id="L922">			node = ctx.getMatchedNode();</span>
 		}
-<span class="nc bnc" id="L908" title="All 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L909">			return false;</span>
+<span class="nc bnc" id="L924" title="All 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L925">			return false;</span>
 		}
-<span class="nc" id="L911">		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);</span>
-<span class="nc bnc" id="L912" title="All 2 branches missed.">		if (typeDecl == null) {</span>
-<span class="nc" id="L913">			return false;</span>
+<span class="nc" id="L927">		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);</span>
+<span class="nc bnc" id="L928" title="All 2 branches missed.">		if (typeDecl == null) {</span>
+<span class="nc" id="L929">			return false;</span>
 		}
-<span class="nc" id="L915">		ITypeBinding typeBinding = typeDecl.resolveBinding();</span>
-<span class="nc bnc" id="L916" title="All 2 branches missed.">		if (typeBinding == null) {</span>
-<span class="nc" id="L917">			return false;</span>
+<span class="nc" id="L931">		ITypeBinding typeBinding = typeDecl.resolveBinding();</span>
+<span class="nc bnc" id="L932" title="All 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L933">			return false;</span>
 		}
-<span class="nc" id="L919">		return implementsSerializable(typeBinding);</span>
+<span class="nc" id="L935">		return implementsSerializable(typeBinding);</span>
 	}
 
 	/**
@@ -925,35 +941,35 @@ public final class BuiltInGuards {
 	 */
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static boolean evaluateContainsAnnotation(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L928" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
-<span class="nc" id="L929">			return false;</span>
+<span class="pc bpc" id="L944" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
+<span class="nc" id="L945">			return false;</span>
 		}
-<span class="fc" id="L931">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L932">		String annotationName = stripQuotes(args[1].toString());</span>
+<span class="fc" id="L947">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L948">		String annotationName = stripQuotes(args[1].toString());</span>
 
-<span class="fc" id="L934">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="pc bpc" id="L935" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L936">			return false;</span>
+<span class="fc" id="L950">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L951" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L952">			return false;</span>
 		}
 
 		// If the node is a BodyDeclaration, check its modifiers
 		BodyDeclaration bodyDecl;
-<span class="pc bpc" id="L941" title="1 of 2 branches missed.">		if (node instanceof BodyDeclaration bd) {</span>
-<span class="fc" id="L942">			bodyDecl = bd;</span>
+<span class="pc bpc" id="L957" title="1 of 2 branches missed.">		if (node instanceof BodyDeclaration bd) {</span>
+<span class="fc" id="L958">			bodyDecl = bd;</span>
 		} else {
-<span class="nc" id="L944">			bodyDecl = findEnclosingBodyDeclaration(node);</span>
+<span class="nc" id="L960">			bodyDecl = findEnclosingBodyDeclaration(node);</span>
 		}
-<span class="pc bpc" id="L946" title="1 of 2 branches missed.">		if (bodyDecl != null) {</span>
-<span class="fc bfc" id="L947" title="All 2 branches covered.">			for (Object modifier : bodyDecl.modifiers()) {</span>
-<span class="pc bpc" id="L948" title="1 of 2 branches missed.">				if (modifier instanceof Annotation annotation) {</span>
-<span class="fc" id="L949">					String name = getAnnotationName(annotation);</span>
-<span class="fc bfc" id="L950" title="All 2 branches covered.">					if (annotationName.equals(name)) {</span>
-<span class="fc" id="L951">						return true;</span>
+<span class="pc bpc" id="L962" title="1 of 2 branches missed.">		if (bodyDecl != null) {</span>
+<span class="fc bfc" id="L963" title="All 2 branches covered.">			for (Object modifier : bodyDecl.modifiers()) {</span>
+<span class="pc bpc" id="L964" title="1 of 2 branches missed.">				if (modifier instanceof Annotation annotation) {</span>
+<span class="fc" id="L965">					String name = getAnnotationName(annotation);</span>
+<span class="fc bfc" id="L966" title="All 2 branches covered.">					if (annotationName.equals(name)) {</span>
+<span class="fc" id="L967">						return true;</span>
 					}
 				}
-<span class="fc" id="L954">			}</span>
+<span class="fc" id="L970">			}</span>
 		}
-<span class="fc" id="L956">		return false;</span>
+<span class="fc" id="L972">		return false;</span>
 	}
 
 	/**
@@ -968,30 +984,30 @@ public final class BuiltInGuards {
 	 * Args: [pattern] or [placeholderName, pattern]
 	 */
 	private static boolean evaluateParentMatches(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L971" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L972">			return false;</span>
+<span class="pc bpc" id="L987" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L988">			return false;</span>
 		}
 		ASTNode node;
 		String pattern;
-<span class="pc bpc" id="L976" title="1 of 2 branches missed.">		if (args.length &gt;= 2) {</span>
-<span class="fc" id="L977">			node = ctx.getBinding(args[0].toString());</span>
-<span class="fc" id="L978">			pattern = stripQuotes(args[1].toString());</span>
+<span class="pc bpc" id="L992" title="1 of 2 branches missed.">		if (args.length &gt;= 2) {</span>
+<span class="fc" id="L993">			node = ctx.getBinding(args[0].toString());</span>
+<span class="fc" id="L994">			pattern = stripQuotes(args[1].toString());</span>
 		} else {
-<span class="nc" id="L980">			node = ctx.getMatchedNode();</span>
-<span class="nc" id="L981">			pattern = stripQuotes(args[0].toString());</span>
+<span class="nc" id="L996">			node = ctx.getMatchedNode();</span>
+<span class="nc" id="L997">			pattern = stripQuotes(args[0].toString());</span>
 		}
-<span class="pc bpc" id="L983" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L984">			return false;</span>
+<span class="pc bpc" id="L999" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1000">			return false;</span>
 		}
-<span class="fc" id="L986">		ASTNode parent = node.getParent();</span>
-<span class="pc bpc" id="L987" title="1 of 2 branches missed.">		if (parent == null) {</span>
-<span class="nc" id="L988">			return false;</span>
+<span class="fc" id="L1002">		ASTNode parent = node.getParent();</span>
+<span class="pc bpc" id="L1003" title="1 of 2 branches missed.">		if (parent == null) {</span>
+<span class="nc" id="L1004">			return false;</span>
 		}
 		// Simple string-contains check on the parent's source representation
 		// Replace $_ with .* for wildcard matching concept
-<span class="fc" id="L992">		String parentText = parent.toString().trim();</span>
-<span class="fc" id="L993">		String simplePattern = pattern.replace(&quot;$_&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L994">		return parentText.contains(simplePattern);</span>
+<span class="fc" id="L1008">		String parentText = parent.toString().trim();</span>
+<span class="fc" id="L1009">		String simplePattern = pattern.replace(&quot;$_&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L1010">		return parentText.contains(simplePattern);</span>
 	}
 
 	/**
@@ -999,25 +1015,25 @@ public final class BuiltInGuards {
 	 * Args: [fqn]
 	 */
 	private static boolean evaluateInClass(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L1002" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L1003">			return false;</span>
+<span class="pc bpc" id="L1018" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L1019">			return false;</span>
 		}
-<span class="fc" id="L1005">		String classFqn = stripQuotes(args[0].toString());</span>
-<span class="fc" id="L1006">		ASTNode node = ctx.getMatchedNode();</span>
-<span class="pc bpc" id="L1007" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1008">			return false;</span>
+<span class="fc" id="L1021">		String classFqn = stripQuotes(args[0].toString());</span>
+<span class="fc" id="L1022">		ASTNode node = ctx.getMatchedNode();</span>
+<span class="pc bpc" id="L1023" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1024">			return false;</span>
 		}
-<span class="fc" id="L1010">		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);</span>
-<span class="pc bpc" id="L1011" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
-<span class="nc" id="L1012">			return false;</span>
+<span class="fc" id="L1026">		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);</span>
+<span class="pc bpc" id="L1027" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
+<span class="nc" id="L1028">			return false;</span>
 		}
-<span class="fc" id="L1014">		ITypeBinding typeBinding = typeDecl.resolveBinding();</span>
-<span class="pc bpc" id="L1015" title="1 of 2 branches missed.">		if (typeBinding != null) {</span>
-<span class="fc" id="L1016">			return classFqn.equals(typeBinding.getQualifiedName());</span>
+<span class="fc" id="L1030">		ITypeBinding typeBinding = typeDecl.resolveBinding();</span>
+<span class="pc bpc" id="L1031" title="1 of 2 branches missed.">		if (typeBinding != null) {</span>
+<span class="fc" id="L1032">			return classFqn.equals(typeBinding.getQualifiedName());</span>
 		}
 		// Fallback: compare simple name
-<span class="nc bnc" id="L1019" title="All 2 branches missed.">		return classFqn.equals(typeDecl.getName().getIdentifier())</span>
-<span class="nc bnc" id="L1020" title="All 2 branches missed.">				|| classFqn.endsWith(&quot;.&quot; + typeDecl.getName().getIdentifier()); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1035" title="All 2 branches missed.">		return classFqn.equals(typeDecl.getName().getIdentifier())</span>
+<span class="nc bnc" id="L1036" title="All 2 branches missed.">				|| classFqn.endsWith(&quot;.&quot; + typeDecl.getName().getIdentifier()); //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -1025,19 +1041,19 @@ public final class BuiltInGuards {
 	 * Args: [packageName]
 	 */
 	private static boolean evaluateInPackage(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L1028" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L1029">			return false;</span>
+<span class="pc bpc" id="L1044" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L1045">			return false;</span>
 		}
-<span class="fc" id="L1031">		String packageName = stripQuotes(args[0].toString());</span>
-<span class="fc" id="L1032">		CompilationUnit cu = ctx.getCompilationUnit();</span>
-<span class="pc bpc" id="L1033" title="1 of 2 branches missed.">		if (cu == null) {</span>
-<span class="nc" id="L1034">			return false;</span>
+<span class="fc" id="L1047">		String packageName = stripQuotes(args[0].toString());</span>
+<span class="fc" id="L1048">		CompilationUnit cu = ctx.getCompilationUnit();</span>
+<span class="pc bpc" id="L1049" title="1 of 2 branches missed.">		if (cu == null) {</span>
+<span class="nc" id="L1050">			return false;</span>
 		}
-<span class="fc" id="L1036">		PackageDeclaration packageDecl = cu.getPackage();</span>
-<span class="pc bpc" id="L1037" title="1 of 2 branches missed.">		if (packageDecl == null) {</span>
-<span class="nc" id="L1038">			return packageName.isEmpty();</span>
+<span class="fc" id="L1052">		PackageDeclaration packageDecl = cu.getPackage();</span>
+<span class="pc bpc" id="L1053" title="1 of 2 branches missed.">		if (packageDecl == null) {</span>
+<span class="nc" id="L1054">			return packageName.isEmpty();</span>
 		}
-<span class="fc" id="L1040">		return packageName.equals(packageDecl.getName().getFullyQualifiedName());</span>
+<span class="fc" id="L1056">		return packageName.equals(packageDecl.getName().getFullyQualifiedName());</span>
 	}
 
 	/**
@@ -1046,18 +1062,18 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName, modifierName]
 	 */
 	private static boolean evaluateHasModifier(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L1049" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
-<span class="nc" id="L1050">			return false;</span>
+<span class="pc bpc" id="L1065" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
+<span class="nc" id="L1066">			return false;</span>
 		}
-<span class="fc" id="L1052">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L1053">		String modifierName = args[1].toString().toUpperCase(Locale.ROOT);</span>
+<span class="fc" id="L1068">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L1069">		String modifierName = args[1].toString().toUpperCase(Locale.ROOT);</span>
 
-<span class="fc" id="L1055">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="pc bpc" id="L1056" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1057">			return false;</span>
+<span class="fc" id="L1071">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L1072" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1073">			return false;</span>
 		}
-<span class="fc" id="L1059">		int modifiers = resolveModifiers(node);</span>
-<span class="fc" id="L1060">		return matchesModifierName(modifiers, modifierName);</span>
+<span class="fc" id="L1075">		int modifiers = resolveModifiers(node);</span>
+<span class="fc" id="L1076">		return matchesModifierName(modifiers, modifierName);</span>
 	}
 
 	// ---- Helper methods ----
@@ -1066,67 +1082,67 @@ public final class BuiltInGuards {
 	 * Resolves the type binding for an AST node.
 	 */
 	private static ITypeBinding resolveTypeBinding(ASTNode node) {
-<span class="fc bfc" id="L1069" title="All 2 branches covered.">		if (node instanceof Name name) {</span>
-<span class="fc" id="L1070">			IBinding binding = name.resolveBinding();</span>
-<span class="pc bpc" id="L1071" title="1 of 2 branches missed.">			if (binding instanceof IVariableBinding varBinding) {</span>
-<span class="nc" id="L1072">				return varBinding.getType();</span>
+<span class="fc bfc" id="L1085" title="All 2 branches covered.">		if (node instanceof Name name) {</span>
+<span class="fc" id="L1086">			IBinding binding = name.resolveBinding();</span>
+<span class="pc bpc" id="L1087" title="1 of 2 branches missed.">			if (binding instanceof IVariableBinding varBinding) {</span>
+<span class="nc" id="L1088">				return varBinding.getType();</span>
 			}
-<span class="pc bpc" id="L1074" title="1 of 2 branches missed.">			if (binding instanceof ITypeBinding typeBinding) {</span>
-<span class="nc" id="L1075">				return typeBinding;</span>
-			}
-		}
-<span class="pc bpc" id="L1078" title="1 of 2 branches missed.">		if (node instanceof MethodInvocation methodInv) {</span>
-<span class="nc" id="L1079">			IMethodBinding methodBinding = methodInv.resolveMethodBinding();</span>
-<span class="nc bnc" id="L1080" title="All 2 branches missed.">			if (methodBinding != null) {</span>
-<span class="nc" id="L1081">				return methodBinding.getReturnType();</span>
+<span class="pc bpc" id="L1090" title="1 of 2 branches missed.">			if (binding instanceof ITypeBinding typeBinding) {</span>
+<span class="nc" id="L1091">				return typeBinding;</span>
 			}
 		}
-<span class="fc bfc" id="L1084" title="All 2 branches covered.">		if (node instanceof Expression expr) {</span>
-<span class="fc" id="L1085">			return expr.resolveTypeBinding();</span>
+<span class="pc bpc" id="L1094" title="1 of 2 branches missed.">		if (node instanceof MethodInvocation methodInv) {</span>
+<span class="nc" id="L1095">			IMethodBinding methodBinding = methodInv.resolveMethodBinding();</span>
+<span class="nc bnc" id="L1096" title="All 2 branches missed.">			if (methodBinding != null) {</span>
+<span class="nc" id="L1097">				return methodBinding.getReturnType();</span>
+			}
 		}
-<span class="fc" id="L1087">		return null;</span>
+<span class="fc bfc" id="L1100" title="All 2 branches covered.">		if (node instanceof Expression expr) {</span>
+<span class="fc" id="L1101">			return expr.resolveTypeBinding();</span>
+		}
+<span class="fc" id="L1103">		return null;</span>
 	}
 
 	/**
 	 * Checks if a type binding matches a given type name (simple or qualified).
 	 */
 	private static boolean matchesTypeName(ITypeBinding typeBinding, String typeName) {
-<span class="nc bnc" id="L1094" title="All 2 branches missed.">		if (typeBinding.getName().equals(typeName)) {</span>
-<span class="nc" id="L1095">			return true;</span>
+<span class="nc bnc" id="L1110" title="All 2 branches missed.">		if (typeBinding.getName().equals(typeName)) {</span>
+<span class="nc" id="L1111">			return true;</span>
 		}
-<span class="nc bnc" id="L1097" title="All 2 branches missed.">		if (typeBinding.getQualifiedName().equals(typeName)) {</span>
-<span class="nc" id="L1098">			return true;</span>
+<span class="nc bnc" id="L1113" title="All 2 branches missed.">		if (typeBinding.getQualifiedName().equals(typeName)) {</span>
+<span class="nc" id="L1114">			return true;</span>
 		}
 		// Check supertypes
-<span class="nc" id="L1101">		ITypeBinding superclass = typeBinding.getSuperclass();</span>
-<span class="nc bnc" id="L1102" title="All 4 branches missed.">		if (superclass != null &amp;&amp; matchesTypeName(superclass, typeName)) {</span>
-<span class="nc" id="L1103">			return true;</span>
+<span class="nc" id="L1117">		ITypeBinding superclass = typeBinding.getSuperclass();</span>
+<span class="nc bnc" id="L1118" title="All 4 branches missed.">		if (superclass != null &amp;&amp; matchesTypeName(superclass, typeName)) {</span>
+<span class="nc" id="L1119">			return true;</span>
 		}
-<span class="nc bnc" id="L1105" title="All 2 branches missed.">		for (ITypeBinding iface : typeBinding.getInterfaces()) {</span>
-<span class="nc bnc" id="L1106" title="All 2 branches missed.">			if (matchesTypeName(iface, typeName)) {</span>
-<span class="nc" id="L1107">				return true;</span>
+<span class="nc bnc" id="L1121" title="All 2 branches missed.">		for (ITypeBinding iface : typeBinding.getInterfaces()) {</span>
+<span class="nc bnc" id="L1122" title="All 2 branches missed.">			if (matchesTypeName(iface, typeName)) {</span>
+<span class="nc" id="L1123">				return true;</span>
 			}
 		}
-<span class="nc" id="L1110">		return false;</span>
+<span class="nc" id="L1126">		return false;</span>
 	}
 
 	/**
 	 * Resolves an IBinding from an AST node.
 	 */
 	private static IBinding resolveBinding(ASTNode node) {
-<span class="fc bfc" id="L1117" title="All 2 branches covered.">		if (node instanceof SimpleName simpleName) {</span>
-<span class="fc" id="L1118">			return simpleName.resolveBinding();</span>
+<span class="fc bfc" id="L1133" title="All 2 branches covered.">		if (node instanceof SimpleName simpleName) {</span>
+<span class="fc" id="L1134">			return simpleName.resolveBinding();</span>
 		}
-<span class="pc bpc" id="L1120" title="1 of 2 branches missed.">		if (node instanceof MethodDeclaration methodDecl) {</span>
-<span class="fc" id="L1121">			return methodDecl.resolveBinding();</span>
+<span class="pc bpc" id="L1136" title="1 of 2 branches missed.">		if (node instanceof MethodDeclaration methodDecl) {</span>
+<span class="fc" id="L1137">			return methodDecl.resolveBinding();</span>
 		}
-<span class="nc bnc" id="L1123" title="All 2 branches missed.">		if (node instanceof VariableDeclarationFragment varFrag) {</span>
-<span class="nc" id="L1124">			return varFrag.resolveBinding();</span>
+<span class="nc bnc" id="L1139" title="All 2 branches missed.">		if (node instanceof VariableDeclarationFragment varFrag) {</span>
+<span class="nc" id="L1140">			return varFrag.resolveBinding();</span>
 		}
-<span class="nc bnc" id="L1126" title="All 2 branches missed.">		if (node instanceof SingleVariableDeclaration singleVar) {</span>
-<span class="nc" id="L1127">			return singleVar.resolveBinding();</span>
+<span class="nc bnc" id="L1142" title="All 2 branches missed.">		if (node instanceof SingleVariableDeclaration singleVar) {</span>
+<span class="nc" id="L1143">			return singleVar.resolveBinding();</span>
 		}
-<span class="nc" id="L1129">		return null;</span>
+<span class="nc" id="L1145">		return null;</span>
 	}
 
 	/**
@@ -1138,39 +1154,39 @@ public final class BuiltInGuards {
 	 * modifiers directly from the AST.&lt;/p&gt;
 	 */
 	private static int resolveModifiers(ASTNode node) {
-<span class="fc" id="L1141">		IBinding binding = resolveBinding(node);</span>
-<span class="fc bfc" id="L1142" title="All 2 branches covered.">		if (binding != null) {</span>
-<span class="fc" id="L1143">			return binding.getModifiers();</span>
+<span class="fc" id="L1157">		IBinding binding = resolveBinding(node);</span>
+<span class="fc bfc" id="L1158" title="All 2 branches covered.">		if (binding != null) {</span>
+<span class="fc" id="L1159">			return binding.getModifiers();</span>
 		}
-<span class="pc bpc" id="L1145" title="1 of 2 branches missed.">		if (node instanceof BodyDeclaration bodyDecl) {</span>
-<span class="nc" id="L1146">			return bodyDecl.getModifiers();</span>
+<span class="pc bpc" id="L1161" title="1 of 2 branches missed.">		if (node instanceof BodyDeclaration bodyDecl) {</span>
+<span class="nc" id="L1162">			return bodyDecl.getModifiers();</span>
 		}
 		// Fallback: navigate from SimpleName to parent BodyDeclaration
 		// This handles METHOD_DECLARATION patterns where $name binds to the
 		// method's SimpleName but binding resolution is unavailable.
-<span class="pc bpc" id="L1151" title="1 of 2 branches missed.">		if (node instanceof SimpleName) {</span>
-<span class="fc" id="L1152">			ASTNode parent = node.getParent();</span>
-<span class="pc bpc" id="L1153" title="1 of 2 branches missed.">			if (parent instanceof BodyDeclaration parentDecl) {</span>
-<span class="fc" id="L1154">				return parentDecl.getModifiers();</span>
+<span class="pc bpc" id="L1167" title="1 of 2 branches missed.">		if (node instanceof SimpleName) {</span>
+<span class="fc" id="L1168">			ASTNode parent = node.getParent();</span>
+<span class="pc bpc" id="L1169" title="1 of 2 branches missed.">			if (parent instanceof BodyDeclaration parentDecl) {</span>
+<span class="fc" id="L1170">				return parentDecl.getModifiers();</span>
 			}
 		}
-<span class="nc" id="L1157">		return 0;</span>
+<span class="nc" id="L1173">		return 0;</span>
 	}
 
 	/**
 	 * Gets the simple name of an annotation.
 	 */
 	private static String getAnnotationName(Annotation annotation) {
-<span class="pc bpc" id="L1164" title="1 of 2 branches missed.">		if (annotation instanceof MarkerAnnotation marker) {</span>
-<span class="fc" id="L1165">			return marker.getTypeName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L1180" title="1 of 2 branches missed.">		if (annotation instanceof MarkerAnnotation marker) {</span>
+<span class="fc" id="L1181">			return marker.getTypeName().getFullyQualifiedName();</span>
 		}
-<span class="nc bnc" id="L1167" title="All 2 branches missed.">		if (annotation instanceof SingleMemberAnnotation sma) {</span>
-<span class="nc" id="L1168">			return sma.getTypeName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L1183" title="All 2 branches missed.">		if (annotation instanceof SingleMemberAnnotation sma) {</span>
+<span class="nc" id="L1184">			return sma.getTypeName().getFullyQualifiedName();</span>
 		}
-<span class="nc bnc" id="L1170" title="All 2 branches missed.">		if (annotation instanceof NormalAnnotation normal) {</span>
-<span class="nc" id="L1171">			return normal.getTypeName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L1186" title="All 2 branches missed.">		if (annotation instanceof NormalAnnotation normal) {</span>
+<span class="nc" id="L1187">			return normal.getTypeName().getFullyQualifiedName();</span>
 		}
-<span class="nc" id="L1173">		return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L1189">		return &quot;&quot;; //$NON-NLS-1$</span>
 	}
 
 	/**
@@ -1183,18 +1199,18 @@ public final class BuiltInGuards {
 	 * (source version &quot;1.8&quot;).&lt;/p&gt;
 	 */
 	private static double parseVersion(String version) {
-<span class="pc bpc" id="L1186" title="2 of 4 branches missed.">		if (version == null || version.isEmpty()) {</span>
-<span class="nc" id="L1187">			return 0;</span>
+<span class="pc bpc" id="L1202" title="2 of 4 branches missed.">		if (version == null || version.isEmpty()) {</span>
+<span class="nc" id="L1203">			return 0;</span>
 		}
 		try {
-<span class="fc" id="L1190">			double v = Double.parseDouble(version);</span>
+<span class="fc" id="L1206">			double v = Double.parseDouble(version);</span>
 			// Convert old-style &quot;1.x&quot; versions (1.5, 1.6, 1.7, 1.8) to major versions (5, 6, 7, 8)
-<span class="pc bpc" id="L1192" title="1 of 4 branches missed.">			if (v &gt; 1.0 &amp;&amp; v &lt; 2.0) {</span>
-<span class="fc" id="L1193">				return Math.round(v * 10) - 10; // 1.5→5, 1.6→6, 1.7→7, 1.8→8</span>
+<span class="pc bpc" id="L1208" title="1 of 4 branches missed.">			if (v &gt; 1.0 &amp;&amp; v &lt; 2.0) {</span>
+<span class="fc" id="L1209">				return Math.round(v * 10) - 10; // 1.5→5, 1.6→6, 1.7→7, 1.8→8</span>
 			}
-<span class="fc" id="L1195">			return v;</span>
-<span class="nc" id="L1196">		} catch (NumberFormatException e) {</span>
-<span class="nc" id="L1197">			return 0;</span>
+<span class="fc" id="L1211">			return v;</span>
+<span class="nc" id="L1212">		} catch (NumberFormatException e) {</span>
+<span class="nc" id="L1213">			return 0;</span>
 		}
 	}
 
@@ -1208,59 +1224,59 @@ public final class BuiltInGuards {
 	 * @return the extracted text value
 	 */
 	private static String extractNodeText(ASTNode node) {
-<span class="pc bpc" id="L1211" title="1 of 2 branches missed.">		if (node instanceof StringLiteral stringLiteral) {</span>
-<span class="fc" id="L1212">			return stringLiteral.getLiteralValue();</span>
+<span class="pc bpc" id="L1227" title="1 of 2 branches missed.">		if (node instanceof StringLiteral stringLiteral) {</span>
+<span class="fc" id="L1228">			return stringLiteral.getLiteralValue();</span>
 		}
-<span class="nc bnc" id="L1214" title="All 2 branches missed.">		if (node instanceof CharacterLiteral charLiteral) {</span>
-<span class="nc" id="L1215">			return String.valueOf(charLiteral.charValue());</span>
+<span class="nc bnc" id="L1230" title="All 2 branches missed.">		if (node instanceof CharacterLiteral charLiteral) {</span>
+<span class="nc" id="L1231">			return String.valueOf(charLiteral.charValue());</span>
 		}
-<span class="nc bnc" id="L1217" title="All 2 branches missed.">		if (node instanceof NumberLiteral numberLiteral) {</span>
-<span class="nc" id="L1218">			return numberLiteral.getToken();</span>
+<span class="nc bnc" id="L1233" title="All 2 branches missed.">		if (node instanceof NumberLiteral numberLiteral) {</span>
+<span class="nc" id="L1234">			return numberLiteral.getToken();</span>
 		}
-<span class="nc bnc" id="L1220" title="All 2 branches missed.">		if (node instanceof BooleanLiteral boolLiteral) {</span>
-<span class="nc" id="L1221">			return String.valueOf(boolLiteral.booleanValue());</span>
+<span class="nc bnc" id="L1236" title="All 2 branches missed.">		if (node instanceof BooleanLiteral boolLiteral) {</span>
+<span class="nc" id="L1237">			return String.valueOf(boolLiteral.booleanValue());</span>
 		}
-<span class="nc" id="L1223">		return node.toString().trim();</span>
+<span class="nc" id="L1239">		return node.toString().trim();</span>
 	}
 
 	/**
 	 * Strips surrounding quotes from a string literal argument.
 	 */
 	private static String stripQuotes(String value) {
-<span class="pc bpc" id="L1230" title="1 of 2 branches missed.">		if (value.length() &gt;= 2</span>
-<span class="pc bpc" id="L1231" title="1 of 4 branches missed.">				&amp;&amp; ((value.startsWith(&quot;\&quot;&quot;) &amp;&amp; value.endsWith(&quot;\&quot;&quot;)) //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L1232" title="3 of 4 branches missed.">				|| (value.startsWith(&quot;'&quot;) &amp;&amp; value.endsWith(&quot;'&quot;)))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L1233">			return value.substring(1, value.length() - 1);</span>
+<span class="pc bpc" id="L1246" title="1 of 2 branches missed.">		if (value.length() &gt;= 2</span>
+<span class="pc bpc" id="L1247" title="1 of 4 branches missed.">				&amp;&amp; ((value.startsWith(&quot;\&quot;&quot;) &amp;&amp; value.endsWith(&quot;\&quot;&quot;)) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L1248" title="3 of 4 branches missed.">				|| (value.startsWith(&quot;'&quot;) &amp;&amp; value.endsWith(&quot;'&quot;)))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L1249">			return value.substring(1, value.length() - 1);</span>
 		}
-<span class="fc" id="L1235">		return value;</span>
+<span class="fc" id="L1251">		return value;</span>
 	}
 
 	/**
 	 * Finds the enclosing method body for an AST node.
 	 */
 	private static Block findEnclosingMethodBody(ASTNode node) {
-<span class="nc" id="L1242">		ASTNode current = node;</span>
-<span class="nc bnc" id="L1243" title="All 2 branches missed.">		while (current != null) {</span>
-<span class="nc bnc" id="L1244" title="All 2 branches missed.">			if (current instanceof MethodDeclaration methodDecl) {</span>
-<span class="nc" id="L1245">				return methodDecl.getBody();</span>
+<span class="nc" id="L1258">		ASTNode current = node;</span>
+<span class="nc bnc" id="L1259" title="All 2 branches missed.">		while (current != null) {</span>
+<span class="nc bnc" id="L1260" title="All 2 branches missed.">			if (current instanceof MethodDeclaration methodDecl) {</span>
+<span class="nc" id="L1261">				return methodDecl.getBody();</span>
 			}
-<span class="nc" id="L1247">			current = current.getParent();</span>
+<span class="nc" id="L1263">			current = current.getParent();</span>
 		}
-<span class="nc" id="L1249">		return null;</span>
+<span class="nc" id="L1265">		return null;</span>
 	}
 
 	/**
 	 * Finds the nearest enclosing BodyDeclaration for an AST node.
 	 */
 	private static BodyDeclaration findEnclosingBodyDeclaration(ASTNode node) {
-<span class="fc" id="L1256">		ASTNode current = node;</span>
-<span class="pc bpc" id="L1257" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="fc bfc" id="L1258" title="All 2 branches covered.">			if (current instanceof BodyDeclaration bodyDecl) {</span>
-<span class="fc" id="L1259">				return bodyDecl;</span>
+<span class="fc" id="L1272">		ASTNode current = node;</span>
+<span class="pc bpc" id="L1273" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L1274" title="All 2 branches covered.">			if (current instanceof BodyDeclaration bodyDecl) {</span>
+<span class="fc" id="L1275">				return bodyDecl;</span>
 			}
-<span class="fc" id="L1261">			current = current.getParent();</span>
+<span class="fc" id="L1277">			current = current.getParent();</span>
 		}
-<span class="nc" id="L1263">		return null;</span>
+<span class="nc" id="L1279">		return null;</span>
 	}
 
 	/**
@@ -1268,25 +1284,25 @@ public final class BuiltInGuards {
 	 */
 	private static boolean matchesElementKind(ASTNode node, String elementKind) {
 		// Try via binding first
-<span class="fc" id="L1271">		IBinding binding = resolveBinding(node);</span>
-<span class="pc bpc" id="L1272" title="1 of 2 branches missed.">		if (binding != null) {</span>
-<span class="nc" id="L1273">			return matchesBindingKind(binding, elementKind);</span>
+<span class="fc" id="L1287">		IBinding binding = resolveBinding(node);</span>
+<span class="pc bpc" id="L1288" title="1 of 2 branches missed.">		if (binding != null) {</span>
+<span class="nc" id="L1289">			return matchesBindingKind(binding, elementKind);</span>
 		}
 		// Fallback: check AST node type directly
-<span class="fc" id="L1276">		return matchesNodeKind(node, elementKind);</span>
+<span class="fc" id="L1292">		return matchesNodeKind(node, elementKind);</span>
 	}
 
 	/**
 	 * Matches a binding against an element kind string.
 	 */
 	private static boolean matchesBindingKind(IBinding binding, String elementKind) {
-<span class="nc bnc" id="L1283" title="All 6 branches missed.">		return switch (elementKind.toUpperCase(Locale.ROOT)) {</span>
-<span class="nc bnc" id="L1284" title="All 4 branches missed.">			case &quot;FIELD&quot; -&gt; binding instanceof IVariableBinding vb &amp;&amp; vb.isField(); //$NON-NLS-1$</span>
-<span class="nc" id="L1285">			case &quot;METHOD&quot; -&gt; binding instanceof IMethodBinding; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L1286" title="All 6 branches missed.">			case &quot;LOCAL_VARIABLE&quot; -&gt; binding instanceof IVariableBinding vb &amp;&amp; !vb.isField() &amp;&amp; !vb.isParameter(); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L1287" title="All 4 branches missed.">			case &quot;PARAMETER&quot; -&gt; binding instanceof IVariableBinding vb &amp;&amp; vb.isParameter(); //$NON-NLS-1$</span>
-<span class="nc" id="L1288">			case &quot;TYPE&quot; -&gt; binding instanceof ITypeBinding; //$NON-NLS-1$</span>
-<span class="nc" id="L1289">			default -&gt; false;</span>
+<span class="nc bnc" id="L1299" title="All 6 branches missed.">		return switch (elementKind.toUpperCase(Locale.ROOT)) {</span>
+<span class="nc bnc" id="L1300" title="All 4 branches missed.">			case &quot;FIELD&quot; -&gt; binding instanceof IVariableBinding vb &amp;&amp; vb.isField(); //$NON-NLS-1$</span>
+<span class="nc" id="L1301">			case &quot;METHOD&quot; -&gt; binding instanceof IMethodBinding; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1302" title="All 6 branches missed.">			case &quot;LOCAL_VARIABLE&quot; -&gt; binding instanceof IVariableBinding vb &amp;&amp; !vb.isField() &amp;&amp; !vb.isParameter(); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1303" title="All 4 branches missed.">			case &quot;PARAMETER&quot; -&gt; binding instanceof IVariableBinding vb &amp;&amp; vb.isParameter(); //$NON-NLS-1$</span>
+<span class="nc" id="L1304">			case &quot;TYPE&quot; -&gt; binding instanceof ITypeBinding; //$NON-NLS-1$</span>
+<span class="nc" id="L1305">			default -&gt; false;</span>
 		};
 	}
 
@@ -1294,17 +1310,17 @@ public final class BuiltInGuards {
 	 * Matches an AST node type against an element kind string (fallback when binding is unavailable).
 	 */
 	private static boolean matchesNodeKind(ASTNode node, String elementKind) {
-<span class="pc bpc" id="L1297" title="4 of 6 branches missed.">		return switch (elementKind.toUpperCase(Locale.ROOT)) {</span>
+<span class="pc bpc" id="L1313" title="4 of 6 branches missed.">		return switch (elementKind.toUpperCase(Locale.ROOT)) {</span>
 			case &quot;FIELD&quot; -&gt; node instanceof FieldDeclaration //$NON-NLS-1$
-<span class="pc bpc" id="L1299" title="4 of 6 branches missed.">					|| (node instanceof VariableDeclarationFragment vdf &amp;&amp; vdf.getParent() instanceof FieldDeclaration);</span>
-<span class="fc" id="L1300">			case &quot;METHOD&quot; -&gt; node instanceof MethodDeclaration; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L1315" title="4 of 6 branches missed.">					|| (node instanceof VariableDeclarationFragment vdf &amp;&amp; vdf.getParent() instanceof FieldDeclaration);</span>
+<span class="fc" id="L1316">			case &quot;METHOD&quot; -&gt; node instanceof MethodDeclaration; //$NON-NLS-1$</span>
 			case &quot;LOCAL_VARIABLE&quot; -&gt; node instanceof VariableDeclarationStatement //$NON-NLS-1$
-<span class="nc bnc" id="L1302" title="All 6 branches missed.">					|| (node instanceof VariableDeclarationFragment vdf &amp;&amp; vdf.getParent() instanceof VariableDeclarationStatement);</span>
-<span class="nc" id="L1303">			case &quot;PARAMETER&quot; -&gt; node instanceof SingleVariableDeclaration; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L1304" title="All 6 branches missed.">			case &quot;TYPE&quot; -&gt; node instanceof TypeDeclaration //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1318" title="All 6 branches missed.">					|| (node instanceof VariableDeclarationFragment vdf &amp;&amp; vdf.getParent() instanceof VariableDeclarationStatement);</span>
+<span class="nc" id="L1319">			case &quot;PARAMETER&quot; -&gt; node instanceof SingleVariableDeclaration; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L1320" title="All 6 branches missed.">			case &quot;TYPE&quot; -&gt; node instanceof TypeDeclaration //$NON-NLS-1$</span>
 					|| node instanceof EnumDeclaration
 					|| node instanceof RecordDeclaration;
-<span class="nc" id="L1307">			default -&gt; false;</span>
+<span class="nc" id="L1323">			default -&gt; false;</span>
 		};
 	}
 
@@ -1312,14 +1328,14 @@ public final class BuiltInGuards {
 	 * Finds the nearest enclosing TypeDeclaration for an AST node.
 	 */
 	private static TypeDeclaration findEnclosingTypeDeclaration(ASTNode node) {
-<span class="fc" id="L1315">		ASTNode current = node;</span>
-<span class="pc bpc" id="L1316" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="fc bfc" id="L1317" title="All 2 branches covered.">			if (current instanceof TypeDeclaration typeDecl) {</span>
-<span class="fc" id="L1318">				return typeDecl;</span>
+<span class="fc" id="L1331">		ASTNode current = node;</span>
+<span class="pc bpc" id="L1332" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L1333" title="All 2 branches covered.">			if (current instanceof TypeDeclaration typeDecl) {</span>
+<span class="fc" id="L1334">				return typeDecl;</span>
 			}
-<span class="fc" id="L1320">			current = current.getParent();</span>
+<span class="fc" id="L1336">			current = current.getParent();</span>
 		}
-<span class="nc" id="L1322">		return null;</span>
+<span class="nc" id="L1338">		return null;</span>
 	}
 
 	/**
@@ -1327,60 +1343,60 @@ public final class BuiltInGuards {
 	 * Uses a visited set to prevent infinite recursion in case of cycles in the type hierarchy.
 	 */
 	private static boolean implementsSerializable(ITypeBinding typeBinding) {
-<span class="nc" id="L1330">		return implementsSerializable(typeBinding, new java.util.HashSet&lt;&gt;());</span>
+<span class="nc" id="L1346">		return implementsSerializable(typeBinding, new java.util.HashSet&lt;&gt;());</span>
 	}
 
 	private static boolean implementsSerializable(ITypeBinding typeBinding, java.util.Set&lt;String&gt; visited) {
-<span class="nc" id="L1334">		String qualifiedName = typeBinding.getQualifiedName();</span>
-<span class="nc bnc" id="L1335" title="All 2 branches missed.">		if (!visited.add(qualifiedName)) {</span>
-<span class="nc" id="L1336">			return false; // Already visited — break potential cycle</span>
+<span class="nc" id="L1350">		String qualifiedName = typeBinding.getQualifiedName();</span>
+<span class="nc bnc" id="L1351" title="All 2 branches missed.">		if (!visited.add(qualifiedName)) {</span>
+<span class="nc" id="L1352">			return false; // Already visited — break potential cycle</span>
 		}
-<span class="nc bnc" id="L1338" title="All 2 branches missed.">		for (ITypeBinding iface : typeBinding.getInterfaces()) {</span>
-<span class="nc bnc" id="L1339" title="All 2 branches missed.">			if (&quot;java.io.Serializable&quot;.equals(iface.getQualifiedName())) { //$NON-NLS-1$</span>
-<span class="nc" id="L1340">				return true;</span>
+<span class="nc bnc" id="L1354" title="All 2 branches missed.">		for (ITypeBinding iface : typeBinding.getInterfaces()) {</span>
+<span class="nc bnc" id="L1355" title="All 2 branches missed.">			if (&quot;java.io.Serializable&quot;.equals(iface.getQualifiedName())) { //$NON-NLS-1$</span>
+<span class="nc" id="L1356">				return true;</span>
 			}
-<span class="nc bnc" id="L1342" title="All 2 branches missed.">			if (implementsSerializable(iface, visited)) {</span>
-<span class="nc" id="L1343">				return true;</span>
+<span class="nc bnc" id="L1358" title="All 2 branches missed.">			if (implementsSerializable(iface, visited)) {</span>
+<span class="nc" id="L1359">				return true;</span>
 			}
 		}
-<span class="nc" id="L1346">		ITypeBinding superclass = typeBinding.getSuperclass();</span>
-<span class="nc bnc" id="L1347" title="All 2 branches missed.">		if (superclass != null) {</span>
-<span class="nc" id="L1348">			return implementsSerializable(superclass, visited);</span>
+<span class="nc" id="L1362">		ITypeBinding superclass = typeBinding.getSuperclass();</span>
+<span class="nc bnc" id="L1363" title="All 2 branches missed.">		if (superclass != null) {</span>
+<span class="nc" id="L1364">			return implementsSerializable(superclass, visited);</span>
 		}
-<span class="nc" id="L1350">		return false;</span>
+<span class="nc" id="L1366">		return false;</span>
 	}
 
 	/**
 	 * Checks if {@code ancestor} is an ancestor of {@code node} (or the same node).
 	 */
 	private static boolean isAncestorOrSelf(ASTNode ancestor, ASTNode node) {
-<span class="nc" id="L1357">		ASTNode current = node;</span>
-<span class="nc bnc" id="L1358" title="All 2 branches missed.">		while (current != null) {</span>
-<span class="nc bnc" id="L1359" title="All 2 branches missed.">			if (current == ancestor) {</span>
-<span class="nc" id="L1360">				return true;</span>
+<span class="nc" id="L1373">		ASTNode current = node;</span>
+<span class="nc bnc" id="L1374" title="All 2 branches missed.">		while (current != null) {</span>
+<span class="nc bnc" id="L1375" title="All 2 branches missed.">			if (current == ancestor) {</span>
+<span class="nc" id="L1376">				return true;</span>
 			}
-<span class="nc" id="L1362">			current = current.getParent();</span>
+<span class="nc" id="L1378">			current = current.getParent();</span>
 		}
-<span class="nc" id="L1364">		return false;</span>
+<span class="nc" id="L1380">		return false;</span>
 	}
 
 	/**
 	 * Checks if the given modifier flags contain the named modifier.
 	 */
 	private static boolean matchesModifierName(int modifiers, String modifierName) {
-<span class="pc bpc" id="L1371" title="9 of 12 branches missed.">		return switch (modifierName) {</span>
-<span class="fc" id="L1372">			case &quot;PUBLIC&quot; -&gt; Modifier.isPublic(modifiers); //$NON-NLS-1$</span>
-<span class="fc" id="L1373">			case &quot;PRIVATE&quot; -&gt; Modifier.isPrivate(modifiers); //$NON-NLS-1$</span>
-<span class="nc" id="L1374">			case &quot;PROTECTED&quot; -&gt; Modifier.isProtected(modifiers); //$NON-NLS-1$</span>
-<span class="nc" id="L1375">			case &quot;ABSTRACT&quot; -&gt; Modifier.isAbstract(modifiers); //$NON-NLS-1$</span>
-<span class="fc" id="L1376">			case &quot;STATIC&quot; -&gt; Modifier.isStatic(modifiers); //$NON-NLS-1$</span>
-<span class="nc" id="L1377">			case &quot;FINAL&quot; -&gt; Modifier.isFinal(modifiers); //$NON-NLS-1$</span>
-<span class="nc" id="L1378">			case &quot;SYNCHRONIZED&quot; -&gt; Modifier.isSynchronized(modifiers); //$NON-NLS-1$</span>
-<span class="nc" id="L1379">			case &quot;VOLATILE&quot; -&gt; Modifier.isVolatile(modifiers); //$NON-NLS-1$</span>
-<span class="nc" id="L1380">			case &quot;TRANSIENT&quot; -&gt; Modifier.isTransient(modifiers); //$NON-NLS-1$</span>
-<span class="nc" id="L1381">			case &quot;NATIVE&quot; -&gt; Modifier.isNative(modifiers); //$NON-NLS-1$</span>
-<span class="nc" id="L1382">			case &quot;STRICTFP&quot; -&gt; Modifier.isStrict(modifiers); //$NON-NLS-1$</span>
-<span class="nc" id="L1383">			default -&gt; false;</span>
+<span class="pc bpc" id="L1387" title="9 of 12 branches missed.">		return switch (modifierName) {</span>
+<span class="fc" id="L1388">			case &quot;PUBLIC&quot; -&gt; Modifier.isPublic(modifiers); //$NON-NLS-1$</span>
+<span class="fc" id="L1389">			case &quot;PRIVATE&quot; -&gt; Modifier.isPrivate(modifiers); //$NON-NLS-1$</span>
+<span class="nc" id="L1390">			case &quot;PROTECTED&quot; -&gt; Modifier.isProtected(modifiers); //$NON-NLS-1$</span>
+<span class="nc" id="L1391">			case &quot;ABSTRACT&quot; -&gt; Modifier.isAbstract(modifiers); //$NON-NLS-1$</span>
+<span class="fc" id="L1392">			case &quot;STATIC&quot; -&gt; Modifier.isStatic(modifiers); //$NON-NLS-1$</span>
+<span class="nc" id="L1393">			case &quot;FINAL&quot; -&gt; Modifier.isFinal(modifiers); //$NON-NLS-1$</span>
+<span class="nc" id="L1394">			case &quot;SYNCHRONIZED&quot; -&gt; Modifier.isSynchronized(modifiers); //$NON-NLS-1$</span>
+<span class="nc" id="L1395">			case &quot;VOLATILE&quot; -&gt; Modifier.isVolatile(modifiers); //$NON-NLS-1$</span>
+<span class="nc" id="L1396">			case &quot;TRANSIENT&quot; -&gt; Modifier.isTransient(modifiers); //$NON-NLS-1$</span>
+<span class="nc" id="L1397">			case &quot;NATIVE&quot; -&gt; Modifier.isNative(modifiers); //$NON-NLS-1$</span>
+<span class="nc" id="L1398">			case &quot;STRICTFP&quot; -&gt; Modifier.isStrict(modifiers); //$NON-NLS-1$</span>
+<span class="nc" id="L1399">			default -&gt; false;</span>
 		};
 	}
 
@@ -1401,15 +1417,15 @@ public final class BuiltInGuards {
 	 * Args: [modeName]
 	 */
 	private static boolean evaluateMode(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L1404" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L1405">			return false;</span>
+<span class="pc bpc" id="L1420" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L1421">			return false;</span>
 		}
-<span class="fc" id="L1407">		String requiredMode = args[0].toString().trim();</span>
-<span class="fc" id="L1408">		String currentMode = ctx.getCompilerOptions().get(&quot;sandbox.cleanup.mode&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L1409" title="1 of 2 branches missed.">		if (currentMode == null) {</span>
-<span class="nc" id="L1410">			return false;</span>
+<span class="fc" id="L1423">		String requiredMode = args[0].toString().trim();</span>
+<span class="fc" id="L1424">		String currentMode = ctx.getCompilerOptions().get(&quot;sandbox.cleanup.mode&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L1425" title="1 of 2 branches missed.">		if (currentMode == null) {</span>
+<span class="nc" id="L1426">			return false;</span>
 		}
-<span class="fc" id="L1412">		return requiredMode.equalsIgnoreCase(currentMode.trim());</span>
+<span class="fc" id="L1428">		return requiredMode.equalsIgnoreCase(currentMode.trim());</span>
 	}
 
 	/**
@@ -1430,30 +1446,30 @@ public final class BuiltInGuards {
 	 * @since 1.3.9
 	 */
 	private static boolean evaluateMethodNameMatches(GuardContext ctx, Object... args) {
-<span class="fc bfc" id="L1433" title="All 2 branches covered.">		if (args.length &lt; 2) {</span>
-<span class="fc" id="L1434">			return false;</span>
+<span class="fc bfc" id="L1449" title="All 2 branches covered.">		if (args.length &lt; 2) {</span>
+<span class="fc" id="L1450">			return false;</span>
 		}
-<span class="fc" id="L1436">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L1437">		String regexPattern = stripQuotes(args[1].toString());</span>
+<span class="fc" id="L1452">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L1453">		String regexPattern = stripQuotes(args[1].toString());</span>
 
-<span class="fc" id="L1439">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="pc bpc" id="L1440" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1441">			return false;</span>
+<span class="fc" id="L1455">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L1456" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1457">			return false;</span>
 		}
 
 		String methodName;
-<span class="pc bpc" id="L1445" title="1 of 2 branches missed.">		if (node instanceof SimpleName simpleName) {</span>
-<span class="fc" id="L1446">			methodName = simpleName.getIdentifier();</span>
-<span class="nc bnc" id="L1447" title="All 2 branches missed.">		} else if (node instanceof MethodDeclaration methodDecl) {</span>
-<span class="nc" id="L1448">			methodName = methodDecl.getName().getIdentifier();</span>
+<span class="pc bpc" id="L1461" title="1 of 2 branches missed.">		if (node instanceof SimpleName simpleName) {</span>
+<span class="fc" id="L1462">			methodName = simpleName.getIdentifier();</span>
+<span class="nc bnc" id="L1463" title="All 2 branches missed.">		} else if (node instanceof MethodDeclaration methodDecl) {</span>
+<span class="nc" id="L1464">			methodName = methodDecl.getName().getIdentifier();</span>
 		} else {
-<span class="nc" id="L1450">			methodName = node.toString().trim();</span>
+<span class="nc" id="L1466">			methodName = node.toString().trim();</span>
 		}
 
 		try {
-<span class="fc" id="L1454">			return methodName.matches(regexPattern);</span>
-<span class="nc" id="L1455">		} catch (java.util.regex.PatternSyntaxException e) {</span>
-<span class="nc" id="L1456">			return false;</span>
+<span class="fc" id="L1470">			return methodName.matches(regexPattern);</span>
+<span class="nc" id="L1471">		} catch (java.util.regex.PatternSyntaxException e) {</span>
+<span class="nc" id="L1472">			return false;</span>
 		}
 	}
 
@@ -1482,35 +1498,35 @@ public final class BuiltInGuards {
 	 * @since 1.3.10
 	 */
 	private static boolean evaluateEnclosingClassExtends(GuardContext ctx, Object... args) {
-<span class="fc bfc" id="L1485" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
-<span class="fc" id="L1486">			return false;</span>
+<span class="fc bfc" id="L1501" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
+<span class="fc" id="L1502">			return false;</span>
 		}
-<span class="fc" id="L1488">		String targetFqn = stripQuotes(args[0].toString());</span>
-<span class="fc" id="L1489">		ASTNode node = ctx.getMatchedNode();</span>
-<span class="pc bpc" id="L1490" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1491">			return false;</span>
+<span class="fc" id="L1504">		String targetFqn = stripQuotes(args[0].toString());</span>
+<span class="fc" id="L1505">		ASTNode node = ctx.getMatchedNode();</span>
+<span class="pc bpc" id="L1506" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1507">			return false;</span>
 		}
-<span class="fc" id="L1493">		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);</span>
-<span class="pc bpc" id="L1494" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
-<span class="nc" id="L1495">			return false;</span>
+<span class="fc" id="L1509">		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);</span>
+<span class="pc bpc" id="L1510" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
+<span class="nc" id="L1511">			return false;</span>
 		}
-<span class="fc" id="L1497">		ITypeBinding typeBinding = typeDecl.resolveBinding();</span>
-<span class="pc bpc" id="L1498" title="2 of 4 branches missed.">		if (typeBinding != null &amp;&amp; !typeBinding.isRecovered()) {</span>
-<span class="fc" id="L1499">			ITypeBinding superclass = typeBinding.getSuperclass();</span>
-<span class="pc bpc" id="L1500" title="1 of 4 branches missed.">			if (superclass != null &amp;&amp; !superclass.isRecovered()) {</span>
-<span class="fc" id="L1501">				return extendsType(superclass, targetFqn, new java.util.HashSet&lt;&gt;());</span>
+<span class="fc" id="L1513">		ITypeBinding typeBinding = typeDecl.resolveBinding();</span>
+<span class="pc bpc" id="L1514" title="2 of 4 branches missed.">		if (typeBinding != null &amp;&amp; !typeBinding.isRecovered()) {</span>
+<span class="fc" id="L1515">			ITypeBinding superclass = typeBinding.getSuperclass();</span>
+<span class="pc bpc" id="L1516" title="1 of 4 branches missed.">			if (superclass != null &amp;&amp; !superclass.isRecovered()) {</span>
+<span class="fc" id="L1517">				return extendsType(superclass, targetFqn, new java.util.HashSet&lt;&gt;());</span>
 			}
 		}
 		// Fallback without reliable bindings: check the extends clause textually (direct superclass only)
-<span class="fc" id="L1505">		org.eclipse.jdt.core.dom.Type superclassType = typeDecl.getSuperclassType();</span>
-<span class="pc bpc" id="L1506" title="1 of 2 branches missed.">		if (superclassType == null) {</span>
-<span class="nc" id="L1507">			return false;</span>
+<span class="fc" id="L1521">		org.eclipse.jdt.core.dom.Type superclassType = typeDecl.getSuperclassType();</span>
+<span class="pc bpc" id="L1522" title="1 of 2 branches missed.">		if (superclassType == null) {</span>
+<span class="nc" id="L1523">			return false;</span>
 		}
-<span class="fc" id="L1509">		String superclassText = superclassType.toString().trim();</span>
+<span class="fc" id="L1525">		String superclassText = superclassType.toString().trim();</span>
 		// Match if the extends clause is the FQN or the simple name part of it
-<span class="fc" id="L1511">		int lastDot = targetFqn.lastIndexOf('.');</span>
-<span class="fc bfc" id="L1512" title="All 2 branches covered.">		String simpleName = (lastDot &gt;= 0) ? targetFqn.substring(lastDot + 1) : targetFqn;</span>
-<span class="fc bfc" id="L1513" title="All 4 branches covered.">		return targetFqn.equals(superclassText) || simpleName.equals(superclassText);</span>
+<span class="fc" id="L1527">		int lastDot = targetFqn.lastIndexOf('.');</span>
+<span class="fc bfc" id="L1528" title="All 2 branches covered.">		String simpleName = (lastDot &gt;= 0) ? targetFqn.substring(lastDot + 1) : targetFqn;</span>
+<span class="fc bfc" id="L1529" title="All 4 branches covered.">		return targetFqn.equals(superclassText) || simpleName.equals(superclassText);</span>
 	}
 
 	/**
@@ -1519,18 +1535,18 @@ public final class BuiltInGuards {
 	 * Stops at recovered bindings since they are unreliable.
 	 */
 	private static boolean extendsType(ITypeBinding typeBinding, String targetFqn, java.util.Set&lt;String&gt; visited) {
-<span class="pc bpc" id="L1522" title="1 of 4 branches missed.">		if (typeBinding == null || typeBinding.isRecovered()) {</span>
-<span class="fc" id="L1523">			return false;</span>
+<span class="pc bpc" id="L1538" title="1 of 4 branches missed.">		if (typeBinding == null || typeBinding.isRecovered()) {</span>
+<span class="fc" id="L1539">			return false;</span>
 		}
-<span class="fc" id="L1525">		String qualifiedName = typeBinding.getQualifiedName();</span>
-<span class="pc bpc" id="L1526" title="1 of 2 branches missed.">		if (!visited.add(qualifiedName)) {</span>
-<span class="nc" id="L1527">			return false; // Already visited — break potential cycle</span>
+<span class="fc" id="L1541">		String qualifiedName = typeBinding.getQualifiedName();</span>
+<span class="pc bpc" id="L1542" title="1 of 2 branches missed.">		if (!visited.add(qualifiedName)) {</span>
+<span class="nc" id="L1543">			return false; // Already visited — break potential cycle</span>
 		}
-<span class="pc bpc" id="L1529" title="1 of 2 branches missed.">		if (targetFqn.equals(qualifiedName)) {</span>
-<span class="nc" id="L1530">			return true;</span>
+<span class="pc bpc" id="L1545" title="1 of 2 branches missed.">		if (targetFqn.equals(qualifiedName)) {</span>
+<span class="nc" id="L1546">			return true;</span>
 		}
-<span class="fc" id="L1532">		ITypeBinding superclass = typeBinding.getSuperclass();</span>
-<span class="fc" id="L1533">		return extendsType(superclass, targetFqn, visited);</span>
+<span class="fc" id="L1548">		ITypeBinding superclass = typeBinding.getSuperclass();</span>
+<span class="fc" id="L1549">		return extendsType(superclass, targetFqn, visited);</span>
 	}
 
 	/**
@@ -1545,12 +1561,12 @@ public final class BuiltInGuards {
 	 * @since 1.4.0
 	 */
 	private static boolean evaluateHasSuppressWarnings(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L1548" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L1549">			return false;</span>
+<span class="pc bpc" id="L1564" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L1565">			return false;</span>
 		}
-<span class="fc" id="L1551">		String key = stripQuotes(args[0].toString());</span>
-<span class="fc" id="L1552">		ASTNode node = ctx.getMatchedNode();</span>
-<span class="fc" id="L1553">		return SuppressWarningsChecker.isSuppressed(node, key);</span>
+<span class="fc" id="L1567">		String key = stripQuotes(args[0].toString());</span>
+<span class="fc" id="L1568">		ASTNode node = ctx.getMatchedNode();</span>
+<span class="fc" id="L1569">		return SuppressWarningsChecker.isSuppressed(node, key);</span>
 	}
 
 	/**
@@ -1565,29 +1581,29 @@ public final class BuiltInGuards {
 	 */
 	@SuppressWarnings(&quot;unchecked&quot;)
 	private static boolean evaluateHasField(GuardContext ctx, Object... args) {
-<span class="fc bfc" id="L1568" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
-<span class="fc" id="L1569">			return false;</span>
+<span class="fc bfc" id="L1584" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
+<span class="fc" id="L1585">			return false;</span>
 		}
-<span class="fc" id="L1571">		String fieldName = stripQuotes(args[0].toString());</span>
-<span class="fc" id="L1572">		ASTNode node = ctx.getMatchedNode();</span>
-<span class="pc bpc" id="L1573" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1574">			return false;</span>
+<span class="fc" id="L1587">		String fieldName = stripQuotes(args[0].toString());</span>
+<span class="fc" id="L1588">		ASTNode node = ctx.getMatchedNode();</span>
+<span class="pc bpc" id="L1589" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1590">			return false;</span>
 		}
-<span class="fc" id="L1576">		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);</span>
-<span class="pc bpc" id="L1577" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
-<span class="nc" id="L1578">			return false;</span>
+<span class="fc" id="L1592">		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);</span>
+<span class="pc bpc" id="L1593" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
+<span class="nc" id="L1594">			return false;</span>
 		}
-<span class="fc bfc" id="L1580" title="All 2 branches covered.">		for (Object bodyDecl : typeDecl.bodyDeclarations()) {</span>
-<span class="fc bfc" id="L1581" title="All 2 branches covered.">			if (bodyDecl instanceof FieldDeclaration fieldDecl) {</span>
-<span class="fc bfc" id="L1582" title="All 2 branches covered.">				for (Object frag : fieldDecl.fragments()) {</span>
-<span class="pc bpc" id="L1583" title="1 of 2 branches missed.">					if (frag instanceof VariableDeclarationFragment vdf</span>
-<span class="fc bfc" id="L1584" title="All 2 branches covered.">							&amp;&amp; fieldName.equals(vdf.getName().getIdentifier())) {</span>
-<span class="fc" id="L1585">						return true;</span>
+<span class="fc bfc" id="L1596" title="All 2 branches covered.">		for (Object bodyDecl : typeDecl.bodyDeclarations()) {</span>
+<span class="fc bfc" id="L1597" title="All 2 branches covered.">			if (bodyDecl instanceof FieldDeclaration fieldDecl) {</span>
+<span class="fc bfc" id="L1598" title="All 2 branches covered.">				for (Object frag : fieldDecl.fragments()) {</span>
+<span class="pc bpc" id="L1599" title="1 of 2 branches missed.">					if (frag instanceof VariableDeclarationFragment vdf</span>
+<span class="fc bfc" id="L1600" title="All 2 branches covered.">							&amp;&amp; fieldName.equals(vdf.getName().getIdentifier())) {</span>
+<span class="fc" id="L1601">						return true;</span>
 					}
-<span class="fc" id="L1587">				}</span>
+<span class="fc" id="L1603">				}</span>
 			}
-<span class="fc" id="L1589">		}</span>
-<span class="fc" id="L1590">		return false;</span>
+<span class="fc" id="L1605">		}</span>
+<span class="fc" id="L1606">		return false;</span>
 	}
 
 	/**
@@ -1601,22 +1617,22 @@ public final class BuiltInGuards {
 	 * @since 1.4.1
 	 */
 	private static boolean evaluateIsInLoop(GuardContext ctx, Object... args) {
-<span class="fc" id="L1604">		ASTNode node = ctx.getMatchedNode();</span>
-<span class="pc bpc" id="L1605" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1606">			return false;</span>
+<span class="fc" id="L1620">		ASTNode node = ctx.getMatchedNode();</span>
+<span class="pc bpc" id="L1621" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1622">			return false;</span>
 		}
-<span class="fc" id="L1608">		ASTNode current = node.getParent();</span>
-<span class="fc bfc" id="L1609" title="All 2 branches covered.">		while (current != null) {</span>
-<span class="fc" id="L1610">			int nodeType = current.getNodeType();</span>
-<span class="pc bpc" id="L1611" title="2 of 8 branches missed.">			if (nodeType == ASTNode.FOR_STATEMENT</span>
+<span class="fc" id="L1624">		ASTNode current = node.getParent();</span>
+<span class="fc bfc" id="L1625" title="All 2 branches covered.">		while (current != null) {</span>
+<span class="fc" id="L1626">			int nodeType = current.getNodeType();</span>
+<span class="pc bpc" id="L1627" title="2 of 8 branches missed.">			if (nodeType == ASTNode.FOR_STATEMENT</span>
 					|| nodeType == ASTNode.WHILE_STATEMENT
 					|| nodeType == ASTNode.DO_STATEMENT
 					|| nodeType == ASTNode.ENHANCED_FOR_STATEMENT) {
-<span class="fc" id="L1615">				return true;</span>
+<span class="fc" id="L1631">				return true;</span>
 			}
-<span class="fc" id="L1617">			current = current.getParent();</span>
-<span class="fc" id="L1618">		}</span>
-<span class="fc" id="L1619">		return false;</span>
+<span class="fc" id="L1633">			current = current.getParent();</span>
+<span class="fc" id="L1634">		}</span>
+<span class="fc" id="L1635">		return false;</span>
 	}
 
 	/**
@@ -1629,24 +1645,24 @@ public final class BuiltInGuards {
 	 * @since 1.4.1
 	 */
 	private static boolean evaluateParamCount(GuardContext ctx, Object... args) {
-<span class="fc bfc" id="L1632" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
-<span class="fc" id="L1633">			return false;</span>
+<span class="fc bfc" id="L1648" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
+<span class="fc" id="L1649">			return false;</span>
 		}
 		int expectedCount;
 		try {
-<span class="fc" id="L1637">			expectedCount = Integer.parseInt(args[0].toString().trim());</span>
-<span class="nc" id="L1638">		} catch (NumberFormatException e) {</span>
-<span class="nc" id="L1639">			return false;</span>
-<span class="fc" id="L1640">		}</span>
-<span class="fc" id="L1641">		ASTNode node = ctx.getMatchedNode();</span>
-<span class="pc bpc" id="L1642" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1643">			return false;</span>
+<span class="fc" id="L1653">			expectedCount = Integer.parseInt(args[0].toString().trim());</span>
+<span class="nc" id="L1654">		} catch (NumberFormatException e) {</span>
+<span class="nc" id="L1655">			return false;</span>
+<span class="fc" id="L1656">		}</span>
+<span class="fc" id="L1657">		ASTNode node = ctx.getMatchedNode();</span>
+<span class="pc bpc" id="L1658" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1659">			return false;</span>
 		}
-<span class="fc" id="L1645">		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);</span>
-<span class="pc bpc" id="L1646" title="1 of 2 branches missed.">		if (methodDecl == null) {</span>
-<span class="nc" id="L1647">			return false;</span>
+<span class="fc" id="L1661">		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);</span>
+<span class="pc bpc" id="L1662" title="1 of 2 branches missed.">		if (methodDecl == null) {</span>
+<span class="nc" id="L1663">			return false;</span>
 		}
-<span class="fc bfc" id="L1649" title="All 2 branches covered.">		return methodDecl.parameters().size() == expectedCount;</span>
+<span class="fc bfc" id="L1665" title="All 2 branches covered.">		return methodDecl.parameters().size() == expectedCount;</span>
 	}
 
 	/**
@@ -1659,24 +1675,24 @@ public final class BuiltInGuards {
 	 * @since 1.4.1
 	 */
 	private static boolean evaluateHasReturnType(GuardContext ctx, Object... args) {
-<span class="fc bfc" id="L1662" title="All 2 branches covered.">		if (args.length != 1) {</span>
-<span class="fc" id="L1663">			return false;</span>
+<span class="fc bfc" id="L1678" title="All 2 branches covered.">		if (args.length != 1) {</span>
+<span class="fc" id="L1679">			return false;</span>
 		}
-<span class="fc" id="L1665">		String typeName = stripQuotes(args[0].toString());</span>
-<span class="fc" id="L1666">		ASTNode node = ctx.getMatchedNode();</span>
-<span class="pc bpc" id="L1667" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1668">			return false;</span>
+<span class="fc" id="L1681">		String typeName = stripQuotes(args[0].toString());</span>
+<span class="fc" id="L1682">		ASTNode node = ctx.getMatchedNode();</span>
+<span class="pc bpc" id="L1683" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1684">			return false;</span>
 		}
-<span class="fc" id="L1670">		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);</span>
-<span class="pc bpc" id="L1671" title="1 of 2 branches missed.">		if (methodDecl == null) {</span>
-<span class="nc" id="L1672">			return false;</span>
+<span class="fc" id="L1686">		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);</span>
+<span class="pc bpc" id="L1687" title="1 of 2 branches missed.">		if (methodDecl == null) {</span>
+<span class="nc" id="L1688">			return false;</span>
 		}
-<span class="fc" id="L1674">		org.eclipse.jdt.core.dom.Type returnType = methodDecl.getReturnType2();</span>
-<span class="pc bpc" id="L1675" title="1 of 2 branches missed.">		if (returnType == null) {</span>
-<span class="nc" id="L1676">			return &quot;void&quot;.equals(typeName); //$NON-NLS-1$</span>
+<span class="fc" id="L1690">		org.eclipse.jdt.core.dom.Type returnType = methodDecl.getReturnType2();</span>
+<span class="pc bpc" id="L1691" title="1 of 2 branches missed.">		if (returnType == null) {</span>
+<span class="nc" id="L1692">			return &quot;void&quot;.equals(typeName); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L1678">		String returnTypeStr = returnType.toString().trim();</span>
-<span class="fc" id="L1679">		return typeName.equals(returnTypeStr);</span>
+<span class="fc" id="L1694">		String returnTypeStr = returnType.toString().trim();</span>
+<span class="fc" id="L1695">		return typeName.equals(returnTypeStr);</span>
 	}
 
 	/**
@@ -1686,25 +1702,25 @@ public final class BuiltInGuards {
 	 * @since 1.4.1
 	 */
 	private static boolean evaluateIsStringLiteral(GuardContext ctx, Object... args) {
-<span class="fc bfc" id="L1689" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
-<span class="fc" id="L1690">			return false;</span>
+<span class="fc bfc" id="L1705" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
+<span class="fc" id="L1706">			return false;</span>
 		}
-<span class="fc" id="L1692">		ASTNode node = ctx.getBinding(args[0].toString());</span>
-<span class="fc" id="L1693">		return node instanceof StringLiteral;</span>
+<span class="fc" id="L1708">		ASTNode node = ctx.getBinding(args[0].toString());</span>
+<span class="fc" id="L1709">		return node instanceof StringLiteral;</span>
 	}
 
 	/**
 	 * Finds the nearest enclosing MethodDeclaration for an AST node.
 	 */
 	private static MethodDeclaration findEnclosingMethodDeclaration(ASTNode node) {
-<span class="fc" id="L1700">		ASTNode current = node;</span>
-<span class="pc bpc" id="L1701" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="fc bfc" id="L1702" title="All 2 branches covered.">			if (current instanceof MethodDeclaration methodDecl) {</span>
-<span class="fc" id="L1703">				return methodDecl;</span>
+<span class="fc" id="L1716">		ASTNode current = node;</span>
+<span class="pc bpc" id="L1717" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L1718" title="All 2 branches covered.">			if (current instanceof MethodDeclaration methodDecl) {</span>
+<span class="fc" id="L1719">				return methodDecl;</span>
 			}
-<span class="fc" id="L1705">			current = current.getParent();</span>
+<span class="fc" id="L1721">			current = current.getParent();</span>
 		}
-<span class="nc" id="L1707">		return null;</span>
+<span class="nc" id="L1723">		return null;</span>
 	}
 
 	/**
@@ -1713,22 +1729,22 @@ public final class BuiltInGuards {
 	 * @since 1.4.1
 	 */
 	private static boolean evaluateIsPublic(GuardContext ctx, Object... args) {
-<span class="fc bfc" id="L1716" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
+<span class="fc bfc" id="L1732" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
 			// No argument: check the matched node directly
-<span class="fc" id="L1718">			ASTNode node = ctx.getMatchedNode();</span>
-<span class="pc bpc" id="L1719" title="1 of 2 branches missed.">			if (node == null) {</span>
-<span class="nc" id="L1720">				return false;</span>
+<span class="fc" id="L1734">			ASTNode node = ctx.getMatchedNode();</span>
+<span class="pc bpc" id="L1735" title="1 of 2 branches missed.">			if (node == null) {</span>
+<span class="nc" id="L1736">				return false;</span>
 			}
-<span class="fc" id="L1722">			int modifiers = resolveModifiers(node);</span>
-<span class="fc" id="L1723">			return Modifier.isPublic(modifiers);</span>
+<span class="fc" id="L1738">			int modifiers = resolveModifiers(node);</span>
+<span class="fc" id="L1739">			return Modifier.isPublic(modifiers);</span>
 		}
-<span class="fc" id="L1725">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L1726">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="pc bpc" id="L1727" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1728">			return false;</span>
+<span class="fc" id="L1741">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L1742">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L1743" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1744">			return false;</span>
 		}
-<span class="fc" id="L1730">		int modifiers = resolveModifiers(node);</span>
-<span class="fc" id="L1731">		return Modifier.isPublic(modifiers);</span>
+<span class="fc" id="L1746">		int modifiers = resolveModifiers(node);</span>
+<span class="fc" id="L1747">		return Modifier.isPublic(modifiers);</span>
 	}
 
 	/**
@@ -1737,21 +1753,21 @@ public final class BuiltInGuards {
 	 * @since 1.4.1
 	 */
 	private static boolean evaluateIsPrivate(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L1740" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L1741">			ASTNode node = ctx.getMatchedNode();</span>
-<span class="nc bnc" id="L1742" title="All 2 branches missed.">			if (node == null) {</span>
-<span class="nc" id="L1743">				return false;</span>
+<span class="pc bpc" id="L1756" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L1757">			ASTNode node = ctx.getMatchedNode();</span>
+<span class="nc bnc" id="L1758" title="All 2 branches missed.">			if (node == null) {</span>
+<span class="nc" id="L1759">				return false;</span>
 			}
-<span class="nc" id="L1745">			int modifiers = resolveModifiers(node);</span>
-<span class="nc" id="L1746">			return Modifier.isPrivate(modifiers);</span>
+<span class="nc" id="L1761">			int modifiers = resolveModifiers(node);</span>
+<span class="nc" id="L1762">			return Modifier.isPrivate(modifiers);</span>
 		}
-<span class="fc" id="L1748">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L1749">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="pc bpc" id="L1750" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1751">			return false;</span>
+<span class="fc" id="L1764">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L1765">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L1766" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1767">			return false;</span>
 		}
-<span class="fc" id="L1753">		int modifiers = resolveModifiers(node);</span>
-<span class="fc" id="L1754">		return Modifier.isPrivate(modifiers);</span>
+<span class="fc" id="L1769">		int modifiers = resolveModifiers(node);</span>
+<span class="fc" id="L1770">		return Modifier.isPrivate(modifiers);</span>
 	}
 
 	/**
@@ -1760,21 +1776,21 @@ public final class BuiltInGuards {
 	 * @since 1.4.1
 	 */
 	private static boolean evaluateIsProtected(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L1763" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L1764">			ASTNode node = ctx.getMatchedNode();</span>
-<span class="nc bnc" id="L1765" title="All 2 branches missed.">			if (node == null) {</span>
-<span class="nc" id="L1766">				return false;</span>
+<span class="pc bpc" id="L1779" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L1780">			ASTNode node = ctx.getMatchedNode();</span>
+<span class="nc bnc" id="L1781" title="All 2 branches missed.">			if (node == null) {</span>
+<span class="nc" id="L1782">				return false;</span>
 			}
-<span class="nc" id="L1768">			int modifiers = resolveModifiers(node);</span>
-<span class="nc" id="L1769">			return Modifier.isProtected(modifiers);</span>
+<span class="nc" id="L1784">			int modifiers = resolveModifiers(node);</span>
+<span class="nc" id="L1785">			return Modifier.isProtected(modifiers);</span>
 		}
-<span class="fc" id="L1771">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L1772">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="pc bpc" id="L1773" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1774">			return false;</span>
+<span class="fc" id="L1787">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L1788">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L1789" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1790">			return false;</span>
 		}
-<span class="fc" id="L1776">		int modifiers = resolveModifiers(node);</span>
-<span class="fc" id="L1777">		return Modifier.isProtected(modifiers);</span>
+<span class="fc" id="L1792">		int modifiers = resolveModifiers(node);</span>
+<span class="fc" id="L1793">		return Modifier.isProtected(modifiers);</span>
 	}
 
 	/**
@@ -1787,45 +1803,45 @@ public final class BuiltInGuards {
 	 * @since 1.4.1
 	 */
 	private static boolean evaluateThrowsException(GuardContext ctx, Object... args) {
-<span class="fc" id="L1790">		ASTNode node = ctx.getMatchedNode();</span>
-<span class="pc bpc" id="L1791" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1792">			return false;</span>
+<span class="fc" id="L1806">		ASTNode node = ctx.getMatchedNode();</span>
+<span class="pc bpc" id="L1807" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1808">			return false;</span>
 		}
-<span class="fc" id="L1794">		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);</span>
-<span class="pc bpc" id="L1795" title="1 of 2 branches missed.">		if (methodDecl == null) {</span>
-<span class="nc" id="L1796">			return false;</span>
+<span class="fc" id="L1810">		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);</span>
+<span class="pc bpc" id="L1811" title="1 of 2 branches missed.">		if (methodDecl == null) {</span>
+<span class="nc" id="L1812">			return false;</span>
 		}
 		// Modern JDT ASTs return Type nodes here; do not narrow the raw API to Name.
-<span class="fc" id="L1799">		List&lt;?&gt; thrownExceptions = methodDecl.thrownExceptionTypes();</span>
-<span class="fc bfc" id="L1800" title="All 2 branches covered.">		if (thrownExceptions.isEmpty()) {</span>
-<span class="fc" id="L1801">			return false;</span>
+<span class="fc" id="L1815">		List&lt;?&gt; thrownExceptions = methodDecl.thrownExceptionTypes();</span>
+<span class="fc bfc" id="L1816" title="All 2 branches covered.">		if (thrownExceptions.isEmpty()) {</span>
+<span class="fc" id="L1817">			return false;</span>
 		}
-<span class="fc bfc" id="L1803" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
-<span class="fc" id="L1804">			return true; // any throws clause present</span>
+<span class="fc bfc" id="L1819" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
+<span class="fc" id="L1820">			return true; // any throws clause present</span>
 		}
-<span class="fc" id="L1806">		String targetType = stripQuotes(args[0].toString());</span>
-<span class="fc bfc" id="L1807" title="All 2 branches covered.">		for (Object exType : thrownExceptions) {</span>
-<span class="pc bpc" id="L1808" title="1 of 2 branches missed.">			if (exType instanceof Name name) {</span>
-<span class="nc bnc" id="L1809" title="All 2 branches missed.">				if (targetType.equals(name.getFullyQualifiedName())) {</span>
-<span class="nc" id="L1810">					return true;</span>
+<span class="fc" id="L1822">		String targetType = stripQuotes(args[0].toString());</span>
+<span class="fc bfc" id="L1823" title="All 2 branches covered.">		for (Object exType : thrownExceptions) {</span>
+<span class="pc bpc" id="L1824" title="1 of 2 branches missed.">			if (exType instanceof Name name) {</span>
+<span class="nc bnc" id="L1825" title="All 2 branches missed.">				if (targetType.equals(name.getFullyQualifiedName())) {</span>
+<span class="nc" id="L1826">					return true;</span>
 				}
 				// Also check simple name match
-<span class="nc" id="L1813">				String simpleName = name.getFullyQualifiedName();</span>
-<span class="nc" id="L1814">				int lastDot = simpleName.lastIndexOf('.');</span>
-<span class="nc bnc" id="L1815" title="All 2 branches missed.">				if (lastDot &gt;= 0) {</span>
-<span class="nc" id="L1816">					simpleName = simpleName.substring(lastDot + 1);</span>
+<span class="nc" id="L1829">				String simpleName = name.getFullyQualifiedName();</span>
+<span class="nc" id="L1830">				int lastDot = simpleName.lastIndexOf('.');</span>
+<span class="nc bnc" id="L1831" title="All 2 branches missed.">				if (lastDot &gt;= 0) {</span>
+<span class="nc" id="L1832">					simpleName = simpleName.substring(lastDot + 1);</span>
 				}
-<span class="nc bnc" id="L1818" title="All 2 branches missed.">				if (targetType.equals(simpleName)) {</span>
-<span class="nc" id="L1819">					return true;</span>
+<span class="nc bnc" id="L1834" title="All 2 branches missed.">				if (targetType.equals(simpleName)) {</span>
+<span class="nc" id="L1835">					return true;</span>
 				}
-<span class="pc bpc" id="L1821" title="1 of 2 branches missed.">			} else if (exType instanceof org.eclipse.jdt.core.dom.Type type) {</span>
-<span class="fc" id="L1822">				String typeName = type.toString();</span>
-<span class="fc bfc" id="L1823" title="All 2 branches covered.">				if (targetType.equals(typeName)) {</span>
-<span class="fc" id="L1824">					return true;</span>
+<span class="pc bpc" id="L1837" title="1 of 2 branches missed.">			} else if (exType instanceof org.eclipse.jdt.core.dom.Type type) {</span>
+<span class="fc" id="L1838">				String typeName = type.toString();</span>
+<span class="fc bfc" id="L1839" title="All 2 branches covered.">				if (targetType.equals(typeName)) {</span>
+<span class="fc" id="L1840">					return true;</span>
 				}
 			}
-<span class="fc" id="L1827">		}</span>
-<span class="fc" id="L1828">		return false;</span>
+<span class="fc" id="L1843">		}</span>
+<span class="fc" id="L1844">		return false;</span>
 	}
 
 	/**
@@ -1839,29 +1855,29 @@ public final class BuiltInGuards {
 	 * @since 1.4.2
 	 */
 	private static boolean evaluateIsParameter(GuardContext ctx, Object... args) {
-<span class="fc bfc" id="L1842" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
-<span class="fc" id="L1843">			return false;</span>
+<span class="fc bfc" id="L1858" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
+<span class="fc" id="L1859">			return false;</span>
 		}
-<span class="fc" id="L1845">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L1846">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="pc bpc" id="L1847" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1848">			return false;</span>
+<span class="fc" id="L1861">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L1862">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L1863" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1864">			return false;</span>
 		}
-<span class="fc" id="L1850">		IBinding binding = resolveBinding(node);</span>
-<span class="pc bpc" id="L1851" title="1 of 2 branches missed.">		if (binding instanceof IVariableBinding vb) {</span>
-<span class="fc" id="L1852">			return vb.isParameter();</span>
+<span class="fc" id="L1866">		IBinding binding = resolveBinding(node);</span>
+<span class="pc bpc" id="L1867" title="1 of 2 branches missed.">		if (binding instanceof IVariableBinding vb) {</span>
+<span class="fc" id="L1868">			return vb.isParameter();</span>
 		}
 		// Fallback: check AST structure
-<span class="nc bnc" id="L1855" title="All 2 branches missed.">		if (node instanceof SingleVariableDeclaration) {</span>
-<span class="nc" id="L1856">			return node.getParent() instanceof MethodDeclaration;</span>
+<span class="nc bnc" id="L1871" title="All 2 branches missed.">		if (node instanceof SingleVariableDeclaration) {</span>
+<span class="nc" id="L1872">			return node.getParent() instanceof MethodDeclaration;</span>
 		}
-<span class="nc bnc" id="L1858" title="All 2 branches missed.">		if (node instanceof SimpleName simpleName) {</span>
-<span class="nc" id="L1859">			ASTNode parent = simpleName.getParent();</span>
-<span class="nc bnc" id="L1860" title="All 2 branches missed.">			if (parent instanceof SingleVariableDeclaration svd) {</span>
-<span class="nc" id="L1861">				return svd.getParent() instanceof MethodDeclaration;</span>
+<span class="nc bnc" id="L1874" title="All 2 branches missed.">		if (node instanceof SimpleName simpleName) {</span>
+<span class="nc" id="L1875">			ASTNode parent = simpleName.getParent();</span>
+<span class="nc bnc" id="L1876" title="All 2 branches missed.">			if (parent instanceof SingleVariableDeclaration svd) {</span>
+<span class="nc" id="L1877">				return svd.getParent() instanceof MethodDeclaration;</span>
 			}
 		}
-<span class="nc" id="L1864">		return false;</span>
+<span class="nc" id="L1880">		return false;</span>
 	}
 
 	/**
@@ -1874,32 +1890,32 @@ public final class BuiltInGuards {
 	 * @since 1.4.2
 	 */
 	private static boolean evaluateIsField(GuardContext ctx, Object... args) {
-<span class="fc bfc" id="L1877" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
-<span class="fc" id="L1878">			return false;</span>
+<span class="fc bfc" id="L1893" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
+<span class="fc" id="L1894">			return false;</span>
 		}
-<span class="fc" id="L1880">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L1881">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="pc bpc" id="L1882" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1883">			return false;</span>
+<span class="fc" id="L1896">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L1897">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="pc bpc" id="L1898" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1899">			return false;</span>
 		}
-<span class="fc" id="L1885">		IBinding binding = resolveBinding(node);</span>
-<span class="pc bpc" id="L1886" title="1 of 2 branches missed.">		if (binding instanceof IVariableBinding vb) {</span>
-<span class="fc" id="L1887">			return vb.isField();</span>
+<span class="fc" id="L1901">		IBinding binding = resolveBinding(node);</span>
+<span class="pc bpc" id="L1902" title="1 of 2 branches missed.">		if (binding instanceof IVariableBinding vb) {</span>
+<span class="fc" id="L1903">			return vb.isField();</span>
 		}
 		// Fallback: check AST structure
-<span class="nc bnc" id="L1890" title="All 2 branches missed.">		if (node instanceof FieldDeclaration) {</span>
-<span class="nc" id="L1891">			return true;</span>
+<span class="nc bnc" id="L1906" title="All 2 branches missed.">		if (node instanceof FieldDeclaration) {</span>
+<span class="nc" id="L1907">			return true;</span>
 		}
-<span class="nc bnc" id="L1893" title="All 2 branches missed.">		if (node instanceof VariableDeclarationFragment vdf) {</span>
-<span class="nc" id="L1894">			return vdf.getParent() instanceof FieldDeclaration;</span>
+<span class="nc bnc" id="L1909" title="All 2 branches missed.">		if (node instanceof VariableDeclarationFragment vdf) {</span>
+<span class="nc" id="L1910">			return vdf.getParent() instanceof FieldDeclaration;</span>
 		}
-<span class="nc bnc" id="L1896" title="All 2 branches missed.">		if (node instanceof SimpleName simpleName) {</span>
-<span class="nc" id="L1897">			ASTNode parent = simpleName.getParent();</span>
-<span class="nc bnc" id="L1898" title="All 2 branches missed.">			if (parent instanceof VariableDeclarationFragment vdf) {</span>
-<span class="nc" id="L1899">				return vdf.getParent() instanceof FieldDeclaration;</span>
+<span class="nc bnc" id="L1912" title="All 2 branches missed.">		if (node instanceof SimpleName simpleName) {</span>
+<span class="nc" id="L1913">			ASTNode parent = simpleName.getParent();</span>
+<span class="nc bnc" id="L1914" title="All 2 branches missed.">			if (parent instanceof VariableDeclarationFragment vdf) {</span>
+<span class="nc" id="L1915">				return vdf.getParent() instanceof FieldDeclaration;</span>
 			}
 		}
-<span class="nc" id="L1902">		return false;</span>
+<span class="nc" id="L1918">		return false;</span>
 	}
 
 	/**
@@ -1914,18 +1930,18 @@ public final class BuiltInGuards {
 	 * @since 1.4.2
 	 */
 	private static boolean evaluateIsInConstructor(GuardContext ctx, Object... args) {
-<span class="fc" id="L1917">		ASTNode node = ctx.getMatchedNode();</span>
-<span class="pc bpc" id="L1918" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1919">			return false;</span>
+<span class="fc" id="L1933">		ASTNode node = ctx.getMatchedNode();</span>
+<span class="pc bpc" id="L1934" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1935">			return false;</span>
 		}
-<span class="fc" id="L1921">		ASTNode current = node;</span>
-<span class="pc bpc" id="L1922" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="fc bfc" id="L1923" title="All 2 branches covered.">			if (current instanceof MethodDeclaration methodDecl) {</span>
-<span class="fc" id="L1924">				return methodDecl.isConstructor();</span>
+<span class="fc" id="L1937">		ASTNode current = node;</span>
+<span class="pc bpc" id="L1938" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L1939" title="All 2 branches covered.">			if (current instanceof MethodDeclaration methodDecl) {</span>
+<span class="fc" id="L1940">				return methodDecl.isConstructor();</span>
 			}
-<span class="fc" id="L1926">			current = current.getParent();</span>
+<span class="fc" id="L1942">			current = current.getParent();</span>
 		}
-<span class="nc" id="L1928">		return false;</span>
+<span class="nc" id="L1944">		return false;</span>
 	}
 
 	/**
@@ -1939,24 +1955,24 @@ public final class BuiltInGuards {
 	 * @since 1.4.2
 	 */
 	private static boolean evaluateClassOverrides(GuardContext ctx, Object... args) {
-<span class="fc bfc" id="L1942" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
-<span class="fc" id="L1943">			return false;</span>
+<span class="fc bfc" id="L1958" title="All 2 branches covered.">		if (args.length &lt; 1) {</span>
+<span class="fc" id="L1959">			return false;</span>
 		}
-<span class="fc" id="L1945">		String methodName = stripQuotes(args[0].toString());</span>
-<span class="fc" id="L1946">		ASTNode node = ctx.getMatchedNode();</span>
-<span class="pc bpc" id="L1947" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1948">			return false;</span>
+<span class="fc" id="L1961">		String methodName = stripQuotes(args[0].toString());</span>
+<span class="fc" id="L1962">		ASTNode node = ctx.getMatchedNode();</span>
+<span class="pc bpc" id="L1963" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1964">			return false;</span>
 		}
-<span class="fc" id="L1950">		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);</span>
-<span class="pc bpc" id="L1951" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
-<span class="nc" id="L1952">			return false;</span>
+<span class="fc" id="L1966">		TypeDeclaration typeDecl = findEnclosingTypeDeclaration(node);</span>
+<span class="pc bpc" id="L1967" title="1 of 2 branches missed.">		if (typeDecl == null) {</span>
+<span class="nc" id="L1968">			return false;</span>
 		}
-<span class="fc bfc" id="L1954" title="All 2 branches covered.">		for (MethodDeclaration method : typeDecl.getMethods()) {</span>
-<span class="fc bfc" id="L1955" title="All 2 branches covered.">			if (methodName.equals(method.getName().getIdentifier())) {</span>
-<span class="fc" id="L1956">				return true;</span>
+<span class="fc bfc" id="L1970" title="All 2 branches covered.">		for (MethodDeclaration method : typeDecl.getMethods()) {</span>
+<span class="fc bfc" id="L1971" title="All 2 branches covered.">			if (methodName.equals(method.getName().getIdentifier())) {</span>
+<span class="fc" id="L1972">				return true;</span>
 			}
 		}
-<span class="fc" id="L1959">		return false;</span>
+<span class="fc" id="L1975">		return false;</span>
 	}
 
 	/**
@@ -1969,31 +1985,31 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateIsLocalVariable(GuardContext ctx, Object... args) {
-<span class="nc bnc" id="L1972" title="All 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L1973">			return false;</span>
+<span class="nc bnc" id="L1988" title="All 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L1989">			return false;</span>
 		}
-<span class="nc" id="L1975">		String placeholderName = args[0].toString();</span>
-<span class="nc" id="L1976">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="nc bnc" id="L1977" title="All 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1978">			return false;</span>
+<span class="nc" id="L1991">		String placeholderName = args[0].toString();</span>
+<span class="nc" id="L1992">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="nc bnc" id="L1993" title="All 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1994">			return false;</span>
 		}
-<span class="nc" id="L1980">		IBinding binding = resolveBinding(node);</span>
-<span class="nc bnc" id="L1981" title="All 2 branches missed.">		if (binding instanceof IVariableBinding vb) {</span>
-<span class="nc bnc" id="L1982" title="All 4 branches missed.">			return !vb.isField() &amp;&amp; !vb.isParameter();</span>
+<span class="nc" id="L1996">		IBinding binding = resolveBinding(node);</span>
+<span class="nc bnc" id="L1997" title="All 2 branches missed.">		if (binding instanceof IVariableBinding vb) {</span>
+<span class="nc bnc" id="L1998" title="All 4 branches missed.">			return !vb.isField() &amp;&amp; !vb.isParameter();</span>
 		}
 		// Fallback: walk up AST and check for VariableDeclarationStatement
-<span class="nc" id="L1985">		ASTNode current = node;</span>
-<span class="nc bnc" id="L1986" title="All 2 branches missed.">		while (current != null) {</span>
-<span class="nc bnc" id="L1987" title="All 2 branches missed.">			if (current instanceof VariableDeclarationStatement) {</span>
-<span class="nc" id="L1988">				return true;</span>
+<span class="nc" id="L2001">		ASTNode current = node;</span>
+<span class="nc bnc" id="L2002" title="All 2 branches missed.">		while (current != null) {</span>
+<span class="nc bnc" id="L2003" title="All 2 branches missed.">			if (current instanceof VariableDeclarationStatement) {</span>
+<span class="nc" id="L2004">				return true;</span>
 			}
-<span class="nc bnc" id="L1990" title="All 4 branches missed.">			if (current instanceof FieldDeclaration</span>
+<span class="nc bnc" id="L2006" title="All 4 branches missed.">			if (current instanceof FieldDeclaration</span>
 					|| current instanceof MethodDeclaration) {
-<span class="nc" id="L1992">				return false;</span>
+<span class="nc" id="L2008">				return false;</span>
 			}
-<span class="nc" id="L1994">			current = current.getParent();</span>
+<span class="nc" id="L2010">			current = current.getParent();</span>
 		}
-<span class="nc" id="L1996">		return false;</span>
+<span class="nc" id="L2012">		return false;</span>
 	}
 
 	/**
@@ -2011,21 +2027,21 @@ public final class BuiltInGuards {
 	 * Args: (none)
 	 */
 	private static boolean evaluateIsAssignedToLocalVariable(GuardContext ctx, Object... args) {
-<span class="nc" id="L2014">		ASTNode node = ctx.getMatchedNode();</span>
-<span class="nc bnc" id="L2015" title="All 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L2016">			return false;</span>
+<span class="nc" id="L2030">		ASTNode node = ctx.getMatchedNode();</span>
+<span class="nc bnc" id="L2031" title="All 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L2032">			return false;</span>
 		}
 		// The matched node must be the initializer of a VariableDeclarationFragment
-<span class="nc" id="L2019">		ASTNode parent = node.getParent();</span>
-<span class="nc bnc" id="L2020" title="All 2 branches missed.">		if (!(parent instanceof VariableDeclarationFragment vdf)) {</span>
-<span class="nc" id="L2021">			return false;</span>
+<span class="nc" id="L2035">		ASTNode parent = node.getParent();</span>
+<span class="nc bnc" id="L2036" title="All 2 branches missed.">		if (!(parent instanceof VariableDeclarationFragment vdf)) {</span>
+<span class="nc" id="L2037">			return false;</span>
 		}
 		// The initializer of the fragment must be our node
-<span class="nc bnc" id="L2024" title="All 2 branches missed.">		if (vdf.getInitializer() != node) {</span>
-<span class="nc" id="L2025">			return false;</span>
+<span class="nc bnc" id="L2040" title="All 2 branches missed.">		if (vdf.getInitializer() != node) {</span>
+<span class="nc" id="L2041">			return false;</span>
 		}
 		// The fragment's parent must be a VariableDeclarationStatement (local), not FieldDeclaration
-<span class="nc" id="L2028">		return vdf.getParent() instanceof VariableDeclarationStatement;</span>
+<span class="nc" id="L2044">		return vdf.getParent() instanceof VariableDeclarationStatement;</span>
 	}
 
 	/**
@@ -2039,44 +2055,44 @@ public final class BuiltInGuards {
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateIsAutoCloseable(GuardContext ctx, Object... args) {
-<span class="nc bnc" id="L2042" title="All 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L2043">			return false;</span>
+<span class="nc bnc" id="L2058" title="All 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L2059">			return false;</span>
 		}
-<span class="nc" id="L2045">		String placeholderName = args[0].toString();</span>
-<span class="nc" id="L2046">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="nc bnc" id="L2047" title="All 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L2048">			return false;</span>
+<span class="nc" id="L2061">		String placeholderName = args[0].toString();</span>
+<span class="nc" id="L2062">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="nc bnc" id="L2063" title="All 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L2064">			return false;</span>
 		}
-<span class="nc bnc" id="L2050" title="All 2 branches missed.">		if (!(node instanceof Expression expr)) {</span>
-<span class="nc" id="L2051">			return false;</span>
+<span class="nc bnc" id="L2066" title="All 2 branches missed.">		if (!(node instanceof Expression expr)) {</span>
+<span class="nc" id="L2067">			return false;</span>
 		}
-<span class="nc" id="L2053">		ITypeBinding typeBinding = expr.resolveTypeBinding();</span>
-<span class="nc bnc" id="L2054" title="All 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L2069">		ITypeBinding typeBinding = expr.resolveTypeBinding();</span>
+<span class="nc bnc" id="L2070" title="All 2 branches missed.">		if (typeBinding == null) {</span>
 			// Cannot resolve — allow the rule to fire conservatively
-<span class="nc" id="L2056">			return true;</span>
+<span class="nc" id="L2072">			return true;</span>
 		}
-<span class="nc" id="L2058">		return implementsAutoCloseable(typeBinding);</span>
+<span class="nc" id="L2074">		return implementsAutoCloseable(typeBinding);</span>
 	}
 
 	/**
 	 * Returns {@code true} if the given type binding implements {@code java.lang.AutoCloseable}.
 	 */
 	private static boolean implementsAutoCloseable(ITypeBinding typeBinding) {
-<span class="nc bnc" id="L2065" title="All 2 branches missed.">		if (typeBinding == null) {</span>
-<span class="nc" id="L2066">			return false;</span>
+<span class="nc bnc" id="L2081" title="All 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="nc" id="L2082">			return false;</span>
 		}
-<span class="nc" id="L2068">		String qualifiedName = typeBinding.getQualifiedName();</span>
-<span class="nc bnc" id="L2069" title="All 2 branches missed.">		if (&quot;java.lang.AutoCloseable&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
-<span class="nc bnc" id="L2070" title="All 2 branches missed.">				|| &quot;java.io.Closeable&quot;.equals(qualifiedName)) { //$NON-NLS-1$</span>
-<span class="nc" id="L2071">			return true;</span>
+<span class="nc" id="L2084">		String qualifiedName = typeBinding.getQualifiedName();</span>
+<span class="nc bnc" id="L2085" title="All 2 branches missed.">		if (&quot;java.lang.AutoCloseable&quot;.equals(qualifiedName) //$NON-NLS-1$</span>
+<span class="nc bnc" id="L2086" title="All 2 branches missed.">				|| &quot;java.io.Closeable&quot;.equals(qualifiedName)) { //$NON-NLS-1$</span>
+<span class="nc" id="L2087">			return true;</span>
 		}
-<span class="nc bnc" id="L2073" title="All 2 branches missed.">		for (ITypeBinding iface : typeBinding.getInterfaces()) {</span>
-<span class="nc bnc" id="L2074" title="All 2 branches missed.">			if (implementsAutoCloseable(iface)) {</span>
-<span class="nc" id="L2075">				return true;</span>
+<span class="nc bnc" id="L2089" title="All 2 branches missed.">		for (ITypeBinding iface : typeBinding.getInterfaces()) {</span>
+<span class="nc bnc" id="L2090" title="All 2 branches missed.">			if (implementsAutoCloseable(iface)) {</span>
+<span class="nc" id="L2091">				return true;</span>
 			}
 		}
-<span class="nc" id="L2078">		ITypeBinding superClass = typeBinding.getSuperclass();</span>
-<span class="nc" id="L2079">		return implementsAutoCloseable(superClass);</span>
+<span class="nc" id="L2094">		ITypeBinding superClass = typeBinding.getSuperclass();</span>
+<span class="nc" id="L2095">		return implementsAutoCloseable(superClass);</span>
 	}
 
 	/**
@@ -2095,37 +2111,37 @@ public final class BuiltInGuards {
 	 * @since 1.4.2
 	 */
 	private static boolean evaluateGenericTypeIs(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L2098" title="1 of 2 branches missed.">		if (args.length &lt; 3) {</span>
-<span class="nc" id="L2099">			return false;</span>
+<span class="pc bpc" id="L2114" title="1 of 2 branches missed.">		if (args.length &lt; 3) {</span>
+<span class="nc" id="L2115">			return false;</span>
 		}
-<span class="fc" id="L2101">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L2117">		String placeholderName = args[0].toString();</span>
 		int paramIndex;
 		try {
-<span class="fc" id="L2104">			paramIndex = Integer.parseInt(args[1].toString());</span>
-<span class="fc" id="L2105">		} catch (NumberFormatException e) {</span>
-<span class="fc" id="L2106">			return false;</span>
-<span class="fc" id="L2107">		}</span>
-<span class="fc" id="L2108">		String expectedTypeName = args[2].toString();</span>
+<span class="fc" id="L2120">			paramIndex = Integer.parseInt(args[1].toString());</span>
+<span class="fc" id="L2121">		} catch (NumberFormatException e) {</span>
+<span class="fc" id="L2122">			return false;</span>
+<span class="fc" id="L2123">		}</span>
+<span class="fc" id="L2124">		String expectedTypeName = args[2].toString();</span>
 
-<span class="fc" id="L2110">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="fc bfc" id="L2111" title="All 2 branches covered.">		if (node == null) {</span>
-<span class="fc" id="L2112">			return false;</span>
+<span class="fc" id="L2126">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="fc bfc" id="L2127" title="All 2 branches covered.">		if (node == null) {</span>
+<span class="fc" id="L2128">			return false;</span>
 		}
 
-<span class="fc" id="L2115">		ITypeBinding typeBinding = resolveTypeBinding(node);</span>
-<span class="pc bpc" id="L2116" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="fc" id="L2131">		ITypeBinding typeBinding = resolveTypeBinding(node);</span>
+<span class="pc bpc" id="L2132" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
 			// Graceful degradation: no binding info → accept conservatively
-<span class="fc" id="L2118">			return true;</span>
+<span class="fc" id="L2134">			return true;</span>
 		}
 
-<span class="nc" id="L2121">		ITypeBinding[] typeArgs = typeBinding.getTypeArguments();</span>
-<span class="nc bnc" id="L2122" title="All 6 branches missed.">		if (typeArgs == null || paramIndex &lt; 0 || paramIndex &gt;= typeArgs.length) {</span>
-<span class="nc" id="L2123">			return false;</span>
+<span class="nc" id="L2137">		ITypeBinding[] typeArgs = typeBinding.getTypeArguments();</span>
+<span class="nc bnc" id="L2138" title="All 6 branches missed.">		if (typeArgs == null || paramIndex &lt; 0 || paramIndex &gt;= typeArgs.length) {</span>
+<span class="nc" id="L2139">			return false;</span>
 		}
 
-<span class="nc" id="L2126">		String actualName = typeArgs[paramIndex].getQualifiedName();</span>
-<span class="nc bnc" id="L2127" title="All 2 branches missed.">		return expectedTypeName.equals(actualName)</span>
-<span class="nc bnc" id="L2128" title="All 2 branches missed.">				|| expectedTypeName.equals(typeArgs[paramIndex].getName());</span>
+<span class="nc" id="L2142">		String actualName = typeArgs[paramIndex].getQualifiedName();</span>
+<span class="nc bnc" id="L2143" title="All 2 branches missed.">		return expectedTypeName.equals(actualName)</span>
+<span class="nc bnc" id="L2144" title="All 2 branches missed.">				|| expectedTypeName.equals(typeArgs[paramIndex].getName());</span>
 	}
 
 	/**
@@ -2139,26 +2155,26 @@ public final class BuiltInGuards {
 	 * @since 1.4.2
 	 */
 	private static boolean evaluateArgsCount(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L2142" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
-<span class="nc" id="L2143">			return false;</span>
+<span class="pc bpc" id="L2158" title="1 of 2 branches missed.">		if (args.length &lt; 2) {</span>
+<span class="nc" id="L2159">			return false;</span>
 		}
-<span class="fc" id="L2145">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L2161">		String placeholderName = args[0].toString();</span>
 		int expectedCount;
 		try {
-<span class="fc" id="L2148">			expectedCount = Integer.parseInt(args[1].toString());</span>
-<span class="nc" id="L2149">		} catch (NumberFormatException e) {</span>
-<span class="nc" id="L2150">			return false;</span>
-<span class="fc" id="L2151">		}</span>
+<span class="fc" id="L2164">			expectedCount = Integer.parseInt(args[1].toString());</span>
+<span class="nc" id="L2165">		} catch (NumberFormatException e) {</span>
+<span class="nc" id="L2166">			return false;</span>
+<span class="fc" id="L2167">		}</span>
 
-<span class="fc" id="L2153">		Object binding = ctx.getMatch().getBindings().get(placeholderName);</span>
-<span class="fc bfc" id="L2154" title="All 2 branches covered.">		if (binding instanceof List&lt;?&gt; list) {</span>
-<span class="fc bfc" id="L2155" title="All 2 branches covered.">			return list.size() == expectedCount;</span>
+<span class="fc" id="L2169">		Object binding = ctx.getMatch().getBindings().get(placeholderName);</span>
+<span class="fc bfc" id="L2170" title="All 2 branches covered.">		if (binding instanceof List&lt;?&gt; list) {</span>
+<span class="fc bfc" id="L2171" title="All 2 branches covered.">			return list.size() == expectedCount;</span>
 		}
 		// Single binding counts as 1
-<span class="fc bfc" id="L2158" title="All 2 branches covered.">		if (binding != null) {</span>
-<span class="pc bpc" id="L2159" title="1 of 2 branches missed.">			return expectedCount == 1;</span>
+<span class="fc bfc" id="L2174" title="All 2 branches covered.">		if (binding != null) {</span>
+<span class="pc bpc" id="L2175" title="1 of 2 branches missed.">			return expectedCount == 1;</span>
 		}
-<span class="pc bpc" id="L2161" title="1 of 2 branches missed.">		return expectedCount == 0;</span>
+<span class="pc bpc" id="L2177" title="1 of 2 branches missed.">		return expectedCount == 0;</span>
 	}
 
 	/**
@@ -2178,43 +2194,43 @@ public final class BuiltInGuards {
 	 * @since 1.4.2
 	 */
 	private static boolean evaluateIsResourceVariable(GuardContext ctx, Object... args) {
-<span class="pc bpc" id="L2181" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
-<span class="nc" id="L2182">			return false;</span>
+<span class="pc bpc" id="L2197" title="1 of 2 branches missed.">		if (args.length &lt; 1) {</span>
+<span class="nc" id="L2198">			return false;</span>
 		}
-<span class="fc" id="L2184">		String placeholderName = args[0].toString();</span>
-<span class="fc" id="L2185">		ASTNode node = ctx.getBinding(placeholderName);</span>
-<span class="fc bfc" id="L2186" title="All 2 branches covered.">		if (node == null) {</span>
-<span class="fc" id="L2187">			return false;</span>
+<span class="fc" id="L2200">		String placeholderName = args[0].toString();</span>
+<span class="fc" id="L2201">		ASTNode node = ctx.getBinding(placeholderName);</span>
+<span class="fc bfc" id="L2202" title="All 2 branches covered.">		if (node == null) {</span>
+<span class="fc" id="L2203">			return false;</span>
 		}
 
 		// Check if the node's type implements AutoCloseable
-<span class="fc" id="L2191">		ITypeBinding typeBinding = resolveTypeBinding(node);</span>
-<span class="pc bpc" id="L2192" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
+<span class="fc" id="L2207">		ITypeBinding typeBinding = resolveTypeBinding(node);</span>
+<span class="pc bpc" id="L2208" title="1 of 2 branches missed.">		if (typeBinding == null) {</span>
 			// Graceful degradation
-<span class="fc" id="L2194">			return true;</span>
+<span class="fc" id="L2210">			return true;</span>
 		}
-<span class="nc bnc" id="L2196" title="All 2 branches missed.">		if (!implementsAutoCloseable(typeBinding)) {</span>
-<span class="nc" id="L2197">			return false;</span>
+<span class="nc bnc" id="L2212" title="All 2 branches missed.">		if (!implementsAutoCloseable(typeBinding)) {</span>
+<span class="nc" id="L2213">			return false;</span>
 		}
 
 		// Check if already in a try-with-resources block
-<span class="nc" id="L2201">		ASTNode parent = node.getParent();</span>
-<span class="nc bnc" id="L2202" title="All 2 branches missed.">		while (parent != null) {</span>
-<span class="nc bnc" id="L2203" title="All 2 branches missed.">			if (parent instanceof TryStatement tryStmt) {</span>
+<span class="nc" id="L2217">		ASTNode parent = node.getParent();</span>
+<span class="nc bnc" id="L2218" title="All 2 branches missed.">		while (parent != null) {</span>
+<span class="nc bnc" id="L2219" title="All 2 branches missed.">			if (parent instanceof TryStatement tryStmt) {</span>
 				@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L2205">				List&lt;Expression&gt; resources = tryStmt.resources();</span>
-<span class="nc bnc" id="L2206" title="All 2 branches missed.">				if (!resources.isEmpty()) {</span>
+<span class="nc" id="L2221">				List&lt;Expression&gt; resources = tryStmt.resources();</span>
+<span class="nc bnc" id="L2222" title="All 2 branches missed.">				if (!resources.isEmpty()) {</span>
 					// This is a try-with-resources, check if our node is within a resource
-<span class="nc bnc" id="L2208" title="All 2 branches missed.">					for (Expression resource : resources) {</span>
-<span class="nc bnc" id="L2209" title="All 2 branches missed.">						if (isAncestorOrSelf(resource, node)) {</span>
-<span class="nc" id="L2210">							return false; // Already managed by try-with-resources</span>
+<span class="nc bnc" id="L2224" title="All 2 branches missed.">					for (Expression resource : resources) {</span>
+<span class="nc bnc" id="L2225" title="All 2 branches missed.">						if (isAncestorOrSelf(resource, node)) {</span>
+<span class="nc" id="L2226">							return false; // Already managed by try-with-resources</span>
 						}
-<span class="nc" id="L2212">					}</span>
+<span class="nc" id="L2228">					}</span>
 				}
 			}
-<span class="nc" id="L2215">			parent = parent.getParent();</span>
+<span class="nc" id="L2231">			parent = parent.getParent();</span>
 		}
-<span class="nc" id="L2217">		return true;</span>
+<span class="nc" id="L2233">		return true;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

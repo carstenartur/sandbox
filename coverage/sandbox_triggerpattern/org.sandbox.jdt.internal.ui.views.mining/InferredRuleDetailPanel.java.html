@@ -24,8 +24,12 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
+import org.sandbox.jdt.triggerpattern.api.PatternIndex;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.mining.analysis.InferredRule;
+import org.sandbox.jdt.triggerpattern.internal.DslValidator.ValidationResult;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
+import org.sandbox.jdt.triggerpattern.internal.HintProgramParser;
 
 /**
  * Detail panel showing inferred rules or AI evaluations for a selected commit.
@@ -41,148 +45,144 @@ public class InferredRuleDetailPanel extends Composite {
 	private final ScrolledComposite scrolled;
 	private final Composite content;
 	private final Label headerLabel;
-<span class="fc" id="L44">	private final List&lt;Button&gt; ruleCheckboxes = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L48">	private final List&lt;Button&gt; ruleCheckboxes = new ArrayList&lt;&gt;();</span>
 	private CommitTableEntry currentEntry;
 
 	public InferredRuleDetailPanel(Composite parent) {
-<span class="fc" id="L48">		super(parent, SWT.NONE);</span>
-<span class="fc" id="L49">		setLayout(new GridLayout(1, false));</span>
+<span class="fc" id="L52">		super(parent, SWT.NONE);</span>
+<span class="fc" id="L53">		setLayout(new GridLayout(1, false));</span>
 
-<span class="fc" id="L51">		headerLabel = new Label(this, SWT.WRAP);</span>
-<span class="fc" id="L52">		headerLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
-<span class="fc" id="L53">		headerLabel.setText(&quot;Select a commit to inspect its analysis state and inferred rules.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L55">		headerLabel = new Label(this, SWT.WRAP);</span>
+<span class="fc" id="L56">		headerLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="fc" id="L57">		headerLabel.setText(&quot;Select a commit to inspect its analysis state and inferred rules.&quot;); //$NON-NLS-1$</span>
 
-<span class="fc" id="L55">		scrolled = new ScrolledComposite(this, SWT.V_SCROLL | SWT.H_SCROLL);</span>
-<span class="fc" id="L56">		scrolled.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
-<span class="fc" id="L57">		scrolled.setExpandHorizontal(true);</span>
-<span class="fc" id="L58">		scrolled.setExpandVertical(true);</span>
+<span class="fc" id="L59">		scrolled = new ScrolledComposite(this, SWT.V_SCROLL | SWT.H_SCROLL);</span>
+<span class="fc" id="L60">		scrolled.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
+<span class="fc" id="L61">		scrolled.setExpandHorizontal(true);</span>
+<span class="fc" id="L62">		scrolled.setExpandVertical(true);</span>
 
-<span class="fc" id="L60">		content = new Composite(scrolled, SWT.NONE);</span>
-<span class="fc" id="L61">		content.setLayout(new GridLayout(1, false));</span>
-<span class="fc" id="L62">		scrolled.setContent(content);</span>
-<span class="fc" id="L63">	}</span>
+<span class="fc" id="L64">		content = new Composite(scrolled, SWT.NONE);</span>
+<span class="fc" id="L65">		content.setLayout(new GridLayout(1, false));</span>
+<span class="fc" id="L66">		scrolled.setContent(content);</span>
+<span class="fc" id="L67">	}</span>
 
 	public void showRules(CommitTableEntry entry) {
-<span class="fc" id="L66">		this.currentEntry = entry;</span>
-<span class="fc" id="L67">		ruleCheckboxes.clear();</span>
-<span class="fc bfc" id="L68" title="All 2 branches covered.">		for (var child : content.getChildren()) {</span>
-<span class="fc" id="L69">			child.dispose();</span>
+<span class="fc" id="L70">		this.currentEntry = entry;</span>
+<span class="fc" id="L71">		ruleCheckboxes.clear();</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">		for (var child : content.getChildren()) {</span>
+<span class="fc" id="L73">			child.dispose();</span>
 		}
 
-<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		if (entry == null) {</span>
-<span class="nc" id="L73">			headerLabel.setText(&quot;Select a commit to inspect its analysis state and inferred rules.&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L74">			finishLayout();</span>
-<span class="nc" id="L75">			return;</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">		if (entry == null) {</span>
+<span class="nc" id="L77">			headerLabel.setText(&quot;Select a commit to inspect its analysis state and inferred rules.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L78">			finishLayout();</span>
+<span class="nc" id="L79">			return;</span>
 		}
 
-<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		if (!entry.hasRules()) {</span>
-<span class="nc" id="L79">			String commit = &quot;Commit &quot; + entry.getCommitInfo().shortId() + &quot;: \&quot;&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L80">					+ firstLine(entry.getCommitInfo().message()) + &quot;\&quot; — &quot;; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L81" title="All 6 branches missed.">			switch (entry.getStatus()) {</span>
-<span class="nc" id="L82">			case PENDING -&gt; headerLabel.setText(commit + &quot;waiting for analysis&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L83">			case ANALYZING -&gt; headerLabel.setText(commit + &quot;analysis in progress&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L84">			case NO_RULES -&gt; headerLabel.setText(commit + &quot;analysis finished; no reusable DSL rule was inferred&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L85">			case FAILED -&gt; headerLabel.setText(commit + &quot;analysis failed: &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L86">					+ safeFailureMessage(entry.getFailureMessage()));</span>
-<span class="nc" id="L87">			case DONE -&gt; headerLabel.setText(commit + &quot;analysis finished without exportable rules&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">		if (!entry.hasRules()) {</span>
+<span class="nc" id="L83">			String commit = &quot;Commit &quot; + entry.getCommitInfo().shortId() + &quot;: \&quot;&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L84">					+ firstLine(entry.getCommitInfo().message()) + &quot;\&quot; — &quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L85" title="All 6 branches missed.">			switch (entry.getStatus()) {</span>
+<span class="nc" id="L86">			case PENDING -&gt; headerLabel.setText(commit + &quot;waiting for analysis&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L87">			case ANALYZING -&gt; headerLabel.setText(commit + &quot;analysis in progress&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L88">			case NO_RULES -&gt; headerLabel.setText(commit + &quot;analysis finished; no reusable DSL rule was inferred&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L89">			case FAILED -&gt; headerLabel.setText(commit + &quot;analysis failed: &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L90">					+ safeFailureMessage(entry.getFailureMessage()));</span>
+<span class="nc" id="L91">			case DONE -&gt; headerLabel.setText(commit + &quot;analysis finished without exportable rules&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L89">			finishLayout();</span>
-<span class="nc" id="L90">			return;</span>
+<span class="nc" id="L93">			finishLayout();</span>
+<span class="nc" id="L94">			return;</span>
 		}
 
-<span class="fc" id="L93">		headerLabel.setText(&quot;Commit &quot; + entry.getCommitInfo().shortId() + &quot;: \&quot;&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L94">				+ firstLine(entry.getCommitInfo().message()) + &quot;\&quot; — &quot; //$NON-NLS-1$</span>
-<span class="fc" id="L95">				+ entry.getRuleCount() + &quot; rule(s)&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L97">		headerLabel.setText(&quot;Commit &quot; + entry.getCommitInfo().shortId() + &quot;: \&quot;&quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L98">				+ firstLine(entry.getCommitInfo().message()) + &quot;\&quot; — &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L99">				+ entry.getRuleCount() + &quot; rule(s)&quot;); //$NON-NLS-1$</span>
 
-<span class="fc" id="L97">		List&lt;CommitEvaluation&gt; evals = entry.getEvaluations();</span>
-<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		if (!evals.isEmpty()) {</span>
-<span class="fc" id="L99">			int index = 1;</span>
-<span class="fc bfc" id="L100" title="All 2 branches covered.">			for (CommitEvaluation eval : evals) {</span>
-<span class="pc bpc" id="L101" title="2 of 4 branches missed.">				if (eval.dslRule() != null &amp;&amp; !eval.dslRule().isBlank()) {</span>
-<span class="fc" id="L102">					createEvaluationWidget(content, eval, index++);</span>
+<span class="fc" id="L101">		List&lt;CommitEvaluation&gt; evals = entry.getEvaluations();</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">		if (!evals.isEmpty()) {</span>
+<span class="fc" id="L103">			int index = 1;</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">			for (CommitEvaluation eval : evals) {</span>
+<span class="pc bpc" id="L105" title="2 of 4 branches missed.">				if (eval.dslRule() != null &amp;&amp; !eval.dslRule().isBlank()) {</span>
+<span class="fc" id="L106">					createEvaluationWidget(content, eval, index++);</span>
 				}
 			}
-<span class="fc" id="L105">		} else {</span>
-<span class="nc" id="L106">			List&lt;InferredRule&gt; rules = entry.getInferredRules();</span>
-<span class="nc bnc" id="L107" title="All 2 branches missed.">			for (int i = 0; i &lt; rules.size(); i++) {</span>
-<span class="nc" id="L108">				createRuleWidget(content, rules.get(i), i + 1);</span>
+<span class="fc" id="L109">		} else {</span>
+<span class="nc" id="L110">			List&lt;InferredRule&gt; rules = entry.getInferredRules();</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">			for (int i = 0; i &lt; rules.size(); i++) {</span>
+<span class="nc" id="L112">				createRuleWidget(content, rules.get(i), i + 1);</span>
 			}
 		}
-<span class="fc" id="L111">		finishLayout();</span>
-<span class="fc" id="L112">	}</span>
+<span class="fc" id="L115">		finishLayout();</span>
+<span class="fc" id="L116">	}</span>
 
 	public List&lt;String&gt; getSelectedDslRules() {
-<span class="fc" id="L115">		List&lt;String&gt; selected = new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L116" title="2 of 4 branches missed.">		if (currentEntry == null || !currentEntry.hasRules()) {</span>
-<span class="nc" id="L117">			return selected;</span>
+<span class="fc" id="L119">		List&lt;String&gt; selected = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L120" title="2 of 4 branches missed.">		if (currentEntry == null || !currentEntry.hasRules()) {</span>
+<span class="nc" id="L121">			return selected;</span>
 		}
-<span class="fc" id="L119">		List&lt;CommitEvaluation&gt; evals = currentEntry.getEvaluations();</span>
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">		if (!evals.isEmpty()) {</span>
-<span class="fc" id="L121">			int checkIndex = 0;</span>
-<span class="fc bfc" id="L122" title="All 2 branches covered.">			for (CommitEvaluation eval : evals) {</span>
-<span class="pc bpc" id="L123" title="2 of 4 branches missed.">				if (eval.dslRule() != null &amp;&amp; !eval.dslRule().isBlank()) {</span>
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">					if (checkIndex &lt; ruleCheckboxes.size()</span>
-<span class="fc bfc" id="L125" title="All 2 branches covered.">							&amp;&amp; ruleCheckboxes.get(checkIndex).getSelection()) {</span>
-<span class="fc" id="L126">						selected.add(eval.dslRule());</span>
+<span class="fc" id="L123">		List&lt;CommitEvaluation&gt; evals = currentEntry.getEvaluations();</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">		if (!evals.isEmpty()) {</span>
+<span class="fc" id="L125">			int checkIndex = 0;</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">			for (CommitEvaluation eval : evals) {</span>
+<span class="pc bpc" id="L127" title="2 of 4 branches missed.">				if (eval.dslRule() != null &amp;&amp; !eval.dslRule().isBlank()) {</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">					if (checkIndex &lt; ruleCheckboxes.size()</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">							&amp;&amp; ruleCheckboxes.get(checkIndex).getSelection()</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">							&amp;&amp; validateDsl(eval.dslRule()).valid()) {</span>
+<span class="fc" id="L131">						selected.add(eval.dslRule());</span>
 					}
-<span class="fc" id="L128">					checkIndex++;</span>
+<span class="fc" id="L133">					checkIndex++;</span>
 				}
 			}
 		}
-<span class="fc" id="L132">		return selected;</span>
+<span class="fc" id="L137">		return selected;</span>
 	}
 
 	public List&lt;InferredRule&gt; getSelectedRules() {
-<span class="nc" id="L136">		List&lt;InferredRule&gt; selected = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L137" title="All 4 branches missed.">		if (currentEntry == null || !currentEntry.hasRules()) {</span>
-<span class="nc" id="L138">			return selected;</span>
+<span class="nc" id="L141">		List&lt;InferredRule&gt; selected = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L142" title="All 4 branches missed.">		if (currentEntry == null || !currentEntry.hasRules()) {</span>
+<span class="nc" id="L143">			return selected;</span>
 		}
-<span class="nc" id="L140">		List&lt;InferredRule&gt; rules = currentEntry.getInferredRules();</span>
-<span class="nc bnc" id="L141" title="All 4 branches missed.">		for (int i = 0; i &lt; ruleCheckboxes.size() &amp;&amp; i &lt; rules.size(); i++) {</span>
-<span class="nc bnc" id="L142" title="All 2 branches missed.">			if (ruleCheckboxes.get(i).getSelection()) {</span>
-<span class="nc" id="L143">				selected.add(rules.get(i));</span>
+<span class="nc" id="L145">		List&lt;InferredRule&gt; rules = currentEntry.getInferredRules();</span>
+<span class="nc bnc" id="L146" title="All 4 branches missed.">		for (int i = 0; i &lt; ruleCheckboxes.size() &amp;&amp; i &lt; rules.size(); i++) {</span>
+<span class="nc bnc" id="L147" title="All 4 branches missed.">			if (ruleCheckboxes.get(i).getSelection() &amp;&amp; validateDsl(asDsl(rules.get(i))).valid()) {</span>
+<span class="nc" id="L148">				selected.add(rules.get(i));</span>
 			}
 		}
-<span class="nc" id="L146">		return selected;</span>
+<span class="nc" id="L151">		return selected;</span>
 	}
 
 	private void createEvaluationWidget(Composite parent, CommitEvaluation eval, int index) {
-<span class="fc" id="L150">		Composite ruleComposite = new Composite(parent, SWT.BORDER);</span>
-<span class="fc" id="L151">		ruleComposite.setLayout(new GridLayout(2, false));</span>
-<span class="fc" id="L152">		ruleComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));</span>
+<span class="fc" id="L155">		Composite ruleComposite = new Composite(parent, SWT.BORDER);</span>
+<span class="fc" id="L156">		ruleComposite.setLayout(new GridLayout(2, false));</span>
+<span class="fc" id="L157">		ruleComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));</span>
 
-<span class="fc" id="L154">		Button checkbox = new Button(ruleComposite, SWT.CHECK);</span>
-<span class="fc" id="L155">		checkbox.setSelection(true);</span>
-<span class="pc bpc" id="L156" title="3 of 4 branches missed.">		String trafficIcon = switch (eval.trafficLight()) {</span>
-<span class="fc" id="L157">		case GREEN -&gt; &quot;\uD83D\uDFE2&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L158">		case YELLOW -&gt; &quot;\uD83D\uDFE1&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L159">		case RED -&gt; &quot;\uD83D\uDD34&quot;; //$NON-NLS-1$</span>
-<span class="nc" id="L160">		case NOT_APPLICABLE -&gt; &quot;\u2B55&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L159">		Button checkbox = new Button(ruleComposite, SWT.CHECK);</span>
+<span class="fc" id="L160">		ValidationResult validation = validateDsl(eval.dslRule());</span>
+<span class="fc" id="L161">		checkbox.setSelection(false);</span>
+<span class="fc" id="L162">		checkbox.setEnabled(validation.valid());</span>
+<span class="pc bpc" id="L163" title="3 of 4 branches missed.">		String trafficIcon = switch (eval.trafficLight()) {</span>
+<span class="fc" id="L164">		case GREEN -&gt; &quot;\uD83D\uDFE2&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L165">		case YELLOW -&gt; &quot;\uD83D\uDFE1&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L166">		case RED -&gt; &quot;\uD83D\uDD34&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L167">		case NOT_APPLICABLE -&gt; &quot;\u2B55&quot;; //$NON-NLS-1$</span>
 		};
-<span class="fc" id="L162">		checkbox.setText(&quot;Rule &quot; + index + &quot;  &quot; + trafficIcon + &quot;  &quot; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="pc bpc" id="L163" title="1 of 2 branches missed.">				+ (eval.category() != null ? eval.category() : &quot;&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L164">		checkbox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));</span>
-<span class="fc" id="L165">		ruleCheckboxes.add(checkbox);</span>
+<span class="fc" id="L169">		checkbox.setText(&quot;Rule &quot; + index + &quot;  AI assessment: &quot; + trafficIcon + &quot;  &quot; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">				+ (eval.category() != null ? eval.category() : &quot;&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L171">		checkbox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));</span>
+<span class="fc" id="L172">		ruleCheckboxes.add(checkbox);</span>
 
-<span class="pc bpc" id="L167" title="2 of 4 branches missed.">		if (eval.summary() != null &amp;&amp; !eval.summary().isBlank()) {</span>
-<span class="fc" id="L168">			Label summaryLabel = new Label(ruleComposite, SWT.WRAP);</span>
-<span class="fc" id="L169">			summaryLabel.setText(eval.summary());</span>
-<span class="fc" id="L170">			summaryLabel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));</span>
+<span class="pc bpc" id="L174" title="2 of 4 branches missed.">		if (eval.summary() != null &amp;&amp; !eval.summary().isBlank()) {</span>
+<span class="fc" id="L175">			Label summaryLabel = new Label(ruleComposite, SWT.WRAP);</span>
+<span class="fc" id="L176">			summaryLabel.setText(eval.summary());</span>
+<span class="fc" id="L177">			summaryLabel.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));</span>
 		}
 
-<span class="fc" id="L173">		StyledText ruleText = new StyledText(ruleComposite, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP | SWT.BORDER);</span>
-<span class="fc" id="L174">		ruleText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));</span>
-<span class="fc" id="L175">		ruleText.setText(eval.dslRule());</span>
-<span class="fc" id="L176">		ruleText.setEditable(false);</span>
+<span class="fc" id="L180">		StyledText ruleText = new StyledText(ruleComposite, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP | SWT.BORDER);</span>
+<span class="fc" id="L181">		ruleText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));</span>
+<span class="fc" id="L182">		ruleText.setText(eval.dslRule());</span>
+<span class="fc" id="L183">		ruleText.setEditable(false);</span>
 
-<span class="pc bpc" id="L178" title="1 of 2 branches missed.">		if (eval.dslValidationResult() != null) {</span>
-<span class="fc" id="L179">			Label validationLabel = new Label(ruleComposite, SWT.NONE);</span>
-<span class="pc bpc" id="L180" title="1 of 2 branches missed.">			String validationText = &quot;VALID&quot;.equals(eval.dslValidationResult()) //$NON-NLS-1$</span>
-<span class="fc" id="L181">					? &quot;\u2705 Valid DSL&quot; //$NON-NLS-1$</span>
-<span class="nc" id="L182">					: &quot;\u26A0\uFE0F &quot; + eval.dslValidationResult(); //$NON-NLS-1$</span>
-<span class="fc" id="L183">			validationLabel.setText(validationText);</span>
-<span class="fc" id="L184">			validationLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));</span>
-		}
+<span class="fc" id="L185">		createValidationLabels(ruleComposite, validation);</span>
 <span class="fc" id="L186">	}</span>
 
 	private void createRuleWidget(Composite parent, InferredRule rule, int index) {
@@ -191,36 +191,73 @@ public class InferredRuleDetailPanel extends Composite {
 <span class="nc" id="L191">		ruleComposite.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));</span>
 
 <span class="nc" id="L193">		Button checkbox = new Button(ruleComposite, SWT.CHECK);</span>
-<span class="nc" id="L194">		checkbox.setSelection(true);</span>
-<span class="nc" id="L195">		int confidencePercent = (int) (rule.confidence() * 100);</span>
-<span class="nc" id="L196">		checkbox.setText(&quot;Rule &quot; + index + &quot;:  Confidence: &quot; + confidencePercent + &quot;%&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="nc" id="L197">		checkbox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));</span>
-<span class="nc" id="L198">		ruleCheckboxes.add(checkbox);</span>
+<span class="nc" id="L194">		ValidationResult validation = validateDsl(asDsl(rule));</span>
+<span class="nc" id="L195">		checkbox.setSelection(false);</span>
+<span class="nc" id="L196">		checkbox.setEnabled(validation.valid());</span>
+<span class="nc" id="L197">		int confidencePercent = (int) (rule.confidence() * 100);</span>
+<span class="nc" id="L198">		checkbox.setText(&quot;Rule &quot; + index + &quot;:  Inference confidence: &quot; + confidencePercent + &quot;%&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="nc" id="L199">		checkbox.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));</span>
+<span class="nc" id="L200">		ruleCheckboxes.add(checkbox);</span>
 
-<span class="nc" id="L200">		StyledText patternText = new StyledText(ruleComposite, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP);</span>
-<span class="nc" id="L201">		patternText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));</span>
-<span class="nc" id="L202">		StringBuilder sb = new StringBuilder();</span>
-<span class="nc" id="L203">		sb.append(rule.sourcePattern()).append('\n');</span>
-<span class="nc" id="L204">		sb.append(&quot;=&gt; &quot;).append(rule.replacementPattern()); //$NON-NLS-1$</span>
-<span class="nc" id="L205">		patternText.setText(sb.toString());</span>
-<span class="nc" id="L206">		patternText.setEditable(false);</span>
-<span class="nc" id="L207">	}</span>
+<span class="nc" id="L202">		StyledText patternText = new StyledText(ruleComposite, SWT.READ_ONLY | SWT.MULTI | SWT.WRAP);</span>
+<span class="nc" id="L203">		patternText.setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1));</span>
+<span class="nc" id="L204">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L205">		sb.append(rule.sourcePattern()).append('\n');</span>
+<span class="nc" id="L206">		sb.append(&quot;=&gt; &quot;).append(rule.replacementPattern()); //$NON-NLS-1$</span>
+<span class="nc" id="L207">		patternText.setText(sb.toString());</span>
+<span class="nc" id="L208">		patternText.setEditable(false);</span>
+<span class="nc" id="L209">		createValidationLabels(ruleComposite, validation);</span>
+<span class="nc" id="L210">	}</span>
+
+	private static String asDsl(InferredRule rule) {
+<span class="nc" id="L213">		return rule.sourcePattern() + &quot;\n=&gt; &quot; + rule.replacementPattern() + &quot;\n;;&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+
+	/** Rechecks actual content; an inference provider's VALID flag is not evidence. */
+	private static ValidationResult validateDsl(String dsl) {
+		try {
+<span class="fc" id="L219">			var hint = new HintProgramParser().parseHintFile(dsl);</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">			if (hint.getRules().isEmpty()) {</span>
+<span class="fc" id="L221">				return new ValidationResult(false, &quot;No rules found&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc bfc" id="L223" title="All 2 branches covered.">			if (new PatternIndex(hint.getRules()).size() != hint.getRules().size()) {</span>
+<span class="fc" id="L224">				return new ValidationResult(false, &quot;A source pattern cannot be parsed by TriggerPattern&quot;); //$NON-NLS-1$</span>
+			}
+<span class="fc" id="L226">			return new ValidationResult(true, &quot;Language checked&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L227">		} catch (HintFileParser.HintParseException | RuntimeException e) {</span>
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">			return new ValidationResult(false, e.getMessage() == null ? &quot;Invalid DSL&quot; : e.getMessage()); //$NON-NLS-1$</span>
+		}
+	}
+
+	private static void createValidationLabels(Composite parent, ValidationResult validation) {
+<span class="fc" id="L233">		Label language = new Label(parent, SWT.WRAP);</span>
+<span class="fc bfc" id="L234" title="All 2 branches covered.">		language.setText(validation.valid() ? &quot;Draft — language checked&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L235">				: &quot;Draft — Language check failed: &quot; + validation.message()); //$NON-NLS-1$</span>
+<span class="fc" id="L236">		language.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));</span>
+<span class="fc" id="L237">		Label scope = new Label(parent, SWT.WRAP);</span>
+<span class="fc" id="L238">		scope.setText(&quot;Examples: not checked; project: not checked. Language checking does not establish behavioral safety.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L239">		scope.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));</span>
+<span class="fc" id="L240">		Label selection = new Label(parent, SWT.WRAP);</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">		selection.setText(validation.valid() ? &quot;Select explicitly to export this draft for review.&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L242">				: &quot;Correct the rule before exporting it as a project rule.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L243">		selection.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));</span>
+<span class="fc" id="L244">	}</span>
 
 	private void finishLayout() {
-<span class="fc" id="L210">		content.layout();</span>
-<span class="fc" id="L211">		scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));</span>
-<span class="fc" id="L212">	}</span>
+<span class="fc" id="L247">		content.layout();</span>
+<span class="fc" id="L248">		scrolled.setMinSize(content.computeSize(SWT.DEFAULT, SWT.DEFAULT));</span>
+<span class="fc" id="L249">	}</span>
 
 	private static String safeFailureMessage(String message) {
-<span class="nc bnc" id="L215" title="All 4 branches missed.">		return message == null || message.isBlank() ? &quot;unknown analysis error&quot; : message; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L252" title="All 4 branches missed.">		return message == null || message.isBlank() ? &quot;unknown analysis error&quot; : message; //$NON-NLS-1$</span>
 	}
 
 	private static String firstLine(String message) {
-<span class="pc bpc" id="L219" title="1 of 2 branches missed.">		if (message == null) {</span>
-<span class="nc" id="L220">			return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">		if (message == null) {</span>
+<span class="nc" id="L257">			return &quot;&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L222">		int nl = message.indexOf('\n');</span>
-<span class="pc bpc" id="L223" title="1 of 2 branches missed.">		return nl &gt; 0 ? message.substring(0, nl) : message;</span>
+<span class="fc" id="L259">		int nl = message.indexOf('\n');</span>
+<span class="pc bpc" id="L260" title="1 of 2 branches missed.">		return nl &gt; 0 ? message.substring(0, nl) : message;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -90,8 +90,8 @@ import java.util.regex.Pattern;
 <span class="fc bfc" id="L90" title="All 2 branches covered.">		for (int index= 0; index &lt; line.length();) {</span>
 <span class="fc bfc" id="L91" title="All 2 branches covered.">			if (inBlockComment) {</span>
 <span class="fc" id="L92">				int end= line.indexOf(&quot;*/&quot;, index); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L93" title="1 of 2 branches missed.">				if (end &lt; 0) {</span>
-<span class="nc" id="L94">					return new VisibleLine(visible.toString(), true);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">				if (end &lt; 0) {</span>
+<span class="fc" id="L94">					return new VisibleLine(visible.toString(), true);</span>
 				}
 <span class="fc" id="L96">				inBlockComment= false;</span>
 <span class="fc" id="L97">				index= end + 2;</span>

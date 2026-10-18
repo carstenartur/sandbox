@@ -44,29 +44,29 @@ final class HintStructuredActionPreprocessor {
 <span class="fc bfc" id="L44" title="All 2 branches covered.">		for (int lineIndex= 0; lineIndex &lt; lines.length; lineIndex++) {</span>
 <span class="fc" id="L45">			String line= lines[lineIndex];</span>
 <span class="fc" id="L46">			String trimmed= line.stripLeading();</span>
-<span class="pc bpc" id="L47" title="1 of 2 branches missed.">			if (inEmbeddedJava) {</span>
-<span class="nc" id="L48">				output.add(line);</span>
-<span class="nc bnc" id="L49" title="All 2 branches missed.">				if (trimmed.contains(&quot;?&gt;&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L50">					inEmbeddedJava= false;</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">			if (inEmbeddedJava) {</span>
+<span class="fc" id="L48">				output.add(line);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">				if (trimmed.contains(&quot;?&gt;&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L50">					inEmbeddedJava= false;</span>
 				}
 				continue;
 			}
-<span class="pc bpc" id="L54" title="1 of 2 branches missed.">			if (inBlockComment) {</span>
-<span class="nc" id="L55">				output.add(line);</span>
-<span class="nc bnc" id="L56" title="All 2 branches missed.">				if (trimmed.contains(&quot;*/&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L57">					inBlockComment= false;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">			if (inBlockComment) {</span>
+<span class="fc" id="L55">				output.add(line);</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">				if (trimmed.contains(&quot;*/&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L57">					inBlockComment= false;</span>
 				}
 				continue;
 			}
-<span class="pc bpc" id="L61" title="3 of 4 branches missed.">			if (trimmed.startsWith(&quot;&lt;?&quot;) &amp;&amp; !trimmed.contains(&quot;?&gt;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L62">				inEmbeddedJava= true;</span>
-<span class="nc" id="L63">				output.add(line);</span>
-<span class="nc" id="L64">				continue;</span>
+<span class="pc bpc" id="L61" title="1 of 4 branches missed.">			if (trimmed.startsWith(&quot;&lt;?&quot;) &amp;&amp; !trimmed.contains(&quot;?&gt;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L62">				inEmbeddedJava= true;</span>
+<span class="fc" id="L63">				output.add(line);</span>
+<span class="fc" id="L64">				continue;</span>
 			}
-<span class="pc bpc" id="L66" title="3 of 4 branches missed.">			if (trimmed.startsWith(&quot;/*&quot;) &amp;&amp; !trimmed.contains(&quot;*/&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L67">				inBlockComment= true;</span>
-<span class="nc" id="L68">				output.add(line);</span>
-<span class="nc" id="L69">				continue;</span>
+<span class="pc bpc" id="L66" title="1 of 4 branches missed.">			if (trimmed.startsWith(&quot;/*&quot;) &amp;&amp; !trimmed.contains(&quot;*/&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L67">				inBlockComment= true;</span>
+<span class="fc" id="L68">				output.add(line);</span>
+<span class="fc" id="L69">				continue;</span>
 			}
 <span class="fc bfc" id="L71" title="All 2 branches covered.">			if (!trimmed.startsWith(&quot;=&gt;!&quot;)) { //$NON-NLS-1$</span>
 <span class="fc" id="L72">				output.add(line);</span>

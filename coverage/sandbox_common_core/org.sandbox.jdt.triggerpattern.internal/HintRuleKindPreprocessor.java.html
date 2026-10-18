@@ -43,22 +43,22 @@ final class HintRuleKindPreprocessor {
 <span class="fc" id="L43">			String line= lines[index];</span>
 <span class="fc" id="L44">			String trimmed= line.stripLeading();</span>
 <span class="fc" id="L45">			boolean metadataVisible= true;</span>
-<span class="pc bpc" id="L46" title="1 of 2 branches missed.">			if (inEmbeddedJava) {</span>
-<span class="nc" id="L47">				metadataVisible= false;</span>
-<span class="nc bnc" id="L48" title="All 2 branches missed.">				if (trimmed.contains(&quot;?&gt;&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L49">					inEmbeddedJava= false;</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">			if (inEmbeddedJava) {</span>
+<span class="fc" id="L47">				metadataVisible= false;</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">				if (trimmed.contains(&quot;?&gt;&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L49">					inEmbeddedJava= false;</span>
 				}
-<span class="pc bpc" id="L51" title="1 of 2 branches missed.">			} else if (inBlockComment) {</span>
-<span class="nc" id="L52">				metadataVisible= false;</span>
-<span class="nc bnc" id="L53" title="All 2 branches missed.">				if (trimmed.contains(&quot;*/&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L54">					inBlockComment= false;</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">			} else if (inBlockComment) {</span>
+<span class="fc" id="L52">				metadataVisible= false;</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">				if (trimmed.contains(&quot;*/&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L54">					inBlockComment= false;</span>
 				}
-<span class="pc bpc" id="L56" title="1 of 2 branches missed.">			} else if (trimmed.startsWith(&quot;&lt;?&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L57">				metadataVisible= false;</span>
-<span class="nc bnc" id="L58" title="All 2 branches missed.">				inEmbeddedJava= !trimmed.contains(&quot;?&gt;&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L59" title="1 of 2 branches missed.">			} else if (trimmed.startsWith(&quot;/*&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L60">				metadataVisible= false;</span>
-<span class="nc bnc" id="L61" title="All 2 branches missed.">				inBlockComment= !trimmed.contains(&quot;*/&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">			} else if (trimmed.startsWith(&quot;&lt;?&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L57">				metadataVisible= false;</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">				inEmbeddedJava= !trimmed.contains(&quot;?&gt;&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">			} else if (trimmed.startsWith(&quot;/*&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L60">				metadataVisible= false;</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">				inBlockComment= !trimmed.contains(&quot;*/&quot;); //$NON-NLS-1$</span>
 <span class="fc bfc" id="L62" title="All 2 branches covered.">			} else if (trimmed.startsWith(&quot;//&quot;)) { //$NON-NLS-1$</span>
 <span class="fc" id="L63">				metadataVisible= false;</span>
 			}

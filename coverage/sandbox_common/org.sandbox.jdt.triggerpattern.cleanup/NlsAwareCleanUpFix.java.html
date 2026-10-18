@@ -12,34 +12,67 @@ package org.sandbox.jdt.triggerpattern.cleanup;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 
 /** Completes recorded NLS changes without replacing enclosing statements as raw text. */
 public class NlsAwareCleanUpFix extends CompilationUnitRewriteOperationsFixCore {
 
 	private final CompilationUnit root;
+	private final CompilationUnitRewriteOperation[] operations;
 
 	public NlsAwareCleanUpFix(String name, CompilationUnit root, CompilationUnitRewriteOperation[] operations) {
-<span class="fc" id="L24">		super(name, root, operations);</span>
-<span class="fc" id="L25">		this.root= root;</span>
-<span class="fc" id="L26">	}</span>
+<span class="fc" id="L27">		super(name, root, operations);</span>
+<span class="fc" id="L28">		this.root= root;</span>
+<span class="fc" id="L29">		this.operations= operations.clone();</span>
+<span class="fc" id="L30">	}</span>
+
+	/**
+	 * Runs the same production operations for a trial, allowing an idempotent
+	 * operation to produce no edit. JDT's ordinary fix API treats that as an error.
+	 */
+	public CompilationUnitChange createOptionalChange(IProgressMonitor monitor) throws CoreException {
+<span class="fc" id="L37">		EncodingSourceRewrite.clear(root);</span>
+<span class="fc" id="L38">		CompilationUnitChange change= null;</span>
+		try {
+<span class="fc" id="L40">			CompilationUnitRewrite rewrite= new CompilationUnitRewrite((ICompilationUnit) root.getJavaElement(), root);</span>
+<span class="fc" id="L41">			fLinkedProposalModel.clear();</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">			for (CompilationUnitRewriteOperation operation : operations) {</span>
+<span class="fc" id="L43">				org.sandbox.jdt.triggerpattern.api.SemanticRewritePlanContext.checkCanceled();</span>
+<span class="fc" id="L44">				operation.rewriteAST(rewrite, fLinkedProposalModel);</span>
+			}
+<span class="fc" id="L46">			change= rewrite.createChange(getDisplayString(), true, monitor);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">			if (change != null) {</span>
+<span class="fc" id="L48">				EncodingSourceRewrite.complete(root, change);</span>
+			}
+<span class="fc" id="L50">			return change;</span>
+<span class="nc" id="L51">		} catch (CoreException | RuntimeException exception) {</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">			if (change != null) {</span>
+<span class="nc" id="L53">				change.dispose();</span>
+			}
+<span class="nc" id="L55">			throw exception;</span>
+		} finally {
+<span class="fc" id="L57">			EncodingSourceRewrite.clear(root);</span>
+		}
+	}
 
 	@Override
 	public CompilationUnitChange createChange(IProgressMonitor monitor) throws CoreException {
-<span class="fc" id="L30">		EncodingSourceRewrite.clear(root);</span>
-<span class="fc" id="L31">		CompilationUnitChange change= null;</span>
+<span class="fc" id="L63">		EncodingSourceRewrite.clear(root);</span>
+<span class="fc" id="L64">		CompilationUnitChange change= null;</span>
 		try {
-<span class="fc" id="L33">			change= super.createChange(monitor);</span>
-<span class="fc" id="L34">			EncodingSourceRewrite.complete(root, change);</span>
-<span class="fc" id="L35">			return change;</span>
-<span class="fc" id="L36">		} catch (CoreException | RuntimeException exception) {</span>
-<span class="pc bpc" id="L37" title="1 of 2 branches missed.">			if (change != null) {</span>
-<span class="nc" id="L38">				change.dispose();</span>
+<span class="fc" id="L66">			change= super.createChange(monitor);</span>
+<span class="fc" id="L67">			EncodingSourceRewrite.complete(root, change);</span>
+<span class="fc" id="L68">			return change;</span>
+<span class="fc" id="L69">		} catch (CoreException | RuntimeException exception) {</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">			if (change != null) {</span>
+<span class="nc" id="L71">				change.dispose();</span>
 			}
-<span class="fc" id="L40">			throw exception;</span>
+<span class="fc" id="L73">			throw exception;</span>
 		} finally {
-<span class="fc" id="L42">			EncodingSourceRewrite.clear(root);</span>
+<span class="fc" id="L75">			EncodingSourceRewrite.clear(root);</span>
 		}
 	}
 }

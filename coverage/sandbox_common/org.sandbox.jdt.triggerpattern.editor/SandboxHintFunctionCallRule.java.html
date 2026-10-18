@@ -30,7 +30,7 @@ final class SandboxHintFunctionCallRule implements IRule {
 <span class="fc" id="L30">		int identifierLength= 0;</span>
 <span class="fc" id="L31">		int character= scanner.read();</span>
 <span class="fc" id="L32">		consumed++;</span>
-<span class="pc bpc" id="L33" title="1 of 2 branches missed.">		if (character == ICharacterScanner.EOF</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">		if (character == ICharacterScanner.EOF</span>
 <span class="fc bfc" id="L34" title="All 2 branches covered.">				|| !Character.isJavaIdentifierStart((char) character)) {</span>
 <span class="fc" id="L35">			unread(scanner, consumed);</span>
 <span class="fc" id="L36">			return Token.UNDEFINED;</span>

@@ -97,8 +97,8 @@ public final class PatternIndex {
 <span class="fc bfc" id="L97" title="All 2 branches covered.">			ASTNode patternNode = sourcePattern.getKind() == PatternKind.TYPE_DECLARATION</span>
 <span class="fc" id="L98">					? typeParser.parse(sourcePattern.getValue())</span>
 <span class="fc" id="L99">					: parser.parse(sourcePattern);</span>
-<span class="pc bpc" id="L100" title="1 of 2 branches missed.">			if (patternNode == null) {</span>
-<span class="nc" id="L101">				continue;</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">			if (patternNode == null) {</span>
+<span class="fc" id="L101">				continue;</span>
 			}
 
 <span class="fc" id="L104">			PatternKind kind = sourcePattern.getKind();</span>

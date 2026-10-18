@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>StringCleanupGuards.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">StringCleanupGuards.java</span></div><h1>StringCleanupGuards.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import java.util.Set;
+
+import org.eclipse.jdt.core.dom.ASTMatcher;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.Comment;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.sandbox.jdt.triggerpattern.api.GuardContext;
+
+/**
+ * Binding-dependent safety contracts for the two JDT reference String cleanups.
+ *
+ * &lt;p&gt;These are deliberately narrower than JDT's AST rewrite implementations:
+ * text replacements decline internal comments, and substring accepts stable
+ * local/literal receivers and passive local expressions for the start index.
+ * Unknown or recovered bindings never authorize a rewrite.&lt;/p&gt;
+ */
+final class StringCleanupGuards {
+
+	private static final String STRING= &quot;java.lang.String&quot;; //$NON-NLS-1$
+<span class="fc" id="L45">	private static final Set&lt;String&gt; STRIP_METHODS= Set.of(&quot;strip&quot;, &quot;stripLeading&quot;, &quot;stripTrailing&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+
+	private StringCleanupGuards() {
+	}
+
+	static boolean substringSafe(GuardContext context, Object... arguments) {
+<span class="pc bpc" id="L51" title="1 of 4 branches missed.">		if (arguments.length != 0 || hasInternalComment(context)</span>
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">				|| !(context.getMatchedNode() instanceof MethodInvocation substring)</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">				|| !stringMethod(context, &quot;stringSubstringSafe&quot;, substring, &quot;substring&quot;, &quot;int&quot;, &quot;int&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$</span>
+<span class="fc" id="L54">			return false;</span>
+		}
+<span class="fc" id="L56">		Expression receiver= unparenthesize(substring.getExpression());</span>
+<span class="fc" id="L57">		Expression start= (Expression) substring.arguments().get(0);</span>
+<span class="fc" id="L58">		Expression end= unparenthesize((Expression) substring.arguments().get(1));</span>
+<span class="pc bpc" id="L59" title="1 of 2 branches missed.">		if (!(end instanceof MethodInvocation length)</span>
+<span class="pc bpc" id="L60" title="1 of 2 branches missed.">				|| !stringMethod(context, &quot;stringSubstringSafe&quot;, length, &quot;length&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L61" title="All 4 branches covered.">				|| !isStableLocalReceiver(receiver) || !isStableExpression(start)) {</span>
+<span class="fc" id="L62">			return false;</span>
+		}
+<span class="fc" id="L64">		Expression endReceiver= unparenthesize(length.getExpression());</span>
+<span class="pc bpc" id="L65" title="2 of 4 branches missed.">		if (receiver instanceof SimpleName name &amp;&amp; endReceiver instanceof SimpleName endName) {</span>
+<span class="fc" id="L66">			IBinding binding= name.resolveBinding();</span>
+<span class="pc bpc" id="L67" title="2 of 4 branches missed.">			return binding != null &amp;&amp; binding.isEqualTo(endName.resolveBinding());</span>
+		}
+<span class="nc bnc" id="L69" title="All 4 branches missed.">		return endReceiver != null &amp;&amp; receiver.subtreeMatch(new ASTMatcher(), endReceiver);</span>
+	}
+
+	static boolean isBlankSafe(GuardContext context, Object... arguments) {
+<span class="pc bpc" id="L73" title="1 of 4 branches missed.">		if (arguments.length != 0 || hasInternalComment(context)) {</span>
+<span class="fc" id="L74">			return false;</span>
+		}
+<span class="fc" id="L76">		ASTNode node= context.getMatchedNode();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (node instanceof MethodInvocation invocation) {</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">			if (stringMethod(context, &quot;stringIsBlankSafe&quot;, invocation, &quot;isEmpty&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L79">				return stringStrip(context, invocation.getExpression());</span>
+			}
+<span class="fc bfc" id="L81" title="All 2 branches covered.">			if (stringMethod(context, &quot;stringIsBlankSafe&quot;, invocation, &quot;equals&quot;, &quot;java.lang.Object&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
+<span class="fc" id="L82">				Expression argument= (Expression) invocation.arguments().get(0);</span>
+<span class="pc bpc" id="L83" title="1 of 4 branches missed.">				return (isEmptyLiteral(invocation.getExpression()) &amp;&amp; stringStrip(context, argument))</span>
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">						|| (isEmptyLiteral(argument) &amp;&amp; stringStrip(context, invocation.getExpression()));</span>
+			}
+		}
+<span class="pc bpc" id="L87" title="1 of 4 branches missed.">		if (node instanceof InfixExpression infix &amp;&amp; !infix.hasExtendedOperands()</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">				&amp;&amp; isSupportedLengthComparison(infix)</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">				&amp;&amp; unparenthesize(infix.getLeftOperand()) instanceof MethodInvocation length</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">				&amp;&amp; stringMethod(context, &quot;stringIsBlankSafe&quot;, length, &quot;length&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">			if (infix.getParent() instanceof LambdaExpression</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">					&amp;&amp; (infix.getOperator() == InfixExpression.Operator.EQUALS</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">							|| infix.getOperator() == InfixExpression.Operator.LESS_EQUALS</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">							|| infix.getOperator() == InfixExpression.Operator.LESS)) {</span>
+				// A bare isBlank() call would also make the lambda void-compatible.
+<span class="fc" id="L96">				return false;</span>
+			}
+<span class="fc" id="L98">			return stringStrip(context, length.getExpression());</span>
+		}
+<span class="fc" id="L100">		return false;</span>
+	}
+
+	private static boolean isSupportedLengthComparison(InfixExpression infix) {
+<span class="fc" id="L104">		Object constant= infix.getRightOperand().resolveConstantExpressionValue();</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">		if (Integer.valueOf(0).equals(constant)) {</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">			return infix.getOperator() == InfixExpression.Operator.EQUALS</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">					|| infix.getOperator() == InfixExpression.Operator.LESS_EQUALS</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">					|| infix.getOperator() == InfixExpression.Operator.NOT_EQUALS</span>
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">					|| infix.getOperator() == InfixExpression.Operator.GREATER;</span>
+		}
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">		return Integer.valueOf(1).equals(constant)</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">				&amp;&amp; (infix.getOperator() == InfixExpression.Operator.LESS</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">						|| infix.getOperator() == InfixExpression.Operator.GREATER_EQUALS);</span>
+	}
+
+	private static boolean stringStrip(GuardContext context, Expression expression) {
+<span class="fc" id="L117">		Expression unwrapped= unparenthesize(expression);</span>
+<span class="fc" id="L118">		return unwrapped instanceof MethodInvocation strip</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">				&amp;&amp; STRIP_METHODS.contains(strip.getName().getIdentifier())</span>
+<span class="pc bpc" id="L120" title="2 of 4 branches missed.">				&amp;&amp; stringMethod(context, &quot;stringIsBlankSafe&quot;, strip, strip.getName().getIdentifier()); //$NON-NLS-1$</span>
+	}
+
+	private static boolean stringMethod(GuardContext context, String guard,
+			MethodInvocation invocation, String name, String... parameterTypes) {
+<span class="fc bfc" id="L125" title="All 2 branches covered.">		if (!name.equals(invocation.getName().getIdentifier())</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">				|| invocation.arguments().size() != parameterTypes.length) {</span>
+<span class="fc" id="L127">			return false;</span>
+		}
+<span class="fc" id="L129">		IMethodBinding binding= invocation.resolveMethodBinding();</span>
+<span class="pc bpc" id="L130" title="2 of 6 branches missed.">		if (binding == null || binding.isRecovered() || binding.getDeclaringClass() == null</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">				|| binding.getDeclaringClass().isRecovered()) {</span>
+<span class="fc" id="L132">			context.markUnknown(guard, &quot;Cannot resolve String.&quot; + name + &quot; method signature&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L133">			return false;</span>
+		}
+<span class="fc bfc" id="L135" title="All 2 branches covered.">		if (!STRING.equals(binding.getDeclaringClass().getErasure().getQualifiedName())</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">				|| !name.equals(binding.getName())) {</span>
+<span class="fc" id="L137">			return false;</span>
+		}
+<span class="fc" id="L139">		ITypeBinding[] parameters= binding.getParameterTypes();</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">		if (parameters.length != parameterTypes.length) {</span>
+<span class="nc" id="L141">			return false;</span>
+		}
+<span class="fc bfc" id="L143" title="All 2 branches covered.">		for (int i= 0; i &lt; parameters.length; i++) {</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">			if (parameters[i].isRecovered()) {</span>
+<span class="nc" id="L145">				context.markUnknown(guard, &quot;Cannot resolve String.&quot; + name + &quot; parameter type&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L146">				return false;</span>
+			}
+<span class="pc bpc" id="L148" title="1 of 2 branches missed.">			if (!parameterTypes[i].equals(parameters[i].getErasure().getQualifiedName())) {</span>
+<span class="nc" id="L149">				return false;</span>
+			}
+		}
+<span class="fc" id="L152">		return true;</span>
+	}
+
+	private static boolean isEmptyLiteral(Expression expression) {
+<span class="pc bpc" id="L156" title="1 of 4 branches missed.">		return unparenthesize(expression) instanceof StringLiteral literal &amp;&amp; literal.getLiteralValue().isEmpty();</span>
+	}
+
+	private static boolean isStableLocalReceiver(Expression expression) {
+<span class="pc bpc" id="L160" title="1 of 6 branches missed.">		return expression instanceof StringLiteral || expression instanceof SimpleName name &amp;&amp; isLocal(name);</span>
+	}
+
+	/** Declines calls, fields, arrays, allocations and writes across the removed read. */
+	private static boolean isStableExpression(Expression expression) {
+<span class="fc" id="L165">		Expression node= unparenthesize(expression);</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L167">			return false;</span>
+		}
+<span class="fc bfc" id="L169" title="All 2 branches covered.">		if (node instanceof SimpleName name) {</span>
+<span class="fc" id="L170">			return isLocal(name);</span>
+		}
+<span class="pc bpc" id="L172" title="1 of 4 branches missed.">		if (node.getNodeType() == ASTNode.NUMBER_LITERAL || node.getNodeType() == ASTNode.CHARACTER_LITERAL</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">				|| node.getNodeType() == ASTNode.BOOLEAN_LITERAL) {</span>
+<span class="fc" id="L174">			return true;</span>
+		}
+<span class="fc bfc" id="L176" title="All 2 branches covered.">		if (node instanceof InfixExpression infix) {</span>
+<span class="pc bpc" id="L177" title="2 of 4 branches missed.">			if (!isStableExpression(infix.getLeftOperand()) || !isStableExpression(infix.getRightOperand())) {</span>
+<span class="nc" id="L178">				return false;</span>
+			}
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">			for (Object operand : infix.extendedOperands()) {</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">				if (!isStableExpression((Expression) operand)) {</span>
+<span class="nc" id="L182">					return false;</span>
+				}
+<span class="nc" id="L184">			}</span>
+<span class="fc" id="L185">			return true;</span>
+		}
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">		if (node instanceof PrefixExpression prefix) {</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">			return prefix.getOperator() != PrefixExpression.Operator.INCREMENT</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">					&amp;&amp; prefix.getOperator() != PrefixExpression.Operator.DECREMENT</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">					&amp;&amp; isStableExpression(prefix.getOperand());</span>
+		}
+<span class="pc bpc" id="L192" title="1 of 2 branches missed.">		if (node instanceof ConditionalExpression conditional) {</span>
+<span class="nc bnc" id="L193" title="All 2 branches missed.">			return isStableExpression(conditional.getExpression())</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">					&amp;&amp; isStableExpression(conditional.getThenExpression())</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">					&amp;&amp; isStableExpression(conditional.getElseExpression());</span>
+		}
+<span class="pc bnc" id="L197" title="All 2 branches missed.">		return node instanceof CastExpression cast &amp;&amp; cast.getType().isPrimitiveType()</span>
+<span class="pc bpc" id="L198" title="3 of 4 branches missed.">				&amp;&amp; isStableExpression(cast.getExpression());</span>
+	}
+
+	private static boolean isLocal(SimpleName name) {
+<span class="pc bpc" id="L202" title="2 of 4 branches missed.">		return name.resolveBinding() instanceof IVariableBinding variable &amp;&amp; !variable.isRecovered()</span>
+<span class="pc bpc" id="L203" title="1 of 4 branches missed.">				&amp;&amp; !variable.isField() &amp;&amp; !variable.isEnumConstant();</span>
+	}
+
+	private static Expression unparenthesize(Expression expression) {
+<span class="fc" id="L207">		Expression result= expression;</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">		while (result instanceof ParenthesizedExpression parenthesized) {</span>
+<span class="nc" id="L209">			result= parenthesized.getExpression();</span>
+		}
+<span class="fc" id="L211">		return result;</span>
+	}
+
+	/** Text substitution cannot relocate comments inside the replaced AST range. */
+	private static boolean hasInternalComment(GuardContext context) {
+<span class="fc" id="L216">		ASTNode node= context.getMatchedNode();</span>
+<span class="pc bpc" id="L217" title="2 of 4 branches missed.">		if (node == null || context.getCompilationUnit() == null</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">				|| context.getCompilationUnit().getCommentList() == null) {</span>
+<span class="nc" id="L219">			return true;</span>
+		}
+<span class="fc" id="L221">		int start= node.getStartPosition();</span>
+<span class="fc" id="L222">		int end= start + node.getLength();</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">		for (Object value : context.getCompilationUnit().getCommentList()) {</span>
+<span class="fc" id="L224">			Comment comment= (Comment) value;</span>
+<span class="fc bfc" id="L225" title="All 4 branches covered.">			if (comment.getStartPosition() &gt;= start &amp;&amp; comment.getStartPosition() &lt; end) {</span>
+<span class="fc" id="L226">				return true;</span>
+			}
+<span class="fc" id="L228">		}</span>
+<span class="fc" id="L229">		return false;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

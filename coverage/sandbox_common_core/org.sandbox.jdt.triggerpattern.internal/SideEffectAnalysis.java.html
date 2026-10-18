@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SideEffectAnalysis.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.internal</a> &gt; <span class="el_source">SideEffectAnalysis.java</span></div><h1>SideEffectAnalysis.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import java.lang.reflect.Modifier;
+
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ArrayAccess;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
+import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.CharacterLiteral;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.FieldAccess;
+import org.eclipse.jdt.core.dom.IBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.InstanceofExpression;
+import org.eclipse.jdt.core.dom.NullLiteral;
+import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PatternInstanceofExpression;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.SuperFieldAccess;
+import org.eclipse.jdt.core.dom.TextBlock;
+import org.eclipse.jdt.core.dom.ThisExpression;
+import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.TypePattern;
+import org.sandbox.jdt.triggerpattern.api.GuardContext;
+
+/**
+ * A deliberately limited expression-effects proof, shared by guard evaluation.
+ * It does not prove that reads are stable, non-throwing or safe to move.
+ * Type cases stay separate because JDT binding recovery can crash on grouped
+ * patterns when their types are unresolved.
+ */
+final class SideEffectAnalysis {
+
+	private SideEffectAnalysis() {
+	}
+
+	/**
+	 * Proves a non-throwing, stable value read only. This says nothing about the
+	 * mutability of the object it denotes or conversions introduced by a rewrite.
+	 */
+	static boolean isStableValue(Expression expression, GuardContext context) {
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">		if ((expression.getFlags() &amp; (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {</span>
+<span class="nc" id="L63">			context.markUnknown(&quot;isStableValue&quot;, &quot;Recovered or malformed expression&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L64">			return false;</span>
+		}
+<span class="pc bpc" id="L66" title="2 of 9 branches missed.">		return switch (expression) {</span>
+<span class="fc" id="L67">		case BooleanLiteral _ -&gt; true;</span>
+<span class="nc" id="L68">		case CharacterLiteral _ -&gt; true;</span>
+<span class="fc" id="L69">		case NullLiteral _ -&gt; true;</span>
+<span class="fc" id="L70">		case NumberLiteral _ -&gt; true;</span>
+<span class="fc" id="L71">		case StringLiteral _ -&gt; true;</span>
+<span class="nc" id="L72">		case TextBlock _ -&gt; true;</span>
+<span class="fc" id="L73">		case ParenthesizedExpression parenthesized -&gt; isStableValue(parenthesized.getExpression(), context);</span>
+<span class="fc" id="L74">		case SimpleName name -&gt; {</span>
+<span class="fc" id="L75">			IBinding binding= name.resolveBinding();</span>
+<span class="pc bpc" id="L76" title="2 of 6 branches missed.">			if (binding == null || binding.isRecovered()</span>
+<span class="fc" id="L77">					|| binding instanceof IVariableBinding variable</span>
+<span class="pc bpc" id="L78" title="2 of 4 branches missed.">						&amp;&amp; (variable.getType() == null || variable.getType().isRecovered())) {</span>
+<span class="fc" id="L79">				context.markUnknown(&quot;isStableValue&quot;, &quot;Variable binding unavailable: &quot; + name); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L80">				yield false;</span>
+			}
+<span class="fc bfc" id="L82" title="All 2 branches covered.">			yield binding instanceof IVariableBinding variable &amp;&amp; !variable.isField()</span>
+<span class="pc bpc" id="L83" title="1 of 4 branches missed.">					&amp;&amp; Modifier.isFinal(variable.getModifiers());</span>
+		}
+<span class="fc" id="L85">		default -&gt; false;</span>
+		};
+	}
+
+	static boolean hasNoSideEffect(Expression expression, GuardContext context) {
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">		if ((expression.getFlags() &amp; (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {</span>
+<span class="nc" id="L91">			return unknown(context, expression);</span>
+		}
+<span class="pc bpc" id="L93" title="5 of 23 branches missed.">		return switch (expression) {</span>
+<span class="nc" id="L94">		case BooleanLiteral _ -&gt; true;</span>
+<span class="fc" id="L95">		case CharacterLiteral _ -&gt; true;</span>
+<span class="fc" id="L96">		case NullLiteral _ -&gt; true;</span>
+<span class="fc" id="L97">		case NumberLiteral _ -&gt; true;</span>
+<span class="fc" id="L98">		case StringLiteral _ -&gt; true;</span>
+<span class="nc" id="L99">		case TextBlock _ -&gt; true;</span>
+<span class="nc" id="L100">		case ThisExpression _ -&gt; true;</span>
+<span class="fc" id="L101">		case TypeLiteral _ -&gt; true;</span>
+<span class="fc" id="L102">		case SimpleName name -&gt; safeRead(name.resolveBinding(), context, name);</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">		case QualifiedName name -&gt; safeRead(name.resolveBinding(), context, name)</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">				&amp;&amp; hasNoSideEffect(name.getQualifier(), context);</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		case FieldAccess field -&gt; safeRead(field.resolveFieldBinding(), context, field)</span>
+<span class="pc bnc" id="L106" title="All 2 branches missed.">				&amp;&amp; hasNoSideEffect(field.getExpression(), context);</span>
+<span class="nc" id="L107">		case SuperFieldAccess field -&gt; safeRead(field.resolveFieldBinding(), context, field);</span>
+<span class="fc" id="L108">		case ParenthesizedExpression parenthesized -&gt; hasNoSideEffect(parenthesized.getExpression(), context);</span>
+<span class="nc" id="L109">		case CastExpression cast -&gt; hasNoSideEffect(cast.getExpression(), context);</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">		case ArrayAccess access -&gt; hasNoSideEffect(access.getArray(), context)</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">				&amp;&amp; hasNoSideEffect(access.getIndex(), context);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">		case PrefixExpression prefix -&gt; prefix.getOperator() != PrefixExpression.Operator.INCREMENT</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">				&amp;&amp; prefix.getOperator() != PrefixExpression.Operator.DECREMENT</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">				&amp;&amp; hasNoSideEffect(prefix.getOperand(), context);</span>
+<span class="fc" id="L115">		case InfixExpression infix -&gt; safeInfix(infix, context);</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">		case ConditionalExpression conditional -&gt; hasNoSideEffect(conditional.getExpression(), context)</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">				&amp;&amp; hasNoSideEffect(conditional.getThenExpression(), context)</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">				&amp;&amp; hasNoSideEffect(conditional.getElseExpression(), context);</span>
+<span class="fc" id="L119">		case InstanceofExpression instanceOf -&gt; hasNoSideEffect(instanceOf.getLeftOperand(), context);</span>
+<span class="fc" id="L120">		case PatternInstanceofExpression instanceOf -&gt; {</span>
+			boolean typePattern;
+<span class="fc bfc" id="L122" title="All 2 branches covered.">			if (instanceOf.getAST().apiLevel() &gt;= AST.JLS21) {</span>
+<span class="fc" id="L123">				typePattern= instanceOf.getPattern() instanceof TypePattern;</span>
+			} else {
+				// Older DOMs expose record patterns as synthetic, unbound declarations.
+<span class="fc" id="L126">				IVariableBinding variable= instanceOf.getRightOperand().resolveBinding();</span>
+<span class="pc bpc" id="L127" title="1 of 4 branches missed.">				typePattern= variable != null &amp;&amp; !variable.isRecovered();</span>
+			}
+<span class="fc bfc" id="L129" title="All 2 branches covered.">			if (!typePattern) {</span>
+				// Record deconstruction invokes accessors, including in nested patterns.
+<span class="fc" id="L131">				yield unknown(context, instanceOf);</span>
+			}
+<span class="fc" id="L133">			yield hasNoSideEffect(instanceOf.getLeftOperand(), context);</span>
+		}
+<span class="fc" id="L135">		case Assignment _ -&gt; false;</span>
+<span class="fc" id="L136">		case PostfixExpression _ -&gt; false;</span>
+		// Calls (including constructors), writes, allocation and unsupported syntax
+		// never become proof merely because their outer node is not a method call.
+		// Unknown purity must remain unknown under guard negation as well.
+<span class="fc" id="L140">		default -&gt; unknown(context, expression);</span>
+		};
+	}
+
+	private static boolean safeRead(IBinding binding, GuardContext context, ASTNode node) {
+<span class="pc bpc" id="L145" title="1 of 4 branches missed.">		if (binding == null || binding.isRecovered()) {</span>
+<span class="fc" id="L146">			return unknown(context, node);</span>
+		}
+<span class="fc bfc" id="L148" title="All 2 branches covered.">		if (binding instanceof IVariableBinding variable) {</span>
+<span class="fc" id="L149">			ITypeBinding type= variable.getType();</span>
+<span class="pc bpc" id="L150" title="2 of 4 branches missed.">			if (type == null || type.isRecovered()) {</span>
+<span class="nc" id="L151">				return unknown(context, node);</span>
+			}
+<span class="fc bfc" id="L153" title="All 2 branches covered.">			if (Modifier.isVolatile(variable.getModifiers())) {</span>
+<span class="fc" id="L154">				return false;</span>
+			}
+<span class="fc bfc" id="L156" title="All 4 branches covered.">			if (Modifier.isStatic(variable.getModifiers()) &amp;&amp; variable.getConstantValue() == null) {</span>
+<span class="fc" id="L157">				return unknown(context, node);</span>
+			}
+<span class="fc" id="L159">			return true;</span>
+		}
+		// Qualified static names also traverse their package/type qualifier. Merely
+		// naming that qualifier does not initialize a class.
+<span class="pc bpc" id="L163" title="3 of 4 branches missed.">		return binding.getKind() == IBinding.TYPE || binding.getKind() == IBinding.PACKAGE;</span>
+	}
+
+	private static boolean safeInfix(InfixExpression expression, GuardContext context) {
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">		if (!safeOperand(expression.getLeftOperand(), expression.getOperator(), context)</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">				|| !safeOperand(expression.getRightOperand(), expression.getOperator(), context)) {</span>
+<span class="fc" id="L169">			return false;</span>
+		}
+<span class="fc bfc" id="L171" title="All 2 branches covered.">		for (Object operand : expression.extendedOperands()) {</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">			if (!safeOperand((Expression) operand, expression.getOperator(), context)) {</span>
+<span class="fc" id="L173">				return false;</span>
+			}
+<span class="nc" id="L175">		}</span>
+<span class="fc" id="L176">		return true;</span>
+	}
+
+	private static boolean safeOperand(Expression operand, InfixExpression.Operator operator,
+			GuardContext context) {
+<span class="fc bfc" id="L181" title="All 2 branches covered.">		if (!hasNoSideEffect(operand, context)) {</span>
+<span class="fc" id="L182">			return false;</span>
+		}
+<span class="fc bfc" id="L184" title="All 2 branches covered.">		if (operator != InfixExpression.Operator.PLUS) {</span>
+<span class="fc" id="L185">			return true;</span>
+		}
+		// String concatenation can invoke an arbitrary Object.toString(), even
+		// without an explicit invocation node in the source.
+<span class="pc bpc" id="L189" title="4 of 12 branches missed.">		if (operand instanceof NullLiteral || operand instanceof NumberLiteral</span>
+				|| operand instanceof BooleanLiteral || operand instanceof CharacterLiteral
+				|| operand instanceof StringLiteral || operand instanceof TextBlock) {
+<span class="fc" id="L192">			return true;</span>
+		}
+<span class="fc" id="L194">		ITypeBinding type= operand.resolveTypeBinding();</span>
+<span class="pc bpc" id="L195" title="2 of 4 branches missed.">		if (type == null || type.isRecovered()) {</span>
+<span class="nc" id="L196">			return unknown(context, operand);</span>
+		}
+<span class="fc bfc" id="L198" title="All 4 branches covered.">		return type.isPrimitive() || &quot;java.lang.String&quot;.equals(type.getQualifiedName()) //$NON-NLS-1$</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">				|| unknown(context, operand);</span>
+	}
+
+	private static boolean unknown(GuardContext context, ASTNode node) {
+<span class="fc" id="L203">		context.markUnknown(&quot;hasNoSideEffect&quot;, &quot;Effects could not be proven absent: &quot; + node); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L204">		return false;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

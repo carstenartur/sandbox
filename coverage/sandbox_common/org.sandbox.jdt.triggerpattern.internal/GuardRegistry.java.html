@@ -43,7 +43,8 @@ import org.sandbox.jdt.triggerpattern.api.GuardFunction;
  *   &lt;tr&gt;&lt;td&gt;{@code matchesNone}&lt;/td&gt;&lt;td&gt;Returns {@code true} if a placeholder's text matches none of the given literals, or if unbound and no literals given&lt;/td&gt;&lt;/tr&gt;
  *   &lt;tr&gt;&lt;td&gt;{@code referencedIn}&lt;/td&gt;&lt;td&gt;Checks if a variable is referenced within another expression&lt;/td&gt;&lt;/tr&gt;
  *   &lt;tr&gt;&lt;td&gt;{@code elementKindMatches}&lt;/td&gt;&lt;td&gt;Checks if a binding is of a specific element kind (FIELD, METHOD, LOCAL_VARIABLE, PARAMETER, TYPE)&lt;/td&gt;&lt;/tr&gt;
- *   &lt;tr&gt;&lt;td&gt;{@code hasNoSideEffect}&lt;/td&gt;&lt;td&gt;Checks if an expression has no side effects&lt;/td&gt;&lt;/tr&gt;
+ *   &lt;tr&gt;&lt;td&gt;{@code hasNoSideEffect}&lt;/td&gt;&lt;td&gt;Recursively excludes effects; does not prove exception freedom or stable values&lt;/td&gt;&lt;/tr&gt;
+ *   &lt;tr&gt;&lt;td&gt;{@code isStableValue}&lt;/td&gt;&lt;td&gt;Accepts only literals or resolved final local/parameter reads&lt;/td&gt;&lt;/tr&gt;
  *   &lt;tr&gt;&lt;td&gt;{@code sourceVersionGE}&lt;/td&gt;&lt;td&gt;Checks if the source version is greater than or equal to a given version&lt;/td&gt;&lt;/tr&gt;
  *   &lt;tr&gt;&lt;td&gt;{@code sourceVersionLE}&lt;/td&gt;&lt;td&gt;Checks if the source version is less than or equal to a given version&lt;/td&gt;&lt;/tr&gt;
  *   &lt;tr&gt;&lt;td&gt;{@code sourceVersionBetween}&lt;/td&gt;&lt;td&gt;Checks if the source version is within a given range&lt;/td&gt;&lt;/tr&gt;
@@ -65,15 +66,15 @@ public final class GuardRegistry {
 	
 	private static final String GUARDS_EXTENSION_POINT_ID = &quot;org.sandbox.jdt.triggerpattern.guards&quot;; //$NON-NLS-1$
 	
-<span class="fc" id="L68">	private static final GuardRegistry INSTANCE = new GuardRegistry();</span>
+<span class="fc" id="L69">	private static final GuardRegistry INSTANCE = new GuardRegistry();</span>
 	
-<span class="fc" id="L70">	private final Map&lt;String, GuardFunction&gt; guards = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L71">	private final Map&lt;String, GuardFunction&gt; guards = new ConcurrentHashMap&lt;&gt;();</span>
 	
-<span class="fc" id="L72">	private GuardRegistry() {</span>
-<span class="fc" id="L73">		BuiltInGuardRegistration.registerAll(guards);</span>
+<span class="fc" id="L73">	private GuardRegistry() {</span>
+<span class="fc" id="L74">		BuiltInGuardRegistration.registerAll(guards);</span>
 		// Register this registry as the resolver for GuardExpression evaluation
-<span class="fc" id="L75">		org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder.setResolver(this::get);</span>
-<span class="fc" id="L76">	}</span>
+<span class="fc" id="L76">		org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder.setResolver(this::get);</span>
+<span class="fc" id="L77">	}</span>
 	
 	/**
 	 * Returns the singleton instance.
@@ -81,7 +82,7 @@ public final class GuardRegistry {
 	 * @return the guard registry instance
 	 */
 	public static GuardRegistry getInstance() {
-<span class="fc" id="L84">		return INSTANCE;</span>
+<span class="fc" id="L85">		return INSTANCE;</span>
 	}
 	
 	/**
@@ -91,8 +92,8 @@ public final class GuardRegistry {
 	 * @param fn the guard function
 	 */
 	public void register(String name, GuardFunction fn) {
-<span class="fc" id="L94">		guards.put(name, fn);</span>
-<span class="fc" id="L95">	}</span>
+<span class="fc" id="L95">		guards.put(name, fn);</span>
+<span class="fc" id="L96">	}</span>
 	
 	/**
 	 * Removes a guard function by name.
@@ -101,8 +102,8 @@ public final class GuardRegistry {
 	 * @since 1.5.0
 	 */
 	public void unregister(String name) {
-<span class="fc" id="L104">		guards.remove(name);</span>
-<span class="fc" id="L105">	}</span>
+<span class="fc" id="L105">		guards.remove(name);</span>
+<span class="fc" id="L106">	}</span>
 	
 	/**
 	 * Returns the guard function registered under the given name.
@@ -111,7 +112,7 @@ public final class GuardRegistry {
 	 * @return the guard function, or {@code null} if not found
 	 */
 	public GuardFunction get(String name) {
-<span class="fc" id="L114">		return guards.get(name);</span>
+<span class="fc" id="L115">		return guards.get(name);</span>
 	}
 	
 	/**
@@ -121,7 +122,7 @@ public final class GuardRegistry {
 	 * @since 1.3.6
 	 */
 	public Set&lt;String&gt; getRegisteredNames() {
-<span class="fc" id="L124">		return java.util.Collections.unmodifiableSet(guards.keySet());</span>
+<span class="fc" id="L125">		return java.util.Collections.unmodifiableSet(guards.keySet());</span>
 	}
 	
 	/**
@@ -140,46 +141,46 @@ public final class GuardRegistry {
 	 * @since 1.3.6
 	 */
 	public List&lt;String&gt; loadExtensions() {
-<span class="fc" id="L143">		List&lt;String&gt; loaded = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L144">		List&lt;String&gt; loaded = new ArrayList&lt;&gt;();</span>
 		
-<span class="fc" id="L145">		IExtensionRegistry registry = Platform.getExtensionRegistry();</span>
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (registry == null) {</span>
-<span class="fc" id="L147">			return loaded;</span>
+<span class="fc" id="L146">		IExtensionRegistry registry = Platform.getExtensionRegistry();</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">		if (registry == null) {</span>
+<span class="fc" id="L148">			return loaded;</span>
 		}
 		
-<span class="nc" id="L150">		IConfigurationElement[] elements = registry.getConfigurationElementsFor(GUARDS_EXTENSION_POINT_ID);</span>
+<span class="nc" id="L151">		IConfigurationElement[] elements = registry.getConfigurationElementsFor(GUARDS_EXTENSION_POINT_ID);</span>
 		
-<span class="nc bnc" id="L152" title="All 2 branches missed.">		for (IConfigurationElement element : elements) {</span>
-<span class="nc bnc" id="L153" title="All 2 branches missed.">			if (!&quot;guard&quot;.equals(element.getName())) { //$NON-NLS-1$</span>
-<span class="nc" id="L154">				continue;</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">		for (IConfigurationElement element : elements) {</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">			if (!&quot;guard&quot;.equals(element.getName())) { //$NON-NLS-1$</span>
+<span class="nc" id="L155">				continue;</span>
 			}
-<span class="nc" id="L156">			String name = element.getAttribute(&quot;name&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L157" title="All 4 branches missed.">			if (name == null || name.isEmpty()) {</span>
-<span class="nc" id="L158">				continue;</span>
+<span class="nc" id="L157">			String name = element.getAttribute(&quot;name&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L158" title="All 4 branches missed.">			if (name == null || name.isEmpty()) {</span>
+<span class="nc" id="L159">				continue;</span>
 			}
 			try {
-<span class="nc" id="L161">				Bundle bundle = Platform.getBundle(element.getContributor().getName());</span>
-<span class="nc bnc" id="L162" title="All 2 branches missed.">				if (bundle == null) {</span>
-<span class="nc" id="L163">					continue;</span>
+<span class="nc" id="L162">				Bundle bundle = Platform.getBundle(element.getContributor().getName());</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">				if (bundle == null) {</span>
+<span class="nc" id="L164">					continue;</span>
 				}
-<span class="nc" id="L165">				String className = element.getAttribute(&quot;class&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L166" title="All 2 branches missed.">				if (className == null) {</span>
-<span class="nc" id="L167">					continue;</span>
+<span class="nc" id="L166">				String className = element.getAttribute(&quot;class&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">				if (className == null) {</span>
+<span class="nc" id="L168">					continue;</span>
 				}
-<span class="nc" id="L169">				Class&lt;?&gt; guardClass = bundle.loadClass(className);</span>
-<span class="nc" id="L170">				Object instance = guardClass.getDeclaredConstructor().newInstance();</span>
-<span class="nc bnc" id="L171" title="All 2 branches missed.">				if (instance instanceof GuardFunction guardFunction) {</span>
-<span class="nc" id="L172">					register(name, guardFunction);</span>
-<span class="nc" id="L173">					loaded.add(name);</span>
+<span class="nc" id="L170">				Class&lt;?&gt; guardClass = bundle.loadClass(className);</span>
+<span class="nc" id="L171">				Object instance = guardClass.getDeclaredConstructor().newInstance();</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">				if (instance instanceof GuardFunction guardFunction) {</span>
+<span class="nc" id="L173">					register(name, guardFunction);</span>
+<span class="nc" id="L174">					loaded.add(name);</span>
 				}
-<span class="nc" id="L175">			} catch (Exception e) {</span>
-<span class="nc" id="L176">				ILog log = Platform.getLog(GuardRegistry.class);</span>
-<span class="nc" id="L177">				log.log(Status.warning(</span>
-<span class="nc" id="L178">						&quot;Failed to load guard function from extension: &quot; + name, e)); //$NON-NLS-1$</span>
+<span class="nc" id="L176">			} catch (Exception e) {</span>
+<span class="nc" id="L177">				ILog log = Platform.getLog(GuardRegistry.class);</span>
+<span class="nc" id="L178">				log.log(Status.warning(</span>
+<span class="nc" id="L179">						&quot;Failed to load guard function from extension: &quot; + name, e)); //$NON-NLS-1$</span>
 			}
 		}
 		
-<span class="nc" id="L182">		return loaded;</span>
+<span class="nc" id="L183">		return loaded;</span>
 	}
 	
 }

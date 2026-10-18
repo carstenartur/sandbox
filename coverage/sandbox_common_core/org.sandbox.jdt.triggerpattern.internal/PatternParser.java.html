@@ -386,7 +386,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 	private MethodDeclaration parseMethodDeclaration(String methodSnippet) {
 		// Normalize the snippet: add empty body if not present
 <span class="fc" id="L388">		String normalizedSnippet = methodSnippet.trim();</span>
-<span class="pc bpc" id="L389" title="1 of 4 branches missed.">		if (!normalizedSnippet.endsWith(&quot;}&quot;) &amp;&amp; !normalizedSnippet.endsWith(&quot;;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L389" title="All 4 branches covered.">		if (!normalizedSnippet.endsWith(&quot;}&quot;) &amp;&amp; !normalizedSnippet.endsWith(&quot;;&quot;)) { //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L390">			normalizedSnippet = normalizedSnippet + &quot; {}&quot;; //$NON-NLS-1$</span>
 		}
 		

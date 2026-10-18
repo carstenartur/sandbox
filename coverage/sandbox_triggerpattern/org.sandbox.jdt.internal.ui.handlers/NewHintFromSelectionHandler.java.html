@@ -48,69 +48,47 @@ import org.sandbox.jdt.internal.ui.wizard.NewSandboxHintFileWizard;
 		}
 
 <span class="nc" id="L50">		NewSandboxHintFileWizard wizard = new NewSandboxHintFileWizard();</span>
-		// Normalize multiline selection: trim and take only the first non-blank line
-		// since the source pattern field is single-line
-<span class="nc" id="L53">		String snippet = normalizeSelection(textSelection.getText());</span>
-<span class="nc" id="L54">		wizard.setInitialCodeSnippet(snippet);</span>
+<span class="nc" id="L51">		wizard.setInitialCodeSnippet(textSelection.getText());</span>
 
-<span class="nc" id="L56">		IStructuredSelection resourceSelection = getResourceSelection(event);</span>
-<span class="nc" id="L57">		wizard.init(PlatformUI.getWorkbench(), resourceSelection);</span>
+<span class="nc" id="L53">		IStructuredSelection resourceSelection = getResourceSelection(event);</span>
+<span class="nc" id="L54">		wizard.init(PlatformUI.getWorkbench(), resourceSelection);</span>
 
-<span class="nc" id="L59">		WizardDialog dialog = new WizardDialog(</span>
-<span class="nc" id="L60">				HandlerUtil.getActiveShell(event), wizard);</span>
-<span class="nc" id="L61">		dialog.open();</span>
+<span class="nc" id="L56">		WizardDialog dialog = new WizardDialog(</span>
+<span class="nc" id="L57">				HandlerUtil.getActiveShell(event), wizard);</span>
+<span class="nc" id="L58">		dialog.open();</span>
 
-<span class="nc" id="L63">		return null;</span>
+<span class="nc" id="L60">		return null;</span>
 	}
 
 	/**
 	 * Extracts the current text selection from the active editor.
 	 */
 	private static ITextSelection getTextSelection(ExecutionEvent event) {
-<span class="nc" id="L70">		IEditorPart editor = HandlerUtil.getActiveEditor(event);</span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">		if (editor instanceof ITextEditor textEditor) {</span>
-<span class="nc" id="L72">			ISelection sel = textEditor.getSelectionProvider().getSelection();</span>
-<span class="nc bnc" id="L73" title="All 2 branches missed.">			if (sel instanceof ITextSelection textSel) {</span>
-<span class="nc" id="L74">				return textSel;</span>
+<span class="nc" id="L67">		IEditorPart editor = HandlerUtil.getActiveEditor(event);</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">		if (editor instanceof ITextEditor textEditor) {</span>
+<span class="nc" id="L69">			ISelection sel = textEditor.getSelectionProvider().getSelection();</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">			if (sel instanceof ITextSelection textSel) {</span>
+<span class="nc" id="L71">				return textSel;</span>
 			}
 		}
-<span class="nc" id="L77">		return null;</span>
-	}
-
-	/**
-	 * Normalizes a potentially multiline text selection into a single line
-	 * suitable for the source pattern field. Trims whitespace and takes
-	 * the first non-blank line.
-	 */
-	private static String normalizeSelection(String text) {
-<span class="nc bnc" id="L86" title="All 2 branches missed.">		if (text == null) {</span>
-<span class="nc" id="L87">			return &quot;&quot;; //$NON-NLS-1$</span>
-		}
-<span class="nc" id="L89">		String[] lines = text.split(&quot;\\R&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L90" title="All 2 branches missed.">		for (String line : lines) {</span>
-<span class="nc" id="L91">			String trimmed = line.trim();</span>
-<span class="nc bnc" id="L92" title="All 2 branches missed.">			if (!trimmed.isEmpty()) {</span>
-<span class="nc" id="L93">				return trimmed;</span>
-			}
-		}
-<span class="nc" id="L96">		return &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L74">		return null;</span>
 	}
 
 	/**
 	 * Builds a structured selection from the resource of the active editor.
 	 */
 	private static IStructuredSelection getResourceSelection(ExecutionEvent event) {
-<span class="nc" id="L103">		IEditorPart editor = HandlerUtil.getActiveEditor(event);</span>
-<span class="nc bnc" id="L104" title="All 2 branches missed.">		if (editor != null) {</span>
-<span class="nc" id="L105">			IEditorInput input = editor.getEditorInput();</span>
-<span class="nc bnc" id="L106" title="All 2 branches missed.">			if (input != null) {</span>
-<span class="nc" id="L107">				IResource resource = input.getAdapter(IResource.class);</span>
-<span class="nc bnc" id="L108" title="All 2 branches missed.">				if (resource != null) {</span>
-<span class="nc" id="L109">					return new StructuredSelection(resource);</span>
+<span class="nc" id="L81">		IEditorPart editor = HandlerUtil.getActiveEditor(event);</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">		if (editor != null) {</span>
+<span class="nc" id="L83">			IEditorInput input = editor.getEditorInput();</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">			if (input != null) {</span>
+<span class="nc" id="L85">				IResource resource = input.getAdapter(IResource.class);</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">				if (resource != null) {</span>
+<span class="nc" id="L87">					return new StructuredSelection(resource);</span>
 				}
 			}
 		}
-<span class="nc" id="L113">		return StructuredSelection.EMPTY;</span>
+<span class="nc" id="L91">		return StructuredSelection.EMPTY;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

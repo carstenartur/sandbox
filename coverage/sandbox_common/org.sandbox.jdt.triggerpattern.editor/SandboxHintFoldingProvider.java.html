@@ -54,24 +54,24 @@ public final class SandboxHintFoldingProvider {
 	 * @param viewer the projection viewer
 	 */
 	public static void updateFolding(ProjectionViewer viewer) {
-<span class="nc bnc" id="L57" title="All 2 branches missed.">		if (viewer == null) {</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">		if (viewer == null) {</span>
 <span class="nc" id="L58">			return;</span>
 		}
-<span class="nc" id="L60">		ProjectionAnnotationModel model = viewer.getProjectionAnnotationModel();</span>
-<span class="nc bnc" id="L61" title="All 2 branches missed.">		if (model == null) {</span>
+<span class="fc" id="L60">		ProjectionAnnotationModel model = viewer.getProjectionAnnotationModel();</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">		if (model == null) {</span>
 <span class="nc" id="L62">			return;</span>
 		}
-<span class="nc" id="L64">		IDocument document = viewer.getDocument();</span>
-<span class="nc bnc" id="L65" title="All 2 branches missed.">		if (document == null) {</span>
+<span class="fc" id="L64">		IDocument document = viewer.getDocument();</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">		if (document == null) {</span>
 <span class="nc" id="L66">			return;</span>
 		}
 
-<span class="nc" id="L69">		List&lt;Position&gt; newPositions = computeFoldingPositions(document);</span>
+<span class="fc" id="L69">		List&lt;Position&gt; newPositions = computeFoldingPositions(document);</span>
 
 		// Collect existing annotations for differential update
-<span class="nc" id="L72">		Map&lt;Annotation, Position&gt; deletions = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L73">		Iterator&lt;Annotation&gt; iter = model.getAnnotationIterator();</span>
-<span class="nc bnc" id="L74" title="All 2 branches missed.">		while (iter.hasNext()) {</span>
+<span class="fc" id="L72">		Map&lt;Annotation, Position&gt; deletions = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L73">		Iterator&lt;Annotation&gt; iter = model.getAnnotationIterator();</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">		while (iter.hasNext()) {</span>
 <span class="nc" id="L75">			Annotation annotation = iter.next();</span>
 <span class="nc bnc" id="L76" title="All 2 branches missed.">			if (annotation instanceof ProjectionAnnotation) {</span>
 <span class="nc" id="L77">				deletions.put(annotation, model.getPosition(annotation));</span>
@@ -79,45 +79,45 @@ public final class SandboxHintFoldingProvider {
 		}
 
 		// Build additions
-<span class="nc" id="L82">		Map&lt;Annotation, Position&gt; additions = new HashMap&lt;&gt;();</span>
-<span class="nc bnc" id="L83" title="All 2 branches missed.">		for (Position pos : newPositions) {</span>
-<span class="nc" id="L84">			additions.put(new ProjectionAnnotation(), pos);</span>
+<span class="fc" id="L82">		Map&lt;Annotation, Position&gt; additions = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		for (Position pos : newPositions) {</span>
+<span class="fc" id="L84">			additions.put(new ProjectionAnnotation(), pos);</span>
 		}
 
-<span class="nc" id="L87">		model.modifyAnnotations(</span>
-<span class="nc" id="L88">				deletions.keySet().toArray(new Annotation[0]),</span>
-<span class="nc" id="L89">				additions,</span>
-<span class="nc" id="L90">				null);</span>
-<span class="nc" id="L91">	}</span>
+<span class="fc" id="L87">		model.modifyAnnotations(</span>
+<span class="fc" id="L88">				deletions.keySet().toArray(new Annotation[0]),</span>
+<span class="fc" id="L89">				additions,</span>
+<span class="fc" id="L90">				null);</span>
+<span class="fc" id="L91">	}</span>
 
 	/**
 	 * Computes the foldable positions from document partitions.
 	 */
 	private static List&lt;Position&gt; computeFoldingPositions(IDocument document) {
-<span class="nc" id="L97">		List&lt;Position&gt; positions = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L97">		List&lt;Position&gt; positions = new ArrayList&lt;&gt;();</span>
 		try {
-<span class="nc" id="L99">			ITypedRegion[] partitions = document.computePartitioning(0, document.getLength());</span>
-<span class="nc bnc" id="L100" title="All 2 branches missed.">			for (ITypedRegion partition : partitions) {</span>
-<span class="nc" id="L101">				String type = partition.getType();</span>
-<span class="nc bnc" id="L102" title="All 2 branches missed.">				if (SandboxHintPartitionScanner.JAVA_CODE.equals(type)</span>
-<span class="nc bnc" id="L103" title="All 2 branches missed.">						|| SandboxHintPartitionScanner.COMMENT.equals(type)) {</span>
+<span class="fc" id="L99">			ITypedRegion[] partitions = document.computePartitioning(0, document.getLength());</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">			for (ITypedRegion partition : partitions) {</span>
+<span class="fc" id="L101">				String type = partition.getType();</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">				if (SandboxHintPartitionScanner.JAVA_CODE.equals(type)</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">						|| SandboxHintPartitionScanner.COMMENT.equals(type)) {</span>
 					// Only fold regions that span multiple lines
-<span class="nc" id="L105">					int startLine = document.getLineOfOffset(partition.getOffset());</span>
-<span class="nc" id="L106">					int endOffset = partition.getOffset() + partition.getLength();</span>
-<span class="nc" id="L107">					int endLine = document.getLineOfOffset(Math.min(endOffset, document.getLength() - 1));</span>
-<span class="nc bnc" id="L108" title="All 2 branches missed.">					if (endLine &gt; startLine) {</span>
-<span class="nc" id="L109">						IRegion startLineInfo = document.getLineInformation(startLine);</span>
-<span class="nc" id="L110">						IRegion endLineInfo = document.getLineInformation(endLine);</span>
-<span class="nc" id="L111">						int foldStart = startLineInfo.getOffset();</span>
-<span class="nc" id="L112">						int foldEnd = endLineInfo.getOffset() + endLineInfo.getLength();</span>
-<span class="nc" id="L113">						positions.add(new Position(foldStart, foldEnd - foldStart));</span>
+<span class="fc" id="L105">					int startLine = document.getLineOfOffset(partition.getOffset());</span>
+<span class="fc" id="L106">					int endOffset = partition.getOffset() + partition.getLength();</span>
+<span class="fc" id="L107">					int endLine = document.getLineOfOffset(Math.min(endOffset, document.getLength() - 1));</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">					if (endLine &gt; startLine) {</span>
+<span class="fc" id="L109">						IRegion startLineInfo = document.getLineInformation(startLine);</span>
+<span class="fc" id="L110">						IRegion endLineInfo = document.getLineInformation(endLine);</span>
+<span class="fc" id="L111">						int foldStart = startLineInfo.getOffset();</span>
+<span class="fc" id="L112">						int foldEnd = endLineInfo.getOffset() + endLineInfo.getLength();</span>
+<span class="fc" id="L113">						positions.add(new Position(foldStart, foldEnd - foldStart));</span>
 					}
 				}
 			}
-<span class="nc" id="L117">		} catch (BadLocationException e) {</span>
+<span class="pc" id="L117">		} catch (BadLocationException e) {</span>
 			// ignore — return partial results
 		}
-<span class="nc" id="L120">		return positions;</span>
+<span class="fc" id="L120">		return positions;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

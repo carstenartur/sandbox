@@ -166,8 +166,8 @@ public final class RuleMatchDiagnostics {
 <span class="fc" id="L166">				.filter(match -&gt; selected(match, selectionOffset, selectionLength))</span>
 <span class="fc" id="L167">				.forEach(match -&gt; candidates.add(Map.entry(rule, match))));</span>
 <span class="fc" id="L168">		candidates.sort(Comparator.comparingInt(entry -&gt; entry.getValue().getOffset()));</span>
-<span class="pc bpc" id="L169" title="1 of 2 branches missed.">		if (candidates.isEmpty()) {</span>
-<span class="nc" id="L170">			return List.of();</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">		if (candidates.isEmpty()) {</span>
+<span class="fc" id="L170">			return List.of();</span>
 		}
 <span class="fc" id="L172">		List&lt;TransformationResult&gt; transformations= processor.process(cu, compilerOptions, plan);</span>
 <span class="pc bpc" id="L173" title="1 of 4 branches missed.">		boolean requiredBindings= hintFile.getBindingPolicy() == HintBindingPolicy.REQUIRED || !plan.isEmpty();</span>
@@ -297,7 +297,7 @@ public final class RuleMatchDiagnostics {
 <span class="fc bfc" id="L297" title="All 2 branches covered.">			if (binding.getValue() instanceof ASTNode node) {</span>
 <span class="fc" id="L298">				details.add(bindingDetail(binding.getKey(), node, source));</span>
 <span class="pc bpc" id="L299" title="1 of 2 branches missed.">			} else if (binding.getValue() instanceof List&lt;?&gt; nodes) {</span>
-<span class="pc bpc" id="L300" title="1 of 4 branches missed.">				for (int i= 0; i &lt; nodes.size() &amp;&amp; details.size() &lt; MAX_ENTRIES; i++) {</span>
+<span class="fc bfc" id="L300" title="All 4 branches covered.">				for (int i= 0; i &lt; nodes.size() &amp;&amp; details.size() &lt; MAX_ENTRIES; i++) {</span>
 <span class="pc bpc" id="L301" title="1 of 2 branches missed.">					if (nodes.get(i) instanceof ASTNode node) {</span>
 <span class="fc" id="L302">						details.add(bindingDetail(binding.getKey() + &quot;[&quot; + i + &quot;]&quot;, node, source)); //$NON-NLS-1$ //$NON-NLS-2$</span>
 					}
@@ -308,12 +308,12 @@ public final class RuleMatchDiagnostics {
 	}
 
 	private static BindingDetail bindingDetail(String name, ASTNode node, String source) {
-<span class="pc bpc" id="L311" title="2 of 5 branches missed.">		ITypeBinding type= switch (node) {</span>
+<span class="pc bpc" id="L311" title="1 of 5 branches missed.">		ITypeBinding type= switch (node) {</span>
 <span class="fc" id="L312">		case AbstractTypeDeclaration value -&gt; value.resolveBinding();</span>
 <span class="fc" id="L313">		case Name value -&gt; value.resolveTypeBinding();</span>
 <span class="fc" id="L314">		case Expression value -&gt; value.resolveTypeBinding();</span>
 <span class="nc" id="L315">		case Type value -&gt; value.resolveBinding();</span>
-<span class="nc" id="L316">		default -&gt; null;</span>
+<span class="fc" id="L316">		default -&gt; null;</span>
 <span class="fc" id="L317">		};</span>
 <span class="pc bpc" id="L318" title="1 of 4 branches missed.">		String excerpt= &quot;$this&quot;.equals(name) &amp;&amp; node instanceof AbstractTypeDeclaration enclosing //$NON-NLS-1$</span>
 <span class="pc bpc" id="L319" title="1 of 4 branches missed.">				? &quot;enclosing type &quot; + clip(type == null || type.isRecovered() ? enclosing.getName().getIdentifier() //$NON-NLS-1$</span>
@@ -325,10 +325,10 @@ public final class RuleMatchDiagnostics {
 	}
 
 	private static IMethodBinding resolveMethod(ASTNode node) {
-<span class="pc bpc" id="L328" title="1 of 4 branches missed.">		return switch (node) {</span>
+<span class="fc bfc" id="L328" title="All 4 branches covered.">		return switch (node) {</span>
 <span class="fc" id="L329">		case MethodInvocation invocation -&gt; invocation.resolveMethodBinding();</span>
 <span class="fc" id="L330">		case ClassInstanceCreation creation -&gt; creation.resolveConstructorBinding();</span>
-<span class="nc" id="L331">		case MethodDeclaration declaration -&gt; declaration.resolveBinding();</span>
+<span class="fc" id="L331">		case MethodDeclaration declaration -&gt; declaration.resolveBinding();</span>
 <span class="fc" id="L332">		default -&gt; null;</span>
 		};
 	}
@@ -343,11 +343,11 @@ public final class RuleMatchDiagnostics {
 <span class="pc bpc" id="L343" title="1 of 2 branches missed.">		text.append(declaringClass == null ? &quot;?&quot; : declaringClass.getErasure().getQualifiedName()) //$NON-NLS-1$</span>
 <span class="fc" id="L344">				.append('#').append(declaration.getName()).append('(');</span>
 <span class="fc" id="L345">		ITypeBinding[] parameters= declaration.getParameterTypes();</span>
-<span class="pc bpc" id="L346" title="3 of 4 branches missed.">		for (int i= 0; i &lt; parameters.length &amp;&amp; !text.isFull(); i++) {</span>
-<span class="nc bnc" id="L347" title="All 2 branches missed.">			if (i &gt; 0) {</span>
-<span class="nc" id="L348">				text.append(&quot;, &quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L346" title="1 of 4 branches missed.">		for (int i= 0; i &lt; parameters.length &amp;&amp; !text.isFull(); i++) {</span>
+<span class="fc bfc" id="L347" title="All 2 branches covered.">			if (i &gt; 0) {</span>
+<span class="fc" id="L348">				text.append(&quot;, &quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L350">			text.append(parameters[i].getQualifiedName());</span>
+<span class="fc" id="L350">			text.append(parameters[i].getQualifiedName());</span>
 		}
 <span class="fc" id="L352">		return text.append(')').toString();</span>
 	}

@@ -66,10 +66,10 @@ public class PlaceholderRule implements IRule {
 				}
 <span class="nc" id="L67">				return Token.UNDEFINED;</span>
 			}
-<span class="pc bpc" id="L69" title="1 of 2 branches missed.">			if (c == '$') {</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">			if (c == '$') {</span>
 				// Variadic: $name$
-<span class="nc bnc" id="L71" title="All 2 branches missed.">				if (hasNameChars) {</span>
-<span class="nc" id="L72">					return variadicToken;</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">				if (hasNameChars) {</span>
+<span class="fc" id="L72">					return variadicToken;</span>
 				}
 				// Just &quot;$$&quot; - not a valid placeholder
 <span class="nc bnc" id="L75" title="All 2 branches missed.">				for (int i = 0; i &lt; length; i++) {</span>

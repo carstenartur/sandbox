@@ -52,8 +52,8 @@ public class TriggerPatternQuickAssistProcessor implements IQuickAssistProcessor
 <span class="fc" id="L52">	private final TriggerPatternEngine engine = new TriggerPatternEngine();</span>
 
 	public TriggerPatternQuickAssistProcessor() {
-<span class="nc" id="L55">		this(REGISTRY);</span>
-<span class="nc" id="L56">	}</span>
+<span class="fc" id="L55">		this(REGISTRY);</span>
+<span class="fc" id="L56">	}</span>
 
 <span class="fc" id="L58">	TriggerPatternQuickAssistProcessor(HintRegistry registry) {</span>
 <span class="fc" id="L59">		this.registry = Objects.requireNonNull(registry);</span>
@@ -77,8 +77,8 @@ public class TriggerPatternQuickAssistProcessor implements IQuickAssistProcessor
 		// JDT's invocation AST already represents this editor context and normally
 		// includes bindings. Reuse it before falling back to a resolved parse.
 <span class="fc" id="L79">		CompilationUnit cu = context.getASTRoot();</span>
-<span class="pc bpc" id="L80" title="1 of 2 branches missed.">		if (cu == null) {</span>
-<span class="nc" id="L81">			cu = getCompilationUnit(icu);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">		if (cu == null) {</span>
+<span class="fc" id="L81">			cu = getCompilationUnit(icu);</span>
 		}
 <span class="pc bpc" id="L83" title="1 of 2 branches missed.">		if (cu == null) {</span>
 <span class="nc" id="L84">			return null;</span>
@@ -121,8 +121,8 @@ public class TriggerPatternQuickAssistProcessor implements IQuickAssistProcessor
 <span class="fc" id="L121">						Object result = hint.invoke(hintContext);</span>
 						
 						// Convert result to proposals
-<span class="pc bpc" id="L124" title="1 of 2 branches missed.">						if (result instanceof IJavaCompletionProposal) {</span>
-<span class="nc" id="L125">							proposals.add((IJavaCompletionProposal) result);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">						if (result instanceof IJavaCompletionProposal) {</span>
+<span class="fc" id="L125">							proposals.add((IJavaCompletionProposal) result);</span>
 <span class="pc bpc" id="L126" title="1 of 2 branches missed.">						} else if (result instanceof List) {</span>
 							@SuppressWarnings(&quot;unchecked&quot;)
 <span class="nc" id="L128">							List&lt;IJavaCompletionProposal&gt; list = (List&lt;IJavaCompletionProposal&gt;) result;</span>
@@ -137,17 +137,17 @@ public class TriggerPatternQuickAssistProcessor implements IQuickAssistProcessor
 			}
 		}
 		
-<span class="pc bpc" id="L140" title="1 of 2 branches missed.">		return proposals.isEmpty() ? null : proposals.toArray(new IJavaCompletionProposal[0]);</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">		return proposals.isEmpty() ? null : proposals.toArray(new IJavaCompletionProposal[0]);</span>
 	}
 	
 	/**
 	 * Parses the compilation unit.
 	 */
 	private CompilationUnit getCompilationUnit(ICompilationUnit icu) {
-<span class="nc" id="L147">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
-<span class="nc" id="L148">		parser.setSource(icu);</span>
-<span class="nc" id="L149">		parser.setResolveBindings(true);</span>
-<span class="nc" id="L150">		return (CompilationUnit) parser.createAST(null);</span>
+<span class="fc" id="L147">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L148">		parser.setSource(icu);</span>
+<span class="fc" id="L149">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L150">		return (CompilationUnit) parser.createAST(null);</span>
 	}
 	
 	/**

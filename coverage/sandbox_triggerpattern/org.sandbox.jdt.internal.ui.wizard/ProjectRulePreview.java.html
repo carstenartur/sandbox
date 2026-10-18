@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ProjectRulePreview.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.wizard</a> &gt; <span class="el_source">ProjectRulePreview.java</span></div><h1>ProjectRulePreview.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.wizard;
+
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.ltk.ui.refactoring.RefactoringWizard;
+import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
+import org.eclipse.ltk.ui.refactoring.UserInputWizardPage;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
+
+/** Shared entry point for real project trials from the wizard and hint editor. */
+public final class ProjectRulePreview {
+
+	private ProjectRulePreview() {
+	}
+
+	public static void open(Shell shell, IJavaProject project, String dsl) {
+<span class="fc" id="L26">		ProjectRuleRefactoring refactoring= new ProjectRuleRefactoring(project, dsl);</span>
+<span class="fc" id="L27">		RefactoringWizard wizard= new RefactoringWizard(refactoring,</span>
+<span class="fc" id="L28">				RefactoringWizard.DIALOG_BASED_USER_INTERFACE | RefactoringWizard.PREVIEW_EXPAND_FIRST_NODE</span>
+						| RefactoringWizard.CHECK_INITIAL_CONDITIONS_ON_OPEN) {
+			@Override
+			protected void addUserInputPages() {
+<span class="fc" id="L32">				addPage(new UserInputWizardPage(&quot;candidate-explanations&quot;) { //$NON-NLS-1$</span>
+					{
+<span class="fc" id="L34">						setTitle(&quot;Try TriggerPattern on my project&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L35">						setDescription(&quot;Review the candidates, then use Preview for the actual source changes.&quot;); //$NON-NLS-1$</span>
+					}
+
+					@Override
+					public void createControl(Composite parent) {
+<span class="fc" id="L40">						Composite container= new Composite(parent, SWT.NONE);</span>
+<span class="fc" id="L41">						container.setLayout(new GridLayout());</span>
+<span class="fc" id="L42">						Text details= new Text(container, SWT.READ_ONLY | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER);</span>
+<span class="fc" id="L43">						GridData data= new GridData(SWT.FILL, SWT.FILL, true, true);</span>
+<span class="fc" id="L44">						data.widthHint= 740;</span>
+<span class="fc" id="L45">						data.heightHint= 440;</span>
+<span class="fc" id="L46">						details.setLayoutData(data);</span>
+<span class="fc" id="L47">						details.setText(refactoring.getExplanation());</span>
+<span class="fc" id="L48">						setControl(container);</span>
+<span class="fc" id="L49">					}</span>
+				});
+<span class="fc" id="L51">			}</span>
+		};
+<span class="fc" id="L53">		wizard.setForcePreviewReview(true);</span>
+<span class="fc" id="L54">		wizard.setChangeCreationCancelable(true);</span>
+		try {
+<span class="fc" id="L56">			new RefactoringWizardOpenOperation(wizard).run(shell, refactoring.getName());</span>
+<span class="pc" id="L57">		} catch (InterruptedException exception) {</span>
+			// The refactoring dialog treats interruption as cancellation.
+<span class="nc" id="L59">		} catch (RuntimeException exception) {</span>
+<span class="nc" id="L60">			MessageDialog.openError(shell, &quot;TriggerPattern project trial&quot;, exception.getMessage()); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L62">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
