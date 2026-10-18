@@ -44,7 +44,7 @@ void $method($params$) :: plannedRole($method, "TEST_METHOD")
 <p><code>SemanticRewritePlan</code> is an immutable authorization graph. Stable <code>NodeKey</code> values identify types, methods, constructors, fields and exact call sites. A plan can assign roles, typed facts and directed relation occurrences with typed attributes. Relation order and duplicate occurrences are preserved.</p>
 <h2>Plan dependency and bindings</h2>
 <p>The declaration <code>&lt;!requires-plan: contract-id&gt;</code> is the complete plan-aware safety contract. It both selects the required semantic plan and implies fail-closed semantic target resolution. No separate binding-policy declaration is needed.</p>
-<p>Ordinary programs keep the existing compatibility behaviour unless they declare <code>&lt;!binding-policy: required&gt;</code>. Required mode tracks binding-dependent guards as <code>MATCH</code>, <code>NO_MATCH</code> or <code>UNKNOWN</code>. An unknown semantic requirement yields a diagnostic instead of a rewrite, while a decisive logical branch can still determine the result.</p>
+<p>Every executable ordinary rule tracks necessary source API identities and binding-dependent guards as <code>MATCH</code>, <code>NO_MATCH</code> or <code>UNKNOWN</code>. Unknown necessary prerequisites yield a diagnostic instead of a rewrite, even under optional policy. Diagnostic-only hints retain historical compatibility unless they declare <code>&lt;!binding-policy: required&gt;</code>. A decisive logical branch can still determine the result.</p>
 <h2>Declaring a plan dependency</h2>
 <pre>&lt;!requires-plan: junit3-hierarchy&gt;
 

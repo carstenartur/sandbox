@@ -857,29 +857,30 @@ public final class HintFileParser {
 			firstLine = ruleLines.get(ruleLineIdx);
 		}
 		
-		// Parse source pattern line (may have :: guard)
-		GuardSplit sourceAndGuard = splitGuard(firstLine);
+		// Keep the complete source, just as replacements already retain their
+		// continuation lines. A source guard can follow the final Java line or
+		// appear on its own :: line; multiple guards remain conjunctive.
+		StringBuilder sourceText = new StringBuilder();
+		while (ruleLineIdx < ruleLines.size() && !ruleLines.get(ruleLineIdx).startsWith("=>")) { //$NON-NLS-1$
+			if (sourceText.length() > 0) {
+				sourceText.append('\n');
+			}
+			sourceText.append(ruleLines.get(ruleLineIdx));
+			ruleLineIdx++;
+		}
+		if (RuleAuthoringDocument.containsJavaTextBlock(sourceText.toString())) {
+			throw new HintParseException(RuleAuthoringDocument.textBlockDiagnostic(), startIndex + 1);
+		}
+		GuardSplit sourceAndGuard = splitGuard(sourceText.toString());
 		sourcePatternText = sourceAndGuard.patternText().trim();
 		if (sourceAndGuard.hasGuard()) {
-			sourceGuard = guardParser.parse(sourceAndGuard.guardText().trim());
+			for (String guardPart : sourceAndGuard.guardText().split("\\R\\s*::")) { //$NON-NLS-1$
+				GuardExpression lineGuard = guardParser.parse(guardPart.trim());
+				sourceGuard = sourceGuard == null ? lineGuard : new GuardExpression.And(sourceGuard, lineGuard);
+			}
 		}
-		ruleLineIdx++;
-		
-		// Check for continuation lines with guard expressions (start with ::)
-		while (ruleLineIdx < ruleLines.size()) {
-			String nextLine = ruleLines.get(ruleLineIdx).trim();
-			if (!nextLine.startsWith("::")) { //$NON-NLS-1$
-				break;
-			}
-			String guardText = nextLine.substring(2).trim();
-			if (sourceGuard != null) {
-				// Combine with existing guard using AND
-				sourceGuard = new GuardExpression.And(
-						sourceGuard, guardParser.parse(guardText));
-			} else {
-				sourceGuard = guardParser.parse(guardText);
-			}
-			ruleLineIdx++;
+		if (sourcePatternText.isBlank()) {
+			throw new HintParseException("Rule has no source pattern", startIndex + 1); //$NON-NLS-1$
 		}
 		
 		// Parse rewrite alternatives (lines starting with =>)
@@ -921,6 +922,9 @@ public final class HintFileParser {
 						startIndex + ruleLineIdx + 1);
 			}
 			
+			if (RuleAuthoringDocument.containsJavaTextBlock(altContent)) {
+				throw new HintParseException(RuleAuthoringDocument.textBlockDiagnostic(), startIndex + ruleLineIdx + 1);
+			}
 			GuardSplit altAndGuard = splitGuard(altContent);
 			String replacementPattern = altAndGuard.patternText().trim();
 			GuardExpression altGuard = null;
@@ -1004,53 +1008,59 @@ public final class HintFileParser {
 	/**
 	 * Infers the {@link PatternKind} from the source pattern text.
 	 * 
-	 * <p>Heuristics:</p>
+	 * <p>Declaration syntax and parsed statement/expression roots determine the kind:</p>
 	 * <ul>
 	 *   <li>Starts with {@code @} → ANNOTATION</li>
 	 *   <li>Starts with {@code import } → IMPORT</li>
-	 *   <li>Starts with {@code new } → CONSTRUCTOR</li>
+	 *   <li>Class-instance creation root → CONSTRUCTOR</li>
 	 *   <li>Starts with {@code {}} → BLOCK</li>
 	 *   <li>Looks like a method declaration (return type + name + parens) → METHOD_DECLARATION</li>
-	 *   <li>Contains name + parens → METHOD_CALL</li>
+	 *   <li>Multiple parsed statements → STATEMENT_SEQUENCE</li>
+	 *   <li>Method-invocation root → METHOD_CALL</li>
 	 *   <li>Ends with {@code ;} → STATEMENT</li>
 	 *   <li>Default → EXPRESSION</li>
 	 * </ul>
 	 */
 	private PatternKind inferPatternKind(String patternText) {
 		String trimmed = patternText.trim();
-		
 		if (trimmed.startsWith("@")) { //$NON-NLS-1$
 			return PatternKind.ANNOTATION;
 		}
 		if (trimmed.startsWith("import ")) { //$NON-NLS-1$
 			return PatternKind.IMPORT;
 		}
-		if (trimmed.startsWith("new ")) { //$NON-NLS-1$
-			return PatternKind.CONSTRUCTOR;
-		}
 		if (trimmed.startsWith("{")) { //$NON-NLS-1$
 			return PatternKind.BLOCK;
 		}
-		// Method declaration: starts with a return type keyword followed by name and parens
-		// e.g., "void $name($params$)", "String getName()", "int $name()"
+		PatternParser syntax = new PatternParser();
+		// Inspect actual statement roots. Parentheses may occur in initializers,
+		// strings or nested calls and do not identify a method declaration.
+		if (trimmed.endsWith(";")) { //$NON-NLS-1$
+			ASTNode statements = syntax.parse(Pattern.of(trimmed, PatternKind.BLOCK));
+			if (statements instanceof org.eclipse.jdt.core.dom.Block block) {
+				if (block.statements().size() > 1) {
+					return PatternKind.STATEMENT_SEQUENCE;
+				}
+				if (block.statements().size() == 1
+						&& block.statements().getFirst() instanceof org.eclipse.jdt.core.dom.VariableDeclarationStatement) {
+					return PatternKind.DECLARATION;
+				}
+			}
+		}
 		if (looksLikeMethodDeclaration(trimmed)) {
 			return PatternKind.METHOD_DECLARATION;
 		}
-		// Method call: contains '(' and '.' or is a simple name with parens
-		if (trimmed.contains("(") && trimmed.contains(")") && !trimmed.endsWith(";")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			return PatternKind.METHOD_CALL;
-		}
-		// Variable declaration: "$Type $var = $init;" or "$Type $var;"
-		// Must be checked before generic STATEMENT to distinguish declarations
-		if (looksLikeDeclaration(trimmed)) {
-			return PatternKind.DECLARATION;
+		ASTNode expression = syntax.parse(Pattern.of(trimmed, PatternKind.EXPRESSION));
+		if (expression instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {
+			return PatternKind.CONSTRUCTOR;
 		}
 		if (trimmed.endsWith(";")) { //$NON-NLS-1$
-			return PatternKind.STATEMENT;
+			return looksLikeDeclaration(trimmed) ? PatternKind.DECLARATION : PatternKind.STATEMENT;
 		}
-		return PatternKind.EXPRESSION;
+		return expression instanceof org.eclipse.jdt.core.dom.MethodInvocation
+				? PatternKind.METHOD_CALL : PatternKind.EXPRESSION;
 	}
-	
+
 	/**
 	 * Checks if a pattern looks like a method declaration.
 	 * 

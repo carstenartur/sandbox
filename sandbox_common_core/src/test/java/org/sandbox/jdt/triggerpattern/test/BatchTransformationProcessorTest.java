@@ -231,9 +231,8 @@ public class BatchTransformationProcessorTest {
 	}
 
 	@Test
-	public void testInstanceOfGuardGracefulDegradation() throws Exception {
-		// When bindings are not resolved, instanceof guard should return true
-		// (graceful degradation), allowing the rule to match
+	public void testStringLiteralGuardCanBeProvenWithoutBindings() throws Exception {
+		// A String literal proves this guard even when the AST has no binding resolver.
 		registerBuiltInGuards();
 
 		String hintContent = """
@@ -261,8 +260,9 @@ public class BatchTransformationProcessorTest {
 
 		List<TransformationResult> results = processor.process(cu);
 
-		// Should match because instanceof guard gracefully degrades to true
-		assertFalse(results.isEmpty(), "Should find matches with graceful degradation"); //$NON-NLS-1$
+		assertEquals(1, results.size());
+		assertTrue(results.getFirst().hasRewrite());
+		assertFalse(results.getFirst().isSemanticUnknown());
 	}
 
 	@Test

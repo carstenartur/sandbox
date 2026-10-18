@@ -1,0 +1,127 @@
+/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ *
+ * This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License 2.0
+ * which accompanies this distribution, and is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.internal;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.ToolFactory;
+import org.eclipse.jdt.core.compiler.IScanner;
+import org.eclipse.jdt.core.compiler.ITerminalSymbols;
+import org.eclipse.jdt.core.compiler.InvalidInputException;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Assignment;
+import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.InstanceofExpression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.MethodReference;
+import org.eclipse.jdt.core.dom.PostfixExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.SwitchExpression;
+import org.sandbox.jdt.triggerpattern.api.Match;
+
+/** Substitutes Java identifier tokens once, preserving literals and expression grouping. */
+public final class BindingSubstitution {
+
+	private BindingSubstitution() {
+	}
+
+	public static String substitute(String pattern, Match match) {
+		if (pattern == null || match.getBindings().isEmpty()) {
+			return pattern;
+		}
+		IScanner scanner = ToolFactory.createScanner(false, false, false, JavaCore.VERSION_25);
+		scanner.setSource(pattern.toCharArray());
+		StringBuilder result = new StringBuilder();
+		int copiedUntil = 0;
+		try {
+			for (int token = scanner.getNextToken(); token != ITerminalSymbols.TokenNameEOF; token = scanner.getNextToken()) {
+				int start = scanner.getCurrentTokenStartPosition();
+				if (token != ITerminalSymbols.TokenNameIdentifier || start < copiedUntil) {
+					continue;
+				}
+				String name = new String(scanner.getCurrentTokenSource());
+				Object value = match.getBindings().get(name);
+				if (value == null) {
+					continue;
+				}
+				int end = scanner.getCurrentTokenEndPosition() + 1;
+				String replacement;
+				if (value instanceof List<?> nodes) {
+					if (pattern.startsWith(".length", end) && (end + 7 == pattern.length() //$NON-NLS-1$
+							|| !Character.isJavaIdentifierPart(pattern.charAt(end + 7)))) {
+						replacement = Integer.toString(nodes.size());
+						end += 7;
+					} else if (end < pattern.length() && pattern.charAt(end) == '[') {
+						int closing = pattern.indexOf(']', end);
+						if (closing < 0) {
+							continue;
+						}
+						try {
+							int index = Integer.parseInt(pattern.substring(end + 1, closing));
+							if (index < 0) {
+								index += nodes.size();
+							}
+							if (index < 0 || index >= nodes.size()) {
+								continue;
+							}
+							replacement = render(nodes.get(index));
+							end = closing + 1;
+						} catch (NumberFormatException invalidIndex) {
+							continue;
+						}
+					} else {
+						boolean statements = nodes.stream().allMatch(Statement.class::isInstance);
+						replacement = nodes.stream().map(BindingSubstitution::render)
+								.collect(Collectors.joining(statements ? "\n" : ", ")); //$NON-NLS-1$ //$NON-NLS-2$
+						if (statements) {
+							int semicolon = end;
+							while (semicolon < pattern.length() && Character.isWhitespace(pattern.charAt(semicolon))) {
+								semicolon++;
+							}
+							if (semicolon < pattern.length() && pattern.charAt(semicolon) == ';') {
+								end = semicolon + 1;
+							}
+						}
+					}
+				} else {
+					replacement = render(value);
+				}
+				result.append(pattern, copiedUntil, start).append(replacement);
+				copiedUntil = end;
+			}
+		} catch (InvalidInputException invalidJava) {
+			throw new IllegalArgumentException("Replacement is not lexically valid Java", invalidJava); //$NON-NLS-1$
+		}
+		return result.append(pattern, copiedUntil, pattern.length()).toString();
+	}
+
+	private static String render(Object value) {
+		String text = value instanceof ASTNode node ? node.toString().stripTrailing() : String.valueOf(value);
+		if (value instanceof Expression expression && requiresGrouping(expression)) {
+			return '(' + text + ')';
+		}
+		return text;
+	}
+
+	private static boolean requiresGrouping(Expression expression) {
+		return expression instanceof InfixExpression || expression instanceof ConditionalExpression
+				|| expression instanceof Assignment || expression instanceof CastExpression
+				|| expression instanceof InstanceofExpression || expression instanceof LambdaExpression
+				|| expression instanceof PrefixExpression || expression instanceof PostfixExpression
+				|| expression instanceof MethodReference || expression instanceof SwitchExpression;
+	}
+}

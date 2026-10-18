@@ -23,13 +23,13 @@ The plan-aware execution boundary rejects an empty or mismatched plan. Every pro
 
 ## Binding policy for ordinary hints
 
-Ordinary hints without `requires-plan` retain compatibility behaviour by default. A migration whose correctness depends on resolved overload, owner, type, generic or hierarchy information can opt into the same fail-closed guard semantics explicitly:
+Every rule with an executable text, structured or embedded replacement fails closed when a necessary source API identity or semantic guard is unknown. This applies equally to editor fixes, cleanup and project trials, even when the file declares `optional` or omits a policy. Diagnostic-only hints can retain their historical boolean fallback. To require strict semantics for those findings as well, declare:
 
 ```text
 <!binding-policy: required>
 ```
 
-`optional` preserves the historical boolean fallback. `required` evaluates guards as `MATCH`, `NO_MATCH` or `UNKNOWN`; an unresolved semantic requirement produces a diagnostic transformation result and no rewrite. An unknown ordered alternative does not fall through to `otherwise`. A proven branch can still decide the expression, for example `UNKNOWN || MATCH` is `MATCH`.
+Guards are evaluated as `MATCH`, `NO_MATCH` or `UNKNOWN`. An unresolved necessary semantic requirement produces a diagnostic transformation result and no rewrite. An unknown ordered replacement alternative does not fall through to `otherwise`. A proven branch can still decide the expression, for example `UNKNOWN || MATCH` is `MATCH`. `optional` cannot override these protections for executable rules.
 
 A plan-aware program may omit `binding-policy` because `requires-plan` is already strict. A contradictory `binding-policy: optional` declaration is rejected.
 
@@ -59,7 +59,7 @@ The existing wizard should describe such a transformation as requiring a semanti
 Before shipping a migration rule:
 
 1. Decide whether the transformation is local or plan-aware.
-2. For an ordinary binding-dependent migration, declare `binding-policy: required`.
+2. Use `binding-policy: required` when diagnostic-only findings must also require resolved semantics; executable rules already reject unknown prerequisites.
 3. Express the desired target code once wherever the DSL can derive the typed AST operations.
 4. Put only non-derivable scope, role, relationship, and strategy information in the semantic plan.
 5. Let `requires-plan` be the sole plan contract.
