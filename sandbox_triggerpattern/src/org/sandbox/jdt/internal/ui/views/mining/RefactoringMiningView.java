@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.views.mining;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -278,7 +279,7 @@ public class RefactoringMiningView extends ViewPart {
 		if (path != null) {
 			String content = buildHintFileContent(selectedDslRules);
 			try {
-				java.nio.file.Files.writeString(java.nio.file.Path.of(path), content);
+				Files.writeString(java.nio.file.Path.of(path), content, StandardCharsets.UTF_8);
 			} catch (java.io.IOException e) {
 				setContentDescription("Repository: " + activeRepositoryName + " — export failed: " //$NON-NLS-1$ //$NON-NLS-2$
 						+ e.getMessage());
