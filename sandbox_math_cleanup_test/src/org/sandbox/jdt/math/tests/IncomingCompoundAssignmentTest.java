@@ -156,12 +156,14 @@ class IncomingCompoundAssignmentTest {
             case ">>=" -> value >> right; case ">>>=" -> value >>> right; default -> throw new IllegalArgumentException(operator);
         };
         int left = (int) value;
-        return switch (operator) {
+        // Java promotes these operands to int; overflow must happen before widening.
+        int result = switch (operator) {
             case "+=" -> left + right; case "-=" -> left - right; case "*=" -> left * right;
             case "/=" -> left / right; case "%=" -> left % right; case "&=" -> left & right;
             case "|=" -> left | right; case "^=" -> left ^ right; case "<<=" -> left << right;
             case ">>=" -> left >> right; case ">>>=" -> left >>> right; default -> throw new IllegalArgumentException(operator);
         };
+        return result;
     }
     private URLClassLoader compile(String source) throws Exception {
         Path directory = Files.createTempDirectory(temporary, "incoming-compound-");
