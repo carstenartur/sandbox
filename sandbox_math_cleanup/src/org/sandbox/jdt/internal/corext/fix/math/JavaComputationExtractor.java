@@ -209,10 +209,16 @@ public final class JavaComputationExtractor {
    private static boolean externalValueAssignment(Statement statement, MathCleanUpOptions options) {
       if (!(statement instanceof ExpressionStatement expression
             && expression.getExpression() instanceof Assignment assignment
-            && assignment.getOperator() == Assignment.Operator.ASSIGN
             && assignment.getLeftHandSide() instanceof SimpleName name
             && name.resolveBinding() instanceof IVariableBinding binding && !binding.isRecovered() && !binding.isField())) return false;
       NumericKind kind = JavaOperationRegistry.kind(binding.getType()).orElse(null);
+      if (assignment.getOperator() != Assignment.Operator.ASSIGN) {
+         NumericKind right = JavaOperationRegistry.kind(assignment.getRightHandSide().resolveTypeBinding()).orElse(null);
+         // The old local value is an input, not a declaration in this region.
+         // Restrict new compound admission to primitive integral Java arithmetic.
+         return JavaArrayReadInputs.integral(kind) && JavaArrayReadInputs.integral(right)
+               && options.safety() == SafetyProfile.PRESERVE_JAVA;
+      }
       return kind == NumericKind.BIG_INTEGER ? options.mathematicalOptIn()
             : kind != null && kind.integral() && options.safety() == SafetyProfile.PRESERVE_JAVA;
    }
@@ -505,14 +511,19 @@ public final class JavaComputationExtractor {
          if (initializer instanceof Assignment assignment) {
             Expression right = assignment.getRightHandSide();
             evaluatedKind = this.kind(right.resolveTypeBinding(), right);
-            value = this.expression(right, false, depth);
-            if (assignment.getOperator() != org.eclipse.jdt.core.dom.Assignment.Operator.ASSIGN) {
+            if (assignment.getOperator() == org.eclipse.jdt.core.dom.Assignment.Operator.ASSIGN) {
+               value = this.expression(right, false, depth);
+            } else {
+               // Read the previous local value before evaluating the right operand.
+               // Existing locals use their graph; incoming locals become typed inputs.
+               Expr oldValue = this.expression(assignment.getLeftHandSide(), false, depth);
                NumericOperation operation = JavaComputationExtractor.compoundOperator(assignment);
                boolean shift = operation == NumericOperation.SHIFT_LEFT
                   || operation == NumericOperation.SHIFT_RIGHT
                   || operation == NumericOperation.UNSIGNED_SHIFT_RIGHT;
                NumericKind promotedKind = shift ? JavaComputationExtractor.promote(declaredKind) : JavaComputationExtractor.promote(declaredKind, evaluatedKind);
-               Expr left = this.cast(localValue(binding, initializer), declaredKind, promotedKind, assignment);
+               Expr left = this.cast(oldValue, declaredKind, promotedKind, assignment);
+               value = this.expression(right, false, depth);
                value = this.cast(value, evaluatedKind, shift ? JavaComputationExtractor.promote(evaluatedKind) : promotedKind, right);
                value = this.operation(promotedKind, operation, assignment, left, value);
                evaluatedKind = promotedKind;
@@ -1012,8 +1023,8 @@ public final class JavaComputationExtractor {
          if (!binding.isField() || !Modifier.isStatic(binding.getModifiers()) || !mathematicalField(binding)) return null;
          Expression initializer = declarations.get(binding.getKey()).getInitializer();
          if (initializer instanceof MethodInvocation factory && factory.resolveMethodBinding() != null
-               && factory.resolveMethodBinding().getDeclaringClass().getQualifiedName().equals("java.math.BigInteger")
                && factory.getName().getIdentifier().equals("valueOf") && factory.arguments().size() == 1
+               && factory.resolveMethodBinding().getDeclaringClass().getQualifiedName().equals("java.math.BigInteger")
                && factory.getExpression() instanceof Name qualifier && qualifier.resolveBinding() instanceof ITypeBinding) {
             Expression argument = (Expression) factory.arguments().getFirst();
             if ((argument instanceof NumberLiteral || argument instanceof PrefixExpression prefix && prefix.getOperand() instanceof NumberLiteral)

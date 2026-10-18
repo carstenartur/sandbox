@@ -11,6 +11,7 @@
 package org.sandbox.jdt.core.cleanupapp;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -22,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.swt.widgets.Display;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -103,6 +105,7 @@ class CodeCleanupApplicationWrapperExitCodeTest {
 
 	private static final class TestApplicationContext implements IApplicationContext {
 		private final String[] arguments;
+		private final Display callingDisplay= Display.getCurrent();
 
 		TestApplicationContext(String[] arguments) {
 			this.arguments= arguments.clone();
@@ -111,6 +114,7 @@ class CodeCleanupApplicationWrapperExitCodeTest {
 		@Override
 		@SuppressWarnings({ "rawtypes", "unchecked" })
 		public Map getArguments() {
+			assertSame(callingDisplay, Display.getCurrent(), "No-import argument handling must not acquire an SWT display"); //$NON-NLS-1$
 			Map result= new HashMap();
 			result.put(APPLICATION_ARGS, arguments.clone());
 			return result;

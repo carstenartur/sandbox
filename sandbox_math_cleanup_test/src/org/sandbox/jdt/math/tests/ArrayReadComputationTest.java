@@ -167,7 +167,7 @@ class ArrayReadComputationTest {
                 "FIELD[i]", "get(words)[i]", "words[other[i]]", "words[i / mask]",
                 "words[i] + value / mask", "value / mask + words[i]", "words[i] + Math.addExact(value, mask)")) {
             String source = source("return (" + expression + ") + 0;").replace("public class Calculation {",
-                    "public class Calculation { static volatile int INDEX; static int[] FIELD;"
+                    "public class Calculation { static volatile int INDEX; static volatile int[] FIELD;"
                     + " private static int next(int value) { return value; } private static int[] get(int[] input) { return input; }");
             var result = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source, options(SafetyProfile.PRESERVE_JAVA),
                     new NullProgressMonitor(), -1, 0);

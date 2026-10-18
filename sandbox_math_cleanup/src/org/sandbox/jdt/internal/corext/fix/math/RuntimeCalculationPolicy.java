@@ -46,6 +46,10 @@ final class RuntimeCalculationPolicy {
                     count[0] += 1 + expression.extendedOperands().size();
                 return true;
             }
+            @Override public boolean visit(Assignment assignment) {
+                if (assignment.getOperator() != Assignment.Operator.ASSIGN) count[0]++;
+                return true;
+            }
             @Override public boolean visit(PrefixExpression expression) {
                 if (expression.getOperator() == PrefixExpression.Operator.COMPLEMENT
                         || expression.getOperator() == PrefixExpression.Operator.MINUS
@@ -73,10 +77,13 @@ final class RuntimeCalculationPolicy {
         }
         if (statement instanceof ExpressionStatement expression
                 && expression.getExpression() instanceof Assignment assignment
-                && assignment.getOperator() == Assignment.Operator.ASSIGN
                 && assignment.getLeftHandSide() instanceof SimpleName name
                 && name.resolveBinding() instanceof IVariableBinding binding && !binding.isField()) {
-            return preserveExpression(assignment.getRightHandSide(), declarations);
+            // A literal RHS is still runtime work in x += 1. An authored formula
+            // such as x ^= (32 - 11) must not bypass source preservation, however.
+            return assignment.getOperator() == Assignment.Operator.ASSIGN
+                    ? preserveExpression(assignment.getRightHandSide(), declarations)
+                    : containsComputedConstant(assignment.getRightHandSide(), declarations);
         }
         return false;
     }
