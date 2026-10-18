@@ -149,25 +149,39 @@ public final class BindingSubstitution {
 				|| destination == ForStatement.INITIALIZERS_PROPERTY || destination == ForStatement.UPDATERS_PROPERTY
 				|| destination == LambdaExpression.BODY_PROPERTY;
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
-		parser.setKind(ASTParser.K_STATEMENTS);
+		parser.setKind(ASTParser.K_EXPRESSION);
 		parser.setSource(source.toCharArray());
 		var options = JavaCore.getOptions();
 		JavaCore.setComplianceOptions(JavaCore.VERSION_25, options);
 		parser.setCompilerOptions(options);
-		parser.setStatementsRecovery(true);
-		parser.createAST(null).accept(new ASTVisitor() {
+		ASTNode context = parser.createAST(null);
+		if (!(context instanceof Expression) || !hasCompleteSourceRange(context, source)
+				|| (context.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0) {
+			// Lambdas are expressions, not standalone statements: statement recovery
+			// can drop their bodies. Use statements only when the whole template
+			// cannot be parsed as one complete expression.
+			parser = ASTParser.newParser(AST.getJLSLatest());
+			parser.setKind(ASTParser.K_STATEMENTS);
+			parser.setSource(source.toCharArray());
+			parser.setCompilerOptions(options);
+			parser.setStatementsRecovery(true);
+			context = parser.createAST(null);
+		}
+		context.accept(new ASTVisitor() {
+			@Override
+			public void preVisit(ASTNode node) {
+				// A bare expression needs its original AST destination; parser recovery
+				// alone must not turn a nested replacement into a statement expression.
+				if (statementExpressionDestination && node instanceof Expression expression
+						&& hasCompleteSourceRange(expression, source)) {
+					addStatementExpression(expression);
+				}
+			}
+
 			@Override
 			public boolean visit(ExpressionStatement node) {
 				int end = node.getStartPosition() + node.getLength();
-				// A bare expression needs its original AST destination; parser recovery
-				// alone must not turn a nested replacement into a statement expression.
-				Expression expression = node.getExpression();
-				int expressionStart = expression.getStartPosition();
-				int expressionEnd = expressionStart + expression.getLength();
-				boolean rootExpression = statementExpressionDestination && expressionStart >= 0
-						&& expressionEnd <= source.length() && source.substring(0, expressionStart).isBlank()
-						&& source.substring(expressionEnd).isBlank();
-				if ((end > 0 && end <= source.length() && source.charAt(end - 1) == ';') || rootExpression) {
+				if (end > 0 && end <= source.length() && source.charAt(end - 1) == ';') {
 					addStatementExpression(node.getExpression());
 				}
 				return true;
@@ -180,6 +194,14 @@ public final class BindingSubstitution {
 				}
 				for (Object updater : node.updaters()) {
 					addStatementExpression((Expression) updater);
+				}
+				return true;
+			}
+
+			@Override
+			public boolean visit(LambdaExpression node) {
+				if (node.getBody() instanceof Expression body) {
+					addStatementExpression(body);
 				}
 				return true;
 			}
@@ -206,6 +228,23 @@ public final class BindingSubstitution {
 			copiedUntil = expression.end();
 		}
 		return result.append(source, copiedUntil, source.length()).toString();
+	}
+
+	private static boolean hasCompleteSourceRange(ASTNode node, String source) {
+		int start = node.getStartPosition();
+		int end = start + node.getLength();
+		return start >= 0 && end <= source.length() && isJavaTrivia(source.substring(0, start))
+				&& isJavaTrivia(source.substring(end));
+	}
+
+	private static boolean isJavaTrivia(String text) {
+		IScanner scanner = ToolFactory.createScanner(false, false, false, JavaCore.VERSION_25);
+		scanner.setSource(text.toCharArray());
+		try {
+			return scanner.getNextToken() == ITerminalSymbols.TokenNameEOF;
+		} catch (InvalidInputException invalidJava) {
+			return false;
+		}
 	}
 
 	private static boolean requiresGrouping(Expression expression) {
