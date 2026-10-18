@@ -33,6 +33,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -154,6 +155,27 @@ public class CodeCleanupApplication implements IApplication {
 
 	private int filesProcessed = 0;
 
+	private static IFile findWorkspaceFile(File file) throws IOException {
+		var root = ResourcesPlugin.getWorkspace().getRoot();
+		IPath filePath = Path.fromOSString(file.getAbsolutePath());
+		IFile direct = root.getFileForLocation(filePath);
+		if (direct != null && direct.exists()) {
+			return direct;
+		}
+		List<IFile> matches = Arrays.stream(root.findFilesForLocationURI(file.toURI()))
+				.filter(IFile::isAccessible).toList();
+		if (matches.isEmpty()) {
+			// Import canonicalizes its directory, but source arguments may retain
+			// a symbolic link or Windows short-name alias. Keep direct links first.
+			matches = Arrays.stream(root.findFilesForLocationURI(file.getCanonicalFile().toURI()))
+					.filter(IFile::isAccessible).toList();
+		}
+		if (matches.size() > 1) {
+			throw new IOException("Multiple accessible workspace files match source location: " + file.getAbsolutePath()); //$NON-NLS-1$
+		}
+		return matches.isEmpty() ? null : matches.getFirst();
+	}
+
 	/**
 	 * Clean up the given Java source file. In CHECK/DIFF modes, detects changes
 	 * without writing them to disk.
@@ -164,8 +186,7 @@ public class CodeCleanupApplication implements IApplication {
 				System.out.println(Messages.bind(Messages.CommandLineCleaning, file.getAbsolutePath()));
 			}
 
-			IPath filePath = Path.fromOSString(file.getAbsolutePath());
-			IFile iFile = ResourcesPlugin.getWorkspace().getRoot().getFileForLocation(filePath);
+			IFile iFile = findWorkspaceFile(file);
 
 			if (iFile == null || !iFile.exists()) {
 				recordError(Messages.bind(Messages.FileOutsideWorkspace, file.getAbsolutePath()));
