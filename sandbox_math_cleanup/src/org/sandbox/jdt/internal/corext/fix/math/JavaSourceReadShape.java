@@ -54,8 +54,11 @@ final class JavaSourceReadShape {
 
     static boolean supported(Expression expression, Set<String> regionalLocals) {
         if (expression instanceof ArrayAccess array) {
-            return arrayReceiver(array.getArray(), regionalLocals)
-                    && stableIndex(array.getIndex(), regionalLocals, 0);
+            Expression receiver = unparenthesized(array.getArray());
+            if (!(receiver instanceof SimpleName name && name.resolveBinding() instanceof IVariableBinding binding)
+                    || binding.isRecovered() || binding.isField() || !binding.getType().isArray()
+                    || binding.getType().getDimensions() != 1 || !integral(binding.getType().getElementType())) return false;
+            return !regionalLocals.contains(binding.getKey()) && stableIndex(array.getIndex(), regionalLocals, 0);
         }
         if (bufferMethod(expression) != null && expression instanceof MethodInvocation call) {
             return localReceiver(call.getExpression(), regionalLocals)
@@ -71,30 +74,6 @@ final class JavaSourceReadShape {
             return Modifier.isStatic(field.getModifiers());
         return receiver instanceof ThisExpression self && self.getQualifier() == null
                 || localReceiver(receiver, regionalLocals);
-    }
-
-    /** Every field receiver is reread in its original expression; no alias or stability claim. */
-    private static boolean arrayReceiver(Expression expression, Set<String> regionalLocals) {
-        Expression receiver = unparenthesized(expression);
-        IVariableBinding binding = receiver instanceof Name name && name.resolveBinding() instanceof IVariableBinding variable
-                ? variable : receiver instanceof FieldAccess access ? access.resolveFieldBinding() : null;
-        if (binding == null || binding.isRecovered()) return false;
-        ITypeBinding type = binding.getType();
-        if (type == null || type.isRecovered() || !type.isArray() || type.getDimensions() != 1
-                || !integral(type.getElementType())) return false;
-        if (!binding.isField())
-            return receiver instanceof SimpleName && !regionalLocals.contains(binding.getKey());
-        if (Modifier.isVolatile(binding.getModifiers())) return false;
-        // Preserve lexical, this-qualified and type-qualified source, including
-        // static initialization. Object chains and effectful qualifiers stay out.
-        if (receiver instanceof SimpleName) return true;
-        if (receiver instanceof FieldAccess access) {
-            Expression qualifier = unparenthesized(access.getExpression());
-            return qualifier instanceof ThisExpression self && self.getQualifier() == null;
-        }
-        return receiver instanceof QualifiedName qualified
-                && qualified.getQualifier().resolveBinding() instanceof ITypeBinding
-                && Modifier.isStatic(binding.getModifiers());
     }
 
     /** Produced locals and throwing prefixes may not move after a following source read. */

@@ -6,14 +6,10 @@ This module participates in the explicit mathematics cleanup. Numerical proof an
 
 For `PRESERVE_JAVA`, including the explicit mathematical opt-in, a straight-line
 region can connect arithmetic that reads one-dimensional `byte`, `short`, `char`,
-`int`, or `long` arrays. Receivers may be resolved local variables or parameters,
-or nonvolatile fields referenced lexically, by unqualified `this`, or by a type.
-Each occurrence reevaluates its original field receiver; mutable fields are not
-assumed stable. Object-qualified and nested field receivers remain excluded.
-Indices may use primitive integral locals, compiler constants, literals, casts,
-and total arithmetic. Authored index formulas retain their original spelling;
-index calls, mutable fields, mutation, nested reads, division, and remainder stay
-outside this admission.
+`int`, or `long` arrays. Receivers must be resolved local variables or parameters.
+Indices may use primitive integral locals, literals, casts, and total arithmetic;
+index calls, fields, mutation, nested reads, division, and remainder stay outside
+this admission.
 
 Each source read gets a distinct scalar input and an ordered `ArrayRead` source
 obligation. The source rewriter emits every read exactly once into a fresh final
@@ -58,19 +54,14 @@ Capture costs and proof requirements are unchanged.
 
 ## Incoming primitive assignments
 
-Under `PRESERVE_JAVA`, a plain or compound assignment to a resolved primitive
-integral local or parameter may expose its own arithmetic even when the
-declaration is outside the current block. Such an assignment is a singleton
-region: preceding writes finish before it, and following reads start after it.
-This also applies after a preparation retry reaches its fragment output limit.
-For a compound assignment, the old local value enters the plan before decoding
-the right operand. Existing Java promotion, shift and final narrowing rules are
-used; the incoming value must never be confused with the value written by the
-replacement. New incoming compound admission requires primitive integral types
-on both sides. Field/array write targets, floating-point assignments, and checked
-and guarded-fallback profiles retain their boundaries. Authored constant formulas
-are still preserved, without treating a literal RHS in `x += 1` as constant-only
-work. No numerical rule is implemented in this source adapter.
+Under `PRESERVE_JAVA`, a simple assignment to a resolved primitive integral local
+or parameter may expose its own arithmetic even when the declaration is outside
+the current block. Such an assignment is a singleton region: preceding writes
+finish before it, and following reads start after it. This also applies after a
+preparation retry reaches its fragment output limit. The incoming value must
+never be confused with the value written by the replacement. Field writes,
+incoming compound assignments, floating-point assignments, and the checked and
+guarded-fallback profiles retain their existing boundaries.
 
 Whole-file analysis schedules these additional regions after established regions
 and their retries, spending only the remaining file work. They do not dilute the
@@ -92,11 +83,3 @@ measurement of runtime performance.
 `addMerge` overloads across 96 style/range cases. Additional tests cover narrow
 conversions, wraparound, observable writes before exceptions, search-budget
 starvation and the fragment-retry incoming-value regression.
-
-`IncomingCompoundAssignmentTest` covers all eleven compound operators for the
-five primitive integral kinds, the old-value/field-read distinction, excluded
-profiles and targets, and an actual rewrite with exceptions and exact Undo.
-`FieldArrayStateVisibilityTest` compares returned values, exception types,
-post-call array contents and field identities after intervening rebinding/stores,
-including failures after the write and aliased inputs. These test requirements
-must pass in the normal Maven authority before qualification is claimed.
