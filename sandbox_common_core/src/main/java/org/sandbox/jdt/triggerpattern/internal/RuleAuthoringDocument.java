@@ -30,7 +30,11 @@ import java.util.regex.Pattern;
 public record RuleAuthoringDocument(String content) {
 
 	private static final Pattern METADATA = Pattern.compile(
-			"(?m)^[\\t ]*<!([A-Za-z][A-Za-z0-9-]*):[^>]*>[\\t ]*(?:\\r\\n|\\r|\\n|$)"); //$NON-NLS-1$
+			"(?m)^[\\t ]*<!([A-Za-z][A-Za-z0-9-]*)[\\t ]*[:=][^>]*>[\\t ]*(?:\\r\\n|\\r|\\n|$)"); //$NON-NLS-1$
+
+	private enum LexicalMode {
+		JAVA, HINT_DOCUMENT
+	}
 
 	public RuleAuthoringDocument {
 		Objects.requireNonNull(content, "content"); //$NON-NLS-1$
@@ -136,7 +140,7 @@ public record RuleAuthoringDocument(String content) {
 
 	private static int lineEnd(String source, int offset) {
 		// If a changed range already ends at a line boundary, keep following lines out.
-		if (offset > 0 && source.charAt(offset - 1) == '\n') {
+		if (offset == 0 || source.charAt(offset - 1) == '\n') {
 			return offset;
 		}
 		while (offset < source.length() && source.charAt(offset) != '\r' && source.charAt(offset) != '\n') {
@@ -159,7 +163,7 @@ public record RuleAuthoringDocument(String content) {
 	public static boolean containsJavaTextBlock(String code) {
 		int offset = -3;
 		while ((offset = code.indexOf("\"\"\"", offset + 3)) >= 0) { //$NON-NLS-1$
-			if (isActiveDirective(code, offset)) {
+			if (isCodePosition(code, offset, LexicalMode.JAVA)) {
 				return true;
 			}
 		}
@@ -172,6 +176,10 @@ public record RuleAuthoringDocument(String content) {
 	}
 
 	private static boolean isActiveDirective(String source, int offset) {
+		return isCodePosition(source, offset, LexicalMode.HINT_DOCUMENT);
+	}
+
+	private static boolean isCodePosition(String source, int offset, LexicalMode mode) {
 		boolean blockComment = false;
 		boolean lineComment = false;
 		boolean embeddedJava = false;
@@ -199,10 +207,10 @@ public record RuleAuthoringDocument(String content) {
 				} else if (ch == quote) {
 					quote = 0;
 				}
-			} else if (source.startsWith("<?", i)) { //$NON-NLS-1$
+			} else if (mode == LexicalMode.HINT_DOCUMENT && source.startsWith("<?", i)) { //$NON-NLS-1$
 				embeddedJava = true;
 				i++;
-			} else if (source.startsWith("?>", i)) { //$NON-NLS-1$
+			} else if (mode == LexicalMode.HINT_DOCUMENT && source.startsWith("?>", i)) { //$NON-NLS-1$
 				embeddedJava = false;
 				i++;
 			} else if (source.startsWith("/*", i)) { //$NON-NLS-1$
@@ -211,7 +219,7 @@ public record RuleAuthoringDocument(String content) {
 			} else if (source.startsWith("//", i)) { //$NON-NLS-1$
 				lineComment = true;
 				i++;
-			} else if (source.startsWith("<!", i)) { //$NON-NLS-1$
+			} else if (mode == LexicalMode.HINT_DOCUMENT && source.startsWith("<!", i)) { //$NON-NLS-1$
 				// Metadata prose is not Java: apostrophes and paths there must not
 				// start character literals or comments that hide later directives.
 				int end = source.indexOf('>', i + 2);
