@@ -78,12 +78,14 @@ class NewRuleWizardPageTest {
 			page.setInitialChange(before, after);
 			page.createControl(shell);
 			List<Text> fields = descendants(shell, Text.class);
-			assertEquals(before, fields.get(0).getText());
-			assertEquals(after, fields.get(2).getText());
+			String nativeBefore = before.replace("\n", fields.get(0).getLineDelimiter());
+			String nativeAfter = after.replace("\n", fields.get(2).getLineDelimiter());
+			assertEquals(nativeBefore, fields.get(0).getText());
+			assertEquals(nativeAfter, fields.get(2).getText());
 			assertTrue((fields.get(0).getStyle() & SWT.MULTI) != 0);
 			assertTrue((fields.get(2).getStyle() & SWT.MULTI) != 0);
-			assertTrue(page.getFullDslDocument().contains("second();"));
-			assertTrue(page.getFullDslDocument().contains("modernSecond();"));
+			assertEquals("<!binding-policy: required>\n\n" + nativeBefore + "\n=> " + nativeAfter + "\n;;\n",
+					page.getFullDslDocument());
 			assertTrue(page.isPageComplete());
 		});
 	}
