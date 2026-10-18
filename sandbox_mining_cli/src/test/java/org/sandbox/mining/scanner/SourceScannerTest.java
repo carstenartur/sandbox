@@ -14,6 +14,9 @@
 package org.sandbox.mining.scanner;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -25,6 +28,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
 import org.sandbox.jdt.triggerpattern.api.GuardFunctionResolverHolder;
 import org.sandbox.jdt.triggerpattern.api.HintFile;
@@ -54,7 +58,6 @@ class SourceScannerTest {
 				@id: source-version-test.empty-list
 				@severity: info
 				java.util.Collections.emptyList() :: sourceVersionGE(9)
-				=> java.util.List.of()
 				;;
 				"""); //$NON-NLS-1$
 		SourceScanner scanner = new SourceScanner(new StandaloneAstParser(), 100);
@@ -67,5 +70,28 @@ class SourceScannerTest {
 		assertEquals(0, java8Report.getMatches().size());
 		assertEquals(1, java21Report.getMatches().size());
 		assertEquals("source-version-test.empty-list", java21Report.getMatches().get(0).ruleName()); //$NON-NLS-1$
+		assertNull(java21Report.getMatches().get(0).suggestedReplacement());
+	}
+
+	@Test
+	void unresolvedSemanticDiagnosticsAreNotReportedAsFindings() throws Exception {
+		String source = "class Test { Object m() { return java.util.Collections.emptyList(); } }"; //$NON-NLS-1$
+		Files.writeString(tempDir.resolve("Test.java"), source, StandardCharsets.UTF_8); //$NON-NLS-1$
+		HintFile hintFile = new HintFileParser().parse("""
+				<!id: unresolved-rewrite-test>
+				java.util.Collections.emptyList()
+				=> java.util.List.of()
+				;;
+				"""); //$NON-NLS-1$
+		StandaloneAstParser parser = new StandaloneAstParser();
+		var results = new BatchTransformationProcessor(hintFile).process(parser.parse(source));
+		assertEquals(1, results.size());
+		assertTrue(results.get(0).isSemanticUnknown());
+		assertFalse(results.get(0).hasReplacement());
+
+		SourceScanner scanner = new SourceScanner(parser, 100);
+		MiningReport report = scanner.scan("repo", tempDir, List.of(), List.of(hintFile)); //$NON-NLS-1$
+
+		assertEquals(0, report.getMatches().size());
 	}
 }

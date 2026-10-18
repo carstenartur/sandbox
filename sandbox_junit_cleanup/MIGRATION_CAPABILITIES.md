@@ -15,7 +15,7 @@ JUnit migration uses three layers:
 
 3. **Runtime oracle** — compares JDT JUnit discovery/execution before and after migration where the migration changes test identity or multiplicity.
 
-A missing binding, binary-only participant, stale plan, incomplete project scope or unsupported execution hook prevents the complete migration unit from being produced. Ordinary non-plan hints retain compatibility behavior by default; `binding-policy: required` uses the implemented `MATCH` / `NO_MATCH` / `UNKNOWN` guard diagnostics. Plan-aware hints continue to use only `requires-plan`.
+A missing binding, binary-only participant, stale plan, incomplete project scope or unsupported execution hook prevents the complete migration unit from being produced. Every executable non-plan rule also rejects unknown necessary source API identities and semantic guards using `MATCH` / `NO_MATCH` / `UNKNOWN` diagnostics. Optional compatibility applies only to diagnostic-only hints; `binding-policy: required` also makes those findings strict. Plan-aware hints continue to use only `requires-plan`.
 
 ## Capability matrix
 

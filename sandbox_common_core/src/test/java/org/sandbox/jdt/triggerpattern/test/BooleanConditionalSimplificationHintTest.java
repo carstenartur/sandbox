@@ -30,7 +30,7 @@ class BooleanConditionalSimplificationHintTest extends HintRuleTestSupport {
 	@Test
 	void simplifiesConditionalWithLiteralBooleanBranches() {
 		String before = "class Test { boolean m(int value) { return value > 10 ? true : false; } }"; //$NON-NLS-1$
-		String expected = "class Test { boolean m(int value) { return value > 10; } }"; //$NON-NLS-1$
+		String expected = "class Test { boolean m(int value) { return (value > 10); } }"; //$NON-NLS-1$
 
 		assertFullReplacement(hintFile, before, expected);
 		assertEquals("logical.simplification.boolean-conditional", //$NON-NLS-1$

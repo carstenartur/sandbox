@@ -43,7 +43,7 @@ class StrictBindingPolicyEvaluationTest {
 	}
 
 	@Test
-	void optionalPolicyKeepsHistoricalUnresolvedBindingFallback() throws Exception {
+	void executableRulesRequireKnownSemanticsEvenWithOptionalPolicy() throws Exception {
 		HintFile hints= parse("""
 				<!binding-policy: optional>
 				Assert.assertEquals($message, $expected, $actual)
@@ -56,8 +56,22 @@ class StrictBindingPolicyEvaluationTest {
 				.process(unresolvedSource());
 
 		assertFalse(results.isEmpty());
-		assertTrue(results.get(0).hasReplacement());
-		assertFalse(results.get(0).isSemanticUnknown());
+		assertFalse(results.get(0).hasReplacement());
+		assertTrue(results.get(0).isSemanticUnknown());
+	}
+
+	@Test
+	void optionalPolicyKeepsHintOnlyCompatibility() throws Exception {
+		HintFile hints = parse("""
+				<!binding-policy: optional>
+				Assert.assertEquals($message, $expected, $actual)
+				    :: $message instanceof java.lang.String
+				;;
+				""");
+		List<TransformationResult> results = new BatchTransformationProcessor(hints).process(unresolvedSource());
+		assertEquals(1, results.size());
+		assertFalse(results.getFirst().hasRewrite());
+		assertFalse(results.getFirst().isSemanticUnknown());
 	}
 
 	@Test

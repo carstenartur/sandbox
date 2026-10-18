@@ -18,10 +18,11 @@ import java.util.regex.Pattern;
  * Reads the {@code <!binding-policy: optional|required>} safety contract from
  * an ordinary hint program without otherwise interpreting the DSL.
  *
- * <p>{@link #OPTIONAL} preserves the historical behaviour of ordinary hints:
- * a binding-aware guard may degrade when semantic bindings are unavailable.
- * {@link #REQUIRED} is the fail-closed mode for ordinary migration programs
- * whose correctness depends on overload, owner, type or hierarchy information.
+ * <p>{@link #OPTIONAL} preserves historical fallback only for diagnostic-only
+ * hints. Every executable rule fails closed when a necessary source API identity
+ * or semantic guard is unknown, including rules declared optional.
+ * {@link #REQUIRED} also makes diagnostic-only hints use strict overload,
+ * owner, type and hierarchy information.
  * Plan-aware programs do not need this second declaration because
  * {@code <!requires-plan: ...>} already implies required semantic bindings.</p>
  *
