@@ -104,12 +104,12 @@ public class PatternCleanupHelper {
      * @return list of all matches
      */
     public List&lt;Match&gt; findAllMatches(org.eclipse.jdt.core.dom.CompilationUnit compilationUnit, List&lt;Pattern&gt; patterns) {
-<span class="nc" id="L107">        java.util.List&lt;Match&gt; allMatches = new java.util.ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L108" title="All 2 branches missed.">        for (Pattern pattern : patterns) {</span>
-<span class="nc" id="L109">            List&lt;Match&gt; matches = ENGINE.findMatches(compilationUnit, pattern);</span>
-<span class="nc" id="L110">            allMatches.addAll(matches);</span>
+<span class="fc" id="L107">        java.util.List&lt;Match&gt; allMatches = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        for (Pattern pattern : patterns) {</span>
+<span class="fc" id="L109">            List&lt;Match&gt; matches = ENGINE.findExecutableMatches(compilationUnit, pattern);</span>
+<span class="fc" id="L110">            allMatches.addAll(matches);</span>
         }
-<span class="nc" id="L112">        return allMatches;</span>
+<span class="fc" id="L112">        return allMatches;</span>
     }
     
     /**

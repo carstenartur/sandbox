@@ -1786,17 +1786,17 @@ public final class BuiltInGuards {
 	 * Args: [] (any throws) or [exceptionTypeName]
 	 * @since 1.4.1
 	 */
-	@SuppressWarnings(&quot;unchecked&quot;)
 	private static boolean evaluateThrowsException(GuardContext ctx, Object... args) {
-<span class="fc" id="L1791">		ASTNode node = ctx.getMatchedNode();</span>
-<span class="pc bpc" id="L1792" title="1 of 2 branches missed.">		if (node == null) {</span>
-<span class="nc" id="L1793">			return false;</span>
+<span class="fc" id="L1790">		ASTNode node = ctx.getMatchedNode();</span>
+<span class="pc bpc" id="L1791" title="1 of 2 branches missed.">		if (node == null) {</span>
+<span class="nc" id="L1792">			return false;</span>
 		}
-<span class="fc" id="L1795">		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);</span>
-<span class="pc bpc" id="L1796" title="1 of 2 branches missed.">		if (methodDecl == null) {</span>
-<span class="nc" id="L1797">			return false;</span>
+<span class="fc" id="L1794">		MethodDeclaration methodDecl = findEnclosingMethodDeclaration(node);</span>
+<span class="pc bpc" id="L1795" title="1 of 2 branches missed.">		if (methodDecl == null) {</span>
+<span class="nc" id="L1796">			return false;</span>
 		}
-<span class="fc" id="L1799">		List&lt;Name&gt; thrownExceptions = methodDecl.thrownExceptionTypes();</span>
+		// Modern JDT ASTs return Type nodes here; do not narrow the raw API to Name.
+<span class="fc" id="L1799">		List&lt;?&gt; thrownExceptions = methodDecl.thrownExceptionTypes();</span>
 <span class="fc bfc" id="L1800" title="All 2 branches covered.">		if (thrownExceptions.isEmpty()) {</span>
 <span class="fc" id="L1801">			return false;</span>
 		}

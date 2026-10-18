@@ -16,39 +16,50 @@ import java.util.Objects;
 /** Thread-confined semantic plan scope used while invoking the existing hint backend. */
 public final class SemanticRewritePlanContext {
 
-	private record State(SemanticRewritePlan plan, Map&lt;String, String&gt; compilerOptions) {
+	private record State(SemanticRewritePlan plan, Map&lt;String, String&gt; compilerOptions, Runnable cancellationCheck) {
 <span class="fc" id="L20">		State {</span>
 <span class="fc" id="L21">			plan= Objects.requireNonNullElseGet(plan, SemanticRewritePlan::empty);</span>
 <span class="pc bpc" id="L22" title="1 of 2 branches missed.">			compilerOptions= Map.copyOf(compilerOptions == null ? Map.of() : compilerOptions);</span>
-<span class="fc" id="L23">		}</span>
+<span class="fc" id="L23">			cancellationCheck= Objects.requireNonNull(cancellationCheck);</span>
+<span class="fc" id="L24">		}</span>
 	}
 
-<span class="fc" id="L26">	private static final ThreadLocal&lt;State&gt; CURRENT=</span>
-<span class="fc" id="L27">			ThreadLocal.withInitial(() -&gt; new State(SemanticRewritePlan.empty(), Map.of()));</span>
+<span class="fc" id="L27">	private static final ThreadLocal&lt;State&gt; CURRENT=</span>
+<span class="fc" id="L28">			ThreadLocal.withInitial(() -&gt; new State(SemanticRewritePlan.empty(), Map.of(), () -&gt; { }));</span>
 
 	private SemanticRewritePlanContext() {
 	}
 
 	/** Returns the plan active for the current synchronous hint-processing call. */
 	public static SemanticRewritePlan current() {
-<span class="fc" id="L34">		return CURRENT.get().plan();</span>
+<span class="fc" id="L35">		return CURRENT.get().plan();</span>
 	}
 
 	/** Returns the compiler options active in the current plan-aware scope. */
 	public static Map&lt;String, String&gt; currentCompilerOptions() {
-<span class="fc" id="L39">		return CURRENT.get().compilerOptions();</span>
+<span class="fc" id="L40">		return CURRENT.get().compilerOptions();</span>
 	}
+
+	/** Checks host cancellation without introducing a workbench dependency into the core. */
+	public static void checkCanceled() {
+<span class="fc" id="L45">		CURRENT.get().cancellationCheck().run();</span>
+<span class="fc" id="L46">	}</span>
 
 	/** Installs a plan with no additional compiler options. */
 	public static Scope install(SemanticRewritePlan plan) {
-<span class="nc" id="L44">		return install(plan, Map.of());</span>
+<span class="nc" id="L50">		return install(plan, Map.of());</span>
 	}
 
 	/** Installs a plan and compiler options until the returned scope is closed. */
 	public static Scope install(SemanticRewritePlan plan, Map&lt;String, String&gt; compilerOptions) {
-<span class="fc" id="L49">		State previous= CURRENT.get();</span>
-<span class="fc" id="L50">		CURRENT.set(new State(plan, compilerOptions));</span>
-<span class="fc" id="L51">		return new Scope(previous);</span>
+<span class="fc" id="L55">		return install(plan, compilerOptions, CURRENT.get().cancellationCheck());</span>
+	}
+
+	/** Installs the same project context and a host-provided cancellation check. */
+	public static Scope install(SemanticRewritePlan plan, Map&lt;String, String&gt; compilerOptions, Runnable cancellationCheck) {
+<span class="fc" id="L60">		State previous= CURRENT.get();</span>
+<span class="fc" id="L61">		CURRENT.set(new State(plan, compilerOptions, cancellationCheck));</span>
+<span class="fc" id="L62">		return new Scope(previous);</span>
 	}
 
 	/** Restores the previous scope exactly once. */
@@ -56,17 +67,17 @@ public final class SemanticRewritePlanContext {
 		private final State previous;
 		private boolean closed;
 
-<span class="fc" id="L59">		private Scope(State previous) {</span>
-<span class="fc" id="L60">			this.previous= previous;</span>
-<span class="fc" id="L61">		}</span>
+<span class="fc" id="L70">		private Scope(State previous) {</span>
+<span class="fc" id="L71">			this.previous= previous;</span>
+<span class="fc" id="L72">		}</span>
 
 		@Override
 		public void close() {
-<span class="pc bpc" id="L65" title="1 of 2 branches missed.">			if (!closed) {</span>
-<span class="fc" id="L66">				CURRENT.set(previous);</span>
-<span class="fc" id="L67">				closed= true;</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">			if (!closed) {</span>
+<span class="fc" id="L77">				CURRENT.set(previous);</span>
+<span class="fc" id="L78">				closed= true;</span>
 			}
-<span class="fc" id="L69">		}</span>
+<span class="fc" id="L80">		}</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

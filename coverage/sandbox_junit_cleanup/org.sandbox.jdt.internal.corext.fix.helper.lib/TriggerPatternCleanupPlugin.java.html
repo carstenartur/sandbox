@@ -171,7 +171,7 @@ import org.sandbox.jdt.triggerpattern.cleanup.PatternCleanupHelper;
 <span class="fc" id="L171">        ReferenceHolder&lt;Integer, JunitHolder&gt; dataHolder = ReferenceHolder.createIndexed();</span>
         
 <span class="fc bfc" id="L173" title="All 2 branches covered.">        for (Pattern pattern : getPatterns()) {</span>
-<span class="fc" id="L174">            List&lt;Match&gt; matches = ENGINE.findMatches(compilationUnit, pattern);</span>
+<span class="fc" id="L174">            List&lt;Match&gt; matches = ENGINE.findExecutableMatches(compilationUnit, pattern);</span>
             
 <span class="fc bfc" id="L176" title="All 2 branches covered.">            for (Match match : matches) {</span>
 <span class="fc" id="L177">                ASTNode node = match.getMatchedNode();</span>

@@ -14,6 +14,8 @@
 package org.sandbox.jdt.triggerpattern.internal;
 
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ArrayType;
 import org.eclipse.jdt.core.dom.ASTMatcher;
@@ -22,19 +24,24 @@ import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NameQualifiedType;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.WildcardType;
+import org.sandbox.jdt.triggerpattern.api.GuardContext.UnknownSemanticRequirement;
 
 /**
  * FQN-aware variant of {@link PlaceholderAstMatcher}.
@@ -43,368 +50,437 @@ import org.eclipse.jdt.core.dom.WildcardType;
  * matcher accepts source code that uses the same API via imports and simple
  * names. It applies that principle to type references, parameterized types,
  * arrays, constructors, type literals, casts and method receivers.&lt;/p&gt;
+ *
+ * &lt;p&gt;Literal dotted receiver names request a semantic API identity. An ambiguous
+ * value receiver such as {@code holder.field} must use an owner placeholder
+ * ({@code $owner.field}) so a variable shadowing an API name is not accepted.&lt;/p&gt;
  */
-<span class="fc" id="L47">public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {</span>
+public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 
-<span class="fc" id="L49">	private final ASTMatcher structuralMatcher = new ASTMatcher();</span>
+<span class="fc" id="L60">	private final ASTMatcher structuralMatcher = new ASTMatcher();</span>
+<span class="fc" id="L61">	private final Set&lt;UnknownSemanticRequirement&gt; unknownRequirements = new LinkedHashSet&lt;&gt;();</span>
+	private final boolean ignoreSemanticIdentities;
+
+	public FqnAwarePlaceholderAstMatcher() {
+<span class="fc" id="L65">		this(false);</span>
+<span class="fc" id="L66">	}</span>
+
+<span class="fc" id="L68">	private FqnAwarePlaceholderAstMatcher(boolean ignoreSemanticIdentities) {</span>
+<span class="fc" id="L69">		this.ignoreSemanticIdentities = ignoreSemanticIdentities;</span>
+<span class="fc" id="L70">	}</span>
+
+	/**
+	 * Tests whether an unresolved candidate otherwise has the required structure.
+	 * This isolated diagnostic probe never supplies bindings for an executable match.
+	 */
+	public boolean couldMatchIgnoringSemanticIdentities(ASTNode pattern, ASTNode source) {
+<span class="pc bpc" id="L77" title="2 of 4 branches missed.">		return pattern != null &amp;&amp; source != null</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">				&amp;&amp; pattern.subtreeMatch(new FqnAwarePlaceholderAstMatcher(true), source);</span>
+	}
+
+	@Override
+	public List&lt;UnknownSemanticRequirement&gt; getUnknownSemanticRequirements() {
+<span class="fc" id="L83">		return List.copyOf(unknownRequirements);</span>
+	}
 
 	@Override
 	public boolean match(SimpleType patternNode, Object other) {
-<span class="fc bfc" id="L53" title="All 2 branches covered.">		if (super.match(patternNode, other)) {</span>
-<span class="fc" id="L54">			return true;</span>
-		}
-<span class="fc" id="L56">		return other instanceof SimpleType otherType</span>
-<span class="pc bpc" id="L57" title="1 of 4 branches missed.">				&amp;&amp; namesEquivalent(patternNode.getName(), otherType.getName());</span>
+<span class="fc" id="L88">		return other instanceof SimpleType otherType</span>
+<span class="fc bfc" id="L89" title="All 4 branches covered.">				&amp;&amp; namesEquivalent(patternNode.getName(), otherType.getName());</span>
 	}
 
 	@Override
 	public boolean match(QualifiedType patternNode, Object other) {
-<span class="nc bnc" id="L62" title="All 4 branches missed.">		return other instanceof Type otherType &amp;&amp; typesEquivalent(patternNode, otherType);</span>
+<span class="nc bnc" id="L94" title="All 4 branches missed.">		return other instanceof Type otherType &amp;&amp; typesEquivalent(patternNode, otherType);</span>
 	}
 
 	@Override
 	public boolean match(NameQualifiedType patternNode, Object other) {
-<span class="nc bnc" id="L67" title="All 4 branches missed.">		return other instanceof Type otherType &amp;&amp; typesEquivalent(patternNode, otherType);</span>
+<span class="nc bnc" id="L99" title="All 4 branches missed.">		return other instanceof Type otherType &amp;&amp; typesEquivalent(patternNode, otherType);</span>
 	}
 
 	@Override
 	public boolean match(ParameterizedType patternNode, Object other) {
-<span class="pc bpc" id="L72" title="2 of 4 branches missed.">		return other instanceof Type otherType &amp;&amp; typesEquivalent(patternNode, otherType);</span>
+<span class="nc bnc" id="L104" title="All 4 branches missed.">		return other instanceof Type otherType &amp;&amp; typesEquivalent(patternNode, otherType);</span>
 	}
 
 	@Override
 	public boolean match(ArrayType patternNode, Object other) {
-<span class="nc bnc" id="L77" title="All 4 branches missed.">		return other instanceof Type otherType &amp;&amp; typesEquivalent(patternNode, otherType);</span>
+<span class="nc bnc" id="L109" title="All 4 branches missed.">		return other instanceof Type otherType &amp;&amp; typesEquivalent(patternNode, otherType);</span>
 	}
 
 	@Override
 	public boolean match(PrimitiveType patternNode, Object other) {
-<span class="fc" id="L82">		return other instanceof PrimitiveType otherType</span>
-<span class="pc bpc" id="L83" title="1 of 4 branches missed.">				&amp;&amp; patternNode.getPrimitiveTypeCode().equals(otherType.getPrimitiveTypeCode());</span>
+<span class="fc" id="L114">		return other instanceof PrimitiveType otherType</span>
+<span class="pc bpc" id="L115" title="1 of 4 branches missed.">				&amp;&amp; patternNode.getPrimitiveTypeCode().equals(otherType.getPrimitiveTypeCode());</span>
 	}
 
 	@Override
 	public boolean match(WildcardType patternNode, Object other) {
-<span class="nc bnc" id="L88" title="All 2 branches missed.">		if (!(other instanceof WildcardType otherType)) {</span>
-<span class="nc" id="L89">			return false;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">		if (!(other instanceof WildcardType otherType)) {</span>
+<span class="nc" id="L121">			return false;</span>
 		}
-<span class="nc bnc" id="L91" title="All 2 branches missed.">		if (patternNode.isUpperBound() != otherType.isUpperBound()) {</span>
-<span class="nc" id="L92">			return false;</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">		if (patternNode.isUpperBound() != otherType.isUpperBound()) {</span>
+<span class="nc" id="L124">			return false;</span>
 		}
-<span class="nc" id="L94">		return typesEquivalent(patternNode.getBound(), otherType.getBound());</span>
+<span class="nc" id="L126">		return typesEquivalent(patternNode.getBound(), otherType.getBound());</span>
 	}
 
 	@Override
 	public boolean match(TypeLiteral patternNode, Object other) {
-<span class="nc" id="L99">		return other instanceof TypeLiteral otherLiteral</span>
-<span class="nc bnc" id="L100" title="All 4 branches missed.">				&amp;&amp; typesEquivalent(patternNode.getType(), otherLiteral.getType());</span>
+<span class="nc" id="L131">		return other instanceof TypeLiteral otherLiteral</span>
+<span class="nc bnc" id="L132" title="All 4 branches missed.">				&amp;&amp; typesEquivalent(patternNode.getType(), otherLiteral.getType());</span>
 	}
 
 	@Override
 	public boolean match(CastExpression patternNode, Object other) {
-<span class="fc" id="L105">		return other instanceof CastExpression otherCast</span>
-<span class="pc bpc" id="L106" title="1 of 2 branches missed.">				&amp;&amp; typesEquivalent(patternNode.getType(), otherCast.getType())</span>
-<span class="pc bpc" id="L107" title="2 of 4 branches missed.">				&amp;&amp; patternNode.getExpression().subtreeMatch(this, otherCast.getExpression());</span>
+<span class="fc" id="L137">		return other instanceof CastExpression otherCast</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">				&amp;&amp; typesEquivalent(patternNode.getType(), otherCast.getType())</span>
+<span class="pc bpc" id="L139" title="1 of 4 branches missed.">				&amp;&amp; patternNode.getExpression().subtreeMatch(this, otherCast.getExpression());</span>
 	}
 
 	@Override
 	public boolean match(ClassInstanceCreation patternNode, Object other) {
-<span class="fc bfc" id="L112" title="All 2 branches covered.">		if (super.match(patternNode, other)) {</span>
-<span class="fc" id="L113">			return true;</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">		if (!(other instanceof ClassInstanceCreation otherCreation)) {</span>
+<span class="fc" id="L145">			return false;</span>
 		}
-<span class="pc bpc" id="L115" title="1 of 2 branches missed.">		if (!(other instanceof ClassInstanceCreation otherCreation)) {</span>
-<span class="nc" id="L116">			return false;</span>
-		}
-<span class="fc bfc" id="L118" title="All 2 branches covered.">		if (!typesEquivalent(patternNode.getType(), otherCreation.getType())) {</span>
-<span class="fc" id="L119">			return false;</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">		if (!typesEquivalent(patternNode.getType(), otherCreation.getType())) {</span>
+<span class="fc" id="L148">			return false;</span>
 		}
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L122">		List&lt;Type&gt; patternTypeArgs = patternNode.typeArguments();</span>
+<span class="fc" id="L151">		List&lt;Type&gt; patternTypeArgs = patternNode.typeArguments();</span>
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L124">		List&lt;Type&gt; otherTypeArgs = otherCreation.typeArguments();</span>
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (!typeListsEquivalent(patternTypeArgs, otherTypeArgs)) {</span>
-<span class="nc" id="L126">			return false;</span>
+<span class="fc" id="L153">		List&lt;Type&gt; otherTypeArgs = otherCreation.typeArguments();</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">		if (!typeListsEquivalent(patternTypeArgs, otherTypeArgs)) {</span>
+<span class="nc" id="L155">			return false;</span>
 		}
-<span class="pc bpc" id="L128" title="1 of 2 branches missed.">		if (!subtreeNullable(patternNode.getExpression(), otherCreation.getExpression())) {</span>
-<span class="nc" id="L129">			return false;</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		if (!subtreeNullable(patternNode.getExpression(), otherCreation.getExpression())) {</span>
+<span class="nc" id="L158">			return false;</span>
+		}
+<span class="fc bfc" id="L160" title="All 2 branches covered.">		if (!subtreeNullable(patternNode.getAnonymousClassDeclaration(), otherCreation.getAnonymousClassDeclaration())) {</span>
+<span class="fc" id="L161">			return false;</span>
 		}
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L132">		List&lt;Expression&gt; patternArgs = patternNode.arguments();</span>
+<span class="fc" id="L164">		List&lt;Expression&gt; patternArgs = patternNode.arguments();</span>
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L134">		List&lt;Expression&gt; otherArgs = otherCreation.arguments();</span>
-<span class="fc" id="L135">		return expressionListsEquivalent(patternArgs, otherArgs);</span>
+<span class="fc" id="L166">		List&lt;Expression&gt; otherArgs = otherCreation.arguments();</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">		if (!matchArgumentsWithMultiPlaceholders(patternArgs, otherArgs)) {</span>
+<span class="fc" id="L168">			return false;</span>
+		}
+<span class="fc bfc" id="L170" title="All 2 branches covered.">		if (typeIdentity(patternNode.getType()).contains(&quot;.&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L171">			IMethodBinding constructor = otherCreation.resolveConstructorBinding();</span>
+<span class="pc bpc" id="L172" title="1 of 4 branches missed.">			if (constructor == null || constructor.isRecovered()) {</span>
+<span class="fc" id="L173">				markUnknown(&quot;Constructor binding unavailable for &quot; + typeIdentity(patternNode.getType())); //$NON-NLS-1$</span>
+			}
+		}
+<span class="fc" id="L176">		return true;</span>
 	}
 
 	@Override
 	public boolean match(MethodInvocation patternNode, Object other) {
-<span class="fc bfc" id="L140" title="All 2 branches covered.">		if (super.match(patternNode, other)) {</span>
-<span class="fc" id="L141">			return true;</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">		if (!(other instanceof MethodInvocation otherInvocation)) {</span>
+<span class="fc" id="L182">			return false;</span>
 		}
-<span class="pc bpc" id="L143" title="1 of 2 branches missed.">		if (!(other instanceof MethodInvocation otherInvocation)) {</span>
-<span class="nc" id="L144">			return false;</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">		if (!patternNode.getName().subtreeMatch(this, otherInvocation.getName())) {</span>
+<span class="fc" id="L185">			return false;</span>
 		}
-<span class="fc bfc" id="L146" title="All 2 branches covered.">		if (!patternNode.getName().subtreeMatch(this, otherInvocation.getName())) {</span>
-<span class="fc" id="L147">			return false;</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">		if (!receiversEquivalent(patternNode.getExpression(), otherInvocation.getExpression())) {</span>
+<span class="fc" id="L188">			return false;</span>
 		}
-<span class="fc bfc" id="L149" title="All 2 branches covered.">		if (!receiversEquivalent(patternNode.getExpression(), otherInvocation.getExpression())) {</span>
-<span class="fc" id="L150">			return false;</span>
-		}
-<span class="pc bpc" id="L152" title="1 of 2 branches missed.">		if (!methodBindingCompatible(patternNode, otherInvocation)) {</span>
-<span class="nc" id="L153">			return false;</span>
+<span class="pc bpc" id="L190" title="1 of 2 branches missed.">		if (!methodBindingCompatible(patternNode, otherInvocation)) {</span>
+<span class="nc" id="L191">			return false;</span>
 		}
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L156">		List&lt;Type&gt; patternTypeArgs = patternNode.typeArguments();</span>
+<span class="fc" id="L194">		List&lt;Type&gt; patternTypeArgs = patternNode.typeArguments();</span>
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L158">		List&lt;Type&gt; otherTypeArgs = otherInvocation.typeArguments();</span>
-<span class="pc bpc" id="L159" title="1 of 2 branches missed.">		if (!typeListsEquivalent(patternTypeArgs, otherTypeArgs)) {</span>
-<span class="nc" id="L160">			return false;</span>
+<span class="fc" id="L196">		List&lt;Type&gt; otherTypeArgs = otherInvocation.typeArguments();</span>
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">		if (!typeListsEquivalent(patternTypeArgs, otherTypeArgs)) {</span>
+<span class="nc" id="L198">			return false;</span>
 		}
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L163">		List&lt;Expression&gt; patternArgs = patternNode.arguments();</span>
+<span class="fc" id="L201">		List&lt;Expression&gt; patternArgs = patternNode.arguments();</span>
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L165">		List&lt;Expression&gt; otherArgs = otherInvocation.arguments();</span>
-<span class="fc" id="L166">		return expressionListsEquivalent(patternArgs, otherArgs);</span>
+<span class="fc" id="L203">		List&lt;Expression&gt; otherArgs = otherInvocation.arguments();</span>
+<span class="fc" id="L204">		return matchArgumentsWithMultiPlaceholders(patternArgs, otherArgs);</span>
 	}
 
 	private boolean typesEquivalent(Type patternType, Type sourceType) {
-<span class="pc bpc" id="L170" title="1 of 2 branches missed.">		if (patternType == null) {</span>
-<span class="nc bnc" id="L171" title="All 2 branches missed.">			return sourceType == null;</span>
+<span class="pc bpc" id="L208" title="1 of 2 branches missed.">		if (patternType == null) {</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">			return sourceType == null;</span>
 		}
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">		if (sourceType == null) {</span>
-<span class="nc" id="L174">			return false;</span>
+<span class="pc bpc" id="L211" title="1 of 2 branches missed.">		if (sourceType == null) {</span>
+<span class="nc" id="L212">			return false;</span>
 		}
-<span class="fc bfc" id="L176" title="All 2 branches covered.">		if (patternType.subtreeMatch(structuralMatcher, sourceType)) {</span>
-<span class="fc" id="L177">			return true;</span>
+<span class="pc bpc" id="L214" title="1 of 4 branches missed.">		if (patternType instanceof SimpleType patternSimple &amp;&amp; sourceType instanceof SimpleType sourceSimple) {</span>
+<span class="fc" id="L215">			return namesEquivalent(patternSimple.getName(), sourceSimple.getName());</span>
 		}
-<span class="pc bpc" id="L179" title="1 of 4 branches missed.">		if (patternType instanceof SimpleType patternSimple &amp;&amp; sourceType instanceof SimpleType sourceSimple) {</span>
-<span class="fc" id="L180">			return namesEquivalent(patternSimple.getName(), sourceSimple.getName());</span>
+<span class="pc bpc" id="L217" title="1 of 4 branches missed.">		if (patternType instanceof ParameterizedType patternParam &amp;&amp; sourceType instanceof ParameterizedType sourceParam) {</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">			return typesEquivalent(patternParam.getType(), sourceParam.getType())</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">					&amp;&amp; typeListsEquivalent(patternParam.typeArguments(), sourceParam.typeArguments());</span>
 		}
-<span class="pc bpc" id="L182" title="2 of 4 branches missed.">		if (patternType instanceof ParameterizedType patternParam &amp;&amp; sourceType instanceof ParameterizedType sourceParam) {</span>
-<span class="pc bpc" id="L183" title="1 of 2 branches missed.">			return typesEquivalent(patternParam.getType(), sourceParam.getType())</span>
-<span class="pc bpc" id="L184" title="1 of 2 branches missed.">					&amp;&amp; typeListsEquivalent(patternParam.typeArguments(), sourceParam.typeArguments());</span>
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">		if (patternType instanceof ParameterizedType patternParam) {</span>
+<span class="nc" id="L222">			return typesEquivalent(patternParam.getType(), sourceType);</span>
 		}
-<span class="nc bnc" id="L186" title="All 2 branches missed.">		if (patternType instanceof ParameterizedType patternParam) {</span>
-<span class="nc" id="L187">			return typesEquivalent(patternParam.getType(), sourceType);</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">		if (sourceType instanceof ParameterizedType sourceParam) {</span>
+<span class="nc" id="L225">			return typesEquivalent(patternType, sourceParam.getType());</span>
 		}
-<span class="nc bnc" id="L189" title="All 2 branches missed.">		if (sourceType instanceof ParameterizedType sourceParam) {</span>
-<span class="nc" id="L190">			return typesEquivalent(patternType, sourceParam.getType());</span>
+<span class="pc bpc" id="L227" title="3 of 4 branches missed.">		if (patternType instanceof ArrayType patternArray &amp;&amp; sourceType instanceof ArrayType sourceArray) {</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">			return patternArray.getDimensions() == sourceArray.getDimensions()</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">					&amp;&amp; typesEquivalent(patternArray.getElementType(), sourceArray.getElementType());</span>
 		}
-<span class="nc bnc" id="L192" title="All 4 branches missed.">		if (patternType instanceof ArrayType patternArray &amp;&amp; sourceType instanceof ArrayType sourceArray) {</span>
-<span class="nc bnc" id="L193" title="All 2 branches missed.">			return patternArray.getDimensions() == sourceArray.getDimensions()</span>
-<span class="nc bnc" id="L194" title="All 2 branches missed.">					&amp;&amp; typesEquivalent(patternArray.getElementType(), sourceArray.getElementType());</span>
+<span class="pc bpc" id="L231" title="2 of 4 branches missed.">		if (patternType instanceof WildcardType patternWildcard &amp;&amp; sourceType instanceof WildcardType sourceWildcard) {</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">			return patternWildcard.isUpperBound() == sourceWildcard.isUpperBound()</span>
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">					&amp;&amp; typesEquivalent(patternWildcard.getBound(), sourceWildcard.getBound());</span>
 		}
-<span class="nc" id="L196">		String patternIdentity = typeIdentity(patternType);</span>
-<span class="nc" id="L197">		String sourceIdentity = typeIdentity(sourceType);</span>
-<span class="nc bnc" id="L198" title="All 4 branches missed.">		return patternIdentity != null &amp;&amp; patternIdentity.equals(sourceIdentity);</span>
+<span class="nc" id="L235">		String patternIdentity = typeIdentity(patternType);</span>
+<span class="nc" id="L236">		String sourceIdentity = typeIdentity(sourceType);</span>
+<span class="nc bnc" id="L237" title="All 4 branches missed.">		return patternIdentity != null &amp;&amp; patternIdentity.equals(sourceIdentity);</span>
 	}
 
 	private boolean typeListsEquivalent(List&lt;?&gt; patternTypes, List&lt;?&gt; sourceTypes) {
-<span class="pc bpc" id="L202" title="1 of 2 branches missed.">		if (patternTypes.size() != sourceTypes.size()) {</span>
-<span class="nc" id="L203">			return false;</span>
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">		if (patternTypes.size() != sourceTypes.size()) {</span>
+<span class="nc" id="L242">			return false;</span>
 		}
-<span class="pc bpc" id="L205" title="1 of 2 branches missed.">		for (int i = 0; i &lt; patternTypes.size(); i++) {</span>
-<span class="nc bnc" id="L206" title="All 2 branches missed.">			if (!typesEquivalent((Type) patternTypes.get(i), (Type) sourceTypes.get(i))) {</span>
-<span class="nc" id="L207">				return false;</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">		for (int i = 0; i &lt; patternTypes.size(); i++) {</span>
+<span class="fc bfc" id="L245" title="All 2 branches covered.">			if (!typesEquivalent((Type) patternTypes.get(i), (Type) sourceTypes.get(i))) {</span>
+<span class="fc" id="L246">				return false;</span>
 			}
 		}
-<span class="fc" id="L210">		return true;</span>
-	}
-
-	private boolean expressionListsEquivalent(List&lt;Expression&gt; patternArgs, List&lt;Expression&gt; sourceArgs) {
-<span class="fc bfc" id="L214" title="All 2 branches covered.">		if (patternArgs.size() != sourceArgs.size()) {</span>
-<span class="fc" id="L215">			return false;</span>
-		}
-<span class="pc bpc" id="L217" title="1 of 2 branches missed.">		for (int i = 0; i &lt; patternArgs.size(); i++) {</span>
-<span class="fc bfc" id="L218" title="All 2 branches covered.">			if (!patternArgs.get(i).subtreeMatch(this, sourceArgs.get(i))) {</span>
-<span class="fc" id="L219">				return false;</span>
-			}
-		}
-<span class="nc" id="L222">		return true;</span>
+<span class="fc" id="L249">		return true;</span>
 	}
 
 	private boolean subtreeNullable(ASTNode patternNode, ASTNode sourceNode) {
-<span class="pc bpc" id="L226" title="1 of 2 branches missed.">		if (patternNode == null) {</span>
-<span class="pc bpc" id="L227" title="1 of 2 branches missed.">			return sourceNode == null;</span>
+<span class="pc bpc" id="L253" title="1 of 2 branches missed.">		if (patternNode == null) {</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">			return sourceNode == null;</span>
 		}
-<span class="nc" id="L229">		return patternNode.subtreeMatch(this, sourceNode);</span>
+<span class="nc" id="L256">		return patternNode.subtreeMatch(this, sourceNode);</span>
 	}
 
 	private boolean receiversEquivalent(Expression patternExpr, Expression sourceExpr) {
-<span class="fc bfc" id="L233" title="All 2 branches covered.">		if (patternExpr == null) {</span>
-<span class="pc bpc" id="L234" title="1 of 2 branches missed.">			return sourceExpr == null;</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">		if (patternExpr == null) {</span>
+<span class="pc bpc" id="L261" title="1 of 2 branches missed.">			return sourceExpr == null;</span>
 		}
-<span class="fc bfc" id="L236" title="All 2 branches covered.">		if (sourceExpr == null) {</span>
-<span class="fc" id="L237">			return false;</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">		if (sourceExpr == null) {</span>
+<span class="fc" id="L264">			return false;</span>
 		}
-<span class="fc bfc" id="L239" title="All 2 branches covered.">		if (patternExpr.subtreeMatch(this, sourceExpr)) {</span>
-<span class="fc" id="L240">			return true;</span>
+<span class="fc bfc" id="L266" title="All 4 branches covered.">		if (patternExpr instanceof Name patternName &amp;&amp; sourceExpr instanceof Name sourceName) {</span>
+<span class="fc" id="L267">			return namesEquivalent(patternName, sourceName);</span>
 		}
-<span class="pc bpc" id="L242" title="1 of 2 branches missed.">		return patternExpr instanceof Name patternName</span>
-<span class="fc" id="L243">				&amp;&amp; sourceExpr instanceof Name sourceName</span>
-<span class="fc bfc" id="L244" title="All 4 branches covered.">				&amp;&amp; namesEquivalent(patternName, sourceName);</span>
+<span class="fc bfc" id="L269" title="All 2 branches covered.">		if (patternExpr.subtreeMatch(this, sourceExpr)) {</span>
+<span class="fc" id="L270">			return true;</span>
+		}
+<span class="pc bnc" id="L272" title="All 2 branches missed.">		return patternExpr instanceof Name patternName</span>
+<span class="nc" id="L273">				&amp;&amp; sourceExpr instanceof Name sourceName</span>
+<span class="pc bpc" id="L274" title="3 of 4 branches missed.">				&amp;&amp; namesEquivalent(patternName, sourceName);</span>
 	}
 
 	private boolean methodBindingCompatible(MethodInvocation patternNode, MethodInvocation sourceNode) {
-<span class="fc bfc" id="L248" title="All 2 branches covered.">		if (!(patternNode.getExpression() instanceof Name patternReceiver)</span>
-<span class="fc bfc" id="L249" title="All 2 branches covered.">				|| !isFullyQualified(patternReceiver.getFullyQualifiedName())) {</span>
-<span class="fc" id="L250">			return true;</span>
+<span class="fc bfc" id="L278" title="All 4 branches covered.">		if (ignoreSemanticIdentities || !(patternNode.getExpression() instanceof Name patternReceiver)</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">				|| containsPlaceholder(patternReceiver)</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">				|| !isFullyQualified(patternReceiver.getFullyQualifiedName())) {</span>
+<span class="fc" id="L281">			return true;</span>
 		}
-<span class="fc" id="L252">		IMethodBinding binding = sourceNode.resolveMethodBinding();</span>
-<span class="pc bpc" id="L253" title="1 of 4 branches missed.">		if (binding == null || binding.getDeclaringClass() == null) {</span>
-<span class="fc" id="L254">			return true;</span>
+<span class="fc" id="L283">		IMethodBinding binding = sourceNode.resolveMethodBinding();</span>
+<span class="pc bpc" id="L284" title="2 of 6 branches missed.">		if (binding == null || binding.isRecovered() || binding.getDeclaringClass() == null</span>
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">				|| binding.getDeclaringClass().isRecovered()) {</span>
+<span class="fc" id="L286">			markUnknown(&quot;Method binding unavailable for &quot; + patternReceiver.getFullyQualifiedName() //$NON-NLS-1$</span>
+<span class="fc" id="L287">					+ '.' + patternNode.getName().getIdentifier());</span>
+<span class="fc" id="L288">			return true;</span>
 		}
-<span class="fc" id="L256">		String declaringClass = binding.getDeclaringClass().getQualifiedName();</span>
-<span class="fc" id="L257">		return patternReceiver.getFullyQualifiedName().equals(declaringClass);</span>
+		// receiversEquivalent already verified the actual receiver identity. The
+		// method can be inherited and declared on a different type.
+<span class="fc" id="L292">		return true;</span>
 	}
 
 	private boolean namesEquivalent(Name patternName, Name sourceName) {
-<span class="pc bpc" id="L261" title="1 of 2 branches missed.">		if (patternName.subtreeMatch(structuralMatcher, sourceName)) {</span>
-<span class="nc" id="L262">			return true;</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">		if (containsPlaceholder(patternName)) {</span>
+<span class="fc" id="L297">			return patternName.subtreeMatch(this, sourceName);</span>
 		}
-<span class="pc bpc" id="L264" title="3 of 4 branches missed.">		if (patternName instanceof SimpleName patternSimple &amp;&amp; patternSimple.getIdentifier().startsWith(&quot;$&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L265">			return patternName.subtreeMatch(this, sourceName);</span>
+<span class="fc" id="L299">		String patternFqn = patternName.getFullyQualifiedName();</span>
+<span class="pc bpc" id="L300" title="1 of 4 branches missed.">		if (ignoreSemanticIdentities &amp;&amp; isFullyQualified(patternFqn)) {</span>
+<span class="fc" id="L301">			return true;</span>
 		}
-<span class="fc" id="L267">		String patternFqn = patternName.getFullyQualifiedName();</span>
-<span class="fc" id="L268">		String sourceFqn = sourceName.getFullyQualifiedName();</span>
-<span class="pc bpc" id="L269" title="1 of 2 branches missed.">		if (patternFqn.equals(sourceFqn)) {</span>
-<span class="nc" id="L270">			return true;</span>
+<span class="fc bfc" id="L303" title="All 2 branches covered.">		if (isFullyQualified(patternFqn)) {</span>
+<span class="fc" id="L304">			IBinding binding = sourceName.resolveBinding();</span>
+<span class="fc bfc" id="L305" title="All 4 branches covered.">			if (binding != null &amp;&amp; !binding.isRecovered()) {</span>
+				// A variable can shadow an imported type; an explicit resolved identity
+				// takes precedence over plausible imports or java.lang spelling.
+<span class="fc bfc" id="L308" title="All 2 branches covered.">				if (binding instanceof ITypeBinding type) {</span>
+<span class="fc" id="L309">					return patternFqn.equals(type.getErasure().getQualifiedName());</span>
+				}
+<span class="pc bpc" id="L311" title="2 of 6 branches missed.">				if (binding instanceof IVariableBinding field &amp;&amp; field.isField() &amp;&amp; field.getDeclaringClass() != null) {</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">					if (patternFqn.equals(field.getDeclaringClass().getErasure().getQualifiedName() + '.' + field.getName())) {</span>
+<span class="fc" id="L313">						return true;</span>
+					}
+					// A relative field receiver such as System.out names its type
+					// without a package. Resolve that qualifier rather than comparing
+					// the relative spelling with the field's fully qualified identity.
+<span class="fc" id="L318">					return patternName instanceof QualifiedName patternQualified</span>
+<span class="pc bpc" id="L319" title="1 of 4 branches missed.">							&amp;&amp; patternQualified.getQualifier() instanceof SimpleName</span>
+<span class="fc" id="L320">							&amp;&amp; sourceName instanceof QualifiedName sourceQualified</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">							&amp;&amp; sourceQualified.getQualifier().resolveBinding() instanceof ITypeBinding</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">							&amp;&amp; patternQualified.getName().getIdentifier().equals(field.getName())</span>
+<span class="pc bpc" id="L323" title="2 of 4 branches missed.">							&amp;&amp; namesEquivalent(patternQualified.getQualifier(), sourceQualified.getQualifier());</span>
+				}
+<span class="fc" id="L325">				return false;</span>
+			}
+<span class="fc" id="L327">			markUnknown(&quot;Type binding unavailable for &quot; + patternFqn); //$NON-NLS-1$</span>
 		}
-<span class="pc bpc" id="L272" title="1 of 4 branches missed.">		if (isFullyQualified(patternFqn) &amp;&amp; sourceName instanceof SimpleName sourceSimple) {</span>
-<span class="fc" id="L273">			return simpleNameResolvesTo(sourceSimple, patternFqn);</span>
+<span class="fc bfc" id="L329" title="All 2 branches covered.">		if (patternName.subtreeMatch(structuralMatcher, sourceName)) {</span>
+<span class="fc" id="L330">			return true;</span>
 		}
-<span class="pc bpc" id="L275" title="2 of 4 branches missed.">		if (isFullyQualified(sourceFqn) &amp;&amp; patternName instanceof SimpleName patternSimple) {</span>
-<span class="nc" id="L276">			return simpleNameResolvesTo(patternSimple, sourceFqn);</span>
+<span class="fc" id="L332">		String sourceFqn = sourceName.getFullyQualifiedName();</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">		if (patternFqn.equals(sourceFqn)) {</span>
+<span class="nc" id="L334">			return true;</span>
 		}
-<span class="fc" id="L278">		return false;</span>
+<span class="fc bfc" id="L336" title="All 4 branches covered.">		if (isFullyQualified(patternFqn) &amp;&amp; sourceName instanceof SimpleName sourceSimple) {</span>
+<span class="fc" id="L337">			return simpleNameResolvesTo(sourceSimple, patternFqn);</span>
+		}
+<span class="fc bfc" id="L339" title="All 4 branches covered.">		if (isFullyQualified(sourceFqn) &amp;&amp; patternName instanceof SimpleName patternSimple) {</span>
+<span class="fc" id="L340">			return simpleNameResolvesTo(patternSimple, sourceFqn);</span>
+		}
+<span class="fc" id="L342">		return false;</span>
+	}
+
+	private boolean containsPlaceholder(Name name) {
+<span class="fc bfc" id="L346" title="All 2 branches covered.">		if (name instanceof SimpleName simpleName) {</span>
+<span class="fc" id="L347">			return simpleName.getIdentifier().startsWith(&quot;$&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L349">		return name instanceof QualifiedName qualifiedName</span>
+<span class="pc bpc" id="L350" title="2 of 6 branches missed.">				&amp;&amp; (containsPlaceholder(qualifiedName.getQualifier()) || containsPlaceholder(qualifiedName.getName()));</span>
 	}
 
 	private String typeIdentity(Type type) {
-<span class="nc bnc" id="L282" title="All 2 branches missed.">		if (type == null) {</span>
-<span class="nc" id="L283">			return null;</span>
+<span class="pc bpc" id="L354" title="1 of 2 branches missed.">		if (type == null) {</span>
+<span class="nc" id="L355">			return null;</span>
 		}
-<span class="nc bnc" id="L285" title="All 2 branches missed.">		if (type instanceof SimpleType simpleType) {</span>
-<span class="nc" id="L286">			return nameIdentity(simpleType.getName());</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">		if (type instanceof SimpleType simpleType) {</span>
+<span class="fc" id="L358">			return nameIdentity(simpleType.getName());</span>
 		}
-<span class="nc bnc" id="L288" title="All 2 branches missed.">		if (type instanceof ParameterizedType parameterizedType) {</span>
-<span class="nc" id="L289">			String raw = typeIdentity(parameterizedType.getType());</span>
+<span class="pc bpc" id="L360" title="1 of 2 branches missed.">		if (type instanceof ParameterizedType parameterizedType) {</span>
+<span class="fc" id="L361">			String raw = typeIdentity(parameterizedType.getType());</span>
 			@SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L291">			List&lt;Type&gt; args = parameterizedType.typeArguments();</span>
-<span class="nc bnc" id="L292" title="All 2 branches missed.">			if (args.isEmpty()) {</span>
-<span class="nc" id="L293">				return raw;</span>
+<span class="fc" id="L363">			List&lt;Type&gt; args = parameterizedType.typeArguments();</span>
+<span class="pc bpc" id="L364" title="1 of 2 branches missed.">			if (args.isEmpty()) {</span>
+<span class="fc" id="L365">				return raw;</span>
 			}
-<span class="nc bnc" id="L295" title="All 2 branches missed.">			StringBuilder sb = new StringBuilder(raw == null ? &quot;&quot; : raw); //$NON-NLS-1$</span>
-<span class="nc" id="L296">			sb.append('&lt;');</span>
-<span class="nc bnc" id="L297" title="All 2 branches missed.">			for (int i = 0; i &lt; args.size(); i++) {</span>
-<span class="nc bnc" id="L298" title="All 2 branches missed.">				if (i &gt; 0) {</span>
-<span class="nc" id="L299">					sb.append(',');</span>
+<span class="nc bnc" id="L367" title="All 2 branches missed.">			StringBuilder sb = new StringBuilder(raw == null ? &quot;&quot; : raw); //$NON-NLS-1$</span>
+<span class="nc" id="L368">			sb.append('&lt;');</span>
+<span class="nc bnc" id="L369" title="All 2 branches missed.">			for (int i = 0; i &lt; args.size(); i++) {</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">				if (i &gt; 0) {</span>
+<span class="nc" id="L371">					sb.append(',');</span>
 				}
-<span class="nc" id="L301">				sb.append(typeIdentity(args.get(i)));</span>
+<span class="nc" id="L373">				sb.append(typeIdentity(args.get(i)));</span>
 			}
-<span class="nc" id="L303">			sb.append('&gt;');</span>
-<span class="nc" id="L304">			return sb.toString();</span>
+<span class="nc" id="L375">			sb.append('&gt;');</span>
+<span class="nc" id="L376">			return sb.toString();</span>
 		}
-<span class="nc bnc" id="L306" title="All 2 branches missed.">		if (type instanceof ArrayType arrayType) {</span>
-<span class="nc" id="L307">			return typeIdentity(arrayType.getElementType()) + &quot;[]&quot;.repeat(arrayType.getDimensions()); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L378" title="All 2 branches missed.">		if (type instanceof ArrayType arrayType) {</span>
+<span class="nc" id="L379">			return typeIdentity(arrayType.getElementType()) + &quot;[]&quot;.repeat(arrayType.getDimensions()); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L309" title="All 2 branches missed.">		if (type instanceof PrimitiveType primitiveType) {</span>
-<span class="nc" id="L310">			return primitiveType.getPrimitiveTypeCode().toString();</span>
+<span class="nc bnc" id="L381" title="All 2 branches missed.">		if (type instanceof PrimitiveType primitiveType) {</span>
+<span class="nc" id="L382">			return primitiveType.getPrimitiveTypeCode().toString();</span>
 		}
-<span class="nc bnc" id="L312" title="All 2 branches missed.">		if (type instanceof WildcardType wildcardType) {</span>
-<span class="nc bnc" id="L313" title="All 2 branches missed.">			if (wildcardType.getBound() == null) {</span>
-<span class="nc" id="L314">				return &quot;?&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L384" title="All 2 branches missed.">		if (type instanceof WildcardType wildcardType) {</span>
+<span class="nc bnc" id="L385" title="All 2 branches missed.">			if (wildcardType.getBound() == null) {</span>
+<span class="nc" id="L386">				return &quot;?&quot;; //$NON-NLS-1$</span>
 			}
-<span class="nc bnc" id="L316" title="All 2 branches missed.">			return wildcardType.isUpperBound()</span>
-<span class="nc" id="L317">					? &quot;? extends &quot; + typeIdentity(wildcardType.getBound()) //$NON-NLS-1$</span>
-<span class="nc" id="L318">					: &quot;? super &quot; + typeIdentity(wildcardType.getBound()); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L388" title="All 2 branches missed.">			return wildcardType.isUpperBound()</span>
+<span class="nc" id="L389">					? &quot;? extends &quot; + typeIdentity(wildcardType.getBound()) //$NON-NLS-1$</span>
+<span class="nc" id="L390">					: &quot;? super &quot; + typeIdentity(wildcardType.getBound()); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L320">		return type.toString();</span>
+<span class="nc" id="L392">		return type.toString();</span>
 	}
 
 	private String nameIdentity(Name name) {
-<span class="nc bnc" id="L324" title="All 2 branches missed.">		if (name instanceof SimpleName simpleName) {</span>
-<span class="nc" id="L325">			String resolved = resolveSimpleNameViaImports(simpleName);</span>
-<span class="nc bnc" id="L326" title="All 2 branches missed.">			return resolved != null ? resolved : simpleName.getIdentifier();</span>
+<span class="fc bfc" id="L396" title="All 2 branches covered.">		if (name instanceof SimpleName simpleName) {</span>
+<span class="fc" id="L397">			String resolved = resolveSimpleNameViaImports(simpleName);</span>
+<span class="pc bpc" id="L398" title="1 of 2 branches missed.">			return resolved != null ? resolved : simpleName.getIdentifier();</span>
 		}
-<span class="nc" id="L328">		return name.getFullyQualifiedName();</span>
+<span class="fc" id="L400">		return name.getFullyQualifiedName();</span>
 	}
 
 	private boolean simpleNameResolvesTo(SimpleName simpleName, String expectedFqn) {
-<span class="fc" id="L332">		String identifier = simpleName.getIdentifier();</span>
-<span class="fc" id="L333">		int lastDot = expectedFqn.lastIndexOf('.');</span>
-<span class="pc bpc" id="L334" title="1 of 2 branches missed.">		String expectedSimpleName = lastDot &gt;= 0 ? expectedFqn.substring(lastDot + 1) : expectedFqn;</span>
-<span class="fc bfc" id="L335" title="All 2 branches covered.">		if (!identifier.equals(expectedSimpleName)) {</span>
-<span class="fc" id="L336">			return false;</span>
+<span class="fc" id="L404">		String identifier = simpleName.getIdentifier();</span>
+<span class="fc" id="L405">		int lastDot = expectedFqn.lastIndexOf('.');</span>
+<span class="pc bpc" id="L406" title="1 of 2 branches missed.">		String expectedSimpleName = lastDot &gt;= 0 ? expectedFqn.substring(lastDot + 1) : expectedFqn;</span>
+<span class="fc bfc" id="L407" title="All 2 branches covered.">		if (!identifier.equals(expectedSimpleName)) {</span>
+<span class="fc" id="L408">			return false;</span>
 		}
-<span class="fc" id="L338">		String resolved = resolveSimpleNameViaImports(simpleName);</span>
-<span class="fc bfc" id="L339" title="All 2 branches covered.">		if (expectedFqn.equals(resolved)) {</span>
-<span class="fc" id="L340">			return true;</span>
+<span class="fc" id="L410">		String resolved = resolveSimpleNameViaImports(simpleName);</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">		if (expectedFqn.equals(resolved)) {</span>
+<span class="fc" id="L412">			return true;</span>
 		}
-<span class="fc bfc" id="L342" title="All 2 branches covered.">		if (expectedFqn.startsWith(&quot;java.lang.&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L343">			return true;</span>
+<span class="fc bfc" id="L414" title="All 2 branches covered.">		if (expectedFqn.startsWith(&quot;java.lang.&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L415">			return true;</span>
 		}
-<span class="fc" id="L345">		CompilationUnit cu = findCompilationUnit(simpleName);</span>
-<span class="pc bpc" id="L346" title="1 of 4 branches missed.">		if (cu != null &amp;&amp; cu.getPackage() != null) {</span>
-<span class="fc" id="L347">			String packageName = cu.getPackage().getName().getFullyQualifiedName();</span>
-<span class="pc bpc" id="L348" title="1 of 2 branches missed.">			if (expectedFqn.equals(packageName + '.' + identifier)) {</span>
-<span class="nc" id="L349">				return true;</span>
+<span class="fc" id="L417">		CompilationUnit cu = findCompilationUnit(simpleName);</span>
+<span class="pc bpc" id="L418" title="1 of 4 branches missed.">		if (cu != null &amp;&amp; cu.getPackage() != null) {</span>
+<span class="fc" id="L419">			String packageName = cu.getPackage().getName().getFullyQualifiedName();</span>
+<span class="pc bpc" id="L420" title="1 of 2 branches missed.">			if (expectedFqn.equals(packageName + '.' + identifier)) {</span>
+<span class="nc" id="L421">				return true;</span>
 			}
 		}
-<span class="fc" id="L352">		return importOnDemandCanResolve(simpleName, expectedFqn);</span>
+<span class="fc" id="L424">		return importOnDemandCanResolve(simpleName, expectedFqn);</span>
 	}
 
 	private String resolveSimpleNameViaImports(SimpleName simpleName) {
-<span class="fc" id="L356">		CompilationUnit cu = findCompilationUnit(simpleName);</span>
-<span class="pc bpc" id="L357" title="1 of 2 branches missed.">		if (cu == null) {</span>
-<span class="nc" id="L358">			return null;</span>
+<span class="fc" id="L428">		CompilationUnit cu = findCompilationUnit(simpleName);</span>
+<span class="pc bpc" id="L429" title="1 of 2 branches missed.">		if (cu == null) {</span>
+<span class="nc" id="L430">			return null;</span>
 		}
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L361">		List&lt;ImportDeclaration&gt; imports = cu.imports();</span>
-<span class="fc bfc" id="L362" title="All 2 branches covered.">		for (ImportDeclaration importDecl : imports) {</span>
-<span class="pc bpc" id="L363" title="2 of 4 branches missed.">			if (importDecl.isStatic() || importDecl.isOnDemand()) {</span>
-<span class="nc" id="L364">				continue;</span>
+<span class="fc" id="L433">		List&lt;ImportDeclaration&gt; imports = cu.imports();</span>
+<span class="fc bfc" id="L434" title="All 2 branches covered.">		for (ImportDeclaration importDecl : imports) {</span>
+<span class="pc bpc" id="L435" title="2 of 4 branches missed.">			if (importDecl.isStatic() || importDecl.isOnDemand()) {</span>
+<span class="nc" id="L436">				continue;</span>
 			}
-<span class="fc" id="L366">			String importFqn = importDecl.getName().getFullyQualifiedName();</span>
-<span class="fc" id="L367">			int lastDot = importFqn.lastIndexOf('.');</span>
-<span class="pc bpc" id="L368" title="1 of 2 branches missed.">			String importSimpleName = lastDot &gt;= 0 ? importFqn.substring(lastDot + 1) : importFqn;</span>
-<span class="fc bfc" id="L369" title="All 2 branches covered.">			if (simpleName.getIdentifier().equals(importSimpleName)) {</span>
-<span class="fc" id="L370">				return importFqn;</span>
+<span class="fc" id="L438">			String importFqn = importDecl.getName().getFullyQualifiedName();</span>
+<span class="fc" id="L439">			int lastDot = importFqn.lastIndexOf('.');</span>
+<span class="pc bpc" id="L440" title="1 of 2 branches missed.">			String importSimpleName = lastDot &gt;= 0 ? importFqn.substring(lastDot + 1) : importFqn;</span>
+<span class="fc bfc" id="L441" title="All 2 branches covered.">			if (simpleName.getIdentifier().equals(importSimpleName)) {</span>
+<span class="fc" id="L442">				return importFqn;</span>
 			}
-<span class="fc" id="L372">		}</span>
-<span class="fc" id="L373">		return null;</span>
+<span class="fc" id="L444">		}</span>
+<span class="fc" id="L445">		return null;</span>
 	}
 
 	private boolean importOnDemandCanResolve(SimpleName simpleName, String expectedFqn) {
-<span class="fc" id="L377">		CompilationUnit cu = findCompilationUnit(simpleName);</span>
-<span class="pc bpc" id="L378" title="1 of 2 branches missed.">		if (cu == null) {</span>
-<span class="nc" id="L379">			return false;</span>
+<span class="fc" id="L449">		CompilationUnit cu = findCompilationUnit(simpleName);</span>
+<span class="pc bpc" id="L450" title="1 of 2 branches missed.">		if (cu == null) {</span>
+<span class="nc" id="L451">			return false;</span>
 		}
 		@SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L382">		List&lt;ImportDeclaration&gt; imports = cu.imports();</span>
-<span class="fc bfc" id="L383" title="All 2 branches covered.">		for (ImportDeclaration importDecl : imports) {</span>
-<span class="pc bpc" id="L384" title="2 of 4 branches missed.">			if (importDecl.isStatic() || !importDecl.isOnDemand()) {</span>
-<span class="fc" id="L385">				continue;</span>
+<span class="fc" id="L454">		List&lt;ImportDeclaration&gt; imports = cu.imports();</span>
+<span class="fc bfc" id="L455" title="All 2 branches covered.">		for (ImportDeclaration importDecl : imports) {</span>
+<span class="pc bpc" id="L456" title="2 of 4 branches missed.">			if (importDecl.isStatic() || !importDecl.isOnDemand()) {</span>
+<span class="fc" id="L457">				continue;</span>
 			}
-<span class="nc" id="L387">			String packageName = importDecl.getName().getFullyQualifiedName();</span>
-<span class="nc bnc" id="L388" title="All 2 branches missed.">			if (expectedFqn.equals(packageName + '.' + simpleName.getIdentifier())) {</span>
-<span class="nc" id="L389">				return true;</span>
+<span class="nc" id="L459">			String packageName = importDecl.getName().getFullyQualifiedName();</span>
+<span class="nc bnc" id="L460" title="All 2 branches missed.">			if (expectedFqn.equals(packageName + '.' + simpleName.getIdentifier())) {</span>
+<span class="nc" id="L461">				return true;</span>
 			}
-<span class="nc" id="L391">		}</span>
-<span class="fc" id="L392">		return false;</span>
+<span class="nc" id="L463">		}</span>
+<span class="fc" id="L464">		return false;</span>
 	}
 
 	private CompilationUnit findCompilationUnit(ASTNode node) {
-<span class="fc" id="L396">		ASTNode current = node;</span>
-<span class="pc bpc" id="L397" title="1 of 2 branches missed.">		while (current != null) {</span>
-<span class="fc bfc" id="L398" title="All 2 branches covered.">			if (current instanceof CompilationUnit cu) {</span>
-<span class="fc" id="L399">				return cu;</span>
+<span class="fc" id="L468">		ASTNode current = node;</span>
+<span class="pc bpc" id="L469" title="1 of 2 branches missed.">		while (current != null) {</span>
+<span class="fc bfc" id="L470" title="All 2 branches covered.">			if (current instanceof CompilationUnit cu) {</span>
+<span class="fc" id="L471">				return cu;</span>
 			}
-<span class="fc" id="L401">			current = current.getParent();</span>
+<span class="fc" id="L473">			current = current.getParent();</span>
 		}
-<span class="nc" id="L403">		return null;</span>
+<span class="nc" id="L475">		return null;</span>
 	}
 
 	private boolean isFullyQualified(String name) {
-<span class="pc bpc" id="L407" title="1 of 4 branches missed.">		return name != null &amp;&amp; name.indexOf('.') &gt; 0;</span>
+<span class="pc bpc" id="L479" title="1 of 4 branches missed.">		return name != null &amp;&amp; name.indexOf('.') &gt; 0;</span>
 	}
+
+	private void markUnknown(String detail) {
+<span class="fc" id="L483">		unknownRequirements.add(new UnknownSemanticRequirement(&quot;source-pattern&quot;, detail)); //$NON-NLS-1$</span>
+<span class="fc" id="L484">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

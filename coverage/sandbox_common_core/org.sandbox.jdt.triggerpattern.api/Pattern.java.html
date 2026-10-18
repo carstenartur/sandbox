@@ -70,7 +70,7 @@ public final class Pattern {
 <span class="fc" id="L70">		this.displayName = displayName;</span>
 <span class="fc" id="L71">		this.qualifiedType = qualifiedType;</span>
 <span class="fc" id="L72">		this.overridesType = overridesType;</span>
-<span class="pc bpc" id="L73" title="1 of 2 branches missed.">		this.constraints = constraints == null ? null : constraints.clone();</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">		this.constraints = constraints == null ? null : constraints.clone();</span>
 <span class="fc" id="L74">	}</span>
 	
 	/**
@@ -136,17 +136,17 @@ public final class Pattern {
 	 * Returns the type constraints for placeholder variables.
 	 * 
 	 * &lt;p&gt;Each constraint maps a placeholder variable to an expected Java type.
-	 * When binding resolution is available, matches are filtered to only include
-	 * those where bound nodes satisfy the type constraints.&lt;/p&gt;
+	 * A match requires that placeholder and a resolved compatible type; missing
+	 * necessary bindings do not satisfy an explicit constraint.&lt;/p&gt;
 	 * 
 	 * @return the type constraints, or {@code null} if not set
 	 * @since 1.4.0
 	 */
 	public ConstraintVariableType[] getConstraints() {
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (constraints == null) {</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">		if (constraints == null) {</span>
 <span class="fc" id="L147">			return null;</span>
 		}
-<span class="nc" id="L149">		return constraints.clone();</span>
+<span class="fc" id="L149">		return constraints.clone();</span>
 	}
 	
 	@Override

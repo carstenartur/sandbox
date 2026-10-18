@@ -167,7 +167,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      * @return true if this match should be processed
      */
     protected boolean shouldProcess(Match match, Pattern pattern) {
-<span class="nc" id="L170">        return true;</span>
+<span class="fc" id="L170">        return true;</span>
     }
     
     /**
@@ -199,7 +199,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
     protected List&lt;Match&gt; findAllMatches(org.eclipse.jdt.core.dom.CompilationUnit compilationUnit, List&lt;Pattern&gt; patterns) {
 <span class="nc" id="L200">        java.util.List&lt;Match&gt; allMatches = new java.util.ArrayList&lt;&gt;();</span>
 <span class="nc bnc" id="L201" title="All 2 branches missed.">        for (Pattern pattern : patterns) {</span>
-<span class="nc" id="L202">            List&lt;Match&gt; matches = ENGINE.findMatches(compilationUnit, pattern);</span>
+<span class="nc" id="L202">            List&lt;Match&gt; matches = ENGINE.findExecutableMatches(compilationUnit, pattern);</span>
 <span class="nc" id="L203">            allMatches.addAll(matches);</span>
         }
 <span class="nc" id="L205">        return allMatches;</span>
@@ -850,19 +850,19 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
      */
     public void findOperations(CompilationUnit compilationUnit,
             Set&lt;CompilationUnitRewriteOperation&gt; operations) {
-<span class="nc bnc" id="L853" title="All 2 branches missed.">        for (Pattern pattern : getPatterns()) {</span>
-<span class="nc" id="L854">            List&lt;Match&gt; matches = ENGINE.findMatches(compilationUnit, pattern);</span>
-<span class="nc bnc" id="L855" title="All 2 branches missed.">            for (Match match : matches) {</span>
-<span class="nc bnc" id="L856" title="All 2 branches missed.">                if (!shouldProcess(match, pattern)) {</span>
+<span class="fc bfc" id="L853" title="All 2 branches covered.">        for (Pattern pattern : getPatterns()) {</span>
+<span class="fc" id="L854">            List&lt;Match&gt; matches = ENGINE.findExecutableMatches(compilationUnit, pattern);</span>
+<span class="fc bfc" id="L855" title="All 2 branches covered.">            for (Match match : matches) {</span>
+<span class="pc bpc" id="L856" title="1 of 2 branches missed.">                if (!shouldProcess(match, pattern)) {</span>
 <span class="nc" id="L857">                    continue;</span>
                 }
-<span class="nc" id="L859">                H holder = createHolder(match);</span>
-<span class="nc bnc" id="L860" title="All 2 branches missed.">                if (holder != null) {</span>
-<span class="nc" id="L861">                    operations.add(new PluginRewriteOperation&lt;&gt;(this, holder));</span>
+<span class="fc" id="L859">                H holder = createHolder(match);</span>
+<span class="pc bpc" id="L860" title="1 of 2 branches missed.">                if (holder != null) {</span>
+<span class="fc" id="L861">                    operations.add(new PluginRewriteOperation&lt;&gt;(this, holder));</span>
                 }
             }
         }
-<span class="nc" id="L865">    }</span>
+<span class="fc" id="L865">    }</span>
 
     /**
      * A {@link CompilationUnitRewriteOperation} that delegates to
@@ -875,10 +875,10 @@ import org.sandbox.jdt.triggerpattern.api.TriggerPatternEngine;
         private final AbstractPatternCleanupPlugin&lt;H&gt; plugin;
         private final H holder;
 
-<span class="nc" id="L878">        PluginRewriteOperation(AbstractPatternCleanupPlugin&lt;H&gt; plugin, H holder) {</span>
-<span class="nc" id="L879">            this.plugin = plugin;</span>
-<span class="nc" id="L880">            this.holder = holder;</span>
-<span class="nc" id="L881">        }</span>
+<span class="fc" id="L878">        PluginRewriteOperation(AbstractPatternCleanupPlugin&lt;H&gt; plugin, H holder) {</span>
+<span class="fc" id="L879">            this.plugin = plugin;</span>
+<span class="fc" id="L880">            this.holder = holder;</span>
+<span class="fc" id="L881">        }</span>
 
         @Override
         public void rewriteAST(CompilationUnitRewrite cuRewrite, LinkedProposalModelCore linkedModel) {

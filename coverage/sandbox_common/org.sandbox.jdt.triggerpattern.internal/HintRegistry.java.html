@@ -52,12 +52,12 @@ import org.sandbox.jdt.triggerpattern.api.TriggerTreeKind;
  * 
  * @since 1.2.2
  */
-<span class="nc" id="L55">public class HintRegistry {</span>
+<span class="fc" id="L55">public class HintRegistry {</span>
 	
 	private static final String EXTENSION_POINT_ID = &quot;org.sandbox.jdt.triggerpattern.hints&quot;; //$NON-NLS-1$
 	
 	private List&lt;HintDescriptor&gt; hints;
-<span class="nc" id="L60">	private boolean initialized = false;</span>
+<span class="fc" id="L60">	private boolean initialized = false;</span>
 	
 	/**
 	 * Represents a registered hint with its pattern and invocation information.
@@ -94,24 +94,24 @@ import org.sandbox.jdt.triggerpattern.api.TriggerTreeKind;
 		 * @param providerClass the provider class
 		 * @param method the hint method
 		 */
-<span class="nc" id="L97">		public HintDescriptor(Pattern pattern, String displayName, String description,</span>
+<span class="fc" id="L97">		public HintDescriptor(Pattern pattern, String displayName, String description,</span>
 				boolean enabledByDefault, Severity severity, String id, String category,
 				String[] suppressWarnings, HintKind hintKind, String minSourceVersion,
 				Integer[] treeKinds, Class&lt;?&gt; providerClass, Method method) {
-<span class="nc" id="L101">			this.pattern = pattern;</span>
-<span class="nc" id="L102">			this.displayName = displayName;</span>
-<span class="nc" id="L103">			this.description = description;</span>
-<span class="nc" id="L104">			this.enabledByDefault = enabledByDefault;</span>
-<span class="nc" id="L105">			this.severity = severity;</span>
-<span class="nc" id="L106">			this.id = id;</span>
-<span class="nc" id="L107">			this.category = category;</span>
-<span class="nc" id="L108">			this.suppressWarnings = suppressWarnings;</span>
-<span class="nc" id="L109">			this.hintKind = hintKind;</span>
-<span class="nc" id="L110">			this.minSourceVersion = minSourceVersion;</span>
-<span class="nc" id="L111">			this.treeKinds = treeKinds;</span>
-<span class="nc" id="L112">			this.providerClass = providerClass;</span>
-<span class="nc" id="L113">			this.method = method;</span>
-<span class="nc" id="L114">		}</span>
+<span class="fc" id="L101">			this.pattern = pattern;</span>
+<span class="fc" id="L102">			this.displayName = displayName;</span>
+<span class="fc" id="L103">			this.description = description;</span>
+<span class="fc" id="L104">			this.enabledByDefault = enabledByDefault;</span>
+<span class="fc" id="L105">			this.severity = severity;</span>
+<span class="fc" id="L106">			this.id = id;</span>
+<span class="fc" id="L107">			this.category = category;</span>
+<span class="fc" id="L108">			this.suppressWarnings = suppressWarnings;</span>
+<span class="fc" id="L109">			this.hintKind = hintKind;</span>
+<span class="fc" id="L110">			this.minSourceVersion = minSourceVersion;</span>
+<span class="fc" id="L111">			this.treeKinds = treeKinds;</span>
+<span class="fc" id="L112">			this.providerClass = providerClass;</span>
+<span class="fc" id="L113">			this.method = method;</span>
+<span class="fc" id="L114">		}</span>
 		
 		/**
 		 * Legacy constructor for backward compatibility.
@@ -147,7 +147,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerTreeKind;
 		 * @return the hint pattern (may be null for tree kind hints)
 		 */
 		public Pattern getPattern() {
-<span class="nc" id="L150">			return pattern;</span>
+<span class="fc" id="L150">			return pattern;</span>
 		}
 		
 		/**
@@ -168,7 +168,7 @@ import org.sandbox.jdt.triggerpattern.api.TriggerTreeKind;
 		 * @return whether enabled by default
 		 */
 		public boolean isEnabledByDefault() {
-<span class="nc" id="L171">			return enabledByDefault;</span>
+<span class="fc" id="L171">			return enabledByDefault;</span>
 		}
 		
 		/**
@@ -244,10 +244,10 @@ import org.sandbox.jdt.triggerpattern.api.TriggerTreeKind;
 		 * @throws Exception if invocation fails
 		 */
 		public Object invoke(HintContext context) throws Exception {
-<span class="nc bnc" id="L247" title="All 2 branches missed.">			if (!Modifier.isStatic(method.getModifiers())) {</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">			if (!Modifier.isStatic(method.getModifiers())) {</span>
 <span class="nc" id="L248">				throw new IllegalStateException(&quot;Hint method must be static: &quot; + method); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L250">			return method.invoke(null, context);</span>
+<span class="fc" id="L250">			return method.invoke(null, context);</span>
 		}
 	}
 	
@@ -344,36 +344,38 @@ import org.sandbox.jdt.triggerpattern.api.TriggerTreeKind;
 	 */
 	private void loadTriggerPatternHint(Method method, TriggerPattern triggerPattern,
 			Class&lt;?&gt; providerClass, List&lt;HintDescriptor&gt; loadedHints) throws Exception {
-<span class="nc" id="L347">		validateHintMethod(method);</span>
+<span class="fc" id="L347">		validateHintMethod(method);</span>
 		
-<span class="nc" id="L349">		Pattern pattern = new Pattern(</span>
-<span class="nc" id="L350">			triggerPattern.value(),</span>
-<span class="nc" id="L351">			triggerPattern.kind(),</span>
-<span class="nc bnc" id="L352" title="All 2 branches missed.">			triggerPattern.id().isEmpty() ? null : triggerPattern.id(),</span>
-<span class="nc" id="L353">			null, null, null, null</span>
+<span class="fc" id="L349">		Pattern pattern = new Pattern(</span>
+<span class="fc" id="L350">			triggerPattern.value(),</span>
+<span class="fc" id="L351">			triggerPattern.kind(),</span>
+<span class="pc bpc" id="L352" title="1 of 2 branches missed.">			triggerPattern.id().isEmpty() ? null : triggerPattern.id(),</span>
+<span class="fc" id="L353">			null, null,</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">			triggerPattern.overrides().isEmpty() ? null : triggerPattern.overrides(),</span>
+<span class="fc" id="L355">			triggerPattern.constraints()</span>
 		);
 		
-<span class="nc" id="L356">		HintDescriptor descriptor = createHintDescriptor(pattern, null, method, providerClass);</span>
-<span class="nc" id="L357">		loadedHints.add(descriptor);</span>
-<span class="nc" id="L358">	}</span>
+<span class="fc" id="L358">		HintDescriptor descriptor = createHintDescriptor(pattern, null, method, providerClass);</span>
+<span class="fc" id="L359">		loadedHints.add(descriptor);</span>
+<span class="fc" id="L360">	}</span>
 	
 	/**
 	 * Loads a @TriggerTreeKind hint.
 	 */
 	private void loadTreeKindHint(Method method, TriggerTreeKind treeKind,
 			Class&lt;?&gt; providerClass, List&lt;HintDescriptor&gt; loadedHints) throws Exception {
-<span class="nc" id="L365">		validateHintMethod(method);</span>
+<span class="nc" id="L367">		validateHintMethod(method);</span>
 		
 		// Convert int[] to Integer[]
-<span class="nc" id="L368">		int[] kinds = treeKind.value();</span>
-<span class="nc" id="L369">		Integer[] treeKinds = new Integer[kinds.length];</span>
-<span class="nc bnc" id="L370" title="All 2 branches missed.">		for (int i = 0; i &lt; kinds.length; i++) {</span>
-<span class="nc" id="L371">			treeKinds[i] = kinds[i];</span>
+<span class="nc" id="L370">		int[] kinds = treeKind.value();</span>
+<span class="nc" id="L371">		Integer[] treeKinds = new Integer[kinds.length];</span>
+<span class="nc bnc" id="L372" title="All 2 branches missed.">		for (int i = 0; i &lt; kinds.length; i++) {</span>
+<span class="nc" id="L373">			treeKinds[i] = kinds[i];</span>
 		}
 		
-<span class="nc" id="L374">		HintDescriptor descriptor = createHintDescriptor(null, treeKinds, method, providerClass);</span>
-<span class="nc" id="L375">		loadedHints.add(descriptor);</span>
-<span class="nc" id="L376">	}</span>
+<span class="nc" id="L376">		HintDescriptor descriptor = createHintDescriptor(null, treeKinds, method, providerClass);</span>
+<span class="nc" id="L377">		loadedHints.add(descriptor);</span>
+<span class="nc" id="L378">	}</span>
 	
 	/**
 	 * Creates a HintDescriptor from a method and its @Hint annotation.
@@ -381,58 +383,58 @@ import org.sandbox.jdt.triggerpattern.api.TriggerTreeKind;
 	private HintDescriptor createHintDescriptor(Pattern pattern, Integer[] treeKinds,
 			Method method, Class&lt;?&gt; providerClass) {
 		// Check for @Hint annotation
-<span class="nc" id="L384">		Hint hintAnnotation = method.getAnnotation(Hint.class);</span>
+<span class="fc" id="L386">		Hint hintAnnotation = method.getAnnotation(Hint.class);</span>
 		
-<span class="nc bnc" id="L386" title="All 2 branches missed.">		String displayName = hintAnnotation != null ? hintAnnotation.displayName() : &quot;&quot;; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L387" title="All 2 branches missed.">		String description = hintAnnotation != null ? hintAnnotation.description() : &quot;&quot;; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L388" title="All 4 branches missed.">		boolean enabledByDefault = hintAnnotation == null || hintAnnotation.enabledByDefault();</span>
-<span class="nc bnc" id="L389" title="All 2 branches missed.">		Severity severity = hintAnnotation != null ? hintAnnotation.severity() : Severity.INFO;</span>
-<span class="nc bnc" id="L390" title="All 2 branches missed.">		String id = hintAnnotation != null ? hintAnnotation.id() : &quot;&quot;; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L391" title="All 2 branches missed.">		String category = hintAnnotation != null ? hintAnnotation.category() : &quot;&quot;; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L392" title="All 2 branches missed.">		String[] suppressWarnings = hintAnnotation != null ? hintAnnotation.suppressWarnings() : new String[0];</span>
-<span class="nc bnc" id="L393" title="All 2 branches missed.">		HintKind hintKind = hintAnnotation != null ? hintAnnotation.hintKind() : HintKind.INSPECTION;</span>
-<span class="nc bnc" id="L394" title="All 2 branches missed.">		String minSourceVersion = hintAnnotation != null ? hintAnnotation.minSourceVersion() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">		String displayName = hintAnnotation != null ? hintAnnotation.displayName() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L389" title="1 of 2 branches missed.">		String description = hintAnnotation != null ? hintAnnotation.description() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L390" title="3 of 4 branches missed.">		boolean enabledByDefault = hintAnnotation == null || hintAnnotation.enabledByDefault();</span>
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">		Severity severity = hintAnnotation != null ? hintAnnotation.severity() : Severity.INFO;</span>
+<span class="pc bpc" id="L392" title="1 of 2 branches missed.">		String id = hintAnnotation != null ? hintAnnotation.id() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L393" title="1 of 2 branches missed.">		String category = hintAnnotation != null ? hintAnnotation.category() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L394" title="1 of 2 branches missed.">		String[] suppressWarnings = hintAnnotation != null ? hintAnnotation.suppressWarnings() : new String[0];</span>
+<span class="pc bpc" id="L395" title="1 of 2 branches missed.">		HintKind hintKind = hintAnnotation != null ? hintAnnotation.hintKind() : HintKind.INSPECTION;</span>
+<span class="pc bpc" id="L396" title="1 of 2 branches missed.">		String minSourceVersion = hintAnnotation != null ? hintAnnotation.minSourceVersion() : &quot;&quot;; //$NON-NLS-1$</span>
 		
-<span class="nc" id="L396">		return new HintDescriptor(pattern, displayName, description, enabledByDefault,</span>
-<span class="nc" id="L397">			severity, id, category, suppressWarnings, hintKind, minSourceVersion,</span>
-<span class="nc" id="L398">			treeKinds, providerClass, method);</span>
+<span class="fc" id="L398">		return new HintDescriptor(pattern, displayName, description, enabledByDefault,</span>
+<span class="fc" id="L399">			severity, id, category, suppressWarnings, hintKind, minSourceVersion,</span>
+<span class="fc" id="L400">			treeKinds, providerClass, method);</span>
 	}
 	
 	/**
 	 * Loads a declaratively defined pattern hint.
 	 */
 	private void loadDeclarativePattern(IConfigurationElement element, List&lt;HintDescriptor&gt; loadedHints) throws Exception {
-<span class="nc" id="L405">		String id = element.getAttribute(&quot;id&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L406">		String value = element.getAttribute(&quot;value&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L407">		String kindStr = element.getAttribute(&quot;kind&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L408">		String displayName = element.getAttribute(&quot;displayName&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L409">		String className = element.getAttribute(&quot;class&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L410">		String methodName = element.getAttribute(&quot;method&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L407">		String id = element.getAttribute(&quot;id&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L408">		String value = element.getAttribute(&quot;value&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L409">		String kindStr = element.getAttribute(&quot;kind&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L410">		String displayName = element.getAttribute(&quot;displayName&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L411">		String className = element.getAttribute(&quot;class&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L412">		String methodName = element.getAttribute(&quot;method&quot;); //$NON-NLS-1$</span>
 		
-<span class="nc bnc" id="L412" title="All 8 branches missed.">		if (value == null || kindStr == null || className == null || methodName == null) {</span>
-<span class="nc" id="L413">			return;</span>
+<span class="nc bnc" id="L414" title="All 8 branches missed.">		if (value == null || kindStr == null || className == null || methodName == null) {</span>
+<span class="nc" id="L415">			return;</span>
 		}
 		
-<span class="nc" id="L416">		PatternKind kind = PatternKind.valueOf(kindStr);</span>
-<span class="nc" id="L417">		Pattern pattern = new Pattern(value, kind, id, displayName, null, null, null);</span>
+<span class="nc" id="L418">		PatternKind kind = PatternKind.valueOf(kindStr);</span>
+<span class="nc" id="L419">		Pattern pattern = new Pattern(value, kind, id, displayName, null, null, null);</span>
 		
 		// Load the class and method
-<span class="nc" id="L420">		Bundle bundle = Platform.getBundle(element.getContributor().getName());</span>
-<span class="nc bnc" id="L421" title="All 2 branches missed.">		if (bundle == null) {</span>
-<span class="nc" id="L422">			return;</span>
+<span class="nc" id="L422">		Bundle bundle = Platform.getBundle(element.getContributor().getName());</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">		if (bundle == null) {</span>
+<span class="nc" id="L424">			return;</span>
 		}
 		
-<span class="nc" id="L425">		Class&lt;?&gt; providerClass = bundle.loadClass(className);</span>
-<span class="nc" id="L426">		Method method = providerClass.getMethod(methodName, HintContext.class);</span>
-<span class="nc" id="L427">		validateHintMethod(method);</span>
+<span class="nc" id="L427">		Class&lt;?&gt; providerClass = bundle.loadClass(className);</span>
+<span class="nc" id="L428">		Method method = providerClass.getMethod(methodName, HintContext.class);</span>
+<span class="nc" id="L429">		validateHintMethod(method);</span>
 		
-<span class="nc" id="L429">		HintDescriptor descriptor = new HintDescriptor(</span>
-<span class="nc bnc" id="L430" title="All 2 branches missed.">			pattern, displayName != null ? displayName : &quot;&quot;, &quot;&quot;, true, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L431">			Severity.INFO, &quot;&quot;, &quot;&quot;, new String[0], //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L432">			HintKind.INSPECTION, &quot;&quot;, null, providerClass, method //$NON-NLS-1$</span>
+<span class="nc" id="L431">		HintDescriptor descriptor = new HintDescriptor(</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">			pattern, displayName != null ? displayName : &quot;&quot;, &quot;&quot;, true, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L433">			Severity.INFO, &quot;&quot;, &quot;&quot;, new String[0], //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L434">			HintKind.INSPECTION, &quot;&quot;, null, providerClass, method //$NON-NLS-1$</span>
 		);
-<span class="nc" id="L434">		loadedHints.add(descriptor);</span>
-<span class="nc" id="L435">	}</span>
+<span class="nc" id="L436">		loadedHints.add(descriptor);</span>
+<span class="nc" id="L437">	}</span>
 	
 	/**
 	 * Loads a {@code .sandbox-hint} file registered via the extension point.
@@ -443,52 +445,52 @@ import org.sandbox.jdt.triggerpattern.api.TriggerTreeKind;
 	 * @param element the configuration element with {@code id} and {@code resource} attributes
 	 */
 	private void loadHintFile(IConfigurationElement element) {
-<span class="nc" id="L446">		String id = element.getAttribute(&quot;id&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L447">		String resource = element.getAttribute(&quot;resource&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L448">		String id = element.getAttribute(&quot;id&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L449">		String resource = element.getAttribute(&quot;resource&quot;); //$NON-NLS-1$</span>
 		
-<span class="nc bnc" id="L449" title="All 4 branches missed.">		if (id == null || resource == null) {</span>
-<span class="nc" id="L450">			return;</span>
+<span class="nc bnc" id="L451" title="All 4 branches missed.">		if (id == null || resource == null) {</span>
+<span class="nc" id="L452">			return;</span>
 		}
 		
-<span class="nc" id="L453">		Bundle bundle = Platform.getBundle(element.getContributor().getName());</span>
-<span class="nc bnc" id="L454" title="All 2 branches missed.">		if (bundle == null) {</span>
-<span class="nc" id="L455">			return;</span>
+<span class="nc" id="L455">		Bundle bundle = Platform.getBundle(element.getContributor().getName());</span>
+<span class="nc bnc" id="L456" title="All 2 branches missed.">		if (bundle == null) {</span>
+<span class="nc" id="L457">			return;</span>
 		}
 		
 		try {
-<span class="nc" id="L459">			java.net.URL resourceUrl = bundle.getResource(resource);</span>
-<span class="nc bnc" id="L460" title="All 2 branches missed.">			if (resourceUrl == null) {</span>
-<span class="nc" id="L461">				ILog log = Platform.getLog(HintRegistry.class);</span>
-<span class="nc" id="L462">				log.log(Status.warning(&quot;Hint file resource not found: &quot; + resource //$NON-NLS-1$</span>
-<span class="nc" id="L463">						+ &quot; in bundle &quot; + bundle.getSymbolicName())); //$NON-NLS-1$</span>
-<span class="nc" id="L464">				return;</span>
+<span class="nc" id="L461">			java.net.URL resourceUrl = bundle.getResource(resource);</span>
+<span class="nc bnc" id="L462" title="All 2 branches missed.">			if (resourceUrl == null) {</span>
+<span class="nc" id="L463">				ILog log = Platform.getLog(HintRegistry.class);</span>
+<span class="nc" id="L464">				log.log(Status.warning(&quot;Hint file resource not found: &quot; + resource //$NON-NLS-1$</span>
+<span class="nc" id="L465">						+ &quot; in bundle &quot; + bundle.getSymbolicName())); //$NON-NLS-1$</span>
+<span class="nc" id="L466">				return;</span>
 			}
-<span class="nc" id="L466">			try (InputStream is = resourceUrl.openStream();</span>
-<span class="nc" id="L467">					Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
-<span class="nc" id="L468">				HintFileRegistry.getInstance().loadFromReader(id, reader);</span>
+<span class="nc" id="L468">			try (InputStream is = resourceUrl.openStream();</span>
+<span class="nc" id="L469">					Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {</span>
+<span class="nc" id="L470">				HintFileRegistry.getInstance().loadFromReader(id, reader);</span>
 			}
-<span class="nc" id="L470">		} catch (HintFileParser.HintParseException | IOException e) {</span>
-<span class="nc" id="L471">			ILog log = Platform.getLog(HintRegistry.class);</span>
-<span class="nc" id="L472">			log.log(Status.error(&quot;Error loading hint file: &quot; + resource, e)); //$NON-NLS-1$</span>
+<span class="nc" id="L472">		} catch (HintFileParser.HintParseException | IOException e) {</span>
+<span class="nc" id="L473">			ILog log = Platform.getLog(HintRegistry.class);</span>
+<span class="nc" id="L474">			log.log(Status.error(&quot;Error loading hint file: &quot; + resource, e)); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L474">	}</span>
+<span class="nc" id="L476">	}</span>
 	
 	/**
 	 * Validates that a method can be used as a hint method.
 	 */
 	private void validateHintMethod(Method method) {
-<span class="nc bnc" id="L480" title="All 2 branches missed.">		if (!Modifier.isPublic(method.getModifiers())) {</span>
-<span class="nc" id="L481">			throw new IllegalArgumentException(&quot;Hint method must be public: &quot; + method); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L482" title="1 of 2 branches missed.">		if (!Modifier.isPublic(method.getModifiers())) {</span>
+<span class="nc" id="L483">			throw new IllegalArgumentException(&quot;Hint method must be public: &quot; + method); //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L483" title="All 2 branches missed.">		if (!Modifier.isStatic(method.getModifiers())) {</span>
-<span class="nc" id="L484">			throw new IllegalArgumentException(&quot;Hint method must be static: &quot; + method); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L485" title="1 of 2 branches missed.">		if (!Modifier.isStatic(method.getModifiers())) {</span>
+<span class="nc" id="L486">			throw new IllegalArgumentException(&quot;Hint method must be static: &quot; + method); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L486">		Class&lt;?&gt;[] paramTypes = method.getParameterTypes();</span>
-<span class="nc bnc" id="L487" title="All 4 branches missed.">		if (paramTypes.length != 1 || !HintContext.class.isAssignableFrom(paramTypes[0])) {</span>
-<span class="nc" id="L488">			throw new IllegalArgumentException(</span>
-<span class="nc" id="L489">				&quot;Hint method must have exactly one parameter of type HintContext: &quot; + method //$NON-NLS-1$</span>
+<span class="fc" id="L488">		Class&lt;?&gt;[] paramTypes = method.getParameterTypes();</span>
+<span class="pc bpc" id="L489" title="2 of 4 branches missed.">		if (paramTypes.length != 1 || !HintContext.class.isAssignableFrom(paramTypes[0])) {</span>
+<span class="nc" id="L490">			throw new IllegalArgumentException(</span>
+<span class="nc" id="L491">				&quot;Hint method must have exactly one parameter of type HintContext: &quot; + method //$NON-NLS-1$</span>
 			);
 		}
-<span class="nc" id="L492">	}</span>
+<span class="fc" id="L494">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

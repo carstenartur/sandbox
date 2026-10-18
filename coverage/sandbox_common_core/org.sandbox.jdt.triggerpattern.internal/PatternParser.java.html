@@ -438,7 +438,7 @@ import org.sandbox.jdt.triggerpattern.api.PatternKind;
 <span class="fc" id="L438">		java.util.Set&lt;String&gt; declared = new java.util.HashSet&lt;&gt;();</span>
 <span class="fc bfc" id="L439" title="All 2 branches covered.">		while (m.find()) {</span>
 <span class="fc" id="L440">			String placeholder = m.group();</span>
-<span class="pc bpc" id="L441" title="1 of 2 branches missed.">			if (!declared.contains(placeholder)) {</span>
+<span class="fc bfc" id="L441" title="All 2 branches covered.">			if (!declared.contains(placeholder)) {</span>
 <span class="fc" id="L442">				declarations.append(&quot;Object &quot;).append(placeholder).append(&quot;; &quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L443">				declared.add(placeholder);</span>
 			}
