@@ -49,6 +49,9 @@ public final class GuardContext {
 				? Collections.unmodifiableMap(compilerOptions)
 				: Collections.emptyMap();
 		this.semanticPlan= semanticPlan == null ? SemanticRewritePlan.empty() : semanticPlan;
+		for (UnknownSemanticRequirement requirement : match.getUnknownSemanticRequirements()) {
+			markUnknown(requirement.guardName(), requirement.detail());
+		}
 	}
 
 	/** Creates a context without compiler options or semantic plan. */

@@ -244,6 +244,7 @@ public final class PatternIndex {
 
 		@SuppressWarnings("unchecked")
 		List<Statement> statements = block.statements();
+		PlaceholderAstMatcher shape = new FqnAwarePlaceholderAstMatcher();
 
 		for (IndexEntry entry : entries) {
 			ASTNode patternNode = entry.patternNode();
@@ -252,7 +253,6 @@ public final class PatternIndex {
 			}
 			@SuppressWarnings("unchecked")
 			List<Statement> patternStatements = patternBlock.statements();
-			PlaceholderAstMatcher shape = new FqnAwarePlaceholderAstMatcher();
 			int minimumSize = shape.minimumStatementCount(patternStatements);
 			boolean variadic = minimumSize != patternStatements.size();
 			// Empty source ranges have no anchor and cannot be rewritten.

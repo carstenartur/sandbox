@@ -31,7 +31,6 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.Statement;
 import org.sandbox.jdt.triggerpattern.internal.FqnAwarePlaceholderAstMatcher;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
-import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
 import org.sandbox.jdt.triggerpattern.api.GuardExpression.TruthValue;
 
 /**
@@ -250,11 +249,12 @@ public class TriggerPatternEngine {
 				}
 				// Try matching against statements
 				if (node instanceof Statement || node instanceof Expression) {
-					PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();
+					FqnAwarePlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();
 					boolean matches = bodyPatternNode.subtreeMatch(matcher, node);
 					if (matches && matcher.getUnknownSemanticRequirements().isEmpty()) {
 						found[0] = TruthValue.MATCH;
-					} else if (!matcher.getUnknownSemanticRequirements().isEmpty()) {
+					} else if (!matcher.getUnknownSemanticRequirements().isEmpty()
+							&& (matches || matcher.couldMatchIgnoringSemanticIdentities(bodyPatternNode, node))) {
 						found[0] = TruthValue.UNKNOWN;
 					}
 				}

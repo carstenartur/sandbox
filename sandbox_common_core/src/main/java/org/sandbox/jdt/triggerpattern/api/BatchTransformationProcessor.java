@@ -82,6 +82,10 @@ public final class BatchTransformationProcessor {
 			TransformationRule rule= entry.getKey();
 			for (Match match : entry.getValue()) {
 				GuardContext guardCtx= GuardContext.fromMatch(match, cu, compilerOptions, effectivePlan);
+				if (strictBindings && guardCtx.hasUnknownSemanticRequirements()) {
+					results.add(unknownResult(rule, match, guardCtx, cu));
+					continue;
+				}
 				if (rule.sourceGuard() != null) {
 					Evaluation sourceEvaluation= rule.sourceGuard().evaluateDetailed(guardCtx);
 					if (strictBindings && sourceEvaluation.truthValue() == TruthValue.UNKNOWN) {

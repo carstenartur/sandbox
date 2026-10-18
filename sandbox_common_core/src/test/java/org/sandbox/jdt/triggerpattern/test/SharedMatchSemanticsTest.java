@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -191,7 +192,7 @@ class SharedMatchSemanticsTest {
 		JavaCore.setComplianceOptions(JavaCore.VERSION_21, options);
 		parser.setCompilerOptions(options);
 		CompilationUnit cu = (CompilationUnit) parser.createAST(null);
-		assertEquals(0, java.util.Arrays.stream(cu.getProblems()).filter(problem -> problem.isError()).count(),
+		assertEquals(0, java.util.Arrays.stream(cu.getProblems()).filter(IProblem::isError).count(),
 				"Regression fixtures must compile with genuinely resolved bindings");
 		return cu;
 	}

@@ -34,6 +34,7 @@ import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.NameQualifiedType;
 import org.eclipse.jdt.core.dom.ParameterizedType;
 import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
@@ -49,11 +50,33 @@ import org.sandbox.jdt.triggerpattern.api.GuardContext.UnknownSemanticRequiremen
  * matcher accepts source code that uses the same API via imports and simple
  * names. It applies that principle to type references, parameterized types,
  * arrays, constructors, type literals, casts and method receivers.</p>
+ *
+ * <p>Literal dotted receiver names request a semantic API identity. An ambiguous
+ * value receiver such as {@code holder.field} must use an owner placeholder
+ * ({@code $owner.field}) so a variable shadowing an API name is not accepted.</p>
  */
 public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 
 	private final ASTMatcher structuralMatcher = new ASTMatcher();
 	private final Set<UnknownSemanticRequirement> unknownRequirements = new LinkedHashSet<>();
+	private final boolean ignoreSemanticIdentities;
+
+	public FqnAwarePlaceholderAstMatcher() {
+		this(false);
+	}
+
+	private FqnAwarePlaceholderAstMatcher(boolean ignoreSemanticIdentities) {
+		this.ignoreSemanticIdentities = ignoreSemanticIdentities;
+	}
+
+	/**
+	 * Tests whether an unresolved candidate otherwise has the required structure.
+	 * This isolated diagnostic probe never supplies bindings for an executable match.
+	 */
+	public boolean couldMatchIgnoringSemanticIdentities(ASTNode pattern, ASTNode source) {
+		return pattern != null && source != null
+				&& pattern.subtreeMatch(new FqnAwarePlaceholderAstMatcher(true), source);
+	}
 
 	@Override
 	public List<UnknownSemanticRequirement> getUnknownSemanticRequirements() {
@@ -205,6 +228,10 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 			return patternArray.getDimensions() == sourceArray.getDimensions()
 					&& typesEquivalent(patternArray.getElementType(), sourceArray.getElementType());
 		}
+		if (patternType instanceof WildcardType patternWildcard && sourceType instanceof WildcardType sourceWildcard) {
+			return patternWildcard.isUpperBound() == sourceWildcard.isUpperBound()
+					&& typesEquivalent(patternWildcard.getBound(), sourceWildcard.getBound());
+		}
 		String patternIdentity = typeIdentity(patternType);
 		String sourceIdentity = typeIdentity(sourceType);
 		return patternIdentity != null && patternIdentity.equals(sourceIdentity);
@@ -248,7 +275,8 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 	}
 
 	private boolean methodBindingCompatible(MethodInvocation patternNode, MethodInvocation sourceNode) {
-		if (!(patternNode.getExpression() instanceof Name patternReceiver)
+		if (ignoreSemanticIdentities || !(patternNode.getExpression() instanceof Name patternReceiver)
+				|| containsPlaceholder(patternReceiver)
 				|| !isFullyQualified(patternReceiver.getFullyQualifiedName())) {
 			return true;
 		}
@@ -259,21 +287,19 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 					+ '.' + patternNode.getName().getIdentifier());
 			return true;
 		}
-		if (sourceNode.getExpression() instanceof Name sourceReceiver
-				&& sourceReceiver.resolveBinding() instanceof IVariableBinding field && field.isField()) {
-			// The receiver is a resolved field such as System.out, whose owning
-			// class is already checked by namesEquivalent, not its method's class.
-			return true;
-		}
-		String declaringClass = binding.getDeclaringClass().getQualifiedName();
-		return patternReceiver.getFullyQualifiedName().equals(declaringClass);
+		// receiversEquivalent already verified the actual receiver identity. The
+		// method can be inherited and declared on a different type.
+		return true;
 	}
 
 	private boolean namesEquivalent(Name patternName, Name sourceName) {
-		if (patternName instanceof SimpleName patternSimple && patternSimple.getIdentifier().startsWith("$")) { //$NON-NLS-1$
+		if (containsPlaceholder(patternName)) {
 			return patternName.subtreeMatch(this, sourceName);
 		}
 		String patternFqn = patternName.getFullyQualifiedName();
+		if (ignoreSemanticIdentities && isFullyQualified(patternFqn)) {
+			return true;
+		}
 		if (isFullyQualified(patternFqn)) {
 			IBinding binding = sourceName.resolveBinding();
 			if (binding != null && !binding.isRecovered()) {
@@ -282,9 +308,21 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 				if (binding instanceof ITypeBinding type) {
 					return patternFqn.equals(type.getErasure().getQualifiedName());
 				}
-				return binding instanceof IVariableBinding field && field.isField()
-						&& field.getDeclaringClass() != null
-						&& patternFqn.equals(field.getDeclaringClass().getErasure().getQualifiedName() + '.' + field.getName());
+				if (binding instanceof IVariableBinding field && field.isField() && field.getDeclaringClass() != null) {
+					if (patternFqn.equals(field.getDeclaringClass().getErasure().getQualifiedName() + '.' + field.getName())) {
+						return true;
+					}
+					// A relative field receiver such as System.out names its type
+					// without a package. Resolve that qualifier rather than comparing
+					// the relative spelling with the field's fully qualified identity.
+					return patternName instanceof QualifiedName patternQualified
+							&& patternQualified.getQualifier() instanceof SimpleName
+							&& sourceName instanceof QualifiedName sourceQualified
+							&& sourceQualified.getQualifier().resolveBinding() instanceof ITypeBinding
+							&& patternQualified.getName().getIdentifier().equals(field.getName())
+							&& namesEquivalent(patternQualified.getQualifier(), sourceQualified.getQualifier());
+				}
+				return false;
 			}
 			markUnknown("Type binding unavailable for " + patternFqn); //$NON-NLS-1$
 		}
@@ -302,6 +340,14 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 			return simpleNameResolvesTo(patternSimple, sourceFqn);
 		}
 		return false;
+	}
+
+	private boolean containsPlaceholder(Name name) {
+		if (name instanceof SimpleName simpleName) {
+			return simpleName.getIdentifier().startsWith("$"); //$NON-NLS-1$
+		}
+		return name instanceof QualifiedName qualifiedName
+				&& (containsPlaceholder(qualifiedName.getQualifier()) || containsPlaceholder(qualifiedName.getName()));
 	}
 
 	private String typeIdentity(Type type) {
