@@ -9,6 +9,10 @@
 =&gt; $receiver.isEmpty()
 ;;</pre>
 <p>Guard expressions use function calls, <code>&amp;&amp;</code>, <code>||</code>, <code>!</code> and parentheses. Missing bindings, wrong arity, missing semantic-plan data and rejected type checks evaluate to false; they are not treated as warnings that allow execution to continue.</p>
+<h2>Expression effects are one prerequisite</h2>
+<p><code>hasNoSideEffect($expression)</code> recursively rejects writes, increment/decrement, explicit calls and object/array allocation, volatile reads, potentially initializing static reads and arbitrary object-to-string concatenation. Implicit boxing or primitive/string concatenation can still allocate. Explicit writes and volatile reads are decisive failures. Unproven call purity, unsupported syntax and missing or recovered bindings remain unknown, including under negation, and do not authorize a rewrite.</p>
+<p>A successful effects check does not prove that an expression is safe to duplicate, discard, reorder or evaluate eagerly. Array access, division, casts and ordinary field reads can still throw or observe changing data. A transformation that changes evaluation count, order or conditions must establish those additional requirements separately.</p>
+<p><code>isStableValue($expression)</code> has a narrower contract: only literals and resolved final local or final parameter reads, optionally parenthesized, qualify. It excludes all fields, arrays, casts, arithmetic and calls. The value read itself is non-throwing and stable; the referenced object can still be mutable, and conversions introduced by the replacement require a separate check.</p>
 <h2>Local predicates</h2>
 <pre>&lt;!predicate hasOverrideAnnotation($method):
     hasAnnotation($method, Override) ||

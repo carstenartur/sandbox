@@ -342,7 +342,8 @@ You can use these functions in `:: guard` expressions:
 | `sourceVersionBetween(11, 17)` | True if source level is between Java 11 and 17 |
 | `hasAnnotation($var, "Type")`| True if the element has the specified annotation |
 | `isDeprecated($var)` | True if the element is marked as deprecated |
-| `hasNoSideEffect($var)` | True if the expression has no side effects |
+| `hasNoSideEffect($var)` | Recursively excludes writes, explicit calls/allocation, volatile reads, potentially initializing static reads or arbitrary object-to-string conversion. Writes and volatile reads fail; unproven purity, unsupported syntax and unresolved bindings remain unknown under negation. Implicit boxing/string concatenation can still allocate. Does not prove exception freedom, stable values or permission to duplicate, discard, reorder or eagerly evaluate the expression. |
+| `isStableValue($var)` | Only literals and resolved final local/parameter reads, with optional parentheses: reading the value itself is stable and non-throwing. Does not prove the referenced object immutable or that a rewrite's new implicit conversions are safe. |
 | `referencedIn($var, $expr)` | True if `$var`'s identifier appears in `$expr`'s AST subtree. Both arguments are placeholder names. |
 | `isLiteral($var)` | True if the expression is a literal value |
 | `isNullLiteral($var)` | True if the expression is a `null` literal |

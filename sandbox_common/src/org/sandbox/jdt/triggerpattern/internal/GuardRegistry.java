@@ -43,7 +43,8 @@ import org.sandbox.jdt.triggerpattern.api.GuardFunction;
  *   <tr><td>{@code matchesNone}</td><td>Returns {@code true} if a placeholder's text matches none of the given literals, or if unbound and no literals given</td></tr>
  *   <tr><td>{@code referencedIn}</td><td>Checks if a variable is referenced within another expression</td></tr>
  *   <tr><td>{@code elementKindMatches}</td><td>Checks if a binding is of a specific element kind (FIELD, METHOD, LOCAL_VARIABLE, PARAMETER, TYPE)</td></tr>
- *   <tr><td>{@code hasNoSideEffect}</td><td>Checks if an expression has no side effects</td></tr>
+ *   <tr><td>{@code hasNoSideEffect}</td><td>Recursively excludes effects; does not prove exception freedom or stable values</td></tr>
+ *   <tr><td>{@code isStableValue}</td><td>Accepts only literals or resolved final local/parameter reads</td></tr>
  *   <tr><td>{@code sourceVersionGE}</td><td>Checks if the source version is greater than or equal to a given version</td></tr>
  *   <tr><td>{@code sourceVersionLE}</td><td>Checks if the source version is less than or equal to a given version</td></tr>
  *   <tr><td>{@code sourceVersionBetween}</td><td>Checks if the source version is within a given range</td></tr>

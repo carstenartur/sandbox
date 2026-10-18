@@ -93,6 +93,7 @@ public final class BuiltInGuards {
 		guards.put("matchesAny", BuiltInGuards::evaluateMatchesAny); //$NON-NLS-1$
 		guards.put("matchesNone", BuiltInGuards::evaluateMatchesNone); //$NON-NLS-1$
 		guards.put("hasNoSideEffect", BuiltInGuards::evaluateHasNoSideEffect); //$NON-NLS-1$
+		guards.put("isStableValue", BuiltInGuards::evaluateIsStableValue); //$NON-NLS-1$
 		guards.put("referencedIn", BuiltInGuards::evaluateReferencedIn); //$NON-NLS-1$
 
 		// Java version guards
@@ -389,21 +390,36 @@ public final class BuiltInGuards {
 	}
 
 	/**
-	 * Checks if an expression has no side effects.
-	 * Currently checks that the node is not a method invocation (conservative check).
+	 * Conservatively proves the absence of writes, explicit calls/allocation, volatile
+	 * reads and potentially initializing static reads throughout an expression.
+	 * This does not establish exception freedom or permission to duplicate, drop
+	 * or reorder its evaluation. Unresolved reads are recorded as unknown.
 	 * Args: [placeholderName]
 	 */
 	private static boolean evaluateHasNoSideEffect(GuardContext ctx, Object... args) {
-		if (args.length < 1) {
-			return true;
+		if (args.length != 1 || args[0] == null) {
+			return false;
 		}
 		String placeholderName = args[0].toString();
 		ASTNode node = ctx.getBinding(placeholderName);
 		if (node == null) {
-			return true;
+			ctx.markUnknown("hasNoSideEffect", "Missing expression binding: " + placeholderName); //$NON-NLS-1$ //$NON-NLS-2$
+			return false;
 		}
-		// Conservative: method invocations may have side effects
-		return !(node instanceof MethodInvocation);
+		return node instanceof Expression expression && SideEffectAnalysis.hasNoSideEffect(expression, ctx);
+	}
+
+	/** Proves only literal values or resolved final local/parameter reads, possibly parenthesized. */
+	private static boolean evaluateIsStableValue(GuardContext ctx, Object... args) {
+		if (args.length != 1 || args[0] == null) {
+			return false;
+		}
+		ASTNode node= ctx.getBinding(args[0].toString());
+		if (node == null) {
+			ctx.markUnknown("isStableValue", "Missing expression binding: " + args[0]); //$NON-NLS-1$ //$NON-NLS-2$
+			return false;
+		}
+		return node instanceof Expression expression && SideEffectAnalysis.isStableValue(expression, ctx);
 	}
 
 	/**
