@@ -12,17 +12,50 @@ package org.sandbox.jdt.triggerpattern.cleanup;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.refactoring.CompilationUnitChange;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore;
+import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
 
 /** Completes recorded NLS changes without replacing enclosing statements as raw text. */
 public class NlsAwareCleanUpFix extends CompilationUnitRewriteOperationsFixCore {
 
 	private final CompilationUnit root;
+	private final CompilationUnitRewriteOperation[] operations;
 
 	public NlsAwareCleanUpFix(String name, CompilationUnit root, CompilationUnitRewriteOperation[] operations) {
 		super(name, root, operations);
 		this.root= root;
+		this.operations= operations.clone();
+	}
+
+	/**
+	 * Runs the same production operations for a trial, allowing an idempotent
+	 * operation to produce no edit. JDT's ordinary fix API treats that as an error.
+	 */
+	public CompilationUnitChange createOptionalChange(IProgressMonitor monitor) throws CoreException {
+		EncodingSourceRewrite.clear(root);
+		CompilationUnitChange change= null;
+		try {
+			CompilationUnitRewrite rewrite= new CompilationUnitRewrite((ICompilationUnit) root.getJavaElement(), root);
+			fLinkedProposalModel.clear();
+			for (CompilationUnitRewriteOperation operation : operations) {
+				org.sandbox.jdt.triggerpattern.api.SemanticRewritePlanContext.checkCanceled();
+				operation.rewriteAST(rewrite, fLinkedProposalModel);
+			}
+			change= rewrite.createChange(getDisplayString(), true, monitor);
+			if (change != null) {
+				EncodingSourceRewrite.complete(root, change);
+			}
+			return change;
+		} catch (CoreException | RuntimeException exception) {
+			if (change != null) {
+				change.dispose();
+			}
+			throw exception;
+		} finally {
+			EncodingSourceRewrite.clear(root);
+		}
 	}
 
 	@Override
