@@ -119,6 +119,48 @@ class BindingSubstitutionTest {
 		assertCompiles(replaceOriginalCall(source, "$x"));
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "value++", "++value", "value = other" })
+	void generatedLambdaBodiesRemainVoidCompatible(String binding) throws Exception {
+		String source = "class Example { int value, other; static Runnable identity(Runnable r) { return r; } "
+				+ "Runnable run() { return identity(() -> " + binding + "); } }";
+		assertCompiles(source);
+		String transformed = replaceCall(source, "identity(() -> $x)", "() -> $x");
+		assertTrue(transformed.contains("return () -> "), "The update must remain deferred inside the lambda");
+		assertCompiles(transformed);
+	}
+
+	@Test
+	void generatedLambdaArithmeticRetainsNestedAssignmentGrouping() throws Exception {
+		String source = "class Example { int value, other; static java.util.function.IntSupplier identity("
+				+ "java.util.function.IntSupplier r) { return r; } "
+				+ "java.util.function.IntSupplier run() { return identity(() -> value = other); } }";
+		assertCompiles(source);
+		String transformed = replaceCall(source, "identity(() -> $x)", "() -> 2 * $x");
+		assertTrue(transformed.contains("2 * (value=other)"));
+		assertCompiles(transformed);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "() -> /* keep */ $x", "() -> $x /* keep */" })
+	void generatedLambdaCommentsRemainVoidCompatible(String replacement) throws Exception {
+		String source = "class Example { int value; static Runnable identity(Runnable r) { return r; } "
+				+ "Runnable run() { return identity(() -> value++); } }";
+		assertCompiles(source);
+		// Keep the actual replacement comments: the DSL parser intentionally strips
+		// them, while callers of the substitution API can supply the complete text.
+		var file = new HintFileParser().parse("identity(() -> $x)\n;;\n");
+		var rule = TransformationRule.of(file.getRules().getFirst().sourcePattern(),
+				List.of(RewriteAlternative.otherwise(replacement)));
+		var results = new BatchTransformationProcessor(file, List.of(rule)).process(parseCompilationUnit(source));
+		assertEquals(1, results.size());
+		var result = results.getFirst();
+		String transformed = source.substring(0, result.match().getOffset()) + result.replacement()
+				+ source.substring(result.match().getOffset() + result.match().getLength());
+		assertTrue(transformed.contains("/* keep */"));
+		assertCompiles(transformed);
+	}
+
 	@Test
 	void nestedLambdaBodyBindingsRetainPrecedenceGrouping() throws Exception {
 		String source = "class Example { int i, other; int old(int value) { return value; } "
@@ -196,7 +238,11 @@ class BindingSubstitutionTest {
 	}
 
 	private String replaceOriginalCall(String source, String replacement) throws Exception {
-		var file = new HintFileParser().parse("old($x)\n=> " + replacement + "\n;;\n");
+		return replaceCall(source, "old($x)", replacement);
+	}
+
+	private String replaceCall(String source, String pattern, String replacement) throws Exception {
+		var file = new HintFileParser().parse(pattern + "\n=> " + replacement + "\n;;\n");
 		var results = new BatchTransformationProcessor(file).process(parseCompilationUnit(source));
 		assertEquals(1, results.size());
 		var result = results.getFirst();
