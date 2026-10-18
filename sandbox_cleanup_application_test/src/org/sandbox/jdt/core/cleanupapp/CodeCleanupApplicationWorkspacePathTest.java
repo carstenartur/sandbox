@@ -4,6 +4,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.core.cleanupapp;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -16,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -138,6 +140,38 @@ class CodeCleanupApplicationWorkspacePathTest {
 		assertEquals(0, Files.size(patch));
 	}
 
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void aliasedLinkedProjectContextsAreNotChosenArbitrarily(boolean linkedSourceFolder) throws Exception {
+		assumeTrue(!Platform.OS_WIN32.equals(Platform.getOS()), "This fixture uses unprivileged symbolic links"); //$NON-NLS-1$
+		Path directory= Files.createDirectory(temporary.resolve("external-source")); //$NON-NLS-1$
+		Path input= Files.writeString(directory.resolve("Sample.java"), ORIGINAL, StandardCharsets.UTF_8); //$NON-NLS-1$
+		Path alias= linkedSourceFolder
+				? Files.createSymbolicLink(temporary.resolve("source-alias"), directory).resolve("Sample.java") //$NON-NLS-1$ //$NON-NLS-2$
+				: Files.createSymbolicLink(temporary.resolve("Sample-alias.java"), input); //$NON-NLS-1$
+		otherProject= javaProject();
+		link(project, input, linkedSourceFolder);
+		// Initialize Eclipse's location index before inserting a link through an alias.
+		ResourcesPlugin.getWorkspace().getRoot().findFilesForLocationURI(input.toUri());
+		link(otherProject, alias, linkedSourceFolder);
+		assertLinkedSource(project, input);
+		assertLinkedSource(otherProject, input);
+		assertTrue(Files.isSameFile(input, alias));
+		Path patch= temporary.resolve("aliased-ambiguous.patch"); //$NON-NLS-1$
+
+		Object result= run(project.getLocation().toOSString(), alias, "apply", patch); //$NON-NLS-1$
+
+		assertAll(() -> assertEquals(Integer.valueOf(CodeCleanupApplication.EXIT_ERROR), result),
+				() -> assertArrayEquals(ORIGINAL.getBytes(StandardCharsets.UTF_8), Files.readAllBytes(input)),
+				() -> assertEquals(0, Files.size(patch)));
+	}
+
+	private void assertLinkedSource(IProject owner, Path physicalFile) throws Exception {
+		IFile source= owner.getFile("src/Sample.java"); //$NON-NLS-1$
+		assertTrue(source.isAccessible());
+		assertTrue(Files.isSameFile(physicalFile, Path.of(source.getLocationURI())));
+	}
+
 	private IProject javaProject() throws Exception {
 		IProject created= ResourcesPlugin.getWorkspace().getRoot().getProject("CleanupPath-" + System.nanoTime()); //$NON-NLS-1$
 		created.create(monitor);
@@ -154,6 +188,16 @@ class CodeCleanupApplicationWorkspacePathTest {
 
 	private void link(IProject owner, Path file) throws Exception {
 		owner.getFile("src/Sample.java").createLink(file.toUri(), IResource.NONE, monitor); //$NON-NLS-1$
+	}
+
+	private void link(IProject owner, Path file, boolean linkedSourceFolder) throws Exception {
+		if (!linkedSourceFolder) {
+			link(owner, file);
+			return;
+		}
+		var source= owner.getFolder("src"); //$NON-NLS-1$
+		source.delete(true, monitor);
+		source.createLink(Objects.requireNonNull(file.getParent()).toUri(), IResource.NONE, monitor);
 	}
 
 	private Object run(String importDirectory, Path input, String mode, Path patch) throws Exception {
