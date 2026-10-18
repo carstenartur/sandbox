@@ -49,6 +49,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.internal.core.JavaModelManager;
 import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
@@ -377,13 +378,15 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 		}
 		project.refreshLocal(IResource.DEPTH_INFINITE, monitor);
 		if (project.hasNature(JavaCore.NATURE_ID)) {
-			var javaProject= JavaCore.create(project);
-			var classpath= javaProject.readRawClasspath();
-			IPath output= javaProject.readOutputLocation();
-			if (classpath != null && output != null) {
-				// Materialize persisted external class folders synchronously. Their
-				// background refresh cannot run while cleanup holds the root rule.
-				javaProject.setRawClasspath(classpath, output, monitor);
+			// A background job can own a pending link while waiting for our root rule.
+			// Materialize this project's mapped links directly before parsing.
+			var externalFolders= JavaModelManager.getExternalManager();
+			for (var entry : JavaCore.create(project).getResolvedClasspath(true)) {
+				var folder= externalFolders.getFolder(entry.getPath());
+				if (folder != null && !folder.exists()) {
+					externalFolders.createLinkFolder(entry.getPath(), false, monitor);
+					externalFolders.removePendingFolder(entry.getPath());
+				}
 			}
 		}
 	}
