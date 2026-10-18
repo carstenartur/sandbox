@@ -14,6 +14,7 @@
 package org.sandbox.jdt.internal.ui.wizard;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -21,6 +22,8 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
@@ -72,6 +75,8 @@ public class NewRuleWizardPage extends WizardPage {
 	private boolean customContentEntered;
 	private String initialSourcePattern;
 	private boolean autoTriggerAi;
+	private Supplier<IJavaProject> projectSupplier;
+	private Supplier<String> draftSupplier;
 
 	protected NewRuleWizardPage() {
 		super("newRuleWizardPage"); //$NON-NLS-1$
@@ -97,6 +102,11 @@ public class NewRuleWizardPage extends WizardPage {
 	 */
 	public void setAutoTriggerAi(boolean auto) {
 		this.autoTriggerAi = auto;
+	}
+
+	public void setProjectTrialContext(Supplier<IJavaProject> projectSupplier, Supplier<String> draftSupplier) {
+		this.projectSupplier = projectSupplier;
+		this.draftSupplier = draftSupplier;
 	}
 
 	@Override
@@ -149,6 +159,24 @@ public class NewRuleWizardPage extends WizardPage {
 		validationLabel = new Label(container, SWT.NONE);
 		GridData valData = new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1);
 		validationLabel.setLayoutData(valData);
+
+		Button tryOnProjectButton = new Button(container, SWT.PUSH);
+		tryOnProjectButton.setText("Try on project..."); //$NON-NLS-1$
+		GridData trialData = new GridData(SWT.END, SWT.CENTER, false, false, 2, 1);
+		tryOnProjectButton.setLayoutData(trialData);
+		tryOnProjectButton.setEnabled(projectSupplier != null && draftSupplier != null);
+		tryOnProjectButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				IJavaProject project = projectSupplier == null ? null : projectSupplier.get();
+				if (project != null && project.exists()) {
+					ProjectRulePreview.open(getShell(), project, draftSupplier.get());
+				} else {
+					MessageDialog.openInformation(getShell(), "TriggerPattern project trial", //$NON-NLS-1$
+							"Choose a Java project as the hint file target to try this draft."); //$NON-NLS-1$
+				}
+			}
+		});
 
 		// Pre-fill from code selection if available
 		if (initialSourcePattern != null && !initialSourcePattern.isBlank()) {

@@ -32,6 +32,8 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
@@ -97,6 +99,7 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 	public void addPages() {
 		filePage = new NewSandboxHintFileWizardPage(selection);
 		rulePage = new NewRuleWizardPage();
+		rulePage.setProjectTrialContext(this::getTargetJavaProject, this::buildHintFileContent);
 
 		if (initialCodeSnippet != null && !initialCodeSnippet.isBlank()) {
 			rulePage.setInitialSourcePattern(initialCodeSnippet);
@@ -128,6 +131,39 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 	public boolean performFinish() {
 		String containerPath = filePage.getContainerPath();
 		String fileName = filePage.getFileName();
+		String fullContent = buildHintFileContent();
+
+		try {
+			getContainer().run(true, false,
+					monitor -> createFile(containerPath, fileName, fullContent, monitor));
+		} catch (InvocationTargetException e) {
+			MessageDialog.openError(getShell(), "Error", //$NON-NLS-1$
+					"Could not create file: " + e.getTargetException().getMessage()); //$NON-NLS-1$
+			return false;
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return false;
+		}
+
+		// Open the newly created file in the editor
+		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+		IResource resource = root.findMember(new Path(containerPath));
+		if (resource instanceof IContainer container) {
+			IFile file = container.getFile(new Path(fileName));
+			IWorkbenchPage page = workbench.getActiveWorkbenchWindow().getActivePage();
+			if (page != null) {
+				try {
+					IDE.openEditor(page, file, true);
+				} catch (PartInitException e) {
+					// ignore - file was created successfully
+				}
+			}
+		}
+
+		return true;
+	}
+
+	private String buildHintFileContent() {
 		SandboxHintTemplates template = filePage.getSelectedTemplate();
 
 		// Build HintFile model from page 1 metadata
@@ -168,36 +204,17 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 			ruleContent = template.getRuleContent();
 		}
 
-		String fullContent = metadataContent + ruleContent;
+		return metadataContent + ruleContent;
+	}
 
-		try {
-			getContainer().run(true, false,
-					monitor -> createFile(containerPath, fileName, fullContent, monitor));
-		} catch (InvocationTargetException e) {
-			MessageDialog.openError(getShell(), "Error", //$NON-NLS-1$
-					"Could not create file: " + e.getTargetException().getMessage()); //$NON-NLS-1$
-			return false;
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			return false;
+	private IJavaProject getTargetJavaProject() {
+		IResource resource = ResourcesPlugin.getWorkspace().getRoot()
+				.findMember(new Path(filePage.getContainerPath()));
+		if (resource == null || resource.getProject() == null) {
+			return null;
 		}
-
-		// Open the newly created file in the editor
-		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-		IResource resource = root.findMember(new Path(containerPath));
-		if (resource instanceof IContainer container) {
-			IFile file = container.getFile(new Path(fileName));
-			IWorkbenchPage page = workbench.getActiveWorkbenchWindow().getActivePage();
-			if (page != null) {
-				try {
-					IDE.openEditor(page, file, true);
-				} catch (PartInitException e) {
-					// ignore - file was created successfully
-				}
-			}
-		}
-
-		return true;
+		IJavaProject project = JavaCore.create(resource.getProject());
+		return project.exists() ? project : null;
 	}
 
 	private void createFile(String containerPath, String fileName, String content,

@@ -29,6 +29,27 @@ import org.sandbox.jdt.triggerpattern.api.RewriteAlternative;
 public class ImportDirectiveTest {
 
 	@Test
+	public void literalAndCommentContentsDoNotInferImports() {
+		String source= "consume(\"java.util.List\", \"org.junit.Assert.assertEquals()\"); "
+				+ "/* java.util.Set */ // java.util.Map\n"
+				+ "consume(\"\"\"\njava.util.Queue\n\"\"\");";
+		assertTrue(ImportDirective.detectFromPattern(source).isEmpty());
+		assertTrue(ImportDirective.inferFromFqnPatterns(source, List.of(source)).isEmpty());
+		assertTrue(ImportDirective.detectRemovedTypes(source,
+				List.of(RewriteAlternative.otherwise("consume();"))).isEmpty());
+	}
+
+	@Test
+	public void codeNamesStillInferImportsAlongsideLiteralsAndComments() {
+		ImportDirective directive= ImportDirective.inferFromFqnPatterns(
+				"consume(\"org.junit.Assert.assertEquals()\");",
+				List.of("consume(java.util.Collections.emptyList(), \"java.util.List\"); /* java.util.Set */"));
+		assertEquals(List.of("java.util.Collections"), directive.getAddImports());
+		assertTrue(directive.getRemoveImports().isEmpty());
+		assertTrue(directive.getReplaceStaticImports().isEmpty());
+	}
+
+	@Test
 	public void testDetectFromPatternWithFqn() {
 		ImportDirective directive = ImportDirective.detectFromPattern(
 				"java.util.Objects.equals($x, $y)"); //$NON-NLS-1$
