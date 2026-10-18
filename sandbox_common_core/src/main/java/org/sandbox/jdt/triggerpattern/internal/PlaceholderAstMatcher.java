@@ -45,6 +45,7 @@ import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.StringLiteral;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.sandbox.jdt.triggerpattern.api.GuardContext.UnknownSemanticRequirement;
 
 /**
  * An AST matcher that supports placeholder matching with multi-placeholder and type constraint support.
@@ -93,6 +94,11 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	 */
 	public Map<String, Object> getBindings() {
 		return new HashMap<>(bindings);
+	}
+
+	/** Unresolved semantic identities retained for required-binding execution. */
+	public List<UnknownSemanticRequirement> getUnknownSemanticRequirements() {
+		return List.of();
 	}
 	
 	/**
@@ -785,7 +791,7 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	 * @param otherStmts the candidate statements
 	 * @return true if the statements match (considering multi-placeholders)
 	 */
-	private boolean matchStatementsWithMultiPlaceholders(List<Statement> patternStmts, List<Statement> otherStmts) {
+	public boolean matchStatementsWithMultiPlaceholders(List<Statement> patternStmts, List<Statement> otherStmts) {
 		// Find multi-placeholder position in pattern statements
 		int multiIndex = findMultiPlaceholderStatementIndex(patternStmts);
 		
@@ -805,6 +811,11 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 		}
 		
 		return true;
+	}
+
+	/** Number of source statements needed, allowing the variadic statement to be empty. */
+	public int minimumStatementCount(List<Statement> patternStatements) {
+		return patternStatements.size() - (findMultiPlaceholderStatementIndex(patternStatements) >= 0 ? 1 : 0);
 	}
 	
 	/**
@@ -915,7 +926,7 @@ public class PlaceholderAstMatcher extends ASTMatcher {
 	 * @param otherArgs the candidate arguments
 	 * @return true if arguments match (considering multi-placeholders)
 	 */
-	private boolean matchArgumentsWithMultiPlaceholders(List<Expression> patternArgs, List<Expression> otherArgs) {
+	protected boolean matchArgumentsWithMultiPlaceholders(List<Expression> patternArgs, List<Expression> otherArgs) {
 		// Find multi-placeholder position in pattern arguments
 		int multiIndex = findMultiPlaceholderIndex(patternArgs);
 		

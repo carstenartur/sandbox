@@ -14,6 +14,8 @@
 package org.sandbox.jdt.triggerpattern.internal;
 
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.eclipse.jdt.core.dom.ArrayType;
 import org.eclipse.jdt.core.dom.ASTMatcher;
@@ -22,7 +24,10 @@ import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.Name;
@@ -35,6 +40,7 @@ import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeLiteral;
 import org.eclipse.jdt.core.dom.WildcardType;
+import org.sandbox.jdt.triggerpattern.api.GuardContext.UnknownSemanticRequirement;
 
 /**
  * FQN-aware variant of {@link PlaceholderAstMatcher}.
@@ -47,12 +53,15 @@ import org.eclipse.jdt.core.dom.WildcardType;
 public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 
 	private final ASTMatcher structuralMatcher = new ASTMatcher();
+	private final Set<UnknownSemanticRequirement> unknownRequirements = new LinkedHashSet<>();
+
+	@Override
+	public List<UnknownSemanticRequirement> getUnknownSemanticRequirements() {
+		return List.copyOf(unknownRequirements);
+	}
 
 	@Override
 	public boolean match(SimpleType patternNode, Object other) {
-		if (super.match(patternNode, other)) {
-			return true;
-		}
 		return other instanceof SimpleType otherType
 				&& namesEquivalent(patternNode.getName(), otherType.getName());
 	}
@@ -109,9 +118,6 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 
 	@Override
 	public boolean match(ClassInstanceCreation patternNode, Object other) {
-		if (super.match(patternNode, other)) {
-			return true;
-		}
 		if (!(other instanceof ClassInstanceCreation otherCreation)) {
 			return false;
 		}
@@ -128,18 +134,27 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 		if (!subtreeNullable(patternNode.getExpression(), otherCreation.getExpression())) {
 			return false;
 		}
+		if (!subtreeNullable(patternNode.getAnonymousClassDeclaration(), otherCreation.getAnonymousClassDeclaration())) {
+			return false;
+		}
 		@SuppressWarnings("unchecked")
 		List<Expression> patternArgs = patternNode.arguments();
 		@SuppressWarnings("unchecked")
 		List<Expression> otherArgs = otherCreation.arguments();
-		return expressionListsEquivalent(patternArgs, otherArgs);
+		if (!matchArgumentsWithMultiPlaceholders(patternArgs, otherArgs)) {
+			return false;
+		}
+		if (typeIdentity(patternNode.getType()).contains(".")) { //$NON-NLS-1$
+			IMethodBinding constructor = otherCreation.resolveConstructorBinding();
+			if (constructor == null || constructor.isRecovered()) {
+				markUnknown("Constructor binding unavailable for " + typeIdentity(patternNode.getType())); //$NON-NLS-1$
+			}
+		}
+		return true;
 	}
 
 	@Override
 	public boolean match(MethodInvocation patternNode, Object other) {
-		if (super.match(patternNode, other)) {
-			return true;
-		}
 		if (!(other instanceof MethodInvocation otherInvocation)) {
 			return false;
 		}
@@ -163,7 +178,7 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 		List<Expression> patternArgs = patternNode.arguments();
 		@SuppressWarnings("unchecked")
 		List<Expression> otherArgs = otherInvocation.arguments();
-		return expressionListsEquivalent(patternArgs, otherArgs);
+		return matchArgumentsWithMultiPlaceholders(patternArgs, otherArgs);
 	}
 
 	private boolean typesEquivalent(Type patternType, Type sourceType) {
@@ -172,9 +187,6 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 		}
 		if (sourceType == null) {
 			return false;
-		}
-		if (patternType.subtreeMatch(structuralMatcher, sourceType)) {
-			return true;
 		}
 		if (patternType instanceof SimpleType patternSimple && sourceType instanceof SimpleType sourceSimple) {
 			return namesEquivalent(patternSimple.getName(), sourceSimple.getName());
@@ -210,18 +222,6 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 		return true;
 	}
 
-	private boolean expressionListsEquivalent(List<Expression> patternArgs, List<Expression> sourceArgs) {
-		if (patternArgs.size() != sourceArgs.size()) {
-			return false;
-		}
-		for (int i = 0; i < patternArgs.size(); i++) {
-			if (!patternArgs.get(i).subtreeMatch(this, sourceArgs.get(i))) {
-				return false;
-			}
-		}
-		return true;
-	}
-
 	private boolean subtreeNullable(ASTNode patternNode, ASTNode sourceNode) {
 		if (patternNode == null) {
 			return sourceNode == null;
@@ -235,6 +235,9 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 		}
 		if (sourceExpr == null) {
 			return false;
+		}
+		if (patternExpr instanceof Name patternName && sourceExpr instanceof Name sourceName) {
+			return namesEquivalent(patternName, sourceName);
 		}
 		if (patternExpr.subtreeMatch(this, sourceExpr)) {
 			return true;
@@ -250,7 +253,16 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 			return true;
 		}
 		IMethodBinding binding = sourceNode.resolveMethodBinding();
-		if (binding == null || binding.getDeclaringClass() == null) {
+		if (binding == null || binding.isRecovered() || binding.getDeclaringClass() == null
+				|| binding.getDeclaringClass().isRecovered()) {
+			markUnknown("Method binding unavailable for " + patternReceiver.getFullyQualifiedName() //$NON-NLS-1$
+					+ '.' + patternNode.getName().getIdentifier());
+			return true;
+		}
+		if (sourceNode.getExpression() instanceof Name sourceReceiver
+				&& sourceReceiver.resolveBinding() instanceof IVariableBinding field && field.isField()) {
+			// The receiver is a resolved field such as System.out, whose owning
+			// class is already checked by namesEquivalent, not its method's class.
 			return true;
 		}
 		String declaringClass = binding.getDeclaringClass().getQualifiedName();
@@ -258,13 +270,27 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 	}
 
 	private boolean namesEquivalent(Name patternName, Name sourceName) {
-		if (patternName.subtreeMatch(structuralMatcher, sourceName)) {
-			return true;
-		}
 		if (patternName instanceof SimpleName patternSimple && patternSimple.getIdentifier().startsWith("$")) { //$NON-NLS-1$
 			return patternName.subtreeMatch(this, sourceName);
 		}
 		String patternFqn = patternName.getFullyQualifiedName();
+		if (isFullyQualified(patternFqn)) {
+			IBinding binding = sourceName.resolveBinding();
+			if (binding != null && !binding.isRecovered()) {
+				// A variable can shadow an imported type; an explicit resolved identity
+				// takes precedence over plausible imports or java.lang spelling.
+				if (binding instanceof ITypeBinding type) {
+					return patternFqn.equals(type.getErasure().getQualifiedName());
+				}
+				return binding instanceof IVariableBinding field && field.isField()
+						&& field.getDeclaringClass() != null
+						&& patternFqn.equals(field.getDeclaringClass().getErasure().getQualifiedName() + '.' + field.getName());
+			}
+			markUnknown("Type binding unavailable for " + patternFqn); //$NON-NLS-1$
+		}
+		if (patternName.subtreeMatch(structuralMatcher, sourceName)) {
+			return true;
+		}
 		String sourceFqn = sourceName.getFullyQualifiedName();
 		if (patternFqn.equals(sourceFqn)) {
 			return true;
@@ -405,5 +431,9 @@ public final class FqnAwarePlaceholderAstMatcher extends PlaceholderAstMatcher {
 
 	private boolean isFullyQualified(String name) {
 		return name != null && name.indexOf('.') > 0;
+	}
+
+	private void markUnknown(String detail) {
+		unknownRequirements.add(new UnknownSemanticRequirement("source-pattern", detail)); //$NON-NLS-1$
 	}
 }

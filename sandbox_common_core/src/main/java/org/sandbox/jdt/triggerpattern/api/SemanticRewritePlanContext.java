@@ -16,15 +16,16 @@ import java.util.Objects;
 /** Thread-confined semantic plan scope used while invoking the existing hint backend. */
 public final class SemanticRewritePlanContext {
 
-	private record State(SemanticRewritePlan plan, Map<String, String> compilerOptions) {
+	private record State(SemanticRewritePlan plan, Map<String, String> compilerOptions, Runnable cancellationCheck) {
 		State {
 			plan= Objects.requireNonNullElseGet(plan, SemanticRewritePlan::empty);
 			compilerOptions= Map.copyOf(compilerOptions == null ? Map.of() : compilerOptions);
+			cancellationCheck= Objects.requireNonNull(cancellationCheck);
 		}
 	}
 
 	private static final ThreadLocal<State> CURRENT=
-			ThreadLocal.withInitial(() -> new State(SemanticRewritePlan.empty(), Map.of()));
+			ThreadLocal.withInitial(() -> new State(SemanticRewritePlan.empty(), Map.of(), () -> { }));
 
 	private SemanticRewritePlanContext() {
 	}
@@ -39,6 +40,11 @@ public final class SemanticRewritePlanContext {
 		return CURRENT.get().compilerOptions();
 	}
 
+	/** Checks host cancellation without introducing a workbench dependency into the core. */
+	public static void checkCanceled() {
+		CURRENT.get().cancellationCheck().run();
+	}
+
 	/** Installs a plan with no additional compiler options. */
 	public static Scope install(SemanticRewritePlan plan) {
 		return install(plan, Map.of());
@@ -46,8 +52,13 @@ public final class SemanticRewritePlanContext {
 
 	/** Installs a plan and compiler options until the returned scope is closed. */
 	public static Scope install(SemanticRewritePlan plan, Map<String, String> compilerOptions) {
+		return install(plan, compilerOptions, CURRENT.get().cancellationCheck());
+	}
+
+	/** Installs the same project context and a host-provided cancellation check. */
+	public static Scope install(SemanticRewritePlan plan, Map<String, String> compilerOptions, Runnable cancellationCheck) {
 		State previous= CURRENT.get();
-		CURRENT.set(new State(plan, compilerOptions));
+		CURRENT.set(new State(plan, compilerOptions, cancellationCheck));
 		return new Scope(previous);
 	}
 

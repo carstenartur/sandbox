@@ -31,9 +31,10 @@ import java.lang.annotation.Target;
  * )}
  * </pre>
  * 
- * <p><b>Note:</b> Type constraint checking currently requires binding resolution,
- * which is disabled in the current TriggerPatternEngine implementation. The infrastructure
- * is in place for future enhancement when binding resolution is enabled.</p>
+ * <p>Type constraint checking requires resolved bindings. Both the indexed and
+ * single-pattern matcher reject candidates with missing necessary bindings or
+ * placeholders. The compilation-unit API enables binding resolution; callers
+ * supplying an AST must provide an AST with bindings for constrained patterns.</p>
  * 
  * @since 1.2.2
  */

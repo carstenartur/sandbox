@@ -106,7 +106,7 @@ public class PatternCleanupHelper {
     public List<Match> findAllMatches(org.eclipse.jdt.core.dom.CompilationUnit compilationUnit, List<Pattern> patterns) {
         java.util.List<Match> allMatches = new java.util.ArrayList<>();
         for (Pattern pattern : patterns) {
-            List<Match> matches = ENGINE.findMatches(compilationUnit, pattern);
+            List<Match> matches = ENGINE.findExecutableMatches(compilationUnit, pattern);
             allMatches.addAll(matches);
         }
         return allMatches;

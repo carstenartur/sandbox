@@ -15,6 +15,7 @@ package org.sandbox.jdt.triggerpattern.ui;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.ILog;
@@ -47,12 +48,21 @@ import org.sandbox.jdt.triggerpattern.internal.HintRegistry.HintDescriptor;
 public class TriggerPatternQuickAssistProcessor implements IQuickAssistProcessor {
 	
 	private static final HintRegistry REGISTRY = new HintRegistry();
+	private final HintRegistry registry;
 	private final TriggerPatternEngine engine = new TriggerPatternEngine();
+
+	public TriggerPatternQuickAssistProcessor() {
+		this(REGISTRY);
+	}
+
+	TriggerPatternQuickAssistProcessor(HintRegistry registry) {
+		this.registry = Objects.requireNonNull(registry);
+	}
 	
 	@Override
 	public boolean hasAssists(IInvocationContext context) throws CoreException {
 		// Quick check - we could optimize this by caching patterns
-		return !REGISTRY.getHints().isEmpty();
+		return !registry.getHints().isEmpty();
 	}
 	
 	@Override
@@ -64,14 +74,25 @@ public class TriggerPatternQuickAssistProcessor implements IQuickAssistProcessor
 			return null;
 		}
 		
-		// Parse the compilation unit
-		CompilationUnit cu = getCompilationUnit(icu);
+		// JDT's invocation AST already represents this editor context and normally
+		// includes bindings. Reuse it before falling back to a resolved parse.
+		CompilationUnit cu = context.getASTRoot();
+		if (cu == null) {
+			cu = getCompilationUnit(icu);
+		}
 		if (cu == null) {
 			return null;
 		}
 		
 		// Get the AST node at the cursor position
 		int offset = context.getSelectionOffset();
+		return collectAssists(cu, icu, offset);
+	}
+
+	IJavaCompletionProposal[] collectAssists(CompilationUnit cu, ICompilationUnit icu, int offset) {
+		if (cu == null || icu == null) {
+			return null;
+		}
 		ASTNode coveringNode = getCoveringNode(cu, offset);
 		if (coveringNode == null) {
 			return null;
@@ -80,13 +101,13 @@ public class TriggerPatternQuickAssistProcessor implements IQuickAssistProcessor
 		List<IJavaCompletionProposal> proposals = new ArrayList<>();
 		
 		// Check each registered hint
-		for (HintDescriptor hint : REGISTRY.getHints()) {
+		for (HintDescriptor hint : registry.getHints()) {
 			if (!hint.isEnabledByDefault()) {
 				continue;
 			}
 			
 			// Find matches for this pattern near the cursor
-			List<Match> matches = engine.findMatches(cu, hint.getPattern());
+			List<Match> matches = engine.findExecutableMatches(cu, hint.getPattern());
 			
 			// Check if any match contains the cursor position
 			for (Match match : matches) {
@@ -125,7 +146,7 @@ public class TriggerPatternQuickAssistProcessor implements IQuickAssistProcessor
 	private CompilationUnit getCompilationUnit(ICompilationUnit icu) {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(icu);
-		parser.setResolveBindings(false);
+		parser.setResolveBindings(true);
 		return (CompilationUnit) parser.createAST(null);
 	}
 	

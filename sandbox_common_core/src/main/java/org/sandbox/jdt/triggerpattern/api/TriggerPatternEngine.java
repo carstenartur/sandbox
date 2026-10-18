@@ -23,24 +23,16 @@ import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
-import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
-import org.eclipse.jdt.core.dom.Annotation;
 import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
-import org.eclipse.jdt.core.dom.ITypeBinding;
-import org.eclipse.jdt.core.dom.IVariableBinding;
-import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.MethodInvocation;
-import org.eclipse.jdt.core.dom.Name;
 import org.eclipse.jdt.core.dom.Statement;
+import org.sandbox.jdt.triggerpattern.internal.FqnAwarePlaceholderAstMatcher;
 import org.sandbox.jdt.triggerpattern.internal.PatternParser;
 import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
+import org.sandbox.jdt.triggerpattern.api.GuardExpression.TruthValue;
 
 /**
  * Engine for finding pattern matches in Java code.
@@ -50,6 +42,8 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
  * method call, import, field, constructor, and method declaration patterns
  * with placeholder binding.</p>
  * 
+ * <p>Single-pattern and batch matching share {@link PatternIndex}, including
+ * FQN resolution, original source-node bindings and statement-sequence ranges.</p>
  * <p><b>Supported Pattern Kinds:</b></p>
  * <ul>
  *   <li>{@link PatternKind#EXPRESSION} - Expressions like {@code $x + 1}</li>
@@ -60,6 +54,10 @@ import org.sandbox.jdt.triggerpattern.internal.PlaceholderAstMatcher;
  *   <li>{@link PatternKind#FIELD} - Field declarations</li>
  *   <li>{@link PatternKind#CONSTRUCTOR} - Constructor invocations like {@code new String($bytes)}</li>
  *   <li>{@link PatternKind#METHOD_DECLARATION} - Method declarations like {@code void dispose()}</li>
+ *   <li>{@link PatternKind#TYPE_DECLARATION} - Type declaration headers</li>
+ *   <li>{@link PatternKind#DECLARATION} - Local variable declarations</li>
+ *   <li>{@link PatternKind#BLOCK} - Entire blocks with variadic statement placeholders</li>
+ *   <li>{@link PatternKind#STATEMENT_SEQUENCE} - Consecutive original statements within a block</li>
  * </ul>
  * 
  * @since 1.2.2
@@ -80,49 +78,25 @@ public class TriggerPatternEngine {
 			return List.of();
 		}
 		
-		ASTNode patternNode = parser.parse(pattern);
-		if (patternNode == null) {
-			return List.of();
-		}
-		
-		List<Match> matches = new ArrayList<>();
-		
-		cu.accept(new ASTVisitor() {
-			@Override
-			public void preVisit(ASTNode node) {
-				// Only check nodes of compatible types
-				if (pattern.getKind() == PatternKind.EXPRESSION && node instanceof Expression) {
-					checkMatch(node, patternNode, matches);
-				} else if (pattern.getKind() == PatternKind.STATEMENT && node instanceof Statement) {
-					checkMatch(node, patternNode, matches);
-				} else if (pattern.getKind() == PatternKind.ANNOTATION && node instanceof Annotation) {
-					checkMatch(node, patternNode, matches);
-				} else if (pattern.getKind() == PatternKind.METHOD_CALL && node instanceof MethodInvocation) {
-					checkMatch(node, patternNode, matches);
-				} else if (pattern.getKind() == PatternKind.IMPORT && node instanceof ImportDeclaration) {
-					checkMatch(node, patternNode, matches);
-				} else if (pattern.getKind() == PatternKind.FIELD && node instanceof FieldDeclaration) {
-					checkMatch(node, patternNode, matches);
-				} else if (pattern.getKind() == PatternKind.CONSTRUCTOR && node instanceof ClassInstanceCreation) {
-					checkMatch(node, patternNode, matches);
-				} else if (pattern.getKind() == PatternKind.METHOD_DECLARATION && node instanceof MethodDeclaration) {
-					checkMethodDeclarationMatch((MethodDeclaration) node, patternNode, pattern, matches);
-				} else if (pattern.getKind() == PatternKind.BLOCK && node instanceof Block) {
-					checkMatch(node, patternNode, matches);
-				} else if (pattern.getKind() == PatternKind.STATEMENT_SEQUENCE && node instanceof Block) {
-					checkStatementSequenceMatch((Block) node, patternNode, matches);
-				}
-			}
-		});
-		
-		return matches;
+		TransformationRule rule = TransformationRule.of(pattern, List.of());
+		return new PatternIndex(List.of(rule)).findAllMatches(cu).getOrDefault(rule, List.of());
+	}
+
+	/**
+	 * Finds matches eligible for invoking an automatic rewrite handler. Structural
+	 * candidates with unresolved concrete API identities remain available through
+	 * {@link #findMatches(CompilationUnit, Pattern)} for diagnostics.
+	 */
+	public List<Match> findExecutableMatches(CompilationUnit cu, Pattern pattern) {
+		return findMatches(cu, pattern).stream()
+				.filter(match -> match.getUnknownSemanticRequirements().isEmpty()).toList();
 	}
 	
 	/**
 	 * Finds all matches of the given pattern in the compilation unit.
 	 * 
-	 * <p>When the pattern specifies an overrides constraint, binding resolution
-	 * is enabled to support override detection via {@link IMethodBinding}.</p>
+	 * <p>Binding resolution is enabled for concrete API identities, type constraints
+	 * and override detection via {@link IMethodBinding}.</p>
 	 * 
 	 * @param icu the ICompilationUnit to search
 	 * @param pattern the pattern to match
@@ -133,25 +107,13 @@ public class TriggerPatternEngine {
 			return List.of();
 		}
 		
-		boolean needsBindings = pattern.getOverridesType() != null
-				|| (pattern.getConstraints() != null && pattern.getConstraints().length > 0);
 		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());
 		astParser.setSource(icu);
-		astParser.setResolveBindings(needsBindings);
-		if (needsBindings) {
-			astParser.setProject(icu.getJavaProject());
-		}
+		astParser.setResolveBindings(true);
+		astParser.setProject(icu.getJavaProject());
 		CompilationUnit cu = (CompilationUnit) astParser.createAST(null);
 		
-		List<Match> matches = findMatches(cu, pattern);
-		
-		// Apply type constraints if specified
-		ConstraintVariableType[] constraints = pattern.getConstraints();
-		if (constraints != null && constraints.length > 0) {
-			matches = filterByTypeConstraints(matches, constraints);
-		}
-		
-		return matches;
+		return findMatches(cu, pattern);
 	}
 	
 	/**
@@ -233,7 +195,7 @@ public class TriggerPatternEngine {
 			return List.of();
 		}
 
-		List<Match> signatureMatches = findMatches(cu, pattern);
+		List<Match> signatureMatches = findExecutableMatches(cu, pattern);
 
 		if (pattern.getKind() != PatternKind.METHOD_DECLARATION || bodyConstraintPattern.isEmpty()) {
 			return signatureMatches;
@@ -242,7 +204,7 @@ public class TriggerPatternEngine {
 		Pattern bodyPattern = Pattern.of(bodyConstraintPattern, bodyConstraintKind);
 		ASTNode bodyPatternNode = parser.parse(bodyPattern);
 		if (bodyPatternNode == null) {
-			return signatureMatches;
+			return List.of();
 		}
 
 		List<Match> result = new ArrayList<>();
@@ -251,9 +213,9 @@ public class TriggerPatternEngine {
 			if (matchedNode instanceof MethodDeclaration methodDecl) {
 				Block body = methodDecl.getBody();
 				if (body != null) {
-					boolean found = containsPattern(body, bodyPatternNode);
+					TruthValue found = containsPattern(body, bodyPatternNode);
 					// negate=true means trigger when pattern NOT found; negate=false means trigger when found
-					if (found != negate) {
+					if (found != TruthValue.UNKNOWN && (found == TruthValue.MATCH) != negate) {
 						result.add(match);
 					}
 				} else if (negate) {
@@ -267,239 +229,6 @@ public class TriggerPatternEngine {
 	}
 
 	/**
-	 * Checks if a method declaration matches the pattern and satisfies the override constraint.
-	 * 
-	 * <p>When the pattern specifies an overrides type, this method checks whether the
-	 * candidate method overrides a method from the specified type using binding resolution.
-	 * If binding resolution is not available (e.g., when parsing from source strings without
-	 * a project context), the override check fails and the method is not matched.</p>
-	 * 
-	 * @param candidate the candidate method declaration
-	 * @param patternNode the parsed pattern AST node
-	 * @param pattern the pattern with potential overrides constraint
-	 * @param matches the list to add the match to
-	 */
-	private void checkMethodDeclarationMatch(MethodDeclaration candidate, ASTNode patternNode,
-			Pattern pattern, List<Match> matches) {
-		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
-
-		if (!patternNode.subtreeMatch(matcher, candidate)) {
-			return;
-		}
-
-		// Check override constraint if specified
-		String overridesType = pattern.getOverridesType();
-		if (overridesType != null && !overridesType.isEmpty()) {
-			if (!checkOverrides(candidate, overridesType)) {
-				return;
-			}
-		}
-
-		Map<String, Object> bindings = new HashMap<>(matcher.getBindings());
-		createMatchWithAutoBindings(candidate, bindings, matches);
-	}
-
-	/**
-	 * Filters matches by type constraints specified in the pattern.
-	 * 
-	 * <p>Each constraint maps a placeholder variable to an expected type.
-	 * A match is retained only if all constraints are satisfied.
-	 * If binding resolution is not available for a placeholder, the
-	 * constraint is considered satisfied (graceful degradation).</p>
-	 * 
-	 * @param matches the matches to filter
-	 * @param constraints the type constraints to check
-	 * @return a filtered list of matches that satisfy all constraints
-	 * @since 1.4.0
-	 */
-	private List<Match> filterByTypeConstraints(List<Match> matches, ConstraintVariableType[] constraints) {
-		List<Match> result = new ArrayList<>();
-		for (Match match : matches) {
-			if (checkTypeConstraints(match, constraints)) {
-				result.add(match);
-			}
-		}
-		return result;
-	}
-
-	/**
-	 * Checks whether a match satisfies all type constraints.
-	 * 
-	 * <p>For each constraint, looks up the bound AST node for the placeholder
-	 * variable and resolves its {@link ITypeBinding}. The constraint is satisfied
-	 * if the resolved type matches the expected type (by simple name or qualified
-	 * name), or if binding resolution is not available (graceful degradation).</p>
-	 * 
-	 * @param match the match to check
-	 * @param constraints the type constraints
-	 * @return {@code true} if all constraints are satisfied
-	 * @since 1.4.0
-	 */
-	private boolean checkTypeConstraints(Match match, ConstraintVariableType[] constraints) {
-		for (ConstraintVariableType constraint : constraints) {
-			String variable = constraint.variable();
-			String expectedType = constraint.type();
-			
-			ASTNode node = match.getBinding(variable);
-			if (node == null) {
-				// Placeholder not found in bindings — constraint not applicable
-				continue;
-			}
-			
-			ITypeBinding typeBinding = resolveTypeBinding(node);
-			if (typeBinding == null) {
-				// Graceful degradation: no binding available, skip constraint
-				continue;
-			}
-			
-			if (!matchesTypeOrSupertype(typeBinding, expectedType)) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	/**
-	 * Resolves the type binding for an AST node.
-	 * 
-	 * @param node the AST node
-	 * @return the type binding, or {@code null} if not resolvable
-	 */
-	private ITypeBinding resolveTypeBinding(ASTNode node) {
-		if (node instanceof Name name) {
-			IBinding binding = name.resolveBinding();
-			if (binding instanceof IVariableBinding varBinding) {
-				return varBinding.getType();
-			}
-			if (binding instanceof ITypeBinding typeBinding) {
-				return typeBinding;
-			}
-		}
-		if (node instanceof MethodInvocation methodInv) {
-			IMethodBinding methodBinding = methodInv.resolveMethodBinding();
-			if (methodBinding != null) {
-				return methodBinding.getReturnType();
-			}
-		}
-		if (node instanceof Expression expr) {
-			return expr.resolveTypeBinding();
-		}
-		return null;
-	}
-
-	/**
-	 * Checks if a type binding matches an expected type name (including supertypes).
-	 * 
-	 * @param typeBinding the resolved type binding
-	 * @param expectedType the expected type name (simple or qualified)
-	 * @return {@code true} if the type matches
-	 */
-	private boolean matchesTypeOrSupertype(ITypeBinding typeBinding, String expectedType) {
-		return matchesTypeOrSupertype(typeBinding, expectedType, new java.util.HashSet<>());
-	}
-
-	/**
-	 * Recursively checks if a type binding matches an expected type name,
-	 * using a visited set to prevent infinite recursion.
-	 */
-	private boolean matchesTypeOrSupertype(ITypeBinding typeBinding, String expectedType,
-			java.util.Set<String> visited) {
-		if (typeBinding == null || typeBinding.isRecovered()) {
-			return false;
-		}
-		String qualifiedName = typeBinding.getQualifiedName();
-		if (!visited.add(qualifiedName)) {
-			return false; // Already visited — break potential cycle
-		}
-		if (typeBinding.getName().equals(expectedType) 
-				|| qualifiedName.equals(expectedType)) {
-			return true;
-		}
-		// Check superclass chain
-		ITypeBinding superclass = typeBinding.getSuperclass();
-		if (matchesTypeOrSupertype(superclass, expectedType, visited)) {
-			return true;
-		}
-		// Check interfaces
-		for (ITypeBinding iface : typeBinding.getInterfaces()) {
-			if (matchesTypeOrSupertype(iface, expectedType, visited)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * Checks if a method declaration overrides a method from the specified type.
-	 * 
-	 * <p>Uses binding resolution to traverse the type hierarchy and find overridden methods.
-	 * Returns {@code false} if bindings are not available (e.g., when parsing from raw source).</p>
-	 * 
-	 * @param method the method declaration to check
-	 * @param overridesType the fully qualified type name that must declare the overridden method
-	 * @return {@code true} if the method overrides a method from the specified type
-	 */
-	private boolean checkOverrides(MethodDeclaration method, String overridesType) {
-		IMethodBinding methodBinding = method.resolveBinding();
-		if (methodBinding == null) {
-			return false;
-		}
-
-		ITypeBinding declaringClass = methodBinding.getDeclaringClass();
-		if (declaringClass == null) {
-			return false;
-		}
-
-		// Walk the superclass chain looking for the overridden method
-		ITypeBinding superClass = declaringClass.getSuperclass();
-		while (superClass != null) {
-			if (overridesType.equals(superClass.getQualifiedName())) {
-				// Found the target type - check if it declares a method that is overridden
-				for (IMethodBinding superMethod : superClass.getDeclaredMethods()) {
-					if (methodBinding.overrides(superMethod)) {
-						return true;
-					}
-				}
-				// Target type found but method not declared there - stop searching
-				return false;
-			}
-			superClass = superClass.getSuperclass();
-		}
-
-		// Also check interfaces
-		return checkOverridesInInterfaces(methodBinding, declaringClass, overridesType);
-	}
-
-	/**
-	 * Checks if a method overrides a method declared in an interface matching the specified type.
-	 * 
-	 * @param methodBinding the method binding to check
-	 * @param typeBinding the declaring type
-	 * @param overridesType the target interface type
-	 * @return {@code true} if the method overrides a method from a matching interface
-	 */
-	private boolean checkOverridesInInterfaces(IMethodBinding methodBinding, ITypeBinding typeBinding,
-			String overridesType) {
-		for (ITypeBinding iface : typeBinding.getInterfaces()) {
-			if (overridesType.equals(iface.getQualifiedName())) {
-				// Found the target interface - check if it declares the overridden method
-				for (IMethodBinding ifaceMethod : iface.getDeclaredMethods()) {
-					if (methodBinding.overrides(ifaceMethod)) {
-						return true;
-					}
-				}
-				// Target interface found but method not declared there - stop searching
-				return false;
-			}
-			// Recursively check super-interfaces
-			if (checkOverridesInInterfaces(methodBinding, iface, overridesType)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	/**
 	 * Checks if a method body contains a match for the given pattern.
 	 * 
 	 * <p>Searches the entire body subtree, including nested blocks and
@@ -507,109 +236,34 @@ public class TriggerPatternEngine {
 	 * 
 	 * @param body the method body to search
 	 * @param bodyPatternNode the pattern AST node to look for
-	 * @return {@code true} if the pattern is found in the body
+	 * @return whether presence or absence is proven, or unknown when a necessary
+	 *         API identity cannot be resolved
 	 */
-	private boolean containsPattern(Block body, ASTNode bodyPatternNode) {
-		boolean[] found = {false};
+	private TruthValue containsPattern(Block body, ASTNode bodyPatternNode) {
+		TruthValue[] found = {TruthValue.NO_MATCH};
 		body.accept(new ASTVisitor() {
 			@Override
-			public void preVisit(ASTNode node) {
-				if (found[0]) {
-					return;
+			public boolean preVisit2(ASTNode node) {
+				SemanticRewritePlanContext.checkCanceled();
+				if (found[0] == TruthValue.MATCH) {
+					return false;
 				}
 				// Try matching against statements
 				if (node instanceof Statement || node instanceof Expression) {
-					PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
-					if (bodyPatternNode.subtreeMatch(matcher, node)) {
-						found[0] = true;
+					PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();
+					boolean matches = bodyPatternNode.subtreeMatch(matcher, node);
+					if (matches && matcher.getUnknownSemanticRequirements().isEmpty()) {
+						found[0] = TruthValue.MATCH;
+					} else if (!matcher.getUnknownSemanticRequirements().isEmpty()) {
+						found[0] = TruthValue.UNKNOWN;
 					}
 				}
+				return found[0] != TruthValue.MATCH;
 			}
 		});
 		return found[0];
 	}
 
-	/**
-	 * Checks if a candidate node matches the pattern node and adds a Match if it does.
-	 * 
-	 * <p>Auto-bindings are added:</p>
-	 * <ul>
-	 *   <li>{@code $_} - the matched node itself</li>
-	 *   <li>{@code $this} - the enclosing AbstractTypeDeclaration</li>
-	 * </ul>
-	 */
-	private void checkMatch(ASTNode candidate, ASTNode patternNode, List<Match> matches) {
-		PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
-		
-		if (patternNode.subtreeMatch(matcher, candidate)) {
-			// We have a match! Create a Match object with pattern bindings and auto-bindings
-			Map<String, Object> bindings = new HashMap<>(matcher.getBindings());
-			createMatchWithAutoBindings(candidate, bindings, matches);
-		}
-	}
-	
-	/**
-	 * Checks if a sequence of consecutive statements in a block matches a pattern block
-	 * using a sliding-window approach.
-	 * 
-	 * <p>The pattern block is parsed as a {@link Block} containing N statements. This method
-	 * slides a window of size N across the candidate block's statements. When all N pattern
-	 * statements match N consecutive candidate statements, a match is created.</p>
-	 * 
-	 * <p>The match's offset and length span the entire matched sequence (from the start of
-	 * the first matched statement to the end of the last matched statement).</p>
-	 * 
-	 * @param candidateBlock the candidate block to search
-	 * @param patternNode the parsed pattern block (must be a {@link Block})
-	 * @param matches the list to add matches to
-	 * @since 1.3.2
-	 */
-	@SuppressWarnings("unchecked")
-	private void checkStatementSequenceMatch(Block candidateBlock, ASTNode patternNode, List<Match> matches) {
-		if (!(patternNode instanceof Block)) {
-			return;
-		}
-		Block patternBlock = (Block) patternNode;
-		List<Statement> patternStmts = patternBlock.statements();
-		List<Statement> candidateStmts = candidateBlock.statements();
-		int patternSize = patternStmts.size();
-		
-		if (patternSize == 0 || candidateStmts.size() < patternSize) {
-			return;
-		}
-		
-		// Slide a window of size patternSize across the candidate statements
-		for (int windowStart = 0; windowStart <= candidateStmts.size() - patternSize; windowStart++) {
-			PlaceholderAstMatcher matcher = new PlaceholderAstMatcher();
-			boolean allMatch = true;
-			
-			for (int j = 0; j < patternSize; j++) {
-				if (!patternStmts.get(j).subtreeMatch(matcher, candidateStmts.get(windowStart + j))) {
-					allMatch = false;
-					break;
-				}
-			}
-			
-			if (allMatch) {
-				// Calculate offset/length spanning the entire matched sequence
-				Statement firstStmt = candidateStmts.get(windowStart);
-				Statement lastStmt = candidateStmts.get(windowStart + patternSize - 1);
-				int offset = firstStmt.getStartPosition();
-				int length = (lastStmt.getStartPosition() + lastStmt.getLength()) - offset;
-				
-				Map<String, Object> bindings = new HashMap<>(matcher.getBindings());
-				bindings.put("$_", firstStmt); //$NON-NLS-1$
-				ASTNode enclosingType = findEnclosingType(firstStmt);
-				if (enclosingType != null) {
-					bindings.put("$this", enclosingType); //$NON-NLS-1$
-				}
-				
-				Match match = new Match(firstStmt, bindings, offset, length);
-				matches.add(match);
-			}
-		}
-	}
-	
 	/**
 	 * Creates a Match with auto-bindings for a matched node.
 	 * 
@@ -628,38 +282,7 @@ public class TriggerPatternEngine {
 	 * @param matches the list to add the match to
 	 */
 	private void createMatchWithAutoBindings(ASTNode node, Map<String, Object> bindings, List<Match> matches) {
-		int offset = node.getStartPosition();
-		int length = node.getLength();
-		
-		// Add auto-bindings
-		bindings.put("$_", node); //$NON-NLS-1$
-		
-		// Find enclosing type declaration
-		ASTNode enclosingType = findEnclosingType(node);
-		if (enclosingType != null) {
-			bindings.put("$this", enclosingType); //$NON-NLS-1$
-		}
-		
-		Match match = new Match(node, bindings, offset, length);
-		matches.add(match);
-	}
-	
-	/**
-	 * Finds the enclosing type declaration for a given node.
-	 * 
-	 * <p>This includes classes, interfaces, enums, annotation types, and records.</p>
-	 * 
-	 * @param node the node to start from
-	 * @return the enclosing AbstractTypeDeclaration, or null if none found
-	 */
-	private ASTNode findEnclosingType(ASTNode node) {
-		ASTNode current = node;
-		while (current != null) {
-			if (current instanceof AbstractTypeDeclaration) {
-				return current;
-			}
-			current = current.getParent();
-		}
-		return null;
+		matches.add(PatternMatchSupport.createMatch(node, bindings,
+				node.getStartPosition(), node.getLength(), List.of()));
 	}
 }

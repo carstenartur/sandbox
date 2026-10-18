@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.sandbox.jdt.triggerpattern.api.GuardContext.UnknownSemanticRequirement;
 
 /**
  * Represents a successful match of a pattern against Java code.
@@ -57,6 +58,7 @@ public final class Match {
 	private final Map<String, Object> bindings;  // Changed to Object to support both ASTNode and List<ASTNode>
 	private final int offset;
 	private final int length;
+	private final List<UnknownSemanticRequirement> unknownSemanticRequirements;
 	private Map<String, Object> extraData;
 	
 	/**
@@ -68,10 +70,25 @@ public final class Match {
 	 * @param length the character length of the match in the source
 	 */
 	public Match(ASTNode matchedNode, Map<String, Object> bindings, int offset, int length) {
+		this(matchedNode, bindings, offset, length, List.of());
+	}
+
+	/**
+	 * Creates a structural match with the semantic identities that could not be
+	 * resolved. Required-binding execution must diagnose these before rewriting.
+	 */
+	public Match(ASTNode matchedNode, Map<String, Object> bindings, int offset, int length,
+			List<UnknownSemanticRequirement> unknownSemanticRequirements) {
 		this.matchedNode = Objects.requireNonNull(matchedNode, "Matched node cannot be null"); //$NON-NLS-1$
 		this.bindings = bindings != null ? Collections.unmodifiableMap(bindings) : Collections.emptyMap();
 		this.offset = offset;
 		this.length = length;
+		this.unknownSemanticRequirements = List.copyOf(unknownSemanticRequirements);
+	}
+
+	/** Returns unresolved concrete API identities observed during structural matching. */
+	public List<UnknownSemanticRequirement> getUnknownSemanticRequirements() {
+		return unknownSemanticRequirements;
 	}
 	
 	/**
