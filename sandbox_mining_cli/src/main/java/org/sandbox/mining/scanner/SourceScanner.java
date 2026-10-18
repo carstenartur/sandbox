@@ -145,6 +145,9 @@ public class SourceScanner {
 				List<TransformationResult> results = processor.process(cu, effectiveCompilerOptions);
 
 				for (TransformationResult result : results) {
+					if (result.isSemanticUnknown()) {
+						continue;
+					}
 					String relativePath = rootDir.relativize(javaFile).toString();
 					int line = cu.getLineNumber(result.match().getOffset());
 					String hintFileName = hintFile.getId() != null ? hintFile.getId() : "unknown"; //$NON-NLS-1$

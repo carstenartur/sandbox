@@ -68,6 +68,25 @@ class RuleAuthoringDocumentTest {
 	}
 
 	@Test
+	void equalsSyntaxMetadataIsReplacedRatherThanShadowingTheExplicitEdit() throws Exception {
+		String body = "$x.old()\n=> $x.modern()\n;;\n";
+		String changed = new RuleAuthoringDocument("<!id=\"old\">\n" + body)
+				.withMetadata(Map.of("id", "modern")).content();
+		assertEquals("<!id: modern>\n" + body, changed);
+		assertEquals("modern", new HintFileParser().parse(changed).getId());
+	}
+
+	@Test
+	void clearingMetadataRemovesEveryActiveEqualsOrColonDeclarationButKeepsExamples() throws Exception {
+		String examples = "/*\n<!id=\"example\">\n*/\n";
+		String body = "$x.old()\n=> $x.modern()\n;;\n";
+		String changed = new RuleAuthoringDocument(examples + "<!id=\"old\">\n<!id: old>\n" + body)
+				.withMetadata(Map.of("id", "")).content();
+		assertEquals(examples + body, changed);
+		assertEquals(null, new HintFileParser().parse(changed).getId());
+	}
+
+	@Test
 	void metadataCannotInjectRules() {
 		assertThrows(IllegalArgumentException.class,
 				() -> new RuleAuthoringDocument("$x\n;;\n").withMetadata(Map.of("id", "new>\n$x")));
@@ -117,6 +136,28 @@ class RuleAuthoringDocumentTest {
 	}
 
 	@Test
+	void insertionAtTheBeginningDoesNotConsumeTheFollowingUnchangedLine() {
+		var change = RuleAuthoringDocument.changedLines("keep();\n", "added();\nkeep();\n").orElseThrow();
+		assertEquals("", change.before());
+		assertEquals("added();\n", change.after());
+	}
+
+	@Test
+	void deletionAtTheBeginningDoesNotConsumeTheFollowingUnchangedLine() {
+		var change = RuleAuthoringDocument.changedLines("removed();\nkeep();\n", "keep();\n").orElseThrow();
+		assertEquals("removed();\n", change.before());
+		assertEquals("", change.after());
+	}
+
+	@Test
+	void insertionAndDeletionAtTheBeginningKeepCrLfUnchangedContextOutsideTheDraft() {
+		var inserted = RuleAuthoringDocument.changedLines("keep();\r\n", "added();\r\nkeep();\r\n").orElseThrow();
+		var removed = RuleAuthoringDocument.changedLines("removed();\r\nkeep();\r\n", "keep();\r\n").orElseThrow();
+		assertEquals(new RuleAuthoringDocument.ChangeExample("", "added();\r\n"), inserted);
+		assertEquals(new RuleAuthoringDocument.ChangeExample("removed();\r\n", ""), removed);
+	}
+
+	@Test
 	void unchangedDocumentHasNoChangeToGeneralize() {
 		assertTrue(RuleAuthoringDocument.changedLines("same();\n", "same();\n").isEmpty());
 	}
@@ -135,5 +176,19 @@ class RuleAuthoringDocumentTest {
 	void tripleQuotesInCommentsAreNotMistakenForJavaTextBlocks() {
 		var document = RuleAuthoringDocument.fromChange("old(); // \"\"\" is a comment", "modern();", "");
 		assertTrue(document.content().contains("// \"\"\" is a comment"));
+	}
+
+	@Test
+	void wildcardTypesDoNotHideUnsupportedJavaTextBlocks() {
+		String java = "java.util.List<? extends Number> values = null;\nString text = \"\"\"\n  preserve exact spaces\n  \"\"\";";
+		assertTrue(RuleAuthoringDocument.containsJavaTextBlock(java));
+		assertThrows(IllegalArgumentException.class,
+				() -> RuleAuthoringDocument.fromChange(java, "modern();", ""));
+	}
+
+	@Test
+	void javaLexicalModeStillSkipsEscapedQuotesAndCommentedTextBlocks() {
+		String java = "java.util.List<? extends Number> values = null;\nString quotes = \"\\\"\\\"\\\"\";\n// \"\"\" comment\n/* \"\"\" comment */";
+		assertFalse(RuleAuthoringDocument.containsJavaTextBlock(java));
 	}
 }

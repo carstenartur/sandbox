@@ -12,6 +12,7 @@ package org.sandbox.jdt.triggerpattern.internal;
 
 import java.lang.reflect.Modifier;
 
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ArrayAccess;
 import org.eclipse.jdt.core.dom.Assignment;
@@ -39,6 +40,7 @@ import org.eclipse.jdt.core.dom.SuperFieldAccess;
 import org.eclipse.jdt.core.dom.TextBlock;
 import org.eclipse.jdt.core.dom.ThisExpression;
 import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.TypePattern;
 import org.sandbox.jdt.triggerpattern.api.GuardContext;
 
 /**
@@ -103,7 +105,21 @@ final class SideEffectAnalysis {
 				&& hasNoSideEffect(conditional.getThenExpression(), context)
 				&& hasNoSideEffect(conditional.getElseExpression(), context);
 		case InstanceofExpression instanceOf -> hasNoSideEffect(instanceOf.getLeftOperand(), context);
-		case PatternInstanceofExpression instanceOf -> hasNoSideEffect(instanceOf.getLeftOperand(), context);
+		case PatternInstanceofExpression instanceOf -> {
+			boolean typePattern;
+			if (instanceOf.getAST().apiLevel() >= AST.JLS21) {
+				typePattern= instanceOf.getPattern() instanceof TypePattern;
+			} else {
+				// Older DOMs expose record patterns as synthetic, unbound declarations.
+				IVariableBinding variable= instanceOf.getRightOperand().resolveBinding();
+				typePattern= variable != null && !variable.isRecovered();
+			}
+			if (!typePattern) {
+				// Record deconstruction invokes accessors, including in nested patterns.
+				yield unknown(context, instanceOf);
+			}
+			yield hasNoSideEffect(instanceOf.getLeftOperand(), context);
+		}
 		case Assignment _, PostfixExpression _ -> false;
 		// Calls (including constructors), writes, allocation and unsupported syntax
 		// never become proof merely because their outer node is not a method call.

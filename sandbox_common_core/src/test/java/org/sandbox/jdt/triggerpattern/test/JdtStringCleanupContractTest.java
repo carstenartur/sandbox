@@ -25,6 +25,8 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
 import org.sandbox.jdt.triggerpattern.api.GuardFunction;
@@ -122,6 +124,43 @@ class JdtStringCleanupContractTest {
 		}
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings= { "== 0", "<= 0", "< 1" }) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	void positiveLengthComparisonPreservesValueOnlyLambdaOverloadResolution(String comparison) {
+		String source= """
+				class Test {
+				  void use(java.util.function.Predicate<String> action) {}
+				  void use(java.util.function.Consumer<String> action) {}
+				  void m() { use(text -> text.strip().length() %s); }
+				}
+				""".formatted(comparison); //$NON-NLS-1$
+		assertCompiles(source);
+		List<TransformationResult> results= process(isBlank, source, "11", true); //$NON-NLS-1$
+		for (TransformationResult result : results) {
+			String transformed= source.substring(0, result.match().getOffset()) + result.replacement()
+					+ source.substring(result.match().getOffset() + result.match().getLength());
+			assertCompiles(transformed);
+		}
+		assertTrue(results.isEmpty(), "A direct value-only lambda body must retain its compatibility"); //$NON-NLS-1$
+	}
+
+	@Test
+	void parenthesizedLengthComparisonKeepsItsLambdaValueOnlyAfterTheRewrite() {
+		assertRewrite(isBlank, """
+				class Test {
+				  void use(java.util.function.Predicate<String> action) {}
+				  void use(java.util.function.Consumer<String> action) {}
+				  void m() { use(text -> (text.strip().length() == 0)); }
+				}
+				""", """
+				class Test {
+				  void use(java.util.function.Predicate<String> action) {}
+				  void use(java.util.function.Consumer<String> action) {}
+				  void m() { use(text -> (text.isBlank())); }
+				}
+				"""); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
 	@Test
 	void trimMustNotBecomeIsBlankBecauseTheWhitespaceContractsDiffer() {
 		assertTrue("\u0000".trim().isEmpty()); //$NON-NLS-1$
@@ -210,6 +249,12 @@ class JdtStringCleanupContractTest {
 
 	private void assertNoRewrite(HintFile hints, String code) {
 		assertTrue(process(hints, code, "11", true).isEmpty(), () -> "Unexpected rewrite for: " + code); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private static void assertCompiles(String code) {
+		for (var problem : parse(code, "11", true).getProblems()) { //$NON-NLS-1$
+			assertFalse(problem.isError(), problem::getMessage);
+		}
 	}
 
 	private List<TransformationResult> process(HintFile hints, String code, String version, boolean bindings) {

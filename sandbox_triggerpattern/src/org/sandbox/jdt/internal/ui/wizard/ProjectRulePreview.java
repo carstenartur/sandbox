@@ -6,9 +6,9 @@ package org.sandbox.jdt.internal.ui.wizard;
 
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizard;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
+import org.eclipse.ltk.ui.refactoring.UserInputWizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -29,7 +29,7 @@ public final class ProjectRulePreview {
 						| RefactoringWizard.CHECK_INITIAL_CONDITIONS_ON_OPEN) {
 			@Override
 			protected void addUserInputPages() {
-				addPage(new WizardPage("candidate-explanations") { //$NON-NLS-1$
+				addPage(new UserInputWizardPage("candidate-explanations") { //$NON-NLS-1$
 					{
 						setTitle("Try TriggerPattern on my project"); //$NON-NLS-1$
 						setDescription("Review the candidates, then use Preview for the actual source changes."); //$NON-NLS-1$

@@ -1802,7 +1802,6 @@ public final class BuiltInGuards {
 	 * Args: [] (any throws) or [exceptionTypeName]
 	 * @since 1.4.1
 	 */
-	@SuppressWarnings("unchecked")
 	private static boolean evaluateThrowsException(GuardContext ctx, Object... args) {
 		ASTNode node = ctx.getMatchedNode();
 		if (node == null) {
@@ -1812,7 +1811,8 @@ public final class BuiltInGuards {
 		if (methodDecl == null) {
 			return false;
 		}
-		List<Name> thrownExceptions = methodDecl.thrownExceptionTypes();
+		// Modern JDT ASTs return Type nodes here; do not narrow the raw API to Name.
+		List<?> thrownExceptions = methodDecl.thrownExceptionTypes();
 		if (thrownExceptions.isEmpty()) {
 			return false;
 		}

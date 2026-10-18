@@ -32,6 +32,8 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.wizard.Wizard;
@@ -41,9 +43,6 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
-import org.eclipse.jdt.core.IJavaElement;
-import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.core.JavaCore;
 import org.sandbox.jdt.triggerpattern.internal.RuleAuthoringDocument;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
@@ -113,6 +112,8 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		rulePage = new NewRuleWizardPage();
 		rulePage.setMetadataSupplier(filePage::getEditedMetadata);
 		rulePage.setDefaultContentSupplier(this::getTemplateContent);
+		rulePage.setProjectTrialContext(this::getTargetJavaProject, this::getFullDslDocument);
+		rulePage.setProjectPreviewAction(projectPreviewAction);
 
 		if (initialCodeSnippet != null && (!initialCodeSnippet.isBlank() || initialReplacement != null)) {
 			if (initialReplacement == null) {
@@ -127,18 +128,6 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 			if (autoAi && EclipseLlmService.getInstance().isAvailable()) {
 				rulePage.setAutoTriggerAi(true);
 			}
-		}
-
-		IJavaProject project = selectedJavaProject();
-		if (projectPreviewAction != null || project != null) {
-			rulePage.setProjectPreviewAction(ignored -> {
-				String dsl = getFullDslDocument();
-				if (projectPreviewAction != null) {
-					projectPreviewAction.accept(dsl);
-				} else {
-					ProjectRulePreview.open(getShell(), project, dsl);
-				}
-			});
 		}
 
 		addPage(filePage);
@@ -212,19 +201,14 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		return content;
 	}
 
-	private IJavaProject selectedJavaProject() {
-		if (selection == null || selection.isEmpty()) {
+	private IJavaProject getTargetJavaProject() {
+		IResource resource = ResourcesPlugin.getWorkspace().getRoot()
+				.findMember(new Path(filePage.getContainerPath()));
+		if (resource == null || resource.getProject() == null) {
 			return null;
 		}
-		Object first = selection.getFirstElement();
-		if (first instanceof IJavaElement javaElement) {
-			return javaElement.getJavaProject();
-		}
-		if (first instanceof IResource resource) {
-			IJavaProject project = JavaCore.create(resource.getProject());
-			return project.exists() ? project : null;
-		}
-		return null;
+		IJavaProject project = JavaCore.create(resource.getProject());
+		return project.exists() ? project : null;
 	}
 
 	private void createFile(String containerPath, String fileName, String content,
