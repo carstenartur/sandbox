@@ -76,9 +76,9 @@ class CodeCleanupApplicationWorkspacePathTest {
 		assertEquals(Integer.valueOf("apply".equals(mode) ? CodeCleanupApplication.EXIT_OK //$NON-NLS-1$
 				: CodeCleanupApplication.EXIT_CHANGES), result);
 		assertTrue(Files.size(patch) > 0);
-		assertTrue(Files.readString(patch).contains("src/Sample.java")); //$NON-NLS-1$
+		assertTrue(Files.readString(patch, StandardCharsets.UTF_8).contains("src/Sample.java")); //$NON-NLS-1$
 		if ("apply".equals(mode)) { //$NON-NLS-1$
-			assertNotEquals(ORIGINAL, Files.readString(input));
+			assertNotEquals(ORIGINAL, Files.readString(input, StandardCharsets.UTF_8));
 		} else {
 			assertArrayEquals(ORIGINAL.getBytes(StandardCharsets.UTF_8), Files.readAllBytes(input));
 		}
@@ -94,8 +94,8 @@ class CodeCleanupApplicationWorkspacePathTest {
 		Object result= run(project.getLocation().toOSString(), input, "apply", patch); //$NON-NLS-1$
 
 		assertEquals(Integer.valueOf(CodeCleanupApplication.EXIT_OK), result);
-		assertNotEquals(ORIGINAL, Files.readString(input));
-		assertTrue(Files.readString(patch).contains("src/Sample.java")); //$NON-NLS-1$
+		assertNotEquals(ORIGINAL, Files.readString(input, StandardCharsets.UTF_8));
+		assertTrue(Files.readString(patch, StandardCharsets.UTF_8).contains("src/Sample.java")); //$NON-NLS-1$
 	}
 
 	@Test
