@@ -46,6 +46,8 @@ import org.sandbox.jdt.triggerpattern.api.GuardContext;
 /**
  * A deliberately limited expression-effects proof, shared by guard evaluation.
  * It does not prove that reads are stable, non-throwing or safe to move.
+ * Type cases stay separate because JDT binding recovery can crash on grouped
+ * patterns when their types are unresolved.
  */
 final class SideEffectAnalysis {
 
@@ -62,8 +64,12 @@ final class SideEffectAnalysis {
 			return false;
 		}
 		return switch (expression) {
-		case BooleanLiteral _, CharacterLiteral _, NullLiteral _, NumberLiteral _,
-				StringLiteral _, TextBlock _ -> true;
+		case BooleanLiteral _ -> true;
+		case CharacterLiteral _ -> true;
+		case NullLiteral _ -> true;
+		case NumberLiteral _ -> true;
+		case StringLiteral _ -> true;
+		case TextBlock _ -> true;
 		case ParenthesizedExpression parenthesized -> isStableValue(parenthesized.getExpression(), context);
 		case SimpleName name -> {
 			IBinding binding= name.resolveBinding();
@@ -85,8 +91,14 @@ final class SideEffectAnalysis {
 			return unknown(context, expression);
 		}
 		return switch (expression) {
-		case BooleanLiteral _, CharacterLiteral _, NullLiteral _, NumberLiteral _,
-				StringLiteral _, TextBlock _, ThisExpression _, TypeLiteral _ -> true;
+		case BooleanLiteral _ -> true;
+		case CharacterLiteral _ -> true;
+		case NullLiteral _ -> true;
+		case NumberLiteral _ -> true;
+		case StringLiteral _ -> true;
+		case TextBlock _ -> true;
+		case ThisExpression _ -> true;
+		case TypeLiteral _ -> true;
 		case SimpleName name -> safeRead(name.resolveBinding(), context, name);
 		case QualifiedName name -> safeRead(name.resolveBinding(), context, name)
 				&& hasNoSideEffect(name.getQualifier(), context);
@@ -120,7 +132,8 @@ final class SideEffectAnalysis {
 			}
 			yield hasNoSideEffect(instanceOf.getLeftOperand(), context);
 		}
-		case Assignment _, PostfixExpression _ -> false;
+		case Assignment _ -> false;
+		case PostfixExpression _ -> false;
 		// Calls (including constructors), writes, allocation and unsupported syntax
 		// never become proof merely because their outer node is not a method call.
 		// Unknown purity must remain unknown under guard negation as well.

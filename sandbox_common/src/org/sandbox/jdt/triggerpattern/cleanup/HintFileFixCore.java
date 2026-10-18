@@ -18,7 +18,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
 
+import org.eclipse.jdt.core.IType;
+import org.eclipse.jdt.core.JavaModelException;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Annotation;
@@ -26,6 +29,7 @@ import org.eclipse.jdt.core.dom.Block;
 import org.eclipse.jdt.core.dom.CatchClause;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.MarkerAnnotation;
 import org.eclipse.jdt.core.dom.MemberValuePair;
@@ -41,7 +45,9 @@ import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
 import org.eclipse.jdt.core.dom.rewrite.ListRewrite;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
 import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.ScopeAnalyzer;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.ImportRemover;
 import org.eclipse.jdt.internal.corext.fix.LinkedProposalModelCore;
@@ -296,11 +302,26 @@ public class HintFileFixCore {
 						|| statement && HintFileRewriteOperation.parseBody(result.replacement(), options) == null)) {
 			return false;
 		}
-		if (node instanceof org.eclipse.jdt.core.dom.MethodDeclaration
-				&& HintFileRewriteOperation.parseReplacementAsMethodDeclaration(result.replacement(), options) == null) {
-			return false;
+		Map<String, String> annotationTypes= new java.util.LinkedHashMap<>();
+		if (node instanceof org.eclipse.jdt.core.dom.MethodDeclaration method) {
+			var replacement= HintFileRewriteOperation.parseReplacementAsMethodDeclaration(result.replacement(), options);
+			if (replacement == null) {
+				return false;
+			}
+			for (Object modifier : replacement.modifiers()) {
+				if (modifier instanceof Annotation annotation) {
+					String name= annotation.getTypeName().getFullyQualifiedName();
+					if (name.indexOf('.') < 0) {
+						String type= HintFileRewriteOperation.resolveAnnotationType(method, name);
+						if (type == null) {
+							return false;
+						}
+						annotationTypes.put(name, type);
+					}
+				}
+			}
 		}
-		operations.add(new HintFileRewriteOperation(result));
+		operations.add(new HintFileRewriteOperation(result, annotationTypes));
 		return true;
 	}
 
@@ -394,9 +415,11 @@ public class HintFileFixCore {
 	private static class HintFileRewriteOperation extends CompilationUnitRewriteOperation {
 
 		private final TransformationResult result;
+		private final Map<String, String> annotationTypes;
 
-		public HintFileRewriteOperation(TransformationResult result) {
+		public HintFileRewriteOperation(TransformationResult result, Map<String, String> annotationTypes) {
 			this.result = result;
+			this.annotationTypes= Map.copyOf(annotationTypes);
 		}
 
 		@Override
@@ -714,14 +737,6 @@ public class HintFileFixCore {
 		}
 
 		/**
-		 * Returns the simple name of an annotation (without package prefix).
-		 */
-		private static String getAnnotationSimpleName(Annotation annotation) {
-			String qualified= annotation.getTypeName().getFullyQualifiedName();
-			return qualified.substring(qualified.lastIndexOf('.') + 1);
-		}
-
-		/**
 		 * Handles DECLARATION rewrite with {@code $widestType} support.
 		 *
 		 * <p>The widest type FQN was pre-computed by {@link #isNonWidenableDeclaration}
@@ -833,12 +848,10 @@ public class HintFileFixCore {
 				return;
 			}
 
-			// Collect existing annotation simple names on the actual matched method
-			java.util.Set<String> existingAnnotationNames = new java.util.LinkedHashSet<>();
+			// Compare resolved identities so different types sharing a simple name remain distinct.
 			java.util.Set<String> existingAnnotationTypes = new java.util.LinkedHashSet<>();
 			for (Object modifier : methodDecl.modifiers()) {
 				if (modifier instanceof Annotation ann) {
-					existingAnnotationNames.add(getAnnotationSimpleName(ann));
 					existingAnnotationTypes.add(ann.getTypeName().getFullyQualifiedName());
 					var binding= ann.resolveTypeBinding();
 					if (binding != null && !binding.isRecovered()) {
@@ -851,16 +864,48 @@ public class HintFileFixCore {
 			ListRewrite modifiersRewrite = rewrite.getListRewrite(
 					methodDecl, org.eclipse.jdt.core.dom.MethodDeclaration.MODIFIERS2_PROPERTY);
 			ImportRewrite importRewrite = cuRewrite.getImportRewrite();
+			var importContext= new ContextSensitiveImportRewriteContext(methodDecl, importRewrite);
 			for (String annotationName : annotationsToAdd) {
 				String fqn = annotationName.indexOf('.') < 0 ? null : annotationName;
-				if (fqn != null ? existingAnnotationTypes.contains(fqn) : existingAnnotationNames.contains(annotationName)) {
+				String targetType= fqn == null ? annotationTypes.get(annotationName) : fqn;
+				if (existingAnnotationTypes.contains(targetType)) {
 					continue; // Already present on the actual method — skip
 				}
 				// Use createStringPlaceholder so the annotation appears on its own
 				// line above the method declaration (proper formatting).
 				ASTNode newAnnotation = rewrite.createStringPlaceholder(
-						"@" + (fqn == null ? annotationName : importRewrite.addImport(fqn)) + "\n", ASTNode.MARKER_ANNOTATION); //$NON-NLS-1$ //$NON-NLS-2$
+						"@" + (fqn == null ? annotationName : importRewrite.addImport(fqn, importContext)) + "\n", ASTNode.MARKER_ANNOTATION); //$NON-NLS-1$ //$NON-NLS-2$
 				modifiersRewrite.insertFirst(newAnnotation, group);
+			}
+		}
+
+		/** Resolves an unambiguous annotation, retaining secondary and member types from original bindings. */
+		private static String resolveAnnotationType(org.eclipse.jdt.core.dom.MethodDeclaration method, String name) {
+			var binding= method.resolveBinding();
+			if (binding == null || binding.isRecovered() || binding.getDeclaringClass() == null
+					|| binding.getDeclaringClass().isRecovered()
+					|| !(binding.getDeclaringClass().getJavaElement() instanceof IType contextType)) {
+				return null;
+			}
+			try {
+				// ScopeAnalyzer hides same-name types; require unique Java-model resolution first.
+				String[][] matches= contextType.resolveType(name);
+				if (matches == null || matches.length != 1) {
+					return null;
+				}
+				String resolvedType= matches[0][0].isEmpty() ? matches[0][1] : matches[0][0] + '.' + matches[0][1];
+				var analyzer= new ScopeAnalyzer((CompilationUnit) method.getRoot());
+				for (var declaration : analyzer.getDeclarationsInScope(method.getStartPosition(),
+						ScopeAnalyzer.TYPES | ScopeAnalyzer.CHECK_VISIBILITY)) {
+					if (declaration instanceof ITypeBinding type && resolvedType.equals(type.getQualifiedName())) {
+						return !type.isRecovered() && type.isAnnotation() ? resolvedType : null;
+					}
+				}
+				// The monitor overload also includes secondary source types in the lookup.
+				IType annotation= contextType.getJavaProject().findType(matches[0][0], matches[0][1], (IProgressMonitor) null);
+				return annotation != null && annotation.isAnnotation() ? annotation.getFullyQualifiedName('.') : null;
+			} catch (JavaModelException exception) {
+				return null;
 			}
 		}
 
@@ -943,8 +988,9 @@ public class HintFileFixCore {
 			sorted.sort((a, b) -> Integer.compare(b.length(), a.length()));
 
 			String shortened = replacement;
+			var context= new ContextSensitiveImportRewriteContext(result.match().getMatchedNode(), imports);
 			for (String fqn : sorted) {
-				String renderedName= imports.addImport(fqn);
+				String renderedName= imports.addImport(fqn, context);
 				java.util.regex.Matcher names= java.util.regex.Pattern.compile(
 						"(?<![\\p{javaJavaIdentifierPart}.])" + java.util.regex.Pattern.quote(fqn) //$NON-NLS-1$
 								+ "(?![\\p{javaJavaIdentifierPart}])") //$NON-NLS-1$
