@@ -11,6 +11,7 @@
 package org.sandbox.jdt.triggerpattern.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -45,6 +46,24 @@ class ExampleHintProviderTest {
 	}
 
 	@Test
+	void directExpressionLambdaRemainsValueOnlyForOverloadResolution() throws Exception {
+		String source= """
+				class Test {
+				  void use(java.util.function.Predicate<String> action) {}
+				  void use(java.util.function.Consumer<String> action) {}
+				  void m() { use(s -> !!s.isEmpty()); }
+				}
+				"""; //$NON-NLS-1$
+		HintContext context= context(source, true);
+		assertCompiles(context.getCompilationUnit());
+		assertNotNull(ExampleHintProvider.simplifyDoubleNegation(context));
+		Document document= new Document(source);
+		context.getASTRewrite().rewriteAST(document, null).apply(document);
+		assertCompiles(parse(document.get(), true));
+		assertEquals(source.replace("!!s.isEmpty()", "(s.isEmpty())"), document.get()); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
 	void aParenthesizedOperandKeepsItsSourceComments() throws Exception {
 		String source= "class Test { boolean m(boolean flag) { return !!(flag /* keep */); } }"; //$NON-NLS-1$
 		HintContext context= context(source, true);
@@ -73,16 +92,7 @@ class ExampleHintProviderTest {
 	}
 
 	private static HintContext context(String source, boolean bindings) {
-		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
-		parser.setSource(source.toCharArray());
-		parser.setKind(ASTParser.K_COMPILATION_UNIT);
-		Map<String, String> options= JavaCore.getOptions();
-		JavaCore.setComplianceOptions(JavaCore.VERSION_25, options);
-		parser.setCompilerOptions(options);
-		parser.setResolveBindings(bindings);
-		parser.setEnvironment(new String[0], new String[0], new String[0], true);
-		parser.setUnitName("Test.java"); //$NON-NLS-1$
-		CompilationUnit cu= (CompilationUnit) parser.createAST(null);
+		CompilationUnit cu= parse(source, bindings);
 		PrefixExpression[] root= new PrefixExpression[1];
 		cu.accept(new ASTVisitor() {
 			@Override
@@ -103,5 +113,24 @@ class ExampleHintProviderTest {
 				default -> method.getReturnType() == boolean.class ? Boolean.FALSE : null;
 				});
 		return new HintContext(cu, unit, match, ASTRewrite.create(cu.getAST()));
+	}
+
+	private static void assertCompiles(CompilationUnit cu) {
+		for (var problem : cu.getProblems()) {
+			assertFalse(problem.isError(), problem::getMessage);
+		}
+	}
+
+	private static CompilationUnit parse(String source, boolean bindings) {
+		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		parser.setSource(source.toCharArray());
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		Map<String, String> options= JavaCore.getOptions();
+		JavaCore.setComplianceOptions(JavaCore.VERSION_25, options);
+		parser.setCompilerOptions(options);
+		parser.setResolveBindings(bindings);
+		parser.setEnvironment(new String[0], new String[0], new String[0], true);
+		parser.setUnitName("Test.java"); //$NON-NLS-1$
+		return (CompilationUnit) parser.createAST(null);
 	}
 }

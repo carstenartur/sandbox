@@ -67,9 +67,31 @@ class SideEffectGuardTest {
 	@ParameterizedTest
 	@ValueSource(strings= { "i", "(i)", "-i", "!flag", "i + 2", "i / 0", "array[0]", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
 			"holder.value", "\"x\" + i", "\"x\" + text", "flag ? i : 0", "i > 0", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
-			"holder instanceof Object", "String.class", "Test.CONSTANT", "'x'", "null" }) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
+			"holder instanceof Object", "candidate instanceof Test otherHolder", "candidate instanceof Box box", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			"String.class", "Test.CONSTANT", "'x'", "null" }) //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 	void acceptsResolvedReadsWithoutPromisingExceptionFreedomOrStability(String source) {
 		assertTrue(evaluate(context(source, true)), source);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings= { "candidate instanceof Box(int value)", //$NON-NLS-1$
+			"candidate instanceof Nested(Box(int value))" }) //$NON-NLS-1$
+	void recordAccessorEffectsRemainUnknownEvenUnderGuardNegation(String source) {
+		for (int astLevel : new int[] { AST.JLS20, AST.getJLSLatest() }) {
+			GuardContext context= context(source, true, astLevel);
+			for (var problem : context.getCompilationUnit().getProblems()) {
+				assertFalse(problem.isError(), problem::getMessage);
+			}
+			GuardExpression expression= new GuardExpression.FunctionCall("hasNoSideEffect", List.of("$x")); //$NON-NLS-1$ //$NON-NLS-2$
+			assertEquals(TruthValue.UNKNOWN, expression.evaluateDetailed(context).truthValue());
+			assertEquals(TruthValue.UNKNOWN, new GuardExpression.Not(expression).evaluateDetailed(context).truthValue());
+		}
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints= { AST.JLS17, AST.JLS20 })
+	void legacyDomTypePatternsRemainEffectFree(int astLevel) {
+		assertTrue(evaluate(context("candidate instanceof Box box", true, astLevel))); //$NON-NLS-1$
 	}
 
 	@Test
@@ -195,12 +217,17 @@ class SideEffectGuardTest {
 	}
 
 	private static GuardContext context(String expression, boolean bindings) {
+		return context(expression, bindings, AST.getJLSLatest());
+	}
+
+	private static GuardContext context(String expression, boolean bindings, int astLevel) {
 		String source= "class Test { volatile int changing; static int counter; static final int CONSTANT=3; " //$NON-NLS-1$
 				+ "int value; static int call() { return 1; } " //$NON-NLS-1$
-				+ "Object m(int i, boolean flag, int[] array, Test holder, Test other, String text, final String finalText) { " //$NON-NLS-1$
+				+ "record Box(int value) { public int value() { counter++; return value; } } record Nested(Box box) {} " //$NON-NLS-1$
+				+ "Object m(int i, boolean flag, int[] array, Test holder, Test other, String text, final String finalText, Object candidate) { " //$NON-NLS-1$
 				+ "final int fixed=7; return " //$NON-NLS-1$
 				+ expression + "; } }"; //$NON-NLS-1$
-		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
+		ASTParser parser= ASTParser.newParser(astLevel);
 		parser.setSource(source.toCharArray());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		Map<String, String> options= JavaCore.getOptions();

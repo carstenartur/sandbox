@@ -16,6 +16,8 @@ package org.sandbox.jdt.triggerpattern.examples;
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.ITypeBinding;
+import org.eclipse.jdt.core.dom.LambdaExpression;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
 import org.eclipse.jdt.ui.text.java.correction.ASTRewriteCorrectionProposal;
@@ -64,7 +66,14 @@ public class ExampleHintProvider {
 				return null;
 			}
 		}
-		context.getASTRewrite().replace(outer, context.getASTRewrite().createCopyTarget(expression), null);
+		Expression replacement= (Expression) context.getASTRewrite().createCopyTarget(expression);
+		if (outer.getParent() instanceof LambdaExpression) {
+			// A method invocation alone would also make the lambda void-compatible.
+			ParenthesizedExpression parenthesized= outer.getAST().newParenthesizedExpression();
+			parenthesized.setExpression(replacement);
+			replacement= parenthesized;
+		}
+		context.getASTRewrite().replace(outer, replacement, null);
 		return new ASTRewriteCorrectionProposal("Remove boolean double negation", //$NON-NLS-1$
 				context.getICompilationUnit(), context.getASTRewrite(), 10, null);
 	}

@@ -23,6 +23,7 @@ import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.InfixExpression;
+import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.ParenthesizedExpression;
 import org.eclipse.jdt.core.dom.PrefixExpression;
@@ -87,6 +88,13 @@ final class StringCleanupGuards {
 				&& isSupportedLengthComparison(infix)
 				&& unparenthesize(infix.getLeftOperand()) instanceof MethodInvocation length
 				&& stringMethod(context, "stringIsBlankSafe", length, "length")) { //$NON-NLS-1$ //$NON-NLS-2$
+			if (infix.getParent() instanceof LambdaExpression
+					&& (infix.getOperator() == InfixExpression.Operator.EQUALS
+							|| infix.getOperator() == InfixExpression.Operator.LESS_EQUALS
+							|| infix.getOperator() == InfixExpression.Operator.LESS)) {
+				// A bare isBlank() call would also make the lambda void-compatible.
+				return false;
+			}
 			return stringStrip(context, length.getExpression());
 		}
 		return false;
