@@ -13,4 +13,8 @@ Export-Package: org.sandbox.jdt.cleanup.multifile.api,\
  org.sandbox.jdt.triggerpattern.llm,\
  org.sandbox.jdt.triggerpattern.git
 
-Import-Package: *
+# JDT intentionally splits core.compiler: IScanner/ITerminalSymbols live in
+# org.eclipse.jdt.core, IProblem/InvalidInputException in compiler.batch.
+# Require-Bundle uses JDT Core's reexport of compiler.batch to see both parts.
+Require-Bundle: org.eclipse.jdt.core
+Import-Package: !org.eclipse.jdt.core.compiler,*

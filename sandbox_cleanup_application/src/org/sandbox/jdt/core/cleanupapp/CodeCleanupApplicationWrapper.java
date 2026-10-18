@@ -22,15 +22,14 @@ package org.sandbox.jdt.core.cleanupapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
@@ -42,12 +41,17 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.jobs.IJobManager;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.equinox.app.IApplicationContext;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jface.operation.ModalContext;
 import org.eclipse.osgi.util.NLS;
+import org.eclipse.swt.widgets.Display;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -158,6 +162,54 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 
 	private final CodeCleanupApplication delegate= new CodeCleanupApplication();
 
+	/** Transfers only a completed acquisition, never one whose UI caller has left. */
+	private static final class WorkspaceRuleHandoff implements AutoCloseable {
+		private final IJobManager manager;
+		private final ISchedulingRule rule;
+		private final Thread uiThread;
+		private final NullProgressMonitor monitor= new NullProgressMonitor();
+		private boolean abandoned;
+		private boolean owned;
+
+		WorkspaceRuleHandoff(IJobManager manager, ISchedulingRule rule, Thread uiThread) {
+			this.manager= manager;
+			this.rule= rule;
+			this.uiThread= uiThread;
+		}
+
+		void acquire(IProgressMonitor progress) {
+			// ModalContext may legally execute inline even with fork=true.
+			if (Thread.currentThread() == uiThread) {
+				throw new IllegalStateException("Workspace rule acquisition requires a separate modal thread."); //$NON-NLS-1$
+			}
+			boolean transferred= false;
+			try {
+				manager.beginRule(rule, progress);
+				synchronized (this) {
+					if (abandoned || progress.isCanceled() || Thread.currentThread().isInterrupted()) {
+						throw new OperationCanceledException();
+					}
+					manager.transferRule(rule, uiThread);
+					owned= true;
+					transferred= true;
+				}
+			} finally {
+				// beginRule must be balanced even when acquisition is canceled.
+				if (!transferred) manager.endRule(rule);
+			}
+		}
+
+		@Override
+		public synchronized void close() {
+			abandoned= true;
+			monitor.setCanceled(true);
+			if (owned) {
+				owned= false;
+				manager.endRule(rule);
+			}
+		}
+	}
+
 	@Override
 	public Object start(final IApplicationContext context) throws NoClassDefFoundError, Exception {
 		final String[] arguments= (String[]) context.getArguments().get(IApplicationContext.APPLICATION_ARGS);
@@ -183,6 +235,73 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 			throw noClassError;
 		}
 
+		return request.projectDirectory() == null ? startCleanup(context, request) : startOnDisplay(context, request);
+	}
+
+	private Object startOnDisplay(IApplicationContext context, ImportRequest request) throws Exception {
+		if (Thread.currentThread().isInterrupted()) {
+			throw new InterruptedException("Interrupted before starting workspace cleanup."); //$NON-NLS-1$
+		}
+		Display current= Display.getCurrent();
+		Display display= current == null ? Display.getDefault() : current;
+		boolean ownsDisplay= current == null && display.getThread() == Thread.currentThread();
+		try {
+			if (display.getThread() != Thread.currentThread() && Job.getJobManager().currentRule() != null) {
+				throw new IllegalStateException("Cannot dispatch cleanup while the calling thread owns a scheduling rule."); //$NON-NLS-1$
+			}
+			AtomicReference<Object> result= new AtomicReference<>();
+			AtomicReference<Throwable> failure= new AtomicReference<>();
+			display.syncExec(() -> {
+				try {
+					result.set(startWithWorkspaceRule(context, request, display));
+				} catch (Exception | Error thrown) {
+					failure.set(thrown);
+				}
+			});
+			if (failure.get() != null) return rethrow(failure.get());
+			return result.get();
+		} finally {
+			if (ownsDisplay && !display.isDisposed()) display.dispose();
+		}
+	}
+
+	/**
+	 * Keep import deltas synchronous and exclude conflicting resource jobs for the
+	 * complete cleanup read/change lifetime. Waiting runs off the SWT thread while
+	 * ModalContext services events needed by a job that already owns the rule.
+	 */
+	private Object startWithWorkspaceRule(IApplicationContext context, ImportRequest request, Display display) throws Exception {
+		IJobManager manager= Job.getJobManager();
+		ISchedulingRule root= ResourcesPlugin.getWorkspace().getRoot();
+		ISchedulingRule current= manager.currentRule();
+		if (current != null) {
+			if (!current.contains(root)) {
+				throw new IllegalStateException("The current SWT scheduling rule does not contain the workspace root."); //$NON-NLS-1$
+			}
+			try {
+				manager.beginRule(root, new NullProgressMonitor());
+				return startCleanup(context, request);
+			} finally {
+				manager.endRule(root);
+			}
+		}
+		try (WorkspaceRuleHandoff handoff= new WorkspaceRuleHandoff(manager, root, Thread.currentThread())) {
+			try {
+				ModalContext.run(handoff::acquire, true, handoff.monitor, display);
+			} catch (InvocationTargetException failure) {
+				return rethrow(failure.getCause());
+			}
+			return startCleanup(context, request);
+		}
+	}
+
+	private static Object rethrow(Throwable failure) throws Exception {
+		if (failure instanceof Exception exception) throw exception;
+		if (failure instanceof Error error) throw error;
+		throw new IllegalStateException(failure);
+	}
+
+	private Object startCleanup(IApplicationContext context, ImportRequest request) throws Exception {
 		if (request.projectDirectory() != null) {
 			try {
 				importProject(request.projectDirectory());
@@ -257,38 +376,15 @@ public class CodeCleanupApplicationWrapper implements IApplication {
 			project.open(monitor);
 		}
 		project.refreshLocal(IResource.DEPTH_INFINITE, monitor);
-		awaitWorkspaceSettled(monitor);
-	}
-
-	/**
-	 * Importing schedules auto-build and refresh jobs. Their Java model deltas can
-	 * close the primary compilation unit (and its buffer) while cleanup reads it,
-	 * so cleanup only starts once their pending runs have finished. A family-wide
-	 * join can keep waiting for a periodic job's future runs. Join each job only
-	 * once instead, including delayed jobs and work scheduled by the pending runs.
-	 */
-	static void awaitWorkspaceSettled(IProgressMonitor monitor) throws IOException {
-		IJobManager manager= Job.getJobManager();
-		Set<Job> observed= Collections.newSetFromMap(new IdentityHashMap<>());
-		try {
-			List<Job> pending;
-			do {
-				pending= new ArrayList<>();
-				for (Object family : List.of(ResourcesPlugin.FAMILY_AUTO_REFRESH, ResourcesPlugin.FAMILY_MANUAL_REFRESH,
-						ResourcesPlugin.FAMILY_AUTO_BUILD, ResourcesPlugin.FAMILY_MANUAL_BUILD)) {
-					for (Job job : manager.find(family)) {
-						if (job != manager.currentJob() && observed.add(job)) {
-							pending.add(job);
-						}
-					}
-				}
-				for (Job job : pending) {
-					job.join(0, monitor);
-				}
-			} while (!pending.isEmpty());
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new IOException("Interrupted while waiting for the imported project to settle.", e); //$NON-NLS-1$
+		if (project.hasNature(JavaCore.NATURE_ID)) {
+			var javaProject= JavaCore.create(project);
+			var classpath= javaProject.readRawClasspath();
+			IPath output= javaProject.readOutputLocation();
+			if (classpath != null && output != null) {
+				// Materialize persisted external class folders synchronously. Their
+				// background refresh cannot run while cleanup holds the root rule.
+				javaProject.setRawClasspath(classpath, output, monitor);
+			}
 		}
 	}
 

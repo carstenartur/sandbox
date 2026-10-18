@@ -28,8 +28,8 @@ class PlatformLoggingHintSafetyTest extends HintRuleTestSupport {
 	@Test
 	void modernizesPlatformLogLookup() {
 		assertFullReplacement(hintFile,
-				"class Test { Object m(Object bundle) { return org.eclipse.core.runtime.Platform.getLog(bundle); } }", //$NON-NLS-1$
-				"class Test { Object m(Object bundle) { return org.eclipse.core.runtime.ILog.of(bundle); } }"); //$NON-NLS-1$
+				"class Test { Object m(org.osgi.framework.Bundle bundle) { return org.eclipse.core.runtime.Platform.getLog(bundle); } }", //$NON-NLS-1$
+				"class Test { Object m(org.osgi.framework.Bundle bundle) { return org.eclipse.core.runtime.ILog.of(bundle); } }"); //$NON-NLS-1$
 	}
 
 	@Test

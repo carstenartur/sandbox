@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.InputStreamReader;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -37,9 +38,9 @@ import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 /**
  * Reusable support for behavior tests of {@code .sandbox-hint} rules.
  *
- * <p>This compatibility helper intentionally permits unresolved imports and
- * bindings because several matcher tests exercise standalone source fragments.
- * Strict promoted-candidate fixtures use {@link StrictHintRuleTestSupport}.</p>
+ * <p>Fixtures resolve their actual runtime classpath and JRE bindings. Unavailable
+ * custom APIs remain unresolved, so executable rules correctly fail closed.
+ * Strict promoted-candidate fixtures additionally use {@link StrictHintRuleTestSupport}.</p>
  */
 abstract class HintRuleTestSupport {
 
@@ -139,8 +140,13 @@ abstract class HintRuleTestSupport {
 		astParser.setSource(code.toCharArray());
 		astParser.setKind(ASTParser.K_COMPILATION_UNIT);
 		Map<String, String> options = JavaCore.getOptions();
-		options.put(JavaCore.COMPILER_SOURCE, sourceVersion);
+		JavaCore.setComplianceOptions(sourceVersion, options);
 		astParser.setCompilerOptions(options);
+		astParser.setUnitName("Test.java"); //$NON-NLS-1$
+		astParser.setResolveBindings(true);
+		String classpath= System.getProperty("surefire.test.class.path", System.getProperty("java.class.path")); //$NON-NLS-1$ //$NON-NLS-2$
+		astParser.setEnvironment(classpath.split(java.util.regex.Pattern.quote(File.pathSeparator)),
+				new String[0], null, true);
 		return (CompilationUnit) astParser.createAST(null);
 	}
 }

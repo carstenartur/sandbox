@@ -76,6 +76,32 @@ class IncomingCompoundAssignmentTest {
                 region.arrayReads().getFirst().start() + region.arrayReads().getFirst().length()));
     }
 
+    @Test void runtimeGoalAcceptsAProvenScalarIncomingMaskFactorization() throws Exception {
+        String statement = "value ^= (a & mask) ^ (b & mask);";
+        String source = "public class Calculation { public static int compute(int value, int a, int b, int mask) { "
+                + statement + " return value; }}";
+        var analysis = MathematicalAnalysis.analyze(MathTestSupport.parse(source), source,
+                options(OptimizationGoal.LOWER_ESTIMATED_RUNTIME), new NullProgressMonitor(), -1, 0);
+        assertTrue(analysis.changed(), analysis.diagnostics().toString());
+        var evidence = analysis.evidence().stream().filter(e -> e.original().equals(statement))
+                .findFirst().orElseThrow(() -> new AssertionError(analysis.diagnostics()));
+        assertNotNull(evidence.proof());
+        assertTrue(evidence.cost().estimatedRuntimeImprovement());
+        var document = new Document(source);
+        analysis.newEdit().apply(document);
+        String generated = document.get();
+        MathTestSupport.parse(generated);
+        try (var before = compile(source); var after = compile(generated)) {
+            var original = before.loadClass("Calculation").getMethod("compute", int.class, int.class, int.class, int.class);
+            var rewritten = after.loadClass("Calculation").getMethod("compute", int.class, int.class, int.class, int.class);
+            int[] edges = {Integer.MIN_VALUE, -1, 0, 19, Integer.MAX_VALUE};
+            for (int value : edges) for (int a : edges) for (int b : edges)
+                for (int mask : new int[] {0, -1, 0x55555555, 0xaaaaaaaa})
+                    assertEquals(original.invoke(null, value, a, b, mask), rewritten.invoke(null, value, a, b, mask),
+                            value + "," + a + "," + b + "," + mask);
+        }
+    }
+
     @Test void aRealRewritePreservesTheOldValueWhenTheCompoundRightSideThrows() throws Exception {
         String source = "public class Calculation { static int[] words; "
                 + "public static int compute(int value, int[] left, int[] right, int mask) { words = left; "
@@ -135,8 +161,11 @@ class IncomingCompoundAssignmentTest {
     }
 
     private static MathCleanUpOptions options() {
+        return options(OptimizationGoal.READABILITY);
+    }
+    private static MathCleanUpOptions options(OptimizationGoal goal) {
         return new MathCleanUpOptions(true, EnumSet.of(NumericKind.BYTE, NumericKind.SHORT, NumericKind.CHAR, NumericKind.INT, NumericKind.LONG),
-                SafetyProfile.PRESERVE_JAVA, OptimizationGoal.READABILITY, 1_000_000, 20_000, false, 17, List.of());
+                SafetyProfile.PRESERVE_JAVA, goal, 1_000_000, 20_000, false, 17, List.of());
     }
     private static Object narrow(NumericKind kind, long value) {
         return switch (kind) {

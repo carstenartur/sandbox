@@ -46,6 +46,10 @@ final class RuntimeCalculationPolicy {
                     count[0] += 1 + expression.extendedOperands().size();
                 return true;
             }
+            @Override public boolean visit(Assignment assignment) {
+                if (assignment.getOperator() != Assignment.Operator.ASSIGN) count[0]++;
+                return true;
+            }
             @Override public boolean visit(PrefixExpression expression) {
                 if (expression.getOperator() == PrefixExpression.Operator.COMPLEMENT
                         || expression.getOperator() == PrefixExpression.Operator.MINUS

@@ -27,7 +27,14 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.ToolFactory;
+import org.eclipse.jdt.core.compiler.IScanner;
+import org.eclipse.jdt.core.compiler.ITerminalSymbols;
+import org.eclipse.jdt.core.compiler.InvalidInputException;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 
 import org.sandbox.jdt.triggerpattern.api.EmbeddedJavaBlock;
 import org.sandbox.jdt.triggerpattern.api.GuardExpression;
@@ -344,6 +351,22 @@ public final class HintFileParser {
 				int len = rawLine.length();
 				for (int c = 0; c < len; c++) {
 					char ch = rawLine.charAt(c);
+					if (ch == '\"' || ch == '\'') {
+						// Comment markers inside Java literals are ordinary source text.
+						// Copy escapes together so an escaped quote does not end the literal.
+						int literalStart = c;
+						char quote = ch;
+						while (++c < len) {
+							char literalCharacter = rawLine.charAt(c);
+							if (literalCharacter == '\\' && c + 1 < len) {
+								c++;
+							} else if (literalCharacter == quote) {
+								break;
+							}
+						}
+						sb.append(rawLine, literalStart, Math.min(c + 1, len));
+						continue;
+					}
 					if (c + 1 < len) {
 						if (ch == '/' && rawLine.charAt(c + 1) == '/') {
 							break; // Line comment
@@ -351,6 +374,7 @@ public final class HintFileParser {
 						if (ch == '/' && rawLine.charAt(c + 1) == '*') {
 							int endIdx = rawLine.indexOf("*/", c + 2); //$NON-NLS-1$
 							if (endIdx >= 0) {
+								sb.append(' ');
 								c = endIdx + 1;
 								continue;
 							}
@@ -857,29 +881,30 @@ public final class HintFileParser {
 			firstLine = ruleLines.get(ruleLineIdx);
 		}
 		
-		// Parse source pattern line (may have :: guard)
-		GuardSplit sourceAndGuard = splitGuard(firstLine);
+		// Keep the complete source, just as replacements already retain their
+		// continuation lines. A source guard can follow the final Java line or
+		// appear on its own :: line; multiple guards remain conjunctive.
+		StringBuilder sourceText = new StringBuilder();
+		while (ruleLineIdx < ruleLines.size() && !ruleLines.get(ruleLineIdx).startsWith("=>")) { //$NON-NLS-1$
+			if (sourceText.length() > 0) {
+				sourceText.append('\n');
+			}
+			sourceText.append(ruleLines.get(ruleLineIdx));
+			ruleLineIdx++;
+		}
+		if (RuleAuthoringDocument.containsJavaTextBlock(sourceText.toString())) {
+			throw new HintParseException(RuleAuthoringDocument.textBlockDiagnostic(), startIndex + 1);
+		}
+		GuardSplit sourceAndGuard = splitGuard(sourceText.toString());
 		sourcePatternText = sourceAndGuard.patternText().trim();
 		if (sourceAndGuard.hasGuard()) {
-			sourceGuard = guardParser.parse(sourceAndGuard.guardText().trim());
+			for (String guardPart : sourceAndGuard.guardText().split("\\R\\s*::")) { //$NON-NLS-1$
+				GuardExpression lineGuard = guardParser.parse(guardPart.trim());
+				sourceGuard = sourceGuard == null ? lineGuard : new GuardExpression.And(sourceGuard, lineGuard);
+			}
 		}
-		ruleLineIdx++;
-		
-		// Check for continuation lines with guard expressions (start with ::)
-		while (ruleLineIdx < ruleLines.size()) {
-			String nextLine = ruleLines.get(ruleLineIdx).trim();
-			if (!nextLine.startsWith("::")) { //$NON-NLS-1$
-				break;
-			}
-			String guardText = nextLine.substring(2).trim();
-			if (sourceGuard != null) {
-				// Combine with existing guard using AND
-				sourceGuard = new GuardExpression.And(
-						sourceGuard, guardParser.parse(guardText));
-			} else {
-				sourceGuard = guardParser.parse(guardText);
-			}
-			ruleLineIdx++;
+		if (sourcePatternText.isBlank()) {
+			throw new HintParseException("Rule has no source pattern", startIndex + 1); //$NON-NLS-1$
 		}
 		
 		// Parse rewrite alternatives (lines starting with =>)
@@ -921,6 +946,9 @@ public final class HintFileParser {
 						startIndex + ruleLineIdx + 1);
 			}
 			
+			if (RuleAuthoringDocument.containsJavaTextBlock(altContent)) {
+				throw new HintParseException(RuleAuthoringDocument.textBlockDiagnostic(), startIndex + ruleLineIdx + 1);
+			}
 			GuardSplit altAndGuard = splitGuard(altContent);
 			String replacementPattern = altAndGuard.patternText().trim();
 			GuardExpression altGuard = null;
@@ -978,79 +1006,177 @@ public final class HintFileParser {
 	 * @param line the line to split
 	 * @return a {@link GuardSplit} with the pattern text and optional guard text
 	 */
-	private GuardSplit splitGuard(String line) {
-		// Find :: that is not inside parentheses or quotes
-		int depth = 0;
-		boolean inQuote = false;
-		for (int c = 0; c < line.length() - 1; c++) {
-			char ch = line.charAt(c);
-			if (ch == '"') {
-				inQuote = !inQuote;
-			} else if (!inQuote) {
-				if (ch == '(') {
-					depth++;
-				} else if (ch == ')') {
-					depth--;
-				} else if (depth == 0 && ch == ':' && line.charAt(c + 1) == ':') {
-					return new GuardSplit(
-							line.substring(0, c),
-							line.substring(c + 2));
+	private GuardSplit splitGuard(String line) throws HintParseException {
+		IScanner scanner = ToolFactory.createScanner(false, false, false, JavaCore.VERSION_25);
+		scanner.setSource(line.toCharArray());
+		int parentheses = 0;
+		int brackets = 0;
+		int braces = 0;
+		try {
+			for (int token = scanner.getNextToken(); token != ITerminalSymbols.TokenNameEOF;
+					token = scanner.getNextToken()) {
+				switch (token) {
+				case ITerminalSymbols.TokenNameLPAREN -> parentheses++;
+				case ITerminalSymbols.TokenNameRPAREN -> parentheses--;
+				case ITerminalSymbols.TokenNameLBRACKET -> brackets++;
+				case ITerminalSymbols.TokenNameRBRACKET -> brackets--;
+				case ITerminalSymbols.TokenNameLBRACE -> braces++;
+				case ITerminalSymbols.TokenNameRBRACE -> braces--;
+				case ITerminalSymbols.TokenNameCOLON_COLON -> {
+					int start = scanner.getCurrentTokenStartPosition();
+					if (parentheses == 0 && brackets == 0 && braces == 0
+							&& !isMethodReference(line, start)) {
+						return new GuardSplit(line.substring(0, start), line.substring(start + 2));
+					}
+				}
+				default -> { }
 				}
 			}
+		} catch (InvalidInputException invalidJava) {
+			throw new HintParseException("Invalid Java token in rule pattern: " + invalidJava.getMessage(), 0, invalidJava); //$NON-NLS-1$
 		}
 		return new GuardSplit(line, null);
+	}
+
+	/**
+	 * A Java method-reference name is not followed by an argument list. Guard
+	 * calls are, while a standalone {@code ::} line always introduces a guard.
+	 * Whitespace around an ambiguous bare name preserves the existing inline
+	 * zero-argument guard syntax; compact {@code Type::name} is a Java reference.
+	 */
+	private static boolean isMethodReference(String text, int separator) throws InvalidInputException {
+		int lineStart = Math.max(text.lastIndexOf('\n', separator), text.lastIndexOf('\r', separator)) + 1;
+		if (text.substring(lineStart, separator).isBlank()) {
+			return false;
+		}
+		IScanner lookahead = ToolFactory.createScanner(false, false, false, JavaCore.VERSION_25);
+		lookahead.setSource(text.toCharArray());
+		lookahead.resetTo(separator + 2, text.length() - 1);
+		int token = lookahead.getNextToken();
+		if (token == ITerminalSymbols.TokenNameLESS) {
+			int typeArguments = 1;
+			while (typeArguments > 0) {
+				token = lookahead.getNextToken();
+				switch (token) {
+				case ITerminalSymbols.TokenNameLESS -> typeArguments++;
+				case ITerminalSymbols.TokenNameGREATER -> typeArguments--;
+				case ITerminalSymbols.TokenNameRIGHT_SHIFT -> typeArguments -= 2;
+				case ITerminalSymbols.TokenNameUNSIGNED_RIGHT_SHIFT -> typeArguments -= 3;
+				case ITerminalSymbols.TokenNameEOF -> { return false; }
+				default -> { }
+				}
+			}
+			token = lookahead.getNextToken();
+		}
+		if (token != ITerminalSymbols.TokenNameIdentifier && token != ITerminalSymbols.TokenNamenew) {
+			return false;
+		}
+		if ("otherwise".equals(new String(lookahead.getCurrentTokenSource()))) { //$NON-NLS-1$
+			return false;
+		}
+		int following = lookahead.getNextToken();
+		if (following == ITerminalSymbols.TokenNameLPAREN || following == ITerminalSymbols.TokenNameinstanceof
+				|| following == ITerminalSymbols.TokenNameAND_AND || following == ITerminalSymbols.TokenNameOR_OR
+				|| following == ITerminalSymbols.TokenNameCOMMA) {
+			return false;
+		}
+		return separator > 0 && separator + 2 < text.length()
+				&& !Character.isWhitespace(text.charAt(separator - 1))
+				&& !Character.isWhitespace(text.charAt(separator + 2));
 	}
 	
 	/**
 	 * Infers the {@link PatternKind} from the source pattern text.
 	 * 
-	 * <p>Heuristics:</p>
+	 * <p>Declaration syntax and parsed statement/expression roots determine the kind:</p>
 	 * <ul>
 	 *   <li>Starts with {@code @} → ANNOTATION</li>
 	 *   <li>Starts with {@code import } → IMPORT</li>
-	 *   <li>Starts with {@code new } → CONSTRUCTOR</li>
+	 *   <li>Class-instance creation root → CONSTRUCTOR</li>
 	 *   <li>Starts with {@code {}} → BLOCK</li>
 	 *   <li>Looks like a method declaration (return type + name + parens) → METHOD_DECLARATION</li>
-	 *   <li>Contains name + parens → METHOD_CALL</li>
+	 *   <li>Multiple parsed statements → STATEMENT_SEQUENCE</li>
+	 *   <li>Method-invocation root → METHOD_CALL</li>
 	 *   <li>Ends with {@code ;} → STATEMENT</li>
 	 *   <li>Default → EXPRESSION</li>
 	 * </ul>
 	 */
-	private PatternKind inferPatternKind(String patternText) {
+	private PatternKind inferPatternKind(String patternText) throws HintParseException {
 		String trimmed = patternText.trim();
-		
 		if (trimmed.startsWith("@")) { //$NON-NLS-1$
 			return PatternKind.ANNOTATION;
 		}
 		if (trimmed.startsWith("import ")) { //$NON-NLS-1$
 			return PatternKind.IMPORT;
 		}
-		if (trimmed.startsWith("new ")) { //$NON-NLS-1$
-			return PatternKind.CONSTRUCTOR;
-		}
+		PatternParser syntax = new PatternParser();
 		if (trimmed.startsWith("{")) { //$NON-NLS-1$
-			return PatternKind.BLOCK;
+			// PatternParser preserves existing leading braces and can otherwise
+			// recover only that first block while ignoring following statements.
+			// Require one complete block rather than authorizing a partial match.
+			if (syntax.parse(Pattern.of(trimmed, PatternKind.BLOCK)) instanceof Block block
+					&& block.getLength() == trimmed.length()) {
+				return PatternKind.BLOCK;
+			}
+			throw new HintParseException("Source pattern must be one complete block; trailing statements are not supported after a leading block", 0); //$NON-NLS-1$
 		}
-		// Method declaration: starts with a return type keyword followed by name and parens
-		// e.g., "void $name($params$)", "String getName()", "int $name()"
-		if (looksLikeMethodDeclaration(trimmed)) {
+		// A method signature can recover as several statements in a method
+		// body. Recognize the actual declaration before inspecting that recovery.
+		if (looksLikeMethodDeclaration(trimmed)
+				&& syntax.parse(Pattern.of(trimmed, PatternKind.METHOD_DECLARATION))
+						instanceof org.eclipse.jdt.core.dom.MethodDeclaration declaration
+				&& (declaration.getFlags() & (ASTNode.MALFORMED | ASTNode.RECOVERED)) == 0) {
 			return PatternKind.METHOD_DECLARATION;
 		}
-		// Method call: contains '(' and '.' or is a simple name with parens
-		if (trimmed.contains("(") && trimmed.contains(")") && !trimmed.endsWith(";")) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			return PatternKind.METHOD_CALL;
+		// Inspect actual statement roots. Parentheses may occur in initializers,
+		// strings or nested calls and do not identify a method declaration.
+		ASTNode statements = syntax.parse(Pattern.of(trimmed, PatternKind.BLOCK));
+		if (statements instanceof Block block && hasCompleteStatementRange(block, trimmed.length())) {
+			if (block.statements().size() > 1) {
+				return PatternKind.STATEMENT_SEQUENCE;
+			}
+			if (block.statements().size() == 1
+					&& block.statements().getFirst() instanceof VariableDeclarationStatement) {
+				return PatternKind.DECLARATION;
+			}
 		}
-		// Variable declaration: "$Type $var = $init;" or "$Type $var;"
-		// Must be checked before generic STATEMENT to distinguish declarations
-		if (looksLikeDeclaration(trimmed)) {
-			return PatternKind.DECLARATION;
+		ASTNode expression = syntax.parse(Pattern.of(trimmed, PatternKind.EXPRESSION));
+		// PatternParser embeds expressions in a method and may return just the
+		// leading expression of a statement list. Never classify that prefix as
+		// if it represented the complete source pattern.
+		if (expression != null && expression.getLength() != trimmed.length()) {
+			if (statements instanceof Block block && hasCompleteStatementRange(block, trimmed.length())
+					&& block.statements().size() == 1) {
+				return PatternKind.STATEMENT;
+			}
+			throw new HintParseException("Source pattern is not a complete Java expression or statement sequence", 0); //$NON-NLS-1$
 		}
-		if (trimmed.endsWith(";")) { //$NON-NLS-1$
+		if (expression instanceof org.eclipse.jdt.core.dom.ClassInstanceCreation) {
+			return PatternKind.CONSTRUCTOR;
+		}
+		if (expression == null && statements instanceof Block block
+				&& hasCompleteStatementRange(block, trimmed.length()) && block.statements().size() == 1) {
 			return PatternKind.STATEMENT;
 		}
-		return PatternKind.EXPRESSION;
+		if (trimmed.endsWith(";")) { //$NON-NLS-1$
+			return looksLikeDeclaration(trimmed) ? PatternKind.DECLARATION : PatternKind.STATEMENT;
+		}
+		return expression instanceof org.eclipse.jdt.core.dom.MethodInvocation
+				? PatternKind.METHOD_CALL : PatternKind.EXPRESSION;
 	}
-	
+
+	/** Checks the complete Java source range, excluding PatternParser's synthetic braces. */
+	private static boolean hasCompleteStatementRange(Block block, int sourceLength) {
+		if (block.getLength() != sourceLength + 4 || block.statements().isEmpty()) {
+			return false;
+		}
+		ASTNode first = (ASTNode) block.statements().getFirst();
+		ASTNode last = (ASTNode) block.statements().getLast();
+		int sourceStart = block.getStartPosition() + 2;
+		return first.getStartPosition() == sourceStart
+				&& last.getStartPosition() + last.getLength() == sourceStart + sourceLength;
+	}
+
 	/**
 	 * Checks if a pattern looks like a method declaration.
 	 * 
@@ -1076,7 +1202,8 @@ public final class HintFileParser {
 		// Must not contain '.' (method calls have receiver.method())
 		// Method declarations don't have dots in the signature part before '('
 		String beforeParens = trimmed.substring(0, trimmed.indexOf('(')).trim();
-		if (beforeParens.contains(".")) { //$NON-NLS-1$
+		if (beforeParens.contains(".") || beforeParens.contains("=") || beforeParens.contains(";") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				|| beforeParens.contains("{") || beforeParens.contains("}")) { //$NON-NLS-1$ //$NON-NLS-2$
 			return false;
 		}
 		// Split into space-separated tokens before '('

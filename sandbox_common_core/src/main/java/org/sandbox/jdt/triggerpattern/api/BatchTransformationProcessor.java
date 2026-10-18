@@ -18,10 +18,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
 
 import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.sandbox.jdt.triggerpattern.internal.BindingSubstitution;
 
 import org.sandbox.jdt.triggerpattern.api.GuardContext.UnknownSemanticRequirement;
 import org.sandbox.jdt.triggerpattern.api.GuardExpression.Evaluation;
@@ -75,17 +75,18 @@ public final class BatchTransformationProcessor {
 		}
 
 		SemanticRewritePlan effectivePlan= semanticPlan == null ? SemanticRewritePlan.empty() : semanticPlan;
-		boolean strictBindings= hintFile.getBindingPolicy() == HintBindingPolicy.REQUIRED
+		boolean requiredBindings= hintFile.getBindingPolicy() == HintBindingPolicy.REQUIRED
 				|| !effectivePlan.isEmpty();
 		List<TransformationResult> results= new ArrayList<>();
 		for (Map.Entry<TransformationRule, List<Match>> entry : allMatches.entrySet()) {
+			SemanticRewritePlanContext.checkCanceled();
 			TransformationRule rule= entry.getKey();
+			boolean strictBindings = requiredBindings || rule.alternatives().stream()
+					.anyMatch(alternative -> alternative.hasRewrite() || alternative.isEmbeddedFix());
 			for (Match match : entry.getValue()) {
+				SemanticRewritePlanContext.checkCanceled();
 				GuardContext guardCtx= GuardContext.fromMatch(match, cu, compilerOptions, effectivePlan);
-				if (strictBindings && guardCtx.hasUnknownSemanticRequirements()) {
-					results.add(unknownResult(rule, match, guardCtx, cu));
-					continue;
-				}
+				boolean unresolvedSource= guardCtx.hasUnknownSemanticRequirements();
 				if (rule.sourceGuard() != null) {
 					Evaluation sourceEvaluation= rule.sourceGuard().evaluateDetailed(guardCtx);
 					if (strictBindings && sourceEvaluation.truthValue() == TruthValue.UNKNOWN) {
@@ -95,6 +96,10 @@ public final class BatchTransformationProcessor {
 					if (!sourceEvaluation.compatibilityValue()) {
 						continue;
 					}
+				}
+				if (strictBindings && (unresolvedSource || !match.getUnknownSemanticRequirements().isEmpty())) {
+					results.add(unknownResult(rule, match, guardCtx, cu));
+					continue;
 				}
 
 				AlternativeSelection selection= selectAlternative(rule, guardCtx, strictBindings);
@@ -150,52 +155,7 @@ public final class BatchTransformationProcessor {
 	}
 
 	private String substituteBindings(String pattern, Match match) {
-		if (pattern == null || match.getBindings().isEmpty()) {
-			return pattern;
-		}
-
-		String result= pattern;
-		for (Map.Entry<String, Object> binding : match.getBindings().entrySet()) {
-			String placeholder= binding.getKey();
-			Object value= binding.getValue();
-			String replacement;
-			if (value instanceof ASTNode astNode) {
-				replacement= astNode.toString();
-			} else if (value instanceof List<?> list) {
-				result= substituteIndexedAccess(result, placeholder, list);
-				result= result.replace(placeholder + ".length", String.valueOf(list.size())); //$NON-NLS-1$
-				StringBuilder text= new StringBuilder();
-				for (int i= 0; i < list.size(); i++) {
-					if (i > 0) {
-						text.append(", "); //$NON-NLS-1$
-					}
-					text.append(list.get(i));
-				}
-				replacement= text.toString();
-			} else {
-				replacement= String.valueOf(value);
-			}
-			result= result.replace(placeholder, Matcher.quoteReplacement(replacement));
-		}
-		return result;
-	}
-
-	private static String substituteIndexedAccess(String text, String placeholder, List<?> list) {
-		java.util.regex.Pattern indexPattern= java.util.regex.Pattern.compile(
-				java.util.regex.Pattern.quote(placeholder) + "\\[(-?\\d+)\\]"); //$NON-NLS-1$
-		java.util.regex.Matcher matcher= indexPattern.matcher(text);
-		StringBuilder result= new StringBuilder();
-		while (matcher.find()) {
-			int index= Integer.parseInt(matcher.group(1));
-			if (index < 0) {
-				index= list.size() + index;
-			}
-			if (index >= 0 && index < list.size()) {
-				matcher.appendReplacement(result, Matcher.quoteReplacement(list.get(index).toString()));
-			}
-		}
-		matcher.appendTail(result);
-		return result.toString();
+		return BindingSubstitution.substitute(pattern, match);
 	}
 
 	private int computeLineNumber(CompilationUnit cu, Match match) {

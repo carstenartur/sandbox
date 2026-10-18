@@ -177,12 +177,21 @@ class MathVariableRegionsTest {
         }
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = { "observed=x*a+x*b;", "observed+=x*a+x*b;" })
+    void fieldWriteTargetsRemainBoundaries(String statement) {
+        var analysis = analyze(observedSource(statement),
+                options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME));
+        assertFalse(analysis.changed(), analysis.diagnostics().toString());
+    }
+
     @Test
-    void fieldWritesAndIncomingCompoundAssignmentsRemainBoundaries() {
-        for (String body : List.of("observed=x*a+x*b;", "a+=x*a+x*b; consume(a);")) {
-            String source = observedSource(body);
-            assertFalse(analyze(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME)).changed());
-        }
+    void anIncomingCompoundAssignmentExposesItsOwnCommonFactor() throws Exception {
+        String source = observedSource("a+=x*a+x*b; consume(a);");
+        String generated = rewrite(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME));
+        assertEquals(1, multiplicationCount(generated), generated);
+        assertFalse(hasDeclaration(generated, "a"), generated);
+        compare(source, generated);
     }
 
     @Test
