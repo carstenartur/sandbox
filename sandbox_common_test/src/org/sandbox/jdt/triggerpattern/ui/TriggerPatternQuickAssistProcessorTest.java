@@ -5,6 +5,7 @@
 package org.sandbox.jdt.triggerpattern.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -15,6 +16,7 @@ import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.ui.text.java.IInvocationContext;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
 import org.eclipse.jdt.ui.text.java.IProblemLocation;
@@ -25,17 +27,18 @@ import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
 import org.sandbox.jdt.triggerpattern.api.Severity;
 import org.sandbox.jdt.triggerpattern.eclipse.HintContext;
-import org.sandbox.jdt.triggerpattern.examples.ExampleHintProvider;
 import org.sandbox.jdt.triggerpattern.internal.HintRegistry;
 import org.sandbox.jdt.triggerpattern.internal.HintRegistry.HintDescriptor;
 
 public class TriggerPatternQuickAssistProcessorTest {
 
 	private static int handlerInvocations;
+	private static String boundType;
 
 	@BeforeEach
 	void resetCounter() {
 		handlerInvocations = 0;
+		boundType = null;
 	}
 
 	@Test
@@ -55,14 +58,22 @@ public class TriggerPatternQuickAssistProcessorTest {
 	}
 
 	@Test
-	void reusesTheInvocationAstSoThePrimitiveBooleanExampleHasBindings() throws Exception {
+	void reusesTheInvocationAstSoTheHandlerReceivesBindings() throws Exception {
 		String source = "class Test { boolean run(boolean flag) { return !!flag; } }";
-		var processor = processor("!!$x", ExampleHintProvider.class, "simplifyDoubleNegation");
-		IJavaCompletionProposal[] proposals = processor.getAssists(
+		var processor = processor("!!$x", TriggerPatternQuickAssistProcessorTest.class, "recordBoundType");
+		processor.getAssists(
 				invocation(parse(source, true), source.indexOf("!!flag") + 1), new IProblemLocation[0]);
-		assertNotNull(proposals);
-		assertEquals(1, proposals.length);
-		assertEquals("Remove boolean double negation", proposals[0].getDisplayString());
+		assertEquals(1, handlerInvocations);
+		assertEquals("boolean", boundType);
+	}
+
+	public static IJavaCompletionProposal recordBoundType(HintContext context) {
+		Expression expression = assertInstanceOf(Expression.class, context.getMatch().getBindings().get("$x"));
+		var binding = expression.resolveTypeBinding();
+		assertNotNull(binding);
+		boundType = binding.getQualifiedName();
+		handlerInvocations++;
+		return null;
 	}
 
 	public static IJavaCompletionProposal record(HintContext context) {

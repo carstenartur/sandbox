@@ -507,8 +507,8 @@ public class HintFileFixCore {
 				String shortenedReplacement = shortenFqns(replacement, result);
 
 				// Try to parse the replacement as an expression
-				ASTNode newNode = parseExpression(shortenedReplacement, cuRewrite);
-				if (newNode instanceof Expression) {
+				Expression newNode = parseExpression(shortenedReplacement, cuRewrite);
+				if (newNode != null) {
 					ASTNode copy = ASTNode.copySubtree(ast, newNode);
 					int oldCount = countStringLiterals(matchedNode);
 					int newCount = countStringLiterals(copy);

@@ -11,13 +11,28 @@
 package org.sandbox.jdt.triggerpattern.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.net.URI;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 
+import javax.tools.DiagnosticCollector;
+import javax.tools.JavaFileObject;
+import javax.tools.SimpleJavaFileObject;
+import javax.tools.ToolProvider;
+
+import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor;
 import org.sandbox.jdt.triggerpattern.api.Pattern;
 import org.sandbox.jdt.triggerpattern.api.PatternKind;
@@ -26,6 +41,9 @@ import org.sandbox.jdt.triggerpattern.api.TransformationRule;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser;
 
 class BindingSubstitutionTest {
+
+	@TempDir
+	Path compilerOutput;
 
 	@Test
 	void overlappingNamesAreReplacedAsWholeTokens() throws Exception {
@@ -61,6 +79,92 @@ class BindingSubstitutionTest {
 		assertReplacement("old($x)", "-$x", "old(-number)", "-(-number)");
 		assertReplacement("old($x)", "$x * 2", "old(number = other)", "(number=other) * 2");
 		assertReplacement("old($x)", "$x.toString()", "old(test ? a : b)", "(test ? a : b).toString()");
+		assertReplacement("old($x)", "$x", "consume(2 * old(number = other))", "(number=other)");
+		assertReplacement("old($x)", "$x", "consume(2 * old(number++))", "(number++)");
+	}
+
+	@Test
+	void postfixUpdatesCanBecomeExpressionStatements() throws Exception {
+		assertStatementReplacement("old($x);", "$x;", "old(i++)", "i++;");
+	}
+
+	@Test
+	void assignmentsCanBecomeExpressionStatements() throws Exception {
+		assertStatementReplacement("old($x);", "$x;", "old(i = other)", "i=other;");
+	}
+
+	@Test
+	void prefixUpdatesCanBecomeExpressionStatements() throws Exception {
+		assertStatementReplacement("old($x);", "$x;", "old(++i)", "++i;");
+	}
+
+	@Test
+	void bareExpressionReplacementsUseTheOriginalStatementDestination() throws Exception {
+		assertReplacement("old($x)", "$x", "old(i = other)", "i=other");
+		assertReplacement("old($x)", "$x", "old(i++)", "i++");
+	}
+
+	@Test
+	void bareExpressionReplacementsUseTheOriginalForDestinations() throws Exception {
+		assertReplacement("old($x)", "$x", "for (old(i = start); condition; ) {}", "i=start");
+		assertReplacement("old($x)", "$x", "for (; condition; old(i++)) {}", "i++");
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "i++", "++i", "i = other" })
+	void wholeLambdaBodyBindingsRemainVoidCompatible(String binding) throws Exception {
+		String source = "class Example { int i, other; int old(int value) { return value; } "
+				+ "void run() { Runnable action = () -> old(" + binding + "); } }";
+		assertCompiles(source);
+		assertCompiles(replaceOriginalCall(source, "$x"));
+	}
+
+	@Test
+	void nestedLambdaBodyBindingsRetainPrecedenceGrouping() throws Exception {
+		String source = "class Example { int i, other; int old(int value) { return value; } "
+				+ "void run() { java.util.function.IntSupplier action = () -> 2 * old(i = other); } }";
+		String transformed = replaceOriginalCall(source, "$x");
+		assertTrue(transformed.contains("2 * (i=other)"));
+		assertCompiles(transformed);
+	}
+
+	@Test
+	void partialLambdaBodyBindingsRetainPrecedenceGrouping() throws Exception {
+		String source = "class Example { int i, other; int old(int value) { return value; } "
+				+ "void run() { java.util.function.IntSupplier action = () -> old(i = other); } }";
+		String transformed = replaceOriginalCall(source, "$x * 2");
+		assertTrue(transformed.contains("() -> (i=other) * 2"));
+		assertCompiles(transformed);
+	}
+
+	@Test
+	void forInitializersAndUpdatersRetainStatementExpressionSyntax() throws Exception {
+		assertStatementReplacement("old($initial, $update);", "for ($initial; condition; $update) {}",
+				"old(i = start, i++)", "for (i=start; condition; i++) {}");
+	}
+
+	@Test
+	void variadicForInitializersRetainStatementExpressionSyntax() throws Exception {
+		assertStatementReplacement("old($initial$);", "for ($initial$; condition; ) {}",
+				"old(i = start, j = other)", "for (i=start, j=other; condition; ) {}");
+	}
+
+	@Test
+	void repeatedBindingsAreGroupedAccordingToEachDestination() throws Exception {
+		assertStatementReplacement("old($x);", "{ $x; consume($x); }", "old(i++)",
+				"{ i++; consume((i++)); }");
+	}
+
+	@Test
+	void nestedAssignmentStillRequiresGroupingInForUpdater() throws Exception {
+		assertStatementReplacement("old($x);", "for (; condition; i += $x) {}", "old(j = other)",
+				"for (; condition; i += (j=other)) {}");
+	}
+
+	@Test
+	void negatedPatternInstanceofGroupsTheWholeBoundExpression() throws Exception {
+		assertReplacement("old($x)", "!$x", "old(value instanceof String text)",
+				"!(value instanceof String text)");
 	}
 
 	@Test
@@ -84,9 +188,49 @@ class BindingSubstitutionTest {
 		assertEquals(expected, results.getFirst().replacement());
 	}
 
+	private void assertStatementReplacement(String sourcePattern, String replacement, String source, String expected)
+			throws Exception {
+		assertReplacement(sourcePattern, replacement, source, expected);
+		assertFalse(Arrays.stream(parse(expected).getProblems()).anyMatch(problem -> problem.isError()),
+				"The substituted statement must remain valid Java syntax");
+	}
+
+	private String replaceOriginalCall(String source, String replacement) throws Exception {
+		var file = new HintFileParser().parse("old($x)\n=> " + replacement + "\n;;\n");
+		var results = new BatchTransformationProcessor(file).process(parseCompilationUnit(source));
+		assertEquals(1, results.size());
+		var result = results.getFirst();
+		return source.substring(0, result.match().getOffset()) + result.replacement()
+				+ source.substring(result.match().getOffset() + result.match().getLength());
+	}
+
+	private void assertCompiles(String source) throws Exception {
+		var compiler = ToolProvider.getSystemJavaCompiler();
+		assertNotNull(compiler, "Compiler-backed regression tests require a JDK");
+		var diagnostics = new DiagnosticCollector<JavaFileObject>();
+		var javaSource = new SimpleJavaFileObject(URI.create("string:///Example.java"), JavaFileObject.Kind.SOURCE) {
+			@Override
+			public CharSequence getCharContent(boolean ignoreEncodingErrors) {
+				return source;
+			}
+		};
+		try (var fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
+			assertTrue(compiler.getTask(null, fileManager, diagnostics,
+					List.of("-proc:none", "-d", compilerOutput.toString()), null, List.of(javaSource)).call(),
+					() -> "Java compiler rejected the transformed source: " + diagnostics.getDiagnostics());
+		}
+	}
+
 	private CompilationUnit parse(String statements) {
+		return parseCompilationUnit("class Example { void run() { " + statements + " } }");
+	}
+
+	private CompilationUnit parseCompilationUnit(String source) {
 		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());
-		parser.setSource(("class Example { void run() { " + statements + " } }").toCharArray());
+		var options = JavaCore.getOptions();
+		JavaCore.setComplianceOptions(JavaCore.VERSION_25, options);
+		parser.setCompilerOptions(options);
+		parser.setSource(source.toCharArray());
 		return (CompilationUnit) parser.createAST(null);
 	}
 }
