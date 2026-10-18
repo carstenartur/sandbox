@@ -30,9 +30,9 @@ import java.lang.annotation.Target;
  * 
  * <p>Example usage:</p>
  * <pre>
- * {@code @TriggerPattern(value = "$x + 1", kind = PatternKind.EXPRESSION)}
- * {@code @Hint(displayName = "Replace with increment", description = "Suggests replacing addition with ++x")}
- * public static IJavaCompletionProposal simplifyIncrement(HintContext ctx) {
+ * {@code @TriggerPattern(value = "$x == null", kind = PatternKind.EXPRESSION)}
+ * {@code @Hint(displayName = "Explain null comparison", description = "Shows information about the null comparison")}
+ * public static IJavaCompletionProposal explainNullComparison(HintContext ctx) {
  *     // Implementation
  * }
  * </pre>
@@ -69,9 +69,8 @@ public @interface TriggerPattern {
 	 * 
 	 * <p>Specifies that certain placeholders must match nodes of specific Java types.</p>
 	 * 
-	 * <p><b>Note:</b> Type constraint checking requires binding resolution,
-	 * which is currently disabled in TriggerPatternEngine. The infrastructure
-	 * is in place for future enhancement when bindings are available.</p>
+	 * <p>Each constraint requires a bound placeholder and a resolved compatible
+	 * type. A missing necessary binding cannot authorize a constrained hint.</p>
 	 * 
 	 * @return array of type constraints
 	 */

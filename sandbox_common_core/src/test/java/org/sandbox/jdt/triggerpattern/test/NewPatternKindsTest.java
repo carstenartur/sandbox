@@ -648,12 +648,17 @@ public class NewPatternKindsTest {
 			}
 			""";
 		
-		CompilationUnit cu = parse(code);
+		ASTParser astParser = ASTParser.newParser(AST.getJLSLatest());
+		astParser.setSource(code.toCharArray());
+		astParser.setUnitName("MyWidget.java");
+		astParser.setResolveBindings(true);
+		astParser.setEnvironment(new String[0], new String[0], null, true);
+		CompilationUnit cu = (CompilationUnit) astParser.createAST(null);
 		Pattern pattern = Pattern.of("void process()", PatternKind.METHOD_DECLARATION);
 		
 		// Check for presence of println call using METHOD_CALL kind
 		List<Match> matches = engine.findMatchesWithConstraints(cu, pattern,
-				"System.out.println($msg)", PatternKind.METHOD_CALL, false);
+				"java.lang.System.out.println($msg)", PatternKind.METHOD_CALL, false);
 		
 		assertEquals(1, matches.size(), "Should find process() with println call");
 	}

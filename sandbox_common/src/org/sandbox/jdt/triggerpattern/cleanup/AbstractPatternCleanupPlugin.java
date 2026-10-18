@@ -199,7 +199,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
     protected List<Match> findAllMatches(org.eclipse.jdt.core.dom.CompilationUnit compilationUnit, List<Pattern> patterns) {
         java.util.List<Match> allMatches = new java.util.ArrayList<>();
         for (Pattern pattern : patterns) {
-            List<Match> matches = ENGINE.findMatches(compilationUnit, pattern);
+            List<Match> matches = ENGINE.findExecutableMatches(compilationUnit, pattern);
             allMatches.addAll(matches);
         }
         return allMatches;
@@ -851,7 +851,7 @@ public abstract class AbstractPatternCleanupPlugin<H> {
     public void findOperations(CompilationUnit compilationUnit,
             Set<CompilationUnitRewriteOperation> operations) {
         for (Pattern pattern : getPatterns()) {
-            List<Match> matches = ENGINE.findMatches(compilationUnit, pattern);
+            List<Match> matches = ENGINE.findExecutableMatches(compilationUnit, pattern);
             for (Match match : matches) {
                 if (!shouldProcess(match, pattern)) {
                     continue;

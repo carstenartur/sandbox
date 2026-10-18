@@ -171,7 +171,7 @@ public abstract class TriggerPatternCleanupPlugin extends AbstractTool<Reference
         ReferenceHolder<Integer, JunitHolder> dataHolder = ReferenceHolder.createIndexed();
         
         for (Pattern pattern : getPatterns()) {
-            List<Match> matches = ENGINE.findMatches(compilationUnit, pattern);
+            List<Match> matches = ENGINE.findExecutableMatches(compilationUnit, pattern);
             
             for (Match match : matches) {
                 ASTNode node = match.getMatchedNode();

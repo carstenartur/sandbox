@@ -350,7 +350,9 @@ public class HintRegistry {
 			triggerPattern.value(),
 			triggerPattern.kind(),
 			triggerPattern.id().isEmpty() ? null : triggerPattern.id(),
-			null, null, null, null
+			null, null,
+			triggerPattern.overrides().isEmpty() ? null : triggerPattern.overrides(),
+			triggerPattern.constraints()
 		);
 		
 		HintDescriptor descriptor = createHintDescriptor(pattern, null, method, providerClass);

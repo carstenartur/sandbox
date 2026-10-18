@@ -136,8 +136,8 @@ public final class Pattern {
 	 * Returns the type constraints for placeholder variables.
 	 * 
 	 * <p>Each constraint maps a placeholder variable to an expected Java type.
-	 * When binding resolution is available, matches are filtered to only include
-	 * those where bound nodes satisfy the type constraints.</p>
+	 * A match requires that placeholder and a resolved compatible type; missing
+	 * necessary bindings do not satisfy an explicit constraint.</p>
 	 * 
 	 * @return the type constraints, or {@code null} if not set
 	 * @since 1.4.0

@@ -158,6 +158,7 @@ public final class PatternIndex {
 		cu.accept(new ASTVisitor() {
 			@Override
 			public void preVisit(ASTNode node) {
+				SemanticRewritePlanContext.checkCanceled();
 				checkNodeAgainstIndex(node, results);
 			}
 		});
@@ -222,9 +223,11 @@ public final class PatternIndex {
 					: new FqnAwarePlaceholderAstMatcher();
 			matcher.setCaseInsensitive(caseInsensitive);
 			if (entry.patternNode().subtreeMatch(matcher, node)) {
-				Match match = new Match(node, matcher.getBindings(),
-						node.getStartPosition(), node.getLength());
-				results.computeIfAbsent(entry.rule(), ignored -> new ArrayList<>()).add(match);
+				Match match = PatternMatchSupport.createMatch(node, matcher.getBindings(),
+						node.getStartPosition(), node.getLength(), matcher.getUnknownSemanticRequirements());
+				if (PatternMatchSupport.satisfiesConstraints(entry.sourcePattern(), match)) {
+					results.computeIfAbsent(entry.rule(), ignored -> new ArrayList<>()).add(match);
+				}
 			}
 		}
 	}
@@ -241,6 +244,7 @@ public final class PatternIndex {
 
 		@SuppressWarnings("unchecked")
 		List<Statement> statements = block.statements();
+		PlaceholderAstMatcher shape = new FqnAwarePlaceholderAstMatcher();
 
 		for (IndexEntry entry : entries) {
 			ASTNode patternNode = entry.patternNode();
@@ -249,26 +253,35 @@ public final class PatternIndex {
 			}
 			@SuppressWarnings("unchecked")
 			List<Statement> patternStatements = patternBlock.statements();
-			int patternSize = patternStatements.size();
-			if (patternSize == 0 || patternSize > statements.size()) {
+			int minimumSize = shape.minimumStatementCount(patternStatements);
+			boolean variadic = minimumSize != patternStatements.size();
+			// Empty source ranges have no anchor and cannot be rewritten.
+			minimumSize = Math.max(1, minimumSize);
+			if (patternStatements.isEmpty() || minimumSize > statements.size()) {
 				continue;
 			}
 
-			for (int start = 0; start <= statements.size() - patternSize; start++) {
-				Block syntheticBlock = block.getAST().newBlock();
-				for (int index = 0; index < patternSize; index++) {
-					syntheticBlock.statements().add(ASTNode.copySubtree(block.getAST(),
-							statements.get(start + index)));
-				}
-
-				PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();
-				matcher.setCaseInsensitive(caseInsensitive);
-				if (patternBlock.subtreeMatch(matcher, syntheticBlock)) {
-					int offset = statements.get(start).getStartPosition();
-					Statement last = statements.get(start + patternSize - 1);
-					int length = last.getStartPosition() + last.getLength() - offset;
-					Match match = new Match(block, matcher.getBindings(), offset, length);
-					results.computeIfAbsent(entry.rule(), ignored -> new ArrayList<>()).add(match);
+			for (int start = 0; start <= statements.size() - minimumSize; start++) {
+				SemanticRewritePlanContext.checkCanceled();
+				int maximumSize = variadic ? statements.size() - start : minimumSize;
+				for (int size = minimumSize; size <= maximumSize; size++) {
+					SemanticRewritePlanContext.checkCanceled();
+					PlaceholderAstMatcher matcher = new FqnAwarePlaceholderAstMatcher();
+					matcher.setCaseInsensitive(caseInsensitive);
+					// Match the original list: copying subtrees would discard bindings,
+					// parent/import context and source-node identity used by guards.
+					if (matcher.matchStatementsWithMultiPlaceholders(patternStatements,
+							statements.subList(start, start + size))) {
+						Statement first = statements.get(start);
+						Statement last = statements.get(start + size - 1);
+						int offset = first.getStartPosition();
+						int length = last.getStartPosition() + last.getLength() - offset;
+						Match match = PatternMatchSupport.createMatch(first, matcher.getBindings(), offset, length,
+								matcher.getUnknownSemanticRequirements());
+						if (PatternMatchSupport.satisfiesConstraints(entry.sourcePattern(), match)) {
+							results.computeIfAbsent(entry.rule(), ignored -> new ArrayList<>()).add(match);
+						}
+					}
 				}
 			}
 		}
