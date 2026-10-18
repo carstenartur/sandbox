@@ -209,7 +209,7 @@ class RuleMatchDiagnosticsTest {
 	}
 
 	@Test
-	void optionalHintOnlyGuardsObserveTheSameContextAsBatchExecution() throws Exception {
+	void optionalHintOnlyGuardsObserveSourceUnknownsInTheSameContextAsBatchExecution() throws Exception {
 		Function<String, GuardFunction> base= GuardExpression.getGuardFunctionResolver();
 		GuardExpression.setGuardFunctionResolver(name -> "noPriorUnknowns".equals(name)
 				? (context, args) -> !context.hasUnknownSemanticRequirements() : base.apply(name));
@@ -220,9 +220,13 @@ class RuleMatchDiagnosticsTest {
 				""");
 		String source= "import java.util.ArrayList; class Example { Object m() { return new ArrayList<>(); } }";
 		var candidate= explain(hint, source, false, -1, 0, 10).getFirst();
-		assertTrue(candidate.batchAccepted());
-		assertEquals(TruthValue.UNKNOWN, candidate.sourceGuard().truthValue());
+		assertFalse(candidate.batchAccepted());
+		assertEquals(TruthValue.NO_MATCH, candidate.sourceGuard().truthValue());
 		assertFalse(candidate.unknownSemanticRequirements().isEmpty());
+		var resolved= explain(hint, source, true, -1, 0, 10).getFirst();
+		assertTrue(resolved.batchAccepted());
+		assertEquals(TruthValue.MATCH, resolved.sourceGuard().truthValue());
+		assertTrue(resolved.unknownSemanticRequirements().isEmpty());
 	}
 
 	private static List<RuleMatchDiagnostics.Candidate> explain(org.sandbox.jdt.triggerpattern.api.HintFile hint,

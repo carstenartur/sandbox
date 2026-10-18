@@ -53,6 +53,24 @@ class BodyConstraintSafetyTest {
 	}
 
 	@Test
+	void differentArgumentCountProvesAbsenceDespiteAnUnresolvedReceiver() {
+		CompilationUnit cu = parse("class Example { void run() { int[] a = {}; Arrays.sort(a, 0, a.length); } }", false);
+		assertEquals(1, engine.findMatchesWithConstraints(cu, method, "java.util.Arrays.sort($a)", PatternKind.METHOD_CALL, true).size());
+	}
+
+	@Test
+	void unequalLiteralArgumentProvesAbsenceDespiteAnUnresolvedReceiver() {
+		CompilationUnit cu = parse("class Example { void run() { int[] a = {}; Arrays.fill(a, 2); } }", false);
+		assertEquals(1, engine.findMatchesWithConstraints(cu, method, "java.util.Arrays.fill($a, 1)", PatternKind.METHOD_CALL, true).size());
+	}
+
+	@Test
+	void unequalRepeatedPlaceholderProvesAbsenceDespiteAnUnresolvedReceiver() {
+		CompilationUnit cu = parse("class Example { void run() { int[] a = {}, b = {}; Arrays.equals(a, b); } }", false);
+		assertEquals(1, engine.findMatchesWithConstraints(cu, method, "java.util.Arrays.equals($a, $a)", PatternKind.METHOD_CALL, true).size());
+	}
+
+	@Test
 	void oneResolvedOccurrenceProvesPresenceDespiteAnotherUnresolvedCandidate() {
 		CompilationUnit cu = parse("class Example { void run() { Missing.emptyList(); java.util.Collections.emptyList(); } }", true);
 		assertEquals(1, engine.findMatchesWithConstraints(cu, method, API, PatternKind.METHOD_CALL, false).size());
