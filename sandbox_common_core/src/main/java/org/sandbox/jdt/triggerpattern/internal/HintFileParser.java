@@ -17,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -1071,7 +1072,7 @@ public final class HintFileParser {
 		if (token != ITerminalSymbols.TokenNameIdentifier && token != ITerminalSymbols.TokenNamenew) {
 			return false;
 		}
-		if ("otherwise".equals(new String(lookahead.getCurrentTokenSource()))) { //$NON-NLS-1$
+		if ("otherwise".equals(new String(lookahead.getCurrentTokenSource(), Charset.defaultCharset()))) { //$NON-NLS-1$
 			return false;
 		}
 		int following = lookahead.getNextToken();
