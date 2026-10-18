@@ -10,10 +10,10 @@ import org.eclipse.jdt.core.dom.*;
 import org.junit.jupiter.api.Test;
 
 class JavaSourceReadShapeTest {
-    @Test void supportsOnlyOneDimensionalLocalArraysAndTotalIndices() {
-        for (String expression : List.of("values[i]", "values[CONST * 2]", "values[Calculation.CONST << 1]", "values[(int)((long)i + 1)]"))
+    @Test void supportsOneDimensionalLocalAndNonvolatileFieldArraysWithTotalIndices() {
+        for (String expression : List.of("values[i]", "data[i]", "this.data[i]", "values[CONST * 2]", "values[Calculation.CONST << 1]", "values[(int)((long)i + 1)]"))
             assertTrue(supported(expression), expression);
-        for (String expression : List.of("data[i]", "owner.data[i]", "values[i++]", "values[next()]", "values[i / j]", "values[i % j]", "values[volatileIndex]", "values[STATIC_FINAL]", "values[owner.CONST]"))
+        for (String expression : List.of("volatileData[i]", "this.volatileData[i]", "owner.data[i]", "values[i++]", "values[next()]", "values[i / j]", "values[i % j]", "values[volatileIndex]", "values[STATIC_FINAL]", "values[owner.CONST]"))
             assertFalse(supported(expression), expression);
     }
     @Test void recognizesOnlyTheBoundJdkAbsoluteGetSignature() {
@@ -52,7 +52,7 @@ class JavaSourceReadShapeTest {
     }
     private static Expression expression(String expression) {
         String source = "class Calculation { static final int CONST=4; static final int STATIC_FINAL=Integer.parseInt(\"7\");"
-                + " final int dynamic=Integer.parseInt(\"9\"); int mutable; static volatile int volatileIndex; int[] data;"
+                + " final int dynamic=Integer.parseInt(\"9\"); int mutable; static volatile int volatileIndex; int[] data; volatile int[] volatileData;"
                 + " Calculation parent; java.nio.IntBuffer buffers; int get(int x){return x;} int next(){return 0;} Calculation nextOwner(){return this;}"
                 + " long calculate(int[] values, int i, int j, Calculation owner, java.nio.ByteBuffer bytes, java.nio.ShortBuffer shorts,"
                 + " java.nio.CharBuffer chars, java.nio.IntBuffer ints, java.nio.LongBuffer longs) { return " + expression + "; }}";
