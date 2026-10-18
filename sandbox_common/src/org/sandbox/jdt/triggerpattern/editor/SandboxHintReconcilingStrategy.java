@@ -56,12 +56,19 @@ public class SandboxHintReconcilingStrategy implements IReconcilingStrategy {
 	private static final String EMBEDDED_JAVA_MARKER_TYPE=
 			"sandbox_common.org.sandbox.jdt.triggerpattern.embeddedJavaProblem"; //$NON-NLS-1$
 
-	private IDocument document;
-	private ISourceViewer sourceViewer;
+	private volatile ReconcileInput input= new ReconcileInput(null, null);
+	private ITextEditor viewerEditor;
 	private SandboxHintEditor editor;
 
+	/** Captures the optional editor adapter while configuring the viewer on the UI thread. */
 	public void setSourceViewer(ISourceViewer viewer) {
-		this.sourceViewer= viewer;
+		viewerEditor= null;
+		if (viewer != null) {
+			Object adapter= viewer.getTextWidget().getData("org.eclipse.ui.texteditor"); //$NON-NLS-1$
+			if (adapter instanceof ITextEditor textEditor) {
+				viewerEditor= textEditor;
+			}
+		}
 	}
 
 	public void setEditor(SandboxHintEditor editor) {
@@ -70,7 +77,9 @@ public class SandboxHintReconcilingStrategy implements IReconcilingStrategy {
 
 	@Override
 	public void setDocument(IDocument document) {
-		this.document= document;
+		// MonoReconciler calls this from the viewer's input-document lifecycle,
+		// after the editor has installed its new input. Publish the pair together.
+		input= new ReconcileInput(document, document == null ? null : getFile());
 	}
 
 	@Override
@@ -80,11 +89,10 @@ public class SandboxHintReconcilingStrategy implements IReconcilingStrategy {
 
 	@Override
 	public void reconcile(IRegion partition) {
-		if (document == null) {
-			return;
-		}
-		IFile file= getFile();
-		if (file == null || !file.exists()) {
+		ReconcileInput current= input;
+		IDocument document= current.document();
+		IFile file= current.file();
+		if (document == null || file == null || !file.exists()) {
 			return;
 		}
 		try {
@@ -176,17 +184,17 @@ public class SandboxHintReconcilingStrategy implements IReconcilingStrategy {
 	}
 
 	private IFile getFile() {
-		if (sourceViewer == null) {
-			return null;
-		}
-		Object adapter= sourceViewer.getTextWidget().getData("org.eclipse.ui.texteditor"); //$NON-NLS-1$
-		if (adapter instanceof ITextEditor textEditor) {
+		ITextEditor textEditor= editor != null ? editor : viewerEditor;
+		if (textEditor != null) {
 			IEditorInput input= textEditor.getEditorInput();
 			if (input instanceof IFileEditorInput fileInput) {
 				return fileInput.getFile();
 			}
 		}
 		return null;
+	}
+
+	private record ReconcileInput(IDocument document, IFile file) {
 	}
 
 	private void logError(String message, CoreException exception) {

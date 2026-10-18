@@ -17,8 +17,8 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
 
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -34,6 +34,7 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.IStructuredSelection;
+import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.jface.wizard.Wizard;
 import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
@@ -41,9 +42,9 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
-import org.sandbox.jdt.triggerpattern.api.HintBindingPolicy;
-import org.sandbox.jdt.triggerpattern.api.HintFile;
-import org.sandbox.jdt.triggerpattern.internal.HintFileSerializer;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
+import org.sandbox.jdt.triggerpattern.internal.RuleAuthoringDocument;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
 /**
@@ -69,6 +70,8 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 	private IStructuredSelection selection;
 	private IWorkbench workbench;
 	private String initialCodeSnippet;
+	private String initialReplacement;
+	private Consumer<String> projectPreviewAction;
 
 	public NewSandboxHintFileWizard() {
 		setWindowTitle("New Sandbox Hint File"); //$NON-NLS-1$
@@ -93,13 +96,32 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		this.initialCodeSnippet = code;
 	}
 
+	/** Sets the actual Java change to generalize without inferring placeholders. */
+	public void setInitialChange(String before, String after) {
+		initialCodeSnippet = before;
+		initialReplacement = after;
+	}
+
+	/** Overrides the project preview entry point, for embedding in another context. */
+	public void setProjectPreviewAction(Consumer<String> action) {
+		projectPreviewAction = action;
+		refreshProjectPreviewAction();
+	}
+
 	@Override
 	public void addPages() {
 		filePage = new NewSandboxHintFileWizardPage(selection);
 		rulePage = new NewRuleWizardPage();
+		filePage.setContainerChangeListener(this::refreshProjectPreviewAction);
+		rulePage.setMetadataSupplier(filePage::getEditedMetadata);
+		rulePage.setDefaultContentSupplier(this::getTemplateContent);
 
-		if (initialCodeSnippet != null && !initialCodeSnippet.isBlank()) {
-			rulePage.setInitialSourcePattern(initialCodeSnippet);
+		if (initialCodeSnippet != null && (!initialCodeSnippet.isBlank() || initialReplacement != null)) {
+			if (initialReplacement == null) {
+				rulePage.setInitialSourcePattern(initialCodeSnippet);
+			} else {
+				rulePage.setInitialChange(initialCodeSnippet, initialReplacement);
+			}
 
 			// Auto-trigger AI only if both configured AND available
 			IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(PLUGIN_ID);
@@ -109,8 +131,40 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 			}
 		}
 
+		refreshProjectPreviewAction();
+
 		addPage(filePage);
 		addPage(rulePage);
+	}
+
+	@Override
+	public IWizardPage getNextPage(IWizardPage page) {
+		if (page == filePage) {
+			refreshProjectPreviewAction();
+		}
+		return super.getNextPage(page);
+	}
+
+	private void refreshProjectPreviewAction() {
+		if (rulePage == null) {
+			return;
+		}
+		if (projectPreviewAction == null && selectedJavaProject() == null) {
+			rulePage.setProjectPreviewAction(null);
+			return;
+		}
+		rulePage.setProjectPreviewAction(ignored -> {
+			if (projectPreviewAction != null) {
+				projectPreviewAction.accept(getFullDslDocument());
+				return;
+			}
+			IJavaProject project = selectedJavaProject();
+			if (project == null) {
+				refreshProjectPreviewAction();
+				return;
+			}
+			ProjectRulePreview.open(getShell(), project, getFullDslDocument());
+		});
 	}
 
 	@Override
@@ -118,7 +172,8 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		// Allow finish from page 1 when template is EMPTY
 		if (getContainer().getCurrentPage() == filePage) {
 			return filePage.isPageComplete()
-					&& filePage.getSelectedTemplate() == SandboxHintTemplates.EMPTY;
+					&& filePage.getSelectedTemplate() == SandboxHintTemplates.EMPTY
+					&& (!rulePage.hasCustomContent() || rulePage.isPageComplete());
 		}
 		// On the rule page, require both pages to be complete
 		return filePage.isPageComplete() && rulePage.isPageComplete();
@@ -128,47 +183,7 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 	public boolean performFinish() {
 		String containerPath = filePage.getContainerPath();
 		String fileName = filePage.getFileName();
-		SandboxHintTemplates template = filePage.getSelectedTemplate();
-
-		// Build HintFile model from page 1 metadata
-		HintFile hintFile = new HintFile();
-		hintFile.setId(filePage.getHintId());
-		hintFile.setDescription(filePage.getHintDescription());
-		hintFile.setSeverity(filePage.getSeverityValue());
-		if (template != SandboxHintTemplates.PLAN_AWARE
-				&& "required".equals(filePage.getBindingPolicyValue())) { //$NON-NLS-1$
-			hintFile.setBindingPolicy(HintBindingPolicy.REQUIRED);
-		}
-		int minJava = filePage.getMinJavaVersion();
-		if (minJava > 0) {
-			hintFile.setMinJavaVersion(minJava);
-		}
-		String tagsText = filePage.getTagsText();
-		if (tagsText != null && !tagsText.isBlank()) {
-			List<String> tags = Arrays.stream(tagsText.split(",")) //$NON-NLS-1$
-					.map(String::trim)
-					.filter(s -> !s.isEmpty())
-					.toList();
-			if (!tags.isEmpty()) {
-				hintFile.setTags(tags);
-			}
-		}
-
-		// Serialize metadata
-		HintFileSerializer serializer = new HintFileSerializer();
-		String metadataContent = serializer.serialize(hintFile);
-
-		// Append rule content from page 2 or template
-		String ruleContent;
-		if (template == SandboxHintTemplates.EMPTY) {
-			ruleContent = ""; //$NON-NLS-1$
-		} else if (rulePage.hasCustomContent()) {
-			ruleContent = rulePage.getFullRuleBlock();
-		} else {
-			ruleContent = template.getRuleContent();
-		}
-
-		String fullContent = metadataContent + ruleContent;
+		String fullContent = getFullDslDocument();
 
 		try {
 			getContainer().run(true, false,
@@ -200,6 +215,40 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		return true;
 	}
 
+	/** The same complete document is previewed, copied and finally written. */
+	public String getFullDslDocument() {
+		if (rulePage.hasCustomContent()) {
+			rulePage.applyPendingMetadata();
+			return rulePage.getFullDslDocument();
+		}
+		return new RuleAuthoringDocument(getTemplateContent()).withMetadata(filePage.getEditedMetadata()).content();
+	}
+
+	private String getTemplateContent() {
+		SandboxHintTemplates template = filePage.getSelectedTemplate();
+		String content = template.getRuleContent();
+		if (template != SandboxHintTemplates.PLAN_AWARE && template != SandboxHintTemplates.EMPTY) {
+			content = new RuleAuthoringDocument(content)
+					.withMetadata(Map.of("binding-policy", "required")).content(); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		return content;
+	}
+
+	/** Resolves preview scope from the destination currently entered on the first page. */
+	private IJavaProject selectedJavaProject() {
+		if (filePage == null || filePage.getContainerPath().isEmpty()) {
+			return null;
+		}
+		IResource resource = ResourcesPlugin.getWorkspace().getRoot()
+				.findMember(new Path(filePage.getContainerPath()));
+		if (!(resource instanceof IContainer container) || !container.isAccessible()
+				|| container.getProject() == null) {
+			return null;
+		}
+		IJavaProject project = JavaCore.create(container.getProject());
+		return project != null && project.exists() ? project : null;
+	}
+
 	private void createFile(String containerPath, String fileName, String content,
 			IProgressMonitor monitor) throws InvocationTargetException {
 		monitor.beginTask("Creating " + fileName, 2); //$NON-NLS-1$
@@ -213,11 +262,7 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		IFile file = container.getFile(new Path(fileName));
 		try (InputStream stream = new ByteArrayInputStream(
 				content.getBytes(StandardCharsets.UTF_8))) {
-			if (file.exists()) {
-				file.setContents(stream, true, true, monitor);
-			} else {
-				file.create(stream, true, monitor);
-			}
+			file.create(stream, false, monitor);
 		} catch (CoreException | java.io.IOException e) {
 			throw new InvocationTargetException(e);
 		}

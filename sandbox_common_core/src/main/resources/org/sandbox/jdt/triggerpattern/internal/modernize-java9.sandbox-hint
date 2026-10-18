@@ -24,8 +24,8 @@ $map.getOrDefault($key, null)
 
 @id: modernize-java9.optional-ternary.to-orelse
 @severity: info
-$optional.isPresent() ? $optional.get() : $default :: sourceVersionGE(9) && hasNoSideEffect($default)
-=> $optional.orElse($default)
+"Consider Optional.orElse only after checking exact API bindings, eager default evaluation and implicit conversions.":
+$optional.isPresent() ? $optional.get() : $default :: sourceVersionGE(9)
 ;;
 
 @id: modernize-java16.stream-collect-tolist.consider-stream-tolist

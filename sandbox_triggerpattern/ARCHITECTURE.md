@@ -54,7 +54,8 @@ String message = String.valueOf(count);
 **Benefits**:
 - More explicit intent
 - Clearer code
-- Handles null values correctly (doesn't produce "null" string for null objects)
+- For an `Object` argument, both forms produce the text `"null"` for null.
+  Overload and operand-type checks are necessary for a specific replacement.
 
 ### Trailing Empty String
 
@@ -254,13 +255,14 @@ This implementation demonstrates how TriggerPattern-based hints can be integrate
 ## Advantages Over Traditional Cleanups
 
 ### Code Simplicity
-- **Traditional**: ~500-1000 lines per cleanup
-- **TriggerPattern**: ~50-100 lines per hint
+Declarative patterns can reduce repeated recognition logic. Comparisons must
+count shared infrastructure, semantic guards and tests; no measured line-count
+or performance saving is claimed here.
 
 ### Maintainability
 - Patterns are easy to read and understand
 - No complex visitor logic to maintain
-- Changes to patterns don't require extensive testing
+- Pattern changes need positive and negative semantic regression tests
 
 ### Discoverability
 - Patterns are self-documenting
@@ -297,7 +299,7 @@ Requires only:
 
 ## Testing
 
-Tests are located in `sandbox_triggerpattern_string_test` module.
+Tests are located in `sandbox_triggerpattern_test` and `sandbox_common_core`.
 
 Test cases verify:
 1. Patterns match expected code structures
@@ -317,17 +319,17 @@ The TriggerPattern engine itself is tested in `sandbox_common_test`, so plugin t
 
 ## Version Compatibility
 
-- **Java**: 21+ (required by Eclipse 2025-09)
-- **Eclipse**: 2025-09 or later
+- **Java**: 25
+- **Eclipse target**: 2026-09 / Platform 4.41
 - **TriggerPattern Engine**: Requires sandbox_common 1.2.2+
 
 ## Future Enhancements
 
 Potential additional string simplification patterns:
 
-1. **Null-safe concatenation**: 
-   - Pattern: `$x != null ? $x : ""`
-   - Replacement: `String.valueOf($x)`
+1. **Explicit null substitution**:
+   Null-to-empty-string and `String.valueOf` have different null behavior and
+   must not be presented as interchangeable transformations.
 
 2. **StringBuilder for single concat**:
    - Pattern: `new StringBuilder().append($x).toString()`

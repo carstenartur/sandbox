@@ -1,112 +1,147 @@
-// string-isblank.sandbox-hint — String Blank/Trim Patterns
-// Replaces trim/strip + isEmpty patterns with String.isBlank() (Java 11+)
+// String.isBlank reference cleanup (Java 11+).
+// Only Unicode strip methods are equivalent. trim() uses a different definition
+// of whitespace and must never be replaced by isBlank().
+// Every API call is binding-checked by stringIsBlankSafe(). Internal comments
+// are retained by declining the current text-substitution rewrite.
 
 <!id: string-isblank>
-<!description: Replace trim/strip + isEmpty patterns with String.isBlank()>
+<!description: Replace Unicode strip emptiness checks with String.isBlank()>
 <!severity: info>
 <!minJavaVersion: 11>
-<!tags: modernization, strings, java11>
+<!binding-policy: required>
+<!tags: modernization, strings, java11, jdt-reference>
 
-// $str.trim().isEmpty() → $str.isBlank()
-$str.trim().isEmpty() :: sourceVersionGE(11)
+@id: string-isblank.strip.empty
+$str.strip().isEmpty() :: sourceVersionGE(11) && stringIsBlankSafe()
 => $str.isBlank()
 ;;
 
-// $str.trim().length() == 0 → $str.isBlank()
-$str.trim().length() == 0 :: sourceVersionGE(11)
+@id: string-isblank.strip.equals-empty
+$str.strip().equals("") :: sourceVersionGE(11) && stringIsBlankSafe()
 => $str.isBlank()
 ;;
 
-// $str.strip().isEmpty() → $str.isBlank()
-$str.strip().isEmpty() :: sourceVersionGE(11)
+@id: string-isblank.strip.empty-equals
+"".equals($str.strip()) :: sourceVersionGE(11) && stringIsBlankSafe()
 => $str.isBlank()
 ;;
 
-// "".equals($str.trim()) → $str.isBlank()
-"".equals($str.trim()) :: sourceVersionGE(11)
+@id: string-isblank.strip.length-eq-zero
+$str.strip().length() == 0 :: sourceVersionGE(11) && stringIsBlankSafe()
 => $str.isBlank()
 ;;
 
-$str.stripLeading().isEmpty() :: sourceVersionGE(11)
+@id: string-isblank.strip.length-le-zero
+$str.strip().length() <= 0 :: sourceVersionGE(11) && stringIsBlankSafe()
 => $str.isBlank()
 ;;
 
-$str.stripTrailing().isEmpty() :: sourceVersionGE(11)
+@id: string-isblank.strip.length-lt-one
+$str.strip().length() < 1 :: sourceVersionGE(11) && stringIsBlankSafe()
 => $str.isBlank()
 ;;
 
-"".equals($str.stripLeading()) :: sourceVersionGE(11)
-=> $str.isBlank()
-;;
-
-"".equals($str.stripTrailing()) :: sourceVersionGE(11)
-=> $str.isBlank()
-;;
-
-$str.strip().length() <= 0 :: sourceVersionGE(11)
-=> $str.isBlank()
-;;
-
-$str.strip().length() < 1 :: sourceVersionGE(11)
-=> $str.isBlank()
-;;
-
-$str.strip().length() != 0 :: sourceVersionGE(11)
+@id: string-isblank.strip.length-ne-zero
+$str.strip().length() != 0 :: sourceVersionGE(11) && stringIsBlankSafe()
 => !$str.isBlank()
 ;;
 
-$str.strip().length() > 0 :: sourceVersionGE(11)
+@id: string-isblank.strip.length-gt-zero
+$str.strip().length() > 0 :: sourceVersionGE(11) && stringIsBlankSafe()
 => !$str.isBlank()
 ;;
 
-$str.strip().length() >= 1 :: sourceVersionGE(11)
+@id: string-isblank.strip.length-ge-one
+$str.strip().length() >= 1 :: sourceVersionGE(11) && stringIsBlankSafe()
 => !$str.isBlank()
 ;;
 
-$str.stripLeading().length() == 0 :: sourceVersionGE(11)
+@id: string-isblank.stripLeading.empty
+$str.stripLeading().isEmpty() :: sourceVersionGE(11) && stringIsBlankSafe()
 => $str.isBlank()
 ;;
 
-$str.stripLeading().length() <= 0 :: sourceVersionGE(11)
+@id: string-isblank.stripLeading.equals-empty
+$str.stripLeading().equals("") :: sourceVersionGE(11) && stringIsBlankSafe()
 => $str.isBlank()
 ;;
 
-$str.stripLeading().length() < 1 :: sourceVersionGE(11)
+@id: string-isblank.stripLeading.empty-equals
+"".equals($str.stripLeading()) :: sourceVersionGE(11) && stringIsBlankSafe()
 => $str.isBlank()
 ;;
 
-$str.stripTrailing().length() == 0 :: sourceVersionGE(11)
+@id: string-isblank.stripLeading.length-eq-zero
+$str.stripLeading().length() == 0 :: sourceVersionGE(11) && stringIsBlankSafe()
 => $str.isBlank()
 ;;
 
-$str.stripTrailing().length() <= 0 :: sourceVersionGE(11)
+@id: string-isblank.stripLeading.length-le-zero
+$str.stripLeading().length() <= 0 :: sourceVersionGE(11) && stringIsBlankSafe()
 => $str.isBlank()
 ;;
 
-$str.stripTrailing().length() < 1 :: sourceVersionGE(11)
+@id: string-isblank.stripLeading.length-lt-one
+$str.stripLeading().length() < 1 :: sourceVersionGE(11) && stringIsBlankSafe()
 => $str.isBlank()
 ;;
 
-$str.stripLeading().length() != 0 :: sourceVersionGE(11)
+@id: string-isblank.stripLeading.length-ne-zero
+$str.stripLeading().length() != 0 :: sourceVersionGE(11) && stringIsBlankSafe()
 => !$str.isBlank()
 ;;
 
-$str.stripLeading().length() > 0 :: sourceVersionGE(11)
+@id: string-isblank.stripLeading.length-gt-zero
+$str.stripLeading().length() > 0 :: sourceVersionGE(11) && stringIsBlankSafe()
 => !$str.isBlank()
 ;;
 
-$str.stripLeading().length() >= 1 :: sourceVersionGE(11)
+@id: string-isblank.stripLeading.length-ge-one
+$str.stripLeading().length() >= 1 :: sourceVersionGE(11) && stringIsBlankSafe()
 => !$str.isBlank()
 ;;
 
-$str.stripTrailing().length() != 0 :: sourceVersionGE(11)
+@id: string-isblank.stripTrailing.empty
+$str.stripTrailing().isEmpty() :: sourceVersionGE(11) && stringIsBlankSafe()
+=> $str.isBlank()
+;;
+
+@id: string-isblank.stripTrailing.equals-empty
+$str.stripTrailing().equals("") :: sourceVersionGE(11) && stringIsBlankSafe()
+=> $str.isBlank()
+;;
+
+@id: string-isblank.stripTrailing.empty-equals
+"".equals($str.stripTrailing()) :: sourceVersionGE(11) && stringIsBlankSafe()
+=> $str.isBlank()
+;;
+
+@id: string-isblank.stripTrailing.length-eq-zero
+$str.stripTrailing().length() == 0 :: sourceVersionGE(11) && stringIsBlankSafe()
+=> $str.isBlank()
+;;
+
+@id: string-isblank.stripTrailing.length-le-zero
+$str.stripTrailing().length() <= 0 :: sourceVersionGE(11) && stringIsBlankSafe()
+=> $str.isBlank()
+;;
+
+@id: string-isblank.stripTrailing.length-lt-one
+$str.stripTrailing().length() < 1 :: sourceVersionGE(11) && stringIsBlankSafe()
+=> $str.isBlank()
+;;
+
+@id: string-isblank.stripTrailing.length-ne-zero
+$str.stripTrailing().length() != 0 :: sourceVersionGE(11) && stringIsBlankSafe()
 => !$str.isBlank()
 ;;
 
-$str.stripTrailing().length() > 0 :: sourceVersionGE(11)
+@id: string-isblank.stripTrailing.length-gt-zero
+$str.stripTrailing().length() > 0 :: sourceVersionGE(11) && stringIsBlankSafe()
 => !$str.isBlank()
 ;;
 
-$str.stripTrailing().length() >= 1 :: sourceVersionGE(11)
+@id: string-isblank.stripTrailing.length-ge-one
+$str.stripTrailing().length() >= 1 :: sourceVersionGE(11) && stringIsBlankSafe()
 => !$str.isBlank()
 ;;
