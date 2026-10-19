@@ -1,17 +1,23 @@
-# Refactoring Mining Report — 2026-10-16
+# Refactoring Mining Report — 2026-10-19
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
 |----------------|-------|---------|-------|
-| eclipse.jdt.core | 227 | 0 | 0 |
-| eclipse.jdt.ui | 1479 | 52 | 9 |
-| eclipse.platform.ui | 1140 | 62 | 8 |
-| eclipse.platform | 311 | 62 | 3 |
+| eclipse.jdt.core | 227 | 3 | 1 |
+| eclipse.jdt.ui | 1479 | 83 | 8 |
+| eclipse.platform.ui | 1140 | 113 | 8 |
+| eclipse.platform | 311 | 71 | 4 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1661 | 86 | 11 |
+| sandbox | 1717 | 176 | 12 |
 
 ## Details
+### eclipse.jdt.core
+#### Rule: `string-equals` → `string-equals.null-or-empty.review`
+- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/PackageBinding.java:91` — `annos == null || annos.isEmpty()`
+- `org.eclipse.jdt.core/dom/org/eclipse/jdt/core/dom/PackageBinding.java:270` — `nameString == null || nameString.isEmpty()`
+- `org.eclipse.jdt.core/dom/org/eclipse/jdt/internal/core/dom/rewrite/imports/ImportRewriteAnalyzer.java:280` — `originalImports == null || originalImports.isEmpty()`
+
 ### eclipse.jdt.ui
 #### Rule: `deprecations` → `deprecations.runtime-exec-string.consider-processbuilder`
 - `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javadocexport/JavadocWizard.java:315` — `Runtime.getRuntime().exec(args)`
@@ -65,17 +71,46 @@
 - `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/util/SelectionUtil.java:85` — `Arrays.asList(resources).contains(null)`
 - `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/spelling/engine/DefaultPhoneticHashProvider.java:167` — `Arrays.asList(candidates).contains(token)`
 
-#### Rule: `arrays` → `arrays.aslist-stream.to-arrays-stream`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/NewImplementationProposal.java:46` — `Arrays.asList(actions).stream()` → `java.util.Arrays.stream(actions)`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/proposals/NewInterfaceImplementationProposal.java:46` — `Arrays.asList(actions).stream()` → `java.util.Arrays.stream(actions)`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/NewJUnitTestCaseProposal.java:46` — `Arrays.asList(actions).stream()` → `java.util.Arrays.stream(actions)`
-
-#### Rule: `string-isblank` → `string-isblank1`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/actions/IndentAction.java:936` — `prevLineString.trim().isEmpty()` → `prevLineString.isBlank()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/formatter/ModifyDialog.java:1015` — `filterText.trim().isEmpty()` → `filterText.isBlank()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/formatter/ModifyDialog.java:1532` — `previewCode.trim().isEmpty()` → `previewCode.isBlank()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackagerfat/FatJarManifestProvider.java:105` — `manifestClasspath.trim().isEmpty()` → `manifestClasspath.isBlank()`
-- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/dialogs/OverrideMethodDialog.java:450` — `searchText.trim().isEmpty()` → `searchText.isBlank()`
+#### Rule: `string-equals` → `string-equals.null-or-empty.review`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/FindReferencesInHierarchyAction.java:103` — `sel == null || sel.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/FindStringsToExternalizeAction.java:175` — `elements == null || elements.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/WorkingSetFindAction.java:108` — `sel == null || sel.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/FindAction.java:112` — `sel == null || sel.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/FindDeclarationsInHierarchyAction.java:121` — `sel == null || sel.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/actions/ExternalizeStringsAction.java:218` — `elements == null || elements.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/OverrideIndicatorLabelDecorator.java:373` — `fListeners == null || fListeners.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/text/java/correction/CUCorrectionProposal.java:345` — `super.getName() == null || super.getName().isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/ui/text/java/correction/CUCorrectionProposal.java:353` — `super.getCommandId() == null || super.getCommandId().isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/HashCleanUp.java:375` — `innerMethod.parameters() == null || innerMethod.parameters().isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/HashCleanUp.java:487` — `hashOnField.arguments() == null || hashOnField.arguments().isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/MapCloningCleanUp.java:243` — `classInstanceCreation.arguments() == null || classInstanceCreation.arguments(...`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/CleanUpRefactoringWizard.java:492` — `res == null || res.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/JoinCleanUp.java:656` — `builderInstantiation.arguments() == null || builderInstantiation.arguments()....`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/JoinCleanUp.java:657` — `builderInstantiation.typeArguments() == null || builderInstantiation.typeArgu...`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/fix/StringBuilderCleanUp.java:791` — `originalClassInstanceCreation.typeArguments() == null || originalClassInstanc...`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/preferences/formatter/ProfileConfigurationBlock.java:275` — `profiles == null || profiles.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/jarpackager/JarFileExportOperation.java:779` — `classFileList == null || classFileList.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/typehierarchy/TypeHierarchyViewPart.java:1415` — `currSelection == null || currSelection.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/typehierarchy/TypeHierarchyViewPart.java:1653` — `inputList == null || inputList.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/packageview/FileTransferDragAdapter.java:109` — `elements == null || elements.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/packageview/FileTransferDragAdapter.java:136` — `elements == null || elements.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/propertiesfileeditor/PropertiesQuickAssistProcessor.java:170` — `keys == null || keys.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/propertiesfileeditor/PropertiesQuickAssistProcessor.java:226` — `keys == null || keys.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/propertiesfileeditor/OpenAction.java:62` — `selection == null || selection.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/search/JavaSearchQuery.java:75` — `dataList == null || dataList.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/ClassFileEditor.java:341` — `path == null || path.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/LibrariesWorkbookPage.java:255` — `ssel == null || ssel.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/newsourcepage/DialogPackageExplorer.java:448` — `elements == null || elements.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/ModuleSelectionDialog.java:325` — `selection == null || selection.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/ProjectsWorkbookPage.java:185` — `ssel == null || ssel.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/CPListLabelProvider.java:467` — `path == null || path.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/CPListLabelProvider.java:477` — `path == null || path.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/buildpaths/CPListLabelProvider.java:488` — `path == null || path.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/wizards/AbstractNewFolderWizardPage.java:182` — `selection == null || selection.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/navigator/JavaFileLinkHelper.java:39` — `selection == null || selection.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/text/correction/proposals/AddStaticFavoriteProposal.java:51` — `favorites == null || favorites.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/browsing/JavaBrowsingPart.java:922` — `selection == null || selection.isEmpty()`
+- `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/browsing/JavaBrowsingPart.java:925` — `selection == null || selection.isEmpty()`
 
 #### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
 - `org.eclipse.jdt.ui/ui/org/eclipse/jdt/internal/ui/javaeditor/codemining/JavaImplementationCodeMining.java:195` — `Stream.of(results).filter(t -> t.getAncestor(IJavaElement.COMPILATION_UNIT) !...`
@@ -94,8 +129,8 @@
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/browser/DefaultWebBrowser.java:155` — `Runtime.getRuntime().exec(new String[]{webBrowser,href})`
 
 #### Rule: `stream-performance` → `stream-performance.collection-stream-foreach.to-collection-foreach`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java:165` — `groupedEditorReferences.getValue().stream().forEach(editorReference -> editor...` → `groupedEditorReferences.getValue().forEach(editorReference -> editorReference...`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java:198` — `refsToMakeDistinguishableViaPathSegments.stream().forEach(e -> editorReferenc...` → `refsToMakeDistinguishableViaPathSegments.forEach(e -> editorReferenceLabelTex...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java:165` — `groupedEditorReferences.getValue().stream().forEach(editorReference -> editor...` → `groupedEditorReferences.getValue().forEach((editorReference -> editorReferenc...`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbookEditorsHandler.java:198` — `refsToMakeDistinguishableViaPathSegments.stream().forEach(e -> editorReferenc...` → `refsToMakeDistinguishableViaPathSegments.forEach((e -> editorReferenceLabelTe...`
 
 #### Rule: `arrays` → `arrays.arraycopy-full-copy.review`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/activities/ActivityCategoryPreferencePage.java:401` — `System.arraycopy(enabledCategories,0,allChecked,0,enabledCategories.length)`
@@ -144,13 +179,64 @@
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPage.java:3815` — `Arrays.asList(models).contains(model)`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/e4/migration/MementoReader.java:56` — `Arrays.asList(memento.getAttributeKeys()).contains(attribute)`
 
-#### Rule: `string-isblank` → `string-isblank1`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/model/WorkbenchPartLabelProvider.java:81` — `path.trim().isEmpty()` → `path.isBlank()`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/model/WorkbenchPartLabelProvider.java:88` — `path.trim().isEmpty()` → `path.isBlank()`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/menus/CommandContributionItem.java:569` — `tooltip.trim().isEmpty()` → `tooltip.isBlank()`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/misc/StatusUtil.java:119` — `message.trim().isEmpty()` → `message.isBlank()`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/ImportExportPespectiveHandler.java:211` — `trimsData.trim().isEmpty()` → `trimsData.isBlank()`
-- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/progress/ProgressAnimationItem.java:241` — `tt.trim().isEmpty()` → `tt.isBlank()`
+#### Rule: `string-equals` → `string-equals.null-or-empty.review`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/actions/LabelRetargetAction.java:105` — `handlerText == null || handlerText.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/XMLMemento.java:133` — `problemText == null || problemText.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/PatternFilter.java:167` — `patternString == null || patternString.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/StyledStringHighlighter.java:42` — `text == null || text.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/dialogs/StyledStringHighlighter.java:47` — `pattern == null || pattern.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/activities/MutableActivityManager.java:284` — `name == null || name.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/activities/MutableActivityManager.java:298` — `name == null || name.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CloseEditorHandler.java:87` — `partTags == null || partTags.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/decorators/DecoratorManager.java:953` — `originalText == null || originalText.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/PluginActionSetBuilder.java:401` — `toolBarId == null || toolBarId.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/handlers/LegacyHandlerService.java:581` — `commandId == null || commandId.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/handlers/LegacyHandlerService.java:646` — `id == null || id.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/keys/BindingPersistence.java:879` — `string == null || string.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/keys/model/KeyController.java:446` — `be.getTrigger() == null || be.getTrigger().isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/EditorRegistry.java:313` — `id == null || id.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/EditorRegistry.java:649` — `defaultEditors == null || defaultEditors.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/registry/EditorRegistry.java:897` — `xmlString == null || xmlString.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/LargeFileLimitsPreferenceHandler.java:423` — `largeFilePreference == null || largeFilePreference.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/services/WorkbenchServiceRegistry.java:194` — `name == null || name.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/services/WorkbenchServiceRegistry.java:198` — `level == null || level.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/ShowInHandler.java:125` — `targetId == null || targetId.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/ShowInMenu.java:183` — `context.getSelection() == null || context.getSelection().isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/MenuAdditionCacheEntry.java:123` — `location.getPath() == null || location.getPath().isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/MenuAdditionCacheEntry.java:133` — `query == null || query.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/MenuAdditionCacheEntry.java:153` — `query == null || query.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/MenuAdditionCacheEntry.java:333` — `query == null || query.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/MenuAdditionCacheEntry.java:351` — `query == null || query.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/WorkbenchMenuService.java:115` — `location.getPath() == null || location.getPath().isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/WorkbenchMenuService.java:126` — `query == null || query.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/WorkbenchMenuService.java:144` — `query == null || query.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/MenuFactoryGenerator.java:54` — `location.getPath() == null || location.getPath().isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/MenuFactoryGenerator.java:64` — `query == null || query.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/MenuFactoryGenerator.java:83` — `query == null || query.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/MenuHelper.java:161` — `id == null || id.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/MenuHelper.java:164` — `id == null || id.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/menus/MenuHelper.java:243` — `style == null || style.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/NavigationHistoryEntry.java:54` — `historyText == null || historyText.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/DecoratorsPreferencePage.java:214` — `text == null || text.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/PropertyPageContributorManager.java:98` — `result == null || result.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/dialogs/FileEditorsPreferencePage.java:117` — `newExtension == null || newExtension.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/ActionExpression.java:928` — `selection == null || selection.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java:1453` — `id == null || id.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchWindow.java:1456` — `id == null || id.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/SaveablesList.java:424` — `saveOptions == null || saveOptions.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/SaveablesList.java:586` — `saveOptionMap == null || saveOptionMap.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/ObjectContributorManager.java:482` — `adaptableList == null || adaptableList.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/ObjectContributorManager.java:660` — `objects == null || objects.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/ObjectContributorManager.java:866` — `objects == null || objects.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/ObjectContributorManager.java:904` — `objects == null || objects.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/ObjectContributorManager.java:937` — `objects == null || objects.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/Workbench.java:1943` — `nlExtensions == null || nlExtensions.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/progress/ProgressInfoItem.java:514` — `taskString == null || taskString.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/PartTaggedAsEditorPropertyTester.java:40` — `partTags == null || partTags.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/about/AboutPluginsPage.java:692` — `searchPattern == null || searchPattern.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/WorkbenchPartReference.java:278` — `toolTip == null || toolTip.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/e4/migration/PerspectiveBuilder.java:433` — `list == null || list.isEmpty()`
+- `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/part/EditorInputTransfer.java:200` — `xmlString == null || xmlString.isEmpty()`
 
 #### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
 - `bundles/org.eclipse.ui.workbench/eclipseui/org/eclipse/ui/internal/CycleViewHandler.java:56` — `modelService.findElements(currentPerspective,null,MPart.class,null,EModelServ...`
@@ -231,7 +317,22 @@
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/dtree/DataTreeNode.java:134` — `System.arraycopy(children,0,childrenCopy,0,children.length)`
 - `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/dtree/NoDataDeltaNode.java:90` — `System.arraycopy(children,0,childrenCopy,0,children.length)`
 
+#### Rule: `string-equals` → `string-equals.null-or-empty.review`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/ResourceDelta.java:580` — `markerDeltas == null || markerDeltas.isEmpty()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/events/ResourceChangeEvent.java:62` — `markerDeltas == null || markerDeltas.isEmpty()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/refresh/MonitorManager.java:214` — `resources == null || resources.isEmpty()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/localstore/HistoryStore2.java:313` — `fileEntry == null || fileEntry.isEmpty()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectContentTypes.java:237` — `associated == null || associated.isEmpty()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/LocationValidator.java:67` — `schemeSpecificPart == null || schemeSpecificPart.isEmpty()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/LocationValidator.java:106` — `schemeSpecificPart == null || schemeSpecificPart.isEmpty()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/PathVariableManager.java:250` — `schemeSpecificPart == null || schemeSpecificPart.isEmpty()`
+- `resources/bundles/org.eclipse.core.resources/src/org/eclipse/core/internal/resources/ProjectPathVariableManager.java:315` — `schemeSpecificPart == null || schemeSpecificPart.isEmpty()`
+
 ### sandbox
+#### Rule: `try-with-resources` → `Consider using try-with-resources for AutoCloseable resource`
+- `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/wizard/ProjectRulePreviewTest.java:54` — `candidate.close()`
+- `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/wizard/ProjectRulePreviewTest.java:60` — `candidate.close()`
+
 #### Rule: `collection-performance` → `collection-performance.map-values-isempty.to-map-isempty`
 - `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/preferences/LlmSecureCredentialsStoreTest.java:54` — `store.values().isEmpty()` → `store.isEmpty()`
 - `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/preferences/LlmSecureCredentialsStoreTest.java:65` — `store.values().isEmpty()` → `store.isEmpty()`
@@ -241,25 +342,26 @@
 
 #### Rule: `stream-performance` → `stream-performance.nested-flatmap.review`
 - `sandbox_tools/src/org/sandbox/jdt/internal/corext/fix/helper/WhileToForEach.java:258` — `miExpr.receiver().flatMap(receiver -> receiver.asSimpleName()).flatMap(Simple...`
+- `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/wizard/ProjectRuleRefactoringTest.java:322` — `java.util.Arrays.stream(registry.getConfigurationElementsFor("org.eclipse.ui....`
 
 #### Rule: `stream-performance` → `stream-performance.sorted-before-collect.review`
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java:205` — `group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candi...`
 - `sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java:910` — `variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(...`
 
 #### Rule: `stream-performance` → `stream-performance.collection-stream-foreach.to-collection-foreach`
-- `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java:103` — `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream().fo...` → `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).forEach(pac...`
-- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:191` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(entry....` → `dataholder.entrySet().forEach(entry -> {   System.out.println(entry.getKey() ...`
-- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:239` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println("=====...` → `dataholder.entrySet().forEach(entry -> {   System.out.println("============="...`
-- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:152` — `VisitorEnum.stream().forEach(ve -> {   hv.add(ve,(node,holder) -> {     holde...` → `VisitorEnum.forEach(ve -> {   hv.add(ve,(node,holder) -> {     holder.merge(V...`
-- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:188` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(entry....` → `dataholder.entrySet().forEach(entry -> {   System.out.println(entry.getKey()....`
-- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:230` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println("Posit...` → `dataholder.entrySet().forEach(entry -> {   System.out.println("Position " + e...`
-- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:291` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(ASTNod...` → `dataholder.entrySet().forEach(entry -> {   System.out.println(ASTNode.nodeCla...`
+- `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java:103` — `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream().fo...` → `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).forEach((pa...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:191` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(entry....` → `dataholder.entrySet().forEach((entry -> {   System.out.println(entry.getKey()...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/VisitorTest.java:239` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println("=====...` → `dataholder.entrySet().forEach((entry -> {   System.out.println("=============...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:152` — `VisitorEnum.stream().forEach(ve -> {   hv.add(ve,(node,holder) -> {     holde...` → `VisitorEnum.forEach((ve -> {   hv.add(ve,(node,holder) -> {     holder.merge(...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:188` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(entry....` → `dataholder.entrySet().forEach((entry -> {   System.out.println(entry.getKey()...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:230` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println("Posit...` → `dataholder.entrySet().forEach((entry -> {   System.out.println("Position " + ...`
+- `sandbox_common_test/src/org/sandbox/jdt/ui/tests/quickfix/ReferenceHolderTest.java:291` — `dataholder.entrySet().stream().forEach(entry -> {   System.out.println(ASTNod...` → `dataholder.entrySet().forEach((entry -> {   System.out.println(ASTNode.nodeCl...`
 
 #### Rule: `arrays` → `arrays.aslist-contains.review`
 - `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:1591` — `Arrays.asList(additionalExpectedOperators).contains(actualOperator)`
 - `org/eclipse/jdt/internal/corext/dom/ASTNodes.java:3301` — `Arrays.asList(fieldNames).contains(node.getName().getIdentifier())`
 - `sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/MathematicsHelpScreenshots.java:323` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
-- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java:444` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java:445` — `Arrays.asList(labels).contains(control.getText().replace("&",""))`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:42` — `Arrays.asList(filtered).contains("test")`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:66` — `Arrays.asList(filtered).contains("--source")`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapperTest.java:139` — `Arrays.asList(values).contains(expected.toFile().getPath())`
@@ -267,6 +369,7 @@
 
 #### Rule: `arrays` → `arrays.clone.review`
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/AbstractPlannedMultiFileCleanUp.java:174` — `compilationUnits.clone()`
+- `sandbox_common/src/org/sandbox/jdt/triggerpattern/cleanup/NlsAwareCleanUpFix.java:29` — `operations.clone()`
 - `sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintTemplateStore.java:75` — `TEMPLATES.clone()`
 - `sandbox_eclipse_help_swtbot_test/src/org/sandbox/jdt/ui/helper/views/CleanupSourceSnapshot.java:29` — `Objects.requireNonNull(bytes).clone()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/cleanup/multifile/api/LineDelimiterPreserver.java:74` — `byteOrderMark.clone()`
@@ -290,18 +393,33 @@
 - `.github/probes/patched-jdt-ui/src/org/sandbox/jdt/ui/probe/ScopeExpansionProbeApplication.java:312` — `compilationUnits.clone()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:273` — `fixes.clone()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitBestEffortSupport.java:708` — `fixes.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/OrderedSourceReadComputationTest.java:48` — `values.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/NewUpstreamMathPilotTest.java:86` — `source.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/NewUpstreamMathPilotTest.java:86` — `up.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/NewUpstreamMathPilotTest.java:87` — `source.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/NewUpstreamMathPilotTest.java:87` — `up.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/NewUpstreamMathPilotTest.java:157` — `input.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/NewUpstreamMathPilotTest.java:157` — `input.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/PreservedArraySourceTest.java:173` — `left.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/PreservedArraySourceTest.java:173` — `right.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayStateVisibilityTest.java:101` — `value.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java:156` — `left.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java:157` — `right.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleModularResidueTest.java:84` — `infinity.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleModularResidueTest.java:85` — `infinity.clone()`
-- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:108` — `arguments.clone()`
-- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:115` — `arguments.clone()`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:111` — `arguments.clone()`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:119` — `arguments.clone()`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWorkspacePathTest.java:210` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:213` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CleanupPatchLifecycleTest.java:220` — `arguments.clone()`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperPersistedClasspathTest.java:120` — `arguments.clone()`
+- `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperWorkspaceRuleTest.java:202` — `arguments.clone()`
 - `sandbox_test_commons/integration-src/org/sandbox/jdt/ui/tests/quickfix/rules/CompilerDiagnosticRegressionTest.java:188` — `source.clone()`
 - `sandbox_functional_converter_test/src/org/sandbox/jdt/ui/tests/quickfix/StreamChainToLoopTest.java:106` — `cleanups.clone()`
-- `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:54` — `applicationArguments.clone()`
-- `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:59` — `applicationArguments.clone()`
+- `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:65` — `applicationArguments.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:70` — `applicationArguments.clone()`
-- `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:78` — `applicationArguments.clone()`
+- `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:81` — `applicationArguments.clone()`
+- `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapper.java:89` — `applicationArguments.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectSnapshot.java:38` — `content.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ProjectSnapshot.java:44` — `content.clone()`
 - `sandbox_cleanup_application/src/org/sandbox/jdt/core/cleanupapp/ScopeFilteringCodeCleanupApplicationWrapper.java:51` — `arguments.clone()`
@@ -319,17 +437,85 @@
 - `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/EclipseBundleClasspath.java:134` — `System.arraycopy(current,0,updated,0,current.length)`
 - `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java:452` — `System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)`
 
-#### Rule: `arrays` → `arrays.aslist-stream.to-arrays-stream`
-- `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java:103` — `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream()` → `java.util.Arrays.stream(packageRoot.getJavaProject().getPackageFragments())`
-
-#### Rule: `string-isblank` → `string-isblank1`
-- `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:44` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
-- `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:44` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
-- `sandbox_triggerpattern/src/org/sandbox/jdt/internal/ui/wizard/NewRuleWizardPage.java:459` — `sourcePatternText.getText().trim().isEmpty()` → `sourcePatternText.getText().isBlank()`
-- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:105` — `parts[0].trim().isEmpty()` → `parts[0].isBlank()`
-- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:105` — `parts[1].trim().isEmpty()` → `parts[1].isBlank()`
-- `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JavaHelperView.java:329` — `newText.trim().isEmpty()` → `newText.isBlank()`
-- `sandbox_xml_cleanup_test/src/test/java/org/sandbox/jdt/ui/tests/quickfix/XMLTestUtils.java:120` — `child.getTextContent().trim().isEmpty()` → `child.getTextContent().isBlank()`
+#### Rule: `string-equals` → `string-equals.null-or-empty.review`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/AnalyticsResource.java:64` — `repo == null || repo.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/AdminResource.java:102` — `expectedToken == null || expectedToken.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:120` — `repo == null || repo.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:129` — `query == null || query.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:234` — `blobId == null || blobId.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:519` — `commitA == null || commitA.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:539` — `commitA == null || commitA.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:785` — `value == null || value.isEmpty()`
+- `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/RelatedCompilationUnitSearch.java:156` — `projects == null || projects.isEmpty()`
+- `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/JavaProjectCompilationUnits.java:270` — `currentScope == null || currentScope.isEmpty()`
+- `sandbox_common/src/org/sandbox/jdt/triggerpattern/cleanup/PlanAwareHintFileFixCore.java:80` — `plan == null || plan.isEmpty()`
+- `sandbox_common/src/org/sandbox/jdt/triggerpattern/cleanup/DslPluginRegistry.java:66` — `id == null || id.isEmpty()`
+- `sandbox_common/src/org/sandbox/jdt/triggerpattern/cleanup/DslPluginRegistry.java:70` — `bundleId == null || bundleId.isEmpty()`
+- `sandbox_common/src/org/sandbox/jdt/triggerpattern/mining/git/CommandLineGitProvider.java:195` — `diffOutput == null || diffOutput.isEmpty()`
+- `sandbox_common/src/org/sandbox/jdt/triggerpattern/mining/git/JGitHistoryProvider.java:231` — `diffText == null || diffText.isEmpty()`
+- `sandbox_common/src/org/sandbox/jdt/triggerpattern/editor/SandboxHintHyperlinkDetector.java:56` — `word == null || word.isEmpty()`
+- `sandbox_common/src/org/sandbox/jdt/triggerpattern/internal/GuardRegistry.java:158` — `name == null || name.isEmpty()`
+- `sandbox_common/src/org/sandbox/jdt/internal/corext/util/NamingUtils.java:63` — `name == null || name.isEmpty()`
+- `sandbox_common/src/org/sandbox/jdt/internal/corext/util/NamingUtils.java:84` — `input == null || input.isEmpty()`
+- `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:119` — `comparatorExpression == null || comparatorExpression.isEmpty()`
+- `sandbox-functional-converter-core/src/main/java/org/sandbox/functional/core/renderer/StringRenderer.java:202` — `rawComment == null || rawComment.isEmpty()`
+- `sandbox_triggerpattern/src/org/sandbox/jdt/internal/ui/wizard/NewSandboxHintFileWizardPage.java:211` — `selection == null || selection.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/PatternIndex.java:216` — `entries == null || entries.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/PatternIndex.java:241` — `entries == null || entries.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/ExecutionTreeSnapshot.java:90` — `nodes == null || nodes.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/ExecutionTreeSnapshot.java:97` — `attributes == null || attributes.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/ImportDirective.java:240` — `replacementPattern == null || replacementPattern.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/ImportDirective.java:284` — `sourcePattern == null || sourcePattern.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/ImportDirective.java:327` — `replacementPatterns == null || replacementPatterns.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/ImportDirective.java:383` — `pattern == null || pattern.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/api/ImportDirective.java:415` — `pattern == null || pattern.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/OpenAiCompatibleClient.java:256` — `choices == null || choices.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/OpenAiCompatibleClient.java:293` — `choices == null || choices.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:283` — `candidates == null || candidates.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:304` — `parts == null || parts.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:464` — `candidates == null || candidates.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:487` — `parts == null || parts.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:546` — `json == null || json.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/EmbeddedJavaCompiler.java:349` — `input == null || input.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java:1202` — `version == null || version.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/PlaceholderInfo.java:41` — `name == null || name.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintTypeDeclarationSourcePreprocessor.java:30` — `source == null || source.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileParser.java:1325` — `text == null || text.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/HintFileStore.java:518` — `hintFile.getTags() == null || hintFile.getTags().isEmpty()`
+- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/EnhancedForHandler.java:491` — `targetVariable == null || targetVariable.isEmpty()`
+- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/JdtLoopExtractor.java:1070` — `commentList == null || commentList.isEmpty()`
+- `sandbox_functional_converter/src/org/sandbox/jdt/internal/corext/fix/helper/ASTStreamRenderer.java:685` — `expressionText == null || expressionText.isEmpty()`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:506` — `units == null || units.isEmpty()`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RunWithJUnitPlugin.java:161` — `runnerQualifiedName == null || runnerQualifiedName.isEmpty()`
+- `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMigrationPlan.java:118` — `blockedRuleUnitHandles == null || blockedRuleUnitHandles.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/config/HibernateSessionFactoryProvider.java:64` — `root == null || root.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1062` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1107` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1200` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1233` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1270` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1328` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1377` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1428` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1501` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1540` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1570` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1575` — `packagePrefix == null || packagePrefix.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1612` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1653` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1743` — `repoName == null || repoName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/JavaBlobExtractor.java:191` — `source == null || source.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/repository/HibernateRepositoryBuilder.java:108` — `repositoryName == null || repositoryName.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/search/EcjTokenFilter.java:156` — `identifier == null || identifier.isEmpty()`
+- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/search/strategies/JavaFileStrategy.java:183` — `source == null || source.isEmpty()`
+- `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/VariableNameSuggester.java:122` — `str == null || str.isEmpty()`
+- `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/VariableNameSuggester.java:135` — `str == null || str.isEmpty()`
+- `sandbox_mining_core/src/main/java/org/sandbox/mining/core/report/StatisticsCollector.java:237` — `evaluations == null || evaluations.isEmpty()`
+- `sandbox_mining_cli/src/main/java/org/sandbox/mining/scanner/SourceScanner.java:66` — `subPaths == null || subPaths.isEmpty()`
+- `sandbox_method_reuse/src/org/sandbox/jdt/internal/corext/fix/helper/lib/SideEffectAnalyzer.java:47` — `statements == null || statements.isEmpty()`
+- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:271` — `units == null || units.isEmpty()`
+- `sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/helper/SwitchIntToEnumHelper.java:336` — `names == null || names.isEmpty()`
+- `sandbox_oomph/src/test/resources/probe/SetupProbe.java:454` — `unsigned == null || unsigned.isEmpty()`
 
 #### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
 - `sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java:87` — `computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(C...`
@@ -339,4 +525,7 @@
 - `sandbox_use_general_type/src/org/sandbox/jdt/internal/ui/fix/UseGeneralTypeCleanUpCore.java:83` — `computeFixSet().stream().map(UseGeneralTypeFixCore::toString).collect(Collect...`
 - `sandbox_encoding_quickfix/src/org/sandbox/jdt/internal/ui/fix/UseExplicitEncodingCleanUpCore.java:204` — `computeFixSet().stream().map(UseExplicitEncodingFixCore::toString).collect(Co...`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:213` — `computeFixSet().stream().map(IntToEnumFixCore::toString).collect(Collectors.t...`
+
+#### Rule: `modernize-java9` → `modernize-java9.optional-ternary.to-orelse`
+- `sandbox_common_core/src/test/java/org/sandbox/jdt/triggerpattern/test/SideEffectGuardTest.java:177` — `optional.isPresent() ? optional.get() : empty[0]`
 
