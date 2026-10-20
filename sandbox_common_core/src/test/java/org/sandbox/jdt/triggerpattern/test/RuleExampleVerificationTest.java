@@ -147,9 +147,9 @@ class RuleExampleVerificationTest {
 		String negative = "class Test { boolean m(boolean value) { return value; } }";
 		var suite = new RuleExampleSuite(1, List.of(new Example("repeat", "Test.java", before, after, true),
 				new Example("literal", "Test.java", negative, negative, false)));
-		var report = verifier.verify("true => false ;;\nfalse => true ;;", suite);
+		var report = verifier.verify("true\n=> false\n;;\nfalse\n=> true\n;;\n", suite);
 		assertFalse(report.passed());
-		assertEquals(Outcome.FAIL, report.results().getFirst().outcome());
+		assertEquals(Outcome.FAIL, report.results().getFirst().outcome(), report::toString);
 		assertTrue(report.results().getFirst().message().contains("second application"), report.toString());
 		assertFalse(verifier.verify(RULE.replace("$x.isBlank()", "new Missing()"), suite()).passed());
 	}
