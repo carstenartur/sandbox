@@ -9,6 +9,20 @@ Bundle-RequiredExecutionEnvironment: JavaSE-25
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global
+Require-Bundle: org.eclipse.jdt.ls.core,
+ sandbox_encoding_quickfix,
+ sandbox_functional_converter,
+ sandbox_platform_helper,
+ sandbox_jface_cleanup,
+ sandbox_junit_cleanup,
+ sandbox_method_reuse,
+ sandbox_int_to_enum,
+ sandbox_math_cleanup,
+ sandbox_container_cleanup,
+ sandbox_use_general_type,
+ sandbox_triggerpattern,
+ sandbox_xml_cleanup,
+ sandbox_tools
 Import-Package: org.junit.jupiter.api;version="5.7.1",
  org.junit.jupiter.api.extension;version="5.7.1",
  org.junit.jupiter.api.io;version="5.7.1",
