@@ -23,9 +23,12 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -77,6 +80,10 @@ public class MiningCli {
  * keeping stdout clean for pipe-friendly NetBeans-format output.
  */
 private PrintStream miningLog = System.out;
+private final Function<String, LlmClient> llmClientFactory;
+private int stagedCandidateCount;
+private final Map<String, Map<String, CommitEvaluation>> completedEvaluations = new HashMap<>();
+private final List<CommitEvaluation> reusedEvaluations = new ArrayList<>();
 
 /**
  * Known rules context for LLM prompts, formatted by {@link KnownRulesStore}.
@@ -118,6 +125,14 @@ DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneOffset.UTC); //$
  */
 private static final int MAX_USEFUL_DIFF_LINES = 300;
 
+public MiningCli() {
+this(LlmClientFactory::createFromEnvironment);
+}
+
+MiningCli(Function<String, LlmClient> llmClientFactory) {
+this.llmClientFactory = llmClientFactory;
+}
+
 public static void main(String[] args) {
 try {
 new MiningCli().run(args);
@@ -137,6 +152,9 @@ System.exit(1);
  */
 public void run(String[] args) throws IOException, GitAPIException {
 long startTimeMs = System.currentTimeMillis();
+stagedCandidateCount = 0;
+completedEvaluations.clear();
+reusedEvaluations.clear();
 Path configPath = null;
 Path statePath = null;
 Path sandboxRoot = Path.of("."); //$NON-NLS-1$
@@ -266,6 +284,10 @@ TypeContextEnricher typeEnricher = enrichTypeContext ? new TypeContextEnricher()
 JsonReporter feedbackReader = new JsonReporter();
 Path existingEvals = outputDir.resolve("evaluations.json"); //$NON-NLS-1$
 List<CommitEvaluation> previousEvals = feedbackReader.loadExistingEvaluations(existingEvals);
+for (CommitEvaluation evaluation : previousEvals) {
+completedEvaluations.computeIfAbsent(evaluation.repoUrl(), key -> new HashMap<>())
+.put(evaluation.commitHash(), evaluation);
+}
 if (!previousEvals.isEmpty()) {
 ErrorFeedbackCollector errorCollector = new ErrorFeedbackCollector();
 errorCollector.collect(previousEvals);
@@ -299,8 +321,9 @@ commitListHashes = new HashSet<>(hashes);
 miningLog.println("Commit list loaded: " + commitListHashes.size() + " commits to process"); //$NON-NLS-1$ //$NON-NLS-2$
 }
 
+Exception miningFailure = null;
 Path workDir = Files.createTempDirectory("mining-core-"); //$NON-NLS-1$
-try (LlmClient llmClient = LlmClientFactory.createFromEnvironment(llmProvider)) {
+try (LlmClient llmClient = llmClientFactory.apply(llmProvider)) {
 llmClient.setMaxFailureDuration(Duration.ofSeconds(maxFailureDurationSeconds));
 // Reset learned limits if requested or if model changed
 for (RepoEntry repo : config.getRepositories()) {
@@ -323,12 +346,24 @@ repoState.setLastModelUsed(currentModel);
 try {
 processRepositories(config, state, statePath, workDir, batchSize, commitsPerRequest,
 llmClient, promptBuilder, dslContext, categoryManager, validator, stats, aggregator,
-startTimeMs, maxDurationMinutes, typeEnricher, keywordFilter, commitListHashes);
+startTimeMs, maxDurationMinutes, typeEnricher, keywordFilter, commitListHashes,
+outputDir, sandboxRoot);
 // Always process deferred commits at end of each run
 retryDeferredCommits(state, statePath, workDir, llmClient, promptBuilder,
 dslContext, categoryManager, validator, stats, aggregator, config, retryDeferred);
+} catch (IOException | GitAPIException e) {
+// Write the results that did complete, then propagate the original failure.
+miningFailure = e;
 } finally {
+try {
 deleteDirectory(workDir);
+} catch (IOException e) {
+if (miningFailure == null) {
+miningFailure = e;
+} else {
+miningFailure.addSuppressed(e);
+}
+}
 }
 printDeferredReport(state, config);
 printRunSummary(stats, state, config, llmClient, startTimeMs);
@@ -351,7 +386,8 @@ llmClient.getDailyRequestCount(), totalDeferred, totalPermanentlySkipped);
 stats.computeTimeWindow(aggregator.getAllEvaluations());
 }
 
-// Generate output
+// Generate output even when discovery stopped at a failed or incomplete batch.
+try {
 Files.createDirectories(outputDir);
 JsonReporter jsonReporter = new JsonReporter();
 jsonReporter.writeEvaluations(aggregator.getAllEvaluations(), outputDir);
@@ -363,9 +399,7 @@ pagesGenerator.generate(aggregator.getAllEvaluations(), stats, outputDir);
 // Save GREEN+VALID evaluations as staged candidates instead of writing directly
 // to productive bundled hint files. Candidates are staged in mining-candidates/
 // for review and validation before promotion.
-CandidateStore candidateStore = new CandidateStore(sandboxRoot.resolve("mining-candidates")); //$NON-NLS-1$
-List<MiningCandidate> savedCandidates = saveCandidates(
-aggregator.getAllEvaluations(), candidateStore, validator, miningLog);
+saveRunCandidates(aggregator, validator, sandboxRoot);
 
 // NetBeans format output
 if ("netbeans".equals(outputFormat) || "both".equals(outputFormat)) { //$NON-NLS-1$ //$NON-NLS-2$
@@ -398,11 +432,25 @@ miningLog.println("Registered " + newKnownRules + " new known rules (total: " + 
 }
 
 state.save(statePath);
+} catch (IOException e) {
+if (miningFailure == null) {
+throw e;
+}
+miningFailure.addSuppressed(e);
+}
+
+if (miningFailure != null) {
+miningLog.println("=== Mining incomplete ==="); //$NON-NLS-1$
+if (miningFailure instanceof IOException ioFailure) {
+throw ioFailure;
+}
+throw (GitAPIException) miningFailure;
+}
 
 miningLog.println("=== Mining complete ==="); //$NON-NLS-1$
 miningLog.println("Processed: " + stats.getTotalProcessed() + " commits"); //$NON-NLS-1$ //$NON-NLS-2$
 miningLog.println("Relevant:  " + stats.getRelevant()); //$NON-NLS-1$
-miningLog.println("Candidates: " + savedCandidates.size() + " staged in mining-candidates/"); //$NON-NLS-1$ //$NON-NLS-2$
+miningLog.println("Candidates: " + stagedCandidateCount + " staged in mining-candidates/"); //$NON-NLS-1$ //$NON-NLS-2$
 miningLog.println("Output:    " + outputDir.toAbsolutePath()); //$NON-NLS-1$
 }
 
@@ -413,7 +461,8 @@ String dslContext, CategoryManager categoryManager, DslValidator validator,
 StatisticsCollector stats, ReportAggregator aggregator,
 long startTimeMs, int maxDurationMinutes,
 TypeContextEnricher typeEnricher,
-CommitKeywordFilter keywordFilter, Set<String> commitListHashes) throws IOException, GitAPIException {
+CommitKeywordFilter keywordFilter, Set<String> commitListHashes,
+Path outputDir, Path sandboxRoot) throws IOException, GitAPIException {
 RepoCloner cloner = new RepoCloner();
 // Dynamic batch size tracking (reduced on truncation)
 int[] dynamicCPR = { commitsPerRequest };
@@ -431,7 +480,7 @@ return;
 }
 if (llmClient.isApiUnavailable()) {
 logApiUnavailable(llmClient);
-return;
+throw new IOException("LLM API unavailable; stopping mining"); //$NON-NLS-1$
 }
 miningLog.println("Processing: " + repo.getUrl()); //$NON-NLS-1$
 Path repoDir = workDir.resolve(repoDirectoryName(repo.getUrl()));
@@ -486,7 +535,7 @@ continue;
 }
 }
 // Group commits into sub-batches for API calls
-for (int i = 0; i < effectiveBatch.size(); i += dynamicCPR[0]) {
+for (int i = 0; i < effectiveBatch.size();) {
 if (shouldStop(startTimeMs, maxDurationMinutes)) {
 miningLog.println("Max duration reached. Stopping batch processing."); //$NON-NLS-1$
 return;
@@ -499,21 +548,22 @@ return;
 }
 if (llmClient.isApiUnavailable()) {
 logApiUnavailable(llmClient);
-return;
+throw new IOException("LLM API unavailable; stopping mining"); //$NON-NLS-1$
 }
 int end = Math.min(i + dynamicCPR[0], effectiveBatch.size());
 List<RevCommit> subBatch = effectiveBatch.subList(i, end);
 processBatch(subBatch, repo, diffExtractor, state, statePath,
 llmClient, promptBuilder, dslContext, categoryManager,
 validator, stats, aggregator, config.getMinDiffLinesPerCommit(),
-config.getMaxDiffLinesPerCommit(), typeEnricher, keywordFilter);
+config.getMaxDiffLinesPerCommit(), typeEnricher, keywordFilter, outputDir, sandboxRoot);
+i = end;
 if (llmClient.wasLastResponseTruncated() && dynamicCPR[0] > 1) {
 dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);
 miningLog.println("  Reducing commits-per-request to " + dynamicCPR[0] + " after truncated response"); //$NON-NLS-1$
 }
 if (llmClient.isApiUnavailable()) {
 logApiUnavailable(llmClient);
-return;
+throw new IOException("LLM API unavailable; stopping mining"); //$NON-NLS-1$
 }
 }
 batch = walker.nextBatch(lastBatchCommit,
@@ -546,7 +596,7 @@ String dslContext, CategoryManager categoryManager, DslValidator validator,
 StatisticsCollector stats, ReportAggregator aggregator,
 int minDiffLines, int maxDiffLines,
 TypeContextEnricher typeEnricher,
-CommitKeywordFilter keywordFilter) throws IOException {
+CommitKeywordFilter keywordFilter, Path outputDir, Path sandboxRoot) throws IOException {
 // Classify commits in original order: track which are skipped vs included
 List<CommitData> commitDataList = new ArrayList<>();
 List<Boolean> isSkipped = new ArrayList<>();
@@ -557,6 +607,16 @@ int effectiveMaxDiff = repoState.getLearnedMaxDiffLines() > 0
 ? repoState.getLearnedMaxDiffLines() : maxDiffLines;
 
 for (RevCommit commit : commits) {
+CommitEvaluation completed = completedEvaluations.getOrDefault(repo.getUrl(), Map.of()).get(commit.getName());
+if (completed != null) {
+// A previous partial batch may have completed this commit beyond a gap.
+// Reuse its exact result without another API call or duplicate statistics.
+reusedEvaluations.add(completed);
+isSkipped.add(Boolean.TRUE);
+repoState.removeDeferredCommit(commit.getName());
+miningLog.println("  Reusing completed evaluation for " + formatCommitInfo(commit, repo)); //$NON-NLS-1$
+continue;
+}
 // Skip commits that don't match keyword filter (if active)
 if (keywordFilter != null && !keywordFilter.matches(commit.getFullMessage())) {
 miningLog.println("  Skipping commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
@@ -592,6 +652,8 @@ isSkipped.add(Boolean.FALSE);
 }
 
 List<CommitEvaluation> evaluations = null;
+IOException evaluationFailure = null;
+Map<String, CommitEvaluation> evaluationsByHash = new HashMap<>();
 if (!commitDataList.isEmpty()) {
 // Enrich prompt with Eclipse type context from actual diffs if enabled
 if (typeEnricher != null) {
@@ -611,10 +673,23 @@ List<String> messages = commitDataList.stream().map(CommitData::commitMessage).t
 String previousResults = knownRulesContext.isEmpty() ? null : knownRulesContext;
 String prompt = promptBuilder.buildBatchPrompt(dslContext,
 categoryManager.getCategoriesJson(), commitDataList, previousResults);
+try {
 evaluations = llmClient.evaluateBatch(prompt, hashes, messages, repo.getUrl());
+} catch (IOException e) {
+evaluationFailure = e;
+}
+if (evaluations != null) {
+for (CommitEvaluation evaluation : evaluations) {
+if (evaluation != null) {
+evaluationsByHash.putIfAbsent(evaluation.commitHash(), evaluation);
+}
+}
+}
 
-// Learn from truncation
-if (llmClient.wasLastResponseTruncated() && !diffLineCounts.isEmpty()) {
+// Do not lower the limit for an incomplete batch: its unresolved commits must
+// still reach the API when the next run resumes at the gap.
+if (evaluationFailure == null && llmClient.wasLastResponseTruncated() && !diffLineCounts.isEmpty()
+&& commitDataList.stream().allMatch(commit -> evaluationsByHash.containsKey(commit.commitHash()))) {
 int maxDiffInBatch = diffLineCounts.stream().mapToInt(Integer::intValue).max().orElse(0);
 if (maxDiffInBatch > 0) {
 int newLimit = (int) (maxDiffInBatch * 0.8);
@@ -626,80 +701,86 @@ repoState.setLearnedMaxDiffLines(newLimit);
 }
 }
 
-if (evaluations == null || evaluations.size() != commitDataList.size()) {
-miningLog.println("  Incomplete batch evaluation for repository " + repo.getUrl() //$NON-NLS-1$
-+ " [" + repo.getBranch() + "]" //$NON-NLS-1$ //$NON-NLS-2$
-+ "; will retry non-evaluated commits in a future run."); //$NON-NLS-1$
-miningLog.println("  Batch contained commits:"); //$NON-NLS-1$
-for (RevCommit c : commits) {
-miningLog.println("    - " + formatCommitInfo(c, repo)); //$NON-NLS-1$
-}
-if (llmClient.isApiUnavailable()) {
-logApiUnavailable(llmClient);
-}
-// Defer commits that were not evaluated
-if (evaluations != null) {
-for (int j = evaluations.size(); j < commitDataList.size(); j++) {
-CommitData cd = commitDataList.get(j);
-String msg = cd.commitMessage();
-String truncatedMsg = msg == null
-? "" //$NON-NLS-1$
-: msg.substring(0, Math.min(120, msg.length()));
-repoState.addDeferredCommit(new DeferredCommit(
-cd.commitHash(),
-truncatedMsg,
-diffLineCounts.get(j), "INCOMPLETE_BATCH", Instant.now().toString(), 0, 3)); //$NON-NLS-1$
-}
-}
-// Advance state only through the leading prefix of skipped commits so
-// that included commits in this batch are not permanently lost.
-for (int i = 0; i < commits.size(); i++) {
-if (!isSkipped.get(i)) {
-break;
-}
-state.updateLastProcessedCommit(repo.getUrl(), commits.get(i).getName());
-}
-state.save(statePath);
-return;
-}
 }
 
-// Process all commits in original order so state always advances
-// monotonically and no commit is permanently skipped on failure.
+// A malformed response element can leave a gap in the returned list. Match by
+// commit identity, retain every actual result, and advance only its complete prefix.
 if (evaluations != null) {
-miningLog.println("  Evaluated batch of " + commitDataList.size() + " commits for " //$NON-NLS-1$ //$NON-NLS-2$
+miningLog.println("  Received " + evaluationsByHash.size() + " evaluations for " //$NON-NLS-1$ //$NON-NLS-2$
 + repo.getUrl() + " [" + repo.getBranch() + "]:"); //$NON-NLS-1$ //$NON-NLS-2$
 }
-int evalIdx = 0;
+boolean completePrefix = true;
+int diffIdx = 0;
 for (int i = 0; i < commits.size(); i++) {
 RevCommit commit = commits.get(i);
 if (isSkipped.get(i)) {
+if (completePrefix) {
 state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
-} else {
-CommitEvaluation evaluation = evaluations != null ? evaluations.get(evalIdx++) : null;
-if (evaluation == null) {
-miningLog.println("  Missing evaluation for commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
-+ "; stopping batch to retry remaining commits later."); //$NON-NLS-1$
-break;
+CommitEvaluation reused = completedEvaluations.getOrDefault(repo.getUrl(), Map.of()).get(commit.getName());
+if (reused != null && reused.relevant() && reused.category() != null) {
+repoState.incrementCategoryHitCount(reused.category());
 }
-int diffIdx = evalIdx - 1;
-String diffInfo = diffIdx >= 0 && diffIdx < diffLineCounts.size()
-? " [" + diffLineCounts.get(diffIdx) + " lines]" //$NON-NLS-1$ //$NON-NLS-2$
-: ""; //$NON-NLS-1$
+}
+} else {
+int diffLines = diffLineCounts.get(diffIdx++);
+CommitEvaluation evaluation = evaluationsByHash.get(commit.getName());
+if (evaluation == null) {
+completePrefix = false;
+String message = commit.getShortMessage();
+repoState.addDeferredCommit(new DeferredCommit(commit.getName(),
+message == null ? "" : message.substring(0, Math.min(120, message.length())), //$NON-NLS-1$
+diffLines, evaluationFailure == null ? "INCOMPLETE_BATCH" : "API_FAILURE", //$NON-NLS-1$ //$NON-NLS-2$
+Instant.now().toString(), 0, 3));
+miningLog.println("  Missing evaluation for commit " + formatCommitInfo(commit, repo) //$NON-NLS-1$
++ "; retaining the checkpoint before this commit for retry."); //$NON-NLS-1$
+continue;
+}
+String diffInfo = " [" + diffLines + " lines]"; //$NON-NLS-1$ //$NON-NLS-2$
 miningLog.println("    - " + formatCommitInfo(commit, repo) + diffInfo + " -> " + evaluation.trafficLight()); //$NON-NLS-1$ //$NON-NLS-2$
 handleEvaluation(evaluation, commit, repo, validator, categoryManager, stats, aggregator);
+if (completePrefix) {
 state.updateLastProcessedCommit(repo.getUrl(), commit.getName());
-// Track per-category hit counts for category-aware mining
+// Persist hit counts only for the complete prefix, including cached results
+// when a later run reaches them. This avoids recounting results after a gap.
 if (evaluation.relevant() && evaluation.category() != null) {
 repoState.incrementCategoryHitCount(evaluation.category());
+}
 }
 // Remove from deferred list if it was previously deferred
 repoState.removeDeferredCommit(commit.getName());
 }
 }
 
-// Save state after each batch for resume safety
+// A persisted scan position must never get ahead of its candidate data.
+try {
+saveCheckpoint(aggregator, validator, state, statePath, outputDir, sandboxRoot);
+} catch (IOException e) {
+if (evaluationFailure != null) {
+evaluationFailure.addSuppressed(e);
+throw evaluationFailure;
+}
+throw e;
+}
+if (evaluationFailure != null) {
+throw evaluationFailure;
+}
+if (!completePrefix) {
+throw new IOException("Incomplete batch evaluation for " + repo.getUrl() //$NON-NLS-1$
++ "; completed results saved, unevaluated commits remain for retry"); //$NON-NLS-1$
+}
+}
+
+private void saveCheckpoint(ReportAggregator aggregator, DslValidator validator,
+MiningState state, Path statePath, Path outputDir, Path sandboxRoot) throws IOException {
+new JsonReporter().writeEvaluations(aggregator.getAllEvaluations(), outputDir);
+saveRunCandidates(aggregator, validator, sandboxRoot);
 state.save(statePath);
+}
+
+private void saveRunCandidates(ReportAggregator aggregator, DslValidator validator, Path sandboxRoot) throws IOException {
+CandidateStore candidateStore = new CandidateStore(sandboxRoot.resolve("mining-candidates")); //$NON-NLS-1$
+stagedCandidateCount += saveCandidates(aggregator.getAllEvaluations(), candidateStore, validator, miningLog).size();
+stagedCandidateCount += saveCandidates(reusedEvaluations, candidateStore, validator, miningLog).size();
 }
 
 private void handleEvaluation(CommitEvaluation evaluation, RevCommit commit, RepoEntry repo,
@@ -808,7 +889,7 @@ return args[index];
  * @return the list of newly saved candidates
  */
 static List<MiningCandidate> saveCandidates(List<CommitEvaluation> evaluations,
-		CandidateStore candidateStore, DslValidator validator, PrintStream log) {
+		CandidateStore candidateStore, DslValidator validator, PrintStream log) throws IOException {
 	List<MiningCandidate> saved = new ArrayList<>();
 	for (CommitEvaluation eval : evaluations) {
 		if (eval.trafficLight() != CommitEvaluation.TrafficLight.GREEN) {
@@ -842,14 +923,9 @@ static List<MiningCandidate> saveCandidates(List<CommitEvaluation> evaluations,
 			continue;
 		}
 		candidate.setStatus(CandidateStatus.DSL_VALID);
-		try {
-			candidateStore.save(candidate);
-			saved.add(candidate);
-			log.println("  Staged candidate: " + candidate.toFileName()); //$NON-NLS-1$
-		} catch (IOException e) {
-			log.println("Warning: could not save candidate for " //$NON-NLS-1$
-					+ eval.commitHash() + ": " + e.getMessage()); //$NON-NLS-1$
-		}
+		candidateStore.save(candidate);
+		saved.add(candidate);
+		log.println("  Staged candidate: " + candidate.toFileName()); //$NON-NLS-1$
 	}
 	if (!saved.isEmpty()) {
 		log.println("Staged " + saved.size() + " new candidates in mining-candidates/"); //$NON-NLS-1$ //$NON-NLS-2$

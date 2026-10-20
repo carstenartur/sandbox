@@ -61,7 +61,7 @@ public class JsonReporter {
 
 	/**
 	 * Writes evaluations to a JSON file, merging with any existing evaluations
-	 * to accumulate results across runs. Deduplicates by commitHash (newer
+	 * to accumulate results across runs. Deduplicates by repository and commitHash (newer
 	 * evaluations replace older ones).
 	 *
 	 * @param evaluations the list of new evaluations from the current run
@@ -102,8 +102,8 @@ public class JsonReporter {
 	}
 
 	/**
-	 * Merges existing and new evaluations, deduplicating by commitHash.
-	 * New evaluations replace existing ones with the same commitHash.
+	 * Merges existing and new evaluations, deduplicating by repository and commitHash.
+	 * New evaluations replace existing ones for the same repository and commit.
 	 *
 	 * @param existing the existing evaluations
 	 * @param newEvals the new evaluations
@@ -111,14 +111,15 @@ public class JsonReporter {
 	 */
 	static List<CommitEvaluation> mergeEvaluations(List<CommitEvaluation> existing,
 			List<CommitEvaluation> newEvals) {
-		Map<String, CommitEvaluation> byHash = new LinkedHashMap<>();
+		record EvaluationKey(String repoUrl, String commitHash) { }
+		Map<EvaluationKey, CommitEvaluation> byCommit = new LinkedHashMap<>();
 		for (CommitEvaluation e : existing) {
-			byHash.put(e.commitHash(), e);
+			byCommit.put(new EvaluationKey(e.repoUrl(), e.commitHash()), e);
 		}
 		for (CommitEvaluation e : newEvals) {
-			byHash.put(e.commitHash(), e);
+			byCommit.put(new EvaluationKey(e.repoUrl(), e.commitHash()), e);
 		}
-		return new ArrayList<>(byHash.values());
+		return new ArrayList<>(byCommit.values());
 	}
 
 	/**

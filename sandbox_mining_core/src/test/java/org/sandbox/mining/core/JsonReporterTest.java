@@ -90,6 +90,20 @@ class JsonReporterTest {
 	}
 
 	@Test
+	void testSameCommitInDifferentRepositoriesKeepsBothEvaluations() throws IOException {
+		JsonReporter reporter = new JsonReporter();
+		CommitEvaluation original = createEval("shared-hash", "Original", TrafficLight.YELLOW);
+		CommitEvaluation fork = createEval("shared-hash", "Fork", TrafficLight.GREEN,
+				"https://github.com/test/fork");
+		reporter.writeEvaluations(List.of(original, fork), tempDir);
+		CommitEvaluation updated = createEval("shared-hash", "Updated original", TrafficLight.GREEN);
+		reporter.writeEvaluations(List.of(updated), tempDir);
+
+		assertEquals(List.of(updated, fork),
+				reporter.loadExistingEvaluations(tempDir.resolve("evaluations.json")));
+	}
+
+	@Test
 	void testWriteEvaluationsPreservesOlderOnNewRun() throws IOException {
 		JsonReporter reporter = new JsonReporter();
 
@@ -140,8 +154,12 @@ class JsonReporterTest {
 	}
 
 	private CommitEvaluation createEval(String hash, String message, TrafficLight light) {
+		return createEval(hash, message, light, "https://github.com/test/repo");
+	}
+
+	private CommitEvaluation createEval(String hash, String message, TrafficLight light, String repository) {
 		return new CommitEvaluation(
-				hash, message, "https://github.com/test/repo",
+				hash, message, repository,
 				Instant.now(), null, true, null, false, null,
 				4, 3, 2, light,
 				"Collections", false, "reason",
