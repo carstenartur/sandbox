@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "bfe82f0bb31a47bcf040d4e0520058a382daff1c",
-      "lastProcessedDate": "2026-10-17T02:27:44.981243312Z",
-      "totalProcessed": 1008,
+      "lastProcessedCommit": "dc3fc7c378f03dcd8404fd598641aa43a8ab086a",
+      "lastProcessedDate": "2026-10-20T02:25:35.821066814Z",
+      "totalProcessed": 1063,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5048,6 +5048,24 @@
           "deferredAt": "2026-10-17T02:26:33.189326098Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "5a188447f9f5c3d266de68fbb232a468cf9590e4",
+          "message": "Bug 543933 - Build javadocs with Java 11",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-20T02:24:41.001752092Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "a63ada6c742b2f49237c81d2ef827e9b6c7141ec",
+          "message": "Bug 541415 - [Test] Use MOD1 instead of CONTROL",
+          "diffLines": 23,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-20T02:25:35.821097281Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5061,9 +5079,9 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 7,
-        "API Modernization": 28,
-        "Performance": 14,
-        "Redundant Code": 5,
+        "API Modernization": 30,
+        "Performance": 15,
+        "Redundant Code": 6,
         "API Misuse Correction": 1,
         "Lambda to Method Reference": 1,
         "JUnit migration": 1,
@@ -5139,7 +5157,11 @@
         "DSL limitation (structural changes)": 1,
         "DSL limitation (parameter binding)": 1,
         "DSL limitation (control flow insertion)": 1,
-        "Stylistic": 1
+        "Stylistic": 1,
+        "Method Call Replacement": 1,
+        "API Replacement": 1,
+        "Magic Number Update": 1,
+        "Code Modernization": 1
       },
       "exhaustedCategories": []
     },
@@ -5249,5 +5271,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52773
+  "globalTotalProcessed": 52828
 }
