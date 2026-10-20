@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1717,
+        "files": 1719,
         "matches": 176,
         "rules": 12
       }
@@ -3201,7 +3201,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 283,
+      "line": 301,
       "matchedCode": "candidates == null || candidates.isEmpty()"
     },
     {
@@ -3209,7 +3209,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 304,
+      "line": 322,
       "matchedCode": "parts == null || parts.isEmpty()"
     },
     {
@@ -3217,7 +3217,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 464,
+      "line": 510,
       "matchedCode": "candidates == null || candidates.isEmpty()"
     },
     {
@@ -3225,7 +3225,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 487,
+      "line": 533,
       "matchedCode": "parts == null || parts.isEmpty()"
     },
     {
@@ -3233,7 +3233,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 546,
+      "line": 592,
       "matchedCode": "json == null || json.isEmpty()"
     },
     {
