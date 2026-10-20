@@ -24,6 +24,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.http.HttpTimeoutException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -84,11 +86,11 @@ class MiningCliRecoveryTest {
 			System.setOut(originalOut);
 		}
 
-		assertFalse(log.toString().contains("=== Mining complete ==="));
+		assertFalse(log.toString(Charset.defaultCharset()).contains("=== Mining complete ==="));
 		assertEquals(fixture.hashes().subList(0, 2), fixture.evaluatedCommits());
 		assertEquals(fixture.hashes().get(1), fixture.loadState().getLastProcessedCommit(fixture.repoUrl()));
 		assertEquals(2, fixture.loadState().getGlobalTotalProcessed());
-		var statistics = JsonParser.parseString(Files.readString(fixture.output().resolve("statistics.json")))
+		var statistics = JsonParser.parseString(Files.readString(fixture.output().resolve("statistics.json"), StandardCharsets.UTF_8))
 				.getAsJsonObject();
 		assertEquals(2, statistics.get("totalProcessed").getAsInt());
 
@@ -189,7 +191,7 @@ class MiningCliRecoveryTest {
 		retainedCandidate.setStatus(status);
 		store.save(retainedCandidate);
 		Path retainedFile = store.getStoreDir().resolve(retainedCandidate.toFileName());
-		String retainedJson = Files.readString(retainedFile);
+		String retainedJson = Files.readString(retainedFile, StandardCharsets.UTF_8);
 
 		StubLlmClient resumed = new StubLlmClient(MiningCliRecoveryTest::evaluations);
 		new MiningCli(provider -> resumed).run(fixture.arguments(4));
@@ -202,11 +204,11 @@ class MiningCliRecoveryTest {
 				.map(CommitEvaluation::commitHash).collect(Collectors.toSet()));
 		assertEquals(retainedEvaluation, allEvaluations.stream()
 				.filter(evaluation -> retainedHash.equals(evaluation.commitHash())).findFirst().orElseThrow());
-		assertEquals(retainedJson, Files.readString(retainedFile), "Keep candidate review status and revision intact");
+		assertEquals(retainedJson, Files.readString(retainedFile, StandardCharsets.UTF_8), "Keep candidate review status and revision intact");
 		assertEquals(5, store.loadAll().size());
 		assertEquals(5, fixture.loadState().getGlobalTotalProcessed());
 		assertEquals(5, fixture.loadState().getRepoState(fixture.repoUrl()).getCategoryHitCounts().get("Collections"));
-		var statistics = JsonParser.parseString(Files.readString(fixture.output().resolve("statistics.json")))
+		var statistics = JsonParser.parseString(Files.readString(fixture.output().resolve("statistics.json"), StandardCharsets.UTF_8))
 				.getAsJsonObject();
 		assertEquals(5, statistics.get("totalProcessed").getAsInt(),
 				"Published statistics rebuild the deduplicated history, including retained evaluations exactly once");
@@ -285,7 +287,7 @@ class MiningCliRecoveryTest {
 	void emptyResponseCheckpointsOnlyTheLeadingSkippedCommits() throws Exception {
 		Fixture fixture = createRepository(3);
 		Path keywords = tempDir.resolve("keywords.txt");
-		Files.writeString(keywords, "change 1\nchange 2\n");
+		Files.writeString(keywords, "change 1\nchange 2\n", StandardCharsets.UTF_8);
 		List<String> arguments = new ArrayList<>(List.of(fixture.arguments(3)));
 		arguments.addAll(List.of("--keyword-filter", keywords.toString()));
 		StubLlmClient client = new StubLlmClient((hashes, messages, repo) -> List.of());
@@ -302,7 +304,8 @@ class MiningCliRecoveryTest {
 	@Test
 	void candidateWriteFailureDoesNotAdvanceThePersistedCheckpoint() throws Exception {
 		Fixture fixture = createRepository(3);
-		Files.writeString(tempDir.resolve("mining-candidates"), "blocks candidate directory creation");
+		Files.writeString(tempDir.resolve("mining-candidates"), "blocks candidate directory creation",
+				StandardCharsets.UTF_8);
 		StubLlmClient client = new StubLlmClient(MiningCliRecoveryTest::evaluations);
 
 		assertThrows(IOException.class, () -> new MiningCli(provider -> client).run(fixture.arguments(2)));
@@ -315,7 +318,8 @@ class MiningCliRecoveryTest {
 	@Test
 	void cachedEvaluationStillRequiresItsCandidateToBeSavedBeforeAdvancing() throws Exception {
 		Fixture fixture = createRepository(2);
-		Files.writeString(tempDir.resolve("mining-candidates"), "blocks candidate directory creation");
+		Files.writeString(tempDir.resolve("mining-candidates"), "blocks candidate directory creation",
+				StandardCharsets.UTF_8);
 		StubLlmClient first = new StubLlmClient(MiningCliRecoveryTest::evaluations);
 		assertThrows(IOException.class, () -> new MiningCli(provider -> first).run(fixture.arguments(2)));
 		assertEquals(fixture.hashes(), fixture.evaluatedCommits());
@@ -341,7 +345,7 @@ class MiningCliRecoveryTest {
 		try (Git git = Git.init().setDirectory(source.toFile()).setInitialBranch("main").call()) {
 			for (int i = 0; i < commitCount; i++) {
 				Files.writeString(source.resolve("Example.java"),
-						"class Example { int value() { return " + i + "; } }\n");
+						("class Example { int value() { return " + i + "; } }\n"), StandardCharsets.UTF_8);
 				git.add().addFilepattern("Example.java").call();
 				PersonIdent author = new PersonIdent("Test", "test@example.com",
 						Date.from(Instant.parse("2024-01-01T00:00:00Z").plusSeconds(i)), TimeZone.getTimeZone("UTC"));
@@ -356,7 +360,7 @@ class MiningCliRecoveryTest {
 				  repositories:
 				    - url: '%s'
 				      branch: main
-				""".formatted(source.toString().replace('\\', '/')));
+				""".formatted(source.toString().replace('\\', '/')), StandardCharsets.UTF_8);
 		return new Fixture(source, config, tempDir.resolve("state.json"), tempDir.resolve("output"), hashes);
 	}
 
