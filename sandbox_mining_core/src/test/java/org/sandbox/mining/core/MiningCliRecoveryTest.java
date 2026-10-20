@@ -158,9 +158,9 @@ class MiningCliRecoveryTest {
 		assertEquals(5, fixture.loadState().getRepoState(fixture.repoUrl()).getCategoryHitCounts().get("Collections"));
 		var statistics = JsonParser.parseString(Files.readString(fixture.output().resolve("statistics.json")))
 				.getAsJsonObject();
-		assertEquals(3, statistics.get("totalProcessed").getAsInt(),
-				"Run statistics count newly evaluated commits, without recounting cached results");
-		assertEquals(3, statistics.get("relevant").getAsInt());
+		assertEquals(5, statistics.get("totalProcessed").getAsInt(),
+				"Published statistics rebuild the deduplicated history, including retained evaluations exactly once");
+		assertEquals(5, statistics.get("relevant").getAsInt());
 	}
 
 	@Test
