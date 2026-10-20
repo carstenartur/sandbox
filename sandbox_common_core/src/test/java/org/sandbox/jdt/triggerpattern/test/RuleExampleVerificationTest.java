@@ -181,6 +181,86 @@ class RuleExampleVerificationTest {
 	}
 
 	@Test
+	void methodBodyRulesCannotQualifyOrProduceARefinementProposal() {
+		String before = "class Test { int f() { return 1; } }";
+		String negative = "class Test { int f() { return 3; } }";
+		var evidence = evidence(before, before.replace("return 1", "return 2"), negative);
+		ChangeExample seed = new ChangeExample("int f() { return 1; }", "int f() { return 2; }");
+		var report = verifier.verify(RuleAuthoringDocument.fromChange(seed.before(), seed.after(), "").content(), evidence);
+		assertEquals(Outcome.UNKNOWN, report.results().getFirst().outcome(), report::toString);
+		assertFalse(report.passed());
+		assertTrue(RuleExampleRefiner.refine(seed, evidence, verifier,
+				change -> RuleAuthoringDocument.fromChange(change.before(), change.after(), "").content()).isEmpty());
+	}
+
+	@Test
+	void commentsInsideMatchesOrReplacementsRequireNativeVerification() {
+		String before = "class Test { int f() { return 1 /* keep */ + 2; } }";
+		String negative = "class Test { int f() { return 4; } }";
+		var report = verifier.verify("1 + 2\n=> 3\n;;\n",
+				evidence(before, before.replace("1 /* keep */ + 2", "3"), negative));
+		assertEquals(Outcome.UNKNOWN, report.results().getFirst().outcome(), report::toString);
+		String plain = before.replace(" /* keep */", "");
+		var replacementComment = verifier.verify("1 + 2\n=> 3 /* new */\n;;\n",
+				evidence(plain, plain.replace("1 + 2", "3 /* new */"), negative));
+		assertEquals(Outcome.UNKNOWN, replacementComment.results().getFirst().outcome(), replacementComment::toString);
+		String literal = "class Test { String f() { return \"/* text */\"; } }";
+		var literalReport = verifier.verify("\"/* text */\"\n=> \"kept\"\n;;\n",
+				evidence(literal, literal.replace("/* text */", "kept"), negative));
+		assertTrue(literalReport.passed(), literalReport::toString);
+	}
+
+	@Test
+	void multipleStatementsCannotPassWithAnAccidentallyUnconditionalSecondCall() {
+		String before = "class Test { void old() {} void first() {} void second() {} "
+				+ "void f(boolean enabled) { if (enabled) old(); } }";
+		String unsafeAfter = before.replace("if (enabled) old();", "if (enabled) first(); second();");
+		String negative = before.replace("if (enabled) old();", "if (enabled) first();");
+		var report = verifier.verify("old();\n=> first(); second();\n;;\n", evidence(before, unsafeAfter, negative));
+		assertEquals(Outcome.UNKNOWN, report.results().getFirst().outcome(), report::toString);
+		assertFalse(report.passed());
+	}
+
+	@Test
+	void compoundExpressionInsertionCannotQualifyAnOutputWithChangedPrecedence() {
+		String before = "class Test { int old() { return 3; } int f() { return old() * 2; } }";
+		String unsafeAfter = before.replace("old() * 2", "1 + 2 * 2");
+		String negative = before.replace("old() * 2", "7 * 2");
+		var report = verifier.verify("old()\n=> 1 + 2\n;;\n", evidence(before, unsafeAfter, negative));
+		assertEquals(Outcome.UNKNOWN, report.results().getFirst().outcome(), report::toString);
+		var parenthesized = verifier.verify("old()\n=> (1 + 2)\n;;\n",
+				evidence(before, before.replace("old() * 2", "(1 + 2) * 2"), negative));
+		assertTrue(parenthesized.passed(), parenthesized::toString);
+	}
+
+	@Test
+	void nativeStringAndConstructorAdaptationsNeverReceiveAReplayPass() {
+		String negative = "class Test { int f() { return 4; } }";
+		String literal = "class Test { String f() { return \"value\"; } }";
+		var nls = verifier.verify("\"value\"\n=> null\n;;\n",
+				evidence(literal, literal.replace("\"value\"", "null"), negative));
+		assertEquals(Outcome.UNKNOWN, nls.results().getFirst().outcome(), nls::toString);
+		String charset = "class Test { String f(String text) { return text.concat(\"UTF-8\"); } }";
+		var charsetReport = verifier.verify("$x.concat(\"UTF-8\")\n=> $x.concat(\"other\")\n;;\n",
+				evidence(charset, charset.replace("UTF-8", "other"), negative));
+		assertEquals(Outcome.UNKNOWN, charsetReport.results().getFirst().outcome(), charsetReport::toString);
+		String constructor = "import java.util.Scanner; import java.io.File; class Test { "
+				+ "Object f(File file) throws Exception { return new Scanner(file); } }";
+		var constructorReport = verifier.verify("new Scanner($file)\n=> new Scanner($file, \"UTF-8\")\n;;\n",
+				evidence(constructor, constructor.replace("new Scanner(file)", "new Scanner(file, \"UTF-8\")"), negative));
+		assertEquals(Outcome.UNKNOWN, constructorReport.results().getFirst().outcome(), constructorReport::toString);
+	}
+
+	@Test
+	void nativeTypeWideningDispatchCannotBeMistakenForAnInitializerEdit() {
+		String before = "class Test { String f() { String text = \"before\"; return text.intern(); } }";
+		String negative = before.replace("before", "other");
+		var report = verifier.verify("String $s = \"before\";\n=> String $s = \"$widestType\";\n;;\n",
+				evidence(before, before.replace("before", "$widestType"), negative));
+		assertEquals(Outcome.UNKNOWN, report.results().getFirst().outcome(), report::toString);
+	}
+
+	@Test
 	void refinerGeneralizesOnlyCandidatesThatPassBothKindsOfExample() {
 		ChangeExample seed = new ChangeExample("text.strip().isEmpty()", "text.isBlank()");
 		Example original = suite().examples().getFirst();
@@ -197,6 +277,11 @@ class RuleExampleVerificationTest {
 				new Example("contradiction", "Test.java", original.before(), original.before(), false)));
 		assertTrue(RuleExampleRefiner.refine(seed, contradictory, verifier,
 				change -> RuleAuthoringDocument.fromChange(change.before(), change.after(), "").content()).isEmpty());
+	}
+
+	private RuleExampleSuite evidence(String before, String after, String negative) {
+		return new RuleExampleSuite(1, List.of(new Example("change", "Test.java", before, after, true),
+				new Example("counterexample", "Test.java", negative, negative, false)));
 	}
 
 	private RuleExampleSuite suite() {

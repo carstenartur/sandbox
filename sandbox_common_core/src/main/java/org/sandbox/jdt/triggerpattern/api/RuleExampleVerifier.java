@@ -14,14 +14,31 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Document;
 import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
 import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite.Example;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
@@ -30,9 +47,9 @@ import org.sandbox.jdt.triggerpattern.internal.RuleAuthoringDocument;
 
 /**
  * Replays examples with the shared matcher, guards and binding substitution.
- * This bounded verifier supports ordinary text replacements. Import edits,
- * structured actions, embedded Java and plan-aware rules require the native
- * project preview and are reported as unsupported, never as qualified here.
+ * This bounded verifier uses JDT AST rewrites for ordinary expressions and
+ * single statements. Comments, structural rules, imports and native cleanup
+ * adaptations require the project preview and are reported as unsupported.
  * The supplied parser must use the caller's actual project/build classpath.
  */
 public final class RuleExampleVerifier {
@@ -73,6 +90,12 @@ public final class RuleExampleVerifier {
 		HintFile hint;
 		try {
 			hint = new HintProgramParser().parseHintFile(dsl);
+			if (hint.getRules().stream().anyMatch(rule -> !switch (rule.sourcePattern().getKind()) {
+				case EXPRESSION, METHOD_CALL, CONSTRUCTOR, STATEMENT, DECLARATION -> true;
+				default -> false;
+			})) {
+				return unsupported(dsl, suite, "Structural, method, field and type patterns require native project verification");
+			}
 			if (hint.getRules().isEmpty() || new PatternIndex(hint.getRules()).size() != hint.getRules().size()) {
 				return unsupported(dsl, suite, "The complete rule document must contain valid source patterns");
 			}
@@ -158,7 +181,7 @@ public final class RuleExampleVerifier {
 		List<TransformationResult> edits = results.stream().filter(TransformationResult::hasReplacement)
 				.sorted(Comparator.comparingInt((TransformationResult result) -> result.match().getOffset()).reversed())
 				.toList();
-		StringBuilder output = new StringBuilder(source);
+		ASTRewrite rewrite = ASTRewrite.create(unit.getAST());
 		int previousStart = source.length();
 		for (TransformationResult edit : edits) {
 			int start = edit.match().getOffset();
@@ -166,16 +189,115 @@ public final class RuleExampleVerifier {
 			if (start < 0 || end > previousStart || end <= start) {
 				return new Rewrite(source, "Overlapping or invalid edits require the native project preview");
 			}
-			output.replace(start, end, edit.replacement());
+			if (unit.getCommentList().stream().anyMatch(value -> {
+				ASTNode comment = (ASTNode) value;
+				return comment.getStartPosition() < end && comment.getStartPosition() + comment.getLength() > start;
+			})) {
+				return new Rewrite(source, "Comments inside a match require native project verification");
+			}
+			ASTNode original = edit.match().getMatchedNode();
+			if (original instanceof VariableDeclarationStatement && edit.replacement().contains("$widestType")) {
+				return new Rewrite(source, "Type-widening replacements require native project verification");
+			}
+			ASTNode replacement = parseReplacement(original, edit.replacement());
+			if (replacement == null) {
+				return new Rewrite(source, "Only complete comment-free expressions and single-statement replacements can be replayed");
+			}
+			if (original.getParent() instanceof Expression && !(original.getParent() instanceof ParenthesizedExpression)
+					&& replacement instanceof Expression && !isPrimaryExpression(replacement)) {
+				return new Rewrite(source, "Compound replacements inside expressions need explicit parentheses and native project verification");
+			}
+			if (requiresNativeAdaptation(original, replacement)) {
+				return new Rewrite(source, "String-literal removal and charset cleanup adaptations require native project verification");
+			}
+			rewrite.replace(original, ASTNode.copySubtree(unit.getAST(), replacement), null);
 			previousStart = start;
 		}
-		return new Rewrite(output.toString(), "");
+		Document output = new Document(source);
+		try {
+			rewrite.rewriteAST(output, compilerOptions).apply(output);
+			return new Rewrite(output.get(), "");
+		} catch (BadLocationException exception) {
+			return new Rewrite(source, "AST edits could not be applied: " + exception.getMessage());
+		}
+	}
+
+	/** Mirrors the native backend's strict syntax boundary without importing its host lifecycle. */
+	private ASTNode parseReplacement(ASTNode original, String replacement) {
+		ASTParser syntax = ASTParser.newParser(AST.getJLSLatest());
+		syntax.setKind(ASTParser.K_COMPILATION_UNIT);
+		String body = original instanceof Expression ? "return " + replacement + ";" : replacement;
+		syntax.setSource(("class __Hint { void __hint() {\n" + body + "\n} }").toCharArray());
+		syntax.setCompilerOptions(compilerOptions);
+		CompilationUnit parsed = (CompilationUnit) syntax.createAST(null);
+		if (!syntaxProblem(parsed).isEmpty() || !parsed.getCommentList().isEmpty() || parsed.types().size() != 1
+				|| !(parsed.types().getFirst() instanceof TypeDeclaration type)
+				|| type.bodyDeclarations().size() != 1 || type.getMethods().length != 1
+				|| type.getMethods()[0].getBody().statements().size() != 1) {
+			return null;
+		}
+		Statement statement = (Statement) type.getMethods()[0].getBody().statements().getFirst();
+		if (original instanceof Expression) {
+			return statement instanceof ReturnStatement returned ? returned.getExpression() : null;
+		}
+		return original instanceof Statement ? statement : null;
+	}
+
+	private static boolean isPrimaryExpression(ASTNode node) {
+		return switch (node.getNodeType()) {
+			case ASTNode.NUMBER_LITERAL, ASTNode.STRING_LITERAL, ASTNode.BOOLEAN_LITERAL, ASTNode.CHARACTER_LITERAL,
+					ASTNode.NULL_LITERAL, ASTNode.SIMPLE_NAME, ASTNode.QUALIFIED_NAME, ASTNode.FIELD_ACCESS,
+					ASTNode.SUPER_FIELD_ACCESS, ASTNode.METHOD_INVOCATION, ASTNode.SUPER_METHOD_INVOCATION,
+					ASTNode.CLASS_INSTANCE_CREATION, ASTNode.ARRAY_ACCESS, ASTNode.THIS_EXPRESSION,
+					ASTNode.TYPE_LITERAL, ASTNode.PARENTHESIZED_EXPRESSION -> true;
+			default -> false;
+		};
+	}
+
+	private static boolean requiresNativeAdaptation(ASTNode original, ASTNode replacement) {
+		if (stringLiteralCount(original) > stringLiteralCount(replacement)) {
+			return true;
+		}
+		if (original instanceof ClassInstanceCreation creation && creation.resolveConstructorBinding() != null) {
+			String owner = creation.resolveConstructorBinding().getDeclaringClass().getQualifiedName();
+			if (Set.of("java.util.Scanner", "java.util.Formatter").contains(owner)) {
+				return true;
+			}
+		}
+		List<?> arguments = original instanceof MethodInvocation call ? call.arguments()
+				: original instanceof SuperMethodInvocation call ? call.arguments()
+				: original instanceof ClassInstanceCreation creation ? creation.arguments() : List.of();
+		for (Object value : arguments) {
+			ASTNode argument = (ASTNode) value;
+			while (argument instanceof ParenthesizedExpression parentheses) {
+				argument = parentheses.getExpression();
+			}
+			if (argument instanceof StringLiteral literal
+					&& Set.of("UTF-8", "UTF-16", "UTF-16BE", "UTF-16LE", "US-ASCII", "ISO-8859-1")
+							.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static int stringLiteralCount(ASTNode node) {
+		int[] count = { 0 };
+		node.accept(new ASTVisitor() {
+			@Override
+			public boolean visit(StringLiteral literal) { count[0]++; return false; }
+		});
+		return count[0];
 	}
 
 	private static String compilationProblem(CompilationUnit unit) {
 		if (unit == null || !unit.getAST().hasResolvedBindings()) {
 			return "Resolved project or build bindings are required";
 		}
+		return syntaxProblem(unit);
+	}
+
+	private static String syntaxProblem(CompilationUnit unit) {
 		var error = Arrays.stream(unit.getProblems()).filter(problem -> problem.isError()).findFirst();
 		if (error.isPresent()) {
 			return error.get().getMessage();

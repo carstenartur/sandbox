@@ -103,8 +103,14 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		initialReplacement = after;
 	}
 
-	/** Seeds evidence with the complete saved and current compilation unit. */
+	/**
+	 * Seeds evidence with the complete saved and current compilation unit.
+	 * Blank units cannot be replayed; their change remains editable in the rule draft.
+	 */
 	public void setInitialExample(String unitName, String before, String after) {
+		if (before.isBlank() || after.isBlank()) {
+			return;
+		}
 		initialExamples = new RuleExampleSuite(RuleExampleSuite.CURRENT_VERSION, List.of(
 				new RuleExampleSuite.Example("Saved edit", unitName, before, after, true))); //$NON-NLS-1$
 	}

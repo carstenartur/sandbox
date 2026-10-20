@@ -74,6 +74,65 @@ class NewRuleWizardPageTest {
 	}
 
 	@Test
+	void blankSavedCompilationUnitStillOpensAnEditableRuleDraft() {
+		for (String blank : List.of("", " \t")) {
+			assertBlankSeedOpensEditableDraft(blank, "class Example { int value = 1; }");
+		}
+	}
+
+	@Test
+	void deletingTheCompleteCompilationUnitStillOpensAnEditableRuleDraft() {
+		for (String blank : List.of("", " \t")) {
+			assertBlankSeedOpensEditableDraft("class Example { int value = 1; }", blank);
+		}
+	}
+
+	private void assertBlankSeedOpensEditableDraft(String before, String after) {
+		runOnDisplay(() -> {
+			var wizard = new NewSandboxHintFileWizard();
+			try {
+				var change = RuleAuthoringDocument.changedLines(before, after).orElseThrow();
+				wizard.setInitialChange(change.before(), change.after());
+				wizard.setInitialExample("src/Example.java", before, after);
+				wizard.addPages();
+				var page = (NewRuleWizardPage) wizard.getPages()[1];
+				page.createControl(shell);
+				assertNull(page.getExamples());
+				List<Text> fields = descendants((Composite) page.getControl(), Text.class);
+				assertEquals(change.before(), fields.get(0).getText());
+				assertEquals(change.after(), fields.get(2).getText());
+				assertTrue(fields.get(0).getEditable());
+				assertTrue(fields.get(2).getEditable());
+				assertFalse(page.isPageComplete());
+				fields.get(0).setText("old()");
+				fields.get(2).setText("modern()");
+				assertTrue(page.isPageComplete(), page.getErrorMessage());
+				assertTrue(page.getFullDslDocument().contains("old()\n=> modern()\n;;"));
+			} finally {
+				wizard.dispose();
+			}
+		});
+	}
+
+	@Test
+	void completeNonblankInitialEvidenceIsRetainedExactly() {
+		runOnDisplay(() -> {
+			var wizard = new NewSandboxHintFileWizard();
+			try {
+				String before = "class Example { int value = 1; }\n";
+				String after = "class Example { int value = 2; }\n";
+				wizard.setInitialExample("src/Example.java", before, after);
+				wizard.addPages();
+				var page = (NewRuleWizardPage) wizard.getPages()[1];
+				assertEquals(List.of(new RuleExampleSuite.Example("Saved edit", "src/Example.java", before, after, true)),
+						page.getExamples().examples());
+			} finally {
+				wizard.dispose();
+			}
+		});
+	}
+
+	@Test
 	void acceptedExampleProposalPreservesMetadataGuardsAndCompleteSourceEvidence() {
 		runOnDisplay(() -> {
 			var page = new NewRuleWizardPage();
