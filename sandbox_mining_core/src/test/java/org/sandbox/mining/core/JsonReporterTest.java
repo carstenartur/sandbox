@@ -77,13 +77,13 @@ class JsonReporterTest {
 		CommitEvaluation retained = createEval("retained", "Completed after a gap", TrafficLight.GREEN);
 		reporter.writeEvaluations(List.of(retained), tempDir);
 		Path history = tempDir.resolve("evaluations.json");
-		String previousJson = Files.readString(history);
+		String previousJson = Files.readString(history, StandardCharsets.UTF_8);
 		Path staging = tempDir.resolve("evaluations.json.tmp");
 		Files.createDirectory(staging);
 		CommitEvaluation next = createEval("next", "Next completed commit", TrafficLight.YELLOW);
 
 		assertThrows(IOException.class, () -> reporter.writeEvaluations(List.of(next), tempDir));
-		assertEquals(previousJson, Files.readString(history));
+		assertEquals(previousJson, Files.readString(history, StandardCharsets.UTF_8));
 		assertEquals(List.of(retained), reporter.loadExistingEvaluations(history));
 
 		Files.delete(staging);
