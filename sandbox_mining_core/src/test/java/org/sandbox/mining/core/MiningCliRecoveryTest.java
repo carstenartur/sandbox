@@ -320,12 +320,12 @@ class MiningCliRecoveryTest {
 				  repositories:
 				    - url: '%s'
 				      branch: main
-				""".formatted(source));
+				""".formatted(source.toString().replace('\\', '/')));
 		return new Fixture(source, config, tempDir.resolve("state.json"), tempDir.resolve("output"), hashes);
 	}
 
 	private record Fixture(Path source, Path config, Path state, Path output, List<String> hashes) {
-		String repoUrl() { return source.toString(); }
+		String repoUrl() { return source.toString().replace('\\', '/'); }
 		MiningState loadState() throws IOException { return MiningState.load(state); }
 		String[] arguments(int commitsPerRequest) {
 			return new String[] { "--config", config.toString(), "--state", state.toString(),
