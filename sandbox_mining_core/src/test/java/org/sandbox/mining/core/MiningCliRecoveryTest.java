@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
 import org.sandbox.jdt.triggerpattern.llm.LlmClient;
@@ -102,7 +103,11 @@ class MiningCliRecoveryTest {
 	@Test
 	void partialResponseKeepsCompletedResultsWithoutAdvancingAcrossTheGap() throws Exception {
 		Fixture fixture = createRepository(5);
+		AtomicInteger attempts = new AtomicInteger();
 		StubLlmClient client = new StubLlmClient((hashes, messages, repo) -> {
+			if (attempts.incrementAndGet() > 1) {
+				return List.of();
+			}
 			var complete = evaluations(hashes, messages, repo);
 			return List.of(complete.get(0), complete.get(2));
 		});
@@ -118,8 +123,37 @@ class MiningCliRecoveryTest {
 		assertEquals(Set.of(fixture.hashes().get(1), fixture.hashes().get(3)),
 				state.getRepoState(fixture.repoUrl()).getDeferredCommits().stream()
 						.map(MiningState.DeferredCommit::getHash).collect(Collectors.toSet()));
-		assertEquals(fixture.hashes().subList(0, 4), client.requestedCommits(),
+		List<String> requested = new ArrayList<>(fixture.hashes().subList(0, 4));
+		requested.addAll(List.of(fixture.hashes().get(1), fixture.hashes().get(1)));
+		assertEquals(requested, client.requestedCommits(),
 				"A later batch must not move the checkpoint past an unevaluated commit");
+	}
+
+	@Test
+	void shortResponseRetriesMissingTailWithoutTruncation() throws Exception {
+		Fixture fixture = createRepository(4);
+		AtomicInteger attempts = new AtomicInteger();
+		StubLlmClient client = new StubLlmClient((hashes, messages, repo) -> {
+			var complete = evaluations(hashes, messages, repo);
+			if (attempts.incrementAndGet() == 1) {
+				return complete.subList(0, 3);
+			}
+			assertEquals(List.of(fixture.hashes().get(3)), hashes,
+					"Only the omitted commit needs another evaluation");
+			assertEquals(fixture.hashes().get(2), fixture.loadState().getLastProcessedCommit(repo));
+			assertEquals(Set.copyOf(fixture.hashes().subList(0, 3)), fixture.candidateCommits());
+			return complete;
+		});
+
+		new MiningCli(provider -> client).run(fixture.arguments(4));
+
+		assertEquals(2, attempts.get());
+		assertEquals(fixture.hashes(), fixture.evaluatedCommits());
+		assertEquals(Set.copyOf(fixture.hashes()), fixture.candidateCommits());
+		MiningState state = fixture.loadState();
+		assertEquals(fixture.hashes().get(3), state.getLastProcessedCommit(fixture.repoUrl()));
+		assertEquals(4, state.getGlobalTotalProcessed());
+		assertTrue(state.getRepoState(fixture.repoUrl()).getDeferredCommits().isEmpty());
 	}
 
 	@ParameterizedTest
@@ -203,15 +237,16 @@ class MiningCliRecoveryTest {
 		assertEquals(4, fixture.loadState().getGlobalTotalProcessed());
 	}
 
-	@Test
-	void partialTruncationRetriesOnlyMissingCommitsWithoutRecountingCompletedResults() throws Exception {
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void partialResponseRetriesOnlyMissingCommitsWithoutRecountingCompletedResults(boolean truncated) throws Exception {
 		Fixture fixture = createRepository(5);
 		AtomicInteger attempts = new AtomicInteger();
 		StubLlmClient client = new StubLlmClient((hashes, messages, repo) -> {
 			var complete = evaluations(hashes, messages, repo);
 			return attempts.incrementAndGet() == 1 ? List.of(complete.get(0), complete.get(2)) : complete;
 		});
-		client.truncated = call -> call == 1;
+		client.truncated = call -> truncated && call == 1;
 
 		new MiningCli(provider -> client).run(fixture.arguments(4));
 
@@ -226,11 +261,12 @@ class MiningCliRecoveryTest {
 		assertEquals(5, fixture.loadState().getRepoState(fixture.repoUrl()).getCategoryHitCounts().get("Collections"));
 	}
 
-	@Test
-	void repeatedEmptyTruncationStopsAtOneCommitWithoutAdvancingTheCheckpoint() throws Exception {
+	@ParameterizedTest
+	@ValueSource(booleans = { false, true })
+	void repeatedEmptyResponseStopsAtOneCommitWithoutAdvancingTheCheckpoint(boolean truncated) throws Exception {
 		Fixture fixture = createRepository(4);
 		StubLlmClient client = new StubLlmClient((hashes, messages, repo) -> List.of());
-		client.truncated = call -> true;
+		client.truncated = call -> truncated;
 
 		assertThrows(IOException.class, () -> new MiningCli(provider -> client).run(fixture.arguments(4)));
 

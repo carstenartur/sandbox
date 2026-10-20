@@ -12,6 +12,10 @@ import static org.sandbox.distribution.AggregateInstallationEvidence.xml;
 
 import java.io.InputStream;
 import java.io.IOException;
+import java.net.HttpRetryException;
+import java.net.HttpURLConnection;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -35,6 +39,7 @@ import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
+import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
@@ -77,6 +82,7 @@ public final class AggregateInstallationVerifier {
     private static final String PROBE = "org.sandbox.distribution.aggregate.probe";
     private static final String LEGACY_COMPONENT_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/1.3.4/";
     private static final String STABLE_AGGREGATE_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/1.3.5/";
+    private static final Pattern TRANSIENT_HTTP_STATUS = Pattern.compile("response code[: ]+(429|502|503|504)\\b");
     private final Path root;
     private final Path evidence;
     private final Path work;
@@ -218,7 +224,8 @@ public final class AggregateInstallationVerifier {
         arguments.addAll(platformArguments(System.getProperty("os.name", ""), System.getProperty("os.arch", "")));
         if (!uninstall.isEmpty()) arguments.addAll(List.of("-uninstallIU", String.join(",", uninstall)));
         if (!install.isEmpty()) arguments.addAll(List.of("-installIU", String.join(",", install)));
-        run(builder, stage, DIRECTOR, arguments, Duration.ofMinutes(15));
+        downloadWithRetry(attempt -> run(builder, attempt == 1 ? stage : stage + "-retry-" + attempt,
+                DIRECTOR, arguments, Duration.ofMinutes(15), Set.of(0)));
     }
 
     private void verifyStage(Path installation, String stage, Map<String, String> versions,
@@ -1108,7 +1115,10 @@ public final class AggregateInstallationVerifier {
         Process process = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(log.toFile()).start();
         try {
             require(process.waitFor(timeout.toSeconds(), TimeUnit.SECONDS), "Timed out: " + stage + "; see " + log);
-            require(expectedExitCodes.contains(process.exitValue()), "Failed: " + stage + "; see " + log);
+            if (!expectedExitCodes.contains(process.exitValue())) {
+                requireSuccessfulProcess(process.exitValue(), expectedExitCodes, application,
+                        stage + "; see " + log, Files.readString(log));
+            }
             return process.exitValue();
         } finally {
             if (process.isAlive()) {
@@ -1119,26 +1129,68 @@ public final class AggregateInstallationVerifier {
         }
     }
 
-    private static Map<String, String> featureVersions(URI repository) throws Exception {
+    @FunctionalInterface
+    interface DownloadAttempt<T> {
+        T run(int attempt) throws Exception;
+    }
+
+    static <T> T downloadWithRetry(DownloadAttempt<T> download) throws Exception {
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return download.run(attempt);
+            } catch (IOException failure) {
+                boolean transientFailure = failure instanceof SocketException || failure instanceof SocketTimeoutException
+                        || failure instanceof HttpRetryException http && Set.of(429, 502, 503, 504).contains(http.responseCode());
+                if (attempt == 3 || !transientFailure) throw failure;
+                System.err.println("Retrying repository download after attempt " + attempt + ": " + failure.getMessage());
+                Thread.sleep(Duration.ofSeconds(attempt));
+            }
+        }
+    }
+
+    static void requireSuccessfulProcess(int exitCode, Set<Integer> expectedExitCodes, String application,
+            String stage, String output) throws IOException {
+        if (expectedExitCodes.contains(exitCode)) return;
+        // Retry only p2's download phase, before installation mutations begin.
+        if (DIRECTOR.equals(application) && output.contains("phase=org.eclipse.equinox.internal.p2.engine.phases.Collect,")) {
+            var status = TRANSIENT_HTTP_STATUS.matcher(output);
+            if (status.find()) throw new HttpRetryException("Failed: " + stage, Integer.parseInt(status.group(1)));
+        }
+        throw new IOException("Failed: " + stage);
+    }
+
+    static Map<String, String> featureVersions(URI repository) throws Exception {
+        return downloadWithRetry(attempt -> readFeatureVersions(repository));
+    }
+
+    private static Map<String, String> readFeatureVersions(URI repository) throws Exception {
         var connection = repository.resolve("content.jar").toURL().openConnection();
         connection.setConnectTimeout(30000);
         connection.setReadTimeout(30000);
-        try (InputStream input = connection.getInputStream(); ZipInputStream archive = new ZipInputStream(input)) {
-            for (var entry = archive.getNextEntry(); entry != null; entry = archive.getNextEntry()) {
-                if (!entry.getName().equals("content.xml")) continue;
-                Map<String, String> result = new TreeMap<>();
-                for (Element units : children(xml(archive), "units")) {
-                    for (Element unit : children(units, "unit")) {
-                        String id = unit.getAttribute("id");
-                        if (AggregateInstallationEvidence.isSandboxFeature(id)) {
-                            require(result.putIfAbsent(id, unit.getAttribute("version")) == null, "Ambiguous repository IU " + id);
+        try {
+            if (connection instanceof HttpURLConnection http) {
+                int status = http.getResponseCode();
+                if (status >= 400) throw new HttpRetryException("HTTP " + status + " reading " + repository.resolve("content.jar"), status);
+            }
+            try (InputStream input = connection.getInputStream(); ZipInputStream archive = new ZipInputStream(input)) {
+                for (var entry = archive.getNextEntry(); entry != null; entry = archive.getNextEntry()) {
+                    if (!entry.getName().equals("content.xml")) continue;
+                    Map<String, String> result = new TreeMap<>();
+                    for (Element units : children(xml(archive), "units")) {
+                        for (Element unit : children(units, "unit")) {
+                            String id = unit.getAttribute("id");
+                            if (AggregateInstallationEvidence.isSandboxFeature(id)) {
+                                require(result.putIfAbsent(id, unit.getAttribute("version")) == null, "Ambiguous repository IU " + id);
+                            }
                         }
                     }
+                    return result;
                 }
-                return result;
             }
+            throw new IOException("Missing content.xml in " + repository);
+        } finally {
+            if (connection instanceof HttpURLConnection http) http.disconnect();
         }
-        throw new IOException("Missing content.xml in " + repository);
     }
 
     private static Element read(Path file) throws Exception {
