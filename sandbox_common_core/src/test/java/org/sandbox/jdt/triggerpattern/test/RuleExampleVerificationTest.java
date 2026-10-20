@@ -194,7 +194,7 @@ class RuleExampleVerificationTest {
 	}
 
 	@Test
-	void commentsInsideMatchesOrReplacementsRequireNativeVerification() {
+	void sourceCommentsStayUnknownAndDslCommentsAreNotInserted() {
 		String before = "class Test { int f() { return 1 /* keep */ + 2; } }";
 		String negative = "class Test { int f() { return 4; } }";
 		var report = verifier.verify("1 + 2\n=> 3\n;;\n",
@@ -203,7 +203,9 @@ class RuleExampleVerificationTest {
 		String plain = before.replace(" /* keep */", "");
 		var replacementComment = verifier.verify("1 + 2\n=> 3 /* new */\n;;\n",
 				evidence(plain, plain.replace("1 + 2", "3 /* new */"), negative));
-		assertEquals(Outcome.UNKNOWN, replacementComment.results().getFirst().outcome(), replacementComment::toString);
+		// DSL comments are removed by HintFileParser before the replacement is evaluated.
+		assertEquals(Outcome.FAIL, replacementComment.results().getFirst().outcome(), replacementComment::toString);
+		assertEquals(plain.replace("1 + 2", "3"), replacementComment.results().getFirst().actualSource());
 		String literal = "class Test { String f() { return \"/* text */\"; } }";
 		var literalReport = verifier.verify("\"/* text */\"\n=> \"kept\"\n;;\n",
 				evidence(literal, literal.replace("/* text */", "kept"), negative));

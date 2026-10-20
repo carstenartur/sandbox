@@ -19,6 +19,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.jobs.Job;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -109,8 +110,14 @@ class HintFileCreationTest {
 	@Test
 	void sidecarCreatedAfterPreflightSurvivesFailureAndTheNewHintIsRemoved() throws Exception {
 		NullProgressMonitor monitor = new NullProgressMonitor() {
+			private boolean injected;
+
 			@Override
 			public void worked(int work) {
+				if (injected) {
+					return;
+				}
+				injected = true;
 				try {
 					write("complete.sandbox-hint.examples.json", "new independent evidence");
 				} catch (CoreException exception) {
@@ -118,8 +125,10 @@ class HintFileCreationTest {
 				}
 			}
 		};
+		var schedulingRule = Job.getJobManager().currentRule();
 		assertThrows(CoreException.class, () -> HintFileCreation.create(project,
 				"complete.sandbox-hint", "rule", suite, monitor));
+		assertEquals(schedulingRule, Job.getJobManager().currentRule(), "Failed creation must release its workspace rule");
 		assertFalse(project.getFile("complete.sandbox-hint").exists());
 		assertEquals("new independent evidence", read("complete.sandbox-hint.examples.json"));
 	}
