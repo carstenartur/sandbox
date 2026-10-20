@@ -552,10 +552,22 @@ throw new IOException("LLM API unavailable; stopping mining"); //$NON-NLS-1$
 }
 int end = Math.min(i + dynamicCPR[0], effectiveBatch.size());
 List<RevCommit> subBatch = effectiveBatch.subList(i, end);
+try {
 processBatch(subBatch, repo, diffExtractor, state, statePath,
 llmClient, promptBuilder, dslContext, categoryManager,
 validator, stats, aggregator, config.getMinDiffLinesPerCommit(),
 config.getMaxDiffLinesPerCommit(), typeEnricher, keywordFilter, outputDir, sandboxRoot);
+} catch (IncompleteBatchException e) {
+if (!llmClient.wasLastResponseTruncated() || dynamicCPR[0] <= 1) {
+throw e;
+}
+dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);
+// The completed prefix is already checkpointed. Retry from the first gap;
+// later completed results are cached and must not be requested again.
+i += e.firstMissingIndex;
+miningLog.println("  Retrying incomplete truncated response with commits-per-request " + dynamicCPR[0]); //$NON-NLS-1$
+continue;
+}
 i = end;
 if (llmClient.wasLastResponseTruncated() && dynamicCPR[0] > 1) {
 dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);
@@ -710,6 +722,7 @@ miningLog.println("  Received " + evaluationsByHash.size() + " evaluations for "
 + repo.getUrl() + " [" + repo.getBranch() + "]:"); //$NON-NLS-1$ //$NON-NLS-2$
 }
 boolean completePrefix = true;
+int firstMissingIndex = -1;
 int diffIdx = 0;
 for (int i = 0; i < commits.size(); i++) {
 RevCommit commit = commits.get(i);
@@ -725,6 +738,9 @@ repoState.incrementCategoryHitCount(reused.category());
 int diffLines = diffLineCounts.get(diffIdx++);
 CommitEvaluation evaluation = evaluationsByHash.get(commit.getName());
 if (evaluation == null) {
+if (completePrefix) {
+firstMissingIndex = i;
+}
 completePrefix = false;
 String message = commit.getShortMessage();
 repoState.addDeferredCommit(new DeferredCommit(commit.getName(),
@@ -765,8 +781,18 @@ if (evaluationFailure != null) {
 throw evaluationFailure;
 }
 if (!completePrefix) {
-throw new IOException("Incomplete batch evaluation for " + repo.getUrl() //$NON-NLS-1$
+throw new IncompleteBatchException(repo.getUrl(), firstMissingIndex);
+}
+}
+
+private static final class IncompleteBatchException extends IOException {
+private static final long serialVersionUID = 1L;
+private final int firstMissingIndex;
+
+IncompleteBatchException(String repoUrl, int firstMissingIndex) {
+super("Incomplete batch evaluation for " + repoUrl //$NON-NLS-1$
 + "; completed results saved, unevaluated commits remain for retry"); //$NON-NLS-1$
+this.firstMissingIndex = firstMissingIndex;
 }
 }
 
@@ -780,7 +806,7 @@ state.save(statePath);
 private void saveRunCandidates(ReportAggregator aggregator, DslValidator validator, Path sandboxRoot) throws IOException {
 CandidateStore candidateStore = new CandidateStore(sandboxRoot.resolve("mining-candidates")); //$NON-NLS-1$
 stagedCandidateCount += saveCandidates(aggregator.getAllEvaluations(), candidateStore, validator, miningLog).size();
-stagedCandidateCount += saveCandidates(reusedEvaluations, candidateStore, validator, miningLog).size();
+stagedCandidateCount += saveCandidates(reusedEvaluations, candidateStore, validator, miningLog, true).size();
 }
 
 private void handleEvaluation(CommitEvaluation evaluation, RevCommit commit, RepoEntry repo,
@@ -820,6 +846,7 @@ categoryManager.addCategory(evaluation.category());
 }
 stats.record(enriched);
 aggregator.add(enriched);
+completedEvaluations.computeIfAbsent(repo.getUrl(), key -> new HashMap<>()).put(commit.getName(), enriched);
 }
 
 static String repoDirectoryName(String url) {
@@ -890,6 +917,11 @@ return args[index];
  */
 static List<MiningCandidate> saveCandidates(List<CommitEvaluation> evaluations,
 		CandidateStore candidateStore, DslValidator validator, PrintStream log) throws IOException {
+	return saveCandidates(evaluations, candidateStore, validator, log, false);
+}
+
+private static List<MiningCandidate> saveCandidates(List<CommitEvaluation> evaluations,
+		CandidateStore candidateStore, DslValidator validator, PrintStream log, boolean preserveExisting) throws IOException {
 	List<MiningCandidate> saved = new ArrayList<>();
 	for (CommitEvaluation eval : evaluations) {
 		if (eval.trafficLight() != CommitEvaluation.TrafficLight.GREEN) {
@@ -919,7 +951,10 @@ static List<MiningCandidate> saveCandidates(List<CommitEvaluation> evaluations,
 				eval.category(),
 				eval.summary(),
 				Instant.now().toString());
-		if (candidateStore.containsCandidate(candidate)) {
+		// Replaying saved evaluations must not replace a reviewed candidate's
+		// corrected content or revision, but still recreate a missing candidate.
+		if (preserveExisting ? candidateStore.findById(candidate.getCandidateId()).isPresent()
+				: candidateStore.containsCandidate(candidate)) {
 			continue;
 		}
 		candidate.setStatus(CandidateStatus.DSL_VALID);

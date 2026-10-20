@@ -34,12 +34,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
 import org.sandbox.jdt.triggerpattern.llm.LlmClient;
@@ -119,14 +122,20 @@ class MiningCliRecoveryTest {
 				"A later batch must not move the checkpoint past an unevaluated commit");
 	}
 
-	@Test
-	void restartReusesResultsAfterAGapWithoutReplacingCandidatesOrCountingThemTwice() throws Exception {
+	@ParameterizedTest
+	@EnumSource(value = CandidateStatus.class, names = { "READY_FOR_REVIEW", "PROMOTED" })
+	void restartReusesResultsAfterAGapWithoutReplacingCandidatesOrCountingThemTwice(CandidateStatus status)
+			throws Exception {
 		Fixture fixture = createRepository(5);
+		AtomicInteger attempts = new AtomicInteger();
 		StubLlmClient partial = new StubLlmClient((hashes, messages, repo) -> {
+			if (attempts.incrementAndGet() > 1) {
+				throw new HttpTimeoutException("retry unavailable until the next run");
+			}
 			var complete = evaluations(hashes, messages, repo);
 			return List.of(complete.get(0), complete.get(2));
 		});
-		partial.truncated = true;
+		partial.truncated = call -> call == 1;
 		assertThrows(IOException.class, () -> new MiningCli(provider -> partial).run(fixture.arguments(4)));
 
 		String retainedHash = fixture.hashes().get(2);
@@ -136,7 +145,14 @@ class MiningCliRecoveryTest {
 		CandidateStore store = new CandidateStore(tempDir.resolve("mining-candidates"));
 		MiningCandidate retainedCandidate = store.loadAll().stream()
 				.filter(candidate -> retainedHash.equals(candidate.getSourceCommit())).findFirst().orElseThrow();
-		retainedCandidate.setStatus(CandidateStatus.READY_FOR_REVIEW);
+		retainedCandidate.setDslRule("java.util.Collections.emptySet() :: sourceVersionGE(9)\n=> java.util.Set.of()\n;;\n");
+		retainedCandidate.setBeforeExample("class T { Object m() { return java.util.Collections.emptySet(); } }");
+		retainedCandidate.setAfterExample("class T { Object m() { return java.util.Set.of(); } }");
+		retainedCandidate.setNegativeExample("class T { Object m() { return java.util.Collections.emptyList(); } }");
+		retainedCandidate.setSourceVersion("17");
+		store.save(retainedCandidate);
+		assertEquals(2, retainedCandidate.getRevision(), "The correction creates a new candidate revision");
+		retainedCandidate.setStatus(status);
 		store.save(retainedCandidate);
 		Path retainedFile = store.getStoreDir().resolve(retainedCandidate.toFileName());
 		String retainedJson = Files.readString(retainedFile);
@@ -161,6 +177,72 @@ class MiningCliRecoveryTest {
 		assertEquals(5, statistics.get("totalProcessed").getAsInt(),
 				"Published statistics rebuild the deduplicated history, including retained evaluations exactly once");
 		assertEquals(5, statistics.get("relevant").getAsInt());
+	}
+
+	@Test
+	void emptyTruncatedResponseRetriesWithSmallerBatches() throws Exception {
+		Fixture fixture = createRepository(4);
+		AtomicInteger attempts = new AtomicInteger();
+		StubLlmClient client = new StubLlmClient((hashes, messages, repo) -> {
+			if (attempts.incrementAndGet() == 1) {
+				return List.of();
+			}
+			assertTrue(hashes.size() <= 2, "The oversized request must be reduced before retry");
+			return evaluations(hashes, messages, repo);
+		});
+		client.truncated = call -> call == 1;
+
+		new MiningCli(provider -> client).run(fixture.arguments(4));
+
+		assertEquals(3, attempts.get());
+		List<String> requested = new ArrayList<>(fixture.hashes());
+		requested.addAll(fixture.hashes());
+		assertEquals(requested, client.requestedCommits());
+		assertEquals(fixture.hashes(), fixture.evaluatedCommits());
+		assertEquals(Set.copyOf(fixture.hashes()), fixture.candidateCommits());
+		assertEquals(4, fixture.loadState().getGlobalTotalProcessed());
+	}
+
+	@Test
+	void partialTruncationRetriesOnlyMissingCommitsWithoutRecountingCompletedResults() throws Exception {
+		Fixture fixture = createRepository(5);
+		AtomicInteger attempts = new AtomicInteger();
+		StubLlmClient client = new StubLlmClient((hashes, messages, repo) -> {
+			var complete = evaluations(hashes, messages, repo);
+			return attempts.incrementAndGet() == 1 ? List.of(complete.get(0), complete.get(2)) : complete;
+		});
+		client.truncated = call -> call == 1;
+
+		new MiningCli(provider -> client).run(fixture.arguments(4));
+
+		List<String> requested = new ArrayList<>(fixture.hashes().subList(0, 4));
+		requested.addAll(List.of(fixture.hashes().get(1), fixture.hashes().get(3), fixture.hashes().get(4)));
+		assertEquals(requested, client.requestedCommits());
+		assertEquals(3, attempts.get());
+		assertEquals(5, fixture.evaluatedCommits().size());
+		assertEquals(Set.copyOf(fixture.hashes()), Set.copyOf(fixture.evaluatedCommits()));
+		assertEquals(Set.copyOf(fixture.hashes()), fixture.candidateCommits());
+		assertEquals(5, fixture.loadState().getGlobalTotalProcessed());
+		assertEquals(5, fixture.loadState().getRepoState(fixture.repoUrl()).getCategoryHitCounts().get("Collections"));
+	}
+
+	@Test
+	void repeatedEmptyTruncationStopsAtOneCommitWithoutAdvancingTheCheckpoint() throws Exception {
+		Fixture fixture = createRepository(4);
+		StubLlmClient client = new StubLlmClient((hashes, messages, repo) -> List.of());
+		client.truncated = call -> true;
+
+		assertThrows(IOException.class, () -> new MiningCli(provider -> client).run(fixture.arguments(4)));
+
+		List<String> requested = new ArrayList<>(fixture.hashes());
+		requested.addAll(fixture.hashes().subList(0, 2));
+		requested.add(fixture.hashes().get(0));
+		assertEquals(requested, client.requestedCommits(), "Shrink 4 to 2 to 1, then report failure");
+		assertEquals(3, client.calls);
+		assertNull(fixture.loadState().getLastProcessedCommit(fixture.repoUrl()));
+		assertEquals(0, fixture.loadState().getGlobalTotalProcessed());
+		assertTrue(fixture.evaluatedCommits().isEmpty());
+		assertTrue(fixture.candidateCommits().isEmpty());
 	}
 
 	@Test
@@ -208,6 +290,13 @@ class MiningCliRecoveryTest {
 		assertTrue(resumed.requestedCommits().isEmpty(), "The previous response is available for reuse");
 		assertNull(fixture.loadState().getLastProcessedCommit(fixture.repoUrl()));
 		assertEquals(0, fixture.loadState().getGlobalTotalProcessed());
+
+		Files.delete(tempDir.resolve("mining-candidates"));
+		StubLlmClient recovered = new StubLlmClient(MiningCliRecoveryTest::evaluations);
+		new MiningCli(provider -> recovered).run(fixture.arguments(2));
+		assertTrue(recovered.requestedCommits().isEmpty());
+		assertEquals(Set.copyOf(fixture.hashes()), fixture.candidateCommits(), "Recreate missing cached candidates");
+		assertEquals(2, fixture.loadState().getGlobalTotalProcessed());
 	}
 
 	private Fixture createRepository(int commitCount) throws Exception {
@@ -278,7 +367,7 @@ class MiningCliRecoveryTest {
 		private final List<String> requested = new ArrayList<>();
 		private Duration maxFailureDuration;
 		private int calls;
-		private boolean truncated;
+		private IntPredicate truncated = call -> false;
 		StubLlmClient(BatchEvaluator evaluator) { this.evaluator = evaluator; }
 		List<String> requestedCommits() { return List.copyOf(requested); }
 		@Override public List<CommitEvaluation> evaluateBatch(String prompt, List<String> hashes,
@@ -295,7 +384,7 @@ class MiningCliRecoveryTest {
 		@Override public int getDailyRequestCount() { return calls; }
 		@Override public Duration getMaxFailureDuration() { return maxFailureDuration; }
 		@Override public void setMaxFailureDuration(Duration duration) { maxFailureDuration = duration; }
-		@Override public boolean wasLastResponseTruncated() { return truncated; }
+		@Override public boolean wasLastResponseTruncated() { return truncated.test(calls); }
 		@Override public String getModel() { return "local-test"; }
 		@Override public void close() { }
 	}

@@ -15,8 +15,10 @@ package org.sandbox.mining.core.report;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -77,7 +79,15 @@ public class JsonReporter {
 		List<CommitEvaluation> merged = mergeEvaluations(existing, evaluations);
 
 		String json = gson.toJson(merged);
-		Files.writeString(file, json, StandardCharsets.UTF_8);
+		// Recovery depends on this history; never truncate the last complete file
+		// while writing its replacement.
+		Path temp = file.resolveSibling(file.getFileName() + ".tmp"); //$NON-NLS-1$
+		Files.writeString(temp, json, StandardCharsets.UTF_8);
+		try {
+			Files.move(temp, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+		} catch (AtomicMoveNotSupportedException e) {
+			Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+		}
 	}
 
 	/**

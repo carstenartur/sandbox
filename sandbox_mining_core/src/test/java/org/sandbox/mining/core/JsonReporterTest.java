@@ -14,6 +14,8 @@
 package org.sandbox.mining.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -67,6 +69,27 @@ class JsonReporterTest {
 		String content = Files.readString(file, StandardCharsets.UTF_8);
 		assertTrue(content.contains("hash1"));
 		assertTrue(content.contains("hash2"));
+	}
+
+	@Test
+	void failedStagingWritePreservesPreviouslyCompletedEvaluations() throws IOException {
+		JsonReporter reporter = new JsonReporter();
+		CommitEvaluation retained = createEval("retained", "Completed after a gap", TrafficLight.GREEN);
+		reporter.writeEvaluations(List.of(retained), tempDir);
+		Path history = tempDir.resolve("evaluations.json");
+		String previousJson = Files.readString(history);
+		Path staging = tempDir.resolve("evaluations.json.tmp");
+		Files.createDirectory(staging);
+		CommitEvaluation next = createEval("next", "Next completed commit", TrafficLight.YELLOW);
+
+		assertThrows(IOException.class, () -> reporter.writeEvaluations(List.of(next), tempDir));
+		assertEquals(previousJson, Files.readString(history));
+		assertEquals(List.of(retained), reporter.loadExistingEvaluations(history));
+
+		Files.delete(staging);
+		reporter.writeEvaluations(List.of(next), tempDir);
+		assertEquals(List.of(retained, next), reporter.loadExistingEvaluations(history));
+		assertFalse(Files.exists(staging), "A successful replacement consumes the temporary file");
 	}
 
 	@Test
