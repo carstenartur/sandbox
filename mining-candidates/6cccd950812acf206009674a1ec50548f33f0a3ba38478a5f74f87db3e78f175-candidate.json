@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6cccd950812acf206009674a1ec50548f33f0a3ba38478a5f74f87db3e78f175",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.swt.composite.layout-all\u003e\n\u003c!description: Update Composite.layout(true) to Composite.layout(true, true) to ensure all children are laid out, matching the intended behavior when relayouting a parent composite.\u003e\n\u003c!severity: HINT\u003e\n\n((org.eclipse.swt.widgets.Composite) $parent).layout(true)\n\u003d\u003e\n((org.eclipse.swt.widgets.Composite) $parent).layout(true, true)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyCompositeRuler {\n    public void update(Control parent) {\n        if (parent instanceof Composite \u0026\u0026 !parent.isDisposed()) {\n            ((Composite) parent).layout(true);\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyCompositeRuler {\n    public void update(Control parent) {\n        if (parent instanceof Composite \u0026\u0026 !parent.isDisposed()) {\n            ((Composite) parent).layout(true, true);\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Control;\n\npublic class MyCompositeRuler {\n    public void updateOther(Control parent) {\n        if (parent instanceof Composite \u0026\u0026 !parent.isDisposed())\n            ((Composite) parent).layout(false); // Different argument\n    }\n\n    public void updateAnother(Control parent) {\n        if (parent instanceof Composite \u0026\u0026 !parent.isDisposed())\n            ((Composite) parent).layout(); // Different method signature\n    }\n\n    public void updateWithAll(Control parent) {\n        if (parent instanceof Composite \u0026\u0026 !parent.isDisposed())\n            ((Composite) parent).layout(true, false); // Already two args, different second arg\n    }\n}",
+  "targetHintFile": "eclipse-swt.sandbox-hint",
+  "sourceCommit": "9514180ac316af59f7489832eaf88ffad6ddfc5d",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace Composite.layout(true) with Composite.layout(true, true)",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-20T02:23:49.636933909Z",
+  "ruleFingerprint": "sha256:abd52c58b3c0ddc28ba0c5fd5625f6c967149b312f679b55d7cbbe941890d467",
+  "behaviorFingerprint": "sha256:52a360f15051928403a1c199c668459fb9ca128061d56df94f25a3e00129d879",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-20T02:25:53.554920901Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

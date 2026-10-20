@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:09f8139b167c2c0fb631f75d0cd724a960cc49178a9bc7ef2dc37f89e2da89f5",
   "verification": {
     "successful": false,
-    "stage": "AFTER_REWRITE",
-    "message": "Transformed syntax tree does not equal afterExample",
-    "verifiedAt": "2026-10-17T02:27:58.098582451Z",
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-10-20T02:25:50.868868493Z",
     "verifierVersion": "7",
-    "matches": 1,
-    "replacements": 1
+    "matches": 0,
+    "replacements": 0
   },
   "transitions": []
 }

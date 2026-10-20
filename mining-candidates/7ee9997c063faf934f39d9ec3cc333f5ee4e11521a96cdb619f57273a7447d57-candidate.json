@@ -19,12 +19,12 @@
   "behaviorFingerprint": "sha256:ecf037567f24b13f0cc210ae488e50fccbe6af20b2eceff283488af124d6c8e5",
   "verification": {
     "successful": false,
-    "stage": "AFTER_REWRITE",
-    "message": "Transformed source is invalid: Java compile error at line 11: Type mismatch: cannot convert from AbstractSet to Set\u003cString\u003e",
-    "verifiedAt": "2026-10-17T02:27:58.568219385Z",
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-10-20T02:25:51.440406127Z",
     "verifierVersion": "7",
-    "matches": 1,
-    "replacements": 1
+    "matches": 0,
+    "replacements": 0
   },
   "transitions": []
 }

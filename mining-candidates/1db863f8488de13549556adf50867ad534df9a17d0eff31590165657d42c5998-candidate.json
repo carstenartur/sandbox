@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 7: The public type NewJavaProjectPreferencePage must be defined in its own file",
-    "verifiedAt": "2026-10-17T02:27:56.491567147Z",
+    "verifiedAt": "2026-10-20T02:25:48.823078053Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

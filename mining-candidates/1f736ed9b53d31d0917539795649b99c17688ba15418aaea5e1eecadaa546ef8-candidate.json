@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1f736ed9b53d31d0917539795649b99c17688ba15418aaea5e1eecadaa546ef8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: messagedialog.openquestion.to.open\u003e\n\u003c!description: Replace MessageDialog.openQuestion with MessageDialog.open using custom button labels for clarity.\u003e\n\u003c!severity: INFO\u003e\norg.eclipse.jface.dialogs.MessageDialog.openQuestion($shell, $title, $msg)\n\u003d\u003e\norg.eclipse.jface.dialogs.MessageDialog.open(org.eclipse.jface.dialogs.MessageDialog.QUESTION, $shell, $title, $msg, org.eclipse.swt.SWT.NONE, new java.lang.String[] { org.eclipse.ui.texteditor.EditorMessages.Editor_error_replace_button_label, org.eclipse.ui.texteditor.EditorMessages.Editor_error_dontreplace_button_label })\n;;",
+  "beforeExample": "import org.eclipse.jface.dialogs.MessageDialog;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Shell;\n\nclass EditorMessages {\n    public static String Editor_error_replace_button_label \u003d \"Replace\";\n    public static String Editor_error_dontreplace_button_label \u003d \"Do not replace\";\n    public static String Editor_error_activated_outofsync_title \u003d \"File Changed\";\n    public static String Editor_error_activated_outofsync_message \u003d \"The file \u0027{0}\u0027 has been changed.\";\n}\n\npublic class Example {\n    public boolean checkFile(Shell shell, String inputName) {\n        String title \u003d EditorMessages.Editor_error_activated_outofsync_title;\n        String msg \u003d EditorMessages.Editor_error_activated_outofsync_message;\n\n        if (MessageDialog.openQuestion(shell, title, msg)) {\n            System.out.println(\"User chose Yes.\");\n            return true;\n        } else {\n            System.out.println(\"User chose No.\");\n            return false;\n        }\n    }\n}",
+  "afterExample": "import org.eclipse.jface.dialogs.MessageDialog;\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.widgets.Shell;\n\nclass EditorMessages {\n    public static String Editor_error_replace_button_label \u003d \"Replace\";\n    public static String Editor_error_dontreplace_button_label \u003d \"Do not replace\";\n    public static String Editor_error_activated_outofsync_title \u003d \"File Changed\";\n    public static String Editor_error_activated_outofsync_message \u003d \"The file \u0027{0}\u0027 has been changed.\";\n}\n\npublic class Example {\n    public boolean checkFile(Shell shell, String inputName) {\n        String title \u003d EditorMessages.Editor_error_activated_outofsync_title;\n        String msg \u003d EditorMessages.Editor_error_activated_outofsync_message;\n\n        if (MessageDialog.open(MessageDialog.QUESTION, shell, title, msg, SWT.NONE,\n                new String[] { EditorMessages.Editor_error_replace_button_label,\n                        EditorMessages.Editor_error_dontreplace_button_label }) \u003d\u003d 0) {\n            System.out.println(\"User chose Yes.\");\n            return true;\n        } else {\n            System.out.println(\"User chose No.\");\n            return false;\n        }\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.dialogs.MessageDialog;\nimport org.eclipse.swt.widgets.Shell;\n\nclass EditorMessages {\n    public static String Editor_error_replace_button_label \u003d \"Replace\";\n    public static String Editor_error_dontreplace_button_label \u003d \"Do not replace\";\n}\n\npublic class NegativeExample {\n    public void anotherDialog(Shell shell) {\n        // This should not be matched as it\u0027s MessageDialog.openInformation\n        MessageDialog.openInformation(shell, \"Info\", \"Some information.\");\n        \n        // This should not be matched as it\u0027s a constructor call\n        MessageDialog dialog \u003d new MessageDialog(shell, \"Title\", null, \"Message\", MessageDialog.QUESTION, new String[]{\"OK\"}, 0);\n        dialog.open();\n    }\n}",
+  "targetHintFile": "jface-dialogs.sandbox-hint",
+  "sourceCommit": "bb585c8e491a149458dd733ba52c50721fa20e39",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Replacement",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-20T02:22:29.286098200Z",
+  "ruleFingerprint": "sha256:9445f71965dc92bac56c0def26cbda9aa7e823f327e613c282ca3f153ebbf628",
+  "behaviorFingerprint": "sha256:a9d508437843c0d76e71426ef2432e56e93a0398100473c7f633a076e24e51d7",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-20T02:25:53.524273225Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

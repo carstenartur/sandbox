@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "014fa99b6f0c5843f52323ca8e4cf9ba44655d53da1b33510d12f9a7ac852261",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: increase-content-assist-min-size\u003e\n\u003c!description: Increase minimum size values (30 to 50) for content assist popup in ContentAssistant.java to ensure better visibility for long API names.\u003e\n\u003c!severity: HINT\u003e\njava.lang.Math.max($value, 30) :: inClass(\"org.eclipse.jface.text.contentassist.ContentAssistant\")\n\u003d\u003e java.lang.Math.max($value, 50)\n;;",
+  "beforeExample": "package org.eclipse.jface.text.contentassist;\n\nimport org.eclipse.swt.graphics.Point;\n\npublic class ContentAssistant {\n    private Point size;\n\n    public ContentAssistant() {\n        this.size \u003d new Point(0, 0); // Example initialization\n    }\n\n    public void calculateSize() {\n        // Other logic...\n        size.x \u003d Math.max(size.x, 30);\n        size.y \u003d Math.max(size.y, 30);\n    }\n\n    public Point getSize() {\n        return size;\n    }\n}",
+  "afterExample": "package org.eclipse.jface.text.contentassist;\n\nimport org.eclipse.swt.graphics.Point;\n\npublic class ContentAssistant {\n    private Point size;\n\n    public ContentAssistant() {\n        this.size \u003d new Point(0, 0); // Example initialization\n    }\n\n    public void calculateSize() {\n        // Other logic...\n        size.x \u003d Math.max(size.x, 50);\n        size.y \u003d Math.max(size.y, 50);\n    }\n\n    public Point getSize() {\n        return size;\n    }\n}",
+  "negativeExample": "package org.eclipse.jface.text.contentassist;\n\nimport org.eclipse.swt.graphics.Point;\n\npublic class AnotherClass {\n    private Point otherSize;\n\n    public AnotherClass() {\n        this.otherSize \u003d new Point(0, 0);\n    }\n\n    public void calculateOtherSize() {\n        int min \u003d 10;\n        otherSize.x \u003d Math.max(otherSize.x, 30); // Should not match due to inClass guard\n        int customMin \u003d Math.max(5, 30); // Should not match due to inClass guard\n    }\n}\n\npackage org.eclipse.jface.text.contentassist;\n\nimport org.eclipse.swt.graphics.Point;\n\n// A class with a similar method but different constant\nclass ContentAssistantDifferentConstant {\n    private Point size;\n\n    public ContentAssistantDifferentConstant() {\n        this.size \u003d new Point(0, 0);\n    }\n\n    public void calculateSize() {\n        size.x \u003d Math.max(size.x, 40); // Different constant (40, not 30), should not match\n    }\n}",
+  "targetHintFile": "ui-sizing.sandbox-hint",
+  "sourceCommit": "672b2b81259c3bab1877489434e05109b4522439",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Magic Number Update",
+  "summary": "Update the hardcoded minimum size (from 30 to 50) when calling Math.max for UI component dimensions within the ContentAssistant class.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-20T02:23:28.383844822Z",
+  "ruleFingerprint": "sha256:70222d7535e40e033c792345193b1a5792ddb9deda576827bddd1ab35b362dc0",
+  "behaviorFingerprint": "sha256:919eb202a0ff53d09f27d28d680ebc122edef8b112a520295bb61dcdc11fcc76",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-20T02:25:53.539540718Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

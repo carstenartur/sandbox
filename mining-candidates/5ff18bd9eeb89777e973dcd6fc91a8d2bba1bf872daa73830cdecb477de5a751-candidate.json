@@ -19,9 +19,9 @@
   "behaviorFingerprint": "sha256:ef81f9f87a4c072b15c65249d18872721a5b0cd1979fcb40086d65efe3e203e5",
   "verification": {
     "successful": false,
-    "stage": "GUARD_RESOLUTION",
-    "message": "Unknown guard function: handlePreferenceStoreChanged",
-    "verifiedAt": "2026-10-17T02:27:58.220260992Z",
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 20: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-10-20T02:25:51.024406251Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

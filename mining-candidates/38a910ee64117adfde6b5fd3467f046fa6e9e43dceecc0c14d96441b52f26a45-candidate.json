@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "38a910ee64117adfde6b5fd3467f046fa6e9e43dceecc0c14d96441b52f26a45",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$contentAssistant.computeAllAutoActivationTriggers().indexOf($c) \u003c 0\n\u003d\u003e\n!$contentAssistant.isAutoActivationTriggerChar($c)\n;;",
+  "beforeExample": "package org.eclipse.jface.text.contentassist;\nimport org.eclipse.swt.events.KeyEvent;\npublic class ContentAssistant {\n    // Original method (private)\n    private String computeAllAutoActivationTriggers() {\n        return \"abc\"; // Dummy implementation\n    }\n    // This listener class exists\n    private class AutoAssistListener {\n        public void keyPressed(KeyEvent e) {\n            // The target line to be cleaned up\n            if (ContentAssistant.this.computeAllAutoActivationTriggers().indexOf(e.character) \u003c 0) {\n                System.out.println(\"Old trigger check\");\n            }\n        }\n    }\n}",
+  "afterExample": "package org.eclipse.jface.text.contentassist;\nimport org.eclipse.swt.events.KeyEvent;\npublic class ContentAssistant {\n    // New method (package-private in actual commit, but here we assume it exists)\n    boolean isAutoActivationTriggerChar(char c) {\n        return \"abc\".indexOf(c) \u003e\u003d 0; // Dummy implementation\n    }\n    // This listener class exists\n    private class AutoAssistListener {\n        public void keyPressed(KeyEvent e) {\n            // The result after cleanup\n            if (!ContentAssistant.this.isAutoActivationTriggerChar(e.character)) {\n                System.out.println(\"New trigger check\");\n            }\n        }\n    }\n}",
+  "negativeExample": "package org.eclipse.jface.text.contentassist;\nimport org.eclipse.swt.events.KeyEvent;\npublic class ContentAssistant {\n    private String someOtherString \u003d \"xyz\";\n    public void someMethod() {\n        char testChar \u003d \u0027z\u0027;\n        // This should NOT match as it\u0027s not the specific \u0027computeAllAutoActivationTriggers()\u0027 method call\n        if (someOtherString.indexOf(testChar) \u003c 0) {\n            System.out.println(\"Other string check\");\n        }\n    }\n    private class AutoAssistListener {\n        public void keyPressed(KeyEvent e) {\n            // This should NOT match as it\u0027s not the specific \u0027computeAllAutoActivationTriggers()\u0027 method call\n            if (\"anotherLiteral\".indexOf(e.character) \u003c 0) {\n                System.out.println(\"Literal string check\");\n            }\n        }\n    }\n}",
+  "targetHintFile": "jface-text-api.sandbox-hint",
+  "sourceCommit": "5b95a692ab1d6a909b865aad0f62fc0389fcc929",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Method Call Replacement",
+  "summary": "Replaces a combined method call (`computeAllAutoActivationTriggers().indexOf(...) \u003c 0`) with a more direct check (`!isAutoActivationTriggerChar(...)`), reflecting an API refactoring where the logic was encapsulated into a new method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-20T02:20:48.244514396Z",
+  "ruleFingerprint": "sha256:02f14be2ca785ed725cd496b8fe421e279704ea6797f219ed0dd96f75447b219",
+  "behaviorFingerprint": "sha256:932ed8f2c6546558f6f1a0907fddf63022b87d0c09ca96816a2da3df6c4f1903",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 2: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-20T02:25:53.492448997Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
