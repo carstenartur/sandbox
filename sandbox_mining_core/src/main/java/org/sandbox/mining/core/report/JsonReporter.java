@@ -15,8 +15,10 @@ package org.sandbox.mining.core.report;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -61,7 +63,7 @@ public class JsonReporter {
 
 	/**
 	 * Writes evaluations to a JSON file, merging with any existing evaluations
-	 * to accumulate results across runs. Deduplicates by commitHash (newer
+	 * to accumulate results across runs. Deduplicates by repository and commitHash (newer
 	 * evaluations replace older ones).
 	 *
 	 * @param evaluations the list of new evaluations from the current run
@@ -77,7 +79,15 @@ public class JsonReporter {
 		List<CommitEvaluation> merged = mergeEvaluations(existing, evaluations);
 
 		String json = gson.toJson(merged);
-		Files.writeString(file, json, StandardCharsets.UTF_8);
+		// Recovery depends on this history; never truncate the last complete file
+		// while writing its replacement.
+		Path temp = file.resolveSibling(file.getFileName() + ".tmp"); //$NON-NLS-1$
+		Files.writeString(temp, json, StandardCharsets.UTF_8);
+		try {
+			Files.move(temp, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+		} catch (AtomicMoveNotSupportedException e) {
+			Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+		}
 	}
 
 	/**
@@ -102,8 +112,8 @@ public class JsonReporter {
 	}
 
 	/**
-	 * Merges existing and new evaluations, deduplicating by commitHash.
-	 * New evaluations replace existing ones with the same commitHash.
+	 * Merges existing and new evaluations, deduplicating by repository and commitHash.
+	 * New evaluations replace existing ones for the same repository and commit.
 	 *
 	 * @param existing the existing evaluations
 	 * @param newEvals the new evaluations
@@ -111,14 +121,15 @@ public class JsonReporter {
 	 */
 	static List<CommitEvaluation> mergeEvaluations(List<CommitEvaluation> existing,
 			List<CommitEvaluation> newEvals) {
-		Map<String, CommitEvaluation> byHash = new LinkedHashMap<>();
+		record EvaluationKey(String repoUrl, String commitHash) { }
+		Map<EvaluationKey, CommitEvaluation> byCommit = new LinkedHashMap<>();
 		for (CommitEvaluation e : existing) {
-			byHash.put(e.commitHash(), e);
+			byCommit.put(new EvaluationKey(e.repoUrl(), e.commitHash()), e);
 		}
 		for (CommitEvaluation e : newEvals) {
-			byHash.put(e.commitHash(), e);
+			byCommit.put(new EvaluationKey(e.repoUrl(), e.commitHash()), e);
 		}
-		return new ArrayList<>(byHash.values());
+		return new ArrayList<>(byCommit.values());
 	}
 
 	/**
