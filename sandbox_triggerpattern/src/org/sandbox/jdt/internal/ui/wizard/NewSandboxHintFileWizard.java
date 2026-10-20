@@ -13,10 +13,8 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.wizard;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -28,6 +26,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -45,6 +44,7 @@ import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
 import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.sandbox.jdt.triggerpattern.internal.RuleAuthoringDocument;
+import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite;
 import org.sandbox.jdt.triggerpattern.mining.llm.EclipseLlmService;
 
 /**
@@ -71,6 +71,7 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 	private IWorkbench workbench;
 	private String initialCodeSnippet;
 	private String initialReplacement;
+	private RuleExampleSuite initialExamples;
 	private Consumer<String> projectPreviewAction;
 
 	public NewSandboxHintFileWizard() {
@@ -102,6 +103,18 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		initialReplacement = after;
 	}
 
+	/**
+	 * Seeds evidence with the complete saved and current compilation unit.
+	 * Blank units cannot be replayed; their change remains editable in the rule draft.
+	 */
+	public void setInitialExample(String unitName, String before, String after) {
+		if (before.isBlank() || after.isBlank()) {
+			return;
+		}
+		initialExamples = new RuleExampleSuite(RuleExampleSuite.CURRENT_VERSION, List.of(
+				new RuleExampleSuite.Example("Saved edit", unitName, before, after, true))); //$NON-NLS-1$
+	}
+
 	/** Overrides the project preview entry point, for embedding in another context. */
 	public void setProjectPreviewAction(Consumer<String> action) {
 		projectPreviewAction = action;
@@ -112,6 +125,8 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 	public void addPages() {
 		filePage = new NewSandboxHintFileWizardPage(selection);
 		rulePage = new NewRuleWizardPage();
+		rulePage.setExamples(initialExamples);
+		rulePage.setExampleProjectSupplier(this::selectedJavaProject);
 		filePage.setContainerChangeListener(this::refreshProjectPreviewAction);
 		rulePage.setMetadataSupplier(filePage::getEditedMetadata);
 		rulePage.setDefaultContentSupplier(this::getTemplateContent);
@@ -184,16 +199,19 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 		String containerPath = filePage.getContainerPath();
 		String fileName = filePage.getFileName();
 		String fullContent = getFullDslDocument();
+		RuleExampleSuite examples = rulePage.getExamples();
 
 		try {
-			getContainer().run(true, false,
-					monitor -> createFile(containerPath, fileName, fullContent, monitor));
+			getContainer().run(true, true,
+					monitor -> createFile(containerPath, fileName, fullContent, examples, monitor));
 		} catch (InvocationTargetException e) {
+			if (e.getCause() instanceof OperationCanceledException) {
+				return false;
+			}
 			MessageDialog.openError(getShell(), "Error", //$NON-NLS-1$
 					"Could not create file: " + e.getTargetException().getMessage()); //$NON-NLS-1$
 			return false;
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
+		} catch (InterruptedException | OperationCanceledException e) {
 			return false;
 		}
 
@@ -250,8 +268,7 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 	}
 
 	private void createFile(String containerPath, String fileName, String content,
-			IProgressMonitor monitor) throws InvocationTargetException {
-		monitor.beginTask("Creating " + fileName, 2); //$NON-NLS-1$
+			RuleExampleSuite examples, IProgressMonitor monitor) throws InvocationTargetException {
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IResource resource = root.findMember(new Path(containerPath));
 		if (!(resource instanceof IContainer container) || !resource.exists()) {
@@ -259,14 +276,10 @@ public class NewSandboxHintFileWizard extends Wizard implements INewWizard {
 					new CoreException(new Status(IStatus.ERROR, PLUGIN_ID,
 							"Container \"" + containerPath + "\" does not exist."))); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		IFile file = container.getFile(new Path(fileName));
-		try (InputStream stream = new ByteArrayInputStream(
-				content.getBytes(StandardCharsets.UTF_8))) {
-			file.create(stream, false, monitor);
-		} catch (CoreException | java.io.IOException e) {
+		try {
+			HintFileCreation.create(container, fileName, content, examples, monitor);
+		} catch (CoreException e) {
 			throw new InvocationTargetException(e);
 		}
-		monitor.worked(1);
-		monitor.done();
 	}
 }

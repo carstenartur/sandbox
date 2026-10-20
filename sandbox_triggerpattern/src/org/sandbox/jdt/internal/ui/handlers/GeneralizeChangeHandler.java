@@ -62,6 +62,7 @@ public class GeneralizeChangeHandler extends AbstractHandler {
 			}
 			NewSandboxHintFileWizard wizard = new NewSandboxHintFileWizard();
 			wizard.setInitialChange(change.get().before(), change.get().after());
+			wizard.setInitialExample(file.getProjectRelativePath().toPortableString(), saved.toString(), current.get());
 			wizard.init(PlatformUI.getWorkbench(), new StructuredSelection(file));
 			new WizardDialog(HandlerUtil.getActiveShell(event), wizard).open();
 		} catch (CoreException | IOException exception) {

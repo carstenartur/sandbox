@@ -558,14 +558,16 @@ llmClient, promptBuilder, dslContext, categoryManager,
 validator, stats, aggregator, config.getMinDiffLinesPerCommit(),
 config.getMaxDiffLinesPerCommit(), typeEnricher, keywordFilter, outputDir, sandboxRoot);
 } catch (IncompleteBatchException e) {
-if (!llmClient.wasLastResponseTruncated() || dynamicCPR[0] <= 1) {
+if (dynamicCPR[0] <= 1) {
 throw e;
 }
+// Even a response that ended normally can omit evaluations. Use the same
+// bounded smaller-batch retry, stopping if a single-commit batch is incomplete.
 dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);
 // The completed prefix is already checkpointed. Retry from the first gap;
 // later completed results are cached and must not be requested again.
 i += e.firstMissingIndex;
-miningLog.println("  Retrying incomplete truncated response with commits-per-request " + dynamicCPR[0]); //$NON-NLS-1$
+miningLog.println("  Retrying incomplete response with commits-per-request " + dynamicCPR[0]); //$NON-NLS-1$
 continue;
 }
 i = end;

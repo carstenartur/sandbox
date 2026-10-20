@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -27,6 +28,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.wizard.WizardPage;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
@@ -56,6 +58,7 @@ import org.eclipse.ui.dialogs.PreferencesUtil;
 import org.eclipse.ui.dialogs.ListSelectionDialog;
 import org.sandbox.jdt.internal.ui.preferences.LlmPreferencePage;
 import org.sandbox.jdt.triggerpattern.api.PatternIndex;
+import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite;
 import org.sandbox.jdt.triggerpattern.internal.DslValidator.ValidationResult;
 import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
 import org.sandbox.jdt.triggerpattern.internal.HintProgramParser;
@@ -101,6 +104,8 @@ public class NewRuleWizardPage extends WizardPage {
 	private boolean requiresReplacement;
 	private String authoringError;
 	private Consumer<String> projectPreviewAction;
+	private Supplier<IJavaProject> exampleProjectSupplier = () -> null;
+	private RuleExampleSuite examples;
 	private Supplier<Map<String, String>> metadataSupplier = Map::of;
 	private Supplier<String> defaultContentSupplier = () -> ""; //$NON-NLS-1$
 	private final Map<String, String> appliedMetadata = new LinkedHashMap<>();
@@ -131,6 +136,20 @@ public class NewRuleWizardPage extends WizardPage {
 	/** Imports a complete file, retaining all metadata, rules and alternatives. */
 	public void setInitialDsl(String dsl) {
 		initialDsl = dsl;
+	}
+
+	/** Supplies the actual current destination project for binding-aware replay. */
+	public void setExampleProjectSupplier(Supplier<IJavaProject> supplier) {
+		exampleProjectSupplier = Objects.requireNonNull(supplier);
+	}
+
+	/** Retains complete compilation-unit evidence independently of rule editing. */
+	public void setExamples(RuleExampleSuite suite) {
+		examples = suite;
+	}
+
+	public RuleExampleSuite getExamples() {
+		return examples;
 	}
 
 	/** Supplies a real project-run action. A DSL preview alone is not a project check. */
@@ -185,8 +204,10 @@ public class NewRuleWizardPage extends WizardPage {
 		container.setLayout(new GridLayout(2, false));
 
 		ModifyListener modifyListener = e -> {
-			customContentEntered = true;
-			updateDocumentFromFields();
+			if (!updatingDocument) {
+				customContentEntered = true;
+				updateDocumentFromFields();
+			}
 		};
 
 		// --- Source pattern ---
@@ -277,6 +298,9 @@ public class NewRuleWizardPage extends WizardPage {
 				projectPreviewAction.accept(getFullDslDocument());
 			}
 		});
+		Button examplesButton = new Button(documentActions, SWT.PUSH);
+		examplesButton.setText("Examples..."); //$NON-NLS-1$
+		examplesButton.addListener(SWT.Selection, event -> openExamples());
 		Button copyButton = new Button(documentActions, SWT.PUSH);
 		copyButton.setText("Copy complete rule"); //$NON-NLS-1$
 		copyButton.addListener(SWT.Selection, event -> {
@@ -464,6 +488,65 @@ public class NewRuleWizardPage extends WizardPage {
 		if (generateAiButton != null) {
 			generateAiButton.setEnabled(false);
 		}
+	}
+
+	private void openExamples() {
+		applyPendingMetadata();
+		String original = getFullDslDocument();
+		var factory = exampleDocumentFactory();
+		var seed = factory == null ? null
+				: new RuleAuthoringDocument.ChangeExample(sourcePatternText.getText(), replacementText.getText());
+		RuleExamplesDialog dialog = new RuleExamplesDialog(getShell(), original, examples,
+				exampleProjectSupplier.get(), seed, factory);
+		if (dialog.open() == Window.OK) {
+			examples = dialog.getSuite();
+			var proposal = dialog.getAcceptedProposal();
+			if (proposal != null) {
+				if (original.equals(getFullDslDocument()) && canRefineExamples()) {
+					applyExampleProposal(proposal.example());
+				} else {
+					MessageDialog.openInformation(getShell(), "Rule changed", //$NON-NLS-1$
+							"The complete rule changed while the examples were open. Your examples are kept; verify a new proposal before using it."); //$NON-NLS-1$
+				}
+			}
+		}
+	}
+
+	boolean canRefineExamples() {
+		return exampleDocumentFactory() != null;
+	}
+
+	private Function<RuleAuthoringDocument.ChangeExample, String> exampleDocumentFactory() {
+		if (sourcePatternText == null || sourcePatternText.isDisposed() || !sourcePatternText.isEnabled()
+				|| sourcePatternText.getText().isBlank() || replacementText.getText().isBlank()) {
+			return null;
+		}
+		String guard = guardText.getText();
+		Map<String, String> metadata = java.util.Collections.unmodifiableMap(new LinkedHashMap<>(appliedMetadata));
+		Function<RuleAuthoringDocument.ChangeExample, String> factory = example -> RuleAuthoringDocument
+				.fromChange(example.before(), example.after(), guard).withMetadata(metadata).content();
+		try {
+			String reconstructed = factory.apply(new RuleAuthoringDocument.ChangeExample(
+					sourcePatternText.getText(), replacementText.getText()));
+			return reconstructed.equals(getFullDslDocument()) ? factory : null;
+		} catch (IllegalArgumentException exception) {
+			return null;
+		}
+	}
+
+	void applyExampleProposal(RuleAuthoringDocument.ChangeExample proposal) {
+		if (!canRefineExamples()) {
+			throw new IllegalStateException("The complete document cannot be rebuilt from helper fields"); //$NON-NLS-1$
+		}
+		updatingDocument = true;
+		try {
+			sourcePatternText.setText(proposal.before());
+			replacementText.setText(proposal.after());
+		} finally {
+			updatingDocument = false;
+		}
+		customContentEntered = true;
+		updateDocumentFromFields();
 	}
 
 	private void chooseVariables() {
