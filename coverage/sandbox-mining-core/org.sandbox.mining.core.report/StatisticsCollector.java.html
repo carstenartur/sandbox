@@ -252,19 +252,19 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation;
 				}
 			}
 <span class="fc" id="L254">			Instant cd = eval.commitDate();</span>
-<span class="pc bpc" id="L255" title="1 of 2 branches missed.">			if (cd != null) {</span>
-<span class="nc bnc" id="L256" title="All 4 branches missed.">				if (earliestCommit == null || cd.isBefore(earliestCommit)) {</span>
-<span class="nc" id="L257">					earliestCommit = cd;</span>
+<span class="fc bfc" id="L255" title="All 2 branches covered.">			if (cd != null) {</span>
+<span class="pc bpc" id="L256" title="1 of 4 branches missed.">				if (earliestCommit == null || cd.isBefore(earliestCommit)) {</span>
+<span class="fc" id="L257">					earliestCommit = cd;</span>
 				}
-<span class="nc bnc" id="L259" title="All 4 branches missed.">				if (latestCommit == null || cd.isAfter(latestCommit)) {</span>
-<span class="nc" id="L260">					latestCommit = cd;</span>
+<span class="fc bfc" id="L259" title="All 4 branches covered.">				if (latestCommit == null || cd.isAfter(latestCommit)) {</span>
+<span class="fc" id="L260">					latestCommit = cd;</span>
 				}
 			}
 <span class="fc" id="L263">		}</span>
 <span class="pc bpc" id="L264" title="1 of 2 branches missed.">		if (earliest != null) {</span>
 <span class="fc" id="L265">			this.timeWindow = new TimeWindow(earliest.toString(), latest.toString(),</span>
-<span class="pc bpc" id="L266" title="1 of 2 branches missed.">					earliestCommit != null ? earliestCommit.toString() : null,</span>
-<span class="pc bpc" id="L267" title="1 of 2 branches missed.">					latestCommit != null ? latestCommit.toString() : null);</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">					earliestCommit != null ? earliestCommit.toString() : null,</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">					latestCommit != null ? latestCommit.toString() : null);</span>
 		}
 <span class="fc" id="L269">	}</span>
 

@@ -66,7 +66,7 @@ import com.google.gson.JsonSerializer;
 		private String focusCategory;
 
 		public String getLastProcessedCommit() {
-<span class="nc" id="L69">			return lastProcessedCommit;</span>
+<span class="fc" id="L69">			return lastProcessedCommit;</span>
 		}
 
 		public void setLastProcessedCommit(String lastProcessedCommit) {
@@ -264,8 +264,8 @@ import com.google.gson.JsonSerializer;
 	 * @throws IOException if the file cannot be read
 	 */
 	public static MiningState load(Path path) throws IOException {
-<span class="pc bpc" id="L267" title="1 of 2 branches missed.">		if (!Files.exists(path)) {</span>
-<span class="nc" id="L268">			return new MiningState();</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">		if (!Files.exists(path)) {</span>
+<span class="fc" id="L268">			return new MiningState();</span>
 		}
 <span class="fc" id="L270">		String json = Files.readString(path, StandardCharsets.UTF_8);</span>
 <span class="fc" id="L271">		MiningState state = GSON.fromJson(json, MiningState.class);</span>
@@ -302,7 +302,7 @@ import com.google.gson.JsonSerializer;
 	 * @throws IOException if the file cannot be copied
 	 */
 	public static void backup(Path path) throws IOException {
-<span class="pc bpc" id="L305" title="1 of 2 branches missed.">		if (Files.exists(path)) {</span>
+<span class="fc bfc" id="L305" title="All 2 branches covered.">		if (Files.exists(path)) {</span>
 <span class="fc" id="L306">			Path backupPath = path.resolveSibling(path.getFileName() + &quot;.bak&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L307">			Files.copy(path, backupPath, StandardCopyOption.REPLACE_EXISTING);</span>
 		}
@@ -315,8 +315,8 @@ import com.google.gson.JsonSerializer;
 	 * @return the commit hash, or null if not yet processed
 	 */
 	public String getLastProcessedCommit(String repoUrl) {
-<span class="nc" id="L318">		RepoState repoState = repositories.get(repoUrl);</span>
-<span class="nc bnc" id="L319" title="All 2 branches missed.">		return repoState != null ? repoState.getLastProcessedCommit() : null;</span>
+<span class="fc" id="L318">		RepoState repoState = repositories.get(repoUrl);</span>
+<span class="fc bfc" id="L319" title="All 2 branches covered.">		return repoState != null ? repoState.getLastProcessedCommit() : null;</span>
 	}
 
 	/**
@@ -348,7 +348,7 @@ import com.google.gson.JsonSerializer;
 	}
 
 	public int getGlobalTotalProcessed() {
-<span class="nc" id="L351">		return globalTotalProcessed;</span>
+<span class="fc" id="L351">		return globalTotalProcessed;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -26,7 +26,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
  * &lt;p&gt;Supports both shallow clones (for quick analysis) and full clones
  * (for commit history iteration).&lt;/p&gt;
  */
-<span class="nc" id="L29">public class RepoCloner {</span>
+<span class="fc" id="L29">public class RepoCloner {</span>
 
 	/**
 	 * Clones a repository with full history.
@@ -40,14 +40,14 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 	 */
 	public Path cloneRepo(String repoUrl, String branch, Path targetDir)
 			throws IOException, GitAPIException {
-<span class="nc" id="L43">		CloneCommand cloneCommand = Git.cloneRepository()</span>
-<span class="nc" id="L44">				.setURI(repoUrl)</span>
-<span class="nc" id="L45">				.setDirectory(targetDir.toFile())</span>
-<span class="nc" id="L46">				.setBranch(branch)</span>
-<span class="nc" id="L47">				.setNoCheckout(false);</span>
+<span class="fc" id="L43">		CloneCommand cloneCommand = Git.cloneRepository()</span>
+<span class="fc" id="L44">				.setURI(repoUrl)</span>
+<span class="fc" id="L45">				.setDirectory(targetDir.toFile())</span>
+<span class="fc" id="L46">				.setBranch(branch)</span>
+<span class="fc" id="L47">				.setNoCheckout(false);</span>
 
-<span class="nc" id="L49">		try (Git git = cloneCommand.call()) {</span>
-<span class="nc" id="L50">			return targetDir;</span>
+<span class="fc" id="L49">		try (Git git = cloneCommand.call()) {</span>
+<span class="fc" id="L50">			return targetDir;</span>
 		}
 	}
 

@@ -27,7 +27,7 @@ import java.util.List;
  * Walks a directory tree and collects all {@code .sandbox-hint} files,
  * returning their content formatted as context for an LLM prompt.
  */
-<span class="nc" id="L30">public class DslContextCollector {</span>
+<span class="fc" id="L30">public class DslContextCollector {</span>
 
 	private static final String HINT_FILE_EXTENSION = &quot;.sandbox-hint&quot;;
 
@@ -39,13 +39,13 @@ import java.util.List;
 	 * @throws IOException if an I/O error occurs
 	 */
 	public String collectContext(Path sandboxRoot) throws IOException {
-<span class="nc bnc" id="L42" title="All 2 branches missed.">		if (!Files.isDirectory(sandboxRoot)) {</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">		if (!Files.isDirectory(sandboxRoot)) {</span>
 <span class="nc" id="L43">			return &quot;&quot;;</span>
 		}
 
-<span class="nc" id="L46">		List&lt;Path&gt; hintFiles = findHintFiles(sandboxRoot);</span>
-<span class="nc bnc" id="L47" title="All 2 branches missed.">		if (hintFiles.isEmpty()) {</span>
-<span class="nc" id="L48">			return &quot;(no existing DSL rules found)&quot;;</span>
+<span class="fc" id="L46">		List&lt;Path&gt; hintFiles = findHintFiles(sandboxRoot);</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">		if (hintFiles.isEmpty()) {</span>
+<span class="fc" id="L48">			return &quot;(no existing DSL rules found)&quot;;</span>
 		}
 
 <span class="nc" id="L51">		StringBuilder sb = new StringBuilder();</span>
@@ -67,15 +67,15 @@ import java.util.List;
 	 * @throws IOException if an I/O error occurs
 	 */
 	List&lt;Path&gt; findHintFiles(Path root) throws IOException {
-<span class="nc" id="L70">		List&lt;Path&gt; result = new ArrayList&lt;&gt;();</span>
-<span class="nc" id="L71">		Files.walkFileTree(root, new SimpleFileVisitor&lt;&gt;() {</span>
+<span class="fc" id="L70">		List&lt;Path&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L71">		Files.walkFileTree(root, new SimpleFileVisitor&lt;&gt;() {</span>
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-<span class="nc" id="L74">				Path fileName = file.getFileName();</span>
-<span class="nc bnc" id="L75" title="All 4 branches missed.">				if (fileName != null &amp;&amp; fileName.toString().endsWith(HINT_FILE_EXTENSION)) {</span>
+<span class="fc" id="L74">				Path fileName = file.getFileName();</span>
+<span class="pc bpc" id="L75" title="2 of 4 branches missed.">				if (fileName != null &amp;&amp; fileName.toString().endsWith(HINT_FILE_EXTENSION)) {</span>
 <span class="nc" id="L76">					result.add(file);</span>
 				}
-<span class="nc" id="L78">				return FileVisitResult.CONTINUE;</span>
+<span class="fc" id="L78">				return FileVisitResult.CONTINUE;</span>
 			}
 
 			@Override
@@ -83,7 +83,7 @@ import java.util.List;
 <span class="nc" id="L83">				return FileVisitResult.CONTINUE;</span>
 			}
 		});
-<span class="nc" id="L86">		return result;</span>
+<span class="fc" id="L86">		return result;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

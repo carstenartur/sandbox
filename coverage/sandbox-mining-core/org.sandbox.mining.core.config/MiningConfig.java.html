@@ -92,9 +92,9 @@ public class MiningConfig {
 	 */
 	public static MiningConfig parse(Path configPath) throws IOException {
 <span class="fc" id="L94">		Yaml yaml = new Yaml();</span>
-<span class="nc" id="L95">		try (InputStream in = Files.newInputStream(configPath)) {</span>
-<span class="nc" id="L96">			Map&lt;String, Object&gt; root = yaml.load(in);</span>
-<span class="nc" id="L97">			return fromMap(root);</span>
+<span class="fc" id="L95">		try (InputStream in = Files.newInputStream(configPath)) {</span>
+<span class="fc" id="L96">			Map&lt;String, Object&gt; root = yaml.load(in);</span>
+<span class="fc" id="L97">			return fromMap(root);</span>
 		}
 	}
 
@@ -124,7 +124,7 @@ public class MiningConfig {
 
 		// Look for settings in mining.settings first, then fall back to mining directly
 <span class="fc" id="L126">		Map&lt;String, Object&gt; settings = (Map&lt;String, Object&gt;) mining.get(&quot;settings&quot;);</span>
-<span class="pc bpc" id="L127" title="1 of 2 branches missed.">		Map&lt;String, Object&gt; source = settings != null ? settings : mining;</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">		Map&lt;String, Object&gt; source = settings != null ? settings : mining;</span>
 
 		// Parse start-date
 <span class="fc" id="L130">		Object startDateObj = source.get(&quot;start-date&quot;);</span>
@@ -146,8 +146,8 @@ public class MiningConfig {
 
 		// Parse max-diff-lines-per-commit
 <span class="fc" id="L148">		Object maxDiffObj = source.get(&quot;max-diff-lines-per-commit&quot;);</span>
-<span class="pc bpc" id="L149" title="1 of 2 branches missed.">		if (maxDiffObj instanceof Number n) {</span>
-<span class="nc" id="L150">			config.maxDiffLinesPerCommit = n.intValue();</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">		if (maxDiffObj instanceof Number n) {</span>
+<span class="fc" id="L150">			config.maxDiffLinesPerCommit = n.intValue();</span>
 		}
 
 		// Parse min-diff-lines-per-commit
@@ -170,23 +170,23 @@ public class MiningConfig {
 
 		// Parse repositories (always from mining directly)
 <span class="fc" id="L172">		Object reposObj = mining.get(&quot;repositories&quot;);</span>
-<span class="pc bpc" id="L173" title="1 of 2 branches missed.">		if (reposObj instanceof List&lt;?&gt; reposList) {</span>
-<span class="nc" id="L174">			config.repositories = reposList.stream().map(obj -&gt; {</span>
-<span class="nc bnc" id="L175" title="All 2 branches missed.">				if (obj instanceof Map&lt;?, ?&gt; map) {</span>
-<span class="nc" id="L176">					RepoEntry entry = new RepoEntry();</span>
-<span class="nc" id="L177">					entry.setUrl((String) map.get(&quot;url&quot;));</span>
-<span class="nc" id="L178">					Object branchObj = map.get(&quot;branch&quot;);</span>
-<span class="nc bnc" id="L179" title="All 2 branches missed.">					if (branchObj != null) {</span>
-<span class="nc" id="L180">						entry.setBranch(branchObj.toString());</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">		if (reposObj instanceof List&lt;?&gt; reposList) {</span>
+<span class="fc" id="L174">			config.repositories = reposList.stream().map(obj -&gt; {</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">				if (obj instanceof Map&lt;?, ?&gt; map) {</span>
+<span class="fc" id="L176">					RepoEntry entry = new RepoEntry();</span>
+<span class="fc" id="L177">					entry.setUrl((String) map.get(&quot;url&quot;));</span>
+<span class="fc" id="L178">					Object branchObj = map.get(&quot;branch&quot;);</span>
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">					if (branchObj != null) {</span>
+<span class="fc" id="L180">						entry.setBranch(branchObj.toString());</span>
 					}
-<span class="nc" id="L182">					Object pathsObj = map.get(&quot;paths&quot;);</span>
-<span class="nc bnc" id="L183" title="All 2 branches missed.">					if (pathsObj instanceof List&lt;?&gt; pathsList) {</span>
+<span class="fc" id="L182">					Object pathsObj = map.get(&quot;paths&quot;);</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">					if (pathsObj instanceof List&lt;?&gt; pathsList) {</span>
 <span class="nc" id="L184">						entry.setPaths(pathsList.stream().map(Object::toString).toList());</span>
 					}
-<span class="nc" id="L186">					return entry;</span>
+<span class="fc" id="L186">					return entry;</span>
 				}
 <span class="nc" id="L188">				return null;</span>
-<span class="nc bnc" id="L189" title="All 2 branches missed.">			}).filter(e -&gt; e != null).toList();</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">			}).filter(e -&gt; e != null).toList();</span>
 		}
 
 		// Parse epochs (from mining.settings.epochs)
@@ -209,7 +209,7 @@ public class MiningConfig {
 	}
 
 	public List&lt;RepoEntry&gt; getRepositories() {
-<span class="nc" id="L212">		return repositories;</span>
+<span class="fc" id="L212">		return repositories;</span>
 	}
 
 	public void setRepositories(List&lt;RepoEntry&gt; repositories) {
@@ -217,7 +217,7 @@ public class MiningConfig {
 <span class="nc" id="L217">	}</span>
 
 	public String getStartDate() {
-<span class="nc" id="L220">		return startDate;</span>
+<span class="fc" id="L220">		return startDate;</span>
 	}
 
 	public void setStartDate(String startDate) {
@@ -249,7 +249,7 @@ public class MiningConfig {
 <span class="nc" id="L249">	}</span>
 
 	public int getMaxDiffLinesPerCommit() {
-<span class="nc" id="L252">		return maxDiffLinesPerCommit;</span>
+<span class="fc" id="L252">		return maxDiffLinesPerCommit;</span>
 	}
 
 	public void setMaxDiffLinesPerCommit(int maxDiffLinesPerCommit) {

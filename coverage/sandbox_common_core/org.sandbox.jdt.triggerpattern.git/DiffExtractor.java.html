@@ -145,8 +145,8 @@ public class DiffExtractor implements Closeable {
 	}
 
 	private AbstractTreeIterator getParentTree(RevCommit commit) throws IOException {
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">		if (commit.getParentCount() == 0) {</span>
-<span class="nc" id="L149">			return new EmptyTreeIterator();</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">		if (commit.getParentCount() == 0) {</span>
+<span class="fc" id="L149">			return new EmptyTreeIterator();</span>
 		}
 <span class="fc" id="L151">		RevCommit parent = commit.getParent(0);</span>
 <span class="fc" id="L152">		return getTree(parent);</span>

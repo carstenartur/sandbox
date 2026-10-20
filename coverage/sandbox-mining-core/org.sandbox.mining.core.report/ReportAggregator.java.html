@@ -29,9 +29,9 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
  * &lt;p&gt;Groups evaluations by repository, category, and traffic light
  * for reporting purposes.&lt;/p&gt;
  */
-<span class="nc" id="L32">public class ReportAggregator {</span>
+<span class="fc" id="L32">public class ReportAggregator {</span>
 
-<span class="nc" id="L34">	private final List&lt;CommitEvaluation&gt; evaluations = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L34">	private final List&lt;CommitEvaluation&gt; evaluations = new ArrayList&lt;&gt;();</span>
 
 	/**
 	 * Adds an evaluation to the aggregator.
@@ -39,10 +39,10 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
 	 * @param evaluation the evaluation to add
 	 */
 	public void add(CommitEvaluation evaluation) {
-<span class="nc bnc" id="L42" title="All 2 branches missed.">		if (evaluation != null) {</span>
-<span class="nc" id="L43">			evaluations.add(evaluation);</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">		if (evaluation != null) {</span>
+<span class="fc" id="L43">			evaluations.add(evaluation);</span>
 		}
-<span class="nc" id="L45">	}</span>
+<span class="fc" id="L45">	}</span>
 
 	/**
 	 * Returns all evaluations.
@@ -50,7 +50,7 @@ import org.sandbox.jdt.triggerpattern.llm.CommitEvaluation.TrafficLight;
 	 * @return unmodifiable list of all evaluations
 	 */
 	public List&lt;CommitEvaluation&gt; getAllEvaluations() {
-<span class="nc" id="L53">		return Collections.unmodifiableList(evaluations);</span>
+<span class="fc" id="L53">		return Collections.unmodifiableList(evaluations);</span>
 	}
 
 	/**

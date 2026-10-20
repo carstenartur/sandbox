@@ -15,8 +15,10 @@ package org.sandbox.mining.core.report;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,25 +45,25 @@ public class JsonReporter {
 
 	private final Gson gson;
 
-<span class="fc" id="L46">	public JsonReporter() {</span>
-<span class="fc" id="L47">		this.gson = new GsonBuilder()</span>
-<span class="fc" id="L48">				.setPrettyPrinting()</span>
-<span class="fc" id="L49">				.registerTypeAdapter(Instant.class, new TypeAdapter&lt;Instant&gt;() {</span>
+<span class="fc" id="L48">	public JsonReporter() {</span>
+<span class="fc" id="L49">		this.gson = new GsonBuilder()</span>
+<span class="fc" id="L50">				.setPrettyPrinting()</span>
+<span class="fc" id="L51">				.registerTypeAdapter(Instant.class, new TypeAdapter&lt;Instant&gt;() {</span>
 					@Override
 					public void write(JsonWriter out, Instant value) throws IOException {
-<span class="fc bfc" id="L52" title="All 2 branches covered.">						out.value(value == null ? null : value.toString());</span>
-<span class="fc" id="L53">					}</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">						out.value(value == null ? null : value.toString());</span>
+<span class="fc" id="L55">					}</span>
 					@Override
 					public Instant read(JsonReader in) throws IOException {
-<span class="fc" id="L56">						return Instant.parse(in.nextString());</span>
+<span class="fc" id="L58">						return Instant.parse(in.nextString());</span>
 					}
 				})
-<span class="fc" id="L59">				.create();</span>
-<span class="fc" id="L60">	}</span>
+<span class="fc" id="L61">				.create();</span>
+<span class="fc" id="L62">	}</span>
 
 	/**
 	 * Writes evaluations to a JSON file, merging with any existing evaluations
-	 * to accumulate results across runs. Deduplicates by commitHash (newer
+	 * to accumulate results across runs. Deduplicates by repository and commitHash (newer
 	 * evaluations replace older ones).
 	 *
 	 * @param evaluations the list of new evaluations from the current run
@@ -69,16 +71,24 @@ public class JsonReporter {
 	 * @throws IOException if file writing fails
 	 */
 	public void writeEvaluations(List&lt;CommitEvaluation&gt; evaluations, Path outputDir) throws IOException {
-<span class="fc" id="L72">		Files.createDirectories(outputDir);</span>
-<span class="fc" id="L73">		Path file = outputDir.resolve(EVALUATIONS_FILE);</span>
+<span class="fc" id="L74">		Files.createDirectories(outputDir);</span>
+<span class="fc" id="L75">		Path file = outputDir.resolve(EVALUATIONS_FILE);</span>
 
 		// Load existing evaluations and merge
-<span class="fc" id="L76">		List&lt;CommitEvaluation&gt; existing = loadExistingEvaluations(file);</span>
-<span class="fc" id="L77">		List&lt;CommitEvaluation&gt; merged = mergeEvaluations(existing, evaluations);</span>
+<span class="fc" id="L78">		List&lt;CommitEvaluation&gt; existing = loadExistingEvaluations(file);</span>
+<span class="fc" id="L79">		List&lt;CommitEvaluation&gt; merged = mergeEvaluations(existing, evaluations);</span>
 
-<span class="fc" id="L79">		String json = gson.toJson(merged);</span>
-<span class="fc" id="L80">		Files.writeString(file, json, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L81">	}</span>
+<span class="fc" id="L81">		String json = gson.toJson(merged);</span>
+		// Recovery depends on this history; never truncate the last complete file
+		// while writing its replacement.
+<span class="fc" id="L84">		Path temp = file.resolveSibling(file.getFileName() + &quot;.tmp&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L85">		Files.writeString(temp, json, StandardCharsets.UTF_8);</span>
+		try {
+<span class="fc" id="L87">			Files.move(temp, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);</span>
+<span class="nc" id="L88">		} catch (AtomicMoveNotSupportedException e) {</span>
+<span class="nc" id="L89">			Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);</span>
+<span class="fc" id="L90">		}</span>
+<span class="fc" id="L91">	}</span>
 
 	/**
 	 * Loads existing evaluations from a JSON file.
@@ -87,23 +97,23 @@ public class JsonReporter {
 	 * @return list of existing evaluations, empty if file doesn't exist or is invalid
 	 */
 	public List&lt;CommitEvaluation&gt; loadExistingEvaluations(Path file) {
-<span class="fc bfc" id="L90" title="All 2 branches covered.">		if (!Files.exists(file)) {</span>
-<span class="fc" id="L91">			return List.of();</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">		if (!Files.exists(file)) {</span>
+<span class="fc" id="L101">			return List.of();</span>
 		}
 		try {
-<span class="fc" id="L94">			String content = Files.readString(file, StandardCharsets.UTF_8);</span>
-<span class="fc" id="L95">			List&lt;CommitEvaluation&gt; result = gson.fromJson(content,</span>
-<span class="fc" id="L96">					new TypeToken&lt;List&lt;CommitEvaluation&gt;&gt;() {}.getType());</span>
-<span class="pc bpc" id="L97" title="1 of 2 branches missed.">			return result != null ? result : List.of();</span>
-<span class="fc" id="L98">		} catch (Exception e) {</span>
-<span class="fc" id="L99">			System.err.println(&quot;Warning: could not load existing evaluations: &quot; + e.getMessage()); //$NON-NLS-1$</span>
-<span class="fc" id="L100">			return List.of();</span>
+<span class="fc" id="L104">			String content = Files.readString(file, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L105">			List&lt;CommitEvaluation&gt; result = gson.fromJson(content,</span>
+<span class="fc" id="L106">					new TypeToken&lt;List&lt;CommitEvaluation&gt;&gt;() {}.getType());</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">			return result != null ? result : List.of();</span>
+<span class="fc" id="L108">		} catch (Exception e) {</span>
+<span class="fc" id="L109">			System.err.println(&quot;Warning: could not load existing evaluations: &quot; + e.getMessage()); //$NON-NLS-1$</span>
+<span class="fc" id="L110">			return List.of();</span>
 		}
 	}
 
 	/**
-	 * Merges existing and new evaluations, deduplicating by commitHash.
-	 * New evaluations replace existing ones with the same commitHash.
+	 * Merges existing and new evaluations, deduplicating by repository and commitHash.
+	 * New evaluations replace existing ones for the same repository and commit.
 	 *
 	 * @param existing the existing evaluations
 	 * @param newEvals the new evaluations
@@ -111,14 +121,15 @@ public class JsonReporter {
 	 */
 	static List&lt;CommitEvaluation&gt; mergeEvaluations(List&lt;CommitEvaluation&gt; existing,
 			List&lt;CommitEvaluation&gt; newEvals) {
-<span class="fc" id="L114">		Map&lt;String, CommitEvaluation&gt; byHash = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L115" title="All 2 branches covered.">		for (CommitEvaluation e : existing) {</span>
-<span class="fc" id="L116">			byHash.put(e.commitHash(), e);</span>
-<span class="fc" id="L117">		}</span>
-<span class="fc bfc" id="L118" title="All 2 branches covered.">		for (CommitEvaluation e : newEvals) {</span>
-<span class="fc" id="L119">			byHash.put(e.commitHash(), e);</span>
-<span class="fc" id="L120">		}</span>
-<span class="fc" id="L121">		return new ArrayList&lt;&gt;(byHash.values());</span>
+<span class="fc" id="L124">		record EvaluationKey(String repoUrl, String commitHash) { }</span>
+<span class="fc" id="L125">		Map&lt;EvaluationKey, CommitEvaluation&gt; byCommit = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		for (CommitEvaluation e : existing) {</span>
+<span class="fc" id="L127">			byCommit.put(new EvaluationKey(e.repoUrl(), e.commitHash()), e);</span>
+<span class="fc" id="L128">		}</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">		for (CommitEvaluation e : newEvals) {</span>
+<span class="fc" id="L130">			byCommit.put(new EvaluationKey(e.repoUrl(), e.commitHash()), e);</span>
+<span class="fc" id="L131">		}</span>
+<span class="fc" id="L132">		return new ArrayList&lt;&gt;(byCommit.values());</span>
 	}
 
 	/**
@@ -129,10 +140,10 @@ public class JsonReporter {
 	 * @throws IOException if file writing fails
 	 */
 	public void writeStatistics(StatisticsCollector stats, Path outputDir) throws IOException {
-<span class="nc" id="L132">		Files.createDirectories(outputDir);</span>
-<span class="nc" id="L133">		String json = gson.toJson(stats);</span>
-<span class="nc" id="L134">		Files.writeString(outputDir.resolve(&quot;statistics.json&quot;), json, StandardCharsets.UTF_8);</span>
-<span class="nc" id="L135">	}</span>
+<span class="fc" id="L143">		Files.createDirectories(outputDir);</span>
+<span class="fc" id="L144">		String json = gson.toJson(stats);</span>
+<span class="fc" id="L145">		Files.writeString(outputDir.resolve(&quot;statistics.json&quot;), json, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L146">	}</span>
 
 	/**
 	 * Serializes evaluations to a JSON string.
@@ -141,7 +152,7 @@ public class JsonReporter {
 	 * @return the JSON string
 	 */
 	public String toJson(List&lt;CommitEvaluation&gt; evaluations) {
-<span class="nc" id="L144">		return gson.toJson(evaluations);</span>
+<span class="nc" id="L155">		return gson.toJson(evaluations);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
