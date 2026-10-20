@@ -67,11 +67,17 @@ jobs:
               git archive origin/mining/candidates mining-candidates | tar -xf -
               echo "Restored $(find mining-candidates -name '*-candidate.json' | wc -l) staged candidates."
             fi
+            if git cat-file -e 'origin/mining/candidates:docs/mining-report/evaluations.json' 2>/dev/null; then
+              mkdir -p docs/mining-report
+              git show 'origin/mining/candidates:docs/mining-report/evaluations.json' > docs/mining-report/evaluations.json
+              echo 'Restored completed evaluations for resumable mining.'
+            fi
           else
             echo 'No candidate-data branch exists yet.'
           fi
 
       - name: Discover staged candidates
+        id: discover
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-2.5-flash
@@ -102,6 +108,8 @@ jobs:
             "${PROVIDER_ARG[@]}"
 
       - name: Verify candidate behavior
+        id: verify_candidates
+        if: ${{ !cancelled() && (steps.discover.outcome == 'success' || steps.discover.outcome == 'failure') }}
         run: |
           set -euo pipefail
           java -cp sandbox_mining_core/target/sandbox-mining-core.jar \
@@ -112,6 +120,8 @@ jobs:
             --source-version 21
 
       - name: Persist candidate data outside main
+        id: persist_candidates
+        if: ${{ !cancelled() && steps.verify_candidates.outcome == 'success' }}
         run: |
           set -euo pipefail
           DATA_WORKTREE="$RUNNER_TEMP/mining-candidate-data"
@@ -131,10 +141,15 @@ jobs:
           if [ -d mining-candidates ]; then
             cp -a mining-candidates/. "$DATA_WORKTREE/mining-candidates/"
           fi
+          if [ -f docs/mining-report/evaluations.json ]; then
+            mkdir -p "$DATA_WORKTREE/docs/mining-report"
+            cp docs/mining-report/evaluations.json "$DATA_WORKTREE/docs/mining-report/evaluations.json"
+          fi
           cat > "$DATA_WORKTREE/README.md" <<'EOF'
           # Mining candidate data
 
-          This branch stores untrusted, staged DSL candidate JSON and review decisions.
+          This branch stores untrusted, staged DSL candidate JSON, review decisions,
+          and completed evaluations needed to resume a partial mining batch.
           It is deliberately not merged into `main` and contains no productive hint files.
           EOF
 
@@ -319,9 +334,11 @@ jobs:
         if: always()
         with:
           name: mining-candidates-${{ github.run_number }}
+          include-hidden-files: true
           path: |
             docs/mining-report/
             mining-candidates/
+            .github/refactoring-mining/state.json
           if-no-files-found: ignore
 
       - name: Report candidate review URL
@@ -330,6 +347,8 @@ jobs:
           echo '📋 [View verified candidates](https://carstenartur.github.io/sandbox/mining-report/candidates.html)' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Persist resumable scan state outside main
+        # Candidate data must reach its branch before the matching scan position.
+        if: ${{ !cancelled() && steps.persist_candidates.outcome == 'success' }}
         run: |
           set -euo pipefail
           STATE='.github/refactoring-mining/state.json'

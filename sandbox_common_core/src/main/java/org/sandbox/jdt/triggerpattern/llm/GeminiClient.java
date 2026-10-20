@@ -13,16 +13,22 @@
  *******************************************************************************/
 package org.sandbox.jdt.triggerpattern.llm;
 
+import java.io.EOFException;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.SocketException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.net.ssl.SSLException;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -36,7 +42,8 @@ import com.google.gson.JsonParser;
  *
  * <p>Sends prompts to the Gemini API and parses the response into
  * {@link CommitEvaluation} objects. Includes rate limiting (15s delay)
- * and exponential backoff on HTTP 429 responses.</p>
+ * and bounded exponential backoff on HTTP 429 responses and transient
+ * transport failures.</p>
  */
 public class GeminiClient implements LlmClient {
 
@@ -56,6 +63,7 @@ public class GeminiClient implements LlmClient {
 	private final String apiKey;
 	private final String model;
 	private final HttpClient httpClient;
+	private final RetryWait retryWait;
 	private final Gson gson;
 	private long lastRequestTime;
 	private int dailyRequestCount;
@@ -64,6 +72,11 @@ public class GeminiClient implements LlmClient {
 	private int rateLimitDelayMs = RATE_LIMIT_DELAY_MS;
 	private int consecutive429Batches;
 	private boolean lastResponseTruncated;
+
+	@FunctionalInterface
+	interface RetryWait {
+		void pause(long delayMs) throws InterruptedException;
+	}
 
 	/**
 	 * Creates a client reading the API key from the GEMINI_API_KEY environment variable.
@@ -101,9 +114,14 @@ public class GeminiClient implements LlmClient {
 	 * @param model      the Gemini model name to use
 	 */
 	public GeminiClient(String apiKey, HttpClient httpClient, String model) {
+		this(apiKey, httpClient, model, Thread::sleep);
+	}
+
+	GeminiClient(String apiKey, HttpClient httpClient, String model, RetryWait retryWait) {
 		this.apiKey = apiKey;
 		this.model = model;
 		this.httpClient = httpClient;
+		this.retryWait = retryWait;
 		this.gson = new GsonBuilder().create();
 		this.lastSuccessfulCall = Instant.now();
 		this.maxFailureDuration = Duration.ofSeconds(DEFAULT_MAX_FAILURE_DURATION_SECONDS);
@@ -206,7 +224,7 @@ public class GeminiClient implements LlmClient {
 	 * @param commitMessage the commit message
 	 * @param repoUrl       the repository URL
 	 * @return the evaluation result, or null if the API call fails
-	 * @throws IOException if an I/O error occurs
+	 * @throws IOException if transport retries are exhausted or the API returns an error
 	 */
 	@Override
 
@@ -238,7 +256,7 @@ public class GeminiClient implements LlmClient {
 	 * @param commitMessages the commit messages (in order)
 	 * @param repoUrl        the repository URL
 	 * @return list of evaluations (one per commit, in order), never null
-	 * @throws IOException if an I/O error occurs
+	 * @throws IOException if transport retries are exhausted or the API returns an error
 	 */
 	@Override
 
@@ -382,8 +400,24 @@ public class GeminiClient implements LlmClient {
 						.POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
 						.build();
 
-				HttpResponse<String> response = httpClient.send(request,
-						HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+				HttpResponse<String> response;
+				try {
+					response = httpClient.send(request,
+							HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+				} catch (IOException e) {
+					allAttempts429 = false;
+					consecutive429Batches = 0;
+					if (!isTransientTransportFailure(e) || Thread.currentThread().isInterrupted()
+							|| attempt + 1 == MAX_RETRIES || isApiUnavailable()) {
+						throw e;
+					}
+					System.err.println("Transient Gemini transport failure (" + e.getClass().getSimpleName() //$NON-NLS-1$
+							+ "), attempt " + (attempt + 1) + "/" + MAX_RETRIES //$NON-NLS-1$ //$NON-NLS-2$
+							+ "; retrying in " + backoffMs + "ms"); //$NON-NLS-1$ //$NON-NLS-2$
+					retryWait.pause(backoffMs);
+					backoffMs *= 2;
+					continue;
+				}
 
 				if (response.statusCode() == 200) {
 					lastSuccessfulCall = Instant.now();
@@ -413,15 +447,14 @@ public class GeminiClient implements LlmClient {
 					System.err.println("Rate limited (429), attempt " + (attempt + 1) + "/" + MAX_RETRIES //$NON-NLS-1$ //$NON-NLS-2$
 							+ ", waiting " + waitMs + "ms" //$NON-NLS-1$ //$NON-NLS-2$
 							+ (usedRetryAfter ? " (from Retry-After header)" : " (exponential backoff)")); //$NON-NLS-1$ //$NON-NLS-2$
-					Thread.sleep(waitMs);
+					retryWait.pause(waitMs);
 					backoffMs *= 2;
 					continue;
 				}
 
 				allAttempts429 = false;
-				System.err.println("Gemini API error: " + response.statusCode()
-						+ " - " + response.body());
-				return null;
+				throw new IOException("Gemini API error: " + response.statusCode() //$NON-NLS-1$
+						+ " - " + response.body()); //$NON-NLS-1$
 
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -445,11 +478,24 @@ public class GeminiClient implements LlmClient {
 		System.err.println("Max retries exceeded for Gemini API call, entering post-failure cooldown of "
 				+ POST_FAILURE_COOLDOWN_MS + "ms");
 		try {
-			Thread.sleep(POST_FAILURE_COOLDOWN_MS);
+			retryWait.pause(POST_FAILURE_COOLDOWN_MS);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
 		return null;
+	}
+
+	private static boolean isTransientTransportFailure(IOException failure) {
+		for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+			if (cause instanceof SSLException) {
+				return false;
+			}
+			if (cause instanceof HttpTimeoutException || cause instanceof ConnectException
+					|| cause instanceof SocketException || cause instanceof EOFException) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

@@ -14,6 +14,8 @@
 package org.sandbox.mining.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -70,6 +72,27 @@ class JsonReporterTest {
 	}
 
 	@Test
+	void failedStagingWritePreservesPreviouslyCompletedEvaluations() throws IOException {
+		JsonReporter reporter = new JsonReporter();
+		CommitEvaluation retained = createEval("retained", "Completed after a gap", TrafficLight.GREEN);
+		reporter.writeEvaluations(List.of(retained), tempDir);
+		Path history = tempDir.resolve("evaluations.json");
+		String previousJson = Files.readString(history);
+		Path staging = tempDir.resolve("evaluations.json.tmp");
+		Files.createDirectory(staging);
+		CommitEvaluation next = createEval("next", "Next completed commit", TrafficLight.YELLOW);
+
+		assertThrows(IOException.class, () -> reporter.writeEvaluations(List.of(next), tempDir));
+		assertEquals(previousJson, Files.readString(history));
+		assertEquals(List.of(retained), reporter.loadExistingEvaluations(history));
+
+		Files.delete(staging);
+		reporter.writeEvaluations(List.of(next), tempDir);
+		assertEquals(List.of(retained, next), reporter.loadExistingEvaluations(history));
+		assertFalse(Files.exists(staging), "A successful replacement consumes the temporary file");
+	}
+
+	@Test
 	void testWriteEvaluationsDeduplicatesByCommitHash() throws IOException {
 		JsonReporter reporter = new JsonReporter();
 
@@ -87,6 +110,20 @@ class JsonReporterTest {
 		int count = content.split("\"hash1\"").length - 1;
 		assertEquals(1, count, "Should have exactly one evaluation for hash1");
 		assertTrue(content.contains("Updated version"), "Should contain updated evaluation");
+	}
+
+	@Test
+	void testSameCommitInDifferentRepositoriesKeepsBothEvaluations() throws IOException {
+		JsonReporter reporter = new JsonReporter();
+		CommitEvaluation original = createEval("shared-hash", "Original", TrafficLight.YELLOW);
+		CommitEvaluation fork = createEval("shared-hash", "Fork", TrafficLight.GREEN,
+				"https://github.com/test/fork");
+		reporter.writeEvaluations(List.of(original, fork), tempDir);
+		CommitEvaluation updated = createEval("shared-hash", "Updated original", TrafficLight.GREEN);
+		reporter.writeEvaluations(List.of(updated), tempDir);
+
+		assertEquals(List.of(updated, fork),
+				reporter.loadExistingEvaluations(tempDir.resolve("evaluations.json")));
 	}
 
 	@Test
@@ -140,8 +177,12 @@ class JsonReporterTest {
 	}
 
 	private CommitEvaluation createEval(String hash, String message, TrafficLight light) {
+		return createEval(hash, message, light, "https://github.com/test/repo");
+	}
+
+	private CommitEvaluation createEval(String hash, String message, TrafficLight light, String repository) {
 		return new CommitEvaluation(
-				hash, message, "https://github.com/test/repo",
+				hash, message, repository,
 				Instant.now(), null, true, null, false, null,
 				4, 3, 2, light,
 				"Collections", false, "reason",
