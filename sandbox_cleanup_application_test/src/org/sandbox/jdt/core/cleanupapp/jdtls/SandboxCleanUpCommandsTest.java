@@ -35,9 +35,11 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ls.core.internal.IDelegateCommandHandler;
+import org.eclipse.jdt.ls.core.internal.JavaLanguageServerPlugin;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.ICleanUpFix;
 import org.eclipse.jface.text.Document;
+import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
@@ -59,6 +61,9 @@ class SandboxCleanUpCommandsTest {
 
     @BeforeEach
     void createProject() throws Exception {
+        // The normal LSP initialize handshake establishes this state. The native
+        // JUnit host has no editor connection, but uses the real converter.
+        JavaLanguageServerPlugin.getPreferencesManager().updateClientPrefences(new ClientCapabilities(), Map.of());
         project = ResourcesPlugin.getWorkspace().getRoot().getProject("jdtls-cleanup-" + UUID.randomUUID());
         project.create(monitor);
         project.open(monitor);
