@@ -33,7 +33,7 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1719,
+        "files": 1728,
         "matches": 176,
         "rules": 12
       }
@@ -2337,7 +2337,7 @@
       "hintFile": "stream-performance",
       "rule": "stream-performance.sorted-before-collect.review",
       "file": "sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java",
-      "line": 910,
+      "line": 917,
       "matchedCode": "variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(java.util.Locale.ROOT)).sorted().collect(java.util.stream.Collectors.joining(\" \"))"
     },
     {
