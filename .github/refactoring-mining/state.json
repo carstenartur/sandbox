@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "dc3fc7c378f03dcd8404fd598641aa43a8ab086a",
-      "lastProcessedDate": "2026-10-20T02:25:35.821066814Z",
-      "totalProcessed": 1063,
+      "lastProcessedCommit": "e5c4a39c3ccf0136031a414fd78755d0c3807d92",
+      "lastProcessedDate": "2026-10-21T02:30:34.306944220Z",
+      "totalProcessed": 1135,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5059,11 +5059,29 @@
           "maxRetries": 3
         },
         {
-          "hash": "a63ada6c742b2f49237c81d2ef827e9b6c7141ec",
-          "message": "Bug 541415 - [Test] Use MOD1 instead of CONTROL",
-          "diffLines": 23,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-10-20T02:25:35.821097281Z",
+          "hash": "4b9a8a739f42da547975427154744c981d0811ba",
+          "message": "Bug 545531 - Define compare/merge viewer for Generic Editor",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-21T02:22:49.854521372Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "ead7de4749a856cec4c830d7bd331961cc5dad27",
+          "message": "Bug 546828 - Editors based on FileDocumentProvider / TextFileDocumentProvider lock UI on attempt to edit while build is ",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-21T02:24:31.325872846Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "5dacb5c72fb91737feedb5f20ff741a078707c61",
+          "message": "Bug 513034 - [generic editor] Provide a way for generic editor to use different icon based on content-type",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-21T02:29:09.068538005Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -5079,9 +5097,9 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 7,
-        "API Modernization": 30,
-        "Performance": 15,
-        "Redundant Code": 6,
+        "API Modernization": 32,
+        "Performance": 16,
+        "Redundant Code": 7,
         "API Misuse Correction": 1,
         "Lambda to Method Reference": 1,
         "JUnit migration": 1,
@@ -5094,7 +5112,7 @@
         "Deprecation": 2,
         "API Usage": 2,
         "JUnit Assertion": 1,
-        "API Migration": 6,
+        "API Migration": 7,
         "Configuration Default Update": 1,
         "API Deprecation": 1,
         "String API Usage": 2,
@@ -5105,7 +5123,7 @@
         "Logging Cleanup": 1,
         "Concurrency Performance": 1,
         "Modernization": 8,
-        "Defensive Programming": 2,
+        "Defensive Programming": 3,
         "String Literal Replacement": 2,
         "Condition Improvement": 1,
         "Readability": 1,
@@ -5161,7 +5179,16 @@
         "Method Call Replacement": 1,
         "API Replacement": 1,
         "Magic Number Update": 1,
-        "Code Modernization": 1
+        "Code Modernization": 1,
+        "JUnit Modernization": 1,
+        "API Refactoring": 1,
+        "Debugging Cleanup": 1,
+        "UI Layout Cleanup": 1,
+        "String API Modernization": 1,
+        "Performance Optimization": 1,
+        "API Usage Simplification": 1,
+        "Constant Replacement": 1,
+        "Expression Modernization": 1
       },
       "exhaustedCategories": []
     },
@@ -5271,5 +5298,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52828
+  "globalTotalProcessed": 52900
 }
