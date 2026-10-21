@@ -37,8 +37,8 @@ Use the repository's Java 25/Maven build:
 
 The existing application test module contains the bridge's JUnit tests and still
 uses `useUIHarness=false`. No additional workflow or test runner is introduced.
-The JDT LS p2 build repository is confined to the application and its tests, not
-added to the shared Eclipse target. The server dependencies are optional at
+The JDT LS 1.62.0 milestone p2 repository is pinned in the application and its tests,
+not added to the shared Eclipse target. The server dependencies are optional at
 runtime, so the ordinary Eclipse/CLI entry points do not require JDT LS.
 
 **This is a small adapter, not an SWT-free repackaging of Sandbox.** The current
@@ -66,7 +66,7 @@ sandbox_triggerpattern
 ```
 
 Use the locally built `sandbox_updatesite/target/repository`, the JDT LS p2
-repository `https://download.eclipse.org/jdtls/snapshots/repository/`, and the
+repository `https://download.eclipse.org/jdtls/milestones/1.62.0/repository/`, and the
 released Eclipse/Orbit repositories declared by `sandbox_target/eclipse.target`.
 p2 must resolve their combined dependencies successfully; do not force-install
 incompatible versions. Start that installation with the normal JDT LS application
