@@ -11,14 +11,6 @@
 	<artifactId>sandbox_cleanup_application</artifactId>
 	<name>Sandbox cleanup application</name>
 	<packaging>eclipse-plugin</packaging>
-	<!-- Keep the optional language-server build dependency out of the shared target. -->
-	<repositories>
-		<repository>
-			<id>jdtls</id>
-			<layout>p2</layout>
-			<url>https://download.eclipse.org/jdtls/milestones/1.62.0/repository/</url>
-		</repository>
-	</repositories>
 	<dependencies>
 		<dependency>
 			<groupId>org.sandbox</groupId>

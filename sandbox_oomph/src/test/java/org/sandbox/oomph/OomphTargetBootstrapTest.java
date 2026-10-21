@@ -56,6 +56,31 @@ class OomphTargetBootstrapTest {
     }
 
     @Test
+    void activeTargetProvidesTheLanguageServerForImportedSources() throws Exception {
+        Document target = xml(module.resolve("../sandbox_target/eclipse.target"));
+        var repositories = target.getElementsByTagName("repository");
+        Element languageServer = null;
+        for (int index = 0; index < repositories.getLength(); index++) {
+            Element repository = (Element) repositories.item(index);
+            if ("https://download.eclipse.org/jdtls/milestones/1.62.0/repository/"
+                    .equals(repository.getAttribute("location"))) {
+                assertNull(languageServer, "Do not duplicate the pinned language-server target location");
+                languageServer = (Element) repository.getParentNode();
+            }
+        }
+        assertNotNull(languageServer,
+                "A module-local Maven repository cannot supply the active Oomph/PDE target");
+        Set<String> units = new HashSet<>();
+        var nodes = languageServer.getElementsByTagName("unit");
+        for (int index = 0; index < nodes.getLength(); index++) {
+            units.add(((Element) nodes.item(index)).getAttribute("id"));
+        }
+        assertTrue(units.containsAll(Set.of("org.eclipse.jdt.ls.core", "org.eclipse.m2e.core",
+                "org.eclipse.m2e.maven.runtime", "org.eclipse.m2e.jdt", "org.eclipse.buildship.core")),
+                "The adapter and its standard-server test runtime must resolve in the contributor workspace");
+    }
+
+    @Test
     void completeProjectImportStillFollowsMaven() throws Exception {
         Map<String, Element> tasks = tasks();
         assertEquals(Set.of("sandbox.maven"), predecessors(task(tasks, "sandbox.projects")));

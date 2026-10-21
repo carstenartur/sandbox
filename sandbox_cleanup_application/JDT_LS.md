@@ -37,9 +37,14 @@ Use the repository's Java 25/Maven build:
 
 The existing application test module contains the bridge's JUnit tests and still
 uses `useUIHarness=false`. No additional workflow or test runner is introduced.
-The JDT LS 1.62.0 milestone p2 repository is pinned in the application and its tests,
-not added to the shared Eclipse target. The server dependencies are optional at
-runtime, so the ordinary Eclipse/CLI entry points do not require JDT LS.
+The JDT LS 1.62.0 milestone repository is pinned in `sandbox_target/eclipse.target`
+so Maven and the Oomph/PDE contributor workspace use the same build dependencies.
+Module-local Maven repositories alone do not populate PDE's active target.
+The test fragment explicitly requires m2e and Buildship, as the upstream JDT LS
+tests do: these are optional for its syntax server but needed when its standard
+server starts. The production application's server dependencies remain optional;
+ordinary Eclipse/CLI entry points do not require JDT LS. Making bundles available
+in the build target is not a request to install them in every Sandbox product.
 
 **This is a small adapter, not an SWT-free repackaging of Sandbox.** The current
 Sandbox bundles still declare JDT UI/Workbench dependencies. They must be resolved

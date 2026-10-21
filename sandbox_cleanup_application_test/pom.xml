@@ -11,13 +11,6 @@
 	<artifactId>sandbox_cleanup_application_test</artifactId>
 	<name>Sandbox cleanup application test</name>
 	<packaging>eclipse-test-plugin</packaging>
-	<repositories>
-		<repository>
-			<id>jdtls</id>
-			<layout>p2</layout>
-			<url>https://download.eclipse.org/jdtls/milestones/1.62.0/repository/</url>
-		</repository>
-	</repositories>
 	<dependencies>
 		<dependency>
 			<groupId>org.sandbox</groupId>
