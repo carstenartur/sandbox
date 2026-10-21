@@ -47,6 +47,7 @@ import org.eclipse.ui.PlatformUI;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.osgi.framework.Bundle;
 import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
 import org.sandbox.jdt.core.cleanupapp.jdtls.SandboxCleanUpCommands.Request;
 import org.sandbox.jdt.core.cleanupapp.jdtls.SandboxCleanUpCommands.Snapshot;
@@ -61,9 +62,17 @@ class SandboxCleanUpCommandsTest {
 
     @BeforeEach
     void createProject() throws Exception {
+        // Complete bundle activation before configuring the manager created by start().
+        var languageServer = Platform.getBundle("org.eclipse.jdt.ls.core"); //$NON-NLS-1$
+        assertNotNull(languageServer);
+        languageServer.start(Bundle.START_TRANSIENT);
+        assertEquals(Bundle.ACTIVE, languageServer.getState());
         // The normal LSP initialize handshake establishes this state. The native
         // JUnit host has no editor connection, but uses the real converter.
-        JavaLanguageServerPlugin.getPreferencesManager().updateClientPrefences(new ClientCapabilities(), Map.of());
+        var preferences = JavaLanguageServerPlugin.getPreferencesManager();
+        assertNotNull(preferences);
+        preferences.updateClientPrefences(new ClientCapabilities(), Map.of());
+        assertNotNull(JavaLanguageServerPlugin.getPreferencesManager().getClientPreferences());
         project = ResourcesPlugin.getWorkspace().getRoot().getProject("jdtls-cleanup-" + UUID.randomUUID());
         project.create(monitor);
         project.open(monitor);
