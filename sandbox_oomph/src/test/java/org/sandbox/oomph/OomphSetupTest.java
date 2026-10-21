@@ -233,6 +233,8 @@ class OomphSetupTest {
                                     + "org.eclipse.swt.SWTError: No more handles\n");
                         }));
                 assertTrue(failure.getMessage().contains(entry));
+                assertTrue(failure.getMessage().contains("!MESSAGE No underlying browser available"));
+                assertTrue(failure.getMessage().contains("org.eclipse.swt.SWTError: No more handles"));
                 assertTrue(Files.isRegularFile(run.resolve("update.properties")),
                         "Keep the receipt and failing native log for diagnosis");
                 assertTrue(Files.readString(run.resolve("update-0.log")).contains("SWTError"));
@@ -351,8 +353,16 @@ class OomphSetupTest {
         var errorEntry = java.util.regex.Pattern.compile(
                 "^!(?:ENTRY\\s+\\S+|SUBENTRY\\s+\\d+\\s+\\S+)\\s+4\\s+.*");
         try (var lines = Files.lines(log, java.nio.charset.StandardCharsets.UTF_8)) {
-            String error = lines.filter(line -> errorEntry.matcher(line).matches()).findFirst().orElse(null);
-            if (error != null) {
+            var entries = lines.dropWhile(line -> !errorEntry.matcher(line).matches()).iterator();
+            if (entries.hasNext()) {
+                var error = new StringBuilder(entries.next());
+                // Keep the message and stack of this event visible in JUnit/CI,
+                // without dumping the whole native workbench log.
+                for (int remaining = 80; remaining > 0 && entries.hasNext(); remaining--) {
+                    String line = entries.next();
+                    if (line.startsWith("!ENTRY ")) break;
+                    error.append('\n').append(line);
+                }
                 throw new java.io.IOException("Native Eclipse logged an error: " + error + "; see " + log);
             }
         }
