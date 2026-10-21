@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HintFileCreation.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.wizard</a> &gt; <span class="el_source">HintFileCreation.java</span></div><h1>HintFileCreation.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.wizard;
+
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+
+import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Status;
+import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite;
+
+/** Creates new rule evidence under one workspace rule; never overwrites a resource. */
+final class HintFileCreation {
+
+	private HintFileCreation() {
+	}
+
+	static void create(IContainer container, String fileName, String content, RuleExampleSuite suite,
+			IProgressMonitor monitor) throws CoreException {
+<span class="fc bfc" id="L30" title="All 2 branches covered.">		String examples = suite == null ? null : suite.toJson();</span>
+<span class="fc" id="L31">		IFile hint = container.getFile(new Path(fileName));</span>
+<span class="fc" id="L32">		IFile sidecar = container.getFile(new Path(fileName + &quot;.examples.json&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L33">		container.getWorkspace().run(progress -&gt; {</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">			progress.beginTask(&quot;Creating &quot; + fileName, examples == null ? 1 : 2); //$NON-NLS-1$</span>
+<span class="fc" id="L35">			boolean hintCreated = false;</span>
+<span class="fc" id="L36">			boolean sidecarCreated = false;</span>
+			try {
+<span class="fc" id="L38">				checkCanceled(progress);</span>
+<span class="fc" id="L39">				requireAbsent(hint);</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">				if (examples != null) {</span>
+<span class="fc" id="L41">					requireAbsent(sidecar);</span>
+				}
+				// A separate child monitor keeps resource-internal progress from completing
+				// this transaction's first step before create() has returned successfully.
+<span class="fc" id="L45">				hint.create(bytes(content), false, new NullProgressMonitor());</span>
+<span class="fc" id="L46">				hintCreated = true;</span>
+<span class="fc" id="L47">				progress.worked(1);</span>
+<span class="fc" id="L48">				checkCanceled(progress);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">				if (examples != null) {</span>
+<span class="fc" id="L50">					sidecar.create(bytes(examples), false, new NullProgressMonitor());</span>
+<span class="fc" id="L51">					sidecarCreated = true;</span>
+<span class="fc" id="L52">					progress.worked(1);</span>
+<span class="fc" id="L53">					checkCanceled(progress);</span>
+				}
+<span class="fc" id="L55">			} catch (CoreException | RuntimeException failure) {</span>
+				// Existing resources never set these flags. Cleanup must also work after
+				// cancellation, so it deliberately receives a fresh monitor.
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">				if (sidecarCreated) {</span>
+<span class="nc" id="L59">					rollback(sidecar, failure);</span>
+				}
+<span class="fc bfc" id="L61" title="All 2 branches covered.">				if (hintCreated) {</span>
+<span class="fc" id="L62">					rollback(hint, failure);</span>
+				}
+<span class="fc" id="L64">				throw failure;</span>
+			} finally {
+<span class="fc" id="L66">				progress.done();</span>
+			}
+<span class="fc" id="L68">		}, container, IWorkspace.AVOID_UPDATE, monitor);</span>
+<span class="fc" id="L69">	}</span>
+
+	private static ByteArrayInputStream bytes(String contents) {
+<span class="fc" id="L72">		return new ByteArrayInputStream(contents.getBytes(StandardCharsets.UTF_8));</span>
+	}
+
+	private static void requireAbsent(IFile file) throws CoreException {
+<span class="fc bfc" id="L76" title="All 2 branches covered.">		if (file.exists()) {</span>
+<span class="fc" id="L77">			throw new CoreException(new Status(IStatus.ERROR, &quot;sandbox_triggerpattern&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L78">					&quot;File already exists: &quot; + file.getFullPath())); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L80">	}</span>
+
+	private static void checkCanceled(IProgressMonitor monitor) {
+<span class="pc bpc" id="L83" title="1 of 4 branches missed.">		if (monitor.isCanceled() || Thread.currentThread().isInterrupted()) {</span>
+<span class="fc" id="L84">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L86">	}</span>
+
+	private static void rollback(IFile file, Exception failure) {
+		try {
+<span class="fc" id="L90">			file.delete(true, new NullProgressMonitor());</span>
+<span class="pc" id="L91">		} catch (CoreException cleanupFailure) {</span>
+<span class="nc" id="L92">			failure.addSuppressed(cleanupFailure);</span>
+		}
+<span class="fc" id="L94">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

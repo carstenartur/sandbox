@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RuleExampleVerifier.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_common_core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.triggerpattern.api</a> &gt; <span class="el_source">RuleExampleVerifier.java</span></div><h1>RuleExampleVerifier.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ * This program and the accompanying materials are made available under the terms
+ * of the Eclipse Public License 2.0: https://www.eclipse.org/legal/epl-2.0/
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.triggerpattern.api;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.ASTVisitor;
+import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.Expression;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.ReturnStatement;
+import org.eclipse.jdt.core.dom.Statement;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
+import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Document;
+import org.sandbox.jdt.triggerpattern.api.BatchTransformationProcessor.TransformationResult;
+import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite.Example;
+import org.sandbox.jdt.triggerpattern.internal.HintFileParser.HintParseException;
+import org.sandbox.jdt.triggerpattern.internal.HintProgramParser;
+import org.sandbox.jdt.triggerpattern.internal.RuleAuthoringDocument;
+
+/**
+ * Replays examples with the shared matcher, guards and binding substitution.
+ * This bounded verifier uses JDT AST rewrites for ordinary expressions and
+ * single statements. Comments, structural rules, imports and native cleanup
+ * adaptations require the project preview and are reported as unsupported.
+ * The supplied parser must use the caller's actual project/build classpath.
+ */
+public final class RuleExampleVerifier {
+
+	@FunctionalInterface
+	public interface SourceParser {
+		CompilationUnit parse(String unitName, String source);
+	}
+
+<span class="fc" id="L62">	public enum Outcome { PASS, FAIL, UNKNOWN }</span>
+
+<span class="fc" id="L64">	public record Result(String name, Outcome outcome, String message, String actualSource) { }</span>
+
+	public record Report(String ruleSha256, String suiteSha256, List&lt;Result&gt; results, String diagnostic) {
+<span class="fc" id="L67">		public Report {</span>
+<span class="fc" id="L68">			results = List.copyOf(results);</span>
+<span class="fc" id="L69">		}</span>
+
+		/** Passing examples are evidence for this exact input, not a semantic proof. */
+		public boolean passed() {
+<span class="pc bpc" id="L73" title="1 of 4 branches missed.">			return diagnostic.isEmpty() &amp;&amp; !results.isEmpty()</span>
+<span class="fc bfc" id="L74" title="All 4 branches covered.">					&amp;&amp; results.stream().allMatch(result -&gt; result.outcome() == Outcome.PASS);</span>
+		}
+	}
+
+	private final Map&lt;String, String&gt; compilerOptions;
+	private final SourceParser parser;
+
+<span class="fc" id="L81">	public RuleExampleVerifier(Map&lt;String, String&gt; compilerOptions, SourceParser parser) {</span>
+<span class="fc" id="L82">		this.compilerOptions = Map.copyOf(compilerOptions);</span>
+<span class="fc" id="L83">		this.parser = Objects.requireNonNull(parser, &quot;parser&quot;);</span>
+<span class="fc" id="L84">	}</span>
+
+	public Report verify(String dsl, RuleExampleSuite suite) {
+<span class="fc" id="L87">		Objects.requireNonNull(dsl, &quot;dsl&quot;);</span>
+<span class="fc" id="L88">		Objects.requireNonNull(suite, &quot;suite&quot;);</span>
+<span class="fc" id="L89">		checkCanceled();</span>
+		HintFile hint;
+		try {
+<span class="fc" id="L92">			hint = new HintProgramParser().parseHintFile(dsl);</span>
+<span class="fc bfc" id="L93" title="All 4 branches covered.">			if (hint.getRules().stream().anyMatch(rule -&gt; !switch (rule.sourcePattern().getKind()) {</span>
+<span class="fc" id="L94">				case EXPRESSION, METHOD_CALL, CONSTRUCTOR, STATEMENT, DECLARATION -&gt; true;</span>
+				default -&gt; false;
+			})) {
+<span class="fc" id="L97">				return unsupported(dsl, suite, &quot;Structural, method, field and type patterns require native project verification&quot;);</span>
+			}
+<span class="pc bpc" id="L99" title="2 of 4 branches missed.">			if (hint.getRules().isEmpty() || new PatternIndex(hint.getRules()).size() != hint.getRules().size()) {</span>
+<span class="nc" id="L100">				return unsupported(dsl, suite, &quot;The complete rule document must contain valid source patterns&quot;);</span>
+			}
+<span class="fc bfc" id="L102" title="All 4 branches covered.">			if (!hint.getIncludes().isEmpty() || !hint.getEmbeddedJavaBlocks().isEmpty()</span>
+<span class="pc bpc" id="L103" title="1 of 4 branches missed.">					|| !hint.getSuppressWarnings().isEmpty() || !hint.getTreeKindNodeTypes().isEmpty()</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">					|| HintPlanRequirement.fromContent(dsl).isPresent()</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">					|| RuleAuthoringDocument.containsJavaTextBlock(dsl)</span>
+<span class="fc bfc" id="L106" title="All 4 branches covered.">					|| hint.getRules().stream().anyMatch(rule -&gt; rule.hasImportDirective()</span>
+<span class="pc bpc" id="L107" title="2 of 4 branches missed.">							|| rule.alternatives().stream().anyMatch(alternative -&gt; alternative.isEmbeddedFix()</span>
+<span class="pc bpc" id="L108" title="2 of 4 branches missed.">									|| alternative.hasStructuredActions() || !alternative.hasTextReplacement()))) {</span>
+<span class="fc" id="L109">				return unsupported(dsl, suite,</span>
+						&quot;Example replay supports self-contained plain text rules; includes, imports, host filters and other rule kinds require native project verification&quot;);
+			}
+<span class="fc bfc" id="L112" title="All 2 branches covered.">			if (hint.getMinJavaVersion() &gt; 0) {</span>
+<span class="fc" id="L113">				String level = compilerOptions.getOrDefault(JavaCore.COMPILER_SOURCE, &quot;&quot;);</span>
+<span class="pc bpc" id="L114" title="1 of 2 branches missed.">				int sourceVersion = Integer.parseInt(level.startsWith(&quot;1.&quot;) ? level.substring(2) : level);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">				if (sourceVersion &lt; hint.getMinJavaVersion()) {</span>
+<span class="fc" id="L116">					return unsupported(dsl, suite, &quot;The current source version is below this rule's minJavaVersion&quot;);</span>
+				}
+			}
+<span class="nc" id="L119">		} catch (HintParseException | IllegalArgumentException exception) {</span>
+<span class="nc" id="L120">			return unsupported(dsl, suite, &quot;Rule language check failed: &quot; + exception.getMessage());</span>
+<span class="fc" id="L121">		}</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">		String diagnostic = suite.examples().stream().anyMatch(Example::expectChange)</span>
+<span class="fc bfc" id="L123" title="All 4 branches covered.">				&amp;&amp; suite.examples().stream().anyMatch(example -&gt; !example.expectChange()) ? &quot;&quot;</span>
+<span class="fc" id="L124">				: &quot;Add at least one positive example and one counterexample before qualifying a rule&quot;;</span>
+<span class="fc" id="L125">		List&lt;Result&gt; results = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L126" title="All 2 branches covered.">		for (Example example : suite.examples()) {</span>
+<span class="fc" id="L127">			checkCanceled();</span>
+			try {
+<span class="fc" id="L129">				results.add(verifyExample(hint, example));</span>
+<span class="nc" id="L130">			} catch (OperationCanceledException exception) {</span>
+<span class="nc" id="L131">				throw exception;</span>
+<span class="nc" id="L132">			} catch (RuntimeException exception) {</span>
+<span class="nc" id="L133">				results.add(new Result(example.name(), Outcome.UNKNOWN,</span>
+<span class="nc" id="L134">						&quot;Example could not be checked: &quot; + exception.getMessage(), example.before()));</span>
+<span class="fc" id="L135">			}</span>
+<span class="fc" id="L136">		}</span>
+<span class="fc" id="L137">		return new Report(hash(dsl), hash(suite.toJson()), results, diagnostic);</span>
+	}
+
+	private Result verifyExample(HintFile hint, Example example) {
+<span class="fc" id="L141">		CompilationUnit before = parser.parse(example.unitName(), example.before());</span>
+<span class="fc" id="L142">		String problem = compilationProblem(before);</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">		if (!problem.isEmpty()) {</span>
+<span class="fc" id="L144">			return new Result(example.name(), Outcome.UNKNOWN, &quot;Before source: &quot; + problem, example.before());</span>
+		}
+<span class="fc" id="L146">		Rewrite first = rewrite(hint, before, example.before());</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">		if (!first.diagnostic().isEmpty()) {</span>
+<span class="fc" id="L148">			return new Result(example.name(), Outcome.UNKNOWN, first.diagnostic(), first.source());</span>
+		}
+<span class="fc bfc" id="L150" title="All 2 branches covered.">		if (!first.source().equals(example.after())) {</span>
+<span class="fc" id="L151">			return new Result(example.name(), Outcome.FAIL,</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">					example.expectChange() ? &quot;Actual output differs from the complete expected source&quot;</span>
+<span class="fc" id="L153">						: &quot;Counterexample changed&quot;, first.source());</span>
+		}
+<span class="fc" id="L155">		CompilationUnit after = parser.parse(example.unitName(), first.source());</span>
+<span class="fc" id="L156">		problem = compilationProblem(after);</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">		if (!problem.isEmpty()) {</span>
+<span class="nc" id="L158">			return new Result(example.name(), Outcome.FAIL, &quot;After source: &quot; + problem, first.source());</span>
+		}
+<span class="fc" id="L160">		Rewrite second = rewrite(hint, after, first.source());</span>
+<span class="pc bpc" id="L161" title="1 of 2 branches missed.">		if (!second.diagnostic().isEmpty()) {</span>
+<span class="nc" id="L162">			return new Result(example.name(), Outcome.UNKNOWN, second.diagnostic(), first.source());</span>
+		}
+<span class="fc bfc" id="L164" title="All 2 branches covered.">		if (!second.source().equals(first.source())) {</span>
+<span class="fc" id="L165">			return new Result(example.name(), Outcome.FAIL, &quot;A second application changes the output again&quot;, first.source());</span>
+		}
+<span class="fc" id="L167">		return new Result(example.name(), Outcome.PASS,</span>
+<span class="fc bfc" id="L168" title="All 2 branches covered.">				example.expectChange() ? &quot;Exact expected change; source compiles; second application unchanged&quot;</span>
+<span class="fc" id="L169">						: &quot;Counterexample compiles and stays unchanged&quot;, first.source());</span>
+	}
+
+<span class="fc" id="L172">	private record Rewrite(String source, String diagnostic) { }</span>
+
+	private Rewrite rewrite(HintFile hint, CompilationUnit unit, String source) {
+<span class="fc" id="L175">		checkCanceled();</span>
+<span class="fc" id="L176">		List&lt;TransformationResult&gt; results = new BatchTransformationProcessor(hint)</span>
+<span class="fc" id="L177">				.process(unit, compilerOptions, SemanticRewritePlan.empty());</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">		if (results.stream().anyMatch(TransformationResult::isSemanticUnknown)) {</span>
+<span class="nc" id="L179">			return new Rewrite(source, &quot;A match has unresolved semantic requirements&quot;);</span>
+		}
+<span class="fc" id="L181">		List&lt;TransformationResult&gt; edits = results.stream().filter(TransformationResult::hasReplacement)</span>
+<span class="pc" id="L182">				.sorted(Comparator.comparingInt((TransformationResult result) -&gt; result.match().getOffset()).reversed())</span>
+<span class="fc" id="L183">				.toList();</span>
+<span class="fc" id="L184">		ASTRewrite rewrite = ASTRewrite.create(unit.getAST());</span>
+<span class="fc" id="L185">		int previousStart = source.length();</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">		for (TransformationResult edit : edits) {</span>
+<span class="fc" id="L187">			int start = edit.match().getOffset();</span>
+<span class="fc" id="L188">			int end = start + edit.match().getLength();</span>
+<span class="pc bpc" id="L189" title="3 of 6 branches missed.">			if (start &lt; 0 || end &gt; previousStart || end &lt;= start) {</span>
+<span class="nc" id="L190">				return new Rewrite(source, &quot;Overlapping or invalid edits require the native project preview&quot;);</span>
+			}
+<span class="fc bfc" id="L192" title="All 2 branches covered.">			if (unit.getCommentList().stream().anyMatch(value -&gt; {</span>
+<span class="fc" id="L193">				ASTNode comment = (ASTNode) value;</span>
+<span class="pc bpc" id="L194" title="2 of 4 branches missed.">				return comment.getStartPosition() &lt; end &amp;&amp; comment.getStartPosition() + comment.getLength() &gt; start;</span>
+			})) {
+<span class="fc" id="L196">				return new Rewrite(source, &quot;Comments inside a match require native project verification&quot;);</span>
+			}
+<span class="fc" id="L198">			ASTNode original = edit.match().getMatchedNode();</span>
+<span class="pc bpc" id="L199" title="1 of 4 branches missed.">			if (original instanceof VariableDeclarationStatement &amp;&amp; edit.replacement().contains(&quot;$widestType&quot;)) {</span>
+<span class="fc" id="L200">				return new Rewrite(source, &quot;Type-widening replacements require native project verification&quot;);</span>
+			}
+<span class="fc" id="L202">			ASTNode replacement = parseReplacement(original, edit.replacement());</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">			if (replacement == null) {</span>
+<span class="fc" id="L204">				return new Rewrite(source, &quot;Only complete comment-free expressions and single-statement replacements can be replayed&quot;);</span>
+			}
+<span class="pc bpc" id="L206" title="2 of 6 branches missed.">			if (original.getParent() instanceof Expression &amp;&amp; !(original.getParent() instanceof ParenthesizedExpression)</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">					&amp;&amp; replacement instanceof Expression &amp;&amp; !isPrimaryExpression(replacement)) {</span>
+<span class="fc" id="L208">				return new Rewrite(source, &quot;Compound replacements inside expressions need explicit parentheses and native project verification&quot;);</span>
+			}
+<span class="fc bfc" id="L210" title="All 2 branches covered.">			if (requiresNativeAdaptation(original, replacement)) {</span>
+<span class="fc" id="L211">				return new Rewrite(source, &quot;String-literal removal and charset cleanup adaptations require native project verification&quot;);</span>
+			}
+<span class="fc" id="L213">			rewrite.replace(original, ASTNode.copySubtree(unit.getAST(), replacement), null);</span>
+<span class="fc" id="L214">			previousStart = start;</span>
+<span class="fc" id="L215">		}</span>
+<span class="fc" id="L216">		Document output = new Document(source);</span>
+		try {
+<span class="fc" id="L218">			rewrite.rewriteAST(output, compilerOptions).apply(output);</span>
+<span class="fc" id="L219">			return new Rewrite(output.get(), &quot;&quot;);</span>
+<span class="nc" id="L220">		} catch (BadLocationException exception) {</span>
+<span class="nc" id="L221">			return new Rewrite(source, &quot;AST edits could not be applied: &quot; + exception.getMessage());</span>
+		}
+	}
+
+	/** Mirrors the native backend's strict syntax boundary without importing its host lifecycle. */
+	private ASTNode parseReplacement(ASTNode original, String replacement) {
+<span class="fc" id="L227">		ASTParser syntax = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L228">		syntax.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">		String body = original instanceof Expression ? &quot;return &quot; + replacement + &quot;;&quot; : replacement;</span>
+<span class="fc" id="L230">		syntax.setSource((&quot;class __Hint { void __hint() {\n&quot; + body + &quot;\n} }&quot;).toCharArray());</span>
+<span class="fc" id="L231">		syntax.setCompilerOptions(compilerOptions);</span>
+<span class="fc" id="L232">		CompilationUnit parsed = (CompilationUnit) syntax.createAST(null);</span>
+<span class="pc bpc" id="L233" title="3 of 6 branches missed.">		if (!syntaxProblem(parsed).isEmpty() || !parsed.getCommentList().isEmpty() || parsed.types().size() != 1</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">				|| !(parsed.types().getFirst() instanceof TypeDeclaration type)</span>
+<span class="pc bpc" id="L235" title="2 of 4 branches missed.">				|| type.bodyDeclarations().size() != 1 || type.getMethods().length != 1</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">				|| type.getMethods()[0].getBody().statements().size() != 1) {</span>
+<span class="fc" id="L237">			return null;</span>
+		}
+<span class="fc" id="L239">		Statement statement = (Statement) type.getMethods()[0].getBody().statements().getFirst();</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">		if (original instanceof Expression) {</span>
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">			return statement instanceof ReturnStatement returned ? returned.getExpression() : null;</span>
+		}
+<span class="nc bnc" id="L243" title="All 2 branches missed.">		return original instanceof Statement ? statement : null;</span>
+	}
+
+	private static boolean isPrimaryExpression(ASTNode node) {
+<span class="fc bfc" id="L247" title="All 2 branches covered.">		return switch (node.getNodeType()) {</span>
+			case ASTNode.NUMBER_LITERAL, ASTNode.STRING_LITERAL, ASTNode.BOOLEAN_LITERAL, ASTNode.CHARACTER_LITERAL,
+					ASTNode.NULL_LITERAL, ASTNode.SIMPLE_NAME, ASTNode.QUALIFIED_NAME, ASTNode.FIELD_ACCESS,
+					ASTNode.SUPER_FIELD_ACCESS, ASTNode.METHOD_INVOCATION, ASTNode.SUPER_METHOD_INVOCATION,
+					ASTNode.CLASS_INSTANCE_CREATION, ASTNode.ARRAY_ACCESS, ASTNode.THIS_EXPRESSION,
+<span class="fc" id="L252">					ASTNode.TYPE_LITERAL, ASTNode.PARENTHESIZED_EXPRESSION -&gt; true;</span>
+<span class="fc" id="L253">			default -&gt; false;</span>
+		};
+	}
+
+	private static boolean requiresNativeAdaptation(ASTNode original, ASTNode replacement) {
+<span class="fc bfc" id="L258" title="All 2 branches covered.">		if (stringLiteralCount(original) &gt; stringLiteralCount(replacement)) {</span>
+<span class="fc" id="L259">			return true;</span>
+		}
+<span class="pc bpc" id="L261" title="1 of 4 branches missed.">		if (original instanceof ClassInstanceCreation creation &amp;&amp; creation.resolveConstructorBinding() != null) {</span>
+<span class="fc" id="L262">			String owner = creation.resolveConstructorBinding().getDeclaringClass().getQualifiedName();</span>
+<span class="pc bpc" id="L263" title="1 of 2 branches missed.">			if (Set.of(&quot;java.util.Scanner&quot;, &quot;java.util.Formatter&quot;).contains(owner)) {</span>
+<span class="fc" id="L264">				return true;</span>
+			}
+		}
+<span class="fc bfc" id="L267" title="All 2 branches covered.">		List&lt;?&gt; arguments = original instanceof MethodInvocation call ? call.arguments()</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">				: original instanceof SuperMethodInvocation call ? call.arguments()</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">				: original instanceof ClassInstanceCreation creation ? creation.arguments() : List.of();</span>
+<span class="fc bfc" id="L270" title="All 2 branches covered.">		for (Object value : arguments) {</span>
+<span class="fc" id="L271">			ASTNode argument = (ASTNode) value;</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">			while (argument instanceof ParenthesizedExpression parentheses) {</span>
+<span class="nc" id="L273">				argument = parentheses.getExpression();</span>
+			}
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">			if (argument instanceof StringLiteral literal</span>
+<span class="fc" id="L276">					&amp;&amp; Set.of(&quot;UTF-8&quot;, &quot;UTF-16&quot;, &quot;UTF-16BE&quot;, &quot;UTF-16LE&quot;, &quot;US-ASCII&quot;, &quot;ISO-8859-1&quot;)</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">							.contains(literal.getLiteralValue().toUpperCase(Locale.ROOT))) {</span>
+<span class="fc" id="L278">				return true;</span>
+			}
+<span class="nc" id="L280">		}</span>
+<span class="fc" id="L281">		return false;</span>
+	}
+
+	private static int stringLiteralCount(ASTNode node) {
+<span class="fc" id="L285">		int[] count = { 0 };</span>
+<span class="fc" id="L286">		node.accept(new ASTVisitor() {</span>
+			@Override
+<span class="fc" id="L288">			public boolean visit(StringLiteral literal) { count[0]++; return false; }</span>
+		});
+<span class="fc" id="L290">		return count[0];</span>
+	}
+
+	private static String compilationProblem(CompilationUnit unit) {
+<span class="pc bpc" id="L294" title="1 of 4 branches missed.">		if (unit == null || !unit.getAST().hasResolvedBindings()) {</span>
+<span class="fc" id="L295">			return &quot;Resolved project or build bindings are required&quot;;</span>
+		}
+<span class="fc" id="L297">		return syntaxProblem(unit);</span>
+	}
+
+	private static String syntaxProblem(CompilationUnit unit) {
+<span class="fc" id="L301">		var error = Arrays.stream(unit.getProblems()).filter(problem -&gt; problem.isError()).findFirst();</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">		if (error.isPresent()) {</span>
+<span class="fc" id="L303">			return error.get().getMessage();</span>
+		}
+<span class="fc" id="L305">		boolean[] recovered = { false };</span>
+<span class="fc" id="L306">		unit.accept(new ASTVisitor() {</span>
+			@Override
+			public void preVisit(ASTNode node) {
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">				recovered[0] |= (node.getFlags() &amp; (ASTNode.MALFORMED | ASTNode.RECOVERED)) != 0;</span>
+<span class="fc" id="L310">			}</span>
+		});
+<span class="pc bpc" id="L312" title="1 of 2 branches missed.">		return recovered[0] ? &quot;Recovered or malformed Java syntax cannot qualify an example&quot; : &quot;&quot;;</span>
+	}
+
+	private static Report unsupported(String dsl, RuleExampleSuite suite, String diagnostic) {
+<span class="fc" id="L316">		return new Report(hash(dsl), hash(suite.toJson()), suite.examples().stream()</span>
+<span class="fc" id="L317">				.map(example -&gt; new Result(example.name(), Outcome.UNKNOWN, diagnostic, example.before())).toList(), diagnostic);</span>
+	}
+
+	private static String hash(String text) {
+		try {
+<span class="fc" id="L322">			return HexFormat.of().formatHex(MessageDigest.getInstance(&quot;SHA-256&quot;).digest(text.getBytes(StandardCharsets.UTF_8)));</span>
+<span class="nc" id="L323">		} catch (NoSuchAlgorithmException exception) {</span>
+<span class="nc" id="L324">			throw new IllegalStateException(exception);</span>
+		}
+	}
+
+	static void checkCanceled() {
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">		if (Thread.currentThread().isInterrupted()) {</span>
+<span class="nc" id="L330">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L332">		SemanticRewritePlanContext.checkCanceled();</span>
+<span class="fc" id="L333">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

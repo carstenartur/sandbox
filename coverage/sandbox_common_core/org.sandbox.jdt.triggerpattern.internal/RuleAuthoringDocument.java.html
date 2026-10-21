@@ -121,7 +121,7 @@ public record RuleAuthoringDocument(String content) {
 <span class="fc bfc" id="L121" title="All 4 branches covered.">		while (prefix &lt; shortest &amp;&amp; before.charAt(prefix) == after.charAt(prefix)) {</span>
 <span class="fc" id="L122">			prefix++;</span>
 		}
-<span class="pc bpc" id="L124" title="1 of 4 branches missed.">		if (prefix == before.length() &amp;&amp; prefix == after.length()) {</span>
+<span class="fc bfc" id="L124" title="All 4 branches covered.">		if (prefix == before.length() &amp;&amp; prefix == after.length()) {</span>
 <span class="fc" id="L125">			return Optional.empty();</span>
 		}
 <span class="fc" id="L127">		int suffix = 0;</span>
@@ -143,13 +143,13 @@ public record RuleAuthoringDocument(String content) {
 <span class="fc bfc" id="L143" title="All 4 branches covered.">		if (offset == 0 || source.charAt(offset - 1) == '\n') {</span>
 <span class="fc" id="L144">			return offset;</span>
 		}
-<span class="pc bpc" id="L146" title="2 of 6 branches missed.">		while (offset &lt; source.length() &amp;&amp; source.charAt(offset) != '\r' &amp;&amp; source.charAt(offset) != '\n') {</span>
+<span class="pc bpc" id="L146" title="1 of 6 branches missed.">		while (offset &lt; source.length() &amp;&amp; source.charAt(offset) != '\r' &amp;&amp; source.charAt(offset) != '\n') {</span>
 <span class="fc" id="L147">			offset++;</span>
 		}
-<span class="pc bpc" id="L149" title="2 of 4 branches missed.">		if (offset &lt; source.length() &amp;&amp; source.charAt(offset) == '\r') {</span>
+<span class="pc bpc" id="L149" title="1 of 4 branches missed.">		if (offset &lt; source.length() &amp;&amp; source.charAt(offset) == '\r') {</span>
 <span class="fc" id="L150">			offset++;</span>
 		}
-<span class="pc bpc" id="L152" title="2 of 4 branches missed.">		if (offset &lt; source.length() &amp;&amp; source.charAt(offset) == '\n') {</span>
+<span class="pc bpc" id="L152" title="1 of 4 branches missed.">		if (offset &lt; source.length() &amp;&amp; source.charAt(offset) == '\n') {</span>
 <span class="fc" id="L153">			offset++;</span>
 		}
 <span class="fc" id="L155">		return offset;</span>

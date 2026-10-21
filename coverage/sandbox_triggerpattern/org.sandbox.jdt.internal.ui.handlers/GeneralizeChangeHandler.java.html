@@ -62,12 +62,13 @@ import org.sandbox.jdt.triggerpattern.internal.RuleAuthoringDocument;
 			}
 <span class="nc" id="L63">			NewSandboxHintFileWizard wizard = new NewSandboxHintFileWizard();</span>
 <span class="nc" id="L64">			wizard.setInitialChange(change.get().before(), change.get().after());</span>
-<span class="nc" id="L65">			wizard.init(PlatformUI.getWorkbench(), new StructuredSelection(file));</span>
-<span class="nc" id="L66">			new WizardDialog(HandlerUtil.getActiveShell(event), wizard).open();</span>
-<span class="nc" id="L67">		} catch (CoreException | IOException exception) {</span>
-<span class="nc" id="L68">			throw new ExecutionException(&quot;Could not read the saved Java source&quot;, exception); //$NON-NLS-1$</span>
+<span class="nc" id="L65">			wizard.setInitialExample(file.getProjectRelativePath().toPortableString(), saved.toString(), current.get());</span>
+<span class="nc" id="L66">			wizard.init(PlatformUI.getWorkbench(), new StructuredSelection(file));</span>
+<span class="nc" id="L67">			new WizardDialog(HandlerUtil.getActiveShell(event), wizard).open();</span>
+<span class="nc" id="L68">		} catch (CoreException | IOException exception) {</span>
+<span class="nc" id="L69">			throw new ExecutionException(&quot;Could not read the saved Java source&quot;, exception); //$NON-NLS-1$</span>
 		}
-<span class="nc" id="L70">		return null;</span>
+<span class="nc" id="L71">		return null;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

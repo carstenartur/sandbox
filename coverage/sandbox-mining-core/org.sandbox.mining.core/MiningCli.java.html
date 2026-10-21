@@ -558,48 +558,50 @@ llmClient, promptBuilder, dslContext, categoryManager,
 <span class="fc" id="L558">validator, stats, aggregator, config.getMinDiffLinesPerCommit(),</span>
 <span class="fc" id="L559">config.getMaxDiffLinesPerCommit(), typeEnricher, keywordFilter, outputDir, sandboxRoot);</span>
 <span class="fc" id="L560">} catch (IncompleteBatchException e) {</span>
-<span class="fc bfc" id="L561" title="All 4 branches covered.">if (!llmClient.wasLastResponseTruncated() || dynamicCPR[0] &lt;= 1) {</span>
+<span class="fc bfc" id="L561" title="All 2 branches covered.">if (dynamicCPR[0] &lt;= 1) {</span>
 <span class="fc" id="L562">throw e;</span>
 }
-<span class="fc" id="L564">dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);</span>
+// Even a response that ended normally can omit evaluations. Use the same
+// bounded smaller-batch retry, stopping if a single-commit batch is incomplete.
+<span class="fc" id="L566">dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);</span>
 // The completed prefix is already checkpointed. Retry from the first gap;
 // later completed results are cached and must not be requested again.
-<span class="fc" id="L567">i += e.firstMissingIndex;</span>
-<span class="fc" id="L568">miningLog.println(&quot;  Retrying incomplete truncated response with commits-per-request &quot; + dynamicCPR[0]); //$NON-NLS-1$</span>
-<span class="fc" id="L569">continue;</span>
-<span class="fc" id="L570">}</span>
-<span class="fc" id="L571">i = end;</span>
-<span class="pc bpc" id="L572" title="3 of 4 branches missed.">if (llmClient.wasLastResponseTruncated() &amp;&amp; dynamicCPR[0] &gt; 1) {</span>
-<span class="nc" id="L573">dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);</span>
-<span class="nc" id="L574">miningLog.println(&quot;  Reducing commits-per-request to &quot; + dynamicCPR[0] + &quot; after truncated response&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L569">i += e.firstMissingIndex;</span>
+<span class="fc" id="L570">miningLog.println(&quot;  Retrying incomplete response with commits-per-request &quot; + dynamicCPR[0]); //$NON-NLS-1$</span>
+<span class="fc" id="L571">continue;</span>
+<span class="fc" id="L572">}</span>
+<span class="fc" id="L573">i = end;</span>
+<span class="pc bpc" id="L574" title="3 of 4 branches missed.">if (llmClient.wasLastResponseTruncated() &amp;&amp; dynamicCPR[0] &gt; 1) {</span>
+<span class="nc" id="L575">dynamicCPR[0] = Math.max(1, dynamicCPR[0] / 2);</span>
+<span class="nc" id="L576">miningLog.println(&quot;  Reducing commits-per-request to &quot; + dynamicCPR[0] + &quot; after truncated response&quot;); //$NON-NLS-1$</span>
 }
-<span class="pc bpc" id="L576" title="1 of 2 branches missed.">if (llmClient.isApiUnavailable()) {</span>
-<span class="nc" id="L577">logApiUnavailable(llmClient);</span>
-<span class="nc" id="L578">throw new IOException(&quot;LLM API unavailable; stopping mining&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L578" title="1 of 2 branches missed.">if (llmClient.isApiUnavailable()) {</span>
+<span class="nc" id="L579">logApiUnavailable(llmClient);</span>
+<span class="nc" id="L580">throw new IOException(&quot;LLM API unavailable; stopping mining&quot;); //$NON-NLS-1$</span>
 }
-<span class="fc" id="L580">}</span>
-<span class="fc" id="L581">batch = walker.nextBatch(lastBatchCommit,</span>
+<span class="fc" id="L582">}</span>
+<span class="fc" id="L583">batch = walker.nextBatch(lastBatchCommit,</span>
 effectiveStartDate, effectiveEndDate, batchSize);
-<span class="fc" id="L583">}</span>
+<span class="fc" id="L585">}</span>
 
 // Epoch rotation: if epochs are configured and current epoch is exhausted,
 // advance to the next epoch and reset lastProcessedCommit
-<span class="pc bpc" id="L587" title="1 of 2 branches missed.">if (!epochs.isEmpty()) {</span>
-<span class="nc" id="L588">int epochIdx = repoState.getCurrentEpoch();</span>
-<span class="nc" id="L589">MiningConfig.EpochEntry completedEpoch = epochs.get(epochIdx);</span>
-<span class="nc" id="L590">repoState.getCompletedEpochs().add(completedEpoch.toString());</span>
-<span class="nc" id="L591">repoState.setCurrentEpoch(epochIdx + 1);</span>
-<span class="nc" id="L592">repoState.setLastProcessedCommit(null);</span>
-<span class="nc" id="L593">repoState.setStatus(&quot;EPOCH_COMPLETE&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L594">miningLog.println(&quot;  Epoch &quot; + epochIdx + &quot; complete (&quot; + completedEpoch //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L589" title="1 of 2 branches missed.">if (!epochs.isEmpty()) {</span>
+<span class="nc" id="L590">int epochIdx = repoState.getCurrentEpoch();</span>
+<span class="nc" id="L591">MiningConfig.EpochEntry completedEpoch = epochs.get(epochIdx);</span>
+<span class="nc" id="L592">repoState.getCompletedEpochs().add(completedEpoch.toString());</span>
+<span class="nc" id="L593">repoState.setCurrentEpoch(epochIdx + 1);</span>
+<span class="nc" id="L594">repoState.setLastProcessedCommit(null);</span>
+<span class="nc" id="L595">repoState.setStatus(&quot;EPOCH_COMPLETE&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L596">miningLog.println(&quot;  Epoch &quot; + epochIdx + &quot; complete (&quot; + completedEpoch //$NON-NLS-1$ //$NON-NLS-2$</span>
 + &quot;). Advancing to epoch &quot; + (epochIdx + 1)); //$NON-NLS-1$
-<span class="nc" id="L596">state.save(statePath);</span>
+<span class="nc" id="L598">state.save(statePath);</span>
 }
-<span class="nc" id="L598">}</span>
+<span class="nc" id="L600">}</span>
 
-<span class="fc" id="L600">miningLog.println(&quot;  Completed: &quot; + repo.getUrl()); //$NON-NLS-1$</span>
-<span class="fc" id="L601">}</span>
-<span class="fc" id="L602">}</span>
+<span class="fc" id="L602">miningLog.println(&quot;  Completed: &quot; + repo.getUrl()); //$NON-NLS-1$</span>
+<span class="fc" id="L603">}</span>
+<span class="fc" id="L604">}</span>
 
 private void processBatch(List&lt;RevCommit&gt; commits, RepoEntry repo,
 DiffExtractor diffExtractor, MiningState state, Path statePath,
@@ -610,105 +612,105 @@ int minDiffLines, int maxDiffLines,
 TypeContextEnricher typeEnricher,
 CommitKeywordFilter keywordFilter, Path outputDir, Path sandboxRoot) throws IOException {
 // Classify commits in original order: track which are skipped vs included
-<span class="fc" id="L613">List&lt;CommitData&gt; commitDataList = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L614">List&lt;Boolean&gt; isSkipped = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L615">List&lt;Integer&gt; diffLineCounts = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L615">List&lt;CommitData&gt; commitDataList = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L616">List&lt;Boolean&gt; isSkipped = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L617">List&lt;Integer&gt; diffLineCounts = new ArrayList&lt;&gt;();</span>
 
-<span class="fc" id="L617">RepoState repoState = state.getRepoState(repo.getUrl());</span>
-<span class="pc bpc" id="L618" title="1 of 2 branches missed.">int effectiveMaxDiff = repoState.getLearnedMaxDiffLines() &gt; 0</span>
-<span class="pc" id="L619">? repoState.getLearnedMaxDiffLines() : maxDiffLines;</span>
+<span class="fc" id="L619">RepoState repoState = state.getRepoState(repo.getUrl());</span>
+<span class="pc bpc" id="L620" title="1 of 2 branches missed.">int effectiveMaxDiff = repoState.getLearnedMaxDiffLines() &gt; 0</span>
+<span class="pc" id="L621">? repoState.getLearnedMaxDiffLines() : maxDiffLines;</span>
 
-<span class="fc bfc" id="L621" title="All 2 branches covered.">for (RevCommit commit : commits) {</span>
-<span class="fc" id="L622">CommitEvaluation completed = completedEvaluations.getOrDefault(repo.getUrl(), Map.of()).get(commit.getName());</span>
-<span class="fc bfc" id="L623" title="All 2 branches covered.">if (completed != null) {</span>
+<span class="fc bfc" id="L623" title="All 2 branches covered.">for (RevCommit commit : commits) {</span>
+<span class="fc" id="L624">CommitEvaluation completed = completedEvaluations.getOrDefault(repo.getUrl(), Map.of()).get(commit.getName());</span>
+<span class="fc bfc" id="L625" title="All 2 branches covered.">if (completed != null) {</span>
 // A previous partial batch may have completed this commit beyond a gap.
 // Reuse its exact result without another API call or duplicate statistics.
-<span class="fc" id="L626">reusedEvaluations.add(completed);</span>
-<span class="fc" id="L627">isSkipped.add(Boolean.TRUE);</span>
-<span class="fc" id="L628">repoState.removeDeferredCommit(commit.getName());</span>
-<span class="fc" id="L629">miningLog.println(&quot;  Reusing completed evaluation for &quot; + formatCommitInfo(commit, repo)); //$NON-NLS-1$</span>
-<span class="fc" id="L630">continue;</span>
+<span class="fc" id="L628">reusedEvaluations.add(completed);</span>
+<span class="fc" id="L629">isSkipped.add(Boolean.TRUE);</span>
+<span class="fc" id="L630">repoState.removeDeferredCommit(commit.getName());</span>
+<span class="fc" id="L631">miningLog.println(&quot;  Reusing completed evaluation for &quot; + formatCommitInfo(commit, repo)); //$NON-NLS-1$</span>
+<span class="fc" id="L632">continue;</span>
 }
 // Skip commits that don't match keyword filter (if active)
-<span class="fc bfc" id="L633" title="All 4 branches covered.">if (keywordFilter != null &amp;&amp; !keywordFilter.matches(commit.getFullMessage())) {</span>
-<span class="fc" id="L634">miningLog.println(&quot;  Skipping commit &quot; + formatCommitInfo(commit, repo) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L635" title="All 4 branches covered.">if (keywordFilter != null &amp;&amp; !keywordFilter.matches(commit.getFullMessage())) {</span>
+<span class="fc" id="L636">miningLog.println(&quot;  Skipping commit &quot; + formatCommitInfo(commit, repo) //$NON-NLS-1$</span>
 + &quot; (no keyword match)&quot;); //$NON-NLS-1$
-<span class="fc" id="L636">isSkipped.add(Boolean.TRUE);</span>
-<span class="fc" id="L637">continue;</span>
+<span class="fc" id="L638">isSkipped.add(Boolean.TRUE);</span>
+<span class="fc" id="L639">continue;</span>
 }
-<span class="fc" id="L639">String diff = diffExtractor.extractDiff(commit);</span>
-<span class="fc" id="L640">int lineCount = diff.split(&quot;\n&quot;, -1).length; //$NON-NLS-1$</span>
-<span class="pc bpc" id="L641" title="1 of 2 branches missed.">if (diff.isBlank()) {</span>
-<span class="nc" id="L642">isSkipped.add(Boolean.TRUE);</span>
-<span class="pc bpc" id="L643" title="1 of 2 branches missed.">} else if (lineCount &lt; minDiffLines) {</span>
-<span class="nc" id="L644">miningLog.println(&quot;  Skipping commit &quot; + formatCommitInfo(commit, repo) //$NON-NLS-1$</span>
+<span class="fc" id="L641">String diff = diffExtractor.extractDiff(commit);</span>
+<span class="fc" id="L642">int lineCount = diff.split(&quot;\n&quot;, -1).length; //$NON-NLS-1$</span>
+<span class="pc bpc" id="L643" title="1 of 2 branches missed.">if (diff.isBlank()) {</span>
+<span class="nc" id="L644">isSkipped.add(Boolean.TRUE);</span>
+<span class="pc bpc" id="L645" title="1 of 2 branches missed.">} else if (lineCount &lt; minDiffLines) {</span>
+<span class="nc" id="L646">miningLog.println(&quot;  Skipping commit &quot; + formatCommitInfo(commit, repo) //$NON-NLS-1$</span>
 + &quot; (diff too small: &quot; + lineCount + &quot; lines)&quot;); //$NON-NLS-1$ //$NON-NLS-2$
-<span class="nc" id="L646">isSkipped.add(Boolean.TRUE);</span>
-<span class="pc bpc" id="L647" title="1 of 2 branches missed.">} else if (lineCount &gt; effectiveMaxDiff) {</span>
-<span class="nc" id="L648">miningLog.println(&quot;  Deferring commit &quot; + formatCommitInfo(commit, repo) //$NON-NLS-1$</span>
+<span class="nc" id="L648">isSkipped.add(Boolean.TRUE);</span>
+<span class="pc bpc" id="L649" title="1 of 2 branches missed.">} else if (lineCount &gt; effectiveMaxDiff) {</span>
+<span class="nc" id="L650">miningLog.println(&quot;  Deferring commit &quot; + formatCommitInfo(commit, repo) //$NON-NLS-1$</span>
 + &quot; (&quot; + lineCount + &quot; lines &gt; limit &quot; + effectiveMaxDiff + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$
-<span class="nc" id="L650">String shortMsg = commit.getShortMessage();</span>
-<span class="nc bnc" id="L651" title="All 2 branches missed.">String truncatedMsg = shortMsg == null</span>
-<span class="nc" id="L652">? &quot;&quot; //$NON-NLS-1$</span>
-<span class="nc" id="L653">: shortMsg.substring(0, Math.min(120, shortMsg.length()));</span>
-<span class="nc" id="L654">repoState.addDeferredCommit(new DeferredCommit(</span>
-<span class="nc" id="L655">commit.getName(),</span>
+<span class="nc" id="L652">String shortMsg = commit.getShortMessage();</span>
+<span class="nc bnc" id="L653" title="All 2 branches missed.">String truncatedMsg = shortMsg == null</span>
+<span class="nc" id="L654">? &quot;&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L655">: shortMsg.substring(0, Math.min(120, shortMsg.length()));</span>
+<span class="nc" id="L656">repoState.addDeferredCommit(new DeferredCommit(</span>
+<span class="nc" id="L657">commit.getName(),</span>
 truncatedMsg,
-<span class="nc" id="L657">lineCount, &quot;DIFF_TOO_LARGE&quot;, Instant.now().toString(), 0, 3)); //$NON-NLS-1$</span>
-<span class="nc" id="L658">isSkipped.add(Boolean.TRUE);</span>
-<span class="nc" id="L659">} else {</span>
-<span class="fc" id="L660">commitDataList.add(new CommitData(commit.getName(), commit.getFullMessage(), diff));</span>
-<span class="fc" id="L661">diffLineCounts.add(lineCount);</span>
-<span class="fc" id="L662">isSkipped.add(Boolean.FALSE);</span>
+<span class="nc" id="L659">lineCount, &quot;DIFF_TOO_LARGE&quot;, Instant.now().toString(), 0, 3)); //$NON-NLS-1$</span>
+<span class="nc" id="L660">isSkipped.add(Boolean.TRUE);</span>
+<span class="nc" id="L661">} else {</span>
+<span class="fc" id="L662">commitDataList.add(new CommitData(commit.getName(), commit.getFullMessage(), diff));</span>
+<span class="fc" id="L663">diffLineCounts.add(lineCount);</span>
+<span class="fc" id="L664">isSkipped.add(Boolean.FALSE);</span>
 }
-<span class="fc" id="L664">}</span>
+<span class="fc" id="L666">}</span>
 
-<span class="fc" id="L666">List&lt;CommitEvaluation&gt; evaluations = null;</span>
-<span class="fc" id="L667">IOException evaluationFailure = null;</span>
-<span class="fc" id="L668">Map&lt;String, CommitEvaluation&gt; evaluationsByHash = new HashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L669" title="All 2 branches covered.">if (!commitDataList.isEmpty()) {</span>
+<span class="fc" id="L668">List&lt;CommitEvaluation&gt; evaluations = null;</span>
+<span class="fc" id="L669">IOException evaluationFailure = null;</span>
+<span class="fc" id="L670">Map&lt;String, CommitEvaluation&gt; evaluationsByHash = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L671" title="All 2 branches covered.">if (!commitDataList.isEmpty()) {</span>
 // Enrich prompt with Eclipse type context from actual diffs if enabled
-<span class="pc bpc" id="L671" title="1 of 2 branches missed.">if (typeEnricher != null) {</span>
+<span class="pc bpc" id="L673" title="1 of 2 branches missed.">if (typeEnricher != null) {</span>
 // Clear stale type context from previous batch before enriching
-<span class="nc" id="L673">promptBuilder.setTypeContext(null);</span>
-<span class="nc" id="L674">StringBuilder combinedDiffs = new StringBuilder();</span>
-<span class="nc bnc" id="L675" title="All 2 branches missed.">for (CommitData cd : commitDataList) {</span>
-<span class="nc" id="L676">combinedDiffs.append(cd.diff()).append('\n');</span>
-<span class="nc" id="L677">}</span>
-<span class="nc" id="L678">String context = typeEnricher.enrichFromDiff(combinedDiffs.toString());</span>
-<span class="nc bnc" id="L679" title="All 2 branches missed.">if (!context.isEmpty()) {</span>
-<span class="nc" id="L680">promptBuilder.setTypeContext(context);</span>
+<span class="nc" id="L675">promptBuilder.setTypeContext(null);</span>
+<span class="nc" id="L676">StringBuilder combinedDiffs = new StringBuilder();</span>
+<span class="nc bnc" id="L677" title="All 2 branches missed.">for (CommitData cd : commitDataList) {</span>
+<span class="nc" id="L678">combinedDiffs.append(cd.diff()).append('\n');</span>
+<span class="nc" id="L679">}</span>
+<span class="nc" id="L680">String context = typeEnricher.enrichFromDiff(combinedDiffs.toString());</span>
+<span class="nc bnc" id="L681" title="All 2 branches missed.">if (!context.isEmpty()) {</span>
+<span class="nc" id="L682">promptBuilder.setTypeContext(context);</span>
 }
 }
-<span class="fc" id="L683">List&lt;String&gt; hashes = commitDataList.stream().map(CommitData::commitHash).toList();</span>
-<span class="fc" id="L684">List&lt;String&gt; messages = commitDataList.stream().map(CommitData::commitMessage).toList();</span>
-<span class="pc bpc" id="L685" title="1 of 2 branches missed.">String previousResults = knownRulesContext.isEmpty() ? null : knownRulesContext;</span>
-<span class="fc" id="L686">String prompt = promptBuilder.buildBatchPrompt(dslContext,</span>
-<span class="fc" id="L687">categoryManager.getCategoriesJson(), commitDataList, previousResults);</span>
+<span class="fc" id="L685">List&lt;String&gt; hashes = commitDataList.stream().map(CommitData::commitHash).toList();</span>
+<span class="fc" id="L686">List&lt;String&gt; messages = commitDataList.stream().map(CommitData::commitMessage).toList();</span>
+<span class="pc bpc" id="L687" title="1 of 2 branches missed.">String previousResults = knownRulesContext.isEmpty() ? null : knownRulesContext;</span>
+<span class="fc" id="L688">String prompt = promptBuilder.buildBatchPrompt(dslContext,</span>
+<span class="fc" id="L689">categoryManager.getCategoriesJson(), commitDataList, previousResults);</span>
 try {
-<span class="fc" id="L689">evaluations = llmClient.evaluateBatch(prompt, hashes, messages, repo.getUrl());</span>
-<span class="fc" id="L690">} catch (IOException e) {</span>
-<span class="fc" id="L691">evaluationFailure = e;</span>
-<span class="fc" id="L692">}</span>
-<span class="fc bfc" id="L693" title="All 2 branches covered.">if (evaluations != null) {</span>
-<span class="fc bfc" id="L694" title="All 2 branches covered.">for (CommitEvaluation evaluation : evaluations) {</span>
-<span class="pc bpc" id="L695" title="1 of 2 branches missed.">if (evaluation != null) {</span>
-<span class="fc" id="L696">evaluationsByHash.putIfAbsent(evaluation.commitHash(), evaluation);</span>
+<span class="fc" id="L691">evaluations = llmClient.evaluateBatch(prompt, hashes, messages, repo.getUrl());</span>
+<span class="fc" id="L692">} catch (IOException e) {</span>
+<span class="fc" id="L693">evaluationFailure = e;</span>
+<span class="fc" id="L694">}</span>
+<span class="fc bfc" id="L695" title="All 2 branches covered.">if (evaluations != null) {</span>
+<span class="fc bfc" id="L696" title="All 2 branches covered.">for (CommitEvaluation evaluation : evaluations) {</span>
+<span class="pc bpc" id="L697" title="1 of 2 branches missed.">if (evaluation != null) {</span>
+<span class="fc" id="L698">evaluationsByHash.putIfAbsent(evaluation.commitHash(), evaluation);</span>
 }
-<span class="fc" id="L698">}</span>
+<span class="fc" id="L700">}</span>
 }
 
 // Do not lower the limit for an incomplete batch: its unresolved commits must
 // still reach the API when the next run resumes at the gap.
-<span class="pc bpc" id="L703" title="1 of 6 branches missed.">if (evaluationFailure == null &amp;&amp; llmClient.wasLastResponseTruncated() &amp;&amp; !diffLineCounts.isEmpty()</span>
-<span class="pc bpc" id="L704" title="1 of 2 branches missed.">&amp;&amp; commitDataList.stream().allMatch(commit -&gt; evaluationsByHash.containsKey(commit.commitHash()))) {</span>
-<span class="nc" id="L705">int maxDiffInBatch = diffLineCounts.stream().mapToInt(Integer::intValue).max().orElse(0);</span>
-<span class="nc bnc" id="L706" title="All 2 branches missed.">if (maxDiffInBatch &gt; 0) {</span>
-<span class="nc" id="L707">int newLimit = (int) (maxDiffInBatch * 0.8);</span>
-<span class="nc bnc" id="L708" title="All 4 branches missed.">if (repoState.getLearnedMaxDiffLines() == -1 || newLimit &lt; repoState.getLearnedMaxDiffLines()) {</span>
-<span class="nc" id="L709">miningLog.println(&quot;  Learning: reducing max diff limit to &quot; + newLimit //$NON-NLS-1$</span>
-<span class="nc bnc" id="L710" title="All 2 branches missed.">+ &quot; lines (was &quot; + (repoState.getLearnedMaxDiffLines() == -1 ? &quot;default&quot; : repoState.getLearnedMaxDiffLines()) + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L711">repoState.setLearnedMaxDiffLines(newLimit);</span>
+<span class="pc bpc" id="L705" title="1 of 6 branches missed.">if (evaluationFailure == null &amp;&amp; llmClient.wasLastResponseTruncated() &amp;&amp; !diffLineCounts.isEmpty()</span>
+<span class="pc bpc" id="L706" title="1 of 2 branches missed.">&amp;&amp; commitDataList.stream().allMatch(commit -&gt; evaluationsByHash.containsKey(commit.commitHash()))) {</span>
+<span class="nc" id="L707">int maxDiffInBatch = diffLineCounts.stream().mapToInt(Integer::intValue).max().orElse(0);</span>
+<span class="nc bnc" id="L708" title="All 2 branches missed.">if (maxDiffInBatch &gt; 0) {</span>
+<span class="nc" id="L709">int newLimit = (int) (maxDiffInBatch * 0.8);</span>
+<span class="nc bnc" id="L710" title="All 4 branches missed.">if (repoState.getLearnedMaxDiffLines() == -1 || newLimit &lt; repoState.getLearnedMaxDiffLines()) {</span>
+<span class="nc" id="L711">miningLog.println(&quot;  Learning: reducing max diff limit to &quot; + newLimit //$NON-NLS-1$</span>
+<span class="nc bnc" id="L712" title="All 2 branches missed.">+ &quot; lines (was &quot; + (repoState.getLearnedMaxDiffLines() == -1 ? &quot;default&quot; : repoState.getLearnedMaxDiffLines()) + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L713">repoState.setLearnedMaxDiffLines(newLimit);</span>
 }
 }
 }
@@ -717,191 +719,191 @@ try {
 
 // A malformed response element can leave a gap in the returned list. Match by
 // commit identity, retain every actual result, and advance only its complete prefix.
-<span class="fc bfc" id="L720" title="All 2 branches covered.">if (evaluations != null) {</span>
-<span class="fc" id="L721">miningLog.println(&quot;  Received &quot; + evaluationsByHash.size() + &quot; evaluations for &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L722">+ repo.getUrl() + &quot; [&quot; + repo.getBranch() + &quot;]:&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L722" title="All 2 branches covered.">if (evaluations != null) {</span>
+<span class="fc" id="L723">miningLog.println(&quot;  Received &quot; + evaluationsByHash.size() + &quot; evaluations for &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L724">+ repo.getUrl() + &quot; [&quot; + repo.getBranch() + &quot;]:&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 }
-<span class="fc" id="L724">boolean completePrefix = true;</span>
-<span class="fc" id="L725">int firstMissingIndex = -1;</span>
-<span class="fc" id="L726">int diffIdx = 0;</span>
-<span class="fc bfc" id="L727" title="All 2 branches covered.">for (int i = 0; i &lt; commits.size(); i++) {</span>
-<span class="fc" id="L728">RevCommit commit = commits.get(i);</span>
-<span class="fc bfc" id="L729" title="All 2 branches covered.">if (isSkipped.get(i)) {</span>
-<span class="fc bfc" id="L730" title="All 2 branches covered.">if (completePrefix) {</span>
-<span class="fc" id="L731">state.updateLastProcessedCommit(repo.getUrl(), commit.getName());</span>
-<span class="fc" id="L732">CommitEvaluation reused = completedEvaluations.getOrDefault(repo.getUrl(), Map.of()).get(commit.getName());</span>
-<span class="pc bpc" id="L733" title="2 of 6 branches missed.">if (reused != null &amp;&amp; reused.relevant() &amp;&amp; reused.category() != null) {</span>
-<span class="fc" id="L734">repoState.incrementCategoryHitCount(reused.category());</span>
+<span class="fc" id="L726">boolean completePrefix = true;</span>
+<span class="fc" id="L727">int firstMissingIndex = -1;</span>
+<span class="fc" id="L728">int diffIdx = 0;</span>
+<span class="fc bfc" id="L729" title="All 2 branches covered.">for (int i = 0; i &lt; commits.size(); i++) {</span>
+<span class="fc" id="L730">RevCommit commit = commits.get(i);</span>
+<span class="fc bfc" id="L731" title="All 2 branches covered.">if (isSkipped.get(i)) {</span>
+<span class="fc bfc" id="L732" title="All 2 branches covered.">if (completePrefix) {</span>
+<span class="fc" id="L733">state.updateLastProcessedCommit(repo.getUrl(), commit.getName());</span>
+<span class="fc" id="L734">CommitEvaluation reused = completedEvaluations.getOrDefault(repo.getUrl(), Map.of()).get(commit.getName());</span>
+<span class="pc bpc" id="L735" title="2 of 6 branches missed.">if (reused != null &amp;&amp; reused.relevant() &amp;&amp; reused.category() != null) {</span>
+<span class="fc" id="L736">repoState.incrementCategoryHitCount(reused.category());</span>
 }
-<span class="fc" id="L736">}</span>
+<span class="fc" id="L738">}</span>
 } else {
-<span class="fc" id="L738">int diffLines = diffLineCounts.get(diffIdx++);</span>
-<span class="fc" id="L739">CommitEvaluation evaluation = evaluationsByHash.get(commit.getName());</span>
-<span class="fc bfc" id="L740" title="All 2 branches covered.">if (evaluation == null) {</span>
-<span class="fc bfc" id="L741" title="All 2 branches covered.">if (completePrefix) {</span>
-<span class="fc" id="L742">firstMissingIndex = i;</span>
+<span class="fc" id="L740">int diffLines = diffLineCounts.get(diffIdx++);</span>
+<span class="fc" id="L741">CommitEvaluation evaluation = evaluationsByHash.get(commit.getName());</span>
+<span class="fc bfc" id="L742" title="All 2 branches covered.">if (evaluation == null) {</span>
+<span class="fc bfc" id="L743" title="All 2 branches covered.">if (completePrefix) {</span>
+<span class="fc" id="L744">firstMissingIndex = i;</span>
 }
-<span class="fc" id="L744">completePrefix = false;</span>
-<span class="fc" id="L745">String message = commit.getShortMessage();</span>
-<span class="fc" id="L746">repoState.addDeferredCommit(new DeferredCommit(commit.getName(),</span>
-<span class="pc bpc" id="L747" title="1 of 2 branches missed.">message == null ? &quot;&quot; : message.substring(0, Math.min(120, message.length())), //$NON-NLS-1$</span>
-<span class="fc bfc" id="L748" title="All 2 branches covered.">diffLines, evaluationFailure == null ? &quot;INCOMPLETE_BATCH&quot; : &quot;API_FAILURE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L749">Instant.now().toString(), 0, 3));</span>
-<span class="fc" id="L750">miningLog.println(&quot;  Missing evaluation for commit &quot; + formatCommitInfo(commit, repo) //$NON-NLS-1$</span>
+<span class="fc" id="L746">completePrefix = false;</span>
+<span class="fc" id="L747">String message = commit.getShortMessage();</span>
+<span class="fc" id="L748">repoState.addDeferredCommit(new DeferredCommit(commit.getName(),</span>
+<span class="pc bpc" id="L749" title="1 of 2 branches missed.">message == null ? &quot;&quot; : message.substring(0, Math.min(120, message.length())), //$NON-NLS-1$</span>
+<span class="fc bfc" id="L750" title="All 2 branches covered.">diffLines, evaluationFailure == null ? &quot;INCOMPLETE_BATCH&quot; : &quot;API_FAILURE&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L751">Instant.now().toString(), 0, 3));</span>
+<span class="fc" id="L752">miningLog.println(&quot;  Missing evaluation for commit &quot; + formatCommitInfo(commit, repo) //$NON-NLS-1$</span>
 + &quot;; retaining the checkpoint before this commit for retry.&quot;); //$NON-NLS-1$
-<span class="fc" id="L752">continue;</span>
+<span class="fc" id="L754">continue;</span>
 }
-<span class="fc" id="L754">String diffInfo = &quot; [&quot; + diffLines + &quot; lines]&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L755">miningLog.println(&quot;    - &quot; + formatCommitInfo(commit, repo) + diffInfo + &quot; -&gt; &quot; + evaluation.trafficLight()); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L756">handleEvaluation(evaluation, commit, repo, validator, categoryManager, stats, aggregator);</span>
-<span class="fc bfc" id="L757" title="All 2 branches covered.">if (completePrefix) {</span>
-<span class="fc" id="L758">state.updateLastProcessedCommit(repo.getUrl(), commit.getName());</span>
+<span class="fc" id="L756">String diffInfo = &quot; [&quot; + diffLines + &quot; lines]&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L757">miningLog.println(&quot;    - &quot; + formatCommitInfo(commit, repo) + diffInfo + &quot; -&gt; &quot; + evaluation.trafficLight()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L758">handleEvaluation(evaluation, commit, repo, validator, categoryManager, stats, aggregator);</span>
+<span class="fc bfc" id="L759" title="All 2 branches covered.">if (completePrefix) {</span>
+<span class="fc" id="L760">state.updateLastProcessedCommit(repo.getUrl(), commit.getName());</span>
 // Persist hit counts only for the complete prefix, including cached results
 // when a later run reaches them. This avoids recounting results after a gap.
-<span class="pc bpc" id="L761" title="2 of 4 branches missed.">if (evaluation.relevant() &amp;&amp; evaluation.category() != null) {</span>
-<span class="fc" id="L762">repoState.incrementCategoryHitCount(evaluation.category());</span>
+<span class="pc bpc" id="L763" title="2 of 4 branches missed.">if (evaluation.relevant() &amp;&amp; evaluation.category() != null) {</span>
+<span class="fc" id="L764">repoState.incrementCategoryHitCount(evaluation.category());</span>
 }
 }
 // Remove from deferred list if it was previously deferred
-<span class="fc" id="L766">repoState.removeDeferredCommit(commit.getName());</span>
+<span class="fc" id="L768">repoState.removeDeferredCommit(commit.getName());</span>
 }
 }
 
 // A persisted scan position must never get ahead of its candidate data.
 try {
-<span class="fc" id="L772">saveCheckpoint(aggregator, validator, state, statePath, outputDir, sandboxRoot);</span>
-<span class="fc" id="L773">} catch (IOException e) {</span>
-<span class="pc bpc" id="L774" title="1 of 2 branches missed.">if (evaluationFailure != null) {</span>
-<span class="nc" id="L775">evaluationFailure.addSuppressed(e);</span>
-<span class="nc" id="L776">throw evaluationFailure;</span>
+<span class="fc" id="L774">saveCheckpoint(aggregator, validator, state, statePath, outputDir, sandboxRoot);</span>
+<span class="fc" id="L775">} catch (IOException e) {</span>
+<span class="pc bpc" id="L776" title="1 of 2 branches missed.">if (evaluationFailure != null) {</span>
+<span class="nc" id="L777">evaluationFailure.addSuppressed(e);</span>
+<span class="nc" id="L778">throw evaluationFailure;</span>
 }
-<span class="fc" id="L778">throw e;</span>
-<span class="fc" id="L779">}</span>
-<span class="fc bfc" id="L780" title="All 2 branches covered.">if (evaluationFailure != null) {</span>
-<span class="fc" id="L781">throw evaluationFailure;</span>
+<span class="fc" id="L780">throw e;</span>
+<span class="fc" id="L781">}</span>
+<span class="fc bfc" id="L782" title="All 2 branches covered.">if (evaluationFailure != null) {</span>
+<span class="fc" id="L783">throw evaluationFailure;</span>
 }
-<span class="fc bfc" id="L783" title="All 2 branches covered.">if (!completePrefix) {</span>
-<span class="fc" id="L784">throw new IncompleteBatchException(repo.getUrl(), firstMissingIndex);</span>
+<span class="fc bfc" id="L785" title="All 2 branches covered.">if (!completePrefix) {</span>
+<span class="fc" id="L786">throw new IncompleteBatchException(repo.getUrl(), firstMissingIndex);</span>
 }
-<span class="fc" id="L786">}</span>
+<span class="fc" id="L788">}</span>
 
 private static final class IncompleteBatchException extends IOException {
 private static final long serialVersionUID = 1L;
 private final int firstMissingIndex;
 
 IncompleteBatchException(String repoUrl, int firstMissingIndex) {
-<span class="fc" id="L793">super(&quot;Incomplete batch evaluation for &quot; + repoUrl //$NON-NLS-1$</span>
+<span class="fc" id="L795">super(&quot;Incomplete batch evaluation for &quot; + repoUrl //$NON-NLS-1$</span>
 + &quot;; completed results saved, unevaluated commits remain for retry&quot;); //$NON-NLS-1$
-<span class="fc" id="L795">this.firstMissingIndex = firstMissingIndex;</span>
-<span class="fc" id="L796">}</span>
+<span class="fc" id="L797">this.firstMissingIndex = firstMissingIndex;</span>
+<span class="fc" id="L798">}</span>
 }
 
 private void saveCheckpoint(ReportAggregator aggregator, DslValidator validator,
 MiningState state, Path statePath, Path outputDir, Path sandboxRoot) throws IOException {
-<span class="fc" id="L801">new JsonReporter().writeEvaluations(aggregator.getAllEvaluations(), outputDir);</span>
-<span class="fc" id="L802">saveRunCandidates(aggregator, validator, sandboxRoot);</span>
-<span class="fc" id="L803">state.save(statePath);</span>
-<span class="fc" id="L804">}</span>
+<span class="fc" id="L803">new JsonReporter().writeEvaluations(aggregator.getAllEvaluations(), outputDir);</span>
+<span class="fc" id="L804">saveRunCandidates(aggregator, validator, sandboxRoot);</span>
+<span class="fc" id="L805">state.save(statePath);</span>
+<span class="fc" id="L806">}</span>
 
 private void saveRunCandidates(ReportAggregator aggregator, DslValidator validator, Path sandboxRoot) throws IOException {
-<span class="fc" id="L807">CandidateStore candidateStore = new CandidateStore(sandboxRoot.resolve(&quot;mining-candidates&quot;)); //$NON-NLS-1$</span>
-<span class="fc" id="L808">stagedCandidateCount += saveCandidates(aggregator.getAllEvaluations(), candidateStore, validator, miningLog).size();</span>
-<span class="fc" id="L809">stagedCandidateCount += saveCandidates(reusedEvaluations, candidateStore, validator, miningLog, true).size();</span>
-<span class="fc" id="L810">}</span>
+<span class="fc" id="L809">CandidateStore candidateStore = new CandidateStore(sandboxRoot.resolve(&quot;mining-candidates&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L810">stagedCandidateCount += saveCandidates(aggregator.getAllEvaluations(), candidateStore, validator, miningLog).size();</span>
+<span class="fc" id="L811">stagedCandidateCount += saveCandidates(reusedEvaluations, candidateStore, validator, miningLog, true).size();</span>
+<span class="fc" id="L812">}</span>
 
 private void handleEvaluation(CommitEvaluation evaluation, RevCommit commit, RepoEntry repo,
 DslValidator validator, CategoryManager categoryManager,
 StatisticsCollector stats, ReportAggregator aggregator) {
-<span class="fc" id="L815">String validationResult = null;</span>
-<span class="pc bpc" id="L816" title="2 of 4 branches missed.">if (evaluation.dslRule() != null &amp;&amp; !evaluation.dslRule().isBlank()) {</span>
-<span class="fc" id="L817">var validation = validator.validate(evaluation.dslRule());</span>
-<span class="pc bpc" id="L818" title="1 of 2 branches missed.">if (validation.valid()) {</span>
-<span class="fc" id="L819">validationResult = &quot;VALID&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L817">String validationResult = null;</span>
+<span class="pc bpc" id="L818" title="2 of 4 branches missed.">if (evaluation.dslRule() != null &amp;&amp; !evaluation.dslRule().isBlank()) {</span>
+<span class="fc" id="L819">var validation = validator.validate(evaluation.dslRule());</span>
+<span class="pc bpc" id="L820" title="1 of 2 branches missed.">if (validation.valid()) {</span>
+<span class="fc" id="L821">validationResult = &quot;VALID&quot;; //$NON-NLS-1$</span>
 } else {
-<span class="nc" id="L821">validationResult = validation.message();</span>
-<span class="nc" id="L822">miningLog.println(&quot;  Invalid DSL rule for &quot; + formatCommitInfo(commit, repo) //$NON-NLS-1$</span>
-<span class="nc" id="L823">+ &quot;: &quot; + validation.message()); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L824" title="All 2 branches missed.">if (Boolean.parseBoolean(System.getenv(&quot;GEMINI_DEBUG&quot;))) { //$NON-NLS-1$</span>
-<span class="nc" id="L825">miningLog.println(&quot;  --- DSL rule begin ---&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L826">miningLog.println(evaluation.dslRule());</span>
-<span class="nc" id="L827">miningLog.println(&quot;  --- DSL rule end ---&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L823">validationResult = validation.message();</span>
+<span class="nc" id="L824">miningLog.println(&quot;  Invalid DSL rule for &quot; + formatCommitInfo(commit, repo) //$NON-NLS-1$</span>
+<span class="nc" id="L825">+ &quot;: &quot; + validation.message()); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L826" title="All 2 branches missed.">if (Boolean.parseBoolean(System.getenv(&quot;GEMINI_DEBUG&quot;))) { //$NON-NLS-1$</span>
+<span class="nc" id="L827">miningLog.println(&quot;  --- DSL rule begin ---&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L828">miningLog.println(evaluation.dslRule());</span>
+<span class="nc" id="L829">miningLog.println(&quot;  --- DSL rule end ---&quot;); //$NON-NLS-1$</span>
 }
 }
 }
 // Create evaluation with validation result and commit date (author date)
-<span class="fc" id="L832">Instant commitDate = commit.getAuthorIdent().getWhen().toInstant();</span>
-<span class="fc" id="L833">CommitEvaluation enriched = new CommitEvaluation(</span>
-<span class="fc" id="L834">evaluation.commitHash(), evaluation.commitMessage(), evaluation.repoUrl(),</span>
-<span class="fc" id="L835">evaluation.evaluatedAt(), commitDate, evaluation.relevant(), evaluation.irrelevantReason(),</span>
-<span class="fc" id="L836">evaluation.isDuplicate(), evaluation.duplicateOf(),</span>
-<span class="fc" id="L837">evaluation.reusability(), evaluation.codeImprovement(), evaluation.implementationEffort(),</span>
-<span class="fc" id="L838">evaluation.trafficLight(), evaluation.category(), evaluation.isNewCategory(),</span>
-<span class="fc" id="L839">evaluation.categoryReason(), evaluation.canImplementInCurrentDsl(),</span>
-<span class="fc" id="L840">evaluation.dslRule(), evaluation.targetHintFile(),</span>
-<span class="fc" id="L841">evaluation.languageChangeNeeded(), evaluation.dslRuleAfterChange(),</span>
-<span class="fc" id="L842">evaluation.summary(), validationResult,</span>
-<span class="fc" id="L843">evaluation.beforeExample(), evaluation.afterExample(), evaluation.negativeExample());</span>
-<span class="pc bpc" id="L844" title="3 of 4 branches missed.">if (evaluation.isNewCategory() &amp;&amp; evaluation.category() != null) {</span>
-<span class="nc" id="L845">categoryManager.addCategory(evaluation.category());</span>
+<span class="fc" id="L834">Instant commitDate = commit.getAuthorIdent().getWhen().toInstant();</span>
+<span class="fc" id="L835">CommitEvaluation enriched = new CommitEvaluation(</span>
+<span class="fc" id="L836">evaluation.commitHash(), evaluation.commitMessage(), evaluation.repoUrl(),</span>
+<span class="fc" id="L837">evaluation.evaluatedAt(), commitDate, evaluation.relevant(), evaluation.irrelevantReason(),</span>
+<span class="fc" id="L838">evaluation.isDuplicate(), evaluation.duplicateOf(),</span>
+<span class="fc" id="L839">evaluation.reusability(), evaluation.codeImprovement(), evaluation.implementationEffort(),</span>
+<span class="fc" id="L840">evaluation.trafficLight(), evaluation.category(), evaluation.isNewCategory(),</span>
+<span class="fc" id="L841">evaluation.categoryReason(), evaluation.canImplementInCurrentDsl(),</span>
+<span class="fc" id="L842">evaluation.dslRule(), evaluation.targetHintFile(),</span>
+<span class="fc" id="L843">evaluation.languageChangeNeeded(), evaluation.dslRuleAfterChange(),</span>
+<span class="fc" id="L844">evaluation.summary(), validationResult,</span>
+<span class="fc" id="L845">evaluation.beforeExample(), evaluation.afterExample(), evaluation.negativeExample());</span>
+<span class="pc bpc" id="L846" title="3 of 4 branches missed.">if (evaluation.isNewCategory() &amp;&amp; evaluation.category() != null) {</span>
+<span class="nc" id="L847">categoryManager.addCategory(evaluation.category());</span>
 }
-<span class="fc" id="L847">stats.record(enriched);</span>
-<span class="fc" id="L848">aggregator.add(enriched);</span>
-<span class="fc" id="L849">completedEvaluations.computeIfAbsent(repo.getUrl(), key -&gt; new HashMap&lt;&gt;()).put(commit.getName(), enriched);</span>
-<span class="fc" id="L850">}</span>
+<span class="fc" id="L849">stats.record(enriched);</span>
+<span class="fc" id="L850">aggregator.add(enriched);</span>
+<span class="fc" id="L851">completedEvaluations.computeIfAbsent(repo.getUrl(), key -&gt; new HashMap&lt;&gt;()).put(commit.getName(), enriched);</span>
+<span class="fc" id="L852">}</span>
 
 static String repoDirectoryName(String url) {
-<span class="fc" id="L853">String name = url;</span>
-<span class="fc bfc" id="L854" title="All 2 branches covered.">if (name.endsWith(&quot;.git&quot;)) {</span>
-<span class="fc" id="L855">name = name.substring(0, name.length() - 4);</span>
+<span class="fc" id="L855">String name = url;</span>
+<span class="fc bfc" id="L856" title="All 2 branches covered.">if (name.endsWith(&quot;.git&quot;)) {</span>
+<span class="fc" id="L857">name = name.substring(0, name.length() - 4);</span>
 }
-<span class="fc" id="L857">int lastSlash = name.lastIndexOf('/');</span>
-<span class="pc bpc" id="L858" title="1 of 2 branches missed.">if (lastSlash &gt;= 0) {</span>
-<span class="fc" id="L859">name = name.substring(lastSlash + 1);</span>
+<span class="fc" id="L859">int lastSlash = name.lastIndexOf('/');</span>
+<span class="pc bpc" id="L860" title="1 of 2 branches missed.">if (lastSlash &gt;= 0) {</span>
+<span class="fc" id="L861">name = name.substring(lastSlash + 1);</span>
 }
-<span class="fc" id="L861">return name;</span>
+<span class="fc" id="L863">return name;</span>
 }
 
 static String formatCommitInfo(RevCommit commit, RepoEntry repo) {
-<span class="fc" id="L865">String datetime = COMMIT_DATE_FORMAT.format(commit.getAuthorIdent().getWhen().toInstant());</span>
-<span class="fc" id="L866">String title = commit.getShortMessage().replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L867">return commit.getName().substring(0, 7) + &quot; on &quot; + repo.getBranch() //$NON-NLS-1$</span>
+<span class="fc" id="L867">String datetime = COMMIT_DATE_FORMAT.format(commit.getAuthorIdent().getWhen().toInstant());</span>
+<span class="fc" id="L868">String title = commit.getShortMessage().replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L869">return commit.getName().substring(0, 7) + &quot; on &quot; + repo.getBranch() //$NON-NLS-1$</span>
 + &quot; (&quot; + datetime + &quot;) \&quot;&quot; + title + &quot;\&quot;&quot;; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 }
 
 private void logApiUnavailable(LlmClient llmClient) {
-<span class="nc" id="L872">miningLog.println(&quot;LLM API has been unreachable for over &quot; //$NON-NLS-1$</span>
-<span class="nc" id="L873">+ llmClient.getMaxFailureDuration().toMinutes()</span>
+<span class="nc" id="L874">miningLog.println(&quot;LLM API has been unreachable for over &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L875">+ llmClient.getMaxFailureDuration().toMinutes()</span>
 + &quot; minutes. Stopping to avoid wasting CI time. State saved; will resume on next run.&quot;); //$NON-NLS-1$
-<span class="nc" id="L875">}</span>
+<span class="nc" id="L877">}</span>
 
 private static void printUsage() {
-<span class="nc" id="L878">System.out.println(&quot;Usage: java -jar sandbox-mining-core.jar [options]&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L879">System.out.println(&quot;Options:&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L880">System.out.println(&quot;  --config &lt;path&gt;              Path to repos.yml config file&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L881">System.out.println(&quot;  --state &lt;path&gt;               Path to state.json file&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L882">System.out.println(&quot;  --sandbox-root &lt;path&gt;        Root of sandbox repository&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L883">System.out.println(&quot;  --batch-size &lt;n&gt;             Number of commits per batch (default: 500)&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L884">System.out.println(&quot;  --commits-per-request &lt;n&gt;    Commits grouped into one API call (default: 4)&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L885">System.out.println(&quot;  --output &lt;path&gt;              Output directory (default: output)&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L886">System.out.println(&quot;  --max-failure-duration &lt;s&gt;   Seconds without a successful API call before aborting (default: 300)&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L887">System.out.println(&quot;  --llm-provider &lt;name&gt;        LLM provider: gemini, openai, deepseek, qwen, llama, or mistral (default: auto-detect)&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L888">System.out.println(&quot;  --retry-deferred             Retry previously deferred commits&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L889">System.out.println(&quot;  --reset-learned-limits       Reset learned diff size limits&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L890">System.out.println(&quot;  --commit-list &lt;path&gt;         Path to file with commit hashes to process (one per line)&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L891">System.out.println(&quot;  --max-duration &lt;minutes&gt;     Maximum run duration in minutes&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L892">System.out.println(&quot;  --comparison-mode            Enable comparison against reference results&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L893">System.out.println(&quot;  --copilot-results &lt;path&gt;     Path to Copilot/reference evaluation results JSON&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L894">System.out.println(&quot;  --enrich-type-context        Add Eclipse type hierarchy context to prompts&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L895">System.out.println(&quot;  --keyword-filter &lt;path&gt;      Path to keyword filter file for commit pre-filtering&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L896">System.out.println(&quot;  --output-format &lt;format&gt;     Output format: json, netbeans, or both (default: json)&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L897">System.out.println(&quot;  --strict-netbeans            Only NetBeans format on stdout, info on stderr&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L898">}</span>
+<span class="nc" id="L880">System.out.println(&quot;Usage: java -jar sandbox-mining-core.jar [options]&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L881">System.out.println(&quot;Options:&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L882">System.out.println(&quot;  --config &lt;path&gt;              Path to repos.yml config file&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L883">System.out.println(&quot;  --state &lt;path&gt;               Path to state.json file&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L884">System.out.println(&quot;  --sandbox-root &lt;path&gt;        Root of sandbox repository&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L885">System.out.println(&quot;  --batch-size &lt;n&gt;             Number of commits per batch (default: 500)&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L886">System.out.println(&quot;  --commits-per-request &lt;n&gt;    Commits grouped into one API call (default: 4)&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L887">System.out.println(&quot;  --output &lt;path&gt;              Output directory (default: output)&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L888">System.out.println(&quot;  --max-failure-duration &lt;s&gt;   Seconds without a successful API call before aborting (default: 300)&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L889">System.out.println(&quot;  --llm-provider &lt;name&gt;        LLM provider: gemini, openai, deepseek, qwen, llama, or mistral (default: auto-detect)&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L890">System.out.println(&quot;  --retry-deferred             Retry previously deferred commits&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L891">System.out.println(&quot;  --reset-learned-limits       Reset learned diff size limits&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L892">System.out.println(&quot;  --commit-list &lt;path&gt;         Path to file with commit hashes to process (one per line)&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L893">System.out.println(&quot;  --max-duration &lt;minutes&gt;     Maximum run duration in minutes&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L894">System.out.println(&quot;  --comparison-mode            Enable comparison against reference results&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L895">System.out.println(&quot;  --copilot-results &lt;path&gt;     Path to Copilot/reference evaluation results JSON&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L896">System.out.println(&quot;  --enrich-type-context        Add Eclipse type hierarchy context to prompts&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L897">System.out.println(&quot;  --keyword-filter &lt;path&gt;      Path to keyword filter file for commit pre-filtering&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L898">System.out.println(&quot;  --output-format &lt;format&gt;     Output format: json, netbeans, or both (default: json)&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L899">System.out.println(&quot;  --strict-netbeans            Only NetBeans format on stdout, info on stderr&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L900">}</span>
 
 private static String requireArg(String[] args, int index, String option) {
-<span class="pc bpc" id="L901" title="1 of 2 branches missed.">if (index &gt;= args.length) {</span>
-<span class="nc" id="L902">throw new IllegalArgumentException(&quot;Option &quot; + option + &quot; requires a value&quot;);</span>
+<span class="pc bpc" id="L903" title="1 of 2 branches missed.">if (index &gt;= args.length) {</span>
+<span class="nc" id="L904">throw new IllegalArgumentException(&quot;Option &quot; + option + &quot; requires a value&quot;);</span>
 }
-<span class="fc" id="L904">return args[index];</span>
+<span class="fc" id="L906">return args[index];</span>
 }
 
 /**
@@ -917,147 +919,147 @@ private static String requireArg(String[] args, int index, String option) {
  */
 static List&lt;MiningCandidate&gt; saveCandidates(List&lt;CommitEvaluation&gt; evaluations,
 		CandidateStore candidateStore, DslValidator validator, PrintStream log) throws IOException {
-<span class="fc" id="L920">	return saveCandidates(evaluations, candidateStore, validator, log, false);</span>
+<span class="fc" id="L922">	return saveCandidates(evaluations, candidateStore, validator, log, false);</span>
 }
 
 private static List&lt;MiningCandidate&gt; saveCandidates(List&lt;CommitEvaluation&gt; evaluations,
 		CandidateStore candidateStore, DslValidator validator, PrintStream log, boolean preserveExisting) throws IOException {
-<span class="fc" id="L925">	List&lt;MiningCandidate&gt; saved = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L926" title="All 2 branches covered.">	for (CommitEvaluation eval : evaluations) {</span>
-<span class="fc bfc" id="L927" title="All 2 branches covered.">		if (eval.trafficLight() != CommitEvaluation.TrafficLight.GREEN) {</span>
-<span class="fc" id="L928">			continue;</span>
+<span class="fc" id="L927">	List&lt;MiningCandidate&gt; saved = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L928" title="All 2 branches covered.">	for (CommitEvaluation eval : evaluations) {</span>
+<span class="fc bfc" id="L929" title="All 2 branches covered.">		if (eval.trafficLight() != CommitEvaluation.TrafficLight.GREEN) {</span>
+<span class="fc" id="L930">			continue;</span>
 		}
-<span class="fc bfc" id="L930" title="All 2 branches covered.">		if (!&quot;VALID&quot;.equals(eval.dslValidationResult())) { //$NON-NLS-1$</span>
-<span class="fc" id="L931">			continue;</span>
+<span class="fc bfc" id="L932" title="All 2 branches covered.">		if (!&quot;VALID&quot;.equals(eval.dslValidationResult())) { //$NON-NLS-1$</span>
+<span class="fc" id="L933">			continue;</span>
 		}
-<span class="fc" id="L933">		String dslRule = eval.dslRule();</span>
-<span class="pc bpc" id="L934" title="2 of 4 branches missed.">		if (dslRule == null || dslRule.isBlank()) {</span>
-<span class="nc" id="L935">			continue;</span>
+<span class="fc" id="L935">		String dslRule = eval.dslRule();</span>
+<span class="pc bpc" id="L936" title="2 of 4 branches missed.">		if (dslRule == null || dslRule.isBlank()) {</span>
+<span class="nc" id="L937">			continue;</span>
 		}
-<span class="fc" id="L937">		var validation = validator.validate(dslRule);</span>
-<span class="fc bfc" id="L938" title="All 2 branches covered.">		if (!validation.valid()) {</span>
-<span class="fc" id="L939">			log.println(&quot;  Skipped candidate due to invalid DSL during final validation: &quot; //$NON-NLS-1$</span>
-<span class="fc" id="L940">					+ eval.commitHash());</span>
-<span class="fc" id="L941">			continue;</span>
+<span class="fc" id="L939">		var validation = validator.validate(dslRule);</span>
+<span class="fc bfc" id="L940" title="All 2 branches covered.">		if (!validation.valid()) {</span>
+<span class="fc" id="L941">			log.println(&quot;  Skipped candidate due to invalid DSL during final validation: &quot; //$NON-NLS-1$</span>
+<span class="fc" id="L942">					+ eval.commitHash());</span>
+<span class="fc" id="L943">			continue;</span>
 		}
-<span class="fc" id="L943">		MiningCandidate candidate = new MiningCandidate(</span>
+<span class="fc" id="L945">		MiningCandidate candidate = new MiningCandidate(</span>
 				dslRule,
-<span class="fc" id="L945">				eval.beforeExample(),</span>
-<span class="fc" id="L946">				eval.afterExample(),</span>
-<span class="fc" id="L947">				eval.negativeExample(),</span>
-<span class="fc" id="L948">				eval.targetHintFile(),</span>
-<span class="fc" id="L949">				eval.commitHash(),</span>
-<span class="fc" id="L950">				eval.repoUrl(),</span>
-<span class="fc" id="L951">				eval.category(),</span>
-<span class="fc" id="L952">				eval.summary(),</span>
-<span class="fc" id="L953">				Instant.now().toString());</span>
+<span class="fc" id="L947">				eval.beforeExample(),</span>
+<span class="fc" id="L948">				eval.afterExample(),</span>
+<span class="fc" id="L949">				eval.negativeExample(),</span>
+<span class="fc" id="L950">				eval.targetHintFile(),</span>
+<span class="fc" id="L951">				eval.commitHash(),</span>
+<span class="fc" id="L952">				eval.repoUrl(),</span>
+<span class="fc" id="L953">				eval.category(),</span>
+<span class="fc" id="L954">				eval.summary(),</span>
+<span class="fc" id="L955">				Instant.now().toString());</span>
 		// Replaying saved evaluations must not replace a reviewed candidate's
 		// corrected content or revision, but still recreate a missing candidate.
-<span class="fc bfc" id="L956" title="All 4 branches covered.">		if (preserveExisting ? candidateStore.findById(candidate.getCandidateId()).isPresent()</span>
-<span class="fc bfc" id="L957" title="All 2 branches covered.">				: candidateStore.containsCandidate(candidate)) {</span>
-<span class="fc" id="L958">			continue;</span>
+<span class="fc bfc" id="L958" title="All 4 branches covered.">		if (preserveExisting ? candidateStore.findById(candidate.getCandidateId()).isPresent()</span>
+<span class="fc bfc" id="L959" title="All 2 branches covered.">				: candidateStore.containsCandidate(candidate)) {</span>
+<span class="fc" id="L960">			continue;</span>
 		}
-<span class="fc" id="L960">		candidate.setStatus(CandidateStatus.DSL_VALID);</span>
-<span class="fc" id="L961">		candidateStore.save(candidate);</span>
-<span class="fc" id="L962">		saved.add(candidate);</span>
-<span class="fc" id="L963">		log.println(&quot;  Staged candidate: &quot; + candidate.toFileName()); //$NON-NLS-1$</span>
-<span class="fc" id="L964">	}</span>
-<span class="fc bfc" id="L965" title="All 2 branches covered.">	if (!saved.isEmpty()) {</span>
-<span class="fc" id="L966">		log.println(&quot;Staged &quot; + saved.size() + &quot; new candidates in mining-candidates/&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L962">		candidate.setStatus(CandidateStatus.DSL_VALID);</span>
+<span class="fc" id="L963">		candidateStore.save(candidate);</span>
+<span class="fc" id="L964">		saved.add(candidate);</span>
+<span class="fc" id="L965">		log.println(&quot;  Staged candidate: &quot; + candidate.toFileName()); //$NON-NLS-1$</span>
+<span class="fc" id="L966">	}</span>
+<span class="fc bfc" id="L967" title="All 2 branches covered.">	if (!saved.isEmpty()) {</span>
+<span class="fc" id="L968">		log.println(&quot;Staged &quot; + saved.size() + &quot; new candidates in mining-candidates/&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
-<span class="fc" id="L968">	return saved;</span>
+<span class="fc" id="L970">	return saved;</span>
 }
 
 private static void deleteDirectory(Path dir) throws IOException {
-<span class="pc bpc" id="L972" title="1 of 2 branches missed.">if (Files.exists(dir)) {</span>
-<span class="fc" id="L973">try (var walk = Files.walk(dir)) {</span>
-<span class="fc" id="L974">walk.sorted(java.util.Comparator.reverseOrder())</span>
-<span class="fc" id="L975">.forEach(p -&gt; {</span>
+<span class="pc bpc" id="L974" title="1 of 2 branches missed.">if (Files.exists(dir)) {</span>
+<span class="fc" id="L975">try (var walk = Files.walk(dir)) {</span>
+<span class="fc" id="L976">walk.sorted(java.util.Comparator.reverseOrder())</span>
+<span class="fc" id="L977">.forEach(p -&gt; {</span>
 try {
-<span class="fc" id="L977">Files.deleteIfExists(p);</span>
-<span class="nc" id="L978">} catch (IOException e) {</span>
+<span class="fc" id="L979">Files.deleteIfExists(p);</span>
+<span class="nc" id="L980">} catch (IOException e) {</span>
 // best effort cleanup
-<span class="fc" id="L980">}</span>
-<span class="fc" id="L981">});</span>
+<span class="fc" id="L982">}</span>
+<span class="fc" id="L983">});</span>
 }
 }
-<span class="fc" id="L984">}</span>
+<span class="fc" id="L986">}</span>
 
 private void retryDeferredCommits(MiningState state, Path statePath, Path workDir,
 LlmClient llmClient, PromptBuilder promptBuilder, String dslContext,
 CategoryManager categoryManager, DslValidator validator,
 StatisticsCollector stats, ReportAggregator aggregator,
 MiningConfig config, boolean forceRetry) throws IOException {
-<span class="fc bfc" id="L991" title="All 2 branches covered.">for (RepoEntry repo : config.getRepositories()) {</span>
-<span class="fc" id="L992">RepoState repoState = state.getRepoState(repo.getUrl());</span>
-<span class="fc" id="L993">List&lt;DeferredCommit&gt; toRetry = new ArrayList&lt;&gt;(repoState.getDeferredCommits());</span>
-<span class="pc bpc" id="L994" title="1 of 2 branches missed.">if (toRetry.isEmpty()) continue;</span>
+<span class="fc bfc" id="L993" title="All 2 branches covered.">for (RepoEntry repo : config.getRepositories()) {</span>
+<span class="fc" id="L994">RepoState repoState = state.getRepoState(repo.getUrl());</span>
+<span class="fc" id="L995">List&lt;DeferredCommit&gt; toRetry = new ArrayList&lt;&gt;(repoState.getDeferredCommits());</span>
+<span class="pc bpc" id="L996" title="1 of 2 branches missed.">if (toRetry.isEmpty()) continue;</span>
 
-<span class="nc" id="L996">miningLog.println(&quot;Processing &quot; + toRetry.size() + &quot; deferred commits for &quot; + repo.getUrl()); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L997">List&lt;DeferredCommit&gt; remaining = new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L998" title="All 2 branches missed.">for (DeferredCommit dc : toRetry) {</span>
-<span class="nc bnc" id="L999" title="All 4 branches missed.">if (!forceRetry &amp;&amp; dc.getRetryCount() &gt;= dc.getMaxRetries()) {</span>
-<span class="nc" id="L1000">repoState.moveToPermanentlySkipped(dc.getHash());</span>
-<span class="nc" id="L1001">continue;</span>
+<span class="nc" id="L998">miningLog.println(&quot;Processing &quot; + toRetry.size() + &quot; deferred commits for &quot; + repo.getUrl()); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L999">List&lt;DeferredCommit&gt; remaining = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L1000" title="All 2 branches missed.">for (DeferredCommit dc : toRetry) {</span>
+<span class="nc bnc" id="L1001" title="All 4 branches missed.">if (!forceRetry &amp;&amp; dc.getRetryCount() &gt;= dc.getMaxRetries()) {</span>
+<span class="nc" id="L1002">repoState.moveToPermanentlySkipped(dc.getHash());</span>
+<span class="nc" id="L1003">continue;</span>
 }
 // No actual retry can be performed here because the repository checkout and
 // diff extraction pipeline are not available in this context. Keep the commit
 // deferred with its current retryCount so it can be retried during the next
 // normal processing run when its diff is available again.
-<span class="nc" id="L1007">remaining.add(dc);</span>
-<span class="nc" id="L1008">}</span>
-<span class="nc" id="L1009">repoState.setDeferredCommits(remaining);</span>
-<span class="nc" id="L1010">state.save(statePath);</span>
-<span class="nc" id="L1011">}</span>
-<span class="fc" id="L1012">}</span>
+<span class="nc" id="L1009">remaining.add(dc);</span>
+<span class="nc" id="L1010">}</span>
+<span class="nc" id="L1011">repoState.setDeferredCommits(remaining);</span>
+<span class="nc" id="L1012">state.save(statePath);</span>
+<span class="nc" id="L1013">}</span>
+<span class="fc" id="L1014">}</span>
 
 private void printRunSummary(StatisticsCollector stats, MiningState state,
 MiningConfig config, LlmClient llmClient, long startTimeMs) {
-<span class="fc" id="L1016">long durationMs = System.currentTimeMillis() - startTimeMs;</span>
-<span class="fc" id="L1017">long minutes = durationMs / 60000;</span>
-<span class="fc" id="L1018">long seconds = (durationMs % 60000) / 1000;</span>
-<span class="fc" id="L1019">int totalDeferred = 0;</span>
-<span class="fc" id="L1020">int totalPermanentlySkipped = 0;</span>
-<span class="fc bfc" id="L1021" title="All 2 branches covered.">for (RepoEntry repo : config.getRepositories()) {</span>
-<span class="fc" id="L1022">RepoState rs = state.getRepoState(repo.getUrl());</span>
-<span class="fc" id="L1023">totalDeferred += rs.getDeferredCommits().size();</span>
-<span class="fc" id="L1024">totalPermanentlySkipped += rs.getPermanentlySkipped().size();</span>
-<span class="fc" id="L1025">}</span>
-<span class="fc" id="L1026">miningLog.println(&quot;=== Mining Run Summary ===&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L1027">miningLog.println(&quot;Duration:           &quot; + minutes + &quot;m &quot; + seconds + &quot;s&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L1028">miningLog.println(&quot;Commits processed:  &quot; + stats.getTotalProcessed()); //$NON-NLS-1$</span>
-<span class="fc" id="L1029">miningLog.println(&quot;Commits deferred:   &quot; + totalDeferred); //$NON-NLS-1$</span>
-<span class="fc" id="L1030">miningLog.println(&quot;Commits permanently skipped: &quot; + totalPermanentlySkipped); //$NON-NLS-1$</span>
-<span class="fc" id="L1031">miningLog.println(&quot;Relevant:           &quot; + stats.getRelevant()); //$NON-NLS-1$</span>
-<span class="fc" id="L1032">miningLog.println(&quot;API calls:          &quot; + llmClient.getDailyRequestCount()); //$NON-NLS-1$</span>
-<span class="fc" id="L1033">miningLog.println(&quot;Model:              &quot; + llmClient.getModel()); //$NON-NLS-1$</span>
+<span class="fc" id="L1018">long durationMs = System.currentTimeMillis() - startTimeMs;</span>
+<span class="fc" id="L1019">long minutes = durationMs / 60000;</span>
+<span class="fc" id="L1020">long seconds = (durationMs % 60000) / 1000;</span>
+<span class="fc" id="L1021">int totalDeferred = 0;</span>
+<span class="fc" id="L1022">int totalPermanentlySkipped = 0;</span>
+<span class="fc bfc" id="L1023" title="All 2 branches covered.">for (RepoEntry repo : config.getRepositories()) {</span>
+<span class="fc" id="L1024">RepoState rs = state.getRepoState(repo.getUrl());</span>
+<span class="fc" id="L1025">totalDeferred += rs.getDeferredCommits().size();</span>
+<span class="fc" id="L1026">totalPermanentlySkipped += rs.getPermanentlySkipped().size();</span>
+<span class="fc" id="L1027">}</span>
+<span class="fc" id="L1028">miningLog.println(&quot;=== Mining Run Summary ===&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L1029">miningLog.println(&quot;Duration:           &quot; + minutes + &quot;m &quot; + seconds + &quot;s&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L1030">miningLog.println(&quot;Commits processed:  &quot; + stats.getTotalProcessed()); //$NON-NLS-1$</span>
+<span class="fc" id="L1031">miningLog.println(&quot;Commits deferred:   &quot; + totalDeferred); //$NON-NLS-1$</span>
+<span class="fc" id="L1032">miningLog.println(&quot;Commits permanently skipped: &quot; + totalPermanentlySkipped); //$NON-NLS-1$</span>
+<span class="fc" id="L1033">miningLog.println(&quot;Relevant:           &quot; + stats.getRelevant()); //$NON-NLS-1$</span>
+<span class="fc" id="L1034">miningLog.println(&quot;API calls:          &quot; + llmClient.getDailyRequestCount()); //$NON-NLS-1$</span>
+<span class="fc" id="L1035">miningLog.println(&quot;Model:              &quot; + llmClient.getModel()); //$NON-NLS-1$</span>
 // Learned limits
-<span class="fc bfc" id="L1035" title="All 2 branches covered.">for (RepoEntry repo : config.getRepositories()) {</span>
-<span class="fc" id="L1036">RepoState rs = state.getRepoState(repo.getUrl());</span>
-<span class="pc bpc" id="L1037" title="1 of 2 branches missed.">if (rs.getLearnedMaxDiffLines() &gt; 0) {</span>
-<span class="nc" id="L1038">miningLog.println(&quot;Learned max diff:   &quot; + rs.getLearnedMaxDiffLines() + &quot; lines (for &quot; + repo.getUrl() + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L1037" title="All 2 branches covered.">for (RepoEntry repo : config.getRepositories()) {</span>
+<span class="fc" id="L1038">RepoState rs = state.getRepoState(repo.getUrl());</span>
+<span class="pc bpc" id="L1039" title="1 of 2 branches missed.">if (rs.getLearnedMaxDiffLines() &gt; 0) {</span>
+<span class="nc" id="L1040">miningLog.println(&quot;Learned max diff:   &quot; + rs.getLearnedMaxDiffLines() + &quot; lines (for &quot; + repo.getUrl() + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 }
-<span class="fc" id="L1040">}</span>
-<span class="fc" id="L1041">}</span>
+<span class="fc" id="L1042">}</span>
+<span class="fc" id="L1043">}</span>
 
 private void printDeferredReport(MiningState state, MiningConfig config) {
-<span class="fc" id="L1044">boolean hasDeferred = false;</span>
-<span class="fc bfc" id="L1045" title="All 2 branches covered.">for (RepoEntry repo : config.getRepositories()) {</span>
-<span class="fc" id="L1046">RepoState rs = state.getRepoState(repo.getUrl());</span>
-<span class="fc bfc" id="L1047" title="All 2 branches covered.">if (!rs.getDeferredCommits().isEmpty()) {</span>
-<span class="pc bpc" id="L1048" title="1 of 2 branches missed.">if (!hasDeferred) {</span>
-<span class="fc" id="L1049">miningLog.println(&quot;Deferred commits for retry:&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L1050">hasDeferred = true;</span>
+<span class="fc" id="L1046">boolean hasDeferred = false;</span>
+<span class="fc bfc" id="L1047" title="All 2 branches covered.">for (RepoEntry repo : config.getRepositories()) {</span>
+<span class="fc" id="L1048">RepoState rs = state.getRepoState(repo.getUrl());</span>
+<span class="fc bfc" id="L1049" title="All 2 branches covered.">if (!rs.getDeferredCommits().isEmpty()) {</span>
+<span class="pc bpc" id="L1050" title="1 of 2 branches missed.">if (!hasDeferred) {</span>
+<span class="fc" id="L1051">miningLog.println(&quot;Deferred commits for retry:&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L1052">hasDeferred = true;</span>
 }
-<span class="fc" id="L1052">miningLog.println(&quot;  &quot; + repo.getUrl() + &quot;: &quot; + rs.getDeferredCommits().size() + &quot; commits&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc bfc" id="L1053" title="All 2 branches covered.">for (DeferredCommit dc : rs.getDeferredCommits()) {</span>
-<span class="fc" id="L1054">miningLog.println(&quot;    - &quot; + dc.getHash().substring(0, Math.min(7, dc.getHash().length())) //$NON-NLS-1$</span>
-<span class="fc" id="L1055">+ &quot; (&quot; + dc.getDiffLines() + &quot; lines, &quot; + dc.getReason() //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L1056">+ &quot;, retry &quot; + dc.getRetryCount() + &quot;/&quot; + dc.getMaxRetries() + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
-<span class="fc" id="L1057">}</span>
-}
+<span class="fc" id="L1054">miningLog.println(&quot;  &quot; + repo.getUrl() + &quot;: &quot; + rs.getDeferredCommits().size() + &quot; commits&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc bfc" id="L1055" title="All 2 branches covered.">for (DeferredCommit dc : rs.getDeferredCommits()) {</span>
+<span class="fc" id="L1056">miningLog.println(&quot;    - &quot; + dc.getHash().substring(0, Math.min(7, dc.getHash().length())) //$NON-NLS-1$</span>
+<span class="fc" id="L1057">+ &quot; (&quot; + dc.getDiffLines() + &quot; lines, &quot; + dc.getReason() //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L1058">+ &quot;, retry &quot; + dc.getRetryCount() + &quot;/&quot; + dc.getMaxRetries() + &quot;)&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$</span>
 <span class="fc" id="L1059">}</span>
-<span class="fc" id="L1060">}</span>
+}
+<span class="fc" id="L1061">}</span>
+<span class="fc" id="L1062">}</span>
 
 /**
  * Checks whether the mining run should stop based on elapsed time.
@@ -1067,11 +1069,11 @@ private void printDeferredReport(MiningState state, MiningConfig config) {
  * @return true if the run should stop
  */
 static boolean shouldStop(long startTimeMs, int maxDurationMin) {
-<span class="fc bfc" id="L1070" title="All 2 branches covered.">if (maxDurationMin &lt;= 0) {</span>
-<span class="fc" id="L1071">return false;</span>
+<span class="fc bfc" id="L1072" title="All 2 branches covered.">if (maxDurationMin &lt;= 0) {</span>
+<span class="fc" id="L1073">return false;</span>
 }
-<span class="fc" id="L1073">long elapsed = System.currentTimeMillis() - startTimeMs;</span>
-<span class="fc bfc" id="L1074" title="All 2 branches covered.">return elapsed &gt;= (long) maxDurationMin * 60 * 1000;</span>
+<span class="fc" id="L1075">long elapsed = System.currentTimeMillis() - startTimeMs;</span>
+<span class="fc bfc" id="L1076" title="All 2 branches covered.">return elapsed &gt;= (long) maxDurationMin * 60 * 1000;</span>
 }
 
 /**
@@ -1083,14 +1085,14 @@ static boolean shouldStop(long startTimeMs, int maxDurationMin) {
  * @throws IOException if the file cannot be read
  */
 static List&lt;String&gt; readCommitList(Path commitListPath) throws IOException {
-<span class="fc" id="L1086">List&lt;String&gt; hashes = new ArrayList&lt;&gt;();</span>
-<span class="fc bfc" id="L1087" title="All 2 branches covered.">for (String line : Files.readAllLines(commitListPath, StandardCharsets.UTF_8)) {</span>
-<span class="fc" id="L1088">String trimmed = line.trim();</span>
-<span class="fc bfc" id="L1089" title="All 4 branches covered.">if (!trimmed.isEmpty() &amp;&amp; !trimmed.startsWith(&quot;#&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L1090">hashes.add(trimmed);</span>
+<span class="fc" id="L1088">List&lt;String&gt; hashes = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L1089" title="All 2 branches covered.">for (String line : Files.readAllLines(commitListPath, StandardCharsets.UTF_8)) {</span>
+<span class="fc" id="L1090">String trimmed = line.trim();</span>
+<span class="fc bfc" id="L1091" title="All 4 branches covered.">if (!trimmed.isEmpty() &amp;&amp; !trimmed.startsWith(&quot;#&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L1092">hashes.add(trimmed);</span>
 }
-<span class="fc" id="L1092">}</span>
-<span class="fc" id="L1093">return hashes;</span>
+<span class="fc" id="L1094">}</span>
+<span class="fc" id="L1095">return hashes;</span>
 }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

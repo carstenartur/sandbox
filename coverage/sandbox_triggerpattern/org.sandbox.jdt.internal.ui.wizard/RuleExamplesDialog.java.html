@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RuleExamplesDialog.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_triggerpattern</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.wizard</a> &gt; <span class="el_source">RuleExamplesDialog.java</span></div><h1>RuleExamplesDialog.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.wizard;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Path;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.dom.AST;
+import org.eclipse.jdt.core.dom.ASTParser;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.ProgressMonitorDialog;
+import org.eclipse.jface.dialogs.TitleAreaDialog;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.layout.RowLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
+import org.sandbox.jdt.triggerpattern.api.RuleExampleRefiner;
+import org.sandbox.jdt.triggerpattern.api.RuleExampleRefiner.Proposal;
+import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite;
+import org.sandbox.jdt.triggerpattern.api.RuleExampleSuite.Example;
+import org.sandbox.jdt.triggerpattern.api.RuleExampleVerifier;
+import org.sandbox.jdt.triggerpattern.api.RuleExampleVerifier.Report;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlan;
+import org.sandbox.jdt.triggerpattern.api.SemanticRewritePlanContext;
+import org.sandbox.jdt.triggerpattern.internal.RuleAuthoringDocument.ChangeExample;
+
+/** Editable evidence and cancellable replay; no result is persisted as authority. */
+final class RuleExamplesDialog extends TitleAreaDialog {
+
+	private static final int USE_PROPOSAL = IDialogConstants.CLIENT_ID + 1;
+	private final String dsl;
+	private final IJavaProject project;
+	private final ChangeExample seed;
+	private final Function&lt;ChangeExample, String&gt; documentFactory;
+	private RuleExampleSuite suite;
+	private Text json;
+	private Text output;
+	private Proposal proposal;
+	private Proposal acceptedProposal;
+
+	RuleExamplesDialog(Shell shell, String dsl, RuleExampleSuite suite, IJavaProject project,
+			ChangeExample seed, Function&lt;ChangeExample, String&gt; documentFactory) {
+<span class="fc" id="L62">		super(shell);</span>
+<span class="fc" id="L63">		this.dsl = dsl;</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">		this.suite = suite == null ? new RuleExampleSuite(RuleExampleSuite.CURRENT_VERSION, List.of()) : suite;</span>
+<span class="fc" id="L65">		this.project = project;</span>
+<span class="fc" id="L66">		this.seed = seed;</span>
+<span class="fc" id="L67">		this.documentFactory = documentFactory;</span>
+<span class="fc" id="L68">		setShellStyle(getShellStyle() | SWT.RESIZE);</span>
+<span class="fc" id="L69">	}</span>
+
+	@Override
+	protected void configureShell(Shell shell) {
+<span class="fc" id="L73">		super.configureShell(shell);</span>
+<span class="fc" id="L74">		shell.setText(&quot;TriggerPattern rule examples&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L75">	}</span>
+
+	@Override
+	protected Point getInitialSize() {
+<span class="fc" id="L79">		return new Point(920, 760);</span>
+	}
+
+	@Override
+	protected Control createDialogArea(Composite parent) {
+<span class="fc" id="L84">		Composite area = (Composite) super.createDialogArea(parent);</span>
+<span class="fc" id="L85">		setTitle(&quot;Examples for the complete rule&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L86">		setMessage(&quot;Keep replayable source evidence beside the rule. Passing examples do not prove a rule safe for all code.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L87">		Composite content = new Composite(area, SWT.NONE);</span>
+<span class="fc" id="L88">		content.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));</span>
+<span class="fc" id="L89">		content.setLayout(new GridLayout());</span>
+
+<span class="fc" id="L91">		Label guidance = new Label(content, SWT.WRAP);</span>
+<span class="fc" id="L92">		guidance.setText(&quot;Schema 1: each example has a unique name, unitName (a Java source path within the selected project), &quot; //$NON-NLS-1$</span>
+				+ &quot;complete before/after compilation units, and expectChange. Use true for a real change; &quot; //$NON-NLS-1$
+				+ &quot;use false with identical source for a counterexample. JSON represents source line breaks as \\n.\n&quot; //$NON-NLS-1$
+				+ &quot;Replay requires at least one of each, exact expected output, compilation and an unchanged second application. &quot; //$NON-NLS-1$
+				+ &quot;Imports and structured actions currently report UNKNOWN; use Try on my code for them.\n&quot; //$NON-NLS-1$
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">				+ (hasProject() ? &quot;Project: &quot; + project.getElementName() //$NON-NLS-1$</span>
+<span class="fc" id="L98">						: &quot;Choose a Java project on the destination page to enable Verify and Refine.&quot;)); //$NON-NLS-1$</span>
+<span class="fc" id="L99">		guidance.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="fc" id="L100">		json = new Text(content, SWT.BORDER | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);</span>
+<span class="fc" id="L101">		GridData jsonData = new GridData(SWT.FILL, SWT.FILL, true, true);</span>
+<span class="fc" id="L102">		jsonData.heightHint = 250;</span>
+<span class="fc" id="L103">		json.setLayoutData(jsonData);</span>
+<span class="fc" id="L104">		json.setText(suite.toJson());</span>
+<span class="pc" id="L105">		json.addModifyListener(event -&gt; invalidateResult());</span>
+
+<span class="fc" id="L107">		Composite actions = new Composite(content, SWT.NONE);</span>
+<span class="fc" id="L108">		actions.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="fc" id="L109">		actions.setLayout(new RowLayout());</span>
+<span class="pc" id="L110">		action(actions, &quot;Add positive&quot;, () -&gt; addExample(true)); //$NON-NLS-1$</span>
+<span class="pc" id="L111">		action(actions, &quot;Add counterexample&quot;, () -&gt; addExample(false)); //$NON-NLS-1$</span>
+<span class="pc" id="L112">		Button verify = action(actions, &quot;Verify&quot;, () -&gt; runVerification(false)); //$NON-NLS-1$</span>
+<span class="fc" id="L113">		verify.setEnabled(hasProject());</span>
+<span class="pc" id="L114">		Button refine = action(actions, &quot;Refine from examples&quot;, () -&gt; runVerification(true)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L115" title="5 of 6 branches missed.">		refine.setEnabled(hasProject() &amp;&amp; seed != null &amp;&amp; documentFactory != null);</span>
+<span class="fc" id="L116">		refine.setToolTipText(&quot;Available for the Before/After helper fields; imported or edited complete documents stay intact. &quot; //$NON-NLS-1$</span>
+				+ &quot;Tries up to 64 choices for at most six shared names, then offers a proposal for review.&quot;); //$NON-NLS-1$
+
+<span class="fc" id="L119">		Label helperNotice = new Label(content, SWT.WRAP);</span>
+<span class="fc" id="L120">		helperNotice.setText(&quot;Add buttons create editable starting points. Replace them with independent examples. &quot; //$NON-NLS-1$</span>
+				+ &quot;Keeping examples does not run a cleanup or qualify a rule for later use.&quot;); //$NON-NLS-1$
+<span class="fc" id="L122">		helperNotice.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="fc" id="L123">		output = new Text(content, SWT.READ_ONLY | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER);</span>
+<span class="fc" id="L124">		GridData outputData = new GridData(SWT.FILL, SWT.FILL, true, true);</span>
+<span class="fc" id="L125">		outputData.heightHint = 180;</span>
+<span class="fc" id="L126">		output.setLayoutData(outputData);</span>
+<span class="fc" id="L127">		output.setText(&quot;No replay result for this dialog. Edit the examples, then choose Verify.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L128">		return area;</span>
+	}
+
+	private static Button action(Composite parent, String label, Runnable action) {
+<span class="fc" id="L132">		Button button = new Button(parent, SWT.PUSH);</span>
+<span class="fc" id="L133">		button.setText(label);</span>
+<span class="pc" id="L134">		button.addListener(SWT.Selection, event -&gt; action.run());</span>
+<span class="fc" id="L135">		return button;</span>
+	}
+
+	@Override
+	protected void createButtonsForButtonBar(Composite parent) {
+<span class="fc" id="L140">		createButton(parent, USE_PROPOSAL, &quot;Use proposed rule&quot;, false).setEnabled(false); //$NON-NLS-1$</span>
+<span class="fc" id="L141">		createButton(parent, IDialogConstants.OK_ID, &quot;Keep examples&quot;, true); //$NON-NLS-1$</span>
+<span class="fc" id="L142">		createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, false);</span>
+<span class="fc" id="L143">	}</span>
+
+	@Override
+	protected void buttonPressed(int buttonId) {
+<span class="nc bnc" id="L147" title="All 4 branches missed.">		if (buttonId == USE_PROPOSAL &amp;&amp; proposal != null) {</span>
+<span class="nc" id="L148">			acceptedProposal = proposal;</span>
+<span class="nc" id="L149">			okPressed();</span>
+<span class="nc" id="L150">		} else {</span>
+<span class="nc" id="L151">			super.buttonPressed(buttonId);</span>
+		}
+<span class="nc" id="L153">	}</span>
+
+	@Override
+	protected void okPressed() {
+<span class="nc" id="L157">		RuleExampleSuite parsed = parseExamples();</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">		if (parsed != null) {</span>
+<span class="nc" id="L159">			suite = parsed;</span>
+<span class="nc" id="L160">			super.okPressed();</span>
+<span class="nc" id="L161">		} else {</span>
+<span class="nc" id="L162">			acceptedProposal = null;</span>
+		}
+<span class="nc" id="L164">	}</span>
+
+	RuleExampleSuite getSuite() {
+<span class="nc" id="L167">		return suite;</span>
+	}
+
+	Proposal getAcceptedProposal() {
+<span class="fc" id="L171">		return acceptedProposal;</span>
+	}
+
+	private RuleExampleSuite parseExamples() {
+		try {
+<span class="nc" id="L176">			RuleExampleSuite parsed = RuleExampleSuite.fromJson(json.getText());</span>
+<span class="nc" id="L177">			setErrorMessage(null);</span>
+<span class="nc" id="L178">			return parsed;</span>
+<span class="nc" id="L179">		} catch (IllegalArgumentException exception) {</span>
+<span class="nc" id="L180">			setErrorMessage(exception.getMessage());</span>
+<span class="nc" id="L181">			return null;</span>
+		}
+	}
+
+	private void invalidateResult() {
+<span class="nc" id="L186">		proposal = null;</span>
+<span class="nc" id="L187">		acceptedProposal = null;</span>
+<span class="nc" id="L188">		Button use = getButton(USE_PROPOSAL);</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">		if (use != null) {</span>
+<span class="nc" id="L190">			use.setEnabled(false);</span>
+		}
+<span class="nc bnc" id="L192" title="All 2 branches missed.">		if (output != null) {</span>
+<span class="nc" id="L193">			output.setText(&quot;Examples changed. Verify again; no previous result or proposal is retained.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L195">	}</span>
+
+	private void addExample(boolean positive) {
+<span class="nc" id="L198">		RuleExampleSuite current = parseExamples();</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">		if (current == null) {</span>
+<span class="nc" id="L200">			return;</span>
+		}
+<span class="nc" id="L202">		var entries = new ArrayList&lt;&gt;(current.examples());</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">		String prefix = positive ? &quot;Positive &quot; : &quot;Counterexample &quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L204">		int number = 1;</span>
+<span class="nc" id="L205">		var names = entries.stream().map(Example::name).toList();</span>
+<span class="nc bnc" id="L206" title="All 2 branches missed.">		while (names.contains(prefix + number)) {</span>
+<span class="nc" id="L207">			number++;</span>
+		}
+<span class="nc bnc" id="L209" title="All 4 branches missed.">		Example source = entries.stream().filter(example -&gt; !positive || example.expectChange())</span>
+<span class="nc" id="L210">				.findFirst().orElse(null);</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">		String before = source == null ? &quot;class Example { int value = 0; }\n&quot; : source.before(); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L212" title="All 4 branches missed.">		String after = positive ? source == null ? &quot;class Example { int value = 1; }\n&quot; : source.after() : before; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">		entries.add(new Example(prefix + number, source == null ? &quot;Example.java&quot; : source.unitName(), before, after, positive)); //$NON-NLS-1$</span>
+<span class="nc" id="L214">		json.setText(new RuleExampleSuite(RuleExampleSuite.CURRENT_VERSION, entries).toJson());</span>
+<span class="nc" id="L215">	}</span>
+
+	private boolean hasProject() {
+<span class="pc bpc" id="L218" title="5 of 6 branches missed.">		return project != null &amp;&amp; project.exists() &amp;&amp; project.getProject().isAccessible();</span>
+	}
+
+	private void runVerification(boolean refine) {
+<span class="nc" id="L222">		RuleExampleSuite current = parseExamples();</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">		if (current == null) {</span>
+<span class="nc" id="L224">			return;</span>
+		}
+<span class="nc" id="L226">		invalidateResult();</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">		if (!hasProject()) {</span>
+<span class="nc" id="L228">			setErrorMessage(&quot;A currently accessible Java project is required. Choose it on the destination page.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L229">			return;</span>
+		}
+<span class="nc" id="L231">		AtomicReference&lt;Report&gt; report = new AtomicReference&lt;&gt;();</span>
+<span class="nc" id="L232">		AtomicReference&lt;Proposal&gt; proposed = new AtomicReference&lt;&gt;();</span>
+		try {
+<span class="nc" id="L234">			Map&lt;String, String&gt; options = Map.copyOf(project.getOptions(true));</span>
+<span class="nc" id="L235">			new ProgressMonitorDialog(getShell()).run(true, true, monitor -&gt; {</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">				monitor.beginTask(refine ? &quot;Refining from examples (up to 64 candidates)&quot; : &quot;Verifying rule examples&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L237">						IProgressMonitor.UNKNOWN);</span>
+<span class="nc" id="L238">				try (var scope = SemanticRewritePlanContext.install(SemanticRewritePlan.empty(), options,</span>
+<span class="nc" id="L239">						() -&gt; checkCanceled(monitor))) {</span>
+<span class="nc" id="L240">					RuleExampleVerifier verifier = new RuleExampleVerifier(options,</span>
+<span class="nc" id="L241">							(unitName, source) -&gt; parseSource(project, options, unitName, source, monitor));</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">					if (refine) {</span>
+<span class="nc" id="L243">						RuleExampleRefiner.refine(seed, current, verifier, example -&gt; {</span>
+<span class="nc" id="L244">							checkCanceled(monitor);</span>
+<span class="nc" id="L245">							return documentFactory.apply(example);</span>
+<span class="nc" id="L246">						}).ifPresent(proposed::set);</span>
+<span class="nc" id="L247">					} else {</span>
+<span class="nc" id="L248">						report.set(verifier.verify(dsl, current));</span>
+					}
+<span class="nc" id="L250">					checkCanceled(monitor);</span>
+				} finally {
+<span class="nc" id="L252">					monitor.done();</span>
+				}
+<span class="nc" id="L254">			});</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">			if (refine) {</span>
+<span class="nc" id="L256">				proposal = proposed.get();</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">				if (proposal == null) {</span>
+<span class="nc" id="L258">					output.setText(&quot;No candidate passed all examples within the bounded search. The complete rule is unchanged.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L259">					return;</span>
+				}
+<span class="nc" id="L261">				output.setText(format(proposal.report()) + &quot;\nProposed complete rule — review before using:\n&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L262">						+ documentFactory.apply(proposal.example()));</span>
+<span class="nc" id="L263">				getButton(USE_PROPOSAL).setEnabled(true);</span>
+<span class="nc" id="L264">			} else {</span>
+<span class="nc" id="L265">				output.setText(format(report.get()));</span>
+			}
+<span class="nc" id="L267">		} catch (InvocationTargetException exception) {</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">			if (exception.getCause() instanceof OperationCanceledException) {</span>
+<span class="nc" id="L269">				output.setText(&quot;Canceled. No result or proposal is retained.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L270">			} else {</span>
+<span class="nc" id="L271">				setErrorMessage(&quot;Examples could not be checked: &quot; + exception.getCause().getMessage()); //$NON-NLS-1$</span>
+			}
+<span class="nc" id="L273">		} catch (InterruptedException | OperationCanceledException exception) {</span>
+<span class="nc" id="L274">			output.setText(&quot;Canceled. No result or proposal is retained.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L275">		} catch (RuntimeException exception) {</span>
+<span class="nc" id="L276">			setErrorMessage(&quot;Examples could not be checked: &quot; + exception.getMessage()); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L278">	}</span>
+
+	static CompilationUnit parseSource(IJavaProject project, Map&lt;String, String&gt; options,
+			String unitName, String source, IProgressMonitor monitor) {
+<span class="fc" id="L282">		checkCanceled(monitor);</span>
+<span class="pc bpc" id="L283" title="2 of 6 branches missed.">		if (project == null || !project.exists() || !project.getProject().isAccessible()) {</span>
+<span class="fc" id="L284">			throw new IllegalArgumentException(&quot;An accessible Java project is required for example bindings&quot;); //$NON-NLS-1$</span>
+		}
+<span class="pc bpc" id="L286" title="2 of 6 branches missed.">		if (unitName == null || !unitName.endsWith(&quot;.java&quot;) || unitName.indexOf('\\') &gt;= 0 //$NON-NLS-1$</span>
+<span class="fc bfc" id="L287" title="All 2 branches covered.">				|| unitName.indexOf(':') &gt;= 0 || Arrays.stream(unitName.split(&quot;/&quot;, -1)) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L288" title="All 8 branches covered.">						.anyMatch(segment -&gt; segment.isEmpty() || segment.equals(&quot;.&quot;) || segment.equals(&quot;..&quot;))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L289">			throw new IllegalArgumentException(&quot;unitName must be a project-relative Java source path, such as src/p/Example.java&quot;); //$NON-NLS-1$</span>
+		}
+<span class="fc" id="L291">		ASTParser parser = ASTParser.newParser(AST.getJLSLatest());</span>
+<span class="fc" id="L292">		parser.setProject(project);</span>
+<span class="fc" id="L293">		parser.setCompilerOptions(options);</span>
+<span class="fc" id="L294">		parser.setKind(ASTParser.K_COMPILATION_UNIT);</span>
+<span class="fc" id="L295">		parser.setSource(source.toCharArray());</span>
+		// JDT needs the workspace path when setProject() is used; the sidecar stays
+		// project-relative so its evidence can be reopened in a renamed project.
+<span class="fc" id="L298">		parser.setUnitName(project.getPath().append(new Path(unitName)).toPortableString());</span>
+<span class="fc" id="L299">		parser.setResolveBindings(true);</span>
+<span class="fc" id="L300">		parser.setBindingsRecovery(false);</span>
+<span class="fc" id="L301">		parser.setStatementsRecovery(false);</span>
+<span class="fc" id="L302">		CompilationUnit result = (CompilationUnit) parser.createAST(monitor);</span>
+<span class="fc" id="L303">		checkCanceled(monitor);</span>
+<span class="fc" id="L304">		return result;</span>
+	}
+
+	private static void checkCanceled(IProgressMonitor monitor) {
+<span class="pc bpc" id="L308" title="2 of 4 branches missed.">		if (monitor.isCanceled() || Thread.currentThread().isInterrupted()) {</span>
+<span class="nc" id="L309">			throw new OperationCanceledException();</span>
+		}
+<span class="fc" id="L311">	}</span>
+
+	private static String format(Report report) {
+<span class="nc bnc" id="L314" title="All 2 branches missed.">		StringBuilder text = new StringBuilder(report.passed()</span>
+<span class="nc" id="L315">				? &quot;PASS for these examples and this rule. This is bounded evidence, not a general proof.\n&quot; //$NON-NLS-1$</span>
+<span class="nc" id="L316">				: &quot;The example suite has not passed.\n&quot;); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">		if (!report.diagnostic().isEmpty()) {</span>
+<span class="nc" id="L318">			text.append(report.diagnostic()).append('\n');</span>
+		}
+<span class="nc" id="L320">		text.append(&quot;Rule SHA-256: &quot;).append(report.ruleSha256()).append('\n') //$NON-NLS-1$</span>
+<span class="nc" id="L321">				.append(&quot;Examples SHA-256: &quot;).append(report.suiteSha256()).append('\n'); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">		for (var result : report.results()) {</span>
+<span class="nc" id="L323">			text.append('\n').append(result.outcome()).append(&quot; — &quot;).append(result.name()) //$NON-NLS-1$</span>
+<span class="nc" id="L324">					.append(&quot;: &quot;).append(result.message()).append('\n'); //$NON-NLS-1$</span>
+<span class="nc bnc" id="L325" title="All 2 branches missed.">			if (result.outcome() != RuleExampleVerifier.Outcome.PASS) {</span>
+<span class="nc" id="L326">				text.append(result.actualSource()).append('\n');</span>
+			}
+		}
+<span class="nc" id="L329">		return text.toString();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
