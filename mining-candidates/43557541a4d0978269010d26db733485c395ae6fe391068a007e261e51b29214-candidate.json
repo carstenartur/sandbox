@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "43557541a4d0978269010d26db733485c395ae6fe391068a007e261e51b29214",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "public class Example {\n    public String buildString(String input) {\n        final java.lang.StringBuffer buffer \u003d new java.lang.StringBuffer();\n        buffer.append(input);\n        return buffer.toString();\n    }\n}",
+  "afterExample": "public class Example {\n    public String buildString(String input) {\n        final java.lang.StringBuilder buffer \u003d new java.lang.StringBuilder();\n        buffer.append(input);\n        return buffer.toString();\n    }\n}",
+  "negativeExample": "public class Example {\n    private static java.lang.StringBuffer SHARED_BUFFER \u003d new java.lang.StringBuffer();\n    public void appendToShared(String s) {\n        SHARED_BUFFER.append(s);\n    }\n    public java.lang.StringBuffer createUnassigned() {\n        return new java.lang.StringBuffer();\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "f8455f34b862d5140be196d12328b2c4eb6bac7c",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance Optimization",
+  "summary": "Replaces StringBuffer constructor calls with StringBuilder for local variables, leveraging the performance benefits of StringBuilder while respecting thread-safety.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-21T02:26:58.401055119Z",
+  "ruleFingerprint": "sha256:52ef1fd9bf1ad95f1f0de9ba3173c2edfb9f1fa3141c9853875b3da50ac736f0",
+  "behaviorFingerprint": "sha256:ea3efed983b22366ab687b6356c2063000351d5d82d38b1850f663e265b4f7ff",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-21T02:30:53.234564594Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "fd50a55d8ced6a34044495b68c9862db70befa15c6b3e92de067cbdcc35779e0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$instance.getTextWidget().getLineAtOffset($offset) \u003d\u003d $instance.getTextWidget().getLineAtOffset($offset - 1)\n:: instanceof($instance, \"org.eclipse.jface.text.source.inlined.LineContentAnnotation\")\n\u003d\u003e\n$offset \u003e 0 \u0026\u0026 $instance.getTextWidget().getLineAtOffset($offset) \u003d\u003d $instance.getTextWidget().getLineAtOffset($offset - 1)\n;;",
+  "beforeExample": "package org.eclipse.jface.text.tests.codemining;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.jface.text.Position;\nimport org.eclipse.jface.text.codemining.ICodeMiningProvider;\nimport org.eclipse.jface.text.source.inlined.LineContentAnnotation;\n\nclass MyLineContentAnnotation extends LineContentAnnotation {\n    public MyLineContentAnnotation(Position p, ICodeMiningProvider provider) { super(p, provider); }\n    private StyledText getTextWidget() { \n        // Mock method for example, actual implementation would return `this.fViewer.getTextWidget()` or similar.\n        return new StyledText(null, 0); \n    }\n    \n    boolean drawRightToPreviousChar(int widgetOffset) {\n        // Original code\n        return getTextWidget().getLineAtOffset(widgetOffset) \u003d\u003d getTextWidget().getLineAtOffset(widgetOffset - 1);\n    }\n}",
+  "afterExample": "package org.eclipse.jface.text.tests.codemining;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.jface.text.Position;\nimport org.eclipse.jface.text.codemining.ICodeMiningProvider;\nimport org.eclipse.jface.text.source.inlined.LineContentAnnotation;\n\nclass MyLineContentAnnotation extends LineContentAnnotation {\n    public MyLineContentAnnotation(Position p, ICodeMiningProvider provider) { super(p, provider); }\n    private StyledText getTextWidget() { \n        // Mock method for example, actual implementation would return `this.fViewer.getTextWidget()` or similar.\n        return new StyledText(null, 0); \n    }\n    \n    boolean drawRightToPreviousChar(int widgetOffset) {\n        // Transformed code\n        return widgetOffset \u003e 0 \u0026\u0026 getTextWidget().getLineAtOffset(widgetOffset) \u003d\u003d getTextWidget().getLineAtOffset(widgetOffset - 1);\n    }\n}",
+  "negativeExample": "package org.eclipse.jface.text.tests.codemining;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.jface.text.Position;\nimport org.eclipse.jface.text.codemining.ICodeMiningProvider;\nimport org.eclipse.jface.text.source.inlined.LineContentAnnotation;\n\nclass AnotherLineContentAnnotation extends LineContentAnnotation {\n    public AnotherLineContentAnnotation(Position p, ICodeMiningProvider provider) { super(p, provider); }\n    private StyledText getTextWidget() { \n        // Mock method for example\n        return new StyledText(null, 0); \n    }\n    \n    // Rule should not match because of different comparison operator\n    boolean someOtherMethod(int widgetOffset) {\n        return getTextWidget().getLineAtOffset(widgetOffset) !\u003d getTextWidget().getLineAtOffset(widgetOffset - 1);\n    }\n    \n    // Rule should not match because it already contains a similar guard\n    boolean alreadyGuarded(int widgetOffset) {\n        return widgetOffset \u003e\u003d 0 \u0026\u0026 getTextWidget().getLineAtOffset(widgetOffset) \u003d\u003d getTextWidget().getLineAtOffset(widgetOffset - 1);\n    }\n    \n    // Rule should not match if the receiver is not LineContentAnnotation\n    boolean unrelatedMethod(int offset, Object receiver) {\n        return ((StyledText)receiver).getLineAtOffset(offset) \u003d\u003d ((StyledText)receiver).getLineAtOffset(offset - 1);\n    }\n}",
+  "targetHintFile": "defensive-programming.sandbox-hint",
+  "sourceCommit": "b26b8782569616fcace8dcbd47a61c13ae694513",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Defensive Programming",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-21T02:24:31.270648571Z",
+  "ruleFingerprint": "sha256:ad06fa2db132548fa32b0729b008d80d1f5e2eeb057fa308347d4c8fb22a1bc7",
+  "behaviorFingerprint": "sha256:f5462c0fca177a623f1f6e8b0e15b9b2073cb3b71c41e2208de8d20e2272737e",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-21T02:30:53.146018237Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

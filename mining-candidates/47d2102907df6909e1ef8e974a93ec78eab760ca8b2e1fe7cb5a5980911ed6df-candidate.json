@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "47d2102907df6909e1ef8e974a93ec78eab760ca8b2e1fe7cb5a5980911ed6df",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: junit.assumeFalse.isMac\u003e\n\u003c!description: Replace `if (Util.isMac()) { return; }` with JUnit `Assume.assumeFalse()` for skipping tests on macOS.\u003e\n\u003c!severity: HINT\u003e\n\nif (org.eclipse.jface.text.tests.Util.isMac()) {\n    return;\n}\n\u003d\u003e\norg.junit.Assume.assumeFalse(\"macOS specific test\", org.eclipse.jface.text.tests.Util.isMac());\n;;",
+  "beforeExample": "package org.eclipse.jface.text.tests;\n\nimport org.junit.Assert;\nimport org.junit.Test;\n\npublic class MyTest {\n    @Test\n    public void testSomethingOnMac() {\n        if (org.eclipse.jface.text.tests.Util.isMac()) {\n            return;\n        }\n        Assert.assertTrue(true);\n    }\n}\n\n// Mock Util class for compilation\nclass Util {\n    public static boolean isMac() {\n        return System.getProperty(\"os.name\").toLowerCase().startsWith(\"mac os x\");\n    }\n}",
+  "afterExample": "package org.eclipse.jface.text.tests;\n\nimport org.junit.Assert;\nimport org.junit.Assume;\nimport org.junit.Test;\n\npublic class MyTest {\n    @Test\n    public void testSomethingOnMac() {\n        Assume.assumeFalse(\"macOS specific test\", org.eclipse.jface.text.tests.Util.isMac());\n        Assert.assertTrue(true);\n    }\n}\n\n// Mock Util class for compilation\nclass Util {\n    public static boolean isMac() {\n        return System.getProperty(\"os.name\").toLowerCase().startsWith(\"mac os x\");\n    }\n}",
+  "negativeExample": "package org.eclipse.jface.text.tests;\n\nimport org.junit.Assert;\nimport org.junit.Test;\n\npublic class MyNegativeTest {\n    @Test\n    public void testSomethingElse() {\n        if (org.eclipse.jface.text.tests.Util.isMac()) {\n            System.out.println(\"Running on Mac, doing something specific\"); // Not a return statement\n        }\n        Assert.assertFalse(false);\n    }\n\n    @Test\n    public void testDifferentCondition() {\n        boolean isWindows \u003d false; // Different condition\n        if (isWindows) {\n            return;\n        }\n        Assert.assertTrue(true);\n    }\n\n    @Test\n    public void testWithOtherReturn() {\n        if (org.eclipse.jface.text.tests.Util.isMac()) {\n            System.exit(1); // Not \u0027return;\u0027\n        }\n    }\n}\n\n// Mock Util class for compilation\nclass Util {\n    public static boolean isMac() {\n        return System.getProperty(\"os.name\").toLowerCase().startsWith(\"mac os x\");\n    }\n}",
+  "targetHintFile": "junit-modernization.sandbox-hint",
+  "sourceCommit": "a469aff0f60d49271f26c2bbf95af678d2172a68",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "JUnit Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-21T02:22:34.325147635Z",
+  "ruleFingerprint": "sha256:5a11a9954244efc083fb44deb64f7a36e6a8467a227282dce5ad0765ec11e77e",
+  "behaviorFingerprint": "sha256:258e52915638ef183ab5b27a0281278ced7d94cddb099cbb35453dac3fdcebdd",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-21T02:30:53.084414929Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

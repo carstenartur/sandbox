@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "08b4e827c96858736e9468fffcfdc19fd599760caa69770d31285eb5944f04cb",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$s.indexOf($arg) \u003e\u003d 0 :: instanceof($s, \"java.lang.String\") \u0026\u0026 instanceof($arg, \"java.lang.String\")\n\u003d\u003e $s.contains($arg)\n;;",
+  "beforeExample": "public class Example {\n    public boolean check(String text, String sub) {\n        return text.indexOf(sub) \u003e\u003d 0;\n    }\n}",
+  "afterExample": "public class Example {\n    public boolean check(String text, String sub) {\n        return text.contains(sub);\n    }\n}",
+  "negativeExample": "public class Example {\n    public int findIndex(String text, String sub) {\n        return text.indexOf(sub);\n    }\n    public boolean checkChar(String text) {\n        return text.indexOf(\u0027a\u0027) \u003e\u003d 0;\n    }\n}",
+  "targetHintFile": "string-api.sandbox-hint",
+  "sourceCommit": "43300463fb06f41e7b13c128427de112194370de",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "String API Modernization",
+  "summary": "Replaces \u0027String.indexOf(String) \u003e\u003d 0\u0027 with \u0027String.contains(String)\u0027 for improved readability, applicable since Java 1.5.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-21T02:26:58.377962968Z",
+  "ruleFingerprint": "sha256:21fdc895a6975fafee6798ee1c41aac13c526b5a80ca9c39c99dd80c0fb24782",
+  "behaviorFingerprint": "sha256:26055e2a5e137f9b704d3efe779090f99702f458512e7c1761fee32066a229bc",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-21T02:30:53.215497799Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

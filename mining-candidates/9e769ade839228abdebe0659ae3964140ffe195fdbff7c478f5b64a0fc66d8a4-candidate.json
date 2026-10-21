@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9e769ade839228abdebe0659ae3964140ffe195fdbff7c478f5b64a0fc66d8a4",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: string.indexOfToContains\u003e\n\u003c!description: Replace String.indexOf(\"literal\") !\u003d -1 with String.contains(\"literal\") for checking substring presence.\u003e\n\u003c!severity: HINT\u003e\n\n$s.indexOf($literal) !\u003d -1 :: instanceof($s, \"java.lang.String\") \u0026\u0026 isStringLiteral($literal)\n\u003d\u003e\n$s.contains($literal)\n;;",
+  "beforeExample": "class Test {\n    void check() {\n        String html \u003d \"\u003chtml\u003e\u003cbody\u003eHello\u003c/body\u003e\u003c/html\u003e\";\n        int max \u003d 100;\n        if (html.substring(0, max).indexOf(\"\u003chtml\u003e\") !\u003d -1) {\n            System.out.println(\"Contains HTML tag\");\n        }\n\n        String osName \u003d System.getProperty(\"os.name\");\n        if (osName.indexOf(\"Mac\") !\u003d -1) {\n            System.out.println(\"Running on Mac\");\n        }\n        \n        String userDir \u003d System.getProperty(\"user.dir\");\n        if (userDir.indexOf(\"eclipse.platform.text-Gerrit\") !\u003d -1) {\n            System.out.println(\"Run by Gerrit Hudson Job\");\n        }\n        \n        String text \u003d \"abc\";\n        if (text.indexOf(\"b\") !\u003d -1) {\n            System.out.println(\"Contains \u0027b\u0027\");\n        }\n    }\n}",
+  "afterExample": "class Test {\n    void check() {\n        String html \u003d \"\u003chtml\u003e\u003cbody\u003eHello\u003c/body\u003e\u003c/html\u003e\";\n        int max \u003d 100;\n        if (html.substring(0, max).contains(\"\u003chtml\u003e\")) {\n            System.out.println(\"Contains HTML tag\");\n        }\n\n        String osName \u003d System.getProperty(\"os.name\");\n        if (osName.contains(\"Mac\")) {\n            System.out.println(\"Running on Mac\");\n        }\n        \n        String userDir \u003d System.getProperty(\"user.dir\");\n        if (userDir.contains(\"eclipse.platform.text-Gerrit\")) {\n            System.out.println(\"Run by Gerrit Hudson Job\");\n        }\n        \n        String text \u003d \"abc\";\n        if (text.contains(\"b\")) {\n            System.out.println(\"Contains \u0027b\u0027\");\n        }\n    }\n}",
+  "negativeExample": "class Test {\n    void noMatch() {\n        String s \u003d \"hello world\";\n\n        // Case 1: indexOf used to get an index (not a boolean comparison)\n        int index \u003d s.indexOf(\"o\");\n        System.out.println(\"Index of \u0027o\u0027: \" + index);\n\n        // Case 2: indexOf compared to something other than -1 (semantically different checks)\n        if (s.indexOf(\"hello\") \u003d\u003d 0) {\n            System.out.println(\"Starts with \u0027hello\u0027\");\n        }\n        if (s.indexOf(\"world\") \u003e 0) {\n            System.out.println(\"Contains \u0027world\u0027 not at start\");\n        }\n        \n        // Case 3: indexOf with char literal (not a StringLiteral as per guard)\n        if (s.indexOf(\u0027w\u0027) !\u003d -1) {\n            System.out.println(\"Contains \u0027w\u0027\");\n        }\n        char c \u003d \u0027x\u0027;\n        if (s.indexOf(c) !\u003d -1) { // Argument is a variable, not a StringLiteral\n            System.out.println(\"Contains \u0027x\u0027\");\n        }\n\n        // Case 4: Not a String receiver (fails instanceof guard)\n        StringBuilder sb \u003d new StringBuilder(\"test\");\n        if (sb.indexOf(\"es\") !\u003d -1) {\n            System.out.println(\"StringBuilder contains \u0027es\u0027\");\n        }\n    }\n}",
+  "targetHintFile": "string_modernization.sandbox-hint",
+  "sourceCommit": "60e43ccd2584c9464a593b3730b405dd75ca6490",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces String.indexOf(String literal) !\u003d -1 with String.contains(String literal) for checking substring existence.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-21T02:25:52.470496950Z",
+  "ruleFingerprint": "sha256:b03793662897a0ea857a5d68a2b593b8d210b6d43418ecccc6e948212c75286e",
+  "behaviorFingerprint": "sha256:0756dbcfee5f3748741468b69f9a8d7cb80937ca1ebd379c222e1cade9d5026b",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-21T02:30:53.186926248Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
