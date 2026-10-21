@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7cd3a7d51b18f4c4aa3a3e242013554e55283f8f27e415f1c33c8185be0b2aa0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$strLiteral + $obj.toString()\n\u003d\u003e\n$strLiteral + $obj\n;;",
+  "beforeExample": "class Test {\n    public String getStatusMessage(Object description) {\n        // Example from commit\n        return \"FAIL in \" + description.toString();\n    }\n\n    public String getPassMessage(String name) {\n        // Another example from commit\n        return \"PASS for \" + name.toString();\n    }\n\n    public String simpleConcat() {\n        Object data \u003d new Object();\n        return \"Prefix \" + data.toString();\n    }\n}",
+  "afterExample": "class Test {\n    public String getStatusMessage(Object description) {\n        return \"FAIL in \" + description;\n    }\n\n    public String getPassMessage(String name) {\n        return \"PASS for \" + name;\n    }\n\n    public String simpleConcat() {\n        Object data \u003d new Object();\n        return \"Prefix \" + data;\n    }\n}",
+  "negativeExample": "class NegativeTest {\n    private String prefix \u003d \"Log: \";\n    private static final String STATIC_PREFIX \u003d \"Static: \";\n\n    public String logWithVariablePrefix(Object obj) {\n        // Should NOT match: \u0027prefix\u0027 is a variable, not a string literal.\n        return prefix + obj.toString();\n    }\n\n    public String logWithStaticFieldPrefix(Object obj) {\n        // Should NOT match: \u0027STATIC_PREFIX\u0027 is a field reference, not a string literal.\n        return STATIC_PREFIX + obj.toString();\n    }\n\n    public String directToStringCall(Object obj) {\n        // Should NOT match: not part of a string concatenation.\n        String value \u003d obj.toString();\n        return value;\n    }\n}",
+  "targetHintFile": "string-cleanups.sandbox-hint",
+  "sourceCommit": "60b189fe68c05a101f8c9f16dcb863e7e6717b6b",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Redundant Code",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-21T02:28:34.531933827Z",
+  "ruleFingerprint": "sha256:53279924874c8526256c21b7334f16b2616c8fdf95dbbf4c9c93766309887e23",
+  "behaviorFingerprint": "sha256:deddb980d250dfe57502bf3b3b6e4fc6ba2a70f966ac86d9a03f2b17ea25c669",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example is ambiguous: expected one replacement but got 3",
+    "verifiedAt": "2026-10-21T02:30:53.282602871Z",
+    "verifierVersion": "7",
+    "matches": 3,
+    "replacements": 3
+  },
+  "transitions": []
+}

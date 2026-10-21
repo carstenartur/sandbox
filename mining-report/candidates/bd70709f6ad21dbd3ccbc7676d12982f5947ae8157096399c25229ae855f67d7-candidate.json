@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "bd70709f6ad21dbd3ccbc7676d12982f5947ae8157096399c25229ae855f67d7",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.swt.layout.GridData(org.eclipse.swt.layout.GridData.FILL, $arg1$, $arg2$, $arg3$)\n\u003d\u003e\nnew org.eclipse.swt.layout.GridData(org.eclipse.swt.SWT.FILL, $arg1$, $arg2$, $arg3$)\n;;",
+  "beforeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.layout.GridData;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class Example {\n    void setup(Composite composite) {\n        GridData gd \u003d new GridData(GridData.FILL, GridData.CENTER, false, false);\n        composite.setLayoutData(gd);\n    }\n}",
+  "afterExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.layout.GridData;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class Example {\n    void setup(Composite composite) {\n        GridData gd \u003d new GridData(SWT.FILL, GridData.CENTER, false, false);\n        composite.setLayoutData(gd);\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.SWT;\nimport org.eclipse.swt.layout.GridData;\nimport org.eclipse.swt.widgets.Composite;\n\npublic class Example {\n    void setup(Composite composite) {\n        // Should not match other GridData constructors or SWT.FILL directly\n        GridData gd1 \u003d new GridData();\n        GridData gd2 \u003d new GridData(SWT.LEAD, SWT.TOP, true, true);\n        GridData gd3 \u003d new GridData(100, 200);\n        GridData gd4 \u003d new GridData(SWT.FILL, SWT.FILL, true, true);\n        composite.setLayoutData(gd1);\n        composite.setLayoutData(gd2);\n        composite.setLayoutData(gd3);\n        composite.setLayoutData(gd4);\n    }\n}",
+  "targetHintFile": "swt.sandbox-hint",
+  "sourceCommit": "a3b2be38834b90fe30764230803ea9390fce3334",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Constant Replacement",
+  "summary": "Replaces `GridData.FILL` with `SWT.FILL` in `GridData` constructor calls. `GridData.FILL` is an alias for `SWT.FILL`, making this a stylistic and semantics-preserving change.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-21T02:29:57.721485534Z",
+  "ruleFingerprint": "sha256:6da16803daa1c47d96d7eeefe3a0fd58b122be16aac4ad55b321dc5bdcae6a3d",
+  "behaviorFingerprint": "sha256:c88ebfb458e1804411f3de6a421edd3857eb60d5cc5ed1dc729a993e9d22ada3",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-21T02:30:53.326829119Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "fb3d0943acaca007c276d0c9f147ca97cf5a383f85bbea319d8ab1a4508c48db",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.ui.plugin.AbstractUIPlugin.imageDescriptorFromPlugin($bundleId, $imagePath)\n\u003d\u003e org.eclipse.jface.resource.ResourceLocator.imageDescriptorFromBundle($bundleId, $imagePath).orElse(null)\n;;",
+  "beforeExample": "import org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.ui.plugin.AbstractUIPlugin;\n\npublic class MyClass {\n    public static ImageDescriptor getImageDescriptor(String pluginId, String imagePath) {\n        return AbstractUIPlugin.imageDescriptorFromPlugin(pluginId, imagePath);\n    }\n}",
+  "afterExample": "import org.eclipse.jface.resource.ImageDescriptor;\nimport org.eclipse.jface.resource.ResourceLocator;\n\npublic class MyClass {\n    public static ImageDescriptor getImageDescriptor(String pluginId, String imagePath) {\n        return ResourceLocator.imageDescriptorFromBundle(pluginId, imagePath).orElse(null);\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.resource.ImageDescriptor;\n\npublic class MyClass {\n    // This method call is different and should not be matched\n    public static ImageDescriptor getCustomImageDescriptor(String path) {\n        return ImageDescriptor.createFromFile(MyClass.class, path);\n    }\n\n    // This method has different arguments and should not be matched\n    public static ImageDescriptor getAnotherDescriptor(String pluginId) {\n        return ImageDescriptor.getMissingImageDescriptor();\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "47770c4052845dd93da22a50c254eece94b04c45",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Migration",
+  "summary": "Replaces deprecated AbstractUIPlugin.imageDescriptorFromPlugin with ResourceLocator.imageDescriptorFromBundle().orElse(null).",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-21T02:29:09.030981587Z",
+  "ruleFingerprint": "sha256:e4b42f1a66d95922a5d17c182ad6f6a9d0f9b61a7923cc158d431ed96969e14c",
+  "behaviorFingerprint": "sha256:3c2b08c9c20a6c808c9a0c5bf0495fd572fcfdcb58b89a1b880a417af65d0e06",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.jface.resource cannot be resolved",
+    "verifiedAt": "2026-10-21T02:30:53.306430457Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

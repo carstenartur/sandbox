@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "178c04f915e8710095448722f3b7ec67c2cd06130b20d735cb19fb5f11a2314b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add-missing-override-public\u003e\n\u003c!description: Adds the @Override annotation to public methods that legitimately override or implement a supertype method and currently lack the annotation. The DSL engine performs semantic validation to ensure the method actually overrides or implements a supertype method before applying the annotation.\u003e\n\u003c!severity: HINT\u003e\npublic void $name($params$)\n\u003d\u003e @java.lang.Override public void $name($params$)\n;;",
+  "beforeExample": "import org.eclipse.swt.widgets.Control;\n\nclass SuperClass {\n    public void install(Control subjectControl) {}\n}\n\npublic class MyClass extends SuperClass {\n    /**\n     * {@inheritDoc}\n     */\n    public void install(Control subjectControl) {\n        super.install(subjectControl);\n    }\n\n    public void nonOverriddenMethod() {}\n}",
+  "afterExample": "import org.eclipse.swt.widgets.Control;\n\nclass SuperClass {\n    public void install(Control subjectControl) {}\n}\n\npublic class MyClass extends SuperClass {\n    /**\n     * {@inheritDoc}\n     */\n    @Override\n    public void install(Control subjectControl) {\n        super.install(subjectControl);\n    }\n\n    public void nonOverriddenMethod() {}\n}",
+  "negativeExample": "import org.eclipse.swt.widgets.Control;\n\npublic class MyClass {\n    // This method does not override anything, so @Override should not be added.\n    public void nonOverriddenMethod() {\n        System.out.println(\"Hello\");\n    }\n\n    // This method already has @Override, so it should not be changed.\n    @Override\n    public String toString() {\n        return super.toString();\n    }\n}",
+  "targetHintFile": "annotations.sandbox-hint",
+  "sourceCommit": "3e28656e7147b4ae8579e15d906f6d797edaeb9c",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Code Modernization",
+  "summary": "Adds missing @Override annotation to public methods.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-20T02:24:40.946219750Z",
+  "ruleFingerprint": "sha256:954996e33b75a96ae09054f3c5394f713816cf5347fe1010c93f489d1349ef63",
+  "behaviorFingerprint": "sha256:b823db9f7d86089e6dfab28afe6c2dff4b289295dc303913695874458e5bd7b5",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-21T02:30:53.052239832Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

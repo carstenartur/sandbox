@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5d69713cac6850b3800e28a2ff733fc32545855aa125e41d5f0750f0d683ea7a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: org.eclipse.search.FileTreeContentProvider.refreshToUpdate\u003e\n\u003c!description: Replace TreeViewer.refresh(element) with TreeViewer.update(element, null) for performance when no structural change is expected.\u003e\n\u003c!severity: HINT\u003e\n\n$viewer.refresh($element) :: instanceof($viewer, \"org.eclipse.jface.viewers.TreeViewer\")\n\u003d\u003e\n$viewer.update($element, null)\n;;",
+  "beforeExample": "package org.example;\n\nimport org.eclipse.jface.viewers.TreeViewer;\n\npublic class MyClass {\n    private TreeViewer fTreeViewer; // Assuming fTreeViewer is initialized somewhere\n\n    public void updateContent(Object parent, boolean refreshViewer) {\n        if (refreshViewer) {\n            fTreeViewer.refresh(parent);\n        }\n    }\n}",
+  "afterExample": "package org.example;\n\nimport org.eclipse.jface.viewers.TreeViewer;\n\npublic class MyClass {\n    private TreeViewer fTreeViewer; // Assuming fTreeViewer is initialized somewhere\n\n    public void updateContent(Object parent, boolean refreshViewer) {\n        if (refreshViewer) {\n            fTreeViewer.update(parent, null);\n        }\n    }\n}",
+  "negativeExample": "package org.example;\n\nimport org.eclipse.jface.viewers.StructuredViewer;\n\npublic class MyClass {\n    private StructuredViewer someOtherViewer; // Not a TreeViewer\n\n    public void updateContent(Object parent, boolean refreshViewer) {\n        if (refreshViewer) {\n            someOtherViewer.refresh(parent); // Should not match because it\u0027s not a TreeViewer\n        }\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "c830a13682e366a197a96dfe1b7ae47053a2673a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "summary": "Replaces `TreeViewer.refresh(element)` with `TreeViewer.update(element, null)` to improve performance by updating only a specific node rather than refreshing the entire structure.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-20T02:21:34.104438118Z",
+  "ruleFingerprint": "sha256:e81057b018c1e798d8bcd1a82b9f4ec430ea078ce8fb3b8ed8d01063f28925e1",
+  "behaviorFingerprint": "sha256:559b175cd23ee80bedac839688ca8b266b842872f24f1e3881db36212de64bd1",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-21T02:30:52.994008973Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 6: The import org.eclipse.jdt.internal.ui.text.javadoc cannot be resolved",
-    "verifiedAt": "2026-10-17T02:27:55.072903455Z",
+    "verifiedAt": "2026-10-21T02:30:46.810014667Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0fbc5111025c896c37d4f1ec015590fb60257e4e0e35e08b9cf9da8c0194f49d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.Boolean.valueOf($arg$).booleanValue()\n\u003d\u003e\njava.lang.Boolean.parseBoolean($arg$)\n;;",
+  "beforeExample": "public class Example {\n    public boolean checkAttribute(String value) {\n        return Boolean.valueOf(value).booleanValue();\n    }\n}",
+  "afterExample": "public class Example {\n    public boolean checkAttribute(String value) {\n        return Boolean.parseBoolean(value);\n    }\n}",
+  "negativeExample": "public class Example {\n    public Boolean checkObject(String value) {\n        return Boolean.valueOf(value); // Should not match: missing .booleanValue()\n    }\n    public boolean checkPrimitive(boolean value) {\n        return Boolean.parseBoolean(String.valueOf(value)); // Should not match: already using parseBoolean\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "4bc184194956ba7fae4255997954321fba048452",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces the chain Boolean.valueOf(String).booleanValue() with the more direct Boolean.parseBoolean(String), which has identical semantics.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-20T02:24:48.740368546Z",
+  "ruleFingerprint": "sha256:1aa0afdbdb4f2ddc597db189d59e253aca27488515f144bf4fe6e07917402432",
+  "behaviorFingerprint": "sha256:03842c937affd352eedb07b991face0318dfd511072c9c37ed2b7e75ec72d56e",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-21T02:30:53.069581676Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

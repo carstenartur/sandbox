@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ce57541ca9f46151e9212e84c2d8b219d6fe5ba9f59c249b918621819d16d8d0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$x \u003d\u003d $x\n\u003d\u003e true\n;;",
+  "beforeExample": "public class MyClass {\n    void foo(int a, int b) {\n        if (a \u003e 0 \u0026\u0026 b \u003d\u003d b \u0026\u0026 a \u003c 10) {\n            System.out.println(\"Condition met\");\n        }\n    }\n}",
+  "afterExample": "public class MyClass {\n    void foo(int a, int b) {\n        if (a \u003e 0 \u0026\u0026 true \u0026\u0026 a \u003c 10) {\n            System.out.println(\"Condition met\");\n        }\n    }\n}",
+  "negativeExample": "public class MyClass {\n    void foo(int a, int b) {\n        if (a \u003e 0 \u0026\u0026 b \u003d\u003d a \u0026\u0026 a \u003c 10) {\n            System.out.println(\"Condition met\");\n        }\n    }\n}",
+  "targetHintFile": "common.sandbox-hint",
+  "sourceCommit": "591ba6ddca9d65cd6b0631aebd92831c8cabc251",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Redundant Code",
+  "summary": "Replaces a redundant self-comparison (e.g., `$x \u003d\u003d $x`) with `true` in a boolean expression.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-20T02:20:11.286983298Z",
+  "ruleFingerprint": "sha256:4adb0add7292442c7fa3027614b4f1f7f088a143ea5d4738a6f1141b3a6561b9",
+  "behaviorFingerprint": "sha256:61874b608bb29819cd7402c098fdf9c4b375fd1b69388f9972b10fe6ac3c51e3",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-10-21T02:30:52.960921395Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

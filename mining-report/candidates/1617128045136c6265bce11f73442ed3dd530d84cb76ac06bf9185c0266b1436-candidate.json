@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 4: The import org.eclipse.jface.text.reconciler cannot be resolved",
-    "verifiedAt": "2026-10-17T02:27:59.790704097Z",
+    "verifiedAt": "2026-10-21T02:30:52.292779696Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

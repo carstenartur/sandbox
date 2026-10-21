@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "522e260142c4e3c12e0a4ebeea568bdb5c00468dadd64342d20d4ecc28552af6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "(int) ($pixels * $fMarginWidth + 0.5)\n\u003d\u003e\n(int) ($pixels * $fMarginWidth + $fTextWidget.getLeftMargin() + 0.5)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.FontMetrics;\n\nclass ITextViewer { }\nclass Control { }\nclass StyledText {\n    public int getLeftMargin() { return 10; }\n}\nclass GC {\n    public FontMetrics getFontMetrics() { return new FontMetrics(); }\n    public void dispose() {}\n}\nclass FontMetrics {\n    public double getAverageCharacterWidth() { return 7.0; }\n}\n\npublic class MyClass {\n    private StyledText fTextWidget;\n    private int fMarginWidth;\n    private double fCachedWidgetX;\n\n    public MyClass() {\n        fTextWidget \u003d new StyledText();\n        fMarginWidth \u003d 5;\n    }\n\n    public void calculateMargin(GC gc) {\n        double pixels \u003d gc.getFontMetrics().getAverageCharacterWidth();\n        gc.dispose();\n        fCachedWidgetX \u003d (int) (pixels * fMarginWidth + 0.5);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.FontMetrics;\n\nclass ITextViewer { }\nclass Control { }\nclass StyledText {\n    public int getLeftMargin() { return 10; }\n}\nclass GC {\n    public FontMetrics getFontMetrics() { return new FontMetrics(); }\n    public void dispose() {}\n}\nclass FontMetrics {\n    public double getAverageCharacterWidth() { return 7.0; }\n}\n\npublic class MyClass {\n    private StyledText fTextWidget;\n    private int fMarginWidth;\n    private double fCachedWidgetX;\n\n    public MyClass() {\n        fTextWidget \u003d new StyledText();\n        fMarginWidth \u003d 5;\n    }\n\n    public void calculateMargin(GC gc) {\n        double pixels \u003d gc.getFontMetrics().getAverageCharacterWidth();\n        gc.dispose();\n        fCachedWidgetX \u003d (int) (pixels * fMarginWidth + fTextWidget.getLeftMargin() + 0.5);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.FontMetrics;\n\nclass ITextViewer { }\nclass Control { }\nclass StyledText {\n    public int getLeftMargin() { return 10; }\n}\nclass GC {\n    public FontMetrics getFontMetrics() { return new FontMetrics(); }\n    public void dispose() {}\n}\nclass FontMetrics {\n    public double getAverageCharacterWidth() { return 7.0; }\n}\n\npublic class MyClass {\n    private StyledText fTextWidget;\n    private int fMarginWidth;\n    private double fCachedWidgetX;\n\n    public MyClass() {\n        fTextWidget \u003d new StyledText();\n        fMarginWidth \u003d 5;\n    }\n\n    public void calculateOther(GC gc, double factor) {\n        double pixels \u003d gc.getFontMetrics().getAverageCharacterWidth();\n        gc.dispose();\n        fCachedWidgetX \u003d (int) (pixels * fMarginWidth + factor);\n    }\n}",
+  "targetHintFile": "margin-painter-calc.sandbox-hint",
+  "sourceCommit": "fc1d1922254505a0762ea836f57681a322aadcbc",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Expression Modernization",
+  "summary": "Add `fTextWidget.getLeftMargin()` to a specific margin calculation expression.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-21T02:30:34.335295519Z",
+  "ruleFingerprint": "sha256:d72a6791505dfd24356c27e9d26493aba75c25e3268874b76bc1a1bcc382108a",
+  "behaviorFingerprint": "sha256:16182ee49140202b0a35273bdddd854410cc3910f5a0af18ce1bd43bf3da0336",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-21T02:30:53.351901803Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

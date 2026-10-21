@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f4d43406e8889c66da865fa6022226c48e2828d85863939abd47b345fdad2be2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.StringBuffer($args$) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($args$)\n;;",
+  "beforeExample": "public class Example {\n    public void method() {\n        java.lang.StringBuffer buf \u003d new java.lang.StringBuffer(\"test\");\n        buf.append(\"ing\");\n        System.out.println(buf.toString());\n    }\n\n    public void anotherMethod() {\n        java.lang.StringBuffer anotherBuf \u003d new java.lang.StringBuffer(10);\n        anotherBuf.append(\u0027c\u0027);\n    }\n\n    public void multipleAppends() {\n        java.lang.StringBuffer tempBuffer \u003d new java.lang.StringBuffer();\n        tempBuffer.append(\"Hello\").append(\" \").append(\"World\");\n    }\n}",
+  "afterExample": "public class Example {\n    public void method() {\n        java.lang.StringBuilder buf \u003d new java.lang.StringBuilder(\"test\");\n        buf.append(\"ing\");\n        System.out.println(buf.toString());\n    }\n\n    public void anotherMethod() {\n        java.lang.StringBuilder anotherBuf \u003d new java.lang.StringBuilder(10);\n        anotherBuf.append(\u0027c\u0027);\n    }\n\n    public void multipleAppends() {\n        java.lang.StringBuilder tempBuffer \u003d new java.lang.StringBuilder();\n        tempBuffer.append(\"Hello\").append(\" \").append(\"World\");\n    }\n}",
+  "negativeExample": "public class NegativeExample {\n    private java.lang.StringBuffer sharedBuffer \u003d new java.lang.StringBuffer(\"shared\"); // Should not change (field)\n\n    public void modifySharedBuffer(java.lang.StringBuffer paramBuffer) { // Parameter, should not change\n        paramBuffer.append(\" modified\");\n    }\n\n    public static java.lang.StringBuffer createAndReturnBuffer() { // Return value, should not change\n        return new java.lang.StringBuffer(\"returned\");\n    }\n\n    public void testMethod() {\n        java.lang.StringBuffer localButNotDeclaredWithInitializer \u003d null;\n        localButNotDeclaredWithInitializer \u003d new java.lang.StringBuffer(\"assign\"); // Not direct initializer\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "d18024c8e8073f3a28f3fb5013ae3d0e6af7ceb9",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-21T02:25:18.183958561Z",
+  "ruleFingerprint": "sha256:52ef1fd9bf1ad95f1f0de9ba3173c2edfb9f1fa3141c9853875b3da50ac736f0",
+  "behaviorFingerprint": "sha256:1e268467ee68b1ba55e3c5bcd82f1b4874058e33738c5f3ad5190a772b7eb780",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-21T02:30:53.167075493Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
