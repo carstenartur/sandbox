@@ -58,6 +58,19 @@
             <unit id="org.eclipse.swtbot.eclipse.feature.group" version="0.0.0"/>
             <unit id="org.eclipse.swtbot.feature.group" version="0.0.0"/>
         </location>
+
+        <!-- 7. Compile the optional JDT LS adapter in both Maven and Oomph/PDE.
+             Standard-server tests also need the upstream optional Maven/Gradle
+             integrations. Target availability does not make them mandatory
+             dependencies of ordinary Sandbox application installations. -->
+        <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+            <repository location="https://download.eclipse.org/jdtls/milestones/1.62.0/repository/"/>
+            <unit id="org.eclipse.jdt.ls.core" version="1.62.0.202610131109"/>
+            <unit id="org.eclipse.m2e.core" version="0.0.0"/>
+            <unit id="org.eclipse.m2e.maven.runtime" version="0.0.0"/>
+            <unit id="org.eclipse.m2e.jdt" version="0.0.0"/>
+            <unit id="org.eclipse.buildship.core" version="0.0.0"/>
+        </location>
     </locations>
 
 </target>
