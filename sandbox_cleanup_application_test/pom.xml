@@ -27,6 +27,9 @@
 				<configuration>
 					<useJDK>BREE</useJDK>
 					<skip>false</skip>
+					<!-- The JDT LS runtime also exposes JUnit 4; these tests use Jupiter. -->
+					<providerHint>junit6</providerHint>
+					<failIfNoTests>true</failIfNoTests>
 					<useUIHarness>false</useUIHarness>
 					<showEclipseLog>true</showEclipseLog>
 					<dependencies>
