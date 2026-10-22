@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "e5c4a39c3ccf0136031a414fd78755d0c3807d92",
-      "lastProcessedDate": "2026-10-21T02:30:34.306944220Z",
-      "totalProcessed": 1135,
+      "lastProcessedCommit": "649437b71ca4d7ef65fa24637e1f67f15a9bc723",
+      "lastProcessedDate": "2026-10-22T02:26:45.817046884Z",
+      "totalProcessed": 1176,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5084,6 +5084,24 @@
           "deferredAt": "2026-10-21T02:29:09.068538005Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "c0daf761389a45a439c0cf3c2af1c68b22894308",
+          "message": "Bug 550101 - [Quicksearch] Strings not externalized",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-22T02:23:42.657044573Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "e50ee43b2cf76c97c833fe400539c00f9ebe8fc7",
+          "message": "Bug 545252 - ConfigurableLineTracker: use the Aho-Corasick algorithm",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-22T02:24:51.202155866Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5097,8 +5115,8 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 7,
-        "API Modernization": 32,
-        "Performance": 16,
+        "API Modernization": 33,
+        "Performance": 17,
         "Redundant Code": 7,
         "API Misuse Correction": 1,
         "Lambda to Method Reference": 1,
@@ -5136,7 +5154,7 @@
         "Bug Fix": 1,
         "Assertion Improvement": 1,
         "Unnecessary Annotation": 1,
-        "Eclipse API Modernization": 1,
+        "Eclipse API Modernization": 2,
         "API Simplification": 1,
         "JUnit Migration": 1,
         "Image File Extension Update": 3,
@@ -5162,7 +5180,7 @@
         "Adding Control Flow": 1,
         "Unsupported Syntax": 1,
         "Charset Modernization": 1,
-        "Encapsulation": 1,
+        "Encapsulation": 3,
         "Typo Fix": 1,
         "SWT Graphics": 1,
         "Code Mining": 1,
@@ -5188,7 +5206,15 @@
         "Performance Optimization": 1,
         "API Usage Simplification": 1,
         "Constant Replacement": 1,
-        "Expression Modernization": 1
+        "Expression Modernization": 1,
+        "API Usage Modernization": 1,
+        "Code Quality / Annotation Cleanup": 1,
+        "Type Renaming": 1,
+        "Use Constant": 1,
+        "Code Style/Configuration": 1,
+        "UI String Cleanup": 1,
+        "UI Text Processing": 1,
+        "Deprecation/API Migration": 1
       },
       "exhaustedCategories": []
     },
@@ -5298,5 +5324,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52900
+  "globalTotalProcessed": 52941
 }
