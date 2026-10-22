@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9d53533b773ac98d516c4206afefab1178db3c6fd670be25f6e2d7d63c221c5e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: stringfieldeditor.unlimited.width\u003e\n\u003c!description: Replace magic number for StringFieldEditor width with the UNLIMITED constant for better maintainability and responsiveness.\u003e\n\u003c!severity: INFO\u003e\nnew org.eclipse.jface.preference.StringFieldEditor($key, $label, 45, $lines, org.eclipse.jface.preference.StringFieldEditor.VALIDATE_ON_FOCUS_LOST, $parent)\n\u003d\u003e\nnew org.eclipse.jface.preference.StringFieldEditor($key, $label, org.eclipse.jface.preference.StringFieldEditor.UNLIMITED, $lines, org.eclipse.jface.preference.StringFieldEditor.VALIDATE_ON_FOCUS_LOST, $parent)\n;;",
+  "beforeExample": "import org.eclipse.jface.preference.StringFieldEditor;\nimport org.eclipse.jface.preference.FieldEditorPreferencePage;\nimport org.eclipse.swt.widgets.Composite;\n\nclass TestPage extends FieldEditorPreferencePage {\n    protected void createFieldEditors() {\n        Composite parent \u003d getFieldEditorParent();\n        String key \u003d \"testKey\";\n        String label \u003d \"Test Label\";\n        int lines \u003d 5;\n\n        StringFieldEditor field \u003d new StringFieldEditor(key, label, 45, lines, StringFieldEditor.VALIDATE_ON_FOCUS_LOST, parent);\n        addField(field);\n    }\n}",
+  "afterExample": "import org.eclipse.jface.preference.StringFieldEditor;\nimport org.eclipse.jface.preference.FieldEditorPreferencePage;\nimport org.eclipse.swt.widgets.Composite;\n\nclass TestPage extends FieldEditorPreferencePage {\n    protected void createFieldEditors() {\n        Composite parent \u003d getFieldEditorParent();\n        String key \u003d \"testKey\";\n        String label \u003d \"Test Label\";\n        int lines \u003d 5;\n\n        StringFieldEditor field \u003d new StringFieldEditor(key, label, StringFieldEditor.UNLIMITED, lines, StringFieldEditor.VALIDATE_ON_FOCUS_LOST, parent);\n        addField(field);\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.preference.StringFieldEditor;\nimport org.eclipse.jface.preference.FieldEditorPreferencePage;\nimport org.eclipse.swt.widgets.Composite;\n\nclass NegativeTestPage extends FieldEditorPreferencePage {\n    protected void createFieldEditors() {\n        Composite parent \u003d getFieldEditorParent();\n        String key \u003d \"anotherKey\";\n        String label \u003d \"Another Label\";\n        int lines \u003d 1;\n\n        // Different width, should not match\n        StringFieldEditor field1 \u003d new StringFieldEditor(key, label, 100, lines, StringFieldEditor.VALIDATE_ON_FOCUS_LOST, parent);\n        addField(field1);\n\n        // Different constructor arguments count or type, should not match\n        StringFieldEditor field2 \u003d new StringFieldEditor(key + \"2\", label + \"2\", 20, StringFieldEditor.VALIDATE_ON_FOCUS_LOST, parent); // Assuming a 4-arg constructor for example\n        addField(field2);\n    }\n}",
+  "targetHintFile": "ui-cleanup.sandbox-hint",
+  "sourceCommit": "ce1aa6faf4b4057c5a9f303448c84a3b90d8721f",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace the literal `45` with `StringFieldEditor.UNLIMITED` in `StringFieldEditor` constructor calls.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-22T02:23:00.057506418Z",
+  "ruleFingerprint": "sha256:3c6e43ba35cc52870d93e9d5d5b728e4c3a97d77b5c22d556e96b60105db94e5",
+  "behaviorFingerprint": "sha256:4cf91a99dc486c94c8680e9aa96e834525df03b2f5b7dbb885594b58f138c8cb",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-22T02:27:03.109958177Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

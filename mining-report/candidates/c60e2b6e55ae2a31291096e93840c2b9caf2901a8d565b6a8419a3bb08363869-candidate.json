@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c60e2b6e55ae2a31291096e93840c2b9caf2901a8d565b6a8419a3bb08363869",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$sashForm.setWeights(new int[] {5,1})\n\u003d\u003e\n$sashForm.setWeights(new int[] {5,2})\n;;",
+  "beforeExample": "public class Example {\n    public static void main(String[] args) {\n        SashForm mockSashForm \u003d new SashForm();\n        mockSashForm.setWeights(new int[] {5,1});\n        System.out.println(\"Weights set to {5,1}\");\n    }\n}\n\nclass SashForm {\n    private int[] weights;\n    public void setWeights(int[] weights) {\n        this.weights \u003d weights;\n    }\n    public int[] getWeights() {\n        return weights;\n    }\n}",
+  "afterExample": "public class Example {\n    public static void main(String[] args) {\n        SashForm mockSashForm \u003d new SashForm();\n        mockSashForm.setWeights(new int[] {5,2});\n        System.out.println(\"Weights set to {5,2}\");\n    }\n}\n\nclass SashForm {\n    private int[] weights;\n    public void setWeights(int[] weights) {\n        this.weights \u003d weights;\n    }\n    public int[] getWeights() {\n        return weights;\n    }\n}",
+  "negativeExample": "public class Example {\n    public static void main(String[] args) {\n        SashForm mockSashForm \u003d new SashForm();\n        // Should not match: different weights\n        mockSashForm.setWeights(new int[] {10,1});\n        // Should not match: different method\n        mockSashForm.doSomethingElse(new int[] {5,1});\n        System.out.println(\"No matching pattern here\");\n    }\n}\n\nclass SashForm {\n    private int[] weights;\n    public void setWeights(int[] weights) {\n        this.weights \u003d weights;\n    }\n    public int[] getWeights() {\n        return weights;\n    }\n    public void doSomethingElse(int[] arr) { /* ... */ }\n}",
+  "targetHintFile": "ui-layout.sandbox-hint",
+  "sourceCommit": "2425626120ca485ba1a64201fbc41eb863fd94c1",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Code Style/Configuration",
+  "summary": "Updates the layout weights in a SashForm.setWeights call from {5,1} to {5,2}.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-22T02:23:20.195550427Z",
+  "ruleFingerprint": "sha256:60d0861e02fab0e98e456538ec79b314c3a836b4b6f2a17556eecca78bca8b66",
+  "behaviorFingerprint": "sha256:c756a036a0e3958e84fb641d1021ca3e65b692fa5d9a649cea50d7aae00b6cde",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-22T02:27:03.123815574Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

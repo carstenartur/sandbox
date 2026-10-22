@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "28ab663e5a11691061646cd9b7661404ab749672f1e898ea23c2256362137dcd",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: use.constant.for.generic.editor.id\u003e\n\u003c!description: Replace hardcoded generic editor ID string literal with the constant ExtensionBasedTextEditor.GENERIC_EDITOR_ID.\u003e\n\u003c!severity: INFO\u003e\n\"org.eclipse.ui.genericeditor.GenericEditor\"\n\u003d\u003e\norg.eclipse.ui.internal.genericeditor.ExtensionBasedTextEditor.GENERIC_EDITOR_ID\n;;",
+  "beforeExample": "package org.eclipse.ui.internal.genericeditor;\n\nimport org.eclipse.ui.IEditorDescriptor;\n\npublic class MyClass {\n    void method(IEditorDescriptor defaultDescripter) {\n        if (\"org.eclipse.ui.genericeditor.GenericEditor\".equals(defaultDescripter.getId())) {\n            System.out.println(\"It\u0027s the generic editor.\");\n        }\n        String editorId \u003d \"org.eclipse.ui.genericeditor.GenericEditor\";\n    }\n}\n",
+  "afterExample": "package org.eclipse.ui.internal.genericeditor;\n\nimport org.eclipse.ui.IEditorDescriptor;\n\n// Assume this class defines the constant as in the diff\nclass ExtensionBasedTextEditor {\n    public static final String GENERIC_EDITOR_ID \u003d \"org.eclipse.ui.genericeditor.GenericEditor\";\n}\n\npublic class MyClass {\n    void method(IEditorDescriptor defaultDescripter) {\n        if (ExtensionBasedTextEditor.GENERIC_EDITOR_ID.equals(defaultDescripter.getId())) {\n            System.out.println(\"It\u0027s the generic editor.\");\n        }\n        String editorId \u003d ExtensionBasedTextEditor.GENERIC_EDITOR_ID;\n    }\n}\n",
+  "negativeExample": "package org.eclipse.ui.internal.genericeditor;\n\npublic class NegativeExample {\n    void method() {\n        String anotherString \u003d \"some.other.id\";\n    }\n}\n",
+  "targetHintFile": "genericeditor-constants.sandbox-hint",
+  "sourceCommit": "6e643fe1579edcd7f13e2828367b98dc5ca77abe",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Use Constant",
+  "summary": "Replace the hardcoded string literal for the generic editor ID with a constant reference.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-22T02:21:56.124680630Z",
+  "ruleFingerprint": "sha256:206b5bb9f9ae90f3adb948da76da427732e56851dd9012bd448cfc9d2eabc086",
+  "behaviorFingerprint": "sha256:eb120f4896b41f3620db315745f996414ff52325d16466f095e6659c1c42fec0",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-22T02:27:03.077823536Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

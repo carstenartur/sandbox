@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "46765eac92c96bc4b2aecc2a7e7f3ae8df012ab8b04b5507bd4e685df0bc9e59",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: class.encapsulation.private-static-nested-class\u003e\n\u003c!description: Encapsulate static nested classes by making them private if they are not already.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: encapsulation, cleanup, static\u003e\n\nstatic class $Name :: elementKindMatches($Name, \"CLASS\") \u0026\u0026 !isPrivate($Name) \u0026\u0026 hasModifier($Name, \"STATIC\")\n\u003d\u003e private static class $Name\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.Rectangle;\nimport org.eclipse.swt.widgets.Canvas;\nimport org.eclipse.swt.widgets.ScrollBar;\n\npublic class OverviewRuler {\n    static class WidgetInfos { // The target line\n        int maxLines;\n        int lineHeight;\n        Rectangle bounds;\n        int writable;\n\n        public WidgetInfos(StyledText textWidget, Canvas canvas) {\n            maxLines\u003d textWidget.getLineCount();\n            // ... some other logic\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.Rectangle;\nimport org.eclipse.swt.widgets.Canvas;\nimport org.eclipse.swt.widgets.ScrollBar;\n\npublic class OverviewRuler {\n    private static class WidgetInfos { // The target line\n        int maxLines;\n        int lineHeight;\n        Rectangle bounds;\n        int writable;\n\n        public WidgetInfos(StyledText textWidget, Canvas canvas) {\n            maxLines\u003d textWidget.getLineCount();\n            // ... some other logic\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.graphics.Rectangle;\nimport org.eclipse.swt.widgets.Canvas;\nimport org.eclipse.swt.widgets.ScrollBar;\n\npublic class OverviewRuler {\n    private static class AlreadyPrivateWidgetInfos { // Already private\n        int maxLines;\n        int lineHeight;\n        Rectangle bounds;\n        int writable;\n\n        public AlreadyPrivateWidgetInfos(StyledText textWidget, Canvas canvas) {\n            maxLines\u003d textWidget.getLineCount();\n        }\n    }\n\n    class NonStaticInnerClass { // Not static\n        int x;\n    }\n}",
+  "targetHintFile": "encapsulation.sandbox-hint",
+  "sourceCommit": "95b3ff3beb9bbaf6e68933385ade1fb721b2a30a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Encapsulation",
+  "summary": "Change a non-private static nested class to a private static nested class for better encapsulation.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-22T02:25:59.043103596Z",
+  "ruleFingerprint": "sha256:790521e041cafa951542bca46322f7d70ed901d46d4c732a293dd2740271eb9b",
+  "behaviorFingerprint": "sha256:26b28a4421b301a370cb03ae0b041d50937bd3d1458aa66042cb991ed77d3d41",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-22T02:27:03.173240430Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
