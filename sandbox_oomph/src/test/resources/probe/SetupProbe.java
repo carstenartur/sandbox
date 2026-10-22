@@ -205,7 +205,8 @@ public class SetupProbe implements IApplication {
             if (!(objects.next() instanceof EObject object)) {
                 continue;
             }
-            var idFeature = object.eClass().getEStructuralFeature("id");
+            // The EMF structural feature is named iD; only its XML serialization is "id".
+            var idFeature = object.eClass().getEStructuralFeature("iD");
             if (idFeature != null && object.eGet(idFeature) instanceof String id && expected.contains(id)) {
                 present.add(id);
             }
