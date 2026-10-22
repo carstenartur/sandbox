@@ -64,7 +64,7 @@ import org.eclipse.oomph.setup.internal.core.SetupContext;
 import org.eclipse.oomph.setup.internal.core.SetupTaskPerformer;
 import org.eclipse.oomph.setup.internal.core.util.SetupCoreUtil;
 import org.eclipse.oomph.setup.log.ProgressLog;
-import org.eclipse.oomph.setup.p2.P2Package;
+import org.eclipse.oomph.setup.p2.SetupP2Package;
 import org.eclipse.oomph.ui.UICallback;
 import org.eclipse.oomph.ui.UIUtil;
 import org.eclipse.oomph.util.OS;
@@ -174,7 +174,7 @@ public class SetupProbe implements IApplication {
         coreOnly.put(EcorePackage.eNS_URI, EcorePackage.eINSTANCE);
         coreOnly.put(BasePackage.eNS_URI, BasePackage.eINSTANCE);
         coreOnly.put(SetupPackage.eNS_URI, SetupPackage.eINSTANCE);
-        coreOnly.put(P2Package.eNS_URI, P2Package.eINSTANCE);
+        coreOnly.put(SetupP2Package.eNS_URI, SetupP2Package.eINSTANCE);
         isolated.setPackageRegistry(coreOnly);
         SetupCoreUtil.configureResourceSet(isolated);
         URI entry = URI.createURI(ENTRY);
@@ -202,7 +202,9 @@ public class SetupProbe implements IApplication {
         Set<String> present = new TreeSet<>();
         var objects = EcoreUtil.getAllContents(loaded, false);
         while (objects.hasNext()) {
-            EObject object = objects.next();
+            if (!(objects.next() instanceof EObject object)) {
+                continue;
+            }
             var idFeature = object.eClass().getEStructuralFeature("id");
             if (idFeature != null && object.eGet(idFeature) instanceof String id && expected.contains(id)) {
                 present.add(id);
