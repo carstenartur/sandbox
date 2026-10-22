@@ -28,6 +28,10 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.emf.common.util.Diagnostic;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
+import org.eclipse.emf.ecore.EcorePackage;
+import org.eclipse.emf.ecore.impl.EPackageRegistryImpl;
+import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl;
+import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.emf.ecore.InternalEObject;
 import org.eclipse.emf.ecore.resource.Resource;
 import org.eclipse.emf.ecore.resource.ResourceSet;
@@ -43,11 +47,13 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.oomph.internal.setup.SetupPrompter;
+import org.eclipse.oomph.base.BasePackage;
 import org.eclipse.oomph.p2.core.P2Util;
 import org.eclipse.oomph.setup.Configuration;
 import org.eclipse.oomph.setup.ProductVersion;
 import org.eclipse.oomph.setup.Project;
 import org.eclipse.oomph.setup.ProjectCatalog;
+import org.eclipse.oomph.setup.SetupPackage;
 import org.eclipse.oomph.setup.SetupFactory;
 import org.eclipse.oomph.setup.SetupTask;
 import org.eclipse.oomph.setup.SetupTaskContext;
@@ -58,6 +64,7 @@ import org.eclipse.oomph.setup.internal.core.SetupContext;
 import org.eclipse.oomph.setup.internal.core.SetupTaskPerformer;
 import org.eclipse.oomph.setup.internal.core.util.SetupCoreUtil;
 import org.eclipse.oomph.setup.log.ProgressLog;
+import org.eclipse.oomph.setup.p2.P2Package;
 import org.eclipse.oomph.ui.UICallback;
 import org.eclipse.oomph.ui.UIUtil;
 import org.eclipse.oomph.util.OS;
@@ -153,6 +160,60 @@ public class SetupProbe implements IApplication {
                 + " classpath=" + jna.getHeaders("").get("Bundle-ClassPath")));
     }
 
+    /**
+     * Reproduce the public catalog's earliest model-loading step with the real
+     * Oomph/EMF loader but without pre-registering Maven, Git, JDT, PDE,
+     * predicates, project-import or working-set extension packages. A normal
+     * full-SDK verification cannot expose missing xsi:schemaLocation mappings,
+     * because its extension packages are already registered by the IDE.
+     */
+    private static void verifyColdCatalogLoad(Path root) throws Exception {
+        ResourceSet isolated = new ResourceSetImpl();
+        EPackageRegistryImpl coreOnly = new EPackageRegistryImpl();
+        // This registry does NOT delegate to the running IDE's global registry.
+        coreOnly.put(EcorePackage.eNS_URI, EcorePackage.eINSTANCE);
+        coreOnly.put(BasePackage.eNS_URI, BasePackage.eINSTANCE);
+        coreOnly.put(SetupPackage.eNS_URI, SetupPackage.eINSTANCE);
+        coreOnly.put(P2Package.eNS_URI, P2Package.eINSTANCE);
+        isolated.setPackageRegistry(coreOnly);
+        SetupCoreUtil.configureResourceSet(isolated);
+        URI entry = URI.createURI(ENTRY);
+        isolated.getURIConverter().getURIMap().put(entry,
+                URI.createFileURI(root.resolve("sandbox_oomph/sandboxproject.setup").toString()));
+
+        for (String extension : List.of("git", "maven", "jdt", "pde", "projects", "workingsets")) {
+            String suffix = "workingsets".equals(extension) ? "workingsets" : extension;
+            String namespace = "http://www.eclipse.org/oomph/setup/" + suffix + "/1.0";
+            require(coreOnly.getEPackage(namespace) == null,
+                    "Cold model registry is already provisioned: " + namespace);
+        }
+        require(coreOnly.getEPackage("http://www.eclipse.org/oomph/predicates/1.0") == null,
+                "Cold model registry is already provisioned with predicates");
+
+        Resource loaded = isolated.getResource(entry, true);
+        require(loaded.getErrors().isEmpty(), "Cold public Oomph catalog load errors: " + loaded.getErrors());
+        require(loaded.getContents().size() == 1 && loaded.getContents().get(0) instanceof Project,
+                "Cold catalog did not load the public Sandbox Project");
+        Project project = (Project)loaded.getContents().get(0);
+        require("sandbox".equals(project.getName()) && project.getStreams().stream()
+                .anyMatch(stream -> "main".equals(stream.getName())), "Cold catalog lost its public identity");
+
+        Set<String> expected = Set.of("git.clone.sandbox", "sandbox.target", "sandbox.maven", "sandbox.projects");
+        Set<String> present = new TreeSet<>();
+        var objects = EcoreUtil.getAllContents(loaded, false);
+        while (objects.hasNext()) {
+            EObject object = objects.next();
+            var idFeature = object.eClass().getEStructuralFeature("id");
+            if (idFeature != null && object.eGet(idFeature) instanceof String id && expected.contains(id)) {
+                present.add(id);
+            }
+        }
+        require(present.containsAll(expected),
+                "Cold catalog lost extension task types. Present=" + present + ", expected=" + expected);
+        System.out.println("COLD_OOMPH_CATALOG_VERIFIED: extension tasks " + present
+                + " resolved through the public setup model");
+    }
+
     private void verify() throws Exception {
         Path root = Path.of(System.getProperty("sandbox.oomph.root"));
         Path run = root.resolve("sandbox_oomph/target/oomph-runtime");
@@ -168,6 +229,7 @@ public class SetupProbe implements IApplication {
             }
             @Override public void setTaskName(String name) { subTask(name); }
         };
+        verifyColdCatalogLoad(root);
         ResourceSet rs = SetupCoreUtil.createResourceSet();
         System.out.println("Loading and validating the official catalog and candidate models");
         rs.getURIConverter().getURIMap().put(URI.createURI(ENTRY),
