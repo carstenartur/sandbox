@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "541904dabc6b8fe035913f0c727ec79e26eea90e42b13e49070f01d5a1fa47f5",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.quicksearch.dialog.title\u003e\n\u003c!description: Change QuickSearchDialog title from \"Quick Text Search\" to \"Quick Search\".\u003e\n\u003c!severity: HINT\u003e\n\n$dialog.setTitle(\"Quick Text Search\") :: instanceof($dialog, \"org.eclipse.jface.dialogs.Dialog\")\n\u003d\u003e $dialog.setTitle(\"Quick Search\")\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.dialogs.Dialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyQuickSearchDialog extends Dialog {\n\n    protected MyQuickSearchDialog(Shell parentShell) {\n        super(parentShell);\n    }\n\n    public void setup() {\n        this.setTitle(\"Quick Text Search\"); // This should be changed\n        System.out.println(\"Other text search\");\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.dialogs.Dialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyQuickSearchDialog extends Dialog {\n\n    protected MyQuickSearchDialog(Shell parentShell) {\n        super(parentShell);\n    }\n\n    public void setup() {\n        this.setTitle(\"Quick Search\"); // This is the expected change\n        System.out.println(\"Other text search\");\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.dialogs.Dialog;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class AnotherDialog extends Dialog {\n\n    protected AnotherDialog(Shell parentShell) {\n        super(parentShell);\n    }\n\n    public void init() {\n        this.setTitle(\"Another Dialog Title\"); // Should not change\n        setTitle(\"Quick Find\"); // Should not change (different string)\n        System.out.println(\"Quick Text Search is here but not in setTitle\"); // Should not change (different method)\n    }\n}\n",
+  "targetHintFile": "ui-dialog-titles.sandbox-hint",
+  "sourceCommit": "e4cd3301424512368c53114fd477bbb3503adc73",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "UI String Cleanup",
+  "summary": "Replaces the specific dialog title \"Quick Text Search\" with \"Quick Search\" for instances of `org.eclipse.jface.dialogs.Dialog`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-22T02:23:56.115488607Z",
+  "ruleFingerprint": "sha256:c6d377f555ca46007b250ed31f1371448c230e3a2546adbd412630de29399393",
+  "behaviorFingerprint": "sha256:7e8832dbde5d41c8c929cb7f8d10af6f0c405bb2f00b1f00bc35b47f8b2e1339",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-22T02:27:03.134611081Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

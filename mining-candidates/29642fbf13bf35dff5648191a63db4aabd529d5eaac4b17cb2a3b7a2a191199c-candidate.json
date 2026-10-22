@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "29642fbf13bf35dff5648191a63db4aabd529d5eaac4b17cb2a3b7a2a191199c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.platformui.getWorkbench\u003e\n\u003c!description: Replace AbstractUIPlugin.getWorkbench() with PlatformUI.getWorkbench().\nThis is generally preferred as PlatformUI provides a more direct and static way to access the workbench, avoiding the need to retrieve a plugin instance first.\u003e\n\u003c!severity: HINT\u003e\n\n$plugin.getWorkbench() :: instanceof($plugin, \"org.eclipse.ui.plugin.AbstractUIPlugin\")\n\u003d\u003e org.eclipse.ui.PlatformUI.getWorkbench()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.ui.PlatformUI;\nimport org.eclipse.ui.plugin.AbstractUIPlugin;\nimport org.osgi.framework.BundleContext;\n\npublic class MyPlugin extends AbstractUIPlugin {\n    private static MyPlugin plugin;\n\n    public MyPlugin() {\n        plugin \u003d this;\n    }\n\n    public static MyPlugin getDefault() {\n        return plugin;\n    }\n\n    @Override\n    public void start(BundleContext context) throws Exception {\n        super.start(context);\n        // Scenario 1: Access via static getDefault()\n        getDefault().getWorkbench().getWorkbenchWindows();\n        // Scenario 2: Access via \u0027this\u0027\n        this.getWorkbench().getActiveWorkbenchWindow();\n        // Scenario 3: Access via a field or local variable\n        MyPlugin instance \u003d getDefault();\n        instance.getWorkbench().getEditorRegistry();\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.ui.PlatformUI;\nimport org.eclipse.ui.plugin.AbstractUIPlugin;\nimport org.osgi.framework.BundleContext;\n\npublic class MyPlugin extends AbstractUIPlugin {\n    private static MyPlugin plugin;\n\n    public MyPlugin() {\n        plugin \u003d this;\n    }\n\n    public static MyPlugin getDefault() {\n        return plugin;\n    }\n\n    @Override\n    public void start(BundleContext context) throws Exception {\n        super.start(context);\n        // Scenario 1: Access via static getDefault()\n        org.eclipse.ui.PlatformUI.getWorkbench().getWorkbenchWindows();\n        // Scenario 2: Access via \u0027this\u0027\n        org.eclipse.ui.PlatformUI.getWorkbench().getActiveWorkbenchWindow();\n        // Scenario 3: Access via a field or local variable\n        MyPlugin instance \u003d getDefault();\n        org.eclipse.ui.PlatformUI.getWorkbench().getEditorRegistry();\n    }\n}\n",
+  "negativeExample": "package test;\n\n// This class does NOT extend AbstractUIPlugin\nclass NonPlugin {\n    public Object getWorkbench() {\n        return null;\n    }\n}\n\npublic class AnotherClass {\n    public void test() {\n        NonPlugin np \u003d new NonPlugin();\n        // This call should NOT be transformed because NonPlugin is not an AbstractUIPlugin\n        np.getWorkbench();\n    }\n}\n",
+  "targetHintFile": "eclipse-api-modernization.sandbox-hint",
+  "sourceCommit": "a829029eb2163a134192291593a0e0d42913bf32",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Eclipse API Modernization",
+  "summary": "Replaces calls to `getWorkbench()` on instances of `AbstractUIPlugin` (or its subclasses) with the static call `PlatformUI.getWorkbench()`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-22T02:22:26.652254499Z",
+  "ruleFingerprint": "sha256:9d0321d773d8eca7a43230a53502309d4653ce276987586d66f88131527fba1d",
+  "behaviorFingerprint": "sha256:3a91d6542723674001b57df7fce0c38ccd6f9b32e552400b25e7d7f2645bfcc9",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-22T02:27:03.088549528Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

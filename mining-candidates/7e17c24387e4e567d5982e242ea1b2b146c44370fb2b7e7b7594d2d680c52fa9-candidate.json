@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7e17c24387e4e567d5982e242ea1b2b146c44370fb2b7e7b7594d2d680c52fa9",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n\u003c!id: replace-textutilities-indexof-null-check\u003e\n\u003c!description: Replace usage of deprecated TextUtilities.indexOf with MultiStringMatcher for null checks (Java 8+).\u003e\n\u003c!severity: WARNING\u003e\n*/\norg.eclipse.jface.text.TextUtilities.indexOf($delimiters$, $text$, $offset$)[0] !\u003d -1\n\u003d\u003e\norg.eclipse.jface.text.MultiStringMatcher.indexOf($text$, $offset$, $delimiters$) !\u003d null\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.TextUtilities;\n\nclass Example {\n    String[] legalDelimiters \u003d {\"\\n\", \"\\r\\n\"};\n    String contents \u003d \"hello\\nworld\";\n\n    void test() {\n        if (TextUtilities.indexOf(legalDelimiters, contents, 0)[0] !\u003d -1) {\n            System.out.println(\"Delimiter found!\");\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.MultiStringMatcher;\nimport org.eclipse.jface.text.TextUtilities;\n\nclass Example {\n    String[] legalDelimiters \u003d {\"\\n\", \"\\r\\n\"};\n    String contents \u003d \"hello\\nworld\";\n\n    void test() {\n        if (MultiStringMatcher.indexOf(contents, 0, legalDelimiters) !\u003d null) {\n            System.out.println(\"Delimiter found!\");\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.TextUtilities;\nimport org.eclipse.jface.text.MultiStringMatcher;\n\nclass Example {\n    String[] legalDelimiters \u003d {\"\\n\", \"\\r\\n\"};\n    String contents \u003d \"hello\\nworld\";\n\n    void test() {\n        // This should not match, as it uses the numeric index directly, not a null check.\n        int offset \u003d TextUtilities.indexOf(legalDelimiters, contents, 0)[0];\n        if (offset \u003e 0) {\n            System.out.println(\"Offset: \" + offset);\n        }\n\n        // This should not match, as it uses the delimiter type index (index[1]).\n        int delimiterTypeIndex \u003d TextUtilities.indexOf(legalDelimiters, contents, 0)[1];\n        if (delimiterTypeIndex !\u003d -1) {\n            System.out.println(\"Delimiter kind: \" + legalDelimiters[delimiterTypeIndex]);\n        }\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "c89b823822e2d73ba4996ad419475db34c916ed5",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Deprecation/API Migration",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-22T02:26:45.842300335Z",
+  "ruleFingerprint": "sha256:db110d2980e258cdc49da00d14a53b8c5f624f221c170e90dbb67d349f5ec22d",
+  "behaviorFingerprint": "sha256:e178616c095be13bcccf489f2761005ca028b138a7be5bc6755e7e95542bb8bb",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-10-22T02:27:03.198447980Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d1c0c9dca0f1d8d2b13cc14fe0a14a1aedf66f08c5e09003cb750618cab87c76",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: java.lang.StringBuffer.to.StringBuilder.local\u003e\n\u003c!description: Replace StringBuffer with StringBuilder for local variable declarations for performance, as StringBuilder is unsynchronized and faster.\u003e\n\u003c!severity: HINT\u003e\nnew java.lang.StringBuffer($arg) :: isAssignedToLocalVariable()\n\u003d\u003e new java.lang.StringBuilder($arg)\n;;",
+  "beforeExample": "class TestClass {\n    String getContent() { return \"content\"; }\n    void foo() {\n        StringBuffer buffer \u003d new StringBuffer(getContent());\n        buffer.append(\"more\");\n        System.out.println(buffer.toString());\n    }\n}",
+  "afterExample": "class TestClass {\n    String getContent() { return \"content\"; }\n    void foo() {\n        StringBuilder buffer \u003d new StringBuilder(getContent());\n        buffer.append(\"more\");\n        System.out.println(buffer.toString());\n    }\n}",
+  "negativeExample": "class NegativeTestClass {\n    private StringBuffer fieldBuffer \u003d new StringBuffer(\"initial\"); // Should not match: field, not a local variable assignment\n    String getContent() { return \"content\"; }\n    void foo() {\n        fieldBuffer.append(getContent());\n        System.out.println(fieldBuffer.toString());\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "6b953d64a09f18571ccfe6b8e528eafd736b0f55",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Performance",
+  "summary": "Replace `new StringBuffer()` with `new StringBuilder()` when the buffer is assigned to a local variable, for performance.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-22T02:23:00.034852371Z",
+  "ruleFingerprint": "sha256:0a270085a41e399a35b06afd6371dbc34759f55b8d2ca18a2300522276ae9c8d",
+  "behaviorFingerprint": "sha256:9ef054f3698648b7a0e2cecdc8eac2c01ef4b56536b909ce7e3241b7965482c9",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-22T02:27:03.099161518Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

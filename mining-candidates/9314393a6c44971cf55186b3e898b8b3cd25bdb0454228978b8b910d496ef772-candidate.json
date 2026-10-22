@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9314393a6c44971cf55186b3e898b8b3cd25bdb0454228978b8b910d496ef772",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: class.rename.ContentTypeImagesRegistryToIconsRegistry\u003e\n\u003c!description: Renames internal class ContentTypeImagesRegistry to IconsRegistry across all type usages (declarations, method signatures, constructor calls, etc.).\u003e\n\u003c!severity: INFO\u003e\norg.eclipse.ui.internal.genericeditor.ContentTypeImagesRegistry\n\u003d\u003e\norg.eclipse.ui.internal.genericeditor.IconsRegistry\n;;",
+  "beforeExample": "package org.eclipse.ui.internal.genericeditor;\n\nimport java.util.List;\n\n// Dummy class to allow compilation for example\nclass ContentTypeImagesRegistry {\n    public ContentTypeImagesRegistry() {}\n}\n\n// Dummy class to allow compilation for example\nclass IconsRegistry {\n    public IconsRegistry() {}\n}\n\npublic class ExampleClass {\n    private ContentTypeImagesRegistry myRegistryField;\n\n    public ContentTypeImagesRegistry createRegistry(ContentTypeImagesRegistry existing) {\n        ContentTypeImagesRegistry localRegistry \u003d new ContentTypeImagesRegistry();\n        if (localRegistry instanceof ContentTypeImagesRegistry) {\n            System.out.println(\"It is a ContentTypeImagesRegistry\");\n        }\n        List\u003cContentTypeImagesRegistry\u003e listOfRegistries;\n        return localRegistry;\n    }\n}\n",
+  "afterExample": "package org.eclipse.ui.internal.genericeditor;\n\nimport java.util.List;\n\n// Dummy class to allow compilation for example\nclass ContentTypeImagesRegistry {\n    public ContentTypeImagesRegistry() {}\n}\n\n// Dummy class to allow compilation for example\nclass IconsRegistry {\n    public IconsRegistry() {}\n}\n\npublic class ExampleClass {\n    private IconsRegistry myRegistryField;\n\n    public IconsRegistry createRegistry(IconsRegistry existing) {\n        IconsRegistry localRegistry \u003d new IconsRegistry();\n        if (localRegistry instanceof IconsRegistry) {\n            System.out.println(\"It is an IconsRegistry\");\n        }\n        List\u003cIconsRegistry\u003e listOfRegistries;\n        return localRegistry;\n    }\n}\n",
+  "negativeExample": "package org.eclipse.ui.internal.genericeditor;\n\nclass AnotherRegistry {\n    public AnotherRegistry() {}\n}\n\npublic class NegativeExampleClass {\n    private AnotherRegistry myRegistryField;\n\n    public AnotherRegistry createRegistry(AnotherRegistry existing) {\n        AnotherRegistry localRegistry \u003d new AnotherRegistry();\n        return localRegistry;\n    }\n}\n",
+  "targetHintFile": "genericeditor-renames.sandbox-hint",
+  "sourceCommit": "6fb4f653c9bc16088a19860f235898b1b7e4fe09",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Type Renaming",
+  "summary": "Rename internal class ContentTypeImagesRegistry to IconsRegistry across all type usages.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-22T02:21:56.097179168Z",
+  "ruleFingerprint": "sha256:fbd28a53d2c84a303df47581a258b4c074dd0947f161d876da92b9b404b9686e",
+  "behaviorFingerprint": "sha256:ca4a77c7859df51d2e047429770d6604ce7588b3f63869cec497032adc0ee520",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-22T02:27:03.066913456Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

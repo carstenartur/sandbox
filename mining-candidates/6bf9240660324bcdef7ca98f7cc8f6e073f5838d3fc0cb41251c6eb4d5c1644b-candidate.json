@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6bf9240660324bcdef7ca98f7cc8f6e073f5838d3fc0cb41251c6eb4d5c1644b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$s.children !\u003d null :: instanceof($s, \"org.eclipse.jface.text.MultiStringMatcher.Node\")\n\u003d\u003e\n$s.hasChildren()\n;;",
+  "beforeExample": "package org.eclipse.jface.text;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class MultiStringMatcher {\n    private static class Node {\n        Map\u003cCharacter, Node\u003e children;\n        String match;\n        Node output;\n        final int depth;\n\n        Node(int depth) {\n            this.depth \u003d depth;\n        }\n\n        boolean hasChildren() {\n            // Assume this method exists after initial refactoring\n            return children !\u003d null;\n        }\n    }\n\n    public void someMethod(Node s) {\n        // Before: Direct field access\n        if (s.children !\u003d null) {\n            System.out.println(\"Node has children\");\n        }\n    }\n}\n",
+  "afterExample": "package org.eclipse.jface.text;\n\nimport java.util.HashMap;\nimport java.util.Map;\n\npublic class MultiStringMatcher {\n    private static class Node {\n        Map\u003cCharacter, Node\u003e children;\n        String match;\n        Node output;\n        final int depth;\n\n        Node(int depth) {\n            this.depth \u003d depth;\n        }\n\n        boolean hasChildren() {\n            return children !\u003d null;\n        }\n    }\n\n    public void someMethod(Node s) {\n        // After: Using the accessor method\n        if (s.hasChildren()) {\n            System.out.println(\"Node has children\");\n        }\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jface.text;\n\nimport java.util.List;\n\npublic class SomeOtherClass {\n    private static class DifferentNode {\n        List\u003cString\u003e children; // Different type, or no hasChildren() method\n\n        DifferentNode(List\u003cString\u003e children) {\n            this.children \u003d children;\n        }\n    }\n\n    public void anotherMethod(DifferentNode d) {\n        // Should not match: d is not MultiStringMatcher.Node\n        if (d.children !\u003d null) {\n            System.out.println(\"Different node has children\");\n        }\n    }\n}\n",
+  "targetHintFile": "refactoring.sandbox-hint",
+  "sourceCommit": "340d36aec95f8b2cf3fccdb04c63cbaf8ae9c5a8",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Encapsulation",
+  "summary": "Replaces direct null check on the \u0027children\u0027 field of `MultiStringMatcher.Node` with a call to the `hasChildren()` accessor method, improving encapsulation.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-22T02:25:35.995600739Z",
+  "ruleFingerprint": "sha256:245a8e1cb595d95124c843b86f200dc7dc05b56ff63f692f26e3067b2d649038",
+  "behaviorFingerprint": "sha256:686127229bfea05d488c4f16e94047d030d72fe285513666b1379185aff3433b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type MultiStringMatcher must be defined in its own file",
+    "verifiedAt": "2026-10-22T02:27:03.161860301Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

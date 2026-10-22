@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "00bd40d36d85c411140a7ba670aa8548fd019a79f0ed45654b92689da0c2875c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: dialogs.replaceClientIdWithOkId\u003e\n\u003c!description: Replace IDialogConstants.CLIENT_ID + 1 with IDialogConstants.OK_ID for standard button behavior when a custom ID is used for an OK-like button.\u003e\n\u003c!severity: HINT\u003e\norg.eclipse.jface.dialogs.IDialogConstants.CLIENT_ID + 1\n\u003d\u003e org.eclipse.jface.dialogs.IDialogConstants.OK_ID\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jface.dialogs.IDialogConstants;\n\npublic class MyDialog {\n    // A custom button ID for a dialog action\n    private static final int GO_BUTTON_ID \u003d IDialogConstants.CLIENT_ID + 1;\n\n    public void setup() {\n        int currentId \u003d IDialogConstants.CLIENT_ID + 1;\n        System.out.println(currentId);\n    }\n}\n",
+  "afterExample": "package test;\nimport org.eclipse.jface.dialogs.IDialogConstants;\n\npublic class MyDialog {\n    // Use the standard OK button ID for a more conventional dialog experience\n    private static final int GO_BUTTON_ID \u003d IDialogConstants.OK_ID;\n\n    public void setup() {\n        int currentId \u003d IDialogConstants.OK_ID;\n        System.out.println(currentId);\n    }\n}\n",
+  "negativeExample": "package test;\nimport org.eclipse.jface.dialogs.IDialogConstants;\n\npublic class MyOtherDialog {\n    // This should not be matched as it\u0027s a different client ID increment\n    private static final int CUSTOM_BUTTON_ID \u003d IDialogConstants.CLIENT_ID + 2;\n\n    public void setup() {\n        int otherId \u003d IDialogConstants.CLIENT_ID + 2;\n        System.out.println(otherId);\n    }\n}\n",
+  "targetHintFile": "dialogs.sandbox-hint",
+  "sourceCommit": "58437abbada0e715de9c44c022e7ac1a9abc4c26",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Usage Modernization",
+  "summary": "Replaces the expression `IDialogConstants.CLIENT_ID + 1` with `IDialogConstants.OK_ID` to standardize custom dialog button IDs to the conventional OK button ID.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-22T02:21:20.794488175Z",
+  "ruleFingerprint": "sha256:8f2763d6735b49c3901bca7d997e6b6977ffc7086588331d389eb0345fc4d2e4",
+  "behaviorFingerprint": "sha256:2e0884bdddcd7358287a972c5d58f37f4b0bf84db1f9146e751a689fdec5c8b2",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-22T02:27:03.055575271Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
