@@ -230,6 +230,7 @@ jobs:
             sandbox_oomph/target/surefire-reports/**
             sandbox_oomph/target/oomph-runtime/*.log
             sandbox_oomph/target/oomph-runtime/*.properties
+            sandbox_oomph/target/oomph-runtime/*.png
             sandbox_oomph/target/oomph-runtime/workspace/.metadata/.log
             sandbox_oomph/target/oomph-runtime/eclipse/configuration/**/*.log
           include-hidden-files: true

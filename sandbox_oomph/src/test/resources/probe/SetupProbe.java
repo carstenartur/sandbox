@@ -1,13 +1,18 @@
 /* SPDX-License-Identifier: EPL-2.0 */
 package org.sandbox.oomph.probe;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.cert.Certificate;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +55,7 @@ import org.eclipse.oomph.internal.setup.SetupPrompter;
 import org.eclipse.oomph.base.BasePackage;
 import org.eclipse.oomph.p2.core.P2Util;
 import org.eclipse.oomph.setup.Configuration;
+import org.eclipse.oomph.setup.Index;
 import org.eclipse.oomph.setup.ProductVersion;
 import org.eclipse.oomph.setup.Project;
 import org.eclipse.oomph.setup.ProjectCatalog;
@@ -60,9 +66,13 @@ import org.eclipse.oomph.setup.SetupTaskContext;
 import org.eclipse.oomph.setup.Trigger;
 import org.eclipse.oomph.setup.VariableTask;
 import org.eclipse.oomph.setup.git.GitCloneTask;
+import org.eclipse.oomph.setup.ui.wizards.SetupWizard;
+import org.eclipse.oomph.setup.ui.wizards.SetupWizardDialog;
+import org.eclipse.oomph.setup.ui.wizards.ProjectPage;
 import org.eclipse.oomph.setup.internal.core.SetupContext;
 import org.eclipse.oomph.setup.internal.core.SetupTaskPerformer;
 import org.eclipse.oomph.setup.internal.core.util.SetupCoreUtil;
+import org.eclipse.oomph.setup.internal.core.util.ResourceMirror;
 import org.eclipse.oomph.setup.log.ProgressLog;
 import org.eclipse.oomph.setup.p2.SetupP2Package;
 import org.eclipse.oomph.ui.UICallback;
@@ -74,7 +84,21 @@ import org.eclipse.pde.core.target.ITargetPlatformService;
 import org.eclipse.pde.internal.core.PluginModelManager;
 import org.eclipse.pde.internal.launching.launcher.BundleLauncherHelper;
 import org.eclipse.pde.internal.launching.launcher.LaunchValidationOperation;
+import org.eclipse.jface.wizard.IWizardPage;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageLoader;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.application.WorkbenchAdvisor;
 import org.osgi.framework.FrameworkUtil;
@@ -83,12 +107,30 @@ import org.osgi.framework.FrameworkUtil;
 public class SetupProbe implements IApplication {
     private static final String ENTRY = "https://raw.githubusercontent.com/carstenartur/sandbox/main/"
             + "sandbox_oomph/sandboxproject.setup";
+    private static final String PUBLIC_CATALOG =
+            "https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/com.github.projects.setup";
+    private static final Set<String> ESSENTIAL_TASKS =
+            Set.of("git.clone.sandbox", "sandbox.target", "sandbox.maven", "sandbox.projects");
     private volatile Throwable failure;
     private volatile String activeSetupTask = "workbench startup";
 
     @Override
     public Object start(IApplicationContext applicationContext) {
         Display display = PlatformUI.createDisplay();
+        // Eclipse PDE 4.41 computes many classpaths in parallel after the
+        // target-platform switch. A non-in-use OSGi wiring can yield null
+        // from getRequiredWires(namespace), causing a PDE Classpath Update
+        // NullPointerException before the workspace jobs have settled.
+        // Use PDE's supported preference in this disposable acceptance
+        // workspace; production user settings remain untouched.
+        var pdePreferences = org.eclipse.pde.internal.core.PDECore.getDefault().getPreferencesManager();
+        pdePreferences.setValue(
+                org.eclipse.pde.internal.core.ICoreConstants.UPDATE_CLASSPATH_IN_PARALLEL, false);
+        pdePreferences.savePluginPreferences();
+        require(!pdePreferences.getBoolean(
+                org.eclipse.pde.internal.core.ICoreConstants.UPDATE_CLASSPATH_IN_PARALLEL),
+                "Acceptance runtime must update PDE classpaths sequentially");
+        System.out.println("OOMPH_PDE_CLASSPATH_SEQUENTIAL_FOR_ACCEPTANCE");
         org.eclipse.core.runtime.ILogListener indexDiagnostic = this::captureIndexFailure;
         org.eclipse.core.runtime.Platform.addLogListener(indexDiagnostic);
         try {
@@ -168,15 +210,10 @@ public class SetupProbe implements IApplication {
      * because its extension packages are already registered by the IDE.
      */
     private static void verifyColdCatalogLoad(Path root) throws Exception {
-        ResourceSet isolated = new ResourceSetImpl();
-        EPackageRegistryImpl coreOnly = new EPackageRegistryImpl();
+        verifyBrokenCatalogFails(root);
+        ResourceSet isolated = createCoreOnlyResourceSet();
+        EPackageRegistryImpl coreOnly = (EPackageRegistryImpl) isolated.getPackageRegistry();
         // This registry does NOT delegate to the running IDE's global registry.
-        coreOnly.put(EcorePackage.eNS_URI, EcorePackage.eINSTANCE);
-        coreOnly.put(BasePackage.eNS_URI, BasePackage.eINSTANCE);
-        coreOnly.put(SetupPackage.eNS_URI, SetupPackage.eINSTANCE);
-        coreOnly.put(SetupP2Package.eNS_URI, SetupP2Package.eINSTANCE);
-        isolated.setPackageRegistry(coreOnly);
-        SetupCoreUtil.configureResourceSet(isolated);
         URI entry = URI.createURI(ENTRY);
         isolated.getURIConverter().getURIMap().put(entry,
                 URI.createFileURI(root.resolve("sandbox_oomph/sandboxproject.setup").toString()));
@@ -198,7 +235,7 @@ public class SetupProbe implements IApplication {
         require("sandbox".equals(project.getName()) && project.getStreams().stream()
                 .anyMatch(stream -> "main".equals(stream.getName())), "Cold catalog lost its public identity");
 
-        Set<String> expected = Set.of("git.clone.sandbox", "sandbox.target", "sandbox.maven", "sandbox.projects");
+        Set<String> expected = ESSENTIAL_TASKS;
         Set<String> present = new TreeSet<>();
         var objects = EcoreUtil.getAllContents(loaded, false);
         while (objects.hasNext()) {
@@ -217,6 +254,365 @@ public class SetupProbe implements IApplication {
                 + " resolved through the public setup model");
     }
 
+
+    /**
+     * Exercise the same ResourceMirror and ProxyResolver used by
+     * SetupWizard.IndexLoader. Nothing maps the public Github catalog or
+     * Sandbox project URI onto a local test file: both must resolve online.
+     * An unrelated broken Github project must not invalidate Sandbox.
+     */
+    private static void verifyPublicCatalogMirror() {
+        ResourceSet resourceSet = SetupCoreUtil.createResourceSet();
+        URI publicCatalogURI = URI.createURI(PUBLIC_CATALOG);
+        URI sandboxURI = URI.createURI(ENTRY);
+        // Oomph may pre-populate links to its published setups.zip archive.
+        // Force this test to exercise the live public URLs, not the archive or
+        // the candidate's local source tree. Check effective URI normalization.
+        var uriConverter = resourceSet.getURIConverter();
+        uriConverter.getURIMap().remove(publicCatalogURI);
+        uriConverter.getURIMap().remove(sandboxURI);
+        require(publicCatalogURI.equals(uriConverter.normalize(publicCatalogURI)),
+                "Official Github catalog is still redirected: " + uriConverter.normalize(publicCatalogURI));
+        require(sandboxURI.equals(uriConverter.normalize(sandboxURI)),
+                "Public Sandbox project is still redirected: " + uriConverter.normalize(sandboxURI));
+
+        ResourceMirror.WithProductImages mirror = new ResourceMirror.WithProductImages(resourceSet, 4) {
+            @Override
+            protected void run(String taskName, org.eclipse.core.runtime.IProgressMonitor monitor) {
+                perform(List.of(publicCatalogURI));
+                resolveProxies();
+            }
+        };
+        mirror.begin(new NullProgressMonitor());
+        Resource catalogResource = resourceSet.getResource(publicCatalogURI, false);
+        require(catalogResource != null && catalogResource.isLoaded() && catalogResource.getErrors().isEmpty(),
+                "Official Github catalog did not load: " + (catalogResource == null ? "missing" : catalogResource.getErrors()));
+        require(catalogResource.getContents().size() == 1
+                && catalogResource.getContents().get(0) instanceof ProjectCatalog,
+                "Official Github catalog is not an Oomph ProjectCatalog");
+        ProjectCatalog catalog = (ProjectCatalog) catalogResource.getContents().get(0);
+        require("com.github".equals(catalog.getName()), "Wrong Github catalog: " + catalog.getName());
+
+        // Resolve the actual entry from the official catalog, never a
+        // synthetic catalog or an unverified local project file.
+        Project sandbox = null;
+        for (Project candidate : catalog.getProjects()) {
+            if (ENTRY.equals(EcoreUtil.getURI(candidate).trimFragment().toString())) {
+                sandbox = candidate;
+                break;
+            }
+        }
+        require(sandbox != null, "Sandbox is no longer listed in the official Github catalog");
+        require(!sandbox.eIsProxy(), "Sandbox remains an unresolved catalog proxy");
+        require("sandbox".equals(sandbox.getName()), "Unexpected Sandbox project identity");
+        require(sandbox.getStreams().stream().anyMatch(stream -> "main".equals(stream.getName())),
+                "Public Sandbox project has no Main stream");
+        Resource sandboxResource = sandbox.eResource();
+        require(sandboxResource != null && sandboxResource.isLoaded() && sandboxResource.getErrors().isEmpty(),
+                "Public Sandbox resource has load errors: " + (sandboxResource == null ? "missing" : sandboxResource.getErrors()));
+
+        Set<String> present = setupTaskIDs(sandboxResource);
+        require(present.containsAll(ESSENTIAL_TASKS),
+                "Public catalog discarded Sandbox extension tasks: " + present);
+        System.out.println("OOMPH_PUBLIC_CATALOG_MIRROR_VERIFIED: " + PUBLIC_CATALOG
+                + " -> " + ENTRY + " essentialTasks=" + present);
+    }
+
+
+    /**
+     * Render the real Oomph ProjectPage in the disposable SWT workbench.
+     * This is the exact page implementation shared by the Eclipse Installer
+     * and the Oomph project importer, not a cloned or mocked tree:
+     * SetupWizard.loadIndex(), ResourceMirror, CatalogManager and the
+     * ProjectPage JFace content provider all run. The stand-alone Installer
+     * product itself has a different release cadence and is not loaded here.
+     *
+     * Use a nonblocking WizardDialog so that the real SWT event loop keeps
+     * processing index downloads and lazy tree expansion. Never click Finish
+     * or install a second workspace.
+     */
+    private static void verifyProjectPageTree(Path run) throws Exception {
+        Display display = PlatformUI.getWorkbench().getDisplay();
+        CompletableFuture<String> verified = new CompletableFuture<>();
+        AtomicReference<SetupWizardDialog> dialogRef = new AtomicReference<>();
+        AtomicReference<String> state = new AtomicReference<>("project importer not opened");
+        long deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(3);
+
+        display.asyncExec(() -> {
+            try {
+                Shell owner = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+                SetupWizard.Importer importer = new SetupWizard.Importer();
+                SetupWizardDialog dialog = new SetupWizardDialog(owner, importer);
+                dialog.setBlockOnOpen(false);
+                dialog.open();
+                dialogRef.set(dialog);
+                display.timerExec(250, new Runnable() {
+                    private boolean projectPageShown;
+                    private boolean sandboxSelected;
+
+                    @Override
+                    public void run() {
+                        if (verified.isDone()) {
+                            return;
+                        }
+                        try {
+                            if (System.nanoTime() > deadline) {
+                                verified.completeExceptionally(new AssertionError(
+                                        "Oomph ProjectPage UI timed out: " + state.get()));
+                                return;
+                            }
+                            if (dialog.getShell() == null || dialog.getShell().isDisposed()) {
+                                verified.completeExceptionally(new AssertionError("Project importer closed before catalog verification"));
+                                return;
+                            }
+
+                            if (importer.getCatalogManager().getIndex() == null) {
+                                state.set("waiting for official Oomph index");
+                            } else {
+                                IWizardPage page = importer.getPage("ProjectPage");
+                                require(page instanceof ProjectPage, "Real Oomph ProjectPage is missing");
+                                if (!projectPageShown) {
+                                    // This is the same ProjectPage used in the Installer,
+                                    // with its JFace content provider and selected catalog model.
+                                    dialog.showPage(page);
+                                    projectPageShown = true;
+                                }
+                                Tree tree = findCatalogTree(page.getControl());
+                                if (tree == null || tree.isDisposed()) {
+                                    state.set("waiting for ProjectPage tree");
+                                } else {
+                                    TreeItem github = findItem(tree.getItems(), "Github Projects");
+                                    if (github == null) {
+                                        state.set("Github Projects not visible; roots=" + labels(tree.getItems()));
+                                    } else {
+                                        expandItem(tree, github);
+                                        TreeItem sandbox = findItem(github.getItems(), "Sandbox Project");
+                                        if (sandbox == null) {
+                                            state.set("Sandbox Project missing; catalog children=" + labels(github.getItems()));
+                                        } else {
+                                            // The Oomph ProjectPage tree lists projects,
+                                            // not streams. It shows the selected stream in
+                                            // the *separate table* after adding a project.
+                                            Resource publicProject = importer.getResourceSet()
+                                                    .getResource(URI.createURI(ENTRY), false);
+                                            require(publicProject != null && publicProject.isLoaded()
+                                                    && publicProject.getErrors().isEmpty(),
+                                                    "Oomph ProjectPage has load errors: "
+                                                    + (publicProject == null ? "missing" : publicProject.getErrors()));
+                                            require(setupTaskIDs(publicProject).containsAll(ESSENTIAL_TASKS),
+                                                    "ProjectPage lost Sandbox extension tasks");
+                                            Table streamTable = findStreamTable(page.getControl());
+                                            if (streamTable == null || streamTable.isDisposed()) {
+                                                state.set("ProjectPage stream table is missing");
+                                            } else if (containsSandboxMain(streamTable)) {
+                                                captureProjectPageScreenshot(dialog.getShell(),
+                                                        run.resolve("oomph-project-catalog.png"));
+                                                verified.complete("Github Projects / Sandbox Project; stream table: Main");
+                                            } else if (!sandboxSelected) {
+                                                tree.setSelection(sandbox);
+                                                Event selection = new Event();
+                                                selection.item = sandbox;
+                                                tree.notifyListeners(SWT.Selection, selection);
+                                                ToolItem add = findProjectAction(page.getControl(), "choose");
+                                                if (add == null) {
+                                                    state.set("ProjectPage Add button not found");
+                                                } else if (!add.isEnabled()) {
+                                                    state.set("Sandbox selection did not enable Add");
+                                                } else {
+                                                    Event click = new Event();
+                                                    click.item = add;
+                                                    add.notifyListeners(SWT.Selection, click);
+                                                    sandboxSelected = true;
+                                                    state.set("waiting for selected Main stream table entry");
+                                                }
+                                            } else {
+                                                state.set("Main not visible in stream table: " + tableContents(streamTable));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Throwable t) {
+                            verified.completeExceptionally(t);
+                        }
+                        if (!verified.isDone()) {
+                            display.timerExec(250, this);
+                        }
+                    }
+                });
+            } catch (Throwable t) {
+                verified.completeExceptionally(t);
+            }
+        });
+        try {
+            String path = verified.get(4, TimeUnit.MINUTES);
+            System.out.println("OOMPH_PROJECT_PAGE_TREE_VERIFIED: " + path
+                    + " (real Oomph ProjectPage / Importer wizard)");
+        } finally {
+            display.syncExec(() -> {
+                SetupWizardDialog dialog = dialogRef.get();
+                if (dialog != null && dialog.getShell() != null && !dialog.getShell().isDisposed()) {
+                    dialog.close();
+                }
+            });
+        }
+    }
+
+    private static Tree findCatalogTree(Control control) {
+        if (control instanceof Tree tree) {
+            return tree;
+        }
+        if (control instanceof Composite composite) {
+            for (Control child : composite.getChildren()) {
+                Tree found = findCatalogTree(child);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static Table findStreamTable(Control control) {
+        if (control instanceof Table table) {
+            return table;
+        }
+        if (control instanceof Composite composite) {
+            for (Control child : composite.getChildren()) {
+                Table found = findStreamTable(child);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean containsSandboxMain(Table table) {
+        for (var item : table.getItems()) {
+            if ("Sandbox Project".equals(item.getText(1)) && "Main".equals(item.getText(2))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String tableContents(Table table) {
+        return Arrays.stream(table.getItems())
+                .map(item -> item.getText(0) + " / " + item.getText(1) + " / " + item.getText(2))
+                .collect(Collectors.joining("; "));
+    }
+
+    private static ToolItem findProjectAction(Control control, String key) {
+        if (control instanceof ToolBar bar) {
+            for (ToolItem item : bar.getItems()) {
+                if (key.equals(item.getData("org.eclipse.swtbot.widget.key"))) {
+                    return item;
+                }
+            }
+        }
+        if (control instanceof Composite composite) {
+            for (Control child : composite.getChildren()) {
+                ToolItem found = findProjectAction(child, key);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static TreeItem findItem(TreeItem[] items, String text) {
+        for (TreeItem item : items) {
+            if (text.equals(item.getText())) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private static String labels(TreeItem[] items) {
+        return Arrays.stream(items).map(TreeItem::getText).collect(Collectors.joining(", "));
+    }
+
+    private static void expandItem(Tree tree, TreeItem item) {
+        if (!item.getExpanded()) {
+            item.setExpanded(true);
+            Event event = new Event();
+            event.item = item;
+            tree.notifyListeners(SWT.Expand, event);
+        }
+    }
+
+    private static void captureProjectPageScreenshot(Shell shell, Path path) throws Exception {
+        var area = shell.getClientArea();
+        require(area.width > 0 && area.height > 0, "ProjectPage screenshot has no visible client area");
+        Image image = new Image(shell.getDisplay(), area.width, area.height);
+        try {
+            GC gc = new GC(shell);
+            try {
+                gc.copyArea(image, 0, 0);
+            } finally {
+                gc.dispose();
+            }
+            ImageLoader loader = new ImageLoader();
+            loader.data = new org.eclipse.swt.graphics.ImageData[] { image.getImageData() };
+            loader.save(path.toString(), SWT.IMAGE_PNG);
+            require(Files.isRegularFile(path) && Files.size(path) > 0,
+                    "Oomph ProjectPage screenshot was not saved: " + path);
+        } finally {
+            image.dispose();
+        }
+    }
+
+    private static Set<String> setupTaskIDs(Resource resource) {
+        Set<String> result = new TreeSet<>();
+        var it = EcoreUtil.<EObject>getAllContents(resource, false);
+        while (it.hasNext()) {
+            EObject object = it.next();
+            // Extension model classes may be dynamically loaded EObjects,
+            // not Java SetupTask instances. Oomph serializes iD as XML "id".
+            var idFeature = object.eClass().getEStructuralFeature("iD");
+            if (idFeature != null && object.eGet(idFeature) instanceof String id && !id.isBlank()) {
+                result.add(id);
+            }
+        }
+        return result;
+    }
+
+    /** An old setup without xsi:schemaLocation must actually fail cold loading. */
+    private static void verifyBrokenCatalogFails(Path root) throws Exception {
+        String original = Files.readString(root.resolve("sandbox_oomph/sandboxproject.setup"));
+        String broken = original.replaceFirst("(?s)\\s+xsi:schemaLocation=\"[^\"]*\"", "");
+        require(!broken.equals(original), "The positive fixture must declare extension schemas");
+
+        ResourceSet isolated = createCoreOnlyResourceSet();
+        Resource brokenResource = isolated.createResource(URI.createURI(ENTRY));
+        boolean rejected;
+        try {
+            brokenResource.load(new ByteArrayInputStream(broken.getBytes(StandardCharsets.UTF_8)),
+                    isolated.getLoadOptions());
+            rejected = !brokenResource.getErrors().isEmpty()
+                    || !setupTaskIDs(brokenResource).containsAll(ESSENTIAL_TASKS);
+        } catch (Exception ex) {
+            rejected = true;
+        }
+        require(rejected, "Regressed pre-fix catalog unexpectedly passed the cold-model test");
+        System.out.println("OOMPH_PRE_FIX_REGRESSION_REJECTED");
+    }
+
+    private static ResourceSet createCoreOnlyResourceSet() {
+        ResourceSet isolated = new ResourceSetImpl();
+        EPackageRegistryImpl coreOnly = new EPackageRegistryImpl();
+        coreOnly.put(EcorePackage.eNS_URI, EcorePackage.eINSTANCE);
+        coreOnly.put(BasePackage.eNS_URI, BasePackage.eINSTANCE);
+        coreOnly.put(SetupPackage.eNS_URI, SetupPackage.eINSTANCE);
+        coreOnly.put(SetupP2Package.eNS_URI, SetupP2Package.eINSTANCE);
+        isolated.setPackageRegistry(coreOnly);
+        SetupCoreUtil.configureResourceSet(isolated);
+        return isolated;
+    }
+
     private void verify() throws Exception {
         Path root = Path.of(System.getProperty("sandbox.oomph.root"));
         Path run = root.resolve("sandbox_oomph/target/oomph-runtime");
@@ -233,6 +629,10 @@ public class SetupProbe implements IApplication {
             @Override public void setTaskName(String name) { subTask(name); }
         };
         verifyColdCatalogLoad(root);
+        if (!update && attempt == 0) {
+            verifyPublicCatalogMirror();
+            verifyProjectPageTree(run);
+        }
         ResourceSet rs = SetupCoreUtil.createResourceSet();
         System.out.println("Loading and validating the official catalog and candidate models");
         rs.getURIConverter().getURIMap().put(URI.createURI(ENTRY),
