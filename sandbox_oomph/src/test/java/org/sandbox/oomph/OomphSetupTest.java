@@ -132,13 +132,17 @@ class OomphSetupTest {
         }
         List<String> units = new ArrayList<>(List.of("org.eclipse.oomph.setup.sdk.feature.group",
                 "org.eclipse.oomph.setup.maven.feature.group",
-                "org.eclipse.oomph.setup.installer.feature.group"));
+                "org.eclipse.oomph.setup.installer"));
         var project = xml(module.resolve("sandboxproject.setup"));
         var requirements = project.getElementsByTagName("requirement");
         for (int i = 0; i < requirements.getLength(); i++) {
             units.add(((Element) requirements.item(i)).getAttribute("name"));
         }
-        List<String> repositories = new ArrayList<>(List.of("https://download.eclipse.org/oomph/updates/release/latest/"));
+        // The standalone Installer plug-in is published with the official
+        // Installer product, not as a feature in the Oomph SDK update site.
+        List<String> repositories = new ArrayList<>(List.of(
+                "https://download.eclipse.org/oomph/updates/release/latest/",
+                "https://download.eclipse.org/oomph/products/repository"));
         var locations = project.getElementsByTagName("repository");
         for (int i = 0; i < locations.getLength(); i++) {
             repositories.add(((Element) locations.item(i)).getAttribute("url"));
