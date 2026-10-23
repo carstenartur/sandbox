@@ -90,6 +90,8 @@ class OomphTargetBootstrapTest {
         }
         assertNotNull(languageServer,
                 "A module-local Maven repository cannot supply the active Oomph/PDE target");
+        assertEquals("false", languageServer.getAttribute("includeSource"),
+                "Optional JDT LS dependencies include Maven IUs without published source archives");
         Set<String> units = new HashSet<>();
         var nodes = languageServer.getElementsByTagName("unit");
         for (int index = 0; index < nodes.getLength(); index++) {
