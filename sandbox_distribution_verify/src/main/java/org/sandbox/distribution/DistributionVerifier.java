@@ -453,7 +453,11 @@ public final class DistributionVerifier {
 
         List<String> repositories = new ArrayList<>();
         repositories.add(root.resolve("sandbox_updatesite/target/repository").toUri().toString());
-        repositories.addAll(model.targetRepositories());
+        // The optional JDT LS repository is needed to compile the adapter,
+        // but is not a release repository for the stock Sandbox IDE. Mixing
+        // its independently versioned launcher IUs with the pinned Eclipse
+        // 2026-09 SDK makes a fresh p2 installation inconsistent.
+        repositories.addAll(stockDistributionRepositories(model.targetRepositories()));
 
         Path installLog = evidence.resolve("fresh-install.log");
         ProcessResult install = run(
@@ -799,6 +803,18 @@ public final class DistributionVerifier {
 
     static List<String> targetRepositories(Path targetFile) throws Exception {
         return targetRepositories(parseXml(targetFile));
+    }
+
+    /**
+     * JDT LS follows its own release cadence. The language-server bundle is
+     * an optional consumer integration, not part of the stock IDE runtime.
+     * Exclude its p2 catalog when verifying installability of that runtime,
+     * while retaining it in the compiler's target platform.
+     */
+    static List<String> stockDistributionRepositories(List<String> targetRepositories) {
+        return targetRepositories.stream()
+                .filter(repository -> !repository.startsWith("https://download.eclipse.org/jdtls/"))
+                .toList();
     }
 
     private static List<String> targetRepositories(Document target) {
