@@ -293,7 +293,7 @@ public class SetupProbe implements IApplication {
     /** An old setup without xsi:schemaLocation must actually fail cold loading. */
     private static void verifyBrokenCatalogFails(Path root) throws Exception {
         String original = Files.readString(root.resolve("sandbox_oomph/sandboxproject.setup"));
-        String broken = original.replaceFirst("(?s)\\\\s+xsi:schemaLocation=\\\"[^\\\"]*\\\"", "");
+        String broken = original.replaceFirst("(?s)\\s+xsi:schemaLocation=\"[^\"]*\"", "");
         require(!broken.equals(original), "The positive fixture must declare extension schemas");
 
         ResourceSet isolated = createCoreOnlyResourceSet();
