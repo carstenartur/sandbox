@@ -117,6 +117,20 @@ public class SetupProbe implements IApplication {
     @Override
     public Object start(IApplicationContext applicationContext) {
         Display display = PlatformUI.createDisplay();
+        // Eclipse PDE 4.41 computes many classpaths in parallel after the
+        // target-platform switch. A non-in-use OSGi wiring can yield null
+        // from getRequiredWires(namespace), causing a PDE Classpath Update
+        // NullPointerException before the workspace jobs have settled.
+        // Use PDE's supported preference in this disposable acceptance
+        // workspace; production user settings remain untouched.
+        var pdePreferences = org.eclipse.pde.internal.core.PDECore.getDefault().getPreferencesManager();
+        pdePreferences.setValue(
+                org.eclipse.pde.internal.core.ICoreConstants.UPDATE_CLASSPATH_IN_PARALLEL, false);
+        pdePreferences.savePluginPreferences();
+        require(!pdePreferences.getBoolean(
+                org.eclipse.pde.internal.core.ICoreConstants.UPDATE_CLASSPATH_IN_PARALLEL),
+                "Acceptance runtime must update PDE classpaths sequentially");
+        System.out.println("OOMPH_PDE_CLASSPATH_SEQUENTIAL_FOR_ACCEPTANCE");
         org.eclipse.core.runtime.ILogListener indexDiagnostic = this::captureIndexFailure;
         org.eclipse.core.runtime.Platform.addLogListener(indexDiagnostic);
         try {
