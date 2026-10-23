@@ -1,7 +1,9 @@
 /* SPDX-License-Identifier: EPL-2.0 */
 package org.sandbox.oomph.probe;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
@@ -50,6 +52,7 @@ import org.eclipse.oomph.internal.setup.SetupPrompter;
 import org.eclipse.oomph.base.BasePackage;
 import org.eclipse.oomph.p2.core.P2Util;
 import org.eclipse.oomph.setup.Configuration;
+import org.eclipse.oomph.setup.Index;
 import org.eclipse.oomph.setup.ProductVersion;
 import org.eclipse.oomph.setup.Project;
 import org.eclipse.oomph.setup.ProjectCatalog;
@@ -63,6 +66,7 @@ import org.eclipse.oomph.setup.git.GitCloneTask;
 import org.eclipse.oomph.setup.internal.core.SetupContext;
 import org.eclipse.oomph.setup.internal.core.SetupTaskPerformer;
 import org.eclipse.oomph.setup.internal.core.util.SetupCoreUtil;
+import org.eclipse.oomph.setup.internal.core.util.ResourceMirror;
 import org.eclipse.oomph.setup.log.ProgressLog;
 import org.eclipse.oomph.setup.p2.SetupP2Package;
 import org.eclipse.oomph.ui.UICallback;
@@ -83,6 +87,10 @@ import org.osgi.framework.FrameworkUtil;
 public class SetupProbe implements IApplication {
     private static final String ENTRY = "https://raw.githubusercontent.com/carstenartur/sandbox/main/"
             + "sandbox_oomph/sandboxproject.setup";
+    private static final String PUBLIC_CATALOG =
+            "https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/com.github.projects.setup";
+    private static final Set<String> ESSENTIAL_TASKS =
+            Set.of("git.clone.sandbox", "sandbox.target", "sandbox.maven", "sandbox.projects");
     private volatile Throwable failure;
     private volatile String activeSetupTask = "workbench startup";
 
@@ -168,15 +176,10 @@ public class SetupProbe implements IApplication {
      * because its extension packages are already registered by the IDE.
      */
     private static void verifyColdCatalogLoad(Path root) throws Exception {
-        ResourceSet isolated = new ResourceSetImpl();
-        EPackageRegistryImpl coreOnly = new EPackageRegistryImpl();
+        verifyBrokenCatalogFails(root);
+        ResourceSet isolated = createCoreOnlyResourceSet();
+        EPackageRegistryImpl coreOnly = (EPackageRegistryImpl) isolated.getPackageRegistry();
         // This registry does NOT delegate to the running IDE's global registry.
-        coreOnly.put(EcorePackage.eNS_URI, EcorePackage.eINSTANCE);
-        coreOnly.put(BasePackage.eNS_URI, BasePackage.eINSTANCE);
-        coreOnly.put(SetupPackage.eNS_URI, SetupPackage.eINSTANCE);
-        coreOnly.put(SetupP2Package.eNS_URI, SetupP2Package.eINSTANCE);
-        isolated.setPackageRegistry(coreOnly);
-        SetupCoreUtil.configureResourceSet(isolated);
         URI entry = URI.createURI(ENTRY);
         isolated.getURIConverter().getURIMap().put(entry,
                 URI.createFileURI(root.resolve("sandbox_oomph/sandboxproject.setup").toString()));
@@ -198,7 +201,7 @@ public class SetupProbe implements IApplication {
         require("sandbox".equals(project.getName()) && project.getStreams().stream()
                 .anyMatch(stream -> "main".equals(stream.getName())), "Cold catalog lost its public identity");
 
-        Set<String> expected = Set.of("git.clone.sandbox", "sandbox.target", "sandbox.maven", "sandbox.projects");
+        Set<String> expected = ESSENTIAL_TASKS;
         Set<String> present = new TreeSet<>();
         var objects = EcoreUtil.getAllContents(loaded, false);
         while (objects.hasNext()) {
@@ -217,6 +220,109 @@ public class SetupProbe implements IApplication {
                 + " resolved through the public setup model");
     }
 
+
+    /**
+     * Exercise the same ResourceMirror and ProxyResolver used by
+     * SetupWizard.IndexLoader. Nothing maps the public Github catalog or
+     * Sandbox project URI onto a local test file: both must resolve online.
+     * An unrelated broken Github project must not invalidate Sandbox.
+     */
+    private static void verifyPublicCatalogMirror() {
+        ResourceSet resourceSet = SetupCoreUtil.createResourceSet();
+        URI publicCatalogURI = URI.createURI(PUBLIC_CATALOG);
+        URI sandboxURI = URI.createURI(ENTRY);
+        require(!resourceSet.getURIConverter().getURIMap().containsKey(publicCatalogURI),
+                "Public catalog must not be redirected to a fixture");
+        require(!resourceSet.getURIConverter().getURIMap().containsKey(sandboxURI),
+                "Sandbox must not be redirected to a fixture");
+
+        ResourceMirror.WithProductImages mirror = new ResourceMirror.WithProductImages(resourceSet, 4) {
+            @Override
+            protected void run(String taskName, org.eclipse.core.runtime.IProgressMonitor monitor) {
+                perform(List.of(publicCatalogURI));
+                resolveProxies();
+            }
+        };
+        mirror.begin(new NullProgressMonitor());
+        Resource catalogResource = resourceSet.getResource(publicCatalogURI, false);
+        require(catalogResource != null && catalogResource.isLoaded() && catalogResource.getErrors().isEmpty(),
+                "Official Github catalog did not load: " + (catalogResource == null ? "missing" : catalogResource.getErrors()));
+        require(catalogResource.getContents().size() == 1
+                && catalogResource.getContents().get(0) instanceof ProjectCatalog,
+                "Official Github catalog is not an Oomph ProjectCatalog");
+        ProjectCatalog catalog = (ProjectCatalog) catalogResource.getContents().get(0);
+        require("com.github".equals(catalog.getName()), "Wrong Github catalog: " + catalog.getName());
+
+        // Resolve the actual entry from the official catalog, never a
+        // synthetic catalog or an unverified local project file.
+        Project sandbox = null;
+        for (Project candidate : catalog.getProjects()) {
+            if (ENTRY.equals(EcoreUtil.getURI(candidate).trimFragment().toString())) {
+                sandbox = candidate;
+                break;
+            }
+        }
+        require(sandbox != null, "Sandbox is no longer listed in the official Github catalog");
+        require(!sandbox.eIsProxy(), "Sandbox remains an unresolved catalog proxy");
+        require("sandbox".equals(sandbox.getName()), "Unexpected Sandbox project identity");
+        require(sandbox.getStreams().stream().anyMatch(stream -> "main".equals(stream.getName())),
+                "Public Sandbox project has no Main stream");
+        Resource sandboxResource = sandbox.eResource();
+        require(sandboxResource != null && sandboxResource.isLoaded() && sandboxResource.getErrors().isEmpty(),
+                "Public Sandbox resource has load errors: " + (sandboxResource == null ? "missing" : sandboxResource.getErrors()));
+
+        Set<String> present = setupTaskIDs(sandboxResource);
+        require(present.containsAll(ESSENTIAL_TASKS),
+                "Public catalog discarded Sandbox extension tasks: " + present);
+        System.out.println("OOMPH_PUBLIC_CATALOG_MIRROR_VERIFIED: " + PUBLIC_CATALOG
+                + " -> " + ENTRY + " essentialTasks=" + present);
+    }
+
+    private static Set<String> setupTaskIDs(Resource resource) {
+        Set<String> result = new TreeSet<>();
+        var it = EcoreUtil.<EObject>getAllContents(resource, false);
+        while (it.hasNext()) {
+            EObject object = it.next();
+            if (object instanceof SetupTask task && task.getID() != null) {
+                result.add(task.getID());
+            }
+        }
+        return result;
+    }
+
+    /** An old setup without xsi:schemaLocation must actually fail cold loading. */
+    private static void verifyBrokenCatalogFails(Path root) throws Exception {
+        String original = Files.readString(root.resolve("sandbox_oomph/sandboxproject.setup"));
+        String broken = original.replaceFirst("(?s)\\\\s+xsi:schemaLocation=\\\"[^\\\"]*\\\"", "");
+        require(!broken.equals(original), "The positive fixture must declare extension schemas");
+
+        ResourceSet isolated = createCoreOnlyResourceSet();
+        Resource brokenResource = isolated.createResource(URI.createURI(ENTRY));
+        boolean rejected;
+        try {
+            brokenResource.load(new ByteArrayInputStream(broken.getBytes(StandardCharsets.UTF_8)),
+                    isolated.getLoadOptions());
+            rejected = !brokenResource.getErrors().isEmpty()
+                    || !setupTaskIDs(brokenResource).containsAll(ESSENTIAL_TASKS);
+        } catch (Exception ex) {
+            rejected = true;
+        }
+        require(rejected, "Regressed pre-fix catalog unexpectedly passed the cold-model test");
+        System.out.println("OOMPH_PRE_FIX_REGRESSION_REJECTED");
+    }
+
+    private static ResourceSet createCoreOnlyResourceSet() {
+        ResourceSet isolated = new ResourceSetImpl();
+        EPackageRegistryImpl coreOnly = new EPackageRegistryImpl();
+        coreOnly.put(EcorePackage.eNS_URI, EcorePackage.eINSTANCE);
+        coreOnly.put(BasePackage.eNS_URI, BasePackage.eINSTANCE);
+        coreOnly.put(SetupPackage.eNS_URI, SetupPackage.eINSTANCE);
+        coreOnly.put(SetupP2Package.eNS_URI, SetupP2Package.eINSTANCE);
+        isolated.setPackageRegistry(coreOnly);
+        SetupCoreUtil.configureResourceSet(isolated);
+        return isolated;
+    }
+
     private void verify() throws Exception {
         Path root = Path.of(System.getProperty("sandbox.oomph.root"));
         Path run = root.resolve("sandbox_oomph/target/oomph-runtime");
@@ -233,6 +339,9 @@ public class SetupProbe implements IApplication {
             @Override public void setTaskName(String name) { subTask(name); }
         };
         verifyColdCatalogLoad(root);
+        if (!update && attempt == 0) {
+            verifyPublicCatalogMirror();
+        }
         ResourceSet rs = SetupCoreUtil.createResourceSet();
         System.out.println("Loading and validating the official catalog and candidate models");
         rs.getURIConverter().getURIMap().put(URI.createURI(ENTRY),
