@@ -98,6 +98,37 @@
 				</executions>
 			</plugin>
 			
+			<!-- m2e imports this plain Maven module before the Bnd process-classes
+			     execution has generated target/classes/META-INF/MANIFEST.MF.
+			     Seed the output with the checked-in OSGi manifest during
+			     generate-resources; Bnd still replaces it with the final manifest
+			     during an ordinary Maven build. Without the seed, m2e can attempt
+			     to touch a non-existent generated manifest and abort workspace setup. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<executions>
+					<execution>
+						<id>seed-osgi-manifest-before-bnd</id>
+						<phase>generate-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/META-INF</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/META-INF</directory>
+									<includes><include>MANIFEST.MF</include></includes>
+									<filtering>false</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
 			<!-- OSGi Bundle Generation -->
 			<plugin>
 				<groupId>biz.aQute.bnd</groupId>
