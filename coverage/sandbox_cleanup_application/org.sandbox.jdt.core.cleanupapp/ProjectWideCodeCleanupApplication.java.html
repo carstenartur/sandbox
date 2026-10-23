@@ -157,10 +157,10 @@ import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 <span class="nc" id="L157">				statusMessages.add(entry.getMessage());</span>
 			}
 <span class="fc bfc" id="L159" title="All 2 branches covered.">			for (ICleanUp cleanUp : cleanUps) {</span>
-<span class="pc bpc" id="L160" title="1 of 2 branches missed.">				if (cleanUp instanceof IMultiFileCleanUpDiagnosticsProvider provider) {</span>
-<span class="nc" id="L161">					String json= provider.getLastPlanningDiagnosticsJson(javaProject);</span>
-<span class="nc bnc" id="L162" title="All 4 branches missed.">					if (json != null &amp;&amp; !json.isBlank()) {</span>
-<span class="nc" id="L163">						planningDiagnostics.add(json);</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">				if (cleanUp instanceof IMultiFileCleanUpDiagnosticsProvider provider) {</span>
+<span class="fc" id="L161">					String json= provider.getLastPlanningDiagnosticsJson(javaProject);</span>
+<span class="pc bpc" id="L162" title="1 of 4 branches missed.">					if (json != null &amp;&amp; !json.isBlank()) {</span>
+<span class="fc" id="L163">						planningDiagnostics.add(json);</span>
 					}
 				}
 			}
@@ -490,14 +490,14 @@ import org.sandbox.jdt.triggerpattern.git.UnifiedDiffFormatter;
 <span class="fc" id="L490">		json.append(&quot;  },\n&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L491">		array(json, &quot;refactoringStatus&quot;, statusMessages, 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L492">		json.append(&quot;  \&quot;planningDiagnostics\&quot;: [&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L493" title="1 of 2 branches missed.">		for (int index= 0; index &lt; planningDiagnostics.size(); index++) {</span>
-<span class="nc bnc" id="L494" title="All 2 branches missed.">			if (index &gt; 0) {</span>
+<span class="fc bfc" id="L493" title="All 2 branches covered.">		for (int index= 0; index &lt; planningDiagnostics.size(); index++) {</span>
+<span class="pc bpc" id="L494" title="1 of 2 branches missed.">			if (index &gt; 0) {</span>
 <span class="nc" id="L495">				json.append(',');</span>
 			}
-<span class="nc" id="L497">			json.append('\n').append(&quot;    &quot;).append(planningDiagnostics.get(index)); //$NON-NLS-1$</span>
+<span class="fc" id="L497">			json.append('\n').append(&quot;    &quot;).append(planningDiagnostics.get(index)); //$NON-NLS-1$</span>
 		}
 <span class="pc bpc" id="L499" title="1 of 2 branches missed.">		if (!planningDiagnostics.isEmpty()) {</span>
-<span class="nc" id="L500">			json.append('\n').append(&quot;  &quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L500">			json.append('\n').append(&quot;  &quot;); //$NON-NLS-1$</span>
 		}
 <span class="fc" id="L502">		json.append(&quot;],\n&quot;); //$NON-NLS-1$</span>
 <span class="fc" id="L503">		number(json, &quot;errorCount&quot;, errors.size(), 1).append(&quot;,\n&quot;); //$NON-NLS-1$</span>

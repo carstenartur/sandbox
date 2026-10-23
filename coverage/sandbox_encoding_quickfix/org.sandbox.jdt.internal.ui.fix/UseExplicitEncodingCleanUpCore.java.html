@@ -74,11 +74,11 @@ public class UseExplicitEncodingCleanUpCore extends AbstractCleanUp implements I
 	}
 
 	public boolean requireAST() {
-<span class="pc bpc" id="L77" title="2 of 4 branches missed.">		return isEnabled(EXPLICITENCODING_CLEANUP)&amp;&amp; !computeFixSet().isEmpty();</span>
+<span class="pc bpc" id="L77" title="1 of 4 branches missed.">		return isEnabled(EXPLICITENCODING_CLEANUP)&amp;&amp; !computeFixSet().isEmpty();</span>
 	}
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-<span class="pc bpc" id="L81" title="3 of 6 branches missed.">		if (context.getCompilationUnit() == null || context.getAST() == null || !requireAST()) return null;</span>
+<span class="pc bpc" id="L81" title="2 of 6 branches missed.">		if (context.getCompilationUnit() == null || context.getAST() == null || !requireAST()) return null;</span>
 <span class="fc bfc" id="L82" title="All 2 branches covered.">		if (coordinator.isPrepared(context.getCompilationUnit().getJavaProject())) return coordinator.createFix(context);</span>
 <span class="fc" id="L83">		return createEncodingFix(context, CharsetConstructorMigration.plan(List.of(context.getAST())));</span>
 	}

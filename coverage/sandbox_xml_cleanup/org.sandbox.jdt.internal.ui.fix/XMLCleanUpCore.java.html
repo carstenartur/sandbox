@@ -46,23 +46,23 @@ public class XMLCleanUpCore extends AbstractCleanUp {
 	/**
 	 *
 	 */
-<span class="nc" id="L49">	public XMLCleanUpCore() {</span>
-<span class="nc" id="L50">	}</span>
+<span class="fc" id="L49">	public XMLCleanUpCore() {</span>
+<span class="fc" id="L50">	}</span>
 
 	@Override
 	public CleanUpRequirements getRequirements() {
-<span class="nc" id="L54">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
+<span class="fc" id="L54">		return new CleanUpRequirements(requireAST(), false, false, null);</span>
 	}
 
 	public boolean requireAST() {
-<span class="nc" id="L58">		return isEnabled(XML_CLEANUP);</span>
+<span class="fc" id="L58">		return isEnabled(XML_CLEANUP);</span>
 	}
 
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
-<span class="nc" id="L63">		CompilationUnit compilationUnit= context.getAST();</span>
-<span class="nc bnc" id="L64" title="All 2 branches missed.">		if (compilationUnit == null) {</span>
-<span class="nc" id="L65">			return null;</span>
+<span class="fc" id="L63">		CompilationUnit compilationUnit= context.getAST();</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">		if (compilationUnit == null) {</span>
+<span class="fc" id="L65">			return null;</span>
 		}
 <span class="nc" id="L67">		EnumSet&lt;XMLCleanUpFixCore&gt; computeFixSet= computeFixSet();</span>
 <span class="nc bnc" id="L68" title="All 4 branches missed.">		if (!isEnabled(XML_CLEANUP) || computeFixSet.isEmpty()</span>
@@ -88,13 +88,13 @@ public class XMLCleanUpCore extends AbstractCleanUp {
 
 	@Override
 	public String[] getStepDescriptions() {
-<span class="nc" id="L91">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="nc bnc" id="L92" title="All 2 branches missed.">		if (isEnabled(XML_CLEANUP)) {</span>
+<span class="fc" id="L91">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">		if (isEnabled(XML_CLEANUP)) {</span>
 <span class="nc" id="L93">			result.add(Messages.format(XMLCleanUp_description, new Object[] { String.join(&quot;,&quot;, //$NON-NLS-1$</span>
 <span class="nc" id="L94">					computeFixSet().stream().map(XMLCleanUpFixCore::toString)</span>
 <span class="nc" id="L95">					.collect(Collectors.toList())) }));</span>
 		}
-<span class="nc" id="L97">		return result.toArray(new String[0]);</span>
+<span class="fc" id="L97">		return result.toArray(new String[0]);</span>
 	}
 
 	@Override

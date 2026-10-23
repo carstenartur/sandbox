@@ -67,14 +67,14 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 	}
 
 	public boolean requireAST() {
-<span class="pc bpc" id="L70" title="1 of 4 branches missed.">		return isEnabled(METHOD_REUSE_CLEANUP) || isEnabled(METHOD_REUSE_INLINE_SEQUENCES);</span>
+<span class="fc bfc" id="L70" title="All 4 branches covered.">		return isEnabled(METHOD_REUSE_CLEANUP) || isEnabled(METHOD_REUSE_INLINE_SEQUENCES);</span>
 	}
 
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
 <span class="fc" id="L75">		CompilationUnit compilationUnit= context.getAST();</span>
-<span class="pc bpc" id="L76" title="3 of 6 branches missed.">		if (compilationUnit == null || context.getCompilationUnit() == null || !requireAST()) {</span>
-<span class="nc" id="L77">			return null;</span>
+<span class="pc bpc" id="L76" title="2 of 6 branches missed.">		if (compilationUnit == null || context.getCompilationUnit() == null || !requireAST()) {</span>
+<span class="fc" id="L77">			return null;</span>
 		}
 
 <span class="fc bfc" id="L80" title="All 2 branches covered.">		if (isEnabled(METHOD_REUSE_CLEANUP)) {</span>
@@ -102,8 +102,8 @@ public class MethodReuseCleanUpCore extends AbstractCleanUp {
 	@Override
 	public String[] getStepDescriptions() {
 <span class="fc" id="L104">		List&lt;String&gt; result= new ArrayList&lt;&gt;();</span>
-<span class="pc bpc" id="L105" title="1 of 2 branches missed.">		if (isEnabled(METHOD_REUSE_CLEANUP)) {</span>
-<span class="nc" id="L106">			result.add(&quot;Extract repeated sequences of at least &quot; + getMinimumStatements() //$NON-NLS-1$</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">		if (isEnabled(METHOD_REUSE_CLEANUP)) {</span>
+<span class="fc" id="L106">			result.add(&quot;Extract repeated sequences of at least &quot; + getMinimumStatements() //$NON-NLS-1$</span>
 					+ &quot; statements and replace every JDT-validated duplicate with a call&quot;); //$NON-NLS-1$
 		}
 <span class="pc bpc" id="L109" title="1 of 2 branches missed.">		if (isEnabled(METHOD_REUSE_INLINE_SEQUENCES)) {</span>

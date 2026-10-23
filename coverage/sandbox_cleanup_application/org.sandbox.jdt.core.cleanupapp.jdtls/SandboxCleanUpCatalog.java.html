@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SandboxCleanUpCatalog.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_cleanup_application</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.core.cleanupapp.jdtls</a> &gt; <span class="el_source">SandboxCleanUpCatalog.java</span></div><h1>SandboxCleanUpCatalog.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">/*******************************************************************************</span>
+ * Copyright (c) 2026 Carsten Hammer.
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License 2.0 which is available at
+ * https://www.eclipse.org/legal/epl-2.0/
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.core.cleanupapp.jdtls;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.jdt.internal.ui.fix.MapCleanUpOptions;
+import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
+import org.eclipse.jdt.ui.cleanup.ICleanUp;
+import org.eclipse.jdt.ui.cleanup.ICleanUpOptionsInitializer;
+
+/** Reads the existing registrations; it does not maintain a second cleanup registry. */
+<span class="fc" id="L26">final class SandboxCleanUpCatalog {</span>
+    private static final String EXTENSION = &quot;org.eclipse.jdt.ui.cleanUps&quot;; //$NON-NLS-1$
+    // Qualification is per registration, never inherited by a new contribution
+    // merely because it is installed in an already-known bundle.
+    private record Contribution(String bundle, String id, String implementation) {}
+
+<span class="fc" id="L32">    private static final Set&lt;Contribution&gt; READ_ONLY_CLEANUPS = Set.of(</span>
+<span class="fc" id="L33">            new Contribution(&quot;sandbox_container_cleanup&quot;, &quot;org.sandbox.jdt.ui.cleanup.container_contracts&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L34">                    &quot;org.sandbox.jdt.container.cleanup.internal.ui.fix.ContainerCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L35">            new Contribution(&quot;sandbox_container_cleanup&quot;, &quot;org.sandbox.jdt.ui.cleanup.container_contracts.closed_source_parameter_migration&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L36">                    &quot;org.sandbox.jdt.container.cleanup.internal.ui.fix.CoordinatedContainerCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L37">            new Contribution(&quot;sandbox_encoding_quickfix&quot;, &quot;org.eclipse.jdt.ui.cleanup.explicitencoding&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L38">                    &quot;org.sandbox.jdt.internal.ui.fix.UseExplicitEncodingCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L39">            new Contribution(&quot;sandbox_functional_converter&quot;, &quot;org.eclipse.jdt.ui.cleanup.functionalcleanup&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L40">                    &quot;org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L41">            new Contribution(&quot;sandbox_int_to_enum&quot;, &quot;org.eclipse.jdt.ui.cleanup.int_to_enum&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L42">                    &quot;org.sandbox.jdt.internal.ui.fix.IntToEnumCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L43">            new Contribution(&quot;sandbox_jface_cleanup&quot;, &quot;org.eclipse.jdt.ui.cleanup.jfacecleanup&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L44">                    &quot;org.sandbox.jdt.internal.ui.fix.JFaceCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L45">            new Contribution(&quot;sandbox_junit_cleanup&quot;, &quot;org.eclipse.jdt.ui.cleanup.junitcleanup&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L46">                    &quot;org.sandbox.jdt.internal.ui.fix.JUnitCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L47">            new Contribution(&quot;sandbox_math_cleanup&quot;, &quot;org.sandbox.jdt.ui.cleanup.mathematics&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L48">                    &quot;org.sandbox.jdt.internal.ui.fix.MathematicalCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L49">            new Contribution(&quot;sandbox_method_reuse&quot;, &quot;org.eclipse.jdt.ui.cleanup.methodreuse&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L50">                    &quot;org.sandbox.jdt.internal.ui.fix.MethodReuseCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L51">            new Contribution(&quot;sandbox_platform_helper&quot;, &quot;org.eclipse.jdt.ui.cleanup.simplifystatus&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L52">                    &quot;org.sandbox.jdt.internal.ui.fix.SimplifyPlatformStatusCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L53">            new Contribution(&quot;sandbox_triggerpattern&quot;, &quot;org.eclipse.jdt.ui.cleanup.stringsimplification&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L54">                    &quot;org.sandbox.jdt.internal.ui.fix.StringSimplificationCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L55">            new Contribution(&quot;sandbox_triggerpattern&quot;, &quot;org.eclipse.jdt.ui.cleanup.threading&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L56">                    &quot;org.sandbox.jdt.internal.ui.fix.ThreadingCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L57">            new Contribution(&quot;sandbox_triggerpattern&quot;, &quot;org.eclipse.jdt.ui.cleanup.shift_out_of_range&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L58">                    &quot;org.sandbox.jdt.internal.ui.fix.ShiftOutOfRangeCleanUp&quot;), //$NON-NLS-1$</span>
+<span class="fc" id="L59">            new Contribution(&quot;sandbox_use_general_type&quot;, &quot;org.eclipse.jdt.ui.cleanup.use_general_type&quot;, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L60">                    &quot;org.sandbox.jdt.internal.ui.fix.UseGeneralTypeCleanUp&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L61">            );</span>
+
+    record Entry(String id, String bundle, Map&lt;String, String&gt; defaults, boolean available, String reason) {
+<span class="fc" id="L64">        Entry { defaults = Map.copyOf(defaults); }</span>
+    }
+
+    List&lt;Entry&gt; list() throws CoreException {
+<span class="fc" id="L68">        var result = new ArrayList&lt;Entry&gt;();</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        for (var element : registrations()) result.add(describe(element));</span>
+<span class="fc" id="L70">        result.sort(Comparator.comparing(Entry::id));</span>
+<span class="fc" id="L71">        return List.copyOf(result);</span>
+    }
+
+    ICleanUp create(String id, Map&lt;String, String&gt; overrides) throws CoreException {
+<span class="fc" id="L75">        var matches = registrations().stream().filter(e -&gt; id.equals(e.getAttribute(&quot;id&quot;))).toList(); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (matches.size() != 1) throw new IllegalArgumentException(&quot;Unknown or ambiguous Sandbox cleanup: &quot; + id); //$NON-NLS-1$</span>
+<span class="fc" id="L77">        var element = matches.getFirst();</span>
+<span class="fc" id="L78">        var entry = describe(element);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (!entry.available()) throw new IllegalArgumentException(entry.reason());</span>
+<span class="fc" id="L80">        var cleanup = (ICleanUp) element.createExecutableExtension(&quot;class&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L81">        var options = new LinkedHashMap&lt;&gt;(entry.defaults());</span>
+<span class="fc" id="L82">        options.putAll(overrides);</span>
+        // Existing Eclipse cleanups also consume numeric/profile values through
+        // MapCleanUpOptions; boolean-only adapters silently lose those settings.
+<span class="fc" id="L85">        cleanup.setOptions(new MapCleanUpOptions(options));</span>
+<span class="fc" id="L86">        return cleanup;</span>
+    }
+
+    private static List&lt;IConfigurationElement&gt; registrations() {
+<span class="fc" id="L90">        var result = new ArrayList&lt;IConfigurationElement&gt;();</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (var element : Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION)) {</span>
+<span class="fc" id="L92">            String bundle = element.getContributor().getName();</span>
+<span class="fc bfc" id="L93" title="All 4 branches covered.">            if (&quot;cleanUp&quot;.equals(element.getName()) &amp;&amp; bundle.startsWith(&quot;sandbox_&quot;) //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">                    &amp;&amp; !&quot;sandbox_tools&quot;.equals(bundle)) result.add(element); //$NON-NLS-1$</span>
+        }
+<span class="fc" id="L96">        return result;</span>
+    }
+
+    private static Entry describe(IConfigurationElement element) throws CoreException {
+<span class="fc" id="L100">        String bundle = element.getContributor().getName();</span>
+<span class="fc" id="L101">        String id = element.getAttribute(&quot;id&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L102">        String implementation = element.getAttribute(&quot;class&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        if (!READ_ONLY_CLEANUPS.contains(new Contribution(bundle, id, implementation))) {</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            String reason = &quot;sandbox_xml_cleanup&quot;.equals(bundle) //$NON-NLS-1$</span>
+<span class="fc" id="L105">                    ? &quot;XML cleanup writes resources during fix creation and cannot be used as a read-only Java preview.&quot; //$NON-NLS-1$</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">                    : &quot;sandbox_triggerpattern&quot;.equals(bundle) //$NON-NLS-1$</span>
+<span class="fc" id="L107">                            ? &quot;This TriggerPattern contribution is not qualified for a marker-free preview; marker-writing implementations must not run during preview.&quot; //$NON-NLS-1$</span>
+<span class="fc" id="L108">                            : &quot;This contribution identity has not been qualified for read-only Java cleanup previews.&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L109">            return new Entry(id, bundle, Map.of(), false, reason);</span>
+        }
+<span class="fc" id="L111">        var defaults = new CleanUpOptions();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (var initializer : Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION)) {</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">            if (bundle.equals(initializer.getContributor().getName())</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">                    &amp;&amp; &quot;cleanUpOptionsInitializer&quot;.equals(initializer.getName()) //$NON-NLS-1$</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">                    &amp;&amp; &quot;cleanUp&quot;.equals(initializer.getAttribute(&quot;cleanUpKind&quot;))) { //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L116">                ((ICleanUpOptionsInitializer) initializer.createExecutableExtension(&quot;class&quot;)).setDefaultOptions(defaults); //$NON-NLS-1$</span>
+            }
+        }
+<span class="fc" id="L119">        var values = new LinkedHashMap&lt;String, String&gt;();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        for (String key : defaults.getKeys()) values.put(key, defaults.getValue(key));</span>
+<span class="fc" id="L121">        return new Entry(id, bundle, values, true, &quot;&quot;); //$NON-NLS-1$</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -59,8 +59,8 @@ public class SimplifyPlatformStatusCleanUpCore extends AbstractCleanUp {
 	@Override
 	public ICleanUpFix createFix(final CleanUpContext context) throws CoreException {
 <span class="fc" id="L61">		CompilationUnit compilationUnit= context.getAST();</span>
-<span class="pc bpc" id="L62" title="1 of 2 branches missed.">		if (compilationUnit == null) {</span>
-<span class="nc" id="L63">			return null;</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">		if (compilationUnit == null) {</span>
+<span class="fc" id="L63">			return null;</span>
 		}
 <span class="fc" id="L65">		EnumSet&lt;SimplifyPlatformStatusFixCore&gt; computeFixSet= computeFixSet();</span>
 <span class="pc bpc" id="L66" title="2 of 4 branches missed.">		if (!isEnabled(SIMPLIFY_STATUS_CLEANUP) || computeFixSet.isEmpty()</span>

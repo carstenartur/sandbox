@@ -50,7 +50,7 @@ final class CharsetCleanUpCoordinator extends AbstractPlannedMultiFileCleanUp&lt
 
     @Override protected MultiFileCleanUpPlanResult&lt;Run&gt; createPlan(IJavaProject project,
             ICompilationUnit[] units, IProgressMonitor monitor) throws CoreException {
-<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        CheckedExceptionMigration.Plan plan= owner.requireAST() ? parseAndPlan(project, List.of(units), monitor) : null;</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        CheckedExceptionMigration.Plan plan= owner.requireAST() ? parseAndPlan(project, List.of(units), monitor) : null;</span>
 <span class="fc" id="L54">        RefactoringStatus status= new RefactoringStatus();</span>
 <span class="fc bfc" id="L55" title="All 2 branches covered.">        if (plan == null) return MultiFileCleanUpPlanResult.success(new Run(null));</span>
         try {
@@ -76,7 +76,7 @@ final class CharsetCleanUpCoordinator extends AbstractPlannedMultiFileCleanUp&lt
             Collection&lt;ICompilationUnit&gt; selected, IProgressMonitor monitor) throws CoreException {
 <span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (!owner.requireAST()) return List.of();</span>
 <span class="fc" id="L78">        var plan= parseAndPlan(project, selected, monitor);</span>
-<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (plan == null) return List.of();</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (plan == null) return List.of();</span>
 <span class="fc" id="L80">        List&lt;ICompilationUnit&gt; additions= new ArrayList&lt;&gt;();</span>
 <span class="fc bfc" id="L81" title="All 2 branches covered.">        for (String handle : plan.requiredCompilationUnits()) {</span>
 <span class="pc bpc" id="L82" title="2 of 4 branches missed.">            if (JavaCore.create(handle) instanceof ICompilationUnit unit &amp;&amp; unit.exists()</span>
