@@ -97,9 +97,28 @@ class OomphTargetBootstrapTest {
         for (int index = 0; index < nodes.getLength(); index++) {
             units.add(((Element) nodes.item(index)).getAttribute("id"));
         }
-        assertTrue(units.containsAll(Set.of("org.eclipse.jdt.ls.core", "org.eclipse.m2e.core",
-                "org.eclipse.m2e.maven.runtime", "org.eclipse.m2e.jdt", "org.eclipse.buildship.core")),
-                "The adapter and its standard-server test runtime must resolve in the contributor workspace");
+        assertEquals(Set.of("org.eclipse.jdt.ls.core"), units,
+                "Only JDT LS itself should come from the independently versioned milestone");
+
+        Element eclipseRelease = null;
+        for (int index = 0; index < repositories.getLength(); index++) {
+            Element repository = (Element) repositories.item(index);
+            if ("https://download.eclipse.org/releases/2026-09/"
+                    .equals(repository.getAttribute("location"))) {
+                assertNull(eclipseRelease, "Only one pinned Eclipse release target location is expected");
+                eclipseRelease = (Element) repository.getParentNode();
+            }
+        }
+        assertNotNull(eclipseRelease, "Missing pinned Eclipse release for Maven and Gradle integrations");
+        Set<String> baseUnits = new HashSet<>();
+        var baseRoots = eclipseRelease.getElementsByTagName("unit");
+        for (int index = 0; index < baseRoots.getLength(); index++) {
+            baseUnits.add(((Element) baseRoots.item(index)).getAttribute("id"));
+        }
+        assertTrue(baseUnits.containsAll(Set.of("org.eclipse.m2e.core",
+                "org.eclipse.m2e.maven.runtime", "org.eclipse.m2e.jdt",
+                "org.eclipse.buildship.core")),
+                "Required integrations must come from the pinned Eclipse SDK, not the JDT LS milestone");
     }
 
     @Test

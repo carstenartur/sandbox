@@ -18,6 +18,13 @@
             <unit id="org.eclipse.emf.ecore.feature.group" version="0.0.0"/>
             <unit id="org.eclipse.emf.common.feature.group" version="0.0.0"/>
             <unit id="org.eclipse.equinox.p2.user.ui.feature.group" version="0.0.0"/>
+            <!-- Keep standard-server Maven and Gradle integrations aligned
+                 with the pinned Eclipse 2026-09 runtime. Do not source these
+                 bundles from the independently published JDT LS milestone. -->
+            <unit id="org.eclipse.m2e.core" version="0.0.0"/>
+            <unit id="org.eclipse.m2e.maven.runtime" version="0.0.0"/>
+            <unit id="org.eclipse.m2e.jdt" version="0.0.0"/>
+            <unit id="org.eclipse.buildship.core" version="0.0.0"/>
         </location>
 
         <!-- 2. Orbit dependencies aligned with Eclipse 2026-09 / Platform 4.41 -->
@@ -68,10 +75,6 @@
         <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
             <repository location="https://download.eclipse.org/jdtls/milestones/1.62.0/repository/"/>
             <unit id="org.eclipse.jdt.ls.core" version="1.62.0.202610131109"/>
-            <unit id="org.eclipse.m2e.core" version="0.0.0"/>
-            <unit id="org.eclipse.m2e.maven.runtime" version="0.0.0"/>
-            <unit id="org.eclipse.m2e.jdt" version="0.0.0"/>
-            <unit id="org.eclipse.buildship.core" version="0.0.0"/>
         </location>
     </locations>
 
