@@ -33,9 +33,13 @@ class CleanupReviewPublisherTest {
         Process process = new ProcessBuilder("node", "--test", "--test-reporter=tap", scenario.toString())
                 .directory(root.toFile()).redirectErrorStream(true).redirectOutput(output.toFile()).start();
         try {
-            boolean completed = process.waitFor(30, TimeUnit.SECONDS);
+            // Node's test runner starts Git processes for realistic publisher
+            // fixtures. Windows runners can take well over 30 seconds to launch
+            // and reap those subprocesses under load. Retain a finite deadline,
+            // but allow a complete run before claiming a regression.
+            boolean completed = process.waitFor(120, TimeUnit.SECONDS);
             String report = Files.readString(output, StandardCharsets.UTF_8);
-            assertTrue(completed, "Publisher regressions timed out:\n" + report);
+            assertTrue(completed, "Publisher regressions timed out after 120 seconds:\n" + report);
             assertEquals(0, process.exitValue(), report);
             assertFalse(report.lines().anyMatch(line -> line.equals("# Subtest: " + scenario)),
                     "Node must execute registered scenarios, not only load an empty suite:\n" + report);
@@ -46,7 +50,20 @@ class CleanupReviewPublisherTest {
                 assertEquals(0, summaryCount(report, outcome), report);
             }
         } finally {
+            // Windows holds publisher-tests.log open until *all* spawned Git
+            // processes exit. Destroy the process tree and reap it before the
+            // JUnit @TempDir extension attempts directory deletion.
+            var descendants = process.descendants().toList();
+            for (var child : descendants) {
+                if (child.isAlive()) child.destroyForcibly();
+            }
             if (process.isAlive()) process.destroyForcibly();
+            process.waitFor(10, TimeUnit.SECONDS);
+            for (var child : descendants) {
+                if (child.isAlive()) {
+                    child.onExit().get(10, TimeUnit.SECONDS);
+                }
+            }
         }
     }
 
