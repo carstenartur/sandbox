@@ -388,7 +388,7 @@ class OomphSetupTest {
                 "org.eclipse.equinox.p2.core", "org.eclipse.equinox.p2.director.app", "org.eclipse.oomph.p2.core", "bcpg",
                 "org.eclipse.emf.common", "org.eclipse.emf.ecore",
                 "org.eclipse.oomph.base", "org.eclipse.oomph.util", "org.eclipse.oomph.ui", "org.eclipse.oomph.setup",
-                "org.eclipse.oomph.setup.core", "org.eclipse.oomph.setup.git", "org.eclipse.oomph.setup.pde",
+                "org.eclipse.oomph.setup.core", "org.eclipse.oomph.setup.p2", "org.eclipse.oomph.setup.git", "org.eclipse.oomph.setup.pde",
                 "org.eclipse.oomph.setup.maven", "org.eclipse.oomph.setup.workingsets", "org.eclipse.jdt.core",
                 "org.eclipse.jdt.launching", "org.eclipse.pde.core", "org.eclipse.pde.launching",
                 "org.eclipse.debug.core", "org.eclipse.jgit")));

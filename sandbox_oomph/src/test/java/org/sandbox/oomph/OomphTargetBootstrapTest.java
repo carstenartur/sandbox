@@ -92,6 +92,58 @@ class OomphTargetBootstrapTest {
     }
 
     @Test
+    void officialCatalogProvidesExtensionSchemasForColdInstaller() throws Exception {
+        // The public Github Projects catalog loads this model before m2e, PDE and
+        // the corresponding Oomph setup extensions have been provisioned.
+        // Without schemaLocation, those xsi:type values can be unresolved even
+        // though the full-SDK workspace acceptance test passes.
+        Document document = xml(module.resolve("sandboxproject.setup"));
+        Element project = document.getDocumentElement();
+        String schemaLocation = project.getAttributeNS(
+                XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI, "schemaLocation");
+        assertFalse(schemaLocation.isBlank(), "The public setup must be loadable by a fresh installer");
+
+        String[] tokens = schemaLocation.trim().split("\\s+");
+        assertEquals(0, tokens.length % 2, "schemaLocation must contain namespace/URI pairs");
+        Map<String, String> schemas = new LinkedHashMap<>();
+        for (int i = 0; i < tokens.length; i += 2) {
+            assertNull(schemas.put(tokens[i], tokens[i + 1]), "Duplicate schema for " + tokens[i]);
+        }
+
+        Map<String, String> extensionModels = Map.of(
+                "git", "Git.ecore",
+                "maven", "Maven.ecore",
+                "jdt", "JDT.ecore",
+                "pde", "PDE.ecore",
+                "predicates", "Predicates.ecore",
+                "projects", "Projects.ecore",
+                "setup.workingsets", "SetupWorkingSets.ecore");
+        String modelRoot = "https://raw.githubusercontent.com/eclipse-oomph/oomph/master/setups/models/";
+        for (var entry : extensionModels.entrySet()) {
+            String namespace = project.lookupNamespaceURI(entry.getKey());
+            assertNotNull(namespace, "Missing namespace declaration: " + entry.getKey());
+            assertEquals(modelRoot + entry.getValue(), schemas.get(namespace),
+                    "Missing canonical Ecore model for " + entry.getKey());
+        }
+
+        var elements = document.getElementsByTagName("*");
+        for (int i = 0; i < elements.getLength(); i++) {
+            Element element = (Element) elements.item(i);
+            String type = element.getAttributeNS(XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI, "type");
+            if (type.isEmpty()) {
+                continue;
+            }
+            int colon = type.indexOf(':');
+            assertTrue(colon > 0, "Unqualified Oomph model type: " + type);
+            String prefix = type.substring(0, colon);
+            if (!Set.of("setup", "setup.p2").contains(prefix)) {
+                assertTrue(schemas.containsKey(element.lookupNamespaceURI(prefix)),
+                        "Cold installer cannot resolve extension type " + type);
+            }
+        }
+    }
+
+    @Test
     void officialCatalogIdentityAndCloneRemainUnchanged() throws Exception {
         Document setup = xml(module.resolve("sandboxproject.setup"));
         assertEquals("sandbox", setup.getDocumentElement().getAttribute("name"));
