@@ -33,7 +33,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
-      MAVEN_OPTS: -Djava.awt.headless=true
+      # Keep upstream artifact TLS verification intact. Several p2 mirrors
+      # (including mirror.umd.edu) have expired leaf certificates; fetch from
+      # the pinned canonical Eclipse repository instead of random mirrors.
+      MAVEN_OPTS: -Djava.awt.headless=true -Declipse.p2.mirrors=false
     steps:
       - name: Checkout Sandbox
         uses: actions/checkout@v7
