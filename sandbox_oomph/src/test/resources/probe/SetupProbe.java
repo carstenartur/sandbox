@@ -318,7 +318,8 @@ public class SetupProbe implements IApplication {
         display.asyncExec(() -> {
             try {
                 Shell owner = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-                SetupWizardDialog dialog = new SetupWizardDialog(owner, new SetupWizard.Importer());
+                SetupWizard.Importer importer = new SetupWizard.Importer();
+                SetupWizardDialog dialog = new SetupWizardDialog(owner, importer);
                 dialog.setBlockOnOpen(false);
                 dialog.open();
                 dialogRef.set(dialog);
@@ -340,7 +341,7 @@ public class SetupProbe implements IApplication {
                                 verified.completeExceptionally(new AssertionError("Installer closed before catalog verification"));
                                 return;
                             }
-                            SetupWizard.Importer importer = (SetupWizard.Importer) dialog.getWizard();
+
                             if (importer.getCatalogManager().getIndex() == null) {
                                 state.set("waiting for official Installer index");
                             } else {
