@@ -8,11 +8,13 @@ then delegates to the same `ICleanUp` objects used by Eclipse.
 
 ## Scope
 
-Java cleanup contributions from Encoding, Functional Converter, Platform Helper,
-JFace/SubMonitor, JUnit, Method Reuse, Int-to-Enum, Mathematics, Container Cleanup,
-Use General Type, and TriggerPattern/Common are eligible when installed. This
-exposes their **existing supported cases**, not new transformation capabilities.
-`sandbox.cleanup.list` is the authoritative inventory of installed contributions.
+Qualified Java cleanup contributions from Encoding, Functional Converter, Platform
+Helper, JFace/SubMonitor, JUnit, Method Reuse, Int-to-Enum, Mathematics, Container
+Cleanup, and Use General Type are eligible when installed. Qualification uses the
+exact **bundle, cleanup ID, and implementation class**, not a blanket bundle
+permission. This exposes their **existing supported cases**, not new transformation
+capabilities. `sandbox.cleanup.list` is the authoritative inventory of installed
+contributions, including unavailable ones and their reasons.
 
 The already-upstream While-to-For cleanup (`sandbox_tools`) is deliberately not
 listed or executable. Search views, CSS tools, and other non-Java UI features are
@@ -22,8 +24,12 @@ The XML cleanup is listed as unavailable with an explicit reason: its current
 `XMLPlugin.rewrite()` writes workspace resources while creating the fix. Running
 it through a supposedly read-only preview would be unsafe. It needs a separate
 resource-edit adapter before it can be enabled; the bridge never calls that path.
-Unknown future Sandbox contributions are also unavailable until their preview
-contract has been assessed.
+The current TriggerPattern registrations are also unavailable: their shared
+`AbstractSandboxCleanUpCore.createFix()` clears and creates workspace hint markers,
+even when no text edit is returned. They require a marker-free preview path before
+qualification. Existing diagnostics must remain unchanged during a preview.
+Unknown IDs or implementation classes are unavailable even inside a previously
+qualified bundle. New registrations need their own preview-contract assessment.
 
 ## Build and runtime requirements
 
@@ -67,7 +73,6 @@ sandbox_int_to_enum
 sandbox_math_cleanup
 sandbox_container_cleanup
 sandbox_use_general_type
-sandbox_triggerpattern
 ```
 
 Use the locally built `sandbox_updatesite/target/repository`, the JDT LS p2
@@ -90,7 +95,9 @@ Send `workspace/executeCommand` with `command: "sandbox.cleanup.list"` and an
 empty argument list. Each result has `id`, `bundle`, `defaults`, `available`, and
 `reason`. Defaults come from the original plugin; a listed cleanup is **not**
 automatically enabled. Use the same option keys and string values as Eclipse
-cleanup profiles. The adapter does not rewrite workspace preferences.
+cleanup profiles. The adapter does not rewrite workspace preferences. Defaults
+and overrides are passed as `MapCleanUpOptions`, preserving non-boolean profile
+values such as `cleanup.method_reuse.minimum_statements=4`.
 
 For example, the arguments to `workspace/executeCommand` for an encoding preview
 are:
@@ -117,14 +124,17 @@ are:
 endings; the illustration above is not a request to insert placeholder source.
 Wait for normal `didOpen`/`didChange` synchronization before invoking the command.
 The server rejects stale text, duplicate units, read-only sources, and mixed
-Java-project selections. Each request chooses one cleanup, avoiding overlapping
-edits from independently generated transformations.
+Java-project selections. File read-only attributes are checked separately from
+Java-model mutability, including dirty working copies and scope-expanded files.
+Each request chooses one cleanup, avoiding overlapping edits from independently
+generated transformations.
 
 The response contains `edit` (an LSP `WorkspaceEdit`), `requiredUris`, and
 `messages`. When `requiredUris` is nonempty, **no edits are returned**. Open those
 related files, synchronize them, add their versions and exact source to the
 request, and repeat. This preserves the existing multi-file scope and planning
-contract without silently modifying undisclosed files.
+contract without silently modifying undisclosed files. Read-only related files
+are rejected, not returned as unusable snapshot requests.
 
 When the scope is complete, one cleanup instance receives all units in
 `checkPreConditions`. Its existing fixes are converted with JDT LS's

@@ -98,7 +98,7 @@ public final class SandboxCleanUpCommands implements IDelegateCommandHandler {
         IJavaProject project = null;
         for (var snapshot : request.documents()) {
             ICompilationUnit unit = JDTUtils.resolveCompilationUnit(snapshot.uri());
-            if (unit == null || !unit.exists() || unit.isReadOnly() || unit.getResource() == null) {
+            if (!isEditable(unit)) {
                 throw new IllegalArgumentException("Not an editable Java source in this server workspace: " + snapshot.uri()); //$NON-NLS-1$
             }
             if (project == null) project = unit.getJavaProject();
@@ -119,8 +119,7 @@ public final class SandboxCleanUpCommands implements IDelegateCommandHandler {
                 cancelled(monitor);
                 expanded = false;
                 for (var unit : provider.expandCleanUpScope(project, List.copyOf(scope), monitor)) {
-                    if (unit == null || !unit.exists() || unit.isReadOnly() || unit.getResource() == null
-                            || !project.equals(unit.getJavaProject())) {
+                    if (!isEditable(unit) || !project.equals(unit.getJavaProject())) {
                         throw new IllegalArgumentException("Cleanup requires unavailable, read-only, or cross-project source."); //$NON-NLS-1$
                     }
                     expanded |= scope.add(unit);
@@ -204,6 +203,15 @@ public final class SandboxCleanUpCommands implements IDelegateCommandHandler {
         var edit = new WorkspaceEdit();
         edit.setDocumentChanges(edits);
         return new Preview(edit, requiredUris, messages);
+    }
+
+    private static boolean isEditable(ICompilationUnit unit) {
+        if (unit == null || !unit.exists() || unit.isReadOnly()) return false;
+        var resource = unit.getResource();
+        if (resource == null) return false;
+        // A mutable Java working copy can still be backed by a read-only file.
+        var attributes = resource.getResourceAttributes();
+        return attributes == null || !attributes.isReadOnly();
     }
 
     private static void unchanged(ICompilationUnit unit, Snapshot snapshot) throws CoreException {
