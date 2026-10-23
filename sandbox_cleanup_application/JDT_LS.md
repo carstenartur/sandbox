@@ -10,11 +10,12 @@ then delegates to the same `ICleanUp` objects used by Eclipse.
 
 Qualified Java cleanup contributions from Encoding, Functional Converter, Platform
 Helper, JFace/SubMonitor, JUnit, Method Reuse, Int-to-Enum, Mathematics, Container
-Cleanup, and Use General Type are eligible when installed. Qualification uses the
-exact **bundle, cleanup ID, and implementation class**, not a blanket bundle
-permission. This exposes their **existing supported cases**, not new transformation
-capabilities. `sandbox.cleanup.list` is the authoritative inventory of installed
-contributions, including unavailable ones and their reasons.
+Cleanup, Use General Type, and the text-only TriggerPattern String Simplification,
+Threading and Shift Out Of Range cleanups are eligible when installed.
+Qualification uses the exact **bundle, cleanup ID, and implementation class**,
+not a blanket bundle permission. This exposes their **existing supported cases**,
+not new transformation capabilities. `sandbox.cleanup.list` is the authoritative
+inventory of installed contributions, including unavailable ones and their reasons.
 
 The already-upstream While-to-For cleanup (`sandbox_tools`) is deliberately not
 listed or executable. Search views, CSS tools, and other non-Java UI features are
@@ -24,10 +25,13 @@ The XML cleanup is listed as unavailable with an explicit reason: its current
 `XMLPlugin.rewrite()` writes workspace resources while creating the fix. Running
 it through a supposedly read-only preview would be unsafe. It needs a separate
 resource-edit adapter before it can be enabled; the bridge never calls that path.
-The current TriggerPattern registrations are also unavailable: their shared
-`AbstractSandboxCleanUpCore.createFix()` clears and creates workspace hint markers,
-even when no text edit is returned. They require a marker-free preview path before
-qualification. Existing diagnostics must remain unchanged during a preview.
+The TriggerPattern registrations based on `AbstractSandboxCleanUpCore` are also
+unavailable: that shared `createFix()` clears and creates workspace hint markers,
+even when no text edit is returned. These include Hint File, Wrong String Comparison,
+Print Stack Trace, System Out, Obsolete Collection, Missing Hash Code and Overridable
+Call In Constructor. They require a marker-free preview path before qualification.
+The three qualified text-only contributions do not use that marker-writing base.
+Existing diagnostics must remain unchanged during any preview.
 Unknown IDs or implementation classes are unavailable even inside a previously
 qualified bundle. New registrations need their own preview-contract assessment.
 
@@ -73,6 +77,7 @@ sandbox_int_to_enum
 sandbox_math_cleanup
 sandbox_container_cleanup
 sandbox_use_general_type
+sandbox_triggerpattern
 ```
 
 Use the locally built `sandbox_updatesite/target/repository`, the JDT LS p2
