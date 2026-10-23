@@ -10,6 +10,9 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.cert.Certificate;
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +66,8 @@ import org.eclipse.oomph.setup.SetupTaskContext;
 import org.eclipse.oomph.setup.Trigger;
 import org.eclipse.oomph.setup.VariableTask;
 import org.eclipse.oomph.setup.git.GitCloneTask;
+import org.eclipse.oomph.setup.internal.installer.InstallerDialog;
+import org.eclipse.oomph.setup.ui.wizards.ProjectPage;
 import org.eclipse.oomph.setup.internal.core.SetupContext;
 import org.eclipse.oomph.setup.internal.core.SetupTaskPerformer;
 import org.eclipse.oomph.setup.internal.core.util.SetupCoreUtil;
@@ -78,7 +83,18 @@ import org.eclipse.pde.core.target.ITargetPlatformService;
 import org.eclipse.pde.internal.core.PluginModelManager;
 import org.eclipse.pde.internal.launching.launcher.BundleLauncherHelper;
 import org.eclipse.pde.internal.launching.launcher.LaunchValidationOperation;
+import org.eclipse.jface.wizard.IWizardPage;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageLoader;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.application.WorkbenchAdvisor;
 import org.osgi.framework.FrameworkUtil;
@@ -278,6 +294,182 @@ public class SetupProbe implements IApplication {
                 + " -> " + ENTRY + " essentialTasks=" + present);
     }
 
+
+    /**
+     * Render the actual Oomph InstallerDialog and its ProjectPage in the
+     * disposable SWT workbench. This is intentionally not a mock tree:
+     * Installer.addPages(), SetupWizard.loadIndex(), ResourceMirror,
+     * CatalogManager and ProjectPage's JFace content provider all run.
+     *
+     * Use a nonblocking WizardDialog so that the real SWT event loop keeps
+     * processing index downloads and lazy tree expansion. Never click Finish
+     * or install a second workspace.
+     */
+    private static void verifyInstallerProjectTree(Path run) throws Exception {
+        Display display = PlatformUI.getWorkbench().getDisplay();
+        CompletableFuture<String> verified = new CompletableFuture<>();
+        AtomicReference<InstallerDialog> dialogRef = new AtomicReference<>();
+        AtomicReference<String> state = new AtomicReference<>("installer not opened");
+        long deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(3);
+
+        display.asyncExec(() -> {
+            try {
+                Shell owner = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
+                InstallerDialog dialog = new InstallerDialog(owner, false);
+                dialog.setBlockOnOpen(false);
+                dialog.open();
+                dialogRef.set(dialog);
+                display.timerExec(250, new Runnable() {
+                    private boolean projectPageShown;
+
+                    @Override
+                    public void run() {
+                        if (verified.isDone()) {
+                            return;
+                        }
+                        try {
+                            if (System.nanoTime() > deadline) {
+                                verified.completeExceptionally(new AssertionError(
+                                        "Installer catalog UI timed out: " + state.get()));
+                                return;
+                            }
+                            if (dialog.getShell() == null || dialog.getShell().isDisposed()) {
+                                verified.completeExceptionally(new AssertionError("Installer closed before catalog verification"));
+                                return;
+                            }
+                            var installer = dialog.getInstaller();
+                            if (installer.getCatalogManager().getIndex() == null) {
+                                state.set("waiting for official Installer index");
+                            } else {
+                                IWizardPage page = installer.getPage("ProjectPage");
+                                require(page instanceof ProjectPage, "Real Oomph ProjectPage is missing");
+                                if (!projectPageShown) {
+                                    // Exactly the normal Installer page is shown, with its
+                                    // own JFace content provider and selected catalog model.
+                                    dialog.showPage(page);
+                                    projectPageShown = true;
+                                }
+                                Tree tree = findCatalogTree(page.getControl());
+                                if (tree == null || tree.isDisposed()) {
+                                    state.set("waiting for ProjectPage tree");
+                                } else {
+                                    TreeItem github = findItem(tree.getItems(), "Github Projects");
+                                    if (github == null) {
+                                        state.set("Github Projects not visible; roots=" + labels(tree.getItems()));
+                                    } else {
+                                        expandItem(tree, github);
+                                        TreeItem sandbox = findItem(github.getItems(), "Sandbox Project");
+                                        if (sandbox == null) {
+                                            state.set("Sandbox Project missing; catalog children=" + labels(github.getItems()));
+                                        } else {
+                                            expandItem(tree, sandbox);
+                                            TreeItem main = findItem(sandbox.getItems(), "Main");
+                                            if (main == null) {
+                                                state.set("Main stream missing; streams=" + labels(sandbox.getItems()));
+                                            } else {
+                                                Resource publicProject = installer.getResourceSet().getResource(URI.createURI(ENTRY), false);
+                                                require(publicProject != null && publicProject.isLoaded()
+                                                        && publicProject.getErrors().isEmpty(),
+                                                        "Installer project model has errors: "
+                                                        + (publicProject == null ? "missing" : publicProject.getErrors()));
+                                                require(setupTaskIDs(publicProject).containsAll(ESSENTIAL_TASKS),
+                                                        "Installer tree hid unresolved extension tasks");
+                                                captureInstallerScreenshot(dialog.getShell(),
+                                                        run.resolve("installer-catalog.png"));
+                                                verified.complete("Github Projects / Sandbox Project / Main");
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Throwable t) {
+                            verified.completeExceptionally(t);
+                        }
+                        if (!verified.isDone()) {
+                            display.timerExec(250, this);
+                        }
+                    }
+                });
+            } catch (Throwable t) {
+                verified.completeExceptionally(t);
+            }
+        });
+        try {
+            String path = verified.get(4, TimeUnit.MINUTES);
+            System.out.println("OOMPH_INSTALLER_PROJECT_TREE_VERIFIED: " + path
+                    + " (real InstallerDialog / ProjectPage)");
+        } finally {
+            display.syncExec(() -> {
+                InstallerDialog dialog = dialogRef.get();
+                if (dialog != null && dialog.getShell() != null && !dialog.getShell().isDisposed()) {
+                    dialog.close();
+                }
+            });
+        }
+    }
+
+    private static Tree findCatalogTree(Control control) {
+        if (control instanceof Tree tree) {
+            return tree;
+        }
+        if (control instanceof Composite composite) {
+            for (Control child : composite.getChildren()) {
+                Tree found = findCatalogTree(child);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static TreeItem findItem(TreeItem[] items, String text) {
+        for (TreeItem item : items) {
+            if (text.equals(item.getText())) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private static String labels(TreeItem[] items) {
+        return Arrays.stream(items).map(TreeItem::getText).collect(Collectors.joining(", "));
+    }
+
+    private static void expandItem(Tree tree, TreeItem item) {
+        if (!item.getExpanded()) {
+            item.setExpanded(true);
+            Event event = new Event();
+            event.item = item;
+            tree.notifyListeners(SWT.Expand, event);
+        }
+    }
+
+    private static void captureInstallerScreenshot(Shell shell, Path path) {
+        try {
+            var area = shell.getClientArea();
+            if (area.width <= 0 || area.height <= 0) {
+                return;
+            }
+            Image image = new Image(shell.getDisplay(), area.width, area.height);
+            try {
+                GC gc = new GC(shell);
+                try {
+                    gc.copyArea(image, 0, 0);
+                } finally {
+                    gc.dispose();
+                }
+                ImageLoader loader = new ImageLoader();
+                loader.data = new org.eclipse.swt.graphics.ImageData[] { image.getImageData() };
+                loader.save(path.toString(), SWT.IMAGE_PNG);
+            } finally {
+                image.dispose();
+            }
+        } catch (RuntimeException ex) {
+            System.err.println("Installer screenshot unavailable: " + ex);
+        }
+    }
+
     private static Set<String> setupTaskIDs(Resource resource) {
         Set<String> result = new TreeSet<>();
         var it = EcoreUtil.<EObject>getAllContents(resource, false);
@@ -341,6 +533,7 @@ public class SetupProbe implements IApplication {
         verifyColdCatalogLoad(root);
         if (!update && attempt == 0) {
             verifyPublicCatalogMirror();
+            verifyInstallerProjectTree(run);
         }
         ResourceSet rs = SetupCoreUtil.createResourceSet();
         System.out.println("Loading and validating the official catalog and candidate models");
