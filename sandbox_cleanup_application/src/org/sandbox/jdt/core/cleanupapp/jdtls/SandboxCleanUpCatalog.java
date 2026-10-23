@@ -17,6 +17,7 @@ import java.util.Set;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.jdt.internal.ui.fix.MapCleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.ICleanUp;
 import org.eclipse.jdt.ui.cleanup.ICleanUpOptionsInitializer;
@@ -24,11 +25,34 @@ import org.eclipse.jdt.ui.cleanup.ICleanUpOptionsInitializer;
 /** Reads the existing registrations; it does not maintain a second cleanup registry. */
 final class SandboxCleanUpCatalog {
     private static final String EXTENSION = "org.eclipse.jdt.ui.cleanUps"; //$NON-NLS-1$
-    private static final Set<String> JAVA_CLEANUPS = Set.of(
-            "sandbox_common", "sandbox_triggerpattern", "sandbox_encoding_quickfix", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-            "sandbox_functional_converter", "sandbox_platform_helper", "sandbox_jface_cleanup", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-            "sandbox_junit_cleanup", "sandbox_method_reuse", "sandbox_int_to_enum", //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-            "sandbox_math_cleanup", "sandbox_container_cleanup", "sandbox_use_general_type"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+    // Qualification is per registration, never inherited by a new contribution
+    // merely because it is installed in an already-known bundle.
+    private record Contribution(String bundle, String id, String implementation) {}
+
+    private static final Set<Contribution> READ_ONLY_CLEANUPS = Set.of(
+            new Contribution("sandbox_container_cleanup", "org.sandbox.jdt.ui.cleanup.container_contracts", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.container.cleanup.internal.ui.fix.ContainerCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_container_cleanup", "org.sandbox.jdt.ui.cleanup.container_contracts.closed_source_parameter_migration", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.container.cleanup.internal.ui.fix.CoordinatedContainerCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_encoding_quickfix", "org.eclipse.jdt.ui.cleanup.explicitencoding", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.internal.ui.fix.UseExplicitEncodingCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_functional_converter", "org.eclipse.jdt.ui.cleanup.functionalcleanup", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.internal.ui.fix.UseFunctionalCallCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_int_to_enum", "org.eclipse.jdt.ui.cleanup.int_to_enum", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.internal.ui.fix.IntToEnumCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_jface_cleanup", "org.eclipse.jdt.ui.cleanup.jfacecleanup", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.internal.ui.fix.JFaceCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_junit_cleanup", "org.eclipse.jdt.ui.cleanup.junitcleanup", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.internal.ui.fix.JUnitCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_math_cleanup", "org.sandbox.jdt.ui.cleanup.mathematics", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.internal.ui.fix.MathematicalCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_method_reuse", "org.eclipse.jdt.ui.cleanup.methodreuse", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.internal.ui.fix.MethodReuseCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_platform_helper", "org.eclipse.jdt.ui.cleanup.simplifystatus", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.internal.ui.fix.SimplifyPlatformStatusCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_use_general_type", "org.eclipse.jdt.ui.cleanup.use_general_type", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.internal.ui.fix.UseGeneralTypeCleanUp") //$NON-NLS-1$
+            );
 
     record Entry(String id, String bundle, Map<String, String> defaults, boolean available, String reason) {
         Entry { defaults = Map.copyOf(defaults); }
@@ -48,10 +72,11 @@ final class SandboxCleanUpCatalog {
         var entry = describe(element);
         if (!entry.available()) throw new IllegalArgumentException(entry.reason());
         var cleanup = (ICleanUp) element.createExecutableExtension("class"); //$NON-NLS-1$
-        var options = new CleanUpOptions();
-        entry.defaults().forEach(options::setOption);
-        overrides.forEach(options::setOption);
-        cleanup.setOptions(options);
+        var options = new LinkedHashMap<>(entry.defaults());
+        options.putAll(overrides);
+        // Existing Eclipse cleanups also consume numeric/profile values through
+        // MapCleanUpOptions; boolean-only adapters silently lose those settings.
+        cleanup.setOptions(new MapCleanUpOptions(options));
         return cleanup;
     }
 
@@ -68,10 +93,13 @@ final class SandboxCleanUpCatalog {
     private static Entry describe(IConfigurationElement element) throws CoreException {
         String bundle = element.getContributor().getName();
         String id = element.getAttribute("id"); //$NON-NLS-1$
-        if (!JAVA_CLEANUPS.contains(bundle)) {
+        String implementation = element.getAttribute("class"); //$NON-NLS-1$
+        if (!READ_ONLY_CLEANUPS.contains(new Contribution(bundle, id, implementation))) {
             String reason = "sandbox_xml_cleanup".equals(bundle) //$NON-NLS-1$
                     ? "XML cleanup writes resources during fix creation and cannot be used as a read-only Java preview." //$NON-NLS-1$
-                    : "This contribution has not been qualified for read-only Java cleanup previews."; //$NON-NLS-1$
+                    : "sandbox_triggerpattern".equals(bundle) //$NON-NLS-1$
+                            ? "This TriggerPattern contribution changes workspace markers during fix creation and has no marker-free preview path." //$NON-NLS-1$
+                            : "This contribution identity has not been qualified for read-only Java cleanup previews."; //$NON-NLS-1$
             return new Entry(id, bundle, Map.of(), false, reason);
         }
         var defaults = new CleanUpOptions();
