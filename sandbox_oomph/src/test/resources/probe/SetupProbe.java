@@ -66,7 +66,8 @@ import org.eclipse.oomph.setup.SetupTaskContext;
 import org.eclipse.oomph.setup.Trigger;
 import org.eclipse.oomph.setup.VariableTask;
 import org.eclipse.oomph.setup.git.GitCloneTask;
-import org.eclipse.oomph.setup.internal.installer.InstallerDialog;
+import org.eclipse.oomph.setup.ui.wizards.SetupWizard;
+import org.eclipse.oomph.setup.ui.wizards.SetupWizardDialog;
 import org.eclipse.oomph.setup.ui.wizards.ProjectPage;
 import org.eclipse.oomph.setup.internal.core.SetupContext;
 import org.eclipse.oomph.setup.internal.core.SetupTaskPerformer;
@@ -296,26 +297,28 @@ public class SetupProbe implements IApplication {
 
 
     /**
-     * Render the actual Oomph InstallerDialog and its ProjectPage in the
-     * disposable SWT workbench. This is intentionally not a mock tree:
-     * Installer.addPages(), SetupWizard.loadIndex(), ResourceMirror,
-     * CatalogManager and ProjectPage's JFace content provider all run.
+     * Render the real Oomph ProjectPage in the disposable SWT workbench.
+     * This is the exact page implementation shared by the Eclipse Installer
+     * and the Oomph project importer, not a cloned or mocked tree:
+     * SetupWizard.loadIndex(), ResourceMirror, CatalogManager and the
+     * ProjectPage JFace content provider all run. The stand-alone Installer
+     * product itself has a different release cadence and is not loaded here.
      *
      * Use a nonblocking WizardDialog so that the real SWT event loop keeps
      * processing index downloads and lazy tree expansion. Never click Finish
      * or install a second workspace.
      */
-    private static void verifyInstallerProjectTree(Path run) throws Exception {
+    private static void verifyProjectPageTree(Path run) throws Exception {
         Display display = PlatformUI.getWorkbench().getDisplay();
         CompletableFuture<String> verified = new CompletableFuture<>();
-        AtomicReference<InstallerDialog> dialogRef = new AtomicReference<>();
+        AtomicReference<SetupWizardDialog> dialogRef = new AtomicReference<>();
         AtomicReference<String> state = new AtomicReference<>("installer not opened");
         long deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(3);
 
         display.asyncExec(() -> {
             try {
                 Shell owner = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-                InstallerDialog dialog = new InstallerDialog(owner, false);
+                SetupWizardDialog dialog = new SetupWizardDialog(owner, new SetupWizard.Importer());
                 dialog.setBlockOnOpen(false);
                 dialog.open();
                 dialogRef.set(dialog);
@@ -330,18 +333,18 @@ public class SetupProbe implements IApplication {
                         try {
                             if (System.nanoTime() > deadline) {
                                 verified.completeExceptionally(new AssertionError(
-                                        "Installer catalog UI timed out: " + state.get()));
+                                        "Oomph ProjectPage UI timed out: " + state.get()));
                                 return;
                             }
                             if (dialog.getShell() == null || dialog.getShell().isDisposed()) {
                                 verified.completeExceptionally(new AssertionError("Installer closed before catalog verification"));
                                 return;
                             }
-                            var installer = dialog.getInstaller();
-                            if (installer.getCatalogManager().getIndex() == null) {
+                            SetupWizard.Importer importer = (SetupWizard.Importer) dialog.getWizard();
+                            if (importer.getCatalogManager().getIndex() == null) {
                                 state.set("waiting for official Installer index");
                             } else {
-                                IWizardPage page = installer.getPage("ProjectPage");
+                                IWizardPage page = importer.getPage("ProjectPage");
                                 require(page instanceof ProjectPage, "Real Oomph ProjectPage is missing");
                                 if (!projectPageShown) {
                                     // Exactly the normal Installer page is shown, with its
@@ -367,7 +370,7 @@ public class SetupProbe implements IApplication {
                                             if (main == null) {
                                                 state.set("Main stream missing; streams=" + labels(sandbox.getItems()));
                                             } else {
-                                                Resource publicProject = installer.getResourceSet().getResource(URI.createURI(ENTRY), false);
+                                                Resource publicProject = importer.getResourceSet().getResource(URI.createURI(ENTRY), false);
                                                 require(publicProject != null && publicProject.isLoaded()
                                                         && publicProject.getErrors().isEmpty(),
                                                         "Installer project model has errors: "
@@ -375,7 +378,7 @@ public class SetupProbe implements IApplication {
                                                 require(setupTaskIDs(publicProject).containsAll(ESSENTIAL_TASKS),
                                                         "Installer tree hid unresolved extension tasks");
                                                 captureInstallerScreenshot(dialog.getShell(),
-                                                        run.resolve("installer-catalog.png"));
+                                                        run.resolve("oomph-project-catalog.png"));
                                                 verified.complete("Github Projects / Sandbox Project / Main");
                                             }
                                         }
@@ -396,11 +399,11 @@ public class SetupProbe implements IApplication {
         });
         try {
             String path = verified.get(4, TimeUnit.MINUTES);
-            System.out.println("OOMPH_INSTALLER_PROJECT_TREE_VERIFIED: " + path
-                    + " (real InstallerDialog / ProjectPage)");
+            System.out.println("OOMPH_PROJECT_PAGE_TREE_VERIFIED: " + path
+                    + " (real Oomph ProjectPage / Importer wizard)");
         } finally {
             display.syncExec(() -> {
-                InstallerDialog dialog = dialogRef.get();
+                SetupWizardDialog dialog = dialogRef.get();
                 if (dialog != null && dialog.getShell() != null && !dialog.getShell().isDisposed()) {
                     dialog.close();
                 }
@@ -533,7 +536,7 @@ public class SetupProbe implements IApplication {
         verifyColdCatalogLoad(root);
         if (!update && attempt == 0) {
             verifyPublicCatalogMirror();
-            verifyInstallerProjectTree(run);
+            verifyProjectPageTree(run);
         }
         ResourceSet rs = SetupCoreUtil.createResourceSet();
         System.out.println("Loading and validating the official catalog and candidate models");
