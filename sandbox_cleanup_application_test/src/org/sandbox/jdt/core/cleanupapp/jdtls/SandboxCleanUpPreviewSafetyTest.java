@@ -121,6 +121,30 @@ class SandboxCleanUpPreviewSafetyTest {
     }
 
     @Test
+    void qualifiedTriggerPatternTextPreviewPreservesHintMarkers() throws Exception {
+        var catalog = new SandboxCleanUpCatalog();
+        for (String id : List.of("org.eclipse.jdt.ui.cleanup.stringsimplification",
+                "org.eclipse.jdt.ui.cleanup.threading", "org.eclipse.jdt.ui.cleanup.shift_out_of_range")) {
+            assertTrue(catalog.list().stream().filter(e -> e.id().equals(id)).findFirst().orElseThrow().available(), id);
+        }
+        var unit = unit("Strings", "class Strings { String text(int value) { return \"\" + value; } }");
+        IMarker marker = unit.getResource().createMarker(HINT);
+        marker.setAttribute(IMarker.MESSAGE, "existing hint");
+        long id = marker.getId();
+        var attributes = marker.getAttributes();
+        var before = snapshot(unit);
+        var preview = (SandboxCleanUpCommands.Preview) new SandboxCleanUpCommands().executeCommand(
+                SandboxCleanUpCommands.PREVIEW, List.of(new Request("org.eclipse.jdt.ui.cleanup.stringsimplification",
+                        Map.of("cleanup.string_simplification", "true"), List.of(before))), monitor);
+        assertFalse(preview.edit().getDocumentChanges().isEmpty(), "The qualified text cleanup must still propose its rewrite");
+        IMarker[] after = unit.getResource().findMarkers(HINT, true, IResource.DEPTH_ZERO);
+        assertEquals(1, after.length);
+        assertEquals(id, after[0].getId());
+        assertEquals(attributes, after[0].getAttributes());
+        assertEquals(before.source(), unit.getSource());
+    }
+
+    @Test
     void unknownIdOrImplementationInQualifiedBundleIsUnavailable() throws Exception {
         var original = registration(METHOD_REUSE);
         assertFalse(describeWith(original, Map.of("id", METHOD_REUSE + ".future")).available());

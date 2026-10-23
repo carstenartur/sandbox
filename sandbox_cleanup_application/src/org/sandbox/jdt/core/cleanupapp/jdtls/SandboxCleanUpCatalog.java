@@ -50,6 +50,12 @@ final class SandboxCleanUpCatalog {
                     "org.sandbox.jdt.internal.ui.fix.MethodReuseCleanUp"), //$NON-NLS-1$
             new Contribution("sandbox_platform_helper", "org.eclipse.jdt.ui.cleanup.simplifystatus", //$NON-NLS-1$ //$NON-NLS-2$
                     "org.sandbox.jdt.internal.ui.fix.SimplifyPlatformStatusCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_triggerpattern", "org.eclipse.jdt.ui.cleanup.stringsimplification", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.internal.ui.fix.StringSimplificationCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_triggerpattern", "org.eclipse.jdt.ui.cleanup.threading", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.internal.ui.fix.ThreadingCleanUp"), //$NON-NLS-1$
+            new Contribution("sandbox_triggerpattern", "org.eclipse.jdt.ui.cleanup.shift_out_of_range", //$NON-NLS-1$ //$NON-NLS-2$
+                    "org.sandbox.jdt.internal.ui.fix.ShiftOutOfRangeCleanUp"), //$NON-NLS-1$
             new Contribution("sandbox_use_general_type", "org.eclipse.jdt.ui.cleanup.use_general_type", //$NON-NLS-1$ //$NON-NLS-2$
                     "org.sandbox.jdt.internal.ui.fix.UseGeneralTypeCleanUp") //$NON-NLS-1$
             );
@@ -98,7 +104,7 @@ final class SandboxCleanUpCatalog {
             String reason = "sandbox_xml_cleanup".equals(bundle) //$NON-NLS-1$
                     ? "XML cleanup writes resources during fix creation and cannot be used as a read-only Java preview." //$NON-NLS-1$
                     : "sandbox_triggerpattern".equals(bundle) //$NON-NLS-1$
-                            ? "This TriggerPattern contribution changes workspace markers during fix creation and has no marker-free preview path." //$NON-NLS-1$
+                            ? "This TriggerPattern contribution is not qualified for a marker-free preview; marker-writing implementations must not run during preview." //$NON-NLS-1$
                             : "This contribution identity has not been qualified for read-only Java cleanup previews."; //$NON-NLS-1$
             return new Entry(id, bundle, Map.of(), false, reason);
         }
