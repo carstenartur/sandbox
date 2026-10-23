@@ -56,6 +56,26 @@ class OomphTargetBootstrapTest {
     }
 
     @Test
+    void publicWorkspaceEnablesAutomaticResourceRefreshForGeneratedMavenManifests() throws Exception {
+        // The optional Sandbox product already opts in. The actual public
+        // Github Projects catalog must do so too, otherwise m2e manually
+        // touches target/classes/META-INF/MANIFEST.MF while bnd replaces it.
+        Document publicProject = xml(module.resolve("sandboxproject.setup"));
+        int matches = 0;
+        var tasks = publicProject.getElementsByTagName("setupTask");
+        for (int i = 0; i < tasks.getLength(); i++) {
+            Element task = (Element) tasks.item(i);
+            if ("/instance/org.eclipse.core.resources/refresh.enabled".equals(task.getAttribute("key"))) {
+                assertEquals("setup:PreferenceTask", type(task));
+                assertEquals("true", task.getAttribute("value"),
+                        "m2e must not manually touch transient generated bnd manifests");
+                matches++;
+            }
+        }
+        assertEquals(1, matches, "The public project must define refresh consistently exactly once");
+    }
+
+    @Test
     void activeTargetProvidesTheLanguageServerForImportedSources() throws Exception {
         Document target = xml(module.resolve("../sandbox_target/eclipse.target"));
         var repositories = target.getElementsByTagName("repository");
