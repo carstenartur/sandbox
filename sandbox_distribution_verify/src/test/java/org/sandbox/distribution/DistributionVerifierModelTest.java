@@ -31,6 +31,19 @@ class DistributionVerifierModelTest {
     Path root;
 
     @Test
+    void optionalLanguageServerCatalogDoesNotOverridePinnedSdkLauncher() {
+        String languageServer = "https://download.eclipse.org/jdtls/milestones/1.62.0/repository/";
+        List<String> target = List.of(RELEASE, languageServer, ORBIT);
+        assertEquals(target, List.copyOf(target), "Compiler target must retain every declared repository");
+        assertEquals(List.of(RELEASE, ORBIT), DistributionVerifier.stockDistributionRepositories(target),
+                "Fresh stock SDK installation must not see newer JDT LS launcher bundles");
+        assertEquals(List.of(RELEASE, ORBIT),
+                DistributionVerifier.stockDistributionRepositories(
+                        DistributionVerifier.stockDistributionRepositories(target)),
+                "Filtering remains stable across repeated verification");
+    }
+
+    @Test
     void targetOnlyRepositoriesReachArtifactVerification() throws Exception {
         fixture();
         // No built repository: reaching this diagnostic proves the complete model passed.
