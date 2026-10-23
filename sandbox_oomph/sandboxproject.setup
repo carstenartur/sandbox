@@ -46,6 +46,13 @@
   </setupTask>
   <setupTask xsi:type="setup:PreferenceTask"
       key="/instance/org.eclipse.core.resources/encoding" value="UTF-8"/>
+  <!-- The public catalog imports both Tycho and ordinary Maven projects.
+       With auto-refresh off, m2e manually touches generated manifests while
+       bnd may be replacing them in target/classes; that race can fail with
+       ResourceException when the manifest disappears between check and touch.
+       Match the existing optional sandbox.setup product preference. -->
+  <setupTask xsi:type="setup:PreferenceTask"
+      key="/instance/org.eclipse.core.resources/refresh.enabled" value="true"/>
   <!-- Main project setup for sandbox development -->
   <setupTask
       xsi:type="setup:CompoundTask"
