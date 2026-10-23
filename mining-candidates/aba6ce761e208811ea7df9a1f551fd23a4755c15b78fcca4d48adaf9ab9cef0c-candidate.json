@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "aba6ce761e208811ea7df9a1f551fd23a4755c15b78fcca4d48adaf9ab9cef0c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$textWidget.setSelection(0, $stringValue.length()) :: instanceof($textWidget, \"org.eclipse.swt.widgets.Text\")\n\u003d\u003e $textWidget.selectAll()\n;;",
+  "beforeExample": "import org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.Text;\n\npublic class Example {\n    public void test() {\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        Text text \u003d new Text(shell, 0);\n        String input \u003d \"Hello World\";\n        text.setText(input);\n        text.setSelection(0, input.length());\n        shell.pack();\n        shell.open();\n        while (!shell.isDisposed()) {\n            if (!display.readAndDispatch()) {\n                display.sleep();\n            }\n        }\n        display.dispose();\n    }\n}",
+  "afterExample": "import org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.Text;\n\npublic class Example {\n    public void test() {\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        Text text \u003d new Text(shell, 0);\n        String input \u003d \"Hello World\";\n        text.setText(input);\n        text.selectAll(); // Cleaned up\n        shell.pack();\n        shell.open();\n        while (!shell.isDisposed()) {\n            if (!display.readAndDispatch()) {\n                display.sleep();\n            }\n        }\n        display.dispose();\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.widgets.Text;\n\npublic class Example {\n    public void test() {\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        Text text \u003d new Text(shell, 0);\n        String input \u003d \"Hello World\";\n        text.setText(input);\n        text.setSelection(6, input.length()); // Start index not 0, must not match\n        text.setSelection(0, 5); // End index is a literal, not $stringValue.length(), must not match\n        shell.pack();\n        shell.open();\n        while (!shell.isDisposed()) {\n            if (!display.readAndDispatch()) {\n                display.sleep();\n            }\n        }\n        display.dispose();\n    }\n}",
+  "targetHintFile": "swt-api.sandbox-hint",
+  "sourceCommit": "f369f0ecbf7c9f4709a251bd7f3f1ad1508e11d8",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Simplification",
+  "summary": "Replace Text.setSelection(0, string.length()) with Text.selectAll()",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-23T02:56:58.116364676Z",
+  "ruleFingerprint": "sha256:ce544d9838aad7c0abe105529c590f390009877ef39efb9825514657e228ee36",
+  "behaviorFingerprint": "sha256:9df3f22f03fc084483bf5947da3e476925f5d894031358f3a6a10c1199941220",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-23T03:00:55.720817177Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

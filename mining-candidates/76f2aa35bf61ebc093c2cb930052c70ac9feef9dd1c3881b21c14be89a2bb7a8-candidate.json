@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "76f2aa35bf61ebc093c2cb930052c70ac9feef9dd1c3881b21c14be89a2bb7a8",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: array-hashcode-fix\u003e\n\u003c!description: Replace Object.hashCode() call on an array with java.util.Arrays.hashCode() for content-based hashing.\u003e\n\u003c!severity: WARNING\u003e\n$array.hashCode()\n\u003d\u003e java.util.Arrays.hashCode($array)\n;;",
+  "beforeExample": "class MyClass {\n    private String[] names;\n    private int[] ids;\n    private java.util.List\u003cString\u003e items;\n\n    public MyClass(String[] names, int[] ids, java.util.List\u003cString\u003e items) {\n        this.names \u003d names;\n        this.ids \u003d ids;\n        this.items \u003d items;\n    }\n\n    @Override\n    public int hashCode() {\n        final int prime \u003d 31;\n        int result \u003d 1;\n        result \u003d prime * result + (names \u003d\u003d null ? 0 : names.hashCode()); // Should match\n        result \u003d prime * result + (ids \u003d\u003d null ? 0 : ids.hashCode()); // Should match\n        result \u003d prime * result + (items \u003d\u003d null ? 0 : items.hashCode()); // Should NOT match\n        return result;\n    }\n}",
+  "afterExample": "import java.util.Arrays;\n\nclass MyClass {\n    private String[] names;\n    private int[] ids;\n    private java.util.List\u003cString\u003e items;\n\n    public MyClass(String[] names, int[] ids, java.util.List\u003cString\u003e items) {\n        this.names \u003d names;\n        this.ids \u003d ids;\n        this.items \u003d items;\n    }\n\n    @Override\n    public int hashCode() {\n        final int prime \u003d 31;\n        int result \u003d 1;\n        result \u003d prime * result + (names \u003d\u003d null ? 0 : java.util.Arrays.hashCode(names)); // Transformed\n        result \u003d prime * result + (ids \u003d\u003d null ? 0 : java.util.Arrays.hashCode(ids)); // Transformed\n        result \u003d prime * result + (items \u003d\u003d null ? 0 : items.hashCode()); // Untouched\n        return result;\n    }\n}",
+  "negativeExample": "class NonArrayTest {\n    private String name;\n    private java.util.List\u003cString\u003e collection;\n\n    public NonArrayTest(String name, java.util.List\u003cString\u003e collection) {\n        this.name \u003d name;\n        this.collection \u003d collection;\n    }\n\n    @Override\n    public int hashCode() {\n        // Should NOT match \u0027name.hashCode()\u0027 because String is not an array type.\n        // Its hashCode() is already content-based.\n        // Should NOT match \u0027collection.hashCode()\u0027 because List is not an array type.\n        return name.hashCode() + collection.hashCode();\n    }\n}",
+  "targetHintFile": "refactoring.sandbox-hint",
+  "sourceCommit": "839d8194dbfdeeadd58082a9db643a751cfc461f",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Refactoring",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-23T02:53:53.590889311Z",
+  "ruleFingerprint": "sha256:1af4d41ddcfd91ace8e389045960866465fac36ad8ad5492080b4de2a8725bdf",
+  "behaviorFingerprint": "sha256:2d9916a741797f386f985932073483e5da7f8bdf8c8eba98977d9e18839f50b2",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-23T03:00:55.643679171Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

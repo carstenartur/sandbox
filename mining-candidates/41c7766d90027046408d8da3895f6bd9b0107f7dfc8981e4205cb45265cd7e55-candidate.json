@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "41c7766d90027046408d8da3895f6bd9b0107f7dfc8981e4205cb45265cd7e55",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.searchplugin.getworkbench.to.platformui\u003e\n\u003c!description: Replace internal SearchPlugin.getDefault().getWorkbench() with PlatformUI.getWorkbench().\u003e\n\u003c!severity: WARNING\u003e\norg.eclipse.search.internal.ui.SearchPlugin.getDefault().getWorkbench()\n\u003d\u003e\norg.eclipse.ui.PlatformUI.getWorkbench()\n;;",
+  "beforeExample": "package org.eclipse.text.quicksearch.internal.util;\n\nimport org.eclipse.ui.IWorkbench;\nimport org.eclipse.search.internal.ui.SearchPlugin; // Assume this import is present for compilation\nimport org.eclipse.ui.PlatformUI;\n\npublic class TestClass {\n    // Dummy SearchPlugin class to make the example compile\n    // In a real Eclipse environment, org.eclipse.search.internal.ui.SearchPlugin would be available.\n    static class SearchPlugin {\n        public static SearchPlugin getDefault() { return new SearchPlugin(); }\n        public IWorkbench getWorkbench() { return PlatformUI.getWorkbench(); } // Dummy implementation\n    }\n\n    public IWorkbench getWorkbenchFromSearchPlugin() {\n        // Matches: org.eclipse.search.internal.ui.SearchPlugin.getDefault().getWorkbench()\n        return SearchPlugin.getDefault().getWorkbench();\n    }\n}",
+  "afterExample": "package org.eclipse.text.quicksearch.internal.util;\n\nimport org.eclipse.ui.IWorkbench;\nimport org.eclipse.ui.PlatformUI; // New import, or existing one will be reused\n\npublic class TestClass {\n    // Dummy SearchPlugin class to make the example compile\n    // In a real Eclipse environment, org.eclipse.search.internal.ui.SearchPlugin would be available.\n    static class SearchPlugin {\n        public static SearchPlugin getDefault() { return new SearchPlugin(); }\n        public IWorkbench getWorkbench() { return PlatformUI.getWorkbench(); } // Dummy implementation\n    }\n\n    public IWorkbench getWorkbenchFromSearchPlugin() {\n        // Replaced with: org.eclipse.ui.PlatformUI.getWorkbench()\n        return PlatformUI.getWorkbench();\n    }\n}",
+  "negativeExample": "package org.eclipse.text.quicksearch.internal.util;\n\nimport org.eclipse.ui.IWorkbench;\nimport org.eclipse.ui.PlatformUI;\n\npublic class TestClass {\n    public IWorkbench getWorkbenchDirectly() {\n        return PlatformUI.getWorkbench(); // Should not match, already the target\n    }\n}",
+  "targetHintFile": "eclipse-api.sandbox-hint",
+  "sourceCommit": "85b99c4d4fbfc65f31590c2a53ffcd2f4a060697",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-23T02:58:35.322975852Z",
+  "ruleFingerprint": "sha256:82d88ecb8017a20293584bde36de5a242976125b85b47e7a9c9423933dcdf569",
+  "behaviorFingerprint": "sha256:9510c461967af4ddf601bad921683ea0009ae0ed54af46552318af1887e55cd8",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-23T03:00:55.752470319Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

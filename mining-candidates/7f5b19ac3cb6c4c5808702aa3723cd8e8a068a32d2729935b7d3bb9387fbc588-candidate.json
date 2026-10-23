@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7f5b19ac3cb6c4c5808702aa3723cd8e8a068a32d2729935b7d3bb9387fbc588",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new $FunctionalInterface() {\n    @java.lang.Override\n    public $ReturnType $methodName($ParamType $paramName) {\n        return new $ConstructorType($paramName);\n    }\n} :: sourceVersionGE(8)\n\u003d\u003e\n$ConstructorType::new\n;;",
+  "beforeExample": "package test;\n\n// Mock classes for compilation\ninterface IInformationControl { }\ninterface IInformationControlCreator { IInformationControl createInformationControl(Shell parent); }\nclass DefaultInformationControl implements IInformationControl {\n    public DefaultInformationControl(Shell parent) {}\n    public DefaultInformationControl() {}\n}\nclass Shell { public Shell() {} }\n\npublic class Example {\n    public IInformationControlCreator getCreator() {\n        return new IInformationControlCreator() {\n            @Override\n            public IInformationControl createInformationControl(Shell parent) {\n                return new DefaultInformationControl(parent);\n            }\n        };\n    }\n}",
+  "afterExample": "package test;\n\n// Mock classes for compilation\ninterface IInformationControl { }\ninterface IInformationControlCreator { IInformationControl createInformationControl(Shell parent); }\nclass DefaultInformationControl implements IInformationControl {\n    public DefaultInformationControl(Shell parent) {}\n    public DefaultInformationControl() {}\n}\nclass Shell { public Shell() {} }\n\npublic class Example {\n    public IInformationControlCreator getCreator() {\n        return DefaultInformationControl::new;\n    }\n}",
+  "negativeExample": "package test;\n\n// Mock classes for compilation\ninterface IInformationControl { }\ninterface IInformationControlCreator { IInformationControl createInformationControl(Shell parent); }\nclass DefaultInformationControl implements IInformationControl {\n    public DefaultInformationControl(Shell parent) {}\n    public DefaultInformationControl() {}\n}\nclass Shell { public Shell() {} }\n\npublic class Example {\n    public IInformationControlCreator getCreatorWithExtraLogic() {\n        return new IInformationControlCreator() {\n            @Override\n            public IInformationControl createInformationControl(Shell parent) {\n                System.out.println(\"Creating control\"); // extra logic\n                return new DefaultInformationControl(parent);\n            }\n        };\n    }\n\n    public IInformationControlCreator getCreatorWithNoArgsConstructor() {\n        return new IInformationControlCreator() {\n            @Override\n            public IInformationControl createInformationControl(Shell parent) {\n                return new DefaultInformationControl(); // different constructor\n            }\n        };\n    }\n\n    public IInformationControlCreator getCreatorWithDifferentParamName() {\n        return new IInformationControlCreator() {\n            @Override\n            public IInformationControl createInformationControl(Shell someOtherParent) { // different parameter name\n                return new DefaultInformationControl(someOtherParent);\n            }\n        };\n    }\n\n    public IInformationControlCreator getCreatorWithDifferentCtorParam() {\n        return new IInformationControlCreator() {\n            @Override\n            public IInformationControl createInformationControl(Shell parent) {\n                return new DefaultInformationControl(new Shell()); // new instance as ctor param\n            }\n        };\n    }\n}",
+  "targetHintFile": "java8.sandbox-hint",
+  "sourceCommit": "79e36b1e97f35a1a883dfc5bf6175e221c19ea34",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Java 8 Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-23T02:55:44.735250450Z",
+  "ruleFingerprint": "sha256:11db4f25031c5cba044861e454b6c63d378e4b13f0ea569a443cec1f11a10255",
+  "behaviorFingerprint": "sha256:8742c42330e69305b9206b5d68110d5a0fe12c3b95dbdc3e5a4b44760daba56f",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 12: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-23T03:00:55.703437716Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 18: The public type CodeAssistConfigurationBlock must be defined in its own file",
-    "verifiedAt": "2026-10-22T02:26:58.925621435Z",
+    "verifiedAt": "2026-10-23T03:00:51.663590148Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
