@@ -19,4 +19,12 @@
           <run class="org.sandbox.jdt.core.cleanupapp.HeadlessProjectWideCodeCleanupApplication" />
         </application>
 </extension>
+
+<!-- Optional: only instantiated by a JDT LS host. No automatic save action. -->
+<extension point="org.eclipse.jdt.ls.core.delegateCommandHandler">
+    <delegateCommandHandler class="org.sandbox.jdt.core.cleanupapp.jdtls.SandboxCleanUpCommands">
+        <command id="sandbox.cleanup.list"/>
+        <command id="sandbox.cleanup.preview"/>
+    </delegateCommandHandler>
+</extension>
 </plugin>
