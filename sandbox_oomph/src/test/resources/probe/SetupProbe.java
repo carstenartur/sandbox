@@ -94,6 +94,9 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.PlatformUI;
@@ -248,10 +251,16 @@ public class SetupProbe implements IApplication {
         ResourceSet resourceSet = SetupCoreUtil.createResourceSet();
         URI publicCatalogURI = URI.createURI(PUBLIC_CATALOG);
         URI sandboxURI = URI.createURI(ENTRY);
-        require(!resourceSet.getURIConverter().getURIMap().containsKey(publicCatalogURI),
-                "Public catalog must not be redirected to a fixture");
-        require(!resourceSet.getURIConverter().getURIMap().containsKey(sandboxURI),
-                "Sandbox must not be redirected to a fixture");
+        // Oomph may pre-populate links to its published setups.zip archive.
+        // Force this test to exercise the live public URLs, not the archive or
+        // the candidate's local source tree. Check effective URI normalization.
+        var uriConverter = resourceSet.getURIConverter();
+        uriConverter.getURIMap().remove(publicCatalogURI);
+        uriConverter.getURIMap().remove(sandboxURI);
+        require(publicCatalogURI.equals(uriConverter.normalize(publicCatalogURI)),
+                "Official Github catalog is still redirected: " + uriConverter.normalize(publicCatalogURI));
+        require(sandboxURI.equals(uriConverter.normalize(sandboxURI)),
+                "Public Sandbox project is still redirected: " + uriConverter.normalize(sandboxURI));
 
         ResourceMirror.WithProductImages mirror = new ResourceMirror.WithProductImages(resourceSet, 4) {
             @Override
@@ -312,7 +321,7 @@ public class SetupProbe implements IApplication {
         Display display = PlatformUI.getWorkbench().getDisplay();
         CompletableFuture<String> verified = new CompletableFuture<>();
         AtomicReference<SetupWizardDialog> dialogRef = new AtomicReference<>();
-        AtomicReference<String> state = new AtomicReference<>("installer not opened");
+        AtomicReference<String> state = new AtomicReference<>("project importer not opened");
         long deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(3);
 
         display.asyncExec(() -> {
@@ -325,6 +334,7 @@ public class SetupProbe implements IApplication {
                 dialogRef.set(dialog);
                 display.timerExec(250, new Runnable() {
                     private boolean projectPageShown;
+                    private boolean sandboxSelected;
 
                     @Override
                     public void run() {
@@ -338,18 +348,18 @@ public class SetupProbe implements IApplication {
                                 return;
                             }
                             if (dialog.getShell() == null || dialog.getShell().isDisposed()) {
-                                verified.completeExceptionally(new AssertionError("Installer closed before catalog verification"));
+                                verified.completeExceptionally(new AssertionError("Project importer closed before catalog verification"));
                                 return;
                             }
 
                             if (importer.getCatalogManager().getIndex() == null) {
-                                state.set("waiting for official Installer index");
+                                state.set("waiting for official Oomph index");
                             } else {
                                 IWizardPage page = importer.getPage("ProjectPage");
                                 require(page instanceof ProjectPage, "Real Oomph ProjectPage is missing");
                                 if (!projectPageShown) {
-                                    // Exactly the normal Installer page is shown, with its
-                                    // own JFace content provider and selected catalog model.
+                                    // This is the same ProjectPage used in the Installer,
+                                    // with its JFace content provider and selected catalog model.
                                     dialog.showPage(page);
                                     projectPageShown = true;
                                 }
@@ -366,21 +376,43 @@ public class SetupProbe implements IApplication {
                                         if (sandbox == null) {
                                             state.set("Sandbox Project missing; catalog children=" + labels(github.getItems()));
                                         } else {
-                                            expandItem(tree, sandbox);
-                                            TreeItem main = findItem(sandbox.getItems(), "Main");
-                                            if (main == null) {
-                                                state.set("Main stream missing; streams=" + labels(sandbox.getItems()));
-                                            } else {
-                                                Resource publicProject = importer.getResourceSet().getResource(URI.createURI(ENTRY), false);
-                                                require(publicProject != null && publicProject.isLoaded()
-                                                        && publicProject.getErrors().isEmpty(),
-                                                        "Installer project model has errors: "
-                                                        + (publicProject == null ? "missing" : publicProject.getErrors()));
-                                                require(setupTaskIDs(publicProject).containsAll(ESSENTIAL_TASKS),
-                                                        "Installer tree hid unresolved extension tasks");
-                                                captureInstallerScreenshot(dialog.getShell(),
+                                            // The Oomph ProjectPage tree lists projects,
+                                            // not streams. It shows the selected stream in
+                                            // the *separate table* after adding a project.
+                                            Resource publicProject = importer.getResourceSet()
+                                                    .getResource(URI.createURI(ENTRY), false);
+                                            require(publicProject != null && publicProject.isLoaded()
+                                                    && publicProject.getErrors().isEmpty(),
+                                                    "Oomph ProjectPage has load errors: "
+                                                    + (publicProject == null ? "missing" : publicProject.getErrors()));
+                                            require(setupTaskIDs(publicProject).containsAll(ESSENTIAL_TASKS),
+                                                    "ProjectPage lost Sandbox extension tasks");
+                                            Table streamTable = findStreamTable(page.getControl());
+                                            if (streamTable == null || streamTable.isDisposed()) {
+                                                state.set("ProjectPage stream table is missing");
+                                            } else if (containsSandboxMain(streamTable)) {
+                                                captureProjectPageScreenshot(dialog.getShell(),
                                                         run.resolve("oomph-project-catalog.png"));
-                                                verified.complete("Github Projects / Sandbox Project / Main");
+                                                verified.complete("Github Projects / Sandbox Project; stream table: Main");
+                                            } else if (!sandboxSelected) {
+                                                tree.setSelection(sandbox);
+                                                Event selection = new Event();
+                                                selection.item = sandbox;
+                                                tree.notifyListeners(SWT.Selection, selection);
+                                                ToolItem add = findProjectAction(page.getControl(), "choose");
+                                                if (add == null) {
+                                                    state.set("ProjectPage Add button not found");
+                                                } else if (!add.isEnabled()) {
+                                                    state.set("Sandbox selection did not enable Add");
+                                                } else {
+                                                    Event click = new Event();
+                                                    click.item = add;
+                                                    add.notifyListeners(SWT.Selection, click);
+                                                    sandboxSelected = true;
+                                                    state.set("waiting for selected Main stream table entry");
+                                                }
+                                            } else {
+                                                state.set("Main not visible in stream table: " + tableContents(streamTable));
                                             }
                                         }
                                     }
@@ -427,6 +459,55 @@ public class SetupProbe implements IApplication {
         return null;
     }
 
+    private static Table findStreamTable(Control control) {
+        if (control instanceof Table table) {
+            return table;
+        }
+        if (control instanceof Composite composite) {
+            for (Control child : composite.getChildren()) {
+                Table found = findStreamTable(child);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean containsSandboxMain(Table table) {
+        for (var item : table.getItems()) {
+            if ("Sandbox Project".equals(item.getText(1)) && "Main".equals(item.getText(2))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String tableContents(Table table) {
+        return Arrays.stream(table.getItems())
+                .map(item -> item.getText(0) + " / " + item.getText(1) + " / " + item.getText(2))
+                .collect(Collectors.joining("; "));
+    }
+
+    private static ToolItem findProjectAction(Control control, String key) {
+        if (control instanceof ToolBar bar) {
+            for (ToolItem item : bar.getItems()) {
+                if (key.equals(item.getData("org.eclipse.swtbot.widget.key"))) {
+                    return item;
+                }
+            }
+        }
+        if (control instanceof Composite composite) {
+            for (Control child : composite.getChildren()) {
+                ToolItem found = findProjectAction(child, key);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
     private static TreeItem findItem(TreeItem[] items, String text) {
         for (TreeItem item : items) {
             if (text.equals(item.getText())) {
@@ -449,28 +530,24 @@ public class SetupProbe implements IApplication {
         }
     }
 
-    private static void captureInstallerScreenshot(Shell shell, Path path) {
+    private static void captureProjectPageScreenshot(Shell shell, Path path) throws Exception {
+        var area = shell.getClientArea();
+        require(area.width > 0 && area.height > 0, "ProjectPage screenshot has no visible client area");
+        Image image = new Image(shell.getDisplay(), area.width, area.height);
         try {
-            var area = shell.getClientArea();
-            if (area.width <= 0 || area.height <= 0) {
-                return;
-            }
-            Image image = new Image(shell.getDisplay(), area.width, area.height);
+            GC gc = new GC(shell);
             try {
-                GC gc = new GC(shell);
-                try {
-                    gc.copyArea(image, 0, 0);
-                } finally {
-                    gc.dispose();
-                }
-                ImageLoader loader = new ImageLoader();
-                loader.data = new org.eclipse.swt.graphics.ImageData[] { image.getImageData() };
-                loader.save(path.toString(), SWT.IMAGE_PNG);
+                gc.copyArea(image, 0, 0);
             } finally {
-                image.dispose();
+                gc.dispose();
             }
-        } catch (RuntimeException ex) {
-            System.err.println("Installer screenshot unavailable: " + ex);
+            ImageLoader loader = new ImageLoader();
+            loader.data = new org.eclipse.swt.graphics.ImageData[] { image.getImageData() };
+            loader.save(path.toString(), SWT.IMAGE_PNG);
+            require(Files.isRegularFile(path) && Files.size(path) > 0,
+                    "Oomph ProjectPage screenshot was not saved: " + path);
+        } finally {
+            image.dispose();
         }
     }
 
@@ -479,8 +556,11 @@ public class SetupProbe implements IApplication {
         var it = EcoreUtil.<EObject>getAllContents(resource, false);
         while (it.hasNext()) {
             EObject object = it.next();
-            if (object instanceof SetupTask task && task.getID() != null) {
-                result.add(task.getID());
+            // Extension model classes may be dynamically loaded EObjects,
+            // not Java SetupTask instances. Oomph serializes iD as XML "id".
+            var idFeature = object.eClass().getEStructuralFeature("iD");
+            if (idFeature != null && object.eGet(idFeature) instanceof String id && !id.isBlank()) {
+                result.add(id);
             }
         }
         return result;
