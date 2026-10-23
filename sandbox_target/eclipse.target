@@ -62,8 +62,12 @@
         <!-- 7. Compile the optional JDT LS adapter in both Maven and Oomph/PDE.
              Standard-server tests also need the upstream optional Maven/Gradle
              integrations. Target availability does not make them mandatory
-             dependencies of ordinary Sandbox application installations. -->
-        <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
+             dependencies of ordinary Sandbox application installations.
+             Maven-based JDT LS transitive dependencies do not publish every
+             -sources JAR (e.g. flexmark-util:0.64.8). Source attachment is
+             optional; never require missing source artifacts when resolving
+             the contributor's PDE target. -->
+        <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="false" type="InstallableUnit">
             <repository location="https://download.eclipse.org/jdtls/milestones/1.62.0/repository/"/>
             <unit id="org.eclipse.jdt.ls.core" version="1.62.0.202610131109"/>
             <unit id="org.eclipse.m2e.core" version="0.0.0"/>
