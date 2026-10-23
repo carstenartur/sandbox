@@ -250,6 +250,34 @@ class OomphSetupTest {
     }
 
     @Test
+    void onlyUnpublishedOptionalFlexmarkSourceAttachmentIsNonFatal(@TempDir Path temporary) throws Exception {
+        String log = "!SESSION 2026-10-23 00:00:00.000\n"
+                + "!ENTRY org.eclipse.m2e.core 4 0 2026-10-23 00:00:00.010\n"
+                + "!MESSAGE Failed to obtain source for artifact com.vladsch.flexmark:flexmark-util:0.64.8\n"
+                + "!STACK 1\n"
+                + "org.eclipse.core.runtime.CoreException: Could not resolve artifact "
+                + "com.vladsch.flexmark:flexmark-util:jar:sources:0.64.8\n"
+                + "\tat org.eclipse.m2e.pde.target.MavenPluginSourcePathLocator.locateSource(MavenPluginSourcePathLocator.java:55)\n"
+                + "!SUBENTRY 1 org.eclipse.m2e.core 4 -1 2026-10-23 00:00:00.011\n"
+                + "!MESSAGE Could not resolve artifact com.vladsch.flexmark:flexmark-util:jar:sources:0.64.8\n"
+                + "!SUBENTRY 2 org.eclipse.m2e.core 4 0 2026-10-23 00:00:00.012\n"
+                + "!MESSAGE Missing com.vladsch.flexmark:flexmark-util:jar:sources:0.64.8\n";
+        Path file = Files.writeString(temporary.resolve("optional-source.log"), log);
+        assertDoesNotThrow(() -> verifyWorkbenchLog(file));
+        Files.writeString(file, log
+                + "!ENTRY org.eclipse.pde.core 4 0 2026-10-23 00:00:00.020\n"
+                + "!MESSAGE Classpath update failed\n");
+        assertTrue(assertThrows(java.io.IOException.class, () -> verifyWorkbenchLog(file))
+                .getMessage().contains("Classpath update failed"));
+        Files.writeString(file, log.replace("flexmark-util:jar:sources:0.64.8",
+                "flexmark-util:jar:sources:0.64.6"));
+        assertThrows(java.io.IOException.class, () -> verifyWorkbenchLog(file));
+        Files.writeString(file, log.replace("locateSource(MavenPluginSourcePathLocator.java:55)",
+                "unexpectedError(MavenPluginSourcePathLocator.java:55)"));
+        assertThrows(java.io.IOException.class, () -> verifyWorkbenchLog(file));
+    }
+
+    @Test
     void nonErrorWorkbenchMessagesDoNotInvalidateSetup(@TempDir Path temporary) throws Exception {
         Properties result = runSetupInvocation(temporary, "fresh", "fresh-0", () -> {
             Files.writeString(temporary.resolve("fresh.properties"), "result=passed\n");
@@ -350,22 +378,45 @@ class OomphSetupTest {
 
 
     private static void verifyWorkbenchLog(Path log) throws java.io.IOException {
+        // Keep the complete diagnostic entry together with its SUBENTRYs.
+        // A source-attachment failure must never conceal an unrelated error
+        // elsewhere in the same workbench session.
+        String content = Files.readString(log, java.nio.charset.StandardCharsets.UTF_8);
         var errorEntry = java.util.regex.Pattern.compile(
-                "^!(?:ENTRY\\s+\\S+|SUBENTRY\\s+\\d+\\s+\\S+)\\s+4\\s+.*");
-        try (var lines = Files.lines(log, java.nio.charset.StandardCharsets.UTF_8)) {
-            var entries = lines.dropWhile(line -> !errorEntry.matcher(line).matches()).iterator();
-            if (entries.hasNext()) {
-                var error = new StringBuilder(entries.next());
-                // Keep the message and stack of this event visible in JUnit/CI,
-                // without dumping the whole native workbench log.
-                for (int remaining = 80; remaining > 0 && entries.hasNext(); remaining--) {
-                    String line = entries.next();
-                    if (line.startsWith("!ENTRY ")) break;
-                    error.append('\n').append(line);
-                }
-                throw new java.io.IOException("Native Eclipse logged an error: " + error + "; see " + log);
+                "(?m)^!(?:ENTRY\\s+\\S+|SUBENTRY\\s+\\d+\\s+\\S+)\\s+4\\s+.*");
+        for (String section : content.split("(?m)(?=^!ENTRY |^!SESSION )")) {
+            if (!errorEntry.matcher(section).find()) continue;
+            if (isUnpublishedFlexmarkSourceAttachment(section)) {
+                // flexmark-util 0.64.8 publishes the binary artifact but not
+                // the Maven -sources classifier. m2e's optional PDE source
+                // locator logs an ERROR despite the compiled classes being
+                // available. Do not pretend source attachment succeeded.
+                System.err.println("OOMPH_OPTIONAL_SOURCE_UNAVAILABLE: "
+                        + "com.vladsch.flexmark:flexmark-util:jar:sources:0.64.8; see " + log);
+                continue;
             }
+            String excerpt = section.lines().limit(80).collect(Collectors.joining("\n"));
+            throw new java.io.IOException("Native Eclipse logged an error: " + excerpt + "; see " + log);
         }
+    }
+
+    private static boolean isUnpublishedFlexmarkSourceAttachment(String section) {
+        if (!section.startsWith("!ENTRY org.eclipse.m2e.core 4 ")
+                || !section.contains("org.eclipse.m2e.pde.target.MavenPluginSourcePathLocator.locateSource")
+                || !section.contains("org.eclipse.core.runtime.CoreException: Could not resolve artifact ")
+                || section.contains("java.lang.NullPointerException")) {
+            return false;
+        }
+        String id = "com.vladsch.flexmark:flexmark-util";
+        String classifier = id + ":jar:sources:0.64.8";
+        Set<String> onlyExpectedMessages = Set.of(
+                "!MESSAGE Failed to obtain source for artifact " + id + ":0.64.8",
+                "!MESSAGE Could not resolve artifact " + classifier,
+                "!MESSAGE Missing " + classifier);
+        List<String> messages = section.lines().filter(line -> line.startsWith("!MESSAGE ")).toList();
+        if (messages.size() != 3 || !onlyExpectedMessages.containsAll(messages)) return false;
+        return section.lines().filter(line -> line.startsWith("!SUBENTRY "))
+                .allMatch(line -> line.matches("!SUBENTRY \\d+ org\\.eclipse\\.m2e\\.core 4 .*"));
     }
 
     private static Path createFreshRuntime(Path run) throws Exception {
