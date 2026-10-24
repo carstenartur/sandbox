@@ -1,0 +1,15 @@
+import java.math.BigInteger;
+public class Calculation {
+    public static String[] compute(long start, long control, long end, long parameter) {
+        BigInteger a = BigInteger.valueOf(start);
+        BigInteger b = BigInteger.valueOf(control);
+        BigInteger c = BigInteger.valueOf(end);
+        BigInteger t = BigInteger.valueOf(parameter);
+        BigInteger linear = b.subtract(a).multiply(BigInteger.TWO);
+        BigInteger quadratic = a.subtract(b.multiply(BigInteger.TWO)).add(c);
+        BigInteger qt = quadratic.multiply(t);
+        BigInteger value = qt.add(linear).multiply(t).add(a);
+        BigInteger slope = qt.multiply(BigInteger.TWO).add(linear);
+        return new String[] { value.toString(), slope.toString() };
+    }
+}

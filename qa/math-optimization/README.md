@@ -18,9 +18,10 @@ fresh qualification of this reconstruction. No missing samples are fabricated.
 source read. The scanner and test sources are new reconstructions. Fresh corpus,
 test and measurement artifacts must record their own current hashes and output
 directories. The [fresh provisional 14-test run](results/reconstruction-provisional-4fc49eaf/README.md)
-passed, including both exact upstream trees. The final build, full corpus and
-JMH measurement gates remain pending. No historical throughput or allocation
-result is a current claim.
+passed, including both exact upstream trees. That provisional status is historical;
+no historical throughput or allocation result is a current claim. Current
+target/profile tests, frozen independent controls and generated safety-profile
+measurement procedures are described in [release qualification](RELEASE_QUALIFICATION.md).
 
 ## Inputs and contracts
 

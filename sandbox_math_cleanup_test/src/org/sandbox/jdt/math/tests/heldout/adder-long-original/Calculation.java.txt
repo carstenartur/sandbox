@@ -1,0 +1,7 @@
+public class Calculation {
+    public static long[] compute(long x, long y) {
+        long sum = (x ^ y) + 2L * (x & y);
+        long difference = (x | y) - (x & y);
+        return new long[] { sum, difference };
+    }
+}

@@ -1,0 +1,9 @@
+public class Calculation {
+    public static int[] compute(int p, int q) {
+        int a = (p + q) * (p + q);
+        int b = (p - q) * (p - q);
+        int c = a - b;
+        int d = a + b - 2 * p * p;
+        return new int[] { c, d };
+    }
+}

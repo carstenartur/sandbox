@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'sandbox-benchmarks/**'
+      - 'qa/math-optimization/fixtures/local/**'
       - 'sandbox-functional-converter-core/**'
       - 'sandbox-ast-api/**'
       - '.github/workflows/benchmark.yml'
@@ -14,6 +15,7 @@ on:
       - main
     paths:
       - 'sandbox-benchmarks/**'
+      - 'qa/math-optimization/fixtures/local/**'
       - 'sandbox-functional-converter-core/**'
       - 'sandbox-ast-api/**'
       - '.github/workflows/benchmark.yml'
@@ -52,9 +54,8 @@ jobs:
         run: mvn clean package
         
       - name: Run Benchmarks
-        working-directory: sandbox-benchmarks
         run: |
-          java -jar target/benchmarks.jar -rf json -rff target/jmh-result.json
+          java -jar sandbox-benchmarks/target/benchmarks.jar -foe true -rf json -rff sandbox-benchmarks/target/jmh-result.json
           
       - name: Upload Benchmark Results
         uses: actions/upload-artifact@v7

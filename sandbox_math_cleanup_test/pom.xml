@@ -4,7 +4,7 @@
  <artifactId>sandbox_math_cleanup_test</artifactId><name>Sandbox Mathematics Cleanup Test</name><packaging>eclipse-test-plugin</packaging>
 
  <dependencies><dependency><groupId>org.sandbox</groupId><artifactId>sandbox_math_cleanup</artifactId><version>${project.version}</version></dependency></dependencies>
- <properties><sandbox.math.retainHeadlessProbe>false</sandbox.math.retainHeadlessProbe></properties>
+ <properties><sandbox.math.retainHeadlessProbe>false</sandbox.math.retainHeadlessProbe><math.qa.safetyFixtureDirectory></math.qa.safetyFixtureDirectory></properties>
  <build><testSourceDirectory>src</testSourceDirectory><plugins>
  <plugin>
   <groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.11.0</version>
@@ -25,6 +25,7 @@
   <groupId>org.eclipse.tycho</groupId><artifactId>tycho-surefire-plugin</artifactId><version>${tycho-version}</version>
   <configuration><useJDK>BREE</useJDK><useUIHarness>true</useUIHarness><useUIThread>false</useUIThread><showEclipseLog>true</showEclipseLog><providerHint>junit6</providerHint><failIfNoTests>true</failIfNoTests><forkedProcessTimeoutInSeconds>600</forkedProcessTimeoutInSeconds>
    <systemProperties>
+    <math.qa.safetyFixtureDirectory>${math.qa.safetyFixtureDirectory}</math.qa.safetyFixtureDirectory>
     <sandbox.math.swt.binary>${project.build.directory}/corpus-inputs/swt-binary.jar</sandbox.math.swt.binary>
     <sandbox.math.swt.sources>${project.build.directory}/corpus-inputs/swt-sources.jar</sandbox.math.swt.sources>
     <sandbox.math.bc.mavenBinary>${project.build.directory}/corpus-inputs/bc-binary.jar</sandbox.math.bc.mavenBinary>

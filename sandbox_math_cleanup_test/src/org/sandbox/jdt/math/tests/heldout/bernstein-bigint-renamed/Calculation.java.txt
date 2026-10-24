@@ -1,0 +1,16 @@
+import java.math.BigInteger;
+public class Calculation {
+    public static String[] compute(long p, long q, long r, long s) {
+        BigInteger h = BigInteger.valueOf(p);
+        BigInteger i = BigInteger.valueOf(q);
+        BigInteger j = BigInteger.valueOf(r);
+        BigInteger k = BigInteger.valueOf(s);
+        BigInteger l = BigInteger.ONE.subtract(k);
+        BigInteger m = h.multiply(l).multiply(l)
+                .add(i.multiply(BigInteger.TWO).multiply(l).multiply(k))
+                .add(j.multiply(k).multiply(k));
+        BigInteger n = i.subtract(h).multiply(l)
+                .add(j.subtract(i).multiply(k)).multiply(BigInteger.TWO);
+        return new String[] { m.toString(), n.toString() };
+    }
+}
