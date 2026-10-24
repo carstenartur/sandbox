@@ -105,12 +105,18 @@ class ReleaseNotesContractTest {
 				     && "$3" == --exclude-drafts && "$4" == --exclude-pre-releases
 				     && "$5" == --limit && "$6" == 1 && "$7" == --json
 				     && "$8" == tagName && "$9" == --jq
-				     && "${10}" == '.[0].tagName // empty' ]] || return 91
+				     && "${10}" == '.[0].tagName // empty' ]] || {
+				    printf 'Unexpected gh argument: <%s>\\n' "$@" >&2
+				    return 91
+				  }
 				  printf '%s' "$TEST_PUBLISHED_TAG"
 				  return "$TEST_API_EXIT_CODE"
 				}
 				""";
-		return run(List.of(bash(), "-c", remote + workflowBlock()), Map.of(
+		// Keep the script's embedded quotes out of Windows process argv encoding.
+		String script = "release-notes-test.sh";
+		Files.writeString(repository.resolve(script), remote + workflowBlock(), StandardCharsets.UTF_8);
+		return run(List.of(bash(), script), Map.of(
 				"STARTING_SHA", git("rev-parse", "HEAD").trim(),
 				"TEST_PUBLISHED_TAG", publishedTag, "TEST_API_EXIT_CODE", Integer.toString(apiExitCode)));
 	}
