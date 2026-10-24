@@ -15,16 +15,20 @@ The target platform is resolved from `sandbox_target/eclipse.target`. Runtime ve
 
 ## Reproducing the distribution gate
 
-Run the same sequential Maven entry point used by CI:
+Run the sequential distribution build and installed-mathematics stages used by CI:
 
 ```bash
-mvn -Pdistribution \
+./mvnw -Pdistribution,cli-dist,swtbot \
   --batch-mode \
   -Dtycho.localArtifacts=ignore \
+  -Dsandbox.math.retainHeadlessProbe=true \
   clean verify
+
+./mvnw -Pdistribution --batch-mode -pl sandbox_distribution_verify \
+  -Dtycho.localArtifacts=ignore exec:java@verify-installed-mathematics
 ```
 
-A headless Linux runner also needs a virtual X display. Do not add Maven parallelism: product materialization and p2 assembly must finish before `sandbox_distribution_verify` examines their output.
+A headless Linux runner needs a virtual X display for the build command, for example through `xvfb-run --auto-servernum`. The installed-mathematics stage separately verifies execution without a display. Do not add Maven parallelism: product materialization and p2 assembly must finish before `sandbox_distribution_verify` examines their output.
 
 ## Product matrix
 
@@ -40,7 +44,7 @@ ARM64/AArch64 product archives are not currently built or advertised.
 
 ## Automated runtime coverage
 
-The required pull-request gate is **Distribution Smoke Test**. On Linux GTK x86-64 it:
+The required pull-request gate is **Distribution Smoke Test**. Its native matrix covers Linux GTK x86-64, Windows x86-64 and macOS Cocoa x86-64. On each platform it:
 
 1. builds the product and update site from a clean checkout;
 2. parses p2 metadata and verifies all published feature/artifact references;
@@ -48,9 +52,11 @@ The required pull-request gate is **Distribution Smoke Test**. On Linux GTK x86-
 4. installs every published Sandbox feature into a fresh p2 destination;
 5. starts both the materialized product and the fresh installation;
 6. imports an isolated Java project through the installed cleanup application;
-7. applies a deterministic cleanup, validates the report and source change, and compiles the transformed source with Java 25.
+7. applies a deterministic cleanup, validates the report and source change, and compiles the transformed source with Java 25;
+8. upgrades the published stable 1.3.6 aggregate and its components to the candidate in one p2 transaction, then verifies installed cleanup behavior;
+9. executes the native mathematics Workbench scenarios and separately verifies installed mathematics analysis/apply/idempotence without a display.
 
-Windows and macOS archives are assembled by the same reactor but do not yet receive equivalent native launch-and-transform verification. A successful distribution build establishes assembly coverage for those platforms, not native runtime coverage.
+The independent 1.3.4 legacy-feature migration and aggregate-metadata-only update cases remain part of the gate. Linux additionally qualifies cleanup consumers against a Docker image built from the same candidate. Release acceptance requires successful results for the exact candidate revision on every advertised platform; an older successful matrix is supporting evidence.
 
 ## Publication channels
 
