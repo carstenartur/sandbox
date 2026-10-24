@@ -86,7 +86,7 @@ case "$mode" in
     "$java_command" -Xmx384m "${receipt_options[@]}" -cp "$runtime" org.sandbox.math.qa.CaptureFixtureReceipts \
       "$fixture_root" "$output/fixtures-before.properties"
     "$java_command" -Xmx384m -cp "$runtime" org.openjdk.jmh.Main '.*MathematicsOptimizationBenchmark.*' \
-      "${parameters[@]}" -prof gc -rf json -rff "$output/jmh.json" -jvmArgs '-Xms256m -Xmx256m' 2>&1 | tee "$output/jmh.log"
+      "${parameters[@]}" -foe true -prof gc -rf json -rff "$output/jmh.json" -jvmArgs '-Xms256m -Xmx256m' 2>&1 | tee "$output/jmh.log"
     "$java_command" -Xmx384m "${receipt_options[@]}" -cp "$runtime" org.sandbox.math.qa.CaptureFixtureReceipts \
       "$fixture_root" "$output/fixtures-after.properties" "$output/fixtures-before.properties"
     ;;

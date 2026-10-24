@@ -142,9 +142,12 @@
 								</goals>
 								<configuration>
 									<executable>java</executable>
+									<workingDirectory>${project.basedir}/..</workingDirectory>
 									<arguments>
 										<argument>-jar</argument>
 										<argument>${project.build.directory}/${uberjar.name}.jar</argument>
+										<argument>-foe</argument>
+										<argument>true</argument>
 										<argument>-rf</argument>
 										<argument>json</argument>
 										<argument>-rff</argument>

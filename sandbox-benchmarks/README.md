@@ -32,40 +32,43 @@ This creates `target/benchmarks.jar` (uber-jar with all dependencies).
 
 ### Run All Benchmarks
 
+Run the suite from the repository root so the registered mathematics fixture
+paths resolve. The Maven `run-benchmarks` profile uses this directory as well.
+
 ```bash
-java -jar target/benchmarks.jar
+java -jar sandbox-benchmarks/target/benchmarks.jar -foe true
 ```
 
 ### Run Specific Benchmark
 
 ```bash
 # Run only ASTParsingBenchmark
-java -jar target/benchmarks.jar ASTParsingBenchmark
+java -jar sandbox-benchmarks/target/benchmarks.jar ASTParsingBenchmark
 
 # Run specific method
-java -jar target/benchmarks.jar ASTParsingBenchmark.parseASTWithoutBindings
+java -jar sandbox-benchmarks/target/benchmarks.jar ASTParsingBenchmark.parseASTWithoutBindings
 ```
 
 ### Generate JSON Output
 
 ```bash
-java -jar target/benchmarks.jar -rf json -rff results.json
+java -jar sandbox-benchmarks/target/benchmarks.jar -foe true -rf json -rff results.json
 ```
 
 ### Common JMH Options
 
 ```bash
 # Quick run with fewer iterations
-java -jar target/benchmarks.jar -i 3 -wi 2 -f 1
+java -jar sandbox-benchmarks/target/benchmarks.jar -foe true -i 3 -wi 2 -f 1
 
 # Run with specific thread count
-java -jar target/benchmarks.jar -t 4
+java -jar sandbox-benchmarks/target/benchmarks.jar -foe true -t 4
 
 # List all available benchmarks
-java -jar target/benchmarks.jar -l
+java -jar sandbox-benchmarks/target/benchmarks.jar -l
 
 # Help
-java -jar target/benchmarks.jar -h
+java -jar sandbox-benchmarks/target/benchmarks.jar -h
 ```
 
 ## Adding New Benchmarks
@@ -192,14 +195,14 @@ mvn clean install -pl sandbox-functional-converter-core
 
 Reduce iterations for quick testing:
 ```bash
-java -jar target/benchmarks.jar -i 2 -wi 1 -f 1
+java -jar sandbox-benchmarks/target/benchmarks.jar -foe true -i 2 -wi 1 -f 1
 ```
 
 ### Out of Memory Errors
 
 Increase JVM heap:
 ```bash
-java -Xmx2g -jar target/benchmarks.jar
+java -Xmx2g -jar sandbox-benchmarks/target/benchmarks.jar -foe true
 ```
 
 ## References

@@ -4,16 +4,42 @@ package org.sandbox.math.qa;
 import static org.junit.jupiter.api.Assertions.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.openjdk.jmh.annotations.Param;
 import org.sandbox.benchmarks.MathematicsOptimizationBenchmark;
 import org.sandbox.benchmarks.MathematicsOptimizationBenchmark.Inputs;
 
 /** Checks the actual JMH compiler/input/outcome contract, without timing measurements. */
 class MathBenchmarkContractTest {
     @TempDir Path temporary;
+
+    @ParameterizedTest
+    @MethodSource("defaultFixtureDirectories")
+    void registeredDefaultFixturesCompileAndExecute(String fixtureDirectory) throws Exception {
+        Path root = Path.of("").toAbsolutePath();
+        while (root != null && !Files.isDirectory(root.resolve("qa/math-optimization"))) root = root.getParent();
+        assertNotNull(root, "Run from the repository or a Maven module");
+        try (Inputs inputs = new Inputs()) {
+            inputs.fixtureDirectory = root.resolve(fixtureDirectory).toString();
+            inputs.setup();
+            var benchmark = new MathematicsOptimizationBenchmark();
+            for (int i = 0; i < 64; i++) {
+                inputs.cursor = i;
+                long[] before = assertInstanceOf(long[].class, benchmark.original(inputs));
+                inputs.cursor = i;
+                assertArrayEquals(before, assertInstanceOf(long[].class, benchmark.generated(inputs)));
+            }
+        }
+    }
+
+    private static Stream<String> defaultFixtureDirectories() throws Exception {
+        return Stream.of(Inputs.class.getField("fixtureDirectory").getAnnotation(Param.class).value());
+    }
 
     @Test void compilesAndRunsBothJavaBodies() throws Exception {
         fixture("original", "return new long[] {seed + baseSeed};");
