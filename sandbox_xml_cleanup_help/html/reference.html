@@ -14,6 +14,11 @@
 
    <h2>Safety model</h2>
    <p>XML is parsed structurally; malformed resources or constructs that cannot be rewritten safely are reported or left unchanged.</p>
+   <p>Whitespace is removed or indented only in known element-only PDE descriptor
+      and XSD/EXSD containers. Documentation, application information, unknown
+      extension payloads, mixed content, and <code>xml:space="preserve"</code>
+      subtrees retain all text, including whitespace-only separators and blank
+      documentation. An unknown element's whitespace is not assumed to be formatting.</p>
 
    <h2>Known limitations</h2>
    <ul>

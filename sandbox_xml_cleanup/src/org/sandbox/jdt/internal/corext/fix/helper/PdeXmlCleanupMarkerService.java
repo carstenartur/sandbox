@@ -64,9 +64,18 @@ public final class PdeXmlCleanupMarkerService {
 			return 0;
 		}
 
+		String source= transformation.snapshot().content();
 		SchemaTransformationUtils.IndentationFinding finding=
-				SchemaTransformationUtils.firstConvertibleMarkupIndentation(
-						transformation.snapshot().content());
+				SchemaTransformationUtils.firstConvertibleMarkupIndentation(source);
+		if (finding != null) {
+			int lineEnd= source.indexOf('\n', finding.offset());
+			String candidateLine= source.substring(finding.offset(), lineEnd < 0 ? source.length() : lineEnd);
+			// A lexical match may belong to a preserved text subtree. Prefer a file-level
+			// marker if that line survives unchanged anywhere in the prepared output.
+			if (transformation.transformedContent().contains(candidateLine)) {
+				finding= null;
+			}
+		}
 		IMarker marker= file.createMarker(MARKER_TYPE);
 		marker.setAttribute(IMarker.MESSAGE, MARKER_MESSAGE);
 		marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_WARNING);

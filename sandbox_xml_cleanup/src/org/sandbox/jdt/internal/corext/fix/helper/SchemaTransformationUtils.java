@@ -47,7 +47,7 @@ public class SchemaTransformationUtils {
 	private SchemaTransformationUtils() {
 	}
 
-	/** Location of the first structural indentation that can be normalized. */
+	/** Location of the first lexical markup-indentation candidate. */
 	record IndentationFinding(int lineNumber, int offset, int length) {
 	}
 
@@ -101,7 +101,9 @@ public class SchemaTransformationUtils {
 			factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, ""); //$NON-NLS-1$
 
 			Transformer transformer= factory.newTransformer(new StreamSource(xslStream));
-			transformer.setOutputProperty(OutputKeys.INDENT, enableIndent ? "yes" : "no"); //$NON-NLS-1$ //$NON-NLS-2$
+			// Only the stylesheet knows which containers may safely receive layout.
+			transformer.setOutputProperty(OutputKeys.INDENT, "no"); //$NON-NLS-1$
+			transformer.setParameter("indent", enableIndent); //$NON-NLS-1$
 			transformer.setOutputProperty(OutputKeys.ENCODING, outputCharset.name());
 			StringWriter output= new StringWriter(Math.max(1024, sourceContent.length()));
 			transformer.transform(new StreamSource(new StringReader(sourceContent)),
@@ -109,32 +111,8 @@ public class SchemaTransformationUtils {
 			// JAXP serializers can expand normalized XML newlines to the host delimiter.
 			// Canonicalize literal line ends only; references such as &#13; stay intact.
 			// XMLResourceSupport restores the workspace file's original delimiter.
-			String normalized= output.toString().replace("\r\n", "\n").replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$
-			return convertMarkupIndentationToTabs(normalized);
+			return output.toString().replace("\r\n", "\n").replace('\r', '\n'); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-	}
-
-	/**
-	 * Converts complete groups of four leading spaces only when the spaces form a
-	 * whitespace-only segment between XML markup. Indentation that follows
-	 * meaningful text is retained because it belongs to that text node, even when
-	 * the next line starts with a closing tag.
-	 */
-	static String convertMarkupIndentationToTabs(String content) {
-		Matcher matcher= MARKUP_INDENTATION.matcher(content);
-		ProtectedXmlRegions protectedRegions= new ProtectedXmlRegions(content);
-		StringBuilder result= new StringBuilder(content.length());
-		int copiedThrough= 0;
-		while (matcher.find()) {
-			result.append(content, copiedThrough, matcher.start());
-			if (isConvertibleMarkupIndentation(content, matcher.start(), protectedRegions)) {
-				result.append("\t".repeat(matcher.group().length() / 4)); //$NON-NLS-1$
-			} else {
-				result.append(matcher.group());
-			}
-			copiedThrough= matcher.end();
-		}
-		return result.append(content, copiedThrough, content.length()).toString();
 	}
 
 	static IndentationFinding firstConvertibleMarkupIndentation(String content) {
