@@ -80,8 +80,8 @@ class MathHeldoutQualificationTest {
                 System.getProperty("sandbox.math.corpus.evidence"));
         if (directory != null) {
             Path output = Files.createDirectories(Path.of(directory).resolve("heldout").resolve(id));
-            Files.writeString(output.resolve("original.java"), source);
-            Files.writeString(output.resolve("generated.java"), generated);
+            Files.writeString(output.resolve("original.java"), source, StandardCharsets.UTF_8);
+            Files.writeString(output.resolve("generated.java"), generated, StandardCharsets.UTF_8);
             Properties report = new Properties();
             report.setProperty("provenance", "Fresh synthetic heldout selected before execution; not upstream");
             report.setProperty("sourceSha256", sourceHash);
@@ -92,7 +92,7 @@ class MathHeldoutQualificationTest {
             report.setProperty("evidence", analysis.evidence().toString());
             report.setProperty("exactUndo", "true");
             report.setProperty("secondPassChanged", "false");
-            try (var writer = Files.newBufferedWriter(output.resolve("result.properties"))) {
+            try (var writer = Files.newBufferedWriter(output.resolve("result.properties"), StandardCharsets.UTF_8)) {
                 report.store(writer, "All selected outcomes retained, including unchanged cases");
             }
         }
@@ -108,7 +108,7 @@ class MathHeldoutQualificationTest {
     private Method compile(String source, NumericKind kind) throws Exception {
         Path directory = Files.createTempDirectory(temporary, "heldout-");
         Path file = directory.resolve("Calculation.java");
-        Files.writeString(file, source);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-proc:none",
                 "-classpath", directory.toString(), "-d", directory.toString(), file.toString()));
         Class<?>[] signature = kind == NumericKind.BIG_INTEGER ? new Class<?>[] {long.class, long.class, long.class, long.class}
