@@ -7,6 +7,8 @@ Fragment-Host: sandbox_int_to_enum
 Bundle-RequiredExecutionEnvironment: JavaSE-25
 Require-Bundle: org.junit,
  org.eclipse.jface.text,
+ org.eclipse.ui.editors,
+ org.eclipse.ui.workbench.texteditor,
  sandbox_test_commons
 Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir

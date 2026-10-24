@@ -755,6 +755,10 @@ public class SetupProbe implements IApplication {
             @Override public void log(Throwable t) { t.printStackTrace(); }
             @Override public void task(SetupTask task) {
                 activeSetupTask = task.eClass().getName();
+                if ("MavenImportTask".equals(activeSetupTask) || "ProjectsImportTask".equals(activeSetupTask)) {
+                    require("false".equals(System.getProperty("pde.addTransitiveDependenciesWithForbiddenAccess")),
+                            "The IDE must restart with the setup's PDE classpath setting before importing projects");
+                }
                 log("Oomph task: " + task);
             }
             @Override public void setTerminating() { }
@@ -845,6 +849,16 @@ public class SetupProbe implements IApplication {
             System.out.println("Pending workspace jobs: " + Arrays.toString(Job.getJobManager().find(null)));
         }
         require(errors.isEmpty(), "Workspace build errors:\n" + String.join("\n", errors));
+        // Neither direct fragment requirements nor PDE's forbidden transitive
+        // expansion may leak the server's unpacked Maven runtime into JDT indexing.
+        for (String name : List.of("sandbox_cleanup_application", "sandbox_cleanup_application_test")) {
+            var application = JavaCore.create(workspace.getRoot().getProject(name));
+            for (var entry : application.getResolvedClasspath(true)) {
+                String segment = entry.getPath().lastSegment();
+                require(segment == null || !segment.startsWith("org.eclipse.m2e.maven.runtime_"),
+                        "Server runtime leaked into " + name + " classpath: " + entry.getPath());
+            }
+        }
         // A fragment compiles against a workspace host project, while binary
         // Tycho tests use the host bundle's classpath. Check the IDE model too.
         var mathHost = JavaCore.create(workspace.getRoot().getProject("sandbox_math_cleanup"));

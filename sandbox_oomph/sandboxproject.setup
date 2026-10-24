@@ -119,6 +119,12 @@
       vm="true">
     <description>Set an Oomph redirection system property to redirect the logical location of this setup to its physical location in the Git clone.</description>
   </setupTask>
+  <!-- PDE also adds forbidden transitive dependencies by default. For JDT LS
+       this exposes the unpacked Maven runtime to JDT indexing while external
+       folder links are still being created during import. Use PDE's supported
+       opt-out; the real compile dependencies remain on the classpath. -->
+  <setupTask xsi:type="setup:EclipseIniTask"
+      option="-Dpde.addTransitiveDependenciesWithForbiddenAccess" value="=false" vm="true"/>
   <!-- Expose only the non-Java target project before resolving the target.
        Importing Java/PDE consumers first temporarily binds them to the running
        SDK, whose external class folders need not belong to this workspace. -->

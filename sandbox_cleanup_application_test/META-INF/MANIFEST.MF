@@ -10,10 +10,6 @@ Bundle-ActivationPolicy: lazy
 Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global
 Require-Bundle: org.eclipse.jdt.ls.core,
- org.eclipse.m2e.core,
- org.eclipse.m2e.maven.runtime,
- org.eclipse.m2e.jdt,
- org.eclipse.buildship.core,
  sandbox_encoding_quickfix,
  sandbox_functional_converter,
  sandbox_platform_helper,

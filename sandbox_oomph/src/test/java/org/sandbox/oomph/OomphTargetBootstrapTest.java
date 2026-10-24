@@ -76,6 +76,24 @@ class OomphTargetBootstrapTest {
     }
 
     @Test
+    void publicWorkspaceExcludesForbiddenTransitiveClasspathEntries() throws Exception {
+        var tasks = xml(module.resolve("sandboxproject.setup")).getElementsByTagName("setupTask");
+        int matches = 0;
+        for (int i = 0; i < tasks.getLength(); i++) {
+            Element task = (Element) tasks.item(i);
+            if ("-Dpde.addTransitiveDependenciesWithForbiddenAccess".equals(task.getAttribute("option"))) {
+                assertEquals("setup:EclipseIniTask", type(task));
+                assertEquals("=false", task.getAttribute("value"));
+                assertEquals("true", task.getAttribute("vm"),
+                        "PDE reads this property once, when the IDE starts");
+                assertNotEquals("true", task.getAttribute("remove"));
+                matches++;
+            }
+        }
+        assertEquals(1, matches, "The public setup must keep server-only runtime directories out of JDT indexing");
+    }
+
+    @Test
     void activeTargetProvidesTheLanguageServerForImportedSources() throws Exception {
         Document target = xml(module.resolve("../sandbox_target/eclipse.target"));
         var repositories = target.getElementsByTagName("repository");

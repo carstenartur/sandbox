@@ -33,6 +33,30 @@
 					<useUIHarness>false</useUIHarness>
 					<showEclipseLog>true</showEclipseLog>
 					<dependencies>
+						<!-- Runtime-only integrations of the standard language server.
+						     Require-Bundle on this fragment also extends the host's
+						     PDE classpath: the unpacked Maven runtime then races
+						     external-folder link creation during Oomph import. -->
+						<dependency>
+							<type>eclipse-plugin</type>
+							<artifactId>org.eclipse.m2e.core</artifactId>
+							<version>0.0.0</version>
+						</dependency>
+						<dependency>
+							<type>eclipse-plugin</type>
+							<artifactId>org.eclipse.m2e.maven.runtime</artifactId>
+							<version>0.0.0</version>
+						</dependency>
+						<dependency>
+							<type>eclipse-plugin</type>
+							<artifactId>org.eclipse.m2e.jdt</artifactId>
+							<version>0.0.0</version>
+						</dependency>
+						<dependency>
+							<type>eclipse-plugin</type>
+							<artifactId>org.eclipse.buildship.core</artifactId>
+							<version>0.0.0</version>
+						</dependency>
 						<dependency>
 							<type>eclipse-plugin</type>
 							<groupId>org.sandbox</groupId>

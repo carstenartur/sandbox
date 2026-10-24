@@ -299,6 +299,9 @@ class OomphSetupTest {
                 List<String> command = setupCommand(eclipse, workspace, phase, attempt);
                 int vmargs = command.indexOf("-vmargs");
                 assertTrue(vmargs > command.indexOf("-application"));
+                int appendVmargs = command.indexOf("--launcher.appendVmargs");
+                assertTrue(appendVmargs >= 0 && appendVmargs < vmargs,
+                        "Every restart must honor VM settings written by the real EclipseIniTasks");
                 assertEquals("org.sandbox.oomph.probe.run", command.get(command.indexOf("-application") + 1));
                 assertEquals(workspace.toString(), command.get(command.indexOf("-data") + 1));
                 List<String> properties = command.subList(vmargs + 1, command.size()).stream()
@@ -477,7 +480,7 @@ class OomphSetupTest {
         // disposable installation must resolve from its declared repositories
         // and own pool, not depend on or repair unrelated contributor caches.
         List<String> command = eclipseCommand(eclipse);
-        command.addAll(List.of("-clean", "-nosplash", "-application", "org.sandbox.oomph.probe.run",
+        command.addAll(List.of("--launcher.appendVmargs", "-clean", "-nosplash", "-application", "org.sandbox.oomph.probe.run",
                 "-data", workspace.toString(), "-consoleLog", "-vmargs", "-Xmx4g",
                 "-Doomph.setup.skip=true", "-Doomph.setup.questionnaire.skip=true",
                 "-Doomph.p2.additional.pools=false",

@@ -48,6 +48,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.namespace.BundleNamespace;
+import org.osgi.framework.wiring.BundleWiring;
 import org.sandbox.jdt.cleanup.multifile.api.IMultiFileCleanUpScopeProvider;
 import org.sandbox.jdt.core.cleanupapp.jdtls.SandboxCleanUpCommands.Request;
 import org.sandbox.jdt.core.cleanupapp.jdtls.SandboxCleanUpCommands.Snapshot;
@@ -104,6 +106,23 @@ class SandboxCleanUpCommandsTest {
 
     private Snapshot snapshot(ICompilationUnit unit) throws Exception {
         return new Snapshot(unit.getResource().getLocationURI().toString(), 7, unit.getSource());
+    }
+
+    @Test
+    void standardServerIntegrationsRemainRuntimeDependencies() {
+        Set<String> integrations = Set.of("org.eclipse.m2e.core", "org.eclipse.m2e.maven.runtime",
+                "org.eclipse.m2e.jdt", "org.eclipse.buildship.core");
+        var server = Platform.getBundle("org.eclipse.jdt.ls.core").adapt(BundleWiring.class);
+        var serverProviders = server.getRequiredWires(BundleNamespace.BUNDLE_NAMESPACE).stream()
+                .map(wire -> wire.getProviderWiring().getBundle().getSymbolicName()).collect(Collectors.toSet());
+        assertTrue(serverProviders.containsAll(integrations),
+                "Exercise the standard server with its Maven and Gradle integrations: " + serverProviders);
+        var host = Platform.getBundle("sandbox_cleanup_application").adapt(BundleWiring.class);
+        var hostProviders = host.getRequiredWires(BundleNamespace.BUNDLE_NAMESPACE).stream()
+                .map(wire -> wire.getProviderWiring().getBundle().getSymbolicName()).collect(Collectors.toSet());
+        assertTrue(java.util.Collections.disjoint(integrations, hostProviders),
+                "The test fragment must not inject server implementation dependencies into the application: "
+                        + hostProviders);
     }
 
     @Test
