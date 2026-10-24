@@ -28,6 +28,7 @@ mkdir -p "$classes"
   "$repository"/sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathTestSupport.java \
   "$repository"/sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathCorpusIntegrationTest.java \
   "$repository"/sandbox-benchmarks/src/main/java/org/sandbox/benchmarks/MathematicsOptimizationBenchmark.java \
+  "$repository"/sandbox-benchmarks/src/test/java/org/sandbox/math/qa/MathBenchmarkContractTest.java \
   "$repository"/qa/math-optimization/src/main/java/org/sandbox/math/qa/*.java \
   "$repository"/qa/math-optimization/src/test/java/org/sandbox/math/qa/*.java 2>&1 | tee "$output/compile.log"
 
@@ -60,24 +61,33 @@ case "$mode" in
       "${MATH_QA_CACHE:-$output/cache}" "$output/corpus" 2>&1 | tee "$output/corpus.log"
     ;;
   benchmark)
-    # Exclude Eclipse and Regelsuche dependencies from the measured runtime.
-    runtime="$classes"
+    # Keep optimizer/core classes as well as their dependencies out of measured processes.
+    runtime_classes="$output/runtime-classes"
+    mkdir -p "$runtime_classes/org/sandbox/math/qa"
+    cp -R "$classes/org/sandbox/benchmarks" "$runtime_classes/org/sandbox/"
+    cp "$classes/org/sandbox/math/qa/CaptureFixtureReceipts.class" "$runtime_classes/org/sandbox/math/qa/"
+    cp -R "$classes/META-INF" "$runtime_classes/"
+    runtime="$runtime_classes"
     IFS=: read -r -a entries <<< "$classpath"
     for entry in "${entries[@]}"; do
       case "$(basename "$entry")" in
         jmh-core-*.jar|jopt-simple-*.jar|commons-math3-*.jar) runtime="$runtime:$entry" ;;
       esac
     done
-    parameters=()
-    if [[ -n ${MATH_QA_BENCHMARK_FIXTURES:-} ]]; then
-      parameters+=("-p" "fixtureDirectory=$MATH_QA_BENCHMARK_FIXTURES/small,$MATH_QA_BENCHMARK_FIXTURES/wide")
-    fi
     fixture_root=${MATH_QA_BENCHMARK_FIXTURES:-$repository/qa/math-optimization/fixtures/local}
-    "$java_command" -Xmx384m -cp "$runtime" org.sandbox.math.qa.CaptureFixtureReceipts \
+    fixture_cases=${MATH_QA_BENCHMARK_CASES:-small,wide}
+    input_scenarios=${MATH_QA_BENCHMARK_SCENARIOS:-default}
+    IFS=, read -r -a case_names <<< "$fixture_cases"
+    directories=()
+    for name in "${case_names[@]}"; do directories+=("$fixture_root/$name"); done
+    fixture_directories=$(IFS=,; echo "${directories[*]}")
+    parameters=("-p" "fixtureDirectory=$fixture_directories" "-p" "inputScenario=$input_scenarios")
+    receipt_options=("-Dmath.qa.fixtureCases=$fixture_cases" "-Dmath.qa.inputScenarios=$input_scenarios")
+    "$java_command" -Xmx384m "${receipt_options[@]}" -cp "$runtime" org.sandbox.math.qa.CaptureFixtureReceipts \
       "$fixture_root" "$output/fixtures-before.properties"
     "$java_command" -Xmx384m -cp "$runtime" org.openjdk.jmh.Main '.*MathematicsOptimizationBenchmark.*' \
       "${parameters[@]}" -prof gc -rf json -rff "$output/jmh.json" -jvmArgs '-Xms256m -Xmx256m' 2>&1 | tee "$output/jmh.log"
-    "$java_command" -Xmx384m -cp "$runtime" org.sandbox.math.qa.CaptureFixtureReceipts \
+    "$java_command" -Xmx384m "${receipt_options[@]}" -cp "$runtime" org.sandbox.math.qa.CaptureFixtureReceipts \
       "$fixture_root" "$output/fixtures-after.properties" "$output/fixtures-before.properties"
     ;;
 esac

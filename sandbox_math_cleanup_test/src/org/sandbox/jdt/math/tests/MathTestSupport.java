@@ -21,7 +21,13 @@ final class MathTestSupport {
 	static CompilationUnit parse(String source) {
 		return parse(source, new String[0]);
 	}
+	static CompilationUnit parse(String source, int targetJava) {
+		return parse(source, new String[0], targetJava);
+	}
 	static CompilationUnit parse(String source, String[] classpath) {
+		return parse(source, classpath, 17);
+	}
+	private static CompilationUnit parse(String source, String[] classpath, int targetJava) {
 		ASTParser parser= ASTParser.newParser(AST.getJLSLatest());
 		parser.setSource(source.toCharArray());
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
@@ -29,7 +35,7 @@ final class MathTestSupport {
 		parser.setEnvironment(classpath, new String[0], null, true);
 		parser.setResolveBindings(true);
 		Map<String, String> options= new HashMap<>();
-		JavaCore.setComplianceOptions(JavaCore.VERSION_17, options);
+		JavaCore.setComplianceOptions(targetJava == 8 ? JavaCore.VERSION_1_8 : Integer.toString(targetJava), options);
 		parser.setCompilerOptions(options);
 		CompilationUnit result= (CompilationUnit) parser.createAST(null);
 		for (var problem : result.getProblems()) assertFalse(problem.isError(), problem.toString());

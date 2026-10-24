@@ -1,0 +1,16 @@
+import java.math.BigInteger;
+public class Calculation {
+    public static String[] compute(long start, long control, long end, long parameter) {
+        BigInteger a = BigInteger.valueOf(start);
+        BigInteger b = BigInteger.valueOf(control);
+        BigInteger c = BigInteger.valueOf(end);
+        BigInteger t = BigInteger.valueOf(parameter);
+        BigInteger u = BigInteger.ONE.subtract(t);
+        BigInteger value = a.multiply(u).multiply(u)
+                .add(b.multiply(BigInteger.TWO).multiply(u).multiply(t))
+                .add(c.multiply(t).multiply(t));
+        BigInteger slope = b.subtract(a).multiply(u)
+                .add(c.subtract(b).multiply(t)).multiply(BigInteger.TWO);
+        return new String[] { value.toString(), slope.toString() };
+    }
+}
