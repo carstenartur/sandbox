@@ -2,6 +2,7 @@
 package org.sandbox.distribution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -24,27 +25,55 @@ class AggregateInstallationVerifierTest {
     @TempDir Path temporary;
 
     @Test
+    void acceptsLatestStableAggregateAndComponentsUpgradingToCandidate() throws Exception {
+        assertDoesNotThrow(() -> AggregateInstallationVerifier.requireCandidateUpgradeSource(
+                URI.create("https://example.invalid/releases/1.3.6/"),
+                Map.of(AGGREGATE, "1.3.6.202610031300", COMPONENT, "1.3.6.202610031300"),
+                Map.of(AGGREGATE, "1.3.7.qualifier", COMPONENT, "1.3.7.qualifier")));
+    }
+
+    @Test
     void rejectsWrongPublishedAggregateVersionAndStaleCandidateVersion() throws Exception {
         IOException wrongOld = assertThrows(IOException.class, () -> AggregateInstallationVerifier.requireCandidateUpgradeSource(
-                URI.create("https://example.invalid/releases/1.3.5/"),
-                Map.of(AGGREGATE, "1.3.4", COMPONENT, "1.3.5"),
-                Map.of(AGGREGATE, "1.3.6.qualifier", COMPONENT, "1.3.6.qualifier")));
-        assertEquals("Expected published aggregate 1.3.5, found 1.3.4", wrongOld.getMessage());
+                URI.create("https://example.invalid/releases/1.3.6/"),
+                Map.of(AGGREGATE, "1.3.5", COMPONENT, "1.3.6"),
+                Map.of(AGGREGATE, "1.3.7.qualifier", COMPONENT, "1.3.7.qualifier")));
+        assertEquals("Expected published aggregate 1.3.6, found 1.3.5", wrongOld.getMessage());
 
         IOException stale = assertThrows(IOException.class, () -> AggregateInstallationVerifier.requireCandidateUpgradeSource(
-                URI.create("https://example.invalid/releases/1.3.5/"),
-                Map.of(AGGREGATE, "1.3.5", COMPONENT, "1.3.5"),
-                Map.of(AGGREGATE, "1.3.5.qualifier", COMPONENT, "1.3.6.qualifier")));
-        assertEquals("Candidate version is not newer for sandbox_feature.feature.group: old=1.3.5, new=1.3.5.qualifier",
+                URI.create("https://example.invalid/releases/1.3.6/"),
+                Map.of(AGGREGATE, "1.3.6", COMPONENT, "1.3.6"),
+                Map.of(AGGREGATE, "1.3.6.qualifier", COMPONENT, "1.3.7.qualifier")));
+        assertEquals("Candidate version is not newer for sandbox_feature.feature.group: old=1.3.6, new=1.3.6.qualifier",
+                stale.getMessage());
+    }
+
+    @Test
+    void rejectsPublishedComponentFromAnOlderRelease() {
+        IOException mixed = assertThrows(IOException.class, () -> AggregateInstallationVerifier.requireCandidateUpgradeSource(
+                URI.create("https://example.invalid/releases/1.3.6/"),
+                Map.of(AGGREGATE, "1.3.6", COMPONENT, "1.3.5"),
+                Map.of(AGGREGATE, "1.3.7.qualifier", COMPONENT, "1.3.7.qualifier")));
+        assertEquals("Expected published 1.3.6 component version for sandbox_tools_feature.feature.group, found 1.3.5",
+                mixed.getMessage());
+    }
+
+    @Test
+    void rejectsCandidateWithUnchangedComponentDespiteNewAggregate() {
+        IOException stale = assertThrows(IOException.class, () -> AggregateInstallationVerifier.requireCandidateUpgradeSource(
+                URI.create("https://example.invalid/releases/1.3.6/"),
+                Map.of(AGGREGATE, "1.3.6", COMPONENT, "1.3.6"),
+                Map.of(AGGREGATE, "1.3.7.qualifier", COMPONENT, "1.3.6.qualifier")));
+        assertEquals("Candidate version is not newer for sandbox_tools_feature.feature.group: old=1.3.6, new=1.3.6.qualifier",
                 stale.getMessage());
     }
 
     @Test
     void rejectsCandidateMissingPublishedComponent() {
         IOException missing = assertThrows(IOException.class, () -> AggregateInstallationVerifier.requireCandidateUpgradeSource(
-                URI.create("https://example.invalid/releases/1.3.5/"),
-                Map.of(AGGREGATE, "1.3.5", COMPONENT, "1.3.5"),
-                Map.of(AGGREGATE, "1.3.6.qualifier")));
+                URI.create("https://example.invalid/releases/1.3.6/"),
+                Map.of(AGGREGATE, "1.3.6", COMPONENT, "1.3.6"),
+                Map.of(AGGREGATE, "1.3.7.qualifier")));
         assertEquals("Candidate repository misses published component sandbox_tools_feature.feature.group",
                 missing.getMessage());
     }

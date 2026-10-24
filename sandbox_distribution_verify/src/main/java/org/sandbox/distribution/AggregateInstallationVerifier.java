@@ -81,7 +81,9 @@ public final class AggregateInstallationVerifier {
     private static final String DIRECTOR = "org.eclipse.equinox.p2.director";
     private static final String PROBE = "org.sandbox.distribution.aggregate.probe";
     private static final String LEGACY_COMPONENT_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/1.3.4/";
-    private static final String STABLE_AGGREGATE_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/1.3.5/";
+    private static final String STABLE_AGGREGATE_VERSION = "1.3.6";
+    private static final String STABLE_AGGREGATE_REPOSITORY = "https://carstenartur.github.io/sandbox/releases/"
+            + STABLE_AGGREGATE_VERSION + '/';
     private static final Pattern TRANSIENT_HTTP_STATUS = Pattern.compile("response code[: ]+(429|502|503|504)\\b");
     private final Path root;
     private final Path evidence;
@@ -401,11 +403,12 @@ public final class AggregateInstallationVerifier {
     static void requireCandidateUpgradeSource(URI releasedRepository, Map<String, String> released,
             Map<String, String> current) throws IOException {
         String oldVersion = released.get(AGGREGATE);
-        require(oldVersion != null, "The published 1.3.5 repository has no aggregate IU: " + releasedRepository);
-        require("1.3.5".equals(baseVersion(oldVersion)), "Expected published aggregate 1.3.5, found " + oldVersion);
+        require(oldVersion != null, "The published " + STABLE_AGGREGATE_VERSION + " repository has no aggregate IU: " + releasedRepository);
+        require(STABLE_AGGREGATE_VERSION.equals(baseVersion(oldVersion)),
+                "Expected published aggregate " + STABLE_AGGREGATE_VERSION + ", found " + oldVersion);
         for (var entry : released.entrySet()) {
-            require("1.3.5".equals(baseVersion(entry.getValue())),
-                    "Expected published 1.3.5 component version for " + entry.getKey() + ", found " + entry.getValue());
+            require(STABLE_AGGREGATE_VERSION.equals(baseVersion(entry.getValue())),
+                    "Expected published " + STABLE_AGGREGATE_VERSION + " component version for " + entry.getKey() + ", found " + entry.getValue());
             String candidate = current.get(entry.getKey());
             require(candidate != null, "Candidate repository misses published component " + entry.getKey());
             require(compareBaseVersions(candidate, entry.getValue()) > 0,
