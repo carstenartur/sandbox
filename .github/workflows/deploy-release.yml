@@ -375,9 +375,11 @@ jobs:
       - name: Generate release notes
         if: env.DRY_RUN != 'true'
         run: |
-          previous_tag=$(git describe --tags --abbrev=0 "$STARTING_SHA" 2>/dev/null || true)
+          set -euo pipefail
+          # Stable version commits can live outside main's ancestry.
+          previous_tag=$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName // empty')
           if [[ -n "$previous_tag" ]]; then
-            git log --no-merges --pretty='- %s' "${previous_tag}..${STARTING_SHA}" > release-notes.md
+            git log --no-merges --pretty='- %s' "refs/tags/${previous_tag}..${STARTING_SHA}" > release-notes.md
           else
             echo 'Initial verified release.' > release-notes.md
           fi
