@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import javax.tools.ToolProvider;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -111,7 +112,7 @@ class MathSafetyProfileIntegrationTest {
     }
 
     private static void writeNewOrIdentical(Path file, String content) throws Exception {
-        Files.createDirectories(file.getParent());
+        Files.createDirectories(Objects.requireNonNull(file.getParent(), "Fixture file requires a parent directory"));
         if (Files.exists(file)) assertEquals(content, Files.readString(file), "Refusing to overwrite fixture " + file);
         else Files.writeString(file, content, StandardOpenOption.CREATE_NEW);
     }
