@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6344aaddb676504c3feb0f50f64386009a58473cff86442699d68eee05237a44",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: java.awt.FontMetrics.getAverageCharWidth.to.getAverageCharacterWidth\u003e\n\u003c!description: Replace deprecated FontMetrics.getAverageCharWidth() with FontMetrics.getAverageCharacterWidth() and cast to int.\u003e\n\u003c!severity: WARNING\u003e\n$fontMetrics.getAverageCharWidth() :: instanceof($fontMetrics, \"java.awt.FontMetrics\") \u0026\u0026 sourceVersionGE(9)\n\u003d\u003e\n(int) $fontMetrics.getAverageCharacterWidth()\n;;",
+  "beforeExample": "import java.awt.FontMetrics;\nimport java.awt.Font;\nimport java.awt.Graphics;\nimport java.awt.image.BufferedImage;\n\npublic class TestClass {\n    private int getSquareSize(FontMetrics fm) { return 10; } // Placeholder\n\n    public int calculateWidth(FontMetrics fontMetrics) {\n        int width \u003d 2 * fontMetrics.getAverageCharWidth() + getSquareSize(fontMetrics);\n        return width;\n    }\n\n    public static void main(String[] args) {\n        BufferedImage img \u003d new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);\n        Graphics g \u003d img.getGraphics();\n        FontMetrics fm \u003d g.getFontMetrics(new Font(\"Arial\", Font.PLAIN, 12));\n        TestClass tc \u003d new TestClass();\n        System.out.println(tc.calculateWidth(fm));\n        g.dispose(); // Clean up graphics context\n    }\n}",
+  "afterExample": "import java.awt.FontMetrics;\nimport java.awt.Font;\nimport java.awt.Graphics;\nimport java.awt.image.BufferedImage;\n\npublic class TestClass {\n    private int getSquareSize(FontMetrics fm) { return 10; } // Placeholder\n\n    public int calculateWidth(FontMetrics fontMetrics) {\n        int width \u003d 2 * ((int) fontMetrics.getAverageCharacterWidth()) + getSquareSize(fontMetrics);\n        return width;\n    }\n\n    public static void main(String[] args) {\n        BufferedImage img \u003d new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);\n        Graphics g \u003d img.getGraphics();\n        FontMetrics fm \u003d g.getFontMetrics(new Font(\"Arial\", Font.PLAIN, 12));\n        TestClass tc \u003d new TestClass();\n        System.out.println(tc.calculateWidth(fm));\n        g.dispose(); // Clean up graphics context\n    }\n}",
+  "negativeExample": "import java.awt.FontMetrics;\nimport java.awt.Font;\nimport java.awt.Graphics;\nimport java.awt.image.BufferedImage;\n\npublic class TestClass {\n    private int getSquareSize(FontMetrics fm) { return 10; }\n\n    public double calculateWidthWithDouble(FontMetrics fontMetrics) {\n        // Should not match, uses the new method directly and correctly handles double\n        double width \u003d 2.0 * fontMetrics.getAverageCharacterWidth() + getSquareSize(fontMetrics);\n        return width;\n    }\n\n    public static void main(String[] args) {\n        BufferedImage img \u003d new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);\n        Graphics g \u003d img.getGraphics();\n        FontMetrics fm \u003d g.getFontMetrics(new Font(\"Arial\", Font.PLAIN, 12));\n        TestClass tc \u003d new TestClass();\n        System.out.println(tc.calculateWidthWithDouble(fm));\n        g.dispose(); // Clean up graphics context\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "f284207a2380d3208ce8a7505e8a9d4dca0af59a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Deprecated API Usage",
+  "summary": "Replaces `FontMetrics.getAverageCharWidth()` with `(int) FontMetrics.getAverageCharacterWidth()`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-23T02:58:35.334990590Z",
+  "ruleFingerprint": "sha256:cc36a09492c842df9a12bac66e2d958386aa6a4456ba3253284e31d6efc857f5",
+  "behaviorFingerprint": "sha256:f3b4f194cd9e2f3a48d0007d969d8146b55142519c9f2b0865eff4cab51269ba",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-24T02:27:41.434464074Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

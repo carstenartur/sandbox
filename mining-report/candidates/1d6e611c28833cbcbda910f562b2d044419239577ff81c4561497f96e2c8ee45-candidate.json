@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1d6e611c28833cbcbda910f562b2d044419239577ff81c4561497f96e2c8ee45",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: multicatch.identical.blocks\u003e\n\u003c!description: Combines two consecutive catch blocks with identical bodies and exception variable names into a single multi-catch block (Java 7+).\u003e\n\u003c!severity: HINT\u003e\ntry {\n    $tryStatements$;\n} catch ($Type1 $e$) {\n    $catchStatements$;\n} catch ($Type2 $e$) {\n    $catchStatements$;\n}\n\u003d\u003e\ntry {\n    $tryStatements$;\n} catch ($Type1 | $Type2 $e$) {\n    $catchStatements$;\n}\n;;",
+  "beforeExample": "import org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\n\nclass Example {\n    private FileManager fManager \u003d new FileManager();\n\n    void commitFileBufferContent(IProgressMonitor monitor, boolean overwrite) throws CoreException {\n        // dummy implementation\n        if (Math.random() \u003c 0.5) throw new CoreException(null);\n        if (Math.random() \u003c 0.5) throw new RuntimeException();\n    }\n\n    void someMethod(IProgressMonitor monitor, boolean overwrite) {\n        try {\n            commitFileBufferContent(monitor, overwrite);\n        } catch (CoreException x) {\n            fManager.fireStateChangeFailed(this);\n            throw x;\n        } catch (RuntimeException x) {\n            fManager.fireStateChangeFailed(this);\n            throw x;\n        }\n    }\n\n    static class FileManager {\n        void fireStateChangeFailed(Object buffer) { System.err.println(\"State change failed for \" + buffer); }\n    }\n}",
+  "afterExample": "import org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\n\nclass Example {\n    private FileManager fManager \u003d new FileManager();\n\n    void commitFileBufferContent(IProgressMonitor monitor, boolean overwrite) throws CoreException {\n        // dummy implementation\n        if (Math.random() \u003c 0.5) throw new CoreException(null);\n        if (Math.random() \u003c 0.5) throw new RuntimeException();\n    }\n\n    void someMethod(IProgressMonitor monitor, boolean overwrite) {\n        try {\n            commitFileBufferContent(monitor, overwrite);\n        } catch (CoreException | RuntimeException x) {\n            fManager.fireStateChangeFailed(this);\n            throw x;\n        }\n    }\n\n    static class FileManager {\n        void fireStateChangeFailed(Object buffer) { System.err.println(\"State change failed for \" + buffer); }\n    }\n}",
+  "negativeExample": "import org.eclipse.core.runtime.CoreException;\nimport org.eclipse.core.runtime.IProgressMonitor;\n\nclass Example {\n    private FileManager fManager \u003d new FileManager();\n\n    void commitFileBufferContent(IProgressMonitor monitor, boolean overwrite) throws CoreException {\n        // dummy implementation\n        if (Math.random() \u003c 0.5) throw new CoreException(null);\n        if (Math.random() \u003c 0.5) throw new RuntimeException();\n    }\n\n    void differentVariableNames(IProgressMonitor monitor, boolean overwrite) {\n        try {\n            commitFileBufferContent(monitor, overwrite);\n        } catch (CoreException e1) {\n            fManager.fireStateChangeFailed(this);\n            throw e1;\n        } catch (RuntimeException e2) {\n            fManager.fireStateChangeFailed(this);\n            throw e2;\n        }\n    }\n\n    void differentCatchBodies(IProgressMonitor monitor, boolean overwrite) {\n        try {\n            commitFileBufferContent(monitor, overwrite);\n        } catch (CoreException x) {\n            fManager.fireStateChangeFailed(this);\n            System.out.println(\"Caught CoreException\");\n            throw x;\n        } catch (RuntimeException x) {\n            fManager.fireStateChangeFailed(this);\n            throw x;\n        }\n    }\n\n    static class FileManager {\n        void fireStateChangeFailed(Object buffer) { System.err.println(\"State change failed for \" + buffer); }\n    }\n}",
+  "targetHintFile": "multicatch.sandbox-hint",
+  "sourceCommit": "e3e7d2ec4094bef4e9ea0cc5e733be3fff74fd9a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Control Flow Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-23T02:55:04.321472904Z",
+  "ruleFingerprint": "sha256:cc92bd6943f6c08723c9e5ad61057201170f8afe40080af49e27ac3f3857541d",
+  "behaviorFingerprint": "sha256:421a914bb8640fb4de9a64fed058807e566697b071c98b625a2eea3f080d57e6",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-24T02:27:41.291458256Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

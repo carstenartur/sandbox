@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3e3cc1ee39a309655516805a50cc9a119e664011c9a08ba7487cd150a9d89814",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.ArrayList\u003c$Type\u003e($args$) :: sourceVersionGE(7)\n\u003d\u003e new java.util.ArrayList\u003c\u003e($args$)\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.Collection;\nimport java.util.List;\nimport org.eclipse.core.resources.IResource;\n\npublic class TestClass {\n    public Collection\u003cIResource\u003e getSelectedResources(int elementsLength) {\n        Object[] elements \u003d new Object[elementsLength];\n        // Target line for cleanup\n        List\u003cIResource\u003e resources \u003d new ArrayList\u003cIResource\u003e(elements.length);\n        return resources;\n    }\n\n    public List\u003cString\u003e getNames() {\n        // Another target line for cleanup\n        return new ArrayList\u003cString\u003e();\n    }\n}",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.Collection;\nimport java.util.List;\nimport org.eclipse.core.resources.IResource;\n\npublic class TestClass {\n    public Collection\u003cIResource\u003e getSelectedResources(int elementsLength) {\n        Object[] elements \u003d new Object[elementsLength];\n        // Cleaned up line\n        List\u003cIResource\u003e resources \u003d new ArrayList\u003c\u003e(elements.length);\n        return resources;\n    }\n\n    public List\u003cString\u003e getNames() {\n        // Cleaned up line\n        return new ArrayList\u003c\u003e();\n    }\n}",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.LinkedList;\nimport java.util.List;\n\npublic class NegativeTestClass {\n    public List\u003cString\u003e getAlreadyModern() {\n        List\u003cString\u003e list \u003d new ArrayList\u003c\u003e(); // Already uses diamond operator, should not match\n        return list;\n    }\n\n    public List\u003cInteger\u003e getDifferentCollectionType() {\n        List\u003cInteger\u003e list \u003d new LinkedList\u003cInteger\u003e(); // Not an ArrayList, should not match\n        return list;\n    }\n}",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "a357b363a671531459b1c16b99e357aff3d419e7",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Java Language Modernization",
+  "summary": "Replace explicit generic type arguments in ArrayList constructors with the diamond operator for Java 7+.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-23T03:00:38.070067113Z",
+  "ruleFingerprint": "sha256:c6d892006f3c3dc15f6a9141e2ac98ece32e02ac1d7c8dfb0f2924605acfe852",
+  "behaviorFingerprint": "sha256:546f4c7092850584a158887ee20d6a576339c04258951646395f36106b55fed2",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 6: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-10-24T02:27:41.454929020Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

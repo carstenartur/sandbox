@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2eed0d74337b674b7330dc2b9cbbd50487a51a10e15e69bf4357e2394dc5d59c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: use.diamond.operator\u003e\n\u003c!description: Replaces explicit type arguments in constructor calls with the diamond operator (Java 7+).\u003e\n\u003c!severity: HINT\u003e\nnew $Type\u003c$Args$\u003e()\n\u003d\u003e\nnew $Type\u003c\u003e()\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.HashMap;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Set;\nimport java.util.Map;\n\nclass Example {\n    List\u003cString\u003e fCallLog \u003d Collections.synchronizedList(new ArrayList\u003cString\u003e());\n    List\u003cInteger\u003e numbers \u003d new ArrayList\u003cInteger\u003e();\n    Set\u003cObject\u003e objects \u003d new HashSet\u003cObject\u003e();\n    Map\u003cString, String\u003e map \u003d new HashMap\u003cString, String\u003e();\n}",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.HashMap;\nimport java.util.HashSet;\nimport java.util.List;\nimport java.util.Set;\nimport java.util.Map;\n\nclass Example {\n    List\u003cString\u003e fCallLog \u003d Collections.synchronizedList(new ArrayList\u003c\u003e());\n    List\u003cInteger\u003e numbers \u003d new ArrayList\u003c\u003e();\n    Set\u003cObject\u003e objects \u003d new HashSet\u003c\u003e();\n    Map\u003cString, String\u003e map \u003d new HashMap\u003c\u003e();\n}",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.List;\n\nclass Example {\n    // Diamond operator not applicable for anonymous classes before Java 9 (JEP 213)\n    // (or when type arguments cannot be inferred)\n    List\u003cString\u003e list \u003d new ArrayList\u003cString\u003e() {\n        private static final long serialVersionUID \u003d 1L;\n        // body\n    };\n\n    // Constructor without type arguments\n    Object obj \u003d new Object();\n}",
+  "targetHintFile": "generics.sandbox-hint",
+  "sourceCommit": "99343732ef96cc019cb8bac7acddca2c5e3e2cd3",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Code Style Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-23T02:55:04.358771444Z",
+  "ruleFingerprint": "sha256:e69931ce257a97bd9faeff163ecedc134ef91b9d1ebe4d097ea8e5b90d1d2738",
+  "behaviorFingerprint": "sha256:816a0e8c32b8c914519d4138a855e44cf70e5209a7da5dc829c0cf6482444771",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-24T02:27:41.324993460Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

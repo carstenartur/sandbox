@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b6ea7f8c140ee02bf6aa6a65328ad025acdce26b5596d739799850cb72ffcfe5",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: java.io.StringBufferInputStream.to.ByteArrayInputStream\u003e\n\u003c!description: Replace deprecated StringBufferInputStream with ByteArrayInputStream and String.getBytes().\u003e\n\u003c!severity: WARNING\u003e\njava.io.StringBufferInputStream($contents$)\n\u003d\u003e\nnew java.io.ByteArrayInputStream($contents$.getBytes())\n;;",
+  "beforeExample": "import java.io.InputStream;\nimport java.io.StringBufferInputStream; // Deprecated\n\npublic class TestClass {\n    public InputStream createStream(String contents) {\n        return new StringBufferInputStream(contents);\n    }\n}",
+  "afterExample": "import java.io.InputStream;\nimport java.io.ByteArrayInputStream;\n\npublic class TestClass {\n    public InputStream createStream(String contents) {\n        return new ByteArrayInputStream(contents.getBytes());\n    }\n}",
+  "negativeExample": "import java.io.InputStream;\nimport java.io.ByteArrayInputStream;\n\npublic class TestClass {\n    public InputStream createStream(byte[] data) {\n        return new ByteArrayInputStream(data); // Should not match\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "98990509aa273b774eae1042cebfc583c9f7828e",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Deprecated API Usage",
+  "summary": "Replaces `new StringBufferInputStream(String)` with `new ByteArrayInputStream(String.getBytes())`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-23T02:58:35.299724085Z",
+  "ruleFingerprint": "sha256:a67168e85e5047e287d874d79d00a672893d2ac224cc050d2bde53f4d4d38d96",
+  "behaviorFingerprint": "sha256:44f75eea2349925a22aefbfb093dc19c897cb6caf821fdb2f1614b03f8274b29",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-24T02:27:41.402644972Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

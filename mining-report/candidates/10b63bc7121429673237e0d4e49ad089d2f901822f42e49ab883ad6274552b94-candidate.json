@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "10b63bc7121429673237e0d4e49ad089d2f901822f42e49ab883ad6274552b94",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: arrays.getStackTrace.toString\u003e\n\u003c!description: Replaces direct toString() call on a StackTraceElement[] array with Arrays.toString() to print array contents instead of identity hash code.\u003e\n\u003c!severity: WARNING\u003e\n$exception.getStackTrace() :: instanceof($exception, \"java.lang.Throwable\")\n\u003d\u003e\njava.util.Arrays.toString($exception.getStackTrace())\n;;",
+  "beforeExample": "class Example {\n    private void reinitOnError(Exception e) {\n        System.err.println(\"reinitializing quickdiff:\\n\" + e.getLocalizedMessage() + \"\\n\" + e.getStackTrace());\n        initialize();\n    }\n    private void initialize() { /* dummy */ }\n}\n",
+  "afterExample": "import java.util.Arrays;\n\nclass Example {\n    private void reinitOnError(Exception e) {\n        System.err.println(\"reinitializing quickdiff:\\n\" + e.getLocalizedMessage() + \"\\n\" + Arrays.toString(e.getStackTrace()));\n        initialize();\n    }\n    private void initialize() { /* dummy */ }\n}",
+  "negativeExample": "import java.util.Arrays;\n\nclass Example {\n    private void reinitOnError(Throwable e) {\n        // Already using Arrays.toString\n        System.err.println(\"reinitializing quickdiff:\\n\" + e.getLocalizedMessage() + \"\\n\" + Arrays.toString(e.getStackTrace()));\n        initialize();\n    }\n    \n    private void noStackTraceElement(Object obj) {\n        // Not calling getStackTrace()\n        System.err.println(obj.toString());\n    }\n    \n    private void initialize() { /* dummy */ }\n}",
+  "targetHintFile": "arrays.sandbox-hint",
+  "sourceCommit": "80d6f10e2d6dbe2abe5c9e74c5888a466ec3f18f",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Code Quality",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-23T02:55:04.343895777Z",
+  "ruleFingerprint": "sha256:619749929e1437a88d59631958145752aeb3713d9f415eaca94df9450602ae7f",
+  "behaviorFingerprint": "sha256:0f09f793111719e32e672831718bb8b9f6a537841bec57227612ed4ee25d03c2",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-24T02:27:41.308153772Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

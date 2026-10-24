@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9460c45159f2bfc0fa3a8d340caa997c9f1a68d499e685c7faedc5433f71e912",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: lambda-to-instance-method-reference\u003e\n\u003c!description: Replace a simple lambda expression forwarding its single argument to an instance method call with a method reference.\u003e\n\u003c!severity: HINT\u003e\n$listenerObject.$methodCall($param -\u003e $target.$targetMethod($param))\n\u003d\u003e\n$listenerObject.$methodCall($target::$targetMethod)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.action.IMenuListener;\nimport org.eclipse.jface.action.MenuManager;\n\npublic class Example {\n    private MenuManager fMenuManager \u003d new MenuManager();\n\n    public void setup() {\n        fMenuManager.addMenuListener(m -\u003e contextMenuAboutToShow(m));\n    }\n\n    private void contextMenuAboutToShow(IMenuManager menuManager) {\n        // some logic\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.action.IMenuListener;\nimport org.eclipse.jface.action.MenuManager;\n\npublic class Example {\n    private MenuManager fMenuManager \u003d new MenuManager();\n\n    public void setup() {\n        fMenuManager.addMenuListener(this::contextMenuAboutToShow);\n    }\n\n    private void contextMenuAboutToShow(IMenuManager menuManager) {\n        // some logic\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.action.IMenuListener;\nimport org.eclipse.jface.action.MenuManager;\n\npublic class NegativeExample {\n    private MenuManager fMenuManager \u003d new MenuManager();\n\n    public void setup() {\n        // Lambda with block body\n        fMenuManager.addMenuListener(m -\u003e {\n            System.out.println(\"Processing \" + m);\n            contextMenuAboutToShow(m);\n        });\n        // Lambda with modified argument\n        fMenuManager.addMenuListener(m -\u003e contextMenuAboutToShow(m \u003d\u003d null ? null : m));\n        // Lambda calling a method without matching parameter\n        fMenuManager.addMenuListener(m -\u003e anotherMethod());\n    }\n\n    private void contextMenuAboutToShow(IMenuManager menuManager) { /*...*/ }\n    private void anotherMethod() { /*...*/ }\n}",
+  "targetHintFile": "modernize-java8.sandbox-hint",
+  "sourceCommit": "0666cd23d434626abbaeaaf6d5c42820e4172f10",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Lambda to Method Reference",
+  "summary": "Convert a simple lambda `arg -\u003e target.method(arg)` to a method reference `target::method`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-24T02:24:48.680193186Z",
+  "ruleFingerprint": "sha256:95bf83dab480eec0611a285ad000c09d9ec20acc8ba6bb740e7dc47aeea26a3d",
+  "behaviorFingerprint": "sha256:f8e5e7d72e83a341d536667dc3a06a8d111e84fb492ad7ff9d624a3387f394ad",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-24T02:27:41.615186439Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

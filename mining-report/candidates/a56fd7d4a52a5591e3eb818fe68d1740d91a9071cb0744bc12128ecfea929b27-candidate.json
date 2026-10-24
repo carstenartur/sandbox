@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a56fd7d4a52a5591e3eb818fe68d1740d91a9071cb0744bc12128ecfea929b27",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.lang.StringBuffer($arg) :: instanceof($arg, \"java.lang.String\")\n\u003d\u003e $arg\n;;",
+  "beforeExample": "public class TestClass {\n    public void someMethod() {\n        // Target for cleanup\n        String s \u003d new java.lang.StringBuffer(\"hello\").toString();\n        System.out.println(s);\n\n        String literal \u003d \"world\";\n        // Another target for cleanup\n        String s2 \u003d new java.lang.StringBuffer(literal).toString();\n        System.out.println(s2);\n    }\n\n    public void acceptString(String data) {\n        System.out.println(data);\n    }\n\n    public void callAcceptString() {\n        // Target for cleanup where implicit toString() or overload resolution applies\n        acceptString(new java.lang.StringBuffer(\"data\"));\n    }\n}",
+  "afterExample": "public class TestClass {\n    public void someMethod() {\n        // Cleaned up\n        String s \u003d \"hello\";\n        System.out.println(s);\n\n        String literal \u003d \"world\";\n        // Cleaned up\n        String s2 \u003d literal;\n        System.out.println(s2);\n    }\n\n    public void acceptString(String data) {\n        System.out.println(data);\n    }\n\n    public void callAcceptString() {\n        // Cleaned up\n        acceptString(\"data\");\n    }\n}",
+  "negativeExample": "public class NegativeTestClass {\n    public void someMethod() {\n        StringBuilder sb \u003d new StringBuilder(\"dynamic\");\n        // $arg is a StringBuilder, not a String; should not match.\n        String s \u003d new java.lang.StringBuffer(sb).toString();\n        System.out.println(s);\n\n        // Not a StringBuffer constructor, should not match.\n        String s2 \u003d \"already a string\";\n        System.out.println(s2);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "2af90f71fd5d941a9a06a458e3c05462a36dbc8d",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Unnecessary Object Creation",
+  "summary": "Replace unnecessary creation of StringBuffer objects when the constructor argument is a String and the StringBuffer is immediately converted back to a String (e.g., via toString() or method overload resolution).",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-23T03:00:38.089009207Z",
+  "ruleFingerprint": "sha256:0aa3607f24af66e1b05b27a1aef6a529ed0b0f07347fc59c76dabb52eb802ebe",
+  "behaviorFingerprint": "sha256:6a858f33775d013ac4500129d2f5a87e901bd283467c68872d2ed5f939d98e12",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-10-24T02:27:41.474357159Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

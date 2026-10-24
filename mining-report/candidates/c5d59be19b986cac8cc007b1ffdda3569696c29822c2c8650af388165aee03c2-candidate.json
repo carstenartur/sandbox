@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c5d59be19b986cac8cc007b1ffdda3569696c29822c2c8650af388165aee03c2",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: pageLayout.replaceResNav\u003e\n\u003c!description: Replace deprecated IPageLayout.ID_RES_NAV with IPageLayout.ID_PROJECT_EXPLORER.\u003e\n\u003c!severity: WARNING\u003e\norg.eclipse.ui.IPageLayout.ID_RES_NAV\n\u003d\u003e\norg.eclipse.ui.IPageLayout.ID_PROJECT_EXPLORER\n;;",
+  "beforeExample": "package org.eclipse.search.internal.ui.text;\n\nimport org.eclipse.ui.IPageLayout;\n\npublic class FileSearchPage {\n    private static final String[] SHOW_IN_TARGETS\u003d new String[] { IPageLayout.ID_RES_NAV };\n}\n",
+  "afterExample": "package org.eclipse.search.internal.ui.text;\n\nimport org.eclipse.ui.IPageLayout;\n\npublic class FileSearchPage {\n    private static final String[] SHOW_IN_TARGETS\u003d new String[] { IPageLayout.ID_PROJECT_EXPLORER };\n}\n",
+  "negativeExample": "package org.eclipse.search.internal.ui.text;\n\nimport org.eclipse.ui.IPageLayout;\n\npublic class FileSearchPage {\n    private static final String[] SHOW_IN_TARGETS\u003d new String[] { IPageLayout.ID_PROJECT_EXPLORER };\n    private static final String[] ANOTHER_CONSTANT \u003d new String[] { \"some.other.id\" };\n}\n",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "4a7380c8f9006408ed518c4b1238c6253354ecb2",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces the deprecated Eclipse constant IPageLayout.ID_RES_NAV with IPageLayout.ID_PROJECT_EXPLORER.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-23T02:57:53.453817499Z",
+  "ruleFingerprint": "sha256:868e45117b5d7225ea506cd79773b63417084e093e436bdab34d53ba0c173402",
+  "behaviorFingerprint": "sha256:50c1f5b1d3fa5fbf5f71651abf2d4a5449af09de4a664ae1f1643a39acfef321",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-24T02:27:41.386078658Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

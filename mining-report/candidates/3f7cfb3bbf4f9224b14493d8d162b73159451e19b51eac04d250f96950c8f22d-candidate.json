@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3f7cfb3bbf4f9224b14493d8d162b73159451e19b51eac04d250f96950c8f22d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.ui.internal.editors.text.TextEditorMessages.TextEditorDefaultsPreferencePage_codeMinings_ErrowWarningsInfo\n\u003d\u003e\norg.eclipse.ui.internal.editors.text.TextEditorMessages.TextEditorDefaultsPreferencePage_codeMinings_ErrorWarningsInfo\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.ui.internal.editors.text.TextEditorMessages;\n\npublic class Example {\n    void demonstrateTypo() {\n        // This code uses the typoed field name\n        String message \u003d TextEditorMessages.TextEditorDefaultsPreferencePage_codeMinings_ErrowWarningsInfo;\n        System.out.println(message);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.ui.internal.editors.text.TextEditorMessages;\n\npublic class Example {\n    void demonstrateTypo() {\n        // This code uses the corrected field name\n        String message \u003d TextEditorMessages.TextEditorDefaultsPreferencePage_codeMinings_ErrorWarningsInfo;\n        System.out.println(message);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.ui.internal.editors.text.TextEditorMessages;\n\npublic class Example {\n    void doNotMatch() {\n        // This constant is correctly spelled and should not be matched\n        String otherMessage \u003d TextEditorMessages.TextEditorDefaultsPreferencePage_codeMinings_ErrorWarnings;\n        System.out.println(otherMessage);\n    }\n}",
+  "targetHintFile": "typo-fixes.sandbox-hint",
+  "sourceCommit": "3568f7207d32d5170ac4ac805d6cdb8ab6ffc83d",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Typo Fix",
+  "summary": "Fixes a typo in the static field reference \u0027TextEditorDefaultsPreferencePage_codeMinings_ErrowWarningsInfo\u0027 by changing \u0027Errow\u0027 to \u0027Error\u0027.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-24T02:20:53.397612936Z",
+  "ruleFingerprint": "sha256:7baa427223bc8d00e74f0c5d1c4ba48647ac6187a8bfcefe7ca7d462469ac0b2",
+  "behaviorFingerprint": "sha256:a9f088404cc45b1f3fdf1548840ade5250605898d7d5ca97a3864b49d05ec93d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.ui cannot be resolved",
+    "verifiedAt": "2026-10-24T02:27:41.536703034Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
