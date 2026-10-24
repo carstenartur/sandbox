@@ -2,6 +2,8 @@
 package org.sandbox.math.qa;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -128,13 +130,16 @@ class MathBenchmarkContractTest {
 
     private void metadata(String profile) throws Exception {
         Files.writeString(temporary.resolve("fixture.properties"),
-                "schema=math-safety-fixture/v1\ncomputation=long-add-subtract\nsafety=" + profile
-                + "\ngoal=READABILITY\ntargetJava=17\n");
+				("schema=math-safety-fixture/v1\ncomputation=long-add-subtract\nsafety=" + profile
+						+ "\ngoal=READABILITY\ntargetJava=17\n"),
+				StandardCharsets.UTF_8);
     }
 
     private void fixture(String variant, String body) throws Exception {
         Path directory = Files.createDirectories(temporary.resolve(variant));
-        Files.writeString(directory.resolve("Calculation.java"), "public class Calculation {\n"
-                + "  public static long[] compute(long seed, long baseSeed) {\n" + body + "\n  }\n}\n");
+        Files.writeString(
+				directory.resolve("Calculation.java"), ("public class Calculation {\n"
+						+ "  public static long[] compute(long seed, long baseSeed) {\n" + body + "\n  }\n}\n"),
+				StandardCharsets.UTF_8);
     }
 }
