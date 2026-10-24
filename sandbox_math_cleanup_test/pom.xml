@@ -7,7 +7,7 @@
  <properties><sandbox.math.retainHeadlessProbe>false</sandbox.math.retainHeadlessProbe></properties>
  <build><testSourceDirectory>src</testSourceDirectory><plugins>
  <plugin>
-  <groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.8.1</version>
+  <groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.11.0</version>
   <executions><execution><id>pinned-mathematics-corpora</id><phase>generate-test-resources</phase><goals><goal>copy</goal></goals>
    <configuration><outputDirectory>${project.build.directory}/corpus-inputs</outputDirectory><artifactItems>
     <artifactItem><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId><version>3.135.0</version><type>jar</type><destFileName>swt-binary.jar</destFileName></artifactItem>
