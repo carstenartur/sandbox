@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 2: The import org.eclipse.jface.viewers cannot be resolved",
-    "verifiedAt": "2026-10-23T03:00:51.086539435Z",
+    "verifiedAt": "2026-10-24T02:27:34.261250039Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

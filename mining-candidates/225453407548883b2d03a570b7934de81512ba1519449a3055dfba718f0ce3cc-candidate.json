@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "225453407548883b2d03a570b7934de81512ba1519449a3055dfba718f0ce3cc",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.jface.viewers.ArrayContentProvider()\n\u003d\u003e\norg.eclipse.jface.viewers.ArrayContentProvider.getInstance()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.viewers.ArrayContentProvider;\nimport org.eclipse.jface.viewers.IContentProvider;\n\npublic class Example {\n    protected IContentProvider getContentProvider() {\n        return new ArrayContentProvider();\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.viewers.ArrayContentProvider;\nimport org.eclipse.jface.viewers.IContentProvider;\n\npublic class Example {\n    protected IContentProvider getContentProvider() {\n        return ArrayContentProvider.getInstance();\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.viewers.LabelProvider;\nimport org.eclipse.jface.viewers.IContentProvider;\n\npublic class NegativeExample {\n    protected IContentProvider getContentProvider() {\n        return new LabelProvider(); // Should not match\n    }\n}",
+  "targetHintFile": "performance.sandbox-hint",
+  "sourceCommit": "3cc3ec95a63f5575037c05990df7384001ce4be6",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Static Factory Method",
+  "summary": "Replace `new ArrayContentProvider()` with `ArrayContentProvider.getInstance()` for stateless singleton.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-24T02:24:48.640126255Z",
+  "ruleFingerprint": "sha256:a27df33572dd9ba73ffbb882306c7c05fcb61d867e9cf32b18b253f411653f2b",
+  "behaviorFingerprint": "sha256:3863ccdcd630d21af8830911a171121132040739becdb11ff19ba4316e27a56e",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.viewers cannot be resolved",
+    "verifiedAt": "2026-10-24T02:27:41.598634532Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

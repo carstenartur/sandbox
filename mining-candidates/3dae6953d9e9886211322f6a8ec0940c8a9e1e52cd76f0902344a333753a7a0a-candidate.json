@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3dae6953d9e9886211322f6a8ec0940c8a9e1e52cd76f0902344a333753a7a0a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: lambda.methodRef.this\u003e\n\u003c!description: Replaces lambda \u0027p -\u003e this.method(p)\u0027 with method reference \u0027this::method\u0027.\nThis applies when the lambda\u0027s body is a single method call on the enclosing instance, with the lambda\u0027s parameter as the sole argument to that method.\u003e\n\u003c!severity: HINT\u003e\n$receiver.$method($lambdaParam -\u003e $methodInBody($lambdaParam)) :: sourceVersionGE(8)\n\u003d\u003e $receiver.$method(this::$methodInBody)\n;;",
+  "beforeExample": "import org.eclipse.jface.viewers.ListViewer;\nimport org.eclipse.jface.viewers.SelectionChangedEvent;\nimport org.eclipse.jface.viewers.ISelectionChangedListener;\n\npublic class MyClass {\n    ListViewer listViewer \u003d new ListViewer(null);\n\n    public MyClass() {\n        listViewer.addSelectionChangedListener(event -\u003e notifySelectionListeners(event));\n    }\n\n    private void notifySelectionListeners(SelectionChangedEvent event) {\n        // do something\n    }\n}\n",
+  "afterExample": "import org.eclipse.jface.viewers.ListViewer;\nimport org.eclipse.jface.viewers.SelectionChangedEvent;\nimport org.eclipse.jface.viewers.ISelectionChangedListener;\n\npublic class MyClass {\n    ListViewer listViewer \u003d new ListViewer(null);\n\n    public MyClass() {\n        listViewer.addSelectionChangedListener(this::notifySelectionListeners);\n    }\n\n    private void notifySelectionListeners(SelectionChangedEvent event) {\n        // do something\n    }\n}\n",
+  "negativeExample": "import org.eclipse.jface.viewers.ListViewer;\nimport org.eclipse.jface.viewers.SelectionChangedEvent;\nimport org.eclipse.jface.viewers.ISelectionChangedListener;\n\npublic class MyClass {\n    ListViewer listViewer \u003d new ListViewer(null);\n    Object otherObject \u003d new Object();\n\n    public MyClass() {\n        // Lambda body is not a single method call on \u0027this\u0027 with the same parameter\n        listViewer.addSelectionChangedListener(event -\u003e {\n            System.out.println(event);\n            notifySelectionListeners(event);\n        });\n        // Method reference already used\n        listViewer.addSelectionChangedListener(this::notifySelectionListeners);\n        // Lambda refers to a method on another object\n        listViewer.addSelectionChangedListener(e -\u003e otherObject.toString());\n    }\n\n    private void notifySelectionListeners(SelectionChangedEvent event) {\n        // do something\n    }\n}\n",
+  "targetHintFile": "modernize-java8.sandbox-hint",
+  "sourceCommit": "48a6fdfc4e0cc5ea9457494e0bd72258c1b23ee5",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Lambda to Method Reference",
+  "summary": "Convert a lambda `param -\u003e this.method(param)` to a `this::method` method reference when passed as an argument.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-24T02:26:10.317008936Z",
+  "ruleFingerprint": "sha256:883f43afe238c5a0ec76f5e4bdc991e5759be0bd69bf24fa7d4803a332fabc39",
+  "behaviorFingerprint": "sha256:979e8f0b727e7ecd5ac2ec429023e951670fea07a40e1a467d405ae780116024",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-24T02:27:41.631444975Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

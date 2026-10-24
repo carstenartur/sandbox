@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The import org.eclipse.jface.text.AbstractInformationControl cannot be resolved",
-    "verifiedAt": "2026-10-23T03:00:54.062821611Z",
+    "verifiedAt": "2026-10-24T02:27:38.780313636Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

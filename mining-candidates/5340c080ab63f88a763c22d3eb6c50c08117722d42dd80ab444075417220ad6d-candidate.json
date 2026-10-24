@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5340c080ab63f88a763c22d3eb6c50c08117722d42dd80ab444075417220ad6d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$Modifiers $Type $name($params$) \n\u003d\u003e @java.lang.Override $Modifiers $Type $name($params$)\n;;",
+  "beforeExample": "package test;\n\nclass Parent {\n    public void doSomething() {}\n}\n\nclass MyClass extends Parent implements Runnable {\n    @Override\n    public void doSomething() {\n        System.out.println(\"Overriding\");\n    }\n\n    public void run() {\n        System.out.println(\"Running\");\n    }\n}\n",
+  "afterExample": "package test;\n\nclass Parent {\n    public void doSomething() {}\n}\n\nclass MyClass extends Parent implements Runnable {\n    @Override\n    public void doSomething() {\n        System.out.println(\"Overriding\");\n    }\n\n    @Override\n    public void run() {\n        System.out.println(\"Running\");\n    }\n}\n",
+  "negativeExample": "package test;\n\nclass MyOtherClass {\n    public void myMethod() {\n        System.out.println(\"Hello\");\n    }\n}\n",
+  "targetHintFile": "add-override.sandbox-hint",
+  "sourceCommit": "c048e3fe4c50cc1d187ab84dc299ca273e2fd738",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Annotation Addition",
+  "summary": "Adds the @Override annotation to methods that are implicitly overriding a superclass method or implementing an interface method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-24T02:23:28.327210917Z",
+  "ruleFingerprint": "sha256:c243f0c3dad350791903765aa4403baa4c68c0de14b62a33809bc930b43bb5ab",
+  "behaviorFingerprint": "sha256:cba083cbf7675a85a074c59c01687d9f427bb772b36084213e5d9b1528d24e5e",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-10-24T02:27:41.579485627Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

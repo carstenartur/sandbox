@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "45dff318ca8075828848ed27f16336b8db9e4bfcf91096eb977c508be665b633",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.ArrayList\u003c$Type$\u003e()\n\u003d\u003e new java.util.ArrayList\u003c\u003e()\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class MyClass {\n    void foo() {\n        List\u003cString\u003e list \u003d new ArrayList\u003cString\u003e();\n        List\u003cInteger\u003e numbers \u003d new ArrayList\u003cInteger\u003e();\n    }\n}",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class MyClass {\n    void foo() {\n        List\u003cString\u003e list \u003d new ArrayList\u003c\u003e();\n        List\u003cInteger\u003e numbers \u003d new ArrayList\u003c\u003e();\n    }\n}",
+  "negativeExample": "import java.util.LinkedList;\nimport java.util.List;\n\npublic class MyClass {\n    void foo() {\n        // Should not match LinkedList\n        List\u003cString\u003e list \u003d new LinkedList\u003cString\u003e();\n        // Should not match a non-ArrayList constructor\n        Object obj \u003d new Object();\n    }\n}",
+  "targetHintFile": "modernize-java8.sandbox-hint",
+  "sourceCommit": "fe05cafd71c11ddf49b34f89c12880ed5a00c40a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Modernization",
+  "summary": "Replaces redundant type arguments in ArrayList constructor calls with the diamond operator.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-24T02:20:36.205201427Z",
+  "ruleFingerprint": "sha256:0fa62dc1da02902dd1dfd821819f06776b4aca33278367e208931416e0b23ea5",
+  "behaviorFingerprint": "sha256:043bd7f8b9bc72c0fe5665439680198401532722705d1da63c15bef385803fc8",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The public type MyClass must be defined in its own file",
+    "verifiedAt": "2026-10-24T02:27:41.517105317Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

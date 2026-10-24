@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c08b34e745bfa720d003aa2ff94e5fb7f6260f767079fe04cf409a64ebd07218",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new java.util.HashSet\u003c$elementType\u003e()\n\u003d\u003e\nnew java.util.HashSet\u003c\u003e()\n;;",
+  "beforeExample": "package org.eclipse.text.quicksearch.internal.core.priority;\n\nimport java.util.HashSet;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.resources.IContainer;\n\npublic class DefaultPriorityFunction {\n    private HashSet\u003cIResource\u003e ignoredResources;\n\n    private void ignore(IContainer folder) {\n        if (ignoredResources \u003d\u003d null) {\n            ignoredResources \u003d new HashSet\u003cIResource\u003e();\n        }\n        ignoredResources.add(folder);\n    }\n}",
+  "afterExample": "package org.eclipse.text.quicksearch.internal.core.priority;\n\nimport java.util.HashSet;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.resources.IContainer;\n\npublic class DefaultPriorityFunction {\n    private HashSet\u003cIResource\u003e ignoredResources;\n\n    private void ignore(IContainer folder) {\n        if (ignoredResources \u003d\u003d null) {\n            ignoredResources \u003d new HashSet\u003c\u003e();\n        }\n        ignoredResources.add(folder);\n    }\n}",
+  "negativeExample": "package org.eclipse.text.quicksearch.internal.core.priority;\n\nimport java.util.HashSet;\nimport java.util.ArrayList;\nimport org.eclipse.core.resources.IResource;\nimport org.eclipse.core.resources.IContainer;\n\npublic class NegativeExample {\n    private HashSet\u003cIResource\u003e ignoredResources;\n\n    private void ignore(IContainer folder) {\n        if (ignoredResources \u003d\u003d null) {\n            ignoredResources \u003d new HashSet\u003c\u003e(); // Already uses diamond operator\n        }\n        java.util.List\u003cString\u003e stringList \u003d new java.util.ArrayList\u003cString\u003e(); // Different collection type, should not be matched by this specific rule\n    }\n}",
+  "targetHintFile": "generics.sandbox-hint",
+  "sourceCommit": "beb7bc73366c2e07b6d0b8ff7a84a9909a2a9139",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-24T02:20:16.353206377Z",
+  "ruleFingerprint": "sha256:4ef120fd136fd867fd766814bae16ad69db6ad0450a1f0664c8e180b18860aa4",
+  "behaviorFingerprint": "sha256:37a4f57fa911d664a1fa80420db90e9e4f9a0d6bd1980145c60fb57ab21bc369",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 7: The public type DefaultPriorityFunction must be defined in its own file",
+    "verifiedAt": "2026-10-24T02:27:41.494781131Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "792a51772aa1ba2f19b0b2327c508d4e56e5ab31bff4e9eaafbc6ed0a681ea5e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: anonymous.comparator.collections.sort.to.lambda\u003e\n\u003c!description: Replaces an anonymous Comparator implementation passed to Collections.sort with a lambda expression.\nThis applies when the anonymous class only overrides the \u0027compare\u0027 method and has no other members.\u003e\n\u003c!severity: HINT\u003e\njava.util.Collections.sort($list, new java.util.Comparator\u003c$TypeParam\u003e() { @java.lang.Override public int compare($param1, $param2) { $bodyStatements$ } })\n:: sourceVersionGE(8)\n\u003d\u003e java.util.Collections.sort($list, ($param1, $param2) -\u003e { $bodyStatements$ })\n;;",
+  "beforeExample": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.Comparator;\nimport java.util.List;\n\ninterface IBreakpointOrganizer {\n    String getLabel();\n}\n\npublic class MyClass {\n    List\u003cObject\u003e fSorted \u003d new ArrayList\u003c\u003e();\n\n    void sortOrganizers() {\n        fSorted.add(new IBreakpointOrganizer() { public String getLabel() { return \"C\"; }});\n        fSorted.add(new IBreakpointOrganizer() { public String getLabel() { return \"A\"; }});\n        Collections.sort(fSorted, new Comparator\u003cObject\u003e() {\n            @Override\n            public int compare(Object o1, Object o2) {\n                IBreakpointOrganizer b1 \u003d (IBreakpointOrganizer)o1;\n                IBreakpointOrganizer b2 \u003d (IBreakpointOrganizer)o2;\n                return b1.getLabel().compareTo(b2.getLabel());\n            }\n        });\n    }\n}\n",
+  "afterExample": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.Comparator;\nimport java.util.List;\n\ninterface IBreakpointOrganizer {\n    String getLabel();\n}\n\npublic class MyClass {\n    List\u003cObject\u003e fSorted \u003d new ArrayList\u003c\u003e();\n\n    void sortOrganizers() {\n        fSorted.add(new IBreakpointOrganizer() { public String getLabel() { return \"C\"; }});\n        fSorted.add(new IBreakpointOrganizer() { public String getLabel() { return \"A\"; }});\n        Collections.sort(fSorted, (o1, o2) -\u003e {\n            IBreakpointOrganizer b1 \u003d (IBreakpointOrganizer)o1;\n            IBreakpointOrganizer b2 \u003d (IBreakpointOrganizer)o2;\n            return b1.getLabel().compareTo(b2.getLabel());\n        });\n    }\n}\n",
+  "negativeExample": "import java.util.ArrayList;\nimport java.util.Collections;\nimport java.util.Comparator;\nimport java.util.List;\n\ninterface IBreakpointOrganizer {\n    String getLabel();\n}\n\npublic class MyClass {\n    List\u003cObject\u003e fSorted \u003d new ArrayList\u003c\u003e();\n\n    void sortOrganizers() {\n        fSorted.add(new IBreakpointOrganizer() { public String getLabel() { return \"C\"; }});\n        // Does not apply if not calling Collections.sort\n        fSorted.sort(new Comparator\u003cObject\u003e() {\n            @Override\n            public int compare(Object o1, Object o2) {\n                IBreakpointOrganizer b1 \u003d (IBreakpointOrganizer)o1;\n                IBreakpointOrganizer b2 \u003d (IBreakpointOrganizer)o2;\n                return b1.getLabel().compareTo(b2.getLabel());\n            }\n        });\n\n        // Does not apply if anonymous class has extra members (fields, other methods)\n        Collections.sort(fSorted, new Comparator\u003cObject\u003e() {\n            private String defaultLabel \u003d \"\";\n            @Override\n            public int compare(Object o1, Object o2) {\n                IBreakpointOrganizer b1 \u003d (IBreakpointOrganizer)o1;\n                IBreakpointOrganizer b2 \u003d (IBreakpointOrganizer)o2;\n                return (defaultLabel + b1.getLabel()).compareTo(defaultLabel + b2.getLabel());\n            }\n        });\n    }\n}\n",
+  "targetHintFile": "modernize-java8.sandbox-hint",
+  "sourceCommit": "7ca6d22fbdb4d06855a684b6c99705643310e6fd",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.debug",
+  "category": "Anonymous Class to Lambda",
+  "summary": "Convert an anonymous class implementing `Comparator` passed to `Collections.sort` to a lambda expression.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-24T02:26:10.349277747Z",
+  "ruleFingerprint": "sha256:bca4d599dac7a0b2132c2fab0e0534a7583531a598cf182f8f84e5329625a93e",
+  "behaviorFingerprint": "sha256:f5ed8e226e545661e82aca2ff1711f4be2e2f405349684dca2a6a0b91a6270eb",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-24T02:27:41.649593140Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

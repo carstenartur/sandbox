@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3baebd5393c0443832f702adf76c929f40d0a72782d7244d51e9234ebe1a3378",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: sanitize-code-mining-label\u003e\n\u003c!description: Sanitize code mining labels obtained from Annotation.getText() by replacing newline characters with spaces using the helper method, ensuring better display.\u003e\n\u003c!severity: HINT\u003e\n\nsetLabel($annotationInstance.getText()) ::\n  inClass(\"org.eclipse.ui.internal.editors.text.codemining.annotation.AnnotationCodeMining\") \u0026\u0026\n  instanceof($annotationInstance, \"org.eclipse.jface.text.source.Annotation\")\n\u003d\u003e\nsetLabel(org.eclipse.ui.internal.editors.text.codemining.annotation.AnnotationCodeMining.sanitizeLabel($annotationInstance.getText()))\n;;",
+  "beforeExample": "package org.eclipse.ui.internal.editors.text.codemining.annotation;\n\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.codemining.AbstractCodeMining;\nimport org.eclipse.jface.text.codemining.ICodeMiningProvider;\nimport org.eclipse.jface.text.source.Annotation;\nimport org.eclipse.swt.graphics.Point;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.StyledText;\n\npublic class AnnotationCodeMining extends AbstractCodeMining {\n    private Annotation annotation;\n    private Object annotationAccess; // Placeholder to make it compile\n\n    public AnnotationCodeMining(int lineNumber, IDocument document, ICodeMiningProvider provider, Annotation annotation, Runnable action, Object annotationAccess) {\n        super(lineNumber, document, provider, action);\n        this.annotationAccess \u003d annotationAccess;\n        setLabel(annotation.getText()); // Target for cleanup\n        this.annotation \u003d annotation;\n    }\n\n    @Override\n    public Point draw(GC gc, StyledText textWidget, Color color, int x, int y) { return null; }\n\n    // The sanitizeLabel method is assumed to exist in the target class for this rule to be applicable.\n    // private static String sanitizeLabel(String label) {\n    //     return label.replace(\u0027\\r\u0027, \u0027 \u0027).replace(\u0027\\n\u0027, \u0027 \u0027);\n    // }\n}\n",
+  "afterExample": "package org.eclipse.ui.internal.editors.text.codemining.annotation;\n\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.codemining.AbstractCodeMining;\nimport org.eclipse.jface.text.codemining.ICodeMiningProvider;\nimport org.eclipse.jface.text.source.Annotation;\nimport org.eclipse.swt.graphics.Point;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.StyledText;\n\npublic class AnnotationCodeMining extends AbstractCodeMining {\n    private Annotation annotation;\n    private Object annotationAccess; // Placeholder to make it compile\n\n    public AnnotationCodeMining(int lineNumber, IDocument document, ICodeMiningProvider provider, Annotation annotation, Runnable action, Object annotationAccess) {\n        super(lineNumber, document, provider, action);\n        this.annotationAccess \u003d annotationAccess;\n        setLabel(org.eclipse.ui.internal.editors.text.codemining.annotation.AnnotationCodeMining.sanitizeLabel(annotation.getText())); // Transformed\n        this.annotation \u003d annotation;\n    }\n\n    private static String sanitizeLabel(String label) {\n        return label.replace(\u0027\\r\u0027, \u0027 \u0027).replace(\u0027\\n\u0027, \u0027 \u0027);\n    }\n\n    @Override\n    public Point draw(GC gc, StyledText textWidget, Color color, int x, int y) { return null; }\n}\n",
+  "negativeExample": "package some.other.package;\n\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.codemining.AbstractCodeMining;\nimport org.eclipse.jface.text.codemining.ICodeMiningProvider;\nimport org.eclipse.jface.text.source.Annotation;\nimport org.eclipse.swt.graphics.Point;\nimport org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.StyledText;\n\nclass MyLabelSetter extends AbstractCodeMining {\n    String myLabel \u003d \"Hello\\nWorld\";\n    public MyLabelSetter(int lineNumber, IDocument document, ICodeMiningProvider provider, Runnable action) {\n        super(lineNumber, document, provider, action);\n    }\n\n    public void setLabel(String label) {\n        // Does nothing, just a dummy for compilation\n        System.out.println(label);\n    }\n\n    public void someMethod(Annotation annotation) {\n        setLabel(myLabel); // Should NOT be changed\n        setLabel(\"Another\\nLabel\"); // Should NOT be changed\n        setLabel(annotation.getText()); // Should NOT be changed, as this is not AnnotationCodeMining class\n    }\n\n    @Override\n    public Point draw(GC gc, StyledText textWidget, Color color, int x, int y) { return null; }\n}\n",
+  "targetHintFile": "eclipse-jface-text.sandbox-hint",
+  "sourceCommit": "36c093525af6238c6fefac3d88ff37a4d6e3559f",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Code Quality",
+  "summary": "Wrap calls to setLabel with the sanitizeLabel helper method within the AnnotationCodeMining class to ensure labels are sanitized.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-24T02:22:20.088952286Z",
+  "ruleFingerprint": "sha256:92cf563f1ba19459c1618908e1888761efec55b42d2404d8fbd1dcae4515500c",
+  "behaviorFingerprint": "sha256:ab696590c7283f608eacbe5bb1fd83127cb1b290b229cebd68f2e16d2cb51df6",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-24T02:27:41.553302030Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
