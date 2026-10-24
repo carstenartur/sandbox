@@ -6,3 +6,5 @@ mvnw.cmd text eol=crlf
 *.yaml text eol=lf
 # Captured mathematics source is hashed byte-for-byte by Help provenance.
 /sandbox_eclipse_help_swtbot_test/fixtures/mathematics/**/*.java.txt text eol=lf
+# Frozen independent inputs and their receipts retain their selected bytes.
+/sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/heldout/** text eol=lf
