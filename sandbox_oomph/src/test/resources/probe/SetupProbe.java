@@ -845,6 +845,17 @@ public class SetupProbe implements IApplication {
             System.out.println("Pending workspace jobs: " + Arrays.toString(Job.getJobManager().find(null)));
         }
         require(errors.isEmpty(), "Workspace build errors:\n" + String.join("\n", errors));
+        // Test fragments contribute their Require-Bundle entries to the host.
+        // Server-only integrations must not leak an unpacked Maven runtime
+        // into the application's IDE classpath (and its asynchronous indexer).
+        for (String name : List.of("sandbox_cleanup_application", "sandbox_cleanup_application_test")) {
+            var application = JavaCore.create(workspace.getRoot().getProject(name));
+            for (var entry : application.getResolvedClasspath(true)) {
+                String segment = entry.getPath().lastSegment();
+                require(segment == null || !segment.startsWith("org.eclipse.m2e.maven.runtime_"),
+                        "Server runtime leaked into " + name + " classpath: " + entry.getPath());
+            }
+        }
         // A fragment compiles against a workspace host project, while binary
         // Tycho tests use the host bundle's classpath. Check the IDE model too.
         var mathHost = JavaCore.create(workspace.getRoot().getProject("sandbox_math_cleanup"));
