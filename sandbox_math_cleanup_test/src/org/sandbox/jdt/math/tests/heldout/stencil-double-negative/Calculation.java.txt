@@ -1,0 +1,9 @@
+public class Calculation {
+    public static double[] compute(double center, double step) {
+        double right = (center + step) * (center + step);
+        double left = (center - step) * (center - step);
+        double first = right - left;
+        double second = right + left - 2 * center * center;
+        return new double[] { first, second };
+    }
+}

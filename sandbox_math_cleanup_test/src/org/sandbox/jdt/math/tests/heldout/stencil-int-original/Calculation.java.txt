@@ -1,0 +1,9 @@
+public class Calculation {
+    public static int[] compute(int center, int step) {
+        int right = (center + step) * (center + step);
+        int left = (center - step) * (center - step);
+        int first = right - left;
+        int second = right + left - 2 * center * center;
+        return new int[] { first, second };
+    }
+}

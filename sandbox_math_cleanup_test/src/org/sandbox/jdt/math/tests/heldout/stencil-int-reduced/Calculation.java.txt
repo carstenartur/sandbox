@@ -1,0 +1,7 @@
+public class Calculation {
+    public static int[] compute(int center, int step) {
+        int first = 4 * center * step;
+        int second = 2 * step * step;
+        return new int[] { first, second };
+    }
+}
