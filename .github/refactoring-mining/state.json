@@ -3874,9 +3874,8 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "2af90f71fd5d941a9a06a458e3c05462a36dbc8d",
-      "lastProcessedDate": "2026-10-23T03:00:38.053995615Z",
-      "totalProcessed": 1224,
+      "lastProcessedDate": "2026-10-24T02:23:52.626132571Z",
+      "totalProcessed": 1268,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5149,38 +5148,38 @@
           "maxRetries": 3
         },
         {
-          "hash": "5093ad9eb153d27abce112ac5d6c22067500aa9e",
-          "message": "org.eclipse.core.filebuffers.tests are not API",
-          "diffLines": 14,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-10-23T03:00:38.697473041Z",
+          "hash": "f91dbfae8dd72106f7cb7950b5fd66133a8e7546",
+          "message": "Show info, warning, and error Annotations as line header code minings.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-24T02:20:36.288969786Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "9b4c13f310304bc6f46b97c2320d606f1e93a1e4",
-          "message": "Delete unused method in test helper method",
-          "diffLines": 18,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-10-23T03:00:38.697760880Z",
+          "hash": "a63fd8787e17e771ad042b21b5ab7875b8fb1bf8",
+          "message": "Whitespace removal for test plug-ins platform.text",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-24T02:20:53.455933630Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "df9dfa9ffc21130c92f18bfe7b9a268121780c36",
-          "message": "Bug 552134: org.eclipse.rcp misses dependencies",
-          "diffLines": 16,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-10-23T03:00:38.697795311Z",
+          "hash": "ba8184ce0177f0bd80b2c7c049df6b5eb2ff91c6",
+          "message": "Bug 553622: Add tests for context information to jface.text.tests",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-24T02:22:20.131804337Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "8797cf932e7412843f0b3b1eec68c5d299bc58b6",
-          "message": "Bug 552475 - applyHighlights(): Guard against null annotation model",
-          "diffLines": 38,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-10-23T03:00:38.697831415Z",
+          "hash": "15250ab164378b2c5caebfc520885b29863ca5fd",
+          "message": "Use jdk 5 for-each loop",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-24T02:23:08.909374262Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -5188,9 +5187,10 @@
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 1,
+      "currentEpoch": 2,
       "completedEpochs": [
-        "2020-01-01 to 2026-01-01"
+        "2020-01-01 to 2026-01-01",
+        "2015-01-01 to 2020-01-01"
       ],
       "categoryHitCounts": {
         "Method Call Refactoring": 1,
@@ -5221,7 +5221,7 @@
         "Uncategorized": 2,
         "Logging Cleanup": 1,
         "Concurrency Performance": 1,
-        "Modernization": 8,
+        "Modernization": 10,
         "Defensive Programming": 3,
         "String Literal Replacement": 2,
         "Condition Improvement": 1,
@@ -5262,7 +5262,7 @@
         "Unsupported Syntax": 1,
         "Charset Modernization": 1,
         "Encapsulation": 3,
-        "Typo Fix": 1,
+        "Typo Fix": 2,
         "SWT Graphics": 1,
         "Code Mining": 1,
         "Inlining": 1,
@@ -5298,18 +5298,20 @@
         "Deprecation/API Migration": 1,
         "Refactoring": 1,
         "Control Flow Modernization": 1,
-        "Code Quality": 1,
+        "Code Quality": 2,
         "Code Style Modernization": 1,
         "Java 8 Modernization": 1,
         "Java Language Modernization": 1,
-        "Unnecessary Object Creation": 1
+        "Unnecessary Object Creation": 1,
+        "Configuration Update": 1,
+        "Annotation Addition": 1
       },
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "7339831997863b6334bd620b70ea2969143a2a9b",
-      "lastProcessedDate": "2026-10-03T02:32:43.641743009Z",
-      "totalProcessed": 57,
+      "lastProcessedCommit": "5e36d7783af1034ac1c68259bc29d5f07406a001",
+      "lastProcessedDate": "2026-10-24T02:27:22.913519645Z",
+      "totalProcessed": 85,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -5392,6 +5394,15 @@
           "deferredAt": "2026-10-03T02:27:40.700057872Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "4c211278c0d0edf4fb86da00b36eac39edd348d1",
+          "message": "Bug 404990 - [breakpoints] Delete breakpoint, undo, redo, undo. Gone.",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-24T02:26:23.267464445Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5407,10 +5418,14 @@
         "Lambda Conversion": 1,
         "Control Flow Refactoring": 1,
         "Deprecated API Usage": 1,
-        "Constructor to static factory": 1
+        "Constructor to static factory": 1,
+        "Logging Cleanup": 1,
+        "Static Factory Method": 1,
+        "Lambda to Method Reference": 2,
+        "Anonymous Class to Lambda": 1
       },
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 52989
+  "globalTotalProcessed": 53061
 }
