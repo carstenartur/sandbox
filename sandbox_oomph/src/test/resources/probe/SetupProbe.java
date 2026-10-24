@@ -755,6 +755,10 @@ public class SetupProbe implements IApplication {
             @Override public void log(Throwable t) { t.printStackTrace(); }
             @Override public void task(SetupTask task) {
                 activeSetupTask = task.eClass().getName();
+                if ("MavenImportTask".equals(activeSetupTask) || "ProjectsImportTask".equals(activeSetupTask)) {
+                    require("false".equals(System.getProperty("pde.addTransitiveDependenciesWithForbiddenAccess")),
+                            "The IDE must restart with the setup's PDE classpath setting before importing projects");
+                }
                 log("Oomph task: " + task);
             }
             @Override public void setTerminating() { }
@@ -845,9 +849,8 @@ public class SetupProbe implements IApplication {
             System.out.println("Pending workspace jobs: " + Arrays.toString(Job.getJobManager().find(null)));
         }
         require(errors.isEmpty(), "Workspace build errors:\n" + String.join("\n", errors));
-        // Test fragments contribute their Require-Bundle entries to the host.
-        // Server-only integrations must not leak an unpacked Maven runtime
-        // into the application's IDE classpath (and its asynchronous indexer).
+        // Neither direct fragment requirements nor PDE's forbidden transitive
+        // expansion may leak the server's unpacked Maven runtime into JDT indexing.
         for (String name : List.of("sandbox_cleanup_application", "sandbox_cleanup_application_test")) {
             var application = JavaCore.create(workspace.getRoot().getProject(name));
             for (var entry : application.getResolvedClasspath(true)) {
