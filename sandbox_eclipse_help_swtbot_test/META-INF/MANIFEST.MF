@@ -10,7 +10,8 @@ Eclipse-BundleShape: dir
 Eclipse-BuddyPolicy: global
 Import-Package: org.junit.jupiter.api;version="5.7.1",
  org.junit.jupiter.api.extension;version="5.7.1",
- org.junit.jupiter.api.io;version="5.7.1"
+ org.junit.jupiter.api.io;version="5.7.1",
+ org.slf4j
 Require-Bundle: sandbox_test_commons,
  org.eclipse.core.expressions,
  org.eclipse.core.resources,
