@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Sandbox Git search tests
 Bundle-SymbolicName: sandbox_extra_search_test
-Bundle-Version: 1.3.7.qualifier
+Bundle-Version: 1.3.7
 Bundle-RequiredExecutionEnvironment: JavaSE-25
 Fragment-Host: sandbox_extra_search
 Import-Package: org.junit.jupiter.api,
