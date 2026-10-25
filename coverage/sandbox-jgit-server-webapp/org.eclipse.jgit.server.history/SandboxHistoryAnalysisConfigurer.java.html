@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SandboxHistoryAnalysisConfigurer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.history</a> &gt; <span class="el_source">SandboxHistoryAnalysisConfigurer.java</span></div><h1>SandboxHistoryAnalysisConfigurer.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.eclipse.jgit.server.history;
+
+import org.eclipse.jgit.storage.hibernate.search.JavaSourceAnalysisConfigurer;
+import org.hibernate.search.backend.lucene.analysis.LuceneAnalysisConfigurationContext;
+import org.hibernate.search.backend.lucene.analysis.LuceneAnalysisConfigurer;
+
+import io.github.carstenartur.jgit.storage.hibernate.search.analysis.GitTextAnalysis;
+
+/** Sandbox's message vocabulary plus the transitional Java projection analyzers. */
+<span class="fc" id="L14">public final class SandboxHistoryAnalysisConfigurer implements LuceneAnalysisConfigurer {</span>
+
+	@Override
+	public void configure(LuceneAnalysisConfigurationContext context) {
+<span class="fc" id="L18">		new JavaSourceAnalysisConfigurer().configure(context);</span>
+<span class="fc" id="L19">		context.analyzer(GitTextAnalysis.NATURAL_LANGUAGE_ANALYZER).custom()</span>
+<span class="fc" id="L20">				.tokenizer(&quot;standard&quot;)</span>
+<span class="fc" id="L21">				.tokenFilter(&quot;wordDelimiterGraph&quot;)</span>
+<span class="fc" id="L22">				.param(&quot;splitOnCaseChange&quot;, &quot;1&quot;)</span>
+<span class="fc" id="L23">				.param(&quot;preserveOriginal&quot;, &quot;1&quot;)</span>
+<span class="fc" id="L24">				.tokenFilter(&quot;lowercase&quot;)</span>
+<span class="fc" id="L25">				.tokenFilter(&quot;stop&quot;);</span>
+<span class="fc" id="L26">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

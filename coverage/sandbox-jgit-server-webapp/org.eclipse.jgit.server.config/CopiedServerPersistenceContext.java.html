@@ -17,52 +17,61 @@ import org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.hibernate.SessionFactory;
+import org.eclipse.jgit.server.history.SandboxHistorySearch;
+import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
 
 /** Temporary ownership adapter for the copied Sandbox persistence bootstrap. */
 final class CopiedServerPersistenceContext implements ServerPersistenceContext {
 
 	private final HibernateSessionFactoryProvider owner;
 	private final SandboxRepositoryService repositories;
+	private final SandboxHistorySearch history;
 
 	CopiedServerPersistenceContext(Properties properties) {
-<span class="fc" id="L28">		this(new HibernateSessionFactoryProvider(Objects.requireNonNull(properties, &quot;properties&quot;))); //$NON-NLS-1$</span>
-<span class="fc" id="L29">	}</span>
+<span class="fc" id="L31">		this(new HibernateSessionFactoryProvider(Objects.requireNonNull(properties, &quot;properties&quot;))); //$NON-NLS-1$</span>
+<span class="fc" id="L32">	}</span>
 
-<span class="fc" id="L31">	CopiedServerPersistenceContext(HibernateSessionFactoryProvider owner) {</span>
-<span class="fc" id="L32">		this.owner= Objects.requireNonNull(owner, &quot;owner&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L33">		this.repositories= new CopiedHibernateRepositoryService(owner.getSessionFactory());</span>
-<span class="fc" id="L34">	}</span>
+<span class="fc" id="L34">	CopiedServerPersistenceContext(HibernateSessionFactoryProvider owner) {</span>
+<span class="fc" id="L35">		this.owner= Objects.requireNonNull(owner, &quot;owner&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L36">		this.history= new CopiedSandboxHistorySearch(owner.getSessionFactory());</span>
+<span class="fc" id="L37">		this.repositories= new CopiedHibernateRepositoryService(owner.getSessionFactory());</span>
+<span class="fc" id="L38">	}</span>
 
 	@Override
 	public SessionFactory sessionFactory() {
-<span class="fc" id="L38">		return owner.getSessionFactory();</span>
+<span class="fc" id="L42">		return owner.getSessionFactory();</span>
 	}
 
 	@Override
 	public SandboxRepositoryService repositoryService() {
-<span class="fc" id="L43">		return repositories;</span>
+<span class="fc" id="L47">		return repositories;</span>
+	}
+
+	@Override
+	public SandboxHistorySearch historySearch() {
+<span class="fc" id="L52">		return history;</span>
 	}
 
 	@Override
 	public void close() {
-<span class="fc" id="L48">		RuntimeException failure= null;</span>
+<span class="fc" id="L57">		RuntimeException failure= null;</span>
 		try {
-<span class="fc" id="L50">			repositories.close();</span>
-<span class="nc" id="L51">		} catch (RuntimeException exception) {</span>
-<span class="nc" id="L52">			failure= exception;</span>
-<span class="fc" id="L53">		}</span>
-		try {
-<span class="fc" id="L55">			owner.close();</span>
-<span class="nc" id="L56">		} catch (RuntimeException exception) {</span>
-<span class="nc bnc" id="L57" title="All 2 branches missed.">			if (failure == null) {</span>
-<span class="nc" id="L58">				failure= exception;</span>
-			} else {
-<span class="nc" id="L60">				failure.addSuppressed(exception);</span>
-			}
+<span class="fc" id="L59">			repositories.close();</span>
+<span class="nc" id="L60">		} catch (RuntimeException exception) {</span>
+<span class="nc" id="L61">			failure= exception;</span>
 <span class="fc" id="L62">		}</span>
-<span class="pc bpc" id="L63" title="1 of 2 branches missed.">		if (failure != null) {</span>
-<span class="nc" id="L64">			throw failure;</span>
+		try {
+<span class="fc" id="L64">			owner.close();</span>
+<span class="nc" id="L65">		} catch (RuntimeException exception) {</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">			if (failure == null) {</span>
+<span class="nc" id="L67">				failure= exception;</span>
+			} else {
+<span class="nc" id="L69">				failure.addSuppressed(exception);</span>
+			}
+<span class="fc" id="L71">		}</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		if (failure != null) {</span>
+<span class="nc" id="L73">			throw failure;</span>
 		}
-<span class="fc" id="L66">	}</span>
+<span class="fc" id="L75">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

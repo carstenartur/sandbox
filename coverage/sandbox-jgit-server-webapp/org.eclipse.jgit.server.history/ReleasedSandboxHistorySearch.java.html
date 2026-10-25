@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReleasedSandboxHistorySearch.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.history</a> &gt; <span class="el_source">ReleasedSandboxHistorySearch.java</span></div><h1>ReleasedSandboxHistorySearch.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.eclipse.jgit.server.history;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import org.hibernate.SessionFactory;
+import org.hibernate.search.mapper.orm.Search;
+
+import io.github.carstenartur.jgit.storage.hibernate.search.entity.GitCommitIndex;
+import io.github.carstenartur.jgit.storage.hibernate.search.service.CommitHistoryQuery;
+import io.github.carstenartur.jgit.storage.hibernate.search.service.GitHistorySearchService;
+
+/** Maps released Search results to the established Sandbox REST contract. */
+public final class ReleasedSandboxHistorySearch implements SandboxHistorySearch {
+
+	private final SessionFactory sessionFactory;
+	private final GitHistorySearchService queries;
+
+<span class="fc" id="L27">	public ReleasedSandboxHistorySearch(SessionFactory sessionFactory) {</span>
+<span class="fc" id="L28">		this.sessionFactory = Objects.requireNonNull(sessionFactory);</span>
+<span class="fc" id="L29">		queries = new GitHistorySearchService(sessionFactory);</span>
+<span class="fc" id="L30">	}</span>
+
+	@Override
+	public List&lt;CommitHit&gt; searchMessages(String repository, String query, int offset, int limit) {
+<span class="fc bfc" id="L34" title="All 4 branches covered.">		if (blank(repository) || blank(query)) {</span>
+<span class="fc" id="L35">			return List.of();</span>
+		}
+<span class="fc" id="L37">		return page(CommitHistoryQuery.forRepository(repository).matchingMessages(literal(query)), offset, limit).stream()</span>
+<span class="fc" id="L38">				.map(hit -&gt; new CommitHit(hit.getObjectId(), hit.getFullMessage(), hit.getAuthorName(), hit.getAuthorEmail())).toList();</span>
+	}
+
+	@Override
+	public List&lt;PathHit&gt; searchChangedPaths(String repository, String query, int offset, int limit) {
+<span class="pc bpc" id="L43" title="1 of 4 branches missed.">		if (blank(repository) || blank(query)) {</span>
+<span class="fc" id="L44">			return List.of();</span>
+		}
+<span class="fc" id="L46">		return page(CommitHistoryQuery.forRepository(repository).touchingPathTerms(literal(query)), offset, limit).stream()</span>
+<span class="fc" id="L47">				.map(hit -&gt; new PathHit(hit.getObjectId(), hit.getFullMessage(), hit.getChangedPaths())).toList();</span>
+	}
+
+	private List&lt;GitCommitIndex&gt; page(CommitHistoryQuery.Builder builder, int offset, int limit) {
+<span class="pc bpc" id="L51" title="2 of 4 branches missed.">		if (offset &lt; 0 || limit &lt; 0) {</span>
+<span class="nc" id="L52">			throw new IllegalArgumentException(&quot;offset and limit must not be negative&quot;);</span>
+		}
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">		if (limit == 0) {</span>
+<span class="nc" id="L55">			return List.of();</span>
+		}
+<span class="fc" id="L57">		CommitHistoryQuery query = builder.unbounded().build();</span>
+<span class="fc" id="L58">		List&lt;String&gt; ids = new ArrayList&lt;&gt;();</span>
+		// Use the same stable ordering for shallow and deep pages, without the
+		// library's offset ceiling or materializing all skipped entity payloads.
+<span class="fc" id="L61">		try (var cursor = queries.scrollChangeSummaries(query)) {</span>
+<span class="fc" id="L62">			long remaining = offset;</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">			while (ids.size() &lt; limit) {</span>
+<span class="fc" id="L64">				var chunk = cursor.nextChunk();</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">				if (chunk.isEmpty()) {</span>
+<span class="fc" id="L66">					break;</span>
+				}
+<span class="fc bfc" id="L68" title="All 2 branches covered.">				for (var hit : chunk) {</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">					if (remaining &gt; 0) {</span>
+<span class="fc" id="L70">						remaining--;</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">					} else if (ids.size() &lt; limit) {</span>
+<span class="fc" id="L72">						ids.add(hit.objectId());</span>
+					}
+<span class="fc" id="L74">				}</span>
+<span class="fc" id="L75">			}</span>
+		}
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		if (ids.isEmpty()) {</span>
+<span class="fc" id="L78">			return List.of();</span>
+		}
+<span class="fc" id="L80">		Map&lt;String, GitCommitIndex&gt; entities = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L81">		queries.findChanges(CommitHistoryQuery.forRepository(query.repositoryName())</span>
+<span class="fc" id="L82">				.restrictedToObjectIds(ids).limit(ids.size()).build())</span>
+<span class="fc" id="L83">				.forEach(hit -&gt; entities.put(hit.getObjectId(), hit));</span>
+<span class="fc" id="L84">		return ids.stream().map(entities::get).filter(Objects::nonNull).toList();</span>
+	}
+
+	@Override
+	public List&lt;AuthorCount&gt; authors(String repository) {
+<span class="fc bfc" id="L89" title="All 2 branches covered.">		if (blank(repository)) {</span>
+<span class="fc" id="L90">			return List.of();</span>
+		}
+		// This application report groups the released projection in the database:
+		// transferring every commit summary would scale with history, not authors.
+<span class="fc" id="L94">		try (var session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L95">			var rows = session.createQuery(&quot;SELECT c.authorName, c.authorEmail, COUNT(c) FROM &quot;</span>
+<span class="fc" id="L96">					+ GitCommitIndex.class.getName() + &quot; c WHERE c.repositoryName = :repository&quot;</span>
+					+ &quot; GROUP BY c.authorName, c.authorEmail&quot;, Object[].class)
+<span class="fc" id="L98">					.setParameter(&quot;repository&quot;, repository.trim()).getResultList();</span>
+<span class="fc" id="L99">			Comparator&lt;String&gt; textOrder = Comparator.nullsFirst(Comparator.naturalOrder());</span>
+<span class="fc" id="L100">			return rows.stream().map(row -&gt; new AuthorCount((String) row[0], (String) row[1], ((Number) row[2]).longValue()))</span>
+<span class="fc" id="L101">					.sorted(Comparator.comparingLong(AuthorCount::commits).reversed()</span>
+<span class="fc" id="L102">							.thenComparing(AuthorCount::name, textOrder).thenComparing(AuthorCount::email, textOrder)).toList();</span>
+		}
+	}
+
+	@Override
+	public void checkSearch() {
+<span class="fc" id="L108">		try (var session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L109">			Search.session(session).search(GitCommitIndex.class).where(f -&gt; f.matchAll()).fetch(0, 0);</span>
+		}
+<span class="fc" id="L111">	}</span>
+
+	private static boolean blank(String value) {
+<span class="pc bpc" id="L114" title="1 of 4 branches missed.">		return value == null || value.isBlank();</span>
+	}
+
+	private static String literal(String query) {
+<span class="fc" id="L118">		StringBuilder escaped = new StringBuilder();</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">		for (int i = 0; i &lt; query.length(); i++) {</span>
+<span class="fc" id="L120">			char c = query.charAt(i);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">			if (&quot;+-|*\&quot;()\\~&quot;.indexOf(c) &gt;= 0) {</span>
+<span class="fc" id="L122">				escaped.append('\\');</span>
+			}
+<span class="fc" id="L124">			escaped.append(c);</span>
+		}
+<span class="fc" id="L126">		return escaped.toString();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

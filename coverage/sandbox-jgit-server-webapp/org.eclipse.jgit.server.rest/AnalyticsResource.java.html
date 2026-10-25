@@ -22,7 +22,9 @@ import java.util.logging.Logger;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
-import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService.AuthorStats;
+import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
+import org.eclipse.jgit.server.history.SandboxHistorySearch;
+import org.eclipse.jgit.server.history.SandboxHistorySearch.AuthorCount;
 import org.hibernate.SessionFactory;
 
 import com.google.gson.Gson;
@@ -37,106 +39,113 @@ import jakarta.servlet.http.HttpServletResponse;
 public class AnalyticsResource extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
-<span class="fc" id="L40">	private static final Logger LOG = Logger.getLogger(AnalyticsResource.class.getName());</span>
+<span class="fc" id="L42">	private static final Logger LOG = Logger.getLogger(AnalyticsResource.class.getName());</span>
 	private final SessionFactory sessionFactory;
-<span class="fc" id="L42">	private final Gson gson = new Gson();</span>
+	private final SandboxHistorySearch history;
+<span class="fc" id="L45">	private final Gson gson = new Gson();</span>
 
 	/** Creates an analytics endpoint from the application-owned native factory. */
-<span class="fc" id="L45">	public AnalyticsResource(SessionFactory sessionFactory) {</span>
-<span class="fc" id="L46">		this.sessionFactory= Objects.requireNonNull(sessionFactory, &quot;sessionFactory&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L47">	}</span>
+	public AnalyticsResource(SessionFactory sessionFactory) {
+<span class="fc" id="L49">		this(sessionFactory, new CopiedSandboxHistorySearch(sessionFactory));</span>
+<span class="fc" id="L50">	}</span>
+
+	/** Creates analytics with the selected history projection. */
+<span class="fc" id="L53">	public AnalyticsResource(SessionFactory sessionFactory, SandboxHistorySearch history) {</span>
+<span class="fc" id="L54">		this.sessionFactory= Objects.requireNonNull(sessionFactory, &quot;sessionFactory&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L55">		this.history= Objects.requireNonNull(history);</span>
+<span class="fc" id="L56">	}</span>
 
 	/** @deprecated application wiring should pass the native {@link SessionFactory}. */
 	@Deprecated(forRemoval = true)
 	public AnalyticsResource(HibernateSessionFactoryProvider provider) {
-<span class="fc" id="L52">		this(Objects.requireNonNull(provider, &quot;provider&quot;).getSessionFactory()); //$NON-NLS-1$</span>
-<span class="fc" id="L53">	}</span>
+<span class="fc" id="L61">		this(Objects.requireNonNull(provider, &quot;provider&quot;).getSessionFactory()); //$NON-NLS-1$</span>
+<span class="fc" id="L62">	}</span>
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-<span class="fc" id="L57">		resp.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L58">		resp.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L59">		String pathInfo = req.getPathInfo();</span>
-<span class="pc bpc" id="L60" title="1 of 2 branches missed.">		if (pathInfo == null) {</span>
-<span class="nc" id="L61">			pathInfo = &quot;/&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L66">		resp.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L67">		resp.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L68">		String pathInfo = req.getPathInfo();</span>
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">		if (pathInfo == null) {</span>
+<span class="nc" id="L70">			pathInfo = &quot;/&quot;; //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L63">		String repo = req.getParameter(&quot;repo&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L64" title="1 of 4 branches missed.">		if (repo == null || repo.isEmpty()) {</span>
-<span class="fc" id="L65">			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);</span>
-<span class="fc" id="L66">			try (PrintWriter w = resp.getWriter()) {</span>
-<span class="fc" id="L67">				w.write(&quot;{\&quot;error\&quot;:\&quot;Parameter 'repo' is required\&quot;}&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L72">		String repo = req.getParameter(&quot;repo&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L73" title="1 of 4 branches missed.">		if (repo == null || repo.isEmpty()) {</span>
+<span class="fc" id="L74">			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);</span>
+<span class="fc" id="L75">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L76">				w.write(&quot;{\&quot;error\&quot;:\&quot;Parameter 'repo' is required\&quot;}&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L69">			return;</span>
+<span class="fc" id="L78">			return;</span>
 		}
 		try {
-<span class="fc" id="L72">			GitDatabaseQueryService queryService = new GitDatabaseQueryService(sessionFactory);</span>
-<span class="fc bfc" id="L73" title="All 2 branches covered.">			if (pathInfo.startsWith(&quot;/authors&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L74">				handleAuthorStats(queryService, repo, resp);</span>
-<span class="fc bfc" id="L75" title="All 2 branches covered.">			} else if (pathInfo.startsWith(&quot;/objects&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L76">				handleObjectStats(queryService, repo, resp);</span>
-<span class="pc bpc" id="L77" title="1 of 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/packs&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L78">				handlePackStats(queryService, repo, resp);</span>
+<span class="fc" id="L81">			GitDatabaseQueryService queryService = new GitDatabaseQueryService(sessionFactory);</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">			if (pathInfo.startsWith(&quot;/authors&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L83">				handleAuthorStats(repo, resp);</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">			} else if (pathInfo.startsWith(&quot;/objects&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L85">				handleObjectStats(queryService, repo, resp);</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">			} else if (pathInfo.startsWith(&quot;/packs&quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L87">				handlePackStats(queryService, repo, resp);</span>
 			} else {
-<span class="nc" id="L80">				resp.setStatus(HttpServletResponse.SC_NOT_FOUND);</span>
-<span class="nc" id="L81">				try (PrintWriter w = resp.getWriter()) {</span>
-<span class="nc" id="L82">					w.write(&quot;{\&quot;error\&quot;:\&quot;Unknown analytics endpoint\&quot;}&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L89">				resp.setStatus(HttpServletResponse.SC_NOT_FOUND);</span>
+<span class="nc" id="L90">				try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L91">					w.write(&quot;{\&quot;error\&quot;:\&quot;Unknown analytics endpoint\&quot;}&quot;); //$NON-NLS-1$</span>
 				}
 			}
-<span class="nc" id="L85">		} catch (Exception e) {</span>
-<span class="nc" id="L86">			LOG.log(Level.WARNING, &quot;Analytics error&quot;, e); //$NON-NLS-1$</span>
-<span class="nc" id="L87">			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);</span>
-<span class="nc" id="L88">			try (PrintWriter w = resp.getWriter()) {</span>
-<span class="nc" id="L89">				w.write(&quot;{\&quot;error\&quot;:\&quot;Analytics query failed\&quot;}&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L94">		} catch (Exception e) {</span>
+<span class="nc" id="L95">			LOG.log(Level.WARNING, &quot;Analytics error&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L96">			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);</span>
+<span class="nc" id="L97">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L98">				w.write(&quot;{\&quot;error\&quot;:\&quot;Analytics query failed\&quot;}&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L91">		}</span>
-<span class="fc" id="L92">	}</span>
+<span class="fc" id="L100">		}</span>
+<span class="fc" id="L101">	}</span>
 
-	private void handleAuthorStats(GitDatabaseQueryService queryService, String repo,
+	private void handleAuthorStats(String repo,
 			HttpServletResponse resp) throws IOException {
-<span class="fc" id="L96">		List&lt;AuthorStats&gt; stats = queryService.getAuthorStatistics(repo);</span>
-<span class="fc" id="L97">		JsonObject response = new JsonObject();</span>
-<span class="fc" id="L98">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
-<span class="fc" id="L99">		JsonArray authors = new JsonArray();</span>
-<span class="fc bfc" id="L100" title="All 2 branches covered.">		for (AuthorStats as : stats) {</span>
-<span class="fc" id="L101">			JsonObject author = new JsonObject();</span>
-<span class="fc" id="L102">			author.addProperty(&quot;name&quot;, as.getAuthorName()); //$NON-NLS-1$</span>
-<span class="fc" id="L103">			author.addProperty(&quot;email&quot;, as.getAuthorEmail()); //$NON-NLS-1$</span>
-<span class="fc" id="L104">			author.addProperty(&quot;commits&quot;, as.getCommitCount()); //$NON-NLS-1$</span>
-<span class="fc" id="L105">			authors.add(author);</span>
-<span class="fc" id="L106">		}</span>
-<span class="fc" id="L107">		response.add(&quot;authors&quot;, authors); //$NON-NLS-1$</span>
-<span class="fc" id="L108">		resp.setStatus(HttpServletResponse.SC_OK);</span>
-<span class="fc" id="L109">		try (PrintWriter w = resp.getWriter()) {</span>
-<span class="fc" id="L110">			w.write(gson.toJson(response));</span>
+<span class="fc" id="L105">		List&lt;AuthorCount&gt; stats = history.authors(repo);</span>
+<span class="fc" id="L106">		JsonObject response = new JsonObject();</span>
+<span class="fc" id="L107">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+<span class="fc" id="L108">		JsonArray authors = new JsonArray();</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">		for (AuthorCount as : stats) {</span>
+<span class="fc" id="L110">			JsonObject author = new JsonObject();</span>
+<span class="fc" id="L111">			author.addProperty(&quot;name&quot;, as.name()); //$NON-NLS-1$</span>
+<span class="fc" id="L112">			author.addProperty(&quot;email&quot;, as.email()); //$NON-NLS-1$</span>
+<span class="fc" id="L113">			author.addProperty(&quot;commits&quot;, as.commits()); //$NON-NLS-1$</span>
+<span class="fc" id="L114">			authors.add(author);</span>
+<span class="fc" id="L115">		}</span>
+<span class="fc" id="L116">		response.add(&quot;authors&quot;, authors); //$NON-NLS-1$</span>
+<span class="fc" id="L117">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="fc" id="L118">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L119">			w.write(gson.toJson(response));</span>
 		}
-<span class="fc" id="L112">	}</span>
+<span class="fc" id="L121">	}</span>
 
 	private void handleObjectStats(GitDatabaseQueryService queryService, String repo,
 			HttpServletResponse resp) throws IOException {
-<span class="fc" id="L116">		JsonObject response = new JsonObject();</span>
-<span class="fc" id="L117">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
-<span class="fc" id="L118">		JsonObject counts = new JsonObject();</span>
-<span class="fc" id="L119">		counts.addProperty(&quot;commits&quot;, queryService.countObjectsByType(repo, 1)); //$NON-NLS-1$</span>
-<span class="fc" id="L120">		counts.addProperty(&quot;trees&quot;, queryService.countObjectsByType(repo, 2)); //$NON-NLS-1$</span>
-<span class="fc" id="L121">		counts.addProperty(&quot;blobs&quot;, queryService.countObjectsByType(repo, 3)); //$NON-NLS-1$</span>
-<span class="fc" id="L122">		counts.addProperty(&quot;tags&quot;, queryService.countObjectsByType(repo, 4)); //$NON-NLS-1$</span>
-<span class="fc" id="L123">		response.add(&quot;objectCounts&quot;, counts); //$NON-NLS-1$</span>
-<span class="fc" id="L124">		resp.setStatus(HttpServletResponse.SC_OK);</span>
-<span class="fc" id="L125">		try (PrintWriter w = resp.getWriter()) {</span>
-<span class="fc" id="L126">			w.write(gson.toJson(response));</span>
+<span class="fc" id="L125">		JsonObject response = new JsonObject();</span>
+<span class="fc" id="L126">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+<span class="fc" id="L127">		JsonObject counts = new JsonObject();</span>
+<span class="fc" id="L128">		counts.addProperty(&quot;commits&quot;, queryService.countObjectsByType(repo, 1)); //$NON-NLS-1$</span>
+<span class="fc" id="L129">		counts.addProperty(&quot;trees&quot;, queryService.countObjectsByType(repo, 2)); //$NON-NLS-1$</span>
+<span class="fc" id="L130">		counts.addProperty(&quot;blobs&quot;, queryService.countObjectsByType(repo, 3)); //$NON-NLS-1$</span>
+<span class="fc" id="L131">		counts.addProperty(&quot;tags&quot;, queryService.countObjectsByType(repo, 4)); //$NON-NLS-1$</span>
+<span class="fc" id="L132">		response.add(&quot;objectCounts&quot;, counts); //$NON-NLS-1$</span>
+<span class="fc" id="L133">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="fc" id="L134">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L135">			w.write(gson.toJson(response));</span>
 		}
-<span class="fc" id="L128">	}</span>
+<span class="fc" id="L137">	}</span>
 
 	private void handlePackStats(GitDatabaseQueryService queryService, String repo,
 			HttpServletResponse resp) throws IOException {
-<span class="fc" id="L132">		JsonObject response = new JsonObject();</span>
-<span class="fc" id="L133">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
-<span class="fc" id="L134">		response.addProperty(&quot;packCount&quot;, queryService.countPacks(repo)); //$NON-NLS-1$</span>
-<span class="fc" id="L135">		response.addProperty(&quot;totalSizeBytes&quot;, queryService.getTotalPackSize(repo)); //$NON-NLS-1$</span>
-<span class="fc" id="L136">		resp.setStatus(HttpServletResponse.SC_OK);</span>
-<span class="fc" id="L137">		try (PrintWriter w = resp.getWriter()) {</span>
-<span class="fc" id="L138">			w.write(gson.toJson(response));</span>
+<span class="fc" id="L141">		JsonObject response = new JsonObject();</span>
+<span class="fc" id="L142">		response.addProperty(&quot;repository&quot;, repo); //$NON-NLS-1$</span>
+<span class="fc" id="L143">		response.addProperty(&quot;packCount&quot;, queryService.countPacks(repo)); //$NON-NLS-1$</span>
+<span class="fc" id="L144">		response.addProperty(&quot;totalSizeBytes&quot;, queryService.getTotalPackSize(repo)); //$NON-NLS-1$</span>
+<span class="fc" id="L145">		resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="fc" id="L146">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L147">			w.write(gson.toJson(response));</span>
 		}
-<span class="fc" id="L140">	}</span>
+<span class="fc" id="L149">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

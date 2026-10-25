@@ -13,7 +13,6 @@ package org.sandbox.jgit.storage.integration;
 import java.util.List;
 
 import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
-import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
 import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
 
 /**
@@ -25,12 +24,13 @@ import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
  * Core entity names, while copied object and ref entities are not maintained by
  * the released pack/reftable backend. Keeping the list explicit prevents a
  * package scan from silently reintroducing those incompatible mappings during
- * the cut-over.&lt;/p&gt;
+ * the cut-over. Commit history is registered separately by the server through
+ * released Search; the copied GitCommitIndex would collide with that mapping.&lt;/p&gt;
  */
 public final class SandboxProjectionEntities {
 
 <span class="fc" id="L32">	private static final List&lt;Class&lt;?&gt;&gt; ANNOTATED_CLASSES= List.of(</span>
-			GitCommitIndex.class, JavaBlobIndex.class, FilePathHistory.class);
+			JavaBlobIndex.class, FilePathHistory.class);
 
 	private SandboxProjectionEntities() {
 	}
