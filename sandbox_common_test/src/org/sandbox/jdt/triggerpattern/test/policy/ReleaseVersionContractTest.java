@@ -212,9 +212,9 @@ public class ReleaseVersionContractTest {
 		CommandResult staged = run(repository, List.of("git", "diff", "--cached", "--name-only"));
 		assertEquals(0, staged.exitCode(), staged.output());
 		assertEquals(versionFiles, staged.output().lines().collect(Collectors.toSet()), staged.output());
-		assertEquals("generated notes\n", Files.readString(repository.resolve("release-notes.md")));
-		assertEquals("published content\n", Files.readString(pages.resolve("index.html")));
-		assertEquals("unrelated workflow edit\n", Files.readString(workflowFile));
+		assertEquals("generated notes\n", Files.readString(repository.resolve("release-notes.md"), StandardCharsets.UTF_8));
+		assertEquals("published content\n", Files.readString(pages.resolve("index.html"), StandardCharsets.UTF_8));
+		assertEquals("unrelated workflow edit\n", Files.readString(workflowFile, StandardCharsets.UTF_8));
 	}
 
 	static List<String> stagingArguments(String command) {

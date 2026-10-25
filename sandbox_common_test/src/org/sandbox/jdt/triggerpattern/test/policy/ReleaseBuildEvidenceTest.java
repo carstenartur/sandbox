@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -30,7 +31,7 @@ class ReleaseBuildEvidenceTest {
         executable(bin.resolve("mvn"), build);
         Path temporary = Files.createDirectory(directory.resolve("runner-temp"));
         Path script = directory.resolve("build.sh");
-        Files.writeString(script, buildScript());
+        Files.writeString(script, buildScript(), StandardCharsets.UTF_8);
         Path output = directory.resolve("process.log");
         ProcessBuilder builder = new ProcessBuilder("bash", script.toString()).directory(directory.toFile())
                 .redirectErrorStream(true).redirectOutput(output.toFile());
@@ -40,17 +41,17 @@ class ReleaseBuildEvidenceTest {
         Process process = builder.start();
         try {
             assertTrue(process.waitFor(Duration.ofSeconds(30).toMillis(), TimeUnit.MILLISECONDS));
-            assertEquals(buildExit, process.exitValue(), Files.readString(output));
+            assertEquals(buildExit, process.exitValue(), Files.readString(output, StandardCharsets.UTF_8));
             Path log = directory.resolve("target/distribution-verification/maven-release.log");
             assertTrue(Files.isRegularFile(log), "Maven clean must not delete the release build log");
-            assertEquals("release build started\nrelease build finished\n", Files.readString(log));
+            assertEquals("release build started\nrelease build finished\n", Files.readString(log, StandardCharsets.UTF_8));
         } finally {
             process.destroyForcibly();
         }
     }
 
     private static void executable(Path path, String contents) throws IOException {
-        Files.writeString(path, contents);
+        Files.writeString(path, contents, StandardCharsets.UTF_8);
         assertTrue(path.toFile().setExecutable(true));
     }
 
@@ -58,7 +59,7 @@ class ReleaseBuildEvidenceTest {
         for (Path root = Path.of("").toAbsolutePath(); root != null; root = root.getParent()) {
             Path workflow = root.resolve(".github/workflows/deploy-release.yml");
             if (!Files.isRegularFile(workflow)) continue;
-            String text = Files.readString(workflow);
+            String text = Files.readString(workflow, StandardCharsets.UTF_8);
             String name = "      - name: Maven distribution build and verification\n";
             int start = text.indexOf(name);
             assertTrue(start >= 0);
