@@ -4,7 +4,7 @@
 > task-by-task. Continue the complete migration; a completed version-update slice
 > is not completion of the runtime migration.
 
-**Goal:** Adopt stable 0.11.4 and replace Sandbox's copied generic backend with
+**Goal:** Adopt stable 0.11.5 and replace Sandbox's copied generic backend with
 released Core, Search and Java Analysis APIs.
 
 **Architecture:** Keep the existing repository lifecycle boundary and REST server.
@@ -18,8 +18,8 @@ resources are compatible with the released persistence context.
 
 ## Global constraints
 
-- Initial stable `jgit-storage-hibernate` 0.11.4; later stable prerequisite release
-  if required by the public API gaps, no copied upstream implementations.
+- Stable `jgit-storage-hibernate` 0.11.5 includes the public API prerequisites
+  identified against 0.11.4; no copied upstream implementations.
 - Java 25; all assertions belong in Maven/JUnit.
 - Ordinary PRs directly against current main, within the existing size policy.
 - Preserve Git storage and REST compatibility; no production database writes.
@@ -33,7 +33,7 @@ resources are compatible with the released persistence context.
 - Startup against an existing unmigrated schema and shutdown after failed startup.
 - Java analysis with missing classpath entries or moved source files.
 
-## Slice 1: Qualify stable Core 0.11.4
+## Slice 1: Qualify stable Core 0.11.5
 
 **Files:**
 - Modify: `sandbox-jgit-storage-hibernate/pom.xml`
@@ -46,10 +46,10 @@ produces a version-aligned, packaged consumer baseline for subsequent slices.
 
 - [ ] Build the unchanged parent and both consumer modules with Java 25; record
   any baseline environment/build failure separately from code regressions.
-- [ ] Set both `jgit-storage-hibernate.version` properties to `0.11.4` and update
+- [ ] Set both `jgit-storage-hibernate.version` properties to `0.11.5` and update
   the selected/current-version fields in the ledger, retaining historical evidence.
 - [ ] Run the existing full consumer contract and module `verify` goals. Expected:
-  0.11.4 resolves in both modules, all tests pass, the OSGi manifest imports the
+  0.11.5 resolves in both modules, all tests pass, the OSGi manifest imports the
   released Core API, and the shaded server includes the released factory.
 - [ ] Review the complete diff and open an ordinary PR against main.
 - [ ] Verify actual-head CI and review findings before integration.

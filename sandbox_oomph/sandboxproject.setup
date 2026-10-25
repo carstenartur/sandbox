@@ -204,13 +204,10 @@
     </workingSet>
     <description>The dynamic working sets for ${scope.project.label}</description>
   </setupTask>
-  <!-- Build imported projects -->
-  <setupTask
-      xsi:type="projects:ProjectsBuildTask"
-      onlyNewProjects="true"
-      predecessors="sandbox.target sandbox.projects">
-    <description>Build newly imported projects</description>
-  </setupTask>
+  <!-- SetupTaskPerformer schedules the normal AUTO_BUILD after completing its
+       workspace operation. A ProjectsBuildTask would force FULL_BUILD inside
+       that operation, deleting and regenerating Maven bundle manifests before
+       PDE receives the completed import's resource changes. -->
   <!-- Stream definition for the main branch -->
   <stream
       name="main"

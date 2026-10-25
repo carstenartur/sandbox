@@ -153,21 +153,6 @@ class OomphTargetBootstrapTest {
     }
 
     @Test
-    void buildWaitsForBothTheTargetAndCompleteProjectImport() throws Exception {
-        var nodes = xml(module.resolve("sandboxproject.setup")).getElementsByTagName("setupTask");
-        int count = 0;
-        for (int index = 0; index < nodes.getLength(); index++) {
-            Element task = (Element) nodes.item(index);
-            if ("projects:ProjectsBuildTask".equals(type(task))) {
-                count++;
-                assertTrue(predecessors(task).containsAll(Set.of("sandbox.projects", "sandbox.target")));
-                assertEquals("true", task.getAttribute("onlyNewProjects"));
-            }
-        }
-        assertEquals(1, count);
-    }
-
-    @Test
     void explicitDependenciesHaveNoMissingTasksOrCycles() throws Exception {
         Map<String, Element> tasks = tasks();
         for (String id : tasks.keySet()) {

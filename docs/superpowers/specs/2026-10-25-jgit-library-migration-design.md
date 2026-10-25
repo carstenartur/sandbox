@@ -8,6 +8,9 @@ The initial reference implementation is the immutable upstream tag `v0.11.4`, co
 `454ff1558e618571a9ffb1d2edb867cbdeffffb9`. The starting Sandbox commit is
 `7cdfab40bddbbe5ae0d906a050d2968580e18747`.
 
+The selected consumer release is now 0.11.5. The maintainer authorized its
+publication with the public API prerequisites merged in upstream PR #396.
+
 ## Existing behavior
 
 At the starting commit, both Maven consumers select Core 0.11.3. The application already
@@ -26,12 +29,12 @@ server, which would unnecessarily change existing REST URLs and deployment
 behavior. The implementation choice is to retain the Sandbox server and its
 DTOs while replacing generic implementation behind its application boundaries.
 
-1. Select stable 0.11.4 in both consumers and the migration ledger. Preserve
+1. Select stable 0.11.5 in both consumers and the migration ledger. Preserve
    historical evidence with its actual version and commit.
 2. Supply and release missing generic APIs upstream before their consumer
    cutover: message-only search, author-name filtering, documentation/string
-   extraction, and read-only physical storage statistics. The final selected
-   stable release may therefore be newer than 0.11.4, as issue #1303 permits.
+   extraction, and read-only physical storage statistics. Upstream PR #396
+   supplies these additions for stable 0.11.5, as issue #1303 permits.
 3. Migrate generic history ingestion and queries to released Search. Keep
    application response DTOs independent of persistence entities.
 4. Replace Java extraction and semantic queries with public Java Analysis
