@@ -162,7 +162,10 @@ from Git using the released `CommitProjectionRebuilder`, with projection writers
 stopped. Refreshing Lucene from ORM rows alone does not restore missing SQL rows.
 
 `ReleasedSchemaAdoptionHsqlTest` rehearses this sequence against a file database
-written by the copied backend. It records inline-pack SHA-256 checksums, the entire
+restored from a pinned SQL/BLOB snapshot written by the copied backend. The
+[fixture provenance](../sandbox-jgit-server-webapp/tst-rsrc/fixtures/README.md)
+records its original commit and export/restore procedure. Test setup no longer
+starts the copied backend. It records inline-pack SHA-256 checksums, the entire
 SQL reflog and copied projection rows; closes/reopens the database; applies the
 published adoption and regular streams; archives Search; validates the new schema;
 reads the original ref/commit/reflog; rebuilds Search; restarts and performs a new
