@@ -28,7 +28,6 @@ class SandboxProjectionEntitiesTest {
 		List<Class<?>> entities= SandboxProjectionEntities.annotatedClasses();
 
 		assertEquals(List.of(
-				"org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex", //$NON-NLS-1$
 				"org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex", //$NON-NLS-1$
 				"org.eclipse.jgit.storage.hibernate.entity.FilePathHistory"), //$NON-NLS-1$
 				entities.stream().map(Class::getName).toList());

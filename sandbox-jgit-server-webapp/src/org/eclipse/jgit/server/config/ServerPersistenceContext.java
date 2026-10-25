@@ -11,6 +11,7 @@
 package org.eclipse.jgit.server.config;
 
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
+import org.eclipse.jgit.server.history.SandboxHistorySearch;
 import org.hibernate.SessionFactory;
 
 /**
@@ -33,6 +34,9 @@ public interface ServerPersistenceContext extends AutoCloseable {
 	 * context's lifecycle.
 	 */
 	SandboxRepositoryService repositoryService();
+
+	/** Returns queries for this context's registered history projection. */
+	SandboxHistorySearch historySearch();
 
 	/** Closes repository handles before the owned session factory. */
 	@Override

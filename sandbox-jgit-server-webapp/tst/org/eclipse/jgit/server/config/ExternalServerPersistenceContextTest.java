@@ -13,6 +13,7 @@ package org.eclipse.jgit.server.config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.sql.Connection;
@@ -28,11 +29,44 @@ import org.hibernate.SessionFactory;
 import org.junit.Test;
 
 import io.github.carstenartur.jgit.storage.hibernate.schema.CoreSchemaMigrations;
+import io.github.carstenartur.jgit.storage.hibernate.search.SearchEntities;
+import io.github.carstenartur.jgit.storage.hibernate.search.analysis.GitTextAnalysis;
+import io.github.carstenartur.jgit.storage.hibernate.search.service.GitHistorySearchService;
+import io.github.carstenartur.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 
 /** Integration contracts for the prepared external-Core persistence context. */
 public class ExternalServerPersistenceContextTest {
 
 	private static final AtomicInteger DATABASE_COUNTER= new AtomicInteger();
+
+	@Test
+	public void preservesExplicitTextProfilesWithOrWithoutAConfigurer() {
+		for (boolean customConfigurer : List.of(false, true)) {
+			Properties properties= properties(databaseUrl(), "create-drop");
+			if (!customConfigurer) {
+				properties.remove(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY);
+			}
+			properties.setProperty(GitTextAnalysis.PROFILE_ID_PROPERTY, "neutral-standard-v1");
+			try (ServerPersistenceContext context= new ExternalServerPersistenceContext(properties)) {
+				assertEquals("neutral-standard-v1", context.sessionFactory().getProperties()
+						.get(GitTextAnalysis.PROFILE_ID_PROPERTY));
+				assertEquals("class:org.eclipse.jgit.storage.hibernate.search.JavaSourceAnalysisConfigurer",
+						context.sessionFactory().getProperties().get(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY));
+				context.historySearch().checkSearch();
+			}
+		}
+	}
+
+	@Test
+	public void closesOwnedFactoryWhenSearchConfigurationRejectsStartup() {
+		Properties properties= properties(databaseUrl(), "create-drop");
+		properties.setProperty(GitHistorySearchService.MAX_OFFSET_PROPERTY, "invalid");
+		try (var owner= new HibernateSessionFactoryProvider(properties, SearchEntities.annotatedClasses())) {
+			SessionFactory sessionFactory= owner.getSessionFactory();
+			assertThrows(IllegalArgumentException.class, () -> new ExternalServerPersistenceContext(owner));
+			assertTrue("A rejected context must release its already-created factory", sessionFactory.isClosed());
+		}
+	}
 
 	@Test
 	public void registersReleasedCoreAndOnlyCompatibleSandboxProjections()
@@ -53,8 +87,8 @@ public class ExternalServerPersistenceContextTest {
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitReflogEntity", //$NON-NLS-1$
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitRepositoryLifecycleEntity", //$NON-NLS-1$
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitRepositoryLockEntity", //$NON-NLS-1$
+					"io.github.carstenartur.jgit.storage.hibernate.search.entity.GitCommitIndex", //$NON-NLS-1$
 					"org.eclipse.jgit.storage.hibernate.entity.FilePathHistory", //$NON-NLS-1$
-					"org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex", //$NON-NLS-1$
 					"org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex"), //$NON-NLS-1$
 					entityNames);
 			assertFalse(entityNames.contains(

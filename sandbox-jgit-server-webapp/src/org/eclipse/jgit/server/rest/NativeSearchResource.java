@@ -12,6 +12,7 @@ package org.eclipse.jgit.server.rest;
 
 import org.eclipse.jgit.server.internal.NonOwningHibernateSessionFactoryProvider;
 import org.hibernate.SessionFactory;
+import org.eclipse.jgit.server.history.SandboxHistorySearch;
 
 /**
  * Native-factory entry point for the legacy copied Search projection endpoint.
@@ -27,5 +28,9 @@ public final class NativeSearchResource extends SearchResource {
 	/** Creates a Search endpoint backed by an application-owned native factory. */
 	public NativeSearchResource(SessionFactory sessionFactory) {
 		super(NonOwningHibernateSessionFactoryProvider.view(sessionFactory));
+	}
+	/** Creates an endpoint with the persistence context's selected history adapter. */
+	public NativeSearchResource(SessionFactory sessionFactory, SandboxHistorySearch history) {
+		super(NonOwningHibernateSessionFactoryProvider.view(sessionFactory), history);
 	}
 }

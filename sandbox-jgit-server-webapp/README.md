@@ -38,9 +38,25 @@ Additional routes include:
 
 ## Released-library consumer scope
 
-The server and its storage bridge currently consume `jgit-storage-hibernate-core` only. The selected version is defined by `jgit-storage-hibernate.version` in `sandbox-jgit-storage-hibernate/pom.xml`; both consumer module POMs must select the same version. The migration ledger records that selection separately from immutable compatibility evidence.
+The storage bridge consumes released Core only. The server additionally consumes
+released Search at the same `jgit-storage-hibernate.version`. Its guarded external
+context uses `SandboxHistorySearch` for commit/path queries, author counts and the
+search health probe; normal startup still selects the copied adapter until the
+remaining Java, ingestion and schema migration slices are complete.
 
-The real-consumer contract deliberately rejects upstream Search and Java Analysis modules until their dedicated Sandbox migration slices exist. Current search, Java projection, REST composition, and embedding behavior therefore remains Sandbox-owned or copied transitional code; it is not evidence that the external modules have already been integrated.
+The released adapter preserves REST fields, full multiline commit messages,
+repository isolation and `totalResults` as the size of the returned page. Queries
+are literal text, with the existing default 20 / maximum 100 results. Stable
+cursors support deep offsets with bounded memory; traversing a deep page still
+costs time proportional to the skipped hits. The default message analyzer retains
+CamelCase splitting and stop words; explicit operator-supplied analyzer settings
+are preserved. Changing analyzer profiles requires rebuilding the derived index.
+
+Two changed-path semantics are deliberate: paths come from the first-parent diff
+(root commits include all paths; deletions count), and all neutral analyzed path
+terms must match. The copied implementation enumerated whole trees and matched
+any analyzed term. Java projections and optional embeddings remain transitional;
+resolving Search does not qualify normal-startup or production database cutover.
 
 See [jgit-storage-hibernate consumer contract](../docs/JGIT_STORAGE_HIBERNATE_CONTRACT.md) for candidate substitution, OSGi/package checks, forbidden-module checks, and retained evidence.
 

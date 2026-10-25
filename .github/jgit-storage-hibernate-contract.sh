@@ -50,8 +50,8 @@ if [[ "$mode" == "candidate" && "$resolved_version" != "$candidate_version" ]]; 
 fi
 
 # These two consumer modules are intentionally built in isolation from the
-# unrelated Eclipse cleanup reactor. Sandbox currently consumes released Core
-# only; Search and Java Analysis remain explicit later migration slices.
+# unrelated Eclipse cleanup reactor. The bridge consumes Core only; the server
+# additionally qualifies released Search. Java Analysis remains a later slice.
 set -o pipefail
 "${maven[@]}" -B -ntp -nsu -N -f pom.xml install 2>&1 \
   | tee "$evidence_dir/parent-install.log"
@@ -139,16 +139,29 @@ cat "$evidence_dir"/*-dependency-tree.txt \
 test -s "$evidence_dir/dependency-tree.txt"
 
 for forbidden_module in \
-    jgit-storage-hibernate-search \
     jgit-storage-hibernate-java-analysis \
     jgit-storage-hibernate-architecture \
     jgit-storage-hibernate-benchmarks; do
   if grep -Fq "$forbidden_module" "$evidence_dir/dependency-tree.txt"; then
-    echo "Sandbox's Core-only contract resolved forbidden module $forbidden_module." >&2
+    echo "Sandbox's consumer contract resolved forbidden module $forbidden_module." >&2
     cat "$evidence_dir/dependency-tree.txt" >&2
     exit 1
   fi
 done
+if grep -Fq 'jgit-storage-hibernate-search' \
+    "$evidence_dir/sandbox-jgit-storage-hibernate-dependency-tree.txt"; then
+  echo "Released Search must remain outside the OSGi storage bridge." >&2
+  exit 1
+fi
+search_coordinate="io.github.carstenartur:jgit-storage-hibernate-search:jar:$resolved_version:"
+if ! grep -Fq "$search_coordinate" \
+    "$evidence_dir/sandbox-jgit-server-webapp-dependency-tree.txt"; then
+  echo "Server did not resolve expected Search coordinate $search_coordinate." >&2
+  exit 1
+fi
+grep -Fq 'io/github/carstenartur/jgit/storage/hibernate/search/service/GitHistorySearchService.class' \
+  "$evidence_dir/server-jar-entries.txt"
+
 core_coordinate="io.github.carstenartur:jgit-storage-hibernate-core:jar:$resolved_version:"
 if ! grep -Fq "$core_coordinate" "$evidence_dir/dependency-tree.txt"; then
   echo "Sandbox did not resolve expected Core coordinate $core_coordinate." >&2
@@ -192,20 +205,19 @@ evidence = {
     "candidateVersion": candidate_version,
     "resolvedVersion": resolved_version,
     "java": java_specification,
-    "expectedModules": ["jgit-storage-hibernate-core"],
+    "expectedModules": ["jgit-storage-hibernate-core", "jgit-storage-hibernate-search"],
     "forbiddenModules": [
-        "jgit-storage-hibernate-search",
         "jgit-storage-hibernate-java-analysis",
         "jgit-storage-hibernate-architecture",
         "jgit-storage-hibernate-benchmarks",
     ],
     "contract": (
-        "Core-only public API, OSGi bridge metadata, legacy preflight, "
+        "Core-only OSGi bridge, released Search REST contract, legacy preflight, "
         "repository lifecycle and shaded-server packaging"
     ),
 }
 Path(output).write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
 PY
 
-printf 'Sandbox jgit-storage-hibernate contract passed in %s mode with Core %s.\n' \
+printf 'Sandbox jgit-storage-hibernate contract passed in %s mode with Core and server Search %s.\n' \
   "$mode" "$resolved_version"

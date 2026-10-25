@@ -17,12 +17,15 @@ import org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.hibernate.SessionFactory;
+import org.eclipse.jgit.server.history.SandboxHistorySearch;
+import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
 
 /** Temporary ownership adapter for the copied Sandbox persistence bootstrap. */
 final class CopiedServerPersistenceContext implements ServerPersistenceContext {
 
 	private final HibernateSessionFactoryProvider owner;
 	private final SandboxRepositoryService repositories;
+	private final SandboxHistorySearch history;
 
 	CopiedServerPersistenceContext(Properties properties) {
 		this(new HibernateSessionFactoryProvider(Objects.requireNonNull(properties, "properties"))); //$NON-NLS-1$
@@ -30,6 +33,7 @@ final class CopiedServerPersistenceContext implements ServerPersistenceContext {
 
 	CopiedServerPersistenceContext(HibernateSessionFactoryProvider owner) {
 		this.owner= Objects.requireNonNull(owner, "owner"); //$NON-NLS-1$
+		this.history= new CopiedSandboxHistorySearch(owner.getSessionFactory());
 		this.repositories= new CopiedHibernateRepositoryService(owner.getSessionFactory());
 	}
 
@@ -41,6 +45,11 @@ final class CopiedServerPersistenceContext implements ServerPersistenceContext {
 	@Override
 	public SandboxRepositoryService repositoryService() {
 		return repositories;
+	}
+
+	@Override
+	public SandboxHistorySearch historySearch() {
+		return history;
 	}
 
 	@Override

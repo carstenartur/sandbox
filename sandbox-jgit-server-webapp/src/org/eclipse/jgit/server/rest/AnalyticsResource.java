@@ -22,7 +22,9 @@ import java.util.logging.Logger;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
-import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService.AuthorStats;
+import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
+import org.eclipse.jgit.server.history.SandboxHistorySearch;
+import org.eclipse.jgit.server.history.SandboxHistorySearch.AuthorCount;
 import org.hibernate.SessionFactory;
 
 import com.google.gson.Gson;
@@ -39,11 +41,18 @@ public class AnalyticsResource extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private static final Logger LOG = Logger.getLogger(AnalyticsResource.class.getName());
 	private final SessionFactory sessionFactory;
+	private final SandboxHistorySearch history;
 	private final Gson gson = new Gson();
 
 	/** Creates an analytics endpoint from the application-owned native factory. */
 	public AnalyticsResource(SessionFactory sessionFactory) {
+		this(sessionFactory, new CopiedSandboxHistorySearch(sessionFactory));
+	}
+
+	/** Creates analytics with the selected history projection. */
+	public AnalyticsResource(SessionFactory sessionFactory, SandboxHistorySearch history) {
 		this.sessionFactory= Objects.requireNonNull(sessionFactory, "sessionFactory"); //$NON-NLS-1$
+		this.history= Objects.requireNonNull(history);
 	}
 
 	/** @deprecated application wiring should pass the native {@link SessionFactory}. */
@@ -71,7 +80,7 @@ public class AnalyticsResource extends HttpServlet {
 		try {
 			GitDatabaseQueryService queryService = new GitDatabaseQueryService(sessionFactory);
 			if (pathInfo.startsWith("/authors")) { //$NON-NLS-1$
-				handleAuthorStats(queryService, repo, resp);
+				handleAuthorStats(repo, resp);
 			} else if (pathInfo.startsWith("/objects")) { //$NON-NLS-1$
 				handleObjectStats(queryService, repo, resp);
 			} else if (pathInfo.startsWith("/packs")) { //$NON-NLS-1$
@@ -91,17 +100,17 @@ public class AnalyticsResource extends HttpServlet {
 		}
 	}
 
-	private void handleAuthorStats(GitDatabaseQueryService queryService, String repo,
+	private void handleAuthorStats(String repo,
 			HttpServletResponse resp) throws IOException {
-		List<AuthorStats> stats = queryService.getAuthorStatistics(repo);
+		List<AuthorCount> stats = history.authors(repo);
 		JsonObject response = new JsonObject();
 		response.addProperty("repository", repo); //$NON-NLS-1$
 		JsonArray authors = new JsonArray();
-		for (AuthorStats as : stats) {
+		for (AuthorCount as : stats) {
 			JsonObject author = new JsonObject();
-			author.addProperty("name", as.getAuthorName()); //$NON-NLS-1$
-			author.addProperty("email", as.getAuthorEmail()); //$NON-NLS-1$
-			author.addProperty("commits", as.getCommitCount()); //$NON-NLS-1$
+			author.addProperty("name", as.name()); //$NON-NLS-1$
+			author.addProperty("email", as.email()); //$NON-NLS-1$
+			author.addProperty("commits", as.commits()); //$NON-NLS-1$
 			authors.add(author);
 		}
 		response.add("authors", authors); //$NON-NLS-1$

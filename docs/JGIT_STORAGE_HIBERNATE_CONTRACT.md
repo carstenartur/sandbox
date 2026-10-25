@@ -11,22 +11,26 @@ The executable contract is [`.github/jgit-storage-hibernate-contract.sh`](../.gi
 
 ## Authoritative module scope
 
-Sandbox currently consumes exactly one released module:
+The OSGi bridge consumes Core only. The standalone server consumes both:
 
 ```text
 jgit-storage-hibernate-core
+jgit-storage-hibernate-search
 ```
 
 The following modules are deliberately rejected by the contract:
 
 ```text
-jgit-storage-hibernate-search
 jgit-storage-hibernate-java-analysis
 jgit-storage-hibernate-architecture
 jgit-storage-hibernate-benchmarks
 ```
 
-This is not a statement that those modules are unwanted. Search and Java Analysis are later migration slices because Sandbox still owns copied projections, database mappings, REST composition, and compatibility behavior that must be cut over deliberately. Adding one of those dependencies before the corresponding migration work would hide an incomplete integration behind a green dependency resolution.
+The server's released Search adapter qualifies commit/path queries, author counts
+and the health probe against real H2/Lucene projections through both REST prefixes.
+Normal startup, Java analysis and projection ingestion remain separate migration
+slices. The bridge continues to reject Search so server dependencies do not leak
+into Eclipse consumers.
 
 The selected Core version is defined by `jgit-storage-hibernate.version` in `sandbox-jgit-storage-hibernate/pom.xml`. Documentation must not be treated as the version source of truth.
 
@@ -36,7 +40,9 @@ The `jgit-storage-hibernate` repository owns the real-consumer matrix. Its descr
 
 - the Sandbox repository and pinned consumer commit;
 - `.github/jgit-storage-hibernate-contract.sh` as the consumer-owned entry point;
-- `jgit-storage-hibernate-core` as the only expected module.
+- `jgit-storage-hibernate-core` and `jgit-storage-hibernate-search` as expected modules
+  for the updated consumer commit (the upstream descriptor is advanced after this
+  Sandbox slice merges).
 
 For a candidate run, the library workflow:
 
@@ -75,8 +81,11 @@ The contract requires Java 25 and builds the two storage consumer modules indepe
 
 It verifies:
 
-- the released Core dependency resolves at the selected/candidate version;
-- Search, Java Analysis, Architecture, and benchmark modules do not leak in transitively;
+- Core and server Search resolve at the selected/candidate version;
+- Search stays outside the OSGi bridge; Java Analysis, Architecture and benchmark
+  modules do not leak in transitively;
+- released message/path queries, full message bodies, deep paging, author identities
+  and search health work without a copied commit mapping;
 - the Sandbox public integration-boundary tests pass;
 - repository lifecycle, restart, deletion policy, and legacy-schema preflight tests pass;
 - Bnd accepts the package instructions without malformed-property warnings;
@@ -84,7 +93,7 @@ It verifies:
 - `org.sandbox.jgit.storage.integration` is exported;
 - released `io.github.carstenartur.jgit.storage.hibernate.*` packages are imported;
 - the bridge JAR contains `JGitStorageLibraryBoundary`;
-- the standalone shaded server contains the legacy preflight and released Core factory classes;
+- the standalone shaded server contains the legacy preflight, released Core factory and history search classes;
 - JUnit XML reports are produced.
 
 No Xvfb session is needed because this contract has no SWT or workbench path.
