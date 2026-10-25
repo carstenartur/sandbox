@@ -68,9 +68,19 @@ The implementation materializes the complete document in memory and therefore re
 - `XMLConstants.FEATURE_SECURE_PROCESSING` is enabled.
 - External DTD and stylesheet access are disabled.
 - Output encoding is set to the resolved source charset.
-- Compact mode uses `indent=no`; readable mode uses `indent=yes`.
-- Groups of four leading spaces are converted to tabs only on serialized markup lines.
-- Elements, attributes, namespaces, comments, processing instructions, CDATA-derived text, mixed content, and meaningful whitespace are preserved by the identity-style stylesheet.
+- Serializer indentation stays disabled. The stylesheet removes whitespace-only
+  text and optionally generates tab indentation only in known element-only
+  containers: root `plugin`, `fragment`, and `feature` descriptors, their direct
+  `extension` containers, and common XSD/EXSD schema structures.
+- Unknown elements, extension payloads, `documentation`, and `appinfo`/`appInfo`
+  subtrees retain all text, including whitespace-only text nodes. Element names
+  in an unrelated namespace do not establish a formatting contract.
+- Mixed-content containers and `xml:space="preserve"` subtrees are copied without
+  layout changes. This conservative subtree policy also retains descendants that
+  specify `xml:space="default"`; that attribute does not prove whitespace is disposable.
+- Elements, attributes, namespaces, comments, processing instructions, and
+  CDATA-derived text are preserved. Generic inter-element whitespace is not
+  assumed to be indentation, and no regular-expression rewrite touches text after serialization.
 
 After transformation, `XMLResourceSupport` parses the output with external DTD/schema/entity access disabled. Malformed output is rejected before any workspace write.
 
@@ -105,7 +115,8 @@ The current automatic post-transform gate proves XML well-formedness and blocks 
 The XML test module verifies:
 
 - compact versus indented serialization and idempotency;
-- comment, mixed-content, namespace, CDATA, and meaningful-whitespace preservation;
+- comment, mixed-content, namespace, CDATA, and meaningful-whitespace preservation,
+  with exact DOM comparisons retaining whitespace-only nodes for the safety boundary;
 - eligible and ignored file selection;
 - UTF-8 metadata decoding;
 - UTF-8 BOM preservation;

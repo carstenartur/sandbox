@@ -79,7 +79,7 @@ class SchemaTransformationTextSafetyTest {
 				</root>
 				"""; //$NON-NLS-1$
 
-		assertEquals(source, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
+		assertNull(SchemaTransformationUtils.firstConvertibleMarkupIndentation(source));
 	}
 
 	@Test
@@ -91,7 +91,6 @@ class SchemaTransformationTextSafetyTest {
 				    <still-comment-content/>
 				"""; //$NON-NLS-1$
 
-		assertEquals(source, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
 		assertNull(SchemaTransformationUtils.firstConvertibleMarkupIndentation(source));
 	}
 
@@ -137,7 +136,6 @@ class SchemaTransformationTextSafetyTest {
 				</root>
 				"""; //$NON-NLS-1$
 
-		assertEquals(source, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
 		assertNull(SchemaTransformationUtils.firstConvertibleMarkupIndentation(source));
 	}
 
@@ -148,9 +146,6 @@ class SchemaTransformationTextSafetyTest {
 				    <child/>
 				</root>
 				"""; //$NON-NLS-1$
-		String expected= source.replace("    <child/>", "\t<child/>"); //$NON-NLS-1$ //$NON-NLS-2$
-
-		assertEquals(expected, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
 		assertEquals(2, SchemaTransformationUtils.firstConvertibleMarkupIndentation(source).lineNumber());
 	}
 
@@ -163,9 +158,6 @@ class SchemaTransformationTextSafetyTest {
 				    <child/>
 				</root>
 				"""; //$NON-NLS-1$
-		String expected= source.replace("    <child/>", "\t<child/>"); //$NON-NLS-1$ //$NON-NLS-2$
-
-		assertEquals(expected, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
 		assertEquals(4, SchemaTransformationUtils.firstConvertibleMarkupIndentation(source).lineNumber());
 	}
 
@@ -178,7 +170,6 @@ class SchemaTransformationTextSafetyTest {
 				</root>
 				"""; //$NON-NLS-1$
 
-		assertEquals(source, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
 		assertNull(SchemaTransformationUtils.firstConvertibleMarkupIndentation(source));
 	}
 
@@ -190,7 +181,6 @@ class SchemaTransformationTextSafetyTest {
 				</root>
 				"""; //$NON-NLS-1$
 
-		assertEquals(source, SchemaTransformationUtils.convertMarkupIndentationToTabs(source));
 		assertNull(SchemaTransformationUtils.firstConvertibleMarkupIndentation(source));
 	}
 

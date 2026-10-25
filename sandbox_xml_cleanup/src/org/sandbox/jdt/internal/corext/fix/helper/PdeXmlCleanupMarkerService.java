@@ -64,9 +64,30 @@ public final class PdeXmlCleanupMarkerService {
 			return 0;
 		}
 
+		String source= transformation.snapshot().content();
 		SchemaTransformationUtils.IndentationFinding finding=
-				SchemaTransformationUtils.firstConvertibleMarkupIndentation(
-						transformation.snapshot().content());
+				SchemaTransformationUtils.firstConvertibleMarkupIndentation(source);
+		if (finding != null) {
+			int markupStart= source.indexOf('<', finding.offset());
+			int markupNameEnd= markupStart + 1;
+			if (source.charAt(markupNameEnd) == '/') {
+				markupNameEnd++;
+			}
+			while (markupNameEnd < source.length()) {
+				char character= source.charAt(markupNameEnd);
+				if (Character.isWhitespace(character) || character == '/' || character == '>') {
+					break;
+				}
+				markupNameEnd++;
+			}
+			String candidatePrefix= source.substring(finding.offset(), markupNameEnd);
+			// A lexical match may belong to a preserved text subtree. Prefer a file-level
+			// marker if its indentation and markup name survive, even when serialization
+			// changes the tag spelling. Other markup with the same indentation is unrelated.
+			if (transformation.transformedContent().contains(candidatePrefix)) {
+				finding= null;
+			}
+		}
 		IMarker marker= file.createMarker(MARKER_TYPE);
 		marker.setAttribute(IMarker.MESSAGE, MARKER_MESSAGE);
 		marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_WARNING);
