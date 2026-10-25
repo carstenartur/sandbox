@@ -11,11 +11,13 @@ import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.*;
 /** Application rows and reports sharing one immutable released source-search generation. */
 final class HistoricalSourceIndex implements Closeable {
   private final JavaFileSearchIndex index;
+  private final String repositoryName;
   private final List<AnalyzedFile> files;
   private final Map<String, AnalyzedFile> byBlob;
   private final ApplicationSourceReports reports;
 
-  private HistoricalSourceIndex(JavaFileSearchIndex index, LinkedHashMap<String, AnalyzedFile> files) {
+  private HistoricalSourceIndex(String repositoryName, JavaFileSearchIndex index, LinkedHashMap<String, AnalyzedFile> files) {
+    this.repositoryName = repositoryName;
     this.index = index; this.files = List.copyOf(files.values()); this.byBlob = Map.copyOf(files);
     reports = new ApplicationSourceReports(this.files);
   }
@@ -26,7 +28,7 @@ final class HistoricalSourceIndex implements Closeable {
       if (!canonicalName.equals(file.repositoryName())) throw new IllegalArgumentException("Mixed repository source generation");
       files.putIfAbsent(file.blobObjectId(), file);
     }
-    return new HistoricalSourceIndex(JavaFileSearchIndex.build(
+    return new HistoricalSourceIndex(canonicalName, JavaFileSearchIndex.build(
         () -> files.values().stream().map(AnalyzedFile::searchDocument).iterator()), files);
   }
 
@@ -37,6 +39,7 @@ final class HistoricalSourceIndex implements Closeable {
   }
 
   AnalyzedFile byBlob(String id) { return byBlob.get(id); }
+  String repositoryName() { return repositoryName; }
   List<AnalyzedFile> files() { return files; }
   ApplicationSourceReports reports() { return reports; }
   @Override public void close() throws IOException { index.close(); }

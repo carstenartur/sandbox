@@ -22,9 +22,11 @@ import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.*;
 /** All historical commit/path pairs, streamed into the public path index without Java parsing. */
 final class HistoricalPathIndex implements Closeable {
   private final JavaFileSearchIndex index;
+  private final String repositoryName;
   private final Map<String, CommitView> commits;
 
-  private HistoricalPathIndex(JavaFileSearchIndex index, Map<String, CommitView> commits) {
+  private HistoricalPathIndex(String repositoryName, JavaFileSearchIndex index, Map<String, CommitView> commits) {
+    this.repositoryName = repositoryName;
     this.index = index; this.commits = Map.copyOf(commits);
   }
 
@@ -32,7 +34,7 @@ final class HistoricalPathIndex implements Closeable {
     GitHistorySnapshot.checkInterrupted();
     var commits = new HashMap<String, CommitView>(); snapshot.forEach(c -> commits.put(c.objectId(), c));
     try (var documents = new PathDocuments(canonicalName, git.newObjectReader(), snapshot)) {
-      return new HistoricalPathIndex(JavaFileSearchIndex.build(documents), commits);
+      return new HistoricalPathIndex(canonicalName, JavaFileSearchIndex.build(documents), commits);
     } catch (UncheckedIOException failure) { throw failure.getCause(); }
   }
 
@@ -44,6 +46,7 @@ final class HistoricalPathIndex implements Closeable {
   }
 
   @Override public void close() throws IOException { index.close(); }
+  String repositoryName() { return repositoryName; }
 
   private static final class PathDocuments implements Iterable<JavaFileSearchDocument>, Closeable {
     private final String name;

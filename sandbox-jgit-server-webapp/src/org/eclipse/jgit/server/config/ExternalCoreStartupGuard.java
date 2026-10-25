@@ -44,6 +44,10 @@ final class ExternalCoreStartupGuard {
     var properties = new Properties();
     properties.putAll(Environment.getProperties());
     properties.putAll(supplied);
+    String catalog = properties.getProperty("hibernate.default_catalog");
+    if (catalog != null && !catalog.isBlank()) {
+      throw new IllegalStateException("Remove hibernate.default_catalog; select the migration and Hibernate database in the JDBC URL.");
+    }
     if (!"validate".equalsIgnoreCase(properties.getProperty("hibernate.hbm2ddl.auto", "").strip())) {
       throw new IllegalStateException("Released storage requires hibernate.hbm2ddl.auto=validate; migrate Core and Search first.");
     }

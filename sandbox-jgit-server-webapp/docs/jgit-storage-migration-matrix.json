@@ -7,8 +7,8 @@
   "releasePolicy": {
     "required": "non-SNAPSHOT",
     "minimumDocumentedCandidate": "0.1.13",
-    "selectedVersion": "0.11.7",
-    "selectionState": "stable 0.11.7 selected for consumer verification; immutable Core 0.10.0 compatibility evidence remains recorded below independently of the selected version. Selection alone does not qualify production runtime cutover"
+    "selectedVersion": "0.11.8",
+    "selectionState": "stable 0.11.8 selected for consumer verification; immutable Core 0.10.0 compatibility evidence remains recorded below independently of the selected version. Selection alone does not qualify production runtime cutover"
   },
   "runtime": {
     "currentDatabase": "MSSQL",
@@ -27,7 +27,7 @@
         "org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService",
         "org.eclipse.jgit.server.config.ExternalServerPersistenceContext"
       ],
-      "currentBackend": "Sandbox adapter boundary with copied backend for normal startup and released Core 0.11.7 for guarded external startup",
+      "currentBackend": "Sandbox adapter boundary with copied backend for normal startup and released Core 0.11.8 for guarded external startup",
       "targetOwner": "jgit-storage-hibernate-core",
       "targetApi": [
         "HibernateRepositoryFactory",
@@ -147,7 +147,7 @@
         "org.eclipse.jgit.server.history.ReleasedSandboxHistorySearch",
         "org.eclipse.jgit.server.rest.SearchResource"
       ],
-      "currentBackend": "Released Search 0.11.7 in the guarded external context; copied adapter remains selected by normal startup until ingestion, Java and schema cutover",
+      "currentBackend": "Released Search 0.11.8 in the guarded external context; copied adapter remains selected by normal startup until ingestion, Java and schema cutover",
       "targetOwner": "jgit-storage-hibernate-search",
       "targetApi": [
         "GitHistorySearchService",
@@ -174,7 +174,7 @@
         "org.eclipse.jgit.server.history.ReleasedSandboxHistorySearch",
         "org.eclipse.jgit.server.rest.SearchResource"
       ],
-      "currentBackend": "Released Search 0.11.7 in the guarded external context; copied adapter remains selected by normal startup until ingestion, Java and schema cutover",
+      "currentBackend": "Released Search 0.11.8 in the guarded external context; copied adapter remains selected by normal startup until ingestion, Java and schema cutover",
       "targetOwner": "jgit-storage-hibernate-search",
       "targetApi": [
         "GitHistorySearchService",
@@ -221,7 +221,7 @@
         "org.eclipse.jgit.server.analysis.JavaHistoryCorpus",
         "org.eclipse.jgit.server.analysis.ReleasedJavaProjectAnalysis"
       ],
-      "currentBackend": "Copied runtime remains selected; released 0.11.7 whole-project analysis and immutable Sandbox file facets are qualified separately",
+      "currentBackend": "Copied runtime remains selected; released 0.11.8 whole-project analysis and immutable Sandbox file facets are qualified separately",
       "targetOwner": "jgit-storage-hibernate-java-analysis",
       "targetApi": [
         "JavaProjectAnalyzer",

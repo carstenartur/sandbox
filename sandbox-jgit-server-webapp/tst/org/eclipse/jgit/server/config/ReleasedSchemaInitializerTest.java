@@ -6,6 +6,36 @@ import java.sql.DriverManager;
 import org.junit.Test;
 
 public class ReleasedSchemaInitializerTest {
+  @Test public void rejectsCatalogOverridesBeforeCreatingAnyTable() throws Exception {
+    var properties = ReleasedSchemaHistoryTest.properties();
+    properties.setProperty("hibernate.default_catalog", "other_database");
+    var failure = assertThrows(IllegalStateException.class, () -> ReleasedSchemaInitializer.initializeEmpty(properties));
+    assertTrue(failure.getMessage().contains("hibernate.default_catalog"));
+    assertThrows(IllegalStateException.class, () -> ExternalCoreStartupGuard.requireReady(properties));
+    try (var connection = DriverManager.getConnection(properties.getProperty("hibernate.connection.url"), "sa", "");
+        var tables = connection.getMetaData().getTables(null, "PUBLIC", "%", new String[] {"TABLE"})) {
+      assertFalse(tables.next());
+    }
+  }
+
+  @Test public void targetsTheExactSchemaEvenWhenItsNameContainsMetadataWildcards() throws Exception {
+    var properties = ReleasedSchemaHistoryTest.properties();
+    properties.setProperty("hibernate.default_schema", "tenant_1");
+    try (var connection = DriverManager.getConnection(properties.getProperty("hibernate.connection.url"), "sa", "");
+        var statement = connection.createStatement()) {
+      statement.execute("CREATE SCHEMA \"tenant_1\"");
+      statement.execute("CREATE SCHEMA \"tenantA1\"");
+      statement.execute("CREATE TABLE \"tenantA1\".operator_data (stored_number INTEGER)");
+      statement.execute("INSERT INTO \"tenantA1\".operator_data VALUES (7)");
+      ReleasedSchemaInitializer.initializeEmpty(properties);
+      ExternalCoreStartupGuard.requireReady(properties);
+      try (var rows = statement.executeQuery("SELECT stored_number FROM \"tenantA1\".operator_data")) {
+        assertTrue(rows.next()); assertEquals(7, rows.getInt(1));
+      }
+      try (var rows = connection.getMetaData().getTables(null, "PUBLIC", "%", new String[] {"TABLE"})) { assertFalse(rows.next()); }
+    }
+  }
+
   @Test public void explicitlyInitializesEmptyH2AndHsqlSchemasThenNormalValidationIsReadOnly() throws Exception {
     for (String kind : java.util.List.of("h2", "hsqldb")) {
       var properties = ReleasedSchemaHistoryTest.properties();

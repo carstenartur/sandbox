@@ -26,7 +26,12 @@ public final class ReleasedSchemaInitializer {
         if (schema == null || schema.isBlank()) schema = connection.getSchema();
         if (schema == null || schema.isBlank()) throw new IllegalStateException("Set hibernate.default_schema for initialization");
         try (var tables = connection.getMetaData().getTables(connection.getCatalog(), schema, "%", new String[] {"TABLE", "VIEW", "BASE TABLE"})) {
-          if (tables.next()) throw new IllegalStateException("Schema initialization requires an empty schema; use the documented adoption procedure for existing data");
+          // JDBC takes a pattern here: '_' and '%' in an exact schema name also match other schemas.
+          while (tables.next()) {
+            if (schema.equals(tables.getString("TABLE_SCHEM"))) {
+              throw new IllegalStateException("Schema initialization requires an empty schema; use the documented adoption procedure for existing data");
+            }
+          }
         }
       }
       configuration(url, user, password, schema).locations(locations.core()).table(CoreSchemaMigrations.SCHEMA_HISTORY_TABLE)

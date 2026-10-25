@@ -28,11 +28,10 @@ import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch.CommitHit;
 import org.eclipse.jgit.server.history.SandboxHistorySearch.PathHit;
-import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
-import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
-import org.eclipse.jgit.storage.hibernate.service.ApiChangeEntry;
-import org.eclipse.jgit.storage.hibernate.service.ApiDiffResult;
-import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
+
+import org.eclipse.jgit.server.search.SandboxSourceSearch;
+import org.eclipse.jgit.server.search.SandboxSourceSearch.*;
+import org.eclipse.jgit.server.search.CopiedSandboxSourceSearch;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -72,9 +71,9 @@ public class SearchResource extends HttpServlet {
 	private static final Logger LOG = Logger
 			.getLogger(SearchResource.class.getName());
 
-	private final HibernateSessionFactoryProvider provider;
+	private final SandboxSourceSearch sources;
 
-	private final EmbeddingService embeddingService;
+	private final boolean ownsSources;
 
 	private final SandboxHistorySearch history;
 
@@ -105,10 +104,27 @@ public class SearchResource extends HttpServlet {
 
 	/** Selects independent commit and per-commit file history boundaries. */
 	public SearchResource(HibernateSessionFactoryProvider provider, SandboxHistorySearch history, SandboxFileHistory files) {
-		this.files = java.util.Objects.requireNonNull(files);
-		this.provider = provider;
+		this(history, files, new CopiedSandboxSourceSearch(provider.getSessionFactory()), true);
+	}
+
+	/** Uses application-owned search boundaries; their context owns their lifecycle. */
+	public SearchResource(SandboxHistorySearch history, SandboxFileHistory files, SandboxSourceSearch sources) {
+		this(history, files, sources, false);
+	}
+
+	SearchResource(SandboxHistorySearch history, SandboxFileHistory files, SandboxSourceSearch sources, boolean ownsSources) {
 		this.history = java.util.Objects.requireNonNull(history);
-		this.embeddingService = new EmbeddingService();
+		this.files = java.util.Objects.requireNonNull(files);
+		this.sources = java.util.Objects.requireNonNull(sources);
+		this.ownsSources = ownsSources;
+	}
+
+	@Override public void destroy() {
+		try {
+			if (ownsSources) sources.close();
+		} catch (IOException failure) {
+			LOG.log(Level.WARNING, "Cannot close servlet-owned source search", failure);
+		} finally { super.destroy(); }
 	}
 
 	@Override
@@ -183,9 +199,7 @@ public class SearchResource extends HttpServlet {
 		}
 
 		try {
-			GitDatabaseQueryService queryService = new GitDatabaseQueryService(
-					provider.getSessionFactory());
-			queryService.setEmbeddingService(embeddingService);
+			SandboxSourceSearch queryService = sources;
 
 			if (pathInfo.startsWith("/commits")) { //$NON-NLS-1$
 				handleCommitSearch(repo, query, offset,
@@ -358,60 +372,60 @@ public class SearchResource extends HttpServlet {
 		}
 	}
 
-	private void handleTypeSearch(GitDatabaseQueryService queryService,
+	private void handleTypeSearch(SandboxSourceSearch queryService,
 			String repo, String query, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<JavaBlobIndex> results = queryService.searchByType(repo,
+		List<SourceFile> results = queryService.searchByType(repo,
 				query, offset, limit);
 		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
 	}
 
 	private void handleTypeSearchWithModule(
-			GitDatabaseQueryService queryService, String repo,
+			SandboxSourceSearch queryService, String repo,
 			String query, String module, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<JavaBlobIndex> results = queryService
+		List<SourceFile> results = queryService
 				.searchByTypeWithModule(repo, query, module, offset, limit);
 		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
 	}
 
 	private void handleAnnotationSearch(
-			GitDatabaseQueryService queryService, String repo,
+			SandboxSourceSearch queryService, String repo,
 			String query, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<JavaBlobIndex> results = queryService
+		List<SourceFile> results = queryService
 				.searchByAnnotation(repo, query, offset, limit);
 		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
 	}
 
-	private void handleSymbolSearch(GitDatabaseQueryService queryService,
+	private void handleSymbolSearch(SandboxSourceSearch queryService,
 			String repo, String query, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<JavaBlobIndex> results = queryService.searchBySymbol(repo,
+		List<SourceFile> results = queryService.searchBySymbol(repo,
 				query, offset, limit);
 		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
 	}
 
-	private void handleHierarchySearch(GitDatabaseQueryService queryService,
+	private void handleHierarchySearch(SandboxSourceSearch queryService,
 			String repo, String query, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<JavaBlobIndex> results = queryService.searchByHierarchy(repo,
+		List<SourceFile> results = queryService.searchByHierarchy(repo,
 				query, offset, limit);
 		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
 	}
 
-	private void handleSourceSearch(GitDatabaseQueryService queryService,
+	private void handleSourceSearch(SandboxSourceSearch queryService,
 			String repo, String query, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<JavaBlobIndex> results = queryService
+		List<SourceFile> results = queryService
 				.searchSourceContent(repo, query, offset, limit);
 		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
 	}
 
-	private void handleSearch(GitDatabaseQueryService service,
+	private void handleSearch(SandboxSourceSearch service,
 			String repo, String query, int offset, int limit,
 			HttpServletResponse resp, String type) throws IOException {
-		List<JavaBlobIndex> results;
+		List<SourceFile> results;
 		switch (type) {
 		case "docs": //$NON-NLS-1$
 			results = service.searchByDocumentation(repo, query,
@@ -432,12 +446,11 @@ public class SearchResource extends HttpServlet {
 		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
 	}
 
-	private void handleFilePathSearch(GitDatabaseQueryService queryService,
+	private void handleFilePathSearch(SandboxSourceSearch queryService,
 			String repo, String query, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
 		List<FileVersion> results = queryService
-				.searchFilePath(repo, query, offset, limit).stream().map(file -> new FileVersion(
-						file.getCommitObjectId(), file.getFilePath(), file.getBlobObjectId(), file.getFileType(), file.getCommitTime())).toList();
+				.searchFilePath(repo, query, offset, limit);
 		writeFilePathResponse(results, repo, query, offset, limit, resp);
 	}
 
@@ -447,52 +460,52 @@ public class SearchResource extends HttpServlet {
 		writeFilePathResponse(results, repo, path, offset, limit, resp);
 	}
 
-	private void handleFqnSearch(GitDatabaseQueryService queryService,
+	private void handleFqnSearch(SandboxSourceSearch queryService,
 			String repo, String query, String fileType, int offset,
 			int limit, HttpServletResponse resp) throws IOException {
-		List<JavaBlobIndex> results = queryService
+		List<SourceFile> results = queryService
 				.searchFqnAcrossTypes(repo, query, fileType, offset, limit);
 		writeJavaBlobResponse(results, repo, query, offset, limit, resp);
 	}
 
 	private void handleSemanticSearch(
-			GitDatabaseQueryService queryService, String repo,
+			SandboxSourceSearch queryService, String repo,
 			String query, int topK, HttpServletResponse resp)
 			throws IOException {
-		List<JavaBlobIndex> results = queryService.semanticSearch(repo,
+		List<SourceFile> results = queryService.semanticSearch(repo,
 				query, topK);
 		writeJavaBlobResponse(results, repo, query, 0, topK, resp);
 	}
 
 	private void handleHybridSearch(
-			GitDatabaseQueryService queryService, String repo,
+			SandboxSourceSearch queryService, String repo,
 			String query, int topK, HttpServletResponse resp)
 			throws IOException {
-		List<JavaBlobIndex> results = queryService.hybridSearch(repo,
+		List<SourceFile> results = queryService.hybridSearch(repo,
 				query, topK);
 		writeJavaBlobResponse(results, repo, query, 0, topK, resp);
 	}
 
 	private void handleSimilarSearch(
-			GitDatabaseQueryService queryService, String repo,
+			SandboxSourceSearch queryService, String repo,
 			String blobId, int topK, HttpServletResponse resp)
 			throws IOException {
-		List<JavaBlobIndex> results = queryService.findSimilarCode(repo,
+		List<SourceFile> results = queryService.findSimilarCode(repo,
 				blobId, topK);
 		writeJavaBlobResponse(results, repo, blobId, 0, topK, resp);
 	}
 
-	private void handleMigrationImpact(GitDatabaseQueryService queryService,
+	private void handleMigrationImpact(SandboxSourceSearch queryService,
 			String repo, String importPrefix, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<JavaBlobIndex> results = queryService.getMigrationImpact(
+		List<SourceFile> results = queryService.getMigrationImpact(
 				repo, importPrefix, offset, limit);
 		writeJavaBlobResponse(results, repo, importPrefix, offset, limit,
 				resp);
 	}
 
 	private void handleMigrationImpactSummary(
-			GitDatabaseQueryService queryService, String repo,
+			SandboxSourceSearch queryService, String repo,
 			String importPrefix, HttpServletResponse resp)
 			throws IOException {
 		Map<String, Object> summary = queryService
@@ -518,16 +531,16 @@ public class SearchResource extends HttpServlet {
 	}
 
 	private void handleDeprecatedApiUsage(
-			GitDatabaseQueryService queryService, String repo,
+			SandboxSourceSearch queryService, String repo,
 			int offset, int limit, HttpServletResponse resp)
 			throws IOException {
-		List<JavaBlobIndex> results = queryService.getDeprecatedApiUsage(
+		List<SourceFile> results = queryService.getDeprecatedApiUsage(
 				repo, offset, limit);
 		writeJavaBlobResponse(results, repo, "Deprecated", offset, limit, //$NON-NLS-1$
 				resp);
 	}
 
-	private void handleApiDiff(GitDatabaseQueryService queryService,
+	private void handleApiDiff(SandboxSourceSearch queryService,
 			String repo, HttpServletRequest req,
 			HttpServletResponse resp) throws IOException {
 		String commitA = req.getParameter("commitA"); //$NON-NLS-1$
@@ -542,12 +555,12 @@ public class SearchResource extends HttpServlet {
 		}
 		commitA = sanitizeInput(commitA);
 		commitB = sanitizeInput(commitB);
-		ApiDiffResult diff = queryService.getApiDiff(repo, commitA,
+		SourceDiff diff = queryService.getApiDiff(repo, commitA,
 				commitB);
 		writeApiDiffResponse(diff, resp);
 	}
 
-	private void handlePublicApiChanges(GitDatabaseQueryService queryService,
+	private void handlePublicApiChanges(SandboxSourceSearch queryService,
 			String repo, HttpServletRequest req,
 			HttpServletResponse resp) throws IOException {
 		String commitA = req.getParameter("commitA"); //$NON-NLS-1$
@@ -562,37 +575,37 @@ public class SearchResource extends HttpServlet {
 		}
 		commitA = sanitizeInput(commitA);
 		commitB = sanitizeInput(commitB);
-		ApiDiffResult diff = queryService.getPublicApiChanges(repo,
+		SourceDiff diff = queryService.getPublicApiChanges(repo,
 				commitA, commitB);
 		writeApiDiffResponse(diff, resp);
 	}
 
 	private void handleDeprecationTimeline(
-			GitDatabaseQueryService queryService, String repo,
+			SandboxSourceSearch queryService, String repo,
 			int offset, int limit, HttpServletResponse resp)
 			throws IOException {
-		List<JavaBlobIndex> results = queryService.getDeprecationTimeline(
+		List<SourceFile> results = queryService.getDeprecationTimeline(
 				repo, offset, limit);
 		writeJavaBlobResponse(results, repo, "deprecation-timeline", //$NON-NLS-1$
 				offset, limit, resp);
 	}
 
 	private void handleAuthorTypeStatistics(
-			GitDatabaseQueryService queryService, String repo,
+			SandboxSourceSearch queryService, String repo,
 			HttpServletResponse resp) throws IOException {
-		List<Object[]> rows = queryService.getAuthorTypeStatistics(repo);
+		List<AuthorTypes> rows = queryService.getAuthorTypeStatistics(repo);
 		JsonObject response = new JsonObject();
 		response.addProperty("repository", repo); //$NON-NLS-1$
 		response.addProperty("totalResults", rows.size()); //$NON-NLS-1$
 		JsonArray items = new JsonArray();
-		for (Object[] row : rows) {
+		for (AuthorTypes row : rows) {
 			JsonObject item = new JsonObject();
 			item.addProperty("author", //$NON-NLS-1$
-					row[0] != null ? row[0].toString() : null);
+					row.author());
 			item.addProperty("typeKind", //$NON-NLS-1$
-					row[1] != null ? row[1].toString() : null);
+					row.typeKind());
 			item.addProperty("count", //$NON-NLS-1$
-					row[2] != null ? ((Number) row[2]).longValue() : 0L);
+					row.count());
 			items.add(item);
 		}
 		response.add("results", items); //$NON-NLS-1$
@@ -603,22 +616,22 @@ public class SearchResource extends HttpServlet {
 	}
 
 	private void handleCodeComplexityTrend(
-			GitDatabaseQueryService queryService, String repo,
+			SandboxSourceSearch queryService, String repo,
 			String packagePrefix, HttpServletResponse resp)
 			throws IOException {
-		List<Object[]> rows = queryService.getCodeComplexityTrend(repo,
+		List<Complexity> rows = queryService.getCodeComplexityTrend(repo,
 				packagePrefix);
 		JsonObject response = new JsonObject();
 		response.addProperty("repository", repo); //$NON-NLS-1$
 		response.addProperty("packagePrefix", packagePrefix); //$NON-NLS-1$
 		response.addProperty("totalResults", rows.size()); //$NON-NLS-1$
 		JsonArray items = new JsonArray();
-		for (Object[] row : rows) {
+		for (Complexity row : rows) {
 			JsonObject item = new JsonObject();
 			item.addProperty("commitDate", //$NON-NLS-1$
-					row[0] != null ? row[0].toString() : null);
+					row.commitDate());
 			item.addProperty("avgLineCount", //$NON-NLS-1$
-					row[1] != null ? ((Number) row[1]).doubleValue() : 0.0);
+					row.avgLineCount());
 			items.add(item);
 		}
 		response.add("results", items); //$NON-NLS-1$
@@ -628,41 +641,41 @@ public class SearchResource extends HttpServlet {
 		}
 	}
 
-	private void handleMonsterClasses(GitDatabaseQueryService queryService,
+	private void handleMonsterClasses(SandboxSourceSearch queryService,
 			String repo, int threshold, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<JavaBlobIndex> results = queryService.getMonsterClasses(repo,
+		List<SourceFile> results = queryService.getMonsterClasses(repo,
 				threshold, offset, limit);
 		writeJavaBlobResponse(results, repo,
 				"lineCount>=" + threshold, offset, limit, resp); //$NON-NLS-1$
 	}
 
 	private void handleDeadCodeCandidates(
-			GitDatabaseQueryService queryService, String repo,
+			SandboxSourceSearch queryService, String repo,
 			int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<JavaBlobIndex> results = queryService
+		List<SourceFile> results = queryService
 				.getDeadCodeCandidates(repo, offset, limit);
 		writeJavaBlobResponse(results, repo, "dead-code", offset, //$NON-NLS-1$
 				limit, resp);
 	}
 
 	private void handleTestCoverageProxy(
-			GitDatabaseQueryService queryService, String repo,
+			SandboxSourceSearch queryService, String repo,
 			HttpServletResponse resp) throws IOException {
-		List<Object[]> rows = queryService.getTestCoverageProxy(repo);
+		List<TestRatio> rows = queryService.getTestCoverageProxy(repo);
 		JsonObject response = new JsonObject();
 		response.addProperty("repository", repo); //$NON-NLS-1$
 		response.addProperty("totalResults", rows.size()); //$NON-NLS-1$
 		JsonArray items = new JsonArray();
-		for (Object[] row : rows) {
+		for (TestRatio row : rows) {
 			JsonObject item = new JsonObject();
 			item.addProperty("packageName", //$NON-NLS-1$
-					row[0] != null ? row[0].toString() : null);
+					row.packageName());
 			item.addProperty("testTypeCount", //$NON-NLS-1$
-					row[1] != null ? ((Number) row[1]).longValue() : 0L);
+					row.testTypeCount());
 			item.addProperty("totalTypeCount", //$NON-NLS-1$
-					row[2] != null ? ((Number) row[2]).longValue() : 0L);
+					row.totalTypeCount());
 			items.add(item);
 		}
 		response.add("results", items); //$NON-NLS-1$
@@ -672,29 +685,29 @@ public class SearchResource extends HttpServlet {
 		}
 	}
 
-	private void writeApiDiffResponse(ApiDiffResult diff,
+	private void writeApiDiffResponse(SourceDiff diff,
 			HttpServletResponse resp) throws IOException {
 		JsonObject response = new JsonObject();
 
 		JsonArray added = new JsonArray();
-		for (JavaBlobIndex jbi : diff.getAddedFiles()) {
+		for (SourceFile jbi : diff.addedFiles()) {
 			added.add(toJsonObject(jbi));
 		}
 		response.add("addedFiles", added); //$NON-NLS-1$
 
 		JsonArray removed = new JsonArray();
-		for (JavaBlobIndex jbi : diff.getRemovedFiles()) {
+		for (SourceFile jbi : diff.removedFiles()) {
 			removed.add(toJsonObject(jbi));
 		}
 		response.add("removedFiles", removed); //$NON-NLS-1$
 
 		JsonArray changed = new JsonArray();
-		for (ApiChangeEntry ce : diff.getChangedFiles()) {
+		for (Change ce : diff.changedFiles()) {
 			JsonObject item = new JsonObject();
-			item.add("before", toJsonObject(ce.getBefore())); //$NON-NLS-1$
-			item.add("after", toJsonObject(ce.getAfter())); //$NON-NLS-1$
+			item.add("before", toJsonObject(ce.before())); //$NON-NLS-1$
+			item.add("after", toJsonObject(ce.after())); //$NON-NLS-1$
 			item.addProperty("changeDescription", //$NON-NLS-1$
-					ce.getChangeDescription());
+					ce.changeDescription());
 			changed.add(item);
 		}
 		response.add("changedFiles", changed); //$NON-NLS-1$
@@ -705,20 +718,20 @@ public class SearchResource extends HttpServlet {
 		}
 	}
 
-	private static JsonObject toJsonObject(JavaBlobIndex jbi) {
+	private static JsonObject toJsonObject(SourceFile jbi) {
 		if (jbi == null) {
 			return new JsonObject();
 		}
 		JsonObject item = new JsonObject();
-		item.addProperty("blobObjectId", jbi.getBlobObjectId()); //$NON-NLS-1$
-		item.addProperty("commitObjectId", jbi.getCommitObjectId()); //$NON-NLS-1$
-		item.addProperty("filePath", jbi.getFilePath()); //$NON-NLS-1$
-		item.addProperty("packageName", jbi.getPackageName()); //$NON-NLS-1$
-		item.addProperty("declaredTypes", jbi.getDeclaredTypes()); //$NON-NLS-1$
+		item.addProperty("blobObjectId", jbi.blobObjectId()); //$NON-NLS-1$
+		item.addProperty("commitObjectId", jbi.commitObjectId()); //$NON-NLS-1$
+		item.addProperty("filePath", jbi.filePath()); //$NON-NLS-1$
+		item.addProperty("packageName", jbi.packageName()); //$NON-NLS-1$
+		item.addProperty("declaredTypes", jbi.declaredTypes()); //$NON-NLS-1$
 		item.addProperty("fullyQualifiedNames", //$NON-NLS-1$
-				jbi.getFullyQualifiedNames());
-		item.addProperty("declaredMethods", jbi.getDeclaredMethods()); //$NON-NLS-1$
-		item.addProperty("visibility", jbi.getVisibility()); //$NON-NLS-1$
+				jbi.fullyQualifiedNames());
+		item.addProperty("declaredMethods", jbi.declaredMethods()); //$NON-NLS-1$
+		item.addProperty("visibility", jbi.visibility()); //$NON-NLS-1$
 		return item;
 	}
 
@@ -755,7 +768,7 @@ public class SearchResource extends HttpServlet {
 		}
 	}
 
-	private void writeJavaBlobResponse(List<JavaBlobIndex> results,
+	private void writeJavaBlobResponse(List<SourceFile> results,
 			String repo, String query, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
 		JsonObject response = new JsonObject();
@@ -766,25 +779,25 @@ public class SearchResource extends HttpServlet {
 		response.addProperty("totalResults", results.size()); //$NON-NLS-1$
 
 		JsonArray items = new JsonArray();
-		for (JavaBlobIndex jbi : results) {
+		for (SourceFile jbi : results) {
 			JsonObject item = new JsonObject();
-			item.addProperty("blobObjectId", jbi.getBlobObjectId()); //$NON-NLS-1$
+			item.addProperty("blobObjectId", jbi.blobObjectId()); //$NON-NLS-1$
 			item.addProperty("commitObjectId", //$NON-NLS-1$
-					jbi.getCommitObjectId());
-			item.addProperty("filePath", jbi.getFilePath()); //$NON-NLS-1$
-			item.addProperty("packageName", jbi.getPackageName()); //$NON-NLS-1$
+					jbi.commitObjectId());
+			item.addProperty("filePath", jbi.filePath()); //$NON-NLS-1$
+			item.addProperty("packageName", jbi.packageName()); //$NON-NLS-1$
 			item.addProperty("declaredTypes", //$NON-NLS-1$
-					jbi.getDeclaredTypes());
+					jbi.declaredTypes());
 			item.addProperty("fullyQualifiedNames", //$NON-NLS-1$
-					jbi.getFullyQualifiedNames());
+					jbi.fullyQualifiedNames());
 			item.addProperty("declaredMethods", //$NON-NLS-1$
-					jbi.getDeclaredMethods());
+					jbi.declaredMethods());
 			item.addProperty("declaredFields", //$NON-NLS-1$
-					jbi.getDeclaredFields());
+					jbi.declaredFields());
 			item.addProperty("extendsTypes", //$NON-NLS-1$
-					jbi.getExtendsTypes());
+					jbi.extendsTypes());
 			item.addProperty("implementsTypes", //$NON-NLS-1$
-					jbi.getImplementsTypes());
+					jbi.implementsTypes());
 			items.add(item);
 		}
 		response.add("results", items); //$NON-NLS-1$
