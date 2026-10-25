@@ -109,6 +109,31 @@
 			<version>${jgit-storage-hibernate.version}</version>
 		</dependency>
 
+		<!-- Validate the exact released Core/Search migration streams before startup. -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+			<version>13.10.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+			<version>13.10.0</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-sqlserver</artifactId>
+			<version>13.10.0</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-hsqldb</artifactId>
+			<version>13.10.0</version>
+			<scope>runtime</scope>
+		</dependency>
+
 		<!-- Eclipse JDT Core needed by FileTypeStrategyRegistry at runtime -->
 		<dependency>
 			<groupId>org.eclipse.jdt</groupId>

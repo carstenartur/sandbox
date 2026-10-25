@@ -79,7 +79,7 @@ public class HibernateConfig {
 	 * generic Core implementation.
 	 *
 	 * <p>The method fails before Hibernate bootstrap unless the normal Core Flyway
-	 * history is present without failed rows and
+	 * and Search histories match their packaged SQL streams, no competing JPA DDL action is configured, and
 	 * {@code hibernate.hbm2ddl.auto=validate}. Normal server startup deliberately
 	 * continues to use {@link #createPersistenceContext(Properties)} until the
 	 * remaining copied Search/query implementation has its own migration boundary.</p>

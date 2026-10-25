@@ -99,7 +99,7 @@ Do not point the released Core factory at an existing Sandbox database merely by
 
 The accepted Core adoption baseline introduced published pre-library migration paths for PostgreSQL, HSQLDB and Microsoft SQL Server; later selected compatible Core releases retain the consumer contract. The maintenance command rejects unsupported database families before opening them, requires an existing HSQLDB database, marks the JDBC connection read-only, starts neither Hibernate nor Jetty and performs no DDL. A successful report is a prerequisite for the later database-specific migration; it is not itself a migration.
 
-SQL Server support in the accepted migration baseline applies to Core storage. Search migration support is a separate contract, so the production cut-over must keep copied or separately isolated search projections until their own migration slice is verified.
+Core and Search have separate published migration streams for PostgreSQL and SQL Server; HSQLDB Search is available from 0.11.6. The prepared context validates both exact migration histories before Hibernate starts. The copied commit projection must be archived and rebuilt from Git using the documented procedure; it cannot be baselined as released Search.
 
 ## Docker
 
