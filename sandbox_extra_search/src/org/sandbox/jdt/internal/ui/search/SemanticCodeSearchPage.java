@@ -50,7 +50,7 @@ import org.sandbox.jdt.internal.ui.search.gitindex.EmbeddedSearchService;
  * │ Repository: [text field                       ] │
  * │ Max results: [10 ▾]                             │
  * │                                                 │
- * │ ℹ Uses local AI embeddings (offline, ~1ms)      │
+ * │ ℹ Optional model runs on the search server      │
  * └─────────────────────────────────────────────────┘
  * </pre>
  */
@@ -122,8 +122,9 @@ public class SemanticCodeSearchPage extends DialogPage implements ISearchPage {
 		// Info label
 		Label infoLabel= new Label(composite, SWT.NONE);
 		infoLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
-		infoLabel.setText("\u2139 Uses local AI embeddings via local Git index service (requires running backend)"); //$NON-NLS-1$
+		infoLabel.setText("Optional server model; first use may download it. Hybrid can fall back to text."); //$NON-NLS-1$
 
+		org.eclipse.ui.PlatformUI.getWorkbench().getHelpSystem().setHelp(composite, "sandbox_extra_search.git_search"); //$NON-NLS-1$
 		setControl(composite);
 	}
 
@@ -144,6 +145,11 @@ public class SemanticCodeSearchPage extends DialogPage implements ISearchPage {
 		}
 
 		String repo= repoText != null ? repoText.getText().trim() : ""; //$NON-NLS-1$
+		if (repo.isEmpty()) {
+			setErrorMessage("Repository is required."); //$NON-NLS-1$
+			return false;
+		}
+		setErrorMessage(null);
 		int maxResults= maxResultsSpinner != null ? maxResultsSpinner.getSelection() : 10;
 
 		SemanticCodeSearchQuery query= new SemanticCodeSearchQuery(text, repo, maxResults, mode);

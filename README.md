@@ -350,13 +350,19 @@ Standalone CLI tool for refactoring mining: clones Git repositories, scans sourc
 
 ### JGit Storage Backend (`sandbox-jgit-storage-hibernate`)
 
-Hibernate/Lucene-based JGit storage backend for persistent Git object storage.
+Minimal OSGi bridge to the released [jgit-storage-hibernate](https://github.com/carstenartur/jgit-storage-hibernate) Core library. Git objects, refs and history are stored in a database; the executable server additionally uses the released Search and Java Analysis modules.
+
+**Documentation:** [Storage boundary](sandbox-jgit-storage-hibernate/README.md) | [Server setup](sandbox-jgit-server-webapp/README.md)
 
 ---
 
 ### JGit Server WebApp (`sandbox-jgit-server-webapp`)
 
-REST API server for JGit operations, providing web-based access to Git repositories.
+Store repositories through ordinary Git push, search commit messages and changed paths, inspect historical Java types and symbols, and query file versions and author statistics. Optional local embeddings add semantic and hybrid code search.
+
+The **Extra Search** Eclipse feature provides **Git Database Search**, **Git File History**, **Commit Analytics**, and **Semantic Code Search** clients. Start the separate server, import a repository, then enter its server name in the view. Installing the Eclipse feature alone does not start a database or server.
+
+**Get started:** [Eclipse workflow and controls](sandbox_extra_search_help/html/usage.html) | [Server and REST API](sandbox-jgit-server-webapp/README.md) | [Optional embedding prerequisites](sandbox-jgit-server-webapp/docs/application-embeddings.md)
 
 ---
 

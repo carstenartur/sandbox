@@ -1,0 +1,3 @@
+body { font: 15px/1.55 system-ui, sans-serif; margin: 2rem; max-width: 65rem; color: #202830; }
+h1, h2 { color: #174b72; } li { margin: .7rem 0; } pre { padding: 1rem; background: #f2f5f7; overflow: auto; }
+table { border-collapse: collapse; } th, td { padding: .7rem; border: 1px solid #c8d2db; text-align: left; } img { max-width: 100%; }

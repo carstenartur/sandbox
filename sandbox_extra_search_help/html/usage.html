@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Start, import and search</title><link rel="stylesheet" href="style.css"></head>
+<body><h1>Start, import and search</h1>
+<ol>
+<li>Build the standalone server as described in the <a href="https://github.com/carstenartur/sandbox/tree/main/sandbox-jgit-server-webapp">server README</a>. For a new local database, start it with:<pre>JGIT_DB_URL='jdbc:h2:file:./data/jgit' java -jar target/jgit-server.jar --initialize-empty-schema</pre>Subsequent starts use the same database URL without the initialization flag. Existing databases require the documented adoption procedure.</li>
+<li>In Eclipse, open <strong>Window → Preferences → Sandbox Git Search</strong>. Set the REST base URL (default <code>http://localhost:8080</code>) and Git base URL (default <code>http://localhost:8443/git</code>). The default Git endpoint uses HTTP despite its port number.</li>
+<li>Open <strong>Window → Show View → Other… → Git Database Index → Git Database Search</strong>. Enter a server repository name, for example <code>demo</code>.</li>
+<li>Choose <strong>Import Repository…</strong> in the view toolbar. Select a local Git working directory or bare repository and review the displayed destination before confirming. This uploads committed branches and tags to the server. It does not upload uncommitted working-tree edits, force updates or delete server refs. Choose a new server name for an unrelated repository.</li>
+<li>Select <strong>Commits</strong>, enter a word from a commit message and press <strong>Search</strong> or Enter. Select <strong>Java Types</strong> or <strong>Symbols</strong> to find declarations in historical Java sources. A successful search reports the number of returned results; connection and HTTP failures display an error.</li>
+</ol>
+<h2>Inspect history and authors</h2>
+<p><strong>Git File History</strong> takes the same repository name and an exact repository-relative path such as <code>src/example/Clock.java</code>. Use a file path rather than a Java class name. The results show each matching commit and blob; renames begin a separate path history.</p>
+<p><strong>Commit Analytics</strong> accepts a repository name and displays author names, email addresses and commit counts after <strong>Refresh</strong>.</p>
+<h2>Semantic code search</h2>
+<p>Open <strong>Search → Search… → Semantic Code Search</strong>. Supply a repository and query. Semantic uses an optional embedding model, Hybrid combines text and vector rankings, and Similar Code expects a blob object ID. The first enabled semantic request can download the model and initialize its native runtime. Ordinary text searches need no model. Hybrid falls back to text when embeddings are unavailable.</p>
+<h2>Rebuild a server index</h2>
+<p><strong>Rebuild Server Index…</strong> reconstructs the selected repository's derived history index from server-side Git data. Enter the server's <code>JGIT_ADMIN_TOKEN</code> when prompted; Eclipse does not save it. A rebuild can prune indexed history that is no longer reachable. Stop other server writers as described in the server README. This action neither uploads local commits nor modifies Git refs.</p>
+<p>All network operations run in background jobs. Use Eclipse's Progress view to cancel work. Cancellation cannot undo a Git push already accepted by the server.</p>
+<p><a href="reference.html">Configuration, errors and limitations</a></p>
+</body></html>

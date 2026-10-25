@@ -83,7 +83,7 @@
             id="org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView">
       </view>
       <view
-            name="Java Type History"
+            name="Git File History"
             category="org.sandbox.jdt.internal.ui.search.gitindex"
             class="org.sandbox.jdt.internal.ui.search.gitindex.JavaTypeHistoryView"
             id="org.sandbox.jdt.internal.ui.search.gitindex.JavaTypeHistoryView">
@@ -106,12 +106,12 @@
       </category>
       <command
             id="org.sandbox.jdt.internal.ui.search.gitindex.commands.indexRepository"
-            name="Index Repository"
+            name="Import Repository…"
             categoryId="org.sandbox.jdt.internal.ui.search.gitindex.commands">
       </command>
       <command
             id="org.sandbox.jdt.internal.ui.search.gitindex.commands.reindexAll"
-            name="Reindex All Repositories"
+            name="Rebuild Server Index…"
             categoryId="org.sandbox.jdt.internal.ui.search.gitindex.commands">
       </command>
    </extension>
@@ -132,12 +132,12 @@
             locationURI="toolbar:org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView">
          <command
                commandId="org.sandbox.jdt.internal.ui.search.gitindex.commands.indexRepository"
-               label="Index Repository"
+               label="Import Repository…"
                style="push">
          </command>
          <command
                commandId="org.sandbox.jdt.internal.ui.search.gitindex.commands.reindexAll"
-               label="Reindex All"
+               label="Rebuild Server Index…"
                style="push">
          </command>
       </menuContribution>
@@ -149,5 +149,9 @@
          <viewShortcut
                id="org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView"/>
       </perspectiveExtension>
+   </extension>
+   <extension point="org.eclipse.ui.preferencePages">
+      <page id="sandbox_extra_search.preferences" name="Sandbox Git Search"
+            class="org.sandbox.jdt.internal.ui.search.gitindex.GitSearchPreferences"/>
    </extension>
 </plugin>
