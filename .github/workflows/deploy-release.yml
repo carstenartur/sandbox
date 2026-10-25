@@ -39,6 +39,8 @@ on:
       - 'release-request/**'
     paths:
       - '.github/release-request'
+      # Let the existing release request pick up a repaired workflow.
+      - '.github/workflows/deploy-release.yml'
 
 concurrency:
   group: release-workflow
@@ -74,8 +76,8 @@ jobs:
           java-version: '25'
           distribution: temurin
 
-      - name: Use runner Maven
-        uses: ./.github/actions/use-runner-maven
+      - name: Verify pinned Maven Wrapper
+        run: ./mvnw --batch-mode --no-transfer-progress --version
 
       - name: Cache Maven dependencies
         uses: actions/cache@v6
@@ -112,7 +114,7 @@ jobs:
             exit 1
           fi
 
-          current_version=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version | tail -n 1)
+          current_version=$(./mvnw -q -DforceStdout help:evaluate -Dexpression=project.version | tail -n 1)
           if [[ "${{ github.event_name }}" == 'workflow_dispatch' ]]; then
             release_version_input="$RELEASE_VERSION_INPUT"
             next_development_version_input="$NEXT_DEVELOPMENT_VERSION_INPUT"
@@ -182,17 +184,17 @@ jobs:
       - name: Set and verify stable project version
         run: |
           set -euo pipefail
-          tycho_version=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version | tail -n 1)
-          mvn org.eclipse.tycho:tycho-versions-plugin:"$tycho_version":set-version \
+          tycho_version=$(./mvnw -q -DforceStdout help:evaluate -Dexpression=tycho-version | tail -n 1)
+          ./mvnw org.eclipse.tycho:tycho-versions-plugin:"$tycho_version":set-version \
             -DnewVersion="$RELEASE_VERSION" -Pbenchmark,jacoco
-          mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set \
+          ./mvnw -f sandbox_cleanup_cli_dist/pom.xml versions:set \
             -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
-          mvn -f sandbox-maven-plugin/pom.xml versions:set \
+          ./mvnw -f sandbox-maven-plugin/pom.xml versions:set \
             -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
-          mvn -f sandbox_oomph/pom.xml versions:set \
+          ./mvnw -f sandbox_oomph/pom.xml versions:set \
             -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
 
-          actual=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version | tail -n 1)
+          actual=$(./mvnw -q -DforceStdout help:evaluate -Dexpression=project.version | tail -n 1)
           if [[ "$actual" != "$RELEASE_VERSION" ]]; then
             echo "::error::Stable tree reports project version '$actual', expected '$RELEASE_VERSION'."
             exit 1
@@ -218,17 +220,24 @@ jobs:
         timeout-minutes: 150
         run: |
           set -euo pipefail
-          mkdir -p target/distribution-verification
+          release_log="$(mktemp "${RUNNER_TEMP}/maven-release.XXXXXX.log")"
+          preserve_build_log() {
+            build_status=$?
+            mkdir -p target/distribution-verification
+            cp "$release_log" target/distribution-verification/maven-release.log
+            exit "$build_status"
+          }
+          trap preserve_build_log EXIT
           test_args=()
           if [[ "$SKIP_TESTS" == 'true' ]]; then
             test_args=(-DskipTests)
           fi
-          xvfb-run --auto-servernum mvn \
+          xvfb-run --auto-servernum ./mvnw \
             -Pdistribution,cli-dist,maven-plugin,benchmark \
             --batch-mode \
             -Dtycho.localArtifacts=ignore \
             clean verify "${test_args[@]}" 2>&1 \
-            | tee target/distribution-verification/maven-release.log
+            | tee "$release_log"
 
       - name: Create and inspect immutable source archives
         run: |
@@ -510,18 +519,18 @@ jobs:
 
           branch="release/prepare-next-${NEXT_SNAPSHOT}"
           git checkout -b "$branch" "$RELEASE_COMMIT"
-          tycho_version=$(mvn -q -DforceStdout help:evaluate -Dexpression=tycho-version | tail -n 1)
-          mvn org.eclipse.tycho:tycho-versions-plugin:"$tycho_version":set-version \
+          tycho_version=$(./mvnw -q -DforceStdout help:evaluate -Dexpression=tycho-version | tail -n 1)
+          ./mvnw org.eclipse.tycho:tycho-versions-plugin:"$tycho_version":set-version \
             -DnewVersion="$NEXT_SNAPSHOT" -Pbenchmark,jacoco
-          mvn -f sandbox_cleanup_cli_dist/pom.xml versions:set \
+          ./mvnw -f sandbox_cleanup_cli_dist/pom.xml versions:set \
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
-          mvn -f sandbox-maven-plugin/pom.xml versions:set \
+          ./mvnw -f sandbox-maven-plugin/pom.xml versions:set \
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
-          mvn -f sandbox_oomph/pom.xml versions:set \
+          ./mvnw -f sandbox_oomph/pom.xml versions:set \
             -DnewVersion="$NEXT_SNAPSHOT" -DgenerateBackupPoms=false
           sed -i "s/next.release.version=.*/next.release.version=${NEXT_RELEASE}/" release.properties
 
-          actual=$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version | tail -n 1)
+          actual=$(./mvnw -q -DforceStdout help:evaluate -Dexpression=project.version | tail -n 1)
           if [[ "$actual" != "$NEXT_SNAPSHOT" ]]; then
             echo "::error::Next-development tree reports project version '$actual', expected '$NEXT_SNAPSHOT'."
             exit 1
