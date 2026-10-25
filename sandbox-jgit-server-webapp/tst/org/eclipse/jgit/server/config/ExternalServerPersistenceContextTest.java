@@ -16,9 +16,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,7 +25,6 @@ import org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService;
 import org.hibernate.SessionFactory;
 import org.junit.Test;
 
-import io.github.carstenartur.jgit.storage.hibernate.schema.CoreSchemaMigrations;
 import io.github.carstenartur.jgit.storage.hibernate.search.SearchEntities;
 import io.github.carstenartur.jgit.storage.hibernate.search.analysis.GitTextAnalysis;
 import io.github.carstenartur.jgit.storage.hibernate.search.service.GitHistorySearchService;
@@ -116,12 +112,13 @@ public class ExternalServerPersistenceContextTest {
 	public void guardedFactoryStartsOnlyAfterSchemaAndHistoryExist()
 			throws Exception {
 		String url= databaseUrl();
-		Properties createProperties= properties(url, "create"); //$NON-NLS-1$
+		Properties createProperties= properties(url, "update");
+		ReleasedSchemaHistoryTest.core(createProperties).migrate();
+		ReleasedSchemaHistoryTest.search(createProperties).migrate(); //$NON-NLS-1$
 		try (ServerPersistenceContext ignored=
 				new ExternalServerPersistenceContext(createProperties)) {
-			// Disposable test bootstrap creates the exact mapped schema.
+			// Disposable transition fixture adds the two remaining copied Java projections.
 		}
-		createSuccessfulHistory(createProperties);
 
 		Properties validateProperties= properties(url, "validate"); //$NON-NLS-1$
 		try (ServerPersistenceContext context= HibernateConfig
@@ -155,20 +152,4 @@ public class ExternalServerPersistenceContextTest {
 				+ DATABASE_COUNTER.incrementAndGet() + ";DB_CLOSE_DELAY=-1"; //$NON-NLS-1$
 	}
 
-	private static void createSuccessfulHistory(Properties properties)
-			throws Exception {
-		Class.forName(properties.getProperty("hibernate.connection.driver_class")); //$NON-NLS-1$
-		try (Connection connection= DriverManager.getConnection(
-				properties.getProperty("hibernate.connection.url"), //$NON-NLS-1$
-				properties.getProperty("hibernate.connection.username"), //$NON-NLS-1$
-				properties.getProperty("hibernate.connection.password")); //$NON-NLS-1$
-				Statement statement= connection.createStatement()) {
-			statement.execute("CREATE TABLE " //$NON-NLS-1$
-					+ CoreSchemaMigrations.SCHEMA_HISTORY_TABLE
-					+ " (installed_rank INT PRIMARY KEY, version VARCHAR(50), success BOOLEAN NOT NULL)"); //$NON-NLS-1$
-			statement.execute("INSERT INTO " //$NON-NLS-1$
-					+ CoreSchemaMigrations.SCHEMA_HISTORY_TABLE
-					+ " (installed_rank, version, success) VALUES (1, '0.1.15', TRUE)"); //$NON-NLS-1$
-		}
-	}
 }
