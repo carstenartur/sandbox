@@ -25,6 +25,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.errors.RevWalkException;
 import org.eclipse.jgit.transport.ReceiveCommand;
+import org.eclipse.jgit.server.analysis.AnalysisGenerations;
 import org.hibernate.SessionFactory;
 
 import io.github.carstenartur.jgit.storage.hibernate.search.service.CommitIndexer;
@@ -36,6 +37,7 @@ public final class ReleasedSandboxHistoryMaintenance implements SandboxHistoryMa
 	private static final Logger LOG = Logger.getLogger(ReleasedSandboxHistoryMaintenance.class.getName());
 
 	private final SessionFactory sessionFactory;
+	private final AnalysisGenerations analyses;
 	private final ReentrantLock[] locks = IntStream.range(0, 32).mapToObj(i -> new ReentrantLock())
 			.toArray(ReentrantLock[]::new);
 	private final Set<String> failures = ConcurrentHashMap.newKeySet();
@@ -44,12 +46,20 @@ public final class ReleasedSandboxHistoryMaintenance implements SandboxHistoryMa
 	private final LinkedHashMap<String, LinkedHashSet<String>> completeTips = new LinkedHashMap<>(16, .75f, true);
 
 	public ReleasedSandboxHistoryMaintenance(SessionFactory sessionFactory) {
+		this(sessionFactory, null);
+	}
+
+	/** Shares the application-owned source/path/API lifecycle; this service does not close it. */
+	public ReleasedSandboxHistoryMaintenance(SessionFactory sessionFactory, AnalysisGenerations analyses) {
 		this.sessionFactory = Objects.requireNonNull(sessionFactory);
+		this.analyses = analyses;
 	}
 
 	@Override
 	public void published(String name, Repository repository, Collection<ReceiveCommand> commands) {
 		String normalized = Objects.requireNonNull(name, "canonical repository name");
+		if (commands.stream().noneMatch(command -> command.getResult() == ReceiveCommand.Result.OK)) return;
+		invalidateAnalysis(normalized);
 		var tips = commands.stream().filter(command -> command.getResult() == ReceiveCommand.Result.OK)
 				.map(ReceiveCommand::getNewId).filter(id -> !ObjectId.zeroId().equals(id)).distinct().toList();
 		if (tips.isEmpty()) {
@@ -80,6 +90,7 @@ public final class ReleasedSandboxHistoryMaintenance implements SandboxHistoryMa
 			failures.add(normalized);
 			LOG.log(Level.SEVERE, "Published Git history requires a projection rebuild for " + normalized, failure);
 		} finally {
+			invalidateAnalysis(normalized);
 			lock.unlock();
 		}
 	}
@@ -94,6 +105,7 @@ public final class ReleasedSandboxHistoryMaintenance implements SandboxHistoryMa
 			throw new InterruptedIOException("History rebuild interrupted before acquiring the writer lock");
 		}
 		try {
+			invalidateAnalysis(canonicalName);
 			// Purging invalidates every certificate before the first destructive projection write.
 			invalidate(canonicalName);
 			failures.add(canonicalName);
@@ -113,6 +125,7 @@ public final class ReleasedSandboxHistoryMaintenance implements SandboxHistoryMa
 			failures.remove(canonicalName);
 			return new RebuildResult(result.removedProjections(), indexed);
 		} finally {
+			invalidateAnalysis(canonicalName);
 			lock.unlock();
 		}
 	}
@@ -120,6 +133,7 @@ public final class ReleasedSandboxHistoryMaintenance implements SandboxHistoryMa
 	@Override
 	public void repositoryDeleted(String canonicalName) {
 		withExclusiveProjectionAccess(canonicalName, () -> {
+			invalidateAnalysis(canonicalName);
 			invalidate(canonicalName);
 			failures.remove(canonicalName);
 			return null;
@@ -180,6 +194,7 @@ public final class ReleasedSandboxHistoryMaintenance implements SandboxHistoryMa
 			}
 			SandboxHistoryMaintenance.super.refreshIndexes(sessionFactory);
 		} finally {
+			if (analyses != null) analyses.refresh();
 			while (acquired > 0) {
 				locks[--acquired].unlock();
 			}
@@ -188,5 +203,9 @@ public final class ReleasedSandboxHistoryMaintenance implements SandboxHistoryMa
 
 	private ReentrantLock lock(String name) {
 		return locks[Math.floorMod(name.hashCode(), locks.length)];
+	}
+
+	private void invalidateAnalysis(String canonicalName) {
+		if (analyses != null) analyses.invalidateCanonical(canonicalName);
 	}
 }

@@ -54,6 +54,14 @@ public class ApplicationSourceReportsTest {
     assertTrue(reports.dead(Integer.MAX_VALUE, 100).isEmpty());
   }
 
+  @Test public void wildcardImportReportsDistinguishAbsentAndExplicitlyEmptyFacets() {
+    var reports = new ApplicationSourceReports(List.of(file("absent", null, null, null, 0, 1, Map.of()),
+        file("empty", "p", "A", "class", 1, 1, Map.of(IMPORTS, "")),
+        file("present", "q", "B", "class", 1, 2, Map.of(IMPORTS, "a.Type"))));
+    assertEquals(List.of("empty", "present"), reports.migration("%", 0, 20).stream().map(AnalyzedFile::blobObjectId).toList());
+    assertEquals(2, reports.migrationSummary("%%").get("totalFiles"));
+  }
+
   @Test public void deprecatedUsesExactShortAnnotationTokensAndTimelineIsChronological() {
     var reports = new ApplicationSourceReports(List.of(file("late", "p", "A", "class", 1, 3,
         Map.of(ANNOTATIONS, "Other\nDeprecated")), file("qualified", "p", "A", "class", 1, 1,

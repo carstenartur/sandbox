@@ -11,10 +11,15 @@ Both requested commit trees are analyzed in their complete sibling-source contex
 removed files are determined by path, including unchanged blobs at multiple paths. The public
 `JavaSemanticDiff` compares declarations; binding-quality changes alone do not change an API.
 Sandbox retains the `methods changed`, `signatures changed`, `visibility changed` descriptions
-when those file facets differ. Otherwise declaration additions/removals/moves/renames,
-modifiers and annotations are reported. Public-only filtering retains the existing file-level
+when those file facets differ. Otherwise semantic declaration changes (including modifiers
+and annotations) use the conservative `declarations changed` description: heuristic matches
+do not establish exact renames. Public-only filtering retains the existing file-level
 visibility rule. Ordering is deterministic by path. Unknown commits produce a read error.
 This corrects the previous comparison of canonical blob provenance rather than whole trees.
+Semantic comparison is scoped to each retained path using its already analyzed declarations,
+so an unmatched declaration in a deleted file cannot consume an unrelated file's exact match.
+A declaration transferred between retained files changes both file reports; whole-file moves
+are represented by the added/removed path lists.
 
 ## Historical reports
 

@@ -39,7 +39,12 @@ final class JavaHistoryCorpus {
   }
 
   Corpus read(String canonicalName, Repository git, Collection<String> retainedRoots) throws IOException {
-    var commits = GitHistorySnapshot.read(git, retainedRoots);
+    return readSnapshot(canonicalName, git, GitHistorySnapshot.read(git, retainedRoots));
+  }
+
+  /** Build exactly the captured generation; do not discover refs again under its snapshot key. */
+  Corpus readSnapshot(String canonicalName, Repository git, List<CommitView> snapshot) throws IOException {
+    var commits = List.copyOf(snapshot);
     var files = new LinkedHashMap<String, AnalyzedFile>();
     var oldestFirst = commits.stream().sorted(Comparator.comparing(CommitView::authorTime,
         Comparator.nullsLast(Comparator.naturalOrder())).thenComparing(CommitView::objectId)).toList();

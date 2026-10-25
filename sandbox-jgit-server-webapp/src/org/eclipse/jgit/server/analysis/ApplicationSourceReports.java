@@ -109,7 +109,7 @@ final class ApplicationSourceReports {
 
   private static Predicate<AnalyzedFile> migrationPredicate(String prefix) {
     if (prefix == null || prefix.isEmpty()) return ignored -> false;
-    return file -> like(file.facet(IMPORTS), prefix + "%") || like(file.facet(IMPORTS), "%\n" + prefix + "%");
+    return file -> like(file.facets().get(IMPORTS), prefix + "%") || like(file.facets().get(IMPORTS), "%\n" + prefix + "%");
   }
 
   static List<AnalyzedFile> page(Stream<AnalyzedFile> matches, int offset, int limit) {

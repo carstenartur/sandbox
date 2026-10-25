@@ -70,11 +70,43 @@ public class ApplicationApiComparisonTest {
     }
   }
 
+  @Test public void removingAnotherFileCannotCreateAnApiChangeInTheRemainingFile() throws Exception {
+    try (var git = new InMemoryRepository(new DfsRepositoryDescription("removed-sibling"))) {
+      for (String body : List.of("return 1;", "return 2;")) {
+        var a = commit(git, 1, Map.of("A.java", "class A {}", "B.java", "class B { int m(){return 1;} }"));
+        var b = commit(git, 2, Map.of("B.java", "class B { int m(){" + body + "} }"), a);
+        var diff = comparator().compare("repo", git, a, b, false);
+        assertEquals(List.of("A.java"), diff.removed().stream().map(AnalyzedFile::filePath).toList());
+        assertTrue(diff.changed().toString(), diff.changed().isEmpty()); assertTrue(diff.added().isEmpty());
+      }
+    }
+  }
+
+  @Test public void aDeclarationTransferredBetweenRetainedFilesIsARemovalAndAddition() throws Exception {
+    try (var git = new InMemoryRepository(new DfsRepositoryDescription("transfer"))) {
+      var a = commit(git, 1, Map.of("A.java", "class A { int field; }", "B.java", "class B {}"));
+      var b = commit(git, 2, Map.of("A.java", "class A {}", "B.java", "class B { int field; }"), a);
+      var diff = comparator().compare("repo", git, a, b, false);
+      assertTrue(diff.added().isEmpty()); assertTrue(diff.removed().isEmpty());
+      assertEquals(List.of("A.java", "B.java"), diff.changed().stream().map(c -> c.after().filePath()).toList());
+      assertEquals(List.of("declarations changed", "declarations changed"), diff.changed().stream().map(c -> c.description()).toList());
+    }
+  }
+
+  @Test public void heuristicMatchesDoNotClaimAnExactRenameWhenOneOfTwoTypesIsRemoved() throws Exception {
+    try (var git = new InMemoryRepository(new DfsRepositoryDescription("declarations"))) {
+      var a = commit(git, 1, Map.of("Types.java", "class Removed {} class Kept {}"));
+      var b = commit(git, 2, Map.of("Types.java", "class Kept {}"), a);
+      var diff = comparator().compare("repo", git, a, b, false);
+      assertEquals(1, diff.changed().size()); assertEquals("declarations changed", diff.changed().getFirst().description());
+    }
+  }
+
   private ApplicationApiComparison comparator() {
     return new ApplicationApiComparison(new JavaHistoryCorpus(temporary.getRoot().toPath(), 1024 * 1024));
   }
 
-  private static ObjectId commit(Repository git, int seconds, Map<String, String> files, ObjectId... parents) throws Exception {
+  static ObjectId commit(Repository git, int seconds, Map<String, String> files, ObjectId... parents) throws Exception {
     try (var inserter = git.newObjectInserter()) {
       var cache = DirCache.newInCore(); var builder = cache.builder();
       for (var file : new TreeMap<>(files).entrySet()) {
