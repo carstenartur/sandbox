@@ -30,7 +30,7 @@ import io.github.carstenartur.jgit.storage.hibernate.schema.CoreSchemaMigrations
 import io.github.carstenartur.jgit.storage.hibernate.search.schema.SearchSchemaMigrations;
 import io.github.carstenartur.jgit.storage.hibernate.search.service.CommitProjectionRebuilder;
 
-/** Rehearses the operator procedure against a real copied-backend database, never production. */
+/** Rehearses adoption of a frozen SQL/BLOB database captured from the copied backend. */
 public class ReleasedSchemaAdoptionHsqlTest {
   @Rule public TemporaryFolder temporary = new TemporaryFolder();
   private static final String NAME = "copied-example";
@@ -40,16 +40,9 @@ public class ReleasedSchemaAdoptionHsqlTest {
   @Test
   public void adoptsCopiedStorageAndRebuildsSearchWithoutChangingGitOrArchivedRows() throws Exception {
     String url = "jdbc:hsqldb:file:" + temporary.getRoot().toPath().resolve("legacy").toString().replace('\\', '/');
-    ObjectId original;
+    ObjectId original = ObjectId.fromString("7b7b9e9852d8d97bd49feebe76c28a15a4a7cac7");
     try {
-      try (var copied = new CopiedServerPersistenceContext(properties(url, "create"))) {
-        var repository = copied.repositoryService().openOrCreate(NAME);
-        original = commit(repository, "historical needle", null);
-        new org.eclipse.jgit.storage.hibernate.service.CommitIndexer(copied.sessionFactory(), NAME)
-            .indexCommit(repository, original);
-        new org.eclipse.jgit.storage.hibernate.refs.HibernateReflogWriter(copied.sessionFactory(), NAME)
-            .log(Constants.R_HEADS + "main", ObjectId.zeroId(), original, AUTHOR, "legacy reflog preserved");
-      }
+      restoreLegacyFixture(url);
       var packs = packChecksums(url);
       var reflogs = rows(url, "SELECT id, version, repository_name, ref_name, old_id, new_id, who_name, who_email, who_when, message FROM git_reflog ORDER BY id");
       var projection = rows(url, "SELECT object_id, commit_message, author_name, author_email, commit_time FROM git_commit_index ORDER BY id");
@@ -120,6 +113,20 @@ public class ReleasedSchemaAdoptionHsqlTest {
       }
     } finally {
       shutdown(url);
+    }
+  }
+
+  private static void restoreLegacyFixture(String url) throws Exception {
+    byte[] bytes;
+    try (var input = ReleasedSchemaAdoptionHsqlTest.class.getResourceAsStream("/fixtures/copied-hsql-prelibrary.sql")) {
+      assertNotNull("Pinned legacy fixture is packaged", input); bytes = input.readAllBytes();
+    }
+    assertEquals("b5a91d7a535fe08d2852562b5cf66a92521dda94a5468aa5c8e29d7ed0551780",
+        HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)));
+    try (var connection = DriverManager.getConnection(url, "SA", ""); var statement = connection.createStatement()) {
+      for (String line : new String(bytes, StandardCharsets.UTF_8).lines().toList()) {
+        if (!line.isBlank() && !line.startsWith("--")) statement.execute(line);
+      }
     }
   }
 
