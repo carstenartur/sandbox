@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6e4ea20d23ae6f967970424ae0ae3cb93f5842072bf10534c7effd2c106af876",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: template.validate-name-for-xml*/\n\u003c!description: Encapsulate template name retrieval with XML validation for safety.\u003e\n\u003c!severity: WARNING\u003e\n\u003c!tags: validation, xml, security\u003e\n\n$template.getName() :: instanceof($template, \"org.eclipse.jface.text.templates.Template\")\n\u003d\u003e\norg.eclipse.jface.text.templates.persistence.TemplateReaderWriter.validateXML($template.getName())\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.templates.Template;\nimport org.eclipse.jface.text.templates.persistence.TemplateReaderWriter;\nimport org.w3c.dom.Attr;\nimport org.w3c.dom.Document;\n\npublic class TestClass {\n    public void process(Template template, Document document) {\n        Attr name \u003d document.createAttribute(\"name\");\n        name.setValue(template.getName()); // \u003c-- matched\n    }\n\n    // Dummy validateXML method to make the example compile\n    private static String validateXML(String string) {\n        return string;\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.templates.Template;\nimport org.eclipse.jface.text.templates.persistence.TemplateReaderWriter;\nimport org.w3c.dom.Attr;\nimport org.w3c.dom.Document;\n\npublic class TestClass {\n    public void process(Template template, Document document) {\n        Attr name \u003d document.createAttribute(\"name\");\n        name.setValue(org.eclipse.jface.text.templates.persistence.TemplateReaderWriter.validateXML(template.getName())); // \u003c-- replaced\n    }\n\n    // Dummy validateXML method to make the example compile\n    private static String validateXML(String string) {\n        return string;\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.templates.Template;\nimport org.eclipse.jface.text.templates.persistence.TemplateReaderWriter;\nimport org.w3c.dom.Attr;\nimport org.w3c.dom.Document;\n\npublic class TestClass {\n    public void process(Template template, Document document) {\n        Attr description \u003d document.createAttribute(\"description\");\n        description.setValue(template.getDescription()); // \u003c-- should NOT match getName() rule\n    }\n\n    private static String validateXML(String string) {\n        return string;\n    }\n}\n",
+  "targetHintFile": "xml-validation.sandbox-hint",
+  "sourceCommit": "2e0f1dc52db2793726277c75f78424316d053ee2",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Usage",
+  "summary": "Wraps calls to `template.getName()` with `TemplateReaderWriter.validateXML()`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-25T02:27:22.237962902Z",
+  "ruleFingerprint": "sha256:d75a1194aa631d92a5332238114af61ba8d96ff4c3b873f3ef98ba61d880240c",
+  "behaviorFingerprint": "sha256:8aaf7c040f94b21cfc6239f7158a53520ae3543e79d8bf440d81d3a1afa38be5",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-25T02:30:20.386833851Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

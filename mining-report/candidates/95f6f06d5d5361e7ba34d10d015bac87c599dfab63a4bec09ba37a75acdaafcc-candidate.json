@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "95f6f06d5d5361e7ba34d10d015bac87c599dfab63a4bec09ba37a75acdaafcc",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: use-linkedhashset-for-ordered-set-history\u003e\n\u003c!description: Replace HashSet with LinkedHashSet when insertion order must be preserved, typically for history lists or ordered caches. LinkedHashSet provides predictable iteration order.\n\u003e\n\u003c!severity: HINT\u003e\nnew java.util.HashSet($args$)\n\u003d\u003e\nnew java.util.LinkedHashSet($args$)\n;;",
+  "beforeExample": "import java.util.HashSet;\nimport java.util.Set;\n\npublic class Example {\n    public void processHistory() {\n        Set\u003cString\u003e previousExtensions \u003d new HashSet\u003c\u003e(10);\n        previousExtensions.add(\"java\");\n        previousExtensions.add(\"xml\");\n        System.out.println(previousExtensions);\n    }\n}",
+  "afterExample": "import java.util.LinkedHashSet;\nimport java.util.Set;\n\npublic class Example {\n    public void processHistory() {\n        Set\u003cString\u003e previousExtensions \u003d new LinkedHashSet\u003c\u003e(10);\n        previousExtensions.add(\"java\");\n        previousExtensions.add(\"xml\");\n        System.out.println(previousExtensions);\n    }\n}",
+  "negativeExample": "import java.util.HashMap;\nimport java.util.Map;\n\npublic class Example {\n    public void processData() {\n        Map\u003cString, String\u003e data \u003d new HashMap\u003c\u003e(); // Should not match\n        data.put(\"key1\", \"value1\");\n        System.out.println(data);\n    }\n}",
+  "targetHintFile": "collections.sandbox-hint",
+  "sourceCommit": "f00a148c2607f4a04b840755c79a46d69b29e260",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Collections Modernization",
+  "summary": "Replace `new HashSet()` with `new LinkedHashSet()` to maintain insertion order for history-like collections.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-25T02:25:09.146914537Z",
+  "ruleFingerprint": "sha256:477680fe521edfccaa813fd48482ea9f12ed063a09280872f2c646f3bead4873",
+  "behaviorFingerprint": "sha256:e71b11beb3453fe44a4fdc110832c4581793d5a0ec440777eee6f54923903612",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-25T02:30:20.335082625Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

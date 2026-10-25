@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b92eb24a5494553837a16fdfe5231ba81e1f431a7d8f6ad41d2564c2404ba0f3",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: region.includes.length.zero.fix\u003e\n\u003c!description: Fix for AnnotationModel#isWithinRegion to correctly handle regions with length 0.\nReplaces \u0027length - 1\u0027 with \u0027length - (length \u003e 0 ? 1 : 0)\u0027 when used in fRegion.includes(start + length - 1) context.\nThis addresses a bug where a region of length 0 would attempt to include index -1.\n\u003e\n\u003c!severity: ERROR\u003e\n\n$fRegion.includes($start + $length - 1)\n\u003d\u003e\n$fRegion.includes($start + $length - ($length \u003e 0 ? 1 : 0))\n;;",
+  "beforeExample": "package org.eclipse.jface.text.source;\n\npublic class AnnotationModel {\n    interface IRegion {\n        boolean includes(int i);\n        boolean overlapsWith(int s, int l);\n    }\n    IRegion fRegion;\n    boolean fCanStartBefore, fCanEndAfter;\n\n    public boolean isWithinRegion(int start, int length) {\n        if (fCanStartBefore \u0026\u0026 fCanEndAfter)\n            return fRegion.overlapsWith(start, length);\n        else if (fCanStartBefore)\n            return fRegion.includes(start + length - 1);\n        else if (fCanEndAfter)\n            return fRegion.includes(start);\n        else\n            return fRegion.includes(start) \u0026\u0026 fRegion.includes(start + length - 1);\n    }\n\n    public void anotherMethod(int start, int length) {\n        int calculated \u003d start + length - 1;\n        System.out.println(calculated);\n    }\n}",
+  "afterExample": "package org.eclipse.jface.text.source;\n\npublic class AnnotationModel {\n    interface IRegion {\n        boolean includes(int i);\n        boolean overlapsWith(int s, int l);\n    }\n    IRegion fRegion;\n    boolean fCanStartBefore, fCanEndAfter;\n\n    public boolean isWithinRegion(int start, int length) {\n        if (fCanStartBefore \u0026\u0026 fCanEndAfter)\n            return fRegion.overlapsWith(start, length);\n        else if (fCanStartBefore)\n            return fRegion.includes(start + length - (length \u003e 0 ? 1 : 0));\n        else if (fCanEndAfter)\n            return fRegion.includes(start);\n        else\n            return fRegion.includes(start) \u0026\u0026 fRegion.includes(start + length - (length \u003e 0 ? 1 : 0));\n    }\n\n    public void anotherMethod(int start, int length) {\n        int calculated \u003d start + length - 1;\n        System.out.println(calculated);\n    }\n}",
+  "negativeExample": "package com.example;\n\npublic class Calculations {\n    public int calculateIndex(int start, int length) {\n        if (length \u003d\u003d 0) {\n            return start;\n        }\n        return start + length - 1;\n    }\n\n    public boolean checkRange(int start, int length, int value) {\n        if (length \u003c 0) return false;\n        return value \u003e\u003d start \u0026\u0026 value \u003c\u003d (start + length - 1);\n    }\n\n    public void someOtherLogic(int a, int b) {\n        int temp \u003d a + b - 1;\n    }\n}",
+  "targetHintFile": "bugfixes.sandbox-hint",
+  "sourceCommit": "d1192fc960c21f805b8ccc3c2fe1dc5bf7a33755",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Bug Fix",
+  "summary": "Replace incorrect boundary calculation for length 0 in region check.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-25T02:22:19.803130301Z",
+  "ruleFingerprint": "sha256:8062c7ffdc7ca4953be7afc3d75a8f270ac1ca812f18a43b31b91e7447178d0d",
+  "behaviorFingerprint": "sha256:d59e863f52e13ad262020eb2c2816b9869ecbbc2523ea9f7bcbe2989fc33d931",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-25T02:30:20.288146304Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "bc9da51ef7f658b5afc13a43665e67605631b660522b71baf6c499f058e98abe",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\"org.eclipse.ui.DefaultTextEditor\"\n\u003d\u003e org.eclipse.ui.editors.text.EditorsUI.DEFAULT_TEXT_EDITOR_ID\n;;",
+  "beforeExample": "import java.util.HashMap;\nimport java.util.Map;\n\npublic class Example {\n    public Map\u003cString, Object\u003e getHyperlinkDetectorTargets() {\n        Map\u003cString, Object\u003e targets \u003d new HashMap\u003c\u003e();\n        targets.put(\"org.eclipse.ui.DefaultTextEditor\", null); //$NON-NLS-1$\n        return targets;\n    }\n}",
+  "afterExample": "import java.util.HashMap;\nimport java.util.Map;\nimport org.eclipse.ui.editors.text.EditorsUI;\n\npublic class Example {\n    public Map\u003cString, Object\u003e getHyperlinkDetectorTargets() {\n        Map\u003cString, Object\u003e targets \u003d new HashMap\u003c\u003e();\n        targets.put(EditorsUI.DEFAULT_TEXT_EDITOR_ID, null);\n        return targets;\n    }\n}",
+  "negativeExample": "import java.util.HashMap;\nimport java.util.Map;\n\npublic class NegativeExample {\n    public Map\u003cString, Object\u003e getOtherTargets() {\n        Map\u003cString, Object\u003e targets \u003d new HashMap\u003c\u003e();\n        targets.put(\"some.other.id\", null); // Should not match\n        return targets;\n    }\n}",
+  "targetHintFile": "eclipse-constants.sandbox-hint",
+  "sourceCommit": "c80877fd9c99d02e8f466dc3e53d8d5d9aff1570",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Constant Usage",
+  "summary": "Replace the magic string literal \u0027org.eclipse.ui.DefaultTextEditor\u0027 with the API constant EditorsUI.DEFAULT_TEXT_EDITOR_ID.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-25T02:28:32.851603608Z",
+  "ruleFingerprint": "sha256:ffdb122e2e95427ecb7d5a008aaa5f1d3d7513fc63bb17728969f17527147489",
+  "behaviorFingerprint": "sha256:da1f25c05057a0d1982aead66ff884244eba3ac283a1beff3c389e24f610d35c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 4: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-25T02:30:20.408854319Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

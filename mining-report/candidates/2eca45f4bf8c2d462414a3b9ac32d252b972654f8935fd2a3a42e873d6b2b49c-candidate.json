@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2eca45f4bf8c2d462414a3b9ac32d252b972654f8935fd2a3a42e873d6b2b49c",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: arrays.compare-char-array-content*/\n\u003c!description: Replace reference comparison (\u003d\u003d) of char arrays with content comparison using Arrays.equals().\u003e\n\u003c!severity: WARNING\u003e\n\u003c!tags: array, comparison, bugfix\u003e\n\n$arrayElement1 \u003d\u003d $arrayElement2 :: instanceof($arrayElement1, \"char[]\") \u0026\u0026 instanceof($arrayElement2, \"char[]\") \u0026\u0026 hasNoSideEffect($arrayElement1) \u0026\u0026 hasNoSideEffect($arrayElement2)\n\u003d\u003e\njava.util.Arrays.equals($arrayElement1, $arrayElement2)\n;;",
+  "beforeExample": "package test;\n\nimport java.util.Arrays;\n\npublic class TestClass {\n    private char[][] fLineDelimiters;\n\n    public void compareDelimiters(char[][] scannerDelimiters, int count) {\n        // Assume fLineDelimiters is initialized for a valid scenario\n        fLineDelimiters \u003d new char[][] {{\"a\"}, {\"b\"}};\n        scannerDelimiters \u003d new char[][] {{\"a\"}, {\"b\"}};\n        count \u003d 1; // Example index\n\n        if (fLineDelimiters \u003d\u003d null || fLineDelimiters.length !\u003d count) {\n            // ...\n        } else {\n            // Matched line:\n            while (count \u003e 0 \u0026\u0026 fLineDelimiters[count - 1] \u003d\u003d scannerDelimiters[count - 1]) {\n                count--;\n            }\n        }\n    }\n}\n",
+  "afterExample": "package test;\n\nimport java.util.Arrays;\n\npublic class TestClass {\n    private char[][] fLineDelimiters;\n\n    public void compareDelimiters(char[][] scannerDelimiters, int count) {\n        // Assume fLineDelimiters is initialized for a valid scenario\n        fLineDelimiters \u003d new char[][] {{\"a\"}, {\"b\"}};\n        scannerDelimiters \u003d new char[][] {{\"a\"}, {\"b\"}};\n        count \u003d 1; // Example index\n\n        if (fLineDelimiters \u003d\u003d null || fLineDelimiters.length !\u003d count) {\n            // ...\n        } else {\n            // Replaced line:\n            while (count \u003e 0 \u0026\u0026 java.util.Arrays.equals(fLineDelimiters[count - 1], scannerDelimiters[count - 1])) {\n                count--;\n            }\n        }\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport java.util.Arrays;\n\npublic class TestClass {\n    public void comparePrimitivesAndStrings() {\n        char c1 \u003d \u0027a\u0027;\n        char c2 \u003d \u0027b\u0027;\n        if (c1 \u003d\u003d c2) { // Should NOT match, primitive char comparison\n            System.out.println(\"Equal chars\");\n        }\n\n        String s1 \u003d \"hello\";\n        String s2 \u003d \"world\";\n        if (s1 \u003d\u003d s2) { // Should NOT match, String reference comparison (different semantics for equals)\n            System.out.println(\"Equal strings by reference\");\n        }\n\n        int[] arr1 \u003d {1, 2};\n        int[] arr2 \u003d {1, 2};\n        if (arr1 \u003d\u003d arr2) { // Should NOT match, type is int[] not char[]\n            System.out.println(\"Equal int arrays by reference\");\n        }\n    }\n}\n",
+  "targetHintFile": "array-comparisons.sandbox-hint",
+  "sourceCommit": "7d1a5f4e17c71eb7add7519241252287fa4b0859",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Array Comparison",
+  "summary": "Replaces \u0027\u003d\u003d\u0027 operator with \u0027Arrays.equals()\u0027 for comparing char[] array elements.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-25T02:27:22.206447935Z",
+  "ruleFingerprint": "sha256:ebb34ecbf4d269da5a044af99da7d081294104f0812b22e6532af77bc036b49d",
+  "behaviorFingerprint": "sha256:fb6651c6cd082232b6c1cf0739e4b710adee8c8b6e1049a13aeb336fd4bb3970",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-25T02:30:20.369895489Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

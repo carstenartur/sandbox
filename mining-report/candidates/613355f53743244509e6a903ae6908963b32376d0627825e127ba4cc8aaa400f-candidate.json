@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "613355f53743244509e6a903ae6908963b32376d0627825e127ba4cc8aaa400f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: NlsToolWarningReduction_RevertLineAction_PREFIX\u003e\n\u003c!description: Replace usage of RevertLineAction.PREFIX with its literal value \"RevertLineAction.\" to reduce NLS tool warnings, effectively inlining the constant.\nNote: This rule only replaces the usage; the constant field declaration itself would need to be removed manually if unused.\n\u003e\n\u003c!severity: INFO\u003e\norg.eclipse.ui.internal.editors.quickdiff.RevertLineAction.PREFIX\n\u003d\u003e\n\"RevertLineAction.\"\n;;",
+  "beforeExample": "package org.eclipse.ui.internal.editors.quickdiff;\n\nclass QuickDiffMessages {\n    public static java.util.ResourceBundle getResourceBundle() { return null; }\n    public static String getString(String key) { return key; }\n}\n\nclass QuickDiffRestoreAction {\n    public QuickDiffRestoreAction(java.util.ResourceBundle bundle, String prefix, Object editor, boolean isRulerAction) {}\n}\n\npublic class RevertLineAction extends QuickDiffRestoreAction {\n    private static final String PREFIX\u003d \"RevertLineAction.\";\n    \n    public RevertLineAction(Object editor, boolean isRulerAction) {\n        super(QuickDiffMessages.getResourceBundle(), PREFIX, editor, isRulerAction);\n    }\n}\n",
+  "afterExample": "package org.eclipse.ui.internal.editors.quickdiff;\n\nclass QuickDiffMessages {\n    public static java.util.ResourceBundle getResourceBundle() { return null; }\n    public static String getString(String key) { return key; }\n}\n\nclass QuickDiffRestoreAction {\n    public QuickDiffRestoreAction(java.util.ResourceBundle bundle, String prefix, Object editor, boolean isRulerAction) {}\n}\n\npublic class RevertLineAction extends QuickDiffRestoreAction {\n    private static final String PREFIX\u003d \"RevertLineAction.\";\n    \n    public RevertLineAction(Object editor, boolean isRulerAction) {\n        super(QuickDiffMessages.getResourceBundle(), \"RevertLineAction.\", editor, isRulerAction);\n    }\n}\n",
+  "negativeExample": "package org.eclipse.ui.internal.editors.quickdiff;\n\nclass QuickDiffMessages {\n    public static java.util.ResourceBundle getResourceBundle() { return null; }\n    public static String getString(String key) { return key; }\n}\n\nclass QuickDiffRestoreAction {\n    public QuickDiffRestoreAction(java.util.ResourceBundle bundle, String prefix, Object editor, boolean isRulerAction) {}\n}\n\npublic class OtherAction extends QuickDiffRestoreAction {\n    private static final String PREFIX\u003d \"OtherAction.\";\n    \n    public OtherAction(Object editor, boolean isRulerAction) {\n        super(QuickDiffMessages.getResourceBundle(), PREFIX, editor, isRulerAction);\n    }\n}\n",
+  "targetHintFile": "cleanup.sandbox-hint",
+  "sourceCommit": "86aecad5b37f56e93f6f53df0206e188307e94f6",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Inlining Constant",
+  "summary": "Inlines the string literal value of `RevertLineAction.PREFIX` into its usage.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-25T02:26:14.206030154Z",
+  "ruleFingerprint": "sha256:98ab1fdc92025b0ff1ddc650a3a46227ab9ffd1aac6355afc01454e490e5a04e",
+  "behaviorFingerprint": "sha256:92f7bcecddc48ea90c91982bf69a0ec816e305139c0f935b6e73992f31b3302f",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-25T02:30:20.351808446Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

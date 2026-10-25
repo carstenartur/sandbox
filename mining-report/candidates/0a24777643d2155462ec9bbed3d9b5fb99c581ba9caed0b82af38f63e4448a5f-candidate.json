@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 22: The public type TypeHierarchyViewPart must be defined in its own file",
-    "verifiedAt": "2026-10-24T02:27:34.686136089Z",
+    "verifiedAt": "2026-10-25T02:30:13.053185215Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
