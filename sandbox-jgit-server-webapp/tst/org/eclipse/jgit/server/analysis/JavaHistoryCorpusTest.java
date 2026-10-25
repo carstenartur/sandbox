@@ -118,6 +118,18 @@ public class JavaHistoryCorpusTest {
     }
   }
 
+  @Test public void findsARealSourceDirectoryAfterAnEarlierSubstringMatch() throws Exception {
+    for (String root : List.of("mysrc/module/src", "mytst/module/tst", "mysrc/main/java/module/src/main/java")) {
+      try (var git = new InMemoryRepository(new DfsRepositoryDescription("source-boundary"))) {
+        var id = commit(git, 1, Map.of(root + "/p/Caller.java", CALLER, root + "/p/Base.java", BASE), false);
+        ref(git, "refs/heads/main", id);
+        var corpus = new JavaHistoryCorpus(temporary.getRoot().toPath(), 1024 * 1024).read("repo", git, List.of());
+        var caller = corpus.files().stream().filter(f -> f.simpleClassName().equals("Caller")).findFirst().orElseThrow();
+        assertEquals(root, 0, caller.quality().errorCount());
+      }
+    }
+  }
+
   private ObjectId commit(Repository git, int seconds, Map<String, String> files, boolean gitlink, ObjectId... parents) throws Exception {
     try (var inserter = git.newObjectInserter()) {
       var entries = new TreeMap<String, DirCacheEntry>();

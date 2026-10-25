@@ -33,7 +33,9 @@ final class PortableSourcePaths {
   }
 
   static boolean relative(String text) {
-    if (text.contains("\\") || text.chars().anyMatch(c -> c < 32 || "<>:\"|?*".indexOf(c) >= 0)) return false;
+    // Windows drive-relative rooted paths (e.g. /outside) are not Path.isAbsolute().
+    if (text.startsWith("/") || text.contains("\\")
+        || text.chars().anyMatch(c -> c < 32 || "<>:\"|?*".indexOf(c) >= 0)) return false;
     try {
       Path path = Path.of(text);
       if (path.isAbsolute() || path.startsWith("..")

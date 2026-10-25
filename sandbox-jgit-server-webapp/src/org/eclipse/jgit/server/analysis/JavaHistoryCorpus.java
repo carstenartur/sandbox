@@ -147,7 +147,8 @@ final class JavaHistoryCorpus {
     for (String path : project.snapshot().sources().keySet()) {
       for (String layout : List.of("src/main/java/", "src/test/java/", "src/", "tst/")) {
         int position = path.indexOf(layout);
-        if (position >= 0 && (position == 0 || path.charAt(position - 1) == '/')) {
+        while (position > 0 && path.charAt(position - 1) != '/') position = path.indexOf(layout, position + 1);
+        if (position >= 0) {
           addRoot(path.substring(0, position + layout.length() - 1), roots,
               project.snapshot().sources().keySet(), diagnostics); break;
         }
@@ -164,10 +165,13 @@ final class JavaHistoryCorpus {
     String normalized = root.replace('\\', '/');
     try {
       Path path = Path.of(normalized).normalize();
-      if (path.isAbsolute() || normalized.matches("^[A-Za-z]:.*") || path.startsWith("..")) {
+      String canonicalRoot = path.toString().replace('\\', '/');
+      // A shared source root needs one collision scan, regardless of its number of files.
+      if (roots.contains(canonicalRoot)) return;
+      if (normalized.startsWith("/") || path.isAbsolute() || normalized.matches("^[A-Za-z]:.*") || path.startsWith("..")) {
         diagnostics.add("Source root outside the repository was omitted: " + root); return;
       }
-      if (!PortableSourcePaths.relative(path.toString().replace('\\', '/'))) {
+      if (!PortableSourcePaths.relative(canonicalRoot)) {
         diagnostics.add("Source root cannot be represented portably and was omitted: " + root); return;
       }
       for (String source : sources) {
@@ -176,7 +180,7 @@ final class JavaHistoryCorpus {
           diagnostics.add("Source root colliding with a source file was omitted: " + root); return;
         }
       }
-      roots.add(path.toString().replace('\\', '/'));
+      roots.add(canonicalRoot);
     } catch (InvalidPathException invalid) {
       diagnostics.add("Source root cannot be represented on this host and was omitted: " + root);
     }
