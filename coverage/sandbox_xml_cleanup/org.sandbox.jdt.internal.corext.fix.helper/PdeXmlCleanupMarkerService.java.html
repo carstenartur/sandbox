@@ -64,20 +64,41 @@ import org.eclipse.core.runtime.IProgressMonitor;
 <span class="fc" id="L64">			return 0;</span>
 		}
 
-<span class="fc" id="L67">		SchemaTransformationUtils.IndentationFinding finding=</span>
-<span class="fc" id="L68">				SchemaTransformationUtils.firstConvertibleMarkupIndentation(</span>
-<span class="fc" id="L69">						transformation.snapshot().content());</span>
-<span class="fc" id="L70">		IMarker marker= file.createMarker(MARKER_TYPE);</span>
-<span class="fc" id="L71">		marker.setAttribute(IMarker.MESSAGE, MARKER_MESSAGE);</span>
-<span class="fc" id="L72">		marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_WARNING);</span>
-<span class="fc" id="L73">		marker.setAttribute(IMarker.PRIORITY, IMarker.PRIORITY_NORMAL);</span>
-<span class="fc" id="L74">		marker.setAttribute(IMarker.SOURCE_ID, &quot;sandbox_xml_cleanup&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L75" title="1 of 2 branches missed.">		if (finding != null) {</span>
-<span class="fc" id="L76">			marker.setAttribute(IMarker.LINE_NUMBER, finding.lineNumber());</span>
-<span class="fc" id="L77">			marker.setAttribute(IMarker.CHAR_START, finding.offset());</span>
-<span class="fc" id="L78">			marker.setAttribute(IMarker.CHAR_END, finding.offset() + finding.length());</span>
+<span class="fc" id="L67">		String source= transformation.snapshot().content();</span>
+<span class="fc" id="L68">		SchemaTransformationUtils.IndentationFinding finding=</span>
+<span class="fc" id="L69">				SchemaTransformationUtils.firstConvertibleMarkupIndentation(source);</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">		if (finding != null) {</span>
+<span class="fc" id="L71">			int markupStart= source.indexOf('&lt;', finding.offset());</span>
+<span class="fc" id="L72">			int markupNameEnd= markupStart + 1;</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">			if (source.charAt(markupNameEnd) == '/') {</span>
+<span class="nc" id="L74">				markupNameEnd++;</span>
+			}
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">			while (markupNameEnd &lt; source.length()) {</span>
+<span class="fc" id="L77">				char character= source.charAt(markupNameEnd);</span>
+<span class="pc bpc" id="L78" title="1 of 6 branches missed.">				if (Character.isWhitespace(character) || character == '/' || character == '&gt;') {</span>
+<span class="fc" id="L79">					break;</span>
+				}
+<span class="fc" id="L81">				markupNameEnd++;</span>
+			}
+<span class="fc" id="L83">			String candidatePrefix= source.substring(finding.offset(), markupNameEnd);</span>
+			// A lexical match may belong to a preserved text subtree. Prefer a file-level
+			// marker if its indentation and markup name survive, even when serialization
+			// changes the tag spelling. Other markup with the same indentation is unrelated.
+<span class="fc bfc" id="L87" title="All 2 branches covered.">			if (transformation.transformedContent().contains(candidatePrefix)) {</span>
+<span class="fc" id="L88">				finding= null;</span>
+			}
 		}
-<span class="fc" id="L80">		return 1;</span>
+<span class="fc" id="L91">		IMarker marker= file.createMarker(MARKER_TYPE);</span>
+<span class="fc" id="L92">		marker.setAttribute(IMarker.MESSAGE, MARKER_MESSAGE);</span>
+<span class="fc" id="L93">		marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_WARNING);</span>
+<span class="fc" id="L94">		marker.setAttribute(IMarker.PRIORITY, IMarker.PRIORITY_NORMAL);</span>
+<span class="fc" id="L95">		marker.setAttribute(IMarker.SOURCE_ID, &quot;sandbox_xml_cleanup&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">		if (finding != null) {</span>
+<span class="fc" id="L97">			marker.setAttribute(IMarker.LINE_NUMBER, finding.lineNumber());</span>
+<span class="fc" id="L98">			marker.setAttribute(IMarker.CHAR_START, finding.offset());</span>
+<span class="fc" id="L99">			marker.setAttribute(IMarker.CHAR_END, finding.offset() + finding.length());</span>
+		}
+<span class="fc" id="L101">		return 1;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
