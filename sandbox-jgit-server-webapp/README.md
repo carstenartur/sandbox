@@ -4,9 +4,9 @@
 
 ## Overview
 
-`sandbox-jgit-server-webapp` is a Jakarta Servlet-based REST API server that provides web-based access to Git repositories indexed by the `sandbox-jgit-storage-hibernate` integration module. It enables semantic and structural search over indexed Java repositories.
+`sandbox-jgit-server-webapp` is a Jakarta Servlet-based REST API server that provides web-based access to Git repositories stored through released `jgit-storage-hibernate` modules. It enables semantic and structural search over indexed Java repositories.
 
-Repository lifecycle callers are being moved behind the application-owned `SandboxRepositoryService` boundary so the copied storage backend can be replaced by released `jgit-storage-hibernate` modules in independently verified stages. The copied backend remains the production default until its database schema has passed the documented adoption and rollback procedure.
+Normal startup uses published **0.11.8 Core, Search and Java Analysis** behind application-owned repository/search boundaries. The copied generic implementation is removed. Database adoption is an explicit operator procedure; normal startup validates the released schema and never performs the adoption.
 
 ## REST API
 
@@ -23,7 +23,7 @@ Repository lifecycle callers are being moved behind the application-owned `Sandb
 | `GET` | `/api/search/source?repo=...&q=...` | Full-text source search |
 | `GET` | `/api/search/semantic?repo=...&q=...` | Semantic (embedding-based) search |
 | `GET` | `/api/search/hybrid?repo=...&q=...` | Combined keyword + semantic search |
-| `GET` | `/api/search/similar?repo=...&blobId=...` | Find similar code blobs |
+| `GET` | `/api/search/similar?repo=...&q=...&blobId=...` | Find similar code blobs |
 | `GET` | `/api/analytics/authors?repo=...` | Author commit statistics |
 | `GET` | `/api/analytics/objects?repo=...` | Object type counts |
 | `GET` | `/api/analytics/packs?repo=...` | Pack file statistics |
@@ -38,11 +38,13 @@ Additional routes include:
 
 ## Released-library consumer scope
 
-The storage bridge consumes released Core only. The server additionally consumes
-released Search at the same `jgit-storage-hibernate.version`. Its guarded external
-context uses `SandboxHistorySearch` for commit/path queries, author counts and the
-search health probe; normal startup still selects the copied adapter until the
-remaining Java, full-history rebuild and schema migration slices are complete.
+The OSGi storage bridge consumes released Core only. The executable server consumes
+Core, Search and Java Analysis at the same `jgit-storage-hibernate.version`.
+`SandboxHistorySearch`, `SandboxFileHistory` and `SandboxSourceSearch` provide every
+retained REST route; pools, cache, application reports and optional embeddings are
+server-owned. See [runtime contracts](docs/released-runtime-cutover.md),
+[generation lifecycle](docs/analysis-generation-lifecycle.md) and
+[optional embeddings](docs/application-embeddings.md).
 
 The released adapter preserves REST fields, full multiline commit messages,
 repository isolation and `totalResults` as the size of the returned page. Queries
@@ -55,10 +57,10 @@ are preserved. Changing analyzer profiles requires rebuilding the derived index.
 Two changed-path semantics are deliberate: paths come from the first-parent diff
 (root commits include all paths; deletions count), and all neutral analyzed path
 terms must match. The copied implementation enumerated whole trees and matched
-any analyzed term. Java projections and optional embeddings remain transitional;
-resolving Search does not qualify normal-startup or production database cutover.
+any analyzed term. Java search uses immutable historical generations rather than
+copied ORM projections; optional vectors are generated lazily within those generations.
 
-Successful Smart HTTP pushes on the external context now feed the released
+Successful Smart HTTP pushes feed the released
 `CommitIndexer`, including history reachable through annotated commit tags.
 Rejected commands and ref deletions add no projections; valid blob/tree tags are
 ignored. Each request owns a repository reference separate from the service.
@@ -114,32 +116,52 @@ Do not point the released Core factory at an existing Sandbox database merely by
 
 The accepted Core adoption baseline introduced published pre-library migration paths for PostgreSQL, HSQLDB and Microsoft SQL Server; later selected compatible Core releases retain the consumer contract. The maintenance command rejects unsupported database families before opening them, requires an existing HSQLDB database, marks the JDBC connection read-only, starts neither Hibernate nor Jetty and performs no DDL. A successful report is a prerequisite for the later database-specific migration; it is not itself a migration.
 
-Core and Search have separate published migration streams for PostgreSQL and SQL Server; HSQLDB Search is available from 0.11.6. The prepared context validates both exact migration histories before Hibernate starts. The copied commit projection must be archived and rebuilt from Git using the documented procedure; it cannot be baselined as released Search.
+Core and Search have separate published migration streams for PostgreSQL and SQL Server; HSQLDB Search is available from 0.11.6. The normal application context validates both exact migration histories before Hibernate starts. The copied commit projection must be archived and rebuilt from Git using the documented procedure; it cannot be baselined as released Search.
 
 The startup guard checks the effective Hibernate settings, including inherited JVM settings and classpath `hibernate.properties`, before opening JDBC connections. It requires `hibernate.hbm2ddl.auto=validate` and rejects all Jakarta/Javax database and script schema-generation actions (including `none`) and contributor-specific action overrides. Hibernate receives the same validated settings snapshot; script generation must run separately from server startup.
 
-## Docker
+## First start and restart
+
+Build the standalone modules with the [consumer contract](../docs/JGIT_STORAGE_HIBERNATE_CONTRACT.md).
+For a new local persistent database, run:
 
 ```bash
-# Build and start with Docker Compose
-docker-compose up --build
+JGIT_DB_URL='jdbc:h2:file:./data/jgit' java -jar target/jgit-server.jar --initialize-empty-schema
 ```
 
-The `Dockerfile.jgit` and `docker-compose.yml` provide a self-contained deployment with database initialization scripts in `init-db/`.
+The explicit flag installs Core/Search into an empty schema and starts the server.
+Stop with Ctrl-C; subsequent runs use the same database URL and omit the flag.
+`--help` describes the command. A populated legacy database requires the separate
+adoption procedure above. `JGIT_DB_DDL_AUTO` defaults to `validate`; `update`,
+`create` and conflicting schema-generation settings are rejected.
+
+## Docker
+
+`Dockerfile.jgit` builds the executable server on Java 25. Compose selects SQL Server
+and Elasticsearch 8.19.12. Provision the configured SQL Server database first using
+your database administration procedure (`init-db/` contains the SQL template).
+For an empty target, build and initialize it explicitly:
+
+```bash
+docker compose build jgit-server
+docker compose run --rm --service-ports jgit-server --initialize-empty-schema
+```
+
+After stopping that first run, `docker compose up -d jgit-server` uses normal validated
+startup. Existing databases follow the adoption procedure, not empty-schema initialization.
 
 ## Architecture
 
-```text
-JGitServerApplication (Jakarta Servlet container)
-  → RepositoryResource, SearchResource, AnalyticsResource, AdminResource, HealthResource
-  → SandboxRepositoryService / HibernateRepositoryResolver
-  → sandbox-jgit-storage-hibernate (current indexing and query integration)
-  → HibernateConfig, ElasticsearchConfig, RepositoryManagerConfig
-```
+The application owns REST/Smart HTTP, repository leases, generation caches, report
+formulas and optional model lifetime. Released Core owns authoritative Git storage;
+released Search owns commit projections; released Java Analysis owns Java parsing,
+semantic comparison and generic file indexing. No copied generic implementation is
+included in the executable. The packaged-JAR integration test validates its actual
+runtime providers, first start, SIGTERM and restart.
 
 ## Related Modules
 
-- **[sandbox-jgit-storage-hibernate](../sandbox-jgit-storage-hibernate/README.md)** — current Core integration boundary plus transitional search/analysis code
+- **[sandbox-jgit-storage-hibernate](../sandbox-jgit-storage-hibernate/README.md)** — minimal Core OSGi integration boundary
 
 The released context serves `/analytics/objects` and `/analytics/packs` through Core's
 public `RepositoryStorageStatistics`. Counts include published objects unreachable from
@@ -155,10 +177,9 @@ service. Active readers participate in the local lifecycle: deletion is rejected
 one is active; shutdown rejects new readers and waits for existing readers to finish
 before closing storage and Hibernate. Independent readers do not hold the lifecycle
 monitor during their work. This is local coordination, not a distributed snapshot or
-an object-insertion security boundary. Normal startup remains on the transition path
-until the remaining Java projections and schema cutover are qualified.
+an object-insertion security boundary.
 
-### Released Java project analysis preparation
+### Released Java project analysis
 
 The server now consumes the published Java Analysis module alongside Core and
 Search; the OSGi storage bridge remains Core-only. `ReleasedJavaProjectAnalysis`
@@ -166,7 +187,7 @@ creates Sandbox `AnalyzedFile` values from an entire `JavaProjectSnapshot` and a
 explicit `JavaAnalysisConfiguration`. Sibling sources are analyzed together and
 unchanged blob bytes are analyzed again in another commit's project context.
 The adapter does not download dependencies, register Java ORM entities, load an
-embedding model, or select the production REST backend.
+embedding model, or expose parser objects through REST.
 
 `AnalyzedFile` copies provenance, file facets and diagnostic values. Mutable
 library analysis entities remain internal for subsequent semantic comparisons.
@@ -184,8 +205,8 @@ Historical file search retains one record per repository/blob. Its explicit
 path. This replaces ingestion-order provenance: adding an older root can change
 the canonical path, module and author. Per-commit file history remains separate.
 Semantic comparisons analyze both complete commit contexts independently of the
-canonical blob record. Corpus construction is uncached; generation ownership and
-REST selection belong to the following runtime slice.
+canonical blob record. Source, path and API results share a bounded generation
+cache, with one build budget and pinned readers through complete DTO mapping.
 
 Git names that cannot safely share a portable temporary source tree (backslashes,
 case aliases, reserved names, trailing dots/spaces or excessive component/path
@@ -203,4 +224,4 @@ qualification, flat nested-type names and interface-extends placement in
 The complete documentation search facet includes all Javadocs, and the
 string facet also includes decoded text blocks (values of at most three
 characters remain omitted). Records are now recognized. These additions are
-explicitly tested; existing REST endpoints are not switched by this preparation.
+explicitly tested through the normal REST backend.

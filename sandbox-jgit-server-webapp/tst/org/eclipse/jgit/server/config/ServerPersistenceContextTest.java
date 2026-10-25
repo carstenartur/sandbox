@@ -32,7 +32,6 @@ public class ServerPersistenceContextTest {
 		Method repositoryService= ServerPersistenceContext.class.getMethod("repositoryService"); //$NON-NLS-1$
 		assertEquals(SessionFactory.class, sessionFactory.getReturnType());
 		assertEquals(SandboxRepositoryService.class, repositoryService.getReturnType());
-		assertFalse(Modifier.isPublic(CopiedServerPersistenceContext.class.getModifiers()));
 		assertFalse(Modifier.isPublic(ExternalServerPersistenceContext.class.getModifiers()));
 		for (Method method : ServerPersistenceContext.class.getMethods()) {
 			assertFalse(isStorageImplementation(method.getReturnType()));
@@ -46,18 +45,19 @@ public class ServerPersistenceContextTest {
 	}
 
 	@Test
-	public void ownsRepositoryServiceAndClosesNativeSessionFactory() {
+	public void ownsRepositoryServiceAndClosesNativeSessionFactory() throws Exception {
 		Properties properties= new Properties();
 		properties.setProperty("hibernate.connection.url", //$NON-NLS-1$
 				"jdbc:h2:mem:server-persistence-context;DB_CLOSE_DELAY=-1"); //$NON-NLS-1$
 		properties.setProperty("hibernate.connection.driver_class", "org.h2.Driver"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.dialect", "org.hibernate.dialect.H2Dialect"); //$NON-NLS-1$ //$NON-NLS-2$
-		properties.setProperty("hibernate.hbm2ddl.auto", "create-drop"); //$NON-NLS-1$ //$NON-NLS-2$
+		properties.setProperty("hibernate.hbm2ddl.auto", "validate"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.search.backend.directory.type", "local-heap"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.cache.use_second_level_cache", "false"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.connection.provider_class", //$NON-NLS-1$
 				"org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl"); //$NON-NLS-1$
 
+		ReleasedSchemaInitializer.initializeEmpty(properties);
 		ServerPersistenceContext context= HibernateConfig.createPersistenceContext(properties);
 		SessionFactory sessionFactory= context.sessionFactory();
 		SandboxRepositoryService repositories= context.repositoryService();

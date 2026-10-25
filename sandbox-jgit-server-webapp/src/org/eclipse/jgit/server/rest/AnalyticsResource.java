@@ -20,13 +20,9 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.server.repository.SandboxStorageStatistics;
-import org.eclipse.jgit.server.repository.CopiedSandboxStorageStatistics;
-import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch.AuthorCount;
-import org.hibernate.SessionFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -45,26 +41,10 @@ public class AnalyticsResource extends HttpServlet {
 	private final SandboxHistorySearch history;
 	private final Gson gson = new Gson();
 
-	/** Creates an analytics endpoint from the application-owned native factory. */
-	public AnalyticsResource(SessionFactory sessionFactory) {
-		this(sessionFactory, new CopiedSandboxHistorySearch(sessionFactory));
-	}
-
-	/** Creates analytics with the selected history projection. */
-	public AnalyticsResource(SessionFactory sessionFactory, SandboxHistorySearch history) {
-		this(history, new CopiedSandboxStorageStatistics(sessionFactory));
-	}
-
 	/** Uses the selected backend for history and physical inventory. */
 	public AnalyticsResource(SandboxHistorySearch history, SandboxStorageStatistics statistics) {
 		this.statistics= Objects.requireNonNull(statistics);
 		this.history= Objects.requireNonNull(history);
-	}
-
-	/** @deprecated application wiring should pass the native {@link SessionFactory}. */
-	@Deprecated(forRemoval = true)
-	public AnalyticsResource(HibernateSessionFactoryProvider provider) {
-		this(Objects.requireNonNull(provider, "provider").getSessionFactory()); //$NON-NLS-1$
 	}
 
 	@Override

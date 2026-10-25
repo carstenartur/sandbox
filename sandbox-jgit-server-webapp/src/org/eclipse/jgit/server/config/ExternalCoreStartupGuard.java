@@ -21,12 +21,33 @@ final class ExternalCoreStartupGuard {
   private ExternalCoreStartupGuard() {}
 
   static Properties requireReady(Properties supplied) {
+    var properties = validatedSettings(supplied);
+    String url = properties.getProperty("hibernate.connection.url");
+    String schema = properties.getProperty("hibernate.default_schema");
+    var locations = locations(url);
+    try {
+      loadDriver(properties);
+      var source = new ReadOnlySource(url, properties.getProperty("hibernate.connection.username", ""),
+          properties.getProperty("hibernate.connection.password", ""));
+      validate(source, schema, CoreSchemaMigrations.SCHEMA_HISTORY_TABLE, locations.core());
+      validate(source, schema, SearchSchemaMigrations.SCHEMA_HISTORY_TABLE, locations.search());
+    } catch (ClassNotFoundException | RuntimeException failure) {
+      throw new IllegalStateException("Released Core/Search migration validation failed before Hibernate startup.", failure);
+    }
+    return properties;
+  }
+
+  static Properties validatedSettings(Properties supplied) {
     Objects.requireNonNull(supplied, "properties");
     // Configuration inherits this JVM/classpath snapshot before addProperties overlays caller entries.
     // Validate and return precisely that flat snapshot for the subsequent provider bootstrap.
     var properties = new Properties();
     properties.putAll(Environment.getProperties());
     properties.putAll(supplied);
+    String catalog = properties.getProperty("hibernate.default_catalog");
+    if (catalog != null && !catalog.isBlank()) {
+      throw new IllegalStateException("Remove hibernate.default_catalog; select the migration and Hibernate database in the JDBC URL.");
+    }
     if (!"validate".equalsIgnoreCase(properties.getProperty("hibernate.hbm2ddl.auto", "").strip())) {
       throw new IllegalStateException("Released storage requires hibernate.hbm2ddl.auto=validate; migrate Core and Search first.");
     }
@@ -40,36 +61,33 @@ final class ExternalCoreStartupGuard {
         }
       }
     }
-    String url = Objects.requireNonNull(properties.getProperty("hibernate.connection.url"), "JDBC URL");
+    Objects.requireNonNull(properties.getProperty("hibernate.connection.url"), "JDBC URL");
     String schema = properties.getProperty("hibernate.default_schema");
     if (schema != null && schema.contains("\"")) {
       throw new IllegalStateException("Flyway validation does not support embedded double quotes in the schema name.");
     }
-    String core;
-    String search;
+    return properties;
+  }
+
+  record Locations(String core, String search) {}
+
+  static Locations locations(String url) {
     if (url.startsWith("jdbc:h2:")) {
-      core = CoreSchemaMigrations.H2_LOCATION; search = SearchSchemaMigrations.H2_LOCATION;
+      return new Locations(CoreSchemaMigrations.H2_LOCATION, SearchSchemaMigrations.H2_LOCATION);
     } else if (url.startsWith("jdbc:hsqldb:")) {
-      core = CoreSchemaMigrations.HSQLDB_LOCATION;
-      search = SearchSchemaMigrations.HSQLDB_LOCATION;
+      return new Locations(CoreSchemaMigrations.HSQLDB_LOCATION, SearchSchemaMigrations.HSQLDB_LOCATION);
     } else if (url.startsWith("jdbc:postgresql:")) {
-      core = CoreSchemaMigrations.POSTGRESQL_LOCATION; search = SearchSchemaMigrations.POSTGRESQL_LOCATION;
+      return new Locations(CoreSchemaMigrations.POSTGRESQL_LOCATION, SearchSchemaMigrations.POSTGRESQL_LOCATION);
     } else if (url.startsWith("jdbc:sqlserver:")) {
-      core = CoreSchemaMigrations.SQL_SERVER_LOCATION; search = SearchSchemaMigrations.SQL_SERVER_LOCATION;
+      return new Locations(CoreSchemaMigrations.SQL_SERVER_LOCATION, SearchSchemaMigrations.SQL_SERVER_LOCATION);
     } else {
       throw new IllegalStateException("No released Core/Search migration pair for this database family.");
     }
-    try {
-      String driver = properties.getProperty("hibernate.connection.driver_class");
-      if (driver != null && !driver.isBlank()) Class.forName(driver);
-      var source = new ReadOnlySource(url, properties.getProperty("hibernate.connection.username", ""),
-          properties.getProperty("hibernate.connection.password", ""));
-      validate(source, schema, CoreSchemaMigrations.SCHEMA_HISTORY_TABLE, core);
-      validate(source, schema, SearchSchemaMigrations.SCHEMA_HISTORY_TABLE, search);
-    } catch (ClassNotFoundException | RuntimeException failure) {
-      throw new IllegalStateException("Released Core/Search migration validation failed before Hibernate startup.", failure);
-    }
-    return properties;
+  }
+
+  static void loadDriver(Properties properties) throws ClassNotFoundException {
+    String driver = properties.getProperty("hibernate.connection.driver_class");
+    if (driver != null && !driver.isBlank()) Class.forName(driver);
   }
 
   private static void validate(DataSource source, String schema, String table, String location) {

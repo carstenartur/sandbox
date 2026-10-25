@@ -131,7 +131,7 @@ ALTER INDEX idx_commit_repo_time RENAME TO sandbox_legacy_commit_repo_time;
 Check the actual schema for any additional conflicting constraint/index names before
 running the matching database's commands. PostgreSQL and SQL Server require their
 own reviewed DDL. Existing archived projection data is retained for rollback and
-comparison. The copied Java/file projections can remain during the staged migration.
+comparison. The copied Java/file projection tables may remain as unused legacy data; the new runtime neither registers nor reads them.
 
 Install released Search from the selected artifact, with its separate history table:
 
@@ -178,10 +178,10 @@ After the database-specific adoption or installation has established the normal 
 
 ```java
 ServerPersistenceContext context =
-    HibernateConfig.createExternalPersistenceContext(properties);
+    HibernateConfig.createPersistenceContext(properties);
 ```
 
-This factory is deliberately separate from the normal server startup path. Before Hibernate starts, it requires:
+This is the normal server startup factory. Before Hibernate starts, it requires:
 
 - `hibernate.hbm2ddl.auto=validate` exactly and no competing Jakarta/legacy Javax database or script schema-generation actions, including `none`, or contributor-specific action overrides; the checked snapshot includes Hibernate's inherited JVM/classpath settings and is passed to bootstrap unchanged;
 - a supported matching Core/Search migration pair for the JDBC family;
@@ -193,9 +193,9 @@ migration, baseline, repair or schema creation. Embedded double quotes in a sche
 name are rejected before connecting because the selected Flyway driver does not
 escape them correctly; ordinary quoted identifiers such as `tenant-one` are tested.
 Hibernate then validates the physical mappings. The context registers released Core
-and Search once, plus the two temporary compatible Sandbox Java/file projections.
-Copied Core entities and the copied commit projection are excluded.
+and Search once. Historical Java/file queries use Git-derived application generations;
+no copied Core, Search or Java projection entities are registered.
 
 Repository handles are served through `ExternalHibernateRepositoryService` and closed before the application-owned `SessionFactory`. This makes the Core lifecycle executable without leaking the external implementation into REST or Smart HTTP callers.
 
-Normal `JGitServerApplication` startup still selects the copied persistence context. Activating the external context globally remains blocked until Search, analytics and Java-analysis queries no longer depend on copied Core/query entities and their schema/data transition has independent integration evidence. No environment switch is provided that could bypass this boundary accidentally.
+Normal `JGitServerApplication` startup uses this released persistence context. It does not run adoption migrations or delete archived derived tables. `--initialize-empty-schema` is only for a completely empty schema and refuses existing tables/views. Operator adoption remains necessary for deployed legacy databases; the frozen HSQLDB fixture qualifies the documented rehearsal independently of the removed copied implementation.

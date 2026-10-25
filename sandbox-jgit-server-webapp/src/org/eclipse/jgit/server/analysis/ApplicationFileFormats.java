@@ -34,6 +34,11 @@ public final class ApplicationFileFormats {
 
   private ApplicationFileFormats() {}
 
+  /** Preserve text when historical format metadata cannot be decoded. */
+  static Facets plainText(String fileType, String source) {
+    return new Facets(fileType, null, null, null, truncate(source));
+  }
+
   public static Facets extract(String filePath, String source) {
     Objects.requireNonNull(filePath); Objects.requireNonNull(source);
     String filename = filePath.substring(filePath.lastIndexOf('/') + 1).toLowerCase(Locale.ROOT);

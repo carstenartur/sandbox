@@ -20,18 +20,14 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.server.history.SandboxFileHistory;
-import org.eclipse.jgit.server.history.CopiedSandboxFileHistory;
 import org.eclipse.jgit.server.history.SandboxFileHistory.FileVersion;
-import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch.CommitHit;
 import org.eclipse.jgit.server.history.SandboxHistorySearch.PathHit;
 
 import org.eclipse.jgit.server.search.SandboxSourceSearch;
 import org.eclipse.jgit.server.search.SandboxSourceSearch.*;
-import org.eclipse.jgit.server.search.CopiedSandboxSourceSearch;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -73,8 +69,6 @@ public class SearchResource extends HttpServlet {
 
 	private final SandboxSourceSearch sources;
 
-	private final boolean ownsSources;
-
 	private final SandboxHistorySearch history;
 
 	private final SandboxFileHistory files;
@@ -87,45 +81,12 @@ public class SearchResource extends HttpServlet {
 
 	private static final int DEFAULT_LIMIT = 20;
 
-	/**
-	 * Create a search endpoint.
-	 *
-	 * @param provider
-	 *            the session factory provider
-	 */
-	public SearchResource(HibernateSessionFactoryProvider provider) {
-		this(provider, new CopiedSandboxHistorySearch(provider.getSessionFactory()));
-	}
-
-	/** Selects the history adapter independently of the transitional Java queries. */
-	public SearchResource(HibernateSessionFactoryProvider provider, SandboxHistorySearch history) {
-		this(provider, history, new CopiedSandboxFileHistory(provider.getSessionFactory()));
-	}
-
-	/** Selects independent commit and per-commit file history boundaries. */
-	public SearchResource(HibernateSessionFactoryProvider provider, SandboxHistorySearch history, SandboxFileHistory files) {
-		this(history, files, new CopiedSandboxSourceSearch(provider.getSessionFactory()), true);
-	}
-
-	/** Uses application-owned search boundaries; their context owns their lifecycle. */
-	public SearchResource(SandboxHistorySearch history, SandboxFileHistory files, SandboxSourceSearch sources) {
-		this(history, files, sources, false);
-	}
-
-	SearchResource(SandboxHistorySearch history, SandboxFileHistory files, SandboxSourceSearch sources, boolean ownsSources) {
-		this.history = java.util.Objects.requireNonNull(history);
-		this.files = java.util.Objects.requireNonNull(files);
-		this.sources = java.util.Objects.requireNonNull(sources);
-		this.ownsSources = ownsSources;
-	}
-
-	@Override public void destroy() {
-		try {
-			if (ownsSources) sources.close();
-		} catch (IOException failure) {
-			LOG.log(Level.WARNING, "Cannot close servlet-owned source search", failure);
-		} finally { super.destroy(); }
-	}
+    /** Uses application-owned search boundaries; their context owns their lifecycle. */
+    public SearchResource(SandboxHistorySearch history, SandboxFileHistory files, SandboxSourceSearch sources) {
+        this.history = java.util.Objects.requireNonNull(history);
+        this.files = java.util.Objects.requireNonNull(files);
+        this.sources = java.util.Objects.requireNonNull(sources);
+    }
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp)

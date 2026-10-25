@@ -21,7 +21,6 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 
 /**
  * Creates the application-owned Hibernate persistence context from environment
@@ -38,7 +37,7 @@ import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider
  * <li>{@code JGIT_DB_DIALECT} — Hibernate dialect class name</li>
  * <li>{@code JGIT_DB_DRIVER} — JDBC driver class name (optional)</li>
  * <li>{@code JGIT_DB_DDL_AUTO} — Hibernate DDL auto strategy (default:
- * update)</li>
+ * validate)</li>
  * </ul>
  */
 public class HibernateConfig {
@@ -71,7 +70,7 @@ public class HibernateConfig {
 	 * @return the persistence context owning the native session factory
 	 */
 	public static ServerPersistenceContext createPersistenceContext(Properties properties) {
-		return new CopiedServerPersistenceContext(properties);
+		return createExternalPersistenceContext(properties);
 	}
 
 	/**
@@ -80,9 +79,7 @@ public class HibernateConfig {
 	 *
 	 * <p>The method fails before Hibernate bootstrap unless the normal Core Flyway
 	 * and Search histories match their packaged SQL streams, no competing JPA DDL action is configured, and
-	 * {@code hibernate.hbm2ddl.auto=validate}. Normal server startup deliberately
-	 * continues to use {@link #createPersistenceContext(Properties)} until the
-	 * remaining copied Search/query implementation has its own migration boundary.</p>
+	 * {@code hibernate.hbm2ddl.auto=validate}. Normal server startup uses this same read-only validation gate.</p>
 	 *
 	 * @param properties
 	 *            Hibernate configuration properties for an already migrated schema
@@ -93,37 +90,6 @@ public class HibernateConfig {
 	public static ServerPersistenceContext createExternalPersistenceContext(
 			Properties properties) {
 		return new ExternalServerPersistenceContext(ExternalCoreStartupGuard.requireReady(properties));
-	}
-
-	/**
-	 * Create a copied session-factory provider configured from environment variables.
-	 *
-	 * @return the configured session factory provider
-	 * @deprecated application startup should own persistence through
-	 *             {@link #createPersistenceContext()}
-	 */
-	@Deprecated(forRemoval = true)
-	public static HibernateSessionFactoryProvider createSessionFactoryProvider() {
-		Properties props = buildProperties();
-		LOG.log(Level.INFO,
-				"Creating Hibernate SessionFactory with URL: {0}", //$NON-NLS-1$
-				props.getProperty("hibernate.connection.url")); //$NON-NLS-1$
-		return new HibernateSessionFactoryProvider(props);
-	}
-
-	/**
-	 * Create a copied session-factory provider from explicit properties.
-	 *
-	 * @param properties
-	 *            Hibernate configuration properties
-	 * @return the configured session factory provider
-	 * @deprecated application startup should own persistence through
-	 *             {@link #createPersistenceContext(Properties)}
-	 */
-	@Deprecated(forRemoval = true)
-	public static HibernateSessionFactoryProvider createSessionFactoryProvider(
-			Properties properties) {
-		return new HibernateSessionFactoryProvider(properties);
 	}
 
 	/**
@@ -141,7 +107,7 @@ public class HibernateConfig {
 		String dialect = getEnvOrDefault("JGIT_DB_DIALECT", //$NON-NLS-1$
 				"org.hibernate.dialect.H2Dialect"); //$NON-NLS-1$
 		String driver = System.getenv("JGIT_DB_DRIVER"); //$NON-NLS-1$
-		String ddlAuto = getEnvOrDefault("JGIT_DB_DDL_AUTO", "update"); //$NON-NLS-1$ //$NON-NLS-2$
+		String ddlAuto = getEnvOrDefault("JGIT_DB_DDL_AUTO", "validate"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		props.put("hibernate.connection.url", url); //$NON-NLS-1$
 		props.put("hibernate.connection.username", user); //$NON-NLS-1$

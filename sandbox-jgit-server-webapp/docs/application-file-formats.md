@@ -30,5 +30,5 @@ Source snippets remain limited to 65,535 UTF-16 units, with one deliberate
 correction: truncation does not split a surrogate pair. Generic FQN snippets use
 the same bound. Other facet fields retain their historical full values.
 
-This slice supplies format extraction only. Runtime corpus/search wiring follows
-after the released Java foundation and generation lifecycle are integrated.
+The runtime corpus/search adapter uses these extracted facets and preserves
+plain-text source for malformed properties files that cannot produce format facets.

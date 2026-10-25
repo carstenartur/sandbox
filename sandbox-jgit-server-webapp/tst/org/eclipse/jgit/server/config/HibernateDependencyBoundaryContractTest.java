@@ -58,36 +58,20 @@ public class HibernateDependencyBoundaryContractTest {
 				managedVersion(root, "org.hibernate.search", "hibernate-search-backend-lucene")); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
-	@Test
-	public void storageModulePinsItsIndependentHibernateBoundary() throws Exception {
-		Document module= pom("sandbox-jgit-storage-hibernate/pom.xml"); //$NON-NLS-1$
-		String ormVersion= value(module,
-				"/project/properties/jgit.hibernate-orm.version"); //$NON-NLS-1$
-		String searchVersion= value(module,
-				"/project/properties/jgit.hibernate-search.version"); //$NON-NLS-1$
-
-		assertCompatiblePair("Storage module boundary", ormVersion, searchVersion); //$NON-NLS-1$
-		assertEquals("${jgit.hibernate-orm.version}", //$NON-NLS-1$
-				dependencyVersion(module, "org.hibernate.orm", "hibernate-core")); //$NON-NLS-1$ //$NON-NLS-2$
-		assertEquals("${jgit.hibernate-orm.version}", //$NON-NLS-1$
-				dependencyVersion(module, "org.hibernate.orm", "hibernate-hikaricp")); //$NON-NLS-1$ //$NON-NLS-2$
-		assertEquals("${jgit.hibernate-orm.version}", //$NON-NLS-1$
-				dependencyVersion(module, "org.hibernate.orm", "hibernate-jcache")); //$NON-NLS-1$ //$NON-NLS-2$
-		assertEquals("${jgit.hibernate-search.version}", //$NON-NLS-1$
-				dependencyVersion(module, "org.hibernate.search", "hibernate-search-mapper-orm")); //$NON-NLS-1$ //$NON-NLS-2$
-		assertEquals("${jgit.hibernate-search.version}", //$NON-NLS-1$
-				dependencyVersion(module, "org.hibernate.search", "hibernate-search-backend-lucene")); //$NON-NLS-1$ //$NON-NLS-2$
-	}
+    @Test
+    public void storageModuleConsumesOnlyReleasedCore() throws Exception {
+        Document module = pom("sandbox-jgit-storage-hibernate/pom.xml");
+        assertEquals("1", value(module, "count(/project/dependencies/dependency[not(scope='test')])"));
+        assertEquals("${jgit-storage-hibernate.version}",
+                dependencyVersion(module, "io.github.carstenartur", "jgit-storage-hibernate-core"));
+        assertEquals("", value(module, "/project/properties/jgit.hibernate-orm.version"));
+        assertEquals("", value(module, "/project/properties/jgit.hibernate-search.version"));
+    }
 
 	@Test
 	public void serverModuleOverridesAllManagedHibernateArtifactsLocally()
 			throws Exception {
-		Document storage= pom("sandbox-jgit-storage-hibernate/pom.xml"); //$NON-NLS-1$
 		Document server= pom("sandbox-jgit-server-webapp/pom.xml"); //$NON-NLS-1$
-		String storageOrmVersion= value(storage,
-				"/project/properties/jgit.hibernate-orm.version"); //$NON-NLS-1$
-		String storageSearchVersion= value(storage,
-				"/project/properties/jgit.hibernate-search.version"); //$NON-NLS-1$
 		String serverOrmVersion= value(server,
 				"/project/properties/jgit.hibernate-orm.version"); //$NON-NLS-1$
 		String serverSearchVersion= value(server,
@@ -95,12 +79,11 @@ public class HibernateDependencyBoundaryContractTest {
 
 		assertCompatiblePair("Executable server boundary", serverOrmVersion, //$NON-NLS-1$
 				serverSearchVersion);
-		assertEquals(
-				"The server must stay aligned with the storage module's isolated ORM boundary", //$NON-NLS-1$
-				storageOrmVersion, serverOrmVersion);
-		assertEquals(
-				"The server must stay aligned with the storage module's isolated Search boundary", //$NON-NLS-1$
-				storageSearchVersion, serverSearchVersion);
+        assertEquals("", dependencyVersion(server, "org.hibernate.orm", "hibernate-hikaricp"));
+        assertEquals("", dependencyVersion(server, "org.hibernate.orm", "hibernate-jcache"));
+        assertEquals("${caffeine.version}", dependencyVersion(server, "com.github.ben-manes.caffeine", "jcache"));
+        assertEquals("runtime", value(server, "/project/dependencies/dependency[artifactId='h2']/scope"));
+        assertEquals("compile", value(server, "/project/dependencies/dependency[artifactId='jakarta.servlet-api']/scope"));
 		assertEquals("${jgit.hibernate-orm.version}", //$NON-NLS-1$
 				managedVersion(server, "org.hibernate.orm", "hibernate-core")); //$NON-NLS-1$ //$NON-NLS-2$
 		assertEquals("${jgit.hibernate-orm.version}", //$NON-NLS-1$

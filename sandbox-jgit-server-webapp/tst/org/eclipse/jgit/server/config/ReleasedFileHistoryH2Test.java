@@ -53,6 +53,9 @@ public class ReleasedFileHistoryH2Test {
         tag(repository, "annotated-blob", blob, Constants.OBJ_BLOB);
       }
       var history = context.fileHistory();
+      var disabled = new org.eclipse.jgit.server.history.ReleasedSandboxFileHistory(context.sessionFactory(), context.repositoryService(), false);
+      assertTrue(disabled.versions("example.git", "keep.txt", 0, 100).isEmpty());
+      assertTrue(disabled.versions("missing", "keep.txt", 0, 100).isEmpty());
       var all = history.versions("example.git", "keep.txt", 0, 100);
       assertEquals(List.of(main.name(), side.name(), tagged.name(), merge.name(), root.name()), ids(all));
       assertEquals(all.get(0).blobObjectId(), all.get(3).blobObjectId());

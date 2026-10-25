@@ -167,7 +167,7 @@ public class ReleasedHistoryIngestionH2Test {
 			push(client, "example.git.git", "refs/heads/main:refs/heads/main");
 			assertEquals("example.git", context.repositoryService().info("example.git.git").name());
 			assertEquals(id, context.repositoryService().openOrCreate("example.git.git").resolve("refs/heads/main"));
-			assertEquals(List.of(id.name()), context.historySearch().searchMessages("example.git", "needle", 0, 10)
+			assertEquals(List.of(id.name()), context.historySearch().searchMessages("example.git.git", "needle", 0, 10)
 					.stream().map(hit -> hit.objectId()).toList());
 			assertTrue(context.historySearch().searchMessages("example", "needle", 0, 10).isEmpty());
 		}

@@ -30,8 +30,8 @@ import org.eclipse.jgit.internal.storage.dfs.DfsBlockCacheConfig;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.server.JGitServerApplication;
-import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
-import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
+import org.eclipse.jgit.server.history.SandboxHistorySearch.CommitHit;
+import org.eclipse.jgit.server.history.ReleasedSandboxHistorySearch;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.RemoteRefUpdate;
 import org.junit.AfterClass;
@@ -59,10 +59,11 @@ public class EndToEndH2Test {
 		props.put("hibernate.connection.password", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		props.put("hibernate.connection.driver_class", "org.h2.Driver"); //$NON-NLS-1$ //$NON-NLS-2$
 		props.put("hibernate.dialect", "org.hibernate.dialect.H2Dialect"); //$NON-NLS-1$ //$NON-NLS-2$
-		props.put("hibernate.hbm2ddl.auto", "create"); //$NON-NLS-1$ //$NON-NLS-2$
+		props.put("hibernate.hbm2ddl.auto", "validate"); //$NON-NLS-1$ //$NON-NLS-2$
 		props.put("hibernate.show_sql", "false"); //$NON-NLS-1$ //$NON-NLS-2$
 		props.put("hibernate.search.backend.directory.type", "local-heap"); //$NON-NLS-1$ //$NON-NLS-2$
-		server = new JGitServerApplication();
+		org.eclipse.jgit.server.config.ReleasedSchemaInitializer.initializeEmpty(props);
+        server = new JGitServerApplication();
 		server.start(props, 0, 0);
 		restBaseUrl = "http://localhost:" + server.getRestPort(); //$NON-NLS-1$
 		gitBaseUrl = "http://localhost:" + server.getGitPort(); //$NON-NLS-1$
@@ -143,24 +144,12 @@ public class EndToEndH2Test {
 	@Test
 	public void test06_VerifyCommitInDatabase() throws Exception {
 		assertNotNull("pushedCommitSha should be set by test05", pushedCommitSha); //$NON-NLS-1$
-		org.eclipse.jgit.storage.hibernate.service.CommitIndexer indexer =
-				new org.eclipse.jgit.storage.hibernate.service.CommitIndexer(
-						server.getSessionFactory(), "e2e-test"); //$NON-NLS-1$
-		Repository repo = server.getRepositoryResolver().getOrCreateRepository("e2e-test"); //$NON-NLS-1$
-		org.eclipse.jgit.lib.ObjectId tipId = repo.exactRef("refs/heads/master") != null //$NON-NLS-1$
-				? repo.exactRef("refs/heads/master").getObjectId() : null; //$NON-NLS-1$
-		if (tipId == null) {
-			tipId = repo.exactRef("refs/heads/main") != null //$NON-NLS-1$
-					? repo.exactRef("refs/heads/main").getObjectId() : null; //$NON-NLS-1$
-		}
-		assertNotNull("Should have a HEAD ref", tipId); //$NON-NLS-1$
-		indexer.indexCommit(repo, tipId);
-		GitDatabaseQueryService queryService = new GitDatabaseQueryService(server.getSessionFactory());
-		List<GitCommitIndex> results = queryService.searchCommitMessages("e2e-test", "README"); //$NON-NLS-1$ //$NON-NLS-2$
+        List<CommitHit> results = new ReleasedSandboxHistorySearch(server.getSessionFactory())
+                .searchMessages("e2e-test", "README", 0, 100);
 		assertFalse("Should find at least one commit", results.isEmpty()); //$NON-NLS-1$
-		assertEquals("Initial e2e commit: add README", results.get(0).getCommitMessage()); //$NON-NLS-1$
-		assertEquals("E2E Test", results.get(0).getAuthorName()); //$NON-NLS-1$
-		assertEquals("e2e@test.org", results.get(0).getAuthorEmail()); //$NON-NLS-1$
+		assertEquals("Initial e2e commit: add README", results.get(0).message()); //$NON-NLS-1$
+		assertEquals("E2E Test", results.get(0).author()); //$NON-NLS-1$
+		assertEquals("e2e@test.org", results.get(0).authorEmail()); //$NON-NLS-1$
 	}
 
 	@Test
@@ -211,7 +200,7 @@ public class EndToEndH2Test {
 	}
 
 	@Test
-	public void test12_PushJavaFileAndSearchByType() throws Exception {
+	public void test12_PublishJavaFileAndSearchByType() throws Exception {
 		Repository repo = server.getRepositoryResolver().getOrCreateRepository("e2e-test"); //$NON-NLS-1$
 		org.eclipse.jgit.lib.ObjectId commitId;
 		try (org.eclipse.jgit.lib.ObjectInserter inserter = repo.newObjectInserter()) {
@@ -233,10 +222,10 @@ public class EndToEndH2Test {
 			commitId = inserter.insert(commit);
 			inserter.flush();
 		}
-		org.eclipse.jgit.storage.hibernate.service.BlobIndexer blobIndexer =
-				new org.eclipse.jgit.storage.hibernate.service.BlobIndexer(
-						server.getSessionFactory(), "e2e-test"); //$NON-NLS-1$
-		blobIndexer.indexCommitBlobs(repo, commitId);
+        var sourceRef = repo.updateRef("refs/heads/source-search");
+        sourceRef.setNewObjectId(commitId); sourceRef.update();
+        new io.github.carstenartur.jgit.storage.hibernate.search.service.CommitIndexer(server.getSessionFactory(), "e2e-test")
+                .indexCommit(repo, commitId);
 		HttpURLConnection conn = TestHelper.openGet(restBaseUrl,
 				"/api/search/types?repo=e2e-test&q=HelloWorld"); //$NON-NLS-1$
 		assertEquals(200, conn.getResponseCode());

@@ -37,6 +37,7 @@ public class AdminRebuildH2Test {
     properties.setProperty("hibernate.connection.driver_class", "org.h2.Driver");
     properties.setProperty("hibernate.hbm2ddl.auto", "create-drop");
     properties.setProperty("hibernate.search.backend.directory.type", "local-heap");
+    properties.setProperty("hibernate.search.backend.type", "lucene");
     try (var provider = new HibernateSessionFactoryProvider(properties, SearchEntities.annotatedClasses())) {
       var factory = new DefaultHibernateRepositoryFactory(provider.getSessionFactory());
       var maintenance = new ReleasedSandboxHistoryMaintenance(provider.getSessionFactory());
@@ -101,7 +102,7 @@ public class AdminRebuildH2Test {
             assertEquals(1, body.get("indexedCommits").getAsLong());
             assertEquals(200, get(client, base + prefix + "/health").statusCode());
           }
-          assertEquals(original.name(), history.searchMessages("example.git", "needle", 0, 10).getFirst().objectId());
+          assertEquals(original.name(), history.searchMessages("example.git.git", "needle", 0, 10).getFirst().objectId());
           assertFalse(repositories.isOpen("example.git.git"));
           assertThrows(java.io.FileNotFoundException.class, () -> repositories.withExistingRepository("missing", ignored -> null));
         } finally { server.stop(); }

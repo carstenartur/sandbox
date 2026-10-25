@@ -109,16 +109,6 @@ public class SourceSearchBoundaryRestTest {
     endpoint.close(); assertEquals(0, endpoint.sourceCloses.get());
   }
 
-  @Test public void servletOwnedBoundaryIsClosedByServletShutdown() {
-    var closes = new AtomicInteger();
-    var source = (SandboxSourceSearch) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {SandboxSourceSearch.class},
-        (proxy, method, args) -> { if (method.getName().equals("close")) closes.incrementAndGet(); return null; });
-    var history = (SandboxHistorySearch) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {SandboxHistorySearch.class},
-        (proxy, method, args) -> List.of());
-    var servlet = new SearchResource(history, (repo, path, offset, limit) -> List.of(), source, true);
-    servlet.destroy(); assertEquals(1, closes.get());
-  }
-
   private static final class Endpoint implements AutoCloseable {
     final AtomicInteger sourceCloses = new AtomicInteger();
     final Server server = new Server(0);
