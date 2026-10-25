@@ -4,7 +4,11 @@ package org.eclipse.jgit.server.analysis;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -48,6 +52,17 @@ final class HistoricalPathIndex implements Closeable {
   @Override public void close() throws IOException { index.close(); }
   String repositoryName() { return repositoryName; }
 
+  private static String documentId(String commitId, String path) {
+    try {
+      // Git paths are unbounded; only the identity is indexed as an exact keyword.
+      // Keep the complete path in the stored result and analyzed PATH field.
+      byte[] digest = MessageDigest.getInstance("SHA-256").digest(path.getBytes(StandardCharsets.UTF_8));
+      return commitId + ":" + HexFormat.of().formatHex(digest);
+    } catch (NoSuchAlgorithmException unavailable) {
+      throw new IllegalStateException("The JVM must support SHA-256", unavailable);
+    }
+  }
+
   private static final class PathDocuments implements Iterable<JavaFileSearchDocument>, Closeable {
     private final String name;
     private final ObjectReader reader;
@@ -74,7 +89,7 @@ final class HistoricalPathIndex implements Closeable {
                 String path = tree.getPathString();
                 int dot = path.lastIndexOf('.');
                 String type = dot < 0 ? "unknown" : path.substring(dot + 1).toLowerCase(Locale.ROOT);
-                next = new JavaFileSearchDocument(name, commit.objectId() + ":" + path, commit.objectId(),
+                next = new JavaFileSearchDocument(name, documentId(commit.objectId(), path), commit.objectId(),
                     tree.getObjectId(0).name(), path, "", type, Map.of(JavaFileSearchField.PATH, path));
                 return true;
               }

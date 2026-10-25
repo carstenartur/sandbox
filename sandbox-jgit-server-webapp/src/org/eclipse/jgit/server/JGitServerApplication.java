@@ -73,10 +73,14 @@ public class JGitServerApplication {
 			try { app.stop(); }
 			catch (Exception failure) { LOG.log(Level.SEVERE, "Cannot stop JGit server", failure); }
 		}, "jgit-server-shutdown");
-		Runtime.getRuntime().addShutdownHook(shutdown);
 		try {
 			try {
-				app.start(initialize);
+				// Publish the hook and acquire startup resources under the same monitor.
+				// Shutdown must not finish before an in-flight bootstrap publishes its owner.
+				synchronized (app) {
+					Runtime.getRuntime().addShutdownHook(shutdown);
+					app.start(initialize);
+				}
 				app.join();
 			} catch (Exception | Error failure) {
 				try { app.stop(); }
@@ -95,7 +99,7 @@ public class JGitServerApplication {
 		start(false);
 	}
 
-	private void start(boolean initialize) throws Exception {
+	private synchronized void start(boolean initialize) throws Exception {
 		Properties properties = HibernateConfig.buildProperties();
 		if (initialize) org.eclipse.jgit.server.config.ReleasedSchemaInitializer.initializeEmpty(properties);
 		start(HibernateConfig.createPersistenceContext(properties),
@@ -106,7 +110,7 @@ public class JGitServerApplication {
 	}
 
 	/** Starts a test server from explicit Hibernate properties and dynamic ports. */
-	public void start(Properties hibernateProperties, int restPort, int gitPort) throws Exception {
+	public synchronized void start(Properties hibernateProperties, int restPort, int gitPort) throws Exception {
 		start(HibernateConfig.createPersistenceContext(hibernateProperties), restPort, gitPort, null, null, true);
 	}
 
@@ -189,8 +193,10 @@ public class JGitServerApplication {
 
 	/** Waits for the server to stop. */
 	public void join() throws InterruptedException {
-		if (server != null) {
-			server.join();
+		Server running;
+		synchronized (this) { running= server; }
+		if (running != null) {
+			running.join();
 		}
 	}
 
@@ -242,7 +248,7 @@ public class JGitServerApplication {
 		return getPort("git"); //$NON-NLS-1$
 	}
 
-	private int getPort(String connectorName) {
+	private synchronized int getPort(String connectorName) {
 		if (server != null) {
 			for (var connector : server.getConnectors()) {
 				if (connector instanceof ServerConnector serverConnector
@@ -255,12 +261,12 @@ public class JGitServerApplication {
 	}
 
 	/** Returns the repository resolver used by the running application. */
-	public HibernateRepositoryResolver getRepositoryResolver() {
+	public synchronized HibernateRepositoryResolver getRepositoryResolver() {
 		return repositoryResolver;
 	}
 
 	/** Returns the application-owned native Hibernate factory. */
-	public SessionFactory getSessionFactory() {
+	public synchronized SessionFactory getSessionFactory() {
 		if (persistenceContext == null) {
 			throw new IllegalStateException("Server persistence context is not started"); //$NON-NLS-1$
 		}

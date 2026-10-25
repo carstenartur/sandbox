@@ -45,6 +45,23 @@ public class HistoricalPathIndexTest {
     }
   }
 
+  @Test public void longHistoricalPathsRemainSearchableAfterDeletionWithoutPoisoningHealthyFiles() throws Exception {
+    String path = ("directory" + "x".repeat(190) + "/").repeat(170) + "retained.txt";
+    try (var git = new InMemoryRepository(new DfsRepositoryDescription("long-paths"))) {
+      var first = ApplicationApiComparisonTest.commit(git, 1, Map.of(path, "old", "healthy.txt", "healthy"));
+      var second = ApplicationApiComparisonTest.commit(git, 2, Map.of("healthy.txt", "healthy"), first);
+      var commits = GitHistorySnapshot.read(git, List.of(second.name()));
+      try (var index = HistoricalPathIndex.build("repo", git, commits)) {
+        assertEquals(2, index.search("repo", "healthy", 0, 10).size());
+        var retained = index.search("repo", "retained", 0, 10);
+        assertEquals(1, retained.size());
+        assertEquals(path, retained.getFirst().filePath());
+        assertEquals(first.name(), retained.getFirst().commitObjectId());
+        assertEquals("txt", retained.getFirst().fileType());
+      }
+    }
+  }
+
   @Test public void interruptedAndMissingTreeBuildsFailWithoutLeakingTheLease() throws Exception {
     try (var git = new InMemoryRepository(new DfsRepositoryDescription("failure"))) {
       var missing = new GitHistorySnapshot.CommitView(ObjectId.zeroId().name(), ObjectId.zeroId().name(), null, null, null);

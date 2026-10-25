@@ -68,6 +68,40 @@ public class ReleasedRuntimeStartupH2Test {
     } finally { app.stop(); }
   }
 
+  @Test public void stopWaitsForInFlightPersistenceBootstrapAndClosesThePublishedContext() throws Exception {
+    var p = properties(); ReleasedSchemaInitializer.initializeEmpty(p);
+    var entered = new java.util.concurrent.CountDownLatch(1);
+    var release = new java.util.concurrent.CountDownLatch(1);
+    p.put("hibernate.search.backend.analysis.configurer",
+        (org.hibernate.search.backend.lucene.analysis.LuceneAnalysisConfigurer) context -> {
+          new org.eclipse.jgit.server.history.SandboxHistoryAnalysisConfigurer().configure(context);
+          entered.countDown();
+          try { if (!release.await(20, java.util.concurrent.TimeUnit.SECONDS)) throw new AssertionError("Bootstrap not released"); }
+          catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); throw new AssertionError(interrupted); }
+        });
+    p.setProperty(io.github.carstenartur.jgit.storage.hibernate.search.analysis.GitTextAnalysis.PROFILE_ID_PROPERTY,
+        "sandbox-commit-message-v1");
+    var app = new JGitServerApplication();
+    try (var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+      var starting = executor.submit(() -> { app.start(p, 0, 0); return null; });
+      try {
+        assertTrue("Hibernate bootstrap did not reach analysis configuration", entered.await(15, java.util.concurrent.TimeUnit.SECONDS));
+        var stopping = executor.submit(() -> { app.stop(); return null; });
+        assertThrows(java.util.concurrent.TimeoutException.class,
+            () -> stopping.get(150, java.util.concurrent.TimeUnit.MILLISECONDS));
+        release.countDown();
+        starting.get(20, java.util.concurrent.TimeUnit.SECONDS);
+        stopping.get(20, java.util.concurrent.TimeUnit.SECONDS);
+        assertThrows(IllegalStateException.class, app::getSessionFactory);
+        assertEquals(-1, app.getRestPort()); assertEquals(-1, app.getGitPort());
+      } finally {
+        release.countDown();
+        try { starting.get(20, java.util.concurrent.TimeUnit.SECONDS); }
+        finally { app.stop(); }
+      }
+    }
+  }
+
   @Test public void drainsPinnedSemanticReadersBeforeClosingModelRepositoriesAndDatabase() throws Exception {
     var p = properties(); ReleasedSchemaInitializer.initializeEmpty(p);
     var encoder = new BlockingEncoder();
