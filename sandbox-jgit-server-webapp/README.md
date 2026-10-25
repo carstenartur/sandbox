@@ -65,19 +65,34 @@ ignored. Each request owns a repository reference separate from the service.
 Closing a request therefore does not dispose the service's cached handle.
 Repository deletion also removes released Search projections transactionally.
 
-Indexing is synchronous and uses bounded library batches. In 0.11.5 the public
-`indexCommitsFrom` API still walks the entire ancestry of each new tip, including
-previously indexed commits; repeated/shared tips can repeat that work. A successful
-incremental push therefore does not yet provide bounded latency on large histories.
-A public incremental/multi-tip API remains a qualification item before final cutover.
+Indexing is synchronous and uses the released 0.11.6 multi-tip API with bounded
+batches. A successful complete ancestry walk certifies its tips for later pushes;
+subsequent calls traverse only history beyond those tips. Existing projection rows
+alone never certify ancestry. The process keeps at most 128 certified tips for each
+of 256 recently used repositories. Restart, eviction, deletion, failure and rebuild
+invalidate certificates; the next push safely walks the full relevant history again.
+If old boundary ancestry has been pruned, indexing retries once without boundaries.
 
-An indexing failure cannot undo an accepted Git push. It is logged and makes both
-health URLs return 503 for the rest of that process. `/admin/reindex` retains its
-existing response and refreshes Lucene from existing ORM rows, serialized against
-projection writers; it does not reconstruct missing rows or clear that failure.
-The explicit Git-history rebuild endpoint and durable recovery state are separate
-migration work. Incremental history retains projections from force-pushed or deleted
-refs until a full rebuild prunes unreachable commits.
+An indexing failure cannot undo an accepted Git push. It is logged and both health
+URLs return 503 while that repository has a known failure in this process.
+`/admin/reindex` retains its response and refreshes Lucene from existing ORM rows;
+it does not restore missing SQL rows or clear that failure.
+
+`POST /api/admin/rebuild?repo=NAME` (also `/api/v1/admin/rebuild`) uses the existing
+`JGIT_ADMIN_TOKEN` Bearer authentication and an existing-only read lease. Missing
+identities return 404 without creating a repository. It refreshes the reader under
+the writer lock, clears all old certificates before purging, then reconstructs the
+projection from all named-ref ancestry plus detached HEAD. Successful completion
+clears the known failure. Configuration/storage failures return 500 and remain
+visible through health; an interrupted/failed rebuild can leave partial projections
+and is safely rerunnable. The response reports `removedProjections` and
+`indexedCommits`. Repository aliases are normalized exactly once.
+
+The shared locks serialize local pushes, deletion, refresh and rebuild. Stop other
+server processes and external projection writers during an administrative rebuild.
+Incremental pushes retain historical rows after ref deletion or force push; a full
+rebuild prunes history no longer reachable from refs/HEAD. Failure state and
+certificates are process-local; health is not a durable completeness audit.
 
 Exact `filehistory?path=...` reads now have a released-backend adapter. It walks
 all parents from named refs and detached HEAD, plus still-available commits retained
