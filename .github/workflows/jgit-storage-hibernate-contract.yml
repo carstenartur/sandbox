@@ -79,4 +79,5 @@ jobs:
             sandbox-jgit-server-webapp/target/jgit-server.jar
             sandbox-jgit-storage-hibernate/target/surefire-reports/**
             sandbox-jgit-server-webapp/target/surefire-reports/**
+            sandbox-jgit-server-webapp/target/failsafe-reports/**
           if-no-files-found: error

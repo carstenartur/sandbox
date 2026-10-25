@@ -44,8 +44,8 @@ public interface SandboxRepositoryService extends AutoCloseable {
 	/**
 	 * Deletes a closed logical repository when the selected backend supports coordinated deletion.
 	 *
-	 * <p>The released Core adapter overrides this operation. The copied transition backend deliberately
-	 * keeps deletion disabled until normal startup has completed the Core cut-over.</p>
+	 * <p>The released Core adapter overrides this operation. REST deletion remains disabled;
+     * callers must use the separately authorized application lifecycle operation.</p>
 	 */
 	default SandboxRepositoryDeletionResult delete(String name) throws IOException {
 		throw new UnsupportedOperationException("Repository deletion requires the released Core backend."); //$NON-NLS-1$

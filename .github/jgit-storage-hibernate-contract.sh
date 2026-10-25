@@ -62,7 +62,7 @@ set -o pipefail
 
 "${maven[@]}" -B -ntp -nsu \
   -f sandbox-jgit-server-webapp/pom.xml \
-  package 2>&1 | tee "$evidence_dir/server-package.log"
+  verify 2>&1 | tee "$evidence_dir/server-package.log"
 
 if grep -Eq 'Invalid property key|No value specified for key' \
     "$evidence_dir/storage-bridge.log"; then
@@ -179,13 +179,14 @@ fi
 report_directories=()
 for directory in \
     sandbox-jgit-storage-hibernate/target/surefire-reports \
-    sandbox-jgit-server-webapp/target/surefire-reports; do
+    sandbox-jgit-server-webapp/target/surefire-reports \
+    sandbox-jgit-server-webapp/target/failsafe-reports; do
   if [[ -d "$directory" ]]; then
     report_directories+=("$directory")
   fi
 done
 if (( ${#report_directories[@]} == 0 )); then
-  echo "The Sandbox storage modules produced no Surefire report directories." >&2
+  echo "The Sandbox storage modules produced no JUnit report directories." >&2
   exit 1
 fi
 find "${report_directories[@]}" -type f -name 'TEST-*.xml' -print \

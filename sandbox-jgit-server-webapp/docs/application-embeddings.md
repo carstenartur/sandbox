@@ -2,10 +2,10 @@
 
 `EmbeddingEncoder`, `LocalEmbeddingEncoder` and `ApplicationVectorIndex` keep
 Sandbox's optional semantic ranking separate from released Core/Search/Java
-Analysis and from the copied persistence entities. This slice supplies the
-components; runtime corpus/REST wiring follows after its prerequisites merge.
+Analysis. `ApplicationSemanticQueries` connects these components to the normal
+REST backend without persistent Java/vector ORM entities.
 
-The application context will own one encoder and close it after active generation
+The application context owns one encoder and close it after active generation
 readers finish. A vector index does not own or close that shared encoder. Encoder
 construction, status inspection, blank input and disabled encoding never load a
 model. Prediction and close are serialized. Closing before first use prevents
@@ -27,7 +27,8 @@ Existing environment configuration is retained:
 The existing DJL model locator and ONNX engine selection remain unchanged. A first
 enabled semantic request can require a model download or native runtime; ordinary
 startup and text queries must not call `embed`. Model initialization/downloads
-are not validated by the deterministic tests in this slice.
+are not validated by the deterministic encoder tests; model availability remains
+an optional runtime capability.
 
 Input text retains the original class/documentation/method/package formatting
 and 2,048-character approximation before tokenizer processing. Truncation avoids
@@ -44,8 +45,10 @@ similarities remain eligible. RRF uses `1/(60 + rank)` with one-based ranks and
 semantic-first ties; callers must supply rankings from the same repository with
 unique stable blob identities within each ranking. All result lists are immutable.
 
-Integration must build vectors only for an explicit semantic request, keep
-generation invalidation aligned with Git/configuration changes, preserve ordinary
-full-text fallback when encoding is unavailable, and expose disabled/unavailable
-capability without triggering model loading. Archived copied vectors remain
+The first semantic/similarity request builds vectors once for its pinned source
+generation. Text queries never encode the corpus. Invalidation discards those vectors
+with the generation. Hybrid queries fall back to full text when encoding is unavailable;
+existing vectors continue to support similarity without a query encoder. Encoder status
+reports disabled/unavailable state without loading a model. Per-input failed predictions
+are retried only when a new generation is built. Archived copied vectors remain
 operator-owned legacy data; this adapter neither reads nor deletes them.

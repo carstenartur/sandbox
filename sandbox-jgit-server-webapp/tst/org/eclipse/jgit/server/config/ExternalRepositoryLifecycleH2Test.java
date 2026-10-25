@@ -84,7 +84,7 @@ public class ExternalRepositoryLifecycleH2Test {
 		properties.setProperty("hibernate.search.backend.type", "lucene"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.search.backend.directory.type", "local-heap"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.search.backend.analysis.configurer", //$NON-NLS-1$
-				"class:org.eclipse.jgit.storage.hibernate.search.JavaSourceAnalysisConfigurer"); //$NON-NLS-1$
+				"class:org.eclipse.jgit.server.history.SandboxHistoryAnalysisConfigurer"); //$NON-NLS-1$
 		properties.setProperty("hibernate.cache.use_second_level_cache", "false"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.connection.provider_class", //$NON-NLS-1$
 				"org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl"); //$NON-NLS-1$

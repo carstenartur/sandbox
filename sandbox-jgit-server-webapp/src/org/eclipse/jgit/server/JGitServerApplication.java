@@ -69,8 +69,25 @@ public class JGitServerApplication {
 		boolean initialize = args.length == 1 && "--initialize-empty-schema".equals(args[0]);
 		if (args.length != 0 && !initialize) throw new IllegalArgumentException("Expected --initialize-empty-schema, --help, or no arguments");
 		JGitServerApplication app = new JGitServerApplication();
-		app.start(initialize);
-		app.join();
+		Thread shutdown = new Thread(() -> {
+			try { app.stop(); }
+			catch (Exception failure) { LOG.log(Level.SEVERE, "Cannot stop JGit server", failure); }
+		}, "jgit-server-shutdown");
+		Runtime.getRuntime().addShutdownHook(shutdown);
+		try {
+			try {
+				app.start(initialize);
+				app.join();
+			} catch (Exception | Error failure) {
+				try { app.stop(); }
+				catch (Exception | Error cleanup) { failure.addSuppressed(cleanup); }
+				throw failure;
+			}
+			app.stop();
+		} finally {
+			try { Runtime.getRuntime().removeShutdownHook(shutdown); }
+			catch (IllegalStateException shuttingDown) { /* The JVM is already running the hook. */ }
+		}
 	}
 
 	/** Starts the configured production server. */
@@ -178,7 +195,7 @@ public class JGitServerApplication {
 	}
 
 	/** Stops the server and closes the application-owned persistence context. */
-	public void stop() throws Exception {
+	public synchronized void stop() throws Exception {
 		Exception failure= null;
 		try {
 			if (server != null) {

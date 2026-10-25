@@ -11,6 +11,7 @@
 package org.sandbox.jgit.storage.integration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -45,6 +46,9 @@ class OsgiManifestContractTest {
 		assertNotNull(exports, "The bridge must declare its exported OSGi API"); //$NON-NLS-1$
 		assertTrue(exports.contains("org.sandbox.jgit.storage.integration"), //$NON-NLS-1$
 				() -> "Sandbox integration boundary is not exported: " + exports); //$NON-NLS-1$
+
+		assertFalse(exports.contains("org.eclipse.jgit.storage.hibernate"));
+        assertFalse(Files.exists(Path.of("target", "classes", "org", "eclipse", "jgit", "storage", "hibernate")));
 
 		String imports= attributes.getValue("Import-Package"); //$NON-NLS-1$
 		assertNotNull(imports, "The bridge must declare its imported OSGi packages"); //$NON-NLS-1$

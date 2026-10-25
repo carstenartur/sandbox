@@ -1,8 +1,9 @@
 # Analysis generation ownership
 
 `AnalysisGenerationCache` is an application-owned lifecycle primitive for the
-released Java file index. This slice tests ownership independently of parser,
-repository and REST wiring; it does not select a different runtime backend.
+released Java file index. `AnalysisGenerations` shares its capacity across SOURCE,
+PATH and API data in the normal application context. `HistoricalAnalysis` keeps
+repository leases and generation pins through complete REST DTO mapping.
 
 Each immutable snapshot value identifies one complete, closeable generation for
 an already-canonical repository name. Equal snapshots reuse a generation until a
@@ -29,7 +30,7 @@ primary reader/build failure. Interruptions preserve the interrupt flag and an
 unpublished candidate is closed. Callbacks must not retain generations, reenter
 this cache or close it; recursive use is rejected before waiting.
 
-Runtime integration must preserve these conditions:
+The runtime integration preserves these conditions:
 
 - Pass raw request names to the repository service, which normalizes once. Use
   that same canonical identity for cache, SQL and index keys. The cache's

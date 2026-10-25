@@ -28,15 +28,15 @@ jgit-storage-hibernate-benchmarks
 
 The server's released Search adapter qualifies commit/path queries, author counts
 and the health probe against real H2/Lucene projections through both REST prefixes.
-External-context Smart HTTP ingestion is also exercised through push, restart,
+Default-runtime Smart HTTP ingestion is also exercised through push, restart,
 clone and projection-aware deletion. Exact file history additionally exercises all
 ref ancestry, detached HEAD, retained historical roots, per-commit unchanged blobs,
 submodules, exact paths, paging, interruption and restart. Incremental indexing and
-full-history recovery are qualified in the guarded external context. Java analysis
-now qualifies whole-project bindings, immutable file facets and historical corpus
-construction through the released APIs, including reduced-context diagnostics for
-unrepresentable paths. Java REST generation ownership and normal startup remain
-separate migration slices. The bridge rejects Search and Java Analysis so server dependencies do not leak
+full-history recovery are qualified in the normal application context. Java analysis
+qualifies whole-project bindings, immutable historical facets, source queries, reports
+and API comparison through released APIs, including reduced-context diagnostics for
+unrepresentable paths. Default startup, both REST aliases, optional semantic fallback,
+generation invalidation and shutdown are tested. The bridge rejects Search and Java Analysis so server dependencies do not leak
 into Eclipse consumers.
 
 The selected Core version is defined by `jgit-storage-hibernate.version` in `sandbox-jgit-storage-hibernate/pom.xml`. Documentation must not be treated as the version source of truth.
@@ -100,8 +100,10 @@ It verifies:
 - `org.sandbox.jgit.storage.integration` is exported;
 - released `io.github.carstenartur.jgit.storage.hibernate.*` packages are imported;
 - the bridge JAR contains `JGitStorageLibraryBoundary`;
-- the standalone shaded server contains the legacy preflight, released Core factory and history search classes;
-- JUnit XML reports are produced.
+- the standalone shaded server contains all three released modules, the legacy preflight, JDBC/pool/cache providers and Servlet API, with multi-release metadata preserved;
+- no copied generic implementation classes remain in the bridge or executable;
+- the packaged CLI rejects an uninitialized database, explicitly initializes an empty target, serves health, closes on SIGTERM and restarts normally;
+- Surefire and Failsafe JUnit XML reports are produced.
 
 No Xvfb session is needed because this contract has no SWT or workbench path.
 

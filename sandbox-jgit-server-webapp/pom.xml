@@ -19,20 +19,13 @@
 
 	<properties>
 		<tycho.mode>maven</tycho.mode>
-		<!-- Keep the server's direct ORM dependency aligned with the storage module's independent mapper stack. -->
+		<!-- The executable server owns the qualified ORM/Search mapper stack. -->
 		<jgit.hibernate-orm.version>7.4.13.Final</jgit.hibernate-orm.version>
 		<jgit.hibernate-search.version>8.4.0.Final</jgit.hibernate-search.version>
 		<jgit-storage-hibernate.version>0.11.8</jgit-storage-hibernate.version>
 	</properties>
 
-	<!--
-		The parent reactor now manages a general ORM 7.4 / Search 8.4 default, but
-		the executable server must stay aligned with the storage module's independently
-		pinned ORM/Search stack. Maven dependency management rewrites transitive
-		versions, so the server still overrides every managed ORM/Search artifact it
-		consumes to preserve that exact module boundary instead of inheriting later
-		parent defaults.
-	-->
+    <!-- Server-owned ORM/Search overrides keep public module consumers on one qualified stack. -->
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
@@ -183,13 +176,6 @@
 			<scope>runtime</scope>
 		</dependency>
 
-		<!-- Eclipse JDT Core needed by FileTypeStrategyRegistry at runtime -->
-		<dependency>
-			<groupId>org.eclipse.jdt</groupId>
-			<artifactId>org.eclipse.jdt.core</artifactId>
-			<version>${eclipse-jdt-core.version}</version>
-		</dependency>
-
 		<!-- Hibernate ORM -->
 		<dependency>
 			<groupId>org.hibernate.orm</groupId>
@@ -209,12 +195,12 @@
 			<version>${jetty.version}</version>
 		</dependency>
 
-		<!-- Jakarta Servlet API (provided by Jetty at runtime) -->
+		<!-- The executable JAR must include the API used by its embedded Jetty. -->
 		<dependency>
 			<groupId>jakarta.servlet</groupId>
 			<artifactId>jakarta.servlet-api</artifactId>
 			<version>6.1.0</version>
-			<scope>provided</scope>
+			<scope>compile</scope>
 		</dependency>
 
 		<!-- JSON via Gson -->
@@ -224,7 +210,7 @@
 			<version>${gson.version}</version>
 		</dependency>
 
-		<!-- SQL Server driver for the copied backend and published 0.1.15 adoption path. -->
+		<!-- SQL Server driver for the published Core/Search migration and runtime paths. -->
 		<dependency>
 			<groupId>com.microsoft.sqlserver</groupId>
 			<artifactId>mssql-jdbc</artifactId>
@@ -320,6 +306,15 @@
 				</executions>
 			</plugin>
 
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <executions>
+                    <execution><goals><goal>integration-test</goal><goal>verify</goal></goals></execution>
+                </executions>
+            </plugin>
+
 			<!-- Fat JAR via maven-shade-plugin -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -336,6 +331,7 @@
 							<transformers>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 									<mainClass>org.eclipse.jgit.server.JGitServerApplication</mainClass>
+									<manifestEntries><Multi-Release>true</Multi-Release></manifestEntries>
 								</transformer>
 								<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
 							</transformers>
