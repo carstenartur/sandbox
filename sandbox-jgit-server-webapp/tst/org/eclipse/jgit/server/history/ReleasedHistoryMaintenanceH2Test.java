@@ -3,6 +3,7 @@ package org.eclipse.jgit.server.history;
 
 import static org.junit.Assert.*;
 
+import java.nio.charset.Charset;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -158,7 +159,7 @@ public class ReleasedHistoryMaintenanceH2Test {
     try (var pruned = new InMemoryRepository(new DfsRepositoryDescription("pruned"))) {
       ObjectId next = commit(pruned, "unrelated new root");
       try (var inserter = pruned.newObjectInserter()) {
-        assertEquals(boundary, inserter.insert(Constants.OBJ_COMMIT, repository.open(boundary).getBytes()));
+        assertEquals(boundary, inserter.insert(Constants.OBJ_COMMIT, repository.open(boundary).getBytes(Charset.defaultCharset())));
         inserter.flush();
       }
       var command = new ReceiveCommand(ObjectId.zeroId(), next, "refs/heads/new");

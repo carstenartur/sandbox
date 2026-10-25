@@ -4,6 +4,7 @@ package org.eclipse.jgit.server.config;
 import static org.junit.Assert.*;
 import java.net.URI;
 import java.net.http.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Properties;
@@ -41,7 +42,8 @@ public class ReleasedRuntimeStartupH2Test {
          var git = Git.init().setDirectory(temporary.newFolder("client")).setInitialBranch("main").call()) {
       app.start(properties, 0, 0);
       Files.writeString(git.getRepository().getWorkTree().toPath().resolve("Hello.java"),
-          "package p; /** searchable documentation */ public class Hello { public void run() {} }");
+			"package p; /** searchable documentation */ public class Hello { public void run() {} }",
+			StandardCharsets.UTF_8);
       git.add().addFilepattern(".").call();
       first = git.commit().setMessage("Needle source").setAuthor("Author", "a@example.test").setCommitter("Author", "a@example.test").call().name();
       for (var result : git.push().setRemote("http://localhost:" + app.getGitPort() + "/git/example.git.git")
