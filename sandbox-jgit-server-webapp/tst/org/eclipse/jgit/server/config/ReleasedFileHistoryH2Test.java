@@ -15,15 +15,15 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
 import java.util.UUID;
-import org.eclipse.jgit.dircache.DirCache;
-import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.lib.CommitBuilder;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectInserter;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TagBuilder;
+import org.eclipse.jgit.lib.TreeFormatter;
 import org.eclipse.jgit.server.JGitServerApplication;
 import org.eclipse.jgit.server.history.SandboxFileHistory.FileVersion;
 import org.junit.Test;
@@ -174,25 +174,17 @@ public class ReleasedFileHistoryH2Test {
   private ObjectId commit(Repository repository, int authorSeconds, Map<String, String> files, boolean gitlink,
       ObjectId... parents) throws Exception {
     try (var inserter = repository.newObjectInserter()) {
-      var entries = new TreeMap<String, DirCacheEntry>();
+      var entries = new TreeMap<String, TreeEntry>();
       for (var file : files.entrySet()) {
-        var entry = new DirCacheEntry(file.getKey());
-        entry.setFileMode(FileMode.REGULAR_FILE);
-        entry.setObjectId(inserter.insert(Constants.OBJ_BLOB, file.getValue().getBytes(StandardCharsets.UTF_8)));
-        entries.put(file.getKey(), entry);
+        entries.put(file.getKey(), new TreeEntry(FileMode.REGULAR_FILE,
+            inserter.insert(Constants.OBJ_BLOB, file.getValue().getBytes(StandardCharsets.UTF_8))));
       }
       if (gitlink) {
-        var entry = new DirCacheEntry("vendor");
-        entry.setFileMode(FileMode.GITLINK);
-        entry.setObjectId(ObjectId.fromString("1111111111111111111111111111111111111111"));
-        entries.put(entry.getPathString(), entry);
+        entries.put("vendor", new TreeEntry(FileMode.GITLINK,
+            ObjectId.fromString("1111111111111111111111111111111111111111")));
       }
-      var cache = DirCache.newInCore();
-      var builder = cache.builder();
-      entries.values().forEach(builder::add);
-      builder.finish();
       var commit = new CommitBuilder();
-      commit.setTreeId(cache.writeTree(inserter));
+      commit.setTreeId(tree(inserter, entries));
       commit.setParentIds(parents);
       commit.setAuthor(new PersonIdent("Author", "author@example.org", EPOCH.plusSeconds(authorSeconds), ZoneOffset.UTC));
       commit.setCommitter(new PersonIdent("Committer", "committer@example.org", EPOCH.plusSeconds(++sequence), ZoneOffset.UTC));
@@ -201,6 +193,30 @@ public class ReleasedFileHistoryH2Test {
       inserter.flush();
       return id;
     }
+  }
+
+  private record TreeEntry(FileMode mode, ObjectId id) { }
+
+  private static ObjectId tree(ObjectInserter inserter, Map<String, TreeEntry> paths) throws Exception {
+    // Construct bare Git objects: checkout-oriented DirCacheEntry rejects valid Git names on Windows.
+    var entries = new TreeMap<String, TreeEntry>();
+    var directories = new TreeMap<String, Map<String, TreeEntry>>();
+    for (var path : paths.entrySet()) {
+      int slash = path.getKey().indexOf('/');
+      if (slash < 0) entries.put(path.getKey(), path.getValue());
+      else directories.computeIfAbsent(path.getKey().substring(0, slash), ignored -> new TreeMap<>())
+          .put(path.getKey().substring(slash + 1), path.getValue());
+    }
+    for (var directory : directories.entrySet()) {
+      entries.put(directory.getKey() + "/", new TreeEntry(FileMode.TREE, tree(inserter, directory.getValue())));
+    }
+    var tree = new TreeFormatter();
+    for (var entry : entries.entrySet()) {
+      String name = entry.getKey();
+      if (name.endsWith("/")) name = name.substring(0, name.length() - 1);
+      tree.append(name, entry.getValue().mode(), entry.getValue().id());
+    }
+    return inserter.insert(tree);
   }
 
   private static void ref(Repository repository, String name, ObjectId id) throws Exception {
