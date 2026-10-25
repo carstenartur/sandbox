@@ -33,4 +33,9 @@ public final class NativeSearchResource extends SearchResource {
 	public NativeSearchResource(SessionFactory sessionFactory, SandboxHistorySearch history) {
 		super(NonOwningHibernateSessionFactoryProvider.view(sessionFactory), history);
 	}
+	/** Creates an endpoint with the context's history and per-commit file adapters. */
+	public NativeSearchResource(SessionFactory sessionFactory, SandboxHistorySearch history,
+			org.eclipse.jgit.server.history.SandboxFileHistory files) {
+		super(NonOwningHibernateSessionFactoryProvider.view(sessionFactory), history, files);
+	}
 }

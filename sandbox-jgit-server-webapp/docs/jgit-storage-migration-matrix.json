@@ -2,13 +2,13 @@
   "schemaVersion": 2,
   "issue": 1303,
   "baselineCommit": "714bec5cf26e1554520ef063850865ec931a6624",
-  "lastVerifiedCommit": "5f9e286566da8affcaccd69cc38062014c369bc5",
+  "lastVerifiedCommit": "7e91620764dc8a9da2191c43fc77d05b230afd80",
   "purpose": "Machine-readable baseline and evidence ledger for replacing the copied Sandbox JGit/Hibernate implementation with released jgit-storage-hibernate modules.",
   "releasePolicy": {
     "required": "non-SNAPSHOT",
     "minimumDocumentedCandidate": "0.1.13",
-    "selectedVersion": "0.11.5",
-    "selectionState": "stable 0.11.5 selected for consumer verification; immutable Core 0.10.0 compatibility evidence remains recorded below independently of the selected version. Selection alone does not qualify production runtime cutover"
+    "selectedVersion": "0.11.6",
+    "selectionState": "stable 0.11.6 selected for consumer verification; immutable Core 0.10.0 compatibility evidence remains recorded below independently of the selected version. Selection alone does not qualify production runtime cutover"
   },
   "runtime": {
     "currentDatabase": "MSSQL",
@@ -27,7 +27,7 @@
         "org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService",
         "org.eclipse.jgit.server.config.ExternalServerPersistenceContext"
       ],
-      "currentBackend": "Sandbox adapter boundary with copied backend for normal startup and released Core 0.11.5 for guarded external startup",
+      "currentBackend": "Sandbox adapter boundary with copied backend for normal startup and released Core 0.11.6 for guarded external startup",
       "targetOwner": "jgit-storage-hibernate-core",
       "targetApi": [
         "HibernateRepositoryFactory",
@@ -48,7 +48,7 @@
         "ExternalHibernateRepositoryServiceTest.closeDoesNotHoldLifecycleLockWhileClosingStorage",
         "ExternalRepositoryLifecycleH2Test.normalizesIsolatesAndReopensRepositories",
         "PR #1362 / commit 0804ae99532cbb9bfa551fbb6870c053c1938e5d",
-        "jgit-storage-hibernate 0.10.0 Real Consumer Compatibility run 31357180764: Candidate \u2014 sandbox passed against immutable Sandbox commit 5f9e286566da8affcaccd69cc38062014c369bc5 and resolved the exact candidate"
+        "jgit-storage-hibernate 0.10.0 Real Consumer Compatibility run 31357180764: Candidate — sandbox passed against immutable Sandbox commit 5f9e286566da8affcaccd69cc38062014c369bc5 and resolved the exact candidate"
       ]
     },
     {
@@ -136,7 +136,7 @@
         "SandboxRepositoryServiceBoundaryTest.exposesPublicJGitRepositoryContract",
         "Core 0.10.0 DefaultHibernateRepositoryFactory serializes deletion and rejects open handles",
         "Deletion policy evidence commit 970fcb81fe46aaa8c535fa29dc962c901f52b640",
-        "jgit-storage-hibernate 0.10.0 Real Consumer Compatibility run 31357180764: Candidate \u2014 sandbox passed against immutable Sandbox commit 5f9e286566da8affcaccd69cc38062014c369bc5 and resolved the exact candidate"
+        "jgit-storage-hibernate 0.10.0 Real Consumer Compatibility run 31357180764: Candidate — sandbox passed against immutable Sandbox commit 5f9e286566da8affcaccd69cc38062014c369bc5 and resolved the exact candidate"
       ]
     },
     {
@@ -147,7 +147,7 @@
         "org.eclipse.jgit.server.history.ReleasedSandboxHistorySearch",
         "org.eclipse.jgit.server.rest.SearchResource"
       ],
-      "currentBackend": "Released Search 0.11.5 in the guarded external context; copied adapter remains selected by normal startup until ingestion, Java and schema cutover",
+      "currentBackend": "Released Search 0.11.6 in the guarded external context; copied adapter remains selected by normal startup until ingestion, Java and schema cutover",
       "targetOwner": "jgit-storage-hibernate-search",
       "targetApi": [
         "GitHistorySearchService",
@@ -174,7 +174,7 @@
         "org.eclipse.jgit.server.history.ReleasedSandboxHistorySearch",
         "org.eclipse.jgit.server.rest.SearchResource"
       ],
-      "currentBackend": "Released Search 0.11.5 in the guarded external context; copied adapter remains selected by normal startup until ingestion, Java and schema cutover",
+      "currentBackend": "Released Search 0.11.6 in the guarded external context; copied adapter remains selected by normal startup until ingestion, Java and schema cutover",
       "targetOwner": "jgit-storage-hibernate-search",
       "targetApi": [
         "GitHistorySearchService",
@@ -232,18 +232,29 @@
     },
     {
       "id": "file-history",
-      "currentOwner": "sandbox-jgit-storage-hibernate",
+      "currentOwner": "sandbox-jgit-server-webapp",
       "currentEntrypoints": [
+        "org.eclipse.jgit.server.history.SandboxFileHistory",
+        "org.eclipse.jgit.server.history.ReleasedSandboxFileHistory",
         "org.eclipse.jgit.server.rest.SearchResource"
       ],
-      "currentBackend": "copied query and projection services",
-      "targetOwner": "jgit-storage-hibernate-search",
+      "currentBackend": "Public JGit reads through released Core leases plus released Search historical commit identities in the guarded external context; copied adapter remains normal startup",
+      "targetOwner": "Sandbox REST orchestration with released Core/Search",
       "targetApi": [
-        "GitHistorySearchService"
+        "SandboxRepositoryService.withExistingRepository",
+        "Repository / RevWalk / TreeWalk",
+        "GitCommitIndex.objectId"
       ],
-      "migrationStatus": "not-migrated",
+      "migrationStatus": "released-exact-file-history-verified-runtime-cutover-pending",
       "requiredEvidence": [
         "history follows add, modify, delete and rename/move policy explicitly"
+      ],
+      "verifiedEvidence": [
+        "ReleasedFileHistoryH2Test.includesAllParentsAndTagsAndUnchangedVersionsBeforeAuthorTimePaging",
+        "ReleasedFileHistoryH2Test.preservesIndexedHistoryAfterRefDeletionAndReadsGitlinksWithoutLoadingTheirTargets",
+        "ReleasedFileHistoryH2Test.includesDetachedHeadWithoutNamedRefsOrProjectionRows",
+        "ReleasedFileHistoryH2Test.filtersMissingPathsBeforePagingAndOrdersEqualAuthorTimesByObjectId",
+        "ReleasedFileHistoryH2Test.exposesExactHistoryThroughBothPrefixesAfterRestartWithSingleNormalization"
       ]
     },
     {

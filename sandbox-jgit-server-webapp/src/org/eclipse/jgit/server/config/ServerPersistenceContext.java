@@ -39,6 +39,11 @@ public interface ServerPersistenceContext extends AutoCloseable {
 	/** Returns queries for this context's registered history projection. */
 	SandboxHistorySearch historySearch();
 
+	/** Per-commit file versions supplied by the selected persistence boundary. */
+	default org.eclipse.jgit.server.history.SandboxFileHistory fileHistory() {
+		return new org.eclipse.jgit.server.history.CopiedSandboxFileHistory(sessionFactory());
+	}
+
 	/** Returns projection-writer orchestration for the selected backend. */
 	default SandboxHistoryMaintenance historyMaintenance() {
 		return SandboxHistoryMaintenance.NONE;

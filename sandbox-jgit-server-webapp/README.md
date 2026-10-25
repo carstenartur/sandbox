@@ -79,6 +79,18 @@ The explicit Git-history rebuild endpoint and durable recovery state are separat
 migration work. Incremental history retains projections from force-pushed or deleted
 refs until a full rebuild prunes unreachable commits.
 
+Exact `filehistory?path=...` reads now have a released-backend adapter. It walks
+all parents from named refs and detached HEAD, plus still-available commits retained
+by released Search after a ref deletion or force push. Valid non-commit tags are
+ignored. Each commit containing the exact path contributes a version, even when
+the blob is unchanged or is also present under another path. Binary entries and
+submodules are included without loading their target as text. Paths are matched
+before paging; ordering is author time descending, then commit ID for ties.
+Renames start a separate path history. Whitespace filenames remain valid; a trailing slash never matches a file. Missing
+repositories return no results without being created. Reads hold the existing-only
+repository lease and honor interruption. Missing authoritative Git objects remain
+errors; a historical projection whose root was already pruned cannot recover it.
+
 See [jgit-storage-hibernate consumer contract](../docs/JGIT_STORAGE_HIBERNATE_CONTRACT.md) for candidate substitution, OSGi/package checks, forbidden-module checks, and retained evidence.
 
 ## Database adoption safety

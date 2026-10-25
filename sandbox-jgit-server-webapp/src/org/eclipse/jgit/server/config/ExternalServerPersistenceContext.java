@@ -101,6 +101,11 @@ final class ExternalServerPersistenceContext implements ServerPersistenceContext
 	}
 
 	@Override
+	public org.eclipse.jgit.server.history.SandboxFileHistory fileHistory() {
+		return new org.eclipse.jgit.server.history.ReleasedSandboxFileHistory(owner.getSessionFactory(), repositories);
+	}
+
+	@Override
 	public void close() {
 		RuntimeException failure= null;
 		try {
