@@ -145,7 +145,7 @@ public class JGitServerApplication {
 		context.addServlet(new ServletHolder("repos", new RepositoryResource(repositories)), "/repos/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("search", new NativeSearchResource(sessionFactory, history, persistenceContext.fileHistory())), "/search/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("analytics", new AnalyticsResource(history, persistenceContext.storageStatistics())), "/analytics/*"); //$NON-NLS-1$ //$NON-NLS-2$
-		context.addServlet(new ServletHolder("admin", new AdminResource(sessionFactory, maintenance)), "/admin/*"); //$NON-NLS-1$ //$NON-NLS-2$
+		context.addServlet(new ServletHolder("admin", new AdminResource(sessionFactory, maintenance, repositories)), "/admin/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		return context;
 	}
 
