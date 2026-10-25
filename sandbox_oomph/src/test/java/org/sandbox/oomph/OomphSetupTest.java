@@ -208,7 +208,8 @@ class OomphSetupTest {
         Files.writeString(temporary.resolve("update.properties"), previous);
         Properties result = runSetupInvocation(temporary, "update", "update-repeat-3-0",
                 () -> {
-                    Files.writeString(temporary.resolve("update.properties"), "result=restart\nsource=current\n");
+                    Files.writeString(temporary.resolve("update.properties"),
+                            "result=restart\nsource=current\ndeferredStartup.completed=true\n");
                     Files.writeString(temporary.resolve("update-repeat-3-0.log"), "Restart requested\n");
                 });
         assertEquals("restart", result.getProperty("result"));
@@ -280,7 +281,7 @@ class OomphSetupTest {
     @Test
     void nonErrorWorkbenchMessagesDoNotInvalidateSetup(@TempDir Path temporary) throws Exception {
         Properties result = runSetupInvocation(temporary, "fresh", "fresh-0", () -> {
-            Files.writeString(temporary.resolve("fresh.properties"), "result=passed\n");
+            Files.writeString(temporary.resolve("fresh.properties"), "result=passed\ndeferredStartup.completed=true\n");
             Files.writeString(temporary.resolve("fresh-0.log"),
                     "!ENTRY org.eclipse.ui 2 0 2026-10-05 17:56:53.701\n"
                     + "!MESSAGE Ordinary warning\n"
@@ -364,6 +365,34 @@ class OomphSetupTest {
     @FunctionalInterface
     private interface NativeLaunch { void run() throws Exception; }
 
+    @Test
+    void passAndRestartRequireCompletedDeferredStartup(@TempDir Path temporary) throws Exception {
+        for (String status : List.of("passed", "restart")) {
+            for (String completion : List.of("", "deferredStartup.completed=false\n")) {
+                Path run = Files.createTempDirectory(temporary, "startup-");
+                var failure = assertThrows(AssertionError.class,
+                        () -> runSetupInvocation(run, "fresh", "fresh-0", () -> {
+                            Files.writeString(run.resolve("fresh.properties"), "result=" + status + "\n" + completion);
+                            Files.writeString(run.resolve("fresh-0.log"), "Clean workbench log\n");
+                        }));
+                assertTrue(failure.getMessage().contains("deferred startup"), failure.getMessage());
+            }
+        }
+    }
+
+    @Test
+    void completedDeferredStartupPermitsPassAndRestart(@TempDir Path temporary) throws Exception {
+        for (String status : List.of("passed", "restart")) {
+            Path run = Files.createTempDirectory(temporary, "startup-");
+            Properties result = runSetupInvocation(run, "fresh", "fresh-0", () -> {
+                Files.writeString(run.resolve("fresh.properties"),
+                        "result=" + status + "\ndeferredStartup.completed=true\n");
+                Files.writeString(run.resolve("fresh-0.log"), "Clean workbench log\n");
+            });
+            assertEquals(status, result.getProperty("result"));
+        }
+    }
+
     private static Properties runSetupInvocation(Path run, String phase, String invocation, NativeLaunch launch)
             throws Exception {
         Path receipt = run.resolve(phase + ".properties");
@@ -376,6 +405,8 @@ class OomphSetupTest {
         verifyWorkbenchLog(run.resolve(invocation + ".log"));
         Properties result = new Properties();
         try (var in = Files.newInputStream(receipt)) { result.load(in); }
+        assertEquals("true", result.getProperty("deferredStartup.completed"),
+                "Native setup must complete deferred startup before reporting pass or restart");
         return result;
     }
 
@@ -462,6 +493,8 @@ class OomphSetupTest {
             jar.putNextEntry(new JarEntry("plugin.xml"));
             jar.write(("<plugin><extension point=\"org.eclipse.core.runtime.applications\" id=\"run\">"
                     + "<application><run class=\"org.sandbox.oomph.probe.SetupProbe\"/></application>"
+                    + "</extension><extension point=\"org.eclipse.oomph.ui.deferredEarlyStart\">"
+                    + "<startup class=\"org.sandbox.oomph.probe.SetupProbe$DeferredStartupProbe\"/>"
                     + "</extension></plugin>").getBytes(java.nio.charset.StandardCharsets.UTF_8));
             jar.closeEntry();
             try (var files = Files.walk(classes)) {
