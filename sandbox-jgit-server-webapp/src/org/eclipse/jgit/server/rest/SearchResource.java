@@ -22,7 +22,10 @@ import java.util.logging.Logger;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
-import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
+import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
+import org.eclipse.jgit.server.history.SandboxHistorySearch;
+import org.eclipse.jgit.server.history.SandboxHistorySearch.CommitHit;
+import org.eclipse.jgit.server.history.SandboxHistorySearch.PathHit;
 import org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex;
 import org.eclipse.jgit.storage.hibernate.search.EmbeddingService;
 import org.eclipse.jgit.storage.hibernate.service.ApiChangeEntry;
@@ -71,6 +74,8 @@ public class SearchResource extends HttpServlet {
 
 	private final EmbeddingService embeddingService;
 
+	private final SandboxHistorySearch history;
+
 	private final Gson gson = new Gson();
 
 	private static final int MAX_QUERY_LENGTH = 1000;
@@ -86,7 +91,13 @@ public class SearchResource extends HttpServlet {
 	 *            the session factory provider
 	 */
 	public SearchResource(HibernateSessionFactoryProvider provider) {
+		this(provider, new CopiedSandboxHistorySearch(provider.getSessionFactory()));
+	}
+
+	/** Selects the history adapter independently of the transitional Java queries. */
+	public SearchResource(HibernateSessionFactoryProvider provider, SandboxHistorySearch history) {
 		this.provider = provider;
+		this.history = java.util.Objects.requireNonNull(history);
 		this.embeddingService = new EmbeddingService();
 	}
 
@@ -167,10 +178,10 @@ public class SearchResource extends HttpServlet {
 			queryService.setEmbeddingService(embeddingService);
 
 			if (pathInfo.startsWith("/commits")) { //$NON-NLS-1$
-				handleCommitSearch(queryService, repo, query, offset,
+				handleCommitSearch(repo, query, offset,
 						limit, resp);
 			} else if (pathInfo.startsWith("/paths")) { //$NON-NLS-1$
-				handlePathSearch(queryService, repo, query, offset,
+				handlePathSearch(repo, query, offset,
 						limit, resp);
 			} else if (pathInfo.startsWith("/types")) { //$NON-NLS-1$
 				String module = req.getParameter("module"); //$NON-NLS-1$
@@ -274,7 +285,7 @@ public class SearchResource extends HttpServlet {
 				handleTestCoverageProxy(queryService, repo, resp);
 			} else {
 				// Default: search commits
-				handleCommitSearch(queryService, repo, query, offset,
+				handleCommitSearch(repo, query, offset,
 						limit, resp);
 			}
 		} catch (RuntimeException | IOException e) {
@@ -286,11 +297,9 @@ public class SearchResource extends HttpServlet {
 		}
 	}
 
-	private void handleCommitSearch(GitDatabaseQueryService queryService,
-			String repo, String query, int offset, int limit,
+	private void handleCommitSearch(String repo, String query, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<GitCommitIndex> results = queryService
-				.searchCommitMessages(repo, query, offset, limit);
+		List<CommitHit> results = history.searchMessages(repo, query, offset, limit);
 
 		JsonObject response = new JsonObject();
 		response.addProperty("query", query); //$NON-NLS-1$
@@ -298,12 +307,12 @@ public class SearchResource extends HttpServlet {
 		response.addProperty("totalResults", results.size()); //$NON-NLS-1$
 
 		JsonArray items = new JsonArray();
-		for (GitCommitIndex ci : results) {
+		for (var ci : results) {
 			JsonObject item = new JsonObject();
-			item.addProperty("objectId", ci.getObjectId()); //$NON-NLS-1$
-			item.addProperty("message", ci.getCommitMessage()); //$NON-NLS-1$
-			item.addProperty("author", ci.getAuthorName()); //$NON-NLS-1$
-			item.addProperty("authorEmail", ci.getAuthorEmail()); //$NON-NLS-1$
+			item.addProperty("objectId", ci.objectId()); //$NON-NLS-1$
+			item.addProperty("message", ci.message()); //$NON-NLS-1$
+			item.addProperty("author", ci.author()); //$NON-NLS-1$
+			item.addProperty("authorEmail", ci.authorEmail()); //$NON-NLS-1$
 			items.add(item);
 		}
 		response.add("results", items); //$NON-NLS-1$
@@ -314,11 +323,9 @@ public class SearchResource extends HttpServlet {
 		}
 	}
 
-	private void handlePathSearch(GitDatabaseQueryService queryService,
-			String repo, String query, int offset, int limit,
+	private void handlePathSearch(String repo, String query, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<GitCommitIndex> results = queryService
-				.searchByChangedPath(repo, query, offset, limit);
+		List<PathHit> results = history.searchChangedPaths(repo, query, offset, limit);
 
 		JsonObject response = new JsonObject();
 		response.addProperty("query", query); //$NON-NLS-1$
@@ -326,11 +333,11 @@ public class SearchResource extends HttpServlet {
 		response.addProperty("totalResults", results.size()); //$NON-NLS-1$
 
 		JsonArray items = new JsonArray();
-		for (GitCommitIndex ci : results) {
+		for (var ci : results) {
 			JsonObject item = new JsonObject();
-			item.addProperty("objectId", ci.getObjectId()); //$NON-NLS-1$
-			item.addProperty("message", ci.getCommitMessage()); //$NON-NLS-1$
-			item.addProperty("changedPaths", ci.getChangedPaths()); //$NON-NLS-1$
+			item.addProperty("objectId", ci.objectId()); //$NON-NLS-1$
+			item.addProperty("message", ci.message()); //$NON-NLS-1$
+			item.addProperty("changedPaths", ci.changedPaths()); //$NON-NLS-1$
 			items.add(item);
 		}
 		response.add("results", items); //$NON-NLS-1$

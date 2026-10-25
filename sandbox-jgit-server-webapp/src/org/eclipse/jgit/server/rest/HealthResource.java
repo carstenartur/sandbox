@@ -18,11 +18,10 @@ import java.io.PrintWriter;
 import java.util.Objects;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
-import org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex;
+import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
+import org.eclipse.jgit.server.history.SandboxHistorySearch;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.search.mapper.orm.Search;
-import org.hibernate.search.mapper.orm.session.SearchSession;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,6 +41,8 @@ public class HealthResource extends HttpServlet {
 
 	private final SessionFactory sessionFactory;
 
+	private final SandboxHistorySearch history;
+
 	/**
 	 * Create a health check endpoint from the application-owned native factory.
 	 *
@@ -49,7 +50,13 @@ public class HealthResource extends HttpServlet {
 	 *            the native session factory for database and search health checks
 	 */
 	public HealthResource(SessionFactory sessionFactory) {
+		this(sessionFactory, new CopiedSandboxHistorySearch(sessionFactory));
+	}
+
+	/** Checks the selected database and history projection. */
+	public HealthResource(SessionFactory sessionFactory, SandboxHistorySearch history) {
 		this.sessionFactory= Objects.requireNonNull(sessionFactory, "sessionFactory"); //$NON-NLS-1$
+		this.history= Objects.requireNonNull(history);
 	}
 
 	/**
@@ -85,11 +92,8 @@ public class HealthResource extends HttpServlet {
 		}
 
 		// Check search backend
-		try (Session session = sessionFactory.openSession()) {
-			SearchSession searchSession = Search.session(session);
-			searchSession.search(GitCommitIndex.class)
-					.where(f -> f.matchAll())
-					.fetch(0, 0);
+		try {
+			history.checkSearch();
 			searchOk = true;
 		} catch (Exception e) {
 			searchError = e.getMessage();

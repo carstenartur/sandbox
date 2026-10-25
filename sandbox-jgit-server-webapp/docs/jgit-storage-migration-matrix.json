@@ -48,7 +48,7 @@
         "ExternalHibernateRepositoryServiceTest.closeDoesNotHoldLifecycleLockWhileClosingStorage",
         "ExternalRepositoryLifecycleH2Test.normalizesIsolatesAndReopensRepositories",
         "PR #1362 / commit 0804ae99532cbb9bfa551fbb6870c053c1938e5d",
-        "jgit-storage-hibernate 0.10.0 Real Consumer Compatibility run 31357180764: Candidate — sandbox passed against immutable Sandbox commit 5f9e286566da8affcaccd69cc38062014c369bc5 and resolved the exact candidate"
+        "jgit-storage-hibernate 0.10.0 Real Consumer Compatibility run 31357180764: Candidate \u2014 sandbox passed against immutable Sandbox commit 5f9e286566da8affcaccd69cc38062014c369bc5 and resolved the exact candidate"
       ]
     },
     {
@@ -136,47 +136,59 @@
         "SandboxRepositoryServiceBoundaryTest.exposesPublicJGitRepositoryContract",
         "Core 0.10.0 DefaultHibernateRepositoryFactory serializes deletion and rejects open handles",
         "Deletion policy evidence commit 970fcb81fe46aaa8c535fa29dc962c901f52b640",
-        "jgit-storage-hibernate 0.10.0 Real Consumer Compatibility run 31357180764: Candidate — sandbox passed against immutable Sandbox commit 5f9e286566da8affcaccd69cc38062014c369bc5 and resolved the exact candidate"
+        "jgit-storage-hibernate 0.10.0 Real Consumer Compatibility run 31357180764: Candidate \u2014 sandbox passed against immutable Sandbox commit 5f9e286566da8affcaccd69cc38062014c369bc5 and resolved the exact candidate"
       ]
     },
     {
       "id": "commit-history-search",
-      "currentOwner": "sandbox-jgit-storage-hibernate",
+      "currentOwner": "sandbox-jgit-server-webapp",
       "currentEntrypoints": [
-        "org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService",
+        "org.eclipse.jgit.server.history.SandboxHistorySearch",
+        "org.eclipse.jgit.server.history.ReleasedSandboxHistorySearch",
         "org.eclipse.jgit.server.rest.SearchResource"
       ],
-      "currentBackend": "copied history entities and Hibernate Search queries",
+      "currentBackend": "Released Search 0.11.5 in the guarded external context; copied adapter remains selected by normal startup until ingestion, Java and schema cutover",
       "targetOwner": "jgit-storage-hibernate-search",
       "targetApi": [
         "GitHistorySearchService",
         "CommitHistoryQuery"
       ],
-      "migrationStatus": "not-migrated",
+      "migrationStatus": "released-query-adapter-verified-runtime-cutover-pending",
       "requiredEvidence": [
         "message and full-text search",
         "bounded pagination",
         "queries remain usable after the JGit Repository handle closes"
+      ],
+      "verifiedEvidence": [
+        "ReleasedHistorySearchH2Test.searchesMessagesBeforePagingAndAfterRepositoryClose",
+        "ReleasedHistorySearchH2Test.keepsLiteralQueryInputAndCamelCaseMessageAnalysis",
+        "ReleasedHistorySearchH2Test.groupsAuthorsByNameAndEmailAcrossTheWholeHistory",
+        "ReleasedHistorySearchH2Test.servesReleasedSearchHealthAndAuthorsThroughBothRestPrefixes"
       ]
     },
     {
       "id": "changed-path-search",
-      "currentOwner": "sandbox-jgit-storage-hibernate",
+      "currentOwner": "sandbox-jgit-server-webapp",
       "currentEntrypoints": [
-        "org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService",
+        "org.eclipse.jgit.server.history.SandboxHistorySearch",
+        "org.eclipse.jgit.server.history.ReleasedSandboxHistorySearch",
         "org.eclipse.jgit.server.rest.SearchResource"
       ],
-      "currentBackend": "copied changed-path projection",
+      "currentBackend": "Released Search 0.11.5 in the guarded external context; copied adapter remains selected by normal startup until ingestion, Java and schema cutover",
       "targetOwner": "jgit-storage-hibernate-search",
       "targetApi": [
         "GitHistorySearchService",
         "CommitHistoryQuery"
       ],
-      "migrationStatus": "not-migrated",
+      "migrationStatus": "released-query-adapter-verified-runtime-cutover-pending",
       "requiredEvidence": [
         "root commit paths",
         "first-parent merge semantics",
         "added, modified and deleted paths"
+      ],
+      "verifiedEvidence": [
+        "ReleasedHistorySearchH2Test.searchesOnlyFirstParentChangesIncludingRootAndDeletion",
+        "ReleasedHistorySearchH2Test.servesReleasedSearchHealthAndAuthorsThroughBothRestPrefixes"
       ]
     },
     {

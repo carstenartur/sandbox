@@ -11,14 +11,20 @@
 package org.eclipse.jgit.server.config;
 
 import java.util.Objects;
+import java.util.stream.Stream;
 import java.util.Properties;
 
 import org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.hibernate.SessionFactory;
+import org.eclipse.jgit.server.history.SandboxHistorySearch;
+import org.eclipse.jgit.server.history.ReleasedSandboxHistorySearch;
 import org.sandbox.jgit.storage.integration.SandboxProjectionEntities;
 
 import io.github.carstenartur.jgit.storage.hibernate.DefaultHibernateRepositoryFactory;
+import io.github.carstenartur.jgit.storage.hibernate.search.SearchEntities;
+import io.github.carstenartur.jgit.storage.hibernate.search.analysis.GitTextAnalysis;
+import org.eclipse.jgit.server.history.SandboxHistoryAnalysisConfigurer;
 import io.github.carstenartur.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 
 /**
@@ -38,17 +44,29 @@ final class ExternalServerPersistenceContext implements ServerPersistenceContext
 
 	private final HibernateSessionFactoryProvider owner;
 	private final SandboxRepositoryService repositories;
+	private final SandboxHistorySearch history;
 
 	ExternalServerPersistenceContext(Properties properties) {
 		this(new HibernateSessionFactoryProvider(
 				serverProperties(Objects.requireNonNull(properties, "properties")), //$NON-NLS-1$
-				SandboxProjectionEntities.annotatedClasses()));
+				Stream.concat(SearchEntities.annotatedClasses().stream(),
+						SandboxProjectionEntities.annotatedClasses().stream()).toList()));
 	}
 
 	ExternalServerPersistenceContext(HibernateSessionFactoryProvider owner) {
 		this.owner= Objects.requireNonNull(owner, "owner"); //$NON-NLS-1$
-		this.repositories= new ExternalHibernateRepositoryService(
-				new DefaultHibernateRepositoryFactory(owner.getSessionFactory()));
+		try {
+			this.history= new ReleasedSandboxHistorySearch(owner.getSessionFactory());
+			this.repositories= new ExternalHibernateRepositoryService(
+					new DefaultHibernateRepositoryFactory(owner.getSessionFactory()));
+		} catch (RuntimeException | Error failure) {
+			try {
+				owner.close();
+			} catch (RuntimeException closeFailure) {
+				failure.addSuppressed(closeFailure);
+			}
+			throw failure;
+		}
 	}
 
 	@Override
@@ -59,6 +77,11 @@ final class ExternalServerPersistenceContext implements ServerPersistenceContext
 	@Override
 	public SandboxRepositoryService repositoryService() {
 		return repositories;
+	}
+
+	@Override
+	public SandboxHistorySearch historySearch() {
+		return history;
 	}
 
 	@Override
@@ -101,8 +124,15 @@ final class ExternalServerPersistenceContext implements ServerPersistenceContext
 				copy.putIfAbsent("hibernate.search.backend.directory.root", root); //$NON-NLS-1$
 			}
 		}
-		copy.putIfAbsent("hibernate.search.backend.analysis.configurer", //$NON-NLS-1$
-				"class:org.eclipse.jgit.storage.hibernate.search.JavaSourceAnalysisConfigurer"); //$NON-NLS-1$
+		if (!copy.containsKey(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY)
+				&& !copy.containsKey(GitTextAnalysis.PROFILE_ID_PROPERTY)) {
+			GitTextAnalysis.configure(copy, SandboxHistoryAnalysisConfigurer.class, "sandbox-commit-message-v1"); //$NON-NLS-1$
+		} else {
+			// An explicit profile without a configurer retains the library's neutral
+			// default message analysis; these named analyzers serve only legacy Java.
+			copy.putIfAbsent(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY,
+					"class:org.eclipse.jgit.storage.hibernate.search.JavaSourceAnalysisConfigurer"); //$NON-NLS-1$
+		}
 
 		copy.putIfAbsent("hibernate.connection.provider_class", //$NON-NLS-1$
 				"org.hibernate.hikaricp.internal.HikariCPConnectionProvider"); //$NON-NLS-1$

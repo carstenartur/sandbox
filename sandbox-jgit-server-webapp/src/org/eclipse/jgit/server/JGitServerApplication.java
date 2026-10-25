@@ -32,6 +32,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.server.config.HibernateConfig;
 import org.eclipse.jgit.server.config.RepositoryManagerConfig;
 import org.eclipse.jgit.server.config.ServerPersistenceContext;
+import org.eclipse.jgit.server.history.SandboxHistorySearch;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
 import org.eclipse.jgit.server.rest.AdminResource;
@@ -96,9 +97,9 @@ public class JGitServerApplication {
 			server.addConnector(gitConnector);
 
 			ContextHandlerCollection contexts= new ContextHandlerCollection();
-			contexts.addHandler(createRestContext("/api", corsOrigins, sessionFactory, repositories)); //$NON-NLS-1$
+			contexts.addHandler(createRestContext("/api", corsOrigins, sessionFactory, repositories, persistenceContext.historySearch())); //$NON-NLS-1$
 			if (exposeVersionedApi) {
-				contexts.addHandler(createRestContext("/api/v1", corsOrigins, sessionFactory, repositories)); //$NON-NLS-1$
+				contexts.addHandler(createRestContext("/api/v1", corsOrigins, sessionFactory, repositories, persistenceContext.historySearch())); //$NON-NLS-1$
 			}
 			contexts.addHandler(createGitContext());
 			GzipHandler gzip= new GzipHandler();
@@ -129,7 +130,7 @@ public class JGitServerApplication {
 	}
 
 	private ServletContextHandler createRestContext(String contextPath, String corsOrigins,
-			SessionFactory sessionFactory, SandboxRepositoryService repositories) {
+			SessionFactory sessionFactory, SandboxRepositoryService repositories, SandboxHistorySearch history) {
 		ServletContextHandler context= new ServletContextHandler(ServletContextHandler.SESSIONS);
 		context.setContextPath(contextPath);
 		context.setVirtualHosts(List.of("@rest")); //$NON-NLS-1$
@@ -138,10 +139,10 @@ public class JGitServerApplication {
 					EnumSet.allOf(DispatcherType.class));
 		}
 
-		context.addServlet(new ServletHolder("health", new HealthResource(sessionFactory)), "/health"); //$NON-NLS-1$ //$NON-NLS-2$
+		context.addServlet(new ServletHolder("health", new HealthResource(sessionFactory, history)), "/health"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("repos", new RepositoryResource(repositories)), "/repos/*"); //$NON-NLS-1$ //$NON-NLS-2$
-		context.addServlet(new ServletHolder("search", new NativeSearchResource(sessionFactory)), "/search/*"); //$NON-NLS-1$ //$NON-NLS-2$
-		context.addServlet(new ServletHolder("analytics", new AnalyticsResource(sessionFactory)), "/analytics/*"); //$NON-NLS-1$ //$NON-NLS-2$
+		context.addServlet(new ServletHolder("search", new NativeSearchResource(sessionFactory, history)), "/search/*"); //$NON-NLS-1$ //$NON-NLS-2$
+		context.addServlet(new ServletHolder("analytics", new AnalyticsResource(sessionFactory, history)), "/analytics/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("admin", new AdminResource(sessionFactory)), "/admin/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		return context;
 	}
