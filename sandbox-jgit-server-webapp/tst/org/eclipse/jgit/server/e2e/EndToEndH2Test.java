@@ -20,6 +20,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.net.HttpURLConnection;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Properties;
@@ -124,7 +125,7 @@ public class EndToEndH2Test {
 		try (Git git = Git.cloneRepository().setURI(gitBaseUrl + "/git/e2e-test.git") //$NON-NLS-1$
 				.setDirectory(localDir).call()) {
 			File testFile = new File(localDir, "README.md"); //$NON-NLS-1$
-			Files.writeString(testFile.toPath(), "# E2E Test\nHello from Testcontainers!"); //$NON-NLS-1$
+			Files.writeString(testFile.toPath(), "# E2E Test\nHello from Testcontainers!", StandardCharsets.UTF_8); //$NON-NLS-1$
 			git.add().addFilepattern("README.md").call(); //$NON-NLS-1$
 			RevCommit commit = git.commit().setMessage("Initial e2e commit: add README") //$NON-NLS-1$
 					.setAuthor("E2E Test", "e2e@test.org").call(); //$NON-NLS-1$ //$NON-NLS-2$
