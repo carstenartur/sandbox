@@ -33,6 +33,7 @@ import org.eclipse.jgit.server.config.HibernateConfig;
 import org.eclipse.jgit.server.config.RepositoryManagerConfig;
 import org.eclipse.jgit.server.config.ServerPersistenceContext;
 import org.eclipse.jgit.server.history.SandboxHistorySearch;
+import org.eclipse.jgit.server.history.SandboxHistoryMaintenance;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
 import org.eclipse.jgit.server.rest.AdminResource;
@@ -97,9 +98,9 @@ public class JGitServerApplication {
 			server.addConnector(gitConnector);
 
 			ContextHandlerCollection contexts= new ContextHandlerCollection();
-			contexts.addHandler(createRestContext("/api", corsOrigins, sessionFactory, repositories, persistenceContext.historySearch())); //$NON-NLS-1$
+			contexts.addHandler(createRestContext("/api", corsOrigins, sessionFactory, repositories, persistenceContext.historySearch(), persistenceContext.historyMaintenance())); //$NON-NLS-1$
 			if (exposeVersionedApi) {
-				contexts.addHandler(createRestContext("/api/v1", corsOrigins, sessionFactory, repositories, persistenceContext.historySearch())); //$NON-NLS-1$
+				contexts.addHandler(createRestContext("/api/v1", corsOrigins, sessionFactory, repositories, persistenceContext.historySearch(), persistenceContext.historyMaintenance())); //$NON-NLS-1$
 			}
 			contexts.addHandler(createGitContext());
 			GzipHandler gzip= new GzipHandler();
@@ -130,7 +131,8 @@ public class JGitServerApplication {
 	}
 
 	private ServletContextHandler createRestContext(String contextPath, String corsOrigins,
-			SessionFactory sessionFactory, SandboxRepositoryService repositories, SandboxHistorySearch history) {
+			SessionFactory sessionFactory, SandboxRepositoryService repositories, SandboxHistorySearch history,
+			SandboxHistoryMaintenance maintenance) {
 		ServletContextHandler context= new ServletContextHandler(ServletContextHandler.SESSIONS);
 		context.setContextPath(contextPath);
 		context.setVirtualHosts(List.of("@rest")); //$NON-NLS-1$
@@ -139,11 +141,11 @@ public class JGitServerApplication {
 					EnumSet.allOf(DispatcherType.class));
 		}
 
-		context.addServlet(new ServletHolder("health", new HealthResource(sessionFactory, history)), "/health"); //$NON-NLS-1$ //$NON-NLS-2$
+		context.addServlet(new ServletHolder("health", new HealthResource(sessionFactory, history, maintenance)), "/health"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("repos", new RepositoryResource(repositories)), "/repos/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("search", new NativeSearchResource(sessionFactory, history)), "/search/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("analytics", new AnalyticsResource(sessionFactory, history)), "/analytics/*"); //$NON-NLS-1$ //$NON-NLS-2$
-		context.addServlet(new ServletHolder("admin", new AdminResource(sessionFactory)), "/admin/*"); //$NON-NLS-1$ //$NON-NLS-2$
+		context.addServlet(new ServletHolder("admin", new AdminResource(sessionFactory, maintenance)), "/admin/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		return context;
 	}
 
@@ -151,7 +153,7 @@ public class JGitServerApplication {
 		ServletContextHandler context= new ServletContextHandler(ServletContextHandler.SESSIONS);
 		context.setContextPath("/git"); //$NON-NLS-1$
 		context.setVirtualHosts(List.of("@git")); //$NON-NLS-1$
-		context.addServlet(new ServletHolder(createGitServlet(repositoryResolver)), "/*"); //$NON-NLS-1$
+		context.addServlet(new ServletHolder(createGitServlet(repositoryResolver, persistenceContext.historyMaintenance())), "/*"); //$NON-NLS-1$
 		return context;
 	}
 
@@ -248,9 +250,11 @@ public class JGitServerApplication {
 		return defaultValue;
 	}
 
-	private static ReceivePackFactory<HttpServletRequest> createReceivePackFactory() {
+	private static ReceivePackFactory<HttpServletRequest> createReceivePackFactory(SandboxHistoryMaintenance maintenance) {
 		return (request, repository) -> {
 			ReceivePack receivePack= new ReceivePack(repository);
+			String repositoryName = HibernateRepositoryResolver.repositoryName(request);
+			receivePack.setPostReceiveHook((pack, commands) -> maintenance.published(repositoryName, repository, commands));
 			long maxCommandBytes= 50L << 20;
 			String configured= System.getenv("JGIT_RECEIVE_MAX_COMMAND_BYTES"); //$NON-NLS-1$
 			if (configured != null && !configured.isEmpty()) {
@@ -267,10 +271,10 @@ public class JGitServerApplication {
 		};
 	}
 
-	private static GitServlet createGitServlet(HibernateRepositoryResolver resolver) {
+	private static GitServlet createGitServlet(HibernateRepositoryResolver resolver, SandboxHistoryMaintenance maintenance) {
 		GitServlet gitServlet= new GitServlet();
 		gitServlet.setRepositoryResolver(resolver);
-		gitServlet.setReceivePackFactory(createReceivePackFactory());
+		gitServlet.setReceivePackFactory(createReceivePackFactory(maintenance));
 		gitServlet.setReceivePackErrorHandler((request, response, receivePack) -> {
 			try {
 				receivePack.receive();

@@ -22,7 +22,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
-import org.eclipse.jgit.storage.hibernate.service.IndexMigrationService;
+import org.eclipse.jgit.server.history.SandboxHistoryMaintenance;
 import org.hibernate.SessionFactory;
 
 import jakarta.servlet.http.HttpServlet;
@@ -35,10 +35,17 @@ public class AdminResource extends HttpServlet {
 	private static final long serialVersionUID = 1L;
 	private static final Logger LOG = Logger.getLogger(AdminResource.class.getName());
 	private final SessionFactory sessionFactory;
+	private final SandboxHistoryMaintenance maintenance;
 
 	/** Creates an admin endpoint from the application-owned native factory. */
 	public AdminResource(SessionFactory sessionFactory) {
+		this(sessionFactory, SandboxHistoryMaintenance.NONE);
+	}
+
+	/** Uses the selected context's writer coordination when refreshing projections. */
+	public AdminResource(SessionFactory sessionFactory, SandboxHistoryMaintenance maintenance) {
 		this.sessionFactory= Objects.requireNonNull(sessionFactory, "sessionFactory"); //$NON-NLS-1$
+		this.maintenance= Objects.requireNonNull(maintenance);
 	}
 
 	/** @deprecated application wiring should pass the native {@link SessionFactory}. */
@@ -75,8 +82,7 @@ public class AdminResource extends HttpServlet {
 
 	private void handleReindex(HttpServletResponse resp) throws IOException {
 		try {
-			IndexMigrationService migrationService = new IndexMigrationService(sessionFactory);
-			migrationService.reindexAll();
+			maintenance.refreshIndexes(sessionFactory);
 			resp.setStatus(HttpServletResponse.SC_OK);
 			try (PrintWriter w = resp.getWriter()) {
 				w.write("{\"status\":\"Re-indexing completed\"}"); //$NON-NLS-1$

@@ -28,8 +28,9 @@ jgit-storage-hibernate-benchmarks
 
 The server's released Search adapter qualifies commit/path queries, author counts
 and the health probe against real H2/Lucene projections through both REST prefixes.
-Normal startup, Java analysis and projection ingestion remain separate migration
-slices. The bridge continues to reject Search so server dependencies do not leak
+External-context Smart HTTP ingestion is also exercised through push, restart,
+clone and projection-aware deletion. Normal startup, Java analysis, scalable
+incremental indexing and full-history recovery remain separate migration slices. The bridge continues to reject Search so server dependencies do not leak
 into Eclipse consumers.
 
 The selected Core version is defined by `jgit-storage-hibernate.version` in `sandbox-jgit-storage-hibernate/pom.xml`. Documentation must not be treated as the version source of truth.

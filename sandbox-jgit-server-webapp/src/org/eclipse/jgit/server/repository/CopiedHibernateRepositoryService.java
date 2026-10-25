@@ -52,7 +52,7 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 
 	@Override
 	public Repository openOrCreate(String name) throws IOException {
-		return repository(name);
+		return repository(normalize(name));
 	}
 
 	@Override
@@ -83,8 +83,7 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 		repositories.clear();
 	}
 
-	private HibernateRepository repository(String name) throws IOException {
-		String normalized= normalize(name);
+	private HibernateRepository repository(String normalized) throws IOException {
 		HibernateRepository existing= repositories.get(normalized);
 		if (existing != null) {
 			return existing;
@@ -103,16 +102,6 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 	}
 
 	private static String normalize(String name) {
-		String normalized= Objects.requireNonNull(name, "name").strip(); //$NON-NLS-1$
-		if (normalized.startsWith("/")) { //$NON-NLS-1$
-			normalized= normalized.substring(1);
-		}
-		if (normalized.endsWith(".git")) { //$NON-NLS-1$
-			normalized= normalized.substring(0, normalized.length() - 4);
-		}
-		if (normalized.isEmpty()) {
-			throw new IllegalArgumentException("Repository name must not be blank."); //$NON-NLS-1$
-		}
-		return normalized;
+		return SandboxRepositoryNames.normalize(name);
 	}
 }
