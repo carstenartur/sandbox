@@ -105,6 +105,18 @@ public class ReleasedHistorySearchH2Test {
 	}
 
 	@Test
+	public void normalizesRawTransportNamesOnceForEveryHistoryView() throws Exception {
+		String raw = "transport.git.git";
+		ObjectId id = commit(raw, "Needle history", "Author", "author@example.test", Map.of("needle.txt", "body"));
+		assertEquals(List.of(id.name()), history.searchMessages(raw, "needle", 0, 10).stream().map(SandboxHistorySearch.CommitHit::objectId).toList());
+		assertEquals(List.of(id.name()), history.searchChangedPaths(raw, "needle", 0, 10).stream().map(SandboxHistorySearch.PathHit::objectId).toList());
+		assertEquals(List.of(new AuthorCount("Author", "author@example.test", 1)), history.authors(raw));
+		assertTrue(history.searchMessages("transport.git", "needle", 0, 10).isEmpty());
+		assertTrue(history.searchChangedPaths("transport.git", "needle", 0, 10).isEmpty());
+		assertTrue(history.authors("transport.git").isEmpty());
+	}
+
+	@Test
 	public void keepsLiteralQueryInputAndCamelCaseMessageAnalysis() throws Exception {
 		ObjectId id = commit(repo, "StringBuilder -needle", "A", "a@example.org", Map.of());
 		assertEquals(List.of(id.name()), history.searchMessages(repo, "builder", 0, 10)
@@ -211,7 +223,7 @@ public class ReleasedHistorySearchH2Test {
 			id = inserter.insert(commit);
 			inserter.flush();
 		}
-		new CommitIndexer(context.sessionFactory(), repositoryName).indexCommit(repository, id);
+		new CommitIndexer(context.sessionFactory(), org.eclipse.jgit.server.repository.SandboxRepositoryNames.normalize(repositoryName)).indexCommit(repository, id);
 		return id;
 	}
 }

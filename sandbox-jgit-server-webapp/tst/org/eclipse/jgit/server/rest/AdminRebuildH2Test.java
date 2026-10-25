@@ -102,7 +102,7 @@ public class AdminRebuildH2Test {
             assertEquals(1, body.get("indexedCommits").getAsLong());
             assertEquals(200, get(client, base + prefix + "/health").statusCode());
           }
-          assertEquals(original.name(), history.searchMessages("example.git", "needle", 0, 10).getFirst().objectId());
+          assertEquals(original.name(), history.searchMessages("example.git.git", "needle", 0, 10).getFirst().objectId());
           assertFalse(repositories.isOpen("example.git.git"));
           assertThrows(java.io.FileNotFoundException.class, () -> repositories.withExistingRepository("missing", ignored -> null));
         } finally { server.stop(); }

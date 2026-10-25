@@ -30,7 +30,7 @@ import io.github.carstenartur.jgit.storage.hibernate.search.analysis.GitTextAnal
 import io.github.carstenartur.jgit.storage.hibernate.search.service.GitHistorySearchService;
 import io.github.carstenartur.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 
-/** Integration contracts for the prepared external-Core persistence context. */
+/** Integration contracts for the default released persistence context. */
 public class ExternalServerPersistenceContextTest {
 
 	private static final AtomicInteger DATABASE_COUNTER= new AtomicInteger();
@@ -46,8 +46,8 @@ public class ExternalServerPersistenceContextTest {
 			try (ServerPersistenceContext context= new ExternalServerPersistenceContext(properties)) {
 				assertEquals("neutral-standard-v1", context.sessionFactory().getProperties()
 						.get(GitTextAnalysis.PROFILE_ID_PROPERTY));
-				assertEquals("class:org.eclipse.jgit.storage.hibernate.search.JavaSourceAnalysisConfigurer",
-						context.sessionFactory().getProperties().get(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY));
+				assertEquals(customConfigurer ? "class:org.eclipse.jgit.server.history.SandboxHistoryAnalysisConfigurer" : null,
+                        context.sessionFactory().getProperties().get(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY));
 				context.historySearch().checkSearch();
 			}
 		}
@@ -65,7 +65,7 @@ public class ExternalServerPersistenceContextTest {
 	}
 
 	@Test
-	public void registersReleasedCoreAndOnlyCompatibleSandboxProjections()
+	public void registersOnlyReleasedCoreAndSearchEntities()
 			throws Exception {
 		Properties properties= properties(databaseUrl(), "create-drop"); //$NON-NLS-1$
 		SessionFactory sessionFactory;
@@ -83,9 +83,7 @@ public class ExternalServerPersistenceContextTest {
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitReflogEntity", //$NON-NLS-1$
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitRepositoryLifecycleEntity", //$NON-NLS-1$
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitRepositoryLockEntity", //$NON-NLS-1$
-					"io.github.carstenartur.jgit.storage.hibernate.search.entity.GitCommitIndex", //$NON-NLS-1$
-					"org.eclipse.jgit.storage.hibernate.entity.FilePathHistory", //$NON-NLS-1$
-					"org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex"), //$NON-NLS-1$
+					"io.github.carstenartur.jgit.storage.hibernate.search.entity.GitCommitIndex"), //$NON-NLS-1$
 					entityNames);
 			assertFalse(entityNames.contains(
 					"org.eclipse.jgit.storage.hibernate.entity.GitPackEntity")); //$NON-NLS-1$
@@ -115,10 +113,7 @@ public class ExternalServerPersistenceContextTest {
 		Properties createProperties= properties(url, "update");
 		ReleasedSchemaHistoryTest.core(createProperties).migrate();
 		ReleasedSchemaHistoryTest.search(createProperties).migrate(); //$NON-NLS-1$
-		try (ServerPersistenceContext ignored=
-				new ExternalServerPersistenceContext(createProperties)) {
-			// Disposable transition fixture adds the two remaining copied Java projections.
-		}
+
 
 		Properties validateProperties= properties(url, "validate"); //$NON-NLS-1$
 		try (ServerPersistenceContext context= HibernateConfig
@@ -140,7 +135,7 @@ public class ExternalServerPersistenceContextTest {
 		properties.setProperty("hibernate.search.backend.type", "lucene"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.search.backend.directory.type", "local-heap"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.search.backend.analysis.configurer", //$NON-NLS-1$
-				"class:org.eclipse.jgit.storage.hibernate.search.JavaSourceAnalysisConfigurer"); //$NON-NLS-1$
+				"class:org.eclipse.jgit.server.history.SandboxHistoryAnalysisConfigurer"); //$NON-NLS-1$
 		properties.setProperty("hibernate.cache.use_second_level_cache", "false"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.connection.provider_class", //$NON-NLS-1$
 				"org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl"); //$NON-NLS-1$

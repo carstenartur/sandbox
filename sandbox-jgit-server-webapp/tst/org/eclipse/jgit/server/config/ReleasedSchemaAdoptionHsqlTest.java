@@ -42,14 +42,15 @@ public class ReleasedSchemaAdoptionHsqlTest {
     String url = "jdbc:hsqldb:file:" + temporary.getRoot().toPath().resolve("legacy").toString().replace('\\', '/');
     ObjectId original;
     try {
-      try (var copied = new CopiedServerPersistenceContext(properties(url, "create"))) {
-        var repository = copied.repositoryService().openOrCreate(NAME);
+      var copied = new org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider(properties(url, "create"));
+      try (var legacyRepositories = new org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService(copied)) {
+        var repository = legacyRepositories.openOrCreate(NAME);
         original = commit(repository, "historical needle", null);
-        new org.eclipse.jgit.storage.hibernate.service.CommitIndexer(copied.sessionFactory(), NAME)
+        new org.eclipse.jgit.storage.hibernate.service.CommitIndexer(copied.getSessionFactory(), NAME)
             .indexCommit(repository, original);
-        new org.eclipse.jgit.storage.hibernate.refs.HibernateReflogWriter(copied.sessionFactory(), NAME)
+        new org.eclipse.jgit.storage.hibernate.refs.HibernateReflogWriter(copied.getSessionFactory(), NAME)
             .log(Constants.R_HEADS + "main", ObjectId.zeroId(), original, AUTHOR, "legacy reflog preserved");
-      }
+      } finally { copied.close(); }
       var packs = packChecksums(url);
       var reflogs = rows(url, "SELECT id, version, repository_name, ref_name, old_id, new_id, who_name, who_email, who_when, message FROM git_reflog ORDER BY id");
       var projection = rows(url, "SELECT object_id, commit_message, author_name, author_email, commit_time FROM git_commit_index ORDER BY id");

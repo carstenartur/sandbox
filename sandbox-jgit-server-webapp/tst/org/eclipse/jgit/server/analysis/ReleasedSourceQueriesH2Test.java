@@ -126,6 +126,31 @@ public class ReleasedSourceQueriesH2Test {
     assertEquals(" padded.txt ", search.searchFilePath("example.git.git", "padded", 0, 10).getFirst().filePath());
   }
 
+  @Test public void malformedHistoricalPropertiesCannotHideHealthySourceAndReports() throws Exception {
+    poisonHistory("bad.properties", "brokenpropertyliteral=\\uZZZZ", "brokenpropertyliteral");
+  }
+
+  @Test public void oversizedQualifiedFacetsAndTokensCannotHideHealthySourceAndReports() throws Exception {
+    poisonHistory("README.txt", "p.A\n".repeat(9000) + "oversizedfacetmarker", "oversizedfacetmarker");
+    poisonHistory("huge-token.txt", "q".repeat(40_000), null);
+  }
+
+  private void poisonHistory(String path, String content, String retainedText) throws Exception {
+    String repo = "poison-" + UUID.randomUUID();
+    var git = repositories.openOrCreate(repo);
+    var healthy = ApplicationApiComparisonTest.commit(git, 1, Map.of("Healthy.java", "public class Healthy {}"));
+    var ref = git.updateRef("refs/heads/main"); ref.setNewObjectId(healthy); ref.update();
+    assertEquals(1, search.searchByType(repo, "Healthy", 0, 10).size());
+    var bad = ApplicationApiComparisonTest.commit(git, 2, Map.of("Healthy.java", "public class Healthy {}", path, content), healthy);
+    ref = git.updateRef("refs/heads/main"); ref.setNewObjectId(bad); ref.update();
+    assertEquals(1, search.searchByType(repo, "Healthy", 0, 10).size());
+    var removed = ApplicationApiComparisonTest.commit(git, 3, Map.of("Healthy.java", "public class Healthy {}"), bad);
+    ref = git.updateRef("refs/heads/main"); ref.setNewObjectId(removed); ref.update();
+    assertEquals(1, search.searchByType(repo, "Healthy", 0, 10).size());
+    assertEquals(2, search.getAuthorTypeStatistics(repo).stream().mapToLong(row -> row.count()).sum());
+    if (retainedText != null) assertEquals(path, search.searchSourceContent(repo, retainedText, 0, 10).getFirst().filePath());
+  }
+
   private static final class NoSemanticQueries implements ReleasedSandboxSourceSearch.SemanticQueries {
     @Override public List<AnalyzedFile> semantic(HistoricalSourceIndex index, String query, int limit) throws IOException { throw new AssertionError("Text/report queries must not initialize semantic work"); }
     @Override public List<AnalyzedFile> hybrid(HistoricalSourceIndex index, String query, int limit) throws IOException { throw new AssertionError(); }

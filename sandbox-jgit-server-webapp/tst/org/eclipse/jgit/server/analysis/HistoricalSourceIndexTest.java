@@ -15,6 +15,26 @@ import org.junit.rules.TemporaryFolder;
 public class HistoricalSourceIndexTest {
   @Rule public TemporaryFolder temporary = new TemporaryFolder();
 
+  @Test public void preservesExactWhitespaceFiltersAndPagesOnlyMatchingMetadata() throws Exception {
+    var rows = new java.util.ArrayList<AnalyzedFile>();
+    for (int n = 0; n < 140; n++) {
+      String id = String.format("%03d", n);
+      rows.add(new AnalyzedFile("repo", "commit", id, id + ".java", n >= 138 ? " " : "java",
+          n >= 138 ? " " : "ordinary", "p", "Cache", "class", "public", 1, false, "", "Author", null,
+          Map.of(DECLARED_TYPES, "Cache"), null));
+    }
+    try (var index = HistoricalSourceIndex.build("repo", rows)) {
+      var boost = Map.of(DECLARED_TYPES, 1f);
+      assertEquals(List.of("138", "139"), index.search("repo", "Cache", " ", null, boost, 0, 10).stream().map(AnalyzedFile::blobObjectId).toList());
+      assertEquals(List.of("139"), index.search("repo", "Cache", null, " ", boost, 1, 10).stream().map(AnalyzedFile::blobObjectId).toList());
+      assertTrue(index.search("repo", "Cache", "\t", null, boost, 0, 10).isEmpty());
+      assertTrue(index.search("repo", "Cache", "ordinary", " ", boost, 0, 10).isEmpty());
+      assertTrue(index.search("repo", "Cache", " ", " ", boost, 2, 10).isEmpty());
+      assertTrue(index.search("other", "Cache", " ", " ", boost, 0, 10).isEmpty());
+      assertEquals("000", index.search("repo", "Cache", "", "", boost, 0, 1).getFirst().blobObjectId());
+    }
+  }
+
   @Test public void preservesCanonicalBlobRowsAndFiltersBeforePagingThroughTheReleasedIndex() throws Exception {
     try (var git = new InMemoryRepository(new DfsRepositoryDescription("sources"))) {
       String original = "package p; public class Cache { public void clearCache(){} }";

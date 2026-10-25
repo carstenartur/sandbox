@@ -21,8 +21,6 @@ import java.util.logging.Logger;
 
 import org.eclipse.jgit.server.repository.SandboxRepositoryInfo;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
-import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -44,15 +42,6 @@ public class RepositoryResource extends HttpServlet {
 	/** Creates a resource using the application-owned repository boundary. */
 	public RepositoryResource(SandboxRepositoryService repositories) {
 		this.repositories= repositories;
-	}
-
-	/**
-	 * Compatibility constructor while the application still wires the legacy
-	 * Hibernate provider separately for health, search and analytics.
-	 */
-	@SuppressWarnings("unused")
-	public RepositoryResource(HibernateSessionFactoryProvider provider, HibernateRepositoryResolver resolver) {
-		this(resolver.getRepositoryService());
 	}
 
 	@Override

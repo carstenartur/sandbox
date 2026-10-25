@@ -17,8 +17,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Objects;
 
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
-import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistoryMaintenance;
 import org.hibernate.Session;
@@ -45,16 +43,6 @@ public class HealthResource extends HttpServlet {
 	private final SandboxHistorySearch history;
 	private final SandboxHistoryMaintenance maintenance;
 
-	/**
-	 * Create a health check endpoint from the application-owned native factory.
-	 *
-	 * @param sessionFactory
-	 *            the native session factory for database and search health checks
-	 */
-	public HealthResource(SessionFactory sessionFactory) {
-		this(sessionFactory, new CopiedSandboxHistorySearch(sessionFactory));
-	}
-
 	/** Checks the selected database and history projection. */
 	public HealthResource(SessionFactory sessionFactory, SandboxHistorySearch history) {
 		this(sessionFactory, history, SandboxHistoryMaintenance.NONE);
@@ -65,18 +53,6 @@ public class HealthResource extends HttpServlet {
 		this.sessionFactory= Objects.requireNonNull(sessionFactory, "sessionFactory"); //$NON-NLS-1$
 		this.history= Objects.requireNonNull(history);
 		this.maintenance= Objects.requireNonNull(maintenance);
-	}
-
-	/**
-	 * Create a health check endpoint from the copied compatibility provider.
-	 *
-	 * @param provider
-	 *            the session factory provider for database health checks
-	 * @deprecated application wiring should pass the native {@link SessionFactory}
-	 */
-	@Deprecated(forRemoval = true)
-	public HealthResource(HibernateSessionFactoryProvider provider) {
-		this(Objects.requireNonNull(provider, "provider").getSessionFactory()); //$NON-NLS-1$
 	}
 
 	@Override

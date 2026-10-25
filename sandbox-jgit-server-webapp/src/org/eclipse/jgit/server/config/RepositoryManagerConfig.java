@@ -18,9 +18,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 
 /** Creates configured default repositories through the application boundary. */
 public final class RepositoryManagerConfig {
@@ -43,16 +41,6 @@ public final class RepositoryManagerConfig {
 			} catch (IOException | RuntimeException exception) {
 				LOG.log(Level.WARNING, "Failed to create default repository: " + name, exception); //$NON-NLS-1$
 			}
-		}
-	}
-
-	/**
-	 * Compatibility entry point for standalone provisioning callers. The
-	 * temporary adapter is closed after all repository identities are persisted.
-	 */
-	public static void initDefaultRepositories(HibernateSessionFactoryProvider provider, String repositoryList) {
-		try (CopiedHibernateRepositoryService repositories= new CopiedHibernateRepositoryService(provider)) {
-			initDefaultRepositories(repositories, repositoryList);
 		}
 	}
 

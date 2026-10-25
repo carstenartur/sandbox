@@ -13,6 +13,7 @@ import java.util.Objects;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.search.mapper.orm.Search;
+import org.eclipse.jgit.server.repository.SandboxRepositoryNames;
 
 import io.github.carstenartur.jgit.storage.hibernate.search.entity.GitCommitIndex;
 import io.github.carstenartur.jgit.storage.hibernate.search.service.CommitHistoryQuery;
@@ -34,7 +35,7 @@ public final class ReleasedSandboxHistorySearch implements SandboxHistorySearch 
 		if (blank(repository) || blank(query)) {
 			return List.of();
 		}
-		return page(CommitHistoryQuery.forRepository(repository).matchingMessages(literal(query)), offset, limit).stream()
+		return page(CommitHistoryQuery.forRepository(SandboxRepositoryNames.normalize(repository)).matchingMessages(literal(query)), offset, limit).stream()
 				.map(hit -> new CommitHit(hit.getObjectId(), hit.getFullMessage(), hit.getAuthorName(), hit.getAuthorEmail())).toList();
 	}
 
@@ -43,7 +44,7 @@ public final class ReleasedSandboxHistorySearch implements SandboxHistorySearch 
 		if (blank(repository) || blank(query)) {
 			return List.of();
 		}
-		return page(CommitHistoryQuery.forRepository(repository).touchingPathTerms(literal(query)), offset, limit).stream()
+		return page(CommitHistoryQuery.forRepository(SandboxRepositoryNames.normalize(repository)).touchingPathTerms(literal(query)), offset, limit).stream()
 				.map(hit -> new PathHit(hit.getObjectId(), hit.getFullMessage(), hit.getChangedPaths())).toList();
 	}
 
@@ -95,7 +96,7 @@ public final class ReleasedSandboxHistorySearch implements SandboxHistorySearch 
 			var rows = session.createQuery("SELECT c.authorName, c.authorEmail, COUNT(c) FROM "
 					+ GitCommitIndex.class.getName() + " c WHERE c.repositoryName = :repository"
 					+ " GROUP BY c.authorName, c.authorEmail", Object[].class)
-					.setParameter("repository", repository.trim()).getResultList();
+					.setParameter("repository", SandboxRepositoryNames.normalize(repository)).getResultList();
 			Comparator<String> textOrder = Comparator.nullsFirst(Comparator.naturalOrder());
 			return rows.stream().map(row -> new AuthorCount((String) row[0], (String) row[1], ((Number) row[2]).longValue()))
 					.sorted(Comparator.comparingLong(AuthorCount::commits).reversed()

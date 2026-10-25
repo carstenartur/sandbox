@@ -46,6 +46,10 @@ public class JGitServerApplicationLifecycleTest {
 				throw new AssertionError("History must not be requested after factory failure");
 			}
 
+            @Override public org.eclipse.jgit.server.search.SandboxSourceSearch sourceSearch() { throw new AssertionError(); }
+            @Override public org.eclipse.jgit.server.history.SandboxFileHistory fileHistory() { throw new AssertionError(); }
+            @Override public org.eclipse.jgit.server.repository.SandboxStorageStatistics storageStatistics() { throw new AssertionError(); }
+
 			@Override
 			public void close() {
 				closed.set(true);

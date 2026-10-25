@@ -27,6 +27,7 @@ import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.*;
 
 /** Builds an application corpus from authoritative Git; callers own the repository lease. */
 final class JavaHistoryCorpus {
+  private static final System.Logger LOG = System.getLogger(JavaHistoryCorpus.class.getName());
   static final String PROVENANCE_POLICY = "oldest-author-oid-path-v1";
   private final Path localRepository;
   private final int maxBlobBytes;
@@ -100,7 +101,16 @@ final class JavaHistoryCorpus {
     for (var entry : project.files().entrySet()) {
       var source = entry.getValue();
       if (source.java()) continue;
-      var extracted = ApplicationFileFormats.extract(entry.getKey(), source.text());
+      ApplicationFileFormats.Facets extracted;
+      try {
+        extracted = ApplicationFileFormats.extract(entry.getKey(), source.text());
+      } catch (IllegalArgumentException malformed) {
+        // Properties.load rejects malformed Unicode escapes. One retained historical
+        // file must not prevent healthy source generations from being queried.
+        if (!entry.getKey().toLowerCase(Locale.ROOT).endsWith(".properties")) throw malformed;
+        LOG.log(System.Logger.Level.WARNING, "Invalid properties metadata in Git blob {0}; retaining text only", source.objectId());
+        extracted = ApplicationFileFormats.plainText("properties", source.text());
+      }
       var fields = new EnumMap<JavaFileSearchField, String>(JavaFileSearchField.class);
       if (extracted.fullyQualifiedNames() != null) fields.put(JavaFileSearchField.QUALIFIED_NAMES, extracted.fullyQualifiedNames());
       if (extracted.declaredTypes() != null) fields.put(JavaFileSearchField.DECLARED_TYPES, extracted.declaredTypes());

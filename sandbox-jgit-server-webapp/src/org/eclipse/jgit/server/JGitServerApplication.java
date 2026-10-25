@@ -40,7 +40,7 @@ import org.eclipse.jgit.server.rest.AdminResource;
 import org.eclipse.jgit.server.rest.AnalyticsResource;
 import org.eclipse.jgit.server.rest.CorsFilter;
 import org.eclipse.jgit.server.rest.HealthResource;
-import org.eclipse.jgit.server.rest.NativeSearchResource;
+import org.eclipse.jgit.server.rest.SearchResource;
 import org.eclipse.jgit.server.rest.RepositoryResource;
 import org.eclipse.jgit.transport.ReceivePack;
 import org.eclipse.jgit.transport.resolver.ReceivePackFactory;
@@ -61,14 +61,27 @@ public class JGitServerApplication {
 	private HibernateRepositoryResolver repositoryResolver;
 
 	public static void main(String[] args) throws Exception {
+		if (args.length == 1 && "--help".equals(args[0])) {
+			System.out.println("Usage: java -jar jgit-server.jar [--initialize-empty-schema]");
+			System.out.println("Normal startup validates an existing Core/Search schema. The explicit flag initializes an empty schema and starts the server.");
+			return;
+		}
+		boolean initialize = args.length == 1 && "--initialize-empty-schema".equals(args[0]);
+		if (args.length != 0 && !initialize) throw new IllegalArgumentException("Expected --initialize-empty-schema, --help, or no arguments");
 		JGitServerApplication app = new JGitServerApplication();
-		app.start();
+		app.start(initialize);
 		app.join();
 	}
 
 	/** Starts the configured production server. */
 	public void start() throws Exception {
-		start(HibernateConfig.createPersistenceContext(),
+		start(false);
+	}
+
+	private void start(boolean initialize) throws Exception {
+		Properties properties = HibernateConfig.buildProperties();
+		if (initialize) org.eclipse.jgit.server.config.ReleasedSchemaInitializer.initializeEmpty(properties);
+		start(HibernateConfig.createPersistenceContext(properties),
 				getIntEnv("JGIT_REST_PORT", DEFAULT_REST_PORT), //$NON-NLS-1$
 				getIntEnv("JGIT_GIT_PORT", DEFAULT_GIT_PORT), //$NON-NLS-1$
 				System.getenv("JGIT_CORS_ORIGINS"), //$NON-NLS-1$
@@ -77,7 +90,7 @@ public class JGitServerApplication {
 
 	/** Starts a test server from explicit Hibernate properties and dynamic ports. */
 	public void start(Properties hibernateProperties, int restPort, int gitPort) throws Exception {
-		start(HibernateConfig.createPersistenceContext(hibernateProperties), restPort, gitPort, null, null, false);
+		start(HibernateConfig.createPersistenceContext(hibernateProperties), restPort, gitPort, null, null, true);
 	}
 
 	private void start(ServerPersistenceContext context, int restPort, int gitPort,
@@ -143,7 +156,7 @@ public class JGitServerApplication {
 
 		context.addServlet(new ServletHolder("health", new HealthResource(sessionFactory, history, maintenance)), "/health"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("repos", new RepositoryResource(repositories)), "/repos/*"); //$NON-NLS-1$ //$NON-NLS-2$
-		context.addServlet(new ServletHolder("search", new NativeSearchResource(sessionFactory, history, persistenceContext.fileHistory())), "/search/*"); //$NON-NLS-1$ //$NON-NLS-2$
+		context.addServlet(new ServletHolder("search", new SearchResource(history, persistenceContext.fileHistory(), persistenceContext.sourceSearch())), "/search/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("analytics", new AnalyticsResource(history, persistenceContext.storageStatistics())), "/analytics/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("admin", new AdminResource(sessionFactory, maintenance, repositories)), "/admin/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		return context;

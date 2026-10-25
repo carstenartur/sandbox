@@ -38,7 +38,9 @@ import org.eclipse.jgit.server.rest.AnalyticsResource;
 import org.eclipse.jgit.server.rest.HealthResource;
 import org.eclipse.jgit.server.rest.RepositoryResource;
 import org.eclipse.jgit.server.rest.SearchResource;
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
+import org.eclipse.jgit.server.config.ServerPersistenceContext;
+import org.eclipse.jgit.server.config.HibernateConfig;
+import org.eclipse.jgit.server.config.ReleasedSchemaInitializer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,7 +57,7 @@ public class JGitServerWebAppTest {
 
 	private int port;
 
-	private HibernateSessionFactoryProvider provider;
+	private ServerPersistenceContext provider;
 
 	private HibernateRepositoryResolver resolver;
 
@@ -76,11 +78,13 @@ public class JGitServerWebAppTest {
 		props.put("hibernate.connection.driver_class", "org.h2.Driver"); //$NON-NLS-1$ //$NON-NLS-2$
 		props.put("hibernate.dialect", //$NON-NLS-1$
 				"org.hibernate.dialect.H2Dialect"); //$NON-NLS-1$
-		props.put("hibernate.hbm2ddl.auto", "create-drop"); //$NON-NLS-1$ //$NON-NLS-2$
+		props.put("hibernate.hbm2ddl.auto", "validate"); //$NON-NLS-1$ //$NON-NLS-2$
 		props.put("hibernate.show_sql", "false"); //$NON-NLS-1$ //$NON-NLS-2$
 
-		provider = new HibernateSessionFactoryProvider(props);
-		resolver = new HibernateRepositoryResolver(provider);
+		props.setProperty("hibernate.search.backend.directory.type", "local-heap");
+        ReleasedSchemaInitializer.initializeEmpty(props);
+        provider = HibernateConfig.createPersistenceContext(props);
+		resolver = new HibernateRepositoryResolver(provider.repositoryService());
 
 		server = new Server();
 		ServerConnector connector = new ServerConnector(server);
@@ -92,17 +96,17 @@ public class JGitServerWebAppTest {
 		context.setContextPath("/api"); //$NON-NLS-1$
 
 		context.addServlet(
-				new ServletHolder(new HealthResource(provider)),
+				new ServletHolder(new HealthResource(provider.sessionFactory(), provider.historySearch(), provider.historyMaintenance())),
 				"/health"); //$NON-NLS-1$
 		context.addServlet(
 				new ServletHolder(
-						new RepositoryResource(provider, resolver)),
+						new RepositoryResource(provider.repositoryService())),
 				"/repos/*"); //$NON-NLS-1$
 		context.addServlet(
-				new ServletHolder(new SearchResource(provider)),
+				new ServletHolder(new SearchResource(provider.historySearch(), provider.fileHistory(), provider.sourceSearch())),
 				"/search/*"); //$NON-NLS-1$
 		context.addServlet(
-				new ServletHolder(new AnalyticsResource(provider)),
+				new ServletHolder(new AnalyticsResource(provider.historySearch(), provider.storageStatistics())),
 				"/analytics/*"); //$NON-NLS-1$
 
 		server.setHandler(context);

@@ -23,6 +23,13 @@ public final class ReleasedSandboxSourceSearch implements SandboxSourceSearch {
   private final boolean pathHistory;
   private final SemanticQueries semantics;
 
+  public ReleasedSandboxSourceSearch(org.hibernate.SessionFactory factory,
+      org.eclipse.jgit.server.repository.SandboxRepositoryService repositories, AnalysisGenerations generations,
+      AnalysisSettings settings, EmbeddingEncoder encoder) {
+    this(new HistoricalAnalysis(factory, repositories, generations, settings.corpus()),
+        settings.filePathHistory(), new ApplicationSemanticQueries(encoder));
+  }
+
   ReleasedSandboxSourceSearch(HistoricalAnalysis analysis, boolean pathHistory, SemanticQueries semantics) {
     this.analysis = Objects.requireNonNull(analysis); this.pathHistory = pathHistory;
     this.semantics = Objects.requireNonNull(semantics);

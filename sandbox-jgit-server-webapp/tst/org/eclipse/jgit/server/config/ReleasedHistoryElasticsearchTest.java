@@ -27,18 +27,18 @@ public class ReleasedHistoryElasticsearchTest {
     String hosts = System.getenv("JGIT_TEST_ELASTICSEARCH_HOSTS");
     Assume.assumeTrue("Elasticsearch service is supplied by the consumer-contract workflow", hosts != null && !hosts.isBlank());
     var settings = new Properties();
-    settings.setProperty("hibernate.connection.url", "jdbc:h2:mem:es-" + UUID.randomUUID());
+    settings.setProperty("hibernate.connection.url", "jdbc:h2:mem:es-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
     settings.setProperty("hibernate.connection.driver_class", "org.h2.Driver");
-    settings.setProperty("hibernate.hbm2ddl.auto", "create-drop");
+    settings.setProperty("hibernate.hbm2ddl.auto", "validate");
     settings.setProperty("hibernate.search.backend.type", "elasticsearch");
     settings.setProperty("hibernate.search.backend.hosts", hosts);
     settings.setProperty("hibernate.search.backend.protocol", "http");
     settings.setProperty("hibernate.search.schema_management.strategy", "drop-and-create-and-drop");
     settings.setProperty("hibernate.search.indexing.plan.synchronization.strategy", "sync");
-    GitTextAnalysis.configure(settings, "class:" + SandboxHistoryElasticsearchAnalysisConfigurer.class.getName(), "sandbox-commit-message-v1");
-    try (var owner = new HibernateSessionFactoryProvider(settings, SearchEntities.annotatedClasses())) {
-      var factory = owner.getSessionFactory();
-      try (var repositories = new org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService(new DefaultHibernateRepositoryFactory(factory))) {
+    ReleasedSchemaInitializer.initializeEmpty(settings);
+    try (var context = HibernateConfig.createPersistenceContext(settings)) {
+      var factory = context.sessionFactory();
+      var repositories = context.repositoryService();
         var repository = repositories.openOrCreate("es-contract");
         org.eclipse.jgit.lib.ObjectId commit;
         try (var inserter = repository.newObjectInserter()) {
@@ -50,13 +50,12 @@ public class ReleasedHistoryElasticsearchTest {
           builder.setMessage("FixHttpParser marker"); commit = inserter.insert(builder); inserter.flush();
         }
         new CommitIndexer(factory, "es-contract").indexCommit(repository, commit);
-        var history = new ReleasedSandboxHistorySearch(factory);
+        var history = context.historySearch();
         history.checkSearch();
         assertEquals(List.of(commit.name()), history.searchMessages("es-contract", "parser", 0, 10).stream().map(hit -> hit.objectId()).toList());
         assertEquals(commit.name(), history.searchChangedPaths("es-contract", "readme", 0, 10).getFirst().objectId());
         assertTrue(history.searchMessages("other", "parser", 0, 10).isEmpty());
         assertTrue(history.searchMessages("es-contract", "parser", 1, 10).isEmpty());
-      }
     }
   }
 }

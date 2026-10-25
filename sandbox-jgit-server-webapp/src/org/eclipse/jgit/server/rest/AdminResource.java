@@ -23,7 +23,6 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.server.history.SandboxHistoryMaintenance;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.eclipse.jgit.server.repository.SandboxRepositoryNames;
@@ -64,12 +63,6 @@ public class AdminResource extends HttpServlet {
 		this.maintenance= Objects.requireNonNull(maintenance);
 		this.repositories= repositories;
 		this.adminToken= Objects.requireNonNull(adminToken);
-	}
-
-	/** @deprecated application wiring should pass the native {@link SessionFactory}. */
-	@Deprecated(forRemoval = true)
-	public AdminResource(HibernateSessionFactoryProvider provider) {
-		this(Objects.requireNonNull(provider, "provider").getSessionFactory()); //$NON-NLS-1$
 	}
 
 	@Override
