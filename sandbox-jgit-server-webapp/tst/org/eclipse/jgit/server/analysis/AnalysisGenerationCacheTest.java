@@ -248,6 +248,35 @@ public class AnalysisGenerationCacheTest {
     cache.close();
   }
 
+  @Test public void shutdownClosesLaterGenerationsWhenEarlierOnesThrowTheSameFailure() throws Exception {
+    var cache = new AnalysisGenerationCache<Integer, Generation>(3, 1);
+    var shared = new IOException("shared disposal failure");
+    var first = new Generation(1) { @Override public void close() throws IOException { super.close(); throw shared; } };
+    var second = new Generation(2) { @Override public void close() throws IOException { super.close(); throw shared; } };
+    var third = new Generation(3);
+    cache.read("first", () -> 1, key -> first, Generation::value);
+    cache.read("second", () -> 2, key -> second, Generation::value);
+    cache.read("third", () -> 3, key -> third, Generation::value);
+    assertSame(shared, assertThrows(IOException.class, cache::close));
+    assertEquals(0, shared.getSuppressed().length);
+    assertEquals(List.of(1, 1, 1), List.of(first.closed.get(), second.closed.get(), third.closed.get()));
+    cache.close();
+  }
+
+  @Test public void identicalReaderAndEvictionFailuresPreserveTheOriginalException() throws Exception {
+    var shared = new IOException("shared read and disposal failure");
+    var old = new Generation(1) { @Override public void close() throws IOException { super.close(); throw shared; } };
+    var replacement = new Generation(2);
+    try (var cache = new AnalysisGenerationCache<Integer, Generation>(1, 1)) {
+      cache.read("first", () -> 1, key -> old, Generation::value);
+      assertSame(shared, assertThrows(IOException.class, () -> cache.read("second", () -> 2, key -> replacement,
+          generation -> { throw shared; })));
+      assertEquals(0, shared.getSuppressed().length);
+      assertEquals(2, (int) cache.read("second", () -> 2, key -> { throw new AssertionError("Must reuse"); }, Generation::value));
+    }
+    assertEquals(1, old.closed.get()); assertEquals(1, replacement.closed.get());
+  }
+
   @Test public void interruptionDuringBuildClosesTheUnpublishedCandidate() throws Exception {
     var candidate = new Generation(2);
     try (var cache = new AnalysisGenerationCache<Integer, Generation>(1, 1)) {

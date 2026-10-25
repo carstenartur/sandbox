@@ -63,7 +63,10 @@ final class AnalysisGenerationCache<S, G extends Closeable> implements Closeable
     } finally {
       if (locked) slot.lock.unlock();
       try { release(slot); }
-      catch (IOException cleanup) { if (primary != null) primary.addSuppressed(cleanup); else throw cleanup; }
+      catch (IOException cleanup) {
+        if (primary == null) throw cleanup;
+        if (primary != cleanup) primary.addSuppressed(cleanup);
+      }
       finally { inside.remove(); }
     }
   }
@@ -104,7 +107,8 @@ final class AnalysisGenerationCache<S, G extends Closeable> implements Closeable
         if (candidate != null && !published) {
           try { candidate.close(); }
           catch (IOException | RuntimeException cleanup) {
-            if (buildFailure != null) buildFailure.addSuppressed(cleanup); else throw cleanup;
+            if (buildFailure == null) throw cleanup;
+            if (buildFailure != cleanup) buildFailure.addSuppressed(cleanup);
           }
         }
       }
@@ -192,7 +196,8 @@ final class AnalysisGenerationCache<S, G extends Closeable> implements Closeable
       try { generation.close(); }
       catch (IOException | RuntimeException failure) {
         var exception = failure instanceof IOException io ? io : new IOException("Cannot close analysis generation", failure);
-        if (first == null) first = exception; else first.addSuppressed(exception);
+        if (first == null) first = exception;
+        else if (first != exception) first.addSuppressed(exception);
       }
     }
     if (first != null) throw first;
