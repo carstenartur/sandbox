@@ -35,6 +35,7 @@ public class ReleasedHistoryMaintenanceH2Test {
     properties.setProperty("hibernate.hbm2ddl.auto", "create-drop");
     properties.setProperty("hibernate.generate_statistics", "true");
     properties.setProperty("hibernate.search.backend.directory.type", "local-heap");
+    properties.setProperty("hibernate.search.backend.type", "lucene");
     properties.setProperty("hibernate.search.indexing.plan.synchronization.strategy", "sync");
     properties.setProperty("jgit.storage.hibernate.search.index_batch_size", "3");
     provider = new HibernateSessionFactoryProvider(properties, SearchEntities.annotatedClasses());

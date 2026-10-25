@@ -18,15 +18,23 @@ import org.hibernate.SessionFactory;
 public final class ReleasedSandboxFileHistory implements SandboxFileHistory {
   private final SessionFactory factory;
   private final SandboxRepositoryService repositories;
+  private final boolean enabled;
 
   public ReleasedSandboxFileHistory(SessionFactory factory, SandboxRepositoryService repositories) {
+    this(factory, repositories, true);
+  }
+
+  /** Disabling the derived history view never removes authoritative Git objects. */
+  public ReleasedSandboxFileHistory(SessionFactory factory, SandboxRepositoryService repositories, boolean enabled) {
     this.factory = Objects.requireNonNull(factory);
     this.repositories = Objects.requireNonNull(repositories);
+    this.enabled = enabled;
   }
 
   @Override
   public List<FileVersion> versions(String repository, String path, int offset, int limit) throws IOException {
     if (offset < 0 || limit < 1 || limit > 1000) throw new IllegalArgumentException("Invalid history page");
+    if (!enabled) return List.of();
     if (repository == null || repository.isBlank() || path == null || path.isEmpty()) return List.of();
     // TreeWalk normalizes a trailing slash; this endpoint promises an exact file path.
     if (path.endsWith("/")) return List.of();

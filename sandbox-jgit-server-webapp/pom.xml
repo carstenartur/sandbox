@@ -114,6 +114,13 @@
 			<version>${jgit-storage-hibernate.version}</version>
 		</dependency>
 
+		<!-- The optional commit-search backend is an executable-server concern. -->
+		<dependency>
+			<groupId>org.hibernate.search</groupId>
+			<artifactId>hibernate-search-backend-elasticsearch</artifactId>
+			<version>${jgit.hibernate-search.version}</version>
+		</dependency>
+
 		<!-- Validate the exact released Core/Search migration streams before startup. -->
 		<dependency>
 			<groupId>org.flywaydb</groupId>

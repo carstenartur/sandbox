@@ -39,6 +39,7 @@ public class HistoricalAnalysisH2Test {
     properties.setProperty("hibernate.connection.driver_class", "org.h2.Driver");
     properties.setProperty("hibernate.hbm2ddl.auto", "create-drop");
     properties.setProperty("hibernate.search.backend.directory.type", "local-heap");
+    properties.setProperty("hibernate.search.backend.type", "lucene");
     provider = new HibernateSessionFactoryProvider(properties, SearchEntities.annotatedClasses());
     repositories = new ExternalHibernateRepositoryService(new DefaultHibernateRepositoryFactory(provider.getSessionFactory()),
         SandboxHistoryMaintenance.NONE, provider.getSessionFactory());

@@ -37,6 +37,7 @@ public class AdminRebuildH2Test {
     properties.setProperty("hibernate.connection.driver_class", "org.h2.Driver");
     properties.setProperty("hibernate.hbm2ddl.auto", "create-drop");
     properties.setProperty("hibernate.search.backend.directory.type", "local-heap");
+    properties.setProperty("hibernate.search.backend.type", "lucene");
     try (var provider = new HibernateSessionFactoryProvider(properties, SearchEntities.annotatedClasses())) {
       var factory = new DefaultHibernateRepositoryFactory(provider.getSessionFactory());
       var maintenance = new ReleasedSandboxHistoryMaintenance(provider.getSessionFactory());
