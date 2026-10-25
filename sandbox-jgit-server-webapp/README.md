@@ -111,3 +111,20 @@ JGitServerApplication (Jakarta Servlet container)
 ## Related Modules
 
 - **[sandbox-jgit-storage-hibernate](../sandbox-jgit-storage-hibernate/README.md)** — current Core integration boundary plus transitional search/analysis code
+
+The released context serves `/analytics/objects` and `/analytics/packs` through Core's
+public `RepositoryStorageStatistics`. Counts include published objects unreachable from
+refs; they do not approximate storage by walking reachable history. Missing repositories
+return zero counts without creating an identity. Pack totals retain Core's physical
+catalog semantics (distinct pack groups and declared file bytes, including staging rows).
+Concurrent pushes or repacks may change an inventory while it is being read.
+
+`SandboxRepositoryService.withExistingRepository` provides scoped existing-only reads
+for trusted server analysis. Released Core permits discovery/read and denies ref updates
+through this handle. The callback must not retain/close the repository or close the
+service. Active readers participate in the local lifecycle: deletion is rejected while
+one is active; shutdown rejects new readers and waits for existing readers to finish
+before closing storage and Hibernate. Independent readers do not hold the lifecycle
+monitor during their work. This is local coordination, not a distributed snapshot or
+an object-insertion security boundary. Normal startup remains on the transition path
+until the remaining Java projections and schema cutover are qualified.

@@ -64,7 +64,7 @@ final class ExternalServerPersistenceContext implements ServerPersistenceContext
 			this.maintenance= new ReleasedSandboxHistoryMaintenance(owner.getSessionFactory());
 			this.repositories= new ExternalHibernateRepositoryService(
 					new DefaultHibernateRepositoryFactory(owner.getSessionFactory(),
-							java.util.List.of(new SearchRepositoryDeletionParticipant())), maintenance);
+							java.util.List.of(new SearchRepositoryDeletionParticipant())), maintenance, owner.getSessionFactory());
 		} catch (RuntimeException | Error failure) {
 			try {
 				owner.close();
@@ -93,6 +93,11 @@ final class ExternalServerPersistenceContext implements ServerPersistenceContext
 	@Override
 	public SandboxHistoryMaintenance historyMaintenance() {
 		return maintenance;
+	}
+
+	@Override
+	public org.eclipse.jgit.server.repository.SandboxStorageStatistics storageStatistics() {
+		return new org.eclipse.jgit.server.repository.ReleasedSandboxStorageStatistics(owner.getSessionFactory(), repositories);
 	}
 
 	@Override

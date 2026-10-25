@@ -44,6 +44,11 @@ public interface ServerPersistenceContext extends AutoCloseable {
 		return SandboxHistoryMaintenance.NONE;
 	}
 
+	/** Physical inventory for the selected Core backend. */
+	default org.eclipse.jgit.server.repository.SandboxStorageStatistics storageStatistics() {
+		return new org.eclipse.jgit.server.repository.CopiedSandboxStorageStatistics(sessionFactory());
+	}
+
 	/** Closes repository handles before the owned session factory. */
 	@Override
 	void close();
