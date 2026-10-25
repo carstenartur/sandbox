@@ -849,6 +849,22 @@ public class SetupProbe implements IApplication {
             System.out.println("Pending workspace jobs: " + Arrays.toString(Job.getJobManager().find(null)));
         }
         require(errors.isEmpty(), "Workspace build errors:\n" + String.join("\n", errors));
+        require(workspace.isAutoBuilding(), "Setup did not restore automatic workspace builds");
+        // A marker-free import is insufficient if no build ran. Verify the
+        // generated-bundle providers and the consumers from the stale-wiring
+        // regression were compiled by Oomph's normal post-setup auto build.
+        for (var compiledType : Map.of(
+                "sandbox-ast-api", "org/sandbox/ast/api/expr/ASTExpr.class",
+                "sandbox-ast-api-jdt", "org/sandbox/ast/api/jdt/JDTConverter.class",
+                "sandbox-functional-converter-core", "org/sandbox/functional/core/builder/StreamCodeBuilder.class",
+                "sandbox_tools", "org/sandbox/jdt/internal/corext/fix/helper/CheckNodeForValidReferences.class",
+                "sandbox_use_general_type", "org/sandbox/jdt/internal/corext/fix/UseGeneralTypeFixCore.class",
+                "sandbox_functional_converter", "org/sandbox/jdt/internal/corext/fix/UseFunctionalCallFixCore.class")
+                .entrySet()) {
+            var javaProject = JavaCore.create(workspace.getRoot().getProject(compiledType.getKey()));
+            var output = workspace.getRoot().getFile(javaProject.getOutputLocation().append(compiledType.getValue()));
+            require(output.exists(), "Setup did not compile " + output.getFullPath());
+        }
         // Neither direct fragment requirements nor PDE's forbidden transitive
         // expansion may leak the server's unpacked Maven runtime into JDT indexing.
         for (String name : List.of("sandbox_cleanup_application", "sandbox_cleanup_application_test")) {
