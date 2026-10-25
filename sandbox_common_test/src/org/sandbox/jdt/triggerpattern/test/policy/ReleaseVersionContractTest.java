@@ -93,7 +93,7 @@ public class ReleaseVersionContractTest {
 				Matcher command = versionCommand(pom, transition.variable()).matcher(step);
 				assertTrue(command.find(), transition.step() + ": " + pom);
 				String original = command.group();
-				for (String invalid : List.of(original.replace("mvn -f", "# mvn -f"),
+				for (String invalid : List.of(original.replace("./mvnw -f", "# ./mvnw -f"),
 						original.replace("$" + transition.variable(), "$CURRENT_VERSION"))) {
 					String changed = workflow.replace(step, step.replace(original, invalid));
 					assertThrows(AssertionError.class, () -> assertTransition(changed, transition), pom);
@@ -119,7 +119,7 @@ public class ReleaseVersionContractTest {
 
 	private static void assertTransition(String workflow, Transition transition) {
 		String step = workflowStep(workflow, transition.step());
-		int verification = step.indexOf("actual=$(mvn");
+		int verification = step.indexOf("actual=$(./mvnw");
 		assertTrue(verification >= 0, "Missing version verification in " + transition.step());
 		for (String pom : STANDALONE_POMS) {
 			Matcher command = versionCommand(pom, transition.variable()).matcher(step);
@@ -281,7 +281,7 @@ public class ReleaseVersionContractTest {
 
 	private static Pattern versionCommand(String pom, String variable) {
 		// Match a real, complete shell command in this step, not an example or comment.
-		return Pattern.compile("(?m)^[ \\t]*mvn -f " + Pattern.quote(pom)
+		return Pattern.compile("(?m)^[ \\t]*" + Pattern.quote("./mvnw") + " -f " + Pattern.quote(pom)
 				+ " versions:set[ \\t]+\\\\\\r?\\n[ \\t]*"
 				+ Pattern.quote("-DnewVersion=\"$" + variable + "\" -DgenerateBackupPoms=false")
 				+ "[ \\t]*$");
