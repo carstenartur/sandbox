@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-25T17:39:55.534747+00:00",
+  "generated_at": "2026-10-25T18:44:32.397288+00:00",
   "repository": "carstenartur/sandbox",
-  "commit_sha": "f33f4cad776ebb145c860a425c96e462de482f64",
-  "commit_url": "https://github.com/carstenartur/sandbox/commit/f33f4cad776ebb145c860a425c96e462de482f64",
+  "commit_sha": "c5251840590491087c0ed4606b83e9d9a6da2c1b",
+  "commit_url": "https://github.com/carstenartur/sandbox/commit/c5251840590491087c0ed4606b83e9d9a6da2c1b",
   "ref": "refs/heads/main",
   "event_name": "workflow_run",
   "provenance_workflow": {
     "name": "Deploy Snapshot to GitHub Pages",
-    "run_id": "40215483106",
-    "run_number": "813",
+    "run_id": "40217994695",
+    "run_number": "814",
     "run_attempt": "1",
-    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/40215483106",
-    "source_java_ci_run_id": "40213810798",
-    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/40213810798"
+    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/40217994695",
+    "source_java_ci_run_id": "40216695667",
+    "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/40216695667"
   },
   "toolchain": {
     "project_version": "1.3.7-SNAPSHOT",
@@ -51,11 +51,11 @@
       "disabled_tests": 30
     },
     "executed": {
-      "tests": 5957,
+      "tests": 5962,
       "failures": 0,
       "errors": 0,
       "skipped": 11,
-      "report_files": 661
+      "report_files": 662
     }
   },
   "artifacts": {
@@ -252,42 +252,42 @@
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-linux.gtk.x86_64.tar.gz",
-        "size_bytes": 330732001,
-        "sha256": "916a623cde8c4828d5e9dead64eaeebc06c066e578aeeddc82ac7ec407488058"
+        "size_bytes": 330740856,
+        "sha256": "3a4d45e8b7efd3c72d61423048f668307bd5ecffe15a7d2d3ea10dd939219255"
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-macosx.cocoa.x86_64.tar.gz",
-        "size_bytes": 276598404,
-        "sha256": "9646382bb5bb71afcd8302baabe024db5e66e79456b79ce89d0dacd70c2ca398"
+        "size_bytes": 276610938,
+        "sha256": "ae1dbabcc909f8c0fe004f185e1175bd254bf0590f4e00ecf8034c6121a5f54d"
       },
       {
         "path": "sandbox_product/target/products/sandbox.bundle.producteclipse-win32.win32.x86_64.zip",
-        "size_bytes": 328526514,
-        "sha256": "a823b9bcea855fc3d2db6a4ea89745bda17ff80070615c7150a22a22d7b3175c"
+        "size_bytes": 328526694,
+        "sha256": "864f12aa5e661d984c4d520b5fb95632a554a9acb95ef239374c3b30bb43c43f"
       }
     ],
     "product_tree": {
       "path": "sandbox_product/target/products",
       "file_count": 5737,
-      "total_bytes": 2117227967,
-      "sha256_tree": "4ad0853c65b31554f6834683cacfa0cc76d06de7a22468910bca44402b9d8163"
+      "total_bytes": 2117257331,
+      "sha256_tree": "04f50ee4d22f02e66888f6af48160c2d8f21acef8f7ecd11cf531b9cf7da861e"
     },
     "product_status": "built",
     "update_site": {
       "path": "sandbox_updatesite/target/repository",
       "file_count": 58,
-      "total_bytes": 12564176,
-      "sha256_tree": "0ef20f41f73c9177816b602043f895b53a4c24b2f904ea8e9f58ec5dcdacd58a",
+      "total_bytes": 12564555,
+      "sha256_tree": "2c9df27ee2fa977aa45c51b8024b11d64561ce1778a3a86b37c49006dafbd16b",
       "metadata": [
         {
           "path": "sandbox_updatesite/target/repository/artifacts.jar",
-          "size_bytes": 9117,
-          "sha256": "4abaebd7f636e884485de50566e2bef3548a6a862ff119da7526eca780330a11"
+          "size_bytes": 9130,
+          "sha256": "9752c44ec6367c2286428d63a3fa39ca12130b22b6f72b831bb2652b58204e83"
         },
         {
           "path": "sandbox_updatesite/target/repository/content.jar",
-          "size_bytes": 38320,
-          "sha256": "193c66f0909409ab4888b79eaed890a9ad18cb03546876eec1f84192c25420cc"
+          "size_bytes": 38665,
+          "sha256": "ed709949f8fd162113d71f9227d38702ae0142887e6c983212abf14621114eb7"
         }
       ]
     },
