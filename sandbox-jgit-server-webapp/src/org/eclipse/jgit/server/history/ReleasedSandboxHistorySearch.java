@@ -89,24 +89,18 @@ public final class ReleasedSandboxHistorySearch implements SandboxHistorySearch 
 		if (blank(repository)) {
 			return List.of();
 		}
-		record Identity(String name, String email) { }
-		Map<Identity, Long> counts = new HashMap<>();
-		try (var cursor = queries.scrollChangeSummaries(CommitHistoryQuery.forRepository(repository).unbounded().build())) {
-			while (true) {
-				var chunk = cursor.nextChunk();
-				if (chunk.isEmpty()) {
-					break;
-				}
-				for (var hit : chunk) {
-					counts.merge(new Identity(hit.authorName(), hit.authorEmail()), 1L, Long::sum);
-				}
-			}
+		// This application report groups the released projection in the database:
+		// transferring every commit summary would scale with history, not authors.
+		try (var session = sessionFactory.openSession()) {
+			var rows = session.createQuery("SELECT c.authorName, c.authorEmail, COUNT(c) FROM "
+					+ GitCommitIndex.class.getName() + " c WHERE c.repositoryName = :repository"
+					+ " GROUP BY c.authorName, c.authorEmail", Object[].class)
+					.setParameter("repository", repository.trim()).getResultList();
+			Comparator<String> textOrder = Comparator.nullsFirst(Comparator.naturalOrder());
+			return rows.stream().map(row -> new AuthorCount((String) row[0], (String) row[1], ((Number) row[2]).longValue()))
+					.sorted(Comparator.comparingLong(AuthorCount::commits).reversed()
+							.thenComparing(AuthorCount::name, textOrder).thenComparing(AuthorCount::email, textOrder)).toList();
 		}
-		Comparator<String> textOrder = Comparator.nullsFirst(Comparator.naturalOrder());
-		return counts.entrySet().stream()
-				.map(entry -> new AuthorCount(entry.getKey().name(), entry.getKey().email(), entry.getValue()))
-				.sorted(Comparator.comparingLong(AuthorCount::commits).reversed()
-						.thenComparing(AuthorCount::name, textOrder).thenComparing(AuthorCount::email, textOrder)).toList();
 	}
 
 	@Override
