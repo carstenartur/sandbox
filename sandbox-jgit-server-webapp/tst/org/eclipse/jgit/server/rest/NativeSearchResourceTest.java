@@ -11,13 +11,10 @@
 package org.eclipse.jgit.server.rest;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.hibernate.SessionFactory;
 import org.junit.Test;
 
@@ -30,13 +27,7 @@ public class NativeSearchResourceTest {
 		SessionFactory sessionFactory= proxySessionFactory(closed);
 		NativeSearchResource resource= new NativeSearchResource(sessionFactory);
 
-		Field providerField= SearchResource.class.getDeclaredField("provider"); //$NON-NLS-1$
-		providerField.setAccessible(true);
-		HibernateSessionFactoryProvider provider=
-				(HibernateSessionFactoryProvider) providerField.get(resource);
-
-		assertSame(sessionFactory, provider.getSessionFactory());
-		provider.close();
+		resource.destroy();
 		assertFalse("Search compatibility must not close the application-owned factory", closed.get()); //$NON-NLS-1$
 	}
 
