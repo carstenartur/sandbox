@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-24T19:50:55.701838+00:00",
+  "generated_at": "2026-10-25T08:09:05.019609+00:00",
   "repository": "carstenartur/sandbox",
   "commit_sha": "7cdfab40bddbbe5ae0d906a050d2968580e18747",
   "commit_url": "https://github.com/carstenartur/sandbox/commit/7cdfab40bddbbe5ae0d906a050d2968580e18747",
@@ -8,10 +8,10 @@
   "event_name": "workflow_run",
   "provenance_workflow": {
     "name": "Post-merge Build Provenance",
-    "run_id": "40127127436",
-    "run_number": "3145",
+    "run_id": "40175457974",
+    "run_number": "3146",
     "run_attempt": "1",
-    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/40127127436",
+    "run_url": "https://github.com/carstenartur/sandbox/actions/runs/40175457974",
     "source_java_ci_run_id": "40126106580",
     "source_java_ci_run_url": "https://github.com/carstenartur/sandbox/actions/runs/40126106580"
   },
@@ -74,9 +74,9 @@
       "status": "completed",
       "conclusion": "success",
       "run_number": 8598,
-      "run_attempt": 1,
+      "run_attempt": 2,
       "created_at": "2026-10-24T19:37:00Z",
-      "updated_at": "2026-10-24T19:50:36Z",
+      "updated_at": "2026-10-25T08:08:33Z",
       "html_url": "https://github.com/carstenartur/sandbox/actions/runs/40126106580"
     },
     {
