@@ -95,6 +95,18 @@ class GitSearchClientTest {
 		assertFalse(failure.getMessage().contains("wrong-token"));
 	}
 
+	@Test void malformedTokenIsRejectedWithoutDisclosure() {
+		var failure= assertThrows(IllegalArgumentException.class,
+				() -> SemanticSearchClient.getInstance().rebuild("demo", "secret-token\n"));
+		assertFalse(failure.getMessage().contains("secret-token"));
+		assertNull(request.get());
+	}
+
+	@Test void annotationsUseTheirDedicatedEndpoint() {
+		SemanticSearchClient.getInstance().searchAnnotations("demo", "Deprecated", 20);
+		assertEquals("/api/search/annotations?repo=demo&q=Deprecated&limit=20", request.get());
+	}
+
 	@Test void historyPreservesExactPathAndBlobIdentity() {
 		body= "{\"results\":[{\"commitObjectId\":\"c1\",\"blobObjectId\":\"b1\",\"filePath\":\" src/Clock.java \",\"commitTime\":\"2026-10-25T12:00:00Z\"}]}";
 		var row= SemanticSearchClient.getInstance().getFileHistory("demo", " src/Clock.java ").getFirst();

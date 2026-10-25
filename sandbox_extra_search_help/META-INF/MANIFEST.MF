@@ -7,4 +7,3 @@ Bundle-Vendor: Carsten Hammer
 Bundle-RequiredExecutionEnvironment: JavaSE-25
 Eclipse-BundleShape: dir
 Automatic-Module-Name: sandbox.extra.search.help
-

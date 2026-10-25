@@ -7,4 +7,3 @@ Bundle-RequiredExecutionEnvironment: JavaSE-25
 Fragment-Host: sandbox_extra_search
 Import-Package: org.junit.jupiter.api,
  org.junit.jupiter.api.io
-

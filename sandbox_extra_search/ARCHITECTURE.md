@@ -314,119 +314,58 @@ This architecture document relates to:
 
 ## Git Database Index Integration
 
-### Overview
+The Eclipse plug-in is an HTTP client of the separate
+[`sandbox-jgit-server-webapp`](../sandbox-jgit-server-webapp/README.md).
+The server uses the released `jgit-storage-hibernate` Core, Search and Java
+Analysis modules. Hibernate, Lucene and optional embedding models run on the
+server, outside the Eclipse process. `EmbeddedSearchService` retains its
+historical class name but manages a REST client, not an embedded database.
 
-The plugin now includes a "Git Database Index" feature that runs alongside EGit,
-providing DB-backed Java analysis capabilities. This extends the search functionality
-with Git commit and Java source code analysis.
+### Components and requests
 
-### HSQLDB Embedded Architecture (In-Process)
-
-All data access runs in-process — no REST server, no HikariCP connection pool,
-no network communication. HSQLDB `file:` mode operates as direct JVM method calls
-within the Eclipse process.
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Eclipse JVM (single process)              │
-│                                                              │
-│  ┌──────────────────┐    ┌───────────────────────────────┐   │
-│  │ sandbox_extra_    │    │ sandbox-jgit-storage-         │   │
-│  │ search (Plugin)   │    │ hibernate (Library)           │   │
-│  │                   │    │                               │   │
-│  │ EmbeddedSearch    │───▶│ GitDatabaseQueryService       │   │
-│  │ Service           │    │   .searchBySymbol()           │   │
-│  │ (singleton)       │    │   .searchSourceContent()      │   │
-│  │                   │    │   .searchByHierarchy()        │   │
-│  │ GitSearchView     │    │   .getFileHistory()           │   │
-│  │ JavaTypeHistory   │    │   .getAuthorStatistics()      │   │
-│  │ CommitAnalytics   │    │                               │   │
-│  └──────────────────┘    │  HibernateSessionFactory      │   │
-│                           │  Provider                     │   │
-│                           │    │                          │   │
-│                           │    ▼                          │   │
-│                           │  ┌───────────┐ ┌───────────┐ │   │
-│                           │  │ HSQLDB    │ │ Lucene    │ │   │
-│                           │  │ (embedded)│ │ Index     │ │   │
-│                           │  │ file:...  │ │ (local-   │ │   │
-│                           │  │           │ │ filesystem│ │   │
-│                           │  └───────────┘ └───────────┘ │   │
-│                           └───────────────────────────────┘   │
-│                                                              │
-│  Files on disk:                                              │
-│  <plugin-state-location>/                                    │
-│    ├── hsqldb/  (HSQLDB database files)                      │
-│    └── lucene-index/  (Lucene index directory)               │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### What Is NOT Needed (vs. Server Architecture)
-
-| Component | Status | Reason |
-|---|---|---|
-| REST client/server | ❌ Not needed | Direct Java method calls |
-| HikariCP connection pool | ❌ Not needed | HSQLDB embedded = same JVM |
-| JSON serialization | ❌ Not needed | Direct Java objects |
-| HTTP timeout/retry | ❌ Not needed | No network |
-| Server configuration | ❌ Not needed | Everything local |
-
-### What IS Used (Embedded)
-
-| Component | Status | Role |
-|---|---|---|
-| `HibernateSessionFactoryProvider` | ✅ Used | Configured with HSQLDB embedded properties |
-| `GitDatabaseQueryService` | ✅ Used | Called directly from Eclipse views |
-| `JavaBlobIndex` entity | ✅ Used | Hibernate maps to HSQLDB tables |
-| Hibernate Search / Lucene | ✅ Used | Lucene index on local filesystem |
-| `EmbeddedSearchService` | ✅ New | Singleton managing lifecycle |
-
-### Data Flow
-
-```
-EGit commit/pull → IResourceChangeListener → IncrementalIndexer → HSQLDB + Lucene
-                                            → BlobIndexer       → HSQLDB + Lucene
-                                                                         ↓
-Eclipse View ← GitDatabaseQueryService ← Hibernate Search ← Lucene ← HSQLDB
-```
-
-### New Components (gitindex package)
-
-| Class | Responsibility |
+| Component | Responsibility |
 |---|---|
-| `EmbeddedSearchService` | Singleton: HSQLDB config, SessionFactory, QueryService lifecycle |
-| `EGitRepositoryTracker` | IResourceChangeListener tracking .git changes |
-| `RepositoryIndexService` | Orchestrates commit + blob indexing |
-| `IncrementalIndexer` | RevWalk from last indexed commit to HEAD |
-| `GitSearchView` | Full-text search (commits, types, paths, annotations) |
-| `JavaTypeHistoryView` | Type change history across commits |
-| `CommitAnalyticsView` | Author statistics and commit analytics |
-| `IndexRepositoryHandler` | Manual index command handler |
-| `ReindexAllHandler` | Full reindex command handler |
+| `GitSearchPreferences` | Persist explicit REST and Git base URLs |
+| `SemanticSearchClient` | HTTP requests and Gson response decoding; failures remain errors |
+| `GitResultsView` | Shared repository input, background jobs, result columns and lifecycle guards |
+| `GitSearchView` | Commit, type, path, annotation, symbol, semantic and hybrid search |
+| `JavaTypeHistoryView` (Git File History) | Exact repository-relative path history; historical view ID retained |
+| `CommitAnalyticsView` | Author names, emails and commit counts |
+| `IndexRepositoryHandler` / `RepositoryIndexService` / `IncrementalIndexer` | Explicit import of one local repository through a normal non-forced JGit push |
+| `ReindexAllHandler` | Authenticated rebuild of one named server history index; historical command ID retained |
+| `EGitRepositoryTracker` | Observes/logs known local repositories; does not upload or index them |
 
-### Why Not Modify EGit
+Search uses `/api/search/*`; author statistics use `/api/analytics/authors`.
+Both require an explicit server repository name. File history uses an exact
+path rather than a Java fully-qualified type name. HTTP failures, invalid JSON
+and successful zero-hit responses have distinct outcomes. Requests run outside
+the UI thread; changed inputs invalidate old results, and disposed views do not
+receive callbacks.
 
-- EGit creates repositories via `RepositoryCache.open()` → always `FileRepository`
-- No extension point for repository providers in EGit
-- `HibernateRepository` extends `DfsRepository` — different class hierarchy
-- **→ Parallel index approach: listen to EGit events, mirror data to DB**
+### Import and rebuild boundaries
 
-### Relationship to sandbox-jgit-storage-hibernate
+**Import Repository…** asks for a server name and local source directory, then
+shows both endpoints before pushing committed branches and tags. The push never
+forces updates or deletes remote refs. An unrelated destination history is
+rejected. Server-side receive hooks update the derived history projection; a
+successful Git push alone does not certify every optional analysis index.
+Uncommitted working-tree edits and automatic EGit synchronization are outside
+this workflow. A rejected push may have accepted other non-conflicting refs.
 
-The existing `sandbox-jgit-storage-hibernate` module contains Hibernate-based
-storage (entities, services, indexers). Phase 1b will connect the indexer to
-those services once OSGi bundling is resolved. The `EmbeddedSearchService`
-already configures HSQLDB embedded properties — once the storage module is
-bundled as an OSGi dependency, it calls `HibernateSessionFactoryProvider`
-directly (no REST, no HikariCP).
+**Rebuild Server Index…** calls `POST /api/admin/rebuild?repo=...` with the admin
+Bearer token entered for that operation. It reads existing server-side Git
+data and may prune unreachable projection records. It neither pushes local
+commits nor rewrites Git refs. The token is not persisted. Cancellation cannot
+undo writes already accepted by the server.
 
-### Phase Plan
+### User documentation and verification
 
-1. **Phase 1** (current): Module structure, EGit listener, views skeleton
-2. **Phase 1b**: Bundle HSQLDB + Hibernate JARs in `lib/`, connect `EmbeddedSearchService` to storage-hibernate
-3. **Phase 2**: Full EGit integration with incremental indexing
-4. **Phase 3**: Live data from database in Eclipse Views
-5. **Phase 4**: Java-specific queries (type history, annotation changes, etc.)
-6. **Phase 5**: Mining integration, context menu extensions
+See the [installed Help](../sandbox_extra_search_help/html/index.html) for setup,
+search modes, model prerequisites, import/rebuild steps and limitations.
+`sandbox_extra_search_test` exercises real HTTP fixtures, populated SWT views
+and actual JGit repositories. Its screenshot scenario asserts displayed values
+before capturing the three views. Fixture-backed screenshots demonstrate the
+client UI; the server's own integration tests qualify database/analysis behavior.
 
 ## Documentation Requirements
 

@@ -36,7 +36,7 @@ import com.google.gson.JsonParser;
  * <pre>
  * Eclipse Plugin (sandbox_extra_search)
  * └── SemanticSearchClient  (this class — REST HTTP client)
- *     │   uses java.net.http.HttpClient (JDK built-in, no extra dependencies)
+ *     │   uses java.net.http.HttpClient and Gson for JSON decoding
  *     └── sandbox-jgit-server-webapp REST API
  *         ├── GET  /api/search/types?repo=&amp;q=
  *         ├── GET  /api/search/symbols?repo=&amp;q=
@@ -291,6 +291,8 @@ public class SemanticSearchClient {
 	public String rebuild(String repository, String token) {
 		requireRepository(repository);
 		if (token == null || token.isBlank()) throw new IllegalArgumentException("Admin token is required."); //$NON-NLS-1$
+		if (token.chars().anyMatch(character -> character < 33 || character > 126))
+			throw new IllegalArgumentException("Admin token contains invalid characters."); //$NON-NLS-1$
 		HttpRequest request= HttpRequest.newBuilder(URI.create(baseUrl + "/api/admin/rebuild?repo=" + encode(repository))) //$NON-NLS-1$
 				.timeout(Duration.ofMinutes(10)).header("Authorization", "Bearer " + token) //$NON-NLS-1$ //$NON-NLS-2$
 				.POST(HttpRequest.BodyPublishers.noBody()).build();

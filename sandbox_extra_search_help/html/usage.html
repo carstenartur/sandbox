@@ -8,13 +8,16 @@
 <li>Choose <strong>Import Repository…</strong> in the view toolbar. Select a local Git working directory or bare repository and review the displayed destination before confirming. This uploads committed branches and tags to the server. It does not upload uncommitted working-tree edits, force updates or delete server refs. Choose a new server name for an unrelated repository.</li>
 <li>Select <strong>Commits</strong>, enter a word from a commit message and press <strong>Search</strong> or Enter. Select <strong>Java Types</strong> or <strong>Symbols</strong> to find declarations in historical Java sources. A successful search reports the number of returned results; connection and HTTP failures display an error.</li>
 </ol>
+<figure><img src="../images/git-search.png" alt="Git Database Search showing repository demo and a matching commit"><figcaption>Actual SWT search view with deterministic HTTP fixture data.</figcaption></figure>
 <h2>Inspect history and authors</h2>
 <p><strong>Git File History</strong> takes the same repository name and an exact repository-relative path such as <code>src/example/Clock.java</code>. Use a file path rather than a Java class name. The results show each matching commit and blob; renames begin a separate path history.</p>
 <p><strong>Commit Analytics</strong> accepts a repository name and displays author names, email addresses and commit counts after <strong>Refresh</strong>.</p>
+<figure><img src="../images/git-file-history.png" alt="Exact file history showing the commit, path, author time and blob"><figcaption>File-history fixture displayed by the actual view.</figcaption></figure>
+<figure><img src="../images/git-authors.png" alt="Commit Analytics showing an author, email address and seven commits"><figcaption>Author-statistics fixture displayed by the actual view.</figcaption></figure>
 <h2>Semantic code search</h2>
 <p>Open <strong>Search → Search… → Semantic Code Search</strong>. Supply a repository and query. Semantic uses an optional embedding model, Hybrid combines text and vector rankings, and Similar Code expects a blob object ID. The first enabled semantic request can download the model and initialize its native runtime. Ordinary text searches need no model. Hybrid falls back to text when embeddings are unavailable.</p>
 <h2>Rebuild a server index</h2>
 <p><strong>Rebuild Server Index…</strong> reconstructs the selected repository's derived history index from server-side Git data. Enter the server's <code>JGIT_ADMIN_TOKEN</code> when prompted; Eclipse does not save it. A rebuild can prune indexed history that is no longer reachable. Stop other server writers as described in the server README. This action neither uploads local commits nor modifies Git refs.</p>
-<p>All network operations run in background jobs. Use Eclipse's Progress view to cancel work. Cancellation cannot undo a Git push already accepted by the server.</p>
+<p>All network operations run in background jobs. Use Eclipse's Progress view to cancel work. Cancellation suppresses pending results and is observed during Git transfer. A waiting HTTP request may finish before cancellation takes effect. It cannot undo a push or rebuild already accepted by the server.</p>
 <p><a href="reference.html">Configuration, errors and limitations</a></p>
 </body></html>

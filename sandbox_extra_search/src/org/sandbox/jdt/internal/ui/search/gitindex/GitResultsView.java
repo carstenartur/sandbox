@@ -53,6 +53,7 @@ abstract class GitResultsView extends ViewPart {
 		status.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		status.setText("Enter a server repository name."); //$NON-NLS-1$
 		repository.addListener(SWT.DefaultSelection, event -> runQuery());
+		repository.addModifyListener(event -> invalidateResults());
 		parent.addDisposeListener(event -> { generation++; if (request != null) request.cancel(); });
 		PlatformUI.getWorkbench().getHelpSystem().setHelp(parent, "sandbox_extra_search.git_search"); //$NON-NLS-1$
 	}
@@ -68,6 +69,7 @@ abstract class GitResultsView extends ViewPart {
 		text.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		text.setMessage(hint);
 		text.addListener(SWT.DefaultSelection, event -> runQuery());
+		text.addModifyListener(event -> invalidateResults());
 		return text;
 	}
 
@@ -81,6 +83,15 @@ abstract class GitResultsView extends ViewPart {
 	}
 
 	String repositoryName() { return repository.getText().strip(); }
+
+	protected void invalidateResults() {
+		generation++;
+		if (request != null) request.cancel();
+		if (table == null || status == null || status.isDisposed()) return;
+		table.setInput(List.of());
+		status.setText("Inputs changed. Run the query to refresh results."); //$NON-NLS-1$
+		status.getParent().layout();
+	}
 
 	private void runQuery() {
 		long current= ++generation;

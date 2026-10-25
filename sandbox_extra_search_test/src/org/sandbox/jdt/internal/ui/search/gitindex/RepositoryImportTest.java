@@ -54,6 +54,22 @@ class RepositoryImportTest {
 		}
 	}
 
+	@Test void emptyRepositoryFailsAndServerOnlyRefsSurviveRepeatedImports() throws Exception {
+		try (Git source= Git.init().setDirectory(directory.resolve("source").toFile()).setInitialBranch("main").call();
+				Git target= Git.init().setDirectory(directory.resolve("target.git").toFile()).setBare(true).call()) {
+			var importer= new IncrementalIndexer(target.getRepository().getDirectory().toURI().toString());
+			assertThrows(java.io.IOException.class, () -> importer.indexNewCommits(source.getRepository(), new NullProgressMonitor()));
+			ObjectId head= commit(source, "Initial");
+			importer.indexNewCommits(source.getRepository(), new NullProgressMonitor());
+			var serverOnly= target.getRepository().updateRef("refs/heads/server-only");
+			serverOnly.setNewObjectId(head);
+			serverOnly.update();
+			importer.indexNewCommits(source.getRepository(), new NullProgressMonitor());
+			assertEquals(head, target.getRepository().resolve("refs/heads/server-only"));
+			assertEquals(head, target.getRepository().resolve("refs/heads/main"));
+		}
+	}
+
 	private ObjectId commit(Git git, String message) throws Exception {
 		Files.writeString(git.getRepository().getWorkTree().toPath().resolve("Clock.java"), "class Clock {}\n");
 		git.add().addFilepattern(".").call();

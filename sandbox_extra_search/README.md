@@ -13,6 +13,27 @@ The **Extra Search** plugin provides specialized search capabilities for Eclipse
 - 🎯 **Targeted Search** - Focus on specific packages or class patterns
 - 🔌 **Eclipse Integration** - Works within Eclipse IDE search infrastructure
 
+## Git history and Java source search
+
+The Git Database Index views query a separate
+[Sandbox Git server](../sandbox-jgit-server-webapp/README.md), backed by the
+released `jgit-storage-hibernate` modules. They expose commit messages, changed
+paths, Java types, annotations and symbols, exact file history, author commit
+counts, and optional semantic/hybrid code search.
+
+1. Start the server using its README and configure **Window → Preferences → Sandbox Git Search**.
+2. Open **Window → Show View → Other… → Git Database Index → Git Database Search** and enter a server repository name.
+3. Use **Import Repository…** to select a local repository and confirm its Git destination. Only committed branches and tags are pushed; conflicting updates are rejected.
+4. Choose a search mode, enter a query and press **Search**. Use **Git File History** with an exact path or **Commit Analytics** for author counts.
+5. Use **Rebuild Server Index…** only to repair the selected server-side history projection, with its admin token and the server's documented writer precautions.
+
+See the [step-by-step Help with screenshots](../sandbox_extra_search_help/html/usage.html)
+and [controls and limitations](../sandbox_extra_search_help/html/reference.html).
+The Help is installed with this feature and available via F1. EGit commits and
+pulls do not trigger automatic uploads. Text search needs no embedding model;
+semantic search requires the server's optional model/runtime, and hybrid falls
+back to text when embeddings are unavailable.
+
 ## Use Cases
 
 ### Eclipse Version Upgrades
@@ -86,12 +107,18 @@ The Extra Search plugin integrates with:
 
 ## Testing
 
-Tests are in `sandbox_extra_search_test` (if available).
+Tests in `sandbox_extra_search_test` cover HTTP contracts, visible results/errors and real Git imports.
 
 Run tests:
 ```bash
-xvfb-run --auto-servernum mvn test -pl sandbox_extra_search_test
+xvfb-run --auto-servernum mvn -pl sandbox_target,sandbox_extra_search,sandbox_extra_search_help,sandbox_extra_search_feature,sandbox_extra_search_test -am verify
 ```
+
+To reproduce the three Help screenshots, add
+`-Dtycho.testArgLine="-Dsandbox.gitSearch.screenshots=/absolute/path/to/sandbox_extra_search_help/images"`
+to the command. Use Java 25, the repository's Eclipse target and an English Linux
+GTK/Xvfb session; inspect the generated PNGs and SHA-256 files before accepting
+them. The images use deterministic HTTP fixture responses, not a live database.
 
 ## Future Enhancements
 

@@ -27,6 +27,7 @@ public class GitSearchView extends GitResultsView {
 		mode.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 		mode.setItems("Commits", "Java Types", "Paths", "Annotations", "Symbols", "Semantic", "Hybrid"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
 		mode.select(0);
+		mode.addModifyListener(event -> invalidateResults());
 	}
 
 	@Override protected void createColumns() {
