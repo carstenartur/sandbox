@@ -76,6 +76,7 @@ public class SemanticCodeSearchQuery implements ISearchQuery {
 	@Override
 	public IStatus run(IProgressMonitor monitor) {
 		monitor.beginTask(getLabel(), IProgressMonitor.UNKNOWN);
+		result.setMatches(List.of());
 		try {
 			if (monitor.isCanceled()) {
 				return Status.CANCEL_STATUS;

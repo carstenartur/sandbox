@@ -49,5 +49,14 @@ Fixing only the empty name would retain ineffective import commands. Embedding H
 
 - [x] Add installed Help and an example workflow, update root/module READMEs and remove obsolete embedded-HSQLDB claims.
 - [x] Capture real populated views from deterministic HTTP fixtures with assertions; include semantic-search prerequisites.
-- [ ] Run relevant Maven verification and repository policy checks, inspect screenshots, then get one independent final review.
-- [ ] Create/update an ordinary PR against main and inspect actual CI results.
+- [x] Run relevant Maven verification and repository policy checks, inspect screenshots, then get one independent final review.
+- [x] Create/update an ordinary PR against main and inspect actual CI results.
+
+## Verification record
+
+- Original HTTP/UI and no-op Git import failures were reproduced before their fixes.
+- A review found missing Semantic Code Search result-page wiring; two Workbench regressions reproduced it and pass after registration and listener fixes.
+- 25 search/client/Git/Workbench tests, 6 Help structure/evidence tests and 12 repository-policy/fixture tests pass without skips.
+- Three populated SWT screenshots were visually inspected; they use explicitly documented HTTP fixtures.
+- The independent final review and its follow-up have no remaining actionable findings.
+- PR #1759 targets main directly. The newer main commit 225d5a2792817cc5c15e38ec93578941346f6f05 is included; GitHub Actions are tracked on the final PR head.

@@ -150,6 +150,11 @@
                id="org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView"/>
       </perspectiveExtension>
    </extension>
+   <extension point="org.eclipse.search.searchResultViewPages">
+      <viewPage id="org.sandbox.jdt.ui.SemanticCodeSearchResultPage"
+            searchResultClass="org.sandbox.jdt.internal.ui.search.SemanticCodeSearchResult"
+            class="org.sandbox.jdt.internal.ui.search.SemanticCodeSearchResultPage"/>
+   </extension>
    <extension point="org.eclipse.ui.preferencePages">
       <page id="sandbox_extra_search.preferences" name="Sandbox Git Search"
             class="org.sandbox.jdt.internal.ui.search.gitindex.GitSearchPreferences"/>

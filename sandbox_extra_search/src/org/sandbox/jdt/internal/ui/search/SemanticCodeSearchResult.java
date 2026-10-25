@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.search;
 
-import java.util.Collections;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.List;
 
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -35,7 +35,9 @@ public class SemanticCodeSearchResult implements ISearchResult {
 
 	private final SemanticCodeSearchQuery query;
 
-	private List<SearchHit> matches= Collections.emptyList();
+	private volatile List<SearchHit> matches= List.of();
+
+	private final List<ISearchResultListener> listeners= new CopyOnWriteArrayList<>();
 
 	/**
 	 * Creates a new search result container for the given query.
@@ -54,7 +56,11 @@ public class SemanticCodeSearchResult implements ISearchResult {
 	 *            the search results
 	 */
 	public void setMatches(List<SearchHit> matches) {
-		this.matches= matches != null ? matches : Collections.emptyList();
+		this.matches= matches != null ? List.copyOf(matches) : List.of();
+		var event= new org.eclipse.search.ui.SearchResultEvent(this) {
+			private static final long serialVersionUID= 1L;
+		};
+		listeners.forEach(listener -> listener.searchResultChanged(event));
 	}
 
 	/**
@@ -63,7 +69,7 @@ public class SemanticCodeSearchResult implements ISearchResult {
 	 * @return unmodifiable list of results
 	 */
 	public List<SearchHit> getMatches() {
-		return Collections.unmodifiableList(matches);
+		return matches;
 	}
 
 	@Override
@@ -89,11 +95,11 @@ public class SemanticCodeSearchResult implements ISearchResult {
 
 	@Override
 	public void addListener(ISearchResultListener l) {
-		// not needed for static results
+		listeners.add(l);
 	}
 
 	@Override
 	public void removeListener(ISearchResultListener l) {
-		// not needed for static results
+		listeners.remove(l);
 	}
 }

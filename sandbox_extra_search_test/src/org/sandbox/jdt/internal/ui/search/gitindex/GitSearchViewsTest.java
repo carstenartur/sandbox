@@ -104,6 +104,42 @@ class GitSearchViewsTest {
 		}
 	}
 
+	@Test void editedInputsIgnoreAnInFlightResponse() throws Exception {
+		try (var fixture= new ViewFixture(new GitSearchView(), "Git Database Search")) {
+			fixture.responseGate= new java.util.concurrent.CountDownLatch(1);
+			fixture.body= "{\"results\":[{\"objectId\":\"old-repository\"}]}";
+			fixture.beginQuery("fix");
+			fixture.await(() -> fixture.request != null);
+			var job= pendingQuery();
+			fixture.view.repository.setText("new-repository");
+			fixture.responseGate.countDown();
+			fixture.await(() -> job.getState() == org.eclipse.core.runtime.jobs.Job.NONE);
+			while (org.eclipse.swt.widgets.Display.getCurrent().readAndDispatch()) { }
+			assertEquals(0, fixture.view.table.getTable().getItemCount());
+			assertTrue(fixture.message().startsWith("Inputs changed."));
+		}
+	}
+
+	@Test void disposedViewIgnoresAnInFlightResponse() throws Exception {
+		try (var fixture= new ViewFixture(new GitSearchView(), "Git Database Search")) {
+			fixture.responseGate= new java.util.concurrent.CountDownLatch(1);
+			fixture.beginQuery("fix");
+			fixture.await(() -> fixture.request != null);
+			var job= pendingQuery();
+			fixture.shell.dispose();
+			fixture.responseGate.countDown();
+			fixture.await(() -> job.getState() == org.eclipse.core.runtime.jobs.Job.NONE);
+			while (org.eclipse.swt.widgets.Display.getCurrent().readAndDispatch()) { }
+			assertTrue(fixture.shell.isDisposed());
+		}
+	}
+
+	private static org.eclipse.core.runtime.jobs.Job pendingQuery() {
+		return Arrays.stream(org.eclipse.core.runtime.jobs.Job.getJobManager().find(null))
+				.filter(job -> job.getName().equals("Search") && job.getState() == org.eclipse.core.runtime.jobs.Job.RUNNING)
+				.findFirst().orElseThrow();
+	}
+
 	private static final class ViewFixture implements AutoCloseable {
 		final Shell shell= new Shell();
 		final GitResultsView view;
@@ -111,12 +147,17 @@ class GitSearchViewsTest {
 		volatile String body= "{\"results\":[]}";
 		volatile String request;
 		volatile int status= 200;
+		volatile java.util.concurrent.CountDownLatch responseGate;
 
 		ViewFixture(GitResultsView view, String title) throws Exception {
 			this.view= view;
 			server= HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
 			server.createContext("/", exchange -> {
 				request= exchange.getRequestURI().toString();
+				try {
+					if (responseGate != null && !responseGate.await(10, java.util.concurrent.TimeUnit.SECONDS))
+						throw new java.io.IOException("Timed out waiting to release fixture response");
+				} catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); throw new java.io.IOException(interrupted); }
 				byte[] bytes= body.getBytes(StandardCharsets.UTF_8);
 				exchange.sendResponseHeaders(status, bytes.length);
 				try (var output= exchange.getResponseBody()) { output.write(bytes); }
@@ -130,10 +171,14 @@ class GitSearchViewsTest {
 		}
 
 		void query(String text) throws Exception {
+			beginQuery(text);
+			await(() -> !message().equals("Loading…"));
+		}
+
+		void beginQuery(String text) {
 			view.repository.setText("demo");
 			if (text != null) widgets(shell).filter(Text.class::isInstance).map(Text.class::cast).findFirst().orElseThrow().setText(text);
 			widgets(shell).filter(Button.class::isInstance).findFirst().orElseThrow().notifyListeners(SWT.Selection, new Event());
-			await(() -> !message().equals("Loading…"));
 		}
 
 		String message() {
@@ -143,7 +188,7 @@ class GitSearchViewsTest {
 		void await(BooleanSupplier condition) throws Exception {
 			long deadline= System.nanoTime() + java.time.Duration.ofSeconds(10).toNanos();
 			while (!condition.getAsBoolean() && System.nanoTime() < deadline) {
-				if (!shell.getDisplay().readAndDispatch()) Thread.sleep(10);
+				if (!org.eclipse.swt.widgets.Display.getCurrent().readAndDispatch()) Thread.sleep(10);
 			}
 			assertTrue(condition.getAsBoolean(), "Timed out waiting for view result");
 		}
@@ -175,6 +220,7 @@ class GitSearchViewsTest {
 		}
 
 		@Override public void close() {
+			if (responseGate != null) responseGate.countDown();
 			shell.dispose();
 			server.stop(0);
 			SemanticSearchClient.initialize(null);
