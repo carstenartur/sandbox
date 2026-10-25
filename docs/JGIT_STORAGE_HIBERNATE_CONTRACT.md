@@ -29,7 +29,9 @@ jgit-storage-hibernate-benchmarks
 The server's released Search adapter qualifies commit/path queries, author counts
 and the health probe against real H2/Lucene projections through both REST prefixes.
 External-context Smart HTTP ingestion is also exercised through push, restart,
-clone and projection-aware deletion. Normal startup, Java analysis, scalable
+clone and projection-aware deletion. Exact file history additionally exercises all
+ref ancestry, detached HEAD, retained historical roots, per-commit unchanged blobs,
+submodules, exact paths, paging, interruption and restart. Normal startup, Java analysis, scalable
 incremental indexing and full-history recovery remain separate migration slices. The bridge continues to reject Search so server dependencies do not leak
 into Eclipse consumers.
 

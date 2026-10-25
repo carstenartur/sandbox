@@ -21,7 +21,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
-import org.eclipse.jgit.storage.hibernate.entity.FilePathHistory;
+import org.eclipse.jgit.server.history.SandboxFileHistory;
+import org.eclipse.jgit.server.history.CopiedSandboxFileHistory;
+import org.eclipse.jgit.server.history.SandboxFileHistory.FileVersion;
 import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch.CommitHit;
@@ -76,6 +78,8 @@ public class SearchResource extends HttpServlet {
 
 	private final SandboxHistorySearch history;
 
+	private final SandboxFileHistory files;
+
 	private final Gson gson = new Gson();
 
 	private static final int MAX_QUERY_LENGTH = 1000;
@@ -96,6 +100,12 @@ public class SearchResource extends HttpServlet {
 
 	/** Selects the history adapter independently of the transitional Java queries. */
 	public SearchResource(HibernateSessionFactoryProvider provider, SandboxHistorySearch history) {
+		this(provider, history, new CopiedSandboxFileHistory(provider.getSessionFactory()));
+	}
+
+	/** Selects independent commit and per-commit file history boundaries. */
+	public SearchResource(HibernateSessionFactoryProvider provider, SandboxHistorySearch history, SandboxFileHistory files) {
+		this.files = java.util.Objects.requireNonNull(files);
 		this.provider = provider;
 		this.history = java.util.Objects.requireNonNull(history);
 		this.embeddingService = new EmbeddingService();
@@ -221,7 +231,7 @@ public class SearchResource extends HttpServlet {
 				String path = req.getParameter("path"); //$NON-NLS-1$
 				if (path != null && !path.isEmpty()) {
 					path = sanitizeInput(path);
-					handleFileHistory(queryService, repo, path, offset,
+					handleFileHistory(repo, path, offset,
 							limit, resp);
 				} else {
 					handleFilePathSearch(queryService, repo, query,
@@ -425,16 +435,15 @@ public class SearchResource extends HttpServlet {
 	private void handleFilePathSearch(GitDatabaseQueryService queryService,
 			String repo, String query, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<FilePathHistory> results = queryService
-				.searchFilePath(repo, query, offset, limit);
+		List<FileVersion> results = queryService
+				.searchFilePath(repo, query, offset, limit).stream().map(file -> new FileVersion(
+						file.getCommitObjectId(), file.getFilePath(), file.getBlobObjectId(), file.getFileType(), file.getCommitTime())).toList();
 		writeFilePathResponse(results, repo, query, offset, limit, resp);
 	}
 
-	private void handleFileHistory(GitDatabaseQueryService queryService,
-			String repo, String path, int offset, int limit,
+	private void handleFileHistory(String repo, String path, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
-		List<FilePathHistory> results = queryService
-				.getFileHistory(repo, path, offset, limit);
+		List<FileVersion> results = files.versions(repo, path, offset, limit);
 		writeFilePathResponse(results, repo, path, offset, limit, resp);
 	}
 
@@ -713,7 +722,7 @@ public class SearchResource extends HttpServlet {
 		return item;
 	}
 
-	private void writeFilePathResponse(List<FilePathHistory> results,
+	private void writeFilePathResponse(List<FileVersion> results,
 			String repo, String query, int offset, int limit,
 			HttpServletResponse resp) throws IOException {
 		JsonObject response = new JsonObject();
@@ -724,17 +733,17 @@ public class SearchResource extends HttpServlet {
 		response.addProperty("totalResults", results.size()); //$NON-NLS-1$
 
 		JsonArray items = new JsonArray();
-		for (FilePathHistory fph : results) {
+		for (FileVersion fph : results) {
 			JsonObject item = new JsonObject();
 			item.addProperty("commitObjectId", //$NON-NLS-1$
-					fph.getCommitObjectId());
-			item.addProperty("filePath", fph.getFilePath()); //$NON-NLS-1$
+					fph.commitObjectId());
+			item.addProperty("filePath", fph.filePath()); //$NON-NLS-1$
 			item.addProperty("blobObjectId", //$NON-NLS-1$
-					fph.getBlobObjectId());
-			item.addProperty("fileType", fph.getFileType()); //$NON-NLS-1$
-			if (fph.getCommitTime() != null) {
+					fph.blobObjectId());
+			item.addProperty("fileType", fph.fileType()); //$NON-NLS-1$
+			if (fph.commitTime() != null) {
 				item.addProperty("commitTime", //$NON-NLS-1$
-						fph.getCommitTime().toString());
+						fph.commitTime().toString());
 			}
 			items.add(item);
 		}
