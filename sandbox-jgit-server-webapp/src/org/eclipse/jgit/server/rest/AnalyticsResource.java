@@ -21,7 +21,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
-import org.eclipse.jgit.storage.hibernate.service.GitDatabaseQueryService;
+import org.eclipse.jgit.server.repository.SandboxStorageStatistics;
+import org.eclipse.jgit.server.repository.CopiedSandboxStorageStatistics;
 import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch.AuthorCount;
@@ -40,7 +41,7 @@ public class AnalyticsResource extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
 	private static final Logger LOG = Logger.getLogger(AnalyticsResource.class.getName());
-	private final SessionFactory sessionFactory;
+	private final SandboxStorageStatistics statistics;
 	private final SandboxHistorySearch history;
 	private final Gson gson = new Gson();
 
@@ -51,7 +52,12 @@ public class AnalyticsResource extends HttpServlet {
 
 	/** Creates analytics with the selected history projection. */
 	public AnalyticsResource(SessionFactory sessionFactory, SandboxHistorySearch history) {
-		this.sessionFactory= Objects.requireNonNull(sessionFactory, "sessionFactory"); //$NON-NLS-1$
+		this(history, new CopiedSandboxStorageStatistics(sessionFactory));
+	}
+
+	/** Uses the selected backend for history and physical inventory. */
+	public AnalyticsResource(SandboxHistorySearch history, SandboxStorageStatistics statistics) {
+		this.statistics= Objects.requireNonNull(statistics);
 		this.history= Objects.requireNonNull(history);
 	}
 
@@ -78,13 +84,12 @@ public class AnalyticsResource extends HttpServlet {
 			return;
 		}
 		try {
-			GitDatabaseQueryService queryService = new GitDatabaseQueryService(sessionFactory);
 			if (pathInfo.startsWith("/authors")) { //$NON-NLS-1$
 				handleAuthorStats(repo, resp);
 			} else if (pathInfo.startsWith("/objects")) { //$NON-NLS-1$
-				handleObjectStats(queryService, repo, resp);
+				handleObjectStats(repo, resp);
 			} else if (pathInfo.startsWith("/packs")) { //$NON-NLS-1$
-				handlePackStats(queryService, repo, resp);
+				handlePackStats(repo, resp);
 			} else {
 				resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
 				try (PrintWriter w = resp.getWriter()) {
@@ -120,15 +125,16 @@ public class AnalyticsResource extends HttpServlet {
 		}
 	}
 
-	private void handleObjectStats(GitDatabaseQueryService queryService, String repo,
+	private void handleObjectStats(String repo,
 			HttpServletResponse resp) throws IOException {
 		JsonObject response = new JsonObject();
 		response.addProperty("repository", repo); //$NON-NLS-1$
+		var inventory = statistics.objects(repo);
 		JsonObject counts = new JsonObject();
-		counts.addProperty("commits", queryService.countObjectsByType(repo, 1)); //$NON-NLS-1$
-		counts.addProperty("trees", queryService.countObjectsByType(repo, 2)); //$NON-NLS-1$
-		counts.addProperty("blobs", queryService.countObjectsByType(repo, 3)); //$NON-NLS-1$
-		counts.addProperty("tags", queryService.countObjectsByType(repo, 4)); //$NON-NLS-1$
+		counts.addProperty("commits", inventory.commits()); //$NON-NLS-1$
+		counts.addProperty("trees", inventory.trees()); //$NON-NLS-1$
+		counts.addProperty("blobs", inventory.blobs()); //$NON-NLS-1$
+		counts.addProperty("tags", inventory.tags()); //$NON-NLS-1$
 		response.add("objectCounts", counts); //$NON-NLS-1$
 		resp.setStatus(HttpServletResponse.SC_OK);
 		try (PrintWriter w = resp.getWriter()) {
@@ -136,12 +142,13 @@ public class AnalyticsResource extends HttpServlet {
 		}
 	}
 
-	private void handlePackStats(GitDatabaseQueryService queryService, String repo,
+	private void handlePackStats(String repo,
 			HttpServletResponse resp) throws IOException {
 		JsonObject response = new JsonObject();
 		response.addProperty("repository", repo); //$NON-NLS-1$
-		response.addProperty("packCount", queryService.countPacks(repo)); //$NON-NLS-1$
-		response.addProperty("totalSizeBytes", queryService.getTotalPackSize(repo)); //$NON-NLS-1$
+		var inventory = statistics.packs(repo);
+		response.addProperty("packCount", inventory.packCount()); //$NON-NLS-1$
+		response.addProperty("totalSizeBytes", inventory.totalSizeBytes()); //$NON-NLS-1$
 		resp.setStatus(HttpServletResponse.SC_OK);
 		try (PrintWriter w = resp.getWriter()) {
 			w.write(gson.toJson(response));

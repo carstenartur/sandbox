@@ -20,6 +20,21 @@ public interface SandboxRepositoryService extends AutoCloseable {
 	/** Opens the identity, creating it when absent; the returned handle is borrowed and must not be closed. */
 	Repository openOrCreate(String name) throws IOException;
 
+	/**
+	 * Reads an existing identity without creating it. The callback must not retain or close the
+	 * borrowed repository, or close this service. Released Core denies ref publication through
+	 * this handle; the callback still belongs to trusted application code.
+	 */
+	default <T> T withExistingRepository(String name, RepositoryRead<T> read) throws IOException {
+		throw new UnsupportedOperationException("Existing-only reads require the released Core backend.");
+	}
+
+	/** A scoped application read which may use JGit's checked IO operations. */
+	@FunctionalInterface
+	interface RepositoryRead<T> {
+		T read(Repository repository) throws IOException;
+	}
+
 	/** Normalizes, opens or creates a repository and returns stable application metadata. */
 	SandboxRepositoryInfo info(String name) throws IOException;
 
