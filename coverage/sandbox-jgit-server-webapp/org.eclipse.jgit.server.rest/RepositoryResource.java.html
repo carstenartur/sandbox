@@ -21,8 +21,6 @@ import java.util.logging.Logger;
 
 import org.eclipse.jgit.server.repository.SandboxRepositoryInfo;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
-import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -36,101 +34,92 @@ import jakarta.servlet.http.HttpServletResponse;
 public class RepositoryResource extends HttpServlet {
 
 	private static final long serialVersionUID= 1L;
-<span class="fc" id="L39">	private static final Logger LOG= Logger.getLogger(RepositoryResource.class.getName());</span>
+<span class="fc" id="L37">	private static final Logger LOG= Logger.getLogger(RepositoryResource.class.getName());</span>
 
 	private final SandboxRepositoryService repositories;
-<span class="fc" id="L42">	private final Gson gson= new Gson();</span>
+<span class="fc" id="L40">	private final Gson gson= new Gson();</span>
 
 	/** Creates a resource using the application-owned repository boundary. */
-<span class="fc" id="L45">	public RepositoryResource(SandboxRepositoryService repositories) {</span>
-<span class="fc" id="L46">		this.repositories= repositories;</span>
-<span class="fc" id="L47">	}</span>
-
-	/**
-	 * Compatibility constructor while the application still wires the legacy
-	 * Hibernate provider separately for health, search and analytics.
-	 */
-	@SuppressWarnings(&quot;unused&quot;)
-	public RepositoryResource(HibernateSessionFactoryProvider provider, HibernateRepositoryResolver resolver) {
-<span class="fc" id="L55">		this(resolver.getRepositoryService());</span>
-<span class="fc" id="L56">	}</span>
+<span class="fc" id="L43">	public RepositoryResource(SandboxRepositoryService repositories) {</span>
+<span class="fc" id="L44">		this.repositories= repositories;</span>
+<span class="fc" id="L45">	}</span>
 
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-<span class="fc" id="L60">		prepare(response);</span>
-<span class="fc" id="L61">		StringBuilder input= new StringBuilder();</span>
-<span class="fc" id="L62">		try (BufferedReader reader= request.getReader()) {</span>
+<span class="fc" id="L49">		prepare(response);</span>
+<span class="fc" id="L50">		StringBuilder input= new StringBuilder();</span>
+<span class="fc" id="L51">		try (BufferedReader reader= request.getReader()) {</span>
 			String line;
-<span class="fc bfc" id="L64" title="All 2 branches covered.">			while ((line= reader.readLine()) != null) {</span>
-<span class="fc" id="L65">				input.append(line);</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">			while ((line= reader.readLine()) != null) {</span>
+<span class="fc" id="L54">				input.append(line);</span>
 			}
 		}
 
 		try {
-<span class="fc" id="L70">			JsonObject body= JsonParser.parseString(input.toString()).getAsJsonObject();</span>
-<span class="fc bfc" id="L71" title="All 2 branches covered.">			String name= body.has(&quot;name&quot;) ? body.get(&quot;name&quot;).getAsString() : null; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="pc bpc" id="L72" title="1 of 4 branches missed.">			if (name == null || name.isBlank()) {</span>
-<span class="fc" id="L73">				writeError(response, HttpServletResponse.SC_BAD_REQUEST, &quot;Repository name is required&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L74">				return;</span>
+<span class="fc" id="L59">			JsonObject body= JsonParser.parseString(input.toString()).getAsJsonObject();</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">			String name= body.has(&quot;name&quot;) ? body.get(&quot;name&quot;).getAsString() : null; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="pc bpc" id="L61" title="1 of 4 branches missed.">			if (name == null || name.isBlank()) {</span>
+<span class="fc" id="L62">				writeError(response, HttpServletResponse.SC_BAD_REQUEST, &quot;Repository name is required&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L63">				return;</span>
 			}
-<span class="fc" id="L76">			String normalized= name.strip();</span>
-<span class="pc bpc" id="L77" title="1 of 2 branches missed.">			SandboxRepositoryInfo info= body.has(&quot;description&quot;) //$NON-NLS-1$</span>
-<span class="fc" id="L78">					? repositories.setDescription(normalized, body.get(&quot;description&quot;).getAsString()) //$NON-NLS-1$</span>
-<span class="pc" id="L79">					: repositories.info(normalized);</span>
-<span class="fc" id="L80">			response.setStatus(HttpServletResponse.SC_CREATED);</span>
-<span class="fc" id="L81">			writeInfo(response, info);</span>
-<span class="nc" id="L82">		} catch (Exception exception) {</span>
-<span class="nc" id="L83">			LOG.log(Level.WARNING, &quot;Error creating repository&quot;, exception); //$NON-NLS-1$</span>
-<span class="nc" id="L84">			writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, exception.getMessage());</span>
-<span class="fc" id="L85">		}</span>
-<span class="fc" id="L86">	}</span>
+<span class="fc" id="L65">			String normalized= name.strip();</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">			SandboxRepositoryInfo info= body.has(&quot;description&quot;) //$NON-NLS-1$</span>
+<span class="fc" id="L67">					? repositories.setDescription(normalized, body.get(&quot;description&quot;).getAsString()) //$NON-NLS-1$</span>
+<span class="pc" id="L68">					: repositories.info(normalized);</span>
+<span class="fc" id="L69">			response.setStatus(HttpServletResponse.SC_CREATED);</span>
+<span class="fc" id="L70">			writeInfo(response, info);</span>
+<span class="nc" id="L71">		} catch (Exception exception) {</span>
+<span class="nc" id="L72">			LOG.log(Level.WARNING, &quot;Error creating repository&quot;, exception); //$NON-NLS-1$</span>
+<span class="nc" id="L73">			writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, exception.getMessage());</span>
+<span class="fc" id="L74">		}</span>
+<span class="fc" id="L75">	}</span>
 
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-<span class="fc" id="L90">		prepare(response);</span>
-<span class="fc" id="L91">		String pathInfo= request.getPathInfo();</span>
-<span class="pc bpc" id="L92" title="2 of 4 branches missed.">		if (pathInfo == null || pathInfo.equals(&quot;/&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L93">			response.setStatus(HttpServletResponse.SC_OK);</span>
-<span class="nc" id="L94">			try (PrintWriter writer= response.getWriter()) {</span>
-<span class="nc" id="L95">				JsonObject message= new JsonObject();</span>
-<span class="nc" id="L96">				message.addProperty(&quot;message&quot;, &quot;Use POST to create repos or GET /repos/{name} for info&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L97">				writer.write(gson.toJson(message));</span>
+<span class="fc" id="L79">		prepare(response);</span>
+<span class="fc" id="L80">		String pathInfo= request.getPathInfo();</span>
+<span class="pc bpc" id="L81" title="2 of 4 branches missed.">		if (pathInfo == null || pathInfo.equals(&quot;/&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L82">			response.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="nc" id="L83">			try (PrintWriter writer= response.getWriter()) {</span>
+<span class="nc" id="L84">				JsonObject message= new JsonObject();</span>
+<span class="nc" id="L85">				message.addProperty(&quot;message&quot;, &quot;Use POST to create repos or GET /repos/{name} for info&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L86">				writer.write(gson.toJson(message));</span>
 			}
-<span class="nc" id="L99">			return;</span>
+<span class="nc" id="L88">			return;</span>
 		}
 
-<span class="fc" id="L102">		String repositoryName= pathInfo.substring(1);</span>
+<span class="fc" id="L91">		String repositoryName= pathInfo.substring(1);</span>
 		try {
-<span class="fc" id="L104">			SandboxRepositoryInfo info= repositories.info(repositoryName);</span>
-<span class="fc" id="L105">			response.setStatus(HttpServletResponse.SC_OK);</span>
-<span class="fc" id="L106">			writeInfo(response, info);</span>
-<span class="nc" id="L107">		} catch (Exception exception) {</span>
-<span class="nc" id="L108">			LOG.log(Level.WARNING, &quot;Error retrieving repository: &quot; + repositoryName, exception); //$NON-NLS-1$</span>
-<span class="nc" id="L109">			writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, exception.getMessage());</span>
-<span class="fc" id="L110">		}</span>
-<span class="fc" id="L111">	}</span>
+<span class="fc" id="L93">			SandboxRepositoryInfo info= repositories.info(repositoryName);</span>
+<span class="fc" id="L94">			response.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="fc" id="L95">			writeInfo(response, info);</span>
+<span class="nc" id="L96">		} catch (Exception exception) {</span>
+<span class="nc" id="L97">			LOG.log(Level.WARNING, &quot;Error retrieving repository: &quot; + repositoryName, exception); //$NON-NLS-1$</span>
+<span class="nc" id="L98">			writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, exception.getMessage());</span>
+<span class="fc" id="L99">		}</span>
+<span class="fc" id="L100">	}</span>
 
 	private static void prepare(HttpServletResponse response) {
-<span class="fc" id="L114">		response.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L115">		response.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L116">	}</span>
+<span class="fc" id="L103">		response.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L104">		response.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L105">	}</span>
 
 	private void writeInfo(HttpServletResponse response, SandboxRepositoryInfo info) throws IOException {
-<span class="fc" id="L119">		try (PrintWriter writer= response.getWriter()) {</span>
-<span class="fc" id="L120">			JsonObject result= new JsonObject();</span>
-<span class="fc" id="L121">			result.addProperty(&quot;name&quot;, info.name()); //$NON-NLS-1$</span>
-<span class="fc" id="L122">			result.addProperty(&quot;description&quot;, info.description()); //$NON-NLS-1$</span>
-<span class="fc" id="L123">			writer.write(gson.toJson(result));</span>
+<span class="fc" id="L108">		try (PrintWriter writer= response.getWriter()) {</span>
+<span class="fc" id="L109">			JsonObject result= new JsonObject();</span>
+<span class="fc" id="L110">			result.addProperty(&quot;name&quot;, info.name()); //$NON-NLS-1$</span>
+<span class="fc" id="L111">			result.addProperty(&quot;description&quot;, info.description()); //$NON-NLS-1$</span>
+<span class="fc" id="L112">			writer.write(gson.toJson(result));</span>
 		}
-<span class="fc" id="L125">	}</span>
+<span class="fc" id="L114">	}</span>
 
 	private void writeError(HttpServletResponse response, int status, String message) throws IOException {
-<span class="fc" id="L128">		response.setStatus(status);</span>
-<span class="fc" id="L129">		try (PrintWriter writer= response.getWriter()) {</span>
-<span class="fc" id="L130">			JsonObject error= new JsonObject();</span>
-<span class="fc" id="L131">			error.addProperty(&quot;error&quot;, message); //$NON-NLS-1$</span>
-<span class="fc" id="L132">			writer.write(gson.toJson(error));</span>
+<span class="fc" id="L117">		response.setStatus(status);</span>
+<span class="fc" id="L118">		try (PrintWriter writer= response.getWriter()) {</span>
+<span class="fc" id="L119">			JsonObject error= new JsonObject();</span>
+<span class="fc" id="L120">			error.addProperty(&quot;error&quot;, message); //$NON-NLS-1$</span>
+<span class="fc" id="L121">			writer.write(gson.toJson(error));</span>
 		}
-<span class="fc" id="L134">	}</span>
+<span class="fc" id="L123">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

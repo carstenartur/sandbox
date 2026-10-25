@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReleasedSchemaInitializer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.config</a> &gt; <span class="el_source">ReleasedSchemaInitializer.java</span></div><h1>ReleasedSchemaInitializer.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.config;
+
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Properties;
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
+import io.github.carstenartur.jgit.storage.hibernate.schema.CoreSchemaMigrations;
+import io.github.carstenartur.jgit.storage.hibernate.search.schema.SearchSchemaMigrations;
+
+/** Explicit, exclusive operator action for an empty schema; never performs legacy adoption. */
+public final class ReleasedSchemaInitializer {
+  private ReleasedSchemaInitializer() {}
+
+  public static void initializeEmpty(Properties supplied) {
+<span class="fc" id="L17">    var properties = ExternalCoreStartupGuard.validatedSettings(supplied);</span>
+<span class="fc" id="L18">    String url = properties.getProperty(&quot;hibernate.connection.url&quot;);</span>
+<span class="fc" id="L19">    var locations = ExternalCoreStartupGuard.locations(url);</span>
+<span class="fc" id="L20">    String user = properties.getProperty(&quot;hibernate.connection.username&quot;, &quot;&quot;);</span>
+<span class="fc" id="L21">    String password = properties.getProperty(&quot;hibernate.connection.password&quot;, &quot;&quot;);</span>
+<span class="fc" id="L22">    String schema = properties.getProperty(&quot;hibernate.default_schema&quot;);</span>
+    try {
+<span class="fc" id="L24">      ExternalCoreStartupGuard.loadDriver(properties);</span>
+<span class="fc" id="L25">      try (var connection = DriverManager.getConnection(url, user, password)) {</span>
+<span class="pc bpc" id="L26" title="1 of 4 branches missed.">        if (schema == null || schema.isBlank()) schema = connection.getSchema();</span>
+<span class="pc bpc" id="L27" title="2 of 4 branches missed.">        if (schema == null || schema.isBlank()) throw new IllegalStateException(&quot;Set hibernate.default_schema for initialization&quot;);</span>
+<span class="fc" id="L28">        try (var tables = connection.getMetaData().getTables(connection.getCatalog(), schema, &quot;%&quot;, new String[] {&quot;TABLE&quot;, &quot;VIEW&quot;, &quot;BASE TABLE&quot;})) {</span>
+          // JDBC takes a pattern here: '_' and '%' in an exact schema name also match other schemas.
+<span class="fc bfc" id="L30" title="All 2 branches covered.">          while (tables.next()) {</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">            if (schema.equals(tables.getString(&quot;TABLE_SCHEM&quot;))) {</span>
+<span class="fc" id="L32">              throw new IllegalStateException(&quot;Schema initialization requires an empty schema; use the documented adoption procedure for existing data&quot;);</span>
+            }
+          }
+        }
+      }
+<span class="fc" id="L37">      configuration(url, user, password, schema).locations(locations.core()).table(CoreSchemaMigrations.SCHEMA_HISTORY_TABLE)</span>
+<span class="fc" id="L38">          .baselineOnMigrate(false).load().migrate();</span>
+      // Only our just-created Core tables can be present after the explicit empty-schema precondition.
+<span class="fc" id="L40">      configuration(url, user, password, schema).locations(locations.search()).table(SearchSchemaMigrations.SCHEMA_HISTORY_TABLE)</span>
+<span class="fc" id="L41">          .baselineOnMigrate(true).baselineVersion(&quot;0&quot;).load().migrate();</span>
+<span class="fc" id="L42">      ExternalCoreStartupGuard.requireReady(properties);</span>
+<span class="nc" id="L43">    } catch (SQLException | ClassNotFoundException failure) {</span>
+<span class="nc" id="L44">      throw new IllegalStateException(&quot;Could not initialize the empty Core/Search schema&quot;, failure);</span>
+<span class="fc" id="L45">    }</span>
+<span class="fc" id="L46">  }</span>
+
+  private static FluentConfiguration configuration(String url, String user, String password, String schema) {
+<span class="fc" id="L49">    return Flyway.configure().dataSource(url, user, password).defaultSchema(schema).schemas(schema)</span>
+<span class="fc" id="L50">        .createSchemas(false).cleanDisabled(true).failOnMissingLocations(true);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

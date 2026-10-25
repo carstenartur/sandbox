@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HistoricalSourceIndex.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">HistoricalSourceIndex.java</span></div><h1>HistoricalSourceIndex.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.EnumMap;
+import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.*;
+
+/** Application rows and reports sharing one immutable released source-search generation. */
+final class HistoricalSourceIndex implements Closeable {
+<span class="fc" id="L15">  private static final System.Logger LOG = System.getLogger(HistoricalSourceIndex.class.getName());</span>
+  private final JavaFileSearchIndex index;
+  private final String repositoryName;
+  private final List&lt;AnalyzedFile&gt; files;
+  private final Map&lt;String, AnalyzedFile&gt; byBlob;
+  private final ApplicationSourceReports reports;
+  private ApplicationVectorIndex vectors;
+
+<span class="fc" id="L23">  private HistoricalSourceIndex(String repositoryName, JavaFileSearchIndex index, LinkedHashMap&lt;String, AnalyzedFile&gt; files) {</span>
+<span class="fc" id="L24">    this.repositoryName = repositoryName;</span>
+<span class="fc" id="L25">    this.index = index; this.files = List.copyOf(files.values()); this.byBlob = Map.copyOf(files);</span>
+<span class="fc" id="L26">    reports = new ApplicationSourceReports(this.files);</span>
+<span class="fc" id="L27">  }</span>
+
+  static HistoricalSourceIndex build(String canonicalName, List&lt;AnalyzedFile&gt; corpus) throws IOException {
+<span class="fc" id="L30">    var files = new LinkedHashMap&lt;String, AnalyzedFile&gt;();</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">    for (var file : corpus) {</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">      if (!canonicalName.equals(file.repositoryName())) throw new IllegalArgumentException(&quot;Mixed repository source generation&quot;);</span>
+<span class="fc" id="L33">      files.putIfAbsent(file.blobObjectId(), file);</span>
+<span class="fc" id="L34">    }</span>
+<span class="fc" id="L35">    var documents = new ArrayList&lt;JavaFileSearchDocument&gt;();</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">    for (var file : files.values()) {</span>
+<span class="fc" id="L37">      org.eclipse.jgit.server.history.GitHistorySnapshot.checkInterrupted();</span>
+<span class="fc" id="L38">      var document = searchableDocument(file);</span>
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">      if (document != null) documents.add(document);</span>
+<span class="fc" id="L40">    }</span>
+    JavaFileSearchIndex index;
+    try {
+<span class="fc" id="L43">      index = JavaFileSearchIndex.build(documents);</span>
+<span class="fc" id="L44">    } catch (IllegalArgumentException invalidToken) {</span>
+      // The released analyzer can discover an invalid term only while indexing. Probe
+      // documents through that same public API on this exceptional path; do not copy
+      // its analyzers, truncate identifiers, or lose the complete report corpus.
+<span class="fc" id="L48">      var accepted = new ArrayList&lt;JavaFileSearchDocument&gt;();</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">      for (var document : documents) {</span>
+<span class="fc" id="L50">        org.eclipse.jgit.server.history.GitHistorySnapshot.checkInterrupted();</span>
+<span class="fc" id="L51">        try (var probe = JavaFileSearchIndex.build(List.of(document))) {</span>
+<span class="fc" id="L52">          accepted.add(document);</span>
+<span class="fc" id="L53">        } catch (IllegalArgumentException invalidDocument) {</span>
+<span class="fc" id="L54">          LOG.log(System.Logger.Level.WARNING, &quot;Unsearchable Git blob {0}; retained in reports&quot;, document.blobId());</span>
+<span class="fc" id="L55">        }</span>
+<span class="fc" id="L56">      }</span>
+<span class="fc" id="L57">      index = JavaFileSearchIndex.build(accepted);</span>
+<span class="fc" id="L58">    }</span>
+<span class="fc" id="L59">    return new HistoricalSourceIndex(canonicalName, index, files);</span>
+  }
+
+  private static JavaFileSearchDocument searchableDocument(AnalyzedFile file) {
+    try {
+<span class="fc" id="L64">      return file.searchDocument();</span>
+<span class="fc" id="L65">    } catch (IllegalArgumentException invalidField) {</span>
+      try {
+<span class="fc" id="L67">        document(file, Map.of());</span>
+<span class="nc" id="L68">      } catch (IllegalArgumentException invalidMetadata) {</span>
+<span class="nc" id="L69">        LOG.log(System.Logger.Level.WARNING, &quot;Unsearchable metadata in Git blob {0}; retained in reports&quot;, file.blobObjectId());</span>
+<span class="nc" id="L70">        return null;</span>
+<span class="fc" id="L71">      }</span>
+<span class="fc" id="L72">      var fields = new EnumMap&lt;JavaFileSearchField, String&gt;(JavaFileSearchField.class);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">      for (var entry : file.facets().entrySet()) {</span>
+        try {
+<span class="fc" id="L75">          document(file, Map.of(entry.getKey(), entry.getValue()));</span>
+<span class="fc" id="L76">          fields.put(entry.getKey(), entry.getValue());</span>
+<span class="fc" id="L77">        } catch (IllegalArgumentException invalidFacet) {</span>
+<span class="fc" id="L78">          LOG.log(System.Logger.Level.WARNING, &quot;Unsearchable field {0} in Git blob {1}; other fields retained&quot;,</span>
+<span class="fc" id="L79">              entry.getKey(), file.blobObjectId());</span>
+<span class="fc" id="L80">        }</span>
+<span class="fc" id="L81">      }</span>
+<span class="fc" id="L82">      return document(file, fields);</span>
+    }
+  }
+
+  private static JavaFileSearchDocument document(AnalyzedFile file, Map&lt;JavaFileSearchField, String&gt; fields) {
+<span class="fc" id="L87">    return new JavaFileSearchDocument(file.repositoryName(), file.blobObjectId(), file.commitObjectId(),</span>
+<span class="fc" id="L88">        file.blobObjectId(), file.filePath(), file.projectName(), file.fileType(), fields);</span>
+  }
+
+  List&lt;AnalyzedFile&gt; search(String canonicalName, String text, String module, String fileType,
+      Map&lt;JavaFileSearchField, Float&gt; boosts, int offset, int limit) throws IOException {
+<span class="fc bfc" id="L93" title="All 6 branches covered.">    boolean exactModule = module != null &amp;&amp; !module.isEmpty() &amp;&amp; module.isBlank();</span>
+<span class="fc bfc" id="L94" title="All 6 branches covered.">    boolean exactType = fileType != null &amp;&amp; !fileType.isEmpty() &amp;&amp; fileType.isBlank();</span>
+<span class="fc bfc" id="L95" title="All 4 branches covered.">    if (exactModule || exactType) {</span>
+      // The public index treats blank filters as absent; Sandbox historically distinguishes
+      // an empty parameter from a nonempty whitespace value. Retain that exact application
+      // contract through bounded public pages, applying pagination after metadata matching.
+<span class="fc" id="L99">      var result = new java.util.ArrayList&lt;AnalyzedFile&gt;();</span>
+<span class="fc" id="L100">      int position = 0; long matched = 0;</span>
+      for (;;) {
+<span class="fc" id="L102">        org.eclipse.jgit.server.history.GitHistorySnapshot.checkInterrupted();</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">        var page = index.search(new JavaFileSearchQuery(canonicalName, exactModule ? null : module,</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            exactType ? null : fileType, text, boosts, position, 128));</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        for (var hit : page) {</span>
+<span class="fc" id="L106">          var file = byBlob.get(hit.documentId());</span>
+<span class="fc bfc" id="L107" title="All 8 branches covered.">          if (exactModule &amp;&amp; !module.equals(file.projectName()) || exactType &amp;&amp; !fileType.equals(file.fileType())) continue;</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">          if (matched++ &lt; offset) continue;</span>
+<span class="fc" id="L109">          result.add(file);</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">          if (result.size() == limit) return List.copyOf(result);</span>
+<span class="fc" id="L111">        }</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (page.size() &lt; 128) return List.copyOf(result);</span>
+<span class="fc" id="L113">        position = Math.addExact(position, page.size());</span>
+<span class="fc" id="L114">      }</span>
+    }
+<span class="fc" id="L116">    return index.search(new JavaFileSearchQuery(canonicalName, module, fileType, text, boosts, offset, limit))</span>
+<span class="fc" id="L117">        .stream().map(hit -&gt; byBlob.get(hit.documentId())).toList();</span>
+  }
+
+<span class="fc" id="L120">  AnalyzedFile byBlob(String id) { return byBlob.get(id); }</span>
+  /** The generation owns vectors; the context owns the encoder and waits for this reader. */
+  synchronized ApplicationVectorIndex vectors(EmbeddingEncoder encoder) throws IOException {
+<span class="fc bfc" id="L123" title="All 2 branches covered.">    if (vectors != null) return vectors;</span>
+<span class="fc" id="L124">    var values = new LinkedHashMap&lt;String, float[]&gt;();</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">    for (var file : files) {</span>
+<span class="fc" id="L126">      org.eclipse.jgit.server.history.GitHistorySnapshot.checkInterrupted();</span>
+<span class="pc bpc" id="L127" title="1 of 4 branches missed.">      if (encoder.status() == EmbeddingEncoder.Status.DISABLED || encoder.status() == EmbeddingEncoder.Status.UNAVAILABLE</span>
+<span class="pc bpc" id="L128" title="1 of 2 branches missed.">          || encoder.status() == EmbeddingEncoder.Status.CLOSED) break;</span>
+<span class="pc bpc" id="L129" title="1 of 2 branches missed.">      if (!&quot;java&quot;.equals(file.fileType())) continue;</span>
+<span class="fc" id="L130">      String text = LocalEmbeddingEncoder.inputText(file.simpleClassName(), file.primaryDocumentation(),</span>
+<span class="fc" id="L131">          file.facet(JavaFileSearchField.METHOD_SIGNATURES), file.packageName());</span>
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">      if (text.isBlank()) continue;</span>
+<span class="fc" id="L133">      float[] vector = encoder.embed(text);</span>
+<span class="fc" id="L134">      org.eclipse.jgit.server.history.GitHistorySnapshot.checkInterrupted();</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">      if (vector != null) values.put(file.blobObjectId(), vector);</span>
+<span class="fc" id="L136">    }</span>
+<span class="fc" id="L137">    vectors = ApplicationVectorIndex.build(values);</span>
+<span class="fc" id="L138">    return vectors;</span>
+  }
+<span class="fc" id="L140">  String repositoryName() { return repositoryName; }</span>
+<span class="fc" id="L141">  List&lt;AnalyzedFile&gt; files() { return files; }</span>
+<span class="fc" id="L142">  ApplicationSourceReports reports() { return reports; }</span>
+<span class="fc" id="L143">  @Override public void close() throws IOException { index.close(); }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

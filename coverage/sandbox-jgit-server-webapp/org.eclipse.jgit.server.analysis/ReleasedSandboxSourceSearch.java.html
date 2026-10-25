@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReleasedSandboxSourceSearch.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">ReleasedSandboxSourceSearch.java</span></div><h1>ReleasedSandboxSourceSearch.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import static io.github.carstenartur.jgit.storage.hibernate.javaanalysis.JavaFileSearchField.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import org.eclipse.jgit.server.history.SandboxFileHistory.FileVersion;
+import org.eclipse.jgit.server.search.SandboxSourceSearch;
+import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.JavaFileSearchField;
+
+/** Released analysis mapped to the established application contract while each generation is pinned. */
+public final class ReleasedSandboxSourceSearch implements SandboxSourceSearch {
+  interface SemanticQueries {
+    List&lt;AnalyzedFile&gt; semantic(HistoricalSourceIndex index, String query, int limit) throws IOException;
+    List&lt;AnalyzedFile&gt; hybrid(HistoricalSourceIndex index, String query, int limit) throws IOException;
+    List&lt;AnalyzedFile&gt; similar(HistoricalSourceIndex index, String blob, int limit) throws IOException;
+  }
+<span class="fc" id="L21">  private static final SourceDiff EMPTY_DIFF = new SourceDiff(List.of(), List.of(), List.of());</span>
+  private final HistoricalAnalysis analysis;
+  private final boolean pathHistory;
+  private final SemanticQueries semantics;
+
+  public ReleasedSandboxSourceSearch(org.hibernate.SessionFactory factory,
+      org.eclipse.jgit.server.repository.SandboxRepositoryService repositories, AnalysisGenerations generations,
+      AnalysisSettings settings, EmbeddingEncoder encoder) {
+<span class="fc" id="L29">    this(new HistoricalAnalysis(factory, repositories, generations, settings.corpus()),</span>
+<span class="fc" id="L30">        settings.filePathHistory(), new ApplicationSemanticQueries(encoder));</span>
+<span class="fc" id="L31">  }</span>
+
+<span class="fc" id="L33">  ReleasedSandboxSourceSearch(HistoricalAnalysis analysis, boolean pathHistory, SemanticQueries semantics) {</span>
+<span class="fc" id="L34">    this.analysis = Objects.requireNonNull(analysis); this.pathHistory = pathHistory;</span>
+<span class="fc" id="L35">    this.semantics = Objects.requireNonNull(semantics);</span>
+<span class="fc" id="L36">  }</span>
+
+  @Override public List&lt;SourceFile&gt; searchByType(String repo, String query, int offset, int limit) throws IOException {
+<span class="fc" id="L39">    return text(repo, query, null, null, Map.of(QUALIFIED_NAMES, 2f, DECLARED_TYPES, 1.5f), offset, limit);</span>
+  }
+  @Override public List&lt;SourceFile&gt; searchByTypeWithModule(String repo, String query, String module, int offset, int limit) throws IOException {
+<span class="fc" id="L42">    return text(repo, query, module, null, Map.of(SIMPLE_CLASS_NAME, 1f, DECLARED_TYPES, 1f, QUALIFIED_NAMES, 1f), offset, limit);</span>
+  }
+  @Override public List&lt;SourceFile&gt; searchBySymbol(String repo, String query, int offset, int limit) throws IOException {
+<span class="fc" id="L45">    return text(repo, query, null, null, Map.of(METHODS, 1.5f, FIELDS, 1f), offset, limit);</span>
+  }
+  @Override public List&lt;SourceFile&gt; searchByHierarchy(String repo, String query, int offset, int limit) throws IOException {
+<span class="fc" id="L48">    return text(repo, query, null, null, Map.of(EXTENDED_TYPES, 1f, IMPLEMENTED_TYPES, 1f), offset, limit);</span>
+  }
+  @Override public List&lt;SourceFile&gt; searchByAnnotation(String repo, String query, int offset, int limit) throws IOException {
+<span class="fc" id="L51">    return text(repo, query, null, null, Map.of(ANNOTATIONS, 1f), offset, limit);</span>
+  }
+  @Override public List&lt;SourceFile&gt; searchSourceContent(String repo, String query, int offset, int limit) throws IOException {
+<span class="fc" id="L54">    return text(repo, query, null, null, Map.of(SOURCE, 1f), offset, limit);</span>
+  }
+  @Override public List&lt;SourceFile&gt; searchByDocumentation(String repo, String query, int offset, int limit) throws IOException {
+<span class="fc" id="L57">    return text(repo, query, null, null, Map.of(DOCUMENTATION, 1f), offset, limit);</span>
+  }
+  @Override public List&lt;SourceFile&gt; searchByReferencedType(String repo, String query, int offset, int limit) throws IOException {
+<span class="fc" id="L60">    return text(repo, query, null, null, Map.of(REFERENCED_TYPES, 1f), offset, limit);</span>
+  }
+  @Override public List&lt;SourceFile&gt; searchByStringLiteral(String repo, String query, int offset, int limit) throws IOException {
+<span class="fc" id="L63">    return text(repo, query, null, null, Map.of(STRING_LITERALS, 1f), offset, limit);</span>
+  }
+  @Override public List&lt;SourceFile&gt; searchFqnAcrossTypes(String repo, String query, String fileType, int offset, int limit) throws IOException {
+<span class="fc" id="L66">    return text(repo, query, null, fileType, Map.of(QUALIFIED_NAMES, 1f), offset, limit);</span>
+  }
+  private List&lt;SourceFile&gt; text(String repo, String query, String module, String fileType,
+      Map&lt;JavaFileSearchField, Float&gt; boosts, int offset, int limit) throws IOException {
+<span class="fc" id="L70">    page(offset, limit);</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">    if (blank(query)) return List.of();</span>
+<span class="fc" id="L72">    return sources(repo, List.of(), index -&gt; files(index.search(index.repositoryName(), query, module, fileType, boosts, offset, limit)));</span>
+  }
+
+  @Override public List&lt;FileVersion&gt; searchFilePath(String repo, String query, int offset, int limit) throws IOException {
+<span class="fc" id="L76">    page(offset, limit);</span>
+<span class="pc bpc" id="L77" title="2 of 6 branches missed.">    if (!pathHistory || blank(repo) || blank(query)) return List.of();</span>
+<span class="fc" id="L78">    try { return analysis.paths(repo, index -&gt; index.search(index.repositoryName(), query, offset, limit)); }</span>
+<span class="nc" id="L79">    catch (FileNotFoundException missing) { return List.of(); }</span>
+  }
+  @Override public List&lt;SourceFile&gt; semanticSearch(String repo, String query, int limit) throws IOException {
+<span class="fc" id="L82">    page(0, limit);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">    if (blank(query)) return List.of();</span>
+<span class="fc" id="L84">    return sources(repo, List.of(), index -&gt; files(semantics.semantic(index, query, limit)));</span>
+  }
+  @Override public List&lt;SourceFile&gt; hybridSearch(String repo, String query, int limit) throws IOException {
+<span class="nc" id="L87">    page(0, limit);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">    if (blank(query)) return List.of();</span>
+<span class="nc" id="L89">    return sources(repo, List.of(), index -&gt; files(semantics.hybrid(index, query, limit)));</span>
+  }
+  @Override public List&lt;SourceFile&gt; findSimilarCode(String repo, String blob, int limit) throws IOException {
+<span class="nc" id="L92">    page(0, limit);</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">    if (blank(blob)) return List.of();</span>
+<span class="nc" id="L94">    return sources(repo, List.of(), index -&gt; files(semantics.similar(index, blob, limit)));</span>
+  }
+  @Override public List&lt;SourceFile&gt; getMigrationImpact(String repo, String prefix, int offset, int limit) throws IOException {
+<span class="fc" id="L97">    page(offset, limit); return sources(repo, List.of(), index -&gt; files(index.reports().migration(prefix, offset, limit)));</span>
+  }
+  @Override public Map&lt;String, Object&gt; getMigrationImpactSummary(String repo, String prefix) throws IOException {
+<span class="fc" id="L100">    return sources(repo, new ApplicationSourceReports(List.of()).migrationSummary(prefix), index -&gt; index.reports().migrationSummary(prefix));</span>
+  }
+  @Override public List&lt;SourceFile&gt; getDeprecatedApiUsage(String repo, int offset, int limit) throws IOException {
+<span class="fc" id="L103">    page(offset, limit); return sources(repo, List.of(), index -&gt; files(index.reports().deprecated(false, offset, limit)));</span>
+  }
+  @Override public List&lt;SourceFile&gt; getDeprecationTimeline(String repo, int offset, int limit) throws IOException {
+<span class="fc" id="L106">    page(offset, limit); return sources(repo, List.of(), index -&gt; files(index.reports().deprecated(true, offset, limit)));</span>
+  }
+<span class="fc" id="L108">  @Override public SourceDiff getApiDiff(String repo, String before, String after) throws IOException { return api(repo, before, after, false); }</span>
+<span class="fc" id="L109">  @Override public SourceDiff getPublicApiChanges(String repo, String before, String after) throws IOException { return api(repo, before, after, true); }</span>
+  private SourceDiff api(String repo, String before, String after, boolean publicOnly) throws IOException {
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">    if (blank(repo)) return EMPTY_DIFF;</span>
+<span class="fc" id="L112">    try { return analysis.api(repo, before, after, publicOnly, diff -&gt; new SourceDiff(files(diff.added()), files(diff.removed()),</span>
+<span class="pc" id="L113">        diff.changed().stream().map(change -&gt; new Change(file(change.before()), file(change.after()), change.description())).toList())); }</span>
+<span class="fc" id="L114">    catch (FileNotFoundException missing) { return EMPTY_DIFF; }</span>
+  }
+  @Override public List&lt;AuthorTypes&gt; getAuthorTypeStatistics(String repo) throws IOException {
+<span class="fc" id="L117">    return sources(repo, List.of(), index -&gt; index.reports().authors().stream().map(row -&gt; new AuthorTypes(row.author(), row.kind(), row.count())).toList());</span>
+  }
+  @Override public List&lt;Complexity&gt; getCodeComplexityTrend(String repo, String prefix) throws IOException {
+<span class="fc" id="L120">    return sources(repo, List.of(), index -&gt; index.reports().complexity(prefix).stream().map(row -&gt; new Complexity(row.date(), row.average())).toList());</span>
+  }
+  @Override public List&lt;SourceFile&gt; getMonsterClasses(String repo, int threshold, int offset, int limit) throws IOException {
+<span class="fc" id="L123">    page(offset, limit); return sources(repo, List.of(), index -&gt; files(index.reports().monsters(threshold, offset, limit)));</span>
+  }
+  @Override public List&lt;SourceFile&gt; getDeadCodeCandidates(String repo, int offset, int limit) throws IOException {
+<span class="fc" id="L126">    page(offset, limit); return sources(repo, List.of(), index -&gt; files(index.reports().dead(offset, limit)));</span>
+  }
+  @Override public List&lt;TestRatio&gt; getTestCoverageProxy(String repo) throws IOException {
+<span class="fc" id="L129">    return sources(repo, List.of(), index -&gt; index.reports().tests().stream().map(row -&gt; new TestRatio(row.packageName(), row.testCount(), row.totalCount())).toList());</span>
+  }
+
+  private &lt;T&gt; T sources(String repo, T empty, AnalysisGenerationCache.Reader&lt;HistoricalSourceIndex, T&gt; read) throws IOException {
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">    if (blank(repo)) return empty;</span>
+<span class="fc" id="L134">    try { return analysis.sources(repo, read); } catch (FileNotFoundException missing) { return empty; }</span>
+  }
+<span class="fc" id="L136">  static List&lt;SourceFile&gt; files(List&lt;AnalyzedFile&gt; values) { return values.stream().map(ReleasedSandboxSourceSearch::file).toList(); }</span>
+  private static SourceFile file(AnalyzedFile value) {
+<span class="fc" id="L138">    return new SourceFile(value.blobObjectId(), value.commitObjectId(), value.filePath(), value.packageName(),</span>
+<span class="fc" id="L139">        value.facets().get(DECLARED_TYPES), value.facets().get(QUALIFIED_NAMES), value.facets().get(METHODS),</span>
+<span class="fc" id="L140">        value.facets().get(FIELDS), value.facets().get(EXTENDED_TYPES), value.facets().get(IMPLEMENTED_TYPES), value.visibility());</span>
+  }
+<span class="pc bpc" id="L142" title="2 of 4 branches missed.">  private static boolean blank(String value) { return value == null || value.isBlank(); }</span>
+  private static void page(int offset, int limit) {
+<span class="pc bpc" id="L144" title="3 of 6 branches missed.">    if (offset &lt; 0 || limit &lt; 1 || limit &gt; 1000) throw new IllegalArgumentException(&quot;Invalid source-search page&quot;);</span>
+<span class="fc" id="L145">  }</span>
+  /** The persistence context closes generations and the optional encoder before repositories. */
+<span class="fc" id="L147">  @Override public void close() { /* Borrowed context resources. */ }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

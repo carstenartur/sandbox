@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ApplicationVectorIndex.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">ApplicationVectorIndex.java</span></div><h1>ApplicationVectorIndex.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.PriorityQueue;
+import java.util.function.Function;
+
+/** Application-owned optional cosine ranking over immutable, repository-scoped document vectors. */
+public final class ApplicationVectorIndex {
+<span class="fc" id="L15">  public record Hit(String id, double score) {}</span>
+<span class="fc" id="L16">  private static final Comparator&lt;Hit&gt; BEST_FIRST = Comparator.comparingDouble(Hit::score).reversed().thenComparing(Hit::id);</span>
+  private final Map&lt;String, float[]&gt; vectors;
+  private final int rejected;
+
+<span class="fc" id="L20">  private ApplicationVectorIndex(Map&lt;String, float[]&gt; vectors, int rejected) {</span>
+<span class="fc" id="L21">    this.vectors = Map.copyOf(vectors); this.rejected = rejected;</span>
+<span class="fc" id="L22">  }</span>
+
+  /** Copies and normalizes inputs. Invalid dimensions, zero vectors and nonfinite values are omitted. */
+  public static ApplicationVectorIndex build(Map&lt;String, float[]&gt; inputs) {
+<span class="fc" id="L26">    var vectors = new LinkedHashMap&lt;String, float[]&gt;();</span>
+<span class="fc" id="L27">    int rejected = 0;</span>
+<span class="fc bfc" id="L28" title="All 2 branches covered.">    for (var entry : inputs.entrySet()) {</span>
+<span class="fc" id="L29">      Objects.requireNonNull(entry.getKey(), &quot;document identity&quot;);</span>
+<span class="fc" id="L30">      var normalized = normalize(entry.getValue());</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">      if (normalized == null) rejected++;</span>
+<span class="fc" id="L32">      else vectors.put(entry.getKey(), normalized);</span>
+<span class="fc" id="L33">    }</span>
+<span class="fc" id="L34">    return new ApplicationVectorIndex(vectors, rejected);</span>
+  }
+
+<span class="fc" id="L37">  public int size() { return vectors.size(); }</span>
+<span class="fc" id="L38">  public int rejectedVectors() { return rejected; }</span>
+
+<span class="fc" id="L40">  public List&lt;Hit&gt; nearest(float[] query, int limit) { return nearestNormalized(normalize(query), limit, null); }</span>
+
+  /** Similarity remains available from existing vectors when the encoder is disabled or unavailable. */
+  public List&lt;Hit&gt; similar(String documentId, int limit) {
+<span class="fc" id="L44">    return nearestNormalized(vectors.get(documentId), limit, documentId);</span>
+  }
+
+  private List&lt;Hit&gt; nearestNormalized(float[] query, int limit, String excluded) {
+<span class="fc" id="L48">    validateLimit(limit);</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">    if (query == null) return List.of();</span>
+<span class="fc" id="L50">    var best = new PriorityQueue&lt;Hit&gt;(Math.min(limit, Math.max(1, vectors.size())), BEST_FIRST.reversed());</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">    for (var entry : vectors.entrySet()) {</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">      if (entry.getKey().equals(excluded)) continue;</span>
+<span class="fc" id="L53">      double dot = 0;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">      for (int i = 0; i &lt; query.length; i++) dot += (double) query[i] * entry.getValue()[i];</span>
+<span class="fc" id="L55">      var hit = new Hit(entry.getKey(), Math.max(-1, Math.min(1, dot)));</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">      if (best.size() &lt; limit) best.add(hit);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">      else if (BEST_FIRST.compare(hit, best.peek()) &lt; 0) { best.poll(); best.add(hit); }</span>
+<span class="fc" id="L58">    }</span>
+<span class="fc" id="L59">    return best.stream().sorted(BEST_FIRST).toList();</span>
+  }
+
+  private static float[] normalize(float[] vector) {
+<span class="pc bpc" id="L63" title="1 of 4 branches missed.">    if (vector == null || vector.length != EmbeddingEncoder.DIMENSIONS) return null;</span>
+<span class="fc" id="L64">    double norm = 0;</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">    for (float value : vector) {</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">      if (!Float.isFinite(value)) return null;</span>
+<span class="fc" id="L67">      norm += (double) value * value;</span>
+    }
+<span class="fc bfc" id="L69" title="All 2 branches covered.">    if (norm == 0) return null;</span>
+<span class="fc" id="L70">    double length = Math.sqrt(norm);</span>
+<span class="fc" id="L71">    var copy = new float[vector.length];</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">    for (int i = 0; i &lt; copy.length; i++) copy[i] = (float) (vector[i] / length);</span>
+<span class="fc" id="L73">    return copy;</span>
+  }
+
+  /** k=60 RRF; stable insertion order preserves semantic-first ties without database IDs. */
+  public static &lt;T&gt; List&lt;T&gt; fuse(List&lt;T&gt; semantic, List&lt;T&gt; fulltext, int limit, Function&lt;T, String&gt; identity) {
+<span class="fc" id="L78">    validateLimit(limit);</span>
+<span class="fc" id="L79">    var entries = new LinkedHashMap&lt;String, T&gt;();</span>
+<span class="fc" id="L80">    var scores = new LinkedHashMap&lt;String, Double&gt;();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">    for (var source : List.of(semantic, fulltext)) {</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">      for (int rank = 0; rank &lt; source.size(); rank++) {</span>
+<span class="fc" id="L83">        T entry = source.get(rank);</span>
+<span class="fc" id="L84">        String id = identity.apply(entry);</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        if (id == null) continue;</span>
+<span class="fc" id="L86">        entries.putIfAbsent(id, entry);</span>
+<span class="fc" id="L87">        scores.merge(id, 1.0 / (60 + rank + 1), Double::sum);</span>
+      }
+<span class="fc" id="L89">    }</span>
+<span class="fc" id="L90">    var ids = new ArrayList&lt;&gt;(entries.keySet());</span>
+<span class="fc" id="L91">    ids.sort(Comparator.comparingDouble((String id) -&gt; scores.get(id)).reversed());</span>
+<span class="fc" id="L92">    return ids.stream().limit(limit).map(entries::get).toList();</span>
+  }
+
+  private static void validateLimit(int limit) {
+<span class="pc bpc" id="L96" title="1 of 4 branches missed.">    if (limit &lt; 1 || limit &gt; 1000) throw new IllegalArgumentException(&quot;Vector result limit must be between 1 and 1000&quot;);</span>
+<span class="fc" id="L97">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

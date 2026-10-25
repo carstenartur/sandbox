@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ApplicationSourceReports.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">ApplicationSourceReports.java</span></div><h1>ApplicationSourceReports.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import static io.github.carstenartur.jgit.storage.hibernate.javaanalysis.JavaFileSearchField.*;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+/** Application report formulas over one repository's immutable, one-row-per-blob historical corpus. */
+final class ApplicationSourceReports {
+<span class="fc" id="L18">  private static final Comparator&lt;String&gt; TEXT = Comparator.nullsFirst(Comparator.naturalOrder());</span>
+<span class="fc" id="L19">  private static final Comparator&lt;Instant&gt; DATE = Comparator.nullsFirst(Comparator.naturalOrder());</span>
+  private final List&lt;AnalyzedFile&gt; files;
+<span class="fc" id="L21">  ApplicationSourceReports(List&lt;AnalyzedFile&gt; files) { this.files = List.copyOf(files); }</span>
+
+<span class="fc" id="L23">  record AuthorTypes(String author, String kind, long count) {}</span>
+<span class="fc" id="L24">  record Complexity(String date, double average) {}</span>
+<span class="fc" id="L25">  record TestRatio(String packageName, long testCount, long totalCount) {}</span>
+
+  List&lt;AuthorTypes&gt; authors() {
+<span class="fc" id="L28">    record Key(String author, String kind) {}</span>
+<span class="fc" id="L29">    var counts = new HashMap&lt;Key, Long&gt;();</span>
+<span class="fc" id="L30">    files.forEach(f -&gt; counts.merge(new Key(f.commitAuthor(), f.typeKind()), 1L, Long::sum));</span>
+<span class="fc" id="L31">    return counts.entrySet().stream().sorted(Map.Entry.comparingByKey(</span>
+<span class="fc" id="L32">        Comparator.comparing(Key::author, TEXT).thenComparing(Key::kind, TEXT)))</span>
+<span class="fc" id="L33">        .map(e -&gt; new AuthorTypes(e.getKey().author(), e.getKey().kind(), e.getValue())).toList();</span>
+  }
+
+  List&lt;Complexity&gt; complexity(String prefix) {
+<span class="fc" id="L37">    var dates = new java.util.TreeMap&lt;Instant, java.util.IntSummaryStatistics&gt;(DATE);</span>
+<span class="pc bpc" id="L38" title="1 of 6 branches missed.">    files.stream().filter(f -&gt; prefix == null || prefix.isEmpty() || like(f.packageName(), prefix + &quot;%&quot;))</span>
+<span class="fc" id="L39">        .forEach(f -&gt; dates.computeIfAbsent(f.commitDate(), ignored -&gt; new java.util.IntSummaryStatistics()).accept(f.lineCount()));</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">    return dates.entrySet().stream().map(e -&gt; new Complexity(e.getKey() == null ? null : e.getKey().toString(),</span>
+<span class="fc" id="L41">        e.getValue().getAverage())).toList();</span>
+  }
+
+  List&lt;TestRatio&gt; tests() {
+<span class="fc" id="L45">    var totals = new java.util.TreeMap&lt;String, long[]&gt;(TEXT);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">    for (var file : files) {</span>
+<span class="fc" id="L47">      var count = totals.computeIfAbsent(file.packageName(), ignored -&gt; new long[2]); count[1]++;</span>
+<span class="fc" id="L48">      String annotations = file.facet(ANNOTATIONS);</span>
+<span class="pc bpc" id="L49" title="1 of 4 branches missed.">      if (annotations.contains(&quot;org.junit.Test&quot;) || annotations.contains(&quot;org.junit.jupiter.api.Test&quot;)) count[0]++;</span>
+<span class="fc" id="L50">    }</span>
+<span class="fc" id="L51">    return totals.entrySet().stream().map(e -&gt; new TestRatio(e.getKey(), e.getValue()[0], e.getValue()[1])).toList();</span>
+  }
+
+  List&lt;AnalyzedFile&gt; monsters(int threshold, int offset, int limit) {
+<span class="fc bfc" id="L55" title="All 2 branches covered.">    return page(files.stream().filter(f -&gt; f.lineCount() &gt;= threshold)</span>
+<span class="fc" id="L56">        .sorted(Comparator.comparingInt(AnalyzedFile::lineCount).reversed()), offset, limit);</span>
+  }
+
+  List&lt;AnalyzedFile&gt; deprecated(boolean chronological, int offset, int limit) {
+<span class="fc" id="L60">    var matches = files.stream().filter(f -&gt; List.of(f.facet(ANNOTATIONS).split(&quot;\n&quot;, -1)).contains(&quot;Deprecated&quot;));</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">    if (chronological) matches = matches.sorted(Comparator.comparing(AnalyzedFile::commitDate, DATE));</span>
+<span class="fc" id="L62">    return page(matches, offset, limit);</span>
+  }
+
+  List&lt;AnalyzedFile&gt; dead(int offset, int limit) {
+<span class="fc" id="L66">    var imports = new HashSet&lt;String&gt;(); var wildcardPackages = new HashSet&lt;String&gt;();</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">    for (var file : files) {</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">      for (String token : file.facet(IMPORTS).split(&quot;[,\\s]+&quot;)) {</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (token.isBlank()) continue;</span>
+<span class="pc bpc" id="L70" title="1 of 4 branches missed.">        if (token.endsWith(&quot;.*&quot;) &amp;&amp; token.length() &gt; 2) wildcardPackages.add(token.substring(0, token.length() - 2));</span>
+<span class="fc" id="L71">        else imports.add(token);</span>
+      }
+<span class="fc" id="L73">    }</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">    return page(files.stream().filter(f -&gt; !f.facet(QUALIFIED_NAMES).isBlank()).filter(f -&gt; {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">      for (String name : f.facet(QUALIFIED_NAMES).split(&quot;[,\\s]+&quot;)) {</span>
+<span class="fc" id="L76">        int dot = name.lastIndexOf('.');</span>
+<span class="pc bpc" id="L77" title="1 of 6 branches missed.">        if (imports.contains(name) || dot &gt; 0 &amp;&amp; wildcardPackages.contains(name.substring(0, dot))) return false;</span>
+      }
+<span class="fc" id="L79">      return true;</span>
+    }), offset, limit);
+  }
+
+  List&lt;AnalyzedFile&gt; migration(String prefix, int offset, int limit) {
+<span class="fc" id="L84">    return page(files.stream().filter(migrationPredicate(prefix)), offset, limit);</span>
+  }
+
+  Map&lt;String, Object&gt; migrationSummary(String prefix) {
+<span class="fc" id="L88">    var packages = new HashSet&lt;String&gt;(); var authors = new HashSet&lt;String&gt;();</span>
+<span class="fc" id="L89">    Instant earliest = null; Instant latest = null; long count = 0;</span>
+<span class="fc" id="L90">    var predicate = migrationPredicate(prefix);</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">    for (var file : files) {</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">      if (!predicate.test(file)) continue;</span>
+<span class="fc" id="L93">      count++;</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">      if (file.packageName() != null) packages.add(file.packageName());</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">      if (file.commitAuthor() != null) authors.add(file.commitAuthor());</span>
+<span class="fc" id="L96">      var date = file.commitDate();</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">      if (date != null) {</span>
+<span class="pc bpc" id="L98" title="1 of 4 branches missed.">        if (earliest == null || date.isBefore(earliest)) earliest = date;</span>
+<span class="fc bfc" id="L99" title="All 4 branches covered.">        if (latest == null || date.isAfter(latest)) latest = date;</span>
+      }
+<span class="fc" id="L101">    }</span>
+<span class="fc" id="L102">    var result = new LinkedHashMap&lt;String, Object&gt;();</span>
+<span class="fc" id="L103">    result.put(&quot;totalFiles&quot;, (int) Math.min(Integer.MAX_VALUE, count));</span>
+<span class="fc" id="L104">    result.put(&quot;distinctPackages&quot;, packages.size()); result.put(&quot;distinctAuthors&quot;, authors.size());</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">    result.put(&quot;earliestDate&quot;, earliest == null ? null : earliest.toString());</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">    result.put(&quot;latestDate&quot;, latest == null ? null : latest.toString());</span>
+<span class="fc" id="L107">    return Collections.unmodifiableMap(result);</span>
+  }
+
+  private static Predicate&lt;AnalyzedFile&gt; migrationPredicate(String prefix) {
+<span class="pc bpc" id="L111" title="1 of 4 branches missed.">    if (prefix == null || prefix.isEmpty()) return ignored -&gt; false;</span>
+<span class="fc bfc" id="L112" title="All 4 branches covered.">    return file -&gt; like(file.facets().get(IMPORTS), prefix + &quot;%&quot;) || like(file.facets().get(IMPORTS), &quot;%\n&quot; + prefix + &quot;%&quot;);</span>
+  }
+
+  static List&lt;AnalyzedFile&gt; page(Stream&lt;AnalyzedFile&gt; matches, int offset, int limit) {
+<span class="fc" id="L116">    return matches.skip(Math.max(0, offset)).limit(Math.max(0, limit)).toList();</span>
+  }
+
+  /** The existing report queries accept SQL LIKE '%' and '_' wildcards; no regex is evaluated. */
+  private static boolean like(String value, String pattern) {
+<span class="fc bfc" id="L121" title="All 2 branches covered.">    if (value == null) return false;</span>
+<span class="fc" id="L122">    int[] text = value.codePoints().toArray(), query = pattern.codePoints().toArray();</span>
+<span class="fc" id="L123">    int t = 0, q = 0, star = -1, retry = 0;</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">    while (t &lt; text.length) {</span>
+<span class="fc bfc" id="L125" title="All 8 branches covered.">      if (q &lt; query.length &amp;&amp; query[q] != '%' &amp;&amp; (query[q] == '_' || query[q] == text[t])) { t++; q++; }</span>
+<span class="fc bfc" id="L126" title="All 4 branches covered.">      else if (q &lt; query.length &amp;&amp; query[q] == '%') { star = q++; retry = t; }</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">      else if (star &gt;= 0) { q = star + 1; t = ++retry; }</span>
+<span class="fc" id="L128">      else return false;</span>
+    }
+<span class="fc bfc" id="L130" title="All 4 branches covered.">    while (q &lt; query.length &amp;&amp; query[q] == '%') q++;</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">    return q == query.length;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

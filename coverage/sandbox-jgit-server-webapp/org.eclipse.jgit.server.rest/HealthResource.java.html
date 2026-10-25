@@ -17,8 +17,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Objects;
 
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
-import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistoryMaintenance;
 import org.hibernate.Session;
@@ -45,128 +43,106 @@ public class HealthResource extends HttpServlet {
 	private final SandboxHistorySearch history;
 	private final SandboxHistoryMaintenance maintenance;
 
-	/**
-	 * Create a health check endpoint from the application-owned native factory.
-	 *
-	 * @param sessionFactory
-	 *            the native session factory for database and search health checks
-	 */
-	public HealthResource(SessionFactory sessionFactory) {
-<span class="fc" id="L55">		this(sessionFactory, new CopiedSandboxHistorySearch(sessionFactory));</span>
-<span class="fc" id="L56">	}</span>
-
 	/** Checks the selected database and history projection. */
 	public HealthResource(SessionFactory sessionFactory, SandboxHistorySearch history) {
-<span class="fc" id="L60">		this(sessionFactory, history, SandboxHistoryMaintenance.NONE);</span>
-<span class="fc" id="L61">	}</span>
+<span class="nc" id="L48">		this(sessionFactory, history, SandboxHistoryMaintenance.NONE);</span>
+<span class="nc" id="L49">	}</span>
 
 	/** Includes known post-publication projection failures in search health. */
-<span class="fc" id="L64">	public HealthResource(SessionFactory sessionFactory, SandboxHistorySearch history, SandboxHistoryMaintenance maintenance) {</span>
-<span class="fc" id="L65">		this.sessionFactory= Objects.requireNonNull(sessionFactory, &quot;sessionFactory&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L66">		this.history= Objects.requireNonNull(history);</span>
-<span class="fc" id="L67">		this.maintenance= Objects.requireNonNull(maintenance);</span>
-<span class="fc" id="L68">	}</span>
-
-	/**
-	 * Create a health check endpoint from the copied compatibility provider.
-	 *
-	 * @param provider
-	 *            the session factory provider for database health checks
-	 * @deprecated application wiring should pass the native {@link SessionFactory}
-	 */
-	@Deprecated(forRemoval = true)
-	public HealthResource(HibernateSessionFactoryProvider provider) {
-<span class="fc" id="L79">		this(Objects.requireNonNull(provider, &quot;provider&quot;).getSessionFactory()); //$NON-NLS-1$</span>
-<span class="fc" id="L80">	}</span>
+<span class="fc" id="L52">	public HealthResource(SessionFactory sessionFactory, SandboxHistorySearch history, SandboxHistoryMaintenance maintenance) {</span>
+<span class="fc" id="L53">		this.sessionFactory= Objects.requireNonNull(sessionFactory, &quot;sessionFactory&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L54">		this.history= Objects.requireNonNull(history);</span>
+<span class="fc" id="L55">		this.maintenance= Objects.requireNonNull(maintenance);</span>
+<span class="fc" id="L56">	}</span>
 
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 			throws IOException {
-<span class="fc" id="L85">		resp.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L86">		resp.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L61">		resp.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L62">		resp.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
 
-<span class="fc" id="L88">		boolean dbOk = false;</span>
-<span class="fc" id="L89">		boolean searchOk = false;</span>
-<span class="fc" id="L90">		String dbError = null;</span>
-<span class="fc" id="L91">		String searchError = null;</span>
+<span class="fc" id="L64">		boolean dbOk = false;</span>
+<span class="fc" id="L65">		boolean searchOk = false;</span>
+<span class="fc" id="L66">		String dbError = null;</span>
+<span class="fc" id="L67">		String searchError = null;</span>
 
 		// Check database connectivity
-<span class="fc" id="L94">		try (Session session = sessionFactory.openSession()) {</span>
-<span class="fc" id="L95">			session.createNativeQuery(&quot;SELECT 1&quot;, Integer.class) //$NON-NLS-1$</span>
-<span class="fc" id="L96">					.uniqueResult();</span>
-<span class="fc" id="L97">			dbOk = true;</span>
-<span class="nc" id="L98">		} catch (Exception e) {</span>
-<span class="nc" id="L99">			dbError = e.getMessage();</span>
-<span class="fc" id="L100">		}</span>
+<span class="fc" id="L70">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L71">			session.createNativeQuery(&quot;SELECT 1&quot;, Integer.class) //$NON-NLS-1$</span>
+<span class="fc" id="L72">					.uniqueResult();</span>
+<span class="fc" id="L73">			dbOk = true;</span>
+<span class="nc" id="L74">		} catch (Exception e) {</span>
+<span class="nc" id="L75">			dbError = e.getMessage();</span>
+<span class="fc" id="L76">		}</span>
 
 		// Check search backend
 		try {
-<span class="fc" id="L104">			history.checkSearch();</span>
-<span class="fc" id="L105">			maintenance.checkHealthy();</span>
-<span class="fc" id="L106">			searchOk = true;</span>
-<span class="fc" id="L107">		} catch (Exception e) {</span>
-<span class="fc" id="L108">			searchError = e.getMessage();</span>
-<span class="fc" id="L109">		}</span>
+<span class="fc" id="L80">			history.checkSearch();</span>
+<span class="fc" id="L81">			maintenance.checkHealthy();</span>
+<span class="fc" id="L82">			searchOk = true;</span>
+<span class="fc" id="L83">		} catch (Exception e) {</span>
+<span class="fc" id="L84">			searchError = e.getMessage();</span>
+<span class="fc" id="L85">		}</span>
 
-<span class="pc bpc" id="L111" title="1 of 4 branches missed.">		boolean allOk = dbOk &amp;&amp; searchOk;</span>
-<span class="fc bfc" id="L112" title="All 2 branches covered.">		resp.setStatus(allOk ? HttpServletResponse.SC_OK</span>
-<span class="fc" id="L113">				: HttpServletResponse.SC_SERVICE_UNAVAILABLE);</span>
+<span class="pc bpc" id="L87" title="1 of 4 branches missed.">		boolean allOk = dbOk &amp;&amp; searchOk;</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">		resp.setStatus(allOk ? HttpServletResponse.SC_OK</span>
+<span class="fc" id="L89">				: HttpServletResponse.SC_SERVICE_UNAVAILABLE);</span>
 
-<span class="fc" id="L115">		try (PrintWriter w = resp.getWriter()) {</span>
-<span class="fc" id="L116">			StringBuilder json = new StringBuilder();</span>
-<span class="fc" id="L117">			json.append(&quot;{\&quot;status\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L118" title="All 2 branches covered.">			json.append(allOk ? &quot;UP&quot; : &quot;DOWN&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L119">			json.append(&quot;\&quot;,\&quot;database\&quot;:{\&quot;status\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">			json.append(dbOk ? &quot;UP&quot; : &quot;DOWN&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L121">			json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L122" title="1 of 2 branches missed.">			if (dbError != null) {</span>
-<span class="nc" id="L123">				json.append(&quot;,\&quot;error\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L124">				json.append(escapeJson(dbError));</span>
-<span class="nc" id="L125">				json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L91">		try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L92">			StringBuilder json = new StringBuilder();</span>
+<span class="fc" id="L93">			json.append(&quot;{\&quot;status\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">			json.append(allOk ? &quot;UP&quot; : &quot;DOWN&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L95">			json.append(&quot;\&quot;,\&quot;database\&quot;:{\&quot;status\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">			json.append(dbOk ? &quot;UP&quot; : &quot;DOWN&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L97">			json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">			if (dbError != null) {</span>
+<span class="nc" id="L99">				json.append(&quot;,\&quot;error\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L100">				json.append(escapeJson(dbError));</span>
+<span class="nc" id="L101">				json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L127">			json.append(&quot;},\&quot;search\&quot;:{\&quot;status\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L128" title="All 2 branches covered.">			json.append(searchOk ? &quot;UP&quot; : &quot;DOWN&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L129">			json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L130" title="All 2 branches covered.">			if (searchError != null) {</span>
-<span class="fc" id="L131">				json.append(&quot;,\&quot;error\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L132">				json.append(escapeJson(searchError));</span>
-<span class="fc" id="L133">				json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L103">			json.append(&quot;},\&quot;search\&quot;:{\&quot;status\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">			json.append(searchOk ? &quot;UP&quot; : &quot;DOWN&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L105">			json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">			if (searchError != null) {</span>
+<span class="fc" id="L107">				json.append(&quot;,\&quot;error\&quot;:\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L108">				json.append(escapeJson(searchError));</span>
+<span class="fc" id="L109">				json.append(&quot;\&quot;&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L135">			json.append(&quot;}}&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L136">			w.write(json.toString());</span>
+<span class="fc" id="L111">			json.append(&quot;}}&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L112">			w.write(json.toString());</span>
 		}
-<span class="fc" id="L138">	}</span>
+<span class="fc" id="L114">	}</span>
 
 	private static String escapeJson(String s) {
-<span class="fc" id="L141">		StringBuilder sb = new StringBuilder(s.length());</span>
-<span class="fc bfc" id="L142" title="All 2 branches covered.">		for (int i = 0; i &lt; s.length(); i++) {</span>
-<span class="fc" id="L143">			char c = s.charAt(i);</span>
-<span class="pc bpc" id="L144" title="5 of 6 branches missed.">			switch (c) {</span>
+<span class="fc" id="L117">		StringBuilder sb = new StringBuilder(s.length());</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">		for (int i = 0; i &lt; s.length(); i++) {</span>
+<span class="fc" id="L119">			char c = s.charAt(i);</span>
+<span class="pc bpc" id="L120" title="5 of 6 branches missed.">			switch (c) {</span>
 			case '&quot;':
-<span class="nc" id="L146">				sb.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L147">				break;</span>
+<span class="nc" id="L122">				sb.append(&quot;\\\&quot;&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L123">				break;</span>
 			case '\\':
-<span class="nc" id="L149">				sb.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L150">				break;</span>
+<span class="nc" id="L125">				sb.append(&quot;\\\\&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L126">				break;</span>
 			case '\n':
-<span class="nc" id="L152">				sb.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L153">				break;</span>
+<span class="nc" id="L128">				sb.append(&quot;\\n&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L129">				break;</span>
 			case '\r':
-<span class="nc" id="L155">				sb.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L156">				break;</span>
+<span class="nc" id="L131">				sb.append(&quot;\\r&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L132">				break;</span>
 			case '\t':
-<span class="nc" id="L158">				sb.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L159">				break;</span>
+<span class="nc" id="L134">				sb.append(&quot;\\t&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L135">				break;</span>
 			default:
-<span class="pc bpc" id="L161" title="1 of 2 branches missed.">				if (c &lt; 0x20) {</span>
-<span class="nc" id="L162">					sb.append(String.format(&quot;\\u%04x&quot;, (int) c)); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">				if (c &lt; 0x20) {</span>
+<span class="nc" id="L138">					sb.append(String.format(&quot;\\u%04x&quot;, (int) c)); //$NON-NLS-1$</span>
 				} else {
-<span class="fc" id="L164">					sb.append(c);</span>
+<span class="fc" id="L140">					sb.append(c);</span>
 				}
 				break;
 			}
 		}
-<span class="fc" id="L169">		return sb.toString();</span>
+<span class="fc" id="L145">		return sb.toString();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

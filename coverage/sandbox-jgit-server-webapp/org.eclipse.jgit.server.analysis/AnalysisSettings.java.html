@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AnalysisSettings.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">AnalysisSettings.java</span></div><h1>AnalysisSettings.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/** Immutable application policy; generic analysis receives explicit inputs only. */
+public record AnalysisSettings(Path localRepository, int maxBlobBytes, boolean allFileTypes,
+    boolean filePathHistory, Set&lt;String&gt; skippedExtensions, int retainedGenerations, int concurrentBuilds) {
+<span class="fc" id="L15">  private static final Set&lt;String&gt; DEFAULT_SKIPPED = Set.of(&quot;.class&quot;, &quot;.jar&quot;, &quot;.png&quot;, &quot;.jpg&quot;, &quot;.jpeg&quot;, &quot;.gif&quot;,</span>
+      &quot;.zip&quot;, &quot;.tar&quot;, &quot;.gz&quot;, &quot;.bz2&quot;, &quot;.pdf&quot;, &quot;.so&quot;, &quot;.dll&quot;, &quot;.exe&quot;, &quot;.ico&quot;, &quot;.war&quot;, &quot;.ear&quot;);
+
+<span class="fc" id="L18">  public AnalysisSettings {</span>
+<span class="fc" id="L19">    localRepository = Objects.requireNonNull(localRepository).toAbsolutePath().normalize();</span>
+<span class="fc" id="L20">    skippedExtensions = Set.copyOf(skippedExtensions);</span>
+<span class="pc bpc" id="L21" title="3 of 6 branches missed.">    if (maxBlobBytes &lt; 1 || retainedGenerations &lt; 1 || concurrentBuilds &lt; 1) throw new IllegalArgumentException(&quot;Analysis limits must be positive&quot;);</span>
+<span class="fc" id="L22">  }</span>
+
+  public static AnalysisSettings fromEnvironment() {
+<span class="fc" id="L25">    String configured = System.getProperty(&quot;maven.repo.local&quot;);</span>
+<span class="pc bpc" id="L26" title="3 of 4 branches missed.">    Path local = configured == null || configured.isBlank() ? Path.of(System.getProperty(&quot;user.home&quot;), &quot;.m2&quot;, &quot;repository&quot;) : Path.of(configured);</span>
+<span class="fc" id="L27">    return from(System.getenv(), local);</span>
+  }
+
+  static AnalysisSettings from(Map&lt;String, String&gt; environment, Path defaultLocalRepository) {
+<span class="fc" id="L31">    String extensions = environment.get(&quot;JGIT_INDEX_SKIP_EXTENSIONS&quot;);</span>
+<span class="pc bpc" id="L32" title="1 of 4 branches missed.">    var skipped = extensions == null || extensions.isEmpty() ? DEFAULT_SKIPPED : Arrays.stream(extensions.split(&quot;,&quot;))</span>
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">        .map(String::strip).map(e -&gt; e.toLowerCase(Locale.ROOT)).filter(e -&gt; !e.isEmpty()).collect(Collectors.toUnmodifiableSet());</span>
+<span class="fc" id="L34">    String local = environment.get(&quot;JGIT_ANALYSIS_LOCAL_REPOSITORY&quot;);</span>
+<span class="pc bpc" id="L35" title="1 of 4 branches missed.">    return new AnalysisSettings(local == null || local.isBlank() ? defaultLocalRepository : Path.of(local),</span>
+<span class="fc" id="L36">        positive(environment, &quot;JGIT_INDEX_MAX_BLOB_SIZE&quot;, 1024 * 1024),</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        !&quot;false&quot;.equalsIgnoreCase(environment.get(&quot;JGIT_INDEX_ALL_FILE_TYPES&quot;)),</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        !&quot;false&quot;.equalsIgnoreCase(environment.get(&quot;JGIT_INDEX_FILE_PATH_HISTORY&quot;)), skipped,</span>
+<span class="fc" id="L39">        positive(environment, &quot;JGIT_ANALYSIS_CACHE_GENERATIONS&quot;, 4), positive(environment, &quot;JGIT_ANALYSIS_CONCURRENT_BUILDS&quot;, 2));</span>
+  }
+
+  private static int positive(Map&lt;String, String&gt; values, String name, int fallback) {
+<span class="fc" id="L43">    String value = values.get(name);</span>
+<span class="pc bpc" id="L44" title="1 of 4 branches missed.">    if (value == null || value.isEmpty()) return fallback;</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">    try { int parsed = Integer.parseInt(value); if (parsed &gt; 0) return parsed; }</span>
+<span class="fc" id="L46">    catch (NumberFormatException invalid) { /* Report the setting, not an incidental parser failure. */ }</span>
+<span class="fc" id="L47">    throw new IllegalArgumentException(name + &quot; must be a positive integer&quot;);</span>
+  }
+
+<span class="fc" id="L50">  JavaHistoryCorpus corpus() { return new JavaHistoryCorpus(localRepository, maxBlobBytes, allFileTypes, skippedExtensions); }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

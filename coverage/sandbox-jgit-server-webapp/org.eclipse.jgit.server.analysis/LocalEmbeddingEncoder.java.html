@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LocalEmbeddingEncoder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">LocalEmbeddingEncoder.java</span></div><h1>LocalEmbeddingEncoder.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import ai.djl.MalformedModelException;
+import ai.djl.engine.EngineException;
+import ai.djl.repository.zoo.Criteria;
+import ai.djl.repository.zoo.ModelNotFoundException;
+import ai.djl.translate.TranslateException;
+
+/** Owns a lazy local DJL/ONNX model independently of the released storage modules. */
+public final class LocalEmbeddingEncoder implements EmbeddingEncoder {
+<span class="fc" id="L18">  private static final Logger LOG = Logger.getLogger(LocalEmbeddingEncoder.class.getName());</span>
+  private static final String DEFAULT_MODEL = &quot;sentence-transformers/all-MiniLM-L6-v2&quot;;
+  @FunctionalInterface interface Loader { Model load() throws IOException; }
+  interface Model extends Closeable { float[] embed(String text) throws IOException; }
+  private final Loader loader;
+  private volatile Status status;
+  private Model model;
+
+  public LocalEmbeddingEncoder() {
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">    this(!&quot;false&quot;.equalsIgnoreCase(System.getenv(&quot;JGIT_EMBEDDING_ENABLED&quot;)),</span>
+<span class="fc" id="L28">        environment(&quot;JGIT_EMBEDDING_MODEL_NAME&quot;, DEFAULT_MODEL), System.getenv(&quot;JGIT_EMBEDDING_MODEL_DIR&quot;));</span>
+<span class="fc" id="L29">  }</span>
+
+  public LocalEmbeddingEncoder(boolean enabled, String modelName, String modelDirectory) {
+<span class="pc" id="L32">    this(enabled, () -&gt; loadDjl(modelName, modelDirectory));</span>
+<span class="fc" id="L33">  }</span>
+
+<span class="fc" id="L35">  LocalEmbeddingEncoder(boolean enabled, Loader loader) {</span>
+<span class="fc" id="L36">    this.loader = Objects.requireNonNull(loader);</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">    status = enabled ? Status.NOT_INITIALIZED : Status.DISABLED;</span>
+<span class="fc" id="L38">  }</span>
+
+<span class="fc" id="L40">  @Override public Status status() { return status; }</span>
+
+  /** Serializes model initialization/prediction with close; ordinary status reads never wait. */
+  @Override public synchronized float[] embed(String text) {
+<span class="fc bfc" id="L44" title="All 10 branches covered.">    if (text == null || text.isBlank() || status == Status.DISABLED || status == Status.UNAVAILABLE || status == Status.CLOSED)</span>
+<span class="fc" id="L45">      return null;</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">    if (status == Status.NOT_INITIALIZED) {</span>
+      try {
+<span class="fc" id="L48">        model = Objects.requireNonNull(loader.load(), &quot;model&quot;); status = Status.AVAILABLE;</span>
+<span class="fc" id="L49">      } catch (IOException | EngineException | LinkageError unavailable) {</span>
+<span class="fc" id="L50">        unavailable(unavailable); return null;</span>
+<span class="fc" id="L51">      }</span>
+    }
+    try {
+<span class="fc" id="L54">      return model.embed(truncate(text));</span>
+<span class="fc" id="L55">    } catch (IOException failedPrediction) {</span>
+<span class="fc" id="L56">      preserveInterruption(failedPrediction);</span>
+<span class="fc" id="L57">      LOG.log(Level.WARNING, &quot;Optional embedding prediction failed; later inputs may still be encoded&quot;, failedPrediction);</span>
+<span class="fc" id="L58">      return null;</span>
+<span class="nc" id="L59">    } catch (EngineException | LinkageError unavailable) {</span>
+<span class="nc" id="L60">      unavailable(unavailable);</span>
+<span class="nc" id="L61">      return null;</span>
+    }
+  }
+
+  private void unavailable(Throwable failure) {
+<span class="fc" id="L66">    status = Status.UNAVAILABLE;</span>
+<span class="fc" id="L67">    preserveInterruption(failure);</span>
+<span class="fc" id="L68">    LOG.log(Level.WARNING, &quot;Optional local embeddings unavailable; text search remains available&quot;, failure);</span>
+<span class="fc" id="L69">  }</span>
+
+  private static void preserveInterruption(Throwable failure) {
+<span class="fc" id="L72">    var visited = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap&lt;Throwable, Boolean&gt;());</span>
+<span class="pc bpc" id="L73" title="1 of 4 branches missed.">    for (Throwable current = failure; current != null &amp;&amp; visited.add(current); current = current.getCause()) {</span>
+<span class="fc bfc" id="L74" title="All 6 branches covered.">      if (current instanceof InterruptedException || (current instanceof java.io.InterruptedIOException</span>
+          &amp;&amp; !(current instanceof java.net.SocketTimeoutException))) {
+<span class="fc" id="L76">        Thread.currentThread().interrupt(); return;</span>
+      }
+    }
+<span class="fc" id="L79">  }</span>
+
+  @Override public synchronized void close() throws IOException {
+<span class="fc bfc" id="L82" title="All 2 branches covered.">    if (status == Status.CLOSED) return;</span>
+<span class="fc" id="L83">    status = Status.CLOSED;</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">    try { if (model != null) model.close(); }</span>
+<span class="fc" id="L85">    finally { model = null; }</span>
+<span class="fc" id="L86">  }</span>
+
+  /** Retains Sandbox's established class/documentation/method/package input formatting. */
+  public static String inputText(String simpleName, String documentation, String signatures, String packageName) {
+<span class="fc" id="L90">    var text = new StringBuilder();</span>
+<span class="fc" id="L91">    append(text, simpleName, &quot;&quot;); append(text, documentation, &quot;: &quot;);</span>
+<span class="fc" id="L92">    append(text, signatures, &quot;\nMethods: &quot;); append(text, packageName, &quot;\nPackage: &quot;);</span>
+<span class="fc" id="L93">    return text.toString();</span>
+  }
+
+  private static void append(StringBuilder target, String value, String separator) {
+<span class="fc bfc" id="L97" title="All 4 branches covered.">    if (value == null || value.isEmpty()) return;</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">    if (!target.isEmpty()) target.append(separator);</span>
+<span class="fc" id="L99">    target.append(value);</span>
+<span class="fc" id="L100">  }</span>
+
+  private static String truncate(String text) {
+<span class="fc bfc" id="L103" title="All 2 branches covered.">    if (text.length() &lt;= 2048) return text;</span>
+<span class="fc" id="L104">    int end = 2048;</span>
+<span class="pc bpc" id="L105" title="2 of 4 branches missed.">    if (Character.isHighSurrogate(text.charAt(end - 1)) &amp;&amp; Character.isLowSurrogate(text.charAt(end))) end--;</span>
+<span class="fc" id="L106">    return text.substring(0, end);</span>
+  }
+
+  private static String environment(String name, String fallback) {
+<span class="pc bpc" id="L110" title="3 of 4 branches missed.">    String value = System.getenv(name); return value == null || value.isEmpty() ? fallback : value;</span>
+  }
+
+  private static Model loadDjl(String modelName, String modelDirectory) throws IOException {
+<span class="nc" id="L114">    var criteria = Criteria.builder().setTypes(String.class, float[].class)</span>
+<span class="nc" id="L115">        .optModelUrls(&quot;djl://ai.djl.huggingface.pytorch/&quot; + modelName).optEngine(&quot;OnnxRuntime&quot;)</span>
+<span class="nc" id="L116">        .optTranslatorFactory(new ai.djl.huggingface.translator.TextEmbeddingTranslatorFactory());</span>
+<span class="nc bnc" id="L117" title="All 4 branches missed.">    if (modelDirectory != null &amp;&amp; !modelDirectory.isEmpty()) {</span>
+<span class="nc" id="L118">      System.setProperty(&quot;DJL_CACHE_DIR&quot;, Path.of(modelDirectory).toAbsolutePath().toString());</span>
+    }
+    try {
+<span class="nc" id="L121">      var loaded = criteria.build().loadModel();</span>
+<span class="nc" id="L122">      return new Model() {</span>
+        @Override public float[] embed(String text) throws IOException {
+<span class="nc" id="L124">          try (var predictor = loaded.newPredictor()) { return predictor.predict(text); }</span>
+<span class="nc" id="L125">          catch (TranslateException failure) { throw new IOException(&quot;Local embedding prediction failed&quot;, failure); }</span>
+        }
+<span class="nc" id="L127">        @Override public void close() { loaded.close(); }</span>
+      };
+<span class="nc" id="L129">    } catch (ModelNotFoundException | MalformedModelException failure) {</span>
+<span class="nc" id="L130">      throw new IOException(&quot;Local embedding model could not be loaded&quot;, failure);</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

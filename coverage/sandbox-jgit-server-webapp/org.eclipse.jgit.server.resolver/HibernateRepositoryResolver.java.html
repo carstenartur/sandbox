@@ -17,116 +17,61 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.eclipse.jgit.server.repository.SandboxRepositoryNames;
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.transport.resolver.RepositoryResolver;
 import org.eclipse.jgit.transport.resolver.ServiceNotEnabledException;
-import org.hibernate.SessionFactory;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 /** Resolves Smart HTTP repositories through the application-owned service boundary. */
 public class HibernateRepositoryResolver
 		implements RepositoryResolver&lt;HttpServletRequest&gt;, AutoCloseable {
-<span class="fc" id="L33">	private static final String REPOSITORY_NAME = HibernateRepositoryResolver.class.getName() + &quot;.repositoryName&quot;;</span>
+<span class="fc" id="L30">	private static final String REPOSITORY_NAME = HibernateRepositoryResolver.class.getName() + &quot;.repositoryName&quot;;</span>
 
-	private final HibernateSessionFactoryProvider sessionFactoryProvider;
-	private final SandboxRepositoryService repositories;
-	private final boolean ownsRepositoryService;
+    private final SandboxRepositoryService repositories;
 
-	/** Creates a resolver that owns a copied adapter for the native session factory. */
-	public HibernateRepositoryResolver(SessionFactory sessionFactory) {
-<span class="nc" id="L41">		this(null, new CopiedHibernateRepositoryService(sessionFactory), true);</span>
-<span class="nc" id="L42">	}</span>
-
-	/**
-	 * Creates a resolver using and owning the temporary copied-backend adapter.
-	 *
-	 * @deprecated application wiring should pass its application-owned
-	 *             {@link SandboxRepositoryService}
-	 */
-	@Deprecated(forRemoval = true)
-	public HibernateRepositoryResolver(HibernateSessionFactoryProvider sessionFactoryProvider) {
-<span class="fc" id="L52">		this(sessionFactoryProvider, new CopiedHibernateRepositoryService(sessionFactoryProvider), true);</span>
-<span class="fc" id="L53">	}</span>
-
-	/**
-	 * Creates a resolver for an application-owned repository service without
-	 * taking lifecycle ownership.
-	 */
-	public HibernateRepositoryResolver(SandboxRepositoryService repositories) {
-<span class="fc" id="L60">		this(null, repositories, false);</span>
-<span class="fc" id="L61">	}</span>
-
-	private HibernateRepositoryResolver(HibernateSessionFactoryProvider sessionFactoryProvider,
-<span class="fc" id="L64">			SandboxRepositoryService repositories, boolean ownsRepositoryService) {</span>
-<span class="fc" id="L65">		this.sessionFactoryProvider= sessionFactoryProvider;</span>
-<span class="fc" id="L66">		this.repositories= Objects.requireNonNull(repositories, &quot;repositories&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L67">		this.ownsRepositoryService= ownsRepositoryService;</span>
-<span class="fc" id="L68">	}</span>
+    /** Borrows the context-owned service; HTTP requests own their own JGit references. */
+<span class="fc" id="L35">    public HibernateRepositoryResolver(SandboxRepositoryService repositories) {</span>
+<span class="fc" id="L36">        this.repositories = Objects.requireNonNull(repositories, &quot;repositories&quot;);</span>
+<span class="fc" id="L37">    }</span>
 
 	@Override
 	public Repository open(HttpServletRequest request, String name) throws ServiceNotEnabledException {
 		try {
-<span class="fc" id="L73">			String normalized = SandboxRepositoryNames.normalize(name);</span>
-<span class="fc" id="L74">			Repository repository = repositories.openOrCreate(name);</span>
-<span class="fc bfc" id="L75" title="All 2 branches covered.">			if (request != null) {</span>
-<span class="fc" id="L76">				request.setAttribute(REPOSITORY_NAME, normalized);</span>
+<span class="fc" id="L42">			String normalized = SandboxRepositoryNames.normalize(name);</span>
+<span class="fc" id="L43">			Repository repository = repositories.openOrCreate(name);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">			if (request != null) {</span>
+<span class="fc" id="L45">				request.setAttribute(REPOSITORY_NAME, normalized);</span>
 			}
 			// JGit's RepositoryFilter closes this request reference in its finally block.
-<span class="fc" id="L79">			repository.incrementOpen();</span>
-<span class="fc" id="L80">			return repository;</span>
-<span class="nc" id="L81">		} catch (IOException | RuntimeException exception) {</span>
-<span class="nc" id="L82">			throw new ServiceNotEnabledException(exception.getMessage());</span>
+<span class="fc" id="L48">			repository.incrementOpen();</span>
+<span class="fc" id="L49">			return repository;</span>
+<span class="nc" id="L50">		} catch (IOException | RuntimeException exception) {</span>
+<span class="nc" id="L51">			throw new ServiceNotEnabledException(exception.getMessage());</span>
 		}
 	}
 
 	/** Returns the identity already resolved for this Smart HTTP request. */
 	public static String repositoryName(HttpServletRequest request) {
-<span class="fc" id="L88">		return (String) Objects.requireNonNull(request.getAttribute(REPOSITORY_NAME), &quot;resolved repository name&quot;);</span>
+<span class="fc" id="L57">		return (String) Objects.requireNonNull(request.getAttribute(REPOSITORY_NAME), &quot;resolved repository name&quot;);</span>
 	}
 
-	/**
-	 * Transitional source-compatible access for existing server tests and callers.
-	 * New application code must use {@link #getRepositoryService()} and the public
-	 * {@link Repository} type. The generic return erases to {@code Repository} and
-	 * introduces no copied-backend type into this resolver.
-	 */
-	@Deprecated(forRemoval = true)
-	@SuppressWarnings(&quot;unchecked&quot;)
-	public &lt;R extends Repository&gt; R getOrCreateRepository(String name) throws IOException {
-<span class="fc" id="L100">		return (R) repositories.openOrCreate(name);</span>
-	}
+    /** Opens a repository through the context-owned service. */
+    public Repository getOrCreateRepository(String name) throws IOException {
+<span class="fc" id="L62">        return repositories.openOrCreate(name);</span>
+    }
 
 	/** Returns whether this resolver already owns an open repository handle. */
 	public boolean hasRepository(String name) {
-<span class="fc" id="L105">		return repositories.isOpen(name);</span>
+<span class="fc" id="L67">		return repositories.isOpen(name);</span>
 	}
 
 	/** Returns the application-owned repository service used by REST resources. */
 	public SandboxRepositoryService getRepositoryService() {
-<span class="fc" id="L110">		return repositories;</span>
+<span class="fc" id="L72">		return repositories;</span>
 	}
 
-	/**
-	 * Returns the legacy provider while Search and analytics still use the copied
-	 * implementation. Repository lifecycle code must use {@link #getRepositoryService()}.
-	 */
-	@Deprecated(forRemoval = true)
-	public HibernateSessionFactoryProvider getSessionFactoryProvider() {
-<span class="nc bnc" id="L119" title="All 2 branches missed.">		if (sessionFactoryProvider == null) {</span>
-<span class="nc" id="L120">			throw new IllegalStateException(&quot;This resolver was created without a legacy session factory provider.&quot;); //$NON-NLS-1$</span>
-		}
-<span class="nc" id="L122">		return sessionFactoryProvider;</span>
-	}
-
-	@Override
-	public void close() {
-<span class="fc bfc" id="L127" title="All 2 branches covered.">		if (ownsRepositoryService) {</span>
-<span class="fc" id="L128">			repositories.close();</span>
-		}
-<span class="fc" id="L130">	}</span>
+<span class="fc" id="L75">    @Override public void close() { /* The application context owns the service. */ }</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

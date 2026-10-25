@@ -25,6 +25,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.errors.RevWalkException;
 import org.eclipse.jgit.transport.ReceiveCommand;
+import org.eclipse.jgit.server.analysis.AnalysisGenerations;
 import org.hibernate.SessionFactory;
 
 import io.github.carstenartur.jgit.storage.hibernate.search.service.CommitIndexer;
@@ -33,161 +34,179 @@ import io.github.carstenartur.jgit.storage.hibernate.RepositoryName;
 
 /** Uses released indexing services, with bounded application-owned writer locks. */
 public final class ReleasedSandboxHistoryMaintenance implements SandboxHistoryMaintenance {
-<span class="fc" id="L36">	private static final Logger LOG = Logger.getLogger(ReleasedSandboxHistoryMaintenance.class.getName());</span>
+<span class="fc" id="L37">	private static final Logger LOG = Logger.getLogger(ReleasedSandboxHistoryMaintenance.class.getName());</span>
 
 	private final SessionFactory sessionFactory;
-<span class="fc" id="L39">	private final ReentrantLock[] locks = IntStream.range(0, 32).mapToObj(i -&gt; new ReentrantLock())</span>
-<span class="fc" id="L40">			.toArray(ReentrantLock[]::new);</span>
-<span class="fc" id="L41">	private final Set&lt;String&gt; failures = ConcurrentHashMap.newKeySet();</span>
+	private final AnalysisGenerations analyses;
+<span class="fc" id="L41">	private final ReentrantLock[] locks = IntStream.range(0, 32).mapToObj(i -&gt; new ReentrantLock())</span>
+<span class="fc" id="L42">			.toArray(ReentrantLock[]::new);</span>
+<span class="fc" id="L43">	private final Set&lt;String&gt; failures = ConcurrentHashMap.newKeySet();</span>
 	private static final int MAX_REPOSITORIES = 256;
 	private static final int MAX_COMPLETE_TIPS = 128;
-<span class="fc" id="L44">	private final LinkedHashMap&lt;String, LinkedHashSet&lt;String&gt;&gt; completeTips = new LinkedHashMap&lt;&gt;(16, .75f, true);</span>
+<span class="fc" id="L46">	private final LinkedHashMap&lt;String, LinkedHashSet&lt;String&gt;&gt; completeTips = new LinkedHashMap&lt;&gt;(16, .75f, true);</span>
 
-<span class="fc" id="L46">	public ReleasedSandboxHistoryMaintenance(SessionFactory sessionFactory) {</span>
-<span class="fc" id="L47">		this.sessionFactory = Objects.requireNonNull(sessionFactory);</span>
-<span class="fc" id="L48">	}</span>
+	public ReleasedSandboxHistoryMaintenance(SessionFactory sessionFactory) {
+<span class="fc" id="L49">		this(sessionFactory, null);</span>
+<span class="fc" id="L50">	}</span>
+
+	/** Shares the application-owned source/path/API lifecycle; this service does not close it. */
+<span class="fc" id="L53">	public ReleasedSandboxHistoryMaintenance(SessionFactory sessionFactory, AnalysisGenerations analyses) {</span>
+<span class="fc" id="L54">		this.sessionFactory = Objects.requireNonNull(sessionFactory);</span>
+<span class="fc" id="L55">		this.analyses = analyses;</span>
+<span class="fc" id="L56">	}</span>
 
 	@Override
 	public void published(String name, Repository repository, Collection&lt;ReceiveCommand&gt; commands) {
-<span class="fc" id="L52">		String normalized = Objects.requireNonNull(name, &quot;canonical repository name&quot;);</span>
-<span class="fc bfc" id="L53" title="All 2 branches covered.">		var tips = commands.stream().filter(command -&gt; command.getResult() == ReceiveCommand.Result.OK)</span>
-<span class="fc bfc" id="L54" title="All 2 branches covered.">				.map(ReceiveCommand::getNewId).filter(id -&gt; !ObjectId.zeroId().equals(id)).distinct().toList();</span>
-<span class="fc bfc" id="L55" title="All 2 branches covered.">		if (tips.isEmpty()) {</span>
-<span class="fc" id="L56">			return;</span>
+<span class="fc" id="L60">		String normalized = Objects.requireNonNull(name, &quot;canonical repository name&quot;);</span>
+<span class="fc bfc" id="L61" title="All 4 branches covered.">		if (commands.stream().noneMatch(command -&gt; command.getResult() == ReceiveCommand.Result.OK)) return;</span>
+<span class="fc" id="L62">		invalidateAnalysis(normalized);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">		var tips = commands.stream().filter(command -&gt; command.getResult() == ReceiveCommand.Result.OK)</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">				.map(ReceiveCommand::getNewId).filter(id -&gt; !ObjectId.zeroId().equals(id)).distinct().toList();</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">		if (tips.isEmpty()) {</span>
+<span class="fc" id="L66">			return;</span>
 		}
-<span class="fc" id="L58">		ReentrantLock lock = lock(normalized);</span>
-<span class="fc" id="L59">		lock.lock();</span>
+<span class="fc" id="L68">		ReentrantLock lock = lock(normalized);</span>
+<span class="fc" id="L69">		lock.lock();</span>
 		try {
-<span class="fc" id="L61">			CommitIndexer indexer = new CommitIndexer(sessionFactory, normalized);</span>
-<span class="fc" id="L62">			var boundaries = boundaries(normalized);</span>
+<span class="fc" id="L71">			CommitIndexer indexer = new CommitIndexer(sessionFactory, normalized);</span>
+<span class="fc" id="L72">			var boundaries = boundaries(normalized);</span>
 			CommitIndexer.ReachableIndexResult result;
 			try {
-<span class="fc" id="L65">				result = indexer.indexReachableCommits(repository, tips, boundaries);</span>
-<span class="fc" id="L66">			} catch (MissingObjectException | RevWalkException possiblyPrunedBoundary) {</span>
+<span class="fc" id="L75">				result = indexer.indexReachableCommits(repository, tips, boundaries);</span>
+<span class="fc" id="L76">			} catch (MissingObjectException | RevWalkException possiblyPrunedBoundary) {</span>
 				// RevWalk's Iterator wraps checked read failures; other walk failures must not retry.
-<span class="fc bfc" id="L68" title="All 4 branches covered.">				if (boundaries.isEmpty() || (possiblyPrunedBoundary instanceof RevWalkException</span>
-<span class="pc bpc" id="L69" title="1 of 2 branches missed.">						&amp;&amp; !(possiblyPrunedBoundary.getCause() instanceof MissingObjectException))) {</span>
-<span class="fc" id="L70">					throw possiblyPrunedBoundary;</span>
+<span class="fc bfc" id="L78" title="All 4 branches covered.">				if (boundaries.isEmpty() || (possiblyPrunedBoundary instanceof RevWalkException</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">						&amp;&amp; !(possiblyPrunedBoundary.getCause() instanceof MissingObjectException))) {</span>
+<span class="fc" id="L80">					throw possiblyPrunedBoundary;</span>
 				}
-<span class="fc" id="L72">				invalidate(normalized);</span>
+<span class="fc" id="L82">				invalidate(normalized);</span>
 				// Git maintenance may have pruned a former boundary's ancestry. A genuine missing
 				// new tip/blob still fails this single retry and remains visible through health.
-<span class="fc" id="L75">				result = indexer.indexReachableCommits(repository, tips, List.of());</span>
-<span class="fc" id="L76">			}</span>
-<span class="fc" id="L77">			certify(normalized, result.completedTipIds());</span>
-<span class="fc" id="L78">		} catch (IOException | RuntimeException failure) {</span>
-<span class="fc" id="L79">			invalidate(normalized);</span>
-<span class="fc" id="L80">			failures.add(normalized);</span>
-<span class="fc" id="L81">			LOG.log(Level.SEVERE, &quot;Published Git history requires a projection rebuild for &quot; + normalized, failure);</span>
+<span class="fc" id="L85">				result = indexer.indexReachableCommits(repository, tips, List.of());</span>
+<span class="fc" id="L86">			}</span>
+<span class="fc" id="L87">			certify(normalized, result.completedTipIds());</span>
+<span class="fc" id="L88">		} catch (IOException | RuntimeException failure) {</span>
+<span class="fc" id="L89">			invalidate(normalized);</span>
+<span class="fc" id="L90">			failures.add(normalized);</span>
+<span class="fc" id="L91">			LOG.log(Level.SEVERE, &quot;Published Git history requires a projection rebuild for &quot; + normalized, failure);</span>
 		} finally {
-<span class="fc" id="L83">			lock.unlock();</span>
+<span class="fc" id="L93">			invalidateAnalysis(normalized);</span>
+<span class="fc" id="L94">			lock.unlock();</span>
 		}
-<span class="fc" id="L85">	}</span>
+<span class="fc" id="L96">	}</span>
 
 	@Override
 	public RebuildResult rebuild(String canonicalName, Repository repository) throws IOException {
-<span class="fc" id="L89">		ReentrantLock lock = lock(canonicalName);</span>
+<span class="fc" id="L100">		ReentrantLock lock = lock(canonicalName);</span>
 		try {
-<span class="fc" id="L91">			lock.lockInterruptibly();</span>
-<span class="fc" id="L92">		} catch (InterruptedException interrupted) {</span>
-<span class="fc" id="L93">			Thread.currentThread().interrupt();</span>
-<span class="fc" id="L94">			throw new InterruptedIOException(&quot;History rebuild interrupted before acquiring the writer lock&quot;);</span>
-<span class="fc" id="L95">		}</span>
+<span class="fc" id="L102">			lock.lockInterruptibly();</span>
+<span class="fc" id="L103">		} catch (InterruptedException interrupted) {</span>
+<span class="fc" id="L104">			Thread.currentThread().interrupt();</span>
+<span class="fc" id="L105">			throw new InterruptedIOException(&quot;History rebuild interrupted before acquiring the writer lock&quot;);</span>
+<span class="fc" id="L106">		}</span>
 		try {
+<span class="fc" id="L108">			invalidateAnalysis(canonicalName);</span>
 			// Purging invalidates every certificate before the first destructive projection write.
-<span class="fc" id="L98">			invalidate(canonicalName);</span>
-<span class="fc" id="L99">			failures.add(canonicalName);</span>
+<span class="fc" id="L110">			invalidate(canonicalName);</span>
+<span class="fc" id="L111">			failures.add(canonicalName);</span>
 			// The scoped reader may have opened before another handle published and indexed a new tip.
 			// Refresh under the writer lock so purging cannot replace that tip with a stale ref snapshot.
-<span class="fc" id="L102">			repository.scanForRepoChanges();</span>
-<span class="fc" id="L103">			var head = repository.exactRef(Constants.HEAD);</span>
-<span class="fc bfc" id="L104" title="All 4 branches covered.">			ObjectId detached = head != null &amp;&amp; !head.isSymbolic() ? head.getObjectId() : null;</span>
-<span class="fc" id="L105">			var result = new CommitProjectionRebuilder(sessionFactory).rebuild(repository, new RepositoryName(canonicalName));</span>
-<span class="fc" id="L106">			long indexed = result.indexedCommits();</span>
+<span class="fc" id="L114">			repository.scanForRepoChanges();</span>
+<span class="fc" id="L115">			var head = repository.exactRef(Constants.HEAD);</span>
+<span class="fc bfc" id="L116" title="All 4 branches covered.">			ObjectId detached = head != null &amp;&amp; !head.isSymbolic() ? head.getObjectId() : null;</span>
+<span class="fc" id="L117">			var result = new CommitProjectionRebuilder(sessionFactory).rebuild(repository, new RepositoryName(canonicalName));</span>
+<span class="fc" id="L118">			long indexed = result.indexedCommits();</span>
 			// The library rebuild discovers refs/*; an independent detached HEAD is also authoritative here.
-<span class="fc bfc" id="L108" title="All 2 branches covered.">			if (detached != null) {</span>
-<span class="fc" id="L109">				indexed += new CommitIndexer(sessionFactory, canonicalName)</span>
-<span class="fc" id="L110">						.indexReachableCommits(repository, List.of(detached), List.of()).indexedCommits();</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">			if (detached != null) {</span>
+<span class="fc" id="L121">				indexed += new CommitIndexer(sessionFactory, canonicalName)</span>
+<span class="fc" id="L122">						.indexReachableCommits(repository, List.of(detached), List.of()).indexedCommits();</span>
 			}
 			// Do not infer certificates from refs read after the rebuild: a concurrent Git push may have moved them.
-<span class="fc" id="L113">			failures.remove(canonicalName);</span>
-<span class="fc" id="L114">			return new RebuildResult(result.removedProjections(), indexed);</span>
+<span class="fc" id="L125">			failures.remove(canonicalName);</span>
+<span class="fc" id="L126">			return new RebuildResult(result.removedProjections(), indexed);</span>
 		} finally {
-<span class="fc" id="L116">			lock.unlock();</span>
+<span class="fc" id="L128">			invalidateAnalysis(canonicalName);</span>
+<span class="fc" id="L129">			lock.unlock();</span>
 		}
 	}
 
 	@Override
 	public void repositoryDeleted(String canonicalName) {
-<span class="fc" id="L122">		withExclusiveProjectionAccess(canonicalName, () -&gt; {</span>
-<span class="fc" id="L123">			invalidate(canonicalName);</span>
-<span class="fc" id="L124">			failures.remove(canonicalName);</span>
-<span class="fc" id="L125">			return null;</span>
+<span class="fc" id="L135">		withExclusiveProjectionAccess(canonicalName, () -&gt; {</span>
+<span class="fc" id="L136">			invalidateAnalysis(canonicalName);</span>
+<span class="fc" id="L137">			invalidate(canonicalName);</span>
+<span class="fc" id="L138">			failures.remove(canonicalName);</span>
+<span class="fc" id="L139">			return null;</span>
 		});
-<span class="fc" id="L127">	}</span>
+<span class="fc" id="L141">	}</span>
 
 	private List&lt;ObjectId&gt; boundaries(String name) {
-<span class="fc" id="L130">		synchronized (completeTips) {</span>
-<span class="fc" id="L131">			var tips = completeTips.get(name);</span>
-<span class="fc bfc" id="L132" title="All 2 branches covered.">			return tips == null ? List.of() : tips.stream().map(ObjectId::fromString).toList();</span>
+<span class="fc" id="L144">		synchronized (completeTips) {</span>
+<span class="fc" id="L145">			var tips = completeTips.get(name);</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">			return tips == null ? List.of() : tips.stream().map(ObjectId::fromString).toList();</span>
 		}
 	}
 
 	private void invalidate(String name) {
-<span class="fc" id="L137">		synchronized (completeTips) { completeTips.remove(name); }</span>
-<span class="fc" id="L138">	}</span>
+<span class="fc" id="L151">		synchronized (completeTips) { completeTips.remove(name); }</span>
+<span class="fc" id="L152">	}</span>
 
 	private void certify(String name, List&lt;String&gt; completed) {
-<span class="fc bfc" id="L141" title="All 2 branches covered.">		if (completed.isEmpty()) return;</span>
-<span class="fc" id="L142">		synchronized (completeTips) {</span>
-<span class="fc" id="L143">			var tips = completeTips.computeIfAbsent(name, ignored -&gt; new LinkedHashSet&lt;&gt;());</span>
-<span class="fc bfc" id="L144" title="All 2 branches covered.">			for (String tip : completed) {</span>
-<span class="fc" id="L145">				tips.remove(tip); tips.add(tip);</span>
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">				while (tips.size() &gt; MAX_COMPLETE_TIPS) tips.removeFirst();</span>
-<span class="fc" id="L147">			}</span>
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">			while (completeTips.size() &gt; MAX_REPOSITORIES) completeTips.pollFirstEntry();</span>
-<span class="fc" id="L149">		}</span>
-<span class="fc" id="L150">	}</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">		if (completed.isEmpty()) return;</span>
+<span class="fc" id="L156">		synchronized (completeTips) {</span>
+<span class="fc" id="L157">			var tips = completeTips.computeIfAbsent(name, ignored -&gt; new LinkedHashSet&lt;&gt;());</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">			for (String tip : completed) {</span>
+<span class="fc" id="L159">				tips.remove(tip); tips.add(tip);</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">				while (tips.size() &gt; MAX_COMPLETE_TIPS) tips.removeFirst();</span>
+<span class="fc" id="L161">			}</span>
+<span class="pc bpc" id="L162" title="1 of 2 branches missed.">			while (completeTips.size() &gt; MAX_REPOSITORIES) completeTips.pollFirstEntry();</span>
+<span class="fc" id="L163">		}</span>
+<span class="fc" id="L164">	}</span>
 
 	@Override
 	public &lt;T&gt; T withExclusiveProjectionAccess(String canonicalName, Supplier&lt;T&gt; operation) {
-<span class="fc" id="L154">		ReentrantLock lock = lock(canonicalName);</span>
-<span class="fc" id="L155">		lock.lock();</span>
+<span class="fc" id="L168">		ReentrantLock lock = lock(canonicalName);</span>
+<span class="fc" id="L169">		lock.lock();</span>
 		try {
-<span class="fc" id="L157">			return operation.get();</span>
+<span class="fc" id="L171">			return operation.get();</span>
 		} finally {
-<span class="fc" id="L159">			lock.unlock();</span>
+<span class="fc" id="L173">			lock.unlock();</span>
 		}
 	}
 
 	@Override
 	public void checkHealthy() {
-<span class="fc bfc" id="L165" title="All 2 branches covered.">		if (!failures.isEmpty()) {</span>
-<span class="fc" id="L166">			throw new IllegalStateException(&quot;History projection rebuild required for &quot; + failures.size() + &quot; repositories&quot;);</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">		if (!failures.isEmpty()) {</span>
+<span class="fc" id="L180">			throw new IllegalStateException(&quot;History projection rebuild required for &quot; + failures.size() + &quot; repositories&quot;);</span>
 		}
-<span class="fc" id="L168">	}</span>
+<span class="fc" id="L182">	}</span>
 
 	@Override
 	public void refreshIndexes(SessionFactory factory) throws InterruptedException {
-<span class="pc bpc" id="L172" title="1 of 2 branches missed.">		if (factory != sessionFactory) {</span>
-<span class="nc" id="L173">			throw new IllegalArgumentException(&quot;Index maintenance belongs to another persistence context&quot;);</span>
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">		if (factory != sessionFactory) {</span>
+<span class="nc" id="L187">			throw new IllegalArgumentException(&quot;Index maintenance belongs to another persistence context&quot;);</span>
 		}
-<span class="fc" id="L175">		int acquired = 0;</span>
+<span class="fc" id="L189">		int acquired = 0;</span>
 		try {
-<span class="fc bfc" id="L177" title="All 2 branches covered.">			for (ReentrantLock lock : locks) {</span>
-<span class="fc" id="L178">				lock.lockInterruptibly();</span>
-<span class="fc" id="L179">				acquired++;</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">			for (ReentrantLock lock : locks) {</span>
+<span class="fc" id="L192">				lock.lockInterruptibly();</span>
+<span class="fc" id="L193">				acquired++;</span>
 			}
-<span class="fc" id="L181">			SandboxHistoryMaintenance.super.refreshIndexes(sessionFactory);</span>
+<span class="fc" id="L195">			SandboxHistoryMaintenance.super.refreshIndexes(sessionFactory);</span>
 		} finally {
-<span class="fc bfc" id="L183" title="All 2 branches covered.">			while (acquired &gt; 0) {</span>
-<span class="fc" id="L184">				locks[--acquired].unlock();</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">			if (analyses != null) analyses.refresh();</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">			while (acquired &gt; 0) {</span>
+<span class="fc" id="L199">				locks[--acquired].unlock();</span>
 			}
 		}
-<span class="fc" id="L187">	}</span>
+<span class="fc" id="L202">	}</span>
 
 	private ReentrantLock lock(String name) {
-<span class="fc" id="L190">		return locks[Math.floorMod(name.hashCode(), locks.length)];</span>
+<span class="fc" id="L205">		return locks[Math.floorMod(name.hashCode(), locks.length)];</span>
 	}
+
+	private void invalidateAnalysis(String canonicalName) {
+<span class="fc bfc" id="L209" title="All 2 branches covered.">		if (analyses != null) analyses.invalidateCanonical(canonicalName);</span>
+<span class="fc" id="L210">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

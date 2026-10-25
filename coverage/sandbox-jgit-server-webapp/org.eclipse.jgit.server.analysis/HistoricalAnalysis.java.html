@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HistoricalAnalysis.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">HistoricalAnalysis.java</span></div><h1>HistoricalAnalysis.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.server.history.GitHistorySnapshot;
+import org.eclipse.jgit.server.history.GitHistorySnapshot.CommitView;
+import org.eclipse.jgit.server.repository.SandboxRepositoryNames;
+import org.eclipse.jgit.server.repository.SandboxRepositoryService;
+import org.hibernate.SessionFactory;
+
+/** Keeps an existing-only repository lease and a generation pin through complete result mapping. */
+final class HistoricalAnalysis {
+  @FunctionalInterface interface Snapshots {
+    List&lt;CommitView&gt; read(String canonicalName, Repository repository) throws IOException;
+  }
+  private final SandboxRepositoryService repositories;
+  private final AnalysisGenerations generations;
+  private final JavaHistoryCorpus corpus;
+  private final Snapshots snapshots;
+
+  HistoricalAnalysis(SessionFactory factory, SandboxRepositoryService repositories, AnalysisGenerations generations,
+      JavaHistoryCorpus corpus) {
+<span class="fc" id="L28">    this(repositories, generations, corpus, (name, git) -&gt; snapshot(factory, name, git));</span>
+<span class="fc" id="L29">  }</span>
+
+  HistoricalAnalysis(SandboxRepositoryService repositories, AnalysisGenerations generations, JavaHistoryCorpus corpus,
+<span class="fc" id="L32">      Snapshots snapshots) {</span>
+<span class="fc" id="L33">    this.repositories = Objects.requireNonNull(repositories); this.generations = Objects.requireNonNull(generations);</span>
+<span class="fc" id="L34">    this.corpus = Objects.requireNonNull(corpus); this.snapshots = Objects.requireNonNull(snapshots);</span>
+<span class="fc" id="L35">  }</span>
+
+  &lt;T&gt; T sources(String requestName, AnalysisGenerationCache.Reader&lt;HistoricalSourceIndex, T&gt; read) throws IOException {
+<span class="fc" id="L38">    String canonical = SandboxRepositoryNames.normalize(requestName);</span>
+<span class="fc" id="L39">    return repositories.withExistingRepository(requestName, git -&gt; generations.read(AnalysisGenerations.Kind.SOURCE, canonical,</span>
+<span class="fc" id="L40">        () -&gt; new AnalysisGenerations.Snapshot(snapshots.read(canonical, git), null),</span>
+<span class="fc" id="L41">        snapshot -&gt; HistoricalSourceIndex.build(canonical, corpus.readSnapshot(canonical, git, snapshot.commits()).files()),</span>
+        HistoricalSourceIndex.class, read));
+  }
+
+  &lt;T&gt; T paths(String requestName, AnalysisGenerationCache.Reader&lt;HistoricalPathIndex, T&gt; read) throws IOException {
+<span class="fc" id="L46">    String canonical = SandboxRepositoryNames.normalize(requestName);</span>
+<span class="fc" id="L47">    return repositories.withExistingRepository(requestName, git -&gt; generations.read(AnalysisGenerations.Kind.PATH, canonical,</span>
+<span class="fc" id="L48">        () -&gt; new AnalysisGenerations.Snapshot(snapshots.read(canonical, git), null),</span>
+<span class="fc" id="L49">        snapshot -&gt; HistoricalPathIndex.build(canonical, git, snapshot.commits()), HistoricalPathIndex.class, read));</span>
+  }
+
+  &lt;T&gt; T api(String requestName, String before, String after, boolean publicOnly,
+      AnalysisGenerationCache.Reader&lt;ApplicationApiComparison.Diff, T&gt; read) throws IOException {
+<span class="fc" id="L54">    String canonical = SandboxRepositoryNames.normalize(requestName);</span>
+<span class="fc" id="L55">    var request = new AnalysisGenerations.ApiRequest(before, after, publicOnly);</span>
+<span class="fc" id="L56">    return repositories.withExistingRepository(requestName, git -&gt; generations.read(AnalysisGenerations.Kind.API, canonical,</span>
+<span class="fc" id="L57">        () -&gt; { git.scanForRepoChanges(); return new AnalysisGenerations.Snapshot(List.of(), request); },</span>
+<span class="fc" id="L58">        snapshot -&gt; new ApiGeneration(new ApplicationApiComparison(corpus).compare(canonical, git,</span>
+<span class="fc" id="L59">            ObjectId.fromString(snapshot.api().before()), ObjectId.fromString(snapshot.api().after()), snapshot.api().publicOnly())),</span>
+<span class="fc" id="L60">        ApiGeneration.class, generation -&gt; read.read(generation.diff())));</span>
+  }
+
+  /** Called after the per-identity lock, after waiting for capacity, and on every invalidation retry. */
+  static List&lt;CommitView&gt; snapshot(SessionFactory factory, String canonicalName, Repository git) throws IOException {
+<span class="fc" id="L65">    git.scanForRepoChanges();</span>
+    List&lt;String&gt; retained;
+<span class="fc" id="L67">    try (var session = factory.openSession()) {</span>
+<span class="fc" id="L68">      retained = session.createQuery(&quot;SELECT c.objectId FROM GitCommitIndex c WHERE c.repositoryName = :repo&quot;, String.class)</span>
+<span class="fc" id="L69">          .setParameter(&quot;repo&quot;, canonicalName).getResultList();</span>
+    }
+<span class="fc" id="L71">    return GitHistorySnapshot.read(git, retained);</span>
+  }
+
+<span class="fc" id="L74">  private record ApiGeneration(ApplicationApiComparison.Diff diff) implements Closeable {</span>
+<span class="fc" id="L75">    @Override public void close() { /* Immutable application values own no external resources. */ }</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

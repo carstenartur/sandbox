@@ -20,10 +20,10 @@ public interface SandboxHistoryMaintenance {
 <span class="fc" id="L20">	SandboxHistoryMaintenance NONE = new SandboxHistoryMaintenance() {};</span>
 
 	/** Called with the canonical identity after publication; projection failures must not fail an accepted push. */
-<span class="fc" id="L23">	default void published(String name, Repository repository, Collection&lt;ReceiveCommand&gt; commands) {}</span>
+<span class="nc" id="L23">	default void published(String name, Repository repository, Collection&lt;ReceiveCommand&gt; commands) {}</span>
 
 	/** Reports any known projection failure in this server process. */
-<span class="fc" id="L26">	default void checkHealthy() {}</span>
+<span class="nc" id="L26">	default void checkHealthy() {}</span>
 
 	/** Reconstructs this repository's projection from Git, with local writers serialized. */
 	default RebuildResult rebuild(String canonicalName, Repository repository) throws IOException {

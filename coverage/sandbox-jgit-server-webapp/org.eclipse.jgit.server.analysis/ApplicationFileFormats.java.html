@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ApplicationFileFormats.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">ApplicationFileFormats.java</span></div><h1>ApplicationFileFormats.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
+import java.util.regex.Pattern;
+
+/** Sandbox's non-Java search conventions, independent of persistence and Java parsing. */
+public final class ApplicationFileFormats {
+  private static final int MAX_SNIPPET = 65535;
+<span class="fc" id="L22">  private static final Pattern FQN = Pattern.compile(&quot;[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*\\.[A-Z]\\w*&quot;);</span>
+<span class="fc" id="L23">  private static final Pattern GROUP = Pattern.compile(&quot;&lt;groupId&gt;\\s*([^&lt;]+?)\\s*&lt;/groupId&gt;&quot;);</span>
+<span class="fc" id="L24">  private static final Pattern ARTIFACT = Pattern.compile(&quot;&lt;artifactId&gt;\\s*([^&lt;]+?)\\s*&lt;/artifactId&gt;&quot;);</span>
+<span class="fc" id="L25">  private static final Pattern MODULE = Pattern.compile(&quot;&lt;module&gt;\\s*([^&lt;]+?)\\s*&lt;/module&gt;&quot;);</span>
+<span class="fc" id="L26">  private static final Pattern EXTENSION_POINT = Pattern.compile(&quot;point=\&quot;([^\&quot;]+)\&quot;&quot;);</span>
+<span class="fc" id="L27">  private static final Pattern CLASS_ATTRIBUTE = Pattern.compile(&quot;class=\&quot;([^\&quot;]+)\&quot;&quot;);</span>
+<span class="fc" id="L28">  private static final Pattern NAMESPACE = Pattern.compile(&quot;xmlns[^\&quot;]*=\&quot;([^\&quot;]+)\&quot;&quot;);</span>
+<span class="fc" id="L29">  private static final Pattern ELEMENT = Pattern.compile(&quot;&lt;([a-zA-Z][\\w.:-]*)\\s&quot;);</span>
+
+  /** Nullable facets retain the legacy distinction between absent and empty metadata. */
+<span class="fc" id="L32">  public record Facets(String fileType, String fullyQualifiedNames, String declaredTypes,</span>
+      String declaredFields, String sourceSnippet) {}
+
+  private ApplicationFileFormats() {}
+
+  /** Preserve text when historical format metadata cannot be decoded. */
+  static Facets plainText(String fileType, String source) {
+<span class="fc" id="L39">    return new Facets(fileType, null, null, null, truncate(source));</span>
+  }
+
+  public static Facets extract(String filePath, String source) {
+<span class="fc" id="L43">    Objects.requireNonNull(filePath); Objects.requireNonNull(source);</span>
+<span class="fc" id="L44">    String filename = filePath.substring(filePath.lastIndexOf('/') + 1).toLowerCase(Locale.ROOT);</span>
+<span class="fc" id="L45">    String snippet = truncate(source);</span>
+    // Filename conventions take precedence over extension conventions.
+<span class="fc bfc" id="L47" title="All 2 branches covered.">    if (filename.equals(&quot;pom.xml&quot;)) {</span>
+<span class="fc" id="L48">      var names = uniqueMatches(GROUP, source);</span>
+<span class="fc" id="L49">      var artifacts = uniqueMatches(ARTIFACT, source);</span>
+<span class="fc" id="L50">      names.addAll(artifacts);</span>
+<span class="fc" id="L51">      var modules = uniqueMatches(MODULE, source);</span>
+<span class="fc" id="L52">      return new Facets(&quot;pom&quot;, join(names), join(artifacts), nullableJoin(modules), snippet);</span>
+    }
+<span class="fc bfc" id="L54" title="All 4 branches covered.">    if (filename.equals(&quot;plugin.xml&quot;) || filename.equals(&quot;fragment.xml&quot;)) {</span>
+<span class="fc" id="L55">      return new Facets(&quot;plugin-xml&quot;, join(uniqueMatches(EXTENSION_POINT, source)),</span>
+<span class="fc" id="L56">          join(uniqueMatches(CLASS_ATTRIBUTE, source)), null, snippet);</span>
+    }
+<span class="fc" id="L58">    int extensionStart = filename.lastIndexOf('.');</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">    String extension = extensionStart &lt; 0 ? &quot;&quot; : filename.substring(extensionStart + 1);</span>
+<span class="fc bfc" id="L60" title="All 5 branches covered.">    return switch (extension) {</span>
+<span class="fc" id="L61">      case &quot;java&quot; -&gt; throw new IllegalArgumentException(&quot;Java files require released Java Analysis&quot;);</span>
+<span class="fc" id="L62">      case &quot;mf&quot; -&gt; manifest(source, snippet);</span>
+<span class="fc" id="L63">      case &quot;properties&quot; -&gt; properties(source, snippet);</span>
+<span class="fc" id="L64">      case &quot;xml&quot;, &quot;xsd&quot;, &quot;exsd&quot;, &quot;xsl&quot; -&gt; new Facets(&quot;xml&quot;, join(uniqueMatches(NAMESPACE, source)),</span>
+<span class="fc" id="L65">          join(uniqueMatches(ELEMENT, source)), null, snippet);</span>
+      default -&gt; {
+        // Retain the historical fallback tag calculation, including paths with dotted directories.
+<span class="fc" id="L68">        int dot = filePath.lastIndexOf('.');</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        String type = dot &gt;= 0 ? filePath.substring(dot + 1).toLowerCase(Locale.ROOT) : &quot;text&quot;;</span>
+<span class="fc" id="L70">        String names = nullableJoin(matches(FQN, source, 0));</span>
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        yield new Facets(type, names == null ? null : truncate(names), null, null, snippet);</span>
+      }
+    };
+  }
+
+  private static Facets manifest(String source, String snippet) {
+    try {
+<span class="fc" id="L78">      var attributes = new Manifest(new ByteArrayInputStream(source.getBytes(StandardCharsets.UTF_8)))</span>
+<span class="fc" id="L79">          .getMainAttributes();</span>
+<span class="fc" id="L80">      var names = new LinkedHashSet&lt;String&gt;();</span>
+<span class="fc" id="L81">      var types = new LinkedHashSet&lt;String&gt;();</span>
+<span class="fc" id="L82">      String symbolicName = attributes.getValue(&quot;Bundle-SymbolicName&quot;);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">      if (symbolicName != null) {</span>
+<span class="fc" id="L84">        int separator = symbolicName.indexOf(';');</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        names.add(separator &gt; 0 ? symbolicName.substring(0, separator).trim() : symbolicName.trim());</span>
+      }
+<span class="fc" id="L87">      packages(attributes, &quot;Export-Package&quot;, names);</span>
+<span class="fc" id="L88">      packages(attributes, &quot;Import-Package&quot;, names);</span>
+<span class="fc" id="L89">      packages(attributes, &quot;Require-Bundle&quot;, types);</span>
+<span class="fc" id="L90">      String bundleName = attributes.getValue(&quot;Bundle-Name&quot;);</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">      if (bundleName != null) types.add(bundleName.trim());</span>
+<span class="fc" id="L92">      return new Facets(&quot;manifest&quot;, join(names), join(types), null, snippet);</span>
+<span class="fc" id="L93">    } catch (IOException malformed) {</span>
+      // As before, the original manifest remains searchable even when headers cannot be parsed.
+<span class="fc" id="L95">      return new Facets(&quot;manifest&quot;, null, null, null, snippet);</span>
+    }
+  }
+
+  private static void packages(Attributes attributes, String header, Set&lt;String&gt; target) {
+<span class="fc" id="L100">    String value = attributes.getValue(header);</span>
+<span class="fc bfc" id="L101" title="All 4 branches covered.">    if (value != null) for (String part : value.split(&quot;,&quot;)) target.add(withoutDirectives(part));</span>
+<span class="fc" id="L102">  }</span>
+
+  private static String withoutDirectives(String text) {
+<span class="fc" id="L105">    String trimmed = text.trim();</span>
+<span class="fc" id="L106">    int separator = trimmed.indexOf(';');</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">    return separator &gt; 0 ? trimmed.substring(0, separator).trim() : trimmed;</span>
+  }
+
+  private static Facets properties(String source, String snippet) {
+<span class="fc" id="L111">    var properties = new Properties();</span>
+<span class="fc" id="L112">    try { properties.load(new StringReader(source)); }</span>
+<span class="pc" id="L113">    catch (IOException malformed) { return new Facets(&quot;properties&quot;, null, null, null, snippet); }</span>
+<span class="fc" id="L114">    var keys = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L115">    var names = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L116">    var enumeration = properties.propertyNames();</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">    while (enumeration.hasMoreElements()) {</span>
+<span class="fc" id="L118">      String key = (String) enumeration.nextElement();</span>
+<span class="fc" id="L119">      keys.add(key);</span>
+<span class="fc" id="L120">      names.addAll(matches(FQN, properties.getProperty(key), 0));</span>
+<span class="fc" id="L121">    }</span>
+<span class="fc" id="L122">    String joinedKeys = join(keys);</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">    return new Facets(&quot;properties&quot;, nullableJoin(names), null, joinedKeys.isEmpty() ? null : joinedKeys, snippet);</span>
+  }
+
+  private static LinkedHashSet&lt;String&gt; uniqueMatches(Pattern pattern, String text) {
+<span class="fc" id="L127">    return new LinkedHashSet&lt;&gt;(matches(pattern, text, 1));</span>
+  }
+
+  private static List&lt;String&gt; matches(Pattern pattern, String text, int group) {
+<span class="fc bfc" id="L131" title="All 4 branches covered.">    if (pattern == FQN &amp;&amp; text.indexOf('.') &lt; 0) return List.of();</span>
+<span class="fc" id="L132">    var result = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L133">    var matcher = pattern.matcher(text);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">    while (matcher.find()) result.add(matcher.group(group));</span>
+<span class="fc" id="L135">    return result;</span>
+  }
+
+<span class="fc" id="L138">  private static String join(Iterable&lt;String&gt; values) { return String.join(&quot;\n&quot;, values); }</span>
+  private static String nullableJoin(java.util.Collection&lt;String&gt; values) {
+<span class="fc bfc" id="L140" title="All 2 branches covered.">    return values.isEmpty() ? null : join(values);</span>
+  }
+  private static String truncate(String text) {
+<span class="fc bfc" id="L143" title="All 2 branches covered.">    if (text.length() &lt;= MAX_SNIPPET) return text;</span>
+<span class="fc" id="L144">    int end = MAX_SNIPPET;</span>
+<span class="pc bpc" id="L145" title="2 of 4 branches missed.">    if (Character.isHighSurrogate(text.charAt(end - 1)) &amp;&amp; Character.isLowSurrogate(text.charAt(end))) end--;</span>
+<span class="fc" id="L146">    return text.substring(0, end);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

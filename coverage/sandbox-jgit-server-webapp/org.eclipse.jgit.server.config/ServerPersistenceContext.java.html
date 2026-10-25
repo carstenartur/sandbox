@@ -40,19 +40,18 @@ public interface ServerPersistenceContext extends AutoCloseable {
 	SandboxHistorySearch historySearch();
 
 	/** Per-commit file versions supplied by the selected persistence boundary. */
-	default org.eclipse.jgit.server.history.SandboxFileHistory fileHistory() {
-<span class="fc" id="L44">		return new org.eclipse.jgit.server.history.CopiedSandboxFileHistory(sessionFactory());</span>
-	}
+	org.eclipse.jgit.server.history.SandboxFileHistory fileHistory();
+
+    /** Historical source queries share this context's generation and model ownership. */
+    org.eclipse.jgit.server.search.SandboxSourceSearch sourceSearch();
 
 	/** Returns projection-writer orchestration for the selected backend. */
 	default SandboxHistoryMaintenance historyMaintenance() {
-<span class="fc" id="L49">		return SandboxHistoryMaintenance.NONE;</span>
+<span class="nc" id="L50">		return SandboxHistoryMaintenance.NONE;</span>
 	}
 
 	/** Physical inventory for the selected Core backend. */
-	default org.eclipse.jgit.server.repository.SandboxStorageStatistics storageStatistics() {
-<span class="fc" id="L54">		return new org.eclipse.jgit.server.repository.CopiedSandboxStorageStatistics(sessionFactory());</span>
-	}
+	org.eclipse.jgit.server.repository.SandboxStorageStatistics storageStatistics();
 
 	/** Closes repository handles before the owned session factory. */
 	@Override

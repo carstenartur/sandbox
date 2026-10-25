@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SandboxSourceSearch.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.search</a> &gt; <span class="el_source">SandboxSourceSearch.java</span></div><h1>SandboxSourceSearch.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.search;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import org.eclipse.jgit.server.history.SandboxFileHistory.FileVersion;
+
+/** Application search/report results, independent of ORM entities and Java parser implementation. */
+public interface SandboxSourceSearch extends Closeable {
+  List&lt;SourceFile&gt; searchByType(String repo, String query, int offset, int limit) throws IOException;
+  List&lt;SourceFile&gt; searchByTypeWithModule(String repo, String query, String module, int offset, int limit) throws IOException;
+  List&lt;SourceFile&gt; searchBySymbol(String repo, String query, int offset, int limit) throws IOException;
+  List&lt;SourceFile&gt; searchByHierarchy(String repo, String query, int offset, int limit) throws IOException;
+  List&lt;SourceFile&gt; searchByAnnotation(String repo, String query, int offset, int limit) throws IOException;
+  List&lt;SourceFile&gt; searchSourceContent(String repo, String query, int offset, int limit) throws IOException;
+  List&lt;SourceFile&gt; searchByDocumentation(String repo, String query, int offset, int limit) throws IOException;
+  List&lt;SourceFile&gt; searchByReferencedType(String repo, String query, int offset, int limit) throws IOException;
+  List&lt;SourceFile&gt; searchByStringLiteral(String repo, String query, int offset, int limit) throws IOException;
+  List&lt;SourceFile&gt; searchFqnAcrossTypes(String repo, String query, String fileType, int offset, int limit) throws IOException;
+  List&lt;FileVersion&gt; searchFilePath(String repo, String query, int offset, int limit) throws IOException;
+  List&lt;SourceFile&gt; semanticSearch(String repo, String query, int limit) throws IOException;
+  List&lt;SourceFile&gt; hybridSearch(String repo, String query, int limit) throws IOException;
+  List&lt;SourceFile&gt; findSimilarCode(String repo, String blobId, int limit) throws IOException;
+  List&lt;SourceFile&gt; getMigrationImpact(String repo, String prefix, int offset, int limit) throws IOException;
+  Map&lt;String, Object&gt; getMigrationImpactSummary(String repo, String prefix) throws IOException;
+  List&lt;SourceFile&gt; getDeprecatedApiUsage(String repo, int offset, int limit) throws IOException;
+  List&lt;SourceFile&gt; getDeprecationTimeline(String repo, int offset, int limit) throws IOException;
+  SourceDiff getApiDiff(String repo, String before, String after) throws IOException;
+  SourceDiff getPublicApiChanges(String repo, String before, String after) throws IOException;
+  List&lt;AuthorTypes&gt; getAuthorTypeStatistics(String repo) throws IOException;
+  List&lt;Complexity&gt; getCodeComplexityTrend(String repo, String packagePrefix) throws IOException;
+  List&lt;SourceFile&gt; getMonsterClasses(String repo, int threshold, int offset, int limit) throws IOException;
+  List&lt;SourceFile&gt; getDeadCodeCandidates(String repo, int offset, int limit) throws IOException;
+  List&lt;TestRatio&gt; getTestCoverageProxy(String repo) throws IOException;
+
+<span class="fc" id="L38">  record SourceFile(String blobObjectId, String commitObjectId, String filePath, String packageName,</span>
+      String declaredTypes, String fullyQualifiedNames, String declaredMethods, String declaredFields,
+      String extendsTypes, String implementsTypes, String visibility) {}
+<span class="fc" id="L41">  record Change(SourceFile before, SourceFile after, String changeDescription) {}</span>
+  record SourceDiff(List&lt;SourceFile&gt; addedFiles, List&lt;SourceFile&gt; removedFiles, List&lt;Change&gt; changedFiles) {
+<span class="fc" id="L43">    public SourceDiff {</span>
+<span class="fc" id="L44">      addedFiles = List.copyOf(addedFiles); removedFiles = List.copyOf(removedFiles); changedFiles = List.copyOf(changedFiles);</span>
+<span class="fc" id="L45">    }</span>
+  }
+<span class="fc" id="L47">  record AuthorTypes(String author, String typeKind, long count) {}</span>
+<span class="fc" id="L48">  record Complexity(String commitDate, double avgLineCount) {}</span>
+<span class="fc" id="L49">  record TestRatio(String packageName, long testTypeCount, long totalTypeCount) {}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

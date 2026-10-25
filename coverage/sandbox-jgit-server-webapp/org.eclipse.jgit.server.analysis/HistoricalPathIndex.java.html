@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>HistoricalPathIndex.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">HistoricalPathIndex.java</span></div><h1>HistoricalPathIndex.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.HexFormat;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.server.history.GitHistorySnapshot;
+import org.eclipse.jgit.server.history.GitHistorySnapshot.CommitView;
+import org.eclipse.jgit.server.history.SandboxFileHistory.FileVersion;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.*;
+
+/** All historical commit/path pairs, streamed into the public path index without Java parsing. */
+final class HistoricalPathIndex implements Closeable {
+  private final JavaFileSearchIndex index;
+  private final String repositoryName;
+  private final Map&lt;String, CommitView&gt; commits;
+
+<span class="fc" id="L32">  private HistoricalPathIndex(String repositoryName, JavaFileSearchIndex index, Map&lt;String, CommitView&gt; commits) {</span>
+<span class="fc" id="L33">    this.repositoryName = repositoryName;</span>
+<span class="fc" id="L34">    this.index = index; this.commits = Map.copyOf(commits);</span>
+<span class="fc" id="L35">  }</span>
+
+  static HistoricalPathIndex build(String canonicalName, Repository git, List&lt;CommitView&gt; snapshot) throws IOException {
+<span class="fc" id="L38">    GitHistorySnapshot.checkInterrupted();</span>
+<span class="fc" id="L39">    var commits = new HashMap&lt;String, CommitView&gt;(); snapshot.forEach(c -&gt; commits.put(c.objectId(), c));</span>
+<span class="fc" id="L40">    try (var documents = new PathDocuments(canonicalName, git.newObjectReader(), snapshot)) {</span>
+<span class="fc" id="L41">      return new HistoricalPathIndex(canonicalName, JavaFileSearchIndex.build(documents), commits);</span>
+<span class="fc" id="L42">    } catch (UncheckedIOException failure) { throw failure.getCause(); }</span>
+  }
+
+  List&lt;FileVersion&gt; search(String canonicalName, String text, int offset, int limit) throws IOException {
+<span class="fc" id="L46">    return index.search(new JavaFileSearchQuery(canonicalName, null, null, text,</span>
+<span class="fc" id="L47">        Map.of(JavaFileSearchField.PATH, 1f), offset, limit)).stream().map(hit -&gt;</span>
+<span class="fc" id="L48">            new FileVersion(hit.commitId(), hit.path(), hit.blobId(), fileType(hit.path()),</span>
+<span class="fc" id="L49">                commits.get(hit.commitId()).authorTime())).toList();</span>
+  }
+
+<span class="fc" id="L52">  @Override public void close() throws IOException { index.close(); }</span>
+<span class="fc" id="L53">  String repositoryName() { return repositoryName; }</span>
+
+  private static String fileType(String path) {
+<span class="fc" id="L56">    int dot = path.lastIndexOf('.');</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">    return dot &lt; 0 ? &quot;unknown&quot; : path.substring(dot + 1).toLowerCase(Locale.ROOT);</span>
+  }
+
+  private static String documentId(String commitId, String path) {
+    try {
+      // Git paths are unbounded; only the identity is indexed as an exact keyword.
+      // Keep the complete path in the stored result and analyzed PATH field.
+<span class="fc" id="L64">      byte[] digest = MessageDigest.getInstance(&quot;SHA-256&quot;).digest(path.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L65">      return commitId + &quot;:&quot; + HexFormat.of().formatHex(digest);</span>
+<span class="nc" id="L66">    } catch (NoSuchAlgorithmException unavailable) {</span>
+<span class="nc" id="L67">      throw new IllegalStateException(&quot;The JVM must support SHA-256&quot;, unavailable);</span>
+    }
+  }
+
+  private static final class PathDocuments implements Iterable&lt;JavaFileSearchDocument&gt;, Closeable {
+    private final String name;
+    private final ObjectReader reader;
+    private final Iterator&lt;CommitView&gt; commits;
+    private TreeWalk tree;
+    private CommitView commit;
+    private boolean iterated;
+
+<span class="fc" id="L79">    PathDocuments(String name, ObjectReader reader, List&lt;CommitView&gt; commits) {</span>
+<span class="fc" id="L80">      this.name = name; this.reader = reader; this.commits = commits.iterator();</span>
+<span class="fc" id="L81">    }</span>
+
+    @Override public Iterator&lt;JavaFileSearchDocument&gt; iterator() {
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">      if (iterated) throw new IllegalStateException(&quot;Historical path stream is single-use&quot;);</span>
+<span class="fc" id="L85">      iterated = true;</span>
+<span class="fc" id="L86">      return new Iterator&lt;&gt;() {</span>
+        private JavaFileSearchDocument next;
+        @Override public boolean hasNext() {
+<span class="fc bfc" id="L89" title="All 2 branches covered.">          if (next != null) return true;</span>
+          try {
+            for (;;) {
+<span class="fc" id="L92">              GitHistorySnapshot.checkInterrupted();</span>
+<span class="fc bfc" id="L93" title="All 4 branches covered.">              if (tree != null &amp;&amp; tree.next()) {</span>
+<span class="fc" id="L94">                String path = tree.getPathString();</span>
+                // This index searches paths only. Derive the legacy file type from the
+                // stored path when returning results; it need not fit an indexed keyword.
+<span class="fc" id="L97">                next = new JavaFileSearchDocument(name, documentId(commit.objectId(), path), commit.objectId(),</span>
+<span class="fc" id="L98">                    tree.getObjectId(0).name(), path, &quot;&quot;, &quot;&quot;, Map.of(JavaFileSearchField.PATH, path));</span>
+<span class="fc" id="L99">                return true;</span>
+              }
+<span class="fc bfc" id="L101" title="All 2 branches covered.">              if (tree != null) { tree.close(); tree = null; }</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">              if (!commits.hasNext()) return false;</span>
+<span class="fc" id="L103">              commit = commits.next(); tree = new TreeWalk(reader);</span>
+<span class="fc" id="L104">              tree.addTree(ObjectId.fromString(commit.treeId())); tree.setRecursive(true);</span>
+            }
+<span class="fc" id="L106">          } catch (IOException failure) { throw new UncheckedIOException(failure); }</span>
+        }
+        @Override public JavaFileSearchDocument next() {
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">          if (!hasNext()) throw new NoSuchElementException();</span>
+<span class="fc" id="L110">          var result = next; next = null; return result;</span>
+        }
+      };
+    }
+
+    @Override public void close() {
+<span class="fc bfc" id="L116" title="All 2 branches covered.">      try { if (tree != null) tree.close(); }</span>
+<span class="fc" id="L117">      finally { reader.close(); }</span>
+<span class="fc" id="L118">    }</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

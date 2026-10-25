@@ -18,48 +18,36 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
-import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 
 /** Creates configured default repositories through the application boundary. */
 public final class RepositoryManagerConfig {
 
-<span class="nc" id="L28">	private static final Logger LOG= Logger.getLogger(RepositoryManagerConfig.class.getName());</span>
+<span class="nc" id="L26">	private static final Logger LOG= Logger.getLogger(RepositoryManagerConfig.class.getName());</span>
 
 	private RepositoryManagerConfig() {
 	}
 
 	/** Initializes comma-separated repository identities through the shared service. */
 	public static void initDefaultRepositories(SandboxRepositoryService repositories, String repositoryList) {
-<span class="nc bnc" id="L35" title="All 2 branches missed.">		for (String repositoryName : repositoryList.split(&quot;,&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L36">			String name= repositoryName.strip();</span>
-<span class="nc bnc" id="L37" title="All 2 branches missed.">			if (name.isEmpty()) {</span>
-<span class="nc" id="L38">				continue;</span>
+<span class="nc bnc" id="L33" title="All 2 branches missed.">		for (String repositoryName : repositoryList.split(&quot;,&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L34">			String name= repositoryName.strip();</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">			if (name.isEmpty()) {</span>
+<span class="nc" id="L36">				continue;</span>
 			}
 			try {
-<span class="nc" id="L41">				repositories.openOrCreate(name);</span>
-<span class="nc" id="L42">				LOG.log(Level.INFO, &quot;Initialized default repository: {0}&quot;, name); //$NON-NLS-1$</span>
-<span class="nc" id="L43">			} catch (IOException | RuntimeException exception) {</span>
-<span class="nc" id="L44">				LOG.log(Level.WARNING, &quot;Failed to create default repository: &quot; + name, exception); //$NON-NLS-1$</span>
-<span class="nc" id="L45">			}</span>
+<span class="nc" id="L39">				repositories.openOrCreate(name);</span>
+<span class="nc" id="L40">				LOG.log(Level.INFO, &quot;Initialized default repository: {0}&quot;, name); //$NON-NLS-1$</span>
+<span class="nc" id="L41">			} catch (IOException | RuntimeException exception) {</span>
+<span class="nc" id="L42">				LOG.log(Level.WARNING, &quot;Failed to create default repository: &quot; + name, exception); //$NON-NLS-1$</span>
+<span class="nc" id="L43">			}</span>
 		}
-<span class="nc" id="L47">	}</span>
-
-	/**
-	 * Compatibility entry point for standalone provisioning callers. The
-	 * temporary adapter is closed after all repository identities are persisted.
-	 */
-	public static void initDefaultRepositories(HibernateSessionFactoryProvider provider, String repositoryList) {
-<span class="nc" id="L54">		try (CopiedHibernateRepositoryService repositories= new CopiedHibernateRepositoryService(provider)) {</span>
-<span class="nc" id="L55">			initDefaultRepositories(repositories, repositoryList);</span>
-		}
-<span class="nc" id="L57">	}</span>
+<span class="nc" id="L45">	}</span>
 
 	/** Opens or creates one repository through the application boundary. */
 	public static Repository createRepositoryIfAbsent(SandboxRepositoryService repositories, String repositoryName)
 			throws IOException {
-<span class="nc" id="L62">		return repositories.openOrCreate(repositoryName);</span>
+<span class="nc" id="L50">		return repositories.openOrCreate(repositoryName);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

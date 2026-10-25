@@ -116,7 +116,7 @@ import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.entity.JavaSym
 <span class="fc" id="L116">    fields.put(SOURCE, truncate(source.source(), 65_535));</span>
 <span class="fc" id="L117">    fields.put(PATH, source.path());</span>
 <span class="fc" id="L118">    String filename = source.path().substring(source.path().lastIndexOf('/') + 1);</span>
-<span class="pc bpc" id="L119" title="1 of 2 branches missed.">    String simpleName = filename.endsWith(&quot;.java&quot;) ? filename.substring(0, filename.length() - 5) : filename;</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">    String simpleName = filename.endsWith(&quot;.java&quot;) ? filename.substring(0, filename.length() - 5) : filename;</span>
 <span class="fc" id="L120">    fields.put(SIMPLE_CLASS_NAME, simpleName);</span>
 <span class="fc bfc" id="L121" title="All 2 branches covered.">    var primary = structure.types().isEmpty() ? null : structure.types().getFirst();</span>
 <span class="fc bfc" id="L122" title="All 2 branches covered.">    var primarySymbol = primary == null ? null : symbols.stream()</span>

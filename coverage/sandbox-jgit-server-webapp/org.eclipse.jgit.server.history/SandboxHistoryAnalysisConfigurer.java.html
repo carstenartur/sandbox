@@ -4,25 +4,23 @@
  *******************************************************************************/
 package org.eclipse.jgit.server.history;
 
-import org.eclipse.jgit.storage.hibernate.search.JavaSourceAnalysisConfigurer;
 import org.hibernate.search.backend.lucene.analysis.LuceneAnalysisConfigurationContext;
 import org.hibernate.search.backend.lucene.analysis.LuceneAnalysisConfigurer;
 
 import io.github.carstenartur.jgit.storage.hibernate.search.analysis.GitTextAnalysis;
 
-/** Sandbox's message vocabulary plus the transitional Java projection analyzers. */
-<span class="fc" id="L14">public final class SandboxHistoryAnalysisConfigurer implements LuceneAnalysisConfigurer {</span>
+/** Sandbox's commit-message vocabulary for the released Search projection. */
+<span class="fc" id="L13">public final class SandboxHistoryAnalysisConfigurer implements LuceneAnalysisConfigurer {</span>
 
 	@Override
 	public void configure(LuceneAnalysisConfigurationContext context) {
-<span class="fc" id="L18">		new JavaSourceAnalysisConfigurer().configure(context);</span>
-<span class="fc" id="L19">		context.analyzer(GitTextAnalysis.NATURAL_LANGUAGE_ANALYZER).custom()</span>
-<span class="fc" id="L20">				.tokenizer(&quot;standard&quot;)</span>
-<span class="fc" id="L21">				.tokenFilter(&quot;wordDelimiterGraph&quot;)</span>
-<span class="fc" id="L22">				.param(&quot;splitOnCaseChange&quot;, &quot;1&quot;)</span>
-<span class="fc" id="L23">				.param(&quot;preserveOriginal&quot;, &quot;1&quot;)</span>
-<span class="fc" id="L24">				.tokenFilter(&quot;lowercase&quot;)</span>
-<span class="fc" id="L25">				.tokenFilter(&quot;stop&quot;);</span>
-<span class="fc" id="L26">	}</span>
+<span class="fc" id="L17">		context.analyzer(GitTextAnalysis.NATURAL_LANGUAGE_ANALYZER).custom()</span>
+<span class="fc" id="L18">				.tokenizer(&quot;standard&quot;)</span>
+<span class="fc" id="L19">				.tokenFilter(&quot;wordDelimiterGraph&quot;)</span>
+<span class="fc" id="L20">				.param(&quot;splitOnCaseChange&quot;, &quot;1&quot;)</span>
+<span class="fc" id="L21">				.param(&quot;preserveOriginal&quot;, &quot;1&quot;)</span>
+<span class="fc" id="L22">				.tokenFilter(&quot;lowercase&quot;)</span>
+<span class="fc" id="L23">				.tokenFilter(&quot;stop&quot;);</span>
+<span class="fc" id="L24">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

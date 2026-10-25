@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AnalysisGenerations.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">AnalysisGenerations.java</span></div><h1>AnalysisGenerations.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
+import org.eclipse.jgit.server.history.GitHistorySnapshot.CommitView;
+
+/** Shared build capacity and shutdown ownership for source, path and API generations. */
+public final class AnalysisGenerations implements Closeable {
+<span class="fc" id="L12">  enum Kind { SOURCE, PATH, API }</span>
+<span class="fc" id="L13">  record ApiRequest(String before, String after, boolean publicOnly) {}</span>
+  record Snapshot(List&lt;CommitView&gt; commits, ApiRequest api) {
+<span class="fc" id="L15">    Snapshot { commits = List.copyOf(commits); }</span>
+  }
+  private final AnalysisGenerationCache&lt;Snapshot, Closeable&gt; cache;
+
+<span class="fc" id="L19">  public AnalysisGenerations(int retainedGenerations, int concurrentBuilds) {</span>
+<span class="fc" id="L20">    cache = new AnalysisGenerationCache&lt;&gt;(retainedGenerations, concurrentBuilds);</span>
+<span class="fc" id="L21">  }</span>
+
+  &lt;G extends Closeable, T&gt; T read(Kind kind, String canonicalName,
+      AnalysisGenerationCache.Snapshot&lt;Snapshot&gt; snapshots,
+      AnalysisGenerationCache.Builder&lt;Snapshot, G&gt; builder, Class&lt;G&gt; type,
+      AnalysisGenerationCache.Reader&lt;G, T&gt; reader) throws IOException {
+<span class="fc" id="L27">    return cache.read(key(kind, canonicalName), snapshots, snapshot -&gt; builder.build(snapshot),</span>
+<span class="fc" id="L28">        generation -&gt; reader.read(type.cast(generation)));</span>
+  }
+
+  /** Canonical identities arrive from accepted transport/deletion/rebuild operations. */
+  public void invalidateCanonical(String canonicalName) {
+<span class="fc bfc" id="L33" title="All 2 branches covered.">    for (var kind : Kind.values()) cache.invalidateCanonical(key(kind, canonicalName));</span>
+<span class="fc" id="L34">  }</span>
+
+  /** Explicitly refreshes local dependency/classpath inputs as well as Git-derived generations. */
+<span class="fc" id="L37">  public void refresh() { cache.invalidateAll(); }</span>
+
+  private static String key(Kind kind, String canonicalName) {
+<span class="fc" id="L40">    return kind.name() + &quot;:&quot; + Objects.requireNonNull(canonicalName);</span>
+  }
+
+<span class="fc" id="L43">  @Override public void close() throws IOException { cache.close(); }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

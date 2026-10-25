@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ApplicationApiComparison.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">ApplicationApiComparison.java</span></div><h1>ApplicationApiComparison.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import static io.github.carstenartur.jgit.storage.hibernate.javaanalysis.JavaFileSearchField.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeSet;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
+import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.JavaSemanticDiff;
+import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.JavaProjectAnalysisResult;
+import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.SemanticChangeKind;
+
+/** Sandbox's file-level API report, computed from complete Git snapshots and the public semantic diff. */
+final class ApplicationApiComparison {
+  private final JavaHistoryCorpus corpus;
+<span class="fc" id="L20">  ApplicationApiComparison(JavaHistoryCorpus corpus) { this.corpus = Objects.requireNonNull(corpus); }</span>
+
+<span class="fc" id="L22">  record Change(AnalyzedFile before, AnalyzedFile after, String description) {}</span>
+  record Diff(List&lt;AnalyzedFile&gt; added, List&lt;AnalyzedFile&gt; removed, List&lt;Change&gt; changed) {
+<span class="fc" id="L24">    Diff { added = List.copyOf(added); removed = List.copyOf(removed); changed = List.copyOf(changed); }</span>
+  }
+
+  Diff compare(String repositoryName, Repository git, ObjectId beforeId, ObjectId afterId, boolean publicOnly)
+      throws IOException {
+<span class="fc" id="L29">    var before = corpus.atCommit(repositoryName, git, beforeId);</span>
+<span class="fc" id="L30">    var after = corpus.atCommit(repositoryName, git, afterId);</span>
+<span class="fc" id="L31">    var paths = new TreeSet&lt;&gt;(before.files().keySet()); paths.addAll(after.files().keySet());</span>
+<span class="fc" id="L32">    var added = new ArrayList&lt;AnalyzedFile&gt;(); var removed = new ArrayList&lt;AnalyzedFile&gt;();</span>
+<span class="fc" id="L33">    var changed = new ArrayList&lt;Change&gt;();</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">    for (String path : paths) {</span>
+<span class="fc" id="L35">      var a = before.files().get(path); var b = after.files().get(path);</span>
+<span class="fc bfc" id="L36" title="All 6 branches covered.">      if (publicOnly &amp;&amp; !isPublic(a) &amp;&amp; !isPublic(b)) continue;</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">      if (a == null) added.add(b);</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">      else if (b == null) removed.add(a);</span>
+      else {
+<span class="fc" id="L40">        var labels = new ArrayList&lt;String&gt;();</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (!Objects.equals(a.facet(METHODS), b.facet(METHODS))) labels.add(&quot;methods changed&quot;);</span>
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (!Objects.equals(a.facet(METHOD_SIGNATURES), b.facet(METHOD_SIGNATURES))) labels.add(&quot;signatures changed&quot;);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (!Objects.equals(a.visibility(), b.visibility())) labels.add(&quot;visibility changed&quot;);</span>
+        // A heuristic declaration match is evidence of a change, not an exact rename diagnosis.
+<span class="fc bfc" id="L45" title="All 4 branches covered.">        if (labels.isEmpty() &amp;&amp; declarationsChanged(before.semantic(), after.semantic(), path)) labels.add(&quot;declarations changed&quot;);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (!labels.isEmpty()) changed.add(new Change(a, b, String.join(&quot;, &quot;, labels)));</span>
+      }
+<span class="fc" id="L48">    }</span>
+<span class="fc" id="L49">    return new Diff(added, removed, changed);</span>
+  }
+
+  private static boolean declarationsChanged(JavaProjectAnalysisResult before,
+      JavaProjectAnalysisResult after, String path) {
+    // Match declarations only within this retained file. Cross-file heuristic matches can consume
+    // an unrelated exact identity. Binding analysis still used the entire project on each side.
+<span class="pc bpc" id="L56" title="2 of 4 branches missed.">    if (!before.files().containsKey(path) || !after.files().containsKey(path)) return false;</span>
+<span class="fc" id="L57">    return new JavaSemanticDiff().compare(fileView(before, path), fileView(after, path)).stream()</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        .anyMatch(change -&gt; change.kind() != SemanticChangeKind.BINDING_QUALITY_CHANGED);</span>
+  }
+
+  private static JavaProjectAnalysisResult fileView(JavaProjectAnalysisResult project, String path) {
+<span class="fc" id="L62">    var file = project.files().get(path);</span>
+<span class="fc" id="L63">    return new JavaProjectAnalysisResult(project.project(), Map.of(path, file), file.symbols(), file.references(),</span>
+<span class="fc" id="L64">        file.analysisRun().getProblemCount(), file.analysisRun().getErrorCount());</span>
+  }
+
+  private static boolean isPublic(AnalyzedFile file) {
+<span class="fc bfc" id="L68" title="All 6 branches covered.">    return file != null &amp;&amp; file.visibility() != null &amp;&amp; file.visibility().contains(&quot;public&quot;);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

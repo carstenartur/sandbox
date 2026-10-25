@@ -21,99 +21,117 @@ final class ExternalCoreStartupGuard {
   private ExternalCoreStartupGuard() {}
 
   static Properties requireReady(Properties supplied) {
-<span class="fc" id="L24">    Objects.requireNonNull(supplied, &quot;properties&quot;);</span>
-    // Configuration inherits this JVM/classpath snapshot before addProperties overlays caller entries.
-    // Validate and return precisely that flat snapshot for the subsequent provider bootstrap.
-<span class="fc" id="L27">    var properties = new Properties();</span>
-<span class="fc" id="L28">    properties.putAll(Environment.getProperties());</span>
-<span class="fc" id="L29">    properties.putAll(supplied);</span>
-<span class="fc bfc" id="L30" title="All 2 branches covered.">    if (!&quot;validate&quot;.equalsIgnoreCase(properties.getProperty(&quot;hibernate.hbm2ddl.auto&quot;, &quot;&quot;).strip())) {</span>
-<span class="fc" id="L31">      throw new IllegalStateException(&quot;Released storage requires hibernate.hbm2ddl.auto=validate; migrate Core and Search first.&quot;);</span>
-    }
-<span class="fc bfc" id="L33" title="All 2 branches covered.">    for (Object setting : properties.keySet()) {</span>
-<span class="pc bpc" id="L34" title="1 of 2 branches missed.">      if (!(setting instanceof String key)) continue;</span>
-<span class="fc bfc" id="L35" title="All 2 branches covered.">      for (String action : new String[] {&quot;jakarta.persistence.schema-generation.database.action&quot;,</span>
-          &quot;javax.persistence.schema-generation.database.action&quot;, &quot;jakarta.persistence.schema-generation.scripts.action&quot;,
-          &quot;javax.persistence.schema-generation.scripts.action&quot;, &quot;hibernate.hbm2ddl.auto&quot;}) {
-<span class="fc bfc" id="L38" title="All 6 branches covered.">        if ((!action.equals(&quot;hibernate.hbm2ddl.auto&quot;) &amp;&amp; key.equals(action)) || key.startsWith(action + &quot;.&quot;)) {</span>
-<span class="fc" id="L39">          throw new IllegalStateException(&quot;Remove &quot; + key + &quot;; it overrides hibernate.hbm2ddl.auto=validate.&quot;);</span>
-        }
-      }
-<span class="fc" id="L42">    }</span>
-<span class="fc" id="L43">    String url = Objects.requireNonNull(properties.getProperty(&quot;hibernate.connection.url&quot;), &quot;JDBC URL&quot;);</span>
-<span class="fc" id="L44">    String schema = properties.getProperty(&quot;hibernate.default_schema&quot;);</span>
-<span class="fc bfc" id="L45" title="All 4 branches covered.">    if (schema != null &amp;&amp; schema.contains(&quot;\&quot;&quot;)) {</span>
-<span class="fc" id="L46">      throw new IllegalStateException(&quot;Flyway validation does not support embedded double quotes in the schema name.&quot;);</span>
-    }
-    String core;
-    String search;
-<span class="fc bfc" id="L50" title="All 2 branches covered.">    if (url.startsWith(&quot;jdbc:h2:&quot;)) {</span>
-<span class="fc" id="L51">      core = CoreSchemaMigrations.H2_LOCATION; search = SearchSchemaMigrations.H2_LOCATION;</span>
-<span class="fc bfc" id="L52" title="All 2 branches covered.">    } else if (url.startsWith(&quot;jdbc:hsqldb:&quot;)) {</span>
-<span class="fc" id="L53">      core = CoreSchemaMigrations.HSQLDB_LOCATION;</span>
-<span class="fc" id="L54">      search = SearchSchemaMigrations.HSQLDB_LOCATION;</span>
-<span class="pc bpc" id="L55" title="1 of 2 branches missed.">    } else if (url.startsWith(&quot;jdbc:postgresql:&quot;)) {</span>
-<span class="nc" id="L56">      core = CoreSchemaMigrations.POSTGRESQL_LOCATION; search = SearchSchemaMigrations.POSTGRESQL_LOCATION;</span>
-<span class="pc bpc" id="L57" title="1 of 2 branches missed.">    } else if (url.startsWith(&quot;jdbc:sqlserver:&quot;)) {</span>
-<span class="nc" id="L58">      core = CoreSchemaMigrations.SQL_SERVER_LOCATION; search = SearchSchemaMigrations.SQL_SERVER_LOCATION;</span>
-    } else {
-<span class="fc" id="L60">      throw new IllegalStateException(&quot;No released Core/Search migration pair for this database family.&quot;);</span>
-    }
+<span class="fc" id="L24">    var properties = validatedSettings(supplied);</span>
+<span class="fc" id="L25">    String url = properties.getProperty(&quot;hibernate.connection.url&quot;);</span>
+<span class="fc" id="L26">    String schema = properties.getProperty(&quot;hibernate.default_schema&quot;);</span>
+<span class="fc" id="L27">    var locations = locations(url);</span>
     try {
-<span class="fc" id="L63">      String driver = properties.getProperty(&quot;hibernate.connection.driver_class&quot;);</span>
-<span class="pc bpc" id="L64" title="2 of 4 branches missed.">      if (driver != null &amp;&amp; !driver.isBlank()) Class.forName(driver);</span>
-<span class="fc" id="L65">      var source = new ReadOnlySource(url, properties.getProperty(&quot;hibernate.connection.username&quot;, &quot;&quot;),</span>
-<span class="fc" id="L66">          properties.getProperty(&quot;hibernate.connection.password&quot;, &quot;&quot;));</span>
-<span class="fc" id="L67">      validate(source, schema, CoreSchemaMigrations.SCHEMA_HISTORY_TABLE, core);</span>
-<span class="fc" id="L68">      validate(source, schema, SearchSchemaMigrations.SCHEMA_HISTORY_TABLE, search);</span>
-<span class="fc" id="L69">    } catch (ClassNotFoundException | RuntimeException failure) {</span>
-<span class="fc" id="L70">      throw new IllegalStateException(&quot;Released Core/Search migration validation failed before Hibernate startup.&quot;, failure);</span>
-<span class="fc" id="L71">    }</span>
-<span class="fc" id="L72">    return properties;</span>
+<span class="fc" id="L29">      loadDriver(properties);</span>
+<span class="fc" id="L30">      var source = new ReadOnlySource(url, properties.getProperty(&quot;hibernate.connection.username&quot;, &quot;&quot;),</span>
+<span class="fc" id="L31">          properties.getProperty(&quot;hibernate.connection.password&quot;, &quot;&quot;));</span>
+<span class="fc" id="L32">      validate(source, schema, CoreSchemaMigrations.SCHEMA_HISTORY_TABLE, locations.core());</span>
+<span class="fc" id="L33">      validate(source, schema, SearchSchemaMigrations.SCHEMA_HISTORY_TABLE, locations.search());</span>
+<span class="fc" id="L34">    } catch (ClassNotFoundException | RuntimeException failure) {</span>
+<span class="fc" id="L35">      throw new IllegalStateException(&quot;Released Core/Search migration validation failed before Hibernate startup.&quot;, failure);</span>
+<span class="fc" id="L36">    }</span>
+<span class="fc" id="L37">    return properties;</span>
   }
 
-  private static void validate(DataSource source, String schema, String table, String location) {
-<span class="fc" id="L76">    var configuration = Flyway.configure().dataSource(source).locations(location).table(table)</span>
-<span class="fc" id="L77">        .createSchemas(false).cleanDisabled(true).failOnMissingLocations(true).ignoreMigrationPatterns(new String[0]);</span>
-<span class="pc bpc" id="L78" title="1 of 4 branches missed.">    if (schema != null &amp;&amp; !schema.isBlank()) configuration.defaultSchema(schema).schemas(schema);</span>
-<span class="fc" id="L79">    var flyway = configuration.load();</span>
-<span class="fc" id="L80">    var information = flyway.info();</span>
-<span class="fc bfc" id="L81" title="All 2 branches covered.">    if (information.pending().length != 0</span>
-<span class="pc bpc" id="L82" title="1 of 4 branches missed.">        || Arrays.stream(information.applied()).noneMatch(migration -&gt; migration.getVersion() != null</span>
-<span class="pc bpc" id="L83" title="1 of 4 branches missed.">            &amp;&amp; &quot;SQL&quot;.equals(migration.getType().name()) &amp;&amp; migration.getState().isApplied())) {</span>
-<span class="fc" id="L84">      throw new IllegalStateException(&quot;Missing or incomplete released migration stream: &quot; + table);</span>
+  static Properties validatedSettings(Properties supplied) {
+<span class="fc" id="L41">    Objects.requireNonNull(supplied, &quot;properties&quot;);</span>
+    // Configuration inherits this JVM/classpath snapshot before addProperties overlays caller entries.
+    // Validate and return precisely that flat snapshot for the subsequent provider bootstrap.
+<span class="fc" id="L44">    var properties = new Properties();</span>
+<span class="fc" id="L45">    properties.putAll(Environment.getProperties());</span>
+<span class="fc" id="L46">    properties.putAll(supplied);</span>
+<span class="fc" id="L47">    String catalog = properties.getProperty(&quot;hibernate.default_catalog&quot;);</span>
+<span class="pc bpc" id="L48" title="1 of 4 branches missed.">    if (catalog != null &amp;&amp; !catalog.isBlank()) {</span>
+<span class="fc" id="L49">      throw new IllegalStateException(&quot;Remove hibernate.default_catalog; select the migration and Hibernate database in the JDBC URL.&quot;);</span>
     }
-<span class="fc" id="L86">    flyway.validate();</span>
-<span class="fc" id="L87">  }</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">    if (!&quot;validate&quot;.equalsIgnoreCase(properties.getProperty(&quot;hibernate.hbm2ddl.auto&quot;, &quot;&quot;).strip())) {</span>
+<span class="fc" id="L52">      throw new IllegalStateException(&quot;Released storage requires hibernate.hbm2ddl.auto=validate; migrate Core and Search first.&quot;);</span>
+    }
+<span class="fc bfc" id="L54" title="All 2 branches covered.">    for (Object setting : properties.keySet()) {</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">      if (!(setting instanceof String key)) continue;</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">      for (String action : new String[] {&quot;jakarta.persistence.schema-generation.database.action&quot;,</span>
+          &quot;javax.persistence.schema-generation.database.action&quot;, &quot;jakarta.persistence.schema-generation.scripts.action&quot;,
+          &quot;javax.persistence.schema-generation.scripts.action&quot;, &quot;hibernate.hbm2ddl.auto&quot;}) {
+<span class="fc bfc" id="L59" title="All 6 branches covered.">        if ((!action.equals(&quot;hibernate.hbm2ddl.auto&quot;) &amp;&amp; key.equals(action)) || key.startsWith(action + &quot;.&quot;)) {</span>
+<span class="fc" id="L60">          throw new IllegalStateException(&quot;Remove &quot; + key + &quot;; it overrides hibernate.hbm2ddl.auto=validate.&quot;);</span>
+        }
+      }
+<span class="fc" id="L63">    }</span>
+<span class="fc" id="L64">    Objects.requireNonNull(properties.getProperty(&quot;hibernate.connection.url&quot;), &quot;JDBC URL&quot;);</span>
+<span class="fc" id="L65">    String schema = properties.getProperty(&quot;hibernate.default_schema&quot;);</span>
+<span class="fc bfc" id="L66" title="All 4 branches covered.">    if (schema != null &amp;&amp; schema.contains(&quot;\&quot;&quot;)) {</span>
+<span class="fc" id="L67">      throw new IllegalStateException(&quot;Flyway validation does not support embedded double quotes in the schema name.&quot;);</span>
+    }
+<span class="fc" id="L69">    return properties;</span>
+  }
+
+<span class="fc" id="L72">  record Locations(String core, String search) {}</span>
+
+  static Locations locations(String url) {
+<span class="fc bfc" id="L75" title="All 2 branches covered.">    if (url.startsWith(&quot;jdbc:h2:&quot;)) {</span>
+<span class="fc" id="L76">      return new Locations(CoreSchemaMigrations.H2_LOCATION, SearchSchemaMigrations.H2_LOCATION);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">    } else if (url.startsWith(&quot;jdbc:hsqldb:&quot;)) {</span>
+<span class="fc" id="L78">      return new Locations(CoreSchemaMigrations.HSQLDB_LOCATION, SearchSchemaMigrations.HSQLDB_LOCATION);</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">    } else if (url.startsWith(&quot;jdbc:postgresql:&quot;)) {</span>
+<span class="nc" id="L80">      return new Locations(CoreSchemaMigrations.POSTGRESQL_LOCATION, SearchSchemaMigrations.POSTGRESQL_LOCATION);</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">    } else if (url.startsWith(&quot;jdbc:sqlserver:&quot;)) {</span>
+<span class="nc" id="L82">      return new Locations(CoreSchemaMigrations.SQL_SERVER_LOCATION, SearchSchemaMigrations.SQL_SERVER_LOCATION);</span>
+    } else {
+<span class="fc" id="L84">      throw new IllegalStateException(&quot;No released Core/Search migration pair for this database family.&quot;);</span>
+    }
+  }
+
+  static void loadDriver(Properties properties) throws ClassNotFoundException {
+<span class="fc" id="L89">    String driver = properties.getProperty(&quot;hibernate.connection.driver_class&quot;);</span>
+<span class="pc bpc" id="L90" title="2 of 4 branches missed.">    if (driver != null &amp;&amp; !driver.isBlank()) Class.forName(driver);</span>
+<span class="fc" id="L91">  }</span>
+
+  private static void validate(DataSource source, String schema, String table, String location) {
+<span class="fc" id="L94">    var configuration = Flyway.configure().dataSource(source).locations(location).table(table)</span>
+<span class="fc" id="L95">        .createSchemas(false).cleanDisabled(true).failOnMissingLocations(true).ignoreMigrationPatterns(new String[0]);</span>
+<span class="pc bpc" id="L96" title="1 of 4 branches missed.">    if (schema != null &amp;&amp; !schema.isBlank()) configuration.defaultSchema(schema).schemas(schema);</span>
+<span class="fc" id="L97">    var flyway = configuration.load();</span>
+<span class="fc" id="L98">    var information = flyway.info();</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">    if (information.pending().length != 0</span>
+<span class="pc bpc" id="L100" title="1 of 4 branches missed.">        || Arrays.stream(information.applied()).noneMatch(migration -&gt; migration.getVersion() != null</span>
+<span class="pc bpc" id="L101" title="1 of 4 branches missed.">            &amp;&amp; &quot;SQL&quot;.equals(migration.getType().name()) &amp;&amp; migration.getState().isApplied())) {</span>
+<span class="fc" id="L102">      throw new IllegalStateException(&quot;Missing or incomplete released migration stream: &quot; + table);</span>
+    }
+<span class="fc" id="L104">    flyway.validate();</span>
+<span class="fc" id="L105">  }</span>
 
   /** Flyway receives only read-only connections; no migrate/repair/baseline API is called. */
   private static final class ReadOnlySource implements DataSource {
     private final String url;
     private final String user;
     private final String password;
-<span class="fc" id="L94">    ReadOnlySource(String url, String user, String password) {</span>
-<span class="fc" id="L95">      this.url = url; this.user = user; this.password = password;</span>
-<span class="fc" id="L96">    }</span>
-<span class="fc" id="L97">    @Override public Connection getConnection() throws SQLException { return getConnection(user, password); }</span>
+<span class="fc" id="L112">    ReadOnlySource(String url, String user, String password) {</span>
+<span class="fc" id="L113">      this.url = url; this.user = user; this.password = password;</span>
+<span class="fc" id="L114">    }</span>
+<span class="fc" id="L115">    @Override public Connection getConnection() throws SQLException { return getConnection(user, password); }</span>
     @Override public Connection getConnection(String username, String suppliedPassword) throws SQLException {
-<span class="fc" id="L99">      Connection connection = DriverManager.getConnection(url, username, suppliedPassword);</span>
+<span class="fc" id="L117">      Connection connection = DriverManager.getConnection(url, username, suppliedPassword);</span>
       try {
-<span class="fc" id="L101">        connection.setReadOnly(true);</span>
-<span class="fc" id="L102">        return connection;</span>
-<span class="nc" id="L103">      } catch (SQLException failure) {</span>
-<span class="nc" id="L104">        try { connection.close(); } catch (SQLException cleanup) { failure.addSuppressed(cleanup); }</span>
-<span class="nc" id="L105">        throw failure;</span>
+<span class="fc" id="L119">        connection.setReadOnly(true);</span>
+<span class="fc" id="L120">        return connection;</span>
+<span class="nc" id="L121">      } catch (SQLException failure) {</span>
+<span class="nc" id="L122">        try { connection.close(); } catch (SQLException cleanup) { failure.addSuppressed(cleanup); }</span>
+<span class="nc" id="L123">        throw failure;</span>
       }
     }
-<span class="nc" id="L108">    @Override public PrintWriter getLogWriter() { return null; }</span>
-<span class="nc" id="L109">    @Override public void setLogWriter(PrintWriter writer) throws SQLException { throw new SQLFeatureNotSupportedException(); }</span>
-<span class="nc" id="L110">    @Override public int getLoginTimeout() { return 0; }</span>
-<span class="nc" id="L111">    @Override public void setLoginTimeout(int seconds) throws SQLException { throw new SQLFeatureNotSupportedException(); }</span>
-<span class="nc" id="L112">    @Override public Logger getParentLogger() throws SQLFeatureNotSupportedException { throw new SQLFeatureNotSupportedException(); }</span>
-<span class="nc" id="L113">    @Override public boolean isWrapperFor(Class&lt;?&gt; type) { return type.isInstance(this); }</span>
+<span class="nc" id="L126">    @Override public PrintWriter getLogWriter() { return null; }</span>
+<span class="nc" id="L127">    @Override public void setLogWriter(PrintWriter writer) throws SQLException { throw new SQLFeatureNotSupportedException(); }</span>
+<span class="nc" id="L128">    @Override public int getLoginTimeout() { return 0; }</span>
+<span class="nc" id="L129">    @Override public void setLoginTimeout(int seconds) throws SQLException { throw new SQLFeatureNotSupportedException(); }</span>
+<span class="nc" id="L130">    @Override public Logger getParentLogger() throws SQLFeatureNotSupportedException { throw new SQLFeatureNotSupportedException(); }</span>
+<span class="nc" id="L131">    @Override public boolean isWrapperFor(Class&lt;?&gt; type) { return type.isInstance(this); }</span>
     @Override public &lt;T&gt; T unwrap(Class&lt;T&gt; type) throws SQLException {
-<span class="nc bnc" id="L115" title="All 2 branches missed.">      if (type.isInstance(this)) return type.cast(this);</span>
-<span class="nc" id="L116">      throw new SQLException(&quot;Not a wrapper for &quot; + type.getName());</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">      if (type.isInstance(this)) return type.cast(this);</span>
+<span class="nc" id="L134">      throw new SQLException(&quot;Not a wrapper for &quot; + type.getName());</span>
     }
   }
 }

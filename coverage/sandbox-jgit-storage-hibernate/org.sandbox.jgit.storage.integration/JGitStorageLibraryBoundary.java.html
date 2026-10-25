@@ -19,10 +19,8 @@ import io.github.carstenartur.jgit.storage.hibernate.config.CoreEntities;
  * Sandbox-owned integration boundary to the released generic storage library.
  *
  * &lt;p&gt;New Sandbox code must enter database-backed Git storage through public
- * {@code io.github.carstenartur.jgit.storage.hibernate} APIs. The copied
- * {@code org.eclipse.jgit.storage.hibernate} implementation remains only as a
- * temporary migration source until its callers and Sandbox-specific services
- * have been separated.&lt;/p&gt;
+ * {@code io.github.carstenartur.jgit.storage.hibernate} APIs. The bridge owns no
+ * storage implementation, Search projection, Java parser or model lifecycle.&lt;/p&gt;
  */
 public final class JGitStorageLibraryBoundary {
 
@@ -31,12 +29,12 @@ public final class JGitStorageLibraryBoundary {
 
 	/** Creates the external library's validated logical repository identity. */
 	public static RepositoryName repositoryName(String value) {
-<span class="fc" id="L34">		return new RepositoryName(value);</span>
+<span class="fc" id="L32">		return new RepositoryName(value);</span>
 	}
 
 	/** Returns the stable public entity-registration contract for generic core storage. */
 	public static List&lt;Class&lt;?&gt;&gt; coreEntities() {
-<span class="fc" id="L39">		return CoreEntities.annotatedClasses();</span>
+<span class="fc" id="L37">		return CoreEntities.annotatedClasses();</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

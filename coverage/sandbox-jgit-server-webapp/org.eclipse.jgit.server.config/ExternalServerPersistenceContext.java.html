@@ -1,172 +1,133 @@
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExternalServerPersistenceContext.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.config</a> &gt; <span class="el_source">ExternalServerPersistenceContext.java</span></div><h1>ExternalServerPersistenceContext.java</h1><pre class="source lang-java linenums">/*******************************************************************************
- * Copyright (c) 2026 Carsten Hammer and others.
- *
- * This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License 2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
- *
- * SPDX-License-Identifier: EPL-2.0
- *******************************************************************************/
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExternalServerPersistenceContext.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.config</a> &gt; <span class="el_source">ExternalServerPersistenceContext.java</span></div><h1>ExternalServerPersistenceContext.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
 package org.eclipse.jgit.server.config;
 
 import java.util.Objects;
-import java.util.stream.Stream;
 import java.util.Properties;
-
-import org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService;
-import org.eclipse.jgit.server.repository.SandboxRepositoryService;
+import org.eclipse.jgit.server.analysis.*;
+import org.eclipse.jgit.server.history.*;
+import org.eclipse.jgit.server.repository.*;
+import org.eclipse.jgit.server.search.SandboxSourceSearch;
 import org.hibernate.SessionFactory;
-import org.eclipse.jgit.server.history.SandboxHistorySearch;
-import org.eclipse.jgit.server.history.ReleasedSandboxHistorySearch;
-import org.eclipse.jgit.server.history.SandboxHistoryMaintenance;
-import org.eclipse.jgit.server.history.ReleasedSandboxHistoryMaintenance;
-import org.sandbox.jgit.storage.integration.SandboxProjectionEntities;
-
 import io.github.carstenartur.jgit.storage.hibernate.DefaultHibernateRepositoryFactory;
+import io.github.carstenartur.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import io.github.carstenartur.jgit.storage.hibernate.search.SearchEntities;
 import io.github.carstenartur.jgit.storage.hibernate.search.SearchRepositoryDeletionParticipant;
 import io.github.carstenartur.jgit.storage.hibernate.search.analysis.GitTextAnalysis;
-import org.eclipse.jgit.server.history.SandboxHistoryAnalysisConfigurer;
-import io.github.carstenartur.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 
-/**
- * Application-owned persistence context backed by the released generic Core
- * implementation.
- *
- * &lt;p&gt;This context is intentionally not the normal server default yet. It
- * registers the released Core mappings exactly once together with the explicit
- * compatible Sandbox projection list. Production construction must go through
- * {@link HibernateConfig#createExternalPersistenceContext(Properties)}, which
- * verifies the Flyway history and Hibernate validation mode before bootstrap.&lt;/p&gt;
- */
+/** Owns released persistence, historical generations and the optional model for one server. */
 final class ExternalServerPersistenceContext implements ServerPersistenceContext {
+    private static final String LUCENE = &quot;lucene&quot;;
+    private static final String LOCAL_FILESYSTEM = &quot;local-filesystem&quot;;
+    private final HibernateSessionFactoryProvider owner;
+    private final SandboxRepositoryService repositories;
+    private final SandboxHistorySearch history;
+    private final SandboxHistoryMaintenance maintenance;
+    private final AnalysisGenerations generations;
+    private final EmbeddingEncoder encoder;
+    private final SandboxSourceSearch sources;
+    private final SandboxFileHistory files;
+    private boolean closed;
 
-	private static final String LUCENE= &quot;lucene&quot;; //$NON-NLS-1$
-	private static final String LOCAL_FILESYSTEM= &quot;local-filesystem&quot;; //$NON-NLS-1$
+    ExternalServerPersistenceContext(Properties properties) {
+<span class="fc" id="L32">        this(properties, AnalysisSettings.fromEnvironment());</span>
+<span class="fc" id="L33">    }</span>
+    private ExternalServerPersistenceContext(Properties properties, AnalysisSettings settings) {
+<span class="fc" id="L35">        this(new HibernateSessionFactoryProvider(serverProperties(Objects.requireNonNull(properties)),</span>
+<span class="fc" id="L36">                SearchEntities.annotatedClasses()), settings, new LocalEmbeddingEncoder());</span>
+<span class="fc" id="L37">    }</span>
+    ExternalServerPersistenceContext(HibernateSessionFactoryProvider owner) {
+<span class="nc" id="L39">        this(owner, AnalysisSettings.fromEnvironment(), new LocalEmbeddingEncoder());</span>
+<span class="nc" id="L40">    }</span>
+<span class="fc" id="L41">    ExternalServerPersistenceContext(HibernateSessionFactoryProvider owner, AnalysisSettings settings, EmbeddingEncoder encoder) {</span>
+<span class="fc" id="L42">        this.owner = Objects.requireNonNull(owner);</span>
+<span class="fc" id="L43">        this.encoder = Objects.requireNonNull(encoder);</span>
+<span class="fc" id="L44">        AnalysisGenerations acquiredGenerations = null;</span>
+<span class="fc" id="L45">        SandboxRepositoryService acquiredRepositories = null;</span>
+        try {
+<span class="fc" id="L47">            acquiredGenerations = new AnalysisGenerations(settings.retainedGenerations(), settings.concurrentBuilds());</span>
+<span class="fc" id="L48">            this.generations = acquiredGenerations;</span>
+<span class="fc" id="L49">            var factory = owner.getSessionFactory();</span>
+<span class="fc" id="L50">            this.history = new ReleasedSandboxHistorySearch(factory);</span>
+<span class="fc" id="L51">            this.maintenance = new ReleasedSandboxHistoryMaintenance(factory, generations);</span>
+<span class="fc" id="L52">            acquiredRepositories = new ExternalHibernateRepositoryService(new DefaultHibernateRepositoryFactory(factory,</span>
+<span class="fc" id="L53">                    java.util.List.of(new SearchRepositoryDeletionParticipant())), maintenance, factory);</span>
+<span class="fc" id="L54">            this.repositories = acquiredRepositories;</span>
+<span class="fc" id="L55">            this.sources = new ReleasedSandboxSourceSearch(factory, repositories, generations, settings, encoder);</span>
+<span class="fc" id="L56">            this.files = new ReleasedSandboxFileHistory(factory, repositories, settings.filePathHistory());</span>
+<span class="fc" id="L57">        } catch (RuntimeException | Error failure) {</span>
+<span class="fc" id="L58">            try { closeAll(acquiredGenerations, encoder, acquiredRepositories, owner); }</span>
+<span class="pc" id="L59">            catch (RuntimeException | Error cleanup) { failure.addSuppressed(cleanup); }</span>
+<span class="fc" id="L60">            throw failure;</span>
+<span class="fc" id="L61">        }</span>
+<span class="fc" id="L62">    }</span>
 
-	private final HibernateSessionFactoryProvider owner;
-	private final SandboxRepositoryService repositories;
-	private final SandboxHistorySearch history;
-	private final SandboxHistoryMaintenance maintenance;
+<span class="fc" id="L64">    @Override public SessionFactory sessionFactory() { return owner.getSessionFactory(); }</span>
+<span class="fc" id="L65">    @Override public SandboxRepositoryService repositoryService() { return repositories; }</span>
+<span class="fc" id="L66">    @Override public SandboxHistorySearch historySearch() { return history; }</span>
+<span class="fc" id="L67">    @Override public SandboxHistoryMaintenance historyMaintenance() { return maintenance; }</span>
+<span class="fc" id="L68">    @Override public SandboxSourceSearch sourceSearch() { return sources; }</span>
+<span class="fc" id="L69">    @Override public SandboxFileHistory fileHistory() { return files; }</span>
+<span class="fc" id="L70">    @Override public SandboxStorageStatistics storageStatistics() { return new ReleasedSandboxStorageStatistics(owner.getSessionFactory(), repositories); }</span>
 
-	ExternalServerPersistenceContext(Properties properties) {
-<span class="fc" id="L54">		this(new HibernateSessionFactoryProvider(</span>
-<span class="fc" id="L55">				serverProperties(Objects.requireNonNull(properties, &quot;properties&quot;)), //$NON-NLS-1$</span>
-<span class="fc" id="L56">				Stream.concat(SearchEntities.annotatedClasses().stream(),</span>
-<span class="fc" id="L57">						SandboxProjectionEntities.annotatedClasses().stream()).toList()));</span>
-<span class="fc" id="L58">	}</span>
-
-<span class="fc" id="L60">	ExternalServerPersistenceContext(HibernateSessionFactoryProvider owner) {</span>
-<span class="fc" id="L61">		this.owner= Objects.requireNonNull(owner, &quot;owner&quot;); //$NON-NLS-1$</span>
-		try {
-<span class="fc" id="L63">			this.history= new ReleasedSandboxHistorySearch(owner.getSessionFactory());</span>
-<span class="fc" id="L64">			this.maintenance= new ReleasedSandboxHistoryMaintenance(owner.getSessionFactory());</span>
-<span class="fc" id="L65">			this.repositories= new ExternalHibernateRepositoryService(</span>
-<span class="fc" id="L66">					new DefaultHibernateRepositoryFactory(owner.getSessionFactory(),</span>
-<span class="fc" id="L67">							java.util.List.of(new SearchRepositoryDeletionParticipant())), maintenance, owner.getSessionFactory());</span>
-<span class="fc" id="L68">		} catch (RuntimeException | Error failure) {</span>
-			try {
-<span class="fc" id="L70">				owner.close();</span>
-<span class="nc" id="L71">			} catch (RuntimeException closeFailure) {</span>
-<span class="nc" id="L72">				failure.addSuppressed(closeFailure);</span>
-<span class="fc" id="L73">			}</span>
-<span class="fc" id="L74">			throw failure;</span>
-<span class="fc" id="L75">		}</span>
-<span class="fc" id="L76">	}</span>
-
-	@Override
-	public SessionFactory sessionFactory() {
-<span class="fc" id="L80">		return owner.getSessionFactory();</span>
-	}
-
-	@Override
-	public SandboxRepositoryService repositoryService() {
-<span class="fc" id="L85">		return repositories;</span>
-	}
-
-	@Override
-	public SandboxHistorySearch historySearch() {
-<span class="fc" id="L90">		return history;</span>
-	}
-
-	@Override
-	public SandboxHistoryMaintenance historyMaintenance() {
-<span class="fc" id="L95">		return maintenance;</span>
-	}
-
-	@Override
-	public org.eclipse.jgit.server.repository.SandboxStorageStatistics storageStatistics() {
-<span class="fc" id="L100">		return new org.eclipse.jgit.server.repository.ReleasedSandboxStorageStatistics(owner.getSessionFactory(), repositories);</span>
-	}
-
-	@Override
-	public org.eclipse.jgit.server.history.SandboxFileHistory fileHistory() {
-<span class="fc" id="L105">		return new org.eclipse.jgit.server.history.ReleasedSandboxFileHistory(owner.getSessionFactory(), repositories);</span>
-	}
-
-	@Override
-	public void close() {
-<span class="fc" id="L110">		RuntimeException failure= null;</span>
-		try {
-<span class="fc" id="L112">			repositories.close();</span>
-<span class="nc" id="L113">		} catch (RuntimeException exception) {</span>
-<span class="nc" id="L114">			failure= exception;</span>
-<span class="fc" id="L115">		}</span>
-		try {
-<span class="fc" id="L117">			owner.close();</span>
-<span class="nc" id="L118">		} catch (RuntimeException exception) {</span>
-<span class="nc bnc" id="L119" title="All 2 branches missed.">			if (failure == null) {</span>
-<span class="nc" id="L120">				failure= exception;</span>
-			} else {
-<span class="nc" id="L122">				failure.addSuppressed(exception);</span>
-			}
-<span class="fc" id="L124">		}</span>
-<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (failure != null) {</span>
-<span class="nc" id="L126">			throw failure;</span>
-		}
-<span class="fc" id="L128">	}</span>
+    /** Drain readers before their model, repository leases and database can be closed. */
+    @Override public synchronized void close() {
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (closed) return;</span>
+<span class="fc" id="L75">        closed = true;</span>
+<span class="fc" id="L76">        closeAll(generations, encoder, repositories, owner);</span>
+<span class="fc" id="L77">    }</span>
+    private static void closeAll(AutoCloseable... resources) {
+<span class="fc" id="L79">        Throwable failure = null;</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (var resource : resources) {</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (resource == null) continue;</span>
+<span class="fc" id="L82">            try { resource.close(); }</span>
+<span class="nc" id="L83">            catch (Exception | Error cleanup) {</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">                if (failure == null) failure = cleanup;</span>
+<span class="nc" id="L85">                else failure.addSuppressed(cleanup);</span>
+<span class="fc" id="L86">            }</span>
+        }
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        if (failure instanceof Error error) throw error;</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (failure instanceof RuntimeException runtime) throw runtime;</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (failure != null) throw new IllegalStateException(&quot;Cannot close server persistence resources&quot;, failure);</span>
+<span class="fc" id="L91">    }</span>
 
 	private static Properties serverProperties(Properties properties) {
-<span class="fc" id="L131">		Properties copy= new Properties();</span>
-<span class="fc" id="L132">		copy.putAll(properties);</span>
+<span class="fc" id="L94">		Properties copy= new Properties();</span>
+<span class="fc" id="L95">		copy.putAll(properties);</span>
 
-<span class="fc" id="L134">		copy.putIfAbsent(&quot;hibernate.search.backend.type&quot;, LUCENE); //$NON-NLS-1$</span>
-<span class="fc" id="L135">		String backend= copy.getProperty(&quot;hibernate.search.backend.type&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		if (LUCENE.equalsIgnoreCase(backend)) {</span>
-<span class="fc" id="L137">			copy.putIfAbsent(&quot;hibernate.search.backend.directory.type&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L97">		copy.putIfAbsent(&quot;hibernate.search.backend.type&quot;, LUCENE); //$NON-NLS-1$</span>
+<span class="fc" id="L98">		String backend= copy.getProperty(&quot;hibernate.search.backend.type&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		if (LUCENE.equalsIgnoreCase(backend)) {</span>
+<span class="fc" id="L100">			copy.putIfAbsent(&quot;hibernate.search.backend.directory.type&quot;, //$NON-NLS-1$</span>
 					LOCAL_FILESYSTEM);
-<span class="fc bfc" id="L139" title="All 2 branches covered.">			if (LOCAL_FILESYSTEM.equalsIgnoreCase(copy.getProperty(</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">			if (LOCAL_FILESYSTEM.equalsIgnoreCase(copy.getProperty(</span>
 					&quot;hibernate.search.backend.directory.type&quot;))) { //$NON-NLS-1$
-<span class="fc" id="L141">				String root= System.getenv(&quot;JGIT_SEARCH_INDEX_DIR&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L142" title="3 of 4 branches missed.">				if (root == null || root.isBlank()) {</span>
-<span class="fc" id="L143">					root= &quot;jgit-search-index&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L104">				String root= System.getenv(&quot;JGIT_SEARCH_INDEX_DIR&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L105" title="3 of 4 branches missed.">				if (root == null || root.isBlank()) {</span>
+<span class="fc" id="L106">					root= &quot;jgit-search-index&quot;; //$NON-NLS-1$</span>
 				}
-<span class="fc" id="L145">				copy.putIfAbsent(&quot;hibernate.search.backend.directory.root&quot;, root); //$NON-NLS-1$</span>
+<span class="fc" id="L108">				copy.putIfAbsent(&quot;hibernate.search.backend.directory.root&quot;, root); //$NON-NLS-1$</span>
 			}
 		}
-<span class="fc bfc" id="L148" title="All 2 branches covered.">		if (!copy.containsKey(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY)</span>
-<span class="fc bfc" id="L149" title="All 2 branches covered.">				&amp;&amp; !copy.containsKey(GitTextAnalysis.PROFILE_ID_PROPERTY)) {</span>
-<span class="fc" id="L150">			GitTextAnalysis.configure(copy, SandboxHistoryAnalysisConfigurer.class, &quot;sandbox-commit-message-v1&quot;); //$NON-NLS-1$</span>
-		} else {
-			// An explicit profile without a configurer retains the library's neutral
-			// default message analysis; these named analyzers serve only legacy Java.
-<span class="fc" id="L154">			copy.putIfAbsent(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY,</span>
-					&quot;class:org.eclipse.jgit.storage.hibernate.search.JavaSourceAnalysisConfigurer&quot;); //$NON-NLS-1$
-		}
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        if (!copy.containsKey(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY)</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">                &amp;&amp; !copy.containsKey(GitTextAnalysis.PROFILE_ID_PROPERTY)) {</span>
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">            String configurer = &quot;elasticsearch&quot;.equalsIgnoreCase(backend)</span>
+<span class="nc" id="L114">                    ? SandboxHistoryElasticsearchAnalysisConfigurer.class.getName()</span>
+<span class="fc" id="L115">                    : SandboxHistoryAnalysisConfigurer.class.getName();</span>
+<span class="fc" id="L116">            GitTextAnalysis.configure(copy, &quot;class:&quot; + configurer, &quot;sandbox-commit-message-v1&quot;);</span>
+        }
 
-<span class="fc" id="L158">		copy.putIfAbsent(&quot;hibernate.connection.provider_class&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L119">		copy.putIfAbsent(&quot;hibernate.connection.provider_class&quot;, //$NON-NLS-1$</span>
 				&quot;org.hibernate.hikaricp.internal.HikariCPConnectionProvider&quot;); //$NON-NLS-1$
-<span class="fc" id="L160">		copy.putIfAbsent(&quot;hibernate.hikari.minimumIdle&quot;, &quot;5&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L161">		copy.putIfAbsent(&quot;hibernate.hikari.maximumPoolSize&quot;, &quot;20&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L162">		copy.putIfAbsent(&quot;hibernate.hikari.idleTimeout&quot;, &quot;300000&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L163">		copy.putIfAbsent(&quot;hibernate.hikari.connectionTimeout&quot;, &quot;20000&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L164">		copy.putIfAbsent(&quot;hibernate.hikari.maxLifetime&quot;, &quot;1200000&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L165">		copy.putIfAbsent(&quot;hibernate.connection.handling_mode&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L121">		copy.putIfAbsent(&quot;hibernate.hikari.minimumIdle&quot;, &quot;5&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L122">		copy.putIfAbsent(&quot;hibernate.hikari.maximumPoolSize&quot;, &quot;20&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L123">		copy.putIfAbsent(&quot;hibernate.hikari.idleTimeout&quot;, &quot;300000&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L124">		copy.putIfAbsent(&quot;hibernate.hikari.connectionTimeout&quot;, &quot;20000&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L125">		copy.putIfAbsent(&quot;hibernate.hikari.maxLifetime&quot;, &quot;1200000&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L126">		copy.putIfAbsent(&quot;hibernate.connection.handling_mode&quot;, //$NON-NLS-1$</span>
 				&quot;DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION&quot;); //$NON-NLS-1$
-<span class="fc" id="L167">		copy.putIfAbsent(&quot;hibernate.cache.use_second_level_cache&quot;, &quot;true&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L168">		copy.putIfAbsent(&quot;hibernate.cache.region.factory_class&quot;, &quot;jcache&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L169">		return copy;</span>
+<span class="fc" id="L128">		copy.putIfAbsent(&quot;hibernate.cache.use_second_level_cache&quot;, &quot;true&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L129">		copy.putIfAbsent(&quot;hibernate.cache.region.factory_class&quot;, &quot;jcache&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L130">		return copy;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
