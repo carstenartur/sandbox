@@ -64,7 +64,7 @@ final class ExternalServerPersistenceContext implements ServerPersistenceContext
 			this.maintenance= new ReleasedSandboxHistoryMaintenance(owner.getSessionFactory());
 			this.repositories= new ExternalHibernateRepositoryService(
 					new DefaultHibernateRepositoryFactory(owner.getSessionFactory(),
-							java.util.List.of(new SearchRepositoryDeletionParticipant())));
+							java.util.List.of(new SearchRepositoryDeletionParticipant())), maintenance);
 		} catch (RuntimeException | Error failure) {
 			try {
 				owner.close();

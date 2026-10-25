@@ -106,6 +106,59 @@ public class ReleasedHistoryIngestionH2Test {
 	}
 
 	@Test
+	public void deletionWaitsForAnInFlightIndexRefresh() throws Exception {
+		String database = "refresh-" + UUID.randomUUID();
+		Path index = temporary.newFolder("refresh-index").toPath();
+		start(properties(database, index, "create"));
+		try (Git client = Git.init().setDirectory(temporary.newFolder("refresh-client")).setInitialBranch("main").call()) {
+			client.commit().setMessage("Needle refresh").setAuthor("Author", "author@example.org")
+					.setCommitter("Author", "author@example.org").setAllowEmpty(true).call();
+			push(client, "example.git", "refs/heads/main:refs/heads/main");
+		}
+		application.stop();
+		application = null;
+		context = null;
+		start(properties(database, index, "validate"));
+		var entered = new java.util.concurrent.CountDownLatch(1);
+		var resume = new java.util.concurrent.CountDownLatch(1);
+		var actualFactory = context.sessionFactory();
+		var pausedFactory = (org.hibernate.SessionFactory) java.lang.reflect.Proxy.newProxyInstance(
+				org.hibernate.SessionFactory.class.getClassLoader(), new Class<?>[] {org.hibernate.SessionFactory.class},
+				(proxy, method, arguments) -> {
+					if (method.getName().equals("openSession")) {
+						entered.countDown();
+						assertTrue("Refresh must be released", resume.await(10, java.util.concurrent.TimeUnit.SECONDS));
+					}
+					try {
+						return method.invoke(actualFactory, arguments);
+					} catch (java.lang.reflect.InvocationTargetException failure) {
+						throw failure.getCause();
+					}
+				});
+		var maintenance = new org.eclipse.jgit.server.history.ReleasedSandboxHistoryMaintenance(pausedFactory);
+		try (var repositories = new org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService(
+				new io.github.carstenartur.jgit.storage.hibernate.DefaultHibernateRepositoryFactory(actualFactory,
+						List.of(new io.github.carstenartur.jgit.storage.hibernate.search.SearchRepositoryDeletionParticipant())), maintenance);
+				var executor = java.util.concurrent.Executors.newFixedThreadPool(2)) {
+			var refresh = executor.submit(() -> { maintenance.refreshIndexes(pausedFactory); return null; });
+			try {
+				assertTrue(entered.await(10, java.util.concurrent.TimeUnit.SECONDS));
+				var deleting = new java.util.concurrent.CountDownLatch(1);
+				var deletion = executor.submit(() -> { deleting.countDown(); return repositories.delete("example.git"); });
+				assertTrue(deleting.await(10, java.util.concurrent.TimeUnit.SECONDS));
+				assertThrows(java.util.concurrent.TimeoutException.class,
+						() -> deletion.get(200, java.util.concurrent.TimeUnit.MILLISECONDS));
+				resume.countDown();
+				refresh.get(10, java.util.concurrent.TimeUnit.SECONDS);
+				assertEquals(1, deletion.get(10, java.util.concurrent.TimeUnit.SECONDS).projectionRows());
+				assertTrue(context.historySearch().searchMessages("example", "needle", 0, 10).isEmpty());
+			} finally {
+				resume.countDown();
+			}
+		}
+	}
+
+	@Test
 	public void normalizesTransportNamesExactlyOnceForStorageAndProjections() throws Exception {
 		start(properties("names-" + UUID.randomUUID(), temporary.newFolder("names-index").toPath(), "create"));
 		try (Git client = Git.init().setDirectory(temporary.newFolder("names-client")).setInitialBranch("main").call()) {

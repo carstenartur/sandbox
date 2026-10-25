@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.server.history.SandboxHistoryMaintenance;
 
 import io.github.carstenartur.jgit.storage.hibernate.HibernateGitStorage;
 import io.github.carstenartur.jgit.storage.hibernate.HibernateRepositoryFactory;
@@ -36,13 +37,20 @@ import io.github.carstenartur.jgit.storage.hibernate.RepositoryName;
 public final class ExternalHibernateRepositoryService implements SandboxRepositoryService {
 
 	private final HibernateRepositoryFactory repositoryFactory;
+	private final SandboxHistoryMaintenance maintenance;
 	private final Object lifecycleLock= new Object();
 	private final Map<String, HibernateGitStorage> storages= new LinkedHashMap<>();
 	private boolean closed;
 
 	/** Creates an adapter for the released public repository factory. */
 	public ExternalHibernateRepositoryService(HibernateRepositoryFactory repositoryFactory) {
+		this(repositoryFactory, SandboxHistoryMaintenance.NONE);
+	}
+
+	/** Shares projection coordination with this context's index refresh and push hooks. */
+	public ExternalHibernateRepositoryService(HibernateRepositoryFactory repositoryFactory, SandboxHistoryMaintenance maintenance) {
 		this.repositoryFactory= Objects.requireNonNull(repositoryFactory, "repositoryFactory"); //$NON-NLS-1$
+		this.maintenance= Objects.requireNonNull(maintenance);
 	}
 
 	@Override
@@ -83,7 +91,8 @@ public final class ExternalHibernateRepositoryService implements SandboxReposito
 						"Repository is open in this process and cannot be deleted: " + normalized); //$NON-NLS-1$
 			}
 			RepositoryDeletionResult result= Objects.requireNonNull(
-					repositoryFactory.deleteRepository(new RepositoryName(normalized)),
+					maintenance.withExclusiveProjectionAccess(normalized,
+							() -> repositoryFactory.deleteRepository(new RepositoryName(normalized))),
 					"repository deletion result for " + normalized); //$NON-NLS-1$
 			return new SandboxRepositoryDeletionResult(
 					result.packRows(), result.reflogRows(), result.projectionRows());

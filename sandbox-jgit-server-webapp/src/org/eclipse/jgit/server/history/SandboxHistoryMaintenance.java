@@ -5,6 +5,7 @@
 package org.eclipse.jgit.server.history;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.ReceiveCommand;
@@ -22,6 +23,11 @@ public interface SandboxHistoryMaintenance {
 
 	/** Reports any known projection failure in this server process. */
 	default void checkHealthy() {}
+
+	/** Serializes projection-affecting repository operations with index refresh. */
+	default <T> T withExclusiveProjectionAccess(String canonicalName, Supplier<T> operation) {
+		return operation.get();
+	}
 
 	/** Refreshes Lucene from existing ORM projections, preserving the old admin operation. */
 	default void refreshIndexes(SessionFactory sessionFactory) throws InterruptedException {

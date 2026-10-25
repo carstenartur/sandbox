@@ -13,6 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
+import java.util.function.Supplier;
 
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -58,6 +59,17 @@ public final class ReleasedSandboxHistoryMaintenance implements SandboxHistoryMa
 		} catch (IOException | RuntimeException failure) {
 			failures.add(normalized);
 			LOG.log(Level.SEVERE, "Published Git history requires a projection rebuild for " + normalized, failure);
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	@Override
+	public <T> T withExclusiveProjectionAccess(String canonicalName, Supplier<T> operation) {
+		ReentrantLock lock = lock(canonicalName);
+		lock.lock();
+		try {
+			return operation.get();
 		} finally {
 			lock.unlock();
 		}
