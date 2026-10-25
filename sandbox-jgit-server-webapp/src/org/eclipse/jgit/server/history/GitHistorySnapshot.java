@@ -17,10 +17,10 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 
 /** Application snapshot of all ref ancestry plus still-available indexed historical roots. */
-final class GitHistorySnapshot {
+public final class GitHistorySnapshot {
   private GitHistorySnapshot() {}
 
-  static List<CommitView> read(Repository repository, Collection<String> indexedCommits) throws IOException {
+  public static List<CommitView> read(Repository repository, Collection<String> indexedCommits) throws IOException {
     var result = new ArrayList<CommitView>();
     try (var walk = new RevWalk(repository)) {
       walk.setRetainBody(false);
@@ -59,9 +59,9 @@ final class GitHistorySnapshot {
     return List.copyOf(result);
   }
 
-  static void checkInterrupted() throws InterruptedIOException {
+  public static void checkInterrupted() throws InterruptedIOException {
     if (Thread.currentThread().isInterrupted()) throw new InterruptedIOException("History read interrupted");
   }
 
-  record CommitView(String objectId, String treeId, Instant authorTime, String authorName, String authorEmail) {}
+  public record CommitView(String objectId, String treeId, Instant authorTime, String authorName, String authorEmail) {}
 }
