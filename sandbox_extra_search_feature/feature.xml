@@ -36,10 +36,18 @@
       <import plugin="org.eclipse.egit.core"/>
       <import plugin="org.eclipse.jgit"/>
       <import plugin="org.eclipse.core.jobs"/>
+      <import plugin="com.google.gson"/>
    </requires>
 
    <plugin
          id="sandbox_extra_search"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="sandbox_extra_search_help"
          download-size="0"
          install-size="0"
          version="0.0.0"

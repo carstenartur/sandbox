@@ -26,6 +26,16 @@ class VerificationMavenWrapperContractTest {
                 new Invocation("codeql.yml", "Build with Maven", "run: ./mvnw -B -DskipTests clean package"),
                 new Invocation("deploy-snapshot.yml", "Maven distribution build and verification",
                         "xvfb-run --auto-servernum ./mvnw"),
+                new Invocation("deploy-release.yml", "Validate requested version and immutable starting state",
+                        "current_version=$(./mvnw"),
+                new Invocation("deploy-release.yml", "Set and verify stable project version",
+                        "./mvnw org.eclipse.tycho:tycho-versions-plugin:"),
+                new Invocation("deploy-release.yml", "Maven distribution build and verification",
+                        "xvfb-run --auto-servernum ./mvnw"),
+                new Invocation("deploy-release.yml", "Prepare next development iteration pull request",
+                        "./mvnw org.eclipse.tycho:tycho-versions-plugin:"),
+                new Invocation("recover-release-handoff.yml", "Create protected-main handoff pull requests",
+                        "./mvnw org.eclipse.tycho:tycho-versions-plugin:"),
                 new Invocation("distribution-smoke.yml", "Maven distribution build and verification",
                         "command=(./mvnw -Pdistribution,cli-dist,swtbot"),
                 new Invocation("distribution-smoke.yml", "Verify installed mathematics without a display",
@@ -101,7 +111,16 @@ class VerificationMavenWrapperContractTest {
             assertTrue(execution.contains("-Pdistribution"));
             assertTrue(execution.contains("clean verify"));
             assertTrue(execution.contains("-Dtycho.localArtifacts=ignore"));
-            assertFalse(execution.contains("-DskipTests"), "Distribution verification must execute its tests");
+            if ("deploy-release.yml".equals(invocation.file())) {
+                String validation = step(workflow, "Validate requested version and immutable starting state");
+                assertTrue(validation.contains("if [[ \"$skip_tests\" == 'true' && \"$dry_run\" != 'true' ]]; then"),
+                        "Published releases must reject skipped tests");
+                assertTrue(validation.contains("Published releases may not skip tests."));
+                assertTrue(execution.contains("test_args=()"));
+                assertTrue(execution.contains("clean verify \"${test_args[@]}\""));
+            } else {
+                assertFalse(execution.contains("-DskipTests"), "Distribution verification must execute its tests");
+            }
             assertFalse(execution.contains("-Dmaven.test.skip"), "Distribution tests must be compiled and executed");
             if ("distribution-smoke.yml".equals(invocation.file())) {
                 assertTrue(execution.contains("-Dsandbox.math.retainHeadlessProbe=true clean verify"));

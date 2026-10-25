@@ -22,11 +22,11 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.core.runtime.ILog;
-import org.eclipse.core.runtime.Platform;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * Lightweight HTTP client for the {@code sandbox-jgit-server-webapp} REST API.
@@ -36,7 +36,7 @@ import org.eclipse.core.runtime.Platform;
  * <pre>
  * Eclipse Plugin (sandbox_extra_search)
  * └── SemanticSearchClient  (this class — REST HTTP client)
- *     │   uses java.net.http.HttpClient (JDK built-in, no extra dependencies)
+ *     │   uses java.net.http.HttpClient and Gson for JSON decoding
  *     └── sandbox-jgit-server-webapp REST API
  *         ├── GET  /api/search/types?repo=&amp;q=
  *         ├── GET  /api/search/symbols?repo=&amp;q=
@@ -58,7 +58,6 @@ import org.eclipse.core.runtime.Platform;
  */
 public class SemanticSearchClient {
 
-	private static final ILog LOG= Platform.getLog(SemanticSearchClient.class);
 
 	/** Default base URL for the REST backend. */
 	public static final String DEFAULT_BASE_URL= "http://localhost:8080"; //$NON-NLS-1$
@@ -72,7 +71,7 @@ public class SemanticSearchClient {
 	private final HttpClient httpClient;
 
 	private SemanticSearchClient(String baseUrl) {
-		this.baseUrl= baseUrl;
+		this.baseUrl= GitSearchPreferences.validateUrl(baseUrl);
 		this.httpClient= HttpClient.newBuilder()
 				.connectTimeout(Duration.ofSeconds(5))
 				.build();
@@ -89,7 +88,7 @@ public class SemanticSearchClient {
 			synchronized (INSTANCE_LOCK) {
 				current= instance;
 				if (current == null) {
-					current= new SemanticSearchClient(DEFAULT_BASE_URL);
+					current= new SemanticSearchClient(GitSearchPreferences.restUrl());
 					instance= current;
 				}
 			}
@@ -137,7 +136,7 @@ public class SemanticSearchClient {
 	/**
 	 * Searches for Java types by name.
 	 *
-	 * @param repoName   the repository name (empty string for all)
+	 * @param repoName   the repository name (required server repository name)
 	 * @param query      the search query
 	 * @param maxResults maximum number of results
 	 * @return list of matching search hits
@@ -151,7 +150,7 @@ public class SemanticSearchClient {
 	/**
 	 * Searches for Java symbols (methods and fields).
 	 *
-	 * @param repoName   the repository name (empty string for all)
+	 * @param repoName   the repository name (required server repository name)
 	 * @param query      the search query
 	 * @param maxResults maximum number of results
 	 * @return list of matching search hits
@@ -165,7 +164,7 @@ public class SemanticSearchClient {
 	/**
 	 * Searches for commits by changed file path.
 	 *
-	 * @param repoName   the repository name (empty string for all)
+	 * @param repoName   the repository name (required server repository name)
 	 * @param query      the path query
 	 * @param maxResults maximum number of results
 	 * @return list of matching search hits
@@ -179,7 +178,7 @@ public class SemanticSearchClient {
 	/**
 	 * Searches commit messages.
 	 *
-	 * @param repoName   the repository name (empty string for all)
+	 * @param repoName   the repository name (required server repository name)
 	 * @param query      the search query
 	 * @param maxResults maximum number of results
 	 * @return list of matching search hits
@@ -193,7 +192,7 @@ public class SemanticSearchClient {
 	/**
 	 * Performs a semantic (vector) search.
 	 *
-	 * @param repoName   the repository name (empty string for all)
+	 * @param repoName   the repository name (required server repository name)
 	 * @param query      the natural language query
 	 * @param maxResults maximum number of results
 	 * @return list of matching search hits
@@ -207,7 +206,7 @@ public class SemanticSearchClient {
 	/**
 	 * Performs a hybrid (full-text + semantic) search.
 	 *
-	 * @param repoName   the repository name (empty string for all)
+	 * @param repoName   the repository name (required server repository name)
 	 * @param query      the natural language query
 	 * @param maxResults maximum number of results
 	 * @return list of matching search hits
@@ -221,13 +220,14 @@ public class SemanticSearchClient {
 	/**
 	 * Finds code similar to a given blob.
 	 *
-	 * @param repoName   the repository name (empty string for all)
+	 * @param repoName   the repository name (required server repository name)
 	 * @param blobId     the blob object ID
 	 * @param maxResults maximum number of results
 	 * @return list of matching search hits
 	 */
 	public List<SearchHit> findSimilarCode(String repoName, String blobId,
 			int maxResults) {
+		requireRepository(repoName);
 		// q= is sent alongside blobId= because the backend validates that
 		// both repo and q are present for all /api/search/* requests.
 		String url= baseUrl + "/api/search/similar?repo=" //$NON-NLS-1$
@@ -239,12 +239,13 @@ public class SemanticSearchClient {
 	/**
 	 * Returns the file history for a given path.
 	 *
-	 * @param repoName the repository name (empty string for all)
+	 * @param repoName the repository name (required server repository name)
 	 * @param path     the file path
 	 * @return list of matching search hits (each represents a commit touching
 	 *         the path)
 	 */
 	public List<SearchHit> getFileHistory(String repoName, String path) {
+		requireRepository(repoName);
 		// q= is sent alongside path= because the backend validates that
 		// both repo and q are present for all /api/search/* requests.
 		String url= baseUrl + "/api/search/filehistory?repo=" //$NON-NLS-1$
@@ -260,6 +261,7 @@ public class SemanticSearchClient {
 	 * @return list of author statistics
 	 */
 	public List<AuthorStats> getAuthorStatistics(String repoName) {
+		requireRepository(repoName);
 		String url= baseUrl + "/api/analytics/authors?repo=" + encode(repoName); //$NON-NLS-1$
 		return getAuthorStats(url);
 	}
@@ -268,6 +270,7 @@ public class SemanticSearchClient {
 
 	private String buildUrl(String path, String repoName, String query,
 			int limit) {
+		requireRepository(repoName);
 		return baseUrl + path + "?repo=" + encode(repoName) //$NON-NLS-1$
 				+ "&q=" + encode(query) + "&limit=" + limit; //$NON-NLS-1$ //$NON-NLS-2$
 	}
@@ -279,293 +282,96 @@ public class SemanticSearchClient {
 		return URLEncoder.encode(value, StandardCharsets.UTF_8);
 	}
 
+	/** Search annotation facets rather than treating annotations as method names. */
+	public List<SearchHit> searchAnnotations(String repository, String query, int limit) {
+		return getSearchHits(buildUrl("/api/search/annotations", repository, query, limit)); //$NON-NLS-1$
+	}
+
+	/** Explicit, authenticated rebuild of one server-side repository. */
+	public String rebuild(String repository, String token) {
+		requireRepository(repository);
+		if (token == null || token.isBlank()) throw new IllegalArgumentException("Admin token is required."); //$NON-NLS-1$
+		if (token.chars().anyMatch(character -> character < 33 || character > 126))
+			throw new IllegalArgumentException("Admin token contains invalid characters."); //$NON-NLS-1$
+		HttpRequest request= HttpRequest.newBuilder(URI.create(baseUrl + "/api/admin/rebuild?repo=" + encode(repository))) //$NON-NLS-1$
+				.timeout(Duration.ofMinutes(10)).header("Authorization", "Bearer " + token) //$NON-NLS-1$ //$NON-NLS-2$
+				.POST(HttpRequest.BodyPublishers.noBody()).build();
+		JsonObject result= JsonParser.parseString(send(request)).getAsJsonObject();
+		if (!result.has("indexedCommits")) throw new IllegalStateException("Invalid rebuild response."); //$NON-NLS-1$ //$NON-NLS-2$
+		return "Index rebuilt: " + result.get("indexedCommits").getAsLong() + " commits."; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	static void requireRepository(String repository) {
+		if (repository == null || repository.isBlank()) throw new IllegalArgumentException("Repository is required."); //$NON-NLS-1$
+	}
+
 	private List<SearchHit> getSearchHits(String url) {
-		try {
-			String body= get(url);
-			if (body == null) {
-				return Collections.emptyList();
-			}
-			return parseSearchHits(body);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			LOG.error("SemanticSearchClient: request interrupted: " + url, e); //$NON-NLS-1$
-			return Collections.emptyList();
-		} catch (IOException e) {
-			LOG.error("SemanticSearchClient: request failed: " + url, e); //$NON-NLS-1$
-			return Collections.emptyList();
+		List<SearchHit> hits= new ArrayList<>();
+		for (var element : array(get(url), "results")) { //$NON-NLS-1$
+			JsonObject item= element.getAsJsonObject();
+			SearchHit hit= new SearchHit();
+			hit.setPath(value(item, "filePath", "changedPaths")); //$NON-NLS-1$ //$NON-NLS-2$
+			hit.setClassName(value(item, "declaredTypes")); //$NON-NLS-1$
+			hit.setMethodName(value(item, "declaredMethods")); //$NON-NLS-1$
+			hit.setCommitHash(value(item, "commitObjectId", "objectId")); //$NON-NLS-1$ //$NON-NLS-2$
+			hit.setContent(value(item, "message", "packageName")); //$NON-NLS-1$ //$NON-NLS-2$
+			hit.setAuthor(value(item, "author")); //$NON-NLS-1$
+			hit.setBlobId(value(item, "blobObjectId")); //$NON-NLS-1$
+			hit.setCommitTime(value(item, "commitTime")); //$NON-NLS-1$
+			hits.add(hit);
 		}
+		return hits;
 	}
 
 	private List<SearchHit> getFileHistoryHits(String url) {
-		try {
-			String body= get(url);
-			if (body == null) {
-				return Collections.emptyList();
-			}
-			return parseFileHistoryHits(body);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			LOG.error("SemanticSearchClient: request interrupted: " + url, e); //$NON-NLS-1$
-			return Collections.emptyList();
-		} catch (IOException e) {
-			LOG.error("SemanticSearchClient: request failed: " + url, e); //$NON-NLS-1$
-			return Collections.emptyList();
-		}
+		return getSearchHits(url);
 	}
 
 	private List<AuthorStats> getAuthorStats(String url) {
+		List<AuthorStats> authors= new ArrayList<>();
+		for (var element : array(get(url), "authors")) { //$NON-NLS-1$
+			var item= element.getAsJsonObject();
+			authors.add(new AuthorStats(value(item, "name"), value(item, "email"), //$NON-NLS-1$ //$NON-NLS-2$
+					item.get("commits").getAsInt(), 0)); //$NON-NLS-1$
+		}
+		return authors;
+	}
+
+	private String get(String url) {
+		return send(HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(30))
+				.header("Accept", "application/json").GET().build()); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	private String send(HttpRequest request) {
 		try {
-			String body= get(url);
-			if (body == null) {
-				return Collections.emptyList();
+			var response= httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+			if (response.statusCode() != 200) {
+				throw new IllegalStateException("Search server returned HTTP " + response.statusCode() //$NON-NLS-1$
+						+ ". Check the server, repository and authorization."); //$NON-NLS-1$
 			}
-			return parseAuthorStats(body);
-		} catch (InterruptedException e) {
+			return response.body();
+		} catch (InterruptedException interrupted) {
 			Thread.currentThread().interrupt();
-			LOG.error("SemanticSearchClient: request interrupted: " + url, e); //$NON-NLS-1$
-			return Collections.emptyList();
-		} catch (IOException e) {
-			LOG.error("SemanticSearchClient: request failed: " + url, e); //$NON-NLS-1$
-			return Collections.emptyList();
+			throw new org.eclipse.core.runtime.OperationCanceledException();
+		} catch (IOException failure) {
+			throw new IllegalStateException("Cannot reach the search server. Check Sandbox Git Search preferences.", failure); //$NON-NLS-1$
 		}
 	}
 
-	private String get(String url)
-			throws IOException, InterruptedException {
-		HttpRequest req= HttpRequest.newBuilder()
-				.uri(URI.create(url))
-				.timeout(Duration.ofSeconds(30))
-				.header("Accept", "application/json") //$NON-NLS-1$ //$NON-NLS-2$
-				.GET()
-				.build();
-		HttpResponse<String> resp= httpClient.send(req,
-				HttpResponse.BodyHandlers.ofString());
-		if (resp.statusCode() != 200) {
-			LOG.warn("SemanticSearchClient: HTTP " + resp.statusCode() //$NON-NLS-1$
-					+ " for " + url); //$NON-NLS-1$
-			return null;
-		}
-		return resp.body();
-	}
-
-	/**
-	 * Minimal JSON array parser for the "results" array in the search response.
-	 * Extracts {@code filePath}, {@code declaredTypes}, {@code declaredMethods},
-	 * and {@code commitObjectId} fields using simple string scanning.
-	 *
-	 * <p>
-	 * This avoids a dependency on Gson or Jackson inside the Eclipse plugin.
-	 * </p>
-	 */
-	private static List<SearchHit> parseSearchHits(String json) {
-		List<SearchHit> hits= new ArrayList<>();
-		int resultsStart= json.indexOf("\"results\""); //$NON-NLS-1$
-		if (resultsStart < 0) {
-			return hits;
-		}
-		int arrayStart= json.indexOf('[', resultsStart);
-		int arrayEnd= findMatchingBracket(json, arrayStart);
-		if (arrayStart < 0 || arrayEnd < 0) {
-			return hits;
-		}
-		String array= json.substring(arrayStart + 1, arrayEnd);
-		List<String> objects= splitJsonObjects(array);
-		for (String obj : objects) {
-			SearchHit hit= new SearchHit();
-			hit.setPath(extractString(obj, "filePath")); //$NON-NLS-1$
-			hit.setClassName(extractString(obj, "declaredTypes")); //$NON-NLS-1$
-			hit.setMethodName(extractString(obj, "declaredMethods")); //$NON-NLS-1$
-			hit.setCommitHash(extractString(obj, "commitObjectId")); //$NON-NLS-1$
-			hit.setContent(extractString(obj, "packageName")); //$NON-NLS-1$
-			hits.add(hit);
-		}
-		return hits;
-	}
-
-	/**
-	 * Parses file history results (from the {@code /filehistory} endpoint).
-	 */
-	private static List<SearchHit> parseFileHistoryHits(String json) {
-		List<SearchHit> hits= new ArrayList<>();
-		int resultsStart= json.indexOf("\"results\""); //$NON-NLS-1$
-		if (resultsStart < 0) {
-			return hits;
-		}
-		int arrayStart= json.indexOf('[', resultsStart);
-		int arrayEnd= findMatchingBracket(json, arrayStart);
-		if (arrayStart < 0 || arrayEnd < 0) {
-			return hits;
-		}
-		String array= json.substring(arrayStart + 1, arrayEnd);
-		List<String> objects= splitJsonObjects(array);
-		for (String obj : objects) {
-			SearchHit hit= new SearchHit();
-			hit.setPath(extractString(obj, "filePath")); //$NON-NLS-1$
-			hit.setCommitHash(extractString(obj, "commitObjectId")); //$NON-NLS-1$
-			hits.add(hit);
-		}
-		return hits;
-	}
-
-	/**
-	 * Parses author statistics from the {@code /analytics/authors} endpoint.
-	 */
-	private static List<AuthorStats> parseAuthorStats(String json) {
-		List<AuthorStats> result= new ArrayList<>();
-		int authorsStart= json.indexOf("\"authors\""); //$NON-NLS-1$
-		if (authorsStart < 0) {
-			return result;
-		}
-		int arrayStart= json.indexOf('[', authorsStart);
-		int arrayEnd= findMatchingBracket(json, arrayStart);
-		if (arrayStart < 0 || arrayEnd < 0) {
-			return result;
-		}
-		String array= json.substring(arrayStart + 1, arrayEnd);
-		List<String> objects= splitJsonObjects(array);
-		for (String obj : objects) {
-			AuthorStats stats= new AuthorStats();
-			stats.setAuthor(extractString(obj, "name")); //$NON-NLS-1$
-			stats.setAuthorEmail(extractString(obj, "email")); //$NON-NLS-1$
-			stats.setCommitCount(extractInt(obj, "commits")); //$NON-NLS-1$
-			result.add(stats);
-		}
-		return result;
-	}
-
-	/**
-	 * Finds the position of the closing bracket matching the opening bracket at
-	 * {@code start}.
-	 */
-	private static int findMatchingBracket(String s, int start) {
-		if (start < 0 || start >= s.length()) {
-			return -1;
-		}
-		char open= s.charAt(start);
-		char close= open == '[' ? ']' : '}';
-		int depth= 0;
-		boolean inString= false;
-		for (int i= start; i < s.length(); i++) {
-			char c= s.charAt(i);
-			if (c == '\\' && inString) {
-				i++; // skip escaped character
-				continue;
-			}
-			if (c == '"') {
-				inString= !inString;
-			} else if (!inString) {
-				if (c == open) {
-					depth++;
-				} else if (c == close) {
-					depth--;
-					if (depth == 0) {
-						return i;
-					}
-				}
-			}
-		}
-		return -1;
-	}
-
-	/**
-	 * Splits a JSON array body (without outer brackets) into individual object
-	 * strings.
-	 */
-	private static List<String> splitJsonObjects(String arrayBody) {
-		List<String> result= new ArrayList<>();
-		int i= 0;
-		while (i < arrayBody.length()) {
-			int objStart= arrayBody.indexOf('{', i);
-			if (objStart < 0) {
-				break;
-			}
-			int objEnd= findMatchingBracket(arrayBody, objStart);
-			if (objEnd < 0) {
-				break;
-			}
-			result.add(arrayBody.substring(objStart, objEnd + 1));
-			i= objEnd + 1;
-		}
-		return result;
-	}
-
-	/**
-	 * Extracts a string value for a given JSON field key from a JSON object
-	 * fragment.
-	 */
-	private static String extractString(String obj, String key) {
-		String search= "\"" + key + "\":\""; //$NON-NLS-1$ //$NON-NLS-2$
-		int start= obj.indexOf(search);
-		if (start < 0) {
-			return null;
-		}
-		start+= search.length();
-		StringBuilder sb= new StringBuilder();
-		for (int i= start; i < obj.length(); i++) {
-			char c= obj.charAt(i);
-			if (c == '\\' && i + 1 < obj.length()) {
-				char next= obj.charAt(i + 1);
-				switch (next) {
-					case '"':
-						sb.append('"');
-						break;
-					case '\\':
-						sb.append('\\');
-						break;
-					case 'n':
-						sb.append('\n');
-						break;
-					case 'r':
-						sb.append('\r');
-						break;
-					case 't':
-						sb.append('\t');
-						break;
-					default:
-						sb.append(next);
-						break;
-				}
-				i++;
-			} else if (c == '"') {
-				break;
-			} else {
-				sb.append(c);
-			}
-		}
-		return sb.toString();
-	}
-
-	/**
-	 * Extracts an integer value for a given JSON field key from a JSON object
-	 * fragment.
-	 */
-	private static int extractInt(String obj, String key) {
-		String search= "\"" + key + "\":"; //$NON-NLS-1$ //$NON-NLS-2$
-		int start= obj.indexOf(search);
-		if (start < 0) {
-			return 0;
-		}
-		start+= search.length();
-		// skip optional whitespace
-		while (start < obj.length() && obj.charAt(start) == ' ') {
-			start++;
-		}
-		int end= start;
-		while (end < obj.length()) {
-			char c= obj.charAt(end);
-			if (c >= '0' && c <= '9') {
-				end++;
-			} else {
-				break;
-			}
-		}
-		if (start == end) {
-			return 0;
-		}
+	private static JsonArray array(String body, String name) {
 		try {
-			return Integer.parseInt(obj.substring(start, end));
-		} catch (NumberFormatException e) {
-			return 0;
+			var root= JsonParser.parseString(body).getAsJsonObject();
+			if (!root.has(name) || !root.get(name).isJsonArray()) throw new IllegalArgumentException();
+			return root.getAsJsonArray(name);
+		} catch (RuntimeException invalid) {
+			throw new IllegalStateException("Invalid response from the search server.", invalid); //$NON-NLS-1$
 		}
+	}
+
+	private static String value(JsonObject object, String... fields) {
+		for (String field : fields) {
+			if (object.has(field) && !object.get(field).isJsonNull()) return object.get(field).getAsString();
+		}
+		return ""; //$NON-NLS-1$
 	}
 }

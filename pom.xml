@@ -78,6 +78,8 @@
 		<module>sandbox_encoding_quickfix_feature</module>
 		<module>sandbox_encoding_quickfix_test</module>
 		<module>sandbox_extra_search</module>
+		<module>sandbox_extra_search_help</module>
+		<module>sandbox_extra_search_test</module>
 		<module>sandbox_extra_search_feature</module>
 		<module>sandbox_functional_converter</module>
 		<module>sandbox_functional_converter_help</module>
