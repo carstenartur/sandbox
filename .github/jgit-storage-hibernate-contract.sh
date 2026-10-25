@@ -51,7 +51,7 @@ fi
 
 # These two consumer modules are intentionally built in isolation from the
 # unrelated Eclipse cleanup reactor. The bridge consumes Core only; the server
-# additionally qualifies released Search. Java Analysis remains a later slice.
+# additionally qualifies released Search and Java Analysis.
 set -o pipefail
 "${maven[@]}" -B -ntp -nsu -N -f pom.xml install 2>&1 \
   | tee "$evidence_dir/parent-install.log"
@@ -139,7 +139,6 @@ cat "$evidence_dir"/*-dependency-tree.txt \
 test -s "$evidence_dir/dependency-tree.txt"
 
 for forbidden_module in \
-    jgit-storage-hibernate-java-analysis \
     jgit-storage-hibernate-architecture \
     jgit-storage-hibernate-benchmarks; do
   if grep -Fq "$forbidden_module" "$evidence_dir/dependency-tree.txt"; then
@@ -148,11 +147,12 @@ for forbidden_module in \
     exit 1
   fi
 done
-if grep -Fq 'jgit-storage-hibernate-search' \
-    "$evidence_dir/sandbox-jgit-storage-hibernate-dependency-tree.txt"; then
-  echo "Released Search must remain outside the OSGi storage bridge." >&2
-  exit 1
-fi
+for server_module in jgit-storage-hibernate-search jgit-storage-hibernate-java-analysis; do
+  if grep -Fq "$server_module" "$evidence_dir/sandbox-jgit-storage-hibernate-dependency-tree.txt"; then
+    echo "Released $server_module must remain outside the OSGi storage bridge." >&2
+    exit 1
+  fi
+done
 search_coordinate="io.github.carstenartur:jgit-storage-hibernate-search:jar:$resolved_version:"
 if ! grep -Fq "$search_coordinate" \
     "$evidence_dir/sandbox-jgit-server-webapp-dependency-tree.txt"; then
@@ -160,6 +160,13 @@ if ! grep -Fq "$search_coordinate" \
   exit 1
 fi
 grep -Fq 'io/github/carstenartur/jgit/storage/hibernate/search/service/GitHistorySearchService.class' \
+  "$evidence_dir/server-jar-entries.txt"
+java_coordinate="io.github.carstenartur:jgit-storage-hibernate-java-analysis:jar:$resolved_version:"
+if ! grep -Fq "$java_coordinate" "$evidence_dir/sandbox-jgit-server-webapp-dependency-tree.txt"; then
+  echo "Server did not resolve expected Java Analysis coordinate $java_coordinate." >&2
+  exit 1
+fi
+grep -Fq 'io/github/carstenartur/jgit/storage/hibernate/javaanalysis/JavaProjectAnalyzer.class' \
   "$evidence_dir/server-jar-entries.txt"
 
 core_coordinate="io.github.carstenartur:jgit-storage-hibernate-core:jar:$resolved_version:"
@@ -205,19 +212,18 @@ evidence = {
     "candidateVersion": candidate_version,
     "resolvedVersion": resolved_version,
     "java": java_specification,
-    "expectedModules": ["jgit-storage-hibernate-core", "jgit-storage-hibernate-search"],
+    "expectedModules": ["jgit-storage-hibernate-core", "jgit-storage-hibernate-search", "jgit-storage-hibernate-java-analysis"],
     "forbiddenModules": [
-        "jgit-storage-hibernate-java-analysis",
         "jgit-storage-hibernate-architecture",
         "jgit-storage-hibernate-benchmarks",
     ],
     "contract": (
-        "Core-only OSGi bridge, released Search REST contract, legacy preflight, "
+        "Core-only OSGi bridge, released Search REST and Java project analysis contracts, legacy preflight, "
         "repository lifecycle and shaded-server packaging"
     ),
 }
 Path(output).write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
 PY
 
-printf 'Sandbox jgit-storage-hibernate contract passed in %s mode with Core and server Search %s.\n' \
+printf 'Sandbox jgit-storage-hibernate contract passed in %s mode with Core and server Search/Java Analysis %s.\n' \
   "$mode" "$resolved_version"

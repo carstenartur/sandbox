@@ -155,3 +155,50 @@ before closing storage and Hibernate. Independent readers do not hold the lifecy
 monitor during their work. This is local coordination, not a distributed snapshot or
 an object-insertion security boundary. Normal startup remains on the transition path
 until the remaining Java projections and schema cutover are qualified.
+
+### Released Java project analysis preparation
+
+The server now consumes the published Java Analysis module alongside Core and
+Search; the OSGi storage bridge remains Core-only. `ReleasedJavaProjectAnalysis`
+creates Sandbox `AnalyzedFile` values from an entire `JavaProjectSnapshot` and an
+explicit `JavaAnalysisConfiguration`. Sibling sources are analyzed together and
+unchanged blob bytes are analyzed again in another commit's project context.
+The adapter does not download dependencies, register Java ORM entities, load an
+embedding model, or select the production REST backend.
+
+`AnalyzedFile` copies provenance, file facets and diagnostic values. Mutable
+library analysis entities remain internal for subsequent semantic comparisons.
+Quality includes the analysis-run status, problem/error counts, binding-status
+counts, unresolved dependencies and configuration diagnostics; a zero syntax-error
+count does not imply a complete classpath. `JavaHistoryCorpus` loads complete
+commit trees across all refs, all parents, detached HEAD and retained Search roots.
+Public Maven/Gradle resolvers use only the configured local artifact repository.
+Malformed build metadata falls back to available source roots with diagnostics;
+absolute/escaping roots are omitted. Oversized and binary source/build files are
+omitted with diagnostics in the analyzed files of that commit.
+
+Historical file search retains one record per repository/blob. Its explicit
+`oldest-author-oid-path-v1` policy picks author time ascending, then commit ID and
+path. This replaces ingestion-order provenance: adding an older root can change
+the canonical path, module and author. Per-commit file history remains separate.
+Semantic comparisons analyze both complete commit contexts independently of the
+canonical blob record. Corpus construction is uncached; generation ownership and
+REST selection belong to the following runtime slice.
+
+Git names that cannot safely share a portable temporary source tree (backslashes,
+case aliases, reserved names, trailing dots/spaces or excessive component/path
+lengths) retain their original provenance and searchable facets. Those files use
+the public per-file analyzer with individual binding recovery. Other files still
+share their complete available project context; both groups expose the omitted
+context in diagnostics. Ordinary I/O failures remain errors.
+
+Compatibility facets preserve constructor names, enum fields, ordered duplicate
+reference types, parameter-before-return ordering, import-based legacy reference
+qualification, flat nested-type names and interface-extends placement in
+`implementsTypes`. Field declaration groups and raw parent types use the public
+0.11.7 structure API. Primary type documentation collapses whitespace before its
+2,000-character limit; it is a normalized view, not an AST pretty-printer rendering.
+The complete documentation search facet includes all Javadocs, and the
+string facet also includes decoded text blocks (values of at most three
+characters remain omitted). Records are now recognized. These additions are
+explicitly tested; existing REST endpoints are not switched by this preparation.
