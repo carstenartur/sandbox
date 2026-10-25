@@ -22,128 +22,128 @@
 {
   "id": "sandbox_feature",
   "iu": "sandbox_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 1958,
-  "artifactSha256": "516922671051724527df9ce48ea59e8c68dd1285ed63f60e8856f526829dc014"
+  "artifactSha256": "99ff67c29b8efc6a976b98e893423412db03115ce99eae4f1bd09c742ed2fd46"
 },
 {
   "id": "sandbox_encoding_quickfix_feature",
   "iu": "sandbox_encoding_quickfix_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 7883,
-  "artifactSha256": "73b8cf9124d50967530c854b440595157c50c0dfbd78331fa7a93eeca138c39e"
+  "artifactSha256": "3d3b04ac48eb8e42a066ef396b3ea6c086967bbbda0137c0261be1ba74f75716"
 },
 {
   "id": "sandbox_platform_helper_feature",
   "iu": "sandbox_platform_helper_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 8122,
-  "artifactSha256": "2f5df27f3dc2c6950dbaca67f75071b986644ff931afb008b6cc3b901d643ed4"
+  "artifactSha256": "350086dbb00dd445c49277c69c897a4add8d6f069fba04c8cdf4ea128d7610c6"
 },
 {
   "id": "sandbox_functional_converter_feature",
   "iu": "sandbox_functional_converter_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 8000,
-  "artifactSha256": "18d61425c6ea824c2b39ab0bc6f28499796be2d9961b485593c9104c6e0b0613"
+  "artifactSha256": "ecaf430270d437193e4372a270b6dddf47e0bdb7342f92bb30838215216b4e16"
 },
 {
   "id": "sandbox_tools_feature",
   "iu": "sandbox_tools_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 7822,
-  "artifactSha256": "265bc252d74d2ca5dac195422d953a31cd6d1163131717d2da884324c38112bf"
+  "artifactSha256": "87352b1a56417dd82bb56698731b5ec5f50a78d8a9adf1aec742cb6d6786f542"
 },
 {
   "id": "sandbox_triggerpattern_feature",
   "iu": "sandbox_triggerpattern_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 7955,
-  "artifactSha256": "a27a5272aa37f73ac0557065790826391a758f7ae0ff6005c59c388cec60f925"
+  "artifactSha256": "b571e7b4f93ef8781f9bca6dcc4b0b7295b27325de215454f03a2aadb6434d2b"
 },
 {
   "id": "sandbox_xml_cleanup_feature",
   "iu": "sandbox_xml_cleanup_feature.feature.group",
-  "version": "1.3.7.202610251037",
-  "artifactSize": 8097,
-  "artifactSha256": "566f4a074cad2f79c757be34f000d6d3beb3e34fd966892c4c735dcff851934e"
+  "version": "1.3.7.202610251155",
+  "artifactSize": 8096,
+  "artifactSha256": "6487f22e3b933c9d7ed3f70ccccb2cc39183e4fcdedd506169e8b7e3c2c1e330"
 },
 {
   "id": "sandbox_jface_cleanup_feature",
   "iu": "sandbox_jface_cleanup_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 7863,
-  "artifactSha256": "e963e683d034a562d7acd8f90b976537c2c36b885a0605587d9febf3667e367f"
+  "artifactSha256": "b7ad387c377ae14cf1616d72d71cb8cfe179d5b42395d636d63d36e57064cb55"
 },
 {
   "id": "sandbox_junit_cleanup_feature",
   "iu": "sandbox_junit_cleanup_feature.feature.group",
-  "version": "1.3.7.202610251037",
-  "artifactSize": 7877,
-  "artifactSha256": "59aacab595425f205c120913fa6088d8796e324f50e06cfb6703eb561911ca12"
+  "version": "1.3.7.202610251155",
+  "artifactSize": 7878,
+  "artifactSha256": "596d263f240a7229c602b6d1da5b3b534e3ed669770c4947442408b069304157"
 },
 {
   "id": "sandbox_method_reuse_feature",
   "iu": "sandbox_method_reuse_feature.feature.group",
-  "version": "1.3.7.202610251037",
-  "artifactSize": 2691,
-  "artifactSha256": "bd7955bef6be84b8529222fbe8af875136125c238da70e85f04ad69cb0bacc7d"
+  "version": "1.3.7.202610251155",
+  "artifactSize": 2690,
+  "artifactSha256": "cc793fce4a6f904926764e8007b12099a7a2645c26d1c13e225c0a3f12475827"
 },
 {
   "id": "sandbox_usage_view_feature",
   "iu": "sandbox_usage_view_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 2837,
-  "artifactSha256": "59cca34b053e14161915042f07e07ed89048e5767ecc416f4a56f9276b27686a"
+  "artifactSha256": "ef3bd70ac6e761fd4423549d86ff3a315baf4937e9bf22873863c04eaff2a644"
 },
 {
   "id": "sandbox_cleanup_application_feature",
   "iu": "sandbox_cleanup_application_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 7872,
-  "artifactSha256": "b306b8adc52236f54ddf996cd15617dcc483216613d667583283d363de982a7e"
+  "artifactSha256": "7e8d6d1cf7bf97d3dc4d4f2494cd8b414b39e2f46edcb66f850a23a25aded78f"
 },
 {
   "id": "sandbox_css_cleanup_feature",
   "iu": "sandbox_css_cleanup_feature.feature.group",
-  "version": "1.3.7.202610251037",
-  "artifactSize": 2717,
-  "artifactSha256": "8d224bfd6bcb76c9e61f5537452a51a6cb738f371962238091a0772feb3460ee"
+  "version": "1.3.7.202610251155",
+  "artifactSize": 2718,
+  "artifactSha256": "1b0f5398abe8a53c4af1d506c6262927e0cecd5ab17e13035123e58a6ee8b3de"
 },
 {
   "id": "sandbox_extra_search_feature",
   "iu": "sandbox_extra_search_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 8287,
-  "artifactSha256": "6229e0975775fec85a88742c280cfd9d1837f3570785acf5b8f0a886674cb513"
+  "artifactSha256": "a04f78feae5e110a5c553f2763861286701c9b7798609129eb806015fca1e9ec"
 },
 {
   "id": "sandbox_int_to_enum_feature",
   "iu": "sandbox_int_to_enum_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 12087,
-  "artifactSha256": "bb19f16d643783d674bfbfaf7d7d6f290feec8358fba95168b8ae5df0db86a32"
+  "artifactSha256": "0b0fa664915728360891f99d88183fec7c2f0b00ca0c3c6f0f00699dbec46355"
 },
 {
   "id": "sandbox_container_cleanup_feature",
   "iu": "sandbox_container_cleanup_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 1416,
-  "artifactSha256": "6cefefe973b3ce57d031f49710fda07bf5390b42d216152e90e3826c3441827d"
+  "artifactSha256": "ad64cfc0a06443fa2c1048839a49c9ff3e9ea132161cdf16f5844a9fb5fb19f3"
 },
 {
   "id": "sandbox_use_general_type_feature",
   "iu": "sandbox_use_general_type_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 8151,
-  "artifactSha256": "bdd3874a1f6cb3e76209a3c216d2371af0ca7b4499b40b83cee1fcfcbd821d2d"
+  "artifactSha256": "85d467c0c9191558a3f03f9772152650a82541873856ca14d16648dbe440d9a1"
 },
 {
   "id": "sandbox_math_cleanup_feature",
   "iu": "sandbox_math_cleanup_feature.feature.group",
-  "version": "1.3.7.202610251037",
+  "version": "1.3.7.202610251155",
   "artifactSize": 6569,
-  "artifactSha256": "e0b9285200b4b4bc7336cd8c29941636c8f12c44ccd5323ff0659a4de61b1c1e"
+  "artifactSha256": "0394172c081a0e6708f0114bbc77bf546848cc2a12b980f314fdea53ad07b54c"
 }
     ]
   }
