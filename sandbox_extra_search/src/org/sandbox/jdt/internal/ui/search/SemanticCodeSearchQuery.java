@@ -76,6 +76,7 @@ public class SemanticCodeSearchQuery implements ISearchQuery {
 	@Override
 	public IStatus run(IProgressMonitor monitor) {
 		monitor.beginTask(getLabel(), IProgressMonitor.UNKNOWN);
+		result.setMatches(List.of());
 		try {
 			if (monitor.isCanceled()) {
 				return Status.CANCEL_STATUS;
@@ -105,6 +106,11 @@ public class SemanticCodeSearchQuery implements ISearchQuery {
 			}
 			result.setMatches(hits);
 			return Status.OK_STATUS;
+		} catch (org.eclipse.core.runtime.OperationCanceledException cancelled) {
+			return Status.CANCEL_STATUS;
+		} catch (RuntimeException failure) {
+			result.setMatches(List.of());
+			return Status.error(failure.getMessage(), failure);
 		} finally {
 			monitor.done();
 		}

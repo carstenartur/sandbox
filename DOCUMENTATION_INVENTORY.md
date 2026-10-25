@@ -34,6 +34,13 @@ This inventory records where current user, contributor, architecture, roadmap, t
 | `docs/docker.md` | Docker packaging and execution |
 | `docs/maven-plugin.md` | Maven plug-in usage |
 
+## Git storage and search integration
+
+- [Server README](sandbox-jgit-server-webapp/README.md): released storage/search/analysis integration, configuration, endpoints and maintenance.
+- [Eclipse search README](sandbox_extra_search/README.md) and [architecture](sandbox_extra_search/ARCHITECTURE.md): actual REST-client and explicit Git-import workflow.
+- [Installed Git Search Help](sandbox_extra_search_help/html/index.html): setup, screenshots, exact file history, search modes and limitations.
+- [Help evidence coverage](docs/ECLIPSE_HELP_COVERAGE.md): scope of the fixture-backed view screenshots.
+
 ## Eclipse plug-in modules
 
 | Module | README | Architecture | Roadmap/TODO |

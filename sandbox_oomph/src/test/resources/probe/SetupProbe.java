@@ -52,6 +52,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.oomph.internal.setup.SetupPrompter;
+import org.eclipse.oomph.internal.ui.EarlyStart;
 import org.eclipse.oomph.base.BasePackage;
 import org.eclipse.oomph.p2.core.P2Util;
 import org.eclipse.oomph.setup.Configuration;
@@ -100,7 +101,9 @@ import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.IStartup;
 import org.eclipse.ui.application.WorkbenchAdvisor;
+import org.eclipse.ui.internal.Workbench;
 import org.osgi.framework.FrameworkUtil;
 
 /** Executed in a real SDK with Oomph, m2e, PDE and a running workbench. */
@@ -113,6 +116,20 @@ public class SetupProbe implements IApplication {
             Set.of("git.clone.sandbox", "sandbox.target", "sandbox.maven", "sandbox.projects");
     private volatile Throwable failure;
     private volatile String activeSetupTask = "workbench startup";
+    private static volatile boolean deferredStartupCompleted;
+
+    /** Invoked by Oomph's actual deferred startup job in the native SDK. */
+    public static class DeferredStartupProbe implements IStartup {
+        @Override
+        public void earlyStartup() {
+            Display.getDefault().syncExec(() -> {
+                require(PlatformUI.isWorkbenchRunning(), "Deferred startup requires a running workbench");
+                require(org.eclipse.core.runtime.Platform.getExtensionRegistry() != null,
+                        "Deferred startup must finish before registry shutdown");
+                deferredStartupCompleted = true;
+            });
+        }
+    }
 
     @Override
     public Object start(IApplicationContext applicationContext) {
@@ -142,10 +159,15 @@ public class SetupProbe implements IApplication {
 
                 @Override
                 public void postStartup() {
-                    new Job("Verify Sandbox Oomph setup") {
+                    // Workbench schedules its startup extensions after postStartup returns.
+                    // Queue the verifier afterwards so joining that family cannot miss them.
+                    display.asyncExec(() -> new Job("Verify Sandbox Oomph setup") {
                         @Override
                         protected IStatus run(org.eclipse.core.runtime.IProgressMonitor monitor) {
                             try {
+                                awaitDeferredStartup(monitor);
+                                require(deferredStartupCompleted,
+                                        "Oomph deferred startup must complete before setup verification");
                                 verify();
                             } catch (Throwable t) {
                                 failure = t;
@@ -155,7 +177,7 @@ public class SetupProbe implements IApplication {
                             }
                             return Status.OK_STATUS;
                         }
-                    }.schedule();
+                    }.schedule());
                 }
             });
         } finally {
@@ -163,6 +185,19 @@ public class SetupProbe implements IApplication {
             display.dispose();
         }
         return failure == null ? EXIT_OK : Integer.valueOf(1);
+    }
+
+    private static void awaitDeferredStartup(org.eclipse.core.runtime.IProgressMonitor monitor)
+            throws InterruptedException {
+        var jobs = Job.getJobManager();
+        jobs.join(Workbench.EARLY_STARTUP_FAMILY, monitor);
+        // Oomph schedules a separate delayed job with no family. Join it while
+        // the UI event loop is alive; its extensions may call Display.syncExec.
+        for (Job job : jobs.find(null)) {
+            if (job.getClass().getEnclosingClass() == EarlyStart.class) {
+                job.join();
+            }
+        }
     }
 
 
@@ -975,6 +1010,7 @@ public class SetupProbe implements IApplication {
     }
 
     private static void saveResult(Path run, boolean update, Properties result) throws Exception {
+        result.setProperty("deferredStartup.completed", Boolean.toString(deferredStartupCompleted));
         try (var out = Files.newOutputStream(run.resolve(update ? "update.properties" : "fresh.properties"))) {
             result.store(out, "Real Oomph workspace verification");
         }

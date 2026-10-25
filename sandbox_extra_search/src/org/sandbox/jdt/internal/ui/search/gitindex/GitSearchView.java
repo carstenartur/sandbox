@@ -1,161 +1,59 @@
 /*******************************************************************************
- * Copyright (c) 2025 Carsten Hammer.
- *
- * This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License 2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
- *
+ * Copyright (c) 2026 Carsten Hammer and others.
  * SPDX-License-Identifier: EPL-2.0
- *
- * Contributors:
- *     Carsten Hammer
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.search.gitindex;
 
 import java.util.List;
+import java.util.function.Supplier;
 
-import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.part.ViewPart;
 
-/**
- * Eclipse view for full-text search over Git commits and Java source code.
- *
- * <p>
- * Provides search across:
- * </p>
- * <ul>
- * <li>Commit messages</li>
- * <li>Java types (class names, interfaces)</li>
- * <li>File paths</li>
- * <li>Annotations</li>
- * <li>Methods and fields</li>
- * </ul>
- *
- * <p>
- * Internally uses {@link SemanticSearchClient} to call the REST API of
- * {@code sandbox-jgit-server-webapp}.
- * </p>
- */
-public class GitSearchView extends ViewPart {
-
-	/** The view ID as registered in plugin.xml */
+/** Search a named server repository's history and historical source facets. */
+public class GitSearchView extends GitResultsView {
 	public static final String ID= "org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView"; //$NON-NLS-1$
+	private Text search;
+	private Combo mode;
 
-	private Text searchText;
-	private Combo searchTypeCombo;
-	private TableViewer tableViewer;
-
-	@Override
-	public void createPartControl(Composite parent) {
-		Composite container= new Composite(parent, SWT.NONE);
-		container.setLayout(new GridLayout(3, false));
-
-		Label searchLabel= new Label(container, SWT.NONE);
-		searchLabel.setText("Search:"); //$NON-NLS-1$
-
-		searchText= new Text(container, SWT.BORDER | SWT.SEARCH);
-		searchText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
-		searchText.setMessage("Enter search query..."); //$NON-NLS-1$
-
-		searchTypeCombo= new Combo(container, SWT.DROP_DOWN | SWT.READ_ONLY);
-		searchTypeCombo.setItems("Commits", //$NON-NLS-1$
-				"Java Types", //$NON-NLS-1$
-				"Paths", //$NON-NLS-1$
-				"Annotations", //$NON-NLS-1$
-				"Methods", //$NON-NLS-1$
-				"Fields", //$NON-NLS-1$
-				"Semantic", //$NON-NLS-1$
-				"Hybrid" //$NON-NLS-1$
-		);
-		searchTypeCombo.select(0);
-
-		tableViewer= new TableViewer(container,
-				SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.BORDER);
-		Table table= tableViewer.getTable();
-		table.setHeaderVisible(true);
-		table.setLinesVisible(true);
-		GridData tableData= new GridData(SWT.FILL, SWT.FILL, true, true, 3, 1);
-		table.setLayoutData(tableData);
-
-		createColumns();
-		tableViewer.setContentProvider(ArrayContentProvider.getInstance());
-
-		searchText.addListener(SWT.DefaultSelection, e -> performSearch());
+	@Override protected void createQuery(Composite parent) {
+		search= input(parent, "Search:", "Enter search query…"); //$NON-NLS-1$ //$NON-NLS-2$
+		new Label(parent, SWT.NONE).setText("Mode:"); //$NON-NLS-1$
+		mode= new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);
+		mode.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+		mode.setItems("Commits", "Java Types", "Paths", "Annotations", "Symbols", "Semantic", "Hybrid"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$
+		mode.select(0);
+		mode.addModifyListener(event -> invalidateResults());
 	}
 
-	private void createColumns() {
-		TableViewerColumn colCommit= new TableViewerColumn(tableViewer, SWT.NONE);
-		colCommit.getColumn().setText("Commit"); //$NON-NLS-1$
-		colCommit.getColumn().setWidth(100);
-		colCommit.setLabelProvider(new ColumnLabelProvider());
-
-		TableViewerColumn colAuthor= new TableViewerColumn(tableViewer, SWT.NONE);
-		colAuthor.getColumn().setText("Author"); //$NON-NLS-1$
-		colAuthor.getColumn().setWidth(150);
-		colAuthor.setLabelProvider(new ColumnLabelProvider());
-
-		TableViewerColumn colDate= new TableViewerColumn(tableViewer, SWT.NONE);
-		colDate.getColumn().setText("Date"); //$NON-NLS-1$
-		colDate.getColumn().setWidth(120);
-		colDate.setLabelProvider(new ColumnLabelProvider());
-
-		TableViewerColumn colMessage= new TableViewerColumn(tableViewer, SWT.NONE);
-		colMessage.getColumn().setText("Message"); //$NON-NLS-1$
-		colMessage.getColumn().setWidth(400);
-		colMessage.setLabelProvider(new ColumnLabelProvider());
+	@Override protected void createColumns() {
+		column("Commit", 160, row -> ((SearchHit) row).getCommitHash()); //$NON-NLS-1$
+		column("Path / Type", 280, row -> { //$NON-NLS-1$
+			SearchHit hit= (SearchHit) row;
+			return hit.getPath().isEmpty() ? hit.getClassName() : hit.getPath();
+		});
+		column("Author", 140, row -> ((SearchHit) row).getAuthor()); //$NON-NLS-1$
+		column("Message / Package", 360, row -> ((SearchHit) row).getContent()); //$NON-NLS-1$
 	}
 
-	private void performSearch() {
-		String query= searchText.getText().trim();
-		if (query.isEmpty()) {
-			return;
-		}
-		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();
-		int searchType= searchTypeCombo.getSelectionIndex();
-		List<SearchHit> results;
-		switch (searchType) {
-			case 1: // Java Types
-				results= client.searchByType("", query, 20); //$NON-NLS-1$
-				break;
-			case 2: // Paths
-				results= client.searchByChangedPath("", query, 20); //$NON-NLS-1$
-				break;
-			case 3: // Annotations
-			case 4: // Methods
-			case 5: // Fields
-				results= client.searchBySymbol("", query, 20); //$NON-NLS-1$
-				break;
-			case 6: // Semantic
-				// Note: result count for semantic search is fixed at 10 in this view.
-				// Use SemanticCodeSearchPage for configurable result counts.
-				results= client.semanticSearch("", query, 10); //$NON-NLS-1$
-				break;
-			case 7: // Hybrid
-				// Note: result count for hybrid search is fixed at 10 in this view.
-				// Use SemanticCodeSearchPage for configurable result counts.
-				results= client.hybridSearch("", query, 10); //$NON-NLS-1$
-				break;
-			default: // Commits
-				results= client.searchCommitMessages("", query, 20); //$NON-NLS-1$
-				break;
-		}
-		tableViewer.setInput(results);
+	@Override protected Supplier<? extends List<?>> query(String repo, SemanticSearchClient client) {
+		String text= search.getText().strip();
+		if (text.isEmpty()) throw new IllegalArgumentException("Search query is required."); //$NON-NLS-1$
+		int selected= mode.getSelectionIndex();
+		return () -> switch (selected) {
+			case 1 -> client.searchByType(repo, text, 20);
+			case 2 -> client.searchByChangedPath(repo, text, 20);
+			case 3 -> client.searchAnnotations(repo, text, 20);
+			case 4 -> client.searchBySymbol(repo, text, 20);
+			case 5 -> client.semanticSearch(repo, text, 10);
+			case 6 -> client.hybridSearch(repo, text, 10);
+			default -> client.searchCommitMessages(repo, text, 20);
+		};
 	}
 
-	@Override
-	public void setFocus() {
-		searchText.setFocus();
-	}
+	@Override protected String actionLabel() { return "Search"; } //$NON-NLS-1$
 }

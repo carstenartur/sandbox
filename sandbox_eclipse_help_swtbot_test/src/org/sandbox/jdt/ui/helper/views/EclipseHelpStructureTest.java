@@ -58,6 +58,7 @@ public class EclipseHelpStructureTest {
 	}
 
 	private static final List<Family> FAMILIES= List.of(
+			new Family("sandbox_extra_search", List.of("git-search.png", "git-file-history.png", "git-authors.png")), //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			new Family("sandbox_cleanup_application", List.of()), //$NON-NLS-1$
 			new Family("sandbox_css_cleanup", List.of("css-cleanup-preferences.png")), //$NON-NLS-1$ //$NON-NLS-2$
 			new Family("sandbox_encoding_quickfix", List.of("explicit-encoding-cleanup.png")), //$NON-NLS-1$ //$NON-NLS-2$

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Git search controls</title><link rel="stylesheet" href="style.css"></head>
+<body><h1>Controls and limitations</h1>
+<table><tr><th>Control</th><th>Meaning</th></tr>
+<tr><td>Repository</td><td>Required server identity, for example demo. A local directory name is not automatically mapped to the server.</td></tr>
+<tr><td>Search mode</td><td>Commits searches messages; Paths searches first-parent changed paths; Java Types, Annotations and Symbols search historical source facets; Semantic and Hybrid use optional vectors.</td></tr>
+<tr><td>Search / Enter</td><td>Run a search against the selected server repository, returning at most 20 rows (10 for semantic/hybrid in the view).</td></tr>
+<tr><td>File path / History</td><td>Look up the exact path in retained history; unchanged blobs can appear in multiple commits.</td></tr>
+<tr><td>Refresh</td><td>Retrieve author commit counts for the entered repository.</td></tr>
+<tr><td>Import Repository…</td><td>Explicitly push local branches and tags to the displayed Git destination. Conflicting updates fail per ref without force-pushing; other non-conflicting refs may already have been accepted. Unrelated histories under different branch names can coexist in the same destination. Use a separate server repository name to keep them separate. The import dialog accepts simple repository names using letters, numbers, dots, underscores and hyphens.</td></tr>
+<tr><td>Rebuild Server Index…</td><td>Use the authenticated, repository-scoped rebuild endpoint. The token is used only for this request.</td></tr>
+</table>
+<p>The three views and Semantic Code Search support F1 help. The server is not embedded in Eclipse. Imports are explicit; EGit commits and pulls do not automatically synchronize all local repositories.</p>
+<h2>Troubleshooting</h2><ul>
+<li><strong>Repository required:</strong> enter the identity used for import or Git push.</li>
+<li><strong>Connection or HTTP error:</strong> verify Preferences, server availability and the exact repository name. Errors are not reported as zero hits.</li>
+<li><strong>HTTP 401 on rebuild:</strong> configure JGIT_ADMIN_TOKEN on the server and enter the matching token.</li>
+<li><strong>Rejected push:</strong> the server has a conflicting branch or tag. Choose another destination or reconcile the histories using normal Git tools.</li>
+<li><strong>No results:</strong> check the repository, search mode and committed source. Rebuild only if the server's derived history index needs repair.</li>
+<li><strong>Semantic model unavailable:</strong> check the server's model/runtime prerequisites or use ordinary text search. Set JGIT_EMBEDDING_ENABLED=false to disable model loading.</li>
+</ul><p>Java results depend on available project context and local dependencies. Search results are historical records, not proof that current workspace files match. API evolution and other server-only routes are described in the server README; this UI does not expose every library API.</p>
+</body></html>

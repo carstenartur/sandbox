@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<contexts>
+  <context id="git_search"><description>Search a named repository in the separate Sandbox Git server.</description><topic label="Git search workflow" href="html/usage.html"/></context>
+</contexts>

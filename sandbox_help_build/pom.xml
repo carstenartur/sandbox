@@ -99,6 +99,12 @@
 		<module>../sandbox_use_general_type_help</module>
 		<module>../sandbox_use_general_type_feature</module>
 
+		<!-- Git history search and its deterministic view evidence. -->
+		<module>../sandbox_extra_search</module>
+		<module>../sandbox_extra_search_help</module>
+		<module>../sandbox_extra_search_feature</module>
+		<module>../sandbox_extra_search_test</module>
+
 		<!-- Dedicated Help structure, screenshot and Workbench integration tests. -->
 		<module>../sandbox_eclipse_help_swtbot_test</module>
 	</modules>

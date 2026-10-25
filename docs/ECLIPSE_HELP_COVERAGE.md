@@ -16,6 +16,7 @@ The standard local LTK frame is a shared Eclipse host surface. JFace supplies th
 
 | Family | Configuration or task UI | Source/result evidence | Real preview evidence |
 |---|---|---|---|
+| Git Database Index | `git-search.png`, `git-file-history.png`, `git-authors.png`; server preferences and explicit import/rebuild documented | populated SWT views asserted against deterministic HTTP fixtures; real JGit import/rejection tests | not Java LTK; captures prove client display, not server database execution |
 | Cleanup application | CLI syntax, report and exit-code examples; no decorative screenshot | deterministic input/output and JSON report | not applicable |
 | CSS Cleanup | `css-cleanup-preferences.png`; context action documented | formatted CSS before/after; external-tool failures | not Java LTK; editor/version-control diff |
 | Explicit Encoding | `explicit-encoding-cleanup.png` with enabled policy | Prefer UTF-8, Keep behavior, Aggregate UTF-8 examples | shared standard LTK evidence |

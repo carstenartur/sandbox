@@ -28,6 +28,9 @@ public class SearchHit {
 	private String repoName;
 	private String commitHash;
 	private String content;
+	private String author;
+	private String blobId;
+	private String commitTime;
 
 	/** Creates an empty SearchHit. */
 	public SearchHit() {
@@ -125,6 +128,13 @@ public class SearchHit {
 	public void setContent(String content) {
 		this.content= content;
 	}
+
+	public String getAuthor() { return author; }
+	public void setAuthor(String value) { author= value; }
+	public String getBlobId() { return blobId; }
+	public void setBlobId(String value) { blobId= value; }
+	public String getCommitTime() { return commitTime; }
+	public void setCommitTime(String value) { commitTime= value; }
 
 	@Override
 	public String toString() {
