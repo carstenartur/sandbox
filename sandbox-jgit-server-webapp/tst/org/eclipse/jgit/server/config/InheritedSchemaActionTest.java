@@ -2,6 +2,8 @@
 package org.eclipse.jgit.server.config;
 
 import static org.junit.Assert.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.*;
@@ -28,7 +30,7 @@ public class InheritedSchemaActionTest {
       var command = new java.util.ArrayList<String>();
       command.add(Path.of(System.getProperty("java.home"), "bin", "java").toString());
       if (classpathSettings) {
-        Files.writeString(directory.resolve("hibernate.properties"), key + "=create\n");
+        Files.writeString(directory.resolve("hibernate.properties"), (key + "=create\n"), StandardCharsets.UTF_8);
         classpath = directory + java.io.File.pathSeparator + classpath;
       } else command.add("-D" + key + "=create");
       command.addAll(List.of("-cp", classpath, Probe.class.getName(), key));
@@ -37,7 +39,7 @@ public class InheritedSchemaActionTest {
       if (!process.waitFor(45, TimeUnit.SECONDS)) {
         process.destroyForcibly(); fail("Inherited settings probe timed out: " + key);
       }
-      assertEquals(Files.readString(output), 0, process.exitValue());
+      assertEquals(Files.readString(output, StandardCharsets.UTF_8), 0, process.exitValue());
     }
   }
 
