@@ -346,8 +346,10 @@ receive callbacks.
 
 **Import Repository…** asks for a server name and local source directory, then
 shows both endpoints before pushing committed branches and tags. The push never
-forces updates or deletes remote refs. An unrelated destination history is
-rejected. Server-side receive hooks update the derived history projection; a
+forces updates or deletes remote refs. Conflicting updates are rejected per ref;
+unrelated histories under different branch names can coexist after import. Use
+a separate server repository name when those histories should remain separate.
+Server-side receive hooks update the derived history projection; a
 successful Git push alone does not certify every optional analysis index.
 Uncommitted working-tree edits and automatic EGit synchronization are outside
 this workflow. A rejected push may have accepted other non-conflicting refs.
