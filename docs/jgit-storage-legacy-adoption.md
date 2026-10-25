@@ -180,7 +180,7 @@ ServerPersistenceContext context =
 
 This factory is deliberately separate from the normal server startup path. Before Hibernate starts, it requires:
 
-- `hibernate.hbm2ddl.auto=validate` exactly and no competing Jakarta/legacy Javax `schema-generation.database.action` property, including `none`, which would override Hibernate validation;
+- `hibernate.hbm2ddl.auto=validate` exactly and no competing Jakarta/legacy Javax database or script schema-generation actions, including `none`, or contributor-specific action overrides; the checked snapshot includes Hibernate's inherited JVM/classpath settings and is passed to bootstrap unchanged;
 - a supported matching Core/Search migration pair for the JDBC family;
 - completed SQL migrations in both dedicated Flyway histories, with no pending migrations, failed rows, unknown future versions or checksum mismatches;
 - histories in the configured schema (no fallback to another schema).

@@ -143,7 +143,11 @@ public final class ExternalHibernateRepositoryService implements SandboxReposito
 			}
 			RepositoryDeletionResult result= Objects.requireNonNull(
 					maintenance.withExclusiveProjectionAccess(normalized,
-							() -> repositoryFactory.deleteRepository(new RepositoryName(normalized))),
+							() -> {
+								var deleted = repositoryFactory.deleteRepository(new RepositoryName(normalized));
+								maintenance.repositoryDeleted(normalized);
+								return deleted;
+							}),
 					"repository deletion result for " + normalized); //$NON-NLS-1$
 			return new SandboxRepositoryDeletionResult(
 					result.packRows(), result.reflogRows(), result.projectionRows());

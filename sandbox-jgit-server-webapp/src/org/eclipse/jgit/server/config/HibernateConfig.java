@@ -92,8 +92,7 @@ public class HibernateConfig {
 	 */
 	public static ServerPersistenceContext createExternalPersistenceContext(
 			Properties properties) {
-		ExternalCoreStartupGuard.requireReady(properties);
-		return new ExternalServerPersistenceContext(properties);
+		return new ExternalServerPersistenceContext(ExternalCoreStartupGuard.requireReady(properties));
 	}
 
 	/**

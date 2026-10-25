@@ -12,6 +12,35 @@ import io.github.carstenartur.jgit.storage.hibernate.schema.CoreSchemaMigrations
 import io.github.carstenartur.jgit.storage.hibernate.search.schema.SearchSchemaMigrations;
 
 public class ReleasedSchemaHistoryTest {
+  @Test public void rejectsScriptGenerationWithValidHistoriesAndAMissingMappedTable() throws Exception {
+    for (String prefix : new String[] {"jakarta", "javax"}) {
+      var properties = properties();
+      core(properties).migrate(); search(properties).migrate();
+      try (var connection = DriverManager.getConnection(properties.getProperty("hibernate.connection.url"), "sa", "");
+          var statement = connection.createStatement()) {
+        statement.execute("DROP TABLE git_packs CASCADE");
+      }
+      String key = prefix + ".persistence.schema-generation.scripts.action";
+      properties.setProperty(key, "create");
+      properties.put(prefix + ".persistence.schema-generation.scripts.create-target", new java.io.StringWriter());
+      var failure = assertThrows(IllegalStateException.class, () -> {
+        try (var context = HibernateConfig.createExternalPersistenceContext(properties)) { context.sessionFactory(); }
+      });
+      assertTrue(failure.getMessage(), failure.getMessage().contains(key));
+    }
+  }
+
+  @Test public void rejectsEveryExplicitActionAndContributorOverrideEvenWhenNone() {
+    for (String key : new String[] {"jakarta.persistence.schema-generation.database.action",
+        "javax.persistence.schema-generation.database.action", "jakarta.persistence.schema-generation.scripts.action",
+        "javax.persistence.schema-generation.scripts.action", "jakarta.persistence.schema-generation.database.action.orm",
+        "javax.persistence.schema-generation.scripts.action.orm", "hibernate.hbm2ddl.auto.orm"}) {
+      var properties = properties(); properties.setProperty(key, "none");
+      var failure = assertThrows(IllegalStateException.class, () -> ExternalCoreStartupGuard.requireReady(properties));
+      assertTrue(failure.getMessage(), failure.getMessage().contains(key));
+    }
+  }
+
   @Test
   public void requiresCompleteCoreAndSearchHistoriesWithoutCreatingEither() throws Exception {
     var properties = properties();

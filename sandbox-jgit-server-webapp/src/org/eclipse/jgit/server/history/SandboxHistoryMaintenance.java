@@ -5,6 +5,7 @@
 package org.eclipse.jgit.server.history;
 
 import java.util.Collection;
+import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.eclipse.jgit.lib.Repository;
@@ -23,6 +24,16 @@ public interface SandboxHistoryMaintenance {
 
 	/** Reports any known projection failure in this server process. */
 	default void checkHealthy() {}
+
+	/** Reconstructs this repository's projection from Git, with local writers serialized. */
+	default RebuildResult rebuild(String canonicalName, Repository repository) throws IOException {
+		throw new UnsupportedOperationException("Git-history rebuild requires the released Search backend.");
+	}
+
+	record RebuildResult(long removedProjections, long indexedCommits) {}
+
+	/** Discards process-local certificates and failure state after successful repository deletion. */
+	default void repositoryDeleted(String canonicalName) {}
 
 	/** Serializes projection-affecting repository operations with index refresh. */
 	default <T> T withExclusiveProjectionAccess(String canonicalName, Supplier<T> operation) {

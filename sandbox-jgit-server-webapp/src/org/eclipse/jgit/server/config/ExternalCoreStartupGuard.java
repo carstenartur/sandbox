@@ -12,6 +12,7 @@ import java.util.Properties;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
+import org.hibernate.cfg.Environment;
 import io.github.carstenartur.jgit.storage.hibernate.schema.CoreSchemaMigrations;
 import io.github.carstenartur.jgit.storage.hibernate.search.schema.SearchSchemaMigrations;
 
@@ -19,15 +20,24 @@ import io.github.carstenartur.jgit.storage.hibernate.search.schema.SearchSchemaM
 final class ExternalCoreStartupGuard {
   private ExternalCoreStartupGuard() {}
 
-  static void requireReady(Properties properties) {
-    Objects.requireNonNull(properties, "properties");
+  static Properties requireReady(Properties supplied) {
+    Objects.requireNonNull(supplied, "properties");
+    // Configuration inherits this JVM/classpath snapshot before addProperties overlays caller entries.
+    // Validate and return precisely that flat snapshot for the subsequent provider bootstrap.
+    var properties = new Properties();
+    properties.putAll(Environment.getProperties());
+    properties.putAll(supplied);
     if (!"validate".equalsIgnoreCase(properties.getProperty("hibernate.hbm2ddl.auto", "").strip())) {
       throw new IllegalStateException("Released storage requires hibernate.hbm2ddl.auto=validate; migrate Core and Search first.");
     }
-    for (String key : new String[] {"jakarta.persistence.schema-generation.database.action",
-        "javax.persistence.schema-generation.database.action"}) {
-      if (properties.get(key) != null) {
-        throw new IllegalStateException("Remove " + key + "; it overrides hibernate.hbm2ddl.auto=validate.");
+    for (Object setting : properties.keySet()) {
+      if (!(setting instanceof String key)) continue;
+      for (String action : new String[] {"jakarta.persistence.schema-generation.database.action",
+          "javax.persistence.schema-generation.database.action", "jakarta.persistence.schema-generation.scripts.action",
+          "javax.persistence.schema-generation.scripts.action", "hibernate.hbm2ddl.auto"}) {
+        if ((!action.equals("hibernate.hbm2ddl.auto") && key.equals(action)) || key.startsWith(action + ".")) {
+          throw new IllegalStateException("Remove " + key + "; it overrides hibernate.hbm2ddl.auto=validate.");
+        }
       }
     }
     String url = Objects.requireNonNull(properties.getProperty("hibernate.connection.url"), "JDBC URL");
@@ -59,6 +69,7 @@ final class ExternalCoreStartupGuard {
     } catch (ClassNotFoundException | RuntimeException failure) {
       throw new IllegalStateException("Released Core/Search migration validation failed before Hibernate startup.", failure);
     }
+    return properties;
   }
 
   private static void validate(DataSource source, String schema, String table, String location) {
