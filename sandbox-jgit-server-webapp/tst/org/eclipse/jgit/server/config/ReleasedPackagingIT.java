@@ -4,6 +4,7 @@ package org.eclipse.jgit.server.config;
 import static org.junit.Assert.*;
 import java.net.URI;
 import java.net.http.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -44,8 +45,8 @@ public class ReleasedPackagingIT {
     var help = process(root, helpLog, "--help");
     try {
       assertTrue(help.waitFor(30, TimeUnit.SECONDS));
-      assertEquals(Files.readString(helpLog), 0, help.exitValue());
-      assertTrue(Files.readString(helpLog).contains("--initialize-empty-schema"));
+      assertEquals(Files.readString(helpLog, StandardCharsets.UTF_8), 0, help.exitValue());
+      assertTrue(Files.readString(helpLog, StandardCharsets.UTF_8).contains("--initialize-empty-schema"));
     } finally { stop(help); }
     Path rejectedLog = root.resolve("uninitialized.log");
     var rejected = process(root, rejectedLog);
@@ -65,8 +66,8 @@ public class ReleasedPackagingIT {
       } finally { stop(child); }
       // Windows uses TerminateProcess; only platforms supporting normal termination
       // can exercise a JVM shutdown hook. Initialization/restart run on every platform.
-      if (child.supportsNormalTermination()) assertTrue("SIGTERM must close the application-owned database pool: " + Files.readString(log),
-          Files.readString(log).contains("Shutdown completed."));
+      if (child.supportsNormalTermination()) assertTrue("SIGTERM must close the application-owned database pool: " + Files.readString(log, StandardCharsets.UTF_8),
+          Files.readString(log, StandardCharsets.UTF_8).contains("Shutdown completed."));
     }
   }
 
@@ -89,13 +90,13 @@ public class ReleasedPackagingIT {
   private static int port(Process child, Path log) throws Exception {
     long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(45);
     while (System.nanoTime() < deadline) {
-      String output = Files.readString(log);
+      String output = Files.readString(log, StandardCharsets.UTF_8);
       var match = REST_PORT.matcher(output);
       if (match.find()) return Integer.parseInt(match.group(1));
       assertTrue(output, child.isAlive());
       Thread.sleep(100);
     }
-    throw new AssertionError("Packaged server did not become ready: " + Files.readString(log));
+    throw new AssertionError("Packaged server did not become ready: " + Files.readString(log, StandardCharsets.UTF_8));
   }
 
   private static void stop(Process child) throws InterruptedException {

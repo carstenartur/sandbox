@@ -2,6 +2,7 @@
 package org.eclipse.jgit.server.analysis;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.InvalidPathException;
@@ -149,7 +150,7 @@ final class JavaHistoryCorpus {
         if (blob.getSize() > maxBlobBytes) {
           diagnostics.add("Source/build file exceeds the configured byte limit: " + path); continue;
         }
-        byte[] bytes = blob.getBytes();
+        byte[] bytes = blob.getBytes(Charset.defaultCharset());
         boolean binary = false;
         for (int i = 0; i < Math.min(bytes.length, 8192); i++) if (bytes[i] == 0) { binary = true; break; }
         if (binary) { diagnostics.add("Binary source/build file omitted: " + path); continue; }
