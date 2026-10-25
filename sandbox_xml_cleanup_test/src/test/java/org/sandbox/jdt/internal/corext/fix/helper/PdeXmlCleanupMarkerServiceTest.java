@@ -182,6 +182,31 @@ class PdeXmlCleanupMarkerServiceTest {
 		assertEquals(source, read(file));
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "\n", "\r\n" }) //$NON-NLS-1$ //$NON-NLS-2$
+	void markerKeepsChangedMarkupLocationWhenDifferentMarkupPreservesTheSameIndentation(String lineDelimiter)
+			throws Exception {
+		String source= ("<?xml version=\"1.0\" encoding=\"UTF-8\"?><schema><annotation>\n" //$NON-NLS-1$
+				+ "      <appinfo><meta.schema id=\"sample\"/></appinfo>\n" //$NON-NLS-1$
+				+ "      <documentation>\n         Keep documentation unchanged.\n" //$NON-NLS-1$
+				+ "      </documentation>\n</annotation></schema>").replace("\n", lineDelimiter); //$NON-NLS-1$ //$NON-NLS-2$
+		IFile file= createFile("schema/shared-indentation.exsd", source); //$NON-NLS-1$
+		PdeXmlCleanupMarkerService service= new PdeXmlCleanupMarkerService();
+
+		String transformed= SchemaTransformationUtils.transform(source, StandardCharsets.UTF_8, false);
+		assertTrue(transformed.contains("      </documentation>")); //$NON-NLS-1$
+		assertFalse(transformed.contains("      <appinfo>")); //$NON-NLS-1$
+		assertEquals(1, service.refresh(file, monitor));
+		IMarker[] markers= file.findMarkers(PdeXmlCleanupMarkerService.MARKER_TYPE,
+				false, IResource.DEPTH_ZERO);
+		assertEquals(1, markers.length);
+		assertEquals(2, markers[0].getAttribute(IMarker.LINE_NUMBER, -1));
+		int indentationOffset= source.indexOf("      <appinfo>"); //$NON-NLS-1$
+		assertEquals(indentationOffset, markers[0].getAttribute(IMarker.CHAR_START, -1));
+		assertEquals(indentationOffset + 4, markers[0].getAttribute(IMarker.CHAR_END, -1));
+		assertEquals(source, read(file));
+	}
+
 	@Test
 	void projectAnalysisCoversRootDescriptorsAndSchemaDirectoriesOnly() throws Exception {
 		createFile("plugin.xml", SOURCE.replace("schema", "plugin")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$

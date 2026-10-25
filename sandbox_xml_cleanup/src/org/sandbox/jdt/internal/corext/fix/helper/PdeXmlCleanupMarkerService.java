@@ -69,9 +69,21 @@ public final class PdeXmlCleanupMarkerService {
 				SchemaTransformationUtils.firstConvertibleMarkupIndentation(source);
 		if (finding != null) {
 			int markupStart= source.indexOf('<', finding.offset());
-			String candidatePrefix= source.substring(finding.offset(), markupStart + 1);
+			int markupNameEnd= markupStart + 1;
+			if (source.charAt(markupNameEnd) == '/') {
+				markupNameEnd++;
+			}
+			while (markupNameEnd < source.length()) {
+				char character= source.charAt(markupNameEnd);
+				if (Character.isWhitespace(character) || character == '/' || character == '>') {
+					break;
+				}
+				markupNameEnd++;
+			}
+			String candidatePrefix= source.substring(finding.offset(), markupNameEnd);
 			// A lexical match may belong to a preserved text subtree. Prefer a file-level
-			// marker if its indentation survives, even when serialization changes the tag.
+			// marker if its indentation and markup name survive, even when serialization
+			// changes the tag spelling. Other markup with the same indentation is unrelated.
 			if (transformation.transformedContent().contains(candidatePrefix)) {
 				finding= null;
 			}
