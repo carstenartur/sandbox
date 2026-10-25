@@ -3874,8 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedDate": "2026-10-24T02:23:52.626132571Z",
-      "totalProcessed": 1268,
+      "lastProcessedCommit": "b88e861ddc9bedafaf69965fa9262e9df0b051b2",
+      "lastProcessedDate": "2026-10-25T02:30:01.067162450Z",
+      "totalProcessed": 1340,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5182,6 +5183,15 @@
           "deferredAt": "2026-10-24T02:23:08.909374262Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "f57829bcc06bc19b6bcb68b398f83b3e2931c42b",
+          "message": "Committed Fabio\u0027s patch to fix bug 270385: [typing] HippieCompleteAction is slow  ( Alt+/ )",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-25T02:24:21.103371401Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5209,7 +5219,7 @@
         "Resource Management": 2,
         "Structural Change": 1,
         "Deprecation": 2,
-        "API Usage": 2,
+        "API Usage": 3,
         "JUnit Assertion": 1,
         "API Migration": 7,
         "Configuration Default Update": 1,
@@ -5232,7 +5242,7 @@
         "JUnit Assertion Improvement": 1,
         "Structural Refactoring": 3,
         "Conditional Logic Refinement": 1,
-        "Bug Fix": 1,
+        "Bug Fix": 3,
         "Assertion Improvement": 1,
         "Unnecessary Annotation": 1,
         "Eclipse API Modernization": 2,
@@ -5304,7 +5314,14 @@
         "Java Language Modernization": 1,
         "Unnecessary Object Creation": 1,
         "Configuration Update": 1,
-        "Annotation Addition": 1
+        "Annotation Addition": 1,
+        "Conditional Simplification": 1,
+        "Collections Modernization": 1,
+        "Inlining Constant": 1,
+        "Array Comparison": 1,
+        "API Constant Usage": 1,
+        "Modifier Cleanup": 1,
+        "String Literal Cleanup": 1
       },
       "exhaustedCategories": []
     },
@@ -5427,5 +5444,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53061
+  "globalTotalProcessed": 53133
 }
