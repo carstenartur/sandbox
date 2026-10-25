@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReleasedSandboxStorageStatistics.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.repository</a> &gt; <span class="el_source">ReleasedSandboxStorageStatistics.java</span></div><h1>ReleasedSandboxStorageStatistics.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.repository;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Objects;
+import org.hibernate.SessionFactory;
+import io.github.carstenartur.jgit.storage.hibernate.RepositoryName;
+import io.github.carstenartur.jgit.storage.hibernate.RepositoryStorageStatistics;
+
+/** Released inventory guarded by the application's existing-reader lifetime. */
+public final class ReleasedSandboxStorageStatistics implements SandboxStorageStatistics {
+	private final RepositoryStorageStatistics statistics;
+	private final SandboxRepositoryService repositories;
+
+<span class="fc" id="L16">	public ReleasedSandboxStorageStatistics(SessionFactory factory, SandboxRepositoryService repositories) {</span>
+<span class="fc" id="L17">		this.statistics= new RepositoryStorageStatistics(factory);</span>
+<span class="fc" id="L18">		this.repositories= Objects.requireNonNull(repositories);</span>
+<span class="fc" id="L19">	}</span>
+
+	@Override
+	public ObjectCounts objects(String repository) throws IOException {
+		try {
+<span class="fc" id="L24">			return repositories.withExistingRepository(repository, ignored -&gt; {</span>
+<span class="fc" id="L25">				var counts= statistics.objects(new RepositoryName(SandboxRepositoryNames.normalize(repository)));</span>
+<span class="fc" id="L26">				return new ObjectCounts(counts.commits(), counts.trees(), counts.blobs(), counts.tags());</span>
+			});
+<span class="fc" id="L28">		} catch (FileNotFoundException missing) {</span>
+<span class="fc" id="L29">			return new ObjectCounts(0, 0, 0, 0);</span>
+		}
+	}
+
+	@Override
+	public PackCounts packs(String repository) throws IOException {
+		try {
+<span class="fc" id="L36">			return repositories.withExistingRepository(repository, ignored -&gt; {</span>
+<span class="fc" id="L37">				var counts= statistics.packs(new RepositoryName(SandboxRepositoryNames.normalize(repository)));</span>
+<span class="fc" id="L38">				return new PackCounts(counts.packCount(), counts.totalSizeBytes());</span>
+			});
+<span class="fc" id="L40">		} catch (FileNotFoundException missing) {</span>
+<span class="fc" id="L41">			return new PackCounts(0, 0);</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

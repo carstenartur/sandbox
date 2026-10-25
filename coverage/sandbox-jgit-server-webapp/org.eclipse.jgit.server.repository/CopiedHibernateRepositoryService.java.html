@@ -52,7 +52,7 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 
 	@Override
 	public Repository openOrCreate(String name) throws IOException {
-<span class="fc" id="L55">		return repository(name);</span>
+<span class="fc" id="L55">		return repository(normalize(name));</span>
 	}
 
 	@Override
@@ -83,37 +83,26 @@ public final class CopiedHibernateRepositoryService implements SandboxRepository
 <span class="fc" id="L83">		repositories.clear();</span>
 <span class="fc" id="L84">	}</span>
 
-	private HibernateRepository repository(String name) throws IOException {
-<span class="fc" id="L87">		String normalized= normalize(name);</span>
-<span class="fc" id="L88">		HibernateRepository existing= repositories.get(normalized);</span>
-<span class="fc bfc" id="L89" title="All 2 branches covered.">		if (existing != null) {</span>
-<span class="fc" id="L90">			return existing;</span>
+	private HibernateRepository repository(String normalized) throws IOException {
+<span class="fc" id="L87">		HibernateRepository existing= repositories.get(normalized);</span>
+<span class="fc bfc" id="L88" title="All 2 branches covered.">		if (existing != null) {</span>
+<span class="fc" id="L89">			return existing;</span>
 		}
-<span class="fc" id="L92">		HibernateRepository created= new HibernateRepositoryBuilder()</span>
-<span class="fc" id="L93">				.setSessionFactoryProvider(sessionFactoryProvider)</span>
-<span class="fc" id="L94">				.setRepositoryName(normalized)</span>
-<span class="fc" id="L95">				.setRepositoryDescription(new DfsRepositoryDescription(normalized))</span>
-<span class="fc" id="L96">				.build();</span>
-<span class="fc" id="L97">		HibernateRepository raced= repositories.putIfAbsent(normalized, created);</span>
-<span class="pc bpc" id="L98" title="1 of 2 branches missed.">		if (raced != null) {</span>
-<span class="nc" id="L99">			created.close();</span>
-<span class="nc" id="L100">			return raced;</span>
+<span class="fc" id="L91">		HibernateRepository created= new HibernateRepositoryBuilder()</span>
+<span class="fc" id="L92">				.setSessionFactoryProvider(sessionFactoryProvider)</span>
+<span class="fc" id="L93">				.setRepositoryName(normalized)</span>
+<span class="fc" id="L94">				.setRepositoryDescription(new DfsRepositoryDescription(normalized))</span>
+<span class="fc" id="L95">				.build();</span>
+<span class="fc" id="L96">		HibernateRepository raced= repositories.putIfAbsent(normalized, created);</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">		if (raced != null) {</span>
+<span class="nc" id="L98">			created.close();</span>
+<span class="nc" id="L99">			return raced;</span>
 		}
-<span class="fc" id="L102">		return created;</span>
+<span class="fc" id="L101">		return created;</span>
 	}
 
 	private static String normalize(String name) {
-<span class="fc" id="L106">		String normalized= Objects.requireNonNull(name, &quot;name&quot;).strip(); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L107" title="All 2 branches covered.">		if (normalized.startsWith(&quot;/&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L108">			normalized= normalized.substring(1);</span>
-		}
-<span class="fc bfc" id="L110" title="All 2 branches covered.">		if (normalized.endsWith(&quot;.git&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L111">			normalized= normalized.substring(0, normalized.length() - 4);</span>
-		}
-<span class="pc bpc" id="L113" title="1 of 2 branches missed.">		if (normalized.isEmpty()) {</span>
-<span class="nc" id="L114">			throw new IllegalArgumentException(&quot;Repository name must not be blank.&quot;); //$NON-NLS-1$</span>
-		}
-<span class="fc" id="L116">		return normalized;</span>
+<span class="fc" id="L105">		return SandboxRepositoryNames.normalize(name);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

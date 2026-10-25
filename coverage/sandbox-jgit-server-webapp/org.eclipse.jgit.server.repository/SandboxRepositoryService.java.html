@@ -17,8 +17,23 @@ import org.eclipse.jgit.lib.Repository;
 /** Application-owned repository lifecycle boundary for REST and Smart HTTP. */
 public interface SandboxRepositoryService extends AutoCloseable {
 
-	/** Opens the supplied repository identity, normalizing and creating it when absent. */
+	/** Opens the identity, creating it when absent; the returned handle is borrowed and must not be closed. */
 	Repository openOrCreate(String name) throws IOException;
+
+	/**
+	 * Reads an existing identity without creating it. The callback must not retain or close the
+	 * borrowed repository, or close this service. Released Core denies ref publication through
+	 * this handle; the callback still belongs to trusted application code.
+	 */
+	default &lt;T&gt; T withExistingRepository(String name, RepositoryRead&lt;T&gt; read) throws IOException {
+<span class="nc" id="L29">		throw new UnsupportedOperationException(&quot;Existing-only reads require the released Core backend.&quot;);</span>
+	}
+
+	/** A scoped application read which may use JGit's checked IO operations. */
+	@FunctionalInterface
+	interface RepositoryRead&lt;T&gt; {
+		T read(Repository repository) throws IOException;
+	}
 
 	/** Normalizes, opens or creates a repository and returns stable application metadata. */
 	SandboxRepositoryInfo info(String name) throws IOException;
@@ -33,7 +48,7 @@ public interface SandboxRepositoryService extends AutoCloseable {
 	 * keeps deletion disabled until normal startup has completed the Core cut-over.&lt;/p&gt;
 	 */
 	default SandboxRepositoryDeletionResult delete(String name) throws IOException {
-<span class="nc" id="L36">		throw new UnsupportedOperationException(&quot;Repository deletion requires the released Core backend.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L51">		throw new UnsupportedOperationException(&quot;Repository deletion requires the released Core backend.&quot;); //$NON-NLS-1$</span>
 	}
 
 	/** Returns whether this process already owns an open handle for the normalized identity. */

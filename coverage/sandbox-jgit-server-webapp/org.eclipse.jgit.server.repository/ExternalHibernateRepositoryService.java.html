@@ -18,11 +18,18 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.server.history.SandboxHistoryMaintenance;
 
 import io.github.carstenartur.jgit.storage.hibernate.HibernateGitStorage;
 import io.github.carstenartur.jgit.storage.hibernate.HibernateRepositoryFactory;
 import io.github.carstenartur.jgit.storage.hibernate.RepositoryDeletionResult;
 import io.github.carstenartur.jgit.storage.hibernate.RepositoryName;
+import io.github.carstenartur.jgit.storage.hibernate.AuthorizedRepositorySession;
+import io.github.carstenartur.jgit.storage.hibernate.RepositoryAccessOperation;
+import io.github.carstenartur.jgit.storage.hibernate.RepositoryAccessDeniedException;
+import io.github.carstenartur.jgit.storage.hibernate.RepositoryDoesNotExistException;
+import io.github.carstenartur.jgit.storage.hibernate.SecuredHibernateRepositoryFactory;
+import org.hibernate.SessionFactory;
 
 /**
  * Adapts the released {@code jgit-storage-hibernate-core} factory to the
@@ -36,117 +43,184 @@ import io.github.carstenartur.jgit.storage.hibernate.RepositoryName;
 public final class ExternalHibernateRepositoryService implements SandboxRepositoryService {
 
 	private final HibernateRepositoryFactory repositoryFactory;
-<span class="fc" id="L39">	private final Object lifecycleLock= new Object();</span>
-<span class="fc" id="L40">	private final Map&lt;String, HibernateGitStorage&gt; storages= new LinkedHashMap&lt;&gt;();</span>
+	private final SandboxHistoryMaintenance maintenance;
+<span class="fc" id="L47">	private final Object lifecycleLock= new Object();</span>
+<span class="fc" id="L48">	private final Map&lt;String, HibernateGitStorage&gt; storages= new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L49">	private final Map&lt;String, Integer&gt; activeReaders= new LinkedHashMap&lt;&gt;();</span>
+	private final SecuredHibernateRepositoryFactory&lt;String&gt; readerFactory;
 	private boolean closed;
+	private boolean shutdownComplete;
 
 	/** Creates an adapter for the released public repository factory. */
-<span class="fc" id="L44">	public ExternalHibernateRepositoryService(HibernateRepositoryFactory repositoryFactory) {</span>
-<span class="fc" id="L45">		this.repositoryFactory= Objects.requireNonNull(repositoryFactory, &quot;repositoryFactory&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L46">	}</span>
+	public ExternalHibernateRepositoryService(HibernateRepositoryFactory repositoryFactory) {
+<span class="fc" id="L56">		this(repositoryFactory, SandboxHistoryMaintenance.NONE);</span>
+<span class="fc" id="L57">	}</span>
+
+	/** Shares projection coordination with this context's index refresh and push hooks. */
+	public ExternalHibernateRepositoryService(HibernateRepositoryFactory repositoryFactory, SandboxHistoryMaintenance maintenance) {
+<span class="fc" id="L61">		this(repositoryFactory, maintenance, null);</span>
+<span class="fc" id="L62">	}</span>
+
+	/** Adds scoped existing-only readers sharing this service's deletion and shutdown lifecycle. */
+	public ExternalHibernateRepositoryService(HibernateRepositoryFactory repositoryFactory,
+<span class="fc" id="L66">			SandboxHistoryMaintenance maintenance, SessionFactory sessionFactory) {</span>
+<span class="fc" id="L67">		this.repositoryFactory= Objects.requireNonNull(repositoryFactory, &quot;repositoryFactory&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L68">		this.maintenance= Objects.requireNonNull(maintenance);</span>
+<span class="fc bfc" id="L69" title="All 2 branches covered.">		this.readerFactory= sessionFactory == null ? null : new SecuredHibernateRepositoryFactory&lt;&gt;(sessionFactory,</span>
+				(context, request) -&gt; {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">					if (request.operation() != RepositoryAccessOperation.DISCOVER</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">							&amp;&amp; request.operation() != RepositoryAccessOperation.READ) {</span>
+<span class="fc" id="L73">						throw new RepositoryAccessDeniedException(request, &quot;sandbox-read-only&quot;, null, 1);</span>
+					}
+<span class="fc" id="L75">				});</span>
+<span class="fc" id="L76">	}</span>
+
+	@Override
+	public &lt;T&gt; T withExistingRepository(String name, RepositoryRead&lt;T&gt; read) throws IOException {
+<span class="fc" id="L80">		Objects.requireNonNull(read, &quot;read&quot;);</span>
+<span class="fc" id="L81">		String normalized= normalize(name);</span>
+		AuthorizedRepositorySession&lt;String&gt; session;
+<span class="fc" id="L83">		synchronized (lifecycleLock) {</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">			if (closed) {</span>
+<span class="fc" id="L85">				throw new IllegalStateException(&quot;Repository service is already closed.&quot;);</span>
+			}
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">			if (readerFactory == null) {</span>
+<span class="nc" id="L88">				throw new UnsupportedOperationException(&quot;No existing-only reader factory configured.&quot;);</span>
+			}
+			try {
+<span class="fc" id="L91">				session= readerFactory.open(new RepositoryName(normalized), &quot;sandbox-analysis&quot;);</span>
+<span class="fc" id="L92">			} catch (RepositoryDoesNotExistException missing) {</span>
+<span class="fc" id="L93">				throw new java.io.FileNotFoundException(&quot;Repository does not exist: &quot; + normalized);</span>
+<span class="fc" id="L94">			}</span>
+<span class="fc" id="L95">			activeReaders.merge(normalized, 1, Integer::sum);</span>
+<span class="fc" id="L96">		}</span>
+<span class="fc" id="L97">		try (session) {</span>
+<span class="fc" id="L98">			return read.read(session.repository());</span>
+		} finally {
+<span class="fc" id="L100">			synchronized (lifecycleLock) {</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">				activeReaders.compute(normalized, (key, count) -&gt; count == 1 ? null : count - 1);</span>
+<span class="fc" id="L102">				lifecycleLock.notifyAll();</span>
+<span class="fc" id="L103">			}</span>
+		}
+	}
 
 	@Override
 	public Repository openOrCreate(String name) throws IOException {
-<span class="fc" id="L50">		synchronized (lifecycleLock) {</span>
-<span class="fc" id="L51">			return storageLocked(name).repository();</span>
+<span class="fc" id="L109">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L110">			return storageLocked(normalize(name)).repository();</span>
 		}
 	}
 
 	@Override
 	public SandboxRepositoryInfo info(String name) throws IOException {
-<span class="fc" id="L57">		synchronized (lifecycleLock) {</span>
-<span class="fc" id="L58">			String normalized= normalize(name);</span>
-<span class="fc" id="L59">			Repository repository= storageLocked(normalized).repository();</span>
-<span class="fc" id="L60">			return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());</span>
+<span class="fc" id="L116">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L117">			String normalized= normalize(name);</span>
+<span class="fc" id="L118">			Repository repository= storageLocked(normalized).repository();</span>
+<span class="fc" id="L119">			return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());</span>
 		}
 	}
 
 	@Override
 	public SandboxRepositoryInfo setDescription(String name, String description) throws IOException {
-<span class="fc" id="L66">		synchronized (lifecycleLock) {</span>
-<span class="fc" id="L67">			String normalized= normalize(name);</span>
-<span class="fc" id="L68">			Repository repository= storageLocked(normalized).repository();</span>
-<span class="fc" id="L69">			repository.setGitwebDescription(description);</span>
-<span class="fc" id="L70">			return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());</span>
+<span class="fc" id="L125">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L126">			String normalized= normalize(name);</span>
+<span class="fc" id="L127">			Repository repository= storageLocked(normalized).repository();</span>
+<span class="fc" id="L128">			repository.setGitwebDescription(description);</span>
+<span class="fc" id="L129">			return new SandboxRepositoryInfo(normalized, repository.getGitwebDescription());</span>
 		}
 	}
 
 	@Override
 	public SandboxRepositoryDeletionResult delete(String name) {
-<span class="fc" id="L76">		synchronized (lifecycleLock) {</span>
-<span class="fc bfc" id="L77" title="All 2 branches covered.">			if (closed) {</span>
-<span class="fc" id="L78">				throw new IllegalStateException(&quot;Repository service is already closed.&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L135">		synchronized (lifecycleLock) {</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">			if (closed) {</span>
+<span class="fc" id="L137">				throw new IllegalStateException(&quot;Repository service is already closed.&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L80">			String normalized= normalize(name);</span>
-<span class="fc bfc" id="L81" title="All 2 branches covered.">			if (storages.containsKey(normalized)) {</span>
-<span class="fc" id="L82">				throw new IllegalStateException(</span>
+<span class="fc" id="L139">			String normalized= normalize(name);</span>
+<span class="fc bfc" id="L140" title="All 4 branches covered.">			if (storages.containsKey(normalized) || activeReaders.containsKey(normalized)) {</span>
+<span class="fc" id="L141">				throw new IllegalStateException(</span>
 						&quot;Repository is open in this process and cannot be deleted: &quot; + normalized); //$NON-NLS-1$
 			}
-<span class="fc" id="L85">			RepositoryDeletionResult result= Objects.requireNonNull(</span>
-<span class="fc" id="L86">					repositoryFactory.deleteRepository(new RepositoryName(normalized)),</span>
+<span class="fc" id="L144">			RepositoryDeletionResult result= Objects.requireNonNull(</span>
+<span class="fc" id="L145">					maintenance.withExclusiveProjectionAccess(normalized,</span>
+<span class="fc" id="L146">							() -&gt; repositoryFactory.deleteRepository(new RepositoryName(normalized))),</span>
 					&quot;repository deletion result for &quot; + normalized); //$NON-NLS-1$
-<span class="fc" id="L88">			return new SandboxRepositoryDeletionResult(</span>
-<span class="fc" id="L89">					result.packRows(), result.reflogRows(), result.projectionRows());</span>
+<span class="fc" id="L148">			return new SandboxRepositoryDeletionResult(</span>
+<span class="fc" id="L149">					result.packRows(), result.reflogRows(), result.projectionRows());</span>
 		}
 	}
 
 	@Override
 	public boolean isOpen(String name) {
-<span class="fc" id="L95">		synchronized (lifecycleLock) {</span>
-<span class="pc bpc" id="L96" title="1 of 4 branches missed.">			return !closed &amp;&amp; storages.containsKey(normalize(name));</span>
+<span class="fc" id="L155">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L156">			String normalized= normalize(name);</span>
+<span class="fc bfc" id="L157" title="All 6 branches covered.">			return !closed &amp;&amp; (storages.containsKey(normalized) || activeReaders.containsKey(normalized));</span>
 		}
 	}
 
 	@Override
 	public void close() {
 		List&lt;HibernateGitStorage&gt; storagesToClose;
-<span class="fc" id="L103">		synchronized (lifecycleLock) {</span>
-<span class="fc bfc" id="L104" title="All 2 branches covered.">			if (closed) {</span>
-<span class="fc" id="L105">				return;</span>
+<span class="fc" id="L164">		synchronized (lifecycleLock) {</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">			if (closed) {</span>
+<span class="fc" id="L166">				awaitLocked(() -&gt; shutdownComplete);</span>
+<span class="fc" id="L167">				return;</span>
 			}
-<span class="fc" id="L107">			closed= true;</span>
-<span class="fc" id="L108">			storagesToClose= new ArrayList&lt;&gt;(storages.values());</span>
-<span class="fc" id="L109">			storages.clear();</span>
-<span class="fc" id="L110">		}</span>
+<span class="fc" id="L169">			closed= true;</span>
+<span class="fc" id="L170">			awaitLocked(activeReaders::isEmpty);</span>
+<span class="fc" id="L171">			storagesToClose= new ArrayList&lt;&gt;(storages.values());</span>
+<span class="fc" id="L172">			storages.clear();</span>
+<span class="fc" id="L173">		}</span>
 
-<span class="fc" id="L112">		RuntimeException failure= null;</span>
-<span class="fc bfc" id="L113" title="All 2 branches covered.">		for (HibernateGitStorage storage : storagesToClose) {</span>
-			try {
-<span class="fc" id="L115">				storage.close();</span>
-<span class="fc" id="L116">			} catch (RuntimeException exception) {</span>
-<span class="fc bfc" id="L117" title="All 2 branches covered.">				if (failure == null) {</span>
-<span class="fc" id="L118">					failure= exception;</span>
-				} else {
-<span class="fc" id="L120">					failure.addSuppressed(exception);</span>
-				}
-<span class="fc" id="L122">			}</span>
-<span class="fc" id="L123">		}</span>
-<span class="fc bfc" id="L124" title="All 2 branches covered.">		if (failure != null) {</span>
-<span class="fc" id="L125">			throw failure;</span>
+		try {
+<span class="fc" id="L176">			RuntimeException failure= null;</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">			for (HibernateGitStorage storage : storagesToClose) {</span>
+				try {
+<span class="fc" id="L179">					storage.close();</span>
+<span class="fc" id="L180">				} catch (RuntimeException exception) {</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">					if (failure == null) {</span>
+<span class="fc" id="L182">						failure= exception;</span>
+					} else {
+<span class="fc" id="L184">						failure.addSuppressed(exception);</span>
+					}
+<span class="fc" id="L186">				}</span>
+<span class="fc" id="L187">			}</span>
+<span class="fc bfc" id="L188" title="All 2 branches covered.">			if (failure != null) {</span>
+<span class="fc" id="L189">				throw failure;</span>
+			}
+		} finally {
+<span class="fc" id="L192">			synchronized (lifecycleLock) {</span>
+<span class="fc" id="L193">				shutdownComplete= true;</span>
+<span class="fc" id="L194">				lifecycleLock.notifyAll();</span>
+<span class="fc" id="L195">			}</span>
 		}
-<span class="fc" id="L127">	}</span>
+<span class="fc" id="L197">	}</span>
+
+	/** Caller owns lifecycleLock; shutdown cannot release the factory under an active reader. */
+	private void awaitLocked(java.util.function.BooleanSupplier complete) {
+<span class="fc" id="L201">		boolean interrupted= false;</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">		while (!complete.getAsBoolean()) {</span>
+			try {
+<span class="fc" id="L204">				lifecycleLock.wait();</span>
+<span class="nc" id="L205">			} catch (InterruptedException failure) {</span>
+<span class="nc" id="L206">				interrupted= true;</span>
+<span class="pc" id="L207">			}</span>
+		}
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">		if (interrupted) {</span>
+<span class="nc" id="L210">			Thread.currentThread().interrupt();</span>
+		}
+<span class="fc" id="L212">	}</span>
 
 	private HibernateGitStorage storageLocked(String name) {
-<span class="fc bfc" id="L130" title="All 2 branches covered.">		if (closed) {</span>
-<span class="fc" id="L131">			throw new IllegalStateException(&quot;Repository service is already closed.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">		if (closed) {</span>
+<span class="fc" id="L216">			throw new IllegalStateException(&quot;Repository service is already closed.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L133">		String normalized= normalize(name);</span>
-<span class="fc" id="L134">		return storages.computeIfAbsent(normalized,</span>
-<span class="fc" id="L135">				key -&gt; repositoryFactory.open(new RepositoryName(key)));</span>
+<span class="fc" id="L218">		return storages.computeIfAbsent(name,</span>
+<span class="fc" id="L219">				key -&gt; repositoryFactory.open(new RepositoryName(key)));</span>
 	}
 
 	private static String normalize(String name) {
-<span class="fc" id="L139">		String normalized= Objects.requireNonNull(name, &quot;name&quot;).strip(); //$NON-NLS-1$</span>
-<span class="fc bfc" id="L140" title="All 2 branches covered.">		if (normalized.startsWith(&quot;/&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L141">			normalized= normalized.substring(1);</span>
-		}
-<span class="fc bfc" id="L143" title="All 2 branches covered.">		if (normalized.endsWith(&quot;.git&quot;)) { //$NON-NLS-1$</span>
-<span class="fc" id="L144">			normalized= normalized.substring(0, normalized.length() - 4);</span>
-		}
-<span class="pc bpc" id="L146" title="1 of 2 branches missed.">		if (normalized.isEmpty()) {</span>
-<span class="nc" id="L147">			throw new IllegalArgumentException(&quot;Repository name must not be blank.&quot;); //$NON-NLS-1$</span>
-		}
-<span class="fc" id="L149">		return normalized;</span>
+<span class="fc" id="L223">		return SandboxRepositoryNames.normalize(name);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
