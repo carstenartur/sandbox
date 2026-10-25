@@ -22,8 +22,8 @@ import java.util.Properties;
  * <ul>
  * <li>{@code JGIT_SEARCH_BACKEND} — backend type: {@code "lucene"}
  * (default, filesystem-based) or {@code "elasticsearch"}</li>
- * <li>{@code JGIT_SEARCH_HOSTS} — Elasticsearch host URL(s), e.g.
- * {@code "http://elasticsearch:9200"} (only used when backend is
+ * <li>{@code JGIT_SEARCH_HOSTS} — Elasticsearch host:port pair(s), e.g.
+ * {@code "elasticsearch:9200"} (only used when backend is
  * {@code "elasticsearch"})</li>
  * <li>{@code JGIT_SEARCH_USER} — Elasticsearch username (optional)</li>
  * <li>{@code JGIT_SEARCH_PASSWORD} — Elasticsearch password

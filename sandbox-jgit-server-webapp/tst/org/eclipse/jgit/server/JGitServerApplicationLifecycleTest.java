@@ -19,6 +19,7 @@ import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jgit.server.config.ServerPersistenceContext;
+import org.eclipse.jgit.server.history.SandboxHistorySearch;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.hibernate.SessionFactory;
 import org.junit.Test;
@@ -39,6 +40,15 @@ public class JGitServerApplicationLifecycleTest {
 			public SandboxRepositoryService repositoryService() {
 				throw new AssertionError("Repository service must not be requested after factory failure"); //$NON-NLS-1$
 			}
+
+			@Override
+			public SandboxHistorySearch historySearch() {
+				throw new AssertionError("History must not be requested after factory failure");
+			}
+
+            @Override public org.eclipse.jgit.server.search.SandboxSourceSearch sourceSearch() { throw new AssertionError(); }
+            @Override public org.eclipse.jgit.server.history.SandboxFileHistory fileHistory() { throw new AssertionError(); }
+            @Override public org.eclipse.jgit.server.repository.SandboxStorageStatistics storageStatistics() { throw new AssertionError(); }
 
 			@Override
 			public void close() {

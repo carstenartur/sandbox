@@ -68,11 +68,11 @@ public final class PdeXmlCleanupMarkerService {
 		SchemaTransformationUtils.IndentationFinding finding=
 				SchemaTransformationUtils.firstConvertibleMarkupIndentation(source);
 		if (finding != null) {
-			int lineEnd= source.indexOf('\n', finding.offset());
-			String candidateLine= source.substring(finding.offset(), lineEnd < 0 ? source.length() : lineEnd);
+			int markupStart= source.indexOf('<', finding.offset());
+			String candidatePrefix= source.substring(finding.offset(), markupStart + 1);
 			// A lexical match may belong to a preserved text subtree. Prefer a file-level
-			// marker if that line survives unchanged anywhere in the prepared output.
-			if (transformation.transformedContent().contains(candidateLine)) {
+			// marker if its indentation survives, even when serialization changes the tag.
+			if (transformation.transformedContent().contains(candidatePrefix)) {
 				finding= null;
 			}
 		}

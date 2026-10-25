@@ -21,7 +21,7 @@ services:
 
   # --- Elasticsearch (Hibernate Search Backend) ---
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.12
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -55,7 +55,8 @@ services:
       JGIT_DB_DRIVER: "com.microsoft.sqlserver.jdbc.SQLServerDriver"
       # Hibernate Search / Elasticsearch
       JGIT_SEARCH_BACKEND: "elasticsearch"
-      JGIT_SEARCH_HOSTS: "http://elasticsearch:9200"
+      JGIT_SEARCH_HOSTS: "elasticsearch:9200"
+      JGIT_SEARCH_PROTOCOL: "http"
       # App
       JGIT_DEFAULT_REPOS: "test-repo,demo-repo"
       JGIT_REST_PORT: "8080"

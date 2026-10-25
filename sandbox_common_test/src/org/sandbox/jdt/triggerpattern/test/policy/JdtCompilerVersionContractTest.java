@@ -45,11 +45,6 @@ public class JdtCompilerVersionContractTest {
 	}
 
 	@Test
-	public void jgitCompilerDependencyInheritsTheManagedVersion() throws Exception {
-		assertInheritsVersion("sandbox-jgit-storage-hibernate/pom.xml", "ecj"); //$NON-NLS-1$ //$NON-NLS-2$
-	}
-
-	@Test
 	public void standaloneTestsInheritTheRuntimeJdtCoreVersion() throws Exception {
 		assertInheritsVersion("sandbox_common_test/pom.xml", "org.eclipse.jdt.core"); //$NON-NLS-1$ //$NON-NLS-2$
 	}

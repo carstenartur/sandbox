@@ -19,10 +19,8 @@ import io.github.carstenartur.jgit.storage.hibernate.config.CoreEntities;
  * Sandbox-owned integration boundary to the released generic storage library.
  *
  * <p>New Sandbox code must enter database-backed Git storage through public
- * {@code io.github.carstenartur.jgit.storage.hibernate} APIs. The copied
- * {@code org.eclipse.jgit.storage.hibernate} implementation remains only as a
- * temporary migration source until its callers and Sandbox-specific services
- * have been separated.</p>
+ * {@code io.github.carstenartur.jgit.storage.hibernate} APIs. The bridge owns no
+ * storage implementation, Search projection, Java parser or model lifecycle.</p>
  */
 public final class JGitStorageLibraryBoundary {
 

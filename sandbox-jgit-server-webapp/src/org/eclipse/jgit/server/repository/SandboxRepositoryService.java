@@ -17,8 +17,23 @@ import org.eclipse.jgit.lib.Repository;
 /** Application-owned repository lifecycle boundary for REST and Smart HTTP. */
 public interface SandboxRepositoryService extends AutoCloseable {
 
-	/** Opens the supplied repository identity, normalizing and creating it when absent. */
+	/** Opens the identity, creating it when absent; the returned handle is borrowed and must not be closed. */
 	Repository openOrCreate(String name) throws IOException;
+
+	/**
+	 * Reads an existing identity without creating it. The callback must not retain or close the
+	 * borrowed repository, or close this service. Released Core denies ref publication through
+	 * this handle; the callback still belongs to trusted application code.
+	 */
+	default <T> T withExistingRepository(String name, RepositoryRead<T> read) throws IOException {
+		throw new UnsupportedOperationException("Existing-only reads require the released Core backend.");
+	}
+
+	/** A scoped application read which may use JGit's checked IO operations. */
+	@FunctionalInterface
+	interface RepositoryRead<T> {
+		T read(Repository repository) throws IOException;
+	}
 
 	/** Normalizes, opens or creates a repository and returns stable application metadata. */
 	SandboxRepositoryInfo info(String name) throws IOException;
@@ -29,8 +44,8 @@ public interface SandboxRepositoryService extends AutoCloseable {
 	/**
 	 * Deletes a closed logical repository when the selected backend supports coordinated deletion.
 	 *
-	 * <p>The released Core adapter overrides this operation. The copied transition backend deliberately
-	 * keeps deletion disabled until normal startup has completed the Core cut-over.</p>
+	 * <p>The released Core adapter overrides this operation. REST deletion remains disabled;
+     * callers must use the separately authorized application lifecycle operation.</p>
 	 */
 	default SandboxRepositoryDeletionResult delete(String name) throws IOException {
 		throw new UnsupportedOperationException("Repository deletion requires the released Core backend."); //$NON-NLS-1$

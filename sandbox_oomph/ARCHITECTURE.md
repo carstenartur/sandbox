@@ -22,7 +22,7 @@ The separately pinned upstream JDT QA models retain their own Eclipse 4.40 produ
 3. TargetPlatformTask resolves and activates `sandbox_target/eclipse.target` by its existing target name.
 4. MavenImportTask imports the Java/Maven consumers against that active target.
 5. The broad ProjectsImportTask discovers remaining Eclipse projects.
-6. ProjectsBuildTask explicitly builds newly imported projects after both imports and target activation.
+6. After completing the setup workspace operation, Oomph's SetupTaskPerformer runs the normal automatic build and restores the workspace's automatic-build preference.
 
 Explicit predecessor references enforce the target-before-consumers dependency. This avoids using the running IDE as a
 provisional target while Java projects are being imported. It does not create external-folder links manually or disable
@@ -34,11 +34,15 @@ with previously imported projects, so the broad Eclipse import must still follow
 again and remains the recovery path for an interrupted/partial import. Existing task IDs and public catalog entry points remain.
 `OomphTargetBootstrapTest` checks the limited non-Java bootstrap, dependency graph, retained Maven discovery and public identity;
 it is a configuration regression, not a substitute for fresh provisioning and repeated native manual setup.
-The build task uses `onlyNewProjects` so repeated manual setup does not force a full
-rebuild of every existing project. Existing projects retain the workspace's normal
-automatic/incremental build policy. This avoids repeatedly deleting and regenerating
-Maven bundle manifests during one forced workspace build: PDE can retain stale
-unresolved-bundle markers even after its resolver has found the regenerated bundle.
+The setup relies on Oomph's existing post-task automatic build, which runs after the
+workspace operation has published the imported resource changes. It does not add a
+ProjectsBuildTask: that task forces FULL_BUILD inside the setup workspace operation,
+even with `onlyNewProjects` on a fresh import. The full build deletes and regenerates
+Maven bundle manifests while PDE is processing the import. Failed acceptance runs
+have retained unresolved-bundle markers and null consumer suppliers despite the
+generated provider models being present and resolved. Avoiding the redundant full
+build leaves fresh and repeated manual setup on the normal automatic/incremental
+build path. Existing workspaces retain their automatic-build preference.
 An explicit second Maven source locator imports this standalone verification module because m2e follows root-POM modules.
 Maven discovery excludes the root artifact `central`; Eclipse import keeps its existing project name `sandbox`, avoiding
 two differently named projects at the same repository location.
@@ -71,6 +75,9 @@ workspace builds those updates schedule until both have settled. It repeats that
 barrier after saving the workspace and reading its target, since those operations
 can enqueue another build. Failed checks
 include generated-bundle manifest/model state and pending-job diagnostics.
+The probe also requires compiled class outputs for the generated-bundle providers
+and affected consumers, so a workspace that never built cannot pass merely because
+it has no error markers.
 The disposable batch installation supplies the wizard's license-confirmation callback; the public setup retains normal interactive license confirmation.
 During task execution it also temporarily uses p2's existing director batch UI service for signed content from
 `download.eclipse.org` and `archive.eclipse.org`. The one unsigned legacy dependency, `jakarta.xml.bind`

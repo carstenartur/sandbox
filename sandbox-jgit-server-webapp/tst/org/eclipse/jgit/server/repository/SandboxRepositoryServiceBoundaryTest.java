@@ -25,7 +25,7 @@ import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
 import org.eclipse.jgit.server.rest.AdminResource;
 import org.eclipse.jgit.server.rest.AnalyticsResource;
 import org.eclipse.jgit.server.rest.HealthResource;
-import org.eclipse.jgit.server.rest.NativeSearchResource;
+import org.eclipse.jgit.server.rest.SearchResource;
 import org.eclipse.jgit.server.rest.RepositoryResource;
 import org.hibernate.SessionFactory;
 import org.junit.Test;
@@ -43,10 +43,9 @@ public class SandboxRepositoryServiceBoundaryTest {
 		assertEquals(SandboxRepositoryDeletionResult.class, delete.getReturnType());
 		assertNotNull(RepositoryResource.class.getConstructor(SandboxRepositoryService.class));
 		assertNotNull(HibernateRepositoryResolver.class.getConstructor(SandboxRepositoryService.class));
-		assertNotNull(HibernateRepositoryResolver.class.getConstructor(SessionFactory.class));
-		assertNotNull(HealthResource.class.getConstructor(SessionFactory.class));
-		assertNotNull(NativeSearchResource.class.getConstructor(SessionFactory.class));
-		assertNotNull(AnalyticsResource.class.getConstructor(SessionFactory.class));
+		assertNotNull(HealthResource.class.getConstructor(SessionFactory.class, org.eclipse.jgit.server.history.SandboxHistorySearch.class));
+		assertNotNull(SearchResource.class.getConstructor(org.eclipse.jgit.server.history.SandboxHistorySearch.class, org.eclipse.jgit.server.history.SandboxFileHistory.class, org.eclipse.jgit.server.search.SandboxSourceSearch.class));
+		assertNotNull(AnalyticsResource.class.getConstructor(org.eclipse.jgit.server.history.SandboxHistorySearch.class, SandboxStorageStatistics.class));
 		assertNotNull(AdminResource.class.getConstructor(SessionFactory.class));
 		assertNotNull(ExternalHibernateRepositoryService.class.getConstructor(HibernateRepositoryFactory.class));
 		assertEquals(SessionFactory.class,
@@ -58,7 +57,7 @@ public class SandboxRepositoryServiceBoundaryTest {
 		assertFalse(hasCopiedBackendField(JGitServerApplication.class));
 		assertFalse(hasCopiedBackendField(RepositoryResource.class));
 		assertFalse(hasCopiedBackendField(HealthResource.class));
-		assertFalse(hasCopiedBackendField(NativeSearchResource.class));
+		assertFalse(hasCopiedBackendField(SearchResource.class));
 		assertFalse(hasCopiedBackendField(AnalyticsResource.class));
 		assertFalse(hasCopiedBackendField(AdminResource.class));
 		assertFalse(hasCopiedBackendField(ExternalHibernateRepositoryService.class));

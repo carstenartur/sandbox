@@ -6,7 +6,7 @@ Sandbox currently contains the pre-library JGit/Hibernate schema. Do not switch 
 
 The published pre-library adoption migrations in `jgit-storage-hibernate-core:0.1.15` support PostgreSQL, HSQLDB and Microsoft SQL Server. The maintenance command rejects H2 and every other JDBC family before opening a connection. A schema-shape check must not be presented as migration eligibility when no matching published Flyway location exists.
 
-The shaded server JAR contains the PostgreSQL, HSQLDB and SQL Server JDBC drivers required by the supported paths. SQL Server support applies to Core storage only; `jgit-storage-hibernate-search` does not yet publish SQL Server migrations.
+The shaded server JAR contains the JDBC drivers and Flyway database modules for PostgreSQL, HSQLDB and SQL Server. Released Search includes H2, PostgreSQL and SQL Server migrations; HSQLDB Search installation is available from 0.11.6. H2 remains a fresh-installation path only: no pre-library H2 adoption stream is published.
 
 ## Safety boundary
 
@@ -32,7 +32,7 @@ The command is not a migration. A successful report only establishes that the da
 3. Record repository and pack counts, ordered SHA-256 checksums of every `git_packs.data` value, refs and complete reflog rows including timestamps.
 4. Use a restored production-like database first. Do not make the initial attempt against the only production copy.
 5. Confirm the JDBC family and select only its matching `CoreSchemaMigrations` location. Never run PostgreSQL or HSQLDB SQL against SQL Server.
-6. Keep Search disabled during the Core cut-over on SQL Server; it has no released SQL Server migration contract.
+6. Plan a separate Search installation after Core adoption. The copied `git_commit_index` is incompatible with released Search and must be explicitly archived, including conflicting index/constraint names, before installing the released projection. Never baseline the copied table as a released Search schema.
 
 ## Build and run
 
@@ -117,29 +117,85 @@ Before enabling writers:
 
 Rollback is database restore plus the previous application artifact; no reverse migration is assumed.
 
-## Prepared external-Core runtime boundary
+## Search installation after Core adoption
+
+Keep writers stopped. Archive the copied commit projection without deleting its rows.
+For HSQLDB, the exercised table/index rename is:
+
+```sql
+ALTER TABLE git_commit_index RENAME TO sandbox_legacy_commit_index;
+ALTER INDEX idx_commit_repo RENAME TO sandbox_legacy_commit_repo;
+ALTER INDEX idx_commit_repo_time RENAME TO sandbox_legacy_commit_repo_time;
+```
+
+Check the actual schema for any additional conflicting constraint/index names before
+running the matching database's commands. PostgreSQL and SQL Server require their
+own reviewed DDL. Existing archived projection data is retained for rollback and
+comparison. The copied Java/file projection tables may remain as unused legacy data; the new runtime neither registers nor reads them.
+
+Install released Search from the selected artifact, with its separate history table:
+
+```java
+Flyway.configure()
+    .dataSource(dataSource)
+    .locations(SearchSchemaMigrations.HSQLDB_LOCATION)
+    .table(SearchSchemaMigrations.SCHEMA_HISTORY_TABLE)
+    .baselineOnMigrate(true)
+    .baselineVersion(SearchSchemaMigrations.PRE_MIGRATION_BASELINE_VERSION)
+    .failOnMissingLocations(true)
+    .load()
+    .migrate();
+```
+
+Use `POSTGRESQL_LOCATION` or `SQL_SERVER_LOCATION` for those database families.
+The baseline here is **0**, allowing all new Search SQL to run alongside already
+migrated Core; it does not adopt the old copied projection. After the SQL migration, initialize each **recorded existing repository identity**
+once through the released `DefaultHibernateRepositoryFactory.open` API and close
+the returned storage handle. This establishes the per-repository lock metadata;
+the normal migration backfills lifecycle identities but does not create every lock
+row. Existing-only secured readers deliberately reject this incomplete state rather
+than writing missing metadata. Confirm the original refs and pack checksums during
+this operator step; do not substitute guessed names or use it as a discovery API.
+
+Reconstruct Search
+from Git using the released `CommitProjectionRebuilder`, with projection writers
+stopped. Refreshing Lucene from ORM rows alone does not restore missing SQL rows.
+
+`ReleasedSchemaAdoptionHsqlTest` rehearses this sequence against a file database
+restored from a pinned SQL/BLOB snapshot written by the copied backend. The
+[fixture provenance](../sandbox-jgit-server-webapp/tst-rsrc/fixtures/README.md)
+records its original commit and export/restore procedure. Test setup no longer
+starts the copied backend. It records inline-pack SHA-256 checksums, the entire
+SQL reflog and copied projection rows; closes/reopens the database; applies the
+published adoption and regular streams; archives Search; validates the new schema;
+reads the original ref/commit/reflog; rebuilds Search; restarts and performs a new
+released-backend ref update. This is disposable HSQLDB evidence, not evidence that
+any production database or another database family has been migrated.
+
+## Prepared released runtime boundary
 
 After the database-specific adoption or installation has established the normal Core Flyway history, application code can explicitly construct the prepared runtime boundary with:
 
 ```java
 ServerPersistenceContext context =
-    HibernateConfig.createExternalPersistenceContext(properties);
+    HibernateConfig.createPersistenceContext(properties);
 ```
 
-This factory is deliberately separate from the normal server startup path. Before Hibernate starts, it requires:
+This is the normal server startup factory. Before Hibernate starts, it requires:
 
-- `hibernate.hbm2ddl.auto=validate` exactly;
-- the normal `jgit_storage_hibernate_core_schema_history` table in the selected schema;
-- no unsuccessful row in that history;
-- at least one successful versioned Core migration.
+- `hibernate.hbm2ddl.auto=validate` exactly and no competing Jakarta/legacy Javax database or script schema-generation actions, including `none`, or contributor-specific action overrides; the checked snapshot includes Hibernate's inherited JVM/classpath settings and is passed to bootstrap unchanged;
+- a supported matching Core/Search migration pair for the JDBC family;
+- completed SQL migrations in both dedicated Flyway histories, with no pending migrations, failed rows, unknown future versions or checksum mismatches;
+- histories in the configured schema (no fallback to another schema).
 
-The subsequent Hibernate bootstrap performs the definitive physical-schema validation. The startup guard neither runs Flyway nor repairs a history table.
-
-The external context registers the released `CoreEntities` exactly once and adds only the explicitly reviewed Sandbox projections `GitCommitIndex`, `JavaBlobIndex` and `FilePathHistory`. It deliberately excludes:
-
-- the copied `GitPackEntity` and `GitReflogEntity`, whose Hibernate entity names collide with released Core mappings;
-- the copied `GitObjectEntity` and `GitRefEntity`, because the released pack/reftable backend does not maintain those legacy tables.
+The read-only Flyway verifier calls only `info` and `validate`. It performs no
+migration, baseline, repair or schema creation. Embedded double quotes in a schema
+name are rejected before connecting because the selected Flyway driver does not
+escape them correctly; ordinary quoted identifiers such as `tenant-one` are tested.
+Hibernate then validates the physical mappings. The context registers released Core
+and Search once. Historical Java/file queries use Git-derived application generations;
+no copied Core, Search or Java projection entities are registered.
 
 Repository handles are served through `ExternalHibernateRepositoryService` and closed before the application-owned `SessionFactory`. This makes the Core lifecycle executable without leaking the external implementation into REST or Smart HTTP callers.
 
-Normal `JGitServerApplication` startup still selects the copied persistence context. Activating the external context globally remains blocked until Search, analytics and Java-analysis queries no longer depend on copied Core/query entities and their schema/data transition has independent integration evidence. No environment switch is provided that could bypass this boundary accidentally.
+Normal `JGitServerApplication` startup uses this released persistence context. It does not run adoption migrations or delete archived derived tables. `--initialize-empty-schema` is only for a completely empty schema and refuses existing tables/views. Operator adoption remains necessary for deployed legacy databases; the frozen HSQLDB fixture qualifies the documented rehearsal independently of the removed copied implementation.

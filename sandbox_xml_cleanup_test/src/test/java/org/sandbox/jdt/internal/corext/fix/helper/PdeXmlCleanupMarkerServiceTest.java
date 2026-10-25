@@ -164,6 +164,25 @@ class PdeXmlCleanupMarkerServiceTest {
 	}
 
 	@Test
+	void markerDoesNotHighlightPreservedIndentationWhenTagSerializationChanges() throws Exception {
+		String source= "<?xml version=\"1.0\" encoding=\"UTF-8\"?><schema><annotation><documentation>\n" //$NON-NLS-1$
+				+ "    <b />\n</documentation></annotation></schema>"; //$NON-NLS-1$
+		IFile file= createFile("schema/documentation.exsd", source); //$NON-NLS-1$
+		PdeXmlCleanupMarkerService service= new PdeXmlCleanupMarkerService();
+
+		String transformed= SchemaTransformationUtils.transform(source, StandardCharsets.UTF_8, false);
+		assertTrue(transformed.contains("\n    <b/>\n")); //$NON-NLS-1$
+		assertEquals(1, service.refresh(file, monitor));
+		IMarker[] markers= file.findMarkers(PdeXmlCleanupMarkerService.MARKER_TYPE,
+				false, IResource.DEPTH_ZERO);
+		assertEquals(1, markers.length);
+		assertEquals(-1, markers[0].getAttribute(IMarker.LINE_NUMBER, -1));
+		assertEquals(-1, markers[0].getAttribute(IMarker.CHAR_START, -1));
+		assertEquals(-1, markers[0].getAttribute(IMarker.CHAR_END, -1));
+		assertEquals(source, read(file));
+	}
+
+	@Test
 	void projectAnalysisCoversRootDescriptorsAndSchemaDirectoriesOnly() throws Exception {
 		createFile("plugin.xml", SOURCE.replace("schema", "plugin")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		createFile("schema/extension.exsd", SOURCE); //$NON-NLS-1$

@@ -13,11 +13,9 @@ package org.eclipse.jgit.server.config;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,15 +25,47 @@ import org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService;
 import org.hibernate.SessionFactory;
 import org.junit.Test;
 
-import io.github.carstenartur.jgit.storage.hibernate.schema.CoreSchemaMigrations;
+import io.github.carstenartur.jgit.storage.hibernate.search.SearchEntities;
+import io.github.carstenartur.jgit.storage.hibernate.search.analysis.GitTextAnalysis;
+import io.github.carstenartur.jgit.storage.hibernate.search.service.GitHistorySearchService;
+import io.github.carstenartur.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 
-/** Integration contracts for the prepared external-Core persistence context. */
+/** Integration contracts for the default released persistence context. */
 public class ExternalServerPersistenceContextTest {
 
 	private static final AtomicInteger DATABASE_COUNTER= new AtomicInteger();
 
 	@Test
-	public void registersReleasedCoreAndOnlyCompatibleSandboxProjections()
+	public void preservesExplicitTextProfilesWithOrWithoutAConfigurer() {
+		for (boolean customConfigurer : List.of(false, true)) {
+			Properties properties= properties(databaseUrl(), "create-drop");
+			if (!customConfigurer) {
+				properties.remove(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY);
+			}
+			properties.setProperty(GitTextAnalysis.PROFILE_ID_PROPERTY, "neutral-standard-v1");
+			try (ServerPersistenceContext context= new ExternalServerPersistenceContext(properties)) {
+				assertEquals("neutral-standard-v1", context.sessionFactory().getProperties()
+						.get(GitTextAnalysis.PROFILE_ID_PROPERTY));
+				assertEquals(customConfigurer ? "class:org.eclipse.jgit.server.history.SandboxHistoryAnalysisConfigurer" : null,
+                        context.sessionFactory().getProperties().get(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY));
+				context.historySearch().checkSearch();
+			}
+		}
+	}
+
+	@Test
+	public void closesOwnedFactoryWhenSearchConfigurationRejectsStartup() {
+		Properties properties= properties(databaseUrl(), "create-drop");
+		properties.setProperty(GitHistorySearchService.MAX_OFFSET_PROPERTY, "invalid");
+		try (var owner= new HibernateSessionFactoryProvider(properties, SearchEntities.annotatedClasses())) {
+			SessionFactory sessionFactory= owner.getSessionFactory();
+			assertThrows(IllegalArgumentException.class, () -> new ExternalServerPersistenceContext(owner));
+			assertTrue("A rejected context must release its already-created factory", sessionFactory.isClosed());
+		}
+	}
+
+	@Test
+	public void registersOnlyReleasedCoreAndSearchEntities()
 			throws Exception {
 		Properties properties= properties(databaseUrl(), "create-drop"); //$NON-NLS-1$
 		SessionFactory sessionFactory;
@@ -53,9 +83,7 @@ public class ExternalServerPersistenceContextTest {
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitReflogEntity", //$NON-NLS-1$
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitRepositoryLifecycleEntity", //$NON-NLS-1$
 					"io.github.carstenartur.jgit.storage.hibernate.entity.GitRepositoryLockEntity", //$NON-NLS-1$
-					"org.eclipse.jgit.storage.hibernate.entity.FilePathHistory", //$NON-NLS-1$
-					"org.eclipse.jgit.storage.hibernate.entity.GitCommitIndex", //$NON-NLS-1$
-					"org.eclipse.jgit.storage.hibernate.entity.JavaBlobIndex"), //$NON-NLS-1$
+					"io.github.carstenartur.jgit.storage.hibernate.search.entity.GitCommitIndex"), //$NON-NLS-1$
 					entityNames);
 			assertFalse(entityNames.contains(
 					"org.eclipse.jgit.storage.hibernate.entity.GitPackEntity")); //$NON-NLS-1$
@@ -82,12 +110,10 @@ public class ExternalServerPersistenceContextTest {
 	public void guardedFactoryStartsOnlyAfterSchemaAndHistoryExist()
 			throws Exception {
 		String url= databaseUrl();
-		Properties createProperties= properties(url, "create"); //$NON-NLS-1$
-		try (ServerPersistenceContext ignored=
-				new ExternalServerPersistenceContext(createProperties)) {
-			// Disposable test bootstrap creates the exact mapped schema.
-		}
-		createSuccessfulHistory(createProperties);
+		Properties createProperties= properties(url, "update");
+		ReleasedSchemaHistoryTest.core(createProperties).migrate();
+		ReleasedSchemaHistoryTest.search(createProperties).migrate(); //$NON-NLS-1$
+
 
 		Properties validateProperties= properties(url, "validate"); //$NON-NLS-1$
 		try (ServerPersistenceContext context= HibernateConfig
@@ -109,7 +135,7 @@ public class ExternalServerPersistenceContextTest {
 		properties.setProperty("hibernate.search.backend.type", "lucene"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.search.backend.directory.type", "local-heap"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.search.backend.analysis.configurer", //$NON-NLS-1$
-				"class:org.eclipse.jgit.storage.hibernate.search.JavaSourceAnalysisConfigurer"); //$NON-NLS-1$
+				"class:org.eclipse.jgit.server.history.SandboxHistoryAnalysisConfigurer"); //$NON-NLS-1$
 		properties.setProperty("hibernate.cache.use_second_level_cache", "false"); //$NON-NLS-1$ //$NON-NLS-2$
 		properties.setProperty("hibernate.connection.provider_class", //$NON-NLS-1$
 				"org.hibernate.engine.jdbc.connections.internal.DriverManagerConnectionProviderImpl"); //$NON-NLS-1$
@@ -121,20 +147,4 @@ public class ExternalServerPersistenceContextTest {
 				+ DATABASE_COUNTER.incrementAndGet() + ";DB_CLOSE_DELAY=-1"; //$NON-NLS-1$
 	}
 
-	private static void createSuccessfulHistory(Properties properties)
-			throws Exception {
-		Class.forName(properties.getProperty("hibernate.connection.driver_class")); //$NON-NLS-1$
-		try (Connection connection= DriverManager.getConnection(
-				properties.getProperty("hibernate.connection.url"), //$NON-NLS-1$
-				properties.getProperty("hibernate.connection.username"), //$NON-NLS-1$
-				properties.getProperty("hibernate.connection.password")); //$NON-NLS-1$
-				Statement statement= connection.createStatement()) {
-			statement.execute("CREATE TABLE " //$NON-NLS-1$
-					+ CoreSchemaMigrations.SCHEMA_HISTORY_TABLE
-					+ " (installed_rank INT PRIMARY KEY, version VARCHAR(50), success BOOLEAN NOT NULL)"); //$NON-NLS-1$
-			statement.execute("INSERT INTO " //$NON-NLS-1$
-					+ CoreSchemaMigrations.SCHEMA_HISTORY_TABLE
-					+ " (installed_rank, version, success) VALUES (1, '0.1.15', TRUE)"); //$NON-NLS-1$
-		}
-	}
 }

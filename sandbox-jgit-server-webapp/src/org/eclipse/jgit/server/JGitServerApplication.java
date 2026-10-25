@@ -32,13 +32,15 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.server.config.HibernateConfig;
 import org.eclipse.jgit.server.config.RepositoryManagerConfig;
 import org.eclipse.jgit.server.config.ServerPersistenceContext;
+import org.eclipse.jgit.server.history.SandboxHistorySearch;
+import org.eclipse.jgit.server.history.SandboxHistoryMaintenance;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.eclipse.jgit.server.resolver.HibernateRepositoryResolver;
 import org.eclipse.jgit.server.rest.AdminResource;
 import org.eclipse.jgit.server.rest.AnalyticsResource;
 import org.eclipse.jgit.server.rest.CorsFilter;
 import org.eclipse.jgit.server.rest.HealthResource;
-import org.eclipse.jgit.server.rest.NativeSearchResource;
+import org.eclipse.jgit.server.rest.SearchResource;
 import org.eclipse.jgit.server.rest.RepositoryResource;
 import org.eclipse.jgit.transport.ReceivePack;
 import org.eclipse.jgit.transport.resolver.ReceivePackFactory;
@@ -59,14 +61,48 @@ public class JGitServerApplication {
 	private HibernateRepositoryResolver repositoryResolver;
 
 	public static void main(String[] args) throws Exception {
+		if (args.length == 1 && "--help".equals(args[0])) {
+			System.out.println("Usage: java -jar jgit-server.jar [--initialize-empty-schema]");
+			System.out.println("Normal startup validates an existing Core/Search schema. The explicit flag initializes an empty schema and starts the server.");
+			return;
+		}
+		boolean initialize = args.length == 1 && "--initialize-empty-schema".equals(args[0]);
+		if (args.length != 0 && !initialize) throw new IllegalArgumentException("Expected --initialize-empty-schema, --help, or no arguments");
 		JGitServerApplication app = new JGitServerApplication();
-		app.start();
-		app.join();
+		Thread shutdown = new Thread(() -> {
+			try { app.stop(); }
+			catch (Exception failure) { LOG.log(Level.SEVERE, "Cannot stop JGit server", failure); }
+		}, "jgit-server-shutdown");
+		try {
+			try {
+				// Publish the hook and acquire startup resources under the same monitor.
+				// Shutdown must not finish before an in-flight bootstrap publishes its owner.
+				synchronized (app) {
+					Runtime.getRuntime().addShutdownHook(shutdown);
+					app.start(initialize);
+				}
+				app.join();
+			} catch (Exception | Error failure) {
+				try { app.stop(); }
+				catch (Exception | Error cleanup) { failure.addSuppressed(cleanup); }
+				throw failure;
+			}
+			app.stop();
+		} finally {
+			try { Runtime.getRuntime().removeShutdownHook(shutdown); }
+			catch (IllegalStateException shuttingDown) { /* The JVM is already running the hook. */ }
+		}
 	}
 
 	/** Starts the configured production server. */
 	public void start() throws Exception {
-		start(HibernateConfig.createPersistenceContext(),
+		start(false);
+	}
+
+	private synchronized void start(boolean initialize) throws Exception {
+		Properties properties = HibernateConfig.buildProperties();
+		if (initialize) org.eclipse.jgit.server.config.ReleasedSchemaInitializer.initializeEmpty(properties);
+		start(HibernateConfig.createPersistenceContext(properties),
 				getIntEnv("JGIT_REST_PORT", DEFAULT_REST_PORT), //$NON-NLS-1$
 				getIntEnv("JGIT_GIT_PORT", DEFAULT_GIT_PORT), //$NON-NLS-1$
 				System.getenv("JGIT_CORS_ORIGINS"), //$NON-NLS-1$
@@ -74,8 +110,8 @@ public class JGitServerApplication {
 	}
 
 	/** Starts a test server from explicit Hibernate properties and dynamic ports. */
-	public void start(Properties hibernateProperties, int restPort, int gitPort) throws Exception {
-		start(HibernateConfig.createPersistenceContext(hibernateProperties), restPort, gitPort, null, null, false);
+	public synchronized void start(Properties hibernateProperties, int restPort, int gitPort) throws Exception {
+		start(HibernateConfig.createPersistenceContext(hibernateProperties), restPort, gitPort, null, null, true);
 	}
 
 	private void start(ServerPersistenceContext context, int restPort, int gitPort,
@@ -96,9 +132,9 @@ public class JGitServerApplication {
 			server.addConnector(gitConnector);
 
 			ContextHandlerCollection contexts= new ContextHandlerCollection();
-			contexts.addHandler(createRestContext("/api", corsOrigins, sessionFactory, repositories)); //$NON-NLS-1$
+			contexts.addHandler(createRestContext("/api", corsOrigins, sessionFactory, repositories, persistenceContext.historySearch(), persistenceContext.historyMaintenance())); //$NON-NLS-1$
 			if (exposeVersionedApi) {
-				contexts.addHandler(createRestContext("/api/v1", corsOrigins, sessionFactory, repositories)); //$NON-NLS-1$
+				contexts.addHandler(createRestContext("/api/v1", corsOrigins, sessionFactory, repositories, persistenceContext.historySearch(), persistenceContext.historyMaintenance())); //$NON-NLS-1$
 			}
 			contexts.addHandler(createGitContext());
 			GzipHandler gzip= new GzipHandler();
@@ -129,7 +165,8 @@ public class JGitServerApplication {
 	}
 
 	private ServletContextHandler createRestContext(String contextPath, String corsOrigins,
-			SessionFactory sessionFactory, SandboxRepositoryService repositories) {
+			SessionFactory sessionFactory, SandboxRepositoryService repositories, SandboxHistorySearch history,
+			SandboxHistoryMaintenance maintenance) {
 		ServletContextHandler context= new ServletContextHandler(ServletContextHandler.SESSIONS);
 		context.setContextPath(contextPath);
 		context.setVirtualHosts(List.of("@rest")); //$NON-NLS-1$
@@ -138,11 +175,11 @@ public class JGitServerApplication {
 					EnumSet.allOf(DispatcherType.class));
 		}
 
-		context.addServlet(new ServletHolder("health", new HealthResource(sessionFactory)), "/health"); //$NON-NLS-1$ //$NON-NLS-2$
+		context.addServlet(new ServletHolder("health", new HealthResource(sessionFactory, history, maintenance)), "/health"); //$NON-NLS-1$ //$NON-NLS-2$
 		context.addServlet(new ServletHolder("repos", new RepositoryResource(repositories)), "/repos/*"); //$NON-NLS-1$ //$NON-NLS-2$
-		context.addServlet(new ServletHolder("search", new NativeSearchResource(sessionFactory)), "/search/*"); //$NON-NLS-1$ //$NON-NLS-2$
-		context.addServlet(new ServletHolder("analytics", new AnalyticsResource(sessionFactory)), "/analytics/*"); //$NON-NLS-1$ //$NON-NLS-2$
-		context.addServlet(new ServletHolder("admin", new AdminResource(sessionFactory)), "/admin/*"); //$NON-NLS-1$ //$NON-NLS-2$
+		context.addServlet(new ServletHolder("search", new SearchResource(history, persistenceContext.fileHistory(), persistenceContext.sourceSearch())), "/search/*"); //$NON-NLS-1$ //$NON-NLS-2$
+		context.addServlet(new ServletHolder("analytics", new AnalyticsResource(history, persistenceContext.storageStatistics())), "/analytics/*"); //$NON-NLS-1$ //$NON-NLS-2$
+		context.addServlet(new ServletHolder("admin", new AdminResource(sessionFactory, maintenance, repositories)), "/admin/*"); //$NON-NLS-1$ //$NON-NLS-2$
 		return context;
 	}
 
@@ -150,19 +187,21 @@ public class JGitServerApplication {
 		ServletContextHandler context= new ServletContextHandler(ServletContextHandler.SESSIONS);
 		context.setContextPath("/git"); //$NON-NLS-1$
 		context.setVirtualHosts(List.of("@git")); //$NON-NLS-1$
-		context.addServlet(new ServletHolder(createGitServlet(repositoryResolver)), "/*"); //$NON-NLS-1$
+		context.addServlet(new ServletHolder(createGitServlet(repositoryResolver, persistenceContext.historyMaintenance())), "/*"); //$NON-NLS-1$
 		return context;
 	}
 
 	/** Waits for the server to stop. */
 	public void join() throws InterruptedException {
-		if (server != null) {
-			server.join();
+		Server running;
+		synchronized (this) { running= server; }
+		if (running != null) {
+			running.join();
 		}
 	}
 
 	/** Stops the server and closes the application-owned persistence context. */
-	public void stop() throws Exception {
+	public synchronized void stop() throws Exception {
 		Exception failure= null;
 		try {
 			if (server != null) {
@@ -209,7 +248,7 @@ public class JGitServerApplication {
 		return getPort("git"); //$NON-NLS-1$
 	}
 
-	private int getPort(String connectorName) {
+	private synchronized int getPort(String connectorName) {
 		if (server != null) {
 			for (var connector : server.getConnectors()) {
 				if (connector instanceof ServerConnector serverConnector
@@ -222,12 +261,12 @@ public class JGitServerApplication {
 	}
 
 	/** Returns the repository resolver used by the running application. */
-	public HibernateRepositoryResolver getRepositoryResolver() {
+	public synchronized HibernateRepositoryResolver getRepositoryResolver() {
 		return repositoryResolver;
 	}
 
 	/** Returns the application-owned native Hibernate factory. */
-	public SessionFactory getSessionFactory() {
+	public synchronized SessionFactory getSessionFactory() {
 		if (persistenceContext == null) {
 			throw new IllegalStateException("Server persistence context is not started"); //$NON-NLS-1$
 		}
@@ -247,9 +286,11 @@ public class JGitServerApplication {
 		return defaultValue;
 	}
 
-	private static ReceivePackFactory<HttpServletRequest> createReceivePackFactory() {
+	private static ReceivePackFactory<HttpServletRequest> createReceivePackFactory(SandboxHistoryMaintenance maintenance) {
 		return (request, repository) -> {
 			ReceivePack receivePack= new ReceivePack(repository);
+			String repositoryName = HibernateRepositoryResolver.repositoryName(request);
+			receivePack.setPostReceiveHook((pack, commands) -> maintenance.published(repositoryName, repository, commands));
 			long maxCommandBytes= 50L << 20;
 			String configured= System.getenv("JGIT_RECEIVE_MAX_COMMAND_BYTES"); //$NON-NLS-1$
 			if (configured != null && !configured.isEmpty()) {
@@ -266,10 +307,10 @@ public class JGitServerApplication {
 		};
 	}
 
-	private static GitServlet createGitServlet(HibernateRepositoryResolver resolver) {
+	private static GitServlet createGitServlet(HibernateRepositoryResolver resolver, SandboxHistoryMaintenance maintenance) {
 		GitServlet gitServlet= new GitServlet();
 		gitServlet.setRepositoryResolver(resolver);
-		gitServlet.setReceivePackFactory(createReceivePackFactory());
+		gitServlet.setReceivePackFactory(createReceivePackFactory(maintenance));
 		gitServlet.setReceivePackErrorHandler((request, response, receivePack) -> {
 			try {
 				receivePack.receive();

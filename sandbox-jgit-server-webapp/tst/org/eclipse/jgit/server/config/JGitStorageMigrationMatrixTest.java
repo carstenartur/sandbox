@@ -93,7 +93,7 @@ public class JGitStorageMigrationMatrixTest {
 				"org.eclipse.jgit.server.repository.SandboxRepositoryService.delete")); //$NON-NLS-1$
 		assertTrue(entrypoints.contains(
 				"org.eclipse.jgit.server.repository.ExternalHibernateRepositoryService.delete")); //$NON-NLS-1$
-		assertEquals("core-adapter-delete-policy-verified-runtime-cutover-pending", //$NON-NLS-1$
+		assertEquals("core-adapter-delete-policy-verified", //$NON-NLS-1$
 				deletion.get("migrationStatus").getAsString()); //$NON-NLS-1$
 		assertTrue(deletion.get("currentBackend").getAsString() //$NON-NLS-1$
 				.contains("REST deletion remains disabled")); //$NON-NLS-1$
