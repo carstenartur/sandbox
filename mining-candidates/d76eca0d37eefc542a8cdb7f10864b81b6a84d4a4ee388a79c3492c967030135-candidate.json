@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d76eca0d37eefc542a8cdb7f10864b81b6a84d4a4ee388a79c3492c967030135",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: remove-unnecessary-font-close-tag\u003e\n\u003c!description: Removes an unnecessary \u0027\u003c/font\u003e\u0027 close tag from HTML string literals appended to a StringBuffer.\u003e\n\u003c!severity: HINT\u003e\n\n$buffer.append(\"\u003c/font\u003e\u003c/body\u003e\u003c/html\u003e\")\n\u003d\u003e $buffer.append(\"\u003c/body\u003e\u003c/html\u003e\")\n;;",
+  "beforeExample": "class HtmlFormatter {\n    public void format(StringBuffer buffer) {\n        buffer.append(\"\u003chtml\u003e\u003cbody\u003e\u003cp\u003eSome text\u003c/p\u003e\u003c/font\u003e\u003c/body\u003e\u003c/html\u003e\");\n        buffer.append(\"\u003c/font\u003e\u003c/body\u003e\u003c/html\u003e\");\n    }\n}",
+  "afterExample": "class HtmlFormatter {\n    public void format(StringBuffer buffer) {\n        buffer.append(\"\u003chtml\u003e\u003cbody\u003e\u003cp\u003eSome text\u003c/p\u003e\u003c/font\u003e\u003c/body\u003e\u003c/html\u003e\");\n        buffer.append(\"\u003c/body\u003e\u003c/html\u003e\");\n    }\n}",
+  "negativeExample": "class OtherFormatter {\n    public void format(StringBuffer buffer) {\n        buffer.append(\"\u003c/body\u003e\u003c/html\u003e\"); // Already correct\n        buffer.append(\"\u003cdiv\u003eSome content\u003c/div\u003e\"); // Different string\n    }\n}",
+  "targetHintFile": "html-cleanups.sandbox-hint",
+  "sourceCommit": "f11adeb4570a6ce7e1e007a6becae454b732a9d4",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "String Literal Cleanup",
+  "summary": "Removes a redundant `\u003c/font\u003e` HTML tag from a specific string literal when appended to a `StringBuffer`, correcting malformed HTML output.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-25T02:29:18.426654530Z",
+  "ruleFingerprint": "sha256:872f100845b930cc51b93a8168457d249849b18d011cd05605d30a6199035d87",
+  "behaviorFingerprint": "sha256:366b653bc451d38926469b8e3094f3dd7d9ae15176d5cd53f5f92657721e0ebe",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-25T02:30:20.442176026Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

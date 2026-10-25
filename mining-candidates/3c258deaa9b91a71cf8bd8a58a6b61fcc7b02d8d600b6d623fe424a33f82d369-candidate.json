@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "3c258deaa9b91a71cf8bd8a58a6b61fcc7b02d8d600b6d623fe424a33f82d369",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: field.addFinalPrivateInitialized\u003e\n\u003c!description: Adds the final modifier to private fields that are initialized at declaration and are not already final.\u003e\n\u003c!severity: HINT\u003e\n\nprivate $Type $name \u003d $init :: !hasModifier($name, \"final\")\n\u003d\u003e private final $Type $name \u003d $init\n;;",
+  "beforeExample": "class MyClass {\n    private java.util.List\u003cString\u003e items \u003d new java.util.ArrayList\u003c\u003e();\n    private int count \u003d 0;\n    protected String label \u003d \"\";\n    private final String ID \u003d \"ABC\"; // Should not match\n}",
+  "afterExample": "class MyClass {\n    private final java.util.List\u003cString\u003e items \u003d new java.util.ArrayList\u003c\u003e();\n    private final int count \u003d 0;\n    protected String label \u003d \"\";\n    private final String ID \u003d \"ABC\";\n}",
+  "negativeExample": "class MyOtherClass {\n    private String name; // No initializer\n    public MyOtherClass() {\n        this.name \u003d \"John Doe\";\n    }\n    private static int staticCounter; // No initializer at declaration\n    static { staticCounter \u003d 5; }\n}",
+  "targetHintFile": "common-cleanups.sandbox-hint",
+  "sourceCommit": "445aff98a1f2f685eb60be6c7875928ca97ce1e7",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Modifier Cleanup",
+  "summary": "Adds the `final` modifier to private fields that are initialized at their declaration, improving immutability where appropriate.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-25T02:29:18.391608433Z",
+  "ruleFingerprint": "sha256:585180a83b738baaaef5b77e693c53b42d604d8bcabbebb75db1a55abbe8bba5",
+  "behaviorFingerprint": "sha256:49fe742c9a1e52bf7f4d81e53519c83eeaed6043a67d87e4c2ca3b56a127f162",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-25T02:30:20.425698363Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "dfec97070fef048265d5a13af7a307e0bd4a2e3592012af5e47d81debb6d3c79",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "if ($moveCursor || $rangeIndication \u003d\u003d null || $offset !\u003d $rangeIndication.getOffset() || $length !\u003d $rangeIndication.getLength())\n\u003d\u003e\nif ($rangeIndication \u003d\u003d null || $offset !\u003d $rangeIndication.getOffset() || $length !\u003d $rangeIndication.getLength())\n;;",
+  "beforeExample": "import org.eclipse.jface.text.IRegion;\n\nclass Example {\n    private SourceViewer fSourceViewer; \n\n    static class SourceViewer {\n        IRegion getRangeIndication() { return null; }\n        void setRangeIndication(int offset, int length, boolean moveCursor) {}\n        void setVisibleRegion(int offset, int length) {}\n    }\n\n    void someMethod(int offset, int length, boolean moveCursor) {\n        if (fSourceViewer \u003d\u003d null) {\n            fSourceViewer.setVisibleRegion(offset, length);\n        } else {\n            IRegion rangeIndication \u003d fSourceViewer.getRangeIndication();\n            if (moveCursor || rangeIndication \u003d\u003d null || offset !\u003d rangeIndication.getOffset() || length !\u003d rangeIndication.getLength()) {\n                fSourceViewer.setRangeIndication(offset, length, moveCursor);\n            }\n        }\n    }\n}",
+  "afterExample": "import org.eclipse.jface.text.IRegion;\n\nclass Example {\n    private SourceViewer fSourceViewer; \n\n    static class SourceViewer {\n        IRegion getRangeIndication() { return null; }\n        void setRangeIndication(int offset, int length, boolean moveCursor) {}\n        void setVisibleRegion(int offset, int length) {}\n    }\n\n    void someMethod(int offset, int length, boolean moveCursor) {\n        if (fSourceViewer \u003d\u003d null) {\n            fSourceViewer.setVisibleRegion(offset, length);\n        } else {\n            IRegion rangeIndication \u003d fSourceViewer.getRangeIndication();\n            if (rangeIndication \u003d\u003d null || offset !\u003d rangeIndication.getOffset() || length !\u003d rangeIndication.getLength()) {\n                fSourceViewer.setRangeIndication(offset, length, moveCursor);\n            }\n        }\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.text.IRegion;\n\nclass Example {\n    private SourceViewer fSourceViewer;\n\n    static class SourceViewer {\n        IRegion getRangeIndication() { return null; }\n        void setRangeIndication(int offset, int length, boolean moveCursor) {}\n        void setVisibleRegion(int offset, int length) {}\n    }\n\n    void someOtherMethod(int offset, int length, boolean moveCursor, boolean otherCondition) {\n        IRegion rangeIndication \u003d fSourceViewer.getRangeIndication();\n        // Different condition: should not match\n        if (moveCursor || otherCondition || rangeIndication \u003d\u003d null || offset !\u003d rangeIndication.getOffset() || length !\u003d rangeIndication.getLength()) {\n            fSourceViewer.setRangeIndication(offset, length, moveCursor);\n        }\n    }\n}",
+  "targetHintFile": "conditional.sandbox-hint",
+  "sourceCommit": "f46fa5c32553ff5bcd5e1f3eeadef978be2efec9",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Conditional Simplification",
+  "summary": "Removes the \u0027moveCursor\u0027 condition from a boolean \u0027if\u0027 expression.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-25T02:23:29.461611652Z",
+  "ruleFingerprint": "sha256:b036c663ba5786c2216db70144505ff48307dcedb510ea77648ace5d077c4c8d",
+  "behaviorFingerprint": "sha256:b6aa8f79a4ff8709ae1302889bc7a32135ddf5412d1b1091bc450c5c175b54d6",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-10-25T02:30:20.317837034Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
