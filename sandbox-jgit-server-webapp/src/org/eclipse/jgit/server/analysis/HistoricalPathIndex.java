@@ -45,12 +45,17 @@ final class HistoricalPathIndex implements Closeable {
   List<FileVersion> search(String canonicalName, String text, int offset, int limit) throws IOException {
     return index.search(new JavaFileSearchQuery(canonicalName, null, null, text,
         Map.of(JavaFileSearchField.PATH, 1f), offset, limit)).stream().map(hit ->
-            new FileVersion(hit.commitId(), hit.path(), hit.blobId(), hit.fileType(),
+            new FileVersion(hit.commitId(), hit.path(), hit.blobId(), fileType(hit.path()),
                 commits.get(hit.commitId()).authorTime())).toList();
   }
 
   @Override public void close() throws IOException { index.close(); }
   String repositoryName() { return repositoryName; }
+
+  private static String fileType(String path) {
+    int dot = path.lastIndexOf('.');
+    return dot < 0 ? "unknown" : path.substring(dot + 1).toLowerCase(Locale.ROOT);
+  }
 
   private static String documentId(String commitId, String path) {
     try {
@@ -87,10 +92,10 @@ final class HistoricalPathIndex implements Closeable {
               GitHistorySnapshot.checkInterrupted();
               if (tree != null && tree.next()) {
                 String path = tree.getPathString();
-                int dot = path.lastIndexOf('.');
-                String type = dot < 0 ? "unknown" : path.substring(dot + 1).toLowerCase(Locale.ROOT);
+                // This index searches paths only. Derive the legacy file type from the
+                // stored path when returning results; it need not fit an indexed keyword.
                 next = new JavaFileSearchDocument(name, documentId(commit.objectId(), path), commit.objectId(),
-                    tree.getObjectId(0).name(), path, "", type, Map.of(JavaFileSearchField.PATH, path));
+                    tree.getObjectId(0).name(), path, "", "", Map.of(JavaFileSearchField.PATH, path));
                 return true;
               }
               if (tree != null) { tree.close(); tree = null; }

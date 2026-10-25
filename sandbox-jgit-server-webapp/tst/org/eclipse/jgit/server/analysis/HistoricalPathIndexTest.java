@@ -62,6 +62,25 @@ public class HistoricalPathIndexTest {
     }
   }
 
+  @Test public void longLegacyFileTypeMetadataDoesNotPreventHistoricalPathSearch() throws Exception {
+    String directories = ("directory" + "x".repeat(190) + "/").repeat(170);
+    String path = "old.dir/" + directories + "LICENSE";
+    try (var git = new InMemoryRepository(new DfsRepositoryDescription("long-file-type"))) {
+      var first = ApplicationApiComparisonTest.commit(git, 1, Map.of(path, "license", "healthy.txt", "healthy"));
+      var second = ApplicationApiComparisonTest.commit(git, 2, Map.of("healthy.txt", "healthy"), first);
+      var commits = GitHistorySnapshot.read(git, List.of(second.name()));
+      try (var index = HistoricalPathIndex.build("repo", git, commits)) {
+        assertEquals(2, index.search("repo", "healthy", 0, 10).size());
+        var retained = index.search("repo", "LICENSE", 0, 10);
+        assertEquals(1, retained.size());
+        assertEquals(path, retained.getFirst().filePath());
+        assertEquals(first.name(), retained.getFirst().commitObjectId());
+        // Preserve the historical response convention without indexing it as a keyword.
+        assertEquals("dir/" + directories + "license", retained.getFirst().fileType());
+      }
+    }
+  }
+
   @Test public void interruptedAndMissingTreeBuildsFailWithoutLeakingTheLease() throws Exception {
     try (var git = new InMemoryRepository(new DfsRepositoryDescription("failure"))) {
       var missing = new GitHistorySnapshot.CommitView(ObjectId.zeroId().name(), ObjectId.zeroId().name(), null, null, null);
