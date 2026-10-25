@@ -101,67 +101,72 @@ final class ExternalServerPersistenceContext implements ServerPersistenceContext
 	}
 
 	@Override
+	public org.eclipse.jgit.server.history.SandboxFileHistory fileHistory() {
+<span class="fc" id="L105">		return new org.eclipse.jgit.server.history.ReleasedSandboxFileHistory(owner.getSessionFactory(), repositories);</span>
+	}
+
+	@Override
 	public void close() {
-<span class="fc" id="L105">		RuntimeException failure= null;</span>
+<span class="fc" id="L110">		RuntimeException failure= null;</span>
 		try {
-<span class="fc" id="L107">			repositories.close();</span>
-<span class="nc" id="L108">		} catch (RuntimeException exception) {</span>
-<span class="nc" id="L109">			failure= exception;</span>
-<span class="fc" id="L110">		}</span>
-		try {
-<span class="fc" id="L112">			owner.close();</span>
+<span class="fc" id="L112">			repositories.close();</span>
 <span class="nc" id="L113">		} catch (RuntimeException exception) {</span>
-<span class="nc bnc" id="L114" title="All 2 branches missed.">			if (failure == null) {</span>
-<span class="nc" id="L115">				failure= exception;</span>
+<span class="nc" id="L114">			failure= exception;</span>
+<span class="fc" id="L115">		}</span>
+		try {
+<span class="fc" id="L117">			owner.close();</span>
+<span class="nc" id="L118">		} catch (RuntimeException exception) {</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">			if (failure == null) {</span>
+<span class="nc" id="L120">				failure= exception;</span>
 			} else {
-<span class="nc" id="L117">				failure.addSuppressed(exception);</span>
+<span class="nc" id="L122">				failure.addSuppressed(exception);</span>
 			}
-<span class="fc" id="L119">		}</span>
-<span class="pc bpc" id="L120" title="1 of 2 branches missed.">		if (failure != null) {</span>
-<span class="nc" id="L121">			throw failure;</span>
+<span class="fc" id="L124">		}</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if (failure != null) {</span>
+<span class="nc" id="L126">			throw failure;</span>
 		}
-<span class="fc" id="L123">	}</span>
+<span class="fc" id="L128">	}</span>
 
 	private static Properties serverProperties(Properties properties) {
-<span class="fc" id="L126">		Properties copy= new Properties();</span>
-<span class="fc" id="L127">		copy.putAll(properties);</span>
+<span class="fc" id="L131">		Properties copy= new Properties();</span>
+<span class="fc" id="L132">		copy.putAll(properties);</span>
 
-<span class="fc" id="L129">		copy.putIfAbsent(&quot;hibernate.search.backend.type&quot;, LUCENE); //$NON-NLS-1$</span>
-<span class="fc" id="L130">		String backend= copy.getProperty(&quot;hibernate.search.backend.type&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L131" title="1 of 2 branches missed.">		if (LUCENE.equalsIgnoreCase(backend)) {</span>
-<span class="fc" id="L132">			copy.putIfAbsent(&quot;hibernate.search.backend.directory.type&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L134">		copy.putIfAbsent(&quot;hibernate.search.backend.type&quot;, LUCENE); //$NON-NLS-1$</span>
+<span class="fc" id="L135">		String backend= copy.getProperty(&quot;hibernate.search.backend.type&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L136" title="1 of 2 branches missed.">		if (LUCENE.equalsIgnoreCase(backend)) {</span>
+<span class="fc" id="L137">			copy.putIfAbsent(&quot;hibernate.search.backend.directory.type&quot;, //$NON-NLS-1$</span>
 					LOCAL_FILESYSTEM);
-<span class="fc bfc" id="L134" title="All 2 branches covered.">			if (LOCAL_FILESYSTEM.equalsIgnoreCase(copy.getProperty(</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">			if (LOCAL_FILESYSTEM.equalsIgnoreCase(copy.getProperty(</span>
 					&quot;hibernate.search.backend.directory.type&quot;))) { //$NON-NLS-1$
-<span class="fc" id="L136">				String root= System.getenv(&quot;JGIT_SEARCH_INDEX_DIR&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L137" title="3 of 4 branches missed.">				if (root == null || root.isBlank()) {</span>
-<span class="fc" id="L138">					root= &quot;jgit-search-index&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L141">				String root= System.getenv(&quot;JGIT_SEARCH_INDEX_DIR&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L142" title="3 of 4 branches missed.">				if (root == null || root.isBlank()) {</span>
+<span class="fc" id="L143">					root= &quot;jgit-search-index&quot;; //$NON-NLS-1$</span>
 				}
-<span class="fc" id="L140">				copy.putIfAbsent(&quot;hibernate.search.backend.directory.root&quot;, root); //$NON-NLS-1$</span>
+<span class="fc" id="L145">				copy.putIfAbsent(&quot;hibernate.search.backend.directory.root&quot;, root); //$NON-NLS-1$</span>
 			}
 		}
-<span class="fc bfc" id="L143" title="All 2 branches covered.">		if (!copy.containsKey(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY)</span>
-<span class="fc bfc" id="L144" title="All 2 branches covered.">				&amp;&amp; !copy.containsKey(GitTextAnalysis.PROFILE_ID_PROPERTY)) {</span>
-<span class="fc" id="L145">			GitTextAnalysis.configure(copy, SandboxHistoryAnalysisConfigurer.class, &quot;sandbox-commit-message-v1&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">		if (!copy.containsKey(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY)</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">				&amp;&amp; !copy.containsKey(GitTextAnalysis.PROFILE_ID_PROPERTY)) {</span>
+<span class="fc" id="L150">			GitTextAnalysis.configure(copy, SandboxHistoryAnalysisConfigurer.class, &quot;sandbox-commit-message-v1&quot;); //$NON-NLS-1$</span>
 		} else {
 			// An explicit profile without a configurer retains the library's neutral
 			// default message analysis; these named analyzers serve only legacy Java.
-<span class="fc" id="L149">			copy.putIfAbsent(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY,</span>
+<span class="fc" id="L154">			copy.putIfAbsent(GitTextAnalysis.BACKEND_CONFIGURER_PROPERTY,</span>
 					&quot;class:org.eclipse.jgit.storage.hibernate.search.JavaSourceAnalysisConfigurer&quot;); //$NON-NLS-1$
 		}
 
-<span class="fc" id="L153">		copy.putIfAbsent(&quot;hibernate.connection.provider_class&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L158">		copy.putIfAbsent(&quot;hibernate.connection.provider_class&quot;, //$NON-NLS-1$</span>
 				&quot;org.hibernate.hikaricp.internal.HikariCPConnectionProvider&quot;); //$NON-NLS-1$
-<span class="fc" id="L155">		copy.putIfAbsent(&quot;hibernate.hikari.minimumIdle&quot;, &quot;5&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L156">		copy.putIfAbsent(&quot;hibernate.hikari.maximumPoolSize&quot;, &quot;20&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L157">		copy.putIfAbsent(&quot;hibernate.hikari.idleTimeout&quot;, &quot;300000&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L158">		copy.putIfAbsent(&quot;hibernate.hikari.connectionTimeout&quot;, &quot;20000&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L159">		copy.putIfAbsent(&quot;hibernate.hikari.maxLifetime&quot;, &quot;1200000&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L160">		copy.putIfAbsent(&quot;hibernate.connection.handling_mode&quot;, //$NON-NLS-1$</span>
+<span class="fc" id="L160">		copy.putIfAbsent(&quot;hibernate.hikari.minimumIdle&quot;, &quot;5&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L161">		copy.putIfAbsent(&quot;hibernate.hikari.maximumPoolSize&quot;, &quot;20&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L162">		copy.putIfAbsent(&quot;hibernate.hikari.idleTimeout&quot;, &quot;300000&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L163">		copy.putIfAbsent(&quot;hibernate.hikari.connectionTimeout&quot;, &quot;20000&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L164">		copy.putIfAbsent(&quot;hibernate.hikari.maxLifetime&quot;, &quot;1200000&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L165">		copy.putIfAbsent(&quot;hibernate.connection.handling_mode&quot;, //$NON-NLS-1$</span>
 				&quot;DELAYED_ACQUISITION_AND_RELEASE_AFTER_TRANSACTION&quot;); //$NON-NLS-1$
-<span class="fc" id="L162">		copy.putIfAbsent(&quot;hibernate.cache.use_second_level_cache&quot;, &quot;true&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L163">		copy.putIfAbsent(&quot;hibernate.cache.region.factory_class&quot;, &quot;jcache&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L164">		return copy;</span>
+<span class="fc" id="L167">		copy.putIfAbsent(&quot;hibernate.cache.use_second_level_cache&quot;, &quot;true&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L168">		copy.putIfAbsent(&quot;hibernate.cache.region.factory_class&quot;, &quot;jcache&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L169">		return copy;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

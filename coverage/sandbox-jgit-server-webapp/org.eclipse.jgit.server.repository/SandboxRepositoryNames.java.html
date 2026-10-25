@@ -18,8 +18,8 @@ public final class SandboxRepositoryNames {
 <span class="fc bfc" id="L18" title="All 2 branches covered.">		if (normalized.endsWith(&quot;.git&quot;)) {</span>
 <span class="fc" id="L19">			normalized = normalized.substring(0, normalized.length() - 4);</span>
 		}
-<span class="pc bpc" id="L21" title="1 of 2 branches missed.">		if (normalized.isEmpty()) {</span>
-<span class="nc" id="L22">			throw new IllegalArgumentException(&quot;Repository name must not be blank.&quot;);</span>
+<span class="fc bfc" id="L21" title="All 2 branches covered.">		if (normalized.isEmpty()) {</span>
+<span class="fc" id="L22">			throw new IllegalArgumentException(&quot;Repository name must not be blank.&quot;);</span>
 		}
 <span class="fc" id="L24">		return normalized;</span>
 	}

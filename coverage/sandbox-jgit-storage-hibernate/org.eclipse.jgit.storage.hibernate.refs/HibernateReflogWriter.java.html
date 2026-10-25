@@ -64,25 +64,25 @@ public class HibernateReflogWriter {
 	 */
 	public void log(String refName, ObjectId oldId, ObjectId newId,
 			PersonIdent who, String message) {
-<span class="nc" id="L67">		GitReflogEntity entry = new GitReflogEntity();</span>
-<span class="nc" id="L68">		entry.setRepositoryName(repositoryName);</span>
-<span class="nc" id="L69">		entry.setRefName(refName);</span>
-<span class="nc bnc" id="L70" title="All 2 branches missed.">		entry.setOldId(oldId != null ? oldId.name() : ObjectId.zeroId().name());</span>
-<span class="nc bnc" id="L71" title="All 2 branches missed.">		entry.setNewId(newId != null ? newId.name() : ObjectId.zeroId().name());</span>
-<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (who != null) {</span>
-<span class="nc" id="L73">			entry.setWhoName(who.getName());</span>
-<span class="nc" id="L74">			entry.setWhoEmail(who.getEmailAddress());</span>
-<span class="nc" id="L75">			entry.setWhen(who.getWhenAsInstant());</span>
+<span class="fc" id="L67">		GitReflogEntity entry = new GitReflogEntity();</span>
+<span class="fc" id="L68">		entry.setRepositoryName(repositoryName);</span>
+<span class="fc" id="L69">		entry.setRefName(refName);</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">		entry.setOldId(oldId != null ? oldId.name() : ObjectId.zeroId().name());</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">		entry.setNewId(newId != null ? newId.name() : ObjectId.zeroId().name());</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">		if (who != null) {</span>
+<span class="fc" id="L73">			entry.setWhoName(who.getName());</span>
+<span class="fc" id="L74">			entry.setWhoEmail(who.getEmailAddress());</span>
+<span class="fc" id="L75">			entry.setWhen(who.getWhenAsInstant());</span>
 		} else {
 <span class="nc" id="L77">			entry.setWhen(Instant.now());</span>
 		}
-<span class="nc" id="L79">		entry.setMessage(message);</span>
+<span class="fc" id="L79">		entry.setMessage(message);</span>
 
-<span class="nc" id="L81">		try (Session session = sessionFactory.openSession()) {</span>
-<span class="nc" id="L82">			session.beginTransaction();</span>
-<span class="nc" id="L83">			session.persist(entry);</span>
-<span class="nc" id="L84">			session.getTransaction().commit();</span>
+<span class="fc" id="L81">		try (Session session = sessionFactory.openSession()) {</span>
+<span class="fc" id="L82">			session.beginTransaction();</span>
+<span class="fc" id="L83">			session.persist(entry);</span>
+<span class="fc" id="L84">			session.getTransaction().commit();</span>
 		}
-<span class="nc" id="L86">	}</span>
+<span class="fc" id="L86">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JavaHistoryCorpus.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">JavaHistoryCorpus.java</span></div><h1>JavaHistoryCorpus.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.nio.file.InvalidPathException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.server.history.GitHistorySnapshot;
+import org.eclipse.jgit.server.history.GitHistorySnapshot.CommitView;
+import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.*;
+
+/** Builds an application corpus from authoritative Git; callers own the repository lease. */
+final class JavaHistoryCorpus {
+  static final String PROVENANCE_POLICY = &quot;oldest-author-oid-path-v1&quot;;
+  private final Path localRepository;
+  private final int maxBlobBytes;
+
+<span class="fc" id="L31">  JavaHistoryCorpus(Path localRepository, int maxBlobBytes) {</span>
+<span class="fc" id="L32">    this.localRepository = localRepository.toAbsolutePath().normalize();</span>
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">    if (maxBlobBytes &lt; 1) throw new IllegalArgumentException(&quot;Maximum source blob size must be positive&quot;);</span>
+<span class="fc" id="L34">    this.maxBlobBytes = maxBlobBytes;</span>
+<span class="fc" id="L35">  }</span>
+
+  record Corpus(List&lt;AnalyzedFile&gt; files, List&lt;CommitView&gt; commits) {
+<span class="fc" id="L38">    Corpus { files = List.copyOf(files); commits = List.copyOf(commits); }</span>
+  }
+
+  Corpus read(String canonicalName, Repository git, Collection&lt;String&gt; retainedRoots) throws IOException {
+<span class="fc" id="L42">    var commits = GitHistorySnapshot.read(git, retainedRoots);</span>
+<span class="fc" id="L43">    var files = new LinkedHashMap&lt;String, AnalyzedFile&gt;();</span>
+<span class="fc" id="L44">    var oldestFirst = commits.stream().sorted(Comparator.comparing(CommitView::authorTime,</span>
+<span class="fc" id="L45">        Comparator.nullsLast(Comparator.naturalOrder())).thenComparing(CommitView::objectId)).toList();</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">    for (var commit : oldestFirst) {</span>
+<span class="fc" id="L47">      GitHistorySnapshot.checkInterrupted();</span>
+<span class="fc" id="L48">      var project = project(canonicalName, git, commit);</span>
+<span class="fc bfc" id="L49" title="All 4 branches covered.">      if (project.snapshot().sources().values().stream().noneMatch(s -&gt; !files.containsKey(s.blobId()))) continue;</span>
+      // Analyze the whole selected commit once, even when only one of its blobs is new to the corpus.
+<span class="fc" id="L51">      var analyzed = analyze(project, commit);</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">      for (String path : new java.util.TreeSet&lt;&gt;(analyzed.files().keySet())) {</span>
+<span class="fc" id="L53">        var file = analyzed.files().get(path);</span>
+<span class="fc" id="L54">        files.putIfAbsent(file.blobObjectId(), file);</span>
+<span class="fc" id="L55">      }</span>
+<span class="fc" id="L56">    }</span>
+<span class="fc" id="L57">    return new Corpus(List.copyOf(files.values()), commits);</span>
+  }
+
+  ReleasedJavaProjectAnalysis.Result atCommit(String name, Repository git, ObjectId id) throws IOException {
+<span class="fc" id="L61">    GitHistorySnapshot.checkInterrupted();</span>
+<span class="fc" id="L62">    try (var walk = new RevWalk(git)) {</span>
+<span class="fc" id="L63">      var commit = walk.parseCommit(id);</span>
+<span class="fc" id="L64">      var author = commit.getAuthorIdent();</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">      var view = new CommitView(commit.name(), commit.getTree().name(), author == null ? null : author.getWhenAsInstant(),</span>
+<span class="pc bpc" id="L66" title="2 of 4 branches missed.">          author == null ? null : author.getName(), author == null ? null : author.getEmailAddress());</span>
+<span class="fc" id="L67">      return analyze(project(name, git, view), view);</span>
+    }
+  }
+
+  private ReleasedJavaProjectAnalysis.Result analyze(Project project, CommitView commit) throws IOException {
+<span class="fc" id="L72">    GitHistorySnapshot.checkInterrupted();</span>
+<span class="fc" id="L73">    var config = configuration(project);</span>
+<span class="fc" id="L74">    var result = new ReleasedJavaProjectAnalysis().analyze(project.snapshot(), config.configuration(),</span>
+<span class="fc" id="L75">        commit.authorName(), commit.authorTime(), config.unresolved(), config.diagnostics());</span>
+<span class="fc" id="L76">    GitHistorySnapshot.checkInterrupted();</span>
+<span class="fc" id="L77">    return result;</span>
+  }
+
+<span class="fc" id="L80">  private record Project(JavaProjectSnapshot snapshot, Map&lt;String, String&gt; builds, List&lt;String&gt; diagnostics) {}</span>
+<span class="fc" id="L81">  private record Configuration(JavaAnalysisConfiguration configuration, List&lt;String&gt; unresolved, List&lt;String&gt; diagnostics) {}</span>
+
+  private Project project(String name, Repository git, CommitView commit) throws IOException {
+<span class="fc" id="L84">    var sources = new TreeMap&lt;String, JavaSourceSnapshot&gt;();</span>
+<span class="fc" id="L85">    var builds = new TreeMap&lt;String, String&gt;();</span>
+<span class="fc" id="L86">    var diagnostics = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L87">    try (var reader = git.newObjectReader(); var tree = new TreeWalk(reader)) {</span>
+<span class="fc" id="L88">      tree.addTree(ObjectId.fromString(commit.treeId())); tree.setRecursive(true);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">      while (tree.next()) {</span>
+<span class="fc" id="L90">        GitHistorySnapshot.checkInterrupted();</span>
+<span class="fc" id="L91">        String path = tree.getPathString();</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (tree.getFileMode(0).getObjectType() != Constants.OBJ_BLOB) continue;</span>
+<span class="fc" id="L93">        boolean java = path.endsWith(&quot;.java&quot;);</span>
+<span class="pc bpc" id="L94" title="1 of 4 branches missed.">        if (!java &amp;&amp; !buildFile(path)) continue;</span>
+<span class="fc" id="L95">        var blob = reader.open(tree.getObjectId(0), Constants.OBJ_BLOB);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (blob.getSize() &gt; maxBlobBytes) {</span>
+<span class="fc" id="L97">          diagnostics.add(&quot;Source/build file exceeds the configured byte limit: &quot; + path); continue;</span>
+        }
+<span class="fc" id="L99">        byte[] bytes = blob.getBytes();</span>
+<span class="fc" id="L100">        boolean binary = false;</span>
+<span class="fc bfc" id="L101" title="All 4 branches covered.">        for (int i = 0; i &lt; Math.min(bytes.length, 8192); i++) if (bytes[i] == 0) { binary = true; break; }</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        if (binary) { diagnostics.add(&quot;Binary source/build file omitted: &quot; + path); continue; }</span>
+<span class="fc" id="L103">        String text = new String(bytes, StandardCharsets.UTF_8);</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (java) sources.put(path, new JavaSourceSnapshot(name, commit.objectId(), tree.getObjectId(0).name(), path, text));</span>
+<span class="fc" id="L105">        else builds.put(path, text);</span>
+<span class="fc" id="L106">      }</span>
+    }
+<span class="fc" id="L108">    return new Project(new JavaProjectSnapshot(name, commit.objectId(), sources), builds, diagnostics);</span>
+  }
+
+  private Configuration configuration(Project project) {
+<span class="fc" id="L112">    var diagnostics = new ArrayList&lt;&gt;(project.diagnostics());</span>
+<span class="fc" id="L113">    var unresolved = new LinkedHashSet&lt;String&gt;();</span>
+<span class="fc" id="L114">    var configurations = new ArrayList&lt;JavaAnalysisConfiguration&gt;();</span>
+<span class="pc bpc" id="L115" title="3 of 6 branches missed.">    if (project.builds().keySet().stream().anyMatch(p -&gt; p.equals(&quot;pom.xml&quot;) || p.endsWith(&quot;/pom.xml&quot;))) {</span>
+      try {
+<span class="fc" id="L117">        var resolved = new MavenJavaAnalysisConfigurationResolver(localRepository).resolve(project.builds());</span>
+<span class="fc" id="L118">        configurations.add(resolved.configuration()); unresolved.addAll(resolved.unresolvedDependencies());</span>
+<span class="fc" id="L119">      } catch (IllegalArgumentException invalid) {</span>
+<span class="fc" id="L120">        diagnostics.add(&quot;Invalid historical Maven metadata; using available source roots without its dependency model&quot;);</span>
+<span class="fc" id="L121">      }</span>
+    }
+<span class="pc bpc" id="L123" title="3 of 6 branches missed.">    if (project.builds().keySet().stream().anyMatch(p -&gt; p.endsWith(&quot;build.gradle&quot;) || p.endsWith(&quot;build.gradle.kts&quot;))) {</span>
+      try {
+<span class="nc" id="L125">        var resolved = new GradleJavaAnalysisConfigurationResolver(localRepository).resolve(project.builds());</span>
+<span class="nc" id="L126">        configurations.add(resolved.configuration()); unresolved.addAll(resolved.unresolvedDependencies());</span>
+<span class="nc" id="L127">      } catch (IllegalArgumentException invalid) {</span>
+<span class="nc" id="L128">        diagnostics.add(&quot;Invalid historical Gradle metadata; using available source roots without its dependency model&quot;);</span>
+<span class="nc" id="L129">      }</span>
+    }
+<span class="fc" id="L131">    var roots = new LinkedHashSet&lt;String&gt;();</span>
+<span class="fc" id="L132">    var classpath = new LinkedHashSet&lt;String&gt;();</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">    int level = configurations.isEmpty() ? 25 : 0;</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">    for (var configuration : configurations) {</span>
+<span class="fc" id="L135">      String version = configuration.sourceLevel().replaceFirst(&quot;^1\\.&quot;, &quot;&quot;);</span>
+<span class="fc" id="L136">      try { level = Math.max(level, Integer.parseInt(version)); }</span>
+<span class="pc" id="L137">      catch (NumberFormatException invalid) { diagnostics.add(&quot;Unsupported build source level: &quot; + configuration.sourceLevel()); }</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">      for (String root : configuration.sourcepathEntries()) {</span>
+<span class="fc" id="L139">        addRoot(root, roots, project.snapshot().sources().keySet(), diagnostics);</span>
+<span class="fc" id="L140">      }</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">      for (String entry : configuration.classpathEntries()) {</span>
+<span class="nc" id="L142">        Path path = Path.of(entry).toAbsolutePath().normalize();</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (path.startsWith(localRepository)) classpath.add(path.toString());</span>
+<span class="nc" id="L144">        else diagnostics.add(&quot;Build dependency outside the configured local artifact repository was omitted&quot;);</span>
+<span class="nc" id="L145">      }</span>
+<span class="fc" id="L146">    }</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">    for (String path : project.snapshot().sources().keySet()) {</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">      for (String layout : List.of(&quot;src/main/java/&quot;, &quot;src/test/java/&quot;, &quot;src/&quot;, &quot;tst/&quot;)) {</span>
+<span class="fc" id="L149">        int position = path.indexOf(layout);</span>
+<span class="fc bfc" id="L150" title="All 4 branches covered.">        while (position &gt; 0 &amp;&amp; path.charAt(position - 1) != '/') position = path.indexOf(layout, position + 1);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        if (position &gt;= 0) {</span>
+<span class="fc" id="L152">          addRoot(path.substring(0, position + layout.length() - 1), roots,</span>
+<span class="fc" id="L153">              project.snapshot().sources().keySet(), diagnostics); break;</span>
+        }
+<span class="fc" id="L155">      }</span>
+<span class="fc" id="L156">    }</span>
+    // Root-layout packages may coexist with module/src or explicitly configured roots.
+<span class="fc" id="L158">    roots.add(&quot;&quot;);</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">    return new Configuration(new JavaAnalysisConfiguration(level == 0 ? &quot;25&quot; : Integer.toString(level), BindingMode.RECOVERY,</span>
+<span class="fc" id="L160">        List.copyOf(classpath), List.copyOf(roots), roots.stream().map(ignored -&gt; &quot;UTF-8&quot;).toList(), List.of(), true,</span>
+<span class="fc" id="L161">        JavaAnalysisConfiguration.DEFAULT_ANALYZER_VERSION), List.copyOf(unresolved), List.copyOf(diagnostics));</span>
+  }
+
+  private static void addRoot(String root, Collection&lt;String&gt; roots, Collection&lt;String&gt; sources, List&lt;String&gt; diagnostics) {
+<span class="fc" id="L165">    String normalized = root.replace('\\', '/');</span>
+    try {
+<span class="fc" id="L167">      Path path = Path.of(normalized).normalize();</span>
+<span class="fc" id="L168">      String canonicalRoot = path.toString().replace('\\', '/');</span>
+      // A shared source root needs one collision scan, regardless of its number of files.
+<span class="fc bfc" id="L170" title="All 2 branches covered.">      if (roots.contains(canonicalRoot)) return;</span>
+<span class="pc bpc" id="L171" title="1 of 8 branches missed.">      if (normalized.startsWith(&quot;/&quot;) || path.isAbsolute() || normalized.matches(&quot;^[A-Za-z]:.*&quot;) || path.startsWith(&quot;..&quot;)) {</span>
+<span class="fc" id="L172">        diagnostics.add(&quot;Source root outside the repository was omitted: &quot; + root); return;</span>
+      }
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">      if (!PortableSourcePaths.relative(canonicalRoot)) {</span>
+<span class="nc" id="L175">        diagnostics.add(&quot;Source root cannot be represented portably and was omitted: &quot; + root); return;</span>
+      }
+<span class="fc bfc" id="L177" title="All 2 branches covered.">      for (String source : sources) {</span>
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        if (!PortableSourcePaths.relative(source)) continue;</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        if (path.startsWith(Path.of(source.replace('\\', '/')).normalize())) {</span>
+<span class="fc" id="L180">          diagnostics.add(&quot;Source root colliding with a source file was omitted: &quot; + root); return;</span>
+        }
+<span class="fc" id="L182">      }</span>
+<span class="fc" id="L183">      roots.add(canonicalRoot);</span>
+<span class="nc" id="L184">    } catch (InvalidPathException invalid) {</span>
+<span class="nc" id="L185">      diagnostics.add(&quot;Source root cannot be represented on this host and was omitted: &quot; + root);</span>
+<span class="fc" id="L186">    }</span>
+<span class="fc" id="L187">  }</span>
+
+  private static boolean buildFile(String path) {
+<span class="fc" id="L190">    String name = path.substring(path.lastIndexOf('/') + 1);</span>
+<span class="pc bpc" id="L191" title="5 of 6 branches missed.">    return name.equals(&quot;pom.xml&quot;) || name.equals(&quot;build.gradle&quot;) || name.equals(&quot;build.gradle.kts&quot;);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

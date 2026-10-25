@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReleasedJavaProjectAnalysis.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">ReleasedJavaProjectAnalysis.java</span></div><h1>ReleasedJavaProjectAnalysis.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import static io.github.carstenartur.jgit.storage.hibernate.javaanalysis.JavaFileSearchField.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.*;
+import io.github.carstenartur.jgit.storage.hibernate.javaanalysis.entity.JavaSymbolIndex;
+
+/** Adapts released analysis of a whole commit to Sandbox's historical file facets. */
+<span class="fc" id="L20">final class ReleasedJavaProjectAnalysis {</span>
+  // Keep the mutable released analysis entities inside this package for semantic diff operations.
+  record Result(Map&lt;String, AnalyzedFile&gt; files, JavaProjectAnalysisResult semantic) {
+<span class="fc" id="L23">    Result { files = Map.copyOf(files); }</span>
+  }
+
+  Result analyze(JavaProjectSnapshot project, JavaAnalysisConfiguration configuration, String author,
+      Instant date, List&lt;String&gt; unresolvedDependencies) {
+<span class="fc" id="L28">    return analyze(project, configuration, author, date, unresolvedDependencies, List.of());</span>
+  }
+
+  Result analyze(JavaProjectSnapshot project, JavaAnalysisConfiguration configuration, String author,
+      Instant date, List&lt;String&gt; unresolvedDependencies, List&lt;String&gt; configurationDiagnostics) {
+<span class="fc" id="L33">    var excluded = PortableSourcePaths.excluded(project.sources().keySet());</span>
+<span class="fc" id="L34">    var semantic = semantic(project, configuration, excluded);</span>
+<span class="fc" id="L35">    var files = new LinkedHashMap&lt;String, AnalyzedFile&gt;();</span>
+<span class="fc bfc" id="L36" title="All 2 branches covered.">    for (var source : project.sources().values().stream().sorted(Comparator.comparing(JavaSourceSnapshot::path)).toList()) {</span>
+<span class="fc" id="L37">      var analysis = semantic.files().get(source.path());</span>
+<span class="fc" id="L38">      var structure = new JavaSourceStructureExtractor().extract(source, configuration);</span>
+<span class="fc" id="L39">      var text = new JavaSourceTextExtractor().extract(source, configuration);</span>
+<span class="fc" id="L40">      var diagnostics = new ArrayList&lt;&gt;(configurationDiagnostics);</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">      if (!excluded.isEmpty()) diagnostics.add(&quot;Project binding context omits &quot; + excluded.size()</span>
+          + &quot; source paths that cannot share a portable temporary tree&quot;);
+<span class="fc bfc" id="L43" title="All 2 branches covered.">      if (excluded.contains(source.path())) diagnostics.add(&quot;Source path analyzed with individual recovery: &quot; + source.path());</span>
+<span class="fc" id="L44">      files.put(source.path(), file(source, analysis, structure, text, author, date, unresolvedDependencies, diagnostics));</span>
+<span class="fc" id="L45">    }</span>
+<span class="fc" id="L46">    return new Result(files, semantic);</span>
+  }
+
+  private static JavaProjectAnalysisResult semantic(JavaProjectSnapshot project, JavaAnalysisConfiguration configuration,
+      java.util.Set&lt;String&gt; excluded) {
+<span class="fc bfc" id="L51" title="All 2 branches covered.">    if (excluded.isEmpty()) return new JavaProjectAnalyzer().analyze(project, configuration);</span>
+<span class="fc" id="L52">    var ordinary = new java.util.TreeMap&lt;String, JavaSourceSnapshot&gt;(project.sources());</span>
+<span class="fc" id="L53">    excluded.forEach(ordinary::remove);</span>
+<span class="fc" id="L54">    var shared = new JavaProjectAnalyzer().analyze(</span>
+<span class="fc" id="L55">        new JavaProjectSnapshot(project.repositoryName(), project.commitId(), ordinary), configuration);</span>
+<span class="fc" id="L56">    var results = new java.util.TreeMap&lt;String, JavaAnalysisResult&gt;(shared.files());</span>
+<span class="fc" id="L57">    var recovery = new JavaAnalysisConfiguration(configuration.sourceLevel(), BindingMode.RECOVERY,</span>
+<span class="fc" id="L58">        configuration.classpathEntries(), List.of(), List.of(), configuration.modulepathEntries(),</span>
+<span class="fc" id="L59">        configuration.includeRunningVmBootClasspath(), configuration.analyzerVersion());</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">    for (String path : new java.util.TreeSet&lt;&gt;(excluded)) {</span>
+<span class="fc" id="L61">      results.put(path, new JavaJdtAnalyzer().analyze(project.sources().get(path), recovery));</span>
+<span class="fc" id="L62">    }</span>
+<span class="fc" id="L63">    return new JavaProjectAnalysisResult(project, results,</span>
+<span class="fc" id="L64">        results.values().stream().flatMap(r -&gt; r.symbols().stream()).toList(),</span>
+<span class="fc" id="L65">        results.values().stream().flatMap(r -&gt; r.references().stream()).toList(),</span>
+<span class="fc" id="L66">        results.values().stream().mapToInt(r -&gt; r.analysisRun().getProblemCount()).sum(),</span>
+<span class="fc" id="L67">        results.values().stream().mapToInt(r -&gt; r.analysisRun().getErrorCount()).sum());</span>
+  }
+
+  private static AnalyzedFile file(JavaSourceSnapshot source, JavaAnalysisResult analysis,
+      JavaSourceStructure structure, JavaSourceText text, String author, Instant date, List&lt;String&gt; unresolved,
+      List&lt;String&gt; configurationDiagnostics) {
+<span class="fc" id="L73">    var imports = new HashMap&lt;String, String&gt;();</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">    for (var declaration : structure.imports()) {</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">      if (!declaration.onDemand()) {</span>
+<span class="fc" id="L76">        String name = declaration.name();</span>
+<span class="fc" id="L77">        imports.put(name.substring(name.lastIndexOf('.') + 1), name);</span>
+      }
+<span class="fc" id="L79">    }</span>
+    // Preserve declaration-group visitation (all field fragments precede their initializer bodies).
+<span class="fc" id="L81">    var symbols = analysis.symbols();</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">    var methods = symbols.stream().filter(s -&gt; s.getSymbolKind() == JavaSymbolKind.METHOD</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        || s.getSymbolKind() == JavaSymbolKind.CONSTRUCTOR).toList();</span>
+<span class="fc" id="L84">    var fields = new EnumMap&lt;JavaFileSearchField, String&gt;(JavaFileSearchField.class);</span>
+<span class="fc" id="L85">    fields.put(DECLARED_TYPES, lines(structure.types().stream().map(JavaSourceStructure.TypeDeclaration::name)));</span>
+    // Retain Sandbox's historical flat nested-type names; semantic results retain true nested identities.
+<span class="fc" id="L87">    fields.put(QUALIFIED_NAMES, lines(structure.types().stream().map(t -&gt; qualify(structure.packageName(), t.name()))));</span>
+<span class="fc" id="L88">    fields.put(METHODS, lines(methods.stream().map(JavaSymbolIndex::getSimpleName)));</span>
+<span class="fc" id="L89">    fields.put(FIELDS, lines(structure.fields().stream().map(JavaSourceStructure.FieldDeclaration::name)));</span>
+<span class="fc" id="L90">    var extended = new ArrayList&lt;String&gt;();</span>
+<span class="fc" id="L91">    var implemented = new ArrayList&lt;String&gt;();</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">    for (var type : structure.types()) {</span>
+      // Legacy file facets placed interface-extends in implementsTypes; semantic structure stays correct upstream.
+<span class="fc bfc" id="L94" title="All 2 branches covered.">      var target = type.kind() == JavaSourceStructure.TypeKind.INTERFACE ? implemented : extended;</span>
+<span class="fc" id="L95">      type.extendedTypes().forEach(t -&gt; target.add(resolve(t.rawTypeName(), structure.packageName(), imports)));</span>
+<span class="fc" id="L96">      type.implementedTypes().forEach(t -&gt; implemented.add(resolve(t.rawTypeName(), structure.packageName(), imports)));</span>
+<span class="fc" id="L97">    }</span>
+<span class="fc" id="L98">    fields.put(EXTENDED_TYPES, String.join(&quot;\n&quot;, extended));</span>
+<span class="fc" id="L99">    fields.put(IMPLEMENTED_TYPES, String.join(&quot;\n&quot;, implemented));</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">    fields.put(IMPORTS, lines(structure.imports().stream().map(i -&gt; i.name() + (i.onDemand() ? &quot;.*&quot; : &quot;&quot;))));</span>
+<span class="fc" id="L101">    fields.put(ANNOTATIONS, lines(analysis.references().stream()</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        .filter(r -&gt; r.getReferenceKind() == JavaReferenceKind.ANNOTATION_USE)</span>
+<span class="fc" id="L103">        .sorted(Comparator.comparingInt(r -&gt; r.getStartPosition()))</span>
+<span class="fc" id="L104">        .map(r -&gt; imports.getOrDefault(r.getReferenceName(), r.getReferenceName()))));</span>
+<span class="fc" id="L105">    fields.put(REFERENCED_TYPES, lines(structure.typeUses().stream()</span>
+<span class="fc" id="L106">        .map(u -&gt; resolve(u.rawTypeName(), structure.packageName(), imports))));</span>
+<span class="fc" id="L107">    var parameters = structure.typeUses().stream()</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">        .filter(u -&gt; u.role() == JavaSourceStructure.TypeUseRole.METHOD_PARAMETER)</span>
+<span class="fc" id="L109">        .collect(Collectors.groupingBy(JavaSourceStructure.TypeUse::ownerStartPosition));</span>
+<span class="fc" id="L110">    fields.put(METHOD_SIGNATURES, lines(methods.stream().map(m -&gt; m.getSimpleName() + &quot;(&quot;</span>
+<span class="fc" id="L111">        + parameters.getOrDefault(m.getStartPosition(), List.of()).stream()</span>
+<span class="fc" id="L112">            .map(u -&gt; resolve(u.rawTypeName(), structure.packageName(), imports)).collect(Collectors.joining(&quot;,&quot;)) + &quot;)&quot;)));</span>
+<span class="fc" id="L113">    fields.put(DOCUMENTATION, lines(text.documentation().stream().map(f -&gt; cleanDocumentation(f.text()))));</span>
+<span class="fc" id="L114">    fields.put(STRING_LITERALS, lines(text.stringLiterals().stream().map(JavaSourceText.Fragment::text)</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        .filter(value -&gt; value.length() &gt; 3)));</span>
+<span class="fc" id="L116">    fields.put(SOURCE, truncate(source.source(), 65_535));</span>
+<span class="fc" id="L117">    fields.put(PATH, source.path());</span>
+<span class="fc" id="L118">    String filename = source.path().substring(source.path().lastIndexOf('/') + 1);</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">    String simpleName = filename.endsWith(&quot;.java&quot;) ? filename.substring(0, filename.length() - 5) : filename;</span>
+<span class="fc" id="L120">    fields.put(SIMPLE_CLASS_NAME, simpleName);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">    var primary = structure.types().isEmpty() ? null : structure.types().getFirst();</span>
+<span class="fc bfc" id="L122" title="All 2 branches covered.">    var primarySymbol = primary == null ? null : symbols.stream()</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">        .filter(s -&gt; s.getStartPosition() == primary.startPosition()).findFirst().orElse(null);</span>
+<span class="fc bfc" id="L124" title="All 4 branches covered.">    String kind = primary == null ? &quot;&quot; : primary.kind() == JavaSourceStructure.TypeKind.ANNOTATION_TYPE</span>
+<span class="fc" id="L125">        ? &quot;annotation&quot; : primary.kind().name().toLowerCase(Locale.ROOT);</span>
+<span class="fc" id="L126">    String documentation = structure.types().stream()</span>
+<span class="fc bfc" id="L127" title="All 4 branches covered.">        .filter(t -&gt; t.kind() == JavaSourceStructure.TypeKind.CLASS || t.kind() == JavaSourceStructure.TypeKind.INTERFACE)</span>
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        .flatMap(t -&gt; text.documentation().stream().filter(f -&gt; f.startPosition() == t.startPosition()))</span>
+<span class="fc" id="L129">        .map(f -&gt; truncate(cleanDocumentation(f.text()).replaceAll(&quot;\\s+&quot;, &quot; &quot;), 2_000))</span>
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">        .filter(value -&gt; !value.isEmpty()).findFirst().orElse(&quot;&quot;);</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">    boolean main = methods.stream().anyMatch(m -&gt; &quot;main&quot;.equals(m.getSimpleName())</span>
+<span class="pc bpc" id="L132" title="2 of 4 branches missed.">        &amp;&amp; modifiers(m).contains(&quot;public&quot;) &amp;&amp; modifiers(m).contains(&quot;static&quot;)</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        &amp;&amp; parameters.getOrDefault(m.getStartPosition(), List.of()).size() == 1);</span>
+<span class="fc" id="L134">    var bindingCounts = new EnumMap&lt;BindingStatus, Long&gt;(BindingStatus.class);</span>
+<span class="fc" id="L135">    Stream.concat(symbols.stream().map(JavaSymbolIndex::getBindingStatus),</span>
+<span class="fc" id="L136">        analysis.references().stream().map(r -&gt; r.getBindingStatus()))</span>
+<span class="fc" id="L137">        .filter(java.util.Objects::nonNull).forEach(status -&gt; bindingCounts.merge(status, 1L, Long::sum));</span>
+<span class="fc" id="L138">    var run = analysis.analysisRun();</span>
+<span class="fc" id="L139">    var quality = new AnalyzedFile.Quality(run.getStatus(), run.getProblemCount(), run.getErrorCount(),</span>
+<span class="fc" id="L140">        run.getFailureMessage(), bindingCounts, unresolved, configurationDiagnostics);</span>
+<span class="fc" id="L141">    return new AnalyzedFile(source.repositoryName(), source.commitId(), source.blobId(), source.path(), &quot;java&quot;,</span>
+<span class="fc" id="L142">        projectName(source.path()), structure.packageName(), simpleName, kind, visibility(primarySymbol),</span>
+<span class="pc bpc" id="L143" title="1 of 4 branches missed.">        source.source().isEmpty() ? 0 : 1 + (int) source.source().chars().filter(c -&gt; c == '\n').count(), main,</span>
+        documentation, author, date, fields, quality);
+  }
+
+  private static String resolve(String rawName, String packageName, Map&lt;String, String&gt; imports) {
+<span class="fc" id="L148">    return imports.getOrDefault(rawName, qualify(packageName, rawName));</span>
+  }
+
+  private static String qualify(String packageName, String name) {
+<span class="fc bfc" id="L152" title="All 2 branches covered.">    return packageName.isEmpty() ? name : packageName + &quot;.&quot; + name;</span>
+  }
+
+<span class="fc" id="L155">  private static String lines(Stream&lt;String&gt; values) { return values.collect(Collectors.joining(&quot;\n&quot;)); }</span>
+
+  private static List&lt;String&gt; modifiers(JavaSymbolIndex symbol) {
+<span class="pc bpc" id="L158" title="2 of 4 branches missed.">    return symbol == null || symbol.getModifiers() == null ? List.of() : List.of(symbol.getModifiers().split(&quot;\\s+&quot;));</span>
+  }
+
+  private static String visibility(JavaSymbolIndex symbol) {
+<span class="fc bfc" id="L162" title="All 2 branches covered.">    if (symbol == null) return &quot;&quot;;</span>
+<span class="fc" id="L163">    var modifiers = modifiers(symbol);</span>
+<span class="fc" id="L164">    String result = Stream.of(&quot;public&quot;, &quot;protected&quot;, &quot;private&quot;).filter(modifiers::contains).findFirst().orElse(&quot;package&quot;);</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">    if (modifiers.contains(&quot;abstract&quot;)) result += &quot; abstract&quot;;</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">    if (modifiers.contains(&quot;final&quot;)) result += &quot; final&quot;;</span>
+<span class="fc" id="L167">    return result;</span>
+  }
+
+  private static String projectName(String path) {
+<span class="fc" id="L171">    int source = path.indexOf(&quot;/src/&quot;);</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">    if (source &lt; 0) source = path.indexOf(&quot;/tst/&quot;);</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">    if (source &lt;= 0) return &quot;&quot;;</span>
+<span class="fc" id="L174">    String before = path.substring(0, source);</span>
+<span class="fc" id="L175">    return before.substring(before.lastIndexOf('/') + 1);</span>
+  }
+
+<span class="fc" id="L178">  private static String cleanDocumentation(String text) { return text.replaceAll(&quot;/\\*\\*|\\*/|\\*&quot;, &quot;&quot;).trim(); }</span>
+
+  private static String truncate(String text, int limit) {
+<span class="fc bfc" id="L181" title="All 2 branches covered.">    if (text.length() &lt;= limit) return text;</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">    int end = Character.isHighSurrogate(text.charAt(limit - 1)) ? limit - 1 : limit;</span>
+<span class="fc" id="L183">    return text.substring(0, end);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

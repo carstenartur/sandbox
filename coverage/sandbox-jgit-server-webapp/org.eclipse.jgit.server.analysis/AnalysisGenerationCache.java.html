@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AnalysisGenerationCache.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.analysis</a> &gt; <span class="el_source">AnalysisGenerationCache.java</span></div><h1>AnalysisGenerationCache.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.analysis;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReentrantLock;
+
+/**
+ * Owns complete, closeable analysis generations. Callbacks cannot retain a generation,
+ * reenter this cache or close it. Snapshot values must be immutable and implement value equality.
+ * Names are already canonical; invalidation must never normalize them a second time.
+ *
+ * &lt;p&gt;The entry limit bounds idle retention, not corpus bytes. Active entries may temporarily exceed
+ * it. Builds and reads run outside the map monitor; readers pin a slot until DTO mapping finishes.
+ */
+final class AnalysisGenerationCache&lt;S, G extends Closeable&gt; implements Closeable {
+  @FunctionalInterface interface Snapshot&lt;S&gt; { S read() throws IOException; }
+  @FunctionalInterface interface Builder&lt;S, G&gt; { G build(S snapshot) throws IOException; }
+  @FunctionalInterface interface Reader&lt;G, T&gt; { T read(G generation) throws IOException; }
+
+  private static final int MAX_ATTEMPTS = 3;
+<span class="fc" id="L28">  private final Object monitor = new Object();</span>
+<span class="fc" id="L29">  private final LinkedHashMap&lt;String, Slot&gt; slots = new LinkedHashMap&lt;&gt;(16, .75f, true);</span>
+  private final Semaphore builders;
+  private final int retainedEntries;
+<span class="fc" id="L32">  private final ThreadLocal&lt;Boolean&gt; inside = ThreadLocal.withInitial(() -&gt; false);</span>
+  private long refreshEpoch;
+  private int activeUsers;
+  private boolean closing;
+  private boolean closed;
+
+<span class="fc" id="L38">  AnalysisGenerationCache(int retainedEntries, int concurrentBuilds) {</span>
+<span class="pc bpc" id="L39" title="2 of 4 branches missed.">    if (retainedEntries &lt; 1 || concurrentBuilds &lt; 1) throw new IllegalArgumentException(&quot;Cache limits must be positive&quot;);</span>
+<span class="fc" id="L40">    this.retainedEntries = retainedEntries;</span>
+<span class="fc" id="L41">    builders = new Semaphore(concurrentBuilds, true);</span>
+<span class="fc" id="L42">  }</span>
+
+  &lt;T&gt; T read(String canonicalName, Snapshot&lt;S&gt; snapshots, Builder&lt;S, G&gt; builder, Reader&lt;G, T&gt; reader) throws IOException {
+<span class="fc" id="L45">    Objects.requireNonNull(canonicalName); Objects.requireNonNull(snapshots);</span>
+<span class="fc" id="L46">    Objects.requireNonNull(builder); Objects.requireNonNull(reader);</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">    if (inside.get()) throw new IllegalStateException(&quot;Analysis callbacks cannot reenter their cache&quot;);</span>
+    Slot slot;
+<span class="fc" id="L49">    synchronized (monitor) {</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">      if (closing) throw new IllegalStateException(&quot;Analysis cache is closing&quot;);</span>
+<span class="fc" id="L51">      slot = slots.computeIfAbsent(canonicalName, ignored -&gt; new Slot());</span>
+<span class="fc" id="L52">      slot.users++; activeUsers++;</span>
+<span class="fc" id="L53">    }</span>
+<span class="fc" id="L54">    inside.set(true);</span>
+<span class="fc" id="L55">    boolean locked = false;</span>
+<span class="fc" id="L56">    Throwable primary = null;</span>
+    try {
+<span class="fc" id="L58">      try { slot.lock.lockInterruptibly(); locked = true; }</span>
+<span class="fc" id="L59">      catch (InterruptedException interrupted) { throw interrupted(interrupted); }</span>
+<span class="fc" id="L60">      return readLocked(slot, snapshots, builder, reader);</span>
+<span class="fc" id="L61">    } catch (IOException | RuntimeException | Error failure) {</span>
+<span class="fc" id="L62">      primary = failure; throw failure;</span>
+    } finally {
+<span class="fc bfc" id="L64" title="All 2 branches covered.">      if (locked) slot.lock.unlock();</span>
+<span class="fc" id="L65">      try { release(slot); }</span>
+<span class="fc" id="L66">      catch (IOException cleanup) {</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">        if (primary == null) throw cleanup;</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        if (primary != cleanup) primary.addSuppressed(cleanup);</span>
+      }
+<span class="fc" id="L70">      finally { inside.remove(); }</span>
+    }
+  }
+
+  private &lt;T&gt; T readLocked(Slot slot, Snapshot&lt;S&gt; snapshots, Builder&lt;S, G&gt; builder, Reader&lt;G, T&gt; reader) throws IOException {
+<span class="fc bfc" id="L75" title="All 2 branches covered.">    for (int attempt = 0; attempt &lt; MAX_ATTEMPTS; attempt++) {</span>
+<span class="fc" id="L76">      checkInterrupted();</span>
+<span class="fc" id="L77">      Epoch epoch = epoch(slot);</span>
+<span class="fc" id="L78">      S snapshot = Objects.requireNonNull(snapshots.read(), &quot;snapshot&quot;);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">      if (matches(slot, snapshot, epoch)) return reader.read(slot.generation);</span>
+<span class="fc" id="L80">      try { builders.acquire(); }</span>
+<span class="pc" id="L81">      catch (InterruptedException interrupted) { throw interrupted(interrupted); }</span>
+<span class="fc" id="L82">      G candidate = null;</span>
+<span class="fc" id="L83">      G previous = null;</span>
+<span class="fc" id="L84">      boolean published = false;</span>
+<span class="fc" id="L85">      boolean reused = false;</span>
+<span class="fc" id="L86">      Throwable buildFailure = null;</span>
+      try {
+        // A source can change while this request waits for a permit. Reload it after that wait.
+<span class="fc" id="L89">        epoch = epoch(slot);</span>
+<span class="fc" id="L90">        snapshot = Objects.requireNonNull(snapshots.read(), &quot;snapshot&quot;);</span>
+<span class="fc" id="L91">        reused = matches(slot, snapshot, epoch);</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (!reused) {</span>
+<span class="fc" id="L93">          candidate = Objects.requireNonNull(builder.build(snapshot), &quot;generation&quot;);</span>
+<span class="fc" id="L94">          checkInterrupted();</span>
+<span class="fc" id="L95">          synchronized (monitor) {</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">            if (epoch.equals(epochLocked(slot))) {</span>
+<span class="fc" id="L97">              previous = slot.generation;</span>
+<span class="fc" id="L98">              slot.generation = candidate; slot.snapshot = snapshot; slot.generationEpoch = epoch;</span>
+<span class="fc" id="L99">              published = true;</span>
+            }
+<span class="fc" id="L101">          }</span>
+        }
+<span class="fc" id="L103">      } catch (IOException | RuntimeException | Error failure) {</span>
+<span class="fc" id="L104">        buildFailure = failure; throw failure;</span>
+      } finally {
+<span class="fc" id="L106">        builders.release();</span>
+<span class="fc bfc" id="L107" title="All 4 branches covered.">        if (candidate != null &amp;&amp; !published) {</span>
+<span class="fc" id="L108">          try { candidate.close(); }</span>
+<span class="nc" id="L109">          catch (IOException | RuntimeException cleanup) {</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">            if (buildFailure == null) throw cleanup;</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">            if (buildFailure != cleanup) buildFailure.addSuppressed(cleanup);</span>
+<span class="fc" id="L112">          }</span>
+        }
+      }
+<span class="fc bfc" id="L115" title="All 2 branches covered.">      if (reused) return reader.read(slot.generation);</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">      if (published) {</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        if (previous != null) previous.close();</span>
+<span class="fc" id="L118">        return reader.read(slot.generation);</span>
+      }
+    }
+<span class="fc" id="L121">    throw new IOException(&quot;Analysis was repeatedly invalidated while building; retry the request&quot;);</span>
+  }
+
+  private boolean matches(Slot slot, S snapshot, Epoch epoch) {
+<span class="fc bfc" id="L125" title="All 6 branches covered.">    if (slot.generation == null || !epoch.equals(slot.generationEpoch) || !snapshot.equals(slot.snapshot)) return false;</span>
+<span class="fc" id="L126">    synchronized (monitor) {</span>
+<span class="fc" id="L127">      return epoch.equals(epochLocked(slot));</span>
+    }
+  }
+
+  /** Invalidates exactly this already-canonical identity without waiting for its active readers. */
+  void invalidateCanonical(String canonicalName) {
+<span class="fc" id="L133">    Objects.requireNonNull(canonicalName);</span>
+<span class="fc" id="L134">    synchronized (monitor) {</span>
+<span class="fc" id="L135">      Slot slot = slots.get(canonicalName);</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">      if (slot != null) slot.epoch++;</span>
+<span class="fc" id="L137">    }</span>
+<span class="fc" id="L138">  }</span>
+
+  /** Refresh local dependency/configuration inputs even when Git history itself is unchanged. */
+<span class="fc" id="L141">  void invalidateAll() { synchronized (monitor) { refreshEpoch++; } }</span>
+
+<span class="fc" id="L143">  boolean isClosing() { synchronized (monitor) { return closing; } }</span>
+
+<span class="fc" id="L145">  private Epoch epoch(Slot slot) { synchronized (monitor) { return epochLocked(slot); } }</span>
+<span class="fc" id="L146">  private Epoch epochLocked(Slot slot) { return new Epoch(refreshEpoch, slot.epoch); }</span>
+
+  private void release(Slot slot) throws IOException {
+<span class="fc" id="L149">    var retired = new ArrayList&lt;G&gt;();</span>
+<span class="fc" id="L150">    synchronized (monitor) {</span>
+<span class="fc" id="L151">      slot.users--;</span>
+<span class="fc" id="L152">      var iterator = slots.entrySet().iterator();</span>
+<span class="pc bpc" id="L153" title="1 of 4 branches missed.">      while (slots.size() &gt; retainedEntries &amp;&amp; iterator.hasNext()) {</span>
+<span class="fc" id="L154">        var entry = iterator.next();</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        if (entry.getValue().users == 0) {</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">          if (entry.getValue().generation != null) retired.add(entry.getValue().generation);</span>
+<span class="fc" id="L157">          iterator.remove();</span>
+        }
+<span class="fc" id="L159">      }</span>
+<span class="fc" id="L160">    }</span>
+<span class="fc" id="L161">    try { closeAll(retired); }</span>
+<span class="fc" id="L162">    finally { synchronized (monitor) { activeUsers--; monitor.notifyAll(); } }</span>
+<span class="fc" id="L163">  }</span>
+
+  @Override public void close() throws IOException {
+<span class="fc bfc" id="L166" title="All 2 branches covered.">    if (inside.get()) throw new IllegalStateException(&quot;Analysis callbacks cannot close their cache&quot;);</span>
+<span class="fc" id="L167">    var retired = new ArrayList&lt;G&gt;();</span>
+<span class="fc" id="L168">    boolean interrupted = false;</span>
+<span class="fc" id="L169">    synchronized (monitor) {</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">      if (closing) {</span>
+<span class="pc bpc" id="L171" title="1 of 2 branches missed.">        while (!closed) {</span>
+<span class="nc" id="L172">          try { monitor.wait(); } catch (InterruptedException ignored) { interrupted = true; }</span>
+        }
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if (interrupted) Thread.currentThread().interrupt();</span>
+<span class="fc" id="L175">        return;</span>
+      }
+<span class="fc" id="L177">      closing = true;</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">      while (activeUsers != 0) {</span>
+<span class="pc" id="L179">        try { monitor.wait(); } catch (InterruptedException ignored) { interrupted = true; }</span>
+      }
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">      slots.values().forEach(slot -&gt; { if (slot.generation != null) retired.add(slot.generation); });</span>
+<span class="fc" id="L182">      slots.clear();</span>
+<span class="fc" id="L183">    }</span>
+<span class="fc" id="L184">    inside.set(true);</span>
+<span class="fc" id="L185">    try { closeAll(retired); }</span>
+    finally {
+<span class="fc" id="L187">      synchronized (monitor) { closed = true; monitor.notifyAll(); }</span>
+<span class="fc" id="L188">      inside.remove();</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">      if (interrupted) Thread.currentThread().interrupt();</span>
+    }
+<span class="fc" id="L191">  }</span>
+
+  private static void closeAll(List&lt;? extends Closeable&gt; generations) throws IOException {
+<span class="fc" id="L194">    IOException first = null;</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">    for (var generation : generations) {</span>
+<span class="fc" id="L196">      try { generation.close(); }</span>
+<span class="fc" id="L197">      catch (IOException | RuntimeException failure) {</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        var exception = failure instanceof IOException io ? io : new IOException(&quot;Cannot close analysis generation&quot;, failure);</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">        if (first == null) first = exception;</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">        else if (first != exception) first.addSuppressed(exception);</span>
+<span class="fc" id="L201">      }</span>
+<span class="fc" id="L202">    }</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">    if (first != null) throw first;</span>
+<span class="fc" id="L204">  }</span>
+
+  private static void checkInterrupted() throws InterruptedIOException {
+<span class="fc bfc" id="L207" title="All 2 branches covered.">    if (Thread.currentThread().isInterrupted()) throw new InterruptedIOException(&quot;Analysis read interrupted&quot;);</span>
+<span class="fc" id="L208">  }</span>
+  private static InterruptedIOException interrupted(InterruptedException cause) {
+<span class="fc" id="L210">    Thread.currentThread().interrupt();</span>
+<span class="fc" id="L211">    var failure = new InterruptedIOException(&quot;Analysis wait interrupted&quot;); failure.initCause(cause); return failure;</span>
+  }
+<span class="fc" id="L213">  private record Epoch(long refresh, long repository) {}</span>
+<span class="fc" id="L214">  private final class Slot {</span>
+<span class="fc" id="L215">    final ReentrantLock lock = new ReentrantLock(true);</span>
+    int users;
+    long epoch;
+    G generation;
+    S snapshot;
+    Epoch generationEpoch;
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

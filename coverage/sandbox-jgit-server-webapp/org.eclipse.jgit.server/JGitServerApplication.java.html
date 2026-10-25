@@ -143,9 +143,9 @@ import jakarta.servlet.http.HttpServletRequest;
 
 <span class="fc" id="L144">		context.addServlet(new ServletHolder(&quot;health&quot;, new HealthResource(sessionFactory, history, maintenance)), &quot;/health&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L145">		context.addServlet(new ServletHolder(&quot;repos&quot;, new RepositoryResource(repositories)), &quot;/repos/*&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L146">		context.addServlet(new ServletHolder(&quot;search&quot;, new NativeSearchResource(sessionFactory, history)), &quot;/search/*&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L146">		context.addServlet(new ServletHolder(&quot;search&quot;, new NativeSearchResource(sessionFactory, history, persistenceContext.fileHistory())), &quot;/search/*&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L147">		context.addServlet(new ServletHolder(&quot;analytics&quot;, new AnalyticsResource(history, persistenceContext.storageStatistics())), &quot;/analytics/*&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L148">		context.addServlet(new ServletHolder(&quot;admin&quot;, new AdminResource(sessionFactory, maintenance)), &quot;/admin/*&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L148">		context.addServlet(new ServletHolder(&quot;admin&quot;, new AdminResource(sessionFactory, maintenance, repositories)), &quot;/admin/*&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
 <span class="fc" id="L149">		return context;</span>
 	}
 

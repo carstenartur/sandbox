@@ -143,84 +143,88 @@ public final class ExternalHibernateRepositoryService implements SandboxReposito
 			}
 <span class="fc" id="L144">			RepositoryDeletionResult result= Objects.requireNonNull(</span>
 <span class="fc" id="L145">					maintenance.withExclusiveProjectionAccess(normalized,</span>
-<span class="fc" id="L146">							() -&gt; repositoryFactory.deleteRepository(new RepositoryName(normalized))),</span>
+							() -&gt; {
+<span class="fc" id="L147">								var deleted = repositoryFactory.deleteRepository(new RepositoryName(normalized));</span>
+<span class="fc" id="L148">								maintenance.repositoryDeleted(normalized);</span>
+<span class="fc" id="L149">								return deleted;</span>
+							}),
 					&quot;repository deletion result for &quot; + normalized); //$NON-NLS-1$
-<span class="fc" id="L148">			return new SandboxRepositoryDeletionResult(</span>
-<span class="fc" id="L149">					result.packRows(), result.reflogRows(), result.projectionRows());</span>
+<span class="fc" id="L152">			return new SandboxRepositoryDeletionResult(</span>
+<span class="fc" id="L153">					result.packRows(), result.reflogRows(), result.projectionRows());</span>
 		}
 	}
 
 	@Override
 	public boolean isOpen(String name) {
-<span class="fc" id="L155">		synchronized (lifecycleLock) {</span>
-<span class="fc" id="L156">			String normalized= normalize(name);</span>
-<span class="fc bfc" id="L157" title="All 6 branches covered.">			return !closed &amp;&amp; (storages.containsKey(normalized) || activeReaders.containsKey(normalized));</span>
+<span class="fc" id="L159">		synchronized (lifecycleLock) {</span>
+<span class="fc" id="L160">			String normalized= normalize(name);</span>
+<span class="fc bfc" id="L161" title="All 6 branches covered.">			return !closed &amp;&amp; (storages.containsKey(normalized) || activeReaders.containsKey(normalized));</span>
 		}
 	}
 
 	@Override
 	public void close() {
 		List&lt;HibernateGitStorage&gt; storagesToClose;
-<span class="fc" id="L164">		synchronized (lifecycleLock) {</span>
-<span class="fc bfc" id="L165" title="All 2 branches covered.">			if (closed) {</span>
-<span class="fc" id="L166">				awaitLocked(() -&gt; shutdownComplete);</span>
-<span class="fc" id="L167">				return;</span>
+<span class="fc" id="L168">		synchronized (lifecycleLock) {</span>
+<span class="fc bfc" id="L169" title="All 2 branches covered.">			if (closed) {</span>
+<span class="fc" id="L170">				awaitLocked(() -&gt; shutdownComplete);</span>
+<span class="fc" id="L171">				return;</span>
 			}
-<span class="fc" id="L169">			closed= true;</span>
-<span class="fc" id="L170">			awaitLocked(activeReaders::isEmpty);</span>
-<span class="fc" id="L171">			storagesToClose= new ArrayList&lt;&gt;(storages.values());</span>
-<span class="fc" id="L172">			storages.clear();</span>
-<span class="fc" id="L173">		}</span>
+<span class="fc" id="L173">			closed= true;</span>
+<span class="fc" id="L174">			awaitLocked(activeReaders::isEmpty);</span>
+<span class="fc" id="L175">			storagesToClose= new ArrayList&lt;&gt;(storages.values());</span>
+<span class="fc" id="L176">			storages.clear();</span>
+<span class="fc" id="L177">		}</span>
 
 		try {
-<span class="fc" id="L176">			RuntimeException failure= null;</span>
-<span class="fc bfc" id="L177" title="All 2 branches covered.">			for (HibernateGitStorage storage : storagesToClose) {</span>
+<span class="fc" id="L180">			RuntimeException failure= null;</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">			for (HibernateGitStorage storage : storagesToClose) {</span>
 				try {
-<span class="fc" id="L179">					storage.close();</span>
-<span class="fc" id="L180">				} catch (RuntimeException exception) {</span>
-<span class="fc bfc" id="L181" title="All 2 branches covered.">					if (failure == null) {</span>
-<span class="fc" id="L182">						failure= exception;</span>
+<span class="fc" id="L183">					storage.close();</span>
+<span class="fc" id="L184">				} catch (RuntimeException exception) {</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">					if (failure == null) {</span>
+<span class="fc" id="L186">						failure= exception;</span>
 					} else {
-<span class="fc" id="L184">						failure.addSuppressed(exception);</span>
+<span class="fc" id="L188">						failure.addSuppressed(exception);</span>
 					}
-<span class="fc" id="L186">				}</span>
-<span class="fc" id="L187">			}</span>
-<span class="fc bfc" id="L188" title="All 2 branches covered.">			if (failure != null) {</span>
-<span class="fc" id="L189">				throw failure;</span>
+<span class="fc" id="L190">				}</span>
+<span class="fc" id="L191">			}</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">			if (failure != null) {</span>
+<span class="fc" id="L193">				throw failure;</span>
 			}
 		} finally {
-<span class="fc" id="L192">			synchronized (lifecycleLock) {</span>
-<span class="fc" id="L193">				shutdownComplete= true;</span>
-<span class="fc" id="L194">				lifecycleLock.notifyAll();</span>
-<span class="fc" id="L195">			}</span>
+<span class="fc" id="L196">			synchronized (lifecycleLock) {</span>
+<span class="fc" id="L197">				shutdownComplete= true;</span>
+<span class="fc" id="L198">				lifecycleLock.notifyAll();</span>
+<span class="fc" id="L199">			}</span>
 		}
-<span class="fc" id="L197">	}</span>
+<span class="fc" id="L201">	}</span>
 
 	/** Caller owns lifecycleLock; shutdown cannot release the factory under an active reader. */
 	private void awaitLocked(java.util.function.BooleanSupplier complete) {
-<span class="fc" id="L201">		boolean interrupted= false;</span>
-<span class="fc bfc" id="L202" title="All 2 branches covered.">		while (!complete.getAsBoolean()) {</span>
+<span class="fc" id="L205">		boolean interrupted= false;</span>
+<span class="fc bfc" id="L206" title="All 2 branches covered.">		while (!complete.getAsBoolean()) {</span>
 			try {
-<span class="fc" id="L204">				lifecycleLock.wait();</span>
-<span class="nc" id="L205">			} catch (InterruptedException failure) {</span>
-<span class="nc" id="L206">				interrupted= true;</span>
-<span class="pc" id="L207">			}</span>
+<span class="fc" id="L208">				lifecycleLock.wait();</span>
+<span class="nc" id="L209">			} catch (InterruptedException failure) {</span>
+<span class="nc" id="L210">				interrupted= true;</span>
+<span class="pc" id="L211">			}</span>
 		}
-<span class="pc bpc" id="L209" title="1 of 2 branches missed.">		if (interrupted) {</span>
-<span class="nc" id="L210">			Thread.currentThread().interrupt();</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">		if (interrupted) {</span>
+<span class="nc" id="L214">			Thread.currentThread().interrupt();</span>
 		}
-<span class="fc" id="L212">	}</span>
+<span class="fc" id="L216">	}</span>
 
 	private HibernateGitStorage storageLocked(String name) {
-<span class="fc bfc" id="L215" title="All 2 branches covered.">		if (closed) {</span>
-<span class="fc" id="L216">			throw new IllegalStateException(&quot;Repository service is already closed.&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">		if (closed) {</span>
+<span class="fc" id="L220">			throw new IllegalStateException(&quot;Repository service is already closed.&quot;); //$NON-NLS-1$</span>
 		}
-<span class="fc" id="L218">		return storages.computeIfAbsent(name,</span>
-<span class="fc" id="L219">				key -&gt; repositoryFactory.open(new RepositoryName(key)));</span>
+<span class="fc" id="L222">		return storages.computeIfAbsent(name,</span>
+<span class="fc" id="L223">				key -&gt; repositoryFactory.open(new RepositoryName(key)));</span>
 	}
 
 	private static String normalize(String name) {
-<span class="fc" id="L223">		return SandboxRepositoryNames.normalize(name);</span>
+<span class="fc" id="L227">		return SandboxRepositoryNames.normalize(name);</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

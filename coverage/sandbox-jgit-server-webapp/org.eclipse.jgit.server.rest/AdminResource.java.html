@@ -14,15 +14,19 @@
 package org.eclipse.jgit.server.rest;
 
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.server.history.SandboxHistoryMaintenance;
+import org.eclipse.jgit.server.repository.SandboxRepositoryService;
+import org.eclipse.jgit.server.repository.SandboxRepositoryNames;
 import org.hibernate.SessionFactory;
 
 import jakarta.servlet.http.HttpServlet;
@@ -33,89 +37,152 @@ import jakarta.servlet.http.HttpServletResponse;
 public class AdminResource extends HttpServlet {
 
 	private static final long serialVersionUID = 1L;
-<span class="fc" id="L36">	private static final Logger LOG = Logger.getLogger(AdminResource.class.getName());</span>
+<span class="fc" id="L40">	private static final Logger LOG = Logger.getLogger(AdminResource.class.getName());</span>
 	private final SessionFactory sessionFactory;
 	private final SandboxHistoryMaintenance maintenance;
+	private final SandboxRepositoryService repositories;
+	private final Supplier&lt;String&gt; adminToken;
 
 	/** Creates an admin endpoint from the application-owned native factory. */
 	public AdminResource(SessionFactory sessionFactory) {
-<span class="nc" id="L42">		this(sessionFactory, SandboxHistoryMaintenance.NONE);</span>
-<span class="nc" id="L43">	}</span>
+<span class="nc" id="L48">		this(sessionFactory, SandboxHistoryMaintenance.NONE);</span>
+<span class="nc" id="L49">	}</span>
 
 	/** Uses the selected context's writer coordination when refreshing projections. */
-<span class="fc" id="L46">	public AdminResource(SessionFactory sessionFactory, SandboxHistoryMaintenance maintenance) {</span>
-<span class="fc" id="L47">		this.sessionFactory= Objects.requireNonNull(sessionFactory, &quot;sessionFactory&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L48">		this.maintenance= Objects.requireNonNull(maintenance);</span>
-<span class="fc" id="L49">	}</span>
+	public AdminResource(SessionFactory sessionFactory, SandboxHistoryMaintenance maintenance) {
+<span class="nc" id="L53">		this(sessionFactory, maintenance, null);</span>
+<span class="nc" id="L54">	}</span>
+
+	/** Uses scoped existing-only readers for an explicit Git-derived rebuild. */
+	public AdminResource(SessionFactory sessionFactory, SandboxHistoryMaintenance maintenance, SandboxRepositoryService repositories) {
+<span class="fc" id="L58">		this(sessionFactory, maintenance, repositories, () -&gt; System.getenv(&quot;JGIT_ADMIN_TOKEN&quot;));</span>
+<span class="fc" id="L59">	}</span>
+
+	AdminResource(SessionFactory sessionFactory, SandboxHistoryMaintenance maintenance,
+<span class="fc" id="L62">			SandboxRepositoryService repositories, Supplier&lt;String&gt; adminToken) {</span>
+<span class="fc" id="L63">		this.sessionFactory= Objects.requireNonNull(sessionFactory, &quot;sessionFactory&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L64">		this.maintenance= Objects.requireNonNull(maintenance);</span>
+<span class="fc" id="L65">		this.repositories= repositories;</span>
+<span class="fc" id="L66">		this.adminToken= Objects.requireNonNull(adminToken);</span>
+<span class="fc" id="L67">	}</span>
 
 	/** @deprecated application wiring should pass the native {@link SessionFactory}. */
 	@Deprecated(forRemoval = true)
 	public AdminResource(HibernateSessionFactoryProvider provider) {
-<span class="nc" id="L54">		this(Objects.requireNonNull(provider, &quot;provider&quot;).getSessionFactory()); //$NON-NLS-1$</span>
-<span class="nc" id="L55">	}</span>
+<span class="nc" id="L72">		this(Objects.requireNonNull(provider, &quot;provider&quot;).getSessionFactory()); //$NON-NLS-1$</span>
+<span class="nc" id="L73">	}</span>
 
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-<span class="fc" id="L59">		resp.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L60">		resp.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L61" title="1 of 2 branches missed.">		if (!isAuthorized(req)) {</span>
-<span class="fc" id="L62">			resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);</span>
-<span class="fc" id="L63">			resp.setHeader(&quot;WWW-Authenticate&quot;, &quot;Bearer realm=\&quot;admin\&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="fc" id="L64">			try (PrintWriter w = resp.getWriter()) {</span>
-<span class="fc" id="L65">				w.write(&quot;{\&quot;error\&quot;:\&quot;Unauthorized. Set JGIT_ADMIN_TOKEN and pass as Bearer token.\&quot;}&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L77">		resp.setContentType(&quot;application/json&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L78">		resp.setCharacterEncoding(&quot;UTF-8&quot;); //$NON-NLS-1$</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">		if (!isAuthorized(req)) {</span>
+<span class="fc" id="L80">			resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);</span>
+<span class="fc" id="L81">			resp.setHeader(&quot;WWW-Authenticate&quot;, &quot;Bearer realm=\&quot;admin\&quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="fc" id="L82">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="fc" id="L83">				w.write(&quot;{\&quot;error\&quot;:\&quot;Unauthorized. Set JGIT_ADMIN_TOKEN and pass as Bearer token.\&quot;}&quot;); //$NON-NLS-1$</span>
 			}
-<span class="fc" id="L67">			return;</span>
+<span class="fc" id="L85">			return;</span>
 		}
-<span class="nc" id="L69">		String pathInfo = req.getPathInfo();</span>
-<span class="nc bnc" id="L70" title="All 2 branches missed.">		if (pathInfo == null) {</span>
-<span class="nc" id="L71">			pathInfo = &quot;/&quot;; //$NON-NLS-1$</span>
+<span class="fc" id="L87">		String pathInfo = req.getPathInfo();</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">		if (pathInfo == null) {</span>
+<span class="nc" id="L89">			pathInfo = &quot;/&quot;; //$NON-NLS-1$</span>
 		}
-<span class="nc bnc" id="L73" title="All 2 branches missed.">		if (pathInfo.startsWith(&quot;/reindex&quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L74">			handleReindex(resp);</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">		if (pathInfo.startsWith(&quot;/reindex&quot;)) { //$NON-NLS-1$</span>
+<span class="nc" id="L92">			handleReindex(resp);</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">		} else if (pathInfo.equals(&quot;/rebuild&quot;)) {</span>
+<span class="fc" id="L94">			handleRebuild(req, resp);</span>
 		} else {
-<span class="nc" id="L76">			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);</span>
-<span class="nc" id="L77">			try (PrintWriter w = resp.getWriter()) {</span>
-<span class="nc" id="L78">				w.write(&quot;{\&quot;error\&quot;:\&quot;Unknown admin endpoint\&quot;}&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L96">			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);</span>
+<span class="nc" id="L97">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L98">				w.write(&quot;{\&quot;error\&quot;:\&quot;Unknown admin endpoint\&quot;}&quot;); //$NON-NLS-1$</span>
 			}
 		}
-<span class="nc" id="L81">	}</span>
+<span class="fc" id="L101">	}</span>
+
+	private void handleRebuild(HttpServletRequest request, HttpServletResponse response) throws IOException {
+<span class="fc" id="L104">		String name = request.getParameter(&quot;repo&quot;);</span>
+<span class="pc bpc" id="L105" title="1 of 4 branches missed.">		if (name == null || name.isBlank()) {</span>
+<span class="fc" id="L106">			writeError(response, HttpServletResponse.SC_BAD_REQUEST, &quot;Missing repository&quot;);</span>
+<span class="fc" id="L107">			return;</span>
+		}
+		final String canonical;
+		try {
+<span class="fc" id="L111">			canonical = SandboxRepositoryNames.normalize(name);</span>
+<span class="fc" id="L112">		} catch (IllegalArgumentException invalid) {</span>
+<span class="fc" id="L113">			writeError(response, HttpServletResponse.SC_BAD_REQUEST, &quot;Invalid repository&quot;);</span>
+<span class="fc" id="L114">			return;</span>
+<span class="fc" id="L115">		}</span>
+		try {
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">			if (repositories == null) throw new UnsupportedOperationException(&quot;No existing-only reader configured&quot;);</span>
+<span class="fc" id="L118">			var result = repositories.withExistingRepository(name, repository -&gt; {</span>
+				try {
+<span class="fc" id="L120">					return maintenance.rebuild(canonical, repository);</span>
+<span class="fc" id="L121">				} catch (IOException | RuntimeException failure) {</span>
+					// Missing objects/configuration failures during an opened repository's rebuild
+					// must not be confused with a missing repository identity or invalid input.
+<span class="fc" id="L124">					throw new IOException(&quot;Git-derived rebuild failed&quot;, failure);</span>
+				}
+			});
+<span class="fc" id="L127">			var body = new com.google.gson.JsonObject();</span>
+<span class="fc" id="L128">			body.addProperty(&quot;status&quot;, &quot;History rebuild completed&quot;);</span>
+<span class="fc" id="L129">			body.addProperty(&quot;repository&quot;, name);</span>
+<span class="fc" id="L130">			body.addProperty(&quot;removedProjections&quot;, result.removedProjections());</span>
+<span class="fc" id="L131">			body.addProperty(&quot;indexedCommits&quot;, result.indexedCommits());</span>
+<span class="fc" id="L132">			response.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="fc" id="L133">			try (var writer = response.getWriter()) { writer.write(body.toString()); }</span>
+<span class="fc" id="L134">		} catch (FileNotFoundException missing) {</span>
+<span class="fc" id="L135">			writeError(response, HttpServletResponse.SC_NOT_FOUND, &quot;Repository not found&quot;);</span>
+<span class="nc" id="L136">		} catch (UnsupportedOperationException unavailable) {</span>
+<span class="nc" id="L137">			writeError(response, HttpServletResponse.SC_SERVICE_UNAVAILABLE, &quot;History rebuild unavailable&quot;);</span>
+<span class="fc" id="L138">		} catch (IOException | RuntimeException failure) {</span>
+<span class="fc" id="L139">			LOG.log(Level.WARNING, &quot;Git-history rebuild failed&quot;, failure);</span>
+<span class="fc" id="L140">			writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, &quot;History rebuild failed&quot;);</span>
+<span class="pc" id="L141">		}</span>
+<span class="fc" id="L142">	}</span>
+
+	private static void writeError(HttpServletResponse response, int status, String message) throws IOException {
+<span class="fc" id="L145">		response.setStatus(status);</span>
+<span class="fc" id="L146">		var body = new com.google.gson.JsonObject(); body.addProperty(&quot;error&quot;, message);</span>
+<span class="fc" id="L147">		try (var writer = response.getWriter()) { writer.write(body.toString()); }</span>
+<span class="fc" id="L148">	}</span>
 
 	private void handleReindex(HttpServletResponse resp) throws IOException {
 		try {
-<span class="nc" id="L85">			maintenance.refreshIndexes(sessionFactory);</span>
-<span class="nc" id="L86">			resp.setStatus(HttpServletResponse.SC_OK);</span>
-<span class="nc" id="L87">			try (PrintWriter w = resp.getWriter()) {</span>
-<span class="nc" id="L88">				w.write(&quot;{\&quot;status\&quot;:\&quot;Re-indexing completed\&quot;}&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L152">			maintenance.refreshIndexes(sessionFactory);</span>
+<span class="nc" id="L153">			resp.setStatus(HttpServletResponse.SC_OK);</span>
+<span class="nc" id="L154">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L155">				w.write(&quot;{\&quot;status\&quot;:\&quot;Re-indexing completed\&quot;}&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L90">		} catch (InterruptedException e) {</span>
-<span class="nc" id="L91">			Thread.currentThread().interrupt();</span>
-<span class="nc" id="L92">			LOG.log(Level.WARNING, &quot;Re-indexing interrupted&quot;, e); //$NON-NLS-1$</span>
-<span class="nc" id="L93">			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);</span>
-<span class="nc" id="L94">			try (PrintWriter w = resp.getWriter()) {</span>
-<span class="nc" id="L95">				w.write(&quot;{\&quot;error\&quot;:\&quot;Re-indexing was interrupted\&quot;}&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L157">		} catch (InterruptedException e) {</span>
+<span class="nc" id="L158">			Thread.currentThread().interrupt();</span>
+<span class="nc" id="L159">			LOG.log(Level.WARNING, &quot;Re-indexing interrupted&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L160">			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);</span>
+<span class="nc" id="L161">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L162">				w.write(&quot;{\&quot;error\&quot;:\&quot;Re-indexing was interrupted\&quot;}&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L97">		} catch (Exception e) {</span>
-<span class="nc" id="L98">			LOG.log(Level.WARNING, &quot;Re-indexing failed&quot;, e); //$NON-NLS-1$</span>
-<span class="nc" id="L99">			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);</span>
-<span class="nc" id="L100">			try (PrintWriter w = resp.getWriter()) {</span>
-<span class="nc" id="L101">				w.write(&quot;{\&quot;error\&quot;:\&quot;Re-indexing failed\&quot;}&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L164">		} catch (Exception e) {</span>
+<span class="nc" id="L165">			LOG.log(Level.WARNING, &quot;Re-indexing failed&quot;, e); //$NON-NLS-1$</span>
+<span class="nc" id="L166">			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);</span>
+<span class="nc" id="L167">			try (PrintWriter w = resp.getWriter()) {</span>
+<span class="nc" id="L168">				w.write(&quot;{\&quot;error\&quot;:\&quot;Re-indexing failed\&quot;}&quot;); //$NON-NLS-1$</span>
 			}
-<span class="nc" id="L103">		}</span>
-<span class="nc" id="L104">	}</span>
+<span class="nc" id="L170">		}</span>
+<span class="nc" id="L171">	}</span>
 
-	private static boolean isAuthorized(HttpServletRequest req) {
-<span class="fc" id="L107">		String expectedToken = System.getenv(&quot;JGIT_ADMIN_TOKEN&quot;); //$NON-NLS-1$</span>
-<span class="pc bpc" id="L108" title="3 of 4 branches missed.">		if (expectedToken == null || expectedToken.isEmpty()) {</span>
-<span class="fc" id="L109">			LOG.log(Level.WARNING, &quot;Admin access denied: JGIT_ADMIN_TOKEN is not set&quot;); //$NON-NLS-1$</span>
-<span class="fc" id="L110">			return false;</span>
+	private boolean isAuthorized(HttpServletRequest req) {
+<span class="fc" id="L174">		String expectedToken = adminToken.get();</span>
+<span class="pc bpc" id="L175" title="1 of 4 branches missed.">		if (expectedToken == null || expectedToken.isEmpty()) {</span>
+<span class="fc" id="L176">			LOG.log(Level.WARNING, &quot;Admin access denied: JGIT_ADMIN_TOKEN is not set&quot;); //$NON-NLS-1$</span>
+<span class="fc" id="L177">			return false;</span>
 		}
-<span class="nc" id="L112">		String authHeader = req.getHeader(&quot;Authorization&quot;); //$NON-NLS-1$</span>
-<span class="nc bnc" id="L113" title="All 4 branches missed.">		if (authHeader == null || !authHeader.startsWith(&quot;Bearer &quot;)) { //$NON-NLS-1$</span>
-<span class="nc" id="L114">			return false;</span>
+<span class="fc" id="L179">		String authHeader = req.getHeader(&quot;Authorization&quot;); //$NON-NLS-1$</span>
+<span class="pc bpc" id="L180" title="1 of 4 branches missed.">		if (authHeader == null || !authHeader.startsWith(&quot;Bearer &quot;)) { //$NON-NLS-1$</span>
+<span class="fc" id="L181">			return false;</span>
 		}
-<span class="nc" id="L116">		String token = authHeader.substring(&quot;Bearer &quot;.length()).trim(); //$NON-NLS-1$</span>
-<span class="nc" id="L117">		return MessageDigest.isEqual(expectedToken.getBytes(StandardCharsets.UTF_8),</span>
-<span class="nc" id="L118">				token.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L183">		String token = authHeader.substring(&quot;Bearer &quot;.length()).trim(); //$NON-NLS-1$</span>
+<span class="fc" id="L184">		return MessageDigest.isEqual(expectedToken.getBytes(StandardCharsets.UTF_8),</span>
+<span class="fc" id="L185">				token.getBytes(StandardCharsets.UTF_8));</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

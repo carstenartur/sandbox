@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReleasedSandboxFileHistory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-jgit-server-webapp</a> &gt; <a href="index.source.html" class="el_package">org.eclipse.jgit.server.history</a> &gt; <span class="el_source">ReleasedSandboxFileHistory.java</span></div><h1>ReleasedSandboxFileHistory.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer and others. SPDX-License-Identifier: EPL-2.0 */
+package org.eclipse.jgit.server.history;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.server.repository.SandboxRepositoryNames;
+import org.eclipse.jgit.server.repository.SandboxRepositoryService;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.hibernate.SessionFactory;
+
+/** File-version view from public JGit reads and released Search's known commit identities. */
+public final class ReleasedSandboxFileHistory implements SandboxFileHistory {
+  private final SessionFactory factory;
+  private final SandboxRepositoryService repositories;
+
+<span class="fc" id="L22">  public ReleasedSandboxFileHistory(SessionFactory factory, SandboxRepositoryService repositories) {</span>
+<span class="fc" id="L23">    this.factory = Objects.requireNonNull(factory);</span>
+<span class="fc" id="L24">    this.repositories = Objects.requireNonNull(repositories);</span>
+<span class="fc" id="L25">  }</span>
+
+  @Override
+  public List&lt;FileVersion&gt; versions(String repository, String path, int offset, int limit) throws IOException {
+<span class="pc bpc" id="L29" title="3 of 6 branches missed.">    if (offset &lt; 0 || limit &lt; 1 || limit &gt; 1000) throw new IllegalArgumentException(&quot;Invalid history page&quot;);</span>
+<span class="pc bpc" id="L30" title="4 of 8 branches missed.">    if (repository == null || repository.isBlank() || path == null || path.isEmpty()) return List.of();</span>
+    // TreeWalk normalizes a trailing slash; this endpoint promises an exact file path.
+<span class="fc bfc" id="L32" title="All 2 branches covered.">    if (path.endsWith(&quot;/&quot;)) return List.of();</span>
+<span class="fc" id="L33">    String canonical = SandboxRepositoryNames.normalize(repository);</span>
+    try {
+<span class="fc" id="L35">      return repositories.withExistingRepository(repository, git -&gt; {</span>
+        List&lt;String&gt; indexed;
+<span class="fc" id="L37">        try (var session = factory.openSession()) {</span>
+<span class="fc" id="L38">          indexed = session.createQuery(&quot;SELECT c.objectId FROM GitCommitIndex c WHERE c.repositoryName = :repo&quot;, String.class)</span>
+<span class="fc" id="L39">              .setParameter(&quot;repo&quot;, canonical).getResultList();</span>
+        }
+<span class="fc" id="L41">        var commits = GitHistorySnapshot.read(git, indexed);</span>
+<span class="fc" id="L42">        var result = new ArrayList&lt;FileVersion&gt;();</span>
+<span class="fc" id="L43">        long matched = 0;</span>
+<span class="fc" id="L44">        try (var reader = git.newObjectReader()) {</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">          for (var commit : commits) {</span>
+<span class="fc" id="L46">            GitHistorySnapshot.checkInterrupted();</span>
+<span class="fc" id="L47">            try (var tree = TreeWalk.forPath(reader, path, ObjectId.fromString(commit.treeId()))) {</span>
+<span class="fc bfc" id="L48" title="All 4 branches covered.">              if (tree == null || tree.getFileMode(0).getObjectType() == Constants.OBJ_TREE) continue;</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">              if (matched++ &lt; offset) continue;</span>
+<span class="fc" id="L50">              result.add(new FileVersion(commit.objectId(), path, tree.getObjectId(0).name(), fileType(path), commit.authorTime()));</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">              if (result.size() == limit) break;</span>
+<span class="pc bpc" id="L52" title="2 of 6 branches missed.">            }</span>
+<span class="fc" id="L53">          }</span>
+        }
+<span class="fc" id="L55">        return List.copyOf(result);</span>
+      });
+<span class="fc" id="L57">    } catch (FileNotFoundException missing) {</span>
+<span class="fc" id="L58">      return List.of();</span>
+    }
+  }
+
+  private static String fileType(String path) {
+<span class="fc" id="L63">    int dot = path.lastIndexOf('.');</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">    return dot &lt; 0 ? &quot;unknown&quot; : path.substring(dot + 1).toLowerCase(Locale.ROOT);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
