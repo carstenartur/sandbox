@@ -11,17 +11,17 @@ The executable contract is [`.github/jgit-storage-hibernate-contract.sh`](../.gi
 
 ## Authoritative module scope
 
-The OSGi bridge consumes Core only. The standalone server consumes both:
+The OSGi bridge consumes Core only. The standalone server consumes:
 
 ```text
 jgit-storage-hibernate-core
 jgit-storage-hibernate-search
+jgit-storage-hibernate-java-analysis
 ```
 
 The following modules are deliberately rejected by the contract:
 
 ```text
-jgit-storage-hibernate-java-analysis
 jgit-storage-hibernate-architecture
 jgit-storage-hibernate-benchmarks
 ```
@@ -31,8 +31,12 @@ and the health probe against real H2/Lucene projections through both REST prefix
 External-context Smart HTTP ingestion is also exercised through push, restart,
 clone and projection-aware deletion. Exact file history additionally exercises all
 ref ancestry, detached HEAD, retained historical roots, per-commit unchanged blobs,
-submodules, exact paths, paging, interruption and restart. Normal startup, Java analysis, scalable
-incremental indexing and full-history recovery remain separate migration slices. The bridge continues to reject Search so server dependencies do not leak
+submodules, exact paths, paging, interruption and restart. Incremental indexing and
+full-history recovery are qualified in the guarded external context. Java analysis
+now qualifies whole-project bindings, immutable file facets and historical corpus
+construction through the released APIs, including reduced-context diagnostics for
+unrepresentable paths. Java REST generation ownership and normal startup remain
+separate migration slices. The bridge rejects Search and Java Analysis so server dependencies do not leak
 into Eclipse consumers.
 
 The selected Core version is defined by `jgit-storage-hibernate.version` in `sandbox-jgit-storage-hibernate/pom.xml`. Documentation must not be treated as the version source of truth.
@@ -43,7 +47,7 @@ The `jgit-storage-hibernate` repository owns the real-consumer matrix. Its descr
 
 - the Sandbox repository and pinned consumer commit;
 - `.github/jgit-storage-hibernate-contract.sh` as the consumer-owned entry point;
-- `jgit-storage-hibernate-core` and `jgit-storage-hibernate-search` as expected modules
+- Core, Search and Java Analysis as expected modules
   for the updated consumer commit (the upstream descriptor is advanced after this
   Sandbox slice merges).
 
@@ -84,9 +88,9 @@ The contract requires Java 25 and builds the two storage consumer modules indepe
 
 It verifies:
 
-- Core and server Search resolve at the selected/candidate version;
-- Search stays outside the OSGi bridge; Java Analysis, Architecture and benchmark
-  modules do not leak in transitively;
+- Core, server Search and server Java Analysis resolve at the selected/candidate version;
+- Search and Java Analysis stay outside the OSGi bridge; Architecture and benchmark
+  modules do not leak into either consumer;
 - released message/path queries, full message bodies, deep paging, author identities
   and search health work without a copied commit mapping;
 - the Sandbox public integration-boundary tests pass;
