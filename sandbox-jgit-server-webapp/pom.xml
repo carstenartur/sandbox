@@ -77,6 +77,23 @@
 	</repositories>
 
 	<dependencies>
+		<!-- Application-owned optional local embeddings; no model/native initialization at server startup. -->
+		<dependency>
+			<groupId>ai.djl</groupId>
+			<artifactId>api</artifactId>
+			<version>${djl.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ai.djl.huggingface</groupId>
+			<artifactId>tokenizers</artifactId>
+			<version>${djl.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ai.djl.onnxruntime</groupId>
+			<artifactId>onnxruntime-engine</artifactId>
+			<version>${djl.version}</version>
+		</dependency>
+
 		<!-- JGit core -->
 		<dependency>
 			<groupId>org.eclipse.jgit</groupId>
