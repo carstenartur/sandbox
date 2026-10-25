@@ -34,7 +34,7 @@ class ReleaseBuildEvidenceTest {
         Path bin = Files.createDirectory(temporary.resolve("bin"));
         Path runnerTemp = Files.createDirectory(temporary.resolve("runner-temp"));
         Path sentinel = Files.createDirectories(checkout.resolve("target")).resolve("clean-sentinel");
-        Files.writeString(sentinel, "Maven clean must remove this file");
+        Files.writeString(sentinel, "Maven clean must remove this file", StandardCharsets.UTF_8);
         writeExecutable(bin.resolve("xvfb-run"), "#!/bin/bash\nshift\nexec \"$@\"\n");
         writeExecutable(bin.resolve("mvn"), FAKE_MAVEN);
         writeExecutable(checkout.resolve("mvnw"), FAKE_MAVEN);
@@ -50,22 +50,22 @@ class ReleaseBuildEvidenceTest {
         try {
             // Seeing tee's console output proves it opened the log before clean removes target.
             long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-            while (process.isAlive() && !Files.readString(console).contains(BEFORE_CLEAN)
+            while (process.isAlive() && !Files.readString(console, StandardCharsets.UTF_8).contains(BEFORE_CLEAN)
                     && System.nanoTime() < deadline) {
                 Thread.sleep(10);
             }
-            assertTrue(Files.readString(console).contains(BEFORE_CLEAN), Files.readString(console));
+            assertTrue(Files.readString(console, StandardCharsets.UTF_8).contains(BEFORE_CLEAN), Files.readString(console, StandardCharsets.UTF_8));
             process.getOutputStream().write("continue\n".getBytes(StandardCharsets.UTF_8));
             process.getOutputStream().close();
             assertTrue(process.waitFor(10, TimeUnit.SECONDS), "Release build shell did not finish");
 
-            String output = Files.readString(console);
+            String output = Files.readString(console, StandardCharsets.UTF_8);
             assertEquals(mavenExit, process.exitValue(), output);
             assertEquals(MAVEN_OUTPUT, output);
             assertFalse(Files.exists(sentinel), "The fixture must execute Maven clean's deletion");
             Path evidence = checkout.resolve("target/distribution-verification/maven-release.log");
             assertTrue(Files.isRegularFile(evidence), "Maven log must survive clean for exit " + mavenExit);
-            assertEquals(MAVEN_OUTPUT, Files.readString(evidence));
+            assertEquals(MAVEN_OUTPUT, Files.readString(evidence, StandardCharsets.UTF_8));
         } finally {
             if (process.isAlive()) process.destroyForcibly();
         }
