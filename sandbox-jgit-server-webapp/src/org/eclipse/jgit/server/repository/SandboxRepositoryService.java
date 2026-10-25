@@ -17,7 +17,7 @@ import org.eclipse.jgit.lib.Repository;
 /** Application-owned repository lifecycle boundary for REST and Smart HTTP. */
 public interface SandboxRepositoryService extends AutoCloseable {
 
-	/** Opens the supplied repository identity, normalizing and creating it when absent. */
+	/** Opens the identity, creating it when absent; the returned handle is borrowed and must not be closed. */
 	Repository openOrCreate(String name) throws IOException;
 
 	/** Normalizes, opens or creates a repository and returns stable application metadata. */

@@ -48,7 +48,7 @@ public final class ExternalHibernateRepositoryService implements SandboxReposito
 	@Override
 	public Repository openOrCreate(String name) throws IOException {
 		synchronized (lifecycleLock) {
-			return storageLocked(name).repository();
+			return storageLocked(normalize(name)).repository();
 		}
 	}
 
@@ -130,22 +130,11 @@ public final class ExternalHibernateRepositoryService implements SandboxReposito
 		if (closed) {
 			throw new IllegalStateException("Repository service is already closed."); //$NON-NLS-1$
 		}
-		String normalized= normalize(name);
-		return storages.computeIfAbsent(normalized,
+		return storages.computeIfAbsent(name,
 				key -> repositoryFactory.open(new RepositoryName(key)));
 	}
 
 	private static String normalize(String name) {
-		String normalized= Objects.requireNonNull(name, "name").strip(); //$NON-NLS-1$
-		if (normalized.startsWith("/")) { //$NON-NLS-1$
-			normalized= normalized.substring(1);
-		}
-		if (normalized.endsWith(".git")) { //$NON-NLS-1$
-			normalized= normalized.substring(0, normalized.length() - 4);
-		}
-		if (normalized.isEmpty()) {
-			throw new IllegalArgumentException("Repository name must not be blank."); //$NON-NLS-1$
-		}
-		return normalized;
+		return SandboxRepositoryNames.normalize(name);
 	}
 }

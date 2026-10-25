@@ -42,7 +42,7 @@ The storage bridge consumes released Core only. The server additionally consumes
 released Search at the same `jgit-storage-hibernate.version`. Its guarded external
 context uses `SandboxHistorySearch` for commit/path queries, author counts and the
 search health probe; normal startup still selects the copied adapter until the
-remaining Java, ingestion and schema migration slices are complete.
+remaining Java, full-history rebuild and schema migration slices are complete.
 
 The released adapter preserves REST fields, full multiline commit messages,
 repository isolation and `totalResults` as the size of the returned page. Queries
@@ -57,6 +57,27 @@ Two changed-path semantics are deliberate: paths come from the first-parent diff
 terms must match. The copied implementation enumerated whole trees and matched
 any analyzed term. Java projections and optional embeddings remain transitional;
 resolving Search does not qualify normal-startup or production database cutover.
+
+Successful Smart HTTP pushes on the external context now feed the released
+`CommitIndexer`, including history reachable through annotated commit tags.
+Rejected commands and ref deletions add no projections; valid blob/tree tags are
+ignored. Each request owns a repository reference separate from the service.
+Closing a request therefore does not dispose the service's cached handle.
+Repository deletion also removes released Search projections transactionally.
+
+Indexing is synchronous and uses bounded library batches. In 0.11.5 the public
+`indexCommitsFrom` API still walks the entire ancestry of each new tip, including
+previously indexed commits; repeated/shared tips can repeat that work. A successful
+incremental push therefore does not yet provide bounded latency on large histories.
+A public incremental/multi-tip API remains a qualification item before final cutover.
+
+An indexing failure cannot undo an accepted Git push. It is logged and makes both
+health URLs return 503 for the rest of that process. `/admin/reindex` retains its
+existing response and refreshes Lucene from existing ORM rows, serialized against
+projection writers; it does not reconstruct missing rows or clear that failure.
+The explicit Git-history rebuild endpoint and durable recovery state are separate
+migration work. Incremental history retains projections from force-pushed or deleted
+refs until a full rebuild prunes unreachable commits.
 
 See [jgit-storage-hibernate consumer contract](../docs/JGIT_STORAGE_HIBERNATE_CONTRACT.md) for candidate substitution, OSGi/package checks, forbidden-module checks, and retained evidence.
 

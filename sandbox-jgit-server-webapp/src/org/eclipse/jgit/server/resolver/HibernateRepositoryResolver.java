@@ -19,6 +19,7 @@ import java.util.Objects;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.server.repository.CopiedHibernateRepositoryService;
 import org.eclipse.jgit.server.repository.SandboxRepositoryService;
+import org.eclipse.jgit.server.repository.SandboxRepositoryNames;
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.transport.resolver.RepositoryResolver;
 import org.eclipse.jgit.transport.resolver.ServiceNotEnabledException;
@@ -29,6 +30,7 @@ import jakarta.servlet.http.HttpServletRequest;
 /** Resolves Smart HTTP repositories through the application-owned service boundary. */
 public class HibernateRepositoryResolver
 		implements RepositoryResolver<HttpServletRequest>, AutoCloseable {
+	private static final String REPOSITORY_NAME = HibernateRepositoryResolver.class.getName() + ".repositoryName";
 
 	private final HibernateSessionFactoryProvider sessionFactoryProvider;
 	private final SandboxRepositoryService repositories;
@@ -68,10 +70,22 @@ public class HibernateRepositoryResolver
 	@Override
 	public Repository open(HttpServletRequest request, String name) throws ServiceNotEnabledException {
 		try {
-			return repositories.openOrCreate(name);
+			String normalized = SandboxRepositoryNames.normalize(name);
+			Repository repository = repositories.openOrCreate(name);
+			if (request != null) {
+				request.setAttribute(REPOSITORY_NAME, normalized);
+			}
+			// JGit's RepositoryFilter closes this request reference in its finally block.
+			repository.incrementOpen();
+			return repository;
 		} catch (IOException | RuntimeException exception) {
 			throw new ServiceNotEnabledException(exception.getMessage());
 		}
+	}
+
+	/** Returns the identity already resolved for this Smart HTTP request. */
+	public static String repositoryName(HttpServletRequest request) {
+		return (String) Objects.requireNonNull(request.getAttribute(REPOSITORY_NAME), "resolved repository name");
 	}
 
 	/**

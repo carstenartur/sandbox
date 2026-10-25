@@ -20,6 +20,7 @@ import java.util.Objects;
 import org.eclipse.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
 import org.eclipse.jgit.server.history.CopiedSandboxHistorySearch;
 import org.eclipse.jgit.server.history.SandboxHistorySearch;
+import org.eclipse.jgit.server.history.SandboxHistoryMaintenance;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
@@ -42,6 +43,7 @@ public class HealthResource extends HttpServlet {
 	private final SessionFactory sessionFactory;
 
 	private final SandboxHistorySearch history;
+	private final SandboxHistoryMaintenance maintenance;
 
 	/**
 	 * Create a health check endpoint from the application-owned native factory.
@@ -55,8 +57,14 @@ public class HealthResource extends HttpServlet {
 
 	/** Checks the selected database and history projection. */
 	public HealthResource(SessionFactory sessionFactory, SandboxHistorySearch history) {
+		this(sessionFactory, history, SandboxHistoryMaintenance.NONE);
+	}
+
+	/** Includes known post-publication projection failures in search health. */
+	public HealthResource(SessionFactory sessionFactory, SandboxHistorySearch history, SandboxHistoryMaintenance maintenance) {
 		this.sessionFactory= Objects.requireNonNull(sessionFactory, "sessionFactory"); //$NON-NLS-1$
 		this.history= Objects.requireNonNull(history);
+		this.maintenance= Objects.requireNonNull(maintenance);
 	}
 
 	/**
@@ -94,6 +102,7 @@ public class HealthResource extends HttpServlet {
 		// Check search backend
 		try {
 			history.checkSearch();
+			maintenance.checkHealthy();
 			searchOk = true;
 		} catch (Exception e) {
 			searchError = e.getMessage();

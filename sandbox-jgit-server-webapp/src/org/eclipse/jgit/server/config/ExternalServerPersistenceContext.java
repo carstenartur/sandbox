@@ -19,10 +19,13 @@ import org.eclipse.jgit.server.repository.SandboxRepositoryService;
 import org.hibernate.SessionFactory;
 import org.eclipse.jgit.server.history.SandboxHistorySearch;
 import org.eclipse.jgit.server.history.ReleasedSandboxHistorySearch;
+import org.eclipse.jgit.server.history.SandboxHistoryMaintenance;
+import org.eclipse.jgit.server.history.ReleasedSandboxHistoryMaintenance;
 import org.sandbox.jgit.storage.integration.SandboxProjectionEntities;
 
 import io.github.carstenartur.jgit.storage.hibernate.DefaultHibernateRepositoryFactory;
 import io.github.carstenartur.jgit.storage.hibernate.search.SearchEntities;
+import io.github.carstenartur.jgit.storage.hibernate.search.SearchRepositoryDeletionParticipant;
 import io.github.carstenartur.jgit.storage.hibernate.search.analysis.GitTextAnalysis;
 import org.eclipse.jgit.server.history.SandboxHistoryAnalysisConfigurer;
 import io.github.carstenartur.jgit.storage.hibernate.config.HibernateSessionFactoryProvider;
@@ -45,6 +48,7 @@ final class ExternalServerPersistenceContext implements ServerPersistenceContext
 	private final HibernateSessionFactoryProvider owner;
 	private final SandboxRepositoryService repositories;
 	private final SandboxHistorySearch history;
+	private final SandboxHistoryMaintenance maintenance;
 
 	ExternalServerPersistenceContext(Properties properties) {
 		this(new HibernateSessionFactoryProvider(
@@ -57,8 +61,10 @@ final class ExternalServerPersistenceContext implements ServerPersistenceContext
 		this.owner= Objects.requireNonNull(owner, "owner"); //$NON-NLS-1$
 		try {
 			this.history= new ReleasedSandboxHistorySearch(owner.getSessionFactory());
+			this.maintenance= new ReleasedSandboxHistoryMaintenance(owner.getSessionFactory());
 			this.repositories= new ExternalHibernateRepositoryService(
-					new DefaultHibernateRepositoryFactory(owner.getSessionFactory()));
+					new DefaultHibernateRepositoryFactory(owner.getSessionFactory(),
+							java.util.List.of(new SearchRepositoryDeletionParticipant())));
 		} catch (RuntimeException | Error failure) {
 			try {
 				owner.close();
@@ -82,6 +88,11 @@ final class ExternalServerPersistenceContext implements ServerPersistenceContext
 	@Override
 	public SandboxHistorySearch historySearch() {
 		return history;
+	}
+
+	@Override
+	public SandboxHistoryMaintenance historyMaintenance() {
+		return maintenance;
 	}
 
 	@Override
