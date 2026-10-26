@@ -28,11 +28,14 @@ public class SearchHit {
 	private String repoName;
 	private String commitHash;
 	private String content;
+	private String author;
+	private String blobId;
+	private String commitTime;
 
 	/** Creates an empty SearchHit. */
-<span class="nc" id="L33">	public SearchHit() {</span>
+<span class="nc" id="L36">	public SearchHit() {</span>
 		// default constructor
-<span class="nc" id="L35">	}</span>
+<span class="nc" id="L38">	}</span>
 
 	/**
 	 * Creates a SearchHit with all fields.
@@ -45,90 +48,97 @@ public class SearchHit {
 	 * @param commitHash commit object ID
 	 * @param content    raw source content snippet
 	 */
-<span class="nc" id="L48">	public SearchHit(String path, String className, String methodName,</span>
+<span class="nc" id="L51">	public SearchHit(String path, String className, String methodName,</span>
 			double score, String repoName, String commitHash, String content) {
-<span class="nc" id="L50">		this.path= path;</span>
-<span class="nc" id="L51">		this.className= className;</span>
-<span class="nc" id="L52">		this.methodName= methodName;</span>
-<span class="nc" id="L53">		this.score= score;</span>
-<span class="nc" id="L54">		this.repoName= repoName;</span>
-<span class="nc" id="L55">		this.commitHash= commitHash;</span>
-<span class="nc" id="L56">		this.content= content;</span>
-<span class="nc" id="L57">	}</span>
+<span class="nc" id="L53">		this.path= path;</span>
+<span class="nc" id="L54">		this.className= className;</span>
+<span class="nc" id="L55">		this.methodName= methodName;</span>
+<span class="nc" id="L56">		this.score= score;</span>
+<span class="nc" id="L57">		this.repoName= repoName;</span>
+<span class="nc" id="L58">		this.commitHash= commitHash;</span>
+<span class="nc" id="L59">		this.content= content;</span>
+<span class="nc" id="L60">	}</span>
 
 	/** @return the file path */
 	public String getPath() {
-<span class="nc" id="L61">		return path;</span>
+<span class="nc" id="L64">		return path;</span>
 	}
 
 	/** @param path the file path */
 	public void setPath(String path) {
-<span class="nc" id="L66">		this.path= path;</span>
-<span class="nc" id="L67">	}</span>
+<span class="nc" id="L69">		this.path= path;</span>
+<span class="nc" id="L70">	}</span>
 
 	/** @return the class name */
 	public String getClassName() {
-<span class="nc" id="L71">		return className;</span>
+<span class="nc" id="L74">		return className;</span>
 	}
 
 	/** @param className the class name */
 	public void setClassName(String className) {
-<span class="nc" id="L76">		this.className= className;</span>
-<span class="nc" id="L77">	}</span>
+<span class="nc" id="L79">		this.className= className;</span>
+<span class="nc" id="L80">	}</span>
 
 	/** @return the method name */
 	public String getMethodName() {
-<span class="nc" id="L81">		return methodName;</span>
+<span class="nc" id="L84">		return methodName;</span>
 	}
 
 	/** @param methodName the method name */
 	public void setMethodName(String methodName) {
-<span class="nc" id="L86">		this.methodName= methodName;</span>
-<span class="nc" id="L87">	}</span>
+<span class="nc" id="L89">		this.methodName= methodName;</span>
+<span class="nc" id="L90">	}</span>
 
 	/** @return the relevance score */
 	public double getScore() {
-<span class="nc" id="L91">		return score;</span>
+<span class="nc" id="L94">		return score;</span>
 	}
 
 	/** @param score the relevance score */
 	public void setScore(double score) {
-<span class="nc" id="L96">		this.score= score;</span>
-<span class="nc" id="L97">	}</span>
+<span class="nc" id="L99">		this.score= score;</span>
+<span class="nc" id="L100">	}</span>
 
 	/** @return the repository name */
 	public String getRepoName() {
-<span class="nc" id="L101">		return repoName;</span>
+<span class="nc" id="L104">		return repoName;</span>
 	}
 
 	/** @param repoName the repository name */
 	public void setRepoName(String repoName) {
-<span class="nc" id="L106">		this.repoName= repoName;</span>
-<span class="nc" id="L107">	}</span>
+<span class="nc" id="L109">		this.repoName= repoName;</span>
+<span class="nc" id="L110">	}</span>
 
 	/** @return the commit hash */
 	public String getCommitHash() {
-<span class="nc" id="L111">		return commitHash;</span>
+<span class="nc" id="L114">		return commitHash;</span>
 	}
 
 	/** @param commitHash the commit hash */
 	public void setCommitHash(String commitHash) {
-<span class="nc" id="L116">		this.commitHash= commitHash;</span>
-<span class="nc" id="L117">	}</span>
+<span class="nc" id="L119">		this.commitHash= commitHash;</span>
+<span class="nc" id="L120">	}</span>
 
 	/** @return the content snippet */
 	public String getContent() {
-<span class="nc" id="L121">		return content;</span>
+<span class="nc" id="L124">		return content;</span>
 	}
 
 	/** @param content the content snippet */
 	public void setContent(String content) {
-<span class="nc" id="L126">		this.content= content;</span>
-<span class="nc" id="L127">	}</span>
+<span class="nc" id="L129">		this.content= content;</span>
+<span class="nc" id="L130">	}</span>
+
+<span class="nc" id="L132">	public String getAuthor() { return author; }</span>
+<span class="nc" id="L133">	public void setAuthor(String value) { author= value; }</span>
+<span class="nc" id="L134">	public String getBlobId() { return blobId; }</span>
+<span class="nc" id="L135">	public void setBlobId(String value) { blobId= value; }</span>
+<span class="nc" id="L136">	public String getCommitTime() { return commitTime; }</span>
+<span class="nc" id="L137">	public void setCommitTime(String value) { commitTime= value; }</span>
 
 	@Override
 	public String toString() {
-<span class="nc" id="L131">		return path + &quot; [&quot; + className + &quot;]&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L141">		return path + &quot; [&quot; + className + &quot;]&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

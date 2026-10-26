@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.search;
 
-import java.util.Collections;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.List;
 
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -35,7 +35,9 @@ public class SemanticCodeSearchResult implements ISearchResult {
 
 	private final SemanticCodeSearchQuery query;
 
-<span class="nc" id="L38">	private List&lt;SearchHit&gt; matches= Collections.emptyList();</span>
+<span class="nc" id="L38">	private volatile List&lt;SearchHit&gt; matches= List.of();</span>
+
+<span class="nc" id="L40">	private final List&lt;ISearchResultListener&gt; listeners= new CopyOnWriteArrayList&lt;&gt;();</span>
 
 	/**
 	 * Creates a new search result container for the given query.
@@ -43,9 +45,9 @@ public class SemanticCodeSearchResult implements ISearchResult {
 	 * @param query
 	 *            the owning search query
 	 */
-<span class="nc" id="L46">	public SemanticCodeSearchResult(SemanticCodeSearchQuery query) {</span>
-<span class="nc" id="L47">		this.query= query;</span>
-<span class="nc" id="L48">	}</span>
+<span class="nc" id="L48">	public SemanticCodeSearchResult(SemanticCodeSearchQuery query) {</span>
+<span class="nc" id="L49">		this.query= query;</span>
+<span class="nc" id="L50">	}</span>
 
 	/**
 	 * Sets the list of matching search hits.
@@ -54,8 +56,12 @@ public class SemanticCodeSearchResult implements ISearchResult {
 	 *            the search results
 	 */
 	public void setMatches(List&lt;SearchHit&gt; matches) {
-<span class="nc bnc" id="L57" title="All 2 branches missed.">		this.matches= matches != null ? matches : Collections.emptyList();</span>
-<span class="nc" id="L58">	}</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">		this.matches= matches != null ? List.copyOf(matches) : List.of();</span>
+<span class="nc" id="L60">		var event= new org.eclipse.search.ui.SearchResultEvent(this) {</span>
+			private static final long serialVersionUID= 1L;
+		};
+<span class="nc" id="L63">		listeners.forEach(listener -&gt; listener.searchResultChanged(event));</span>
+<span class="nc" id="L64">	}</span>
 
 	/**
 	 * Returns the list of matching search hits.
@@ -63,38 +69,38 @@ public class SemanticCodeSearchResult implements ISearchResult {
 	 * @return unmodifiable list of results
 	 */
 	public List&lt;SearchHit&gt; getMatches() {
-<span class="nc" id="L66">		return Collections.unmodifiableList(matches);</span>
+<span class="nc" id="L72">		return matches;</span>
 	}
 
 	@Override
 	public String getLabel() {
-<span class="nc" id="L71">		return &quot;Semantic Search: '&quot; + query.getQueryText() + &quot;' — &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
-<span class="nc" id="L72">				+ matches.size() + &quot; result(s)&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L77">		return &quot;Semantic Search: '&quot; + query.getQueryText() + &quot;' — &quot; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L78">				+ matches.size() + &quot; result(s)&quot;; //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public String getTooltip() {
-<span class="nc" id="L77">		return &quot;Semantic code search results for: &quot; + query.getQueryText(); //$NON-NLS-1$</span>
+<span class="nc" id="L83">		return &quot;Semantic code search results for: &quot; + query.getQueryText(); //$NON-NLS-1$</span>
 	}
 
 	@Override
 	public ImageDescriptor getImageDescriptor() {
-<span class="nc" id="L82">		return null;</span>
+<span class="nc" id="L88">		return null;</span>
 	}
 
 	@Override
 	public ISearchQuery getQuery() {
-<span class="nc" id="L87">		return query;</span>
+<span class="nc" id="L93">		return query;</span>
 	}
 
 	@Override
 	public void addListener(ISearchResultListener l) {
-		// not needed for static results
-<span class="nc" id="L93">	}</span>
+<span class="nc" id="L98">		listeners.add(l);</span>
+<span class="nc" id="L99">	}</span>
 
 	@Override
 	public void removeListener(ISearchResultListener l) {
-		// not needed for static results
-<span class="nc" id="L98">	}</span>
+<span class="nc" id="L103">		listeners.remove(l);</span>
+<span class="nc" id="L104">	}</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

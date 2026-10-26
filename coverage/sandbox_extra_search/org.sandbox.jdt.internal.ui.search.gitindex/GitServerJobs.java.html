@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>GitServerJobs.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_extra_search</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.search.gitindex</a> &gt; <span class="el_source">GitServerJobs.java</span></div><h1>GitServerJobs.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.search.gitindex;
+
+import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.dialogs.InputDialog;
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.window.Window;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.handlers.HandlerUtil;
+
+/** Dialogs and background execution for explicit server mutations. */
+final class GitServerJobs {
+	private GitServerJobs() { }
+
+	static String repository(ExecutionEvent event, Shell shell) {
+<span class="nc" id="L23">		var part= HandlerUtil.getActivePart(event);</span>
+<span class="nc bnc" id="L24" title="All 2 branches missed.">		String initial= part instanceof GitResultsView view ? view.repositoryName() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L25">		var dialog= new InputDialog(shell, &quot;Server repository&quot;, &quot;Repository name on the configured server:&quot;, initial, //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L26" title="All 2 branches missed.">				value -&gt; value.matches(&quot;[A-Za-z0-9][A-Za-z0-9._-]*&quot;) ? null : &quot;Use letters, numbers, dots, underscores or hyphens.&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L27" title="All 2 branches missed.">		if (dialog.open() != Window.OK) return null;</span>
+<span class="nc bnc" id="L28" title="All 2 branches missed.">		if (part instanceof GitResultsView view) view.repository.setText(dialog.getValue());</span>
+<span class="nc" id="L29">		return dialog.getValue();</span>
+	}
+
+	@FunctionalInterface interface Operation { String run(IProgressMonitor monitor) throws Exception; }
+
+	static void schedule(Shell shell, String title, Operation operation) {
+<span class="nc" id="L35">		var display= shell.getDisplay();</span>
+<span class="nc" id="L36">		Job job= Job.create(title, monitor -&gt; {</span>
+			try {
+<span class="nc bnc" id="L38" title="All 2 branches missed.">				if (monitor.isCanceled()) return Status.CANCEL_STATUS;</span>
+<span class="nc" id="L39">				String message= operation.run(monitor);</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">				if (monitor.isCanceled()) return Status.CANCEL_STATUS;</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">				display.asyncExec(() -&gt; { if (!shell.isDisposed()) MessageDialog.openInformation(shell, title, message); });</span>
+<span class="nc" id="L42">				return Status.OK_STATUS;</span>
+<span class="nc" id="L43">			} catch (OperationCanceledException cancelled) {</span>
+<span class="nc" id="L44">				return Status.CANCEL_STATUS;</span>
+<span class="nc" id="L45">			} catch (Exception failure) {</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">				if (monitor.isCanceled()) return Status.CANCEL_STATUS;</span>
+<span class="nc" id="L47">				return Status.error(title + &quot;: &quot; + failure.getMessage(), failure); //$NON-NLS-1$</span>
+<span class="nc" id="L48">			} finally { monitor.done(); }</span>
+		});
+<span class="nc" id="L50">		job.setUser(true);</span>
+<span class="nc" id="L51">		job.schedule();</span>
+<span class="nc" id="L52">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

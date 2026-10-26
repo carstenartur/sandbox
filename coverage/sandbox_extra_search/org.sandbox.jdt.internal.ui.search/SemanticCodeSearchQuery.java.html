@@ -76,58 +76,64 @@ public class SemanticCodeSearchQuery implements ISearchQuery {
 	@Override
 	public IStatus run(IProgressMonitor monitor) {
 <span class="nc" id="L78">		monitor.beginTask(getLabel(), IProgressMonitor.UNKNOWN);</span>
+<span class="nc" id="L79">		result.setMatches(List.of());</span>
 		try {
-<span class="nc bnc" id="L80" title="All 2 branches missed.">			if (monitor.isCanceled()) {</span>
-<span class="nc" id="L81">				return Status.CANCEL_STATUS;</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">			if (monitor.isCanceled()) {</span>
+<span class="nc" id="L82">				return Status.CANCEL_STATUS;</span>
 			}
-<span class="nc" id="L83">			EmbeddedSearchService searchService= EmbeddedSearchService.getInstance();</span>
-<span class="nc" id="L84">			SemanticSearchClient client= searchService.getSearchClient();</span>
-<span class="nc bnc" id="L85" title="All 2 branches missed.">			if (!searchService.isAvailable()) {</span>
-<span class="nc" id="L86">				return Status.error(&quot;Semantic search service is not available. &quot; //$NON-NLS-1$</span>
+<span class="nc" id="L84">			EmbeddedSearchService searchService= EmbeddedSearchService.getInstance();</span>
+<span class="nc" id="L85">			SemanticSearchClient client= searchService.getSearchClient();</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">			if (!searchService.isAvailable()) {</span>
+<span class="nc" id="L87">				return Status.error(&quot;Semantic search service is not available. &quot; //$NON-NLS-1$</span>
 						+ &quot;Please ensure the search backend is running.&quot;); //$NON-NLS-1$
 			}
 			List&lt;SearchHit&gt; hits;
-<span class="nc bnc" id="L90" title="All 3 branches missed.">			switch (mode) {</span>
+<span class="nc bnc" id="L91" title="All 3 branches missed.">			switch (mode) {</span>
 				case HYBRID:
-<span class="nc" id="L92">					hits= client.hybridSearch(repoName, queryText, maxResults);</span>
-<span class="nc" id="L93">					break;</span>
+<span class="nc" id="L93">					hits= client.hybridSearch(repoName, queryText, maxResults);</span>
+<span class="nc" id="L94">					break;</span>
 				case SIMILAR:
 					// queryText is treated as a blob object ID for similar code search
-<span class="nc" id="L96">					hits= client.findSimilarCode(repoName, queryText, maxResults);</span>
-<span class="nc" id="L97">					break;</span>
+<span class="nc" id="L97">					hits= client.findSimilarCode(repoName, queryText, maxResults);</span>
+<span class="nc" id="L98">					break;</span>
 				case SEMANTIC:
 				default:
-<span class="nc" id="L100">					hits= client.semanticSearch(repoName, queryText, maxResults);</span>
+<span class="nc" id="L101">					hits= client.semanticSearch(repoName, queryText, maxResults);</span>
 					break;
 			}
-<span class="nc bnc" id="L103" title="All 2 branches missed.">			if (monitor.isCanceled()) {</span>
-<span class="nc" id="L104">				return Status.CANCEL_STATUS;</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">			if (monitor.isCanceled()) {</span>
+<span class="nc" id="L105">				return Status.CANCEL_STATUS;</span>
 			}
-<span class="nc" id="L106">			result.setMatches(hits);</span>
-<span class="nc" id="L107">			return Status.OK_STATUS;</span>
+<span class="nc" id="L107">			result.setMatches(hits);</span>
+<span class="nc" id="L108">			return Status.OK_STATUS;</span>
+<span class="nc" id="L109">		} catch (org.eclipse.core.runtime.OperationCanceledException cancelled) {</span>
+<span class="nc" id="L110">			return Status.CANCEL_STATUS;</span>
+<span class="nc" id="L111">		} catch (RuntimeException failure) {</span>
+<span class="nc" id="L112">			result.setMatches(List.of());</span>
+<span class="nc" id="L113">			return Status.error(failure.getMessage(), failure);</span>
 		} finally {
-<span class="nc" id="L109">			monitor.done();</span>
+<span class="nc" id="L115">			monitor.done();</span>
 		}
 	}
 
 	@Override
 	public String getLabel() {
-<span class="nc" id="L115">		return &quot;Semantic Search: '&quot; + queryText + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L121">		return &quot;Semantic Search: '&quot; + queryText + &quot;'&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
 	}
 
 	@Override
 	public boolean canRerun() {
-<span class="nc" id="L120">		return true;</span>
+<span class="nc" id="L126">		return true;</span>
 	}
 
 	@Override
 	public boolean canRunInBackground() {
-<span class="nc" id="L125">		return true;</span>
+<span class="nc" id="L131">		return true;</span>
 	}
 
 	@Override
 	public ISearchResult getSearchResult() {
-<span class="nc" id="L130">		return result;</span>
+<span class="nc" id="L136">		return result;</span>
 	}
 
 	/**
@@ -136,7 +142,7 @@ public class SemanticCodeSearchQuery implements ISearchQuery {
 	 * @return the natural language query text
 	 */
 	public String getQueryText() {
-<span class="nc" id="L139">		return queryText;</span>
+<span class="nc" id="L145">		return queryText;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

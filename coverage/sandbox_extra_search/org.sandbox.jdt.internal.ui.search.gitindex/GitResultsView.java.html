@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>GitResultsView.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_extra_search</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.search.gitindex</a> &gt; <span class="el_source">GitResultsView.java</span></div><h1>GitResultsView.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.search.gitindex;
+
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.ColumnLabelProvider;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.part.ViewPart;
+
+/** Shared background request and lifecycle handling for server-backed views. */
+<span class="nc" id="L29">abstract class GitResultsView extends ViewPart {</span>
+
+	protected Combo repository;
+	protected TableViewer table;
+	private Label status;
+	private Job request;
+	private long generation;
+
+	@Override public void createPartControl(Composite parent) {
+<span class="nc" id="L38">		parent.setLayout(new GridLayout(2, false));</span>
+<span class="nc" id="L39">		new Label(parent, SWT.NONE).setText(&quot;Repository:&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L40">		repository= new Combo(parent, SWT.DROP_DOWN);</span>
+<span class="nc" id="L41">		repository.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L42">		createQuery(parent);</span>
+<span class="nc" id="L43">		table= new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.H_SCROLL | SWT.V_SCROLL);</span>
+<span class="nc" id="L44">		table.getTable().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));</span>
+<span class="nc" id="L45">		table.getTable().setHeaderVisible(true);</span>
+<span class="nc" id="L46">		table.getTable().setLinesVisible(true);</span>
+<span class="nc" id="L47">		table.setContentProvider(ArrayContentProvider.getInstance());</span>
+<span class="nc" id="L48">		createColumns();</span>
+<span class="nc" id="L49">		Button button= new Button(parent, SWT.PUSH);</span>
+<span class="nc" id="L50">		button.setText(actionLabel());</span>
+<span class="nc" id="L51">		button.addListener(SWT.Selection, event -&gt; runQuery());</span>
+<span class="nc" id="L52">		status= new Label(parent, SWT.WRAP);</span>
+<span class="nc" id="L53">		status.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L54">		status.setText(&quot;Enter a server repository name.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L55">		repository.addListener(SWT.DefaultSelection, event -&gt; runQuery());</span>
+<span class="nc" id="L56">		repository.addModifyListener(event -&gt; invalidateResults());</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">		parent.addDisposeListener(event -&gt; { generation++; if (request != null) request.cancel(); });</span>
+<span class="nc" id="L58">		PlatformUI.getWorkbench().getHelpSystem().setHelp(parent, &quot;sandbox_extra_search.git_search&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L59">	}</span>
+
+	protected abstract void createQuery(Composite parent);
+	protected abstract void createColumns();
+	protected abstract Supplier&lt;? extends List&lt;?&gt;&gt; query(String repo, SemanticSearchClient client);
+	protected abstract String actionLabel();
+
+	protected Text input(Composite parent, String label, String hint) {
+<span class="nc" id="L67">		new Label(parent, SWT.NONE).setText(label);</span>
+<span class="nc" id="L68">		Text text= new Text(parent, SWT.BORDER | SWT.SEARCH);</span>
+<span class="nc" id="L69">		text.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L70">		text.setMessage(hint);</span>
+<span class="nc" id="L71">		text.addListener(SWT.DefaultSelection, event -&gt; runQuery());</span>
+<span class="nc" id="L72">		text.addModifyListener(event -&gt; invalidateResults());</span>
+<span class="nc" id="L73">		return text;</span>
+	}
+
+	protected void column(String label, int width, Function&lt;Object, String&gt; value) {
+<span class="nc" id="L77">		var column= new TableViewerColumn(table, SWT.NONE);</span>
+<span class="nc" id="L78">		column.getColumn().setText(label);</span>
+<span class="nc" id="L79">		column.getColumn().setWidth(width);</span>
+<span class="nc" id="L80">		column.setLabelProvider(new ColumnLabelProvider() {</span>
+<span class="nc" id="L81">			@Override public String getText(Object element) { return java.util.Objects.toString(value.apply(element), &quot;&quot;); } //$NON-NLS-1$</span>
+		});
+<span class="nc" id="L83">	}</span>
+
+<span class="nc" id="L85">	String repositoryName() { return repository.getText().strip(); }</span>
+
+	protected void invalidateResults() {
+<span class="nc" id="L88">		generation++;</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">		if (request != null) request.cancel();</span>
+<span class="nc bnc" id="L90" title="All 6 branches missed.">		if (table == null || status == null || status.isDisposed()) return;</span>
+<span class="nc" id="L91">		table.setInput(List.of());</span>
+<span class="nc" id="L92">		status.setText(&quot;Inputs changed. Run the query to refresh results.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L93">		status.getParent().layout();</span>
+<span class="nc" id="L94">	}</span>
+
+	private void runQuery() {
+<span class="nc" id="L97">		long current= ++generation;</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">		if (request != null) request.cancel();</span>
+<span class="nc" id="L99">		table.setInput(List.of());</span>
+		try {
+<span class="nc" id="L101">			String repo= repositoryName();</span>
+<span class="nc" id="L102">			SemanticSearchClient.requireRepository(repo);</span>
+			// Snapshot every widget value on the UI thread before scheduling.
+<span class="nc" id="L104">			var fetch= query(repo, EmbeddedSearchService.getInstance().getSearchClient());</span>
+<span class="nc" id="L105">			status.setText(&quot;Loading…&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L106">			var display= status.getDisplay();</span>
+<span class="nc" id="L107">			request= Job.create(actionLabel(), monitor -&gt; {</span>
+<span class="nc" id="L108">				List&lt;?&gt; rows= List.of();</span>
+				String message;
+				try {
+<span class="nc bnc" id="L111" title="All 2 branches missed.">					if (monitor.isCanceled()) throw new OperationCanceledException();</span>
+<span class="nc" id="L112">					rows= fetch.get();</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">					message= monitor.isCanceled() ? &quot;Cancelled.&quot; : rows.size() + &quot; result(s).&quot;; //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">					if (monitor.isCanceled()) rows= List.of();</span>
+<span class="nc" id="L115">				} catch (OperationCanceledException cancelled) {</span>
+<span class="nc" id="L116">					message= &quot;Cancelled.&quot;; //$NON-NLS-1$</span>
+<span class="nc" id="L117">				} catch (RuntimeException failure) {</span>
+<span class="nc" id="L118">					message= &quot;Error: &quot; + failure.getMessage(); //$NON-NLS-1$</span>
+				}
+<span class="nc" id="L120">				var result= rows;</span>
+<span class="nc" id="L121">				var outcome= message;</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">				if (!display.isDisposed()) display.asyncExec(() -&gt; {</span>
+<span class="nc bnc" id="L123" title="All 4 branches missed.">					if (status.isDisposed() || current != generation) return;</span>
+<span class="nc" id="L124">					table.setInput(result);</span>
+<span class="nc" id="L125">					status.setText(outcome);</span>
+<span class="nc" id="L126">					status.getParent().layout();</span>
+<span class="nc" id="L127">				});</span>
+<span class="nc" id="L128">			});</span>
+<span class="nc" id="L129">			request.setUser(true);</span>
+<span class="nc" id="L130">			request.schedule();</span>
+<span class="nc" id="L131">		} catch (IllegalArgumentException invalid) {</span>
+<span class="nc" id="L132">			status.setText(invalid.getMessage());</span>
+<span class="nc" id="L133">			status.getParent().layout();</span>
+		}
+<span class="nc" id="L135">	}</span>
+
+<span class="nc" id="L137">	@Override public void setFocus() { repository.setFocus(); }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

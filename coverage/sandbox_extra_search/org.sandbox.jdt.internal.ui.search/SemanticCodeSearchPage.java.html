@@ -50,7 +50,7 @@ import org.sandbox.jdt.internal.ui.search.gitindex.EmbeddedSearchService;
  * │ Repository: [text field                       ] │
  * │ Max results: [10 ▾]                             │
  * │                                                 │
- * │ ℹ Uses local AI embeddings (offline, ~1ms)      │
+ * │ ℹ Optional model runs on the search server      │
  * └─────────────────────────────────────────────────┘
  * &lt;/pre&gt;
  */
@@ -122,39 +122,45 @@ import org.sandbox.jdt.internal.ui.search.gitindex.EmbeddedSearchService;
 		// Info label
 <span class="nc" id="L123">		Label infoLabel= new Label(composite, SWT.NONE);</span>
 <span class="nc" id="L124">		infoLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));</span>
-<span class="nc" id="L125">		infoLabel.setText(&quot;\u2139 Uses local AI embeddings via local Git index service (requires running backend)&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L125">		infoLabel.setText(&quot;Optional server model; first use may download it. Hybrid can fall back to text.&quot;); //$NON-NLS-1$</span>
 
-<span class="nc" id="L127">		setControl(composite);</span>
-<span class="nc" id="L128">	}</span>
+<span class="nc" id="L127">		org.eclipse.ui.PlatformUI.getWorkbench().getHelpSystem().setHelp(composite, &quot;sandbox_extra_search.git_search&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L128">		setControl(composite);</span>
+<span class="nc" id="L129">	}</span>
 
 	@Override
 	public boolean performAction() {
-<span class="nc bnc" id="L132" title="All 2 branches missed.">		String text= queryText != null ? queryText.getText().trim() : &quot;&quot;; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L133" title="All 2 branches missed.">		if (text.isEmpty()) {</span>
-<span class="nc" id="L134">			return false;</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">		String text= queryText != null ? queryText.getText().trim() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">		if (text.isEmpty()) {</span>
+<span class="nc" id="L135">			return false;</span>
 		}
 
 		SearchMode mode;
-<span class="nc bnc" id="L138" title="All 4 branches missed.">		if (hybridRadio != null &amp;&amp; hybridRadio.getSelection()) {</span>
-<span class="nc" id="L139">			mode= SearchMode.HYBRID;</span>
-<span class="nc bnc" id="L140" title="All 4 branches missed.">		} else if (similarRadio != null &amp;&amp; similarRadio.getSelection()) {</span>
-<span class="nc" id="L141">			mode= SearchMode.SIMILAR;</span>
-<span class="nc" id="L142">		} else {</span>
-<span class="nc" id="L143">			mode= SearchMode.SEMANTIC;</span>
+<span class="nc bnc" id="L139" title="All 4 branches missed.">		if (hybridRadio != null &amp;&amp; hybridRadio.getSelection()) {</span>
+<span class="nc" id="L140">			mode= SearchMode.HYBRID;</span>
+<span class="nc bnc" id="L141" title="All 4 branches missed.">		} else if (similarRadio != null &amp;&amp; similarRadio.getSelection()) {</span>
+<span class="nc" id="L142">			mode= SearchMode.SIMILAR;</span>
+<span class="nc" id="L143">		} else {</span>
+<span class="nc" id="L144">			mode= SearchMode.SEMANTIC;</span>
 		}
 
-<span class="nc bnc" id="L146" title="All 2 branches missed.">		String repo= repoText != null ? repoText.getText().trim() : &quot;&quot;; //$NON-NLS-1$</span>
-<span class="nc bnc" id="L147" title="All 2 branches missed.">		int maxResults= maxResultsSpinner != null ? maxResultsSpinner.getSelection() : 10;</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">		String repo= repoText != null ? repoText.getText().trim() : &quot;&quot;; //$NON-NLS-1$</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">		if (repo.isEmpty()) {</span>
+<span class="nc" id="L149">			setErrorMessage(&quot;Repository is required.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L150">			return false;</span>
+		}
+<span class="nc" id="L152">		setErrorMessage(null);</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">		int maxResults= maxResultsSpinner != null ? maxResultsSpinner.getSelection() : 10;</span>
 
-<span class="nc" id="L149">		SemanticCodeSearchQuery query= new SemanticCodeSearchQuery(text, repo, maxResults, mode);</span>
-<span class="nc" id="L150">		NewSearchUI.runQueryInBackground(query);</span>
-<span class="nc" id="L151">		return true;</span>
+<span class="nc" id="L155">		SemanticCodeSearchQuery query= new SemanticCodeSearchQuery(text, repo, maxResults, mode);</span>
+<span class="nc" id="L156">		NewSearchUI.runQueryInBackground(query);</span>
+<span class="nc" id="L157">		return true;</span>
 	}
 
 	@Override
 	public void setContainer(ISearchPageContainer container) {
-<span class="nc" id="L156">		this.container= container;</span>
-<span class="nc" id="L157">	}</span>
+<span class="nc" id="L162">		this.container= container;</span>
+<span class="nc" id="L163">	}</span>
 
 	/**
 	 * Returns the search page container.
@@ -162,7 +168,7 @@ import org.sandbox.jdt.internal.ui.search.gitindex.EmbeddedSearchService;
 	 * @return the container
 	 */
 	protected ISearchPageContainer getContainer() {
-<span class="nc" id="L165">		return container;</span>
+<span class="nc" id="L171">		return container;</span>
 	}
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

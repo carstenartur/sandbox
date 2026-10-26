@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SemanticCodeSearchResultPage.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_extra_search</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.search</a> &gt; <span class="el_source">SemanticCodeSearchResultPage.java</span></div><h1>SemanticCodeSearchResultPage.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.search;
+
+import java.util.List;
+import java.util.function.Function;
+
+import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.ColumnLabelProvider;
+import org.eclipse.jface.viewers.TableViewer;
+import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.search.ui.ISearchResult;
+import org.eclipse.search.ui.ISearchResultListener;
+import org.eclipse.search.ui.ISearchResultPage;
+import org.eclipse.search.ui.ISearchResultViewPart;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.ui.IMemento;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.part.Page;
+import org.sandbox.jdt.internal.ui.search.gitindex.SearchHit;
+
+/** Displays semantic, hybrid and similar-code results in Eclipse's Search view. */
+<span class="nc" id="L27">public class SemanticCodeSearchResultPage extends Page implements ISearchResultPage {</span>
+	private TableViewer table;
+	private SemanticCodeSearchResult result;
+	private ISearchResultViewPart view;
+	private String id;
+<span class="nc" id="L32">	private final ISearchResultListener listener= event -&gt; refresh();</span>
+
+	@Override public void createControl(Composite parent) {
+<span class="nc" id="L35">		table= new TableViewer(parent, SWT.BORDER | SWT.FULL_SELECTION | SWT.H_SCROLL | SWT.V_SCROLL);</span>
+<span class="nc" id="L36">		table.getTable().setHeaderVisible(true);</span>
+<span class="nc" id="L37">		table.getTable().setLinesVisible(true);</span>
+<span class="nc" id="L38">		table.setContentProvider(ArrayContentProvider.getInstance());</span>
+<span class="nc" id="L39">		column(&quot;Commit&quot;, 180, SearchHit::getCommitHash); //$NON-NLS-1$</span>
+<span class="nc" id="L40">		column(&quot;Path&quot;, 300, SearchHit::getPath); //$NON-NLS-1$</span>
+<span class="nc" id="L41">		column(&quot;Types&quot;, 180, SearchHit::getClassName); //$NON-NLS-1$</span>
+<span class="nc" id="L42">		column(&quot;Methods&quot;, 240, SearchHit::getMethodName); //$NON-NLS-1$</span>
+<span class="nc" id="L43">		column(&quot;Package&quot;, 180, SearchHit::getContent); //$NON-NLS-1$</span>
+<span class="nc" id="L44">		PlatformUI.getWorkbench().getHelpSystem().setHelp(table.getControl(), &quot;sandbox_extra_search.git_search&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L45">		refresh();</span>
+<span class="nc" id="L46">	}</span>
+
+	private void column(String label, int width, Function&lt;SearchHit, String&gt; value) {
+<span class="nc" id="L49">		var column= new TableViewerColumn(table, SWT.NONE);</span>
+<span class="nc" id="L50">		column.getColumn().setText(label);</span>
+<span class="nc" id="L51">		column.getColumn().setWidth(width);</span>
+<span class="nc" id="L52">		column.setLabelProvider(new ColumnLabelProvider() {</span>
+<span class="nc" id="L53">			@Override public String getText(Object element) { return java.util.Objects.toString(value.apply((SearchHit) element), &quot;&quot;); } //$NON-NLS-1$</span>
+		});
+<span class="nc" id="L55">	}</span>
+
+	private void refresh() {
+<span class="nc bnc" id="L58" title="All 4 branches missed.">		if (table == null || table.getControl().isDisposed()) return;</span>
+<span class="nc" id="L59">		var display= table.getControl().getDisplay();</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">		if (!display.isDisposed()) display.asyncExec(() -&gt; {</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">			if (table.getControl().isDisposed()) return;</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">			table.setInput(result == null ? List.of() : result.getMatches());</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">			if (view != null) view.updateLabel();</span>
+<span class="nc" id="L64">		});</span>
+<span class="nc" id="L65">	}</span>
+
+	@Override public void setInput(ISearchResult input, Object state) {
+<span class="nc bnc" id="L68" title="All 2 branches missed.">		if (result != null) result.removeListener(listener);</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		result= input instanceof SemanticCodeSearchResult semantic ? semantic : null;</span>
+<span class="nc bnc" id="L70" title="All 2 branches missed.">		if (result != null) result.addListener(listener);</span>
+<span class="nc" id="L71">		refresh();</span>
+<span class="nc" id="L72">	}</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">	@Override public Control getControl() { return table == null ? null : table.getControl(); }</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">	@Override public void setFocus() { if (table != null) table.getControl().setFocus(); }</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">	@Override public String getLabel() { return result == null ? &quot;Semantic Search&quot; : result.getLabel(); } //$NON-NLS-1$</span>
+<span class="nc" id="L76">	@Override public void setViewPart(ISearchResultViewPart part) { view= part; }</span>
+<span class="nc" id="L77">	@Override public void setID(String value) { id= value; }</span>
+<span class="nc" id="L78">	@Override public String getID() { return id; }</span>
+<span class="nc" id="L79">	@Override public Object getUIState() { return null; }</span>
+<span class="nc" id="L80">	@Override public void restoreState(IMemento memento) { }</span>
+<span class="nc" id="L81">	@Override public void saveState(IMemento memento) { }</span>
+	@Override public void dispose() {
+<span class="nc bnc" id="L83" title="All 2 branches missed.">		if (result != null) result.removeListener(listener);</span>
+<span class="nc bnc" id="L84" title="All 4 branches missed.">		if (table != null &amp;&amp; !table.getControl().isDisposed()) table.getControl().dispose();</span>
+<span class="nc" id="L85">		super.dispose();</span>
+<span class="nc" id="L86">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

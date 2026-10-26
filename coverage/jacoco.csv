@@ -1610,31 +1610,38 @@ sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,Jav
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,AnalysisGenerations.Snapshot,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationSourceReports.Complexity,0,9,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.resolver,HibernateRepositoryResolver,7,53,0,2,2,15,0,9,0,8
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,SemanticCodeSearchResult,41,0,2,0,14,0,10,0,9,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,SemanticCodeSearchQuery,112,0,9,0,30,0,12,0,7,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,SemanticCodeSearchPage,283,0,16,0,55,0,13,0,5,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,SemanticCodeSearchResult,71,0,2,0,19,0,11,0,10,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,SemanticCodeSearchQuery,133,0,9,0,36,0,12,0,7,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,SemanticCodeSearchResultPage,230,0,30,0,45,0,32,0,17,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,SemanticCodeSearchPage,299,0,18,0,60,0,14,0,5,0
 sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,Messages,4,0,0,0,2,0,1,0,1,0
 sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,UpdateNeededSearchPage.SearchSettingsData,134,0,10,0,43,0,16,0,11,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,SemanticCodeSearchResultPage.new ColumnLabelProvider() {...},17,0,0,0,2,0,2,0,2,0
 sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,SemanticCodeSearchQuery.SearchMode,34,0,0,0,7,0,1,0,1,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,SemanticCodeSearchResult.new SearchResultEvent() {...},7,0,0,0,1,0,1,0,1,0
 sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,OpenUpdateSearchPageAction,54,0,10,0,24,0,11,0,6,0
 sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,UpdateNeededSearchPage,469,0,55,0,119,0,43,0,14,0
 sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,OpenSemanticSearchPageAction,54,0,10,0,24,0,11,0,6,0
 sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search,UpdateNeededSearchPage.new SelectionAdapter() {...},34,0,2,0,7,0,3,0,2,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,IndexRepositoryHandler,20,0,0,0,6,0,3,0,3,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,RepositoryIndexService,48,0,0,0,14,0,4,0,4,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,ReindexAllHandler.new Job() {...},53,0,6,0,15,0,5,0,2,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,IndexRepositoryHandler,71,0,6,0,18,0,6,0,3,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,GitResultsView.new ColumnLabelProvider() {...},16,0,0,0,2,0,2,0,2,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,GitSearchPreferences,132,0,14,0,28,0,14,0,7,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,GitServerJobs,127,0,16,0,23,0,13,0,5,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,RepositoryIndexService,19,0,0,0,4,0,2,0,2,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,ReindexAllHandler.new InputDialog() {...},21,0,0,0,4,0,2,0,2,0
 sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,AuthorStats,52,0,0,0,21,0,11,0,11,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,IncrementalIndexer,112,0,16,0,31,0,14,0,6,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,IncrementalIndexer,129,0,16,0,17,0,10,0,2,0
 sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,EmbeddedSearchService,79,0,10,0,23,0,13,0,8,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,GitSearchView,290,0,8,0,67,0,12,0,6,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,SearchHit,82,0,0,0,33,0,17,0,17,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,GitSearchView,195,0,11,0,29,0,19,0,11,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,SearchHit,103,0,0,0,39,0,23,0,23,0
 sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,EmbeddedSearchService.Holder,5,0,0,0,1,0,1,0,1,0
 sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,EGitRepositoryTracker,136,0,18,0,41,0,18,0,9,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,IndexRepositoryHandler.new Job() {...},53,0,6,0,15,0,5,0,2,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,SemanticSearchClient,825,0,102,0,236,0,80,0,27,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,JavaTypeHistoryView,200,0,2,0,45,0,7,0,6,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,ReindexAllHandler,20,0,0,0,6,0,3,0,3,0
-sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,CommitAnalyticsView,224,0,2,0,46,0,7,0,6,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,SemanticSearchClient,604,0,42,0,117,0,48,0,27,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,JavaTypeHistoryView,72,0,2,0,12,0,11,0,10,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,ReindexAllHandler,65,0,8,0,14,0,8,0,4,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,IncrementalIndexer.new ProgressMonitor() {...},31,0,0,0,7,0,7,0,7,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,GitResultsView,407,0,24,0,77,0,28,0,16,0
+sandbox_coverage/sandbox_extra_search,org.sandbox.jdt.internal.ui.search.gitindex,CommitAnalyticsView,43,0,0,0,8,0,9,0,9,0
 sandbox_coverage/sandbox_test_commons,org.eclipse.jdt.testplugin,TestFormatterOptions,217,2014,138,138,0,365,138,4,0,4
 sandbox_coverage/sandbox_test_commons,org.eclipse.jdt.testplugin,TestOptions,0,48,0,0,0,12,0,2,0,2
 sandbox_coverage/sandbox_test_commons,org.sandbox.jdt.ui.tests.quickfix.rules,EclipseJava22,0,5,0,0,0,2,0,1,0,1

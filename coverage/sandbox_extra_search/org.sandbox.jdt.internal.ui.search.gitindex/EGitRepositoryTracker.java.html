@@ -30,8 +30,8 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
 /**
- * Tracks EGit-managed repositories and triggers indexing when changes are
- * detected. Listens for workspace resource changes that affect {@code .git}
+ * Observes EGit-managed repositories and logs when Git changes are
+ * detected. Uploads are performed only by the explicit import command. Listens for workspace resource changes that affect {@code .git}
  * directories (refs, objects) to detect new commits from EGit operations.
  *
  * &lt;p&gt;

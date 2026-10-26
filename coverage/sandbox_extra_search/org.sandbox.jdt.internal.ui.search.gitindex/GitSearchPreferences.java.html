@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>GitSearchPreferences.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_extra_search</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.search.gitindex</a> &gt; <span class="el_source">GitSearchPreferences.java</span></div><h1>GitSearchPreferences.java</h1><pre class="source lang-java linenums">/*******************************************************************************
+ * Copyright (c) 2026 Carsten Hammer and others.
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.sandbox.jdt.internal.ui.search.gitindex;
+
+import java.net.URI;
+
+import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jface.preference.FieldEditorPreferencePage;
+import org.eclipse.jface.preference.StringFieldEditor;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.preferences.ScopedPreferenceStore;
+
+/** Explicit server addresses shared by the Git search clients. */
+public class GitSearchPreferences extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
+
+	private static final String QUALIFIER= &quot;sandbox_extra_search&quot;; //$NON-NLS-1$
+	private static final String REST= &quot;restUrl&quot;; //$NON-NLS-1$
+	private static final String GIT= &quot;gitUrl&quot;; //$NON-NLS-1$
+	private static final String DEFAULT_GIT= &quot;http://localhost:8443/git&quot;; //$NON-NLS-1$
+	private StringFieldEditor rest;
+	private StringFieldEditor git;
+
+	public GitSearchPreferences() {
+<span class="nc" id="L27">		super(GRID);</span>
+<span class="nc" id="L28">		var store= new ScopedPreferenceStore(InstanceScope.INSTANCE, QUALIFIER);</span>
+<span class="nc" id="L29">		store.setDefault(REST, SemanticSearchClient.DEFAULT_BASE_URL);</span>
+<span class="nc" id="L30">		store.setDefault(GIT, DEFAULT_GIT);</span>
+<span class="nc" id="L31">		setPreferenceStore(store);</span>
+<span class="nc" id="L32">		setDescription(&quot;Addresses of the separate Sandbox Git server. Admin tokens are requested per rebuild and are not saved.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L33">	}</span>
+
+<span class="nc" id="L35">	@Override public void init(IWorkbench workbench) { }</span>
+
+	@Override protected void createFieldEditors() {
+<span class="nc" id="L38">		rest= new StringFieldEditor(REST, &quot;REST base URL:&quot;, getFieldEditorParent()); //$NON-NLS-1$</span>
+<span class="nc" id="L39">		git= new StringFieldEditor(GIT, &quot;Git base URL:&quot;, getFieldEditorParent()); //$NON-NLS-1$</span>
+<span class="nc" id="L40">		addField(rest);</span>
+<span class="nc" id="L41">		addField(git);</span>
+<span class="nc" id="L42">	}</span>
+
+	@Override public boolean performOk() {
+		try {
+<span class="nc" id="L46">			validateUrl(rest.getStringValue());</span>
+<span class="nc" id="L47">			validateUrl(git.getStringValue());</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">			if (!super.performOk()) return false;</span>
+<span class="nc" id="L49">			SemanticSearchClient.initialize(rest.getStringValue());</span>
+<span class="nc" id="L50">			return true;</span>
+<span class="nc" id="L51">		} catch (IllegalArgumentException invalid) {</span>
+<span class="nc" id="L52">			setErrorMessage(invalid.getMessage());</span>
+<span class="nc" id="L53">			return false;</span>
+		}
+	}
+
+	static String restUrl() {
+<span class="nc" id="L58">		return InstanceScope.INSTANCE.getNode(QUALIFIER).get(REST, SemanticSearchClient.DEFAULT_BASE_URL);</span>
+	}
+
+	static String gitUrl() {
+<span class="nc" id="L62">		return validateUrl(InstanceScope.INSTANCE.getNode(QUALIFIER).get(GIT, DEFAULT_GIT));</span>
+	}
+
+	static String validateUrl(String value) {
+<span class="nc" id="L66">		URI uri= URI.create(value.strip());</span>
+<span class="nc bnc" id="L67" title="All 6 branches missed.">		if (!(&quot;http&quot;.equals(uri.getScheme()) || &quot;https&quot;.equals(uri.getScheme())) || uri.getHost() == null //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc bnc" id="L68" title="All 6 branches missed.">				|| uri.getUserInfo() != null || uri.getQuery() != null || uri.getFragment() != null) {</span>
+<span class="nc" id="L69">			throw new IllegalArgumentException(&quot;Enter an HTTP(S) server URL without credentials, query or fragment.&quot;); //$NON-NLS-1$</span>
+		}
+<span class="nc" id="L71">		return uri.toString().replaceAll(&quot;/+$&quot;, &quot;&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

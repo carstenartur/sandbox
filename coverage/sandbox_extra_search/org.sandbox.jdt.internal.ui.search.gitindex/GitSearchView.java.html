@@ -1,162 +1,60 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>GitSearchView.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox_extra_search</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.jdt.internal.ui.search.gitindex</a> &gt; <span class="el_source">GitSearchView.java</span></div><h1>GitSearchView.java</h1><pre class="source lang-java linenums">/*******************************************************************************
- * Copyright (c) 2025 Carsten Hammer.
- *
- * This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License 2.0
- * which accompanies this distribution, and is available at
- * https://www.eclipse.org/legal/epl-2.0/
- *
+ * Copyright (c) 2026 Carsten Hammer and others.
  * SPDX-License-Identifier: EPL-2.0
- *
- * Contributors:
- *     Carsten Hammer
  *******************************************************************************/
 package org.sandbox.jdt.internal.ui.search.gitindex;
 
 import java.util.List;
+import java.util.function.Supplier;
 
-import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.TableViewer;
-import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.part.ViewPart;
 
-/**
- * Eclipse view for full-text search over Git commits and Java source code.
- *
- * &lt;p&gt;
- * Provides search across:
- * &lt;/p&gt;
- * &lt;ul&gt;
- * &lt;li&gt;Commit messages&lt;/li&gt;
- * &lt;li&gt;Java types (class names, interfaces)&lt;/li&gt;
- * &lt;li&gt;File paths&lt;/li&gt;
- * &lt;li&gt;Annotations&lt;/li&gt;
- * &lt;li&gt;Methods and fields&lt;/li&gt;
- * &lt;/ul&gt;
- *
- * &lt;p&gt;
- * Internally uses {@link SemanticSearchClient} to call the REST API of
- * {@code sandbox-jgit-server-webapp}.
- * &lt;/p&gt;
- */
-<span class="nc" id="L51">public class GitSearchView extends ViewPart {</span>
-
-	/** The view ID as registered in plugin.xml */
+/** Search a named server repository's history and historical source facets. */
+<span class="nc" id="L18">public class GitSearchView extends GitResultsView {</span>
 	public static final String ID= &quot;org.sandbox.jdt.internal.ui.search.gitindex.GitSearchView&quot;; //$NON-NLS-1$
+	private Text search;
+	private Combo mode;
 
-	private Text searchText;
-	private Combo searchTypeCombo;
-	private TableViewer tableViewer;
+	@Override protected void createQuery(Composite parent) {
+<span class="nc" id="L24">		search= input(parent, &quot;Search:&quot;, &quot;Enter search query…&quot;); //$NON-NLS-1$ //$NON-NLS-2$</span>
+<span class="nc" id="L25">		new Label(parent, SWT.NONE).setText(&quot;Mode:&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L26">		mode= new Combo(parent, SWT.DROP_DOWN | SWT.READ_ONLY);</span>
+<span class="nc" id="L27">		mode.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
+<span class="nc" id="L28">		mode.setItems(&quot;Commits&quot;, &quot;Java Types&quot;, &quot;Paths&quot;, &quot;Annotations&quot;, &quot;Symbols&quot;, &quot;Semantic&quot;, &quot;Hybrid&quot;); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$ //$NON-NLS-7$</span>
+<span class="nc" id="L29">		mode.select(0);</span>
+<span class="nc" id="L30">		mode.addModifyListener(event -&gt; invalidateResults());</span>
+<span class="nc" id="L31">	}</span>
 
-	@Override
-	public void createPartControl(Composite parent) {
-<span class="nc" id="L62">		Composite container= new Composite(parent, SWT.NONE);</span>
-<span class="nc" id="L63">		container.setLayout(new GridLayout(3, false));</span>
+	@Override protected void createColumns() {
+<span class="nc" id="L34">		column(&quot;Commit&quot;, 160, row -&gt; ((SearchHit) row).getCommitHash()); //$NON-NLS-1$</span>
+<span class="nc" id="L35">		column(&quot;Path / Type&quot;, 280, row -&gt; { //$NON-NLS-1$</span>
+<span class="nc" id="L36">			SearchHit hit= (SearchHit) row;</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">			return hit.getPath().isEmpty() ? hit.getClassName() : hit.getPath();</span>
+		});
+<span class="nc" id="L39">		column(&quot;Author&quot;, 140, row -&gt; ((SearchHit) row).getAuthor()); //$NON-NLS-1$</span>
+<span class="nc" id="L40">		column(&quot;Message / Package&quot;, 360, row -&gt; ((SearchHit) row).getContent()); //$NON-NLS-1$</span>
+<span class="nc" id="L41">	}</span>
 
-<span class="nc" id="L65">		Label searchLabel= new Label(container, SWT.NONE);</span>
-<span class="nc" id="L66">		searchLabel.setText(&quot;Search:&quot;); //$NON-NLS-1$</span>
+	@Override protected Supplier&lt;? extends List&lt;?&gt;&gt; query(String repo, SemanticSearchClient client) {
+<span class="nc" id="L44">		String text= search.getText().strip();</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">		if (text.isEmpty()) throw new IllegalArgumentException(&quot;Search query is required.&quot;); //$NON-NLS-1$</span>
+<span class="nc" id="L46">		int selected= mode.getSelectionIndex();</span>
+<span class="nc bnc" id="L47" title="All 7 branches missed.">		return () -&gt; switch (selected) {</span>
+<span class="nc" id="L48">			case 1 -&gt; client.searchByType(repo, text, 20);</span>
+<span class="nc" id="L49">			case 2 -&gt; client.searchByChangedPath(repo, text, 20);</span>
+<span class="nc" id="L50">			case 3 -&gt; client.searchAnnotations(repo, text, 20);</span>
+<span class="nc" id="L51">			case 4 -&gt; client.searchBySymbol(repo, text, 20);</span>
+<span class="nc" id="L52">			case 5 -&gt; client.semanticSearch(repo, text, 10);</span>
+<span class="nc" id="L53">			case 6 -&gt; client.hybridSearch(repo, text, 10);</span>
+<span class="nc" id="L54">			default -&gt; client.searchCommitMessages(repo, text, 20);</span>
+<span class="nc" id="L55">		};</span>
+	}
 
-<span class="nc" id="L68">		searchText= new Text(container, SWT.BORDER | SWT.SEARCH);</span>
-<span class="nc" id="L69">		searchText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));</span>
-<span class="nc" id="L70">		searchText.setMessage(&quot;Enter search query...&quot;); //$NON-NLS-1$</span>
-
-<span class="nc" id="L72">		searchTypeCombo= new Combo(container, SWT.DROP_DOWN | SWT.READ_ONLY);</span>
-<span class="nc" id="L73">		searchTypeCombo.setItems(&quot;Commits&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L74">				&quot;Java Types&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L75">				&quot;Paths&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L76">				&quot;Annotations&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L77">				&quot;Methods&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L78">				&quot;Fields&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L79">				&quot;Semantic&quot;, //$NON-NLS-1$</span>
-<span class="nc" id="L80">				&quot;Hybrid&quot; //$NON-NLS-1$</span>
-		);
-<span class="nc" id="L82">		searchTypeCombo.select(0);</span>
-
-<span class="nc" id="L84">		tableViewer= new TableViewer(container,</span>
-<span class="nc" id="L85">				SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.BORDER);</span>
-<span class="nc" id="L86">		Table table= tableViewer.getTable();</span>
-<span class="nc" id="L87">		table.setHeaderVisible(true);</span>
-<span class="nc" id="L88">		table.setLinesVisible(true);</span>
-<span class="nc" id="L89">		GridData tableData= new GridData(SWT.FILL, SWT.FILL, true, true, 3, 1);</span>
-<span class="nc" id="L90">		table.setLayoutData(tableData);</span>
-
-<span class="nc" id="L92">		createColumns();</span>
-<span class="nc" id="L93">		tableViewer.setContentProvider(ArrayContentProvider.getInstance());</span>
-
-<span class="nc" id="L95">		searchText.addListener(SWT.DefaultSelection, e -&gt; performSearch());</span>
-<span class="nc" id="L96">	}</span>
-
-	private void createColumns() {
-<span class="nc" id="L99">		TableViewerColumn colCommit= new TableViewerColumn(tableViewer, SWT.NONE);</span>
-<span class="nc" id="L100">		colCommit.getColumn().setText(&quot;Commit&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L101">		colCommit.getColumn().setWidth(100);</span>
-<span class="nc" id="L102">		colCommit.setLabelProvider(new ColumnLabelProvider());</span>
-
-<span class="nc" id="L104">		TableViewerColumn colAuthor= new TableViewerColumn(tableViewer, SWT.NONE);</span>
-<span class="nc" id="L105">		colAuthor.getColumn().setText(&quot;Author&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L106">		colAuthor.getColumn().setWidth(150);</span>
-<span class="nc" id="L107">		colAuthor.setLabelProvider(new ColumnLabelProvider());</span>
-
-<span class="nc" id="L109">		TableViewerColumn colDate= new TableViewerColumn(tableViewer, SWT.NONE);</span>
-<span class="nc" id="L110">		colDate.getColumn().setText(&quot;Date&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L111">		colDate.getColumn().setWidth(120);</span>
-<span class="nc" id="L112">		colDate.setLabelProvider(new ColumnLabelProvider());</span>
-
-<span class="nc" id="L114">		TableViewerColumn colMessage= new TableViewerColumn(tableViewer, SWT.NONE);</span>
-<span class="nc" id="L115">		colMessage.getColumn().setText(&quot;Message&quot;); //$NON-NLS-1$</span>
-<span class="nc" id="L116">		colMessage.getColumn().setWidth(400);</span>
-<span class="nc" id="L117">		colMessage.setLabelProvider(new ColumnLabelProvider());</span>
-<span class="nc" id="L118">	}</span>
-
-	private void performSearch() {
-<span class="nc" id="L121">		String query= searchText.getText().trim();</span>
-<span class="nc bnc" id="L122" title="All 2 branches missed.">		if (query.isEmpty()) {</span>
-<span class="nc" id="L123">			return;</span>
-		}
-<span class="nc" id="L125">		SemanticSearchClient client= EmbeddedSearchService.getInstance().getSearchClient();</span>
-<span class="nc" id="L126">		int searchType= searchTypeCombo.getSelectionIndex();</span>
-		List&lt;SearchHit&gt; results;
-<span class="nc bnc" id="L128" title="All 6 branches missed.">		switch (searchType) {</span>
-			case 1: // Java Types
-<span class="nc" id="L130">				results= client.searchByType(&quot;&quot;, query, 20); //$NON-NLS-1$</span>
-<span class="nc" id="L131">				break;</span>
-			case 2: // Paths
-<span class="nc" id="L133">				results= client.searchByChangedPath(&quot;&quot;, query, 20); //$NON-NLS-1$</span>
-<span class="nc" id="L134">				break;</span>
-			case 3: // Annotations
-			case 4: // Methods
-			case 5: // Fields
-<span class="nc" id="L138">				results= client.searchBySymbol(&quot;&quot;, query, 20); //$NON-NLS-1$</span>
-<span class="nc" id="L139">				break;</span>
-			case 6: // Semantic
-				// Note: result count for semantic search is fixed at 10 in this view.
-				// Use SemanticCodeSearchPage for configurable result counts.
-<span class="nc" id="L143">				results= client.semanticSearch(&quot;&quot;, query, 10); //$NON-NLS-1$</span>
-<span class="nc" id="L144">				break;</span>
-			case 7: // Hybrid
-				// Note: result count for hybrid search is fixed at 10 in this view.
-				// Use SemanticCodeSearchPage for configurable result counts.
-<span class="nc" id="L148">				results= client.hybridSearch(&quot;&quot;, query, 10); //$NON-NLS-1$</span>
-<span class="nc" id="L149">				break;</span>
-			default: // Commits
-<span class="nc" id="L151">				results= client.searchCommitMessages(&quot;&quot;, query, 20); //$NON-NLS-1$</span>
-				break;
-		}
-<span class="nc" id="L154">		tableViewer.setInput(results);</span>
-<span class="nc" id="L155">	}</span>
-
-	@Override
-	public void setFocus() {
-<span class="nc" id="L159">		searchText.setFocus();</span>
-<span class="nc" id="L160">	}</span>
+<span class="nc" id="L58">	@Override protected String actionLabel() { return &quot;Search&quot;; } //$NON-NLS-1$</span>
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
