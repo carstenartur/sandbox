@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "483bc57f22b986fe6acd5aa6a048f6b9b26b1b32009e8055f945afc4a9f75435",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.ui.dialogs.PreferencesUtil.createPreferenceDialogOn($shell$, \"org.eclipse.ui.preferencePages.ColorsAndFonts\", $selectionData$, null)\n\u003d\u003e\norg.eclipse.ui.dialogs.PreferencesUtil.createPreferenceDialogOn($shell$, \"org.eclipse.ui.preferencePages.ColorsAndFonts\", $selectionData$, \"selectCategory:org.eclipse.ui.workbenchMisc\")\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.preference.PreferenceDialog;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.ui.dialogs.PreferencesUtil;\n\npublic class TestClass {\n    public void configure(Shell shell) {\n        // This is the pattern we want to match\n        PreferencesUtil.createPreferenceDialogOn(shell, \"org.eclipse.ui.preferencePages.ColorsAndFonts\", null, null);\n\n        // Another variant (different page ID)\n        PreferenceDialog dialog \u003d PreferencesUtil.createPreferenceDialogOn(shell, \"org.eclipse.ui.preferencePages.General\", new String[]{\"someId\"}, null);\n        if (dialog !\u003d null) {\n            dialog.open();\n        }\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.preference.PreferenceDialog;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.ui.dialogs.PreferencesUtil;\n\npublic class TestClass {\n    public void configure(Shell shell) {\n        // This is the pattern we want to match\n        PreferencesUtil.createPreferenceDialogOn(shell, \"org.eclipse.ui.preferencePages.ColorsAndFonts\", null, \"selectCategory:org.eclipse.ui.workbenchMisc\");\n\n        // Another variant (different page ID)\n        PreferenceDialog dialog \u003d PreferencesUtil.createPreferenceDialogOn(shell, \"org.eclipse.ui.preferencePages.General\", new String[]{\"someId\"}, null);\n        if (dialog !\u003d null) {\n            dialog.open();\n        }\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.preference.PreferenceDialog;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.ui.dialogs.PreferencesUtil;\n\npublic class TestClass {\n    public void configure(Shell shell) {\n        // This should NOT match (already correct string)\n        PreferencesUtil.createPreferenceDialogOn(shell, \"org.eclipse.ui.preferencePages.ColorsAndFonts\", null, \"selectCategory:org.eclipse.ui.workbenchMisc\");\n\n        // This should NOT match (different page ID)\n        PreferencesUtil.createPreferenceDialogOn(shell, \"org.eclipse.ui.preferencePages.General\", null, null);\n\n        // This should NOT match (different last argument type/value)\n        PreferencesUtil.createPreferenceDialogOn(shell, \"org.eclipse.ui.preferencePages.ColorsAndFonts\", null, \"someOtherString\");\n\n        // This should NOT match (different page ID and already correct)\n        PreferenceDialog dialog \u003d PreferencesUtil.createPreferenceDialogOn(shell, \"org.eclipse.ui.preferencePages.General\", new String[]{\"someId\"}, \"selectCategory:org.eclipse.ui.workbenchMisc\");\n        if (dialog !\u003d null) {\n            dialog.open();\n        }\n    }\n}",
+  "targetHintFile": "eclipse.sandbox-hint",
+  "sourceCommit": "766d28ec6ad7cdb89c2e290e8fcdf4342d9fc0cf",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Eclipse API Usage",
+  "summary": "Refine `PreferencesUtil.createPreferenceDialogOn` to explicitly select the \u0027Colors and Fonts\u0027 category for the \u0027Colors and Fonts\u0027 preference page, replacing `null` with a specific category string.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-26T02:58:40.694369675Z",
+  "ruleFingerprint": "sha256:d480e1f0186ac2b9c45a86a2981776f20e456301dca086a5aa7daee7d4cfce0e",
+  "behaviorFingerprint": "sha256:8a5cedf15d9d43318ce91bfcf6b0b8645334449a02c51a4915d2e3cd0358670b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.preference cannot be resolved",
+    "verifiedAt": "2026-10-26T03:11:46.310305548Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

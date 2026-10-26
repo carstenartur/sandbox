@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "5b9db4ba9ac6ffdb2c9db7397c714b0bbbc794a2ed3ce5fc42a42700173920cb",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "updateCombo($combo$, $history$);\n$combo$.setText($findString$);\n\u003d\u003e\norg.eclipse.swt.graphics.Point selection \u003d $combo$.getSelection();\nupdateCombo($combo$, $history$);\n$combo$.setText($findString$);\n$combo$.setSelection(selection);\n;;",
+  "beforeExample": "import org.eclipse.swt.widgets.Combo;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class Example {\n    // A dummy updateCombo method for compilation\n    private void updateCombo(Combo combo, List\u003cString\u003e history) {\n        // implementation omitted\n    }\n\n    public void performFindReplaceAction(Combo combo, List\u003cString\u003e history, String findString) {\n        // Imagine some logic here, then:\n        history.add(0, findString);\n        updateCombo(combo, history);\n        combo.setText(findString);\n    }\n}",
+  "afterExample": "import org.eclipse.swt.widgets.Combo;\nimport org.eclipse.swt.graphics.Point;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class Example {\n    // A dummy updateCombo method for compilation\n    private void updateCombo(Combo combo, List\u003cString\u003e history) {\n        // implementation omitted\n    }\n\n    public void performFindReplaceAction(Combo combo, List\u003cString\u003e history, String findString) {\n        // Imagine some logic here, then:\n        history.add(0, findString);\n        org.eclipse.swt.graphics.Point selection \u003d combo.getSelection();\n        updateCombo(combo, history);\n        combo.setText(findString);\n        combo.setSelection(selection);\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.widgets.Combo;\nimport java.util.ArrayList;\nimport java.util.List;\n\npublic class Example {\n    // A dummy updateCombo method for compilation\n    private void updateCombo(Combo combo, List\u003cString\u003e history) {\n        // implementation omitted\n    }\n\n    public void setTextOnly(Combo combo, String findString) {\n        // Should not match: missing updateCombo call\n        combo.setText(findString);\n    }\n\n    public void updateWithoutSetText(Combo combo, List\u003cString\u003e history) {\n        // Should not match: missing setText call\n        updateCombo(combo, history);\n    }\n}",
+  "targetHintFile": "ui-fixes.sandbox-hint",
+  "sourceCommit": "1203b7504922b1b505d3fa313b568f9be04359fd",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "UI Fix",
+  "summary": "Captures and restores the Combo\u0027s selection before and after updating its text and history to prevent cursor reset, which fixes a UI bug where the cursor jumps to the beginning of the text field.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-26T02:58:05.647223159Z",
+  "ruleFingerprint": "sha256:ed771765990052ad2feba17f241e935b513c891f4bddaae8cda29eb74f33a6f5",
+  "behaviorFingerprint": "sha256:d1648b01520f46c9159b2a3ccfa257e70e651dd6198796ba2da17027a94461d6",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-26T03:11:46.290860673Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

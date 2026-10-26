@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f296d73c3fff5cac33d410161beef35b091a5d3176efecb22493bbf2359f05c3",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "private org.eclipse.swt.graphics.Color $name; :: elementKindMatches($name, \"FIELD\") \u0026\u0026 !isFinal($name)\n\u003d\u003e private final org.eclipse.swt.graphics.Color $name;\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.SWT;\n\npublic class MyClass {\n    private Color fForegroundColor;\n    private Color fBackgroundColor;\n    private int otherField;\n\n    public MyClass(Shell parent) {\n        fForegroundColor \u003d parent.getDisplay().getSystemColor(SWT.COLOR_INFO_FOREGROUND);\n        fBackgroundColor \u003d parent.getDisplay().getSystemColor(SWT.COLOR_INFO_BACKGROUND);\n        otherField \u003d 1;\n    }\n}\n",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.SWT;\n\npublic class MyClass {\n    private final Color fForegroundColor;\n    private final Color fBackgroundColor;\n    private int otherField;\n\n    public MyClass(Shell parent) {\n        fForegroundColor \u003d parent.getDisplay().getSystemColor(SWT.COLOR_INFO_FOREGROUND);\n        fBackgroundColor \u003d parent.getDisplay().getSystemColor(SWT.COLOR_INFO_BACKGROUND);\n        otherField \u003d 1;\n    }\n}\n",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.swt.SWT;\n\npublic class MyClass {\n    private final Color fForegroundColor; // Already final, should not match\n    protected Color protectedColor; // Not private, should not match\n    private String someString; // Not Color type, should not match\n\n    public MyClass(Shell parent) {\n        fForegroundColor \u003d parent.getDisplay().getSystemColor(SWT.COLOR_INFO_FOREGROUND);\n        protectedColor \u003d parent.getDisplay().getSystemColor(SWT.COLOR_BLUE);\n        someString \u003d \"hello\";\n    }\n\n    public void someMethod() {\n        Color localColor; // Local variable, not a field, should not match\n        localColor \u003d null;\n    }\n}\n",
+  "targetHintFile": "fieldModifiers.sandbox-hint",
+  "sourceCommit": "0e39dfbef90a258a892e78cfe3455eb801c5365a",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Modifier Addition",
+  "summary": "Add \u0027final\u0027 modifier to private field declarations of type org.eclipse.swt.graphics.Color.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-26T02:57:26.061859399Z",
+  "ruleFingerprint": "sha256:e07f10afef927fa849d7ab7ea255303e3399bae9f2e4307af137f97e912e5a33",
+  "behaviorFingerprint": "sha256:290b9999a423a94294f41f0f6190df96272954880c40f2e1dc95e84250aec59d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-26T03:11:46.271797852Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
