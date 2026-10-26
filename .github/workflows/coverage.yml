@@ -16,7 +16,8 @@ permissions:
 
 concurrency:
   group: verified-quality-${{ github.ref }}
-  cancel-in-progress: true
+  # Scheduled and manual runs must not cancel an active verification of this ref.
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
 
 jobs:
   coverage:
