@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c0fd4590e4169c3ace4bbcec4b63ee5b671a1250776a980b89769b4312c064ae",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "void setColors(org.eclipse.swt.widgets.Control $control, org.eclipse.swt.graphics.Color $foreground, org.eclipse.swt.graphics.Color $background)\n\u003d\u003e void setColor(org.eclipse.swt.widgets.Control $control, org.eclipse.swt.graphics.Color $foreground, org.eclipse.swt.graphics.Color $background)\n;;",
+  "beforeExample": "import org.eclipse.swt.widgets.Control;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyInformationControl {\n    private Shell fShell;\n    private static void setColors(Control control, Color foreground, Color background) {\n        control.setForeground(foreground);\n        control.setBackground(background);\n    }\n    public MyInformationControl(Shell parentShell) {\n        fShell \u003d new Shell(parentShell);\n        Display display \u003d fShell.getDisplay();\n        Color foreground \u003d display.getSystemColor(0);\n        Color background \u003d display.getSystemColor(1);\n        setColors(fShell, foreground, background);\n    }\n}",
+  "afterExample": "import org.eclipse.swt.widgets.Control;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyInformationControl {\n    private Shell fShell;\n    private static void setColor(Control control, Color foreground, Color background) {\n        control.setForeground(foreground);\n        control.setBackground(background);\n    }\n    public MyInformationControl(Shell parentShell) {\n        fShell \u003d new Shell(parentShell);\n        Display display \u003d fShell.getDisplay();\n        Color foreground \u003d display.getSystemColor(0);\n        Color background \u003d display.getSystemColor(1);\n        setColor(fShell, foreground, background);\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.widgets.Control;\nimport org.eclipse.swt.graphics.Color;\n\npublic class AnotherClass {\n    public static void setSomething(Control control, Color foreground, Color background) { // Different method name\n        control.setForeground(foreground);\n        control.setBackground(background);\n    }\n\n    public static void setColors(Control control, Color foreground) { // Different parameters\n        control.setForeground(foreground);\n    }\n\n    public void someMethod(Control control, Color foreground, Color background) { // Not a static method\n        control.setForeground(foreground);\n        control.setBackground(background);\n    }\n}",
+  "targetHintFile": "method-renames.sandbox-hint",
+  "sourceCommit": "23414f5c2ada49b199b2a6c64dcf2dec6ec760fb",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Method Rename Reversal",
+  "summary": "Revert the renaming of a private static utility method from `setColors` back to `setColor`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-26T02:29:15.671798774Z",
+  "ruleFingerprint": "sha256:cf2a92aead869297104acceaed33290f20dc65c8c3fa5589631fc7555f21b72c",
+  "behaviorFingerprint": "sha256:82e58b286f561a6260486e49258263bca4256a060416beefd29f69319bdb09b5",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-26T02:31:37.798521832Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

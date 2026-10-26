@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 6: The import org.eclipse.jface.text.source.DefaultCharacterPairMatcher cannot be resolved",
-    "verifiedAt": "2026-10-25T02:30:14.287728754Z",
+    "verifiedAt": "2026-10-26T02:31:31.663465902Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

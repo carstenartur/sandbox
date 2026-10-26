@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 6: The public type MyOldInterface must be defined in its own file",
-    "verifiedAt": "2026-10-25T02:30:17.102078838Z",
+    "verifiedAt": "2026-10-26T02:31:34.526160649Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

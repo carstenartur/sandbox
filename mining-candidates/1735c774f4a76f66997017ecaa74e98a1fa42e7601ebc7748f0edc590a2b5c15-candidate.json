@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "1735c774f4a76f66997017ecaa74e98a1fa42e7601ebc7748f0edc590a2b5c15",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: junit-assert-true-int-equality-to-assert-equals\u003e\n\u003c!description: Replace junit.framework.TestCase.assertTrue($x \u003d\u003d $y) with assertEquals($y, $x) for integer equality checks.\u003e\n\u003c!severity: HINT\u003e\njunit.framework.TestCase.assertTrue($left \u003d\u003d $right); :: instanceof($left, \"java.lang.Integer\") \u0026\u0026 instanceof($right, \"java.lang.Integer\")\n\u003d\u003e junit.framework.TestCase.assertEquals($right, $left);\n;;",
+  "beforeExample": "import junit.framework.TestCase;\nimport org.eclipse.jface.text.TextSelection;\nimport org.eclipse.jface.text.ITextSelection;\n\npublic class ExampleTest extends TestCase {\n    public void testAssertion() {\n        int x \u003d 5;\n        int y \u003d 5;\n        assertTrue(x \u003d\u003d y);\n        assertTrue(0 \u003d\u003d x); // Also covers constant on left\n\n        ITextSelection selection \u003d new TextSelection(0, 0); // Mock\n        assertTrue(selection.getOffset() \u003d\u003d 0);\n        int actualValue \u003d someMethod();\n        assertTrue(actualValue \u003d\u003d 10);\n    }\n\n    private int someMethod() { return 0; }\n}",
+  "afterExample": "import junit.framework.TestCase;\nimport org.eclipse.jface.text.TextSelection;\nimport org.eclipse.jface.text.ITextSelection;\n\npublic class ExampleTest extends TestCase {\n    public void testAssertion() {\n        int x \u003d 5;\n        int y \u003d 5;\n        assertEquals(y, x);\n        assertEquals(0, x);\n\n        ITextSelection selection \u003d new TextSelection(0, 0); // Mock\n        assertEquals(0, selection.getOffset());\n        int actualValue \u003d someMethod();\n        assertEquals(10, actualValue);\n    }\n\n    private int someMethod() { return 0; }\n}",
+  "negativeExample": "import junit.framework.TestCase;\n\npublic class ExampleTest extends TestCase {\n    public void testOtherAssertions() {\n        boolean condition \u003d true;\n        // Not an equality check\n        assertTrue(condition);\n        assertTrue(5 \u003e 3);\n        // Not integer types\n        String s1 \u003d \"hello\";\n        String s2 \u003d \"world\";\n        assertTrue(s1.equals(s2));\n        // Has a message argument (different overload)\n        assertTrue(\"Message\", 5 \u003d\u003d 5);\n        // Already assertEquals\n        assertEquals(5, 5);\n        // Long comparison\n        long l1 \u003d 1L, l2 \u003d 2L;\n        assertTrue(l1 \u003d\u003d l2);\n    }\n}",
+  "targetHintFile": "junit.sandbox-hint",
+  "sourceCommit": "f2a801c957b07ff9cb3b7774eaa13e45dfea93bc",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "JUnit Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-26T02:30:44.068566229Z",
+  "ruleFingerprint": "sha256:d716544ad653c6ac98daddde03a9efddff872e3b4941c40067afcd2a659d67cd",
+  "behaviorFingerprint": "sha256:c93e5dcc1e13f8461a5649c0443fb64ab4c170521ad68936d19939f9ebe19207",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-26T02:31:37.829678946Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

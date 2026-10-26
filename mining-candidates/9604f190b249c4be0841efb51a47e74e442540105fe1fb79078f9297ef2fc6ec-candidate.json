@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "9604f190b249c4be0841efb51a47e74e442540105fe1fb79078f9297ef2fc6ec",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: deprecate.addAnnotationType.singleArg\u003e\n\u003c!description: Add @Deprecated annotation to the single-argument addAnnotationType method.\nFixes bug 322050: Inconsistency in AnnotationPainter API.\n\u003e\n\u003c!severity: INFO\u003e\nvoid addAnnotationType(java.lang.Object $annotationType$)\n\u003d\u003e @java.lang.Deprecated void addAnnotationType(java.lang.Object $annotationType$)\n;;",
+  "beforeExample": "package com.example;\n\npublic class MyPainter {\n\n    public void addAnnotationType(Object annotationType) {\n        // Method body content is not matched by the pattern, just the signature.\n        System.out.println(\"Adding annotation type: \" + annotationType);\n    }\n\n    // Another overload to show that it is not matched by this specific rule.\n    public void addAnnotationType(Object annotationType, Object strategyID) {\n        System.out.println(\"Adding annotation type with strategy: \" + annotationType + \", \" + strategyID);\n    }\n}",
+  "afterExample": "package com.example;\n\nimport java.lang.Deprecated;\n\npublic class MyPainter {\n\n    @Deprecated\n    public void addAnnotationType(Object annotationType) {\n        System.out.println(\"Adding annotation type: \" + annotationType);\n    }\n\n    public void addAnnotationType(Object annotationType, Object strategyID) {\n        System.out.println(\"Adding annotation type with strategy: \" + annotationType + \", \" + strategyID);\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport java.lang.Deprecated;\n\npublic class MyPainter {\n\n    // This method has a different signature and should not match.\n    public void addAnnotationType(Object annotationType, Object strategyID) {\n        System.out.println(\"Adding annotation type with strategy: \" + annotationType + \", \" + strategyID);\n    }\n\n    // This method has a different name and should not match.\n    public void someOtherMethod(Object param) {\n        System.out.println(\"Another method: \" + param);\n    }\n\n    // A method that is already deprecated should not be modified again (DSL handles idempotency).\n    @Deprecated\n    public void existingDeprecatedMethod(Object arg) {\n        System.out.println(\"Already deprecated: \" + arg);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "3b7b15d898e930ddb60912d41fd58b2a426684aa",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Deprecation",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-26T02:29:49.836937662Z",
+  "ruleFingerprint": "sha256:3416d08d89c5c34a7d0593140a2e73797c6978330dc2613d7a84251cd187cad7",
+  "behaviorFingerprint": "sha256:a72903ef7f7f5397b3b78320c1e791fbd333c79d812f0d6372811d6e3eef0327",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-26T02:31:37.814038313Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
