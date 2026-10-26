@@ -1298,7 +1298,7 @@ sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,DslConte
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,OpenAiClient,29,18,4,2,8,6,7,3,4,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,LlmInferenceSettings,19,37,7,7,3,5,8,1,1,1
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,LlmProvider,0,76,0,6,0,13,0,5,0,2
-sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,GeminiClient,228,1027,59,115,60,264,51,67,1,30
+sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,GeminiClient,228,1062,60,122,60,271,52,70,1,30
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.llm,MistralClient,27,18,4,2,7,6,6,3,3,3
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,HintLanguageVocabulary,2,442,2,10,1,60,2,18,0,14
 sandbox_coverage/sandbox_common_core,org.sandbox.jdt.triggerpattern.internal,ChangeVariableGeneralizer.new ASTVisitor() {...},0,32,0,4,0,5,0,5,0,3
