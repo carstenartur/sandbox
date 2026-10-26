@@ -32,9 +32,9 @@
 - [x] Add failing source-fact regressions; implement bounded binding-based alias propagation; execute positive/negative and generated-code tests.
 - [x] Extend existing ProjectMathScan with a verified benchmark fixture manifest; test failure on mismatched inputs.
 - [x] Add a full BC Hash-to-Curve benchmark consuming the scanner fixture, with JUnit checks for class isolation, outputs and input drift.
-- [ ] Run both pinned BC profiles; measure original/generated complete calls with raw JMH JSON and allocation data.
-- [ ] Update help/QA reproduction instructions and summarize actual results and limitations.
-- [ ] Review the whole change, run applicable checks, and create a PR directly against main.
+- [x] Run both pinned BC profiles; measure original/generated complete calls with raw JMH JSON and allocation data.
+- [x] Update help/QA reproduction instructions and summarize actual results and limitations.
+- [x] Review the whole change, run applicable local checks, and create a PR directly against main; native Eclipse checks run in CI.
 
 ## Execution ledger
 
@@ -44,4 +44,22 @@
 - Toolchain: OpenJDK 25+36, Maven 3.9.11; the unchanged vendored SDK is used by the standalone build.
 - Before/after full archive scans: 3,126 parsed files and 10 parse-error files in each run; 111 strict and 121 mathematical accepted regions. All generated source hashes match the baseline. The alias extension does not add BC hits in this archive.
 - Regression tests first failed with retained guards; the implementation passes. Review additionally found and fixed direct-receiver regressions, a CI artifact layout issue and missing benchmark/report consistency checks.
-- Final standalone suite: 201 tests, zero failures/errors, one optional historical Git-reference skip. The complete corpus/benchmark command is running before recording timing conclusions.
+- Final combined Maven command: BUILD SUCCESS in 6:34, including 201 tests (zero failures/errors, one optional historical Git-reference skip), both full scans and all 16 JMH configurations. Final scan inputs and generated hashes match the before/after comparison.
+- PR: https://github.com/carstenartur/sandbox/pull/1767, directly against main. Native Eclipse and distribution checks are tracked there; they are not replaced by this standalone qualification.
+
+## Observed full-call results
+
+Complete public hashToCurve plus point encoding; construction and compilation are outside timing. OpenJDK 25+36, two forks, three 500 ms warmups and five 500 ms measurements per fork. These are local measurements, not a general speed guarantee. Every original/generated timing confidence interval overlaps, so this run does not establish a reliable runtime improvement. Mean allocations are lower in all eight comparisons (0.5–5.3%). This measures the existing emitted SWU optimization; the alias extension leaves this corpus output unchanged.
+
+| Curve / message bytes | Original µs/op | Generated µs/op | Time change | Allocation change |
+|---|---:|---:|---:|---:|
+| P256_XMD_SHA_256/32 | 90.58 | 96.86 | 6.9% | -5.3% |
+| P256_XMD_SHA_256/256 | 90.87 | 87.12 | -4.1% | -5.2% |
+| P384_XMD_SHA_384/32 | 181.37 | 180.98 | -0.2% | -4.0% |
+| P384_XMD_SHA_384/256 | 183.62 | 184.99 | 0.7% | -4.0% |
+| P521_XMD_SHA_512/32 | 367.55 | 356.32 | -3.1% | -4.6% |
+| P521_XMD_SHA_512/256 | 425.72 | 353.25 | -17.0% | -4.6% |
+| BLS12_381_G1_XMD_SHA_256_SSWU_RO/32 | 909.54 | 810.53 | -10.9% | -1.3% |
+| BLS12_381_G1_XMD_SHA_256_SSWU_RO/256 | 875.81 | 832.90 | -4.9% | -0.5% |
+
+Raw JMH JSON retains individual samples, confidence intervals and GC metrics. Keep it with the scan reports, manifests, ordinary generated/original sources and test reports; do not substitute the review-only source for the measured generated source.
