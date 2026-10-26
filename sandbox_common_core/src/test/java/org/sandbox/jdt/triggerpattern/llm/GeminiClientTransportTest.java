@@ -78,6 +78,59 @@ class GeminiClientTransportTest {
 	}
 
 	@Test
+	void retriesServiceOverloadAndReturnsTheEvaluation() throws IOException {
+		ScriptedHttpClient transport = new ScriptedHttpClient(
+				new Response(503, "Service temporarily overloaded"), SUCCESS);
+		try (GeminiClient client = newClient(transport)) {
+			var result = evaluate(client);
+			assertEquals(List.of("hash"), result.stream().map(CommitEvaluation::commitHash).toList());
+			assertEquals(2, transport.requests.size());
+			assertEquals(List.of(5000L), transport.waits);
+			assertFalse(client.isApiUnavailable());
+		}
+	}
+
+	@Test
+	void exhaustedServiceOverloadRetriesReportTheLastFailure() {
+		Response unavailable = new Response(503, "Service temporarily overloaded");
+		ScriptedHttpClient transport = new ScriptedHttpClient(
+				unavailable, unavailable, unavailable, unavailable, new Response(503, "Still overloaded"));
+		try (GeminiClient client = newClient(transport)) {
+			IOException failure = assertThrows(IOException.class, () -> evaluate(client));
+			assertTrue(failure.getMessage().contains("503"));
+			assertTrue(failure.getMessage().contains("Still overloaded"));
+			assertEquals(5, transport.requests.size(), "Retries must stop at the existing five-attempt bound");
+			assertEquals(List.of(5000L, 10000L, 20000L, 40000L), transport.waits);
+		}
+	}
+
+	@Test
+	void serviceOverloadDoesNotRestartAnExhaustedRetryBudget() {
+		ScriptedHttpClient transport = new ScriptedHttpClient(new Response(503, "Service overloaded"));
+		try (GeminiClient client = newClient(transport)) {
+			client.setMaxFailureDuration(Duration.ofSeconds(-1));
+			assertThrows(IOException.class, () -> evaluate(client));
+			assertEquals(1, transport.requests.size());
+			assertTrue(transport.waits.isEmpty());
+		}
+	}
+
+	@Test
+	void interruptionDuringServiceOverloadBackoffStopsImmediately() {
+		ScriptedHttpClient transport = new ScriptedHttpClient(new Response(503, "Service overloaded"));
+		try (GeminiClient client = new GeminiClient("test-key", transport, "gemini-2.5-flash", millis -> {
+			throw new InterruptedException("cancelled during backoff");
+		})) {
+			IOException failure = assertThrows(IOException.class, () -> evaluate(client));
+			assertInstanceOf(InterruptedException.class, failure.getCause());
+			assertTrue(Thread.currentThread().isInterrupted());
+			assertEquals(1, transport.requests.size());
+		} finally {
+			Thread.interrupted();
+		}
+	}
+
+	@Test
 	@Timeout(5)
 	void exhaustedTimeoutRetriesThrowTheLastFailure() {
 		HttpTimeoutException failure = new HttpTimeoutException("request timed out");
