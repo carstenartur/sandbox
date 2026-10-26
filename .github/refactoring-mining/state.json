@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "b88e861ddc9bedafaf69965fa9262e9df0b051b2",
-      "lastProcessedDate": "2026-10-25T02:30:01.067162450Z",
-      "totalProcessed": 1340,
+      "lastProcessedCommit": "8892b917825e85ef9ff2ec4e12e937b2a4aeed70",
+      "lastProcessedDate": "2026-10-26T02:31:17.794964028Z",
+      "totalProcessed": 1400,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5192,6 +5192,60 @@
           "deferredAt": "2026-10-25T02:24:21.103371401Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "8954f26949d4e371e0efdc0019d0c7209c7ab53a",
+          "message": "Bug 298936: Regression on ScrollAnnotatedJavaEditorTest#testScrollJavaEditorLineWise1() perf test",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-26T02:24:59.022816962Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0b73d68f9ffdb613fa6ce966ecff2dbacc1f6291",
+          "message": "Committed Raksha\u0027s patch to fix bug 78522: [navigation] All Ctrl+Click link targets should also be available under one c",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-26T02:27:34.981285391Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "4ee703d5d2cd4e02f30fcd38f8a92604ef095ac7",
+          "message": "Javadoc spelling",
+          "diffLines": 14,
+          "reason": "API_FAILURE",
+          "deferredAt": "2026-10-26T02:31:18.580446418Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "aa9b29d6ab9e7fff07a206548d78bc3257a29428",
+          "message": "Bug 324385: [search] Double-click in Search results pages should always toggle expansion",
+          "diffLines": 33,
+          "reason": "API_FAILURE",
+          "deferredAt": "2026-10-26T02:31:18.580692498Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "8e1b4a516b45d78b9b88c61816bd3a3979aa9030",
+          "message": "Bug 324182: [find/replace] (Shift+)Enter should always execute the current default button",
+          "diffLines": 25,
+          "reason": "API_FAILURE",
+          "deferredAt": "2026-10-26T02:31:18.580774Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "0e39dfbef90a258a892e78cfe3455eb801c5365a",
+          "message": "Bug 324008: [hovering] Hyperlink popup list is missing a border on the left (Windows 7)",
+          "diffLines": 107,
+          "reason": "API_FAILURE",
+          "deferredAt": "2026-10-26T02:31:18.580862846Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5206,7 +5260,7 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 7,
-        "API Modernization": 35,
+        "API Modernization": 36,
         "Performance": 17,
         "Redundant Code": 7,
         "API Misuse Correction": 1,
@@ -5223,7 +5277,7 @@
         "JUnit Assertion": 1,
         "API Migration": 7,
         "Configuration Default Update": 1,
-        "API Deprecation": 1,
+        "API Deprecation": 2,
         "String API Usage": 2,
         "Thread Safety": 1,
         "Annotation Modernization": 1,
@@ -5289,7 +5343,7 @@
         "API Replacement": 1,
         "Magic Number Update": 1,
         "Code Modernization": 1,
-        "JUnit Modernization": 1,
+        "JUnit Modernization": 2,
         "API Refactoring": 1,
         "Debugging Cleanup": 1,
         "UI Layout Cleanup": 1,
@@ -5321,7 +5375,9 @@
         "Array Comparison": 1,
         "API Constant Usage": 1,
         "Modifier Cleanup": 1,
-        "String Literal Cleanup": 1
+        "String Literal Cleanup": 1,
+        "Method Rename": 1,
+        "Method Rename Reversal": 1
       },
       "exhaustedCategories": []
     },
@@ -5444,5 +5500,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53133
+  "globalTotalProcessed": 53193
 }
