@@ -1,12 +1,53 @@
 # Mathematics corpus and generated-Java qualification
 
-This reconstructed harness analyzes source without applying proposed edits to
-Bouncy Castle or executing upstream source. It uses the production extractor,
-optimizer, independent checker, emitter and complete generated-compilation-unit
-validation. The local execution tests supplement symbolic proof; finite samples
-are not the proof.
+The scanner uses the production extractor, optimizer, independent checker,
+emitter and complete generated-compilation-unit validation without modifying the
+input archives. Qualification tests and benchmarks compile and execute separate
+copies of the original and generated source. These behavioral comparisons
+supplement symbolic proof; finite samples are not the proof.
 
-## Recovery and current evidence
+## Current BC qualification (Java 25 / Maven)
+
+The maintained Maven entry point reuses the existing production core, scanner,
+JUnit contracts and JMH implementation. From the repository root:
+
+```sh
+mvn -f qa/math-optimization/pom.xml clean verify -Pbc-corpus,bc-benchmark
+```
+
+`verify` alone runs the selected standalone core/QA tests. Native Eclipse workspace
+and UI tests remain in the existing Tycho modules; this build does not replace
+them. The optional historical Git-reference test needs its existing mirror and
+reports a skip when it is absent. The new full-call BC tests always receive the
+pinned archives from Maven.
+
+`bc-corpus` scans the same Maven BC 1.85.2 binary/source archives under both
+`bc-strict` and `bc-mathematical`: Java 17, 1,000,000 work units per file,
+20,000 states and the existing five-second timeout. The source SHA-256 is pinned
+in the POM. Both profiles use all archive sources as context, retain parse errors
+explicitly, and write separate fresh `target/bc-*` directories. The older Git-tree
+runner below has a different Java-8/BigInteger-only contract and is historical
+reference evidence, not a comparable scan of this archive.
+
+`bc-benchmark` consumes `target/bc-mathematical/benchmark.properties` and the
+exact ordinary `generated/` SWU source, including every guard and fallback. It
+compiles complete original/generated classes separately, verifies that the real
+call path loads each override, and compares 64 deterministic inputs before timing.
+The timed body is the complete public `hashToCurve` call plus point encoding;
+construction, compilation and optimization are outside measurement. Four curve
+profiles and two message lengths run with two forks, three warmups, five measured
+iterations and JMH's GC profiler. Raw timing/allocation samples are retained in
+`target/bc-hash-to-curve.json`. Binary, source, report and manifest hashes are
+checked before and after measurement. This measures numerical behavior and
+performance on the recorded JVM, not constant-time properties.
+
+Retain the reports, manifests, ordinary original/generated files and raw JSON
+together. Compare runs only with matching source/binary/profile hashes, Java
+target, selected entries and parse-error set. Do not reuse the historical
+115/124 counts as a baseline for a different SDK or archive. Run `clean` for a
+fresh qualification; the scanner deliberately refuses to overwrite prior output.
+
+## Historical recovery and evidence
 
 The workspace maintenance incident deleted the earlier checkout, full corpus
 reports and JMH raw samples. The literal recovered files remain verbatim under
@@ -74,7 +115,7 @@ explicitly skipped unless `MATH_QA_BC_MIRROR` is set. Fixture export refuses to
 overwrite different existing sources. Keep measured fixture sources immutable;
 regenerate into a new directory when qualifying a different build.
 
-## Reports and performance
+## Historical Git-tree reports and expression benchmarks
 
 `files.tsv` contains source hashes, compiler errors, resolved BigInteger method
 calls, extracted regions, supported regions, verified candidate regions, rejected

@@ -80,6 +80,12 @@ public final class ProjectMathScan {
             receipt.put("scope", "Source analysis and exact Apply/Undo only; no whole-library behavior, timing or constant-time qualification.");
             mapper.writerWithDefaultPrettyPrinter().writeValue(output.resolve("inputs.json").toFile(), receipt);
             int parsed = 0, errors = 0, regions = 0, replacements = 0;
+            var benchmark = new Properties();
+            benchmark.setProperty("schema", "sandbox.generated-corpus-fixture/v1");
+            benchmark.setProperty("binarySha256", binaryHash);
+            benchmark.setProperty("sourcesSha256", args[4]);
+            benchmark.setProperty("profileSha256", profileHash);
+            benchmark.setProperty("targetJava", Integer.toString(options.targetJava()));
             var rows = new ArrayList<Map<String, Object>>();
             for (String entry : selected) {
                 if (Thread.currentThread().isInterrupted()) throw new InterruptedException("Scan cancelled");
@@ -118,6 +124,8 @@ public final class ProjectMathScan {
                     row.put("afterSha256", hash(generated.getBytes(StandardCharsets.UTF_8)));
                     row.put("reviewCandidates", MathReviewReport.ranked(analysis.evidence(), options));
                     writeSource(output.resolve("original"), entry, source); writeSource(output.resolve("generated"), entry, generated);
+                    benchmark.setProperty("original." + entry, hash(bytes));
+                    benchmark.setProperty("generated." + entry, hash(generated.getBytes(StandardCharsets.UTF_8)));
                     String reviewOnly = calculationReviewSource(source, analysis);
                     if (Arrays.stream(parse(reviewOnly, entry, binary, sourceRoot, options.targetJava()).getProblems()).anyMatch(p -> p.isError()))
                         throw new AssertionError("Review Java failed to parse: " + entry);
@@ -140,6 +148,10 @@ public final class ProjectMathScan {
             String status = errors == 0 ? "COMPLETED" : "COMPLETED_WITH_PARSE_ERRORS";
             receipt.put("status", status);
             mapper.writerWithDefaultPrettyPrinter().writeValue(output.resolve("review.json").toFile(), receipt);
+            benchmark.setProperty("reviewSha256", CorpusFiles.sha256(output.resolve("review.json")));
+            try (var writer = Files.newBufferedWriter(output.resolve("benchmark.properties"))) {
+                benchmark.store(writer, "Exact ordinary Apply sources; performance and timing behavior remain unmeasured");
+            }
             Files.writeString(output.resolve("COMPLETED"), status + "\nInputs unchanged. Counts are not measured program speedups.\n");
             System.out.println(status + " parsed=" + parsed + " parseErrorFiles=" + errors + " acceptedRegions=" + replacements);
         }

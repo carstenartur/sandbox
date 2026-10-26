@@ -29,6 +29,7 @@ import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.Statement;
 import org.eclipse.jdt.core.dom.ThrowStatement;
 import org.eclipse.jdt.core.dom.TypeLiteral;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 /**
  * Bounded, binding-based facts from dominating branches and early exits. Never infers facts
@@ -74,6 +75,7 @@ final class JavaDominatingGuardFacts {
         if (inspected[0] > MAX_NODES || Thread.currentThread().isInterrupted()) return Set.of();
         rejectedNames.forEach(bindings::remove);
         if (bindings.isEmpty()) return Set.of();
+        var identities = new Identities(unit, frame(selected), start, inspected);
         var facts = new HashMap<String, Integer>();
         int ancestors = 0;
         for (ASTNode node = selected; node != null; node = node.getParent()) {
@@ -82,7 +84,7 @@ final class JavaDominatingGuardFacts {
             if (node instanceof IfStatement condition) {
                 var branch = condition.getThenStatement();
                 if (start >= branch.getStartPosition() && end <= (long) branch.getStartPosition() + branch.getLength()) {
-                    if (!collectFacts(condition.getExpression(), true, bindings, facts, inspected)) return Set.of();
+                    if (!collectFacts(condition.getExpression(), true, bindings, facts, inspected, identities)) return Set.of();
                 }
             }
             if (node instanceof Block block) {
@@ -94,7 +96,7 @@ final class JavaDominatingGuardFacts {
                     // condition on every path to the remainder of this block.
                     if (previous instanceof IfStatement guard && guard.getElseStatement() == null
                             && exits(guard.getThenStatement(), inspected)
-                            && !collectFacts(guard.getExpression(), false, bindings, facts, inspected)) return Set.of();
+                            && !collectFacts(guard.getExpression(), false, bindings, facts, inspected, identities)) return Set.of();
                 }
                 if (inspected[0] > MAX_NODES || Thread.currentThread().isInterrupted()) return Set.of();
             }
@@ -120,7 +122,7 @@ final class JavaDominatingGuardFacts {
     private record KnownCondition(Expression expression, boolean truth) { }
 
     private static boolean collectFacts(Expression condition, boolean truth, Map<String, IVariableBinding> bindings,
-            Map<String, Integer> facts, int[] inspected) {
+            Map<String, Integer> facts, int[] inspected, Identities identities) {
         var pending = new ArrayDeque<KnownCondition>();
         pending.push(new KnownCondition(condition, truth));
         while (!pending.isEmpty()) {
@@ -150,30 +152,30 @@ final class JavaDominatingGuardFacts {
             if (operator == null) continue;
             Expression left = unwrap(infix.getLeftOperand()), right = unwrap(infix.getRightOperand());
             if (operator == InfixExpression.Operator.NOT_EQUALS && right instanceof NullLiteral) {
-                record(left, NON_NULL, bindings, facts);
+                record(left, NON_NULL, bindings, facts, identities);
             } else if (operator == InfixExpression.Operator.NOT_EQUALS && left instanceof NullLiteral) {
-                record(right, NON_NULL, bindings, facts);
+                record(right, NON_NULL, bindings, facts, identities);
             } else if (operator == InfixExpression.Operator.EQUALS && exactClass(right) && method(left, "getClass", "java.lang.Object")) { //$NON-NLS-1$ //$NON-NLS-2$
-                record(((MethodInvocation) left).getExpression(), NON_NULL | EXACT, bindings, facts);
+                record(((MethodInvocation) left).getExpression(), NON_NULL | EXACT, bindings, facts, identities);
             } else if (operator == InfixExpression.Operator.EQUALS && exactClass(left) && method(right, "getClass", "java.lang.Object")) { //$NON-NLS-1$ //$NON-NLS-2$
-                record(((MethodInvocation) right).getExpression(), NON_NULL | EXACT, bindings, facts);
+                record(((MethodInvocation) right).getExpression(), NON_NULL | EXACT, bindings, facts, identities);
             } else if (right instanceof NumberLiteral literal && literal.resolveConstantExpressionValue() instanceof Number number
                     && (number instanceof Integer || number instanceof Long)) {
                 long value = number.longValue();
                 if (method(left, "bitLength", BIG_INTEGER) && value >= 0 //$NON-NLS-1$
                         && ((operator == InfixExpression.Operator.LESS && value <= 4096)
                             || (operator == InfixExpression.Operator.LESS_EQUALS && value < 4096))) {
-                    record(((MethodInvocation) left).getExpression(), BOUNDED, bindings, facts);
+                    record(((MethodInvocation) left).getExpression(), BOUNDED, bindings, facts, identities);
                 }
                 if (method(left, "signum", BIG_INTEGER) //$NON-NLS-1$
                         && ((operator == InfixExpression.Operator.GREATER && value == 0)
                             || (operator == InfixExpression.Operator.GREATER_EQUALS && value == 1)
                             || (operator == InfixExpression.Operator.EQUALS && value == 1))) {
-                    record(((MethodInvocation) left).getExpression(), POSITIVE, bindings, facts);
+                    record(((MethodInvocation) left).getExpression(), POSITIVE, bindings, facts, identities);
                 }
             }
         }
-        return true;
+        return inspected[0] <= MAX_NODES && !Thread.currentThread().isInterrupted();
     }
 
     private static InfixExpression.Operator opposite(InfixExpression.Operator operator) {
@@ -207,10 +209,41 @@ final class JavaDominatingGuardFacts {
     }
 
     private static void record(Expression expression, int fact, Map<String, IVariableBinding> bindings,
-            Map<String, Integer> facts) {
+            Map<String, Integer> facts, Identities identities) {
         if (!(unwrap(expression) instanceof SimpleName name)) return;
-        var expected = bindings.get(name.getIdentifier());
-        if (expected != null && name.resolveBinding() instanceof IVariableBinding actual && expected.isEqualTo(actual))
-            facts.merge(name.getIdentifier(), fact, (left, right) -> left | right);
+        if (!(name.resolveBinding() instanceof IVariableBinding actual)) return;
+        var direct = bindings.get(name.getIdentifier());
+        if (direct != null && direct.isEqualTo(actual)) facts.merge(name.getIdentifier(), fact, (left, right) -> left | right);
+        IVariableBinding origin = identities.origin(actual);
+        if (origin == null) return;
+        bindings.forEach((receiver, expected) -> {
+            IVariableBinding other = identities.origin(expected);
+            if (other != null && origin.isEqualTo(other)) facts.merge(receiver, fact, (left, right) -> left | right);
+        });
+    }
+
+    private static ASTNode frame(ASTNode node) {
+        for (int depth = 0; node != null && depth < MAX_ANCESTORS; depth++, node = node.getParent())
+            if (node instanceof MethodDeclaration || node instanceof LambdaExpression || node instanceof AnonymousClassDeclaration) return node;
+        return null;
+    }
+
+    /** Only immutable local reference copies preserve identity; calls and fields never supply aliases. */
+    private record Identities(CompilationUnit unit, ASTNode frame, int start, int[] inspected) {
+        IVariableBinding origin(IVariableBinding binding) {
+            for (int depth = 0; depth < 32; depth++) {
+                if (++inspected[0] > MAX_NODES || Thread.currentThread().isInterrupted()
+                        || binding.isRecovered() || binding.isField()
+                        || !(Modifier.isFinal(binding.getModifiers()) || binding.isEffectivelyFinal())) return null;
+                ASTNode declaration = unit.findDeclaringNode(binding.getVariableDeclaration());
+                if (declaration == null || frame == null || JavaDominatingGuardFacts.frame(declaration) != frame
+                        || declaration.getStartPosition() >= start) return null;
+                if (!(declaration instanceof VariableDeclarationFragment fragment)
+                        || !(unwrap(fragment.getInitializer()) instanceof SimpleName alias)) return binding;
+                if (!(alias.resolveBinding() instanceof IVariableBinding parent)) return null;
+                binding = parent;
+            }
+            return null;
+        }
     }
 }

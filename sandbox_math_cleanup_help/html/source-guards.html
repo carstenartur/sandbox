@@ -27,6 +27,13 @@ unconditional return or throw, optionally wrapped in single-statement blocks.
 Negated conditions are supported. A true conjunction or false disjunction
 establishes each term; a false conjunction or true disjunction does not.</p>
 <h2>Conservative boundaries</h2>
+<p>Simple local aliases also share established facts. For example,
+<code>final BigInteger base = x;</code> can reuse dominating checks on
+<code>x</code>, and checks on <code>base</code> can establish the same properties
+for <code>x</code>. Every reference in the alias chain must remain final or
+effectively final and belong to the same execution frame. Calls, casts, fields,
+and reassigned references do not establish alias identity. A bounded chain that
+cannot be proved retains the existing receiver checks.</p>
 <p>Fields, reassigned references, conditional exits, caught throws, try/finally,
 and arbitrary calls that might terminate are not accepted as continuation proofs.
 Facts do not cross lambda, method or anonymous-class boundaries. Analysis shares

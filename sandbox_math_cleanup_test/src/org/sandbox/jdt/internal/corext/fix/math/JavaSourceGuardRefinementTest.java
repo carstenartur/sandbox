@@ -20,6 +20,8 @@ import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.TextEdit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.SafetyProfile;
@@ -69,20 +71,24 @@ class JavaSourceGuardRefinementTest {
                 .filter(r -> r.start() == source.indexOf(TARGET)).findFirst().orElseThrow();
         assertEquals(java.util.Set.of("p"), selected.receiverGuards());
     }
-    @Test void optimizedOutputCompilesPreservesFallbackBehaviorAndSupportsExactUndo() throws Exception {
-        var analysis = MathematicalAnalysis.analyze(parse(SOURCE), SOURCE, options(true), new NullProgressMonitor(), SOURCE.indexOf(TARGET), TARGET.length());
+    @ParameterizedTest @ValueSource(booleans = {false, true})
+    void optimizedOutputCompilesPreservesFallbackBehaviorAndSupportsExactUndo(boolean aliases) throws Exception {
+        String source = aliases ? SOURCE.replace(TARGET, "return base.modPow(BigInteger.TWO, modulus);")
+                .replace("if (x !=", "BigInteger base = x; BigInteger modulus = p; if (x !=") : SOURCE;
+        String target = aliases ? "return base.modPow(BigInteger.TWO, modulus);" : TARGET;
+        var analysis = MathematicalAnalysis.analyze(parse(source), source, options(true), new NullProgressMonitor(), source.indexOf(target), target.length());
         assertEquals(1, analysis.replacements().size(), analysis.diagnostics().toString());
         String replacement = analysis.replacements().getFirst().replacement();
         assertTrue(replacement.contains(".multiply("), replacement);
         assertFalse(replacement.contains("getClass()"), replacement);
         assertFalse(replacement.contains("if ("), replacement);
-        var document = new Document(SOURCE);
+        var document = new Document(source);
         var undo = analysis.newEdit().apply(document, TextEdit.CREATE_UNDO);
         String generated = document.get(); parse(generated);
-        undo.apply(document); assertEquals(SOURCE, document.get());
-        assertEquals(1, generated.split(java.util.regex.Pattern.quote(TARGET), -1).length - 1,
+        undo.apply(document); assertEquals(source, document.get());
+        assertEquals(1, generated.split(java.util.regex.Pattern.quote(target), -1).length - 1,
                 "The original calculation outside the dominating branch remains untouched");
-        try (var original = compile(SOURCE, "original"); var optimized = compile(generated, "optimized")) {
+        try (var original = compile(source, "original"); var optimized = compile(generated, "optimized")) {
             var before = original.loadClass("Sample").getMethod("f", BigInteger.class, BigInteger.class);
             var after = optimized.loadClass("Sample").getMethod("f", BigInteger.class, BigInteger.class);
             BigInteger[] values = {null, BigInteger.ZERO, BigInteger.ONE, BigInteger.valueOf(-3), BigInteger.valueOf(27), BigInteger.ONE.shiftLeft(5000)};
