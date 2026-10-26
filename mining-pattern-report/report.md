@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-10-23
+# Refactoring Mining Report — 2026-10-26
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 71 | 4 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1728 | 176 | 12 |
+| sandbox | 1761 | 173 | 12 |
 
 ## Details
 ### eclipse.jdt.core
@@ -330,6 +330,17 @@
 
 ### sandbox
 #### Rule: `try-with-resources` → `Consider using try-with-resources for AutoCloseable resource`
+- `sandbox-jgit-server-webapp/tst/org/eclipse/jgit/server/config/ReleasedRepositoryReadH2Test.java:92` — `context.close()`
+- `sandbox-jgit-server-webapp/tst/org/eclipse/jgit/server/config/ReleasedRepositoryReadH2Test.java:131` — `service.close()`
+- `sandbox-jgit-server-webapp/tst/org/eclipse/jgit/server/config/ReleasedRepositoryReadH2Test.java:132` — `service.close()`
+- `sandbox-jgit-server-webapp/tst/org/eclipse/jgit/server/config/ReleasedRuntimeStartupH2Test.java:127` — `context.close()`
+- `sandbox-jgit-server-webapp/tst/org/eclipse/jgit/server/analysis/LocalEmbeddingEncoderTest.java:70` — `encoder.close()`
+- `sandbox-jgit-server-webapp/tst/org/eclipse/jgit/server/analysis/AnalysisGenerationCacheTest.java:178` — `cache.close()`
+- `sandbox-jgit-server-webapp/tst/org/eclipse/jgit/server/analysis/AnalysisGenerationCacheTest.java:202` — `cache.close()`
+- `sandbox-jgit-server-webapp/tst/org/eclipse/jgit/server/analysis/AnalysisGenerationCacheTest.java:216` — `cache.close()`
+- `sandbox-jgit-server-webapp/tst/org/eclipse/jgit/server/analysis/HistoricalAnalysisH2Test.java:114` — `generations.close()`
+- `sandbox-jgit-server-webapp/tst/org/eclipse/jgit/server/analysis/HistoricalAnalysisH2Test.java:114` — `repositories.close()`
+- `sandbox-jgit-server-webapp/tst/org/eclipse/jgit/server/analysis/HistoricalAnalysisH2Test.java:114` — `provider.close()`
 - `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/wizard/ProjectRulePreviewTest.java:54` — `candidate.close()`
 - `sandbox_triggerpattern_test/src/org/sandbox/jdt/internal/ui/wizard/ProjectRulePreviewTest.java:60` — `candidate.close()`
 
@@ -346,7 +357,7 @@
 
 #### Rule: `stream-performance` → `stream-performance.sorted-before-collect.review`
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/GeneratedNameAllocator.java:205` — `group.stream().map(NestedTypeRequest::requestId).filter(candidateId -> !candi...`
-- `sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java:917` — `variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(...`
+- `sandbox_distribution_verify/src/main/java/org/sandbox/distribution/AggregateInstallationVerifier.java:920` — `variable.getModifiers().stream().map(modifier -> modifier.name().toLowerCase(...`
 
 #### Rule: `stream-performance` → `stream-performance.collection-stream-foreach.to-collection-foreach`
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/JHViewContentProvider.java:103` — `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).stream().fo...` → `Arrays.asList(packageRoot.getJavaProject().getPackageFragments()).forEach((pa...`
@@ -438,14 +449,20 @@
 - `sandbox_test_commons/src/org/sandbox/jdt/ui/tests/quickfix/rules/AbstractEclipseJava.java:452` — `System.arraycopy(prevNatures,0,newNatures,0,prevNatures.length)`
 
 #### Rule: `string-equals` → `string-equals.null-or-empty.review`
-- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/AnalyticsResource.java:64` — `repo == null || repo.isEmpty()`
-- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/AdminResource.java:102` — `expectedToken == null || expectedToken.isEmpty()`
-- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:120` — `repo == null || repo.isEmpty()`
-- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:129` — `query == null || query.isEmpty()`
-- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:234` — `blobId == null || blobId.isEmpty()`
-- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:519` — `commitA == null || commitA.isEmpty()`
-- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:539` — `commitA == null || commitA.isEmpty()`
-- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:785` — `value == null || value.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/AnalyticsResource.java:59` — `repo == null || repo.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/AdminResource.java:168` — `expectedToken == null || expectedToken.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:118` — `repo == null || repo.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:127` — `query == null || query.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:230` — `blobId == null || blobId.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:509` — `commitA == null || commitA.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:529` — `commitA == null || commitA.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/rest/SearchResource.java:775` — `value == null || value.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/analysis/ApplicationSourceReports.java:38` — `prefix == null || prefix.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/analysis/ApplicationSourceReports.java:111` — `prefix == null || prefix.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/analysis/AnalysisSettings.java:32` — `extensions == null || extensions.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/analysis/AnalysisSettings.java:44` — `value == null || value.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/analysis/LocalEmbeddingEncoder.java:97` — `value == null || value.isEmpty()`
+- `sandbox-jgit-server-webapp/src/org/eclipse/jgit/server/analysis/LocalEmbeddingEncoder.java:110` — `value == null || value.isEmpty()`
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/RelatedCompilationUnitSearch.java:156` — `projects == null || projects.isEmpty()`
 - `sandbox_common/src/org/sandbox/jdt/cleanup/multifile/JavaProjectCompilationUnits.java:270` — `currentScope == null || currentScope.isEmpty()`
 - `sandbox_common/src/org/sandbox/jdt/triggerpattern/cleanup/PlanAwareHintFileFixCore.java:80` — `plan == null || plan.isEmpty()`
@@ -488,26 +505,6 @@
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/ui/fix/JUnitCleanUpCore.java:506` — `units == null || units.isEmpty()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/helper/RunWithJUnitPlugin.java:161` — `runnerQualifiedName == null || runnerQualifiedName.isEmpty()`
 - `sandbox_junit_cleanup/src/org/sandbox/jdt/internal/corext/fix/multifile/JUnitMigrationPlan.java:118` — `blockedRuleUnitHandles == null || blockedRuleUnitHandles.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/config/HibernateSessionFactoryProvider.java:64` — `root == null || root.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1062` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1107` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1200` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1233` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1270` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1328` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1377` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1428` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1501` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1540` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1570` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1575` — `packagePrefix == null || packagePrefix.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1612` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1653` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/GitDatabaseQueryService.java:1743` — `repoName == null || repoName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/service/JavaBlobExtractor.java:191` — `source == null || source.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/repository/HibernateRepositoryBuilder.java:108` — `repositoryName == null || repositoryName.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/search/EcjTokenFilter.java:156` — `identifier == null || identifier.isEmpty()`
-- `sandbox-jgit-storage-hibernate/src/org/eclipse/jgit/storage/hibernate/search/strategies/JavaFileStrategy.java:183` — `source == null || source.isEmpty()`
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/VariableNameSuggester.java:122` — `str == null || str.isEmpty()`
 - `sandbox_usage_view/src/org/sandbox/jdt/ui/helper/views/VariableNameSuggester.java:135` — `str == null || str.isEmpty()`
 - `sandbox_mining_core/src/main/java/org/sandbox/mining/core/report/StatisticsCollector.java:237` — `evaluations == null || evaluations.isEmpty()`
@@ -515,7 +512,7 @@
 - `sandbox_method_reuse/src/org/sandbox/jdt/internal/corext/fix/helper/lib/SideEffectAnalyzer.java:47` — `statements == null || statements.isEmpty()`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/ui/fix/IntToEnumCleanUpCore.java:271` — `units == null || units.isEmpty()`
 - `sandbox_int_to_enum/src/org/sandbox/jdt/internal/corext/fix/helper/SwitchIntToEnumHelper.java:336` — `names == null || names.isEmpty()`
-- `sandbox_oomph/src/test/resources/probe/SetupProbe.java:519` — `unsigned == null || unsigned.isEmpty()`
+- `sandbox_oomph/src/test/resources/probe/SetupProbe.java:984` — `unsigned == null || unsigned.isEmpty()`
 
 #### Rule: `modernize-java9` → `modernize-java16.stream-collect-tolist.consider-stream-tolist`
 - `sandbox_tools/src/org/sandbox/jdt/internal/ui/fix/UseIteratorToForLoopCleanUpCore.java:87` — `computeFixSet().stream().map(UseIteratorToForLoopFixCore::toString).collect(C...`
