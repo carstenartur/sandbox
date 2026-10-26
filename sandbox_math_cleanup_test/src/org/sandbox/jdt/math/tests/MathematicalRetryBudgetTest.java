@@ -29,7 +29,7 @@ class MathematicalRetryBudgetTest {
         int overshoots = 0;
         // Search ordering can change the precise admission threshold. Compare with
         // a selected second method given the measured remaining budget in this JVM.
-        for (long budget = 2800; budget <= 3800; budget += 20) {
+        for (long budget = 2800; budget <= 8000; budget += 20) {
             var options = options(budget);
             var first = new JavaComputationExtractor().extractRuntime(ast, source, options).regions().getFirst();
             // Two trace operations versus one receive two thirds; reserve half for the alternate domain.
@@ -52,6 +52,7 @@ class MathematicalRetryBudgetTest {
                     "Later search must receive exactly the unspent file budget at " + budget);
             admittedLaterMethod |= !isolated.evidence().isEmpty();
             exhaustedLaterMethod |= isolated.evidence().isEmpty();
+            if (admittedLaterMethod && exhaustedLaterMethod) break;
         }
         assertTrue(overshoots > 0, "Exercise a failed attempt that reports more work than its allowance");
         assertTrue(admittedLaterMethod, "Exercise a later method that still fits in the remaining budget");

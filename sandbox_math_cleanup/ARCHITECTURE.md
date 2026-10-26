@@ -2,6 +2,62 @@
 
 This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The four-module integration is rebuilt after workspace maintenance; current qualification is recorded separately from historical results.
 
+## Complete computation tasks and CAS ownership
+
+`JavaComputationExtractor.extractTasks` is an inspection path for bounded,
+straight-line primitive integral computations under `PRESERVE_JAVA`. It reuses
+the existing binding/type/operation decoder, retains constant initializers, and
+connects local assignments, array stores and continuing carry calculations.
+`JavaComputationTask` contains the existing Regelsuche `JointComputationPlan`
+and original `SourceEvaluationTrace`, not a second mathematical representation.
+`numericRequest` gives Regelsuche the caller's explicit goal and remaining budget.
+
+Each local assignment is a distinct named output, identified by its JDT binding
+and source occurrence. Every source read is a fresh scalar input, including
+repeated reads after stores through potentially aliased arrays. The separate
+schedule retains `SOURCE_READ`, `LOCAL_COMMIT`, `ARRAY_STORE` and `RETURN` events
+and their positions among original numeric occurrences. A whole-source SHA-256
+binds offsets to the inspected snapshot. The bounded SDK transport is validated
+before export; unsupported statements split tasks and produce diagnostics.
+
+This is a value projection, not an executable memory model. The consumer must
+execute each read, local commit and store in its original order. In particular,
+if a store throws, a handler observes preceding local assignments, never a later
+carry shift. Pure numeric equivalence cannot establish that this source schedule
+may change. Tasks therefore have no conversion to editable regions, no `newEdit`
+method and no implicit use by ordinary cleanup. Existing source receipts,
+compilation, cost, Apply/Undo and effect admission remain mandatory for edits.
+Indices depending on regionally changed locals, non-total arithmetic, unsupported
+calls and control-flow joins retain conservative boundaries; loop bodies are
+separate per-iteration tasks, not inferred loop invariants.
+
+Sandbox owns JDT semantics and source effects. Regelsuche owns arithmetic
+relationships, candidates and independent proofs. A configurable CAS, including
+a future SymPy option, belongs behind Regelsuche's existing solver/proposal
+boundaries. `SolverIr` is an obligation representation: it does not replace the
+typed Java computation graph. Adapters must select supported mathematical
+subgraphs losslessly, preserve widths/division/casts and declared assumptions,
+share work/time/cancellation limits, and independently verify decoded proposals.
+There is no CAS-specific formula catalogue or new Python process in Sandbox.
+
+`JavaComputationTaskTest` compares the entire pinned BC 1.85.2 `Nat256.add` carry
+block with a hand-built SDK plan: 25 ordinary edit regions become one inspection
+task with 26 outputs, 16 reads and eight stores. Replay against the actual BC
+method covers aliasing, overlapping offsets, null and short arrays. A separately
+compiled try/catch example checks handler-visible intermediate local values.
+This demonstrates additional context, not a measured speedup for Nat256.
+
+The source and independently assembled Nat256 plans now both reach SDK search;
+the actual int-to-long initializer conversion is retained in the manual plan's
+source trace. The current result is an incomplete search relation, not a proved
+improvement. `WordProjectionCleanupTest` separately requires a real high/low word
+reconstruction to simplify, compile, execute identically and support exact Undo.
+Failed late trace preparation reserves both its preceding request allowance and
+the bounded unreported preparation before later source regions can run. Existing
+file limits and region weights remain unchanged. The older explanation API still
+reports presentation work separately from fresh re-verification; a complete
+explanation-call work ledger is a documented upstream follow-up.
+
 ## Ordered primitive array inputs
 
 For `PRESERVE_JAVA`, including the explicit mathematical opt-in, a straight-line

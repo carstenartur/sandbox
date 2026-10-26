@@ -19,7 +19,7 @@ import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 class MathematicalPreparationBudgetTest {
     // Preparation can reach its structural cap before the SDK can report request work.
-    private static final long BUDGET = 2L * JointComputationPlan.MAX_NODES - 1;
+    private static final long BUDGET = JointComputationPlan.MAX_RESOLUTION_WORK + JointComputationPlan.MAX_NODES - 1;
 
     @Test void preparationFailureWithTwoToFourStatementsCannotSpendItsCapAgainOnRetries() {
         for (int statements = 2; statements <= 4; statements++) {
@@ -39,6 +39,38 @@ class MathematicalPreparationBudgetTest {
         assertBudgetExhaustedBeforeLaterMethod(fixture, analysis);
     }
 
+    @Test void lateTracePreparationFailureCannotRefundEarlierTraceWorkToTheNextMethod() {
+        String source = "class Calculation { static int first(int x) { int unused = " + intSum(0, 1024)
+                + "; return x; } static int later(int x) { return x + 0; } }";
+        var values = new HashMap<>(MathCleanUpOptions.defaults(17).toMap());
+        values.put(MathCleanUpOptions.CLEANUP, "true"); values.put(MathCleanUpOptions.KINDS, "INT");
+        values.put(MathCleanUpOptions.WORK_BUDGET, "2000000"); values.put(MathCleanUpOptions.MAX_STATES, "20000");
+        var options = MathCleanUpOptions.parse(values, 17);
+        var ast = MathTestSupport.parse(source);
+        var regions = new JavaComputationExtractor().extractRuntime(ast, source, options).regions();
+        assertEquals(2, regions.size());
+        var first = regions.getFirst();
+        assertDoesNotThrow(() -> ComputationOptimizer.prepare(first.plan()), "Only a later dead trace operation reaches the cap");
+        var request = new OptimizationRequest(first.plan(), first.trace(), options.kinds(),
+                ComputationOptimizer.SEMANTICS_REVISION, first.assumptions(), options.safety(), options.goal(),
+                new OptimizationBudget(1_900_000, options.maxStates(), 64, 5000), CheckedPolicy.NONE);
+        var result = assertInstanceOf(OptimizationResult.Unsupported.class,
+                new ComputationOptimizer().optimize(request, CancellationToken.NONE));
+        assertTrue(result.diagnostic().contains("plan preparation work bound exceeded"), result.toString());
+        var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0);
+        int later = source.indexOf("return x + 0;");
+        assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.offset() == later && d.code().equals("BUDGET_EXCEEDED")),
+                "Earlier trace work must not be refunded: " + analysis.diagnostics());
+        assertTrue(analysis.replacements().isEmpty());
+        assertTrue(analysis.evidence().isEmpty());
+    }
+
+    private static String intSum(int first, int count) {
+        if (count == 1) return "(x + " + first + ")";
+        int left = count / 2;
+        return "(" + intSum(first, left) + " + " + intSum(first + left, count - left) + ")";
+    }
+
     private static void assertBudgetExhaustedBeforeLaterMethod(Fixture fixture, MathematicalAnalysis.Analysis analysis) {
         int later = fixture.source().indexOf("return base.modPow");
         assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("BUDGET_EXCEEDED") && d.offset() == later),
@@ -56,7 +88,7 @@ class MathematicalPreparationBudgetTest {
                         BigInteger base = BigInteger.valueOf(seed);
                         BigInteger large =
                 """);
-        source.append(sum(0, 256)).append(";\n");
+        source.append(sum(0, 1024)).append(";\n");
         for (int index = 1; index < statements; index++) {
             source.append("BigInteger square").append(index)
                     .append(" = base.modPow(BigInteger.TWO, MODULUS);\n");

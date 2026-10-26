@@ -6,6 +6,14 @@ input archives. Qualification tests and benchmarks compile and execute separate
 copies of the original and generated source. These behavioral comparisons
 supplement symbolic proof; finite samples are not the proof.
 
+`ProjectMathScan` additionally accepts `--tasks` after its six required arguments.
+This writes bounded computation-task summaries and diagnostics to `review.json`,
+including typed inputs/outputs, source bindings and the ordered read/commit/store
+schedule. The same source snapshot reconstructs the full typed graph through
+`JavaComputationExtractor.extractTasks`; the summary does not recursively expand
+shared expressions or define a new CAS wire protocol. These tasks are inspection
+data (`editable: false`), separate from accepted cleanup regions and timing claims.
+
 ## Current BC qualification (Java 25 / Maven)
 
 The maintained Maven entry point reuses the existing production core, scanner,

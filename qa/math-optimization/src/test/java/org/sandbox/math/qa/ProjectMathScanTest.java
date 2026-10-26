@@ -19,7 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 class ProjectMathScanTest {
     @TempDir Path directory;
     @Test void realPipelineWritesActualRankedChangesWithoutMutatingTheInput() throws Exception {
-        String source = "public class Sample { public int f(int u,int v,int w) { return (u & v) | (~u & w); } }";
+        String source = "public class Sample { public int f(int u,int v,int w) { return (u & v) | (~u & w); } "
+                + "public int g(int[] x,int[] z) { int c=x[0]; z[0]=c; return c; } }";
         Path java = directory.resolve("Sample.java"); Files.writeString(java, source);
         var compiler = ToolProvider.getSystemJavaCompiler(); assertNotNull(compiler);
         assertEquals(0, compiler.run(null, null, null, "--release", "17", "-d", directory.toString(), java.toString()));
@@ -27,13 +28,22 @@ class ProjectMathScanTest {
         Path sources = archive("sources.jar", "Sample.java", source.getBytes(StandardCharsets.UTF_8));
         Path profile = profile(); String hash = CorpusFiles.sha256(sources);
         Path output = directory.resolve("result");
-        ProjectMathScan.main(new String[] {binary.toString(), sources.toString(), profile.toString(), output.toString(), hash, "17", "Sample.java"});
+        ProjectMathScan.main(new String[] {binary.toString(), sources.toString(), profile.toString(), output.toString(), hash, "17", "--tasks", "Sample.java"});
         var json = new ObjectMapper().readTree(output.resolve("review.json").toFile());
         assertEquals("COMPLETED", json.path("status").asText());
         assertEquals(1, json.path("parsedFiles").asInt());
         assertEquals(0, json.path("parseErrorFiles").asInt());
         assertTrue(json.path("acceptedRegions").asInt() > 0);
         assertTrue(json.path("files").get(0).path("reviewCandidates").size() > 0);
+        var tasks = json.path("files").get(0).path("computationTasks");
+        assertEquals(2, tasks.size());
+        var events = tasks.get(1).path("schedule");
+        assertEquals(4, events.size());
+        assertEquals("SOURCE_READ", events.get(0).path("kind").asText());
+        assertEquals("LOCAL_COMMIT", events.get(1).path("kind").asText());
+        assertEquals("ARRAY_STORE", events.get(2).path("kind").asText());
+        assertEquals("RETURN", events.get(3).path("kind").asText());
+        assertEquals(3, tasks.get(1).path("outputTypes").size());
         assertEquals(hash, CorpusFiles.sha256(sources)); assertEquals(source, Files.readString(java));
         assertNotEquals(source, Files.readString(output.resolve("generated/Sample.java")));
         assertTrue(Files.exists(output.resolve("COMPLETED")));

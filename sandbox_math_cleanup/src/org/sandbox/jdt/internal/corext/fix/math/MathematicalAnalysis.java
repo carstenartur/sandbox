@@ -246,15 +246,15 @@ public final class MathematicalAnalysis {
                      boolean preparationLimit = result instanceof OptimizationResult.Unsupported unsupported
                            && unsupported.toString().contains("plan preparation work bound exceeded");
                      long attemptSpent = preparationLimit
-                           ? Math.min(remainingWork, 2L * de.regelsuche.search.program.JointComputationPlan.MAX_NODES)
+                           ? failedPreparationWork(request.budget().maximumWork(), remainingWork)
                            : consumedWork(result, request.budget().maximumWork());
                      if (preparationLimit && slice == null) {
                         if (fragments == null) fragments = new JavaComputationExtractor().extractRuntimeFragments(ast, source, options).regions();
                         var smaller = fragments.stream().filter(part -> part.start() >= region.start()
                               && part.start() + part.length() <= region.start() + region.length() && part.length() < region.length()).toList();
                         if (!smaller.isEmpty()) {
-                           // Failed preparation is bounded by the SDK structural cap; reserve
-                           // a conservative full-cap charge before scheduling smaller requests.
+                           // A later trace preparation can fail after earlier request work.
+                           // Reserve that allowance plus the unreported preparation before retrying.
                            remainingWork -= attemptSpent;
                            scheduleRetries(pending, regionIndex + 1, smaller, deferredAssignments, selectionOffset < 0);
                            diagnostics.add(diagnostic("REGION_PREPARATION_SPLIT", "Preparation limit reached; retrying " + smaller.size()
@@ -573,6 +573,15 @@ public final class MathematicalAnalysis {
          throw new OperationCanceledException("Mathematics analysis interrupted");
       }
       return monitor.isCanceled();
+   }
+
+   private static long failedPreparationWork(long allocation, long remainingWork) {
+      long unreported = Math.min(remainingWork,
+            de.regelsuche.search.program.JointComputationPlan.MAX_RESOLUTION_WORK
+                  + de.regelsuche.search.program.JointComputationPlan.MAX_NODES);
+      // Unsupported has no work counter: earlier trace checks may already have
+      // spent the request allowance before this last bounded preparation failed.
+      return unreported + Math.min(remainingWork - unreported, allocation);
    }
 
    private static long consumedWork(OptimizationResult result, long allocation) {

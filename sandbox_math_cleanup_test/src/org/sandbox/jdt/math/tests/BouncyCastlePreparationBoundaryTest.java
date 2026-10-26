@@ -20,7 +20,7 @@ import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 class BouncyCastlePreparationBoundaryTest {
-    @Test void oversizedPreparationRetriesSmallerRealSourceRegions() throws Exception {
+    @Test void sharedCalculationReachesSearchWithoutPreparationFragments() throws Exception {
         String configured = System.getProperty("sandbox.math.bc.sourceArchive");
         Path archive = configured == null ? FileLocator.getBundleFileLocation(Platform.getBundle("bcprov.source")).orElseThrow().toPath()
                 : Path.of(configured);
@@ -47,7 +47,14 @@ class BouncyCastlePreparationBoundaryTest {
         var analysis = MathematicalAnalysis.analyze(ast, source, MathCleanUpOptions.parse(values, 17),
                 new NullProgressMonitor(), -1, 0, new MathematicalAnalysis.SourceEnvironment(
                         "org/bouncycastle/math/raw/GF256AES.java", java.util.List.of(dependency), java.util.List.of(), java.util.List.of()));
-        assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("REGION_PREPARATION_SPLIT")), analysis.diagnostics().toString());
+        int sharedStart = source.indexOf("int d =");
+        int sharedEnd = source.indexOf("return c;", sharedStart) + "return c;".length();
+        assertTrue(sharedStart >= 0 && sharedEnd > sharedStart);
+        assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.offset() == sharedStart
+                && d.length() == sharedEnd - sharedStart
+                && java.util.Set.of("INCONCLUSIVE", "NOIMPROVEMENT", "VERIFIED_CANDIDATE", "NO_RUNTIME_IMPROVEMENT").contains(d.code())),
+                "The full shared calculation must reach search: " + analysis.diagnostics());
+        assertFalse(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("REGION_PREPARATION_SPLIT")), analysis.diagnostics().toString());
         assertFalse(analysis.diagnostics().stream().anyMatch(d -> d.message().contains("plan preparation work bound exceeded")), analysis.diagnostics().toString());
     }
 }
