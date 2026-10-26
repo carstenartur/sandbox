@@ -4,9 +4,9 @@
 - Platform: **linux/gtk/x86_64**
 - Eclipse release: **2026-09**
 - Published Sandbox features: **18**
-- p2 metadata units: **75**
-- p2 artifact files checked: **56**
-- Product plug-ins: **369**
+- p2 metadata units: **76**
+- p2 artifact files checked: **57**
+- Product plug-ins: **370**
 - Default standalone IDE workbench launch: **PASS**
 - Fresh p2 installation and startup: **PASS**
 - Cleanup application transformation and Java compilation: **PASS**
