@@ -158,6 +158,8 @@ The Eclipse Quick Assist path is also binding-aware. Its JUnit coverage selects 
 
 ## Workflow safety boundary
 
+Gemini discovery retries temporary HTTP 503 overload responses within the same five-attempt limit as transient transport failures, waiting 5, 10, 20, then 40 seconds between attempts. The configured maximum failure duration and cancellation also stop retries. If the service remains unavailable, discovery reports the error and preserves completed evaluations and resumable scan state; the workflow still fails so an incomplete run remains visible.
+
 The nightly discovery workflow may publish candidate artifacts and create review issues for `READY_FOR_REVIEW` candidates. It must not:
 
 - merge candidate JSON into `main`;

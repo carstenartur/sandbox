@@ -42,7 +42,7 @@ import com.google.gson.JsonParser;
  *
  * <p>Sends prompts to the Gemini API and parses the response into
  * {@link CommitEvaluation} objects. Includes rate limiting (15s delay)
- * and bounded exponential backoff on HTTP 429 responses and transient
+ * and bounded exponential backoff on HTTP 429/503 responses and transient
  * transport failures.</p>
  */
 public class GeminiClient implements LlmClient {
@@ -453,6 +453,15 @@ public class GeminiClient implements LlmClient {
 				}
 
 				allAttempts429 = false;
+				consecutive429Batches = 0;
+				if (response.statusCode() == 503 && !Thread.currentThread().isInterrupted()
+						&& attempt + 1 < MAX_RETRIES && !isApiUnavailable()) {
+					System.err.println("Gemini service unavailable (503), attempt " + (attempt + 1) //$NON-NLS-1$
+							+ "/" + MAX_RETRIES + "; retrying in " + backoffMs + "ms"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+					retryWait.pause(backoffMs);
+					backoffMs *= 2;
+					continue;
+				}
 				throw new IOException("Gemini API error: " + response.statusCode() //$NON-NLS-1$
 						+ " - " + response.body()); //$NON-NLS-1$
 
