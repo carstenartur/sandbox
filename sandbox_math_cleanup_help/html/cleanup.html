@@ -72,10 +72,11 @@ the adapter first retries connected windows of at most four source outputs, then
 single statements if needed. Each window retains the intermediate values observed
 outside it and receives its own independent proof. All retries share the original
 file budget; unsupported loops and modular recurrences remain unchanged.</p>
-<p>The <em>Readability</em> goal also evaluates the actual patch: it retains the
+<p>With <em>Preserve Java</em>, the <em>Readability</em> goal also evaluates the actual patch: it retains the
 original when a candidate adds branches, more than eight locals or more than forty
 changed lines. Generated proof comments are excluded from this comparison.
-Review ordering prefers fewer branches, locals and changed lines within each
+Explicit checked and fallback profiles retain the control flow required by their
+selected numerical policy. Review ordering prefers fewer branches, locals and changed lines within each
 review category before comparing estimated numerical savings.</p>
 
 <h2 id="safety">Safety profiles</h2>

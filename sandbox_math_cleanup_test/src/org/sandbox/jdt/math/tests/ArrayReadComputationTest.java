@@ -122,7 +122,9 @@ class ArrayReadComputationTest {
         var extraction = extract(source);
         assertEquals(2, extraction.regions().size(), extraction.diagnostics().toString());
         int write = source.indexOf("alias[i] = value");
-        assertTrue(extraction.regions().getFirst().start() + extraction.regions().getFirst().length() <= write);
+        assertEquals(source.indexOf(';', write) + 1,
+                extraction.regions().getFirst().start() + extraction.regions().getFirst().length());
+        assertTrue(extraction.regions().getFirst().outputs().getLast().arrayStore());
         assertTrue(extraction.regions().getLast().start() > write);
         String generated = rewrite(source);
         assertEquals(2, occurrences(generated, "words[i]"));

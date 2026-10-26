@@ -375,7 +375,8 @@ public final class MathematicalAnalysis {
                   }
 
                   replacement = indentGenerated(JavaRegionSourceRewriter.arrayCaptures(ast, source, region), source, region.start()) + replacement;
-                  if (options.goal() == OptimizationGoal.READABILITY) {
+                  // Explicit checked/fallback profiles require their policy control flow.
+                  if (options.goal() == OptimizationGoal.READABILITY && options.safety() == SafetyProfile.PRESERVE_JAVA) {
                      var patch = MathCandidateReview.assess(source.substring(region.start(), region.start() + region.length()),
                            replacement, candidate.cost().sourceScore(), candidate.cost().candidateScore(),
                            candidate.cost().estimatedRuntimeImprovement(), mathematicalBigInteger || mathematicalIntegral,

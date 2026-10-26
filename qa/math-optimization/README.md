@@ -15,7 +15,10 @@ JUnit contracts and JMH implementation. From the repository root:
 mvn -f qa/math-optimization/pom.xml clean verify -Pbc-corpus,bc-benchmark
 ```
 
-`verify` alone runs the selected standalone core/QA tests. Native Eclipse workspace
+`verify` alone runs the core/QA tests and the entire headless mathematics test
+package, including Java target, safety-profile, generated-code and array-ordering
+contracts reused from the native suite. Its corpus fixtures use the same pinned
+archive versions as that suite. Native Eclipse workspace
 and UI tests remain in the existing Tycho modules; this build does not replace
 them. The optional historical Git-reference test needs its existing mirror and
 reports a skip when it is absent. The new full-call BC tests always receive the

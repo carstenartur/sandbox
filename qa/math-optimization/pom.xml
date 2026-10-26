@@ -10,18 +10,34 @@
   <dependency><groupId>org.openjdk.jmh</groupId><artifactId>jmh-core</artifactId><version>1.37</version></dependency>
   <dependency><groupId>org.openjdk.jmh</groupId><artifactId>jmh-generator-annprocess</artifactId><version>1.37</version></dependency>
   <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>2.20.1</version></dependency>
+  <dependency><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId><version>3.135.0</version><scope>test</scope></dependency>
+  <dependency><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId><version>3.135.0</version><classifier>sources</classifier><scope>test</scope></dependency>
+  <dependency><groupId>org.apache.commons</groupId><artifactId>commons-imaging</artifactId><version>1.0.0-alpha6</version><scope>test</scope></dependency>
+  <dependency><groupId>org.apache.commons</groupId><artifactId>commons-imaging</artifactId><version>1.0.0-alpha6</version><classifier>sources</classifier><scope>test</scope></dependency>
+  <dependency><groupId>org.jcodec</groupId><artifactId>jcodec</artifactId><version>0.2.3</version><scope>test</scope></dependency>
+  <dependency><groupId>org.jcodec</groupId><artifactId>jcodec</artifactId><version>0.2.3</version><classifier>sources</classifier><scope>test</scope></dependency>
   <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><version>6.0.0</version></dependency>
   <dependency><groupId>org.bouncycastle</groupId><artifactId>bcprov-jdk18on</artifactId><version>1.85.2</version></dependency>
   <dependency><groupId>org.bouncycastle</groupId><artifactId>bcprov-jdk18on</artifactId><version>1.85.2</version><classifier>sources</classifier></dependency>
  </dependencies>
- <build><sourceDirectory>${repo}</sourceDirectory><testSourceDirectory>${repo}</testSourceDirectory><plugins>
+ <build><sourceDirectory>${repo}</sourceDirectory><testSourceDirectory>${repo}</testSourceDirectory>
+  <testResources><testResource><directory>${repo}/sandbox_math_cleanup_test/src</directory><includes><include>**/heldout/**</include></includes></testResource></testResources><plugins>
   <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.16.0</version><configuration>
    <includes><include>sandbox_math_cleanup/src/org/sandbox/jdt/internal/corext/fix/math/*.java</include><include>qa/math-optimization/src/main/java/**/*.java</include><include>sandbox-benchmarks/src/main/java/org/sandbox/benchmarks/*Mathematics*java</include><include>sandbox_common_test/src/org/sandbox/jdt/triggerpattern/test/policy/PinnedGitRepository.java</include></includes>
-   <testIncludes><testInclude>sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/*Test.java</testInclude><testInclude>sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathTestSupport.java</testInclude><testInclude>sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/MathCorpusIntegrationTest.java</testInclude><testInclude>sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleVersionProjectionTest.java</testInclude><testInclude>qa/math-optimization/src/test/java/**/*.java</testInclude><testInclude>sandbox-benchmarks/src/test/java/org/sandbox/math/qa/*.java</testInclude></testIncludes>
-   <!-- This standalone build selects core tests. The workspace receipt test remains in the native Tycho suite. -->
+   <testIncludes><testInclude>sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/*Test.java</testInclude><testInclude>sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/*.java</testInclude><testInclude>qa/math-optimization/src/test/java/**/*.java</testInclude><testInclude>sandbox-benchmarks/src/test/java/org/sandbox/math/qa/*.java</testInclude></testIncludes>
+   <!-- Reuse the entire headless mathematics suite, including all target/safety contracts. Workspace/UI tests remain in Tycho. -->
    <testExcludes><testExclude>**/SharedSourceReceiptTest.java</testExclude></testExcludes><annotationProcessorPaths><path><groupId>org.openjdk.jmh</groupId><artifactId>jmh-generator-annprocess</artifactId><version>1.37</version></path></annotationProcessorPaths>
   </configuration></plugin>
-  <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.6.0</version><configuration><argLine>-Xmx768m</argLine><workingDirectory>${repo}</workingDirectory><systemPropertyVariables><sandbox.math.bc.jar>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2.jar</sandbox.math.bc.jar><sandbox.math.bc.sourceArchive>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2-sources.jar</sandbox.math.bc.sourceArchive></systemPropertyVariables></configuration></plugin>
+  <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.6.0</version><configuration><argLine>-Xmx768m</argLine><workingDirectory>${repo}</workingDirectory><systemPropertyVariables><sandbox.math.bc.jar>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2.jar</sandbox.math.bc.jar><sandbox.math.bc.sourceArchive>${settings.localRepository}/org/bouncycastle/bcprov-jdk18on/1.85.2/bcprov-jdk18on-1.85.2-sources.jar</sandbox.math.bc.sourceArchive>
+   <sandbox.math.bc.mavenBinary>${bc.binary}</sandbox.math.bc.mavenBinary><sandbox.math.bc.mavenSources>${bc.sources}</sandbox.math.bc.mavenSources>
+   <sandbox.math.swt.binary>${settings.localRepository}/org/eclipse/platform/org.eclipse.swt.gtk.linux.x86_64/3.135.0/org.eclipse.swt.gtk.linux.x86_64-3.135.0.jar</sandbox.math.swt.binary>
+   <sandbox.math.swt.sources>${settings.localRepository}/org/eclipse/platform/org.eclipse.swt.gtk.linux.x86_64/3.135.0/org.eclipse.swt.gtk.linux.x86_64-3.135.0-sources.jar</sandbox.math.swt.sources>
+   <sandbox.math.imaging.binary>${settings.localRepository}/org/apache/commons/commons-imaging/1.0.0-alpha6/commons-imaging-1.0.0-alpha6.jar</sandbox.math.imaging.binary>
+   <sandbox.math.imaging.sources>${settings.localRepository}/org/apache/commons/commons-imaging/1.0.0-alpha6/commons-imaging-1.0.0-alpha6-sources.jar</sandbox.math.imaging.sources>
+   <sandbox.math.jcodec.binary>${settings.localRepository}/org/jcodec/jcodec/0.2.3/jcodec-0.2.3.jar</sandbox.math.jcodec.binary>
+   <sandbox.math.jcodec.sources>${settings.localRepository}/org/jcodec/jcodec/0.2.3/jcodec-0.2.3-sources.jar</sandbox.math.jcodec.sources>
+   <sandbox.math.corpus.evidence>${project.build.directory}/surefire-reports/practical-corpus</sandbox.math.corpus.evidence>
+  </systemPropertyVariables></configuration></plugin>
  </plugins></build>
  <profiles>
   <profile><id>bc-corpus</id><build><plugins><plugin>

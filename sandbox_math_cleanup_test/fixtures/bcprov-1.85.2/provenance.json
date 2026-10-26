@@ -1,6 +1,7 @@
 {
   "source": "Eclipse 2026-09 bcprov.source 1.85.2",
   "sourceArchiveSha256": "9b15d2ccb83c76f9f393cb8cb97d0cb971d04dee667cc3f9d7f4ac28f582cb91",
+  "mavenSourceArchiveSha256": "b37ac84b1d5435ab7b8d166c16ab9f75e09f68f8ec50479bae433939b241b03f",
   "gitRevision": null,
   "files": {
     "SHA1Digest.java": "5818247460b60c2b93d9c52b081fb0dd1dab803df1720f54e1ca4f6d5efba534",
