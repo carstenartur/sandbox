@@ -59,7 +59,7 @@ final class JavaRegionLiveness {
       var planOutputs = new ArrayList<JointComputationPlan.Output>();
       for (int index = 0; index < region.outputs().size(); index++) {
          var output = region.outputs().get(index);
-         if (output.returnValue() || commented.contains(output.bindingKey())
+         if (output.returnValue() || output.arrayStore() || commented.contains(output.bindingKey())
                || visible.contains(output.bindingKey()) && output == lastVersions.get(output.bindingKey())) {
             outputs.add(output);
             planOutputs.add(region.plan().outputs().get(index));

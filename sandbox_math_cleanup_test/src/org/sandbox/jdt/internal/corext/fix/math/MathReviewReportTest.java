@@ -39,6 +39,17 @@ class MathReviewReportTest {
         assertEquals(-1, assessment.changedLines());
         assertTrue(assessment.cautions().contains("INSUFFICIENT_REVIEW_METADATA"));
     }
+    @Test void readabilitySelectionDoesNotTradeOneExpressionForGuardedControlFlow() {
+        String source = "import java.math.BigInteger; class Sample { BigInteger f(BigInteger x, BigInteger p) { return x.modPow(BigInteger.TWO,p); } }";
+        for (var goal : List.of(OptimizationGoal.READABILITY, OptimizationGoal.LOWER_ESTIMATED_RUNTIME)) {
+            var options = new MathCleanUpOptions(true, EnumSet.of(NumericKind.BIG_INTEGER), SafetyProfile.PRESERVE_JAVA,
+                    goal, 1_000_000, 20_000, false, 17, List.of(), true);
+            var analysis = MathematicalAnalysis.analyze(parse(source), source, options, new NullProgressMonitor(), -1, 0);
+            assertEquals(goal != OptimizationGoal.READABILITY, analysis.changed(), analysis.diagnostics().toString());
+            if (goal == OptimizationGoal.READABILITY)
+                assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("PATCH_READABILITY_COST")));
+        }
+    }
     @Test void malformedReviewTextDoesNotDiscardVerifiedReportEvidence() {
         String source = "class Sample { int f(int u,int v,int w) { return (u & v) | (~u & w); } }";
         var analysis = MathematicalAnalysis.analyze(parse(source), source, options(), new NullProgressMonitor(), -1, 0);

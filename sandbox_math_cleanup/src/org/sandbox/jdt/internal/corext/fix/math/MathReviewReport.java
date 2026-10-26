@@ -14,8 +14,10 @@ public final class MathReviewReport {
     public static List<Entry> ranked(List<MathematicalAnalysis.VerifiedRegion> evidence, MathCleanUpOptions options) {
         return evidence.stream().map(region -> new Entry(region.offset(), region.length(), assess(region, options)))
                 .sorted(Comparator.comparingInt((Entry entry) -> priority(entry.assessment().disposition()))
-                        .thenComparing(Comparator.comparingLong((Entry entry) -> entry.assessment().estimatedScoreSaving()).reversed())
+                        .thenComparingInt(entry -> entry.assessment().addedBranches())
+                        .thenComparingInt(entry -> entry.assessment().addedLocals())
                         .thenComparingInt(entry -> entry.assessment().changedLines() < 0 ? Integer.MAX_VALUE : entry.assessment().changedLines())
+                        .thenComparing(Comparator.comparingLong((Entry entry) -> entry.assessment().estimatedScoreSaving()).reversed())
                         .thenComparingInt(Entry::offset)).toList();
     }
 

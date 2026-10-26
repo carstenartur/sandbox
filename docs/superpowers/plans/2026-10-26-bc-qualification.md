@@ -42,24 +42,28 @@
 - Isolated fresh clone on codex/math-bc-qualification-and-facts.
 - Ruling: extend existing fact propagation through immutable aliases first; avoid introducing broad interprocedural or mutable-memory analysis in this bounded change.
 - Toolchain: OpenJDK 25+36, Maven 3.9.11; the unchanged vendored SDK is used by the standalone build.
-- Before/after full archive scans: 3,126 parsed files and 10 parse-error files in each run; 111 strict and 121 mathematical accepted regions. All generated source hashes match the baseline. The alias extension does not add BC hits in this archive.
+- Initial three-step before/after full archive scans: 3,126 parsed files and 10 parse-error files in each run; 111 strict and 121 mathematical accepted regions. All generated source hashes match the baseline. The alias extension does not add BC hits in this archive.
 - Regression tests first failed with retained guards; the implementation passes. Review additionally found and fixed direct-receiver regressions, a CI artifact layout issue and missing benchmark/report consistency checks.
-- Final combined Maven command: BUILD SUCCESS in 6:34, including 201 tests (zero failures/errors, one optional historical Git-reference skip), both full scans and all 16 JMH configurations. Final scan inputs and generated hashes match the before/after comparison.
+- Initial combined Maven command (before the multi-release review fix): BUILD SUCCESS in 6:34, including 201 tests (zero failures/errors, one optional historical Git-reference skip), both full scans and all 16 JMH configurations. Final scan inputs and generated hashes match the before/after comparison.
 - PR: https://github.com/carstenartur/sandbox/pull/1767, directly against main. Native Eclipse and distribution checks are tracked there; they are not replaced by this standalone qualification.
 
-## Observed full-call results
+## Corrected full-call results
 
-Complete public hashToCurve plus point encoding; construction and compilation are outside timing. OpenJDK 25+36, two forks, three 500 ms warmups and five 500 ms measurements per fork. These are local measurements, not a general speed guarantee. Every original/generated timing confidence interval overlaps, so this run does not establish a reliable runtime improvement. Mean allocations are lower in all eight comparisons (0.5–5.3%). This measures the existing emitted SWU optimization; the alias extension leaves this corpus output unchanged.
+These measurements supersede the earlier base-version-loader run. Dependency lookups now use JarFile.runtimeVersion(), matching ordinary Java 25 multi-release loading, while compiled SWU variants retain precedence. The loader regression covers base/runtime/future entries and compiled overrides.
+
+Complete public hashToCurve plus point encoding; construction and compilation are outside timing. OpenJDK 25+36, two forks, three 500 ms warmups and five 500 ms measurements per fork. All eight timing intervals overlap: no reliable runtime gain is established. The generated means are 0.1–7.8% higher in this run. Allocation changes range from -5.3% to +0.6%; seven are lower and one higher. No optimizer cost weights are fitted from these observations. This measures the existing emitted SWU optimization; the additional GenericSqrtRatio/store rewrites are not the benchmark's compiled override.
 
 | Curve / message bytes | Original µs/op | Generated µs/op | Time change | Allocation change |
 |---|---:|---:|---:|---:|
-| P256_XMD_SHA_256/32 | 90.58 | 96.86 | 6.9% | -5.3% |
-| P256_XMD_SHA_256/256 | 90.87 | 87.12 | -4.1% | -5.2% |
-| P384_XMD_SHA_384/32 | 181.37 | 180.98 | -0.2% | -4.0% |
-| P384_XMD_SHA_384/256 | 183.62 | 184.99 | 0.7% | -4.0% |
-| P521_XMD_SHA_512/32 | 367.55 | 356.32 | -3.1% | -4.6% |
-| P521_XMD_SHA_512/256 | 425.72 | 353.25 | -17.0% | -4.6% |
-| BLS12_381_G1_XMD_SHA_256_SSWU_RO/32 | 909.54 | 810.53 | -10.9% | -1.3% |
-| BLS12_381_G1_XMD_SHA_256_SSWU_RO/256 | 875.81 | 832.90 | -4.9% | -0.5% |
+| P256_XMD_SHA_256/32 | 90.85 | 94.04 | +3.5% | -5.3% |
+| P256_XMD_SHA_256/256 | 86.53 | 89.55 | +3.5% | -5.2% |
+| P384_XMD_SHA_384/32 | 174.82 | 188.43 | +7.8% | -4.0% |
+| P384_XMD_SHA_384/256 | 175.49 | 176.73 | +0.7% | -4.0% |
+| P521_XMD_SHA_512/32 | 334.10 | 353.04 | +5.7% | -4.6% |
+| P521_XMD_SHA_512/256 | 364.81 | 379.42 | +4.0% | -4.6% |
+| BLS12_381_G1_XMD_SHA_256_SSWU_RO/32 | 764.17 | 765.83 | +0.2% | -0.5% |
+| BLS12_381_G1_XMD_SHA_256_SSWU_RO/256 | 793.18 | 793.79 | +0.1% | +0.6% |
 
-Raw JMH JSON retains individual samples, confidence intervals and GC metrics. Keep it with the scan reports, manifests, ordinary generated/original sources and test reports; do not substitute the review-only source for the measured generated source.
+Corrected combined command: BUILD SUCCESS in 7:00, with 210 tests, zero failures/errors and one optional historical Git-reference skip; full scans now yield 114 strict and 124 mathematical regions. The [follow-up ledger](2026-10-26-math-followups.md) records the additional source changes and their limits. Native Eclipse checks remain on PR #1767.
+
+Raw JMH SHA-256: `c1ea2d5932b3c0f177c44ccc2690919a49e8817cd4f572c6f6f917bda5d496f4`. The generated calibration JSON pairs all eight comparisons, retains raw intervals/allocation metrics and marks each timing comparison INCONCLUSIVE. Keep it with raw JMH samples, scan reports, manifests, ordinary generated/original sources and test reports. Do not substitute review-only source for the measured generated source.

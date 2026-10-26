@@ -27,7 +27,7 @@ import org.openjdk.jmh.annotations.*;
 public class BouncyCastleHashToCurveBenchmark {
     private static final String TYPE = "org.bouncycastle.crypto.hash2curve.impl.SimplifiedShallueVanDeWoestijneMapToCurve";
     private static final String ENTRY = TYPE.replace('.', '/') + ".java";
-    private static final Set<String> PROFILES = Set.of("P256_XMD_SHA_256", "P384_XMD_SHA_384", "P521_XMD_SHA_512",
+    static final Set<String> PROFILES = Set.of("P256_XMD_SHA_256", "P384_XMD_SHA_384", "P521_XMD_SHA_512",
             "BLS12_381_G1_XMD_SHA_256_SSWU_RO");
 
     @State(Scope.Thread)
@@ -150,12 +150,13 @@ public class BouncyCastleHashToCurveBenchmark {
     }
 
     /** Separate namespaces also avoid delegating BC calls to an original jar on the harness classpath. */
-    private static final class VariantLoader extends ClassLoader implements AutoCloseable {
+    static final class VariantLoader extends ClassLoader implements AutoCloseable {
         private final Path classes;
         private final JarFile binary;
         private boolean loadedReplacement;
         VariantLoader(Path classes, Path archive) throws IOException {
-            super(ClassLoader.getPlatformClassLoader()); this.classes = classes; this.binary = new JarFile(archive.toFile());
+            super(ClassLoader.getPlatformClassLoader()); this.classes = classes;
+            this.binary = new JarFile(archive.toFile(), true, JarFile.OPEN_READ, JarFile.runtimeVersion());
         }
         @Override protected Class<?> findClass(String name) throws ClassNotFoundException {
             if (!name.equals("HashCall") && !name.startsWith("org.bouncycastle.")) throw new ClassNotFoundException(name);

@@ -41,6 +41,14 @@ iterations and JMH's GC profiler. Raw timing/allocation samples are retained in
 checked before and after measurement. This measures numerical behavior and
 performance on the recorded JVM, not constant-time properties.
 
+Dependency lookups use the running JVM's multi-release JAR view; the separately
+compiled SWU override still takes precedence. `target/bc-performance-review.json`
+pairs all eight original/generated configurations and records the raw JSON hash,
+timing intervals and allocation metrics. Overlapping intervals are explicitly
+`INCONCLUSIVE`; directional evidence is reported only for separated intervals.
+These complete-call observations inform review and do not automatically fit or
+replace optimizer cost weights. Earlier base-version-loader timings are obsolete.
+
 Retain the reports, manifests, ordinary original/generated files and raw JSON
 together. Compare runs only with matching source/binary/profile hashes, Java
 target, selected entries and parse-error set. Do not reuse the historical

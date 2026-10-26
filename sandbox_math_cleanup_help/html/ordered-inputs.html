@@ -29,8 +29,21 @@ literals, casts, and total arithmetic. Calls, mutation, division, remainder,
 nested reads and runtime field values in indices remain boundaries. A read which
 depends on a local produced earlier in the current region starts a new region.
 Potentially throwing arithmetic, observable writes and control flow also prevent
-unsafe motion. Relative <code>get()</code>, bulk reads, writes, floating buffers,
+unsafe motion. Relative <code>get()</code>, bulk reads, buffer writes, floating buffers,
 checked/fallback profiles and helper-body reads require separate support.</p>
+<h2>Ordered primitive array stores</h2>
+<p>A simple store such as <code>out[i] = (u &amp; v) | (~u &amp; w)</code> can now
+include its total primitive calculation in the verified region. The destination
+must be a local one-dimensional integral array, with an index independent of
+locals produced in that region. The store remains at its original position and
+ends the region. Later reads execute after it, even when source and destination
+arrays are the same object. Carry values used afterwards remain live.</p>
+<p>Whole-file analysis tries established regions first. New store regions use
+the remaining work budget and cannot overlap an already accepted edit.</p>
+<p>Compound stores, computed receivers, effectful indices and potentially throwing
+arithmetic remain boundaries. No equality of memory locations or whole-loop
+invariant is assumed, and repeated reads are not merged. This supports arithmetic
+feeding individual limb stores, not a general rewrite of multiword algorithms.</p>
 <h2>Costs and verification</h2>
 <p>The existing capture cost assessment charges capture stores, references and
 conservative peak storage. The unchanged original loads and indices are not

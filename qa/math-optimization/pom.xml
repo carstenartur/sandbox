@@ -51,7 +51,13 @@
      <argument>-p</argument><argument>binaryArchive=${bc.binary}</argument>
      <argument>-foe</argument><argument>true</argument><argument>-prof</argument><argument>gc</argument>
      <argument>-rf</argument><argument>json</argument><argument>-rff</argument><argument>${project.build.directory}/bc-hash-to-curve.json</argument>
-    </arguments></configuration></execution></executions>
+    </arguments></configuration></execution>
+    <execution><id>full-call-calibration</id><phase>verify</phase><goals><goal>exec</goal></goals><configuration>
+     <executable>${java.home}/bin/java</executable><arguments><argument>-cp</argument><classpath/>
+      <argument>org.sandbox.math.qa.FullCallBenchmarkReport</argument>
+      <argument>${project.build.directory}/bc-hash-to-curve.json</argument>
+      <argument>${project.build.directory}/bc-performance-review.json</argument>
+     </arguments></configuration></execution></executions>
   </plugin></plugins></build></profile>
  </profiles>
 </project>

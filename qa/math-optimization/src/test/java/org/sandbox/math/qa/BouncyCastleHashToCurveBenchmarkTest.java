@@ -43,6 +43,16 @@ class BouncyCastleHashToCurveBenchmarkTest {
         Files.writeString(copy.resolve("generated").resolve(ENTRY), "// modified\n", java.nio.file.StandardOpenOption.APPEND);
         try (var inputs = inputs(copy, "P256_XMD_SHA_256")) { assertThrows(IOException.class, inputs::setup); }
     }
+    @Test void genericSqrtRatioRetriesConnectedModularWindowsBeforeSingletons() throws Exception {
+        Path sources = Path.of(System.getProperty("sandbox.math.bc.sourceArchive")), output = temporary.resolve("generic-sqrt");
+        String entry = "org/bouncycastle/crypto/hash2curve/impl/GenericSqrtRatioCalculator.java";
+        ProjectMathScan.main(new String[] {binary.toString(), sources.toString(),
+                "qa/math-optimization/profiles/bc-mathematical.properties", output.toString(), CorpusFiles.sha256(sources), "17", entry});
+        var report = new com.fasterxml.jackson.databind.ObjectMapper().readTree(output.resolve("review.json").toFile());
+        assertTrue(report.toString().contains("MODULAR_WINDOW_RETRY"));
+        assertTrue(report.path("acceptedRegions").asInt() > 0);
+        assertTrue(Files.isRegularFile(output.resolve("generated").resolve(entry)));
+    }
     @Test void binaryMismatchAndUnchangedSourcesCannotMasqueradeAsAQualifiedComparison() throws Exception {
         for (String kind : List.of("binary", "unchanged", "profile", "sources", "stale-report")) {
             Path copy = fixtureCopy(kind);
@@ -61,6 +71,17 @@ class BouncyCastleHashToCurveBenchmarkTest {
             try (var out = Files.newBufferedWriter(copy.resolve("benchmark.properties"))) { metadata.store(out, "negative control"); }
             try (var inputs = inputs(copy, "P256_XMD_SHA_256")) { assertThrows(IOException.class, inputs::setup, kind); }
         }
+    }
+    @Test void additionalStoresDoNotDiluteEstablishedRegionBudgets() throws Exception {
+        Path sources = Path.of(System.getProperty("sandbox.math.bc.sourceArchive")), output = temporary.resolve("retained-regions");
+        var expected = java.util.Map.of("org/bouncycastle/pqc/crypto/hawk/HawkEngine.java", 18,
+                "org/bouncycastle/pqc/crypto/haetae/HAETAEEngine.java", 1, "org/bouncycastle/pqc/math/ntru/Polynomial.java", 2);
+        var args = new java.util.ArrayList<>(List.of(binary.toString(), sources.toString(),
+                "qa/math-optimization/profiles/bc-strict.properties", output.toString(), CorpusFiles.sha256(sources), "17"));
+        args.addAll(expected.keySet()); ProjectMathScan.main(args.toArray(String[]::new));
+        var report = new com.fasterxml.jackson.databind.ObjectMapper().readTree(output.resolve("review.json").toFile());
+        for (var file : report.path("files")) assertTrue(file.path("acceptedRegions").asInt() >= expected.get(file.path("path").asText()),
+                file.path("path").asText() + ": " + file.path("acceptedRegions"));
     }
     @Test void sourceDriftDuringMeasurementIsRejectedAtTeardown() throws Exception {
         Path copy = fixtureCopy("late-drift");

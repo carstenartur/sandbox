@@ -80,6 +80,7 @@ jobs:
           name: bc-math-qualification
           path: |
             qa/math-optimization/target/bc-hash-to-curve.json
+            qa/math-optimization/target/bc-performance-review.json
             qa/math-optimization/target/bc-*/review.json
             qa/math-optimization/target/bc-*/benchmark.properties
             qa/math-optimization/target/bc-*/COMPLETED

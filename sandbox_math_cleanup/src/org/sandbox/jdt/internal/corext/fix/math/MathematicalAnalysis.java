@@ -125,7 +125,9 @@ public final class MathematicalAnalysis {
          }
       }
 
-      JavaComputationExtractor.Extraction extraction = new JavaComputationExtractor().extractRuntime(ast, source, options);
+      var extractor = new JavaComputationExtractor();
+      JavaComputationExtractor.Extraction extraction = selectionOffset < 0
+            ? extractor.extractRuntimeWithoutStores(ast, source, options) : extractor.extractRuntime(ast, source, options);
 
       for (JavaComputationExtractor.Diagnostic diagnostic : extraction.diagnostics()) {
          diagnostics.add(new MathematicalAnalysis.Diagnostic(diagnostic.code(), diagnostic.message(), diagnostic.offset(), diagnostic.length(), Stage.SOURCE));
@@ -162,12 +164,23 @@ public final class MathematicalAnalysis {
       // Only retries receive a minimum fair share; primary region weighting is unchanged.
       var scalarRetries = java.util.Collections.newSetFromMap(
             new java.util.IdentityHashMap<JavaComputationRegion, Boolean>());
+      boolean storesScheduled = selectionOffset >= 0;
 
       try {
-         for (int regionIndex = 0; regionIndex < pending.size() || !deferredAssignments.isEmpty(); regionIndex++) {
+         for (int regionIndex = 0; regionIndex < pending.size() || !deferredAssignments.isEmpty() || !storesScheduled; regionIndex++) {
             if (regionIndex == pending.size()) {
-               pending.addAll(deferredAssignments);
-               deferredAssignments.clear();
+               if (!deferredAssignments.isEmpty()) {
+                  pending.addAll(deferredAssignments);
+                  deferredAssignments.clear();
+               } else if (!storesScheduled && remainingWork > 0) {
+                  storesScheduled = true;
+                  // New store regions only use the remainder; they must never overlap accepted edits.
+                  pending.addAll(extractor.extractRuntime(ast, source, options).regions().stream()
+                        .filter(part -> part.outputs().stream().anyMatch(JavaComputationRegion.OutputBinding::arrayStore))
+                        .filter(part -> replacements.stream().noneMatch(other -> overlaps(part.start(), part.length(), other.offset(), other.length())))
+                        .toList());
+               }
+               if (regionIndex == pending.size()) break;
             }
             remainingWork -= sourceContext.takeWork();
             JavaComputationRegion region = pending.get(regionIndex);
@@ -190,7 +203,9 @@ public final class MathematicalAnalysis {
                if (selectionOffset < 0 && scalarRetry)
                   regionWork = Math.max(regionWork, remainingWork / (pending.size() - regionIndex));
                boolean mathematicalIntegral = false;
-               boolean canTryMathematical = options.mathematicalOptIn() && IntegralMathematicalDomain.supports(region, cancellation);
+               boolean canTryMathematical = options.mathematicalOptIn()
+                     && region.outputs().stream().noneMatch(JavaComputationRegion.OutputBinding::arrayStore)
+                     && IntegralMathematicalDomain.supports(region, cancellation);
                boolean mathematicalBigInteger = options.mathematicalOptIn()
                      && region.trace().occurrences().stream().anyMatch(o -> o.evaluatedKind() == NumericKind.BIG_INTEGER);
                boolean canRetryBigInteger = mathematicalBigInteger && region.outputs().size() + region.internalBindings().size() > 1;
@@ -249,6 +264,16 @@ public final class MathematicalAnalysis {
                      }
                      if (mathematicalBigInteger && (result instanceof NoImprovement || result instanceof OptimizationResult.Inconclusive
                            || result instanceof OptimizationResult.Unsupported || result instanceof BudgetExceeded) && remainingWork > attemptSpent) {
+                        if (fragments == null) fragments = new JavaComputationExtractor().extractRuntimeFragments(ast, source, options).regions();
+                        var windows = fragments.stream().filter(part -> part.start() >= region.start()
+                              && part.start() + part.length() <= region.start() + region.length() && part.length() < region.length()).toList();
+                        if (windows.stream().anyMatch(part -> part.outputs().size() + part.internalBindings().size() > 1)) {
+                           remainingWork -= attemptSpent;
+                           scheduleRetries(pending, regionIndex + 1, windows, deferredAssignments, selectionOffset < 0);
+                           diagnostics.add(diagnostic("MODULAR_WINDOW_RETRY", //$NON-NLS-1$
+                                 "Retrying connected modular windows within the remaining file budget", region)); //$NON-NLS-1$
+                           continue;
+                        }
                         if (statements == null) statements = new JavaComputationExtractor().extractRuntimeStatements(ast, source, options).regions();
                         var smaller = statements.stream().filter(part -> part.start() >= region.start()
                               && part.start() + part.length() <= region.start() + region.length() && part.length() < region.length()).toList();
@@ -308,6 +333,9 @@ public final class MathematicalAnalysis {
                   failureStage = Stage.EMISSION;
                   HashSet<String> reserved = new HashSet<>(region.reservedNames());
                   reserved.addAll(generatedNames);
+                  if (region.outputs().stream().anyMatch(JavaComputationRegion.OutputBinding::arrayStore)
+                        && candidate.obligations().guard() != GuardKind.NONE)
+                     throw new IllegalArgumentException("ARRAY_STORE_GUARD_UNSUPPORTED"); //$NON-NLS-1$
                   JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava());
                   if (mathematicalBigInteger) plain = JavaOriginalExpressions.restore(ast, source, region, plain);
                   failureStage = Stage.PROOF;
@@ -347,6 +375,17 @@ public final class MathematicalAnalysis {
                   }
 
                   replacement = indentGenerated(JavaRegionSourceRewriter.arrayCaptures(ast, source, region), source, region.start()) + replacement;
+                  if (options.goal() == OptimizationGoal.READABILITY) {
+                     var patch = MathCandidateReview.assess(source.substring(region.start(), region.start() + region.length()),
+                           replacement, candidate.cost().sourceScore(), candidate.cost().candidateScore(),
+                           candidate.cost().estimatedRuntimeImprovement(), mathematicalBigInteger || mathematicalIntegral,
+                           region.receiverGuards().size(), options.targetJava());
+                     if (patch.addedBranches() > 0 || patch.cautions().contains("LARGE_REWRITE")) { //$NON-NLS-1$
+                        diagnostics.add(diagnostic("PATCH_READABILITY_COST", //$NON-NLS-1$
+                              "Readability selection retains the original instead of adding control flow or a large rewrite", region)); //$NON-NLS-1$
+                        continue;
+                     }
+                  }
                   if (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
                         || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial()) {
                      replacement = indentGenerated(explanationText.sourceComment(), source, region.start()) + replacement;
@@ -561,7 +600,7 @@ public final class MathematicalAnalysis {
    private static boolean incomingIntegralAssignment(JavaComputationRegion region) {
       if (region.outputs().size() != 1 || !region.internalBindings().isEmpty()) return false;
       var output = region.outputs().getFirst();
-      return !output.declaration() && !output.returnValue() && output.declaredKind().integral()
+      return !output.declaration() && !output.returnValue() && !output.arrayStore() && output.declaredKind().integral()
             && output.declaredKind() != NumericKind.BIG_INTEGER;
    }
 
