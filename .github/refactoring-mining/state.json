@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "8892b917825e85ef9ff2ec4e12e937b2a4aeed70",
-      "lastProcessedDate": "2026-10-26T02:31:17.794964028Z",
-      "totalProcessed": 1400,
+      "lastProcessedCommit": "a9adff60008493ac6e4212ff82325fe1fdbd2d09",
+      "lastProcessedDate": "2026-10-26T03:04:15.103140764Z",
+      "totalProcessed": 1422,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5212,38 +5212,38 @@
           "maxRetries": 3
         },
         {
-          "hash": "4ee703d5d2cd4e02f30fcd38f8a92604ef095ac7",
-          "message": "Javadoc spelling",
-          "diffLines": 14,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-10-26T02:31:18.580446418Z",
+          "hash": "4e35de8a7fc4957dac9ae6d4fcbac843f16e4c0d",
+          "message": "Committed Deepak\u0027s patch to fix bug 257313: [preferences][painting] More options to configure \"Show Whitespace Character",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-26T02:58:05.730764656Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "aa9b29d6ab9e7fff07a206548d78bc3257a29428",
-          "message": "Bug 324385: [search] Double-click in Search results pages should always toggle expansion",
-          "diffLines": 33,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-10-26T02:31:18.580692498Z",
+          "hash": "0908c612a01b42ee60f19ef5ad47e48a9e961ac9",
+          "message": "*** keyword substitution change ***",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-26T03:02:54.083479600Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "8e1b4a516b45d78b9b88c61816bd3a3979aa9030",
-          "message": "Bug 324182: [find/replace] (Shift+)Enter should always execute the current default button",
-          "diffLines": 25,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-10-26T02:31:18.580774Z",
+          "hash": "fdd93cb05653c57b9363fd26abd911f76e4092bf",
+          "message": "Fixed bug 326644: StyledText selection erases painted characters behind last character",
+          "diffLines": 42,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-26T03:07:50.902401755Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "0e39dfbef90a258a892e78cfe3455eb801c5365a",
-          "message": "Bug 324008: [hovering] Hyperlink popup list is missing a border on the left (Windows 7)",
-          "diffLines": 107,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-10-26T02:31:18.580862846Z",
+          "hash": "e604324cec0ba9a783e39b006e6c524286925e41",
+          "message": "Fixed bug 226532: org.eclipse.core.filebuffers.FileBuffers.getWorkspaceFileAtLocation(IPath) code doesn\u0027t do what javado",
+          "diffLines": 44,
+          "reason": "INCOMPLETE_BATCH",
+          "deferredAt": "2026-10-26T03:07:50.902676648Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -5377,7 +5377,10 @@
         "Modifier Cleanup": 1,
         "String Literal Cleanup": 1,
         "Method Rename": 1,
-        "Method Rename Reversal": 1
+        "Method Rename Reversal": 1,
+        "Modifier Addition": 1,
+        "UI Fix": 1,
+        "Eclipse API Usage": 1
       },
       "exhaustedCategories": []
     },
@@ -5500,5 +5503,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53193
+  "globalTotalProcessed": 53215
 }
