@@ -45,6 +45,11 @@ comparisons and exact Undo are checked.
 For a fresh reproduction, add `clean` before `verify`: the scanner deliberately
 refuses to overwrite an existing `target/bc-*` output directory.
 
+The integration rerun with the QA Jackson 2.21.7 update also passed: 560 tests,
+zero failures/errors, one optional skip, and both complete scans. All 117 strict
+and 126 mathematical accepted spans, archive/profile settings and parse errors
+match the qualified feature exactly. Product/test sources and SDK bytes are unchanged.
+
 ## Matched Bouncy Castle 1.85.2 scans
 
 The baseline is the previously qualified Sandbox `eb774d4` checkout, not an older
@@ -84,9 +89,12 @@ Native Eclipse/UI CI is separate from this headless qualification. Regelsuche
 `ca67c0133898e10c21fec9ce5493bdc2b2a4a546`; Sandbox
 [prerequisite PR 1767](https://github.com/carstenartur/sandbox/pull/1767) is merged as
 `2c785aabf1a6ac1fa25554f2292cf851a8f46a48`. The consumer integration is based
-directly on that updated `main`, with unchanged product/test sources and exact SDK
-bytes from the qualified feature tree. Its own native Eclipse, Oomph, screenshots
-and distribution gates remain mandatory; the prerequisite's CI does not substitute
-for them. No stacked PR is used. Configurable CAS/SymPy selection remains a future
+directly on that updated `main` in [PR 1769](https://github.com/carstenartur/sandbox/pull/1769),
+with unchanged product/test sources and exact SDK bytes from the qualified feature
+tree. The QA build additionally incorporates the Jackson 2.21.7 update proposed in
+[PR 1768](https://github.com/carstenartur/sandbox/pull/1768); it does not change the
+packaged SDK. PR 1769's native Eclipse, Oomph, screenshots and distribution gates
+remain mandatory; the prerequisite's CI does not substitute for them. No stacked
+PR is used. Configurable CAS/SymPy selection remains a future
 extension, with requirements documented in the
 [source/CAS architecture](../../../sandbox_math_cleanup/ARCHITECTURE.md#complete-computation-tasks-and-cas-ownership).
