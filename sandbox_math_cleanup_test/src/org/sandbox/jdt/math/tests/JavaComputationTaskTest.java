@@ -106,7 +106,7 @@ class JavaComputationTaskTest {
         assertEquals(0x100000004L, outcome.committed());
         assertEquals(1L, replay(task, source, new int[]{-1}, 0, null, 0, new int[1], 0, 5L).returned());
         assertEquals(5L, replay(task, source, null, 0, null, 0, new int[1], 0, 5L).committed());
-        Path file = temporary.resolve("Calculation.java"); Files.writeString(file, source);
+        Path file = temporary.resolve("Calculation.java"); Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null,
                 "--release", "17", "-d", temporary.toString(), file.toString()));
         try (var loader = new java.net.URLClassLoader(new java.net.URL[]{temporary.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
