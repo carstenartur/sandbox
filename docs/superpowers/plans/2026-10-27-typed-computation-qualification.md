@@ -48,7 +48,15 @@ refuses to overwrite an existing `target/bc-*` output directory.
 The integration rerun with the QA Jackson 2.21.7 update also passed: 560 tests,
 zero failures/errors, one optional skip, and both complete scans. All 117 strict
 and 126 mathematical accepted spans, archive/profile settings and parse errors
-match the qualified feature exactly. Product/test sources and SDK bytes are unchanged.
+match the qualified feature exactly. Product sources and SDK bytes are unchanged.
+
+The native screenshot [run 40458538097](https://github.com/carstenartur/sandbox/actions/runs/40458538097)
+then exposed stale SDK pins in the five mathematics fixtures. Those pins now match
+the receipt above. The existing archive-provenance regression also checks each
+fixture against the actual JAR hash and qualified source revision. It reproduced
+the original mismatch before the fixture correction; both
+`BouncyCastleRuntimeCorpusTest` tests pass afterward. Historical captured image
+provenance is not rewritten to claim execution with a different SDK.
 
 ## Matched Bouncy Castle 1.85.2 scans
 
@@ -90,8 +98,8 @@ Native Eclipse/UI CI is separate from this headless qualification. Regelsuche
 [prerequisite PR 1767](https://github.com/carstenartur/sandbox/pull/1767) is merged as
 `2c785aabf1a6ac1fa25554f2292cf851a8f46a48`. The consumer integration is based
 directly on that updated `main` in [PR 1769](https://github.com/carstenartur/sandbox/pull/1769),
-with unchanged product/test sources and exact SDK bytes from the qualified feature
-tree. The QA build additionally incorporates the Jackson 2.21.7 update proposed in
+with unchanged product sources and exact SDK bytes from the qualified feature
+tree, plus the screenshot-pin regression described above. The QA build additionally incorporates the Jackson 2.21.7 update proposed in
 [PR 1768](https://github.com/carstenartur/sandbox/pull/1768); it does not change the
 packaged SDK. PR 1769's native Eclipse, Oomph, screenshots and distribution gates
 remain mandatory; the prerequisite's CI does not substitute for them. No stacked

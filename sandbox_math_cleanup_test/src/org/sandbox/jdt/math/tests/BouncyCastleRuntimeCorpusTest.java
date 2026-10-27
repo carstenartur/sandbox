@@ -94,6 +94,10 @@ class BouncyCastleRuntimeCorpusTest {
 
     @Test void documentedInputsAreUnmodifiedEntriesOfThePinnedProductionArchive() throws Exception {
         Map<String, String> sources = productionSources();
+        Path sdk = checkout().resolve("sandbox_math_cleanup/lib");
+        var qualification = new com.fasterxml.jackson.databind.ObjectMapper().readTree(sdk.resolve("qualification.json").toFile());
+        String sdkHash = digest(Files.readAllBytes(sdk.resolve("regelsuche-optimization-sdk.jar")));
+        assertEquals(qualification.required("standaloneJarSha256").asText(), sdkHash, "Qualified SDK artifact");
         Path directory = checkout().resolve("sandbox_eclipse_help_swtbot_test/fixtures/mathematics");
         try (var entries = Files.list(directory)) {
             var fixtures = entries.filter(Files::isDirectory).sorted().toList();
@@ -101,6 +105,9 @@ class BouncyCastleRuntimeCorpusTest {
             for (Path fixture : fixtures) {
                 var metadata = new java.util.Properties();
                 try (var reader = Files.newBufferedReader(fixture.resolve("example.properties"), StandardCharsets.UTF_8)) { metadata.load(reader); }
+                assertEquals(sdkHash, metadata.getProperty("sdkSha256"), fixture + ": screenshot SDK artifact");
+                assertEquals(qualification.required("sourceRevision").asText(), metadata.getProperty("sdkOptimizationSourceRevision"),
+                        fixture + ": screenshot SDK source revision");
                 String file = metadata.getProperty("fileName");
                 assertNotNull(file);
                 String expected = sources.get(file.replace(".java", ""));
