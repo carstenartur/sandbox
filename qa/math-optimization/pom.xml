@@ -9,7 +9,7 @@
   <dependency><groupId>org.eclipse.jgit</groupId><artifactId>org.eclipse.jgit</artifactId><version>7.8.0.202609011348-r</version></dependency>
   <dependency><groupId>org.openjdk.jmh</groupId><artifactId>jmh-core</artifactId><version>1.37</version></dependency>
   <dependency><groupId>org.openjdk.jmh</groupId><artifactId>jmh-generator-annprocess</artifactId><version>1.37</version></dependency>
-  <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>2.20.1</version></dependency>
+  <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>2.21.7</version></dependency>
   <dependency><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId><version>3.135.0</version><scope>test</scope></dependency>
   <dependency><groupId>org.eclipse.platform</groupId><artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId><version>3.135.0</version><classifier>sources</classifier><scope>test</scope></dependency>
   <dependency><groupId>org.apache.commons</groupId><artifactId>commons-imaging</artifactId><version>1.0.0-alpha6</version><scope>test</scope></dependency>
