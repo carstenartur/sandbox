@@ -1,5 +1,8 @@
 # Typed computation and word-relation qualification
 
+Status recorded on 2026-10-27. This report qualifies the source revisions below;
+it does not announce a merged change or a public release.
+
 The source adapter retains Java types, bindings and effect order. Regelsuche owns
 mathematical candidates, search and independent proof. The existing typed plan
 and request contracts provide the computation boundary for future configurable
@@ -8,6 +11,7 @@ CAS providers; this change does not add a second mathematics engine to Sandbox.
 ## Qualified source and binary
 
 - Regelsuche source: `b4081ca59ccf2d8b6985bb628856f68d0c118945` ([PR 1114](https://github.com/carstenartur/Regelsuche/pull/1114)).
+- Sandbox consumer: `c4b0f63707a1fca398951a02dd8890819be33eb5` on `codex/typed-computation-tasks`.
 - SDK JAR SHA-256: `87fe1a838f21a86c84ee8519e81b7040e47c7775e32ef01d7c8ac04e0a040adf`.
 - Existing SDK qualification/staging [run 40448545085](https://github.com/carstenartur/sandbox/actions/runs/40448545085): both jobs passed.
 - Staging commit: `92754e85ec870740f72ea6b07e2b7632fc2c4af4`. The JAR and receipt are copied unchanged from its Git blobs.
@@ -21,6 +25,10 @@ Checker v11 rejects v10 evidence. Tests cover typed word projection, transport
 sharing, cancellation, bounded proofs, complete versus partial work accounting,
 and preservation of earlier trace work after preparation failure.
 
+The product-wide Regelsuche [CI run 40448548628](https://github.com/carstenartur/Regelsuche/actions/runs/40448548628)
+also passed on the exact SDK source revision: Maven/Docker, Gradle, JMH and
+`ciCheck` completed successfully. This is separate from consumer/native Eclipse CI.
+
 The final Sandbox command was:
 
 ```sh
@@ -32,6 +40,9 @@ historical-reference skip**, followed by both complete corpus scans. The retaine
 region regression now runs under both profiles. Incoming-assignment retries must
 produce a candidate at the actual assignment before compilation, 343 boundary
 comparisons and exact Undo are checked.
+
+For a fresh reproduction, add `clean` before `verify`: the scanner deliberately
+refuses to overwrite an existing `target/bc-*` output directory.
 
 ## Matched Bouncy Castle 1.85.2 scans
 
@@ -67,6 +78,11 @@ a separately verified realization of their effect schedule.
 
 The older explanation API still reports presentation work separately from fresh
 verification. A complete explanation-call ledger remains an explicit follow-up.
-Native Eclipse/UI CI is separate from this headless qualification. The Sandbox
-feature branch awaits integration after prerequisite PR 1767; no stacked PR is
-created.
+Native Eclipse/UI CI is separate from this headless qualification. The native
+results on [prerequisite PR 1767](https://github.com/carstenartur/sandbox/pull/1767)
+do not qualify this feature branch. After that prerequisite is merged, the feature
+can open an ordinary PR directly against updated `main` and run its native gates.
+Both PR 1114 and the Sandbox feature changes are still unmerged at this report's
+status date; no stacked Sandbox PR is created. Configurable CAS/SymPy selection
+remains a future extension, with requirements documented in the
+[source/CAS architecture](../../../sandbox_math_cleanup/ARCHITECTURE.md#complete-computation-tasks-and-cas-ownership).

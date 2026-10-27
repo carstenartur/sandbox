@@ -1,6 +1,6 @@
 # Mathematics Cleanup
 
-This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The four-module integration is rebuilt after workspace maintenance; current qualification is recorded separately from historical results.
+This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The [current qualification](../docs/superpowers/plans/2026-10-27-typed-computation-qualification.md) identifies tested revisions and pending integration gates separately from historical results.
 
 ## Complete computation tasks and CAS ownership
 
