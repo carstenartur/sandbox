@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "799fb5e04849273815f5be4e30a78abcbb1efc088b7f8b7dbeee1479867a5454",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add-deprecated-to-create-standard-groups\u003e\n\u003c!description: Adds the @Deprecated annotation to the createStandardGroups method to mark it as deprecated.\nIt addresses situations where an API should be discouraged without breaking existing code directly.\u003e\n\u003c!severity: WARNING\u003e\npublic static void $name($params$) :: methodNameMatches($name, \"createStandardGroups\")\n\u003d\u003e @java.lang.Deprecated public static void $name($params$)\n;;",
+  "beforeExample": "package org.eclipse.search.internal.ui;\n\nimport org.eclipse.jface.action.IMenuManager;\n\npublic class SearchPlugin {\n    public static void createStandardGroups(IMenuManager menu) {\n        // Method implementation\n        menu.add(new Object());\n    }\n\n    public static void anotherMethod() {\n        // ...\n    }\n}",
+  "afterExample": "package org.eclipse.search.internal.ui;\n\nimport org.eclipse.jface.action.IMenuManager;\n\npublic class SearchPlugin {\n    @java.lang.Deprecated\n    public static void createStandardGroups(IMenuManager menu) {\n        // Method implementation\n        menu.add(new Object());\n    }\n\n    public static void anotherMethod() {\n        // ...\n    }\n}",
+  "negativeExample": "package org.eclipse.search.internal.ui;\n\nimport org.eclipse.jface.action.IMenuManager;\n\npublic class SearchPlugin {\n    public static void someOtherGroups(IMenuManager menu) {\n        // Method implementation\n        menu.add(new Object());\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "8fce3bb72cd9e7ad4acb73ab72013c4830c75cb1",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Deprecation",
+  "summary": "Adds the @Deprecated annotation to the `createStandardGroups` method.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-27T02:26:45.569074294Z",
+  "ruleFingerprint": "sha256:e3dfabbf3df465e5279766bad190a1507df28d7bd78ac6c0c70a1781128e2f64",
+  "behaviorFingerprint": "sha256:242eefff397b1de48e4a1a8024754ac5be22b268bcbf8bfd5d27cc04e3b3eb5f",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-27T02:31:33.080634611Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

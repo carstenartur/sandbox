@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 4: The import org.eclipse.jface.text.source.ISourceViewer cannot be resolved",
-    "verifiedAt": "2026-10-26T03:11:44.458215036Z",
+    "verifiedAt": "2026-10-27T02:31:31.791172526Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

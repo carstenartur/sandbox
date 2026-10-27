@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a004928e048662805fe08ae5e4c9b62326a7c7432c5e268ad59bf466ed5038a7",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.platformui.getmodaldialogshell\u003e\n\u003c!description: Replace IWorkbenchSite.getShell() with PlatformUI.getWorkbench().getModalDialogShellProvider().getShell() to retrieve the modal dialog shell provider\u0027s shell.\u003e\n\u003c!severity: WARNING\u003e\ngetSite().getShell()\n\u003d\u003e org.eclipse.ui.PlatformUI.getWorkbench().getModalDialogShellProvider().getShell()\n;;",
+  "beforeExample": "package org.eclipse.ui.texteditor;\n\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.ui.IEditorInput;\nimport org.eclipse.ui.IWorkbenchSite;\n\ninterface IDocumentProvider {}\n\nclass WorkbenchPart {\n    protected IWorkbenchSite getSite() {\n        return new IWorkbenchSite() {\n            @Override\n            public Shell getShell() {\n                return new Shell();\n            }\n        };\n    }\n}\n\npublic class AbstractDecoratedTextEditor extends WorkbenchPart {\n    public IEditorInput getEditorInput() { return null; }\n    public IDocumentProvider getDocumentProvider() { return null; }\n\n    protected void performSaveAs(IProgressMonitor progressMonitor) {\n        Shell shell\u003d getSite().getShell();\n        final IEditorInput input\u003d getEditorInput();\n    }\n}\n",
+  "afterExample": "package org.eclipse.ui.texteditor;\n\nimport org.eclipse.core.runtime.IProgressMonitor;\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.ui.IEditorInput;\nimport org.eclipse.ui.IWorkbenchSite;\nimport org.eclipse.ui.PlatformUI;\nimport org.eclipse.ui.IWorkbench;\nimport org.eclipse.ui.IModalDialogShellProvider;\n\ninterface IDocumentProvider {}\n\nclass PlatformUI {\n    public static IWorkbench getWorkbench() {\n        return new IWorkbench() {\n            @Override\n            public IModalDialogShellProvider getModalDialogShellProvider() {\n                return new IModalDialogShellProvider() {\n                    @Override\n                    public Shell getShell() {\n                        return new Shell();\n                    }\n                };\n            }\n        };\n    }\n}\n\ninterface IWorkbench {\n    IModalDialogShellProvider getModalDialogShellProvider();\n}\n\ninterface IModalDialogShellProvider {\n    Shell getShell();\n}\n\nclass WorkbenchPart {\n    protected IWorkbenchSite getSite() {\n        return new IWorkbenchSite() {\n            @Override\n            public Shell getShell() {\n                return new Shell();\n            }\n        };\n    }\n}\n\npublic class AbstractDecoratedTextEditor extends WorkbenchPart {\n    public IEditorInput getEditorInput() { return null; }\n    public IDocumentProvider getDocumentProvider() { return null; }\n\n    protected void performSaveAs(IProgressMonitor progressMonitor) {\n        Shell shell\u003d org.eclipse.ui.PlatformUI.getWorkbench().getModalDialogShellProvider().getShell();\n        final IEditorInput input\u003d getEditorInput();\n    }\n}\n",
+  "negativeExample": "package org.eclipse.ui.texteditor;\n\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.ui.IWorkbenchSite;\n\ninterface MyCustomSite {\n    Shell getShell();\n}\n\npublic class AnotherClass {\n    private MyCustomSite mySite;\n\n    public AnotherClass(MyCustomSite site) {\n        this.mySite \u003d site;\n    }\n\n    public Shell getCustomShell() {\n        return mySite.getShell(); // Should not match\n    }\n}\n",
+  "targetHintFile": "eclipse-ui-api.sandbox-hint",
+  "sourceCommit": "840134e450339f24c2b8ce6b799e90ccd17c5f79",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replaces direct `getSite().getShell()` calls with the modern `PlatformUI.getWorkbench().getModalDialogShellProvider().getShell()` to ensure correct modal dialog shell acquisition.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-27T02:29:42.689583274Z",
+  "ruleFingerprint": "sha256:d0069291637a9a56a269d879493d5589ebe5accf66bce946174a2cd80f5163fd",
+  "behaviorFingerprint": "sha256:940c8f98858fd925c39153d9f584ed838fc244eea7703bee28bc0285e081d431",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-27T02:31:33.123852862Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

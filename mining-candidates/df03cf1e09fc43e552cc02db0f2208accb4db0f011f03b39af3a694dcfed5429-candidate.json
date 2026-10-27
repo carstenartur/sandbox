@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "df03cf1e09fc43e552cc02db0f2208accb4db0f011f03b39af3a694dcfed5429",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.search.internal.ui.SearchPluginImages.IMG_LCL_SEARCH_AGAIN\n\u003d\u003e\norg.eclipse.search.internal.ui.SearchPluginImages.IMG_LCL_REFRESH\n;;",
+  "beforeExample": "package org.eclipse.search2.internal.ui;\n\nclass SearchMessages { /* empty */ }\n\nclass SearchPluginImages {\n    public static final String T_LCL \u003d \"T_LCL\";\n    public static final String IMG_LCL_SEARCH_AGAIN \u003d \"search_again.gif\";\n    public static final String IMG_LCL_REFRESH \u003d \"refresh.gif\";\n    public static void setImageDescriptors(Object action, String type, String path) { /* empty */ }\n}\n\nclass SearchView { /* empty */ }\n\nclass SearchAgainAction {\n    private SearchView fView;\n    public SearchAgainAction(SearchView view) {\n        // Simplified for example\n        SearchPluginImages.setImageDescriptors(this, SearchPluginImages.T_LCL, SearchPluginImages.IMG_LCL_SEARCH_AGAIN);\n        fView \u003d view;\n    }\n}\n",
+  "afterExample": "package org.eclipse.search2.internal.ui;\n\nclass SearchMessages { /* empty */ }\n\nclass SearchPluginImages {\n    public static final String T_LCL \u003d \"T_LCL\";\n    public static final String IMG_LCL_SEARCH_AGAIN \u003d \"search_again.gif\";\n    public static final String IMG_LCL_REFRESH \u003d \"refresh.gif\";\n    public static void setImageDescriptors(Object action, String type, String path) { /* empty */ }\n}\n\nclass SearchView { /* empty */ }\n\nclass SearchAgainAction {\n    private SearchView fView;\n    public SearchAgainAction(SearchView view) {\n        SearchPluginImages.setImageDescriptors(this, SearchPluginImages.T_LCL, SearchPluginImages.IMG_LCL_REFRESH);\n        fView \u003d view;\n    }\n}\n",
+  "negativeExample": "package org.eclipse.search2.internal.ui;\n\nclass SearchMessages { /* empty */ }\n\nclass SearchPluginImages {\n    public static final String T_LCL \u003d \"T_LCL\";\n    public static final String IMG_LCL_SEARCH_AGAIN \u003d \"search_again.gif\";\n    public static final String IMG_LCL_REFRESH \u003d \"refresh.gif\";\n    public static final String IMG_LCL_SOME_OTHER \u003d \"some_other.gif\";\n    public static void setImageDescriptors(Object action, String type, String path) { /* empty */ }\n}\n\nclass SearchView { /* empty */ }\n\nclass SomeDifferentAction {\n    public SomeDifferentAction(SearchView view) {\n        // This uses a different constant and should not be modified\n        SearchPluginImages.setImageDescriptors(this, SearchPluginImages.T_LCL, SearchPluginImages.IMG_LCL_SOME_OTHER);\n    }\n}\n",
+  "targetHintFile": "search.sandbox-hint",
+  "sourceCommit": "99eb9cba059efa1bb40edda619457d93a709a774",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace deprecated `SearchPluginImages.IMG_LCL_SEARCH_AGAIN` with `SearchPluginImages.IMG_LCL_REFRESH`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-27T02:23:44.286971297Z",
+  "ruleFingerprint": "sha256:5e38b802de8eb45e985d0c3cf549fac196f71dc8a6872bf3e3ddfce4126b8b24",
+  "behaviorFingerprint": "sha256:3e7e04b0daf058ce71e346e391410cd6cb13801d741dc93d91ae3acec6b6a830",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-10-27T02:31:33.029445997Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
