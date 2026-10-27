@@ -1,5 +1,25 @@
 # Mathematics cleanup source adapter
 
+## Current implementation and qualification
+
+The [2026-10-27 qualification](../docs/superpowers/plans/2026-10-27-typed-computation-qualification.md)
+records the exact SDK artifact, complete headless tests, matched BC corpus results
+and native integration boundaries. Check the recorded source revisions and the
+integration PR's native checks before applying these results to another version.
+
+Regelsuche now proves generic high/low word reconstruction and preserves shared
+computation graphs through transport and search. Sandbox supplies Java semantics
+and source effects. The [architecture](ARCHITECTURE.md#complete-computation-tasks-and-cas-ownership)
+describes the ownership split and the future configurable CAS boundary.
+
+`JavaComputationExtractor.extractTasks` exports bounded straight-line primitive
+integral tasks under `PRESERVE_JAVA`, including local versions, fresh reads and
+ordered commits/stores. The scanner's [optional `--tasks` mode](../qa/math-optimization/README.md)
+exposes summaries with `editable: false`. Whole-task inspection does not authorize
+cross-store edits; ordinary cleanup retains its existing proof and source gates.
+Configurable SymPy selection and full Nat256-addition optimization are not available
+through this increment.
+
 ## BigInteger magnitude and modular regions
 
 An effectively final `BigInteger` created before a region by `BigInteger(byte[])`
@@ -13,12 +33,18 @@ The allocation, contents and constructor stay in their original source position.
 A magnitude bound supplies no sign or modulus-positivity premise.
 
 In mathematical mode, a failed combined BigInteger request can retry strictly
-smaller source statements within the shared file budget. Unsupported requests
-consume their full allocation; structural preparation failures retain the SDK
-cap charge. Budget-exhausted requests also retain any reported work overshoot
-before retrying. Regelsuche owns modular candidates and independent arithmetic proof.
+smaller source statements within the shared file budget. Initial-validation
+preparation failures debit the SDK's reported safe work bound, including earlier
+trace work. Unknown unsupported outcomes reserve their allocation and any bounded
+unreported preparation. Completed search-limit outcomes debit reported work only
+when the SDK certifies complete accounting; partial stops reserve the allocation
+or reported overshoot, whichever is greater. Regelsuche owns modular candidates and independent arithmetic proof.
 The adapter still verifies emitted Java and requires an estimated runtime saving
 after all receiver checks and fallback costs.
+
+The explanation API's reported presentation work excludes its fresh verification
+work. A complete explanation-call ledger remains a follow-up; the file allowance
+must not be interpreted as accounting for every executed SDK operation.
 
 ## Computations across source helper calls
 
@@ -50,9 +76,10 @@ precomputation remains in place.
 
 The original Bouncy Castle constructor's general loop/method/object contracts are not inferred by this helper adapter. Its removed dedicated recognizer remains removed. Floating-point helper bodies, arbitrary loops and external library contracts require additional general semantic support.
 
-The [same-budget Bouncy Castle qualification](../qa/math-optimization/results/2026-10-11-biginteger-helpers/README.md)
-records the measured effect: two additional regions reach analysis, while
-accepted replacements remain 104 in strict mode and 114 in mathematical mode.
+The [historical 2026-10-11 helper qualification](../qa/math-optimization/results/2026-10-11-biginteger-helpers/README.md)
+records that increment's effect: two additional regions reached analysis, while
+accepted replacements remained 104 in strict mode and 114 in mathematical mode.
+These are historical counts; use the current qualification above for this branch.
 
 ## Shared integral domain analysis
 

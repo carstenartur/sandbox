@@ -71,9 +71,12 @@ class ArrayScalarRetryBudgetTest {
             } else upper = probe;
         }
         assertNotNull(bounded);
+        assertTrue(bounded.hasCompleteWorkAccounting(), bounded.toString());
+        assertTrue(bounded.work() > 0 && bounded.work() < allowance,
+                "This completed inner search leaves part of its outer allowance unused: " + bounded);
         // Both original regions contain thirty-two operations and receive equal shares.
         long budget = allowance * 2;
-        long remaining = budget - Math.max(allowance, bounded.work());
+        long remaining = budget - bounded.work();
         assertTrue(remaining > 0);
 
         var result = MathematicalAnalysis.analyze(ast, source, options(budget), new NullProgressMonitor(), -1, 0);

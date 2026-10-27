@@ -88,6 +88,76 @@ public final class JavaComputationExtractor {
       return this.extract(unit, source, options, false, true);
    }
 
+   /**
+    * Export bounded straight-line value tasks across local commits and stores.
+    * The resolved AST must describe the supplied source. Unlike edit extraction,
+    * this preserves constant initializers and every intermediate output. Effects
+    * remain ordered source obligations, never scalar equalities or edit permission.
+    */
+   public TaskExtraction extractTasks(CompilationUnit unit, String source, MathCleanUpOptions options) {
+      var tasks = new ArrayList<JavaComputationTask>();
+      var diagnostics = new ArrayList<Diagnostic>();
+      if (!options.enabled() || options.safety() != SafetyProfile.PRESERVE_JAVA) return new TaskExtraction(tasks, diagnostics);
+      if (unit.getLength() != source.length()) throw new IllegalArgumentException("TASK_SOURCE_LENGTH_DIFFERS"); //$NON-NLS-1$
+      String digest = JavaComputationTask.hash(source);
+      var declarations = new HashMap<String, VariableDeclarationFragment>();
+      unit.accept(new ASTVisitor() {
+         @Override public boolean visit(VariableDeclarationFragment declaration) {
+            if (declaration.resolveBinding() != null) declarations.put(declaration.resolveBinding().getKey(), declaration);
+            return true;
+         }
+      });
+      unit.accept(new ASTVisitor() {
+         @Override public boolean visit(Block block) {
+            if (!eligibleBlock(block, true)) return false;
+            Builder builder = fresh(block);
+            for (Object child : block.statements()) {
+               Statement statement = (Statement) child;
+               try {
+                  builder.statement(statement);
+                  if (!JavaArrayReadInputs.totalPrefix(builder.trace, builder.outputs))
+                     throw reject("TASK_NON_TOTAL_ARITHMETIC", statement); //$NON-NLS-1$
+                  var output = builder.outputs.getLast();
+                  ASTNode anchor = output.arrayStore() ? ((Assignment) ((ExpressionStatement) statement).getExpression()).getLeftHandSide() : statement;
+                  var kind = output.arrayStore() ? JavaComputationTask.Kind.ARRAY_STORE
+                        : output.returnValue() ? JavaComputationTask.Kind.RETURN : JavaComputationTask.Kind.LOCAL_COMMIT;
+                  builder.taskSchedule.add(new JavaComputationTask.Event(kind, output.id(), output.bindingKey(),
+                        anchor.getStartPosition(), anchor.getLength(), builder.trace.size()));
+                  if (output.returnValue()) { finishTask(builder); builder = fresh(block); }
+               } catch (Rejected rejected) {
+                  finishTask(builder.prior);
+                  diagnostics.add(diagnostic(rejected));
+                  builder = fresh(block);
+               }
+            }
+            finishTask(builder);
+            return true;
+         }
+
+         private Builder fresh(Block block) { return new Builder(unit, options, declarations, Set.of(), block, true, false, true, true); }
+
+         private void finishTask(Builder builder) {
+            if (builder == null || builder.outputs.isEmpty()) return;
+            try {
+               var bindings = new LinkedHashMap<String, String>();
+               builder.inputKeys.forEach((binding, id) -> bindings.put(id, binding));
+               var plan = new JointComputationPlan(builder.inputTypes, Map.of(), builder.planOutputs);
+               plan.searchExpression(); // Enforce the SDK's bounded DAG-to-search transport before exporting.
+               tasks.add(new JavaComputationTask(plan,
+                     new SourceEvaluationTrace(builder.trace), builder.taskSchedule, builder.inputNames, bindings,
+                     options.kinds(), builder.assumptions, digest, source.length(), builder.first, builder.end - builder.first));
+            } catch (IllegalArgumentException boundedGraph) {
+               diagnostics.add(new Diagnostic("TASK_GRAPH_BOUNDARY", boundedGraph.getMessage(), builder.first, builder.end - builder.first)); //$NON-NLS-1$
+            }
+         }
+      });
+      return new TaskExtraction(tasks, diagnostics);
+   }
+
+   public record TaskExtraction(List<JavaComputationTask> tasks, List<Diagnostic> diagnostics) {
+      public TaskExtraction { tasks = List.copyOf(tasks); diagnostics = List.copyOf(diagnostics); }
+   }
+
    Extraction extractRuntimeFragments(CompilationUnit unit, String source, MathCleanUpOptions options) {
       return extract(unit, source, options, false, true, 4);
    }
@@ -399,6 +469,8 @@ public final class JavaComputationExtractor {
       final boolean includeValues;
       final boolean runtimeOnly;
       final boolean arrayInputs;
+      final boolean taskMode;
+      final List<JavaComputationTask.Event> taskSchedule = new ArrayList<>();
       final Map<String, Expr> values = new HashMap<>();
       final Map<String, String> inputKeys = new HashMap<>();
       final Map<String, String> inputNames = new LinkedHashMap<>();
@@ -418,6 +490,10 @@ public final class JavaComputationExtractor {
       int end;
 
       Builder(CompilationUnit unit, MathCleanUpOptions options, Map<String, VariableDeclarationFragment> declarations, Set<String> reserved, Block block, boolean includeValues, boolean runtimeOnly, boolean arrayInputs) {
+         this(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs, false);
+      }
+
+      Builder(CompilationUnit unit, MathCleanUpOptions options, Map<String, VariableDeclarationFragment> declarations, Set<String> reserved, Block block, boolean includeValues, boolean runtimeOnly, boolean arrayInputs, boolean taskMode) {
          this.unit = unit;
          this.options = options;
          this.declarations = declarations;
@@ -426,11 +502,12 @@ public final class JavaComputationExtractor {
          this.includeValues = includeValues;
          this.runtimeOnly = runtimeOnly;
          this.arrayInputs = arrayInputs;
+         this.taskMode = taskMode;
       }
 
       JavaComputationExtractor.Builder snapshot() {
          JavaComputationExtractor.Builder copy = new JavaComputationExtractor.Builder(
-            this.unit, this.options, this.declarations, this.reserved, this.block, this.includeValues, this.runtimeOnly, this.arrayInputs
+            this.unit, this.options, this.declarations, this.reserved, this.block, this.includeValues, this.runtimeOnly, this.arrayInputs, this.taskMode
          );
          copy.values.putAll(this.values);
          copy.inputKeys.putAll(this.inputKeys);
@@ -440,6 +517,7 @@ public final class JavaComputationExtractor {
          copy.outputs.addAll(this.outputs);
          copy.trace.addAll(this.trace);
          copy.arrayReads.addAll(this.arrayReads);
+         copy.taskSchedule.addAll(this.taskSchedule);
          copy.assumptions.addAll(this.assumptions);
          copy.receiverGuards.addAll(this.receiverGuards);
          copy.expandedMethodStatements = this.expandedMethodStatements;
@@ -978,6 +1056,8 @@ public final class JavaComputationExtractor {
          inputNames.put(inputId, javaName);
          inputTypes.put(inputId, kind.type());
          arrayReads.add(new JavaComputationRegion.ArrayRead(inputId, javaName, kind, read.getStartPosition(), read.getLength()));
+         if (taskMode) taskSchedule.add(new JavaComputationTask.Event(JavaComputationTask.Kind.SOURCE_READ, inputId,
+               "read@" + read.getStartPosition(), read.getStartPosition(), read.getLength(), trace.size())); //$NON-NLS-1$
          return new VariableExpr(inputId);
       }
 
