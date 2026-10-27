@@ -3353,7 +3353,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 510,
+      "line": 519,
       "matchedCode": "candidates == null || candidates.isEmpty()"
     },
     {
@@ -3361,7 +3361,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 533,
+      "line": 542,
       "matchedCode": "parts == null || parts.isEmpty()"
     },
     {
@@ -3369,7 +3369,7 @@
       "hintFile": "string-equals",
       "rule": "string-equals.null-or-empty.review",
       "file": "sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java",
-      "line": 592,
+      "line": 601,
       "matchedCode": "json == null || json.isEmpty()"
     },
     {

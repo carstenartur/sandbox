@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-10-26
+# Refactoring Mining Report — 2026-10-27
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -490,9 +490,9 @@
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/OpenAiCompatibleClient.java:293` — `choices == null || choices.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:301` — `candidates == null || candidates.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:322` — `parts == null || parts.isEmpty()`
-- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:510` — `candidates == null || candidates.isEmpty()`
-- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:533` — `parts == null || parts.isEmpty()`
-- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:592` — `json == null || json.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:519` — `candidates == null || candidates.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:542` — `parts == null || parts.isEmpty()`
+- `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/llm/GeminiClient.java:601` — `json == null || json.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/EmbeddedJavaCompiler.java:349` — `input == null || input.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/BuiltInGuards.java:1202` — `version == null || version.isEmpty()`
 - `sandbox_common_core/src/main/java/org/sandbox/jdt/triggerpattern/internal/PlaceholderInfo.java:41` — `name == null || name.isEmpty()`
