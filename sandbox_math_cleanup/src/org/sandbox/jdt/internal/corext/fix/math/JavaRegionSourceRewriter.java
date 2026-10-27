@@ -81,7 +81,7 @@ final class JavaRegionSourceRewriter {
       }
       for (var output : region.outputs()) {
          String expression = Objects.requireNonNull(values.get(output.id()), "MISSING_OUTPUT");
-         if (!output.declaration() && !output.returnValue()) {
+         if (!output.declaration() && !output.returnValue() && !output.arrayStore()) {
             expression = output.javaName() + " = " + expression;
          }
          ASTParser parser = ASTParser.newParser(ast.getAST().apiLevel());

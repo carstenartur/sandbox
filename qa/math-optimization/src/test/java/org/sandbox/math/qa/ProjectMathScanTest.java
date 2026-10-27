@@ -37,11 +37,28 @@ class ProjectMathScanTest {
         assertEquals(hash, CorpusFiles.sha256(sources)); assertEquals(source, Files.readString(java));
         assertNotEquals(source, Files.readString(output.resolve("generated/Sample.java")));
         assertTrue(Files.exists(output.resolve("COMPLETED")));
+        var fixture = new Properties();
+        try (var input = Files.newInputStream(output.resolve("benchmark.properties"))) { fixture.load(input); }
+        assertEquals("sandbox.generated-corpus-fixture/v1", fixture.getProperty("schema"));
+        assertEquals(CorpusFiles.sha256(binary), fixture.getProperty("binarySha256"));
+        assertEquals(hash, fixture.getProperty("sourcesSha256"));
+        assertEquals(CorpusFiles.sha256(output.resolve("original/Sample.java")), fixture.getProperty("original.Sample.java"));
+        assertEquals(CorpusFiles.sha256(output.resolve("generated/Sample.java")), fixture.getProperty("generated.Sample.java"));
+        assertEquals("17", fixture.getProperty("targetJava"));
         assertThrows(IOException.class, () -> ProjectMathScan.main(new String[] {binary.toString(), sources.toString(), profile.toString(), output.toString(), hash, "17"}));
     }
     @Test void incompleteProfileFailsBeforeAnalysis() throws Exception {
         Path path = directory.resolve("partial.properties"); Files.writeString(path, "cleanup.mathematics=true\n");
         assertThrows(IOException.class, () -> ProjectMathScan.profile(path, 17));
+    }
+    @Test void maintainedCorpusProfilesAreCompleteAndPreserveTheirExplicitBudgets() throws Exception {
+        for (String name : java.util.List.of("bc-strict", "bc-mathematical", "swt-strict")) {
+            var options = ProjectMathScan.profile(Path.of("qa/math-optimization/profiles/" + name + ".properties"),
+                    name.startsWith("swt") ? 21 : 17);
+            assertEquals(1_000_000, options.workBudget()); assertEquals(20_000, options.maxStates());
+            assertEquals(5, options.timeoutSeconds());
+            assertEquals(name.equals("bc-mathematical"), options.mathematicalOptIn());
+        }
     }
     private Path profile() throws Exception {
         var values = new HashMap<>(MathCleanUpOptions.defaults(17).toMap());

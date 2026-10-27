@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -86,8 +87,8 @@ class BouncyCastleRuntimeCorpusTest {
         }
         String export = System.getProperty("sandbox.math.production.output", System.getenv("MATH_BC_ARCHIVE_OUTPUT"));
         if (export != null) for (String name : FILES) {
-            write(Path.of(export).resolve("original/" + PACKAGE + name + ".java"), Files.readString(before.resolve(PACKAGE + name + ".java")));
-            write(Path.of(export).resolve("generated/" + PACKAGE + name + ".java"), Files.readString(after.resolve(PACKAGE + name + ".java")));
+            write(Path.of(export).resolve("original/" + PACKAGE + name + ".java"), Files.readString(before.resolve(PACKAGE + name + ".java"), StandardCharsets.UTF_8));
+            write(Path.of(export).resolve("generated/" + PACKAGE + name + ".java"), Files.readString(after.resolve(PACKAGE + name + ".java"), StandardCharsets.UTF_8));
         }
     }
 
@@ -99,12 +100,12 @@ class BouncyCastleRuntimeCorpusTest {
             assertEquals(5, fixtures.size());
             for (Path fixture : fixtures) {
                 var metadata = new java.util.Properties();
-                try (var reader = Files.newBufferedReader(fixture.resolve("example.properties"))) { metadata.load(reader); }
+                try (var reader = Files.newBufferedReader(fixture.resolve("example.properties"), StandardCharsets.UTF_8)) { metadata.load(reader); }
                 String file = metadata.getProperty("fileName");
                 assertNotNull(file);
                 String expected = sources.get(file.replace(".java", ""));
                 assertNotNull(expected, file);
-                assertEquals(expected, Files.readString(fixture.resolve("before.java.txt")), fixture.toString());
+                assertEquals(expected, Files.readString(fixture.resolve("before.java.txt"), StandardCharsets.UTF_8), fixture.toString());
             }
         }
     }
@@ -113,10 +114,17 @@ class BouncyCastleRuntimeCorpusTest {
     private static Map<String, String> productionSources() throws Exception {
         Path fixture = checkout().resolve("sandbox_math_cleanup_test/fixtures/bcprov-1.85.2");
         var provenance = new com.fasterxml.jackson.databind.ObjectMapper().readTree(fixture.resolve("provenance.json").toFile());
-        var bundle = Platform.getBundle("bcprov.source");
-        assertNotNull(bundle, "The pinned source bundle must be installed for production qualification");
-        Path archive = FileLocator.getBundleFileLocation(bundle).orElseThrow().toPath();
-        assertEquals(provenance.get("sourceArchiveSha256").asText(), digest(Files.readAllBytes(archive)));
+        String configured = System.getProperty("sandbox.math.bc.sourceArchive");
+        Path archive;
+        if (configured != null) archive = Path.of(configured);
+        else {
+            var bundle = Platform.getBundle("bcprov.source");
+            assertNotNull(bundle, "The pinned source bundle must be installed for production qualification");
+            archive = FileLocator.getBundleFileLocation(bundle).orElseThrow().toPath();
+        }
+        // Eclipse repackages the archive; the source-entry hashes below are identical.
+        String hashKey = configured == null ? "sourceArchiveSha256" : "mavenSourceArchiveSha256";
+        assertEquals(provenance.get(hashKey).asText(), digest(Files.readAllBytes(archive)));
         Map<String, String> sources = new java.util.LinkedHashMap<>();
         try (var jar = new JarFile(archive.toFile())) {
             for (String name : FILES) {
@@ -204,7 +212,7 @@ class BouncyCastleRuntimeCorpusTest {
     private static void write(Path path, String value) throws IOException {
         Path parent = path.getParent();
         if (parent != null) Files.createDirectories(parent);
-        Files.writeString(path, value);
+        Files.writeString(path, value, StandardCharsets.UTF_8);
     }
 
     /** Load every BC class in one isolated namespace. The fixture classes are unsigned

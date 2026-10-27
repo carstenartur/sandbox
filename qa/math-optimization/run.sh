@@ -36,6 +36,9 @@ cd "$repository"
 case "$mode" in
   test)
     options=()
+    if [[ -n ${MATH_QA_BC_BINARY:-} && -n ${MATH_QA_BC_SOURCES:-} ]]; then
+      options+=("-Dsandbox.math.bc.jar=$MATH_QA_BC_BINARY" "-Dsandbox.math.bc.sourceArchive=$MATH_QA_BC_SOURCES")
+    fi
     if [[ -n ${MATH_QA_BC_MIRROR:-} ]]; then
       options+=("-Dmath.qa.bcMirror=$MATH_QA_BC_MIRROR")
       options+=("-Dmath.qa.pinnedReportDirectory=$output/pinned-reference")

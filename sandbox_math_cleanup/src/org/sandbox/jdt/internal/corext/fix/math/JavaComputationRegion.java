@@ -51,7 +51,13 @@ public record JavaComputationRegion(
 
    public record OutputBinding(String id, String javaName, NumericKind declaredKind,
          int initializerStart, int initializerLength, int statementStart, int statementLength,
-         boolean declaration, String bindingKey, boolean returnValue) {
+         boolean declaration, String bindingKey, boolean returnValue, boolean arrayStore) {
+      public OutputBinding(String id, String javaName, NumericKind declaredKind,
+            int initializerStart, int initializerLength, int statementStart, int statementLength,
+            boolean declaration, String bindingKey, boolean returnValue) {
+         this(id, javaName, declaredKind, initializerStart, initializerLength, statementStart,
+               statementLength, declaration, bindingKey, returnValue, false);
+      }
       public OutputBinding(String id, String javaName, NumericKind declaredKind,
             int initializerStart, int initializerLength, int statementStart, int statementLength,
             boolean declaration, String bindingKey) {

@@ -84,6 +84,43 @@ class JavaDominatingGuardFactsTest {
     @Test void unrelatedUserMethodsDoNotEstablishBigIntegerFacts() {
         assertEquals(Set.of(), facts(method(EXACT + " && x.bitCount() < 4096 && " + POSITIVE), true));
     }
+    @Test void immutableAliasesShareFactsInBothDirections() {
+        for (boolean guardAlias : new boolean[] {false, true}) {
+            String condition = EXACT + " && " + BOUND + " && " + POSITIVE;
+            if (guardAlias) condition = condition.replace("x.", "alias.").replace("x !=", "alias !=");
+            String target = guardAlias ? TARGET : "return alias.add(alias);";
+            String text = source("BigInteger first = x; final BigInteger alias = (first); if (" + condition
+                    + ") { " + target + " } return x;");
+            assertEquals(Set.of(guardAlias ? "x" : "alias"), JavaDominatingGuardFacts.provenReceivers(
+                    parse(text), text.indexOf(target), target.length(), Map.of(guardAlias ? "x" : "alias", true)));
+        }
+    }
+    @Test void aliasFactsDoNotSurviveReassignmentOrAnUnknownFactory() {
+        for (String initialization : new String[] {"x; x = BigInteger.TEN", "x.add(BigInteger.ZERO)"}) {
+            String text = source("BigInteger alias = " + initialization + "; if (" + EXACT + " && " + BOUND
+                    + " && " + POSITIVE + ") { return alias.add(alias); } return x;");
+            assertEquals(Set.of(), JavaDominatingGuardFacts.provenReceivers(parse(text),
+                    text.indexOf("return alias.add(alias);"), "return alias.add(alias);".length(), Map.of("alias", true)));
+        }
+    }
+    @Test void aliasesDoNotInventMissingModulusFacts() {
+        String text = source("BigInteger alias = x; if (" + EXACT + " && " + BOUND
+                + ") { return alias.add(alias); } return x;");
+        assertEquals(Set.of(), JavaDominatingGuardFacts.provenReceivers(parse(text),
+                text.indexOf("return alias.add(alias);"), "return alias.add(alias);".length(), Map.of("alias", true)));
+    }
+    @Test void directlyCheckedImmutableAliasDoesNotDependOnItsMutableOrigin() {
+        String text = source("final BigInteger alias = x; x = BigInteger.TEN; if ("
+                + (EXACT + " && " + BOUND + " && " + POSITIVE).replace("x.", "alias.").replace("x !=", "alias !=")
+                + ") { return alias.add(alias); } return x;");
+        assertEquals(Set.of("alias"), JavaDominatingGuardFacts.provenReceivers(parse(text),
+                text.indexOf("return alias.add(alias);"), "return alias.add(alias);".length(), Map.of("alias", true)));
+    }
+    @Test void checksInsideTheLambdaStillProveItsCapturedReceiver() {
+        String text = source("java.util.function.Supplier<BigInteger> s = () -> { if (" + EXACT + " && " + BOUND
+                + " && " + POSITIVE + ") { " + TARGET + " } return x; }; return s.get();");
+        assertEquals(Set.of("x"), facts(text, true));
+    }
     private static String method(String condition) {
         return source("if (" + condition + ") { " + TARGET + " } return x;");
     }

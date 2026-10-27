@@ -101,6 +101,11 @@ public final class JavaComputationExtractor {
       return extract(unit, source, options, false, true, Integer.MAX_VALUE, false);
    }
 
+   /** Preserve the established regions and their budget shares before trying ordered stores. */
+   Extraction extractRuntimeWithoutStores(CompilationUnit unit, String source, MathCleanUpOptions options) {
+      return extract(unit, source, options, false, true, Integer.MAX_VALUE, true, false);
+   }
+
    JavaComputationExtractor.Extraction extractForVerification(CompilationUnit unit, String source, MathCleanUpOptions options) {
       return this.extract(unit, source, options, true, false);
    }
@@ -116,6 +121,11 @@ public final class JavaComputationExtractor {
 
    private JavaComputationExtractor.Extraction extract(final CompilationUnit unit, String source, final MathCleanUpOptions options,
          final boolean includeValues, final boolean runtimeOnly, int maximumOutputs, boolean arrayInputs) {
+      return extract(unit, source, options, includeValues, runtimeOnly, maximumOutputs, arrayInputs, arrayInputs);
+   }
+
+   private JavaComputationExtractor.Extraction extract(final CompilationUnit unit, String source, final MathCleanUpOptions options,
+         final boolean includeValues, final boolean runtimeOnly, int maximumOutputs, boolean arrayInputs, boolean arrayStores) {
       final ArrayList<JavaComputationRegion> regions = new ArrayList<>();
       final ArrayList<Diagnostic> diagnostics = new ArrayList<>();
       if (!options.enabled()) {
@@ -179,6 +189,10 @@ public final class JavaComputationExtractor {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
                   diagnostics.add(new Diagnostic("CONSTANT_EXPRESSION_PRESERVED", "Intentional constant source is outside runtime cleanup", statement.getStartPosition(), statement.getLength()));
                   builder = new JavaComputationExtractor.Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
+               } else if (!arrayStores && statement instanceof ExpressionStatement expression
+                     && expression.getExpression() instanceof Assignment assignment && assignment.getLeftHandSide() instanceof ArrayAccess) {
+                  finish(builder, regions, diagnostics);
+                  builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                } else if (!(statement instanceof VariableDeclarationStatement) && !(statement instanceof ExpressionStatement)
                      && !(statement instanceof ReturnStatement)) {
                   JavaComputationExtractor.finish(builder, regions, diagnostics);
@@ -186,7 +200,7 @@ public final class JavaComputationExtractor {
                } else {
                   try {
                      builder.statement(statement);
-                     if (incomingAssignment) {
+                     if (incomingAssignment || builder.outputs.stream().anyMatch(JavaComputationRegion.OutputBinding::arrayStore)) {
                         finish(builder, regions, diagnostics);
                         builder = new Builder(unit, options, declarations, reserved, block, includeValues, runtimeOnly, arrayInputs);
                      }
@@ -436,6 +450,11 @@ public final class JavaComputationExtractor {
 
       void statement(Statement statement) {
          this.prior = this.snapshot();
+         if (statement instanceof ExpressionStatement expression && expression.getExpression() instanceof Assignment store
+               && store.getLeftHandSide() instanceof ArrayAccess array) {
+            arrayStore(statement, store, array);
+            return;
+         }
          if (statement instanceof ReturnStatement returned) {
             returnStatement(returned);
             return;
@@ -501,6 +520,37 @@ public final class JavaComputationExtractor {
          } else {
             throw JavaComputationExtractor.reject("UNRESOLVED_OR_NONLOCAL_BINDING", statement);
          }
+      }
+
+      /** One ordered store closes the region; no heap equality is assumed across it. */
+      private void arrayStore(Statement statement, Assignment store, ArrayAccess array) {
+         if (options.safety() != SafetyProfile.PRESERVE_JAVA || store.getOperator() != Assignment.Operator.ASSIGN
+               || !(array.getArray() instanceof SimpleName name)
+               || !(name.resolveBinding() instanceof IVariableBinding binding) || binding.isField() || binding.isRecovered()
+               || !JavaSourceReadShape.supported(array, values.keySet())
+               || !JavaArrayReadInputs.totalPrefix(trace, outputs) || outputs.size() >= 64)
+            throw reject("ARRAY_STORE_EFFECT_BOUNDARY", statement); //$NON-NLS-1$
+         Expression right = store.getRightHandSide();
+         for (Object value : unit.getCommentList()) {
+            ASTNode comment = (ASTNode) value;
+            if (comment.getStartPosition() >= right.getStartPosition()
+                  && comment.getStartPosition() < right.getStartPosition() + right.getLength())
+               throw reject("COMMENT_IN_EXPRESSION", right); //$NON-NLS-1$
+         }
+         NumericKind declared = kind(array.resolveTypeBinding(), array), evaluated = kind(right.resolveTypeBinding(), right);
+         if (!JavaArrayReadInputs.integral(declared) || !JavaArrayReadInputs.integral(evaluated))
+            throw reject("ARRAY_STORE_EFFECT_BOUNDARY", statement); //$NON-NLS-1$
+         selected(declared, array);
+         Expr value = expression(right, false, 0);
+         if (declared != evaluated) value = cast(value, evaluated, declared, right);
+         if (!JavaArrayReadInputs.totalPrefix(trace, outputs)) throw reject("ARRAY_STORE_EFFECT_BOUNDARY", statement); //$NON-NLS-1$
+         if (first < 0) first = statement.getStartPosition();
+         String id = "output" + outputs.size(); //$NON-NLS-1$
+         planOutputs.add(new Output(id, declared.type(), value));
+         outputs.add(new JavaComputationRegion.OutputBinding(id, array.toString(), declared,
+               right.getStartPosition(), right.getLength(), statement.getStartPosition(), statement.getLength(),
+               false, "store@" + statement.getStartPosition(), false, true)); //$NON-NLS-1$
+         end = statement.getStartPosition() + statement.getLength();
       }
 
       private Expr assignedValue(IVariableBinding binding, Expression initializer, int depth) {
