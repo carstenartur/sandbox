@@ -10,6 +10,8 @@ import java.util.Properties;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class BouncyCastleHashToCurveBenchmarkTest {
     private static final String ENTRY = "org/bouncycastle/crypto/hash2curve/impl/SimplifiedShallueVanDeWoestijneMapToCurve.java";
@@ -72,12 +74,14 @@ class BouncyCastleHashToCurveBenchmarkTest {
             try (var inputs = inputs(copy, "P256_XMD_SHA_256")) { assertThrows(IOException.class, inputs::setup, kind); }
         }
     }
-    @Test void additionalStoresDoNotDiluteEstablishedRegionBudgets() throws Exception {
-        Path sources = Path.of(System.getProperty("sandbox.math.bc.sourceArchive")), output = temporary.resolve("retained-regions");
+    @ParameterizedTest
+    @ValueSource(strings = {"bc-strict", "bc-mathematical"})
+    void additionalStoresDoNotDiluteEstablishedRegionBudgets(String profile) throws Exception {
+        Path sources = Path.of(System.getProperty("sandbox.math.bc.sourceArchive")), output = temporary.resolve("retained-regions-" + profile);
         var expected = java.util.Map.of("org/bouncycastle/pqc/crypto/hawk/HawkEngine.java", 18,
                 "org/bouncycastle/pqc/crypto/haetae/HAETAEEngine.java", 1, "org/bouncycastle/pqc/math/ntru/Polynomial.java", 2);
         var args = new java.util.ArrayList<>(List.of(binary.toString(), sources.toString(),
-                "qa/math-optimization/profiles/bc-strict.properties", output.toString(), CorpusFiles.sha256(sources), "17"));
+                "qa/math-optimization/profiles/" + profile + ".properties", output.toString(), CorpusFiles.sha256(sources), "17"));
         args.addAll(expected.keySet()); ProjectMathScan.main(args.toArray(String[]::new));
         var report = new com.fasterxml.jackson.databind.ObjectMapper().readTree(output.resolve("review.json").toFile());
         for (var file : report.path("files")) assertTrue(file.path("acceptedRegions").asInt() >= expected.get(file.path("path").asText()),

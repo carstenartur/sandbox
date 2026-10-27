@@ -210,7 +210,7 @@ public final class MathematicalAnalysis {
                      && region.trace().occurrences().stream().anyMatch(o -> o.evaluatedKind() == NumericKind.BIG_INTEGER);
                boolean canRetryBigInteger = mathematicalBigInteger && region.outputs().size() + region.internalBindings().size() > 1;
                // Alternate domains share the allocation equally. Keep a quarter for smaller
-               // BigInteger requests: an Unsupported result has no counter and costs its full allowance.
+               // BigInteger requests: an Unsupported result with unknown work costs its full allowance.
                long ordinaryWork = canTryMathematical || slice != null ? Math.max(1L, regionWork / 2)
                      : canRetryBigInteger ? Math.max(1L, regionWork - Math.max(1L, regionWork / 4)) : regionWork;
                OptimizationRequest request = new OptimizationRequest(
@@ -245,16 +245,16 @@ public final class MathematicalAnalysis {
                   if (!(result instanceof Candidate candidate)) {
                      boolean preparationLimit = result instanceof OptimizationResult.Unsupported unsupported
                            && unsupported.toString().contains("plan preparation work bound exceeded");
-                     long attemptSpent = preparationLimit
-                           ? Math.min(remainingWork, 2L * de.regelsuche.search.program.JointComputationPlan.MAX_NODES)
+                     long attemptSpent = preparationLimit && ((OptimizationResult.Unsupported) result).work() < 0
+                           ? failedPreparationWork(request.budget().maximumWork(), remainingWork)
                            : consumedWork(result, request.budget().maximumWork());
                      if (preparationLimit && slice == null) {
                         if (fragments == null) fragments = new JavaComputationExtractor().extractRuntimeFragments(ast, source, options).regions();
                         var smaller = fragments.stream().filter(part -> part.start() >= region.start()
                               && part.start() + part.length() <= region.start() + region.length() && part.length() < region.length()).toList();
                         if (!smaller.isEmpty()) {
-                           // Failed preparation is bounded by the SDK structural cap; reserve
-                           // a conservative full-cap charge before scheduling smaller requests.
+                           // Reported work includes earlier trace checks and the failed
+                           // preparation. Unknown legacy work keeps a conservative reserve.
                            remainingWork -= attemptSpent;
                            scheduleRetries(pending, regionIndex + 1, smaller, deferredAssignments, selectionOffset < 0);
                            diagnostics.add(diagnostic("REGION_PREPARATION_SPLIT", "Preparation limit reached; retrying " + smaller.size()
@@ -278,7 +278,7 @@ public final class MathematicalAnalysis {
                         var smaller = statements.stream().filter(part -> part.start() >= region.start()
                               && part.start() + part.length() <= region.start() + region.length() && part.length() < region.length()).toList();
                         if (!smaller.isEmpty()) {
-                           // Unsupported carries no work counter, so charge the full failed request allocation.
+                           // Debit reported work, or the full allocation when it is unknown.
                            remainingWork -= attemptSpent;
                            scheduleRetries(pending, regionIndex + 1, smaller, deferredAssignments, selectionOffset < 0);
                            diagnostics.add(diagnostic("MODULAR_STATEMENT_RETRY", "Retrying supported statements within the remaining file budget", region));
@@ -295,7 +295,7 @@ public final class MathematicalAnalysis {
                      if (result instanceof BudgetExceeded exceeded) {
                         // Charge this attempt, including any reported overshoot. A preceding
                         // ordinary attempt was already charged before the retry.
-                        remainingWork -= Math.max(request.budget().maximumWork(), exceeded.work());
+                        remainingWork -= consumedWork(exceeded, request.budget().maximumWork());
                      }
                      retryArrayScalars = result instanceof NoImprovement || result instanceof OptimizationResult.Inconclusive
                            || result instanceof BudgetExceeded;
@@ -575,10 +575,21 @@ public final class MathematicalAnalysis {
       return monitor.isCanceled();
    }
 
+   private static long failedPreparationWork(long allocation, long remainingWork) {
+      long unreported = Math.min(remainingWork,
+            de.regelsuche.search.program.JointComputationPlan.MAX_RESOLUTION_WORK
+                  + de.regelsuche.search.program.JointComputationPlan.MAX_NODES);
+      // Unknown/legacy Unsupported has no work counter: earlier trace checks may already have
+      // spent the request allowance before this last bounded preparation failed.
+      return unreported + Math.min(remainingWork - unreported, allocation);
+   }
+
    private static long consumedWork(OptimizationResult result, long allocation) {
       if (result instanceof NoImprovement ordinary) return ordinary.work();
       if (result instanceof OptimizationResult.Inconclusive inconclusive && inconclusive.work() >= 0) return inconclusive.work();
-      if (result instanceof BudgetExceeded exceeded) return Math.max(allocation, exceeded.work());
+      if (result instanceof OptimizationResult.Unsupported unsupported && unsupported.work() >= 0) return unsupported.work();
+      if (result instanceof BudgetExceeded exceeded)
+         return exceeded.hasCompleteWorkAccounting() ? exceeded.work() : Math.max(allocation, exceeded.work());
       return allocation;
    }
 

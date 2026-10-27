@@ -9,6 +9,7 @@ import de.regelsuche.sdk.optimization.SafetyProfile;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -232,11 +233,16 @@ class MathVariableRegionsTest {
 
     @Test
     void preparationRetriesPreserveTheIncomingValueAfterAnAssignment() throws Exception {
+        String incoming = "value=(value+1)+0;";
         String source = "public class Calculation { public static int compute(int x,int a,int b) {"
-                + "int value=x+1; int c=" + balancedSum(0, 256) + "; int d=x+3; int e=x+4;"
-                + "value=value+1; int result=value-1; return result+c+d+e; }}";
+                + "int value=x+1; int c=" + balancedSum(0, 1024) + "; int d=x+3; int e=x+4;"
+                + incoming + "int result=value-1; return result+c+d+e; }}";
         var analysis = analyze(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME));
-        assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("REGION_PREPARATION_SPLIT")));
+        assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("REGION_PREPARATION_SPLIT")),
+                analysis.diagnostics().toString());
+        assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("VERIFIED_CANDIDATE")
+                && d.offset() == source.indexOf(incoming)),
+                "The incoming retry must produce an edit before checking execution and Undo: " + analysis.diagnostics());
         Document document = new Document(source);
         var undo = analysis.newEdit().apply(document, TextEdit.CREATE_UNDO);
         compare(source, document.get());
@@ -253,10 +259,11 @@ class MathVariableRegionsTest {
         String incoming = "value=(value-x)-(b-x);";
         String existing = "return x*a+x*b;";
         String source = "class Calculation { int compute(int x,int a,int b) { int value=x+1; int c="
-                + balancedSum(0, 256) + "; int d=x+3; int e=x+4;" + incoming
+                + balancedSum(0, 1024) + "; int d=x+3; int e=x+4;" + incoming
                 + "int result=value-1; return result+c+d+e; } int established(int x,int a,int b) {" + existing + "}}";
         var analysis = analyze(source, options(SafetyProfile.PRESERVE_JAVA, OptimizationGoal.LOWER_ESTIMATED_RUNTIME));
-        assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("REGION_PREPARATION_SPLIT")));
+        assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.code().equals("REGION_PREPARATION_SPLIT")),
+                analysis.diagnostics().toString());
         var acceptedOffsets = analysis.diagnostics().stream().filter(d -> d.code().equals("VERIFIED_CANDIDATE"))
                 .map(d -> d.offset()).toList();
         assertTrue(acceptedOffsets.contains(source.indexOf(incoming)), acceptedOffsets.toString());
@@ -352,7 +359,7 @@ class MathVariableRegionsTest {
     private Method compile(String source) throws Exception {
         Path directory = Files.createTempDirectory(temporary, "compiled-");
         Path file = directory.resolve("Calculation.java");
-        Files.writeString(file, source);
+        Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
                 "--release", "17", "-d", directory.toString(), file.toString()), source);
         try (var loader = new URLClassLoader(new java.net.URL[] {directory.toUri().toURL()}, null)) {

@@ -24,6 +24,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jface.text.Document;
 import org.eclipse.text.edits.TextEdit;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationExtractor;
+import org.sandbox.jdt.internal.corext.fix.math.JavaComputationTask;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathReviewReport;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
@@ -38,7 +39,7 @@ public final class ProjectMathScan {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 6) throw new IllegalArgumentException(
-                "Usage: <binary.jar> <sources.jar> <profile.properties> <fresh-output> <sources-sha256> <target-java> [exact-entry.java ...]");
+                "Usage: <binary.jar> <sources.jar> <profile.properties> <fresh-output> <sources-sha256> <target-java> [--tasks] [exact-entry.java ...]");
         Path binary = Path.of(args[0]).toAbsolutePath(), archive = Path.of(args[1]).toAbsolutePath();
         Path profile = Path.of(args[2]).toAbsolutePath(), output = Path.of(args[3]).toAbsolutePath().normalize();
         var options = profile(profile, Integer.parseInt(args[5]));
@@ -46,8 +47,10 @@ public final class ProjectMathScan {
         String binaryHash = CorpusFiles.sha256(binary), profileHash = CorpusFiles.sha256(profile);
         var runtime = runtimeInputs();
         var mapper = new ObjectMapper();
+        var requested = Arrays.asList(args).subList(6, args.length);
+        boolean exportTasks = requested.contains("--tasks");
         try (var jar = new JarFile(archive.toFile())) {
-            var selected = CorpusFiles.select(jar, Arrays.asList(args).subList(6, args.length));
+            var selected = CorpusFiles.select(jar, requested.stream().filter(s -> !s.equals("--tasks")).toList());
             Files.createDirectory(output); // Fail rather than overwrite any existing result.
             // A shared immutable source snapshot makes definitions in other units available.
             // Exact selectedEntries still controls analysis; dependencies are not extra scan successes.
@@ -72,6 +75,7 @@ public final class ProjectMathScan {
             receipt.put("startedAt", Instant.now().toString());
             receipt.put("sourcesSha256", args[4]); receipt.put("binarySha256", binaryHash); receipt.put("profileSha256", profileHash);
             receipt.put("selectedEntries", selected); receipt.put("options", options.toMap()); receipt.put("targetJava", options.targetJava());
+            receipt.put("exportComputationTasks", exportTasks);
             receipt.put("javaRuntime", System.getProperty("java.runtime.version")); receipt.put("runtimeInputs", runtime);
             receipt.put("sourceContextFiles", contextHashes.size());
             receipt.put("sourceContext", "shared archive sources; consulted definitions are rechecked before Apply");
@@ -104,6 +108,11 @@ public final class ProjectMathScan {
                 parsed++;
                 int extracted = new JavaComputationExtractor().extractRuntime(ast, source, options).regions().size();
                 regions += extracted; row.put("extractedRegions", extracted);
+                if (exportTasks) {
+                    var tasks = new JavaComputationExtractor().extractTasks(ast, source, options);
+                    row.put("computationTasks", tasks.tasks().stream().map(ProjectMathScan::taskSummary).toList());
+                    row.put("computationTaskDiagnostics", tasks.diagnostics());
+                }
                 var environment = new MathematicalAnalysis.SourceEnvironment(entry, List.of(binary.toString()), List.of(sourceRoot.toString()), List.of("UTF-8"));
                 var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0, environment);
                 if (analysis.diagnostics().stream().anyMatch(d -> d.code().equals("CANCELLED"))) throw new InterruptedException("Analysis cancelled");
@@ -155,6 +164,17 @@ public final class ProjectMathScan {
             Files.writeString(output.resolve("COMPLETED"), status + "\nInputs unchanged. Counts are not measured program speedups.\n");
             System.out.println(status + " parsed=" + parsed + " parseErrorFiles=" + errors + " acceptedRegions=" + replacements);
         }
+    }
+
+    /** Bounded inspection receipt, not a serialized CAS protocol or an editable region. */
+    private static Map<String, Object> taskSummary(JavaComputationTask task) {
+        var row = new TreeMap<String, Object>();
+        row.put("sourceSha256", task.sourceSha256()); row.put("start", task.start()); row.put("length", task.length());
+        row.put("inputTypes", task.plan().inputs()); row.put("inputBindings", task.inputBindings());
+        var outputs = new TreeMap<String, Object>(); task.plan().outputs().forEach(o -> outputs.put(o.name(), o.type()));
+        row.put("outputTypes", outputs); row.put("numericOccurrences", task.trace().occurrences().size());
+        row.put("schedule", task.schedule()); row.put("editable", false);
+        return row;
     }
 
     /** Same verified calculation edits, not a second optimizer. Only separate automatic documentation edits are omitted. */
