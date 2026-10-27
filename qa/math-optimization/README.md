@@ -14,6 +14,9 @@ schedule. The same source snapshot reconstructs the full typed graph through
 shared expressions or define a new CAS wire protocol. These tasks are inspection
 data (`editable: false`), separate from accepted cleanup regions and timing claims.
 
+The [typed-computation qualification](../../docs/superpowers/plans/2026-10-27-typed-computation-qualification.md)
+records the exact SDK, 560-test consumer run and matched full-corpus comparison.
+
 ## Current BC qualification (Java 25 / Maven)
 
 The maintained Maven entry point reuses the existing production core, scanner,

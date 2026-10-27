@@ -2,14 +2,14 @@
 
 ## Current shared-rule integration candidate
 
-Source revision: `42caf2f862b5c606d6b516ff8f99279f9928d064`.
-Standalone JAR SHA-256: `aef1b7c4002bb76cd122e7a15e45692215f56cc4c56c0c2f3b4545289da709f4`.
+Source revision: `b4081ca59ccf2d8b6985bb628856f68d0c118945`.
+Standalone JAR SHA-256: `87fe1a838f21a86c84ee8519e81b7040e47c7775e32ef01d7c8ac04e0a040adf`.
 
 The existing native Maven/JUnit SDK qualification and staging jobs both passed
-in [run 40422423698](https://github.com/carstenartur/sandbox/actions/runs/40422423698).
+in [run 40448545085](https://github.com/carstenartur/sandbox/actions/runs/40448545085).
 `qualification.json` is the unchanged packager receipt from that run. The JAR
 and receipt are copied from the exact Git blobs staged on
-`sdk-transfer/42caf2f862b5c606d6b516ff8f99279f9928d064`; they are not rebuilt or
+`sdk-transfer/b4081ca59ccf2d8b6985bb628856f68d0c118945`; they are not rebuilt or
 edited in the consumer repository. The receipt records a fresh external consumer
 verifying optimization, selected-path replay, checked overflow, and the public
 original/candidate domain API.
@@ -19,8 +19,13 @@ shared computation graphs after cold transport in the common Regelsuche resolver
 Resolver traversal and shallow structural keys remain charged to the work budget;
 the affine domain API uses the same metered traversal. No second CAS or proof
 implementation is introduced in Sandbox. The complete upstream dependency/SDK
-verification passed, including 201 SDK tests. Preparation and derivation capture
+verification passed, including 210 SDK tests. Preparation and derivation capture
 reuse already resolved producer data; external proof replay remains independent.
+Initial-validation preparation failures report earlier trace work plus a safe
+failure bound, allowing smaller retries without discarding already consumed work.
+Completed search limits expose certified aggregate accounting; partial checker
+stops remain conservative. Existing opaque Boolean proofs precede expensive
+projection attempts, and checker revision v11 rejects previous receipts.
 
 The existing signed-additive capability belongs to Regelsuche's ordinary core rule
 inventory and its existing term-collection pack. The existing Java adapter lifts

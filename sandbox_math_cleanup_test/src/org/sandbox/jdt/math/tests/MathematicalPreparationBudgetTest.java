@@ -18,7 +18,7 @@ import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
 
 class MathematicalPreparationBudgetTest {
-    // Preparation can reach its structural cap before the SDK can report request work.
+    // Even the conservative failed-preparation bound alone exceeds this file budget.
     private static final long BUDGET = JointComputationPlan.MAX_RESOLUTION_WORK + JointComputationPlan.MAX_NODES - 1;
 
     @Test void preparationFailureWithTwoToFourStatementsCannotSpendItsCapAgainOnRetries() {
@@ -44,7 +44,7 @@ class MathematicalPreparationBudgetTest {
                 + "; return x; } static int later(int x) { return x + 0; } }";
         var values = new HashMap<>(MathCleanUpOptions.defaults(17).toMap());
         values.put(MathCleanUpOptions.CLEANUP, "true"); values.put(MathCleanUpOptions.KINDS, "INT");
-        values.put(MathCleanUpOptions.WORK_BUDGET, "2000000"); values.put(MathCleanUpOptions.MAX_STATES, "20000");
+        values.put(MathCleanUpOptions.WORK_BUDGET, "1000000"); values.put(MathCleanUpOptions.MAX_STATES, "20000");
         var options = MathCleanUpOptions.parse(values, 17);
         var ast = MathTestSupport.parse(source);
         var regions = new JavaComputationExtractor().extractRuntime(ast, source, options).regions();
@@ -57,6 +57,8 @@ class MathematicalPreparationBudgetTest {
         var result = assertInstanceOf(OptimizationResult.Unsupported.class,
                 new ComputationOptimizer().optimize(request, CancellationToken.NONE));
         assertTrue(result.diagnostic().contains("plan preparation work bound exceeded"), result.toString());
+        assertTrue(result.work() > options.workBudget(), "Prior trace work plus failed preparation exhaust this file: " + result);
+        assertTrue(result.work() < request.budget().maximumWork(), "Unused request allowance is not consumed work: " + result);
         var analysis = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0);
         int later = source.indexOf("return x + 0;");
         assertTrue(analysis.diagnostics().stream().anyMatch(d -> d.offset() == later && d.code().equals("BUDGET_EXCEEDED")),
@@ -122,7 +124,7 @@ class MathematicalPreparationBudgetTest {
                 new OptimizationBudget(requestAllowance, options.maxStates(), 64, 5000L), CheckedPolicy.NONE);
         var result = new ComputationOptimizer().optimize(request, CancellationToken.NONE);
         assertInstanceOf(OptimizationResult.Unsupported.class, result,
-                "Exercise unreported preparation work, not an ordinary request-budget failure");
+                "Exercise a preparation-limit failure, not an ordinary request-budget failure");
         assertTrue(result.toString().contains("plan preparation work bound exceeded"), result.toString());
         return new Fixture(source.toString(), ast, options);
     }

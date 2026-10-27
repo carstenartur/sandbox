@@ -52,9 +52,13 @@ the actual int-to-long initializer conversion is retained in the manual plan's
 source trace. The current result is an incomplete search relation, not a proved
 improvement. `WordProjectionCleanupTest` separately requires a real high/low word
 reconstruction to simplify, compile, execute identically and support exact Undo.
-Failed late trace preparation reserves both its preceding request allowance and
-the bounded unreported preparation before later source regions can run. Existing
-file limits and region weights remain unchanged. The older explanation API still
+Failed initial-validation preparation reports a conservative work bound including
+completed trace checks. The adapter debits that value before retries, including
+overshoots; unused allowance remains available. Unknown legacy failures reserve
+the request allowance plus bounded unreported preparation. Existing
+file limits and region weights remain unchanged. Completed bounded searches debit
+their reported work when the SDK certifies complete accounting; partial checker
+stops still reserve the allocation or reported overshoot. The older explanation API still
 reports presentation work separately from fresh re-verification; a complete
 explanation-call work ledger is a documented upstream follow-up.
 
