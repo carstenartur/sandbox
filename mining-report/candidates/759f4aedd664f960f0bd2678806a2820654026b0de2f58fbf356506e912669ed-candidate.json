@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_PARSE",
     "message": "Java compile error at line 11: Collections cannot be resolved",
-    "verifiedAt": "2026-10-25T02:30:15.665298691Z",
+    "verifiedAt": "2026-10-27T02:31:29.738612211Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

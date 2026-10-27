@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "f932159f8de05886f0fc22aeceecff02a58cdb16dabd93002457b93afd06d112",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\"org.eclipse.jdt.ui.ColoredLabels.match_highlight\"\n\u003d\u003e\n\"org.eclipse.search.ui.match.highlight\"\n;;",
+  "beforeExample": "package test;\n\npublic class TestClass {\n    private static final String HIGHLIGHT_ID \u003d \"org.eclipse.jdt.ui.ColoredLabels.match_highlight\";\n    \n    public void processId(String id) {\n        if (id.equals(\"org.eclipse.jdt.ui.ColoredLabels.match_highlight\")) {\n            System.out.println(\"Old ID used\");\n        }\n    }\n}",
+  "afterExample": "package test;\n\npublic class TestClass {\n    private static final String HIGHLIGHT_ID \u003d \"org.eclipse.search.ui.match.highlight\";\n    \n    public void processId(String id) {\n        if (id.equals(\"org.eclipse.search.ui.match.highlight\")) {\n            System.out.println(\"Old ID used\");\n        }\n    }\n}",
+  "negativeExample": "package test;\n\npublic class TestClass {\n    private static final String OTHER_HIGHLIGHT_ID \u003d \"some.other.highlight.id\";\n    \n    public void processId(String id) {\n        if (id.equals(\"another.id\")) {\n            System.out.println(\"Another ID used\");\n        }\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "0314fccb79770ec38fe20a6a215c1139ffe3c649",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Constant Update",
+  "summary": "Replace the deprecated string literal for the match highlight color ID with the new, correct ID.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-27T02:25:16.997577338Z",
+  "ruleFingerprint": "sha256:1ce8a42b8b235dc8ab7cc173ee1b0ba9354849057399507b46ebe905f1e951cb",
+  "behaviorFingerprint": "sha256:da16435cd9fb184baf0424fc6d80653f78791d149eedafb4732debc017de6f64",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-10-27T02:31:33.070226628Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b3fa843a4d54e35e6d68cbf262fce839e409901ae415572da65f7d49718c38ad",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "new org.eclipse.jface.text.WhitespaceCharacterPainter($viewer, $showLeadingSpaces, $showEnclosedSpaces, $showTrailingSpaces, $showLeadingIdeographicSpaces, $showEnclosedIdeographicSpaces, $showTrailingIdeographicSpace, $showLeadingTabs, $showEnclosedTabs, $showTrailingTabs, $showCarriageReturn, $showLineFeed)\n\u003d\u003e\nnew org.eclipse.jface.text.WhitespaceCharacterPainter($viewer, $showLeadingSpaces, $showEnclosedSpaces, $showTrailingSpaces, $showLeadingIdeographicSpaces, $showEnclosedIdeographicSpaces, $showTrailingIdeographicSpace, $showLeadingTabs, $showEnclosedTabs, $showTrailingTabs, $showCarriageReturn, $showLineFeed, 255 /* alpha */)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.text.ITextViewer;\nimport org.eclipse.jface.text.WhitespaceCharacterPainter;\n\npublic class TestClass {\n    void setup(ITextViewer viewer) {\n        WhitespaceCharacterPainter painter \u003d new WhitespaceCharacterPainter(viewer, true, true, false, false, false, false, true, true, false, false, true);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.text.ITextViewer;\nimport org.eclipse.jface.text.WhitespaceCharacterPainter;\n\npublic class TestClass {\n    void setup(ITextViewer viewer) {\n        WhitespaceCharacterPainter painter \u003d new WhitespaceCharacterPainter(viewer, true, true, false, false, false, false, true, true, false, false, true, 255 /* alpha */);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.ITextViewer;\nimport org.eclipse.jface.text.WhitespaceCharacterPainter;\n\npublic class TestClass {\n    void setup(ITextViewer viewer) {\n        // Should not match 1-arg constructor\n        WhitespaceCharacterPainter painter1 \u003d new WhitespaceCharacterPainter(viewer);\n        // Should not match 13-arg constructor already providing alpha\n        WhitespaceCharacterPainter painter2 \u003d new WhitespaceCharacterPainter(viewer, true, true, false, false, false, false, true, true, false, false, true, 100);\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "34d63252babe603338c1ba3b17cca62010db712d",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Migration",
+  "summary": "Migrate from deprecated 12-argument WhitespaceCharacterPainter constructor to the 13-argument version by adding a default alpha value.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-27T02:25:16.974719635Z",
+  "ruleFingerprint": "sha256:4aace2047311939046b72586974699034b5c8e2ad884d5ee09e4c9161228bfad",
+  "behaviorFingerprint": "sha256:c4af17e12bd0adde01c8be228caf2e43aa544bfca72d3f4627ee25c0fc692997",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.text.ITextViewer cannot be resolved",
+    "verifiedAt": "2026-10-27T02:31:33.057734409Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "fa6ca98c98902d70e3ec66cdc1d006291cb352905a7bcc98deed6a879438976b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: use-instancescope-singleton\u003e\n\u003c!description: Replace new InstanceScope() with InstanceScope.INSTANCE to use the singleton instance.\nThis is the recommended and more efficient way to access the InstanceScope since Eclipse 3.7 (Platform 3.7.0).\n\u003e\n\u003c!severity: HINT\u003e\nnew org.eclipse.core.runtime.preferences.InstanceScope()\n\u003d\u003e\norg.eclipse.core.runtime.preferences.InstanceScope.INSTANCE\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.core.runtime.preferences.InstanceScope;\nimport org.osgi.service.prefs.Preferences;\n\npublic class Example {\n    public void method() {\n        Preferences prefs \u003d new InstanceScope().getNode(\"some.node\");\n        System.out.println(prefs);\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.core.runtime.preferences.InstanceScope;\nimport org.osgi.service.prefs.Preferences;\n\npublic class Example {\n    public void method() {\n        Preferences prefs \u003d InstanceScope.INSTANCE.getNode(\"some.node\");\n        System.out.println(prefs);\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.core.runtime.preferences.InstanceScope;\nimport org.osgi.service.prefs.Preferences;\n\npublic class Example {\n    public void method() {\n        Preferences prefs \u003d InstanceScope.INSTANCE.getNode(\"another.node\"); // Already uses singleton\n        System.out.println(prefs);\n    }\n}",
+  "targetHintFile": "eclipse-api.sandbox-hint",
+  "sourceCommit": "20fddb34705c097a1afedf23114d5886dbbd70d3",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-27T02:27:45.506371593Z",
+  "ruleFingerprint": "sha256:1d1e15738c9fecb2f8816eeab2251c5582f373cecfdb5ef619bfb2311ca171a0",
+  "behaviorFingerprint": "sha256:07789304d2f839a91caeb04c50a46e6b11e09ad1789f1f948f020cd8a04c6475",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-27T02:31:33.092268878Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "6599fda79a28dcef0859c1ee71d4bb05ca51025b77918d8e05e46aed779b6036",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: add.null.check.before.method.call.in.or.condition*/\n/*!description: Adds a null check for the receiver of a method call when it appears as the second operand of an OR (||) expression, preventing NullPointerException if the receiver is null. Applies only if the receiver has no side effects, and the method call is part of an equality comparison.*/\n/*!severity: WARNING*/\n$cond1 || $receiver.method($args$) \u003d\u003d $comparisonValue :: hasNoSideEffect($receiver)\n\u003d\u003e\n$cond1 || $receiver !\u003d null \u0026\u0026 $receiver.method($args$) \u003d\u003d $comparisonValue\n;;",
+  "beforeExample": "import org.eclipse.core.runtime.IAdaptable;\n\npublic class TestClass {\n    private Object fActivePart;\n    private TestClass self \u003d this;\n\n    static class MyAdaptable implements IAdaptable {\n        @Override\n        public \u003cT\u003e T getAdapter(Class\u003cT\u003e adapter) {\n            if (adapter.equals(TestClass.class)) {\n                return (T) new TestClass();\n            }\n            return null;\n        }\n    }\n\n    void someMethod() {\n        if (fActivePart \u003d\u003d self || ((IAdaptable) fActivePart).getAdapter(TestClass.class) \u003d\u003d self) {\n            System.out.println(\"Matched\");\n        }\n\n        MyAdaptable myAdaptable \u003d new MyAdaptable();\n        if (myAdaptable.hashCode() \u003d\u003d 0 || myAdaptable.getAdapter(TestClass.class) \u003d\u003d this) {\n            System.out.println(\"Matched again\");\n        }\n    }\n\n    private TestClass getTestClass() { return this; }\n    private Object getPotentiallyNullObject() { return null; }\n    \n    void sideEffectMethod() {\n        if (true || getPotentiallyNullObject().hashCode() \u003d\u003d 0) {\n        }\n    }\n}",
+  "afterExample": "import org.eclipse.core.runtime.IAdaptable;\n\npublic class TestClass {\n    private Object fActivePart;\n    private TestClass self \u003d this;\n\n    static class MyAdaptable implements IAdaptable {\n        @Override\n        public \u003cT\u003e T getAdapter(Class\u003cT\u003e adapter) {\n            if (adapter.equals(TestClass.class)) {\n                return (T) new TestClass();\n            }\n            return null;\n        }\n    }\n\n    void someMethod() {\n        if (fActivePart \u003d\u003d self || fActivePart !\u003d null \u0026\u0026 ((IAdaptable) fActivePart).getAdapter(TestClass.class) \u003d\u003d self) {\n            System.out.println(\"Matched\");\n        }\n\n        MyAdaptable myAdaptable \u003d new MyAdaptable();\n        if (myAdaptable.hashCode() \u003d\u003d 0 || myAdaptable !\u003d null \u0026\u0026 myAdaptable.getAdapter(TestClass.class) \u003d\u003d this) {\n            System.out.println(\"Matched again\");\n        }\n    }\n\n    private TestClass getTestClass() { return this; }\n    private Object getPotentiallyNullObject() { return null; }\n    \n    void sideEffectMethod() {\n        if (true || getPotentiallyNullObject().hashCode() \u003d\u003d 0) {\n        }\n    }\n}",
+  "negativeExample": "import org.eclipse.core.runtime.IAdaptable;\n\npublic class TestClass {\n    private Object fActivePart;\n    private TestClass self \u003d this;\n\n    static class MyAdaptable implements IAdaptable {\n        @Override\n        public \u003cT\u003e T getAdapter(Class\u003cT\u003e adapter) {\n            if (adapter.equals(TestClass.class)) {\n                return (T) new TestClass();\n            }\n            return null;\n        }\n    }\n\n    void someMethod() {\n        // Already has the null check\n        if (fActivePart \u003d\u003d self || fActivePart !\u003d null \u0026\u0026 ((IAdaptable) fActivePart).getAdapter(TestClass.class) \u003d\u003d self) {\n            System.out.println(\"Already handled\");\n        }\n        // Not in an OR condition\n        if (((IAdaptable) fActivePart).getAdapter(TestClass.class) \u003d\u003d self) {\n            System.out.println(\"Not an OR\");\n        }\n        // Method call not followed by \u003d\u003d\n        if (fActivePart \u003d\u003d self || ((IAdaptable) fActivePart).getAdapter(TestClass.class) !\u003d null) {\n            System.out.println(\"Not \u003d\u003d comparison\");\n        }\n        // Receiver has side effects - should not match due to guard\n        if (fActivePart \u003d\u003d self || getPotentiallyNullObject().getAdapter(TestClass.class) \u003d\u003d self) {\n            System.out.println(\"Side effect receiver - should not match\");\n        }\n    }\n    \n    private Object getPotentiallyNullObject() {\n        System.out.println(\"Calling getPotentiallyNullObject\");\n        return null;\n    }\n}",
+  "targetHintFile": "defensive.sandbox-hint",
+  "sourceCommit": "2e7543ee3354fa003b469788b3d003a9059f95c0",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Defensive Coding",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-27T02:30:59.560317269Z",
+  "ruleFingerprint": "sha256:5fce808b6e9440653b36b25ae5097c227978e16fffcc6ef47fc2397915cb4880",
+  "behaviorFingerprint": "sha256:411afb6a4c80a3562fed389a79214747ba3afb3376203e76d7604ba9d3b9a0ef",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-10-27T02:31:33.138822732Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

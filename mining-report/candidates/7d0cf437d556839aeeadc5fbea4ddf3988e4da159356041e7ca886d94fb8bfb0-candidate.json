@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7d0cf437d556839aeeadc5fbea4ddf3988e4da159356041e7ca886d94fb8bfb0",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!id: replace.hardcoded.delay.with.openstrategy.postselectiondelay*/\n/*!description: Replace hardcoded \u0027500\u0027 delay value in specific JFace content assist controllers with OpenStrategy.getPostSelectionDelay().*/\n/*!severity: INFO*/\nnew $Controller($creator, 500) :: (instanceof($Controller, \"org.eclipse.jface.internal.text.link.contentassist.AdditionalInfoController2\") || instanceof($Controller, \"org.eclipse.jface.text.contentassist.AdditionalInfoController\"))\n\u003d\u003e\nnew $Controller($creator, org.eclipse.jface.util.OpenStrategy.getPostSelectionDelay())\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.jface.internal.text.link.contentassist.AdditionalInfoController2;\nimport org.eclipse.jface.text.contentassist.IInformationControlCreator;\nimport org.eclipse.jface.text.contentassist.AdditionalInfoController;\n\npublic class TestClass {\n    IInformationControlCreator creator;\n\n    void setup() {\n        // Target 1\n        AdditionalInfoController2 controller2 \u003d new AdditionalInfoController2(creator, 500);\n        \n        // Target 2\n        AdditionalInfoController controller \u003d new AdditionalInfoController(creator, 500);\n\n        // Not a target\n        int someOtherValue \u003d 500;\n        System.out.println(500);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.jface.internal.text.link.contentassist.AdditionalInfoController2;\nimport org.eclipse.jface.text.contentassist.IInformationControlCreator;\nimport org.eclipse.jface.text.contentassist.AdditionalInfoController;\nimport org.eclipse.jface.util.OpenStrategy;\n\npublic class TestClass {\n    IInformationControlCreator creator;\n\n    void setup() {\n        AdditionalInfoController2 controller2 \u003d new AdditionalInfoController2(creator, OpenStrategy.getPostSelectionDelay());\n        \n        AdditionalInfoController controller \u003d new AdditionalInfoController(creator, OpenStrategy.getPostSelectionDelay());\n\n        int someOtherValue \u003d 500;\n        System.out.println(500);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.jface.text.contentassist.IInformationControlCreator;\nimport org.eclipse.jface.util.OpenStrategy;\n\npublic class TestClass {\n    IInformationControlCreator creator;\n\n    void setup() {\n        // Not a target: different constructor or different literal\n        SomeOtherController otherController \u003d new SomeOtherController(creator, 500);\n        SomeOtherController otherController2 \u003d new SomeOtherController(creator, 1000);\n        \n        // Already converted\n        SomeOtherController otherController3 \u003d new SomeOtherController(creator, OpenStrategy.getPostSelectionDelay());\n        \n        // Literal 500 not in the specified constructor context\n        int x \u003d 500;\n        System.out.println(\"The value is \" + 500);\n    }\n    \n    static class SomeOtherController {\n        SomeOtherController(IInformationControlCreator c, int delay) {}\n    }\n}",
+  "targetHintFile": "jface.sandbox-hint",
+  "sourceCommit": "3f8ae18d659490a301754b288d5f5dbbfe92dfa9",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-27T02:30:59.576661675Z",
+  "ruleFingerprint": "sha256:ae169abe6879b0b28a9c990462ed1768b0e9f1b83e4bd5e12da3f3dcc6f08822",
+  "behaviorFingerprint": "sha256:9e3fbe6805b1e1d841965f8c8937e4f1ea275bb09cd2f99e14bfec804260ea0c",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.jface.internal cannot be resolved",
+    "verifiedAt": "2026-10-27T02:31:33.151905949Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

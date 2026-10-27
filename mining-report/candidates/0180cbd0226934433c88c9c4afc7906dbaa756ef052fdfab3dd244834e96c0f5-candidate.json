@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0180cbd0226934433c88c9c4afc7906dbaa756ef052fdfab3dd244834e96c0f5",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: gc.fillRectangle-wrong-x-for-width\u003e\n\u003c!description: Corrects usage of Rectangle.x where Rectangle.width is intended for rectangle filling, specifically when the width argument is calculated by subtracting an offset from Rectangle.x. This often indicates a bug where the x-coordinate is mistakenly used for width. \u003e\n\u003c!severity: ERROR\u003e\norg.eclipse.swt.graphics.GC.fillRectangle($arg0, $arg1, $rectangle.x - $offset, $arg3)\n:: instanceof($rectangle, \"org.eclipse.swt.graphics.Rectangle\")\n\u003d\u003e org.eclipse.swt.graphics.GC.fillRectangle($arg0, $arg1, $rectangle.width - $offset, $arg3)\n;;",
+  "beforeExample": "import org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Rectangle;\nimport org.eclipse.swt.widgets.Canvas;\n\npublic class Example {\n    private static final int INSET \u003d 5;\n\n    public void draw(GC gc, Canvas canvas) {\n        Rectangle bounds \u003d canvas.getBounds();\n        int yy \u003d 10;\n        int hh \u003d 20;\n        // Original buggy line: used bounds.x instead of bounds.width\n        gc.fillRectangle(INSET, yy, bounds.x - (2 * INSET), hh);\n    }\n}",
+  "afterExample": "import org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Rectangle;\nimport org.eclipse.swt.widgets.Canvas;\n\npublic class Example {\n    private static final int INSET \u003d 5;\n\n    public void draw(GC gc, Canvas canvas) {\n        Rectangle bounds \u003d canvas.getBounds();\n        int yy \u003d 10;\n        int hh \u003d 20;\n        // Corrected line: uses bounds.width\n        gc.fillRectangle(INSET, yy, bounds.width - (2 * INSET), hh);\n    }\n}",
+  "negativeExample": "import org.eclipse.swt.graphics.GC;\nimport org.eclipse.swt.graphics.Rectangle;\n\npublic class NegativeExample {\n    public void draw(GC gc) {\n        Rectangle rect \u003d new Rectangle(10, 20, 100, 50);\n        int xOffset \u003d 5;\n        // This is a valid usage where rect.x is intended as the x-coordinate, not part of a width calculation with subtraction.\n        gc.fillRectangle(rect.x, rect.y, rect.width, rect.height); \n        \n        // This pattern must not match if rect.x is used as a coordinate, not a calculated width.\n        gc.fillRectangle(xOffset, 10, 50, 30);\n\n        // Other method call not related to fillRectangle\n        int newX \u003d rect.x + 10;\n    }\n}",
+  "targetHintFile": "graphics.sandbox-hint",
+  "sourceCommit": "99c693fc228a75033f5bb045cc83445791f9fada",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Misuse / Bug Fix",
+  "summary": "Replaces Rectangle.x with Rectangle.width when used as part of a width calculation (subtraction) in GC.fillRectangle.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-27T02:28:38.742878780Z",
+  "ruleFingerprint": "sha256:ed31980bae0c797f9a3bebf236c48b917a8a414e26a49379cd7017bf5f2bb504",
+  "behaviorFingerprint": "sha256:8e70ef4da7ff13b86f0aade8f7d03f0e2347bc0a509a64e6e64b5eca7a9e8dd0",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-27T02:31:33.113427943Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

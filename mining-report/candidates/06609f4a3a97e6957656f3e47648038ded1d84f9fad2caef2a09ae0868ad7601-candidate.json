@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "06609f4a3a97e6957656f3e47648038ded1d84f9fad2caef2a09ae0868ad7601",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$selection instanceof org.eclipse.jface.text.ITextSelection \u0026\u0026 !$selection.isEmpty()\n\u003d\u003e\n$selection instanceof org.eclipse.jface.text.ITextSelection \u0026\u0026 !$selection.isEmpty() \u0026\u0026 ((org.eclipse.jface.text.ITextSelection)$selection).getLength() \u003e 0\n;;",
+  "beforeExample": "import org.eclipse.jface.viewers.ISelection;\nimport org.eclipse.jface.text.ITextSelection;\n\npublic class MyClass {\n    public void someMethod(ISelection selection) {\n        if (selection instanceof ITextSelection \u0026\u0026 !selection.isEmpty()) {\n            System.out.println(\"Text selected.\");\n        }\n    }\n}",
+  "afterExample": "import org.eclipse.jface.viewers.ISelection;\nimport org.eclipse.jface.text.ITextSelection;\n\npublic class MyClass {\n    public void someMethod(ISelection selection) {\n        if (selection instanceof org.eclipse.jface.text.ITextSelection \u0026\u0026 !selection.isEmpty() \u0026\u0026 ((org.eclipse.jface.text.ITextSelection)selection).getLength() \u003e 0) {\n            System.out.println(\"Text selected.\");\n        }\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.viewers.ISelection;\nimport org.eclipse.jface.text.ITextSelection;\nimport org.eclipse.jface.viewers.IStructuredSelection;\n\npublic class MyClass {\n    public void someOtherMethod(ISelection selection) {\n        // Should not match if condition is different (different instanceof type)\n        if (selection instanceof IStructuredSelection \u0026\u0026 !selection.isEmpty()) {\n            System.out.println(\"Structured selection.\");\n        }\n\n        // Should not match if already correct\n        if (selection instanceof ITextSelection \u0026\u0026 !selection.isEmpty() \u0026\u0026 ((ITextSelection)selection).getLength() \u003e 0) {\n            System.out.println(\"Already correct.\");\n        }\n\n        // Should not match if ITextSelection.isEmpty() is not combined with instanceof check in the same way\n        if (selection instanceof ITextSelection \u0026\u0026 selection.isEmpty()) {\n            System.out.println(\"Empty text selection specifically.\");\n        }\n    }\n}",
+  "targetHintFile": "search-api-usage.sandbox-hint",
+  "sourceCommit": "d4c07ae5b0ae6c242e4d12c187b37229744c78fc",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Usage Improvement",
+  "summary": "Refine a conditional check for `ITextSelection.isEmpty()` by adding a `getLength() \u003e 0` check to accurately determine if actual text characters are selected, addressing a common bug pattern.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-27T02:24:44.938701501Z",
+  "ruleFingerprint": "sha256:a3840e31781bde332a67a41376c3244fdf955d082e10fb12473c147cc60a5d00",
+  "behaviorFingerprint": "sha256:477138a7565fb3d5a65ff60d12b69c64ddc7e3581571a97d5d4ad60dafefe210",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.jface.viewers cannot be resolved",
+    "verifiedAt": "2026-10-27T02:31:33.044285890Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
