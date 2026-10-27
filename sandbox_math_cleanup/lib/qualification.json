@@ -10,19 +10,19 @@
     "jackson-core-2.22.4.jar": "2d30c375cddea9657a1e1ef97547a2694b663b355facb4de53a097782b312d1a",
     "jackson-databind-2.22.4.jar": "d4cbf8947087f305869826801913abdc50735a1fab2074a1993e7bc67ca974a3",
     "jackson-dataformat-yaml-2.22.4.jar": "2f55e2b864f6354b24d4bcccd488f7c4a3fce4977f8c8dbad07242a68e11dde9",
-    "regelsuche-core-0.5.1-SNAPSHOT.jar": "44b4703a8b0e6cc6749ac38f068541395b0105c847d38c511c5f46c5821f5127",
-    "regelsuche-egraph-0.5.1-SNAPSHOT.jar": "47ac195369414179f4b47598b9069fa846ee51ad912d088619ade723fe937d88",
-    "regelsuche-math-algorithms-0.5.1-SNAPSHOT.jar": "0766e284f1e794959a7ac1643ff38b9c3849775737afab785553ac52edd25455",
-    "regelsuche-optimization-sdk-0.5.1-SNAPSHOT.jar": "5b6da88a077b169c55483c2cf11f42f0428887770d47cbe2331edcd1397dba3b",
-    "regelsuche-search-0.5.1-SNAPSHOT.jar": "dbed235070c68c6c97727c2ba5c72d279fb8af1ec54fd6b88d2076575995a9ab",
-    "regelsuche-validation-0.5.1-SNAPSHOT.jar": "e2eb79f48daea5eff0aa7da1aacb9b66963e736dadfde956681d6f3a51814195",
+    "regelsuche-core-0.5.1-SNAPSHOT.jar": "0f9258ff0559c415758df968a1dbbec8ac27302e492bfac4bffa4363ee4aeef2",
+    "regelsuche-egraph-0.5.1-SNAPSHOT.jar": "bdda5498ee54ab49edd7d52c707d8b981908c56758f8e45e992cdbc1b82bd5ed",
+    "regelsuche-math-algorithms-0.5.1-SNAPSHOT.jar": "aa56d70e6e8d035dcc39c15acf5851262e6eb82336744b75bfc771544a7de86a",
+    "regelsuche-optimization-sdk-0.5.1-SNAPSHOT.jar": "626df0bf9d4f4084eb860fc221d063068ea73fdac710513f3ca59451cc18d0f5",
+    "regelsuche-search-0.5.1-SNAPSHOT.jar": "373e126599b80d9a6509373e331ae0856273dcdc8978a127707728089c594e64",
+    "regelsuche-validation-0.5.1-SNAPSHOT.jar": "5f3a3212e49c642370fd1081d5271ac8ab47e19d325da56cf5e310aae5b41a99",
     "snakeyaml-2.5.jar": "e6682acf1ace77508ef13649cbf4f8d09d2cf5457bdb61d25ffb6ac0233d78dd"
   },
   "javaRelease": 25,
   "publiclyPublished": false,
   "schema": "regelsuche.optimization-distribution/v1",
   "semanticsRevision": "java25-numeric/v1",
-  "sourceRevision": "42caf2f862b5c606d6b516ff8f99279f9928d064",
-  "standaloneJarSha256": "aef1b7c4002bb76cd122e7a15e45692215f56cc4c56c0c2f3b4545289da709f4",
-  "version": "0.5.1-issue1657-42caf2f862b5"
+  "sourceRevision": "2d6ef27f5caee7c5372f043e540690a8994bbcf2",
+  "standaloneJarSha256": "8e54e0c0c2b99a5b0364888b3edc3d732bc1c7e230f40320cb54955d9ae91e4e",
+  "version": "0.5.1-issue1657-2d6ef27f5cae"
 }
