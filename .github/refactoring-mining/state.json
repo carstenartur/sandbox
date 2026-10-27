@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "a9adff60008493ac6e4212ff82325fe1fdbd2d09",
-      "lastProcessedDate": "2026-10-26T03:04:15.103140764Z",
-      "totalProcessed": 1422,
+      "lastProcessedCommit": "29810195a3f448e77b66c334983348c259b86eb9",
+      "lastProcessedDate": "2026-10-27T02:31:15.432371521Z",
+      "totalProcessed": 1494,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5228,24 +5228,6 @@
           "deferredAt": "2026-10-26T03:02:54.083479600Z",
           "retryCount": 0,
           "maxRetries": 3
-        },
-        {
-          "hash": "fdd93cb05653c57b9363fd26abd911f76e4092bf",
-          "message": "Fixed bug 326644: StyledText selection erases painted characters behind last character",
-          "diffLines": 42,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-10-26T03:07:50.902401755Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "e604324cec0ba9a783e39b006e6c524286925e41",
-          "message": "Fixed bug 226532: org.eclipse.core.filebuffers.FileBuffers.getWorkspaceFileAtLocation(IPath) code doesn\u0027t do what javado",
-          "diffLines": 44,
-          "reason": "INCOMPLETE_BATCH",
-          "deferredAt": "2026-10-26T03:07:50.902676648Z",
-          "retryCount": 0,
-          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5260,7 +5242,7 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 7,
-        "API Modernization": 36,
+        "API Modernization": 41,
         "Performance": 17,
         "Redundant Code": 7,
         "API Misuse Correction": 1,
@@ -5272,10 +5254,10 @@
         "Singleton_Usage": 1,
         "Resource Management": 2,
         "Structural Change": 1,
-        "Deprecation": 2,
+        "Deprecation": 3,
         "API Usage": 3,
         "JUnit Assertion": 1,
-        "API Migration": 7,
+        "API Migration": 8,
         "Configuration Default Update": 1,
         "API Deprecation": 2,
         "String API Usage": 2,
@@ -5380,7 +5362,11 @@
         "Method Rename Reversal": 1,
         "Modifier Addition": 1,
         "UI Fix": 1,
-        "Eclipse API Usage": 1
+        "Eclipse API Usage": 1,
+        "API Usage Improvement": 1,
+        "Constant Update": 1,
+        "API Misuse / Bug Fix": 1,
+        "Defensive Coding": 1
       },
       "exhaustedCategories": []
     },
@@ -5503,5 +5489,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53215
+  "globalTotalProcessed": 53287
 }
