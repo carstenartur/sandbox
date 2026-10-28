@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "29810195a3f448e77b66c334983348c259b86eb9",
-      "lastProcessedDate": "2026-10-27T02:31:15.432371521Z",
-      "totalProcessed": 1494,
+      "lastProcessedCommit": "242dba4fc651a8d29175e9583fe9601ef0d7fc6e",
+      "lastProcessedDate": "2026-10-28T02:24:25.042881544Z",
+      "totalProcessed": 1562,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5228,6 +5228,42 @@
           "deferredAt": "2026-10-26T03:02:54.083479600Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "be38ff2e5af29ddc9d015d906172a02870264ffb",
+          "message": "Fixed bug 9503: Brace and parenthesis matching is one-off",
+          "diffLines": 262,
+          "reason": "API_FAILURE",
+          "deferredAt": "2026-10-28T02:26:40.518767836Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "f7e9c6e267deffe8ad723ad4b8c99d360e585a7b",
+          "message": "Fixed bug 347622: [typing] Paste with imports doesn\u0027t work after using Breadcrumb",
+          "diffLines": 25,
+          "reason": "API_FAILURE",
+          "deferredAt": "2026-10-28T02:26:40.519445323Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "b8d0417ed59519a46d28cac812ad3b7393dd83e9",
+          "message": "Fixed bug 366400: [preferences][syntax highlighting] New preference to always show enclosing brackets",
+          "diffLines": 378,
+          "reason": "API_FAILURE",
+          "deferredAt": "2026-10-28T02:26:40.519560543Z",
+          "retryCount": 0,
+          "maxRetries": 3
+        },
+        {
+          "hash": "27da83b9a695fd137ec84f15c00c478813e3394a",
+          "message": "Polish fix for bug 366400: [preferences][syntax highlighting] New preference to always show enclosing brackets",
+          "diffLines": 367,
+          "reason": "API_FAILURE",
+          "deferredAt": "2026-10-28T02:26:40.519643004Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5242,9 +5278,9 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 7,
-        "API Modernization": 41,
+        "API Modernization": 45,
         "Performance": 17,
-        "Redundant Code": 7,
+        "Redundant Code": 8,
         "API Misuse Correction": 1,
         "Lambda to Method Reference": 1,
         "JUnit migration": 1,
@@ -5253,7 +5289,7 @@
         "Performance / Thread Safety": 1,
         "Singleton_Usage": 1,
         "Resource Management": 2,
-        "Structural Change": 1,
+        "Structural Change": 2,
         "Deprecation": 3,
         "API Usage": 3,
         "JUnit Assertion": 1,
@@ -5278,7 +5314,7 @@
         "JUnit Assertion Improvement": 1,
         "Structural Refactoring": 3,
         "Conditional Logic Refinement": 1,
-        "Bug Fix": 3,
+        "Bug Fix": 4,
         "Assertion Improvement": 1,
         "Unnecessary Annotation": 1,
         "Eclipse API Modernization": 2,
@@ -5342,7 +5378,7 @@
         "UI String Cleanup": 1,
         "UI Text Processing": 1,
         "Deprecation/API Migration": 1,
-        "Refactoring": 1,
+        "Refactoring": 2,
         "Control Flow Modernization": 1,
         "Code Quality": 2,
         "Code Style Modernization": 1,
@@ -5366,7 +5402,11 @@
         "API Usage Improvement": 1,
         "Constant Update": 1,
         "API Misuse / Bug Fix": 1,
-        "Defensive Coding": 1
+        "Defensive Coding": 1,
+        "Logic Simplification": 1,
+        "API Usage Cleanup": 1,
+        "bug-fix": 1,
+        "Control Flow Modification": 1
       },
       "exhaustedCategories": []
     },
@@ -5489,5 +5529,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53287
+  "globalTotalProcessed": 53355
 }
