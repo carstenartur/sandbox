@@ -1,4 +1,4 @@
-# Refactoring Mining Report — 2026-10-27
+# Refactoring Mining Report — 2026-10-28
 
 ## Summary
 | Eclipse Project | Files | Matches | Rules |
@@ -9,7 +9,7 @@
 | eclipse.platform | 311 | 71 | 4 |
 | eclipse.platform.text | 0 | 0 | 0 |
 | eclipse.platform.debug | 0 | 0 | 0 |
-| sandbox | 1761 | 173 | 12 |
+| sandbox | 1770 | 176 | 12 |
 
 ## Details
 ### eclipse.jdt.core
@@ -418,6 +418,9 @@
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/FieldArrayOrderingTest.java:157` — `right.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleModularResidueTest.java:84` — `infinity.clone()`
 - `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleModularResidueTest.java:85` — `infinity.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationTaskTest.java:195` — `v.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaArrayStoreTest.java:71` — `a.clone()`
+- `sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaArrayStoreTest.java:71` — `b.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:111` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWrapperExitCodeTest.java:119` — `arguments.clone()`
 - `sandbox_cleanup_application_test/src/org/sandbox/jdt/core/cleanupapp/CodeCleanupApplicationWorkspacePathTest.java:210` — `arguments.clone()`

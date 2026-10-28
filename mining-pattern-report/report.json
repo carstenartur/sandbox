@@ -1,6 +1,6 @@
 {
   "summary": {
-    "totalMatches": 443,
+    "totalMatches": 446,
     "repositories": {
       "eclipse.jdt.core": {
         "files": 227,
@@ -33,8 +33,8 @@
         "rules": 0
       },
       "sandbox": {
-        "files": 1761,
-        "matches": 173,
+        "files": 1770,
+        "matches": 176,
         "rules": 12
       }
     }
@@ -2807,10 +2807,34 @@
     {
       "repository": "sandbox",
       "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaComputationTaskTest.java",
+      "line": 195,
+      "matchedCode": "v.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
       "rule": "arrays.aslist-contains.review",
       "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/ui/fix/MathematicalWorkbenchSWTBotTest.java",
       "line": 445,
       "matchedCode": "Arrays.asList(labels).contains(control.getText().replace(\"&\",\"\"))"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaArrayStoreTest.java",
+      "line": 71,
+      "matchedCode": "a.clone()"
+    },
+    {
+      "repository": "sandbox",
+      "hintFile": "arrays",
+      "rule": "arrays.clone.review",
+      "file": "sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/JavaArrayStoreTest.java",
+      "line": 71,
+      "matchedCode": "b.clone()"
     },
     {
       "repository": "sandbox",
