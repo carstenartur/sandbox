@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "428dc2eee01d95674a6e9adc8bc7de6f04159b5038656db0c5c81ef507c1d627",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.search.use-public-pattern-factory\u003e\n\u003c!description: Replace internal PatternConstructor.createPattern with public TextSearchEngine.createPattern when fixed parameters match the public API\u0027s implicit values.\u003e\n\u003c!severity: HINT\u003e\norg.eclipse.search.internal.core.text.PatternConstructor.createPattern($pattern, $isRegex, true, $isCaseSensitive, false)\n\u003d\u003e\norg.eclipse.search.core.text.TextSearchEngine.createPattern($pattern, $isCaseSensitive, $isRegex)\n;;",
+  "beforeExample": "import java.util.regex.PatternSyntaxException;\nimport org.eclipse.search.internal.core.text.PatternConstructor;\nimport java.util.regex.Pattern;\n\n// Mock classes for compilation\npackage org.eclipse.search.internal.core.text;\npublic class PatternConstructor {\n    public static Pattern createPattern(String pattern, boolean isRegex, boolean isLiteral, boolean isCaseSensitive, boolean isWholeWord) throws PatternSyntaxException {\n        return Pattern.compile(pattern);\n    }\n}\n\npackage org.eclipse.search.core.text;\npublic abstract class TextSearchEngine {\n    public static Pattern createPattern(String pattern, boolean isCaseSensitive, boolean isRegex) throws PatternSyntaxException {\n        return Pattern.compile(pattern);\n    }\n}\n\npublic class TestClass {\n    public static void main(String[] args) throws PatternSyntaxException {\n        String pattern \u003d \"*test\";\n        boolean isRegex \u003d false;\n        boolean isCaseSensitive \u003d true;\n        Pattern p \u003d org.eclipse.search.internal.core.text.PatternConstructor.createPattern(pattern, isRegex, true, isCaseSensitive, false);\n        System.out.println(p.pattern());\n    }\n}\n",
+  "afterExample": "import java.util.regex.PatternSyntaxException;\nimport org.eclipse.search.core.text.TextSearchEngine;\nimport java.util.regex.Pattern;\n\n// Mock classes for compilation\npackage org.eclipse.search.internal.core.text;\npublic class PatternConstructor {\n    public static Pattern createPattern(String pattern, boolean isRegex, boolean isLiteral, boolean isCaseSensitive, boolean isWholeWord) throws PatternSyntaxException {\n        return Pattern.compile(pattern);\n    }\n}\n\npackage org.eclipse.search.core.text;\npublic abstract class TextSearchEngine {\n    public static Pattern createPattern(String pattern, boolean isCaseSensitive, boolean isRegex) throws PatternSyntaxException {\n        return Pattern.compile(pattern);\n    }\n}\n\npublic class TestClass {\n    public static void main(String[] args) throws PatternSyntaxException {\n        String pattern \u003d \"*test\";\n        boolean isRegex \u003d false;\n        boolean isCaseSensitive \u003d true;\n        Pattern p \u003d org.eclipse.search.core.text.TextSearchEngine.createPattern(pattern, isCaseSensitive, isRegex);\n        System.out.println(p.pattern());\n    }\n}\n",
+  "negativeExample": "import java.util.regex.PatternSyntaxException;\nimport org.eclipse.search.internal.core.text.PatternConstructor;\nimport java.util.regex.Pattern;\n\n// Mock classes for compilation\npackage org.eclipse.search.internal.core.text;\npublic class PatternConstructor {\n    public static Pattern createPattern(String pattern, boolean isRegex, boolean isLiteral, boolean isCaseSensitive, boolean isWholeWord) throws PatternSyntaxException {\n        return Pattern.compile(pattern);\n    }\n}\n\npackage org.eclipse.search.core.text;\npublic abstract class TextSearchEngine {\n    public static Pattern createPattern(String pattern, boolean isCaseSensitive, boolean isRegex) throws PatternSyntaxException {\n        return Pattern.compile(pattern);\n    }\n}\n\npublic class TestClass {\n    public static void main(String[] args) throws PatternSyntaxException {\n        String pattern \u003d \"*test\";\n        boolean isRegex \u003d false;\n        boolean isCaseSensitive \u003d true;\n        // This call has \u0027isLiteral \u003d false\u0027, which does not match the public API\u0027s implicit \u0027true\u0027.\n        Pattern p \u003d org.eclipse.search.internal.core.text.PatternConstructor.createPattern(pattern, isRegex, false, isCaseSensitive, false);\n        System.out.println(p.pattern());\n    }\n}\n",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "ea87859a5d35cb349a6bc0de0278150a04f6bab2",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace internal PatternConstructor.createPattern with TextSearchEngine.createPattern for fixed parameter calls.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-28T02:22:40.357437136Z",
+  "ruleFingerprint": "sha256:de29b4512f02afb89d1ee78ad7c96c8bb15ea72f3282c10c7cffc4bf64a9965e",
+  "behaviorFingerprint": "sha256:ca0c0237089717d8333bb7479e87e0e00e925cc52801e8336f3e9f5a534380e9",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-28T02:27:00.495963813Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

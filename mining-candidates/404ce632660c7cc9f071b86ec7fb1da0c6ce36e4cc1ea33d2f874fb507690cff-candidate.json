@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 2: The import org.eclipse.jface.wizard cannot be resolved",
-    "verifiedAt": "2026-10-27T02:31:28.374830970Z",
+    "verifiedAt": "2026-10-28T02:26:52.666151422Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

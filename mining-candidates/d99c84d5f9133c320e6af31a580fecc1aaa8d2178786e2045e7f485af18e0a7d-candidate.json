@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d99c84d5f9133c320e6af31a580fecc1aaa8d2178786e2045e7f485af18e0a7d",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n@id: org.eclipse.jface.text.add-read-loop-termination-condition\n@description: Add termination condition \u0027c !\u003d -1\u0027 to a specific read loop to prevent hang.\n@severity: WARNING\n*/\nwhile (!fReadFromBuffer)\n\u003d\u003e\nwhile (!fReadFromBuffer \u0026\u0026 c !\u003d -1)\n;;",
+  "beforeExample": "class SubstitutionTextReader extends java.io.Reader {\n    private boolean fReadFromBuffer;\n    private int c;\n    private int nextChar() { return -1; }\n    public int read(char[] cbuf, int off, int len) throws java.io.IOException {\n        do {\n            c \u003d nextChar();\n            while (!fReadFromBuffer) {\n                String s \u003d \"test\";\n                if (s \u003d\u003d null) break;\n            }\n        } while (c !\u003d -1);\n        return 0;\n    }\n}",
+  "afterExample": "class SubstitutionTextReader extends java.io.Reader {\n    private boolean fReadFromBuffer;\n    private int c;\n    private int nextChar() { return -1; }\n    public int read(char[] cbuf, int off, int len) throws java.io.IOException {\n        do {\n            c \u003d nextChar();\n            while (!fReadFromBuffer \u0026\u0026 c !\u003d -1) {\n                String s \u003d \"test\";\n                if (s \u003d\u003d null) break;\n            }\n        } while (c !\u003d -1);\n        return 0;\n    }\n}",
+  "negativeExample": "class OtherClass {\n    private boolean someOtherFlag;\n    public void method() {\n        int x \u003d 0;\n        while (!someOtherFlag) { \n            x++;\n        }\n    }\n}",
+  "targetHintFile": "jface-text.sandbox-hint",
+  "sourceCommit": "60f31587f7b264eca3911ae21d595b0d2e35a568",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Bug Fix",
+  "summary": "Adds a specific termination condition (`c !\u003d -1`) to a `while` loop to prevent a hang, targeting a specific boolean expression `!fReadFromBuffer`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-28T02:23:10.133427342Z",
+  "ruleFingerprint": "sha256:2262cc6c6487b256ef91ed142d398509e75ab4302928603b6b423a2a22753fe1",
+  "behaviorFingerprint": "sha256:59f3d80c4fafbec8028b7795b39a58f52e111cb9452d0105c86c3a18c094ddc9",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The type SubstitutionTextReader must implement the inherited abstract method Reader.close()",
+    "verifiedAt": "2026-10-28T02:27:00.519464255Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

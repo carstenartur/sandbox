@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "756a3836bed194c349a045977aabb6e19279624dd06c6eb7c82c2b2a366d9721",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: add-reconciler-isactive-check\u003e\n\u003c!description: Add isActive() check to reconciler condition to fix lost aboutToReconcile() calls.\u003e\n\u003c!severity: ERROR\u003e\n!$fThread.isDirty() \u0026\u0026 $fThread.isAlive()\n\u003d\u003e\n$fThread.isActive() || !$fThread.isDirty() \u0026\u0026 $fThread.isAlive()\n;;",
+  "beforeExample": "package test;\n\n// Mock class to satisfy compilation for the example\nclass ReconcilerThread {\n    public boolean isDirty() { return false; }\n    public boolean isAlive() { return true; }\n    public boolean isActive() { return false; }\n}\n\npublic class TestClass {\n    ReconcilerThread fThread \u003d new ReconcilerThread();\n\n    public void documentChanged() {\n        if (!fThread.isDirty() \u0026\u0026 fThread.isAlive()) { // This condition matches the pattern\n            System.out.println(\"Condition met.\");\n        } else {\n            System.out.println(\"Condition not met.\");\n        }\n\n        boolean check \u003d !fThread.isDirty() \u0026\u0026 fThread.isAlive(); // Also matches\n        System.out.println(\"Check result: \" + check);\n    }\n}",
+  "afterExample": "package test;\n\n// Mock class to satisfy compilation for the example\nclass ReconcilerThread {\n    public boolean isDirty() { return false; }\n    public boolean isAlive() { return true; }\n    public boolean isActive() { return false; } // Value doesn\u0027t prevent rule application\n}\n\npublic class TestClass {\n    ReconcilerThread fThread \u003d new ReconcilerThread();\n\n    public void documentChanged() {\n        if (fThread.isActive() || !fThread.isDirty() \u0026\u0026 fThread.isAlive()) { // This condition is transformed\n            System.out.println(\"Condition met.\");\n        } else {\n            System.out.println(\"Condition not met.\");\n        }\n\n        boolean check \u003d fThread.isActive() || !fThread.isDirty() \u0026\u0026 fThread.isAlive(); // Also transformed\n        System.out.println(\"Check result: \" + check);\n    }\n}",
+  "negativeExample": "package test;\n\n// Mock class to satisfy compilation for the example\nclass ReconcilerThread {\n    public boolean isDirty() { return false; }\n    public boolean isAlive() { return true; }\n    public boolean isActive() { return false; }\n}\n\npublic class TestClass {\n    ReconcilerThread fThread \u003d new ReconcilerThread();\n\n    public void documentChanged() {\n        if (fThread.isActive() \u0026\u0026 fThread.isAlive()) { // Different logical expression, should not match\n            System.out.println(\"Different condition.\");\n        }\n        if (!fThread.isDirty() || fThread.isAlive()) { // Different operator, should not match\n             System.out.println(\"Another different condition.\");\n        }\n    }\n}",
+  "targetHintFile": "logic-refactorings.sandbox-hint",
+  "sourceCommit": "9d09c3fbac71e02660d12373e75d5fd1bc5b56b2",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Logic Simplification",
+  "summary": "Replace a boolean logical expression from `!$fThread.isDirty() \u0026\u0026 $fThread.isAlive()` to `$fThread.isActive() || !$fThread.isDirty() \u0026\u0026 $fThread.isAlive()`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-28T02:17:20.479610433Z",
+  "ruleFingerprint": "sha256:43d021d35fda44ab957f01c854c6b741ef11493c5894d911aa595c6c0cc0a147",
+  "behaviorFingerprint": "sha256:8e79a4239a4b3bcea1946ed82478a26c270e622d0351ff75f43ebda443a5b228",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-28T02:27:00.426465583Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

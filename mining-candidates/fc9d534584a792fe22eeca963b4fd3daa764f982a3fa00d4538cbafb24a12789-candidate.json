@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "AFTER_REWRITE",
     "message": "Transformed source is invalid: Java compile error at line 4: Type mismatch: cannot convert from StringBuilder to StringBuffer",
-    "verifiedAt": "2026-10-27T02:31:31.838205041Z",
+    "verifiedAt": "2026-10-28T02:26:58.217806284Z",
     "verifierVersion": "7",
     "matches": 1,
     "replacements": 1

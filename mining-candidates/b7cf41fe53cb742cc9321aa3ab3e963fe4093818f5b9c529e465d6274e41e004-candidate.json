@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "b7cf41fe53cb742cc9321aa3ab3e963fe4093818f5b9c529e465d6274e41e004",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.String $var \u003d ($obj instanceof java.lang.String) ? (java.lang.String) $obj : \"\";\nif ($var \u003d\u003d null)\n    $var \u003d \"\";\n\u003d\u003e\njava.lang.String $var \u003d ($obj instanceof java.lang.String) ? (java.lang.String) $obj : \"\";\n;;",
+  "beforeExample": "public class Example {\n    public void testMethod(Object o) {\n        java.lang.String proposal \u003d (o instanceof java.lang.String) ? (java.lang.String) o : \"\";\n        if (proposal \u003d\u003d null)\n            proposal \u003d \"\";\n        System.out.println(proposal);\n    }\n\n    public void anotherMethod() {\n        Object message \u003d null;\n        java.lang.String value \u003d (message instanceof java.lang.String) ? (java.lang.String) message : \"\";\n        if (value \u003d\u003d null)\n            value \u003d \"\";\n        System.out.println(value);\n    }\n}",
+  "afterExample": "public class Example {\n    public void testMethod(Object o) {\n        java.lang.String proposal \u003d (o instanceof java.lang.String) ? (java.lang.String) o : \"\";\n        System.out.println(proposal);\n    }\n\n    public void anotherMethod() {\n        Object message \u003d null;\n        java.lang.String value \u003d (message instanceof java.lang.String) ? (java.lang.String) message : \"\";\n        System.out.println(value);\n    }\n}",
+  "negativeExample": "public class Example {\n    public void testMethod(Object o) {\n        // This case has a `null` fallback, so the null check is necessary.\n        java.lang.String proposal \u003d (o instanceof java.lang.String) ? (java.lang.String) o : null;\n        if (proposal \u003d\u003d null)\n            proposal \u003d \"default\"; // This line must remain\n        System.out.println(proposal);\n    }\n}",
+  "targetHintFile": "redundant-code.sandbox-hint",
+  "sourceCommit": "4c7af5458ffdc591a9950f42434fa1c914eb4031",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Redundant Code",
+  "summary": "Removes a redundant null check for a String variable initialized with a ternary operator where the fallback is an empty string, guaranteeing a non-null value.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-28T02:16:44.424891476Z",
+  "ruleFingerprint": "sha256:2f9fc593b67b7fa60588e83b35482fadd58873610db39e1ae6f206e4e0c88526",
+  "behaviorFingerprint": "sha256:445e245fb8916f277ac463b74e8b976a6ad622d9a1e199155989264a26cd33e9",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-28T02:27:00.390870412Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
