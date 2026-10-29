@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "242dba4fc651a8d29175e9583fe9601ef0d7fc6e",
-      "lastProcessedDate": "2026-10-28T02:24:25.042881544Z",
-      "totalProcessed": 1562,
+      "lastProcessedCommit": "386f2895bf7503ce73c7e436582087c4b68ce898",
+      "lastProcessedDate": "2026-10-29T02:22:46.556929206Z",
+      "totalProcessed": 1634,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5230,38 +5230,20 @@
           "maxRetries": 3
         },
         {
-          "hash": "be38ff2e5af29ddc9d015d906172a02870264ffb",
-          "message": "Fixed bug 9503: Brace and parenthesis matching is one-off",
-          "diffLines": 262,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-10-28T02:26:40.518767836Z",
+          "hash": "1942dbddd460925c0dd3cbed02bad82b548af896",
+          "message": "Fixed bug 40580: [navigation] Matching brace (Ctrl+Shift+P) should work anywhere in the file",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-29T02:15:43.203741582Z",
           "retryCount": 0,
           "maxRetries": 3
         },
         {
-          "hash": "f7e9c6e267deffe8ad723ad4b8c99d360e585a7b",
-          "message": "Fixed bug 347622: [typing] Paste with imports doesn\u0027t work after using Breadcrumb",
-          "diffLines": 25,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-10-28T02:26:40.519445323Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "b8d0417ed59519a46d28cac812ad3b7393dd83e9",
-          "message": "Fixed bug 366400: [preferences][syntax highlighting] New preference to always show enclosing brackets",
-          "diffLines": 378,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-10-28T02:26:40.519560543Z",
-          "retryCount": 0,
-          "maxRetries": 3
-        },
-        {
-          "hash": "27da83b9a695fd137ec84f15c00c478813e3394a",
-          "message": "Polish fix for bug 366400: [preferences][syntax highlighting] New preference to always show enclosing brackets",
-          "diffLines": 367,
-          "reason": "API_FAILURE",
-          "deferredAt": "2026-10-28T02:26:40.519643004Z",
+          "hash": "ab31f1a2507f1497a0f78a48fe2faaed037040c4",
+          "message": "Bug 372128: [syntax highlighting] \"Highlight enclosing brackets\" has massive performance problems",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-29T02:16:20.587445734Z",
           "retryCount": 0,
           "maxRetries": 3
         }
@@ -5394,7 +5376,7 @@
         "API Constant Usage": 1,
         "Modifier Cleanup": 1,
         "String Literal Cleanup": 1,
-        "Method Rename": 1,
+        "Method Rename": 2,
         "Method Rename Reversal": 1,
         "Modifier Addition": 1,
         "UI Fix": 1,
@@ -5406,7 +5388,8 @@
         "Logic Simplification": 1,
         "API Usage Cleanup": 1,
         "bug-fix": 1,
-        "Control Flow Modification": 1
+        "Control Flow Modification": 1,
+        "UI Refactoring": 1
       },
       "exhaustedCategories": []
     },
@@ -5529,5 +5512,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53355
+  "globalTotalProcessed": 53427
 }
