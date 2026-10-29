@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "244a1c8c8195a38aa7bbc756b584defc567d5fb7d1faf37a907c35389b0c83ab",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: org.eclipse.jface.text.tests.renameTestReaderMethod\u003e\n\u003c!description: Renames a specific JUnit test method \u0027testTestCaseReader\u0027 to \u0027testTestCaseReader1\u0027. This is a minor refactoring often done to resolve test naming conflicts or adjust to new testing frameworks like JUnit 5, though in this commit, it was related to resolving test logic issues.\u003e\n\u003c!severity: INFO\u003e\nvoid $name$($params$) :: methodNameMatches($name$, \"testTestCaseReader\")\n\u003d\u003e void testTestCaseReader1($params$)\n;;",
+  "beforeExample": "package org.eclipse.jface.text.tests;\n\nimport junit.framework.TestCase;\n\npublic class DefaultPairMatcherTest extends junit.framework.TestCase {\n    public void testTestCaseReader() {\n        System.out.println(\"old reader test\");\n    }\n\n    public void someOtherMethod() {\n        System.out.println(\"some other stuff\");\n    }\n}\n",
+  "afterExample": "package org.eclipse.jface.text.tests;\n\nimport junit.framework.TestCase;\n\npublic class DefaultPairMatcherTest extends junit.framework.TestCase {\n    public void testTestCaseReader1() {\n        System.out.println(\"old reader test\");\n    }\n\n    public void someOtherMethod() {\n        System.out.println(\"some other stuff\");\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jface.text.tests;\n\nimport junit.framework.TestCase;\n\npublic class DefaultPairMatcherTest extends junit.framework.TestCase {\n    public void testSomethingElse() {\n        System.out.println(\"some other test\");\n    }\n\n    public void testTestCaseReader1() {\n        System.out.println(\"already renamed\");\n    }\n\n    public void anUnrelatedMethod() {\n        System.out.println(\"unrelated\");\n    }\n}\n",
+  "targetHintFile": "method-refactorings.sandbox-hint",
+  "sourceCommit": "1b02d37376c3050930a5c0e7cb577494e267828d",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Method Rename",
+  "summary": "Rename JUnit test method \u0027testTestCaseReader\u0027 to \u0027testTestCaseReader1\u0027.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-29T02:19:52.319525136Z",
+  "ruleFingerprint": "sha256:ed75f03046c3b3f059bdd944d1e77edfdc2cfda32975171acc4a48a297e6ad11",
+  "behaviorFingerprint": "sha256:0c82134796bd5c1f76404b72dc259f4fd4e59458b3ef4d70c8aa976f411bee9c",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-29T02:23:03.751259321Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
