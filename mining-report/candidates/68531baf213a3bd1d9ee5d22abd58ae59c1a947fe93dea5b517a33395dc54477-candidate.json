@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "68531baf213a3bd1d9ee5d22abd58ae59c1a947fe93dea5b517a33395dc54477",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: remove-skipfiltered-replaceaction\u003e\n\u003c!description: Remove useless \u0027skipFiltered\u0027 boolean argument from ReplaceAction constructor.\u003e\n\u003c!severity: HINT\u003e\nnew org.eclipse.search.internal.ui.text.ReplaceAction($shell$, $result$, $selectionOrNull$, true)\n\u003d\u003e\nnew org.eclipse.search.internal.ui.text.ReplaceAction($shell$, $result$, $selectionOrNull$)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.search.internal.ui.text.FileSearchResult;\nimport org.eclipse.search.internal.ui.text.ReplaceAction;\n\npublic class TestClass {\n    public void test(Shell shell, FileSearchResult result, Object[] selection) {\n        // Example 1: with explicit selection\n        ReplaceAction replaceSelection \u003d new ReplaceAction(shell, result, selection, true);\n        // Example 2: with null selection\n        ReplaceAction replaceAll \u003d new ReplaceAction(shell, result, null, true);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.search.internal.ui.text.FileSearchResult;\nimport org.eclipse.search.internal.ui.text.ReplaceAction;\n\npublic class TestClass {\n    public void test(Shell shell, FileSearchResult result, Object[] selection) {\n        // Example 1: with explicit selection\n        ReplaceAction replaceSelection \u003d new ReplaceAction(shell, result, selection);\n        // Example 2: with null selection\n        ReplaceAction replaceAll \u003d new ReplaceAction(shell, result, null);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.widgets.Shell;\nimport org.eclipse.search.internal.ui.text.FileSearchResult;\nimport org.eclipse.search.internal.ui.text.ReplaceAction;\n\npublic class TestClass {\n    public void test(Shell shell, FileSearchResult result, Object[] selection) {\n        // Should not match if the boolean argument is \u0027false\u0027\n        ReplaceAction replaceSelection \u003d new ReplaceAction(shell, result, selection, false);\n        // Should not match if the constructor already has the correct signature\n        ReplaceAction alreadyCorrect \u003d new ReplaceAction(shell, result, selection);\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "7cf215ea8862f1564f1dbeae7dacbe04353eeac1",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Remove the redundant \u0027true\u0027 boolean argument from the `org.eclipse.search.internal.ui.text.ReplaceAction` constructor call.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-28T02:17:20.434986780Z",
+  "ruleFingerprint": "sha256:c7540d7122ef02a694e845b834acca867029abb60a3220949596a5640012f770",
+  "behaviorFingerprint": "sha256:8baddc1e9925e3836df80238db3294b51826ad63175979558a73d928d0f631e3",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-29T02:23:03.640713404Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

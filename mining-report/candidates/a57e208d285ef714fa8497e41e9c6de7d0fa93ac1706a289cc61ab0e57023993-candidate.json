@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "a57e208d285ef714fa8497e41e9c6de7d0fa93ac1706a289cc61ab0e57023993",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.ui.statusline.color-refactoring\u003e\n\u003c!description: Use parent\u0027s foreground color instead of system widget foreground for status line labels. This helps in cases where the parent\u0027s color might be customized, promoting UI consistency.\u003e\n\u003c!severity: HINT\u003e\n\u003c!tags: eclipse-ui, color, refactoring, swt\u003e\n\n$label.getDisplay().getSystemColor(org.eclipse.swt.SWT.COLOR_WIDGET_FOREGROUND) :: instanceof($label, \"org.eclipse.swt.widgets.Label\")\n\u003d\u003e\n$label.getParent().getForeground()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Label;\n\npublic class TestClass {\n    Label fLabel;\n\n    public TestClass(Label label) {\n        this.fLabel \u003d label;\n    }\n\n    public void setLabelColor() {\n        if (fLabel \u003d\u003d null) return;\n        Display display \u003d fLabel.getDisplay();\n        Color color \u003d display.getSystemColor(SWT.COLOR_WIDGET_FOREGROUND);\n        fLabel.setForeground(color);\n    }\n\n    public void anotherMethod() {\n        System.out.println(fLabel.getText());\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Label;\n\npublic class TestClass {\n    Label fLabel;\n\n    public TestClass(Label label) {\n        this.fLabel \u003d label;\n    }\n\n    public void setLabelColor() {\n        if (fLabel \u003d\u003d null) return;\n        Display display \u003d fLabel.getDisplay();\n        Color color \u003d fLabel.getParent().getForeground();\n        fLabel.setForeground(color);\n    }\n\n    public void anotherMethod() {\n        System.out.println(fLabel.getText());\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.graphics.Color;\nimport org.eclipse.swt.widgets.Composite;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Label;\n\npublic class NegativeTestClass {\n    Composite fComposite;\n\n    public NegativeTestClass(Composite composite) {\n        this.fComposite \u003d composite;\n    }\n\n    public void setCompositeColor() {\n        if (fComposite \u003d\u003d null) return;\n        Display display \u003d fComposite.getDisplay();\n        // This call should NOT be changed (different color constant)\n        Color color1 \u003d display.getSystemColor(SWT.COLOR_RED);\n        fComposite.setBackground(color1);\n\n        // This call should NOT be changed (target is not a Label, \u0027instanceof\u0027 guard will prevent match)\n        Color color2 \u003d display.getSystemColor(SWT.COLOR_WIDGET_FOREGROUND);\n        fComposite.setForeground(color2);\n    }\n}",
+  "targetHintFile": "eclipse-ui.sandbox-hint",
+  "sourceCommit": "74138525633e8e3db35a927464cbdc22a9661512",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "UI Refactoring",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-29T02:21:47.445116416Z",
+  "ruleFingerprint": "sha256:5d42c024a269ff643d709e4981f4b4e757fe7e565c54ac0b8e1165c22ebd320a",
+  "behaviorFingerprint": "sha256:2db223e37327bc5a28526de73351275a33a2e96ef07178a4027da278b9c8a300",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-29T02:23:03.761998894Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

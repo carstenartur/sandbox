@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "d6489e4178c56bf9197439290df56c0b589e674bfb0a5ff94a18faf15dd2378f",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: combo.getCaretPosition\u003e\n\u003c!description: Adopt new org.eclipse.swt.widgets.Combo.getCaretPosition() API.\nReplaces accessing the \u0027y\u0027 coordinate of \u0027getSelection()\u0027 with the direct \u0027getCaretPosition()\u0027 method, which was introduced for this purpose.\u003e\n\u003c!severity: INFO\u003e\n\n$combo.getSelection().y :: instanceof($combo, \"org.eclipse.swt.widgets.Combo\")\n\u003d\u003e\n$combo.getCaretPosition()\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.swt.widgets.Combo;\nimport org.eclipse.swt.graphics.Point;\n\npublic class TestClass {\n    Combo fCombo;\n\n    public int getCaretOffset() {\n        if (fCombo \u003d\u003d null) return -1;\n        return fCombo.getSelection().y;\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.swt.widgets.Combo;\n//import org.eclipse.swt.graphics.Point; // Point import might be removed if not used elsewhere\n\npublic class TestClass {\n    Combo fCombo;\n\n    public int getCaretOffset() {\n        if (fCombo \u003d\u003d null) return -1;\n        return fCombo.getCaretPosition();\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.swt.graphics.Point;\n\nclass MyCustomControl {\n    Point getSelection() { return new Point(0, 5); }\n}\n\npublic class NegativeTestClass {\n    MyCustomControl myControl;\n    public int getCaretOffset() {\n        // This should not match because myControl is not an instance of Combo\n        if (myControl \u003d\u003d null) return -1;\n        return myControl.getSelection().y;\n    }\n}",
+  "targetHintFile": "api-modernization.sandbox-hint",
+  "sourceCommit": "10e6ec4fdd22131c8ce8631eabe9a66e5b34219c",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace Combo.getSelection().y with Combo.getCaretPosition()",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-28T02:21:30.512169865Z",
+  "ruleFingerprint": "sha256:0e7ca0cd770b63625c50ff2bf9ffb044bb8f8cb45ad20fb1520df3a4066a800b",
+  "behaviorFingerprint": "sha256:64afbf9e75d1281010acfe5ca46b83426116f4085f243cbe20a204222cb262a9",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-29T02:23:03.680403872Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

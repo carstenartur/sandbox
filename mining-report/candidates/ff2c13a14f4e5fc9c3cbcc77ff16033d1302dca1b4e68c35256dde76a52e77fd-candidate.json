@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "ff2c13a14f4e5fc9c3cbcc77ff16033d1302dca1b4e68c35256dde76a52e77fd",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: annotationmodel.fixModificationStampLeak\u003e\n\u003c!description: Prevents AnnotationModel.fModificationStamp from leaking AnnotationModelEvent objects by replacing the direct assignment of the event object with a new generic Object.\u003e\n\u003c!severity: ERROR\u003e\n\u003c!tags: bugfix, eclipse, jface\u003e\n\nfModificationStamp \u003d $event; :: instanceof($event, \"org.eclipse.jface.text.source.AnnotationModelEvent\") \u0026\u0026 inClass(\"org.eclipse.jface.text.source.AnnotationModel\")\n\u003d\u003e\nfModificationStamp \u003d new java.lang.Object();\n;;",
+  "beforeExample": "package org.eclipse.jface.text.source;\n\nclass AnnotationModelEvent {\n    void markWorldChange(boolean b) {}\n}\n\npublic class AnnotationModel {\n    private Object fModificationStamp;\n    private AnnotationModelEvent fModelEvent;\n\n    private AnnotationModelEvent createAnnotationModelEvent() {\n        return new AnnotationModelEvent();\n    }\n\n    public void exampleMethod() {\n        if (fModelEvent \u003d\u003d null) {\n            fModelEvent \u003d createAnnotationModelEvent();\n            fModelEvent.markWorldChange(false);\n            fModificationStamp \u003d fModelEvent; // Target line\n        }\n    }\n}\n",
+  "afterExample": "package org.eclipse.jface.text.source;\n\nclass AnnotationModelEvent {\n    void markWorldChange(boolean b) {}\n}\n\npublic class AnnotationModel {\n    private Object fModificationStamp;\n    private AnnotationModelEvent fModelEvent;\n\n    private AnnotationModelEvent createAnnotationModelEvent() {\n        return new AnnotationModelEvent();\n    }\n\n    public void exampleMethod() {\n        if (fModelEvent \u003d\u003d null) {\n            fModelEvent \u003d createAnnotationModelEvent();\n            fModelEvent.markWorldChange(false);\n            fModificationStamp \u003d new java.lang.Object(); // Replaced line\n        }\n    }\n}\n",
+  "negativeExample": "package org.eclipse.jface.text.source;\n\nclass AnnotationModelEvent {\n    void markWorldChange(boolean b) {}\n}\nclass SomeOtherObject {}\n\npublic class AnnotationModel {\n    private Object fModificationStamp;\n    private AnnotationModelEvent fModelEvent;\n\n    private AnnotationModelEvent createAnnotationModelEvent() {\n        return new AnnotationModelEvent();\n    }\n\n    public void anotherMethod() {\n        Object someOther \u003d new SomeOtherObject();\n        fModificationStamp \u003d someOther; // Should not match (different type)\n        \n        fModificationStamp \u003d new java.lang.Object(); // Should not match (already target state)\n    }\n    \n    public void methodWithoutAssignment() {\n        AnnotationModelEvent event \u003d createAnnotationModelEvent();\n        // fModificationStamp is not assigned here\n    }\n}\n",
+  "targetHintFile": "bugfixes.sandbox-hint",
+  "sourceCommit": "d6a9e824ab01117f71f73ecc3d2d604bad4970f9",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "bug-fix",
+  "summary": "Replaces assignment of AnnotationModelEvent to fModificationStamp with new Object() to prevent memory leak.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-28T02:19:17.658065851Z",
+  "ruleFingerprint": "sha256:ef970bda0a1560242e017ad303f0a505c592450e0582b1f559b7a7f35a670505",
+  "behaviorFingerprint": "sha256:264c1d5eccd8babb791f2d2a81b5fb9127df288f5a60fccad2d22ad8d6bdc3f5",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-29T02:23:03.670515854Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

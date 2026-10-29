@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "607482193ace532df7f10933868cb83861d6b1ac3f82feff817ebd74635395ca",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: remove-redundant-auto-refresh-check\u003e\n\u003c!description: Remove redundant check for PREF_AUTO_REFRESH in logical OR with PREF_LIGHTWEIGHT_AUTO_REFRESH, as PREF_AUTO_REFRESH is no longer relevant in this context. This is a behavioral change from bug 248068.\u003e\n\u003c!severity: WARNING\u003e\n$pref.getBoolean(org.eclipse.core.resources.ResourcesPlugin.PREF_AUTO_REFRESH, false) || $pref.getBoolean(org.eclipse.core.resources.ResourcesPlugin.PREF_LIGHTWEIGHT_AUTO_REFRESH, false) :: instanceof($pref, \"org.eclipse.core.runtime.preferences.IEclipsePreferences\")\n\u003d\u003e\n$pref.getBoolean(org.eclipse.core.resources.ResourcesPlugin.PREF_LIGHTWEIGHT_AUTO_REFRESH, false)\n;;",
+  "beforeExample": "package com.example;\n\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.preferences.IEclipsePreferences;\nimport org.eclipse.core.runtime.preferences.InstanceScope;\n\npublic class ExampleClass {\n    public void method() {\n        IEclipsePreferences pref \u003d InstanceScope.INSTANCE.getNode(ResourcesPlugin.PI_RESOURCES);\n        if (pref !\u003d null \u0026\u0026 (pref.getBoolean(ResourcesPlugin.PREF_AUTO_REFRESH, false) || pref.getBoolean(ResourcesPlugin.PREF_LIGHTWEIGHT_AUTO_REFRESH, false))) {\n            System.out.println(\"Auto refresh is enabled.\");\n        }\n    }\n}",
+  "afterExample": "package com.example;\n\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.preferences.IEclipsePreferences;\nimport org.eclipse.core.runtime.preferences.InstanceScope;\n\npublic class ExampleClass {\n    public void method() {\n        IEclipsePreferences pref \u003d InstanceScope.INSTANCE.getNode(ResourcesPlugin.PI_RESOURCES);\n        if (pref !\u003d null \u0026\u0026 pref.getBoolean(ResourcesPlugin.PREF_LIGHTWEIGHT_AUTO_REFRESH, false)) {\n            System.out.println(\"Auto refresh is enabled.\");\n        }\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport org.eclipse.core.resources.ResourcesPlugin;\nimport org.eclipse.core.runtime.preferences.IEclipsePreferences;\nimport org.eclipse.core.runtime.preferences.InstanceScope;\n\npublic class ExampleClass {\n    public void method() {\n        IEclipsePreferences pref \u003d InstanceScope.INSTANCE.getNode(ResourcesPlugin.PI_RESOURCES);\n        // Different literal default value\n        if (pref !\u003d null \u0026\u0026 (pref.getBoolean(ResourcesPlugin.PREF_AUTO_REFRESH, true) || pref.getBoolean(ResourcesPlugin.PREF_LIGHTWEIGHT_AUTO_REFRESH, true))) {\n            System.out.println(\"Auto refresh is enabled (different default).\");\n        }\n        // Different preference keys\n        if (pref !\u003d null \u0026\u0026 (pref.getBoolean(\"some.other.key\", false) || pref.getBoolean(ResourcesPlugin.PREF_LIGHTWEIGHT_AUTO_REFRESH, false))) {\n            System.out.println(\"Auto refresh is enabled (different key).\");\n        }\n        // Not an OR condition\n        boolean autoRefresh \u003d pref.getBoolean(ResourcesPlugin.PREF_AUTO_REFRESH, false);\n        boolean lightweightRefresh \u003d pref.getBoolean(ResourcesPlugin.PREF_LIGHTWEIGHT_AUTO_REFRESH, false);\n        if (autoRefresh \u0026\u0026 lightweightRefresh) { // AND instead of OR\n            System.out.println(\"Both refreshes enabled.\");\n        }\n    }\n}",
+  "targetHintFile": "eclipse-api-cleanup.sandbox-hint",
+  "sourceCommit": "1c6b3b5d40c01d47041d4eac4373d7948d75576b",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Usage Cleanup",
+  "summary": "Replaces a boolean OR condition involving two specific preference checks with only the PREF_LIGHTWEIGHT_AUTO_REFRESH check, reflecting a fix where PREF_AUTO_REFRESH became irrelevant in this context.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-28T02:18:33.830005899Z",
+  "ruleFingerprint": "sha256:a205370669a3861d31cb9f1af8a30771748b89c5b89632c557904d23f7df3abf",
+  "behaviorFingerprint": "sha256:f0c0c921b290deb9c6d82cfa210f755915aa7fc25ca4dde0d5fbf2729a57fb14",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-29T02:23:03.660575097Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

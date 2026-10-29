@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "31d23ccf0043610682170187ed7ef68f4198d0c81df71c4c650aef28804092d6",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.jface.text.rules.PatternRule.sequenceDetected($scanner, $sequence, false) :: inClass(\"org.eclipse.jface.text.rules.PatternRule\")\n\u003d\u003e\norg.eclipse.jface.text.rules.PatternRule.sequenceDetected($scanner, $sequence, fBreaksOnEOF)\n;;",
+  "beforeExample": "package org.eclipse.jface.text.rules;\n\nimport org.eclipse.jface.text.rules.ICharacterScanner;\n\nclass PatternRule {\n    protected boolean fBreaksOnEOF \u003d true;\n    protected char[] fStartSequence \u003d new char[] {\u0027a\u0027};\n\n    protected boolean sequenceDetected(ICharacterScanner scanner, char[] sequence, boolean eofAllowed) {\n        return true;\n    }\n\n    public void applyRule(ICharacterScanner scanner) {\n        int c \u003d scanner.read();\n        if (c \u003d\u003d fStartSequence[0]) {\n            if (sequenceDetected(scanner, fStartSequence, false)) { // Target line\n                System.out.println(\"Matched\");\n            }\n        }\n    }\n}\n\ninterface ICharacterScanner {\n    int read();\n}",
+  "afterExample": "package org.eclipse.jface.text.rules;\n\nimport org.eclipse.jface.text.rules.ICharacterScanner;\n\nclass PatternRule {\n    protected boolean fBreaksOnEOF \u003d true;\n    protected char[] fStartSequence \u003d new char[] {\u0027a\u0027};\n\n    protected boolean sequenceDetected(ICharacterScanner scanner, char[] sequence, boolean eofAllowed) {\n        return true;\n    }\n\n    public void applyRule(ICharacterScanner scanner) {\n        int c \u003d scanner.read();\n        if (c \u003d\u003d fStartSequence[0]) {\n            if (sequenceDetected(scanner, fStartSequence, fBreaksOnEOF)) { // Changed line\n                System.out.println(\"Matched\");\n            }\n        }\n    }\n}\n\ninterface ICharacterScanner {\n    int read();\n}",
+  "negativeExample": "package org.eclipse.jface.text.rules;\n\nimport org.eclipse.jface.text.rules.ICharacterScanner;\n\nclass AnotherClass {\n    // This class does not extend PatternRule, so the rule\u0027s \u0027inClass\u0027 guard prevents matching\n    protected boolean fBreaksOnEOF \u003d false;\n    protected char[] fAnotherSequence \u003d new char[] {\u0027b\u0027};\n\n    protected boolean sequenceDetected(ICharacterScanner scanner, char[] sequence, boolean eofAllowed) {\n        return false;\n    }\n\n    public void doSomething(ICharacterScanner scanner) {\n        sequenceDetected(scanner, fAnotherSequence, false); // Must not match (wrong class)\n        // A call to PatternRule.sequenceDetected with \u0027true\u0027 should also not match this specific rule\n        new PatternRule().sequenceDetected(scanner, new char[]{\u0027c\u0027}, true);\n    }\n}\n\nclass PatternRule {\n    protected boolean fBreaksOnEOF \u003d true;\n    protected char[] fStartSequence \u003d new char[] {\u0027a\u0027};\n\n    protected boolean sequenceDetected(ICharacterScanner scanner, char[] sequence, boolean eofAllowed) {\n        return true;\n    }\n    public void applyRule(ICharacterScanner scanner) {\n        // ...\n    }\n}\n\ninterface ICharacterScanner {\n    int read();\n}",
+  "targetHintFile": "bugfixes.sandbox-hint",
+  "sourceCommit": "8c2cb21c418afbdf3849e3a0c31b0b67aab853cf",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace hardcoded \u0027false\u0027 with \u0027fBreaksOnEOF\u0027 in sequenceDetected calls within PatternRule.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-28T02:23:39.631396733Z",
+  "ruleFingerprint": "sha256:38e1d14870693e2065ed89a2dcbb90679e43c902ec7b461fbcf3cc3c6abe5e5d",
+  "behaviorFingerprint": "sha256:6518ac1b4541fccb4e96b8b87c2d657522aa1c8ff37dc9abac86d5fc607d7717",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_MATCH",
+    "message": "Positive example produced no replacement",
+    "verifiedAt": "2026-10-29T02:23:03.741045543Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

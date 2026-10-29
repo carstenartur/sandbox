@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7e7b332d7124c9d691067da5274a0a468c64e0fe433e253d4502697302fcf75b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "/*!\n@id: org.eclipse.jface.text.refactor-enable-colored-labels\n@description: Replace direct assignment to \u0027fIsColoredLabelsSupportEnabled\u0027 with a delegated call to \u0027fAssistant.enableColoredLabels()\u0027.\n@severity: HINT\n*/\nfIsColoredLabelsSupportEnabled \u003d $value$;\n\u003d\u003e\nfAssistant.enableColoredLabels($value$);\n;;",
+  "beforeExample": "import org.eclipse.jface.text.link.ContentAssistant;\n\nclass LinkedModeUI {\n    private boolean fIsColoredLabelsSupportEnabled \u003d false;\n    private ContentAssistant fAssistant \u003d new ContentAssistant();\n\n    public void enableColoredLabels(boolean isEnabled) {\n        fIsColoredLabelsSupportEnabled \u003d isEnabled;\n    }\n}",
+  "afterExample": "import org.eclipse.jface.text.link.ContentAssistant;\n\nclass LinkedModeUI {\n    private boolean fIsColoredLabelsSupportEnabled \u003d false;\n    private ContentAssistant fAssistant \u003d new ContentAssistant();\n\n    public void enableColoredLabels(boolean isEnabled) {\n        fAssistant.enableColoredLabels(isEnabled);\n    }\n}",
+  "negativeExample": "import org.eclipse.jface.text.link.ContentAssistant;\n\nclass OtherClass {\n    private boolean someOtherFlag \u003d false;\n    private ContentAssistant otherAssistant \u003d new ContentAssistant();\n\n    public void setFlag(boolean value) {\n        someOtherFlag \u003d value;\n    }\n}",
+  "targetHintFile": "jface-text.sandbox-hint",
+  "sourceCommit": "3abcc6a1710bfea19defbb0f6cbd9845c5fae14d",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Refactoring",
+  "summary": "Replaces a direct assignment to a boolean field with a method call on another field, effectively delegating state management.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-28T02:23:10.163846379Z",
+  "ruleFingerprint": "sha256:41b7f6101f04ce630357bed864c4280cbcb2c4533db3118177590663fd9543b8",
+  "behaviorFingerprint": "sha256:2a9cc83433ca2796ad9190559218befb58add48301d73bf75ea8f70f44c9ca94",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: The import org.eclipse.jface.text.link.ContentAssistant cannot be resolved",
+    "verifiedAt": "2026-10-29T02:23:03.724288989Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -20,7 +20,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 5: The public type FindReplaceDialog must be defined in its own file",
-    "verifiedAt": "2026-10-27T02:31:31.310514796Z",
+    "verifiedAt": "2026-10-29T02:23:01.882913012Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
