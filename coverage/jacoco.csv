@@ -1568,7 +1568,7 @@ sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,Sand
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,SandboxHistorySearch.AuthorCount,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,SandboxHistoryAnalysisConfigurer,0,23,0,0,0,9,0,2,0,2
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.history,GitHistorySnapshot,7,147,3,17,1,32,3,9,0,2
-sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationVectorIndex,8,360,4,34,0,55,4,27,0,12
+sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationVectorIndex,1,367,3,35,0,55,3,28,0,12
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,AnalysisGenerationCache,43,619,14,64,4,127,12,44,0,17
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationApiComparison.Change,0,12,0,0,0,1,0,1,0,1
 sandbox_coverage/sandbox-jgit-server-webapp,org.eclipse.jgit.server.analysis,ApplicationSourceReports.AuthorTypes,0,12,0,0,0,1,0,1,0,1
