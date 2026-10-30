@@ -1,5 +1,73 @@
 # Mathematics cleanup source adapter
 
+For maintainers of numerical Java code and authors evaluating verified optimization,
+this adapter makes a bounded calculation available to Regelsuche, checks the
+emitted Java, and offers a source diff for review. You can work in Eclipse or
+inspect source archives with the headless qualification tools.
+
+Sandbox supplies Java types, bindings, evaluation order and source edits.
+[Regelsuche](https://github.com/carstenartur/Regelsuche) owns mathematical
+candidates, search and independent arithmetic proof.
+
+## A source-backed example
+
+The frozen Bouncy Castle 1.85.2 `BLS12_381Serialization` source supplies this
+[recorded calculation review](SOURCE_BACKED_REWRITES.md#archive-scanner-and-review-export):
+
+```java
+// Before
+BigInteger ySquared = x.multiply(x).mod(P).multiply(x).mod(P)
+    .add(BigInteger.valueOf(4)).mod(P);
+
+// Calculation review
+BigInteger ySquared = x.multiply(x).multiply(x)
+    .add(BigInteger.valueOf(4)).mod(P);
+```
+
+The adapter resolves the source-defined modulus through
+`P -> Fp2Element.P -> BLS12_381G1.Q` and checks the required source facts.
+Regelsuche verifies the arithmetic replacement; the adapter does not recognize
+the project or formula by name. The [source-context regression](../sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/BouncyCastleSourceContextTest.java)
+checks the exact rewrite, compilation of the resulting class, Apply/Undo and
+rejection after a referenced source changes. It also checks that the available
+definitions alone do not enable mathematical mode.
+
+This example requires **explicit mathematical opt-in**. The excerpt shows the
+calculation review; normal Apply retains the generated mathematical-contract
+documentation, including the possible change to result reference identity.
+The separate `review-only/` export is a manual review artifact. A verified
+replacement and a lower estimated cost are not evidence of an actual runtime
+speedup or cryptographic constant-time behavior.
+
+## Try it and inspect the evidence
+
+- **In Eclipse:** edit a cleanup profile under **Java → Code Style → Clean Up → Mathematics (Sandbox)**, choose the numeric types, safety profile, goal and budget, then run **Source → Clean Up** and inspect the ordinary file diff. Selection Quick Assist starts a background analysis; invoke it again after completion to obtain the proposal. See [configuration and preview](../sandbox_math_cleanup_help/html/cleanup.html#configure) and the [actual source/preview gallery](../sandbox_math_cleanup_help/html/examples.html).
+- **From the command line:** use Java 25 and run the existing Maven qualification from the repository root:
+
+  ```sh
+  mvn -f qa/math-optimization/pom.xml clean verify -Pbc-corpus
+  ```
+
+  The [headless guide](../qa/math-optimization/README.md) explains the pinned inputs, strict/mathematical profiles, reports and original/generated source outputs. It also documents the separate complete-call benchmark profile and how to interpret inconclusive results.
+
+## Semantics and current limits
+
+The cleanup is disabled by default and initially selects BigInteger only.
+Select primitive integral types to analyze those calculations; all declared and
+promoted numeric kinds must be enabled. Strict Java behavior remains distinct
+from the separate mathematical checkbox, which can permit changed integer
+overflow behavior and BigInteger result identity. **Select All does not grant
+that consent.** Review the [safety profiles](../sandbox_math_cleanup_help/html/cleanup.html#safety)
+and generated contracts before accepting a change.
+
+`JavaComputationExtractor.extractTasks` exports bounded straight-line primitive
+integral tasks under `PRESERVE_JAVA`, including local versions, fresh reads and
+ordered commits/stores. The scanner's [optional `--tasks` mode](../qa/math-optimization/README.md)
+exposes summaries with `editable: false`. Whole-task inspection does not authorize
+cross-store edits; ordinary cleanup retains its existing proof and source gates.
+Configurable SymPy selection and full Nat256-addition optimization are not available
+through this increment.
+
 ## Current implementation and qualification
 
 The [2026-10-27 qualification](../docs/superpowers/plans/2026-10-27-typed-computation-qualification.md)
@@ -12,13 +80,14 @@ computation graphs through transport and search. Sandbox supplies Java semantics
 and source effects. The [architecture](ARCHITECTURE.md#complete-computation-tasks-and-cas-ownership)
 describes the ownership split and the future configurable CAS boundary.
 
-`JavaComputationExtractor.extractTasks` exports bounded straight-line primitive
-integral tasks under `PRESERVE_JAVA`, including local versions, fresh reads and
-ordered commits/stores. The scanner's [optional `--tasks` mode](../qa/math-optimization/README.md)
-exposes summaries with `editable: false`. Whole-task inspection does not authorize
-cross-store edits; ordinary cleanup retains its existing proof and source gates.
-Configurable SymPy selection and full Nat256-addition optimization are not available
-through this increment.
+The recorded matched Bouncy Castle 1.85.2 scans accepted **117 strict-Java regions**
+and **126 mathematical-opt-in regions**, retaining all baseline accepted spans.
+Both profiles parsed 3,126 files and retained the same ten parse-error files.
+The headless consumer run recorded 560 tests, zero failures/errors and one
+optional historical-reference skip. These results belong to the exact sources,
+SDK and profiles in the qualification; they are not a measured speedup or a
+claim that every calculation is supported. Native Eclipse/UI and distribution
+checks remain separate.
 
 ## BigInteger magnitude and modular regions
 

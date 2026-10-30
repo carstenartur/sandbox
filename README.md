@@ -1,43 +1,89 @@
 # Sandbox Project
 
-An experimental Java modernization toolkit built on Eclipse JDT (Java Development Tools). The repository provides tested cleanup plugins, quick fixes, static-analysis tools, and reusable transformation infrastructure for Eclipse-based and standalone Java development.
+Sandbox helps Java developers modernize existing code, turn repeated edits into reusable project rules, and investigate typed calculations and Git history. Built on Eclipse JDT, it includes Eclipse cleanup workflows, headless tools, a separate Git/source-history server, and reusable Java libraries.
 
-**Main Technologies:** Eclipse JDT, Java 25, Maven/Tycho 5.0.4
-
-**Status:** Experimental and under active development. Supported transformations are protected by regression tests; maturity and known limitations are documented per module.
-
----
-
-## 🔗 CI Status & Resources
-
-[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)
-[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Fcoverage.json)](https://carstenartur.github.io/sandbox/coverage/)
-[![Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Ftests.json)](https://carstenartur.github.io/sandbox/tests/)
-[![Benchmarks](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml)
-[![Snapshot Deploy](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml)
-[![Commit Mining](https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml)
-[![Refactoring Mining](https://github.com/carstenartur/sandbox/actions/workflows/refactoring-mining.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/refactoring-mining.yml)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20941684.svg)](https://doi.org/10.5281/zenodo.20941684)
-[![Eclipse Marketplace](https://img.shields.io/badge/Eclipse%20Marketplace-Sandbox-blue)](https://marketplace.eclipse.org/content/sandbox)
-<br>
-🏠 **[Project Dashboard](https://carstenartur.github.io/sandbox/)** | 📊 **[Test Results](https://carstenartur.github.io/sandbox/tests/)** | 📈 **[Code Coverage](https://carstenartur.github.io/sandbox/coverage/)** | ⚡ **[Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)**
-
----
+**Status:** Experimental and under active development. Supported transformations have regression tests; the supported source shapes, evidence and limitations are documented per module.
 
 ## Overview
 
-This project provides:
+Choose the workflow that matches your work:
 
-- **Custom JDT Cleanup Plugins**: Automated code transformations for encoding, JUnit migration, functional programming patterns, and more
-- **Eclipse Product Build**: A complete Eclipse product with bundled features
-- **P2 Update Site**: Installable plugins via Eclipse update mechanism
-- **Test Infrastructure**: JUnit 5-based tests for all cleanup implementations
-- **Refactoring Mining Infrastructure**: AI-assisted commit analysis, DSL rule inference from Git diffs, standalone CLI and Eclipse-integrated mining tools
-- **Standalone Tooling**: Maven plugin, CLI distributions, Docker packaging, JGit storage backend, and web interface modules
+| You want to… | Start here |
+|---|---|
+| Modernize an existing Java codebase | [Preview a cleanup in Eclipse](#modernize-existing-java) or [review proposals in GitHub](#github-actions) |
+| Turn an ordinary code edit into a rule your team can reuse | [Create, try and share a project rule](#turn-a-code-edit-into-a-project-rule) |
+| Investigate numerical Java code with explicit semantics and proof evidence | [Mathematics cleanup and headless qualification](#investigate-typed-java-calculations) |
+| Search repositories, source versions and Java symbols over Git history | [Run the Git/source-history server](#search-git-and-source-history) |
+| Build your own analyzer or transformation tool | [Reuse the analysis and AST libraries](#build-on-the-analysis-and-ast-libraries) |
 
+## Table of Contents
 
-Sandbox remains experimental, but many transformations are actively tested and distributed for evaluation. See the individual module documentation for supported cases, known limitations, and maturity.
+- [Quickstart](#quickstart)
+- [GitHub Actions](#github-actions)
+- [🚀 Installation](#-installation)
+- [Building from Source](#building-from-source)
+- [What's Included](#whats-included)
+- [Projects](#projects)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [📦 Release Process](#-release-process)
+- [🔗 CI Status & Resources](#-ci-status--resources)
+- [License](#license)
+
+## Quickstart
+
+<a id="for-users"></a>
+
+### Modernize existing Java
+
+For maintainers updating Java APIs, encodings, tests or loop idioms:
+
+1. [Install the relevant Eclipse feature](#-installation).
+2. Open **Source → Clean Up…**, or edit a profile under **Java → Code Style → Clean Up**.
+3. Enable the cleanup you need, review its source diff, and run your project's normal tests before accepting the change.
+4. Open **Help → Help Contents** for the feature's offline guide, or press **F1** on a Sandbox configuration page.
+
+Start with [explicit encoding](sandbox_encoding_quickfix/README.md), [JUnit migration capabilities](sandbox_junit_cleanup/MIGRATION_CAPABILITIES.md), or [loop conversion](sandbox_functional_converter/README.md) for concrete examples and supported cases.
+
+For terminal or CI use, the [headless application](sandbox_cleanup_application/README.md) offers check/diff reports, and the [GitHub workflow](#github-actions) creates reviewable proposals. These cleanup paths still require an Eclipse workspace with valid project/classpath metadata; an arbitrary Maven or Gradle checkout is not automatically resolved. The default CLI processes one compilation unit per refactoring. A [separate project-wide QA runner](sandbox_cleanup_application/README.md#project-wide-migration-qa) handles complete project scope for supported coordinated migrations.
+
+### Turn a code edit into a project rule
+
+For developers repeating an API replacement or a project convention, the [change-to-rule guide](docs/triggerpattern-change-to-rule.md) follows the complete current workflow:
+
+1. Improve a saved Java file and leave the edit unsaved. Choose **Sandbox TriggerPattern → Generalize this change…**.
+2. Review the actual before/after lines. Use **Choose variables to generalize…** to select the names that should become placeholders; nothing is generalized automatically.
+3. Inspect the complete `.sandbox-hint` draft, including its conditions and binding policy.
+4. Choose **Try on my code…** and select a Java project. Inspect candidate bindings and guard outcomes, then use **Preview** to review the real project diff, including imports and companion edits.
+5. Apply the reviewed trial with ordinary Eclipse refactoring Undo available. Finish the wizard to save the rule, then commit the `.sandbox-hint` file with the project so the team can use it through hint Quick Assist and cleanup.
+
+A trial uses the project's source, compiler options and classpath without installing the draft. Language checks and replacement compiler checks do not prove behavioral equivalence: positive/negative examples, project tests and review still matter. The trial supports self-contained text rules; includes, embedded Java and coordinated semantic-plan actions use their specialized paths. The guide records further authoring and comment-preservation limits.
+
+### Investigate typed Java calculations
+
+For numerical-code reviewers and tool authors, [Mathematics Cleanup](sandbox_math_cleanup/README.md) turns bounded Java calculations into typed Regelsuche requests and offers verified Java replacements for review. Start with its actual Bouncy Castle source rewrite, then use Eclipse cleanup/selection Quick Assist or the [headless corpus workflow](qa/math-optimization/README.md).
+
+Sandbox owns Java bindings, source effects and edits; [Regelsuche](https://github.com/carstenartur/Regelsuche) owns mathematical search and independent proof. The cleanup is disabled by default. Strict Java behavior and explicit mathematical opt-in remain separate, complete computation tasks are inspection-only, and accepted rewrites or estimated costs do not establish a measured speedup or constant-time behavior. The [dated qualification](docs/superpowers/plans/2026-10-27-typed-computation-qualification.md) records exact sources, SDK bytes and corpus results.
+
+### Search Git and source history
+
+For repository tooling and historical Java analysis, start the [separate Git server](sandbox-jgit-server-webapp/README.md#first-start-and-restart), import a repository with ordinary Git push, and use its REST API to search commit messages, changed paths, historical Java types/symbols, file versions and author statistics. This server can be used without the Eclipse workbench.
+
+The [Extra Search views](sandbox_extra_search_help/html/usage.html) are optional Eclipse clients for the same service. Installing that feature does not start the database or server. Semantic/hybrid code search has [additional embedding prerequisites](sandbox-jgit-server-webapp/docs/application-embeddings.md).
+
+### Build on the analysis and AST libraries
+
+For tool builders, [`sandbox_common_core`](sandbox_common_core/README.md) provides JDT-based visitors, TriggerPattern matching, guards and hint parsing without an Eclipse Platform/UI runtime. Use its Maven build and dependency example to embed those APIs; callers still supply the source and binding environment their analysis requires.
+
+[`sandbox-ast-api`](sandbox-ast-api/README.md) provides fluent AST wrapper types, and [`sandbox-functional-converter-core`](sandbox-functional-converter-core/README.md) models loop transformations; both are plain Java modules without Eclipse/JDT dependencies. The [JDT bridge](#fluent-ast-api-jdt-bridge-sandbox-ast-api-jdt) connects the fluent types to existing JDT trees. The [module catalog](#projects) also lists the mining core, mining CLI and shared test infrastructure.
+
+## GitHub Actions
+
+Add automated, reviewable cleanup proposals to your own **Eclipse Java repository** with one workflow file. Existing `.project`, `.classpath` and compiler settings are reused; no Sandbox checkout or copied default profile is required. Proposals use normal GitHub diffs and are accepted together through a cleanup PR, not pushed automatically into your original branch.
+
+**[Set up cleanup proposals in your project](GITHUB_ACTIONS.md)** | **[Standalone Eclipse example](examples/cleanup-review/eclipse)** | **[Action reference](.github/actions/cleanup-review/README.md)**
+
+Maven/Gradle repositories without Eclipse metadata and PDE target-platform dependencies need additional preparation; the guide describes the supported boundaries. Sandbox's own `pr-auto-cleanup.yml` runs automatically and also contains internal tests that consumers should not copy.
 
 ## 🚀 Installation
 
@@ -73,39 +119,12 @@ Each cleanup or quick-fix feature installs its matching offline user documentati
 
 > **⚠️ Warning**: These plugins are experimental. Test them in a development environment before using in production.
 
-## 📦 Release Process
-
-> **For Maintainers**: See [Release Process](CONTRIBUTING.md#release-process) in CONTRIBUTING.md for instructions on creating and publishing releases.
-
-## Table of Contents
-
-- [🔗 CI Status & Resources](#-ci-status--resources)
-- [Overview](#overview)
-- [🚀 Installation](#-installation)
-- [📦 Release Process](#-release-process)
-
-- [Building from Source](#building-from-source)
-- [Quickstart](#quickstart)
-- [What's Included](#whats-included)
-- [Projects](#projects)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
-- [License](#license)
-  - [Eclipse Public License 2.0](#eclipse-public-license-20)
-
-## GitHub Actions
-
-Add automated, reviewable cleanup proposals to your own **Eclipse Java repository** with one workflow file. Existing `.project`, `.classpath` and compiler settings are reused; no Sandbox checkout or copied default profile is required. Proposals use normal GitHub diffs and are accepted together through a cleanup PR, not pushed automatically into your original branch.
-
-**[Set up cleanup proposals in your project](GITHUB_ACTIONS.md)** | **[Standalone Eclipse example](examples/cleanup-review/eclipse)** | **[Action reference](.github/actions/cleanup-review/README.md)**
-
-Maven/Gradle repositories without Eclipse metadata and PDE target-platform dependencies need additional preparation; the guide describes the supported boundaries. Sandbox's own `pr-auto-cleanup.yml` runs automatically and also contains internal tests that consumers should not copy.
-
 ## Building from Source
 
-> **For Contributors/Developers**: Want to build the project locally? See [Building from Source](CONTRIBUTING.md#building-from-source) in CONTRIBUTING.md for complete build instructions.
+> **For Contributors/Developers**: Want to build the project locally? See [Building and testing](CONTRIBUTING.md#building-and-testing) in CONTRIBUTING.md for complete build instructions.
 
 **Quick Start:**
+
 - **Requires**: Java 25
 - **Quick Build**: `mvn -T 1C verify`
 - **Standalone IDE Product**: `mvn -Pproduct clean verify`
@@ -114,26 +133,15 @@ Maven/Gradle repositories without Eclipse metadata and PDE target-platform depen
 
 **Note**: The supported build/runtime is Java 25. Java 21 and earlier are rejected; later JDKs require separate qualification.
 
----
-
-## Quickstart
-
-### For Users
-
-1. **Install the plugins** via Eclipse update site (see [Installation](#-installation) above)
-2. **Open Eclipse** and navigate to **Source** → **Clean Up...** or use **Preferences** → **Java** → **Code Style** → **Clean Up**
-3. **Configure cleanups**: Select the sandbox cleanup profiles you want to enable
-4. **Apply cleanups**: Run cleanup on your Java files
-5. **Open installed documentation** through **Help** → **Help Contents**, or press **F1** on a Sandbox configuration page
+**Main Technologies:** Eclipse JDT, Java 25, Maven/Tycho 5.0.4
 
 ### For Contributors/Developers
 
-Want to build and run the Eclipse product with bundled plugins? See the [Building from Source](CONTRIBUTING.md#building-from-source) section in CONTRIBUTING.md for:
+Want to build and run the Eclipse product with bundled plugins? See the [Building and testing](CONTRIBUTING.md#building-and-testing) section in CONTRIBUTING.md for:
+
 - Building the Eclipse product locally
 - Running the built Eclipse product
 - Using command-line cleanup tools
-
----
 
 ## What's Included
 
@@ -155,7 +163,9 @@ Want to build and run the Eclipse product with bundled plugins? See the [Buildin
 
 ### Cleanup CLI Application (`sandbox_cleanup_application`)
 
-It is an Equinox CLI application for running Eclipse JDT cleanup operations on Java files from the command line. It supports recursive directory processing, configurable cleanup profiles via properties files, verbose/quiet modes, and the full Eclipse cleanup registry. The current implementation processes one compilation unit per refactoring; atomic per-project batching for planned multi-file cleanups is tracked in [#1210](https://github.com/carstenartur/sandbox/issues/1210). A valid Eclipse workspace (`-data` parameter) is required.
+Runs installed Eclipse JDT cleanups from the command line with recursive inputs, properties-based profiles, check/apply/diff modes and patch/JSON evidence. The default `org.sandbox.jdt.core.JavaCleanup` application processes one compilation unit per refactoring. The separate `org.sandbox.jdt.core.ProjectWideJavaCleanup` application runs one refactoring over a complete Eclipse Java project for semantic migration QA; it has its own check/apply contract. Both require a valid Eclipse workspace and resolved project metadata.
+
+**Documentation:** [CLI usage and limits](sandbox_cleanup_application/README.md) | [Project-wide migration QA](sandbox_cleanup_application/README.md#project-wide-migration-qa)
 
 ---
 
@@ -223,9 +233,13 @@ Transforms imperative Java loops into functional Java 8 Stream equivalents (`for
 
 ---
 
-### JUnit 5 Migration Cleanup (`sandbox_junit_cleanup`)
+<a id="junit-5-migration-cleanup-sandbox_junit_cleanup"></a>
 
-Automates many migrations from JUnit 3 and JUnit 4 to JUnit 5 (Jupiter), including test classes, annotations, assertions, lifecycle hooks, and several rule patterns. Coordinated multi-file support currently covers named `ExternalResource` implementations and proven `@Rule`/`@ClassRule` consumers. Broader hierarchy, suite, runner, parameterized-test, and dependency migration remains tracked in [#1217](https://github.com/carstenartur/sandbox/issues/1217).
+### JUnit Migration Cleanup (`sandbox_junit_cleanup`)
+
+Automates explicitly modeled JUnit 3/4 migrations to Jupiter, including annotations, classified assertions, lifecycle hooks and rule patterns. Generated Jupiter source can target JUnit 5 or 6 according to the project's runtime dependencies; selected removed JUnit 6 APIs have dedicated compatibility rewrites.
+
+Coordinated support includes ordinary closed JUnit 3 hierarchies, proven `ExternalResource` fixture/consumer chains, modeled suites, selected Parameterized provider/injection closures, and direct private or package-private static assertion/assumption helpers. Each has its own binding, source-scope and execution requirements. Custom harnesses/runners, broader helper APIs and automatic JUnit 4/Vintage dependency removal remain outside general support. See the [executable capability matrix](sandbox_junit_cleanup/MIGRATION_CAPABILITIES.md) for the implementation and tests behind each boundary; ongoing migration work is tracked in [#1217](https://github.com/carstenartur/sandbox/issues/1217).
 
 📖 **Full Documentation**: [Plugin README](sandbox_junit_cleanup/README.md) | [Architecture](sandbox_junit_cleanup/ARCHITECTURE.md) | [TODO](sandbox_junit_cleanup/TODO.md) | [Testing Guide](sandbox_junit_cleanup_test/TESTING.md)
 
@@ -388,19 +402,19 @@ Installed end-user documentation is available offline in Eclipse through **Help*
 
 - **[Installation](#-installation)** - How to install plugins in Eclipse
 - **[Installed Eclipse Help](docs/ECLIPSE_HELP.md)** - Help-bundle architecture, local validation, and screenshot reproduction
-- **[Building from Source](CONTRIBUTING.md#building-from-source)** - How to build the project with Maven/Tycho
+- **[Building from Source](CONTRIBUTING.md#building-and-testing)** - How to build the project with Maven/Tycho
 - **[Projects](#projects)** - Descriptions and documentation for all plugins
 - **[Contributing](CONTRIBUTING.md)** - How to contribute to this project
 - **[Release Process](CONTRIBUTING.md#release-process)** - Maintainer guide for creating releases
 - **[Distribution Compatibility](docs/distribution-compatibility.md)** - Supported build matrix, runtime coverage, publication gates, and evidence
-- **[Post-merge Multi-file Cleanup QA](docs/qa/multi-file-cleanup-post-merge-qa.md)** - Validated scope, risks, and prioritized follow-ups
-- **[Eclipse Version Configuration](CONTRIBUTING.md#eclipse-version-configuration)** - Maintainer guide for updating Eclipse versions
+- **[Historical Multi-file Cleanup QA](docs/qa/multi-file-cleanup-post-merge-qa.md)** - Scope, risks and follow-ups for the cited revisions; use the current module documentation for today's support
+- **[Eclipse Version Configuration](CONTRIBUTING.md#updating-eclipse-maven-or-tycho)** - Maintainer guide for updating Eclipse versions
 
 ---
 
 ## Contributing
 
-Contributions are welcome! This is an experimental sandbox project for testing Eclipse JDT cleanup implementations.
+Contributions are welcome across the cleanup workflows, rule authoring, Java analysis libraries, mathematics adapter and Git/source-history tools.
 
 **📖 For full contribution guidelines, building instructions, reporting issues, release process, and Eclipse version configuration**, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -414,6 +428,25 @@ Contributions are welcome! This is an experimental sandbox project for testing E
 **Note**: This project primarily serves as an experimental playground. Features that prove stable and useful may be contributed upstream to Eclipse JDT.
 
 ---
+
+## 📦 Release Process
+
+> **For Maintainers**: See [Release Process](CONTRIBUTING.md#release-process) in CONTRIBUTING.md for instructions on creating and publishing releases.
+
+## 🔗 CI Status & Resources
+
+[![Java CI with Maven](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/maven.yml)
+[![CodeQL](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/codeql.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Fcoverage.json)](https://carstenartur.github.io/sandbox/coverage/)
+[![Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcarstenartur%2Fsandbox%2Fgh-pages%2Fbadges%2Ftests.json)](https://carstenartur.github.io/sandbox/tests/)
+[![Benchmarks](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/benchmark.yml)
+[![Snapshot Deploy](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/deploy-snapshot.yml)
+[![Commit Mining](https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/mining-core.yml)
+[![Refactoring Mining](https://github.com/carstenartur/sandbox/actions/workflows/refactoring-mining.yml/badge.svg?branch=main)](https://github.com/carstenartur/sandbox/actions/workflows/refactoring-mining.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20941684.svg)](https://doi.org/10.5281/zenodo.20941684)
+[![Eclipse Marketplace](https://img.shields.io/badge/Eclipse%20Marketplace-Sandbox-blue)](https://marketplace.eclipse.org/content/sandbox)
+<br>
+🏠 **[Project Dashboard](https://carstenartur.github.io/sandbox/)** | 📊 **[Test Results](https://carstenartur.github.io/sandbox/tests/)** | 📈 **[Code Coverage](https://carstenartur.github.io/sandbox/coverage/)** | ⚡ **[Performance Charts](https://carstenartur.github.io/sandbox/dev/bench/)**
 
 <details>
 <summary>Legacy Branch CI Status</summary>
