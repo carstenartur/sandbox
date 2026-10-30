@@ -10,6 +10,10 @@ Runs the cleanup implementations installed in an Eclipse/Equinox distribution wi
 org.sandbox.jdt.core.JavaCleanup
 ```
 
+This is the default, per-compilation-unit application. The separate
+[project-wide QA runner](#project-wide-migration-qa) has its own option set and
+passes complete project scope to one cleanup refactoring.
+
 ## Recommended first run
 
 Use a disposable workspace and check mode before allowing writes:
@@ -145,6 +149,50 @@ Archive the JSON report and stderr when diagnosing CI failures.
 - The scope filter recognizes conventional `src/test`, `src/tests`, and explicit `test`/`tests` roots; use explicit roots with `both` for custom source sets.
 - The generated diff is review evidence, not a rename- or binary-aware replacement for Git diff.
 - Patch/report write failures and source restoration failures produce exit `1`.
+
+## Project-wide migration QA
+
+The separately registered application `org.sandbox.jdt.core.ProjectWideJavaCleanup`
+exists for semantic migration QA. It collects all source compilation units from
+one Eclipse Java project and adds them to one `CleanUpRefactoring`, so supported
+coordinated migrations can see their complete source scope.
+
+For example, on headless Linux (the entry point creates an SWT display):
+
+```bash
+xvfb-run --auto-servernum eclipse -nosplash \
+  -data /tmp/sandbox-project-cleanup-workspace \
+  -application org.sandbox.jdt.core.ProjectWideJavaCleanup \
+  --project my-eclipse-project \
+  --project-location "$PWD" \
+  --mode check \
+  --config "$PWD/cleanup.properties" \
+  --report /tmp/sandbox-project-cleanup.json \
+  --patch /tmp/sandbox-project-cleanup.patch
+```
+
+Use the name declared by the project's `.project` file for `--project`.
+`--project-location` imports that existing Eclipse project when needed; it can
+be omitted for a project already imported into the selected workspace.
+The classpath and dependencies must resolve in that runtime.
+
+This runner requires `--project`, `--config` and `--report`. Its modes are
+`check` (the default) and `apply`; the per-file runner's `diff`, `--scope`
+and positional-input options do not apply. Check temporarily performs the
+change, captures the changed bytes and restores tracked source and project-resource
+bytes before writing the patch/report. An incomplete change execution attempts
+to restore those snapshots.
+Exit codes are `0` for success, `2` for changes required in check mode and
+`1` for errors, with errors taking precedence.
+
+Review the complete patch, planning diagnostics and the project's normal tests.
+The runner can also add the required Jupiter parallel-package import to an
+existing PDE manifest when a migration introduces `@Isolated`. Its project
+scope does not broaden the [supported migration shapes](../sandbox_junit_cleanup/MIGRATION_CAPABILITIES.md)
+or supply an arbitrary Maven/Gradle dependency resolver. The default CLI and
+cleanup-review action continue to use the per-compilation-unit application.
+See the [upstream JDT QA workflow](../qa/upstream-jdt/README.md) for reproducible
+before/after evidence recipes.
 
 ## Implementation structure
 
