@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "2650a511bc017b3c7331d4850da976c2aa7e4306954cd2c88884ad5a14c84ee7",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!map CaseMethods: \"toUpperCase\" \u003d\u003e \"toUpperCase\", \"toLowerCase\" \u003d\u003e \"toLowerCase\"\u003e\n\njava.lang.Character.#{CaseMethods}($ch)\n\u003d\u003e java.lang.String.valueOf($ch).#{CaseMethods_VALUE}()\n;;",
+  "beforeExample": "public class Example {\n    private StringBuffer buf \u003d new StringBuffer();\n\n    public void process(char ch, boolean upper) {\n        if (upper) {\n            buf.append(Character.toUpperCase(ch));\n        } else {\n            buf.append(Character.toLowerCase(ch));\n        }\n    }\n}",
+  "afterExample": "public class Example {\n    private StringBuffer buf \u003d new StringBuffer();\n\n    public void process(char ch, boolean upper) {\n        if (upper) {\n            buf.append(String.valueOf(ch).toUpperCase());\n        }\n else {\n            buf.append(String.valueOf(ch).toLowerCase());\n        }\n    }\n}",
+  "negativeExample": "public class NegativeExample {\n    public String convert(String s) {\n        return s.toUpperCase(); // Should not match: not Character.toUpperCase\n    }\n    public String convertStringChar(char ch) {\n        return String.valueOf(ch); // Should not match: not a case conversion\n    }\n}",
+  "targetHintFile": "string.sandbox-hint",
+  "sourceCommit": "6d8d25ceafc477087e85ed3340bddf46ef92bc80",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "String/Character Manipulation",
+  "summary": "Replaces Character.toUpperCase/toLowerCase with locale-sensitive String.valueOf().toUpperCase/toLowerCase, addressing a bug with Turkish locale casing.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-30T02:18:38.373791841Z",
+  "ruleFingerprint": "sha256:11c684828f79ced60c5a39d0cee203592b6d7cc0d9e6f0436c0dee8763f9ab39",
+  "behaviorFingerprint": "sha256:0c8e33bc1d92c7002255afa2746978554f98734f86600b40112965e97c668b65",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain exactly one transformation rule, but contains 2",
+    "verifiedAt": "2026-10-30T02:24:50.964690726Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0e55dda0c5fd1dbb552f831e664c592794f31989a4b8fc1b7f1bcf5571ffcf83",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.core.runtime.Platform.OS_MACOSX.equals(org.eclipse.core.runtime.Platform.getOS())\n\u003d\u003e\njava.lang.System.getProperty(\"os.name\").indexOf(\"Mac\") !\u003d -1\n;;",
+  "beforeExample": "import org.eclipse.core.runtime.Platform;\n\npublic class TestClass {\n    private static final boolean BUG_392594 \u003d true;\n    public void testMethod() {\n        if (BUG_392594 \u0026\u0026 Platform.OS_MACOSX.equals(Platform.getOS())) {\n            System.out.println(\"Skipping on Mac\");\n            return;\n        }\n        System.out.println(\"Running test\");\n    }\n}",
+  "afterExample": "public class TestClass {\n    private static final boolean BUG_392594 \u003d true;\n    public void testMethod() {\n        if (BUG_392594 \u0026\u0026 System.getProperty(\"os.name\").indexOf(\"Mac\") !\u003d -1) {\n            System.out.println(\"Skipping on Mac\");\n            return;\n        }\n        System.out.println(\"Running test\");\n    }\n}",
+  "negativeExample": "import org.eclipse.core.runtime.Platform;\n\npublic class TestClass {\n    public void testOtherChecks() {\n        // Checks a different OS, should not match\n        if (Platform.OS_WIN32.equals(Platform.getOS())) {\n            System.out.println(\"Running on Windows\");\n        }\n        // Uses a different Platform method, should not match\n        if (Platform.isRunning()) {\n            System.out.println(\"Platform is running\");\n        }\n    }\n}",
+  "targetHintFile": "platform-compat.sandbox-hint",
+  "sourceCommit": "0af83c4888063f09a174eff097d23dc17e3c04fe",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Replacement",
+  "summary": "Replace Eclipse Platform.getOS() check for macOS with System.getProperty(\"os.name\") to avoid NPE outside Eclipse platform.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-30T02:18:17.474046662Z",
+  "ruleFingerprint": "sha256:5367d95305b3328cf0af9e0d1007fbbfa3e77af26e873144bc12c269df4ac44a",
+  "behaviorFingerprint": "sha256:95b81f013b5da0964a6695807e6ca6d11a04619d83a7f6bcd52f7c2b00f6878d",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type TestClass must be defined in its own file",
+    "verifiedAt": "2026-10-30T02:24:50.943222640Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

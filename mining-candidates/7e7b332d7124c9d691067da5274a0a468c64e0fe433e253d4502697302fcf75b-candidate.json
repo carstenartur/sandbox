@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 1: The import org.eclipse.jface.text.link.ContentAssistant cannot be resolved",
-    "verifiedAt": "2026-10-29T02:23:03.724288989Z",
+    "verifiedAt": "2026-10-30T02:24:50.802457182Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
