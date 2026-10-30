@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "0c5e7d09c95050ff823016b97f7018acd3390052fb18e0ec2016d28ed125c352",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "org.eclipse.search.internal.core.text.PatternConstructor.createPattern($searchText, $isCaseSensitive, $isRegEx)\n\u003d\u003e\norg.eclipse.search.internal.core.text.PatternConstructor.createPattern($searchText, $isRegEx, true, $isCaseSensitive, false)\n;;",
+  "beforeExample": "package test;\n\nimport java.util.regex.Pattern;\nimport org.eclipse.search.internal.core.text.PatternConstructor;\n\nclass MySearchQuery {\n    String fSearchText \u003d \"pattern\";\n    boolean fIsCaseSensitive \u003d false;\n    boolean fIsRegEx \u003d true;\n\n    Pattern getSearchPattern() {\n        return PatternConstructor.createPattern(fSearchText, fIsCaseSensitive, fIsRegEx);\n    }\n\n    Pattern anotherMethod(String text, boolean caseSensitive, boolean regEx) {\n        return PatternConstructor.createPattern(text, caseSensitive, regEx);\n    }\n}\n\n// File: PatternConstructor.java (Stub to allow compilation)\npackage org.eclipse.search.internal.core.text;\nimport java.util.regex.Pattern;\npublic class PatternConstructor {\n    // Old signature - we want to transform calls to this\n    public static Pattern createPattern(String searchPattern, boolean caseSensitive, boolean isRegEx) {\n        return Pattern.compile(searchPattern);\n    }\n\n    // New signature - the target of the transformation\n    public static Pattern createPattern(String searchPattern, boolean isRegEx, boolean hasEmbeddedWildcard, boolean caseSensitive, boolean isWholeWord) {\n        return Pattern.compile(searchPattern);\n    }\n}",
+  "afterExample": "package test;\n\nimport java.util.regex.Pattern;\nimport org.eclipse.search.internal.core.text.PatternConstructor;\n\nclass MySearchQuery {\n    String fSearchText \u003d \"pattern\";\n    boolean fIsCaseSensitive \u003d false;\n    boolean fIsRegEx \u003d true;\n\n    Pattern getSearchPattern() {\n        return PatternConstructor.createPattern(fSearchText, fIsRegEx, true, fIsCaseSensitive, false);\n    }\n\n    Pattern anotherMethod(String text, boolean caseSensitive, boolean regEx) {\n        return PatternConstructor.createPattern(text, regEx, true, caseSensitive, false);\n    }\n}\n\n// File: PatternConstructor.java (Stub to allow compilation)\npackage org.eclipse.search.internal.core.text;\nimport java.util.regex.Pattern;\npublic class PatternConstructor {\n    public static Pattern createPattern(String searchPattern, boolean caseSensitive, boolean isRegEx) {\n        return Pattern.compile(searchPattern);\n    }\n    public static Pattern createPattern(String searchPattern, boolean isRegEx, boolean hasEmbeddedWildcard, boolean caseSensitive, boolean isWholeWord) {\n        return Pattern.compile(searchPattern);\n    }\n}",
+  "negativeExample": "package test;\n\nimport java.util.regex.Pattern;\nimport org.eclipse.search.internal.core.text.PatternConstructor;\n\nclass MySearchQuery {\n    String fSearchText \u003d \"pattern\";\n    boolean fIsCaseSensitive \u003d false;\n    boolean fIsRegEx \u003d true;\n    boolean fIsWholeWord \u003d true;\n\n    Pattern getSearchPattern() {\n        // This already uses the new signature, should NOT match\n        return PatternConstructor.createPattern(fSearchText, fIsRegEx, true, fIsCaseSensitive, fIsWholeWord);\n    }\n}\n\n// File: PatternConstructor.java (Stub to allow compilation)\npackage org.eclipse.search.internal.core.text;\nimport java.util.regex.Pattern;\npublic class PatternConstructor {\n    public static Pattern createPattern(String searchPattern, boolean caseSensitive, boolean isRegEx) {\n        return Pattern.compile(searchPattern);\n    }\n    public static Pattern createPattern(String searchPattern, boolean isRegEx, boolean hasEmbeddedWildcard, boolean caseSensitive, boolean isWholeWord) {\n        return Pattern.compile(searchPattern);\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "2b7c70a9bcc6df6731f39436fd7ca0ab7c0a2fab",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Modernize calls to `PatternConstructor.createPattern` by migrating from the 3-argument method to the 5-argument method, explicitly passing `true` for `hasEmbeddedWildcard` and `false` for `isWholeWord` to preserve the original implicit behavior.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-30T02:21:57.124156003Z",
+  "ruleFingerprint": "sha256:7d519c4d0abb6ecb2800352a5b62750c4526c91bd5d9be5f9b4ed048111bfb87",
+  "behaviorFingerprint": "sha256:4ed97e510d20c5febd62bbf72cc93fdaf8b6fe5db274e2c7c988326619570bb0",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 1: Syntax error on token(s), misplaced construct(s)",
+    "verifiedAt": "2026-10-30T02:24:51.004676372Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

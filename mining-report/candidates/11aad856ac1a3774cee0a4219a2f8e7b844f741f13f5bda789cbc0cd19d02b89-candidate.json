@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "11aad856ac1a3774cee0a4219a2f8e7b844f741f13f5bda789cbc0cd19d02b89",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jface.text.scrollbar.isVisible\u003e\n\u003c!description: Adds an isVisible() check to ScrollBar null check to correctly handle invisible scrollbars.\u003e\n\u003c!severity: HINT\u003e\n$verticalBar \u003d\u003d null :: instanceof($verticalBar, \"org.eclipse.swt.widgets.ScrollBar\")\n\u003d\u003e\n$verticalBar \u003d\u003d null || !$verticalBar.isVisible()\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.swt.widgets.ScrollBar;\nimport org.eclipse.swt.custom.StyledText;\n\npublic class TestClass {\n    public int[] getHeights(StyledText textWidget) {\n        ScrollBar verticalBar \u003d textWidget.getVerticalBar();\n        if (verticalBar \u003d\u003d null)\n            return new int[] { 0, 0 };\n        // Simulate other code using verticalBar\n        return new int[] { verticalBar.getMaximum(), verticalBar.getMinimum() };\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.swt.widgets.ScrollBar;\nimport org.eclipse.swt.custom.StyledText;\n\npublic class TestClass {\n    public int[] getHeights(StyledText textWidget) {\n        ScrollBar verticalBar \u003d textWidget.getVerticalBar();\n        if (verticalBar \u003d\u003d null || !verticalBar.isVisible())\n            return new int[] { 0, 0 };\n        // Simulate other code using verticalBar\n        return new int[] { verticalBar.getMaximum(), verticalBar.getMinimum() };\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.swt.widgets.ScrollBar;\nimport org.eclipse.swt.custom.StyledText;\n\npublic class TestClass {\n    public void noMatch() {\n        String s \u003d null;\n        if (s \u003d\u003d null) { // Not a ScrollBar\n            System.out.println(\"null string\");\n        }\n\n        ScrollBar horizontalBar \u003d null;\n        if (horizontalBar !\u003d null) { // Not \u0027\u003d\u003d null\u0027\n            System.out.println(\"horizontal bar\");\n        }\n    }\n}",
+  "targetHintFile": "jface.sandbox-hint",
+  "sourceCommit": "67e1ed78a51efe5d1182de6bb9f98631a3e9841c",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Null Safety / API Guard",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-30T02:23:10.861079487Z",
+  "ruleFingerprint": "sha256:fb06666cfee854d57721c8091fc2934cd3bd8ec875e4968fc96098877b48290e",
+  "behaviorFingerprint": "sha256:bb50ea37ffb51860103f3feeb92749215cf26642fc74d8b90f071e8281c63d8f",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-30T02:24:51.040493621Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

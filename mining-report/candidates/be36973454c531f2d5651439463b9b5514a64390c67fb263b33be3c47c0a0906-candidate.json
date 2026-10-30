@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "be36973454c531f2d5651439463b9b5514a64390c67fb263b33be3c47c0a0906",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.bytecodeOrderedTestSuite-to-orderedTestSuite\u003e\n\u003c!description: Replaces usage of the moved BytecodeOrderedTestSuite with the new OrderedTestSuite class in org.eclipse.test.\u003e\n\u003c!severity: WARNING\u003e\n\nnew org.eclipse.ui.workbench.texteditor.tests.BytecodeOrderedTestSuite($class$)\n\u003d\u003e\nnew org.eclipse.test.OrderedTestSuite($class$)\n;;",
+  "beforeExample": "package test;\n\nimport junit.framework.Test;\nimport junit.framework.TestCase;\nimport junit.framework.TestSuite;\n\n// Dummy definition to make the example compile, assuming it existed in the package\nclass BytecodeOrderedTestSuite extends TestSuite {\n    public BytecodeOrderedTestSuite(Class testClass) {\n        super(testClass);\n    }\n}\n\npublic class MyTestClass extends TestCase {\n    public static Test suite() {\n        return new BytecodeOrderedTestSuite(MyTestClass.class);\n    }\n\n    public void testSomething() {\n        // Example method\n    }\n}",
+  "afterExample": "package test;\n\nimport junit.framework.Test;\nimport junit.framework.TestCase;\nimport org.eclipse.test.OrderedTestSuite;\n\npublic class MyTestClass extends TestCase {\n    public static Test suite() {\n        return new OrderedTestSuite(MyTestClass.class);\n    }\n\n    public void testSomething() {\n        // Example method\n    }\n}",
+  "negativeExample": "package test;\n\nimport junit.framework.Test;\nimport junit.framework.TestCase;\nimport junit.framework.TestSuite;\nimport org.eclipse.test.OrderedTestSuite;\n\npublic class AnotherTestClass extends TestCase {\n    public static Test suite() {\n        // This constructor call should not be matched and replaced\n        return new TestSuite(AnotherTestClass.class);\n    }\n\n    public void anotherMethod() {\n        // This unrelated constructor call should also not be matched\n        String s \u003d new String(\"hello\");\n    }\n}",
+  "targetHintFile": "modernize.sandbox-hint",
+  "sourceCommit": "99dc73aa9ed854acb202efc554cfb91d3931ef64",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Migration",
+  "summary": "Replaces the deprecated/moved `BytecodeOrderedTestSuite` with `OrderedTestSuite`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-30T02:21:07.648634934Z",
+  "ruleFingerprint": "sha256:e2231000acacc8cab8d68ab760b45acb315cdd899fad6934f2fb76c462ff0442",
+  "behaviorFingerprint": "sha256:47441b098a2499b544a7e06191c07924671f4eaffc871f8cf4d7ae4f7ff7d477",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-30T02:24:50.982318568Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

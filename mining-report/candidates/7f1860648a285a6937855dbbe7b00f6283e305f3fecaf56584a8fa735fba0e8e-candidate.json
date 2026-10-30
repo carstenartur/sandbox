@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "7f1860648a285a6937855dbbe7b00f6283e305f3fecaf56584a8fa735fba0e8e",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "return \"\u0026\" + $symbol;\n\u003d\u003e\nreturn \"\u0026\" + $symbol + \";\";\n;;",
+  "beforeExample": "package org.eclipse.jface.internal.text.html;\n\npublic class HTML2TextReader {\n    private static String[] fgEntityLookup \u003d { \"amp\", \"\u0026\", \"lt\", \"\u003c\", \"gt\", \"\u003e\", \"nbsp\", \" \", \"apos\", \"\u0027\", \"quot\", \"\\\"\", \"agrave\", \"\\u00e0\" };\n\n    protected String entity2Text(String symbol) {\n        if (symbol.length() \u003e 1 \u0026\u0026 symbol.charAt(0) \u003d\u003d \u0027#\u0027) {\n            int i\u003d Integer.parseInt(symbol.substring(1));\n            return String.valueOf((char) i);\n        }\n\n        for (int i\u003d 0; i \u003c fgEntityLookup.length; i\u003d i + 2) {\n            if (symbol.equals(fgEntityLookup[i]))\n                return fgEntityLookup[i + 1];\n        }\n        return \"\u0026\" + symbol; // not found\n    }\n}",
+  "afterExample": "package org.eclipse.jface.internal.text.html;\n\npublic class HTML2TextReader {\n    private static String[] fgEntityLookup \u003d { \"amp\", \"\u0026\", \"lt\", \"\u003c\", \"gt\", \"\u003e\", \"nbsp\", \" \", \"apos\", \"\u0027\", \"quot\", \"\\\"\", \"agrave\", \"\\u00e0\" };\n\n    protected String entity2Text(String symbol) {\n        if (symbol.length() \u003e 1 \u0026\u0026 symbol.charAt(0) \u003d\u003d \u0027#\u0027) {\n            int i\u003d Integer.parseInt(symbol.substring(1));\n            return String.valueOf((char) i);\n        }\n\n        for (int i\u003d 0; i \u003c fgEntityLookup.length; i\u003d i + 2) {\n            if (symbol.equals(fgEntityLookup[i]))\n                return fgEntityLookup[i + 1];\n        }\n        return \"\u0026\" + symbol + \";\"; // not found\n    }\n}",
+  "negativeExample": "package org.eclipse.jface.internal.text.html;\n\npublic class HTML2TextReader {\n    protected String someOtherMethod(String prefix, String suffix) {\n        String result \u003d prefix + suffix;\n        return result;\n    }\n    \n    protected String anotherReturn(String name) {\n        return \"Hello \" + name;\n    }\n    \n    protected String yetAnother(String s) {\n        return s;\n    }\n}",
+  "targetHintFile": "strings.sandbox-hint",
+  "sourceCommit": "7edcbfb6389bbbdbc14c57d31e0be01640833275",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "String Manipulation",
+  "summary": "Appends a semicolon to string concatenations of the form \u0027\u0026\u0027 + symbol within a return statement to correctly form HTML entities.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-30T02:17:30.966781134Z",
+  "ruleFingerprint": "sha256:256b8090db78823326b222763774ab855315d1df6b1d17516a109212a5d30320",
+  "behaviorFingerprint": "sha256:d24d734bec4a876389ea0b06b5a11503937a18eb50ffc49cf1d8e52586c2948b",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type HTML2TextReader must be defined in its own file",
+    "verifiedAt": "2026-10-30T02:24:50.921168195Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

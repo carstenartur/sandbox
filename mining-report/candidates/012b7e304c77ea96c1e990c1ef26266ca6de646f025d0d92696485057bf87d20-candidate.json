@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 12: The public type MyClientCode must be defined in its own file",
-    "verifiedAt": "2026-10-29T02:22:58.217460216Z",
+    "verifiedAt": "2026-10-30T02:24:41.985523956Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0

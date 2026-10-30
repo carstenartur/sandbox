@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "e7959af55ba5be25f859f3fc6a28c7bfcdd1b239d1aa10f3c72a662cb452308b",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "java.lang.System.err.println($arg)\n\u003d\u003e\njava.lang.System.out.println($arg)\n;;",
+  "beforeExample": "class Test {\n    void log(String message) {\n        System.err.println(\"Error: \" + message);\n    }\n}",
+  "afterExample": "class Test {\n    void log(String message) {\n        System.out.println(\"Error: \" + message);\n    }\n}",
+  "negativeExample": "class Test {\n    void log(String message) {\n        System.out.println(\"Info: \" + message);\n    }\n}",
+  "targetHintFile": "logging.sandbox-hint",
+  "sourceCommit": "61eb7c2f54751c7860b33e1a6bc644a3a43647da",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace System.err.println with System.out.println",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-30T02:16:39.459038846Z",
+  "ruleFingerprint": "sha256:791c66f816b97283cdc150754f16acb2132e30c3f514c3f3d52ea59f702feb75",
+  "behaviorFingerprint": "sha256:5808fddb63ac064f53e7994c072c4e9d89d5794145be9c2f4827d8378a87a035",
+  "verification": {
+    "successful": false,
+    "stage": "AFTER_REWRITE",
+    "message": "Transformed syntax tree does not equal afterExample",
+    "verifiedAt": "2026-10-30T02:24:50.898127701Z",
+    "verifierVersion": "7",
+    "matches": 1,
+    "replacements": 1
+  },
+  "transitions": []
+}

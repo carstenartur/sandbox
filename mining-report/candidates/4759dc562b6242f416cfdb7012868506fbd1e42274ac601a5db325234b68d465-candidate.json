@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "4759dc562b6242f416cfdb7012868506fbd1e42274ac601a5db325234b68d465",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.search.fixwholewordregex\u003e\n\u003c!description: Ensures \u0027isWholeWord\u0027 is false if \u0027isRegExSearch\u0027 is true when constructing TextSearchPageInput.\u003e\n\u003c!severity: WARNING\u003e\nnew org.eclipse.search.internal.ui.text.TextSearchPageInput($textPattern, $isCaseSensitive, $isRegExSearchExpr, $isWholeWordExpr, $scope)\n\u003d\u003e\nnew org.eclipse.search.internal.ui.text.TextSearchPageInput($textPattern, $isCaseSensitive, $isRegExSearchExpr, $isWholeWordExpr \u0026\u0026 !$isRegExSearchExpr, $scope)\n;;",
+  "beforeExample": "package test;\n\nimport org.eclipse.search.ui.ISearchScope;\nimport org.eclipse.search.internal.ui.text.TextSearchPageInput;\n\nclass DummyData {\n    String textPattern \u003d \"pattern\";\n    boolean isCaseSensitive \u003d false;\n    boolean isRegExSearch \u003d true;\n    boolean isWholeWord \u003d true;\n}\n\npublic class TestClass {\n    public void someMethod(DummyData data, ISearchScope s) {\n        // Original line with potential bug\n        TextSearchPageInput input \u003d new TextSearchPageInput(data.textPattern, data.isCaseSensitive, data.isRegExSearch, data.isWholeWord, s);\n    }\n}",
+  "afterExample": "package test;\n\nimport org.eclipse.search.ui.ISearchScope;\nimport org.eclipse.search.internal.ui.text.TextSearchPageInput;\n\nclass DummyData {\n    String textPattern \u003d \"pattern\";\n    boolean isCaseSensitive \u003d false;\n    boolean isRegExSearch \u003d true;\n    boolean isWholeWord \u003d true;\n}\n\npublic class TestClass {\n    public void someMethod(DummyData data, ISearchScope s) {\n        // Transformed line, whole word is now false due to regex being true\n        TextSearchPageInput input \u003d new TextSearchPageInput(data.textPattern, data.isCaseSensitive, data.isRegExSearch, data.isWholeWord \u0026\u0026 !data.isRegExSearch, s);\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.eclipse.search.ui.ISearchScope;\nimport org.eclipse.search.internal.ui.text.TextSearchPageInput;\n\nclass DummyData {\n    String textPattern \u003d \"pattern\";\n    boolean isCaseSensitive \u003d false;\n    boolean isRegExSearch \u003d false; // isRegExSearch is false, so isWholeWord should remain unchanged if true\n    boolean isWholeWord \u003d true;\n}\n\npublic class TestClass {\n    public void anotherMethod(DummyData data, ISearchScope s) {\n        // This should not be changed as isRegExSearch is already false\n        TextSearchPageInput input \u003d new TextSearchPageInput(data.textPattern, data.isCaseSensitive, data.isRegExSearch, data.isWholeWord, s);\n        \n        // A different constructor or type should not match\n        String anotherString \u003d new String(\"hello\");\n    }\n}",
+  "targetHintFile": "search.sandbox-hint",
+  "sourceCommit": "04c4ef15a4f0dc527eb24db5f114794e397fe7b5",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Usage Correction",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-30T02:23:10.821670851Z",
+  "ruleFingerprint": "sha256:7c0338c3c692d98b0aaa96e4fa021a49efbf70f0a8140bf25f8a8ae6a5d0465e",
+  "behaviorFingerprint": "sha256:99a063dfa879c87cb76af6813de5bdc0e4dc6f4c688f53141dedd3a17ef0fe78",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-30T02:24:51.022549585Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}
