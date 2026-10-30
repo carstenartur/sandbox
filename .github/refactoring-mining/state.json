@@ -3874,9 +3874,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "386f2895bf7503ce73c7e436582087c4b68ce898",
-      "lastProcessedDate": "2026-10-29T02:22:46.556929206Z",
-      "totalProcessed": 1634,
+      "lastProcessedCommit": "1726a32434ee8a113d5ab8c3441987c7aa6fdf25",
+      "lastProcessedDate": "2026-10-30T02:24:29.796739513Z",
+      "totalProcessed": 1706,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5246,6 +5246,15 @@
           "deferredAt": "2026-10-29T02:16:20.587445734Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "54d70bc9abb288b278ce134bfe8f6dae764f4a4e",
+          "message": "- added BytecodeOrderedTestSuite - removed all hacks in FindReplaceDialogTest - added separate ScreenshotTest to experim",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-30T02:16:39.597620266Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
@@ -5260,7 +5269,7 @@
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 7,
-        "API Modernization": 45,
+        "API Modernization": 47,
         "Performance": 17,
         "Redundant Code": 8,
         "API Misuse Correction": 1,
@@ -5275,7 +5284,7 @@
         "Deprecation": 3,
         "API Usage": 3,
         "JUnit Assertion": 1,
-        "API Migration": 8,
+        "API Migration": 9,
         "Configuration Default Update": 1,
         "API Deprecation": 2,
         "String API Usage": 2,
@@ -5340,7 +5349,7 @@
         "DSL limitation (control flow insertion)": 1,
         "Stylistic": 1,
         "Method Call Replacement": 1,
-        "API Replacement": 1,
+        "API Replacement": 2,
         "Magic Number Update": 1,
         "Code Modernization": 1,
         "JUnit Modernization": 2,
@@ -5389,7 +5398,11 @@
         "API Usage Cleanup": 1,
         "bug-fix": 1,
         "Control Flow Modification": 1,
-        "UI Refactoring": 1
+        "UI Refactoring": 1,
+        "String Manipulation": 1,
+        "String/Character Manipulation": 1,
+        "API Usage Correction": 1,
+        "Null Safety / API Guard": 1
       },
       "exhaustedCategories": []
     },
@@ -5512,5 +5525,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53427
+  "globalTotalProcessed": 53499
 }
