@@ -3874,9 +3874,8 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.text": {
-      "lastProcessedCommit": "1726a32434ee8a113d5ab8c3441987c7aa6fdf25",
-      "lastProcessedDate": "2026-10-30T02:24:29.796739513Z",
-      "totalProcessed": 1706,
+      "lastProcessedDate": "2026-10-31T02:21:39.838152137Z",
+      "totalProcessed": 1773,
       "status": "EPOCH_COMPLETE",
       "deferredCommits": [
         {
@@ -5255,21 +5254,31 @@
           "deferredAt": "2026-10-30T02:16:39.597620266Z",
           "retryCount": 0,
           "maxRetries": 3
+        },
+        {
+          "hash": "65c48af2e4c894561c2ccfd8a97bc40c081b14db",
+          "message": "Fixed bug 440952: Basic Marker Updater should be executed before other contributed markers",
+          "diffLines": 502,
+          "reason": "DIFF_TOO_LARGE",
+          "deferredAt": "2026-10-31T02:21:22.148646149Z",
+          "retryCount": 0,
+          "maxRetries": 3
         }
       ],
       "permanentlySkipped": [],
       "learnedMaxDiffLines": -1,
       "lastModelUsed": "gemini-2.5-flash",
-      "currentEpoch": 2,
+      "currentEpoch": 3,
       "completedEpochs": [
         "2020-01-01 to 2026-01-01",
-        "2015-01-01 to 2020-01-01"
+        "2015-01-01 to 2020-01-01",
+        "2010-01-01 to 2015-01-01"
       ],
       "categoryHitCounts": {
         "Method Call Refactoring": 1,
         "Exception Handling": 1,
         "Null Safety": 7,
-        "API Modernization": 47,
+        "API Modernization": 49,
         "Performance": 17,
         "Redundant Code": 8,
         "API Misuse Correction": 1,
@@ -5284,7 +5293,7 @@
         "Deprecation": 3,
         "API Usage": 3,
         "JUnit Assertion": 1,
-        "API Migration": 9,
+        "API Migration": 10,
         "Configuration Default Update": 1,
         "API Deprecation": 2,
         "String API Usage": 2,
@@ -5335,7 +5344,7 @@
         "Unsupported Syntax": 1,
         "Charset Modernization": 1,
         "Encapsulation": 3,
-        "Typo Fix": 2,
+        "Typo Fix": 3,
         "SWT Graphics": 1,
         "Code Mining": 1,
         "Inlining": 1,
@@ -5407,9 +5416,9 @@
       "exhaustedCategories": []
     },
     "https://github.com/eclipse-platform/eclipse.platform.debug": {
-      "lastProcessedCommit": "5e36d7783af1034ac1c68259bc29d5f07406a001",
-      "lastProcessedDate": "2026-10-24T02:27:22.913519645Z",
-      "totalProcessed": 85,
+      "lastProcessedCommit": "5bdc65e433a2f78b82c44af5828485ec0315c86d",
+      "lastProcessedDate": "2026-10-31T02:23:21.993794392Z",
+      "totalProcessed": 89,
       "status": "CATCHING_UP",
       "deferredCommits": [
         {
@@ -5525,5 +5534,5 @@
       "exhaustedCategories": []
     }
   },
-  "globalTotalProcessed": 53499
+  "globalTotalProcessed": 53570
 }
