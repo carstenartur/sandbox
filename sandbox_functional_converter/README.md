@@ -202,6 +202,24 @@ managed markers on rebuild and clean. Unsupported code gets no conversion hint.
 | Enhanced for | Supported sequential stream/forEach expressions and iterator while/for loops |
 | Iterator while | Enhanced for over `Iterable`, supported sequential stream/forEach expressions |
 
+Classic integer loops become `IntStream.range` only when the upper bound is
+invariant: primitive constants, effectively final primitive locals/parameters,
+the length of an effectively final local array, and integral arithmetic over
+these values. Calls such as `size()`, mutable fields/array elements, and bounds
+depending on the counter remain unchanged because Java reevaluates the condition
+before every iteration and on exit. Wider or boxed bounds also remain unchanged.
+For `<=`, the bound must additionally be a constant below `Integer.MAX_VALUE`
+or have primitive `byte`, `short`, or `char` type. An inclusive maximum can wrap
+the source counter; changing it to `rangeClosed` would not preserve termination.
+The body cannot write the counter, capture mutable outer locals, or let checked
+exceptions escape into `IntConsumer`. Checked exceptions caught inside the body
+and unchecked exceptions remain supported, including resource closing; a checked
+initializer remains outside the lambda. Body comments
+are copied with their statements; comments in the loop header keep the entire
+loop unchanged so their original location is retained. The stream factory uses
+scope-aware imports; if both `IntStream` and its `java` package qualifier are
+obscured, the original loop remains unchanged.
+
 The cleanup dialog disables source choices that do not apply to the selected
 target and previews the chosen conversions. An explicit conversion target takes
 precedence over legacy stream-only cleanup flags. Existing `for` and `while`

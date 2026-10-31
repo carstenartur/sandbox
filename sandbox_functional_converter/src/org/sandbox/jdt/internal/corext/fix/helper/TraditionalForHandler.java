@@ -17,10 +17,17 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.core.ICompilationUnit;
 import org.eclipse.jdt.core.dom.*;
 import org.eclipse.jdt.core.dom.rewrite.ASTRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite;
+import org.eclipse.jdt.core.dom.rewrite.ImportRewrite.ImportRewriteContext;
+import org.eclipse.jdt.internal.corext.codemanipulation.ContextSensitiveImportRewriteContext;
+import org.eclipse.jdt.internal.corext.dom.ASTNodes;
+import org.eclipse.jdt.internal.corext.dom.Bindings;
 import org.eclipse.jdt.internal.corext.fix.CompilationUnitRewriteOperationsFixCore.CompilationUnitRewriteOperation;
 import org.eclipse.jdt.internal.corext.refactoring.structure.CompilationUnitRewrite;
+import org.eclipse.jdt.internal.corext.refactoring.util.AbstractExceptionAnalyzer;
 import org.eclipse.text.edits.TextEditGroup;
 import org.sandbox.functional.core.builder.LoopModelBuilder;
 import org.sandbox.functional.core.model.ElementDescriptor;
@@ -50,6 +57,8 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  *   <li>Initializer: {@code int i = start} (single variable declaration with int type)</li>
  *   <li>Condition: {@code i < end} or {@code i <= end} (comparison with loop variable)</li>
  *   <li>Updater: {@code i++} or {@code ++i} (increment operator)</li>
+ *   <li>Upper bound: an invariant primitive integral expression; inclusive bounds must
+ *       exclude {@link Integer#MAX_VALUE} so the final update cannot wrap</li>
  * </ul>
  * 
  * <p><b>Infrastructure:</b></p>
@@ -69,9 +78,8 @@ import org.sandbox.jdt.internal.corext.fix.UseFunctionalCallFixCore;
  *       in lambda bodies</li>
  *   <li><b>Sequential-only streams</b>: Always generates {@code IntStream.range()} (sequential),
  *       never parallel streams, avoiding complex synchronization requirements</li>
- *   <li><b>Synchronized block detection</b>: Handled upstream by {@code JdtLoopExtractor} and
- *       {@code PreconditionsChecker}, which reject loops containing synchronized statements
- *       before they reach this handler</li>
+ *   <li><b>Header and capture checks</b>: Bounds cannot depend on calls, mutable heap state,
+ *       or the counter; the body cannot write the counter or capture mutable locals</li>
  * </ul>
  * 
  * <p><b>Naming Note:</b> This class is named after the <i>source</i> loop type (traditional for-loop),
@@ -153,6 +161,11 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         if (startExpr == null) {
             return null;
         }
+
+        IVariableBinding counter = fragment.resolveBinding();
+        if (counter == null || counter.isRecovered()) {
+            return null;
+        }
         
         // Check condition: must be infix comparison with loop variable
         Expression condition = forStmt.getExpression();
@@ -188,6 +201,12 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
             inclusive = true;
         } else {
             return null; // Unsupported operator
+        }
+
+        // A range snapshots its end once, whereas a Java loop evaluates the
+        // condition before every iteration, including the final failed check.
+        if (!isStableIntegralBound(endExpr) || (inclusive && !canIncrementPast(endExpr))) {
+            return null;
         }
         
         // Check updater: must be i++ or ++i
@@ -228,6 +247,20 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         if (containsUnconvertibleStatements(body)) {
             return null;
         }
+
+        if (hasUnsafeCapturesOrCounterWrites(body, counter)) {
+            return null;
+        }
+
+        if (CheckedBodyExceptions.escape(body)) {
+            return null;
+        }
+
+        // Header comments have no unambiguous counterpart after the counter
+        // declaration/condition/update disappear. Keep their original location.
+        if (containsComments(forStmt, forStmt.getStartPosition(), body.getStartPosition())) {
+            return null;
+        }
         
         // Issue #670: Check if the index variable is used in the body for complex
         // patterns like a[i+1], a[i-1], or i%2 that indicate neighbor access or
@@ -236,8 +269,210 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         if (usesIndexBeyondSimpleAccess(body, loopVarName)) {
             return null;
         }
+
+        // Admission uses a disposable rewrite so an unavailable qualifier cannot
+        // advertise a quick assist or leave an import behind on an unchanged loop.
+        CompilationUnit unit = (CompilationUnit) forStmt.getRoot();
+        if (!(unit.getTypeRoot() instanceof ICompilationUnit)
+                || streamTypeName(forStmt, ImportRewrite.create(unit, true)) == null) {
+            return null;
+        }
         
         return new ForLoopPattern(loopVarName, startExpr, endExpr, inclusive, body);
+    }
+
+    private String streamTypeName(ForStatement loop, ImportRewrite imports) {
+        var context = new ContextSensitiveImportRewriteContext(loop, imports);
+        String name = imports.addImport("java.util.stream.IntStream", context); //$NON-NLS-1$
+        // A qualified type used as an expression is still obscured by a visible
+        // variable or type called java. No safe static receiver is available then.
+        if (name.indexOf('.') >= 0 && context.findInContext("", "java", ImportRewriteContext.KIND_TYPE) //$NON-NLS-1$ //$NON-NLS-2$
+                != ImportRewriteContext.RES_NAME_UNKNOWN) {
+            return null;
+        }
+        return name;
+    }
+
+    /** Repeated reads must have the same value and the same first possible exception. */
+    private boolean isStableIntegralBound(Expression expression) {
+        ITypeBinding type = expression.resolveTypeBinding();
+        if (type == null || !type.isPrimitive()
+                || !Set.of("byte", "short", "char", "int").contains(type.getName())) { //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+            return false;
+        }
+        if (expression instanceof ParenthesizedExpression parenthesized) {
+            return isStableIntegralBound(parenthesized.getExpression());
+        }
+        if (expression instanceof NumberLiteral || expression instanceof CharacterLiteral) {
+            return true;
+        }
+        if (expression instanceof SimpleName name && name.resolveBinding() instanceof IVariableBinding variable) {
+            return !variable.isRecovered() && (variable.getConstantValue() != null || isStableLocal(variable));
+        }
+        if (expression instanceof QualifiedName name) {
+            if (name.getName().getIdentifier().equals("length") && isStableArray(name.getQualifier())) { //$NON-NLS-1$
+                return true;
+            }
+            return name.getQualifier().resolveBinding() instanceof ITypeBinding
+                    && name.resolveBinding() instanceof IVariableBinding variable
+                    && !variable.isRecovered() && variable.getConstantValue() != null;
+        }
+        if (expression instanceof FieldAccess field) {
+            return field.getName().getIdentifier().equals("length") && isStableArray(field.getExpression()); //$NON-NLS-1$
+        }
+        if (expression instanceof PrefixExpression prefix) {
+            return (prefix.getOperator() == PrefixExpression.Operator.PLUS
+                    || prefix.getOperator() == PrefixExpression.Operator.MINUS
+                    || prefix.getOperator() == PrefixExpression.Operator.COMPLEMENT)
+                    && isStableIntegralBound(prefix.getOperand());
+        }
+        if (expression instanceof CastExpression cast) {
+            return isStableIntegralBound(cast.getExpression());
+        }
+        if (expression instanceof InfixExpression infix) {
+            if (!isStableIntegralBound(infix.getLeftOperand()) || !isStableIntegralBound(infix.getRightOperand())) {
+                return false;
+            }
+            for (Object operand : infix.extendedOperands()) {
+                if (!isStableIntegralBound((Expression) operand)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isStableLocal(IVariableBinding variable) {
+        return !variable.isField() && !variable.isRecovered()
+                && (Modifier.isFinal(variable.getModifiers()) || variable.isEffectivelyFinal());
+    }
+
+    private boolean isStableArray(Expression expression) {
+        while (expression instanceof ParenthesizedExpression parenthesized) {
+            expression = parenthesized.getExpression();
+        }
+        return expression instanceof SimpleName name
+                && name.resolveBinding() instanceof IVariableBinding variable
+                && variable.getType().isArray() && isStableLocal(variable);
+    }
+
+    /** rangeClosed alone would still truncate a source loop that wraps at MAX_VALUE. */
+    private boolean canIncrementPast(Expression end) {
+        Object constant = end.resolveConstantExpressionValue();
+        if (constant instanceof Number number) {
+            return number.intValue() < Integer.MAX_VALUE;
+        }
+        if (constant instanceof Character) {
+            return true;
+        }
+        return !end.resolveTypeBinding().getName().equals("int"); //$NON-NLS-1$
+    }
+
+    private boolean hasUnsafeCapturesOrCounterWrites(Statement body, IVariableBinding counter) {
+        boolean[] unsafe = { false };
+        CompilationUnit root = (CompilationUnit) body.getRoot();
+        body.accept(new ASTVisitor() {
+            @Override
+            public boolean visit(SimpleName node) {
+                if (node.isDeclaration() || !(node.resolveBinding() instanceof IVariableBinding variable)
+                        || variable.isField()) {
+                    return true;
+                }
+                if (variable.isEqualTo(counter)) {
+                    ASTNode operand = node;
+                    while (operand.getParent() instanceof ParenthesizedExpression) {
+                        operand = operand.getParent();
+                    }
+                    ASTNode parent = operand.getParent();
+                    if (parent instanceof Assignment assignment && assignment.getLeftHandSide() == operand
+                            || parent instanceof PostfixExpression
+                            || parent instanceof PrefixExpression prefix
+                                    && (prefix.getOperator() == PrefixExpression.Operator.INCREMENT
+                                            || prefix.getOperator() == PrefixExpression.Operator.DECREMENT)) {
+                        unsafe[0] = true;
+                    }
+                } else if (!isStableLocal(variable)) {
+                    ASTNode declaration = root.findDeclaringNode(variable);
+                    if (declaration == null || declaration.getStartPosition() < body.getStartPosition()
+                            || declaration.getStartPosition() >= body.getStartPosition() + body.getLength()) {
+                        unsafe[0] = true;
+                    }
+                }
+                return true;
+            }
+        });
+        return unsafe[0];
+    }
+
+    private boolean containsComments(ASTNode owner, int start, int end) {
+        for (Object entry : ((CompilationUnit) owner.getRoot()).getCommentList()) {
+            Comment comment = (Comment) entry;
+            if (comment.getStartPosition() >= start && comment.getStartPosition() < end) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** IntConsumer cannot propagate checked exceptions, even when the enclosing method can. */
+    private static final class CheckedBodyExceptions extends AbstractExceptionAnalyzer {
+        private boolean uncertain;
+
+        static boolean escape(Statement body) {
+            CheckedBodyExceptions analyzer = new CheckedBodyExceptions();
+            body.accept(analyzer);
+            return analyzer.uncertain || analyzer.getCurrentExceptions().stream().anyMatch(exception ->
+                    !Bindings.isRuntimeException(exception)
+                            && Bindings.findTypeInHierarchy(exception, "java.lang.Error") == null); //$NON-NLS-1$
+        }
+
+        @Override
+        public boolean preVisit2(ASTNode node) {
+            if (node instanceof Expression resource && node.getParent() instanceof TryStatement statement
+                    && statement.resources().contains(node)) {
+                ITypeBinding type = resource.resolveTypeBinding();
+                check(type == null || type.isRecovered() ? null
+                        : Bindings.findMethodInHierarchy(type, "close", new ITypeBinding[0]), node); //$NON-NLS-1$
+            }
+            return true;
+        }
+
+        // The resource check above includes declarations, var and Java 9 resource references.
+        @Override
+        public boolean visit(VariableDeclarationExpression node) { return true; }
+
+        @Override
+        public boolean visit(RecordDeclaration node) { return false; }
+
+        @Override
+        public boolean visit(MethodInvocation node) { return check(node.resolveMethodBinding(), node); }
+
+        @Override
+        public boolean visit(SuperMethodInvocation node) { return check(node.resolveMethodBinding(), node); }
+
+        @Override
+        public boolean visit(ClassInstanceCreation node) { return check(node.resolveConstructorBinding(), node); }
+
+        @Override
+        public boolean visit(ThrowStatement node) {
+            ITypeBinding type = node.getExpression().resolveTypeBinding();
+            if (type == null || type.isRecovered()) uncertain = true;
+            else addException(type, node.getAST());
+            return true;
+        }
+
+        private boolean check(IMethodBinding binding, ASTNode node) {
+            if (binding == null || binding.isRecovered()) {
+                uncertain = true;
+            } else {
+                for (ITypeBinding exception : binding.getExceptionTypes()) {
+                    if (exception.isRecovered()) uncertain = true;
+                    else addException(exception, node.getAST());
+                }
+            }
+            return true;
+        }
     }
     
     /**
@@ -434,10 +669,44 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         ASTRewrite rewrite = cuRewrite.getASTRewrite();
         
         // Build LoopModel
-        LoopModel model = buildLoopModel(pattern, ast);
+        String streamType = streamTypeName(visited, cuRewrite.getImportRewrite());
+        if (streamType == null) return;
+        LoopModel model = buildLoopModel(pattern, streamType);
         
         // Create renderer
-        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.body());
+        ASTStreamRenderer renderer = new ASTStreamRenderer(ast, rewrite, cuRewrite.getRoot(), pattern.body()) {
+            @Override
+            @SuppressWarnings("unchecked") //$NON-NLS-1$
+            public Expression renderForEach(Expression pipeline, List<String> statements, String variable, boolean ordered) {
+                // This handler moves the entire body. Copy original source ranges
+                // instead of reparsing strings, which drops comments and statement kinds.
+                MethodInvocation call = ast.newMethodInvocation();
+                call.setExpression(pipeline);
+                call.setName(ast.newSimpleName(ordered ? "forEachOrdered" : "forEach")); //$NON-NLS-1$ //$NON-NLS-2$
+                LambdaExpression lambda = ast.newLambdaExpression();
+                VariableDeclarationFragment parameter = ast.newVariableDeclarationFragment();
+                parameter.setName(ast.newSimpleName(variable));
+                lambda.parameters().add(parameter);
+                lambda.setParentheses(false);
+                Statement body = pattern.body();
+                if (body instanceof Block block && block.statements().size() == 1
+                        && block.statements().get(0) instanceof ExpressionStatement
+                        && !containsComments(body, body.getStartPosition(), body.getStartPosition() + body.getLength())) {
+                    body = (Statement) block.statements().get(0);
+                }
+                if (body instanceof ExpressionStatement statement) {
+                    lambda.setBody(rewrite.createCopyTarget(statement.getExpression()));
+                } else if (body instanceof Block) {
+                    lambda.setBody(rewrite.createCopyTarget(body));
+                } else {
+                    Block block = ast.newBlock();
+                    block.statements().add(rewrite.createCopyTarget(body));
+                    lambda.setBody(block);
+                }
+                call.arguments().add(lambda);
+                return call;
+            }
+        };
         
         // Transform using LoopModelTransformer
         LoopModelTransformer<Expression> transformer = new LoopModelTransformer<>(renderer);
@@ -446,17 +715,16 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         if (streamExpression != null) {
             // Wrap in ExpressionStatement
             ExpressionStatement newStatement = ast.newExpressionStatement(streamExpression);
+            visited.setProperty(ASTNodes.UNTOUCH_COMMENT, Boolean.TRUE);
             rewrite.replace(visited, newStatement, group);
             
-            // Add IntStream import
-            cuRewrite.getImportRewrite().addImport("java.util.stream.IntStream");
         }
     }
     
     /**
      * Builds a LoopModel from the analyzed ForLoopPattern.
      */
-    private LoopModel buildLoopModel(ForLoopPattern pattern, AST ast) {
+    private LoopModel buildLoopModel(ForLoopPattern pattern, String streamType) {
         // Get start and end expressions as strings
         String startStr = pattern.startExpr().toString();
         String endStr = pattern.endExpr().toString();
@@ -473,7 +741,9 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
         SourceDescriptor source = new SourceDescriptor(
             SourceDescriptor.SourceType.EXPLICIT_RANGE,
             rangeExpression,
-            "int"
+            "int", //$NON-NLS-1$
+            // A complete factory preserves commas inside initializer calls.
+            streamType + ".range(" + rangeExpression + ")" //$NON-NLS-1$ //$NON-NLS-2$
         );
         
         // Build element descriptor for the loop variable
@@ -522,7 +792,7 @@ public class TraditionalForHandler extends AbstractFunctionalCall<ForStatement> 
      *
      * @param loopVarName the loop variable name (e.g. {@code "i"})
      * @param startExpr the start expression (e.g. {@code 0})
-     * @param endExpr the end expression (e.g. {@code list.size()})
+     * @param endExpr the invariant end expression (e.g. {@code array.length})
      * @param inclusive {@code true} for {@code <=}, {@code false} for {@code <}
      * @param body the loop body statement
      */
