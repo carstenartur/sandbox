@@ -39,7 +39,9 @@ class JavaSeriesFinalReviewTest extends JavaContextTestSupport {
                     var method=field?cls.getMethod("run",int.class):cls.getMethod("run",int.class,loader.loadClass("Sample$J"));
                     for(int n:new int[]{0,1,50000}) {
                         Object[] args=field?new Object[]{n}:new Object[]{n,null};
-                        if(loader==before)assertEquals(n==50000?1250025000:n,method.invoke(null,args));
+                        // The unchecked small-range fallback now avoids JDK qualifiers entirely.
+                        // Its large-range path still dereferences them, so admission must reject the whole template.
+                        if(loader==before || n<50000)assertEquals(n==50000?1250025000:n,method.invoke(null,args));
                         else assertInstanceOf(NullPointerException.class,assertThrows(java.lang.reflect.InvocationTargetException.class,()->method.invoke(null,args)).getCause());
                     }
                 }

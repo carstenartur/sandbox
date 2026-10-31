@@ -77,6 +77,55 @@ target, selected entries and parse-error set. Do not reuse the historical
 115/124 counts as a baseline for a different SDK or archive. Run `clean` for a
 fresh qualification; the scanner deliberately refuses to overwrite prior output.
 
+## Finite-series generated-Java measurements
+
+The [2026-10-31 measured results](results/2026-10-31-finite-series/README.md)
+record the public source revision, real original/generated timings, matched BC
+retention, raw data and measurement limits. All five large synthetic pairs had
+lower measured time; four of five small pairs and all eight BC pairs were
+inconclusive. These observations do not establish a general or BC speedup.
+
+The optional profile measures the existing finite-series implementation through
+its actual source analysis, proof/source replay and ordinary Apply output:
+
+```sh
+mvn -f qa/math-optimization/pom.xml clean verify -Pfinite-series-benchmark
+```
+
+It prepares polynomial loops, polynomial range streams, affine recurrences,
+geometric accumulation and invariant-factor products in strict `PRESERVE_JAVA`
+int arithmetic. The original and generated complete Java classes are compiled
+separately with `--release 17`. An identical primitive bridge calls each class;
+there is no optimizer or interpreter in the timed body. Every trial compares
+outputs on deterministic varied incoming values, negative/empty counts, counts
+around the recorded heuristic crossover, and large counts before timing.
+
+The measured datasets rotate 64 inputs: counts 16–31 exercise the original
+fallback, and counts 1,000,000–1,000,015 exceed the checked crossover. All emitted
+guards, allocations, modulo arithmetic and fallback code remain in the compiled
+class. The benchmark uses two JVM forks, three 500 ms warmups, five 500 ms measured
+iterations and the GC profiler. Run it without other CPU-heavy builds; host and
+JVM differences still limit transfer of the results to other machines. GC profiler
+allocation samples also include JVM/harness work and final-trial hash checks and
+cleanup, which are outside primary latency timing. Those values cannot isolate
+candidate allocations or establish allocation improvements/regressions; all raw
+samples are retained without dropping the final iterations.
+
+`target/finite-series/` retains exact source files, preparation observations,
+options, implementation/SDK hashes and the source revision/dirty-state receipt.
+Each trial checks these hashes before and after measurement. Raw samples remain
+in `target/finite-series-jmh.json`; `target/finite-series-performance.json` pairs
+all ten configurations, retains allocation measurements and labels overlapping
+timing intervals `INCONCLUSIVE`. The runner records the manifest SHA as an actual
+JMH parameter. The report requires complete matching metadata and the declared
+500 ms durations, then reconstructs means and 99.9% confidence intervals from all
+ten raw samples using JMH statistics. Swapped fixtures and invented summaries
+are rejected. The profile refuses existing fixture or raw-result output:
+use `clean` or retain the earlier run before generating another one. The ordinary
+Maven `verify` also runs the short equivalence/tampering contracts without timing.
+These synthetic reductions complement the real BC corpus; no BC speedup or
+universal crossover improvement follows from them.
+
 ## Historical recovery and evidence
 
 The workspace maintenance incident deleted the earlier checkout, full corpus
