@@ -11,6 +11,15 @@
 	<artifactId>sandbox_usage_view</artifactId>
 	<name>Sandbox usage view</name>
 	<packaging>eclipse-plugin</packaging>
+	<!-- Eclipse API annotations are needed when SpotBugs reads platform types. -->
+	<dependencies>
+		<dependency>
+			<groupId>org.eclipse.pde</groupId>
+			<artifactId>org.eclipse.pde.api.tools.annotations</artifactId>
+			<version>1.4.100</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
 	<build>
 		<sourceDirectory>${project.basedir}/src</sourceDirectory>
 	</build>
