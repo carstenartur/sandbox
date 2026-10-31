@@ -8,6 +8,7 @@ import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.SafetyProfile;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -230,7 +231,7 @@ class JavaExtendedSourceReadTest {
         }
     }
     private URLClassLoader compile(String source) throws Exception {
-        Path root=Files.createTempDirectory(directory,"read-"); Path file=root.resolve("Calculation.java"); Files.writeString(file,source);
+        Path root=Files.createTempDirectory(directory,"read-"); Path file=root.resolve("Calculation.java"); Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-proc:none","-d",root.toString(),file.toString()));
         return new URLClassLoader(new java.net.URL[]{root.toUri().toURL()},ClassLoader.getPlatformClassLoader());
     }
