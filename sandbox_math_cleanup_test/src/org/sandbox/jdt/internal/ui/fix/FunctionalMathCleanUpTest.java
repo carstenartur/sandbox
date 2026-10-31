@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.Map;
 import java.util.UUID;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -452,7 +453,7 @@ class FunctionalMathCleanUpTest {
     }
     private URLClassLoader compile(String source) throws Exception {
         Path folder=Files.createDirectory(compiled.resolve(UUID.randomUUID().toString()));
-        Path file=folder.resolve("Sample.java");Files.writeString(file,source);
+        Path file=folder.resolve("Sample.java");Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0,ToolProvider.getSystemJavaCompiler().run(null,null,null,"--release","17","-d",folder.toString(),file.toString()));
         return new URLClassLoader(new java.net.URL[]{folder.toUri().toURL()},null);
     }
