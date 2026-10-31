@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "60a9652470625a72ae92ba078fa5f59768c507c5df0a4aa424f87d375f81a8b7",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$x.getSelectionCount() \u003d\u003d 0 :: instanceof($x, \"org.eclipse.swt.custom.StyledText\")\n\u003d\u003e !$x.isTextSelected()\n;;",
+  "beforeExample": "package com.example;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyStyledTextUser {\n    private StyledText textWidget;\n\n    public MyStyledTextUser() {\n        // These lines are for context and assume SWT is available for compilation.\n        // In a real environment, Display and Shell would be initialized properly.\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        textWidget \u003d new StyledText(shell, SWT.NONE);\n    }\n\n    public void handleSelection() {\n        if (textWidget.getSelectionCount() \u003d\u003d 0) { // This line should match\n            System.out.println(\"No selection detected.\");\n        }\n    }\n\n    public void handleExistingSelection() {\n        if (textWidget.getSelectionCount() \u003e 0) { // This line should NOT match (different operator)\n            System.out.println(\"Selection exists.\");\n        }\n    }\n\n    public void anotherMethod(StyledText otherText) {\n        if (otherText.getSelectionCount() \u003d\u003d 0) { // This line should match too\n            System.out.println(\"Other text widget has no selection.\");\n        }\n    }\n    \n    // Example that should NOT match - different type\n    public void checkList(java.util.List\u003cString\u003e list) {\n        if (list.size() \u003d\u003d 0) {\n            System.out.println(\"List is empty.\");\n        }\n    }\n}",
+  "afterExample": "package com.example;\n\nimport org.eclipse.swt.SWT;\nimport org.eclipse.swt.custom.StyledText;\nimport org.eclipse.swt.widgets.Display;\nimport org.eclipse.swt.widgets.Shell;\n\npublic class MyStyledTextUser {\n    private StyledText textWidget;\n\n    public MyStyledTextUser() {\n        // These lines are for context and assume SWT is available for compilation.\n        // In a real environment, Display and Shell would be initialized properly.\n        Display display \u003d new Display();\n        Shell shell \u003d new Shell(display);\n        textWidget \u003d new StyledText(shell, SWT.NONE);\n    }\n\n    public void handleSelection() {\n        if (!textWidget.isTextSelected()) { // Transformed line\n            System.out.println(\"No selection detected.\");\n        }\n    }\n\n    public void handleExistingSelection() {\n        if (textWidget.getSelectionCount() \u003e 0) { // This line remains unchanged\n            System.out.println(\"Selection exists.\");\n        }\n    }\n\n    public void anotherMethod(StyledText otherText) {\n        if (!otherText.isTextSelected()) { // Transformed line\n            System.out.println(\"Other text widget has no selection.\");\n        }\n    }\n    \n    // Example that should NOT match - different type\n    public void checkList(java.util.List\u003cString\u003e list) {\n        if (list.size() \u003d\u003d 0) {\n            System.out.println(\"List is empty.\");\n        }\n    }\n}",
+  "negativeExample": "package com.example;\n\nimport java.util.Collections;\nimport java.util.List;\n\n// This example uses a List, not StyledText, and should not be matched by the rule.\npublic class ListUser {\n    public void checkItems(List\u003cString\u003e items) {\n        if (items.size() \u003d\u003d 0) { // This is not StyledText.getSelectionCount()\n            System.out.println(\"List has no items.\");\n        }\n    }\n\n    // This example uses a StyledText instance, but with a different operator (\u003e 0)\n    // so it should not match the \u0027\u003d\u003d 0\u0027 pattern.\n    public void checkExistingSelection(org.eclipse.swt.custom.StyledText textWidget) {\n        // These lines are for context and assume SWT is available for compilation.\n        // In a real environment, Display and Shell would be initialized properly.\n        // To make this compile, we assume StyledText is available.\n        if (textWidget.getSelectionCount() \u003e 0) {\n            System.out.println(\"Text is selected.\");\n        }\n    }\n}",
+  "targetHintFile": "swt.sandbox-hint",
+  "sourceCommit": "d20d2f31690f0455be41b288f0b02f4582835c1f",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace org.eclipse.swt.custom.StyledText.getSelectionCount() \u003d\u003d 0 with !isTextSelected() for clarity and potential efficiency, using the modern API.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-31T02:16:03.911464619Z",
+  "ruleFingerprint": "sha256:12c8da66ca775a6f27aafb530e067cc75f4fead2b1f8cb687952e88f3de91145",
+  "behaviorFingerprint": "sha256:64cfca06de540a19ab74a8a59280910b26ec3b1ec61bf759df98e06481f7e568",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The import org.eclipse.swt cannot be resolved",
+    "verifiedAt": "2026-10-31T02:23:43.668654655Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

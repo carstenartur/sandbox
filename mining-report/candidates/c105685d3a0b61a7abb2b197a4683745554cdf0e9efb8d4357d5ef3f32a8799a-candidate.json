@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "c105685d3a0b61a7abb2b197a4683745554cdf0e9efb8d4357d5ef3f32a8799a",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "$doc.getLegalLineDelimiters()[0] :: instanceof($doc, \"org.eclipse.jface.text.IDocument\")\n\u003d\u003e org.eclipse.jface.text.TextUtilities.getDefaultLineDelimiter($doc)\n;;",
+  "beforeExample": "package test;\nimport org.eclipse.jface.text.IDocument;\npublic class Example {\n    public void someMethod(IDocument fDocument) {\n        String string \u003d \"some text\";\n        int spaces \u003d 5;\n        char[] array \u003d new char[spaces];\n        java.util.Arrays.fill(array, \u0027 \u0027);\n        string \u003d fDocument.getLegalLineDelimiters()[0] + String.valueOf(array) + string;\n        System.out.println(string);\n    }\n}",
+  "afterExample": "package test;\nimport org.eclipse.jface.text.IDocument;\nimport org.eclipse.jface.text.TextUtilities;\npublic class Example {\n    public void someMethod(IDocument fDocument) {\n        String string \u003d \"some text\";\n        int spaces \u003d 5;\n        char[] array \u003d new char[spaces];\n        java.util.Arrays.fill(array, \u0027 \u0027);\n        string \u003d TextUtilities.getDefaultLineDelimiter(fDocument) + String.valueOf(array) + string;\n        System.out.println(string);\n    }\n}",
+  "negativeExample": "package test;\nimport org.eclipse.jface.text.IDocument;\npublic class NegativeExample {\n    public String[] getAllDelimiters(IDocument fDocument) {\n        return fDocument.getLegalLineDelimiters();\n    }\n    public String getSomeOtherString() {\n        String[] arr \u003d {\"\\n\", \"\\r\\n\"};\n        return arr[0];\n    }\n}",
+  "targetHintFile": "text-api-modernization.sandbox-hint",
+  "sourceCommit": "a19c8c64d3a29cb93630e7fa887ba37518374a5c",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Modernization",
+  "summary": "Replace direct access to the first legal line delimiter with `TextUtilities.getDefaultLineDelimiter()` for robustness.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-31T02:19:14.868282264Z",
+  "ruleFingerprint": "sha256:bfe20b9754d9dbc3b432a349b41c4b02974546ed00d194bcf58b08a0e6b46667",
+  "behaviorFingerprint": "sha256:963336ad3c12963ad913b4a429f55ae60ee937e8af2a075ccc8543740bf7af55",
+  "verification": {
+    "successful": false,
+    "stage": "BEFORE_PARSE",
+    "message": "Java compile error at line 3: The public type Example must be defined in its own file",
+    "verifiedAt": "2026-10-31T02:23:43.701892557Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "487e485081022b6d0450eed369fd8ef427e855571b94076e1b450b8857b7f5bc",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: junit.framework.Assert-to-org.junit.Assert\u003e\n\u003c!description: Replaces usages of deprecated junit.framework.Assert with org.junit.Assert.\u003e\n\u003c!severity: WARNING\u003e\njunit.framework.Assert.$method($args$)\n\u003d\u003e\norg.junit.Assert.$method($args$)\n;;",
+  "beforeExample": "package test;\n\nimport junit.framework.Assert;\n\npublic class MyTest {\n    public void testMethod() {\n        Assert.assertTrue(\"message\", true);\n        Assert.assertEquals(1, 1);\n        Assert.assertNull(\"value\");\n    }\n}",
+  "afterExample": "package test;\n\nimport org.junit.Assert; // Import changed\n\npublic class MyTest {\n    public void testMethod() {\n        Assert.assertTrue(\"message\", true);\n        Assert.assertEquals(1, 1);\n        Assert.assertNull(\"value\");\n    }\n}",
+  "negativeExample": "package test;\n\nimport org.junit.jupiter.api.Assertions;\n\npublic class OtherTest {\n    public void testMethod() {\n        Assertions.assertTrue(true, \"message\"); // JUnit 5, should not be matched\n    }\n}",
+  "targetHintFile": "deprecations.sandbox-hint",
+  "sourceCommit": "4b346beb75f34f42085268734a0323f770dd3cfe",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "API Migration",
+  "summary": "Migrate from JUnit 3\u0027s `junit.framework.Assert` to JUnit 4\u0027s `org.junit.Assert`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-31T02:14:22.857206533Z",
+  "ruleFingerprint": "sha256:a6bf1d339254e17c44fa15754bad4b5db70a711a6650f66963dd28619de1862d",
+  "behaviorFingerprint": "sha256:f939894a84e99548de9cf9cdacb19a33fe7ea18a80e03826390b843ae423214b",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-31T02:23:43.649267137Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

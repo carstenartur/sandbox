@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The import org.eclipse.jface.text.ITextOperationTarget cannot be resolved",
-    "verifiedAt": "2026-10-30T02:24:43.846413987Z",
+    "verifiedAt": "2026-10-31T02:23:37.328382280Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
