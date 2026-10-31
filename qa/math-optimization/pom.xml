@@ -75,5 +75,27 @@
       <argument>${project.build.directory}/bc-performance-review.json</argument>
      </arguments></configuration></execution></executions>
   </plugin></plugins></build></profile>
+  <profile><id>finite-series-benchmark</id><build><plugins><plugin>
+   <groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>3.6.4</version>
+   <configuration><classpathScope>compile</classpathScope><longModulepath>false</longModulepath></configuration>
+   <executions>
+    <execution><id>prepare-finite-series</id><phase>verify</phase><goals><goal>exec</goal></goals><configuration>
+     <executable>${java.home}/bin/java</executable><workingDirectory>${repo}</workingDirectory><arguments>
+      <argument>-Xmx512m</argument><argument>-cp</argument><classpath/><argument>org.sandbox.math.qa.FiniteSeriesQualification</argument>
+      <argument>${project.build.directory}/finite-series</argument>
+     </arguments></configuration></execution>
+    <execution><id>measure-finite-series</id><phase>verify</phase><goals><goal>exec</goal></goals><configuration>
+     <executable>${java.home}/bin/java</executable><workingDirectory>${repo}</workingDirectory><arguments>
+      <argument>-Xmx512m</argument><argument>-cp</argument><classpath/><argument>org.sandbox.math.qa.FiniteSeriesBenchmarkRunner</argument>
+      <argument>${project.build.directory}/finite-series</argument><argument>${project.build.directory}/finite-series-jmh.json</argument>
+     </arguments></configuration></execution>
+    <execution><id>report-finite-series</id><phase>verify</phase><goals><goal>exec</goal></goals><configuration>
+     <executable>${java.home}/bin/java</executable><workingDirectory>${repo}</workingDirectory><arguments>
+      <argument>-cp</argument><classpath/><argument>org.sandbox.math.qa.FiniteSeriesBenchmarkReport</argument>
+      <argument>${project.build.directory}/finite-series-jmh.json</argument><argument>${project.build.directory}/finite-series</argument>
+      <argument>${project.build.directory}/finite-series-performance.json</argument>
+     </arguments></configuration></execution>
+   </executions>
+  </plugin></plugins></build></profile>
  </profiles>
 </project>
