@@ -3,6 +3,8 @@ package org.sandbox.jdt.math.tests;
 
 import static org.junit.jupiter.api.Assertions.*;
 import de.regelsuche.sdk.optimization.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import org.eclipse.jface.text.Document;
@@ -65,7 +67,7 @@ class JavaTaskOptimizationTest {
     }
     private java.net.URLClassLoader compile(String source, String label) throws Exception {
         Path output = Files.createDirectories(directory.resolve(label));
-        Path file = output.resolve("Calculation.java"); Files.writeString(file, source);
+        Path file = output.resolve("Calculation.java"); Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-d", output.toString(), file.toString()));
         return new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()}, ClassLoader.getPlatformClassLoader());
     }

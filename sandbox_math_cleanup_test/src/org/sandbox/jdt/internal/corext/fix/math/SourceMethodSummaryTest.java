@@ -3,6 +3,8 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
 import de.regelsuche.sdk.optimization.*;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import org.eclipse.jdt.core.JavaCore;
@@ -22,7 +24,7 @@ class SourceMethodSummaryTest {
                 OptimizationGoal.LOWER_ESTIMATED_RUNTIME, 1_000_000, 20_000, false, 17, List.of());
     }
     private MathematicalAnalysis.Analysis analyze(String source) throws Exception {
-        Files.writeString(directory.resolve("Calculation.java"), source);
+        Files.writeString(directory.resolve("Calculation.java"), source, StandardCharsets.UTF_8);
         var parser = ASTParser.newParser(AST.getJLSLatest()); parser.setSource(source.toCharArray());
         parser.setUnitName(directory.resolve("Calculation.java").toString()); parser.setResolveBindings(true);
         parser.setEnvironment(new String[0], new String[]{directory.toString()}, new String[]{"UTF-8"}, true);
@@ -33,7 +35,7 @@ class SourceMethodSummaryTest {
                 new MathematicalAnalysis.SourceEnvironment(directory.resolve("Calculation.java").toString(), List.of(), List.of(directory.toString()), List.of("UTF-8")));
     }
     @Test void sourceSummaryAcrossFilesRetainsInitializationAndCall() throws Exception {
-        Files.writeString(directory.resolve("Helper.java"), HELPER);
+        Files.writeString(directory.resolve("Helper.java"), HELPER, StandardCharsets.UTF_8);
         var result = analyze(SOURCE);
         assertTrue(result.diagnostics().stream().anyMatch(d -> d.code().equals("VERIFIED_SOURCE_TASK")), result.diagnostics().toString());
         var document = new Document(SOURCE); result.newEdit().apply(document);
@@ -41,7 +43,7 @@ class SourceMethodSummaryTest {
         assertEquals(1, result.sourceDependencies().receipts().size());
         execute(SOURCE, "original", false); execute(document.get(), "generated", false);
         execute(SOURCE, "original-failure", true); execute(document.get(), "generated-failure", true);
-        Files.writeString(directory.resolve("Helper.java"), HELPER.replace("x+y", "x-y"));
+        Files.writeString(directory.resolve("Helper.java"), HELPER.replace("x+y", "x-y"), StandardCharsets.UTF_8);
         assertFalse(result.matches(SOURCE, Map.of()));
         assertThrows(IllegalArgumentException.class, result::newEdit);
     }
@@ -53,15 +55,16 @@ class SourceMethodSummaryTest {
     @Test void mutableFieldsAndVirtualMethodsAreNotPureSummaries() throws Exception {
         for (String helper : List.of(HELPER.replace("return x+y;", "return x+y+Calculation.initialized;"),
                 HELPER.replace("static int add", "int add"))) {
-            Files.writeString(directory.resolve("Helper.java"), helper);
+            Files.writeString(directory.resolve("Helper.java"), helper, StandardCharsets.UTF_8);
             String source = helper.contains("static int add") ? SOURCE : SOURCE.replace("Helper.add", "new Helper().add");
             var result = analyze(source); var document = new Document(source); result.newEdit().apply(document);
             assertTrue(document.get().contains("return a-x;"), document.get());
         }
     }
     @Test void reextractionCannotAcquireANewFullFileSourceAllowance() throws Exception {
-        Files.writeString(directory.resolve("Helper.java"), HELPER + "/*" + " ".repeat(64_000) + "*/");
-        Files.writeString(directory.resolve("Calculation.java"), SOURCE);
+        Files.writeString(directory.resolve("Helper.java"), (HELPER + "/*" + " ".repeat(64_000) + "*/"),
+				StandardCharsets.UTF_8);
+        Files.writeString(directory.resolve("Calculation.java"), SOURCE, StandardCharsets.UTF_8);
         var environment = new MathematicalAnalysis.SourceEnvironment(directory.resolve("Calculation.java").toString(), List.of(), List.of(directory.toString()), List.of("UTF-8"));
         var ast = MathematicalAnalysis.checkGeneratedSource(AST.newAST(AST.getJLSLatest(), false).newCompilationUnit(), SOURCE,
                 Map.of(), 17, new org.eclipse.core.runtime.NullProgressMonitor(), environment);
@@ -73,7 +76,7 @@ class SourceMethodSummaryTest {
     }
     private void execute(String source, String name, boolean fail) throws Exception {
         Path output = Files.createDirectories(directory.resolve(name));
-        Path file = output.resolve("Calculation.java"); Files.writeString(file, source);
+        Path file = output.resolve("Calculation.java"); Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, javax.tools.ToolProvider.getSystemJavaCompiler().run(null, null, null, "--release", "17", "-d", output.toString(), file.toString(), directory.resolve("Helper.java").toString()));
         try (var loader = new java.net.URLClassLoader(new java.net.URL[]{output.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
             var type = loader.loadClass("Calculation"); type.getField("fail").set(null, fail);
