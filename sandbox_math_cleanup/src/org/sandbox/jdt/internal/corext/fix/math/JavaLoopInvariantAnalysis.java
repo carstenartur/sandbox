@@ -243,7 +243,11 @@ final class JavaLoopInvariantAnalysis {
         private final CancellationToken token;
         long used;
         Work(long maximum,CancellationToken token) {this.maximum=maximum;this.token=token;}
-        void tick() {if(used>=maximum || token.isCancelled()) throw new Limit(); used++;}
+        void tick() {charge(1);}
+        void charge(long amount) {
+            if(amount<0 || amount>maximum-used || token.isCancelled()) throw new Limit();
+            used+=amount;
+        }
     }
     static final class Limit extends RuntimeException { private static final long serialVersionUID=1L; }
 }

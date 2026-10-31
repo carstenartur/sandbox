@@ -28,6 +28,7 @@ public final class MathReviewReport {
                 || (options.mathematicalOptIn() && region.explanation() != null && region.explanation().verified().original().steps().stream()
                         .anyMatch(step -> step.kind() == NumericKind.BIG_INTEGER));
         try {
+            if (region.scheduling() != null) region.scheduling().requireCost(region.proof(), region.cost(), options.goal());
             var assessment = MathCandidateReview.assess(region.original(), region.replacement(), region.cost().sourceScore(),
                     region.cost().candidateScore(), region.cost().estimatedRuntimeImprovement(), contractReview,
                     region.explanation() == null ? 0 : region.explanation().guardedReceivers().size(), options.targetJava());

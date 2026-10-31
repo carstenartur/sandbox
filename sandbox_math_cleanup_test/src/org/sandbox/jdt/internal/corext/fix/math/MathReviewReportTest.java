@@ -39,6 +39,19 @@ class MathReviewReportTest {
         assertEquals(-1, assessment.changedLines());
         assertTrue(assessment.cautions().contains("INSUFFICIENT_REVIEW_METADATA"));
     }
+    @Test void forgedLoopCostCannotBecomeAReviewedSaving() {
+        String source="class Sample {int run(int n){int sum=0;for(int i=0;i<8;i++){sum += (n+7)*(n-7);}return sum;}}";
+        var analysis=MathematicalAnalysis.analyze(parse(source),source,options(),null,-1,0);
+        var actual=analysis.evidence().stream().filter(e->e.scheduling()!=null).findFirst().orElseThrow();
+        var s=actual.scheduling();
+        var forged=new LoopSchedulingEvidence(s.control(),s.evaluationBasis(),s.invariantBindings(),s.temporaryName(),s.primitiveType(),
+                s.loopOffset(),s.expressionOffset(),s.expressionLength(),100,800,109,1);
+        var receipt=new MathematicalAnalysis.VerifiedRegion(actual.offset(),actual.length(),actual.proof(),actual.cost(),
+                actual.original(),actual.replacement(),actual.explanation(),actual.sourcePlan(),forged);
+        var assessment=MathReviewReport.ranked(List.of(receipt),options()).getFirst().assessment();
+        assertEquals("UNASSESSED",assessment.disposition());
+        assertEquals(0,assessment.estimatedScoreSaving());
+    }
     @Test void readabilitySelectionDoesNotTradeOneExpressionForGuardedControlFlow() {
         String source = "import java.math.BigInteger; class Sample { BigInteger f(BigInteger x, BigInteger p) { return x.modPow(BigInteger.TWO,p); } }";
         for (var goal : List.of(OptimizationGoal.READABILITY, OptimizationGoal.LOWER_ESTIMATED_RUNTIME)) {

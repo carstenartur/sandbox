@@ -614,7 +614,7 @@ public final class MathematicalAnalysis {
             var scheduleWork = new JavaLoopInvariantAnalysis.Work(Math.max(0, remainingWork), cancellation);
             for (var region : evidence) if (region.scheduling() != null)
                JavaLoopInvariantOptimizer.verifySchedule(ast, combinedAst, source, combined.get(), region, replacements,
-                     scheduleWork);
+                     options, scheduleWork);
             remainingWork -= scheduleWork.used;
          } catch (IllegalArgumentException | BadLocationException | JavaLoopInvariantAnalysis.Limit invalidEdits) {
             diagnostics.add(new MathematicalAnalysis.Diagnostic("COMBINED_EDITS_INVALID", invalidEdits.getMessage(), 0, source.length()));

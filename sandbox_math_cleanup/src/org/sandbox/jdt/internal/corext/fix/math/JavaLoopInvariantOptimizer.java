@@ -9,13 +9,11 @@ import org.eclipse.jdt.core.dom.*;
 import de.regelsuche.sdk.optimization.CancellationToken;
 import de.regelsuche.sdk.optimization.CheckedPolicy;
 import de.regelsuche.sdk.optimization.ComputationOptimizer;
-import de.regelsuche.sdk.optimization.OptimizationGoal;
 import de.regelsuche.sdk.optimization.OptimizationRequest;
 import de.regelsuche.sdk.optimization.OptimizationResult.CostAssessment;
 import de.regelsuche.sdk.optimization.RuntimeObligations.GuardKind;
 import de.regelsuche.sdk.optimization.SafetyProfile;
 import de.regelsuche.sdk.optimization.VerificationResult.Verified;
-import de.regelsuche.search.program.PreparedJointComputation.Cost;
 
 /** Numerical identity proof and independently replayed adapter scheduling. No optimizer candidate is fabricated. */
 final class JavaLoopInvariantOptimizer {
@@ -56,7 +54,7 @@ final class JavaLoopInvariantOptimizer {
                 long scalarWork=region.trace().occurrences().size();
                 long originalWork=Math.multiplyExact(context.control().tripCount(),scalarWork);
                 long scheduledWork=Math.addExact(scalarWork+1,context.control().tripCount());
-                CostAssessment cost=cost(originalWork,scheduledWork,options.goal());
+                CostAssessment cost=LoopSchedulingEvidence.cost(originalWork,scheduledWork,options.goal());
                 if(scalarWork<1 || !cost.estimatedRuntimeImprovement() || cost.candidateScore()>=cost.sourceScore()) continue;
                 String name; int index=0;
                 do {name="_mathInvariant"+index++;} while(!names.add(name)); //$NON-NLS-1$
@@ -89,7 +87,7 @@ final class JavaLoopInvariantOptimizer {
                 var receipt=new MathematicalAnalysis.VerifiedRegion(start,length,verified.evidence(),cost,
                         source.substring(start,start+length),replacement,null,plan,schedule);
                 var edit=new MathematicalAnalysis.Replacement(start,length,replacement,schedule.description());
-                verifySchedule(ast,generatedAst,source,generated,receipt,List.of(edit),new JavaLoopInvariantAnalysis.Work(share,token));
+                verifySchedule(ast,generatedAst,source,generated,receipt,List.of(edit),options,new JavaLoopInvariantAnalysis.Work(share,token));
                 if(token.isCancelled()) break;
                 replacements.add(edit); evidence.add(receipt);
             } catch(IllegalArgumentException | UnsupportedOperationException | JavaLoopInvariantAnalysis.Limit unavailable) {
@@ -108,17 +106,10 @@ final class JavaLoopInvariantOptimizer {
                 :result instanceof de.regelsuche.sdk.optimization.VerificationResult.BudgetExceeded exceeded?exceeded.work():share;
         return Math.max(0,work-share);
     }
-    private static CostAssessment cost(long before,long after,OptimizationGoal goal) {
-        long workWeight=goal==OptimizationGoal.LOWER_ESTIMATED_RUNTIME?10:1;
-        long storageWeight=goal==OptimizationGoal.READABILITY?0:goal==OptimizationGoal.LOWER_ALLOCATION?10:1;
-        var original=new Cost(before,0,0,1,(int)Math.min(Integer.MAX_VALUE,before),0);
-        var scheduled=new Cost(after,0,1,1,(int)Math.min(Integer.MAX_VALUE,after),0);
-        return new CostAssessment(before*workWeight,after*workWeight+storageWeight,0,0,original,scheduled,after<before);
-    }
-
     /** Replay control/admission, exact unchanged loop text, temp type/use, and all original variable bindings. */
     static void verifySchedule(CompilationUnit before,CompilationUnit after,String source,String generated,
-            MathematicalAnalysis.VerifiedRegion receipt,List<MathematicalAnalysis.Replacement> edits,JavaLoopInvariantAnalysis.Work work) {
+            MathematicalAnalysis.VerifiedRegion receipt,List<MathematicalAnalysis.Replacement> edits,MathCleanUpOptions options,
+            JavaLoopInvariantAnalysis.Work work) {
         var schedule=receipt.scheduling();
         if(schedule==null || receipt.sourcePlan()==null) throw new IllegalArgumentException("MISSING_LOOP_SCHEDULE"); //$NON-NLS-1$
         receipt.sourcePlan().resolve(before,source);
@@ -131,6 +122,15 @@ final class JavaLoopInvariantOptimizer {
         if(!context.control().equals(schedule.control()) || !context.inputs().equals(schedule.invariantBindings())
                 || context.normalCompletionOnly()!=(schedule.evaluationBasis()==LoopSchedulingEvidence.EvaluationBasis.NORMAL_LOOP_COMPLETION))
             throw new IllegalArgumentException("LOOP_CONTROL_OR_INPUTS_CHANGED"); //$NON-NLS-1$
+        // Precharge complete source binding scans and expression decoding from this replay's allowance.
+        // Compare the actual trace, rather than trusting a second caller-supplied work count or hash.
+        work.charge(2L*source.length());
+        var extracted=new JavaComputationExtractor().extractRuntimeExpression(before,source,context.expression(),options);
+        work.tick();
+        if(extracted.regions().size()!=1 || !extracted.diagnostics().isEmpty() || receipt.proof()==null
+                || !extracted.regions().getFirst().trace().equals(receipt.proof().obligations().originalTrace()))
+            throw new IllegalArgumentException("LOOP_VERIFIED_TRACE_DIFFERS"); //$NON-NLS-1$
+        schedule.requireCost(receipt.proof(),receipt.cost(),options.goal());
         int preceding=0;
         for(var edit:edits) if(edit.offset()+edit.length()<=receipt.offset()) preceding+=edit.replacement().length()-edit.length();
         String declaration=receipt.sourcePlan().changes().getFirst().replacement();
@@ -209,16 +209,32 @@ final class JavaLoopInvariantOptimizer {
         if(binding.isField() && binding.getConstantValue()!=null) return binding;
         if(!(before.findDeclaringNode(binding) instanceof VariableDeclaration declaration))
             throw new IllegalArgumentException("LOOP_BINDING_DECLARATION_MISSING"); //$NON-NLS-1$
-        int offset=declaration.getName().getStartPosition(), mapped=offset;
+        int mapped=mappedPosition(declaration.getName().getStartPosition(),receipt,edits);
+        ASTNode actual=NodeFinder.perform(after,mapped,declaration.getName().getLength());
+        if(!(actual instanceof SimpleName name) || !name.isDeclaration()
+                || !(name.getParent() instanceof VariableDeclaration actualDeclaration) || actualDeclaration.getName()!=name
+                || actualDeclaration.getNodeType()!=declaration.getNodeType()
+                || actualDeclaration.getParent().getNodeType()!=declaration.getParent().getNodeType()
+                || actualDeclaration.getStartPosition()!=mappedPosition(declaration.getStartPosition(),receipt,edits)
+                || !name.getIdentifier().equals(declaration.getName().getIdentifier()))
+            throw new IllegalArgumentException("LOOP_BINDING_DECLARATION_CHANGED"); //$NON-NLS-1$
+        IVariableBinding result=actualDeclaration.resolveBinding();
+        if(result==null || result.isRecovered() || after.findDeclaringNode(result)!=actualDeclaration
+                || !result.isEqualTo(name.resolveBinding()) || binding.isField()!=result.isField()
+                || binding.isParameter()!=result.isParameter() || binding.isEnumConstant()!=result.isEnumConstant()
+                || !binding.getType().isEqualTo(result.getType()))
+            throw new IllegalArgumentException("LOOP_BINDING_CATEGORY_OR_TYPE_CHANGED"); //$NON-NLS-1$
+        return result;
+    }
+    private static int mappedPosition(int offset,MathematicalAnalysis.VerifiedRegion receipt,
+            List<MathematicalAnalysis.Replacement> edits) {
+        int mapped=offset;
         for(var edit:edits) if(edit.offset()+edit.length()<=offset) mapped+=edit.replacement().length()-edit.length();
         if(offset>=receipt.offset() && offset<receipt.offset()+receipt.length()) {
             mapped+=receipt.sourcePlan().changes().getFirst().replacement().length();
             if(offset>receipt.scheduling().expressionOffset()) mapped+=receipt.scheduling().temporaryName().length()-receipt.scheduling().expressionLength();
         }
-        ASTNode actual=NodeFinder.perform(after,mapped,declaration.getName().getLength());
-        if(!(actual instanceof SimpleName name) || !(name.resolveBinding() instanceof IVariableBinding result) || result.isRecovered())
-            throw new IllegalArgumentException("LOOP_BINDING_DECLARATION_CHANGED"); //$NON-NLS-1$
-        return result;
+        return mapped;
     }
     private static VariableDeclarationFragment temporary(CompilationUnit ast,int start,String declaration,String name) {
         ASTNode node=NodeFinder.perform(ast,start+declaration.indexOf(name),name.length());

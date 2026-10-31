@@ -190,7 +190,54 @@ class JavaLoopInvariantTest extends JavaContextTestSupport {
                 generated.replace("sum += _mathInvariant0","sum += n"),generated.replace("final int _mathInvariant0","final long _mathInvariant0")))
             assertThrows(IllegalArgumentException.class,()->JavaLoopInvariantOptimizer.verifySchedule(
                     JavaEarlyExitGuardFactsTest.parse(source),JavaEarlyExitGuardFactsTest.parse(corrupted),source,corrupted,
-                    receipt,analysis.replacements(),new JavaLoopInvariantAnalysis.Work(10000,()->false)));
+                    receipt,analysis.replacements(),options(),new JavaLoopInvariantAnalysis.Work(10000,()->false)));
+    }
+
+    @Test void replayRejectsAFieldReferenceReplacingTheOriginalLocalDeclaration() {
+        String source="public class Sample {static int n;public static long run(int input){int n=input;int sum=0;"
+                +"for(int i=0;i<8;i++){sum += "+VALUE+";}return sum;}}";
+        var analysis=analyze(source);
+        var receipt=analysis.evidence().stream().filter(e->e.scheduling()!=null).findFirst().orElseThrow();
+        String generated=changed(source);
+        String corrupted=generated.replace("int n=input;","    n=input;");
+        assertEquals(generated.length(),corrupted.length());
+        var validAst=JavaEarlyExitGuardFactsTest.parse(corrupted);
+        assertThrows(IllegalArgumentException.class,()->JavaLoopInvariantOptimizer.verifySchedule(
+                JavaEarlyExitGuardFactsTest.parse(source),validAst,source,corrupted,receipt,analysis.replacements(),options(),
+                new JavaLoopInvariantAnalysis.Work(10000,()->false)));
+    }
+
+    @Test void replayBindsScalarWorkToTheVerifiedOriginalExpression() {
+        String source=sample("for(int i=0;i<8;i++){sum += "+VALUE+";}");
+        var analysis=analyze(source);var actual=analysis.evidence().stream().filter(e->e.scheduling()!=null).findFirst().orElseThrow();
+        var s=actual.scheduling();
+        var forged=new LoopSchedulingEvidence(s.control(),s.evaluationBasis(),s.invariantBindings(),s.temporaryName(),s.primitiveType(),
+                s.loopOffset(),s.expressionOffset(),s.expressionLength(),100,800,109,1);
+        var receipt=new MathematicalAnalysis.VerifiedRegion(actual.offset(),actual.length(),actual.proof(),actual.cost(),
+                actual.original(),actual.replacement(),actual.explanation(),actual.sourcePlan(),forged);
+        String generated=changed(source);
+        assertThrows(IllegalArgumentException.class,()->JavaLoopInvariantOptimizer.verifySchedule(
+                JavaEarlyExitGuardFactsTest.parse(source),JavaEarlyExitGuardFactsTest.parse(generated),source,generated,
+                receipt,analysis.replacements(),options(),new JavaLoopInvariantAnalysis.Work(10000,()->false)));
+    }
+
+    @ParameterizedTest @ValueSource(strings={"weightedScore","retainedStorage","differentGoal"})
+    void replayRejectsCostVectorsThatDisagreeWithTheActualGoalAndSchedule(String variant) {
+        String source=sample("for(int i=0;i<8;i++){sum += "+VALUE+";}");
+        var analysis=analyze(source);var actual=analysis.evidence().stream().filter(e->e.scheduling()!=null).findFirst().orElseThrow();
+        var cost=actual.cost();var candidate=cost.candidateCost();
+        if(variant.equals("retainedStorage")) candidate=new de.regelsuche.search.program.PreparedJointComputation.Cost(
+                candidate.operationWork(),candidate.peakLiveStorage(),0,candidate.outputBindings(),candidate.operationCount(),candidate.inspectionWork());
+        var forged=new de.regelsuche.sdk.optimization.OptimizationResult.CostAssessment(
+                variant.equals("differentGoal")?24:cost.sourceScore(),variant.equals("differentGoal")?12:
+                        variant.equals("weightedScore")?cost.candidateScore()-1:cost.candidateScore(),
+                cost.checkWork(),cost.fallbackOperations(),cost.sourceCost(),candidate,cost.estimatedRuntimeImprovement());
+        var receipt=new MathematicalAnalysis.VerifiedRegion(actual.offset(),actual.length(),actual.proof(),forged,
+                actual.original(),actual.replacement(),actual.explanation(),actual.sourcePlan(),actual.scheduling());
+        String generated=changed(source);
+        assertThrows(IllegalArgumentException.class,()->JavaLoopInvariantOptimizer.verifySchedule(
+                JavaEarlyExitGuardFactsTest.parse(source),JavaEarlyExitGuardFactsTest.parse(generated),source,generated,
+                receipt,analysis.replacements(),options(),new JavaLoopInvariantAnalysis.Work(10000,()->false)));
     }
 
     @ParameterizedTest @ValueSource(strings={
@@ -204,7 +251,7 @@ class JavaLoopInvariantTest extends JavaContextTestSupport {
         String corrupted=changed(source).replace("int i=0","int i=1").replace("new int[8]","new int[9]");
         assertThrows(IllegalArgumentException.class,()->JavaLoopInvariantOptimizer.verifySchedule(
                 JavaEarlyExitGuardFactsTest.parse(source),JavaEarlyExitGuardFactsTest.parse(corrupted),source,corrupted,
-                receipt,analysis.replacements(),new JavaLoopInvariantAnalysis.Work(10000,()->false)));
+                receipt,analysis.replacements(),options(),new JavaLoopInvariantAnalysis.Work(10000,()->false)));
     }
 
     @ParameterizedTest @ValueSource(strings={
