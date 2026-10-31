@@ -109,7 +109,143 @@ otherwise available to later optional passes. Fresh source/dependency receipts,
 combined binding checks, full generated-source validation and exact Apply/Undo
 remain mandatory.
 
-General recurrences, arbitrary virtual numerical summaries, heap/alias analysis,
+Nonlinear recurrences, arbitrary virtual numerical summaries, heap/alias analysis,
 BigDecimal scale/rounding and general floating motion need additional proof
 models. Configurable CAS remains upstream. See the [current qualification](../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md)
 for exact commits, matched corpus evidence and pending integration gates.
+
+## Verified finite sums
+
+After the established scalar and stream passes, a separate finite-sum pass can
+replace a complete counted loop or sequential range sum. Whole-loop reductions
+are considered before overlapping invariant hoists. For example,
+`for (int i=1; i<=100; i++) sum += i;` contributes 5050 while retaining the incoming
+value of `sum`. Existing scalar edits still take precedence; incompatible
+overlapping replacements are not combined.
+
+Constant-range admission supports int or long counters, `<`, `<=`, `>` or `>=`,
+and positive or negative constant strides: increment/decrement, `+=`, `-=`, and
+equivalent additive assignments. The adapter computes the count mathematically
+and proves that the final update remains representable. A for-counter is declared
+in its header. A canonical while/do counter has a single immediately preceding
+declaration and its update is the last body statement; its live final value is
+preserved. Do-loops account for the first execution before testing the condition.
+
+Bodies may declare same-width immutable temporaries before their updates and
+update up to eight independent accumulators, including several ordered updates
+to the same accumulator. Binding-aware substitution rejects temporaries reading
+evolving state and dependencies between accumulator groups. Up to 32 temporaries
+and 32 updates are admitted. Terms use integer literals, invariant local/parameter
+values and `+`, `-`, `*`. Every operator must evaluate at the accumulator's primitive
+width: long arithmetic may consume int leaves, but `long sum; ... sum += i*i;`
+is rejected. Generated long expressions widen int parameters before arithmetic.
+Fields, arrays, unknown calls, abrupt control flow, division, floating point and
+recovered bindings are unavailable. Comments are retained verbatim. Empty loops
+stay unchanged; other reductions require a strict estimated arithmetic gain.
+
+Resolved JDK IntStream/LongStream `range` and `rangeClosed`, optionally followed
+by `sequential` and one expression-lambda `map`, can reduce their `sum` terminal.
+Parallel, filter, peek, unknown-source and effectful pipelines are excluded. The
+source and generated expression types, mapper binding, range semantics and every
+emitted result are independently replayed.
+
+The SDK owns polynomial antidifference synthesis and independent telescoping
+verification, including signed int/long modular arithmetic. The adapter carries
+the incoming accumulator as a free symbol distinct from the recurrence state.
+`VerifiedRegion.finiteSum` contains the recurrence, certificate, actual emitted
+scalar expression, declaration anchors and independently checked operation cost
+for each output;
+scalar `proof` and loop `scheduling` remain absent for this reduction. Public
+certificate/status records are never trusted as proof: replay calls the SDK
+verifier again and recomputes cost, re-admits source control, rebuilds the exact
+generated source, decodes its actual expression and checks declaration bindings.
+Combined edits are replayed with original declaration anchors because local
+binding keys can change after another loop is removed or a temporary is inserted.
+
+Admission scans, model construction, search, verification and generated-source
+reparses consume bounded reservations from the remaining file budget and honor
+cancellation. Review reporting independently verifies numerical evidence before
+ranking its cost. Operations describe the substituted recurrence: a reused Java
+temporary may therefore appear more than once in this estimate. Estimates exclude
+loop control and are not measured speedups. Nonlinear state recurrences and
+infinite series require different proof contracts.
+
+## Runtime bounds and state transitions
+
+With `LOWER_ESTIMATED_RUNTIME`, `PRESERVE_JAVA` and mathematical opt-in off, the
+runtime iteration pass can reduce admitted loops whose bounds are invariant
+primitive expressions. It captures start/end in their original Java width before
+performing exact count arithmetic. Empty and short ranges retain original
+execution. For larger ranges, a guard checks the final counter update and every
+additional type/range/growth obligation before entering the optimized path.
+Statically unprofitable or always-wrapping ranges receive no runtime rewrite.
+Readability and lower-allocation goals do not select these allocating templates.
+
+| Family | Java admission | Verified computation |
+|---|---|---|
+| Polynomial sums | Int/long additive updates, invariant coefficients, bounded same-width temporaries; for/while/do counters, both stride directions. | SDK Newton/binomial coefficients evaluated with BigInteger intermediates; conversion to int/long occurs after exact summation. |
+| Affine state updates | `s = a*s + p(i)` with invariant coefficients; all source operations in one primitive ring or admitted exact BigInteger. | Independently verified augmented transition, powered by repeated squaring without modular division. |
+| Geometric sums and products | Evolving power plus accumulator, or multiplication by an invariant factor. | The same transition model, preserving every live output and source assignment order. |
+| Coupled states | Up to eight states with affine ordered updates, including an update that observes an earlier update in the same iteration. | Source updates are composed and verified before simultaneous output assignment. |
+| Nested polynomial sums | Two levels; inner start 0 or 1, unit stride, bound a scoped outer counter or invariant local. | Exact SDK nested composition, with runtime endpoint guards for nonnegative inner counts and representable counters. |
+| Periodic polynomial sums | One if/else update in a positive unit-stride int/long for-loop, selected by `i % period == residue`; period 1..32. | Independently verified polynomial child plans for the residues, with exact counts and the incoming accumulator included once. |
+| Piecewise polynomial sums | One if/else update selected by `<`, `<=`, `>` or `>=` against an invariant split, in either comparison orientation. | Two independently verified child plans with exact, clamped interval counts and one incoming accumulator. |
+| Sequential range sums | Resolved IntStream/LongStream range/rangeClosed and supported pure expression maps. | The same polynomial plans, preserving result width, range and empty semantics. |
+
+The runtime polynomial provider separates index degree (at most 8) from bounded
+parameter complexity. Expression transport is limited to 2048 nodes and depth 64;
+admission limits evolving states to 8 and temporaries/updates to 32 each. Unsupported
+mixed-width intermediate arithmetic is rejected: casting an already-overflowed
+int product to long is not exact multiplication. Header overflow is preserved by
+native-width capture rather than silently replaced with mathematical arithmetic.
+
+The BigInteger fragment admits resolved JDK add/subtract/multiply/negate,
+literal powers 0..8 and safe valueOf operands. Fast paths require nonnull inputs
+of exact runtime class BigInteger and at most 1024 input bits; nulls and subclasses
+execute the original loop. Linear growth is bounded before powering by a
+conservative matrix norm, with a 65536-bit limit. Accumulator objects must have
+value-only uses such as resolved intValue, longValue, signum, bitLength or toString.
+Escaping/returned BigInteger objects, identity observations, synchronization and
+unknown consumers exclude the rewrite. BigInteger reductions inside an enclosing
+repetition are also excluded: an observation before the reduction can execute
+again on the next outer iteration. These restrictions preserve observable object
+identity as well as numerical values.
+
+Partitioned sums admit one same-width `+=` or `-=` polynomial update per branch;
+an omitted else contributes zero. Their initial Java fragment excludes nested
+branch trees, multiple branch updates, decreasing/nonunit strides, while/do,
+streams and BigInteger terms. Periodic fast paths require a nonnegative start;
+runtime negative starts execute the original Java remainder semantics, while
+statically negative starts receive no candidate. Piecewise split expressions are
+captured in their original primitive width before exact boundary adjustment, so
+even an inclusive split at Long.MAX_VALUE remains representable in the generated
+count calculation. The split may lie below, inside or above the iteration range.
+
+Each polynomial child search and proof consumes the shared remaining allowance.
+Admission, output construction and failed proof or replay attempts also consume
+work; cancellation is checked between children. A simple period-32 example is
+qualified with a configured 5,000,000-unit allowance; a configured 1,000,000-unit
+qualification allowance may reject it. The UI default is 100,000 work units.
+Period and degree limits bound supported syntax, not a
+promise that every such input fits every configured resource budget.
+
+`VerifiedRegion.runtimeIteration` keeps this evidence separate from scalar,
+scheduling and constant-range proofs. Numerical checking uses one decreasing
+work budget and deadline. Source replay re-admits the original controls and
+bindings, verifies the SDK transport, regenerates the complete checked Java
+template, compares the actual edit result and rechecks untouched declarations
+and generated JDK type bindings. A matching hash or a candidate success flag
+alone is insufficient.
+
+Crossover scores count model expression work and a stated BigInteger-operation
+weight, including polynomial degree or transition dimension/count-bit work.
+Sequential substitution may expand that model, so these are explicit estimates
+rather than literal JVM instruction counts or measured speedups. The original
+loop remains below the estimated crossover and whenever a runtime guard fails.
+Generated Java depends only on JDK APIs, not on the Regelsuche runtime.
+
+Exact rational telescoping belongs to the SDK's exact-rational API. Java
+truncating integer division, floating-point reassociation and BigDecimal
+scale/rounding changes are not admitted by these proofs. Infinite series,
+arbitrary nonlinear recurrences, unknown calls, heap effects and unsupported
+stream stages remain outside these finite, source-checked fragments.
