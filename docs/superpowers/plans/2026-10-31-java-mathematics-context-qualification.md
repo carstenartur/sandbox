@@ -4,13 +4,12 @@
 
 Baseline: `4f816e72ee3b369c4456ef1a894426529264edb0` (merged PR #1771).
 Qualified local code: `f648240596f6d9f5451f236d4dc9e0770d142b85`, branch
-`codex/math-java-language-support`. The prepared GitHub commit
+`codex/math-java-language-support`. The matching GitHub source commit
 `68c3c21bbc13bcd1781abdb855b81761d005f383` has the exact same tree as that tested
-local code: `e3f9b0787c7be19ef7f7d4c66518ad8905dc4718`. Branch publication remains
-pending; this prepared identity is not a published final-head CI result.
-This report records local source/test/corpus
-qualification; final whole-branch independent review and integrated-head
-publication/CI are pending at this documentation checkpoint.
+local code: `e3f9b0787c7be19ef7f7d4c66518ad8905dc4718`. The integrated branch is
+published through draft/reference PR #1772. This report records completed local
+source/test/corpus qualification and independent whole-branch review. Exact-head
+remote CI remains a separate gate; consult the PR checks for its current result.
 
 Delivered fragments and their individual admission boundaries are in
 [Java computation contexts](../../../sandbox_math_cleanup/JAVA_CONTEXTS.md) and
@@ -39,7 +38,8 @@ classes were copied from that successful QA `target/classes` into immutable
 | ULR core | `-f sandbox-functional-converter-core/pom.xml test`; `/tmp/task3-core-full.log` | 229 tests, 0 failures/errors/skips at `e9f5c08`; core code/tests unchanged since, no redundant final rerun claimed. |
 | Final native package / SpotBugs | `-pl sandbox-functional-converter-core,sandbox_math_cleanup,sandbox_math_cleanup_test,sandbox_math_cleanup_help,sandbox_math_cleanup_feature -am -DskipTests package`; `/tmp/task5-final-native.log` | BUILD SUCCESS; analyzed modules 0 bugs / 0 errors. Native test/help/feature packages compiled; no workbench test execution. |
 | Fresh repository policy | `-pl sandbox_common_test -am -Dtest=RepositoryPolicy*Test,PinnedGitRepositoryTest -Dsurefire.failIfNoSpecifiedTests=false -Drepository.policy.base=4f816e72ee3b369c4456ef1a894426529264edb0 -Drepository.policy.exception=<verbatim published PR1772 exception> package` | 12 tests, 0 failures/errors/skips, BUILD SUCCESS at documentation checkpoint `13638a03da02bf43f5c94f3537a629f59d01a961`; 42.270 s, bound SpotBugs 0; `evidence/final-policy.log`. The selector permits reactor modules with no selected tests; no failing selected test is ignored. |
-| Task-scoped independent reviews | Tasks 1–3 approved; Task4 `118c43e` findings fixed in `ee58321` and rereviewed; Task5 `f648240` spec PASS / quality APPROVED | No pending task-scoped findings; final complete-branch review remains pending. |
+| Task-scoped independent reviews | Tasks 1–3 approved; Task4 `118c43e` findings fixed in `ee58321` and rereviewed; Task5 `f648240` spec PASS / quality APPROVED | No pending task-scoped findings. |
+| Final independent branch review | `4f816e72ee3b369c4456ef1a894426529264edb0..59395819b5d5c88ed7e0d94fcd865023b3f762dc` | Approved for draft integration; no Critical, Important or deferred Minor findings. Completion bookkeeping changes documentation only. |
 
 Implementation commits: Task1 `d402504`, Task2 `ff50dd3`, Task3 `e9f5c08`,
 Task4 `118c43e` + `ee58321`, Task5 `f648240`. Focused behavioral tests compile and
@@ -47,6 +47,13 @@ execute original/generated Java for overflow, null/bounds/throw precedence,
 call counts, mutation, catch-visible locals/stores, deferred callbacks and
 empty iterations; they check exact edits/Undo, stale dependencies, budgets,
 cancellation, target bindings and deliberately tampered scheduling/cost evidence.
+
+The final reviewer also compiled and executed two separate interaction probes
+against the frozen classes, with Java 17 fixtures and integer edge inputs. A
+combined helper/lambda/conditional/stream/loop source produced six edits and one
+scheduling receipt; a stream-plus-loop inside a deferred block lambda produced
+two edits and one scheduling receipt. Both preserved execution and exact Undo.
+These probes supplement the suite; they are not exhaustive composition coverage.
 
 Task5's initial full run exposed changed Hawk primary windows and a budget
 regression. The fix preserves the old first-pass grammar/windows and defers richer
@@ -179,6 +186,10 @@ JDT indexing/classpath transition and its exact failed-job rerun passed without
 source/gate changes. Maven verification then succeeded in run `41186133665`,
 attempt 2. That is Task3 checkpoint evidence, not final integrated-head CI.
 Fresh repository policy passed at documentation checkpoint `13638a03`; these
-subsequent wording/identity corrections do not change code or scan inputs. Final
-whole-branch review and remote publication/check results remain pending; no
-published final remote SHA is asserted.
+later documentation-only corrections do not change the qualified source. The
+final independent review approved `4f816e7..5939581` for draft integration without
+open findings. The completion commit records that verdict and publishes the
+accumulated per-task history. Exact tree equality is checked during publication.
+This is not a final integrated-head CI success or approval to merge: the PR's
+current checks and the required pre-merge split remain distinct from completed
+local work.

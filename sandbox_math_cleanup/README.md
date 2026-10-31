@@ -89,7 +89,9 @@ Both parsed 3,126 files with the same ten parse-error files. SWT 3.135.0
 recorded 714 tests, zero failures/errors and one existing optional skip; native
 core/math/test/help/feature packaging and SpotBugs passed. Native tests were
 compiled, not executed in a workbench. Repository policy passed 12 tests at documentation checkpoint `13638a03`.
-Final branch review and final-head publication/CI remain pending.
+Final independent branch review approved draft integration without open findings.
+The complete work is published in draft/reference PR #1772; its exact-head CI and
+the required split before merge remain separate integration gates.
 These are coverage and verification results, not measured runtime speedups.
 
 Regelsuche owns arithmetic search and independent numerical proof. Sandbox owns

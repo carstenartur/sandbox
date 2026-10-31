@@ -112,11 +112,13 @@ new heap equalities. Capture original source syntax and primitive result kind.
 - [x] Refresh repository policy gates after documentation commit: checkpoint
   `13638a03`, 12 tests, zero failures/errors/skips; BUILD SUCCESS and SpotBugs 0.
 - [x] Run matched BC/SWT corpus profiles; report exact inputs and changed spans.
-- [ ] Review the complete branch independently and fix material findings.
+- [x] Review the complete branch independently and fix material findings:
+  `4f816e7..5939581` approved for draft integration, no open findings.
 - [x] Document delivered support, remaining upstream proof requirements and
   measured limitations.
-- [ ] Publish final integrated head and reviewable ordinary main-based slices
-  (controller; draft/reference PR #1772 is not a merge candidate).
+- [x] Publish the final integrated head in ordinary main-based draft/reference
+  PR #1772. Separate reviewable main-based slices remain a prerequisite before
+  merge; this aggregate reference branch is not a merge candidate.
 
 ## Execution record
 
@@ -127,9 +129,14 @@ request authorizes execution of the preceding architectural recommendation.
 Tasks 1–5 are implemented and independently reviewed: `d402504`, `ff50dd3`,
 `e9f5c08`, `118c43e` + review fix `ee58321`, and `f648240`. The
 [2026-10-31 qualification](2026-10-31-java-mathematics-context-qualification.md)
-records the frozen code/test/corpus evidence and the remaining controller gates.
+records the frozen code/test/corpus evidence and the separate remote CI boundary.
 Full mathematics: 714 tests, zero failures/errors, one existing optional skip.
 ULR core: 229 passing at Task3, unchanged since. Native core/math/test/help/feature
 packaging and SpotBugs passed. Matched BC strict 120 -> 146, mathematical 129 ->
 147, all prior spans retained; SWT ImageData 0 -> 0. Fresh policy at `13638a03`: 12 tests, zero failures/errors/skips; BUILD SUCCESS.
-Final whole-branch review and integrated publication/CI remain pending here.
+Final independent review of `4f816e7..5939581` approved draft integration with no
+Critical, Important or deferred Minor findings. Two compiled/executed interaction
+probes passed, including stream fusion and loop motion inside a deferred lambda.
+The final documentation-only completion commit records that verdict and the
+integrated draft publication. Consult PR #1772 for its exact-head CI checks;
+earlier checkpoint CI is not a substitute. No merge was performed.
