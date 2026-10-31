@@ -11,6 +11,17 @@
 	<artifactId>sandbox_tools</artifactId>
 	<name>Sandbox tools</name>
 	<packaging>eclipse-plugin</packaging>
+	<!-- Make the OSGi AST dependencies available to Maven analysis tools as well. -->
+	<dependencies>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox-ast-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.sandbox</groupId>
+			<artifactId>sandbox-ast-api-jdt</artifactId>
+		</dependency>
+	</dependencies>
 	<build>
 		<sourceDirectory>${project.basedir}/src</sourceDirectory>
 	</build>

@@ -5,8 +5,8 @@
   byte-exact undo, cancellation and stale-source rejection; produce screenshots
   only from that execution.
 - Preserve the recovered [Bouncy Castle/JMH report](../qa/math-optimization/history/pre-reset/repository-at-8ee0ffc/qa/math-optimization/RESULTS-2026-10-04.md)
-  as historical evidence. The [2026-10-30 qualification](../docs/superpowers/plans/2026-10-30-math-optimization-qualification.md)
-  records 120 strict / 129 mathematical accepted regions and their exact inputs
+  as historical evidence. The [2026-10-31 qualification](../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md)
+  records 146 strict / 147 mathematical accepted regions and their exact inputs
   and budget limits; local fixtures and candidate counts do not qualify arbitrary
   cryptographic transformations or speedups.
 - Before enabling any upstream modification, qualify the upstream build and

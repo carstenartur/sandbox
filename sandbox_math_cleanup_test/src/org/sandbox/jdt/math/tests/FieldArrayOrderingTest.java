@@ -116,10 +116,26 @@ class FieldArrayOrderingTest {
         assertNotEquals(region.arrayReads().get(0).javaName(), region.arrayReads().get(1).javaName());
     }
 
-    @Test void effectfulNestedAndVolatileReceiversRemainOutsideTheContract() {
-        for (String read : List.of("volatileWords[0]", "next().words[0]", "receiver.words[0]",
-                "other.words[0]", "this.other.words[0]", "words[index++]", "words[index / mask]")) {
-            String source = "class Calculation { volatile int[] volatileWords; int[] words; Calculation other; "
+    @Test void objectQualifiedArrayReceiversRetainReadOrderNullAndBoundsChecks() throws Exception {
+        for (String read : List.of("receiver.words[0]", "other.words[0]", "this.other.words[0]")) {
+            String source="public class Calculation {int[] words; Calculation other;"
+                    +"public static int compute(int[] left,int[] right,int mask){Calculation c=new Calculation(); c.words=left; c.other=c; return c.calculate(c,right,mask);}"
+                    +"private int calculate(Calculation receiver,int[] data,int mask){int a="+read+" & mask; int b=data[0] & mask; return a ^ b;} }";
+            String generated=rewrite(source);
+            assertEquals(1,count(generated,read));
+            assertTrue(generated.indexOf(read)<generated.indexOf("data[0]"));
+            try(var before=compile(source);var after=compile(generated)) {
+                for(int[] left:new int[][]{null,new int[0],new int[]{31}})
+                    for(int[] right:new int[][]{null,new int[0],new int[]{-7}})
+                        assertEquals(invoke(before,left,right,-1),invoke(after,left,right,-1));
+            }
+        }
+    }
+
+    @Test void effectfulAndVolatileReceiversRemainOutsideTheContract() {
+        for (String read : List.of("volatileWords[0]", "next().words[0]", "receiver.volatileWords[0]",
+                "volatileOther.words[0]", "this.volatileOther.words[0]", "words[index++]", "words[index / mask]")) {
+            String source = "class Calculation { volatile int[] volatileWords; int[] words; Calculation other; volatile Calculation volatileOther; "
                     + "Calculation next() {return this;} int compute(Calculation receiver, int[] data, int index, int mask) { "
                     + "return (" + read + " & mask) ^ (data[0] & mask); }}";
             var extraction = new JavaComputationExtractor().extractRuntime(MathTestSupport.parse(source), source, options());

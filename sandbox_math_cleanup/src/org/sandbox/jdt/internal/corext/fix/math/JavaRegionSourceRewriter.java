@@ -33,7 +33,7 @@ final class JavaRegionSourceRewriter {
       for (var read : region.arrayReads()) {
          if (!(exactNode(ast, read.start(), read.length()) instanceof Expression expression)
                || !JavaSourceReadShape.supported(expression, java.util.Set.of())
-               || JavaOperationRegistry.kind(expression.resolveTypeBinding()).orElse(null) != read.kind())
+               || JavaSourceReadShape.kind(expression).orElse(null) != read.kind())
             throw new IllegalArgumentException("ARRAY_READ_SOURCE_CHANGED"); //$NON-NLS-1$
          prefix.append("final ").append(MathematicalAnalysis.javaType(read.kind())).append(' ') //$NON-NLS-1$
                .append(read.javaName()).append(" = ").append(source, read.start(), read.start() + read.length()).append(";\n"); //$NON-NLS-1$ //$NON-NLS-2$
