@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "226f460eb84e156c6c0b98b49fc844a17f1b5a18023be5daf1efa8593803b990",
+  "revision": 1,
+  "candidateOrdinal": 0,
+  "dslRule": "\u003c!id: eclipse.jface.text.fix.conextSelectorTypo\u003e\n\u003c!description: Fix typo in ContextInformationPopup.getConextSelectorPopupSize() method name.\u003e\n\u003c!severity: HINT\u003e\n$receiver.getConextSelectorPopupSize() :: instanceof($receiver, \"org.eclipse.jface.text.contentassist.ContextInformationPopup\")\n\u003d\u003e\n$receiver.getContextSelectorPopupSize()\n;;",
+  "beforeExample": "package org.eclipse.jface.text.contentassist;\n\nimport org.eclipse.swt.graphics.Point;\n\n// Simulate the class containing the typo\nclass ContextInformationPopup {\n    // The method with the typo\n    Point getConextSelectorPopupSize() {\n        return new Point(10, 20);\n    }\n}\n\npublic class ContentAssistant {\n    private ContextInformationPopup fContextInfoPopup \u003d new ContextInformationPopup();\n    public void activate() {\n        Point size \u003d fContextInfoPopup.getConextSelectorPopupSize(); // This line should be changed\n        System.out.println(size);\n    }\n}\n\n// Dummy Point class for compilation\nclass Point {\n    public int x, y;\n    public Point(int x, int y) { this.x \u003d x; this.y \u003d y; }\n    @Override public String toString() { return \"(\" + x + \",\" + y + \")\"; }\n}",
+  "afterExample": "package org.eclipse.jface.text.contentassist;\n\nimport org.eclipse.swt.graphics.Point;\n\n// Simulate the class after the typo fix\nclass ContextInformationPopup {\n    // The corrected method\n    Point getContextSelectorPopupSize() {\n        return new Point(10, 20);\n    }\n}\n\npublic class ContentAssistant {\n    private ContextInformationPopup fContextInfoPopup \u003d new ContextInformationPopup();\n    public void activate() {\n        Point size \u003d fContextInfoPopup.getContextSelectorPopupSize(); // This line should be the result\n        System.out.println(size);\n    }\n}\n\n// Dummy Point class for compilation\nclass Point {\n    public int x, y;\n    public Point(int x, int y) { this.x \u003d x; this.y \u003d y; }\n    @Override public String toString() { return \"(\" + x + \",\" + y + \")\"; }\n}",
+  "negativeExample": "package org.eclipse.jface.text.contentassist;\n\nimport org.eclipse.swt.graphics.Point;\n\n// A class that already uses the correct method name\nclass ContextInformationPopup {\n    Point getContextSelectorPopupSize() {\n        return new Point(10, 20);\n    }\n}\n\npublic class ContentAssistant {\n    private ContextInformationPopup fContextInfoPopup \u003d new ContextInformationPopup();\n    public void activate() {\n        Point size \u003d fContextInfoPopup.getContextSelectorPopupSize(); // This line should NOT be changed\n        System.out.println(size);\n    }\n}\n\n// Dummy Point class for compilation\nclass Point {\n    public int x, y;\n    public Point(int x, int y) { this.x \u003d x; this.y \u003d y; }\n    @Override public String toString() { return \"(\" + x + \",\" + y + \")\"; }\n}",
+  "targetHintFile": "eclipse-jface-text-fixes.sandbox-hint",
+  "sourceCommit": "f26750afeabe1a818ce6887ed205a433cf6fcd25",
+  "sourceRepo": "https://github.com/eclipse-platform/eclipse.platform.text",
+  "category": "Typo Fix",
+  "summary": "Fixes a typo in a method name `getConextSelectorPopupSize` to `getContextSelectorPopupSize`.",
+  "sourceVersion": "21",
+  "status": "DSL_VALID",
+  "discoveredAt": "2026-10-31T02:17:07.253373385Z",
+  "ruleFingerprint": "sha256:55a85081b5a9d6eb7737d8b4f64cc53a29e5ad60124de8d9a02898062ab23107",
+  "behaviorFingerprint": "sha256:4c0f427969de1ca426ed5a4450889f09466b011ad0def62bfe34e700cf1b8642",
+  "verification": {
+    "successful": false,
+    "stage": "DSL_PARSE",
+    "message": "Candidate DSL must contain only one rule and optional per-rule metadata; file metadata, includes, and embedded Java are not promotable",
+    "verifiedAt": "2026-10-31T02:23:43.683446645Z",
+    "verifierVersion": "7",
+    "matches": 0,
+    "replacements": 0
+  },
+  "transitions": []
+}

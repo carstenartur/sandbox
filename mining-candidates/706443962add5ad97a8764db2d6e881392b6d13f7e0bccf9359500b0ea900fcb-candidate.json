@@ -21,7 +21,7 @@
     "successful": false,
     "stage": "BEFORE_PARSE",
     "message": "Java compile error at line 3: The import org.eclipse.jface.text.TextAttribute cannot be resolved",
-    "verifiedAt": "2026-10-30T02:24:48.188858560Z",
+    "verifiedAt": "2026-10-31T02:23:41.216973217Z",
     "verifierVersion": "7",
     "matches": 0,
     "replacements": 0
