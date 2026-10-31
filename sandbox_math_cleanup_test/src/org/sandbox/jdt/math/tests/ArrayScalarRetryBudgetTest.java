@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import de.regelsuche.sdk.optimization.CancellationToken;
 import de.regelsuche.sdk.optimization.CheckedPolicy;
-import de.regelsuche.sdk.optimization.ComputationExplanations;
 import de.regelsuche.sdk.optimization.ComputationOptimizer;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationBudget;
@@ -21,21 +20,20 @@ import org.sandbox.jdt.internal.corext.fix.math.JavaComputationExtractor;
 import org.sandbox.jdt.internal.corext.fix.math.JavaComputationRegion;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.corext.fix.math.MathematicalAnalysis;
+import org.sandbox.jdt.internal.corext.fix.math.JavaCandidateRanking;
 
 class ArrayScalarRetryBudgetTest {
-    @Test void captureRejectionChargesSearchAndExplanationBeforeRetry() {
+    @Test void captureRejectionDuringSelectionChargesSearchBeforeRetry() {
         String source = "class Calculation { int compute(int[] words, int i) {"
                 + " int word = words[i]; return word ^ 0; }}";
         var ast = MathTestSupport.parse(source);
         var options = options(100_000L);
         var region = new JavaComputationExtractor().extractRuntime(ast, source, options).regions().getFirst();
-        var request = request(region, options, options.workBudget());
-        var candidate = assertInstanceOf(OptimizationResult.Candidate.class,
-                new ComputationOptimizer().optimize(request, CancellationToken.NONE));
-        long presentation = ComputationExplanations.describe(request, candidate, CancellationToken.NONE)
-                .explanation().orElseThrow().presentationWork();
-        assertTrue(presentation > 0);
-        long spent = candidate.work() + presentation;
+        var request = request(region, options, options.workBudget() - options.workBudget() / 3);
+        var rejected = assertInstanceOf(OptimizationResult.NoImprovement.class,
+                new ComputationOptimizer().optimize(request, CancellationToken.NONE, new JavaCandidateRanking(request, region, options, source)));
+        long spent = rejected.work();
+        assertTrue(spent > 0);
 
         var result = MathematicalAnalysis.analyze(ast, source, options, new NullProgressMonitor(), -1, 0);
         assertEquals(1, result.evidence().size(), result.diagnostics().toString());
@@ -56,15 +54,18 @@ class ArrayScalarRetryBudgetTest {
         var ast = MathTestSupport.parse(source);
         var options = options(100_000L);
         var region = new JavaComputationExtractor().extractRuntime(ast, source, options).regions().getFirst();
-        var complete = assertInstanceOf(OptimizationResult.Candidate.class,
-                new ComputationOptimizer().optimize(request(region, options, options.workBudget()), CancellationToken.NONE));
+        var completeRequest = request(region, options, options.workBudget());
+        var complete = new ComputationOptimizer().optimize(completeRequest, CancellationToken.NONE, new JavaCandidateRanking(completeRequest, region, options, source));
+        long completedWork = complete instanceof OptimizationResult.NoImprovement noImprovement ? noImprovement.work()
+                : assertInstanceOf(OptimizationResult.Inconclusive.class, complete).work();
         // The anytime search may use less work at a smaller allowance. Locate its
         // transition to a bounded failure instead of assuming a fixed work ratio.
-        long allowance = 1, upper = complete.work();
+        long allowance = 1, upper = completedWork;
         OptimizationResult.BudgetExceeded bounded = null;
         while (allowance + 1 < upper) {
             long probe = (allowance + upper) / 2;
-            var result = new ComputationOptimizer().optimize(request(region, options, probe), CancellationToken.NONE);
+            var probeRequest = request(region, options, probe);
+            var result = new ComputationOptimizer().optimize(probeRequest, CancellationToken.NONE, new JavaCandidateRanking(probeRequest, region, options, source));
             if (result instanceof OptimizationResult.BudgetExceeded exceeded) {
                 allowance = probe;
                 bounded = exceeded;
@@ -75,7 +76,11 @@ class ArrayScalarRetryBudgetTest {
         assertTrue(bounded.work() > 0 && bounded.work() < allowance,
                 "This completed inner search leaves part of its outer allowance unused: " + bounded);
         // Both original regions contain thirty-two operations and receive equal shares.
-        long budget = allowance * 2;
+        long budget = allowance * 3;
+        long actualAllowance = budget / 2 - (budget / 2) / 3;
+        var actualRequest = request(region, options, actualAllowance);
+        bounded = assertInstanceOf(OptimizationResult.BudgetExceeded.class, new ComputationOptimizer().optimize(actualRequest,
+                CancellationToken.NONE, new JavaCandidateRanking(actualRequest, region, options, source)));
         long remaining = budget - bounded.work();
         assertTrue(remaining > 0);
 

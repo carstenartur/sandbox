@@ -955,7 +955,7 @@ public final class JavaComputationExtractor {
                   throw JavaComputationExtractor.reject("STATIC_CALL_EFFECTFUL_QUALIFIER", invocation);
                }
 
-               MethodDeclaration scalarMethod = JavaScalarMethodBody.resolve(this.unit, invocation, options.mathematicalOptIn());
+               MethodDeclaration scalarMethod = JavaScalarMethodBody.resolve(this.unit, invocation, options.mathematicalOptIn(), taskMode);
                if (scalarMethod != null) return methodInvocation(invocation, scalarMethod, depth + 1);
 
                if (method.getDeclaringClass().getQualifiedName().equals("java.math.BigInteger")

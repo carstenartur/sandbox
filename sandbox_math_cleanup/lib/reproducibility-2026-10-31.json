@@ -1,0 +1,9 @@
+{
+  "status" : "PASS",
+  "sourceRevision" : "2dbf8e4a11e2aabc78e5d5c51c10cfe23d8a86a3",
+  "sourceTree" : "d515e608b156708f4c5dff7ae0f37e37cbf75b7b",
+  "cleanBuilds" : 2,
+  "sdkTestsPerBuild" : 227,
+  "freshConsumers" : 2,
+  "identicalDistributionFiles" : 10
+}

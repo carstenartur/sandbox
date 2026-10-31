@@ -17,17 +17,26 @@ final class JavaScalarMethodBody {
     private JavaScalarMethodBody() { }
 
     static MethodDeclaration resolve(CompilationUnit unit, MethodInvocation call, boolean mathematical) {
+        return resolve(unit, call, mathematical, false);
+    }
+
+    /** Retained calls may use nonprivate source definitions without removing foreign class initialization. */
+    static MethodDeclaration resolve(CompilationUnit unit, MethodInvocation call, boolean mathematical, boolean retainedCall) {
         IMethodBinding binding = call.resolveMethodBinding();
-        if (binding == null || binding.isRecovered() || !Modifier.isPrivate(binding.getModifiers())
+        if (binding == null || binding.isRecovered() || !retainedCall && !Modifier.isPrivate(binding.getModifiers())
                 || !Modifier.isStatic(binding.getModifiers()) || Modifier.isSynchronized(binding.getModifiers())
                 || Modifier.isNative(binding.getModifiers()) || binding.isVarargs()
                 || binding.isGenericMethod() || !scalar(binding.getReturnType(), mathematical)) return null;
         // Same type: removing the call must not remove another class's initialization.
         MethodDeclaration caller = enclosingMethod(call);
-        if (caller == null || caller.resolveBinding() == null
-                || !binding.getDeclaringClass().isEqualTo(caller.resolveBinding().getDeclaringClass())) return null;
-        ASTNode node = unit.findDeclaringNode(binding.getMethodDeclaration());
+        if (!retainedCall && (caller == null || caller.resolveBinding() == null
+                || !binding.getDeclaringClass().isEqualTo(caller.resolveBinding().getDeclaringClass()))) return null;
+        ASTNode node = retainedCall ? JavaSourceContext.method(unit, binding) : unit.findDeclaringNode(binding.getMethodDeclaration());
+        if (node == null && retainedCall) node = unit.findDeclaringNode(binding.getMethodDeclaration());
         if (!(node instanceof MethodDeclaration method) || method.getBody() == null
+                || method.resolveBinding() == null || !Modifier.isStatic(method.getModifiers())
+                || Modifier.isSynchronized(method.getModifiers()) || Modifier.isNative(method.getModifiers())
+                || !binding.getMethodDeclaration().getKey().equals(method.resolveBinding().getMethodDeclaration().getKey())
                 || method.parameters().size() != call.arguments().size()
                 || method.getBody().statements().size() > 64) return null;
         for (Object value : method.parameters()) {

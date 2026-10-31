@@ -5,8 +5,9 @@
   byte-exact undo, cancellation and stale-source rejection; produce screenshots
   only from that execution.
 - Preserve the pinned Bouncy Castle analysis and generated-Java JMH receipts in
-  `qa/math-optimization/RESULTS-2026-10-04.md`. The full scan accepted no changes;
-  measured local fixtures do not qualify arbitrary cryptographic transformations.
+  `qa/math-optimization/RESULTS-2026-10-04.md` as historical results. The October 30
+  baseline accepts 117 strict / 126 mathematical regions; local fixtures and
+  candidate counts do not qualify arbitrary cryptographic transformations or speedups.
 - Before enabling any upstream modification, qualify the upstream build and
   classify public/secret inputs and constant-time requirements.
 - Keep underflow detection unsupported until a tested tiny-and-inexact event

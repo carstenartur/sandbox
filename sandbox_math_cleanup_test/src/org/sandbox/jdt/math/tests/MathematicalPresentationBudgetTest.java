@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import de.regelsuche.sdk.optimization.CancellationToken;
 import de.regelsuche.sdk.optimization.CheckedPolicy;
 import de.regelsuche.sdk.optimization.ComputationOptimizer;
+import de.regelsuche.sdk.optimization.ComputationExplanations;
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationBudget;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
@@ -43,7 +44,9 @@ class MathematicalPresentationBudgetTest {
                 new OptimizationBudget(firstAllowance, options.maxStates(), 64, 5000L), CheckedPolicy.NONE);
         var candidate = assertInstanceOf(OptimizationResult.Candidate.class,
                 new ComputationOptimizer().optimize(request, CancellationToken.NONE));
-        assertEquals(options.workBudget() - candidate.work() - first.presentationWork(),
+        var described = ComputationExplanations.describe(request, candidate, options.workBudget() - candidate.work(), CancellationToken.NONE);
+        assertTrue(described.work() > first.presentationWork(), "Independent verification and replay must also consume file budget");
+        assertEquals(options.workBudget() - candidate.work() - described.work(),
                 second.derivation().orElseThrow().generationBudget());
     }
 }

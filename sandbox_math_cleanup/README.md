@@ -63,10 +63,14 @@ and generated contracts before accepting a change.
 `JavaComputationExtractor.extractTasks` exports bounded straight-line primitive
 integral tasks under `PRESERVE_JAVA`, including local versions, fresh reads and
 ordered commits/stores. The scanner's [optional `--tasks` mode](../qa/math-optimization/README.md)
-exposes summaries with `editable: false`. Whole-task inspection does not authorize
-cross-store edits; ordinary cleanup retains its existing proof and source gates.
-Configurable SymPy selection and full Nat256-addition optimization are not available
-through this increment.
+exposes summaries with `editable: false`. Ordinary cleanup now separately realizes
+verified whole tasks by changing pure right-hand sides in place. Reads, helper
+calls, intermediate assignments and stores retain their order, including on failure.
+Recompilation, re-extraction and an independent proof gate each accepted change.
+Static primitive helpers can be summarized from other source files while their
+calls and class initialization remain in place. Source dependency edits invalidate
+the patch. Configurable SymPy selection and full Nat256-addition optimization remain
+outside this increment.
 
 ## Current implementation and qualification
 

@@ -66,7 +66,8 @@ at least an equal share of the remaining pending-region allowance, even when the
 arithmetic is small. This covers fixed preparation and derivation overhead without
 raising the file budget. Work already spent on failed searches and explanations,
 including reported overshoot, remains charged; the original regions retain their
-existing proportional allocation.</p>
+existing proportional allocation. Explanation work includes independent verification,
+recorded-path replay and presentation, all within the remaining file allowance.</p>
 <p>For long modular chains which the whole-region search cannot improve or prove,
 the adapter first retries connected windows of at most four source outputs, then
 single statements if needed. Each window retains the intermediate values observed
@@ -175,6 +176,12 @@ calculation. With explicit mathematical opt-in, BigInteger parameters, locals
 and return values are also supported. Nested calls, overloads and local
 reassignments use their resolved Java bindings. Select every numeric kind used
 by the helper, including int for an int exponent.</td></tr>
+<tr><td>Retained source helper calls and array stores</td><td>Whole primitive tasks
+can simplify later arithmetic using a static helper defined in another project
+source file. The original call, initialization effects, reads, local assignments
+and array stores remain in their original order. The generated source is compiled,
+re-extracted and independently proved; edits to a helper invalidate the prepared
+change. Unknown dispatch and mutable helper state remain unsupported.</td></tr>
 <tr><td>float, double</td><td>Only concrete IEEE-equivalent transformations qualify.
 The supported strict contract requires a target Java level of at least 17.
 Rounding, signed zero, NaN and infinities are not interchangeable with real arithmetic. Only explicitly supported primitive or canonical-value observations qualify; raw-bit and object-identity observations require separate evidence.</td></tr>

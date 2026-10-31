@@ -213,6 +213,9 @@ public final class MathematicalAnalysis {
                // BigInteger requests: an Unsupported result with unknown work costs its full allowance.
                long ordinaryWork = canTryMathematical || slice != null ? Math.max(1L, regionWork / 2)
                      : canRetryBigInteger ? Math.max(1L, regionWork - Math.max(1L, regionWork / 4)) : regionWork;
+               // Memory candidates require source-aware ranking and an independent explanation replay.
+               // Reserve part of this region's existing share; never enlarge the file budget.
+               if (!region.arrayReads().isEmpty()) ordinaryWork = Math.max(1L, ordinaryWork - ordinaryWork / 3);
                OptimizationRequest request = new OptimizationRequest(
                   region.plan(),
                   region.trace(),
@@ -229,7 +232,10 @@ public final class MathematicalAnalysis {
                int replacementsBefore = replacements.size();
                Stage failureStage = Stage.SEARCH_OR_PROOF;
                try {
-                  OptimizationResult result = optimizer.optimize(request, cancellation);
+                  boolean sourceRanked = request.safetyProfile() == SafetyProfile.PRESERVE_JAVA
+                        && (!region.arrayReads().isEmpty() || region.trace().occurrences().stream().anyMatch(o -> o.evaluatedKind() == NumericKind.BIG_INTEGER));
+                  OptimizationResult result = optimizer.optimize(request, cancellation,
+                        sourceRanked ? new JavaCandidateRanking(request, region, options, source) : null);
                   // Keep ordinary Java sharing improvements. A different overflow contract is
                   // only needed after that search fails, and both attempts share one work budget.
                   long ordinarySpent = consumedWork(result, ordinaryWork);
@@ -237,12 +243,22 @@ public final class MathematicalAnalysis {
                         && ordinarySpent < regionWork) {
                      remainingWork -= ordinarySpent;
                      mathematicalIntegral = true;
+                     sourceRanked = false;
                      request = new OptimizationRequest(region.plan(), region.trace(), options.kinds(), "java25-numeric/v1",
                            region.assumptions(), SafetyProfile.CHECKED_THROW, OptimizationGoal.READABILITY,
                            options.optimizationBudget(regionWork - ordinarySpent), CheckedPolicy.EXPLICIT_DEFAULT);
                      result = optimizer.optimize(request, cancellation);
                   }
                   if (!(result instanceof Candidate candidate)) {
+                     if (sourceRanked && result instanceof NoImprovement && options.goal() == OptimizationGoal.READABILITY
+                           && !region.receiverGuards().isEmpty()) diagnostics.add(diagnostic("PATCH_READABILITY_COST", //$NON-NLS-1$
+                                 "Readability selection retains the original instead of adding receiver-guard branches", region)); //$NON-NLS-1$
+                     if (sourceRanked && result instanceof NoImprovement && options.goal() != OptimizationGoal.READABILITY) {
+                        if (!region.arrayReads().isEmpty()) diagnostics.add(diagnostic("ARRAY_CAPTURE_COST_EXCEEDS_BENEFIT", //$NON-NLS-1$
+                              "No improvement after emitted capture costs participate in candidate selection", region)); //$NON-NLS-1$
+                        if (!region.receiverGuards().isEmpty()) diagnostics.add(diagnostic("GUARD_COST_EXCEEDS_BENEFIT", //$NON-NLS-1$
+                              "RECEIVER_GUARD_RUNTIME_COST_UNQUALIFIED: no improvement after receiver checks participate in candidate selection", region)); //$NON-NLS-1$
+                     }
                      boolean preparationLimit = result instanceof OptimizationResult.Unsupported unsupported
                            && unsupported.toString().contains("plan preparation work bound exceeded");
                      long attemptSpent = preparationLimit && ((OptimizationResult.Unsupported) result).work() < 0
@@ -304,8 +320,8 @@ public final class MathematicalAnalysis {
 
                   remainingWork -= candidate.work();
                   failureStage = Stage.PROOF;
-                  var explained = ComputationExplanations.describe(request, candidate, cancellation);
-                  remainingWork -= explained.explanation().map(ComputationExplanations.Explanation::presentationWork).orElse(0L);
+                  var explained = ComputationExplanations.describe(request, candidate, Math.max(0, remainingWork), cancellation);
+                  remainingWork -= explained.work() >= 0 ? explained.work() : Math.max(0, remainingWork);
                   if (!(explained.verification() instanceof Verified) || explained.explanation().isEmpty()) {
                      diagnostics.add(diagnostic("REVERIFICATION_FAILED", explained.verification().toString(), region));
                      continue;
@@ -355,7 +371,8 @@ public final class MathematicalAnalysis {
                      }
 
                      if (options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME && (!mathematicalBigInteger
-                           || candidate.cost().sourceScore() - candidate.cost().candidateScore() <= 70L * region.receiverGuards().size())) {
+                           || (sourceRanked ? 10L * (candidate.cost().sourceCost().operationWork() - candidate.cost().candidateCost().operationWork())
+                                 : candidate.cost().sourceScore() - candidate.cost().candidateScore()) <= 70L * region.receiverGuards().size())) {
                         throw new IllegalArgumentException("RECEIVER_GUARD_RUNTIME_COST_UNQUALIFIED");
                      }
 
@@ -440,12 +457,12 @@ public final class MathematicalAnalysis {
                      long weightedChecks = receiverCheckCost * (options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME ? 10 : 1);
                      cost = new CostAssessment(
                         cost.sourceScore(),
-                        cost.candidateScore() + weightedChecks,
+                        cost.candidateScore() + (sourceRanked ? 0 : weightedChecks),
                         cost.checkWork() + receiverCheckCost,
                         region.trace().occurrences().size(),
                         cost.sourceCost(),
                         cost.candidateCost(),
-                        mathematicalBigInteger && cost.estimatedRuntimeImprovement() && cost.sourceScore() > cost.candidateScore() + weightedChecks
+                        mathematicalBigInteger && cost.estimatedRuntimeImprovement() && cost.sourceScore() > cost.candidateScore() + (sourceRanked ? 0 : weightedChecks)
                      );
                   }
                   if (mathematicalBigInteger && cost.candidateScore() >= cost.sourceScore()) {
@@ -453,7 +470,10 @@ public final class MathematicalAnalysis {
                      continue;
                   }
                   long arithmeticWork = cost.candidateCost().operationWork();
+                  long rankedScore = cost.candidateScore();
                   cost = JavaArrayCaptureCost.assess(region, plain, cost, options.goal());
+                  if (sourceRanked && options.goal() != OptimizationGoal.READABILITY) cost = new CostAssessment(cost.sourceScore(), rankedScore, cost.checkWork(), cost.fallbackOperations(),
+                        cost.sourceCost(), cost.candidateCost(), cost.estimatedRuntimeImprovement());
                   if (!region.arrayReads().isEmpty() && options.goal() != OptimizationGoal.READABILITY
                         && (cost.candidateScore() >= cost.sourceScore()
                               || options.goal() == OptimizationGoal.LOWER_ESTIMATED_RUNTIME && !cost.estimatedRuntimeImprovement())) {
@@ -550,6 +570,32 @@ public final class MathematicalAnalysis {
 
       if (isCancelled(monitor)) {
          return cancelled(sourceDigest, compilerOptions);
+      }
+
+      if (options.safety() == SafetyProfile.PRESERVE_JAVA && remainingWork >= 6000) {
+         var tasks = extractor.extractTasks(ast, source, options).tasks().stream()
+               .filter(task -> task.plan().outputs().size() > 1)
+               .filter(task -> selectionOffset < 0 || overlaps(task.start(), task.length(), selectionOffset, Math.max(1, selectionLength)))
+               .filter(task -> replacements.stream().noneMatch(edit -> overlaps(task.start(), task.length(), edit.offset(), edit.length())))
+               .toList();
+         remainingWork -= sourceContext.takeWork();
+         for (int i = 0; i < tasks.size() && remainingWork >= 6000 && !isCancelled(monitor); i++) {
+            var task = tasks.get(i);
+            long allowance = remainingWork / (tasks.size() - i);
+            if (allowance < 6000) continue;
+            remainingWork -= allowance;
+            try {
+               JavaTaskSourceRewriter.optimize(ast, source, task, options, allowance, monitor, compilerOptions, environment).ifPresent(applied -> {
+                  replacements.add(applied.replacement()); evidence.add(applied.evidence());
+                  diagnostics.add(new Diagnostic("VERIFIED_SOURCE_TASK", applied.replacement().description(), task.start(), task.length(), Stage.PROOF)); //$NON-NLS-1$
+               });
+            } catch (JavaTaskSourceRewriter.BudgetOverrun exceeded) {
+               remainingWork -= exceeded.additional;
+               diagnostics.add(new Diagnostic("BUDGET_EXCEEDED", exceeded.getMessage(), task.start(), task.length(), Stage.BUDGET)); //$NON-NLS-1$
+            } catch (IllegalArgumentException | UnsupportedOperationException unavailable) {
+               diagnostics.add(new Diagnostic("SOURCE_TASK_NOT_REALIZED", unavailable.getMessage(), task.start(), task.length(), Stage.EMISSION)); //$NON-NLS-1$
+            }
+         }
       }
 
       MathematicalAnalysis.Analysis analysis = new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation.edits(source));
@@ -719,7 +765,7 @@ public final class MathematicalAnalysis {
             + fallback + indentGenerated("\n}", source, region.start());
    }
 
-   private static void checkGeneratedSource(
+   static CompilationUnit checkGeneratedSource(
       CompilationUnit original, String generated, Map<String, String> compilerOptions, int targetJava, IProgressMonitor monitor, MathematicalAnalysis.SourceEnvironment environment
    ) {
       ASTParser parser = ASTParser.newParser(original.getAST().apiLevel());
@@ -766,6 +812,7 @@ public final class MathematicalAnalysis {
             throw new IllegalArgumentException("GENERATED_REGION_INVALID: " + problem.getMessage());
          }
       }
+      return generatedAst;
    }
 
    static String javaType(NumericKind kind) {

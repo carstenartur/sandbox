@@ -193,7 +193,9 @@ class ArrayReadComputationTest {
         var cost = result.evidence().getFirst().cost();
         // One multiplication, one widening cast, one capture store, two capture references.
         assertEquals(5, cost.candidateCost().operationWork());
-        assertEquals(6, cost.candidateScore());
+        // Readability ranks scalar operations/bindings in eighths, then reports the
+        // three retained capture execution costs separately: (2 + 1) * 8 + 3.
+        assertEquals(27, cost.candidateScore());
         assertFalse(cost.estimatedRuntimeImprovement());
         assertTrue(result.replacements().getFirst().description().contains("array capture work 3"));
     }
