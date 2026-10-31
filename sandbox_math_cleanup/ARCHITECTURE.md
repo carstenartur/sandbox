@@ -88,9 +88,9 @@ overshoots; unused allowance remains available. Unknown legacy failures reserve
 the request allowance plus bounded unreported preparation. Existing
 file limits and region weights remain unchanged. Completed bounded searches debit
 their reported work when the SDK certifies complete accounting; partial checker
-stops still reserve the allocation or reported overshoot. The older explanation API still
-reports presentation work separately from fresh re-verification; a complete
-explanation-call work ledger is a documented upstream follow-up.
+stops still reserve the allocation or reported overshoot. Explanation verification,
+replay and presentation share the remaining allowance as described above;
+completed preparation is still charged when a later phase fails.
 
 ## Ordered primitive array inputs
 

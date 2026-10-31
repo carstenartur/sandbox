@@ -4,10 +4,11 @@
 - Run a real workbench interaction test for options, warning, preview, apply,
   byte-exact undo, cancellation and stale-source rejection; produce screenshots
   only from that execution.
-- Preserve the pinned Bouncy Castle analysis and generated-Java JMH receipts in
-  `qa/math-optimization/RESULTS-2026-10-04.md` as historical results. The October 30
-  baseline accepts 117 strict / 126 mathematical regions; local fixtures and
-  candidate counts do not qualify arbitrary cryptographic transformations or speedups.
+- Preserve the recovered [Bouncy Castle/JMH report](../qa/math-optimization/history/pre-reset/repository-at-8ee0ffc/qa/math-optimization/RESULTS-2026-10-04.md)
+  as historical evidence. The [2026-10-30 qualification](../docs/superpowers/plans/2026-10-30-math-optimization-qualification.md)
+  records 120 strict / 129 mathematical accepted regions and their exact inputs
+  and budget limits; local fixtures and candidate counts do not qualify arbitrary
+  cryptographic transformations or speedups.
 - Before enabling any upstream modification, qualify the upstream build and
   classify public/secret inputs and constant-time requirements.
 - Keep underflow detection unsupported until a tested tiny-and-inexact event

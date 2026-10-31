@@ -60,38 +60,57 @@ overflow behavior and BigInteger result identity. **Select All does not grant
 that consent.** Review the [safety profiles](../sandbox_math_cleanup_help/html/cleanup.html#safety)
 and generated contracts before accepting a change.
 
-`JavaComputationExtractor.extractTasks` exports bounded straight-line primitive
-integral tasks under `PRESERVE_JAVA`, including local versions, fresh reads and
-ordered commits/stores. The scanner's [optional `--tasks` mode](../qa/math-optimization/README.md)
-exposes summaries with `editable: false`. Ordinary cleanup now separately realizes
-verified whole tasks by changing pure right-hand sides in place. Reads, helper
-calls, intermediate assignments and stores retain their order, including on failure.
-Recompilation, re-extraction and an independent proof gate each accepted change.
-Static primitive helpers can be summarized from other source files while their
-calls and class initialization remain in place. Source dependency edits invalidate
-the patch. Configurable SymPy selection and full Nat256-addition optimization remain
-outside this increment.
+### Verified whole-task rewrites
+
+Under `PRESERVE_JAVA`, ordinary cleanup can rewrite bounded straight-line primitive
+integral tasks by changing total (non-throwing) right-hand sides in place. Reads,
+helper calls, intermediate assignments and stores retain their order, including
+on failure. Generated Java must compile, yield the same ordered source events
+when re-extracted, and pass an independent arithmetic proof. The scanner's
+[optional `--tasks` mode](../qa/math-optimization/README.md) separately exports
+inspection summaries with `editable: false`; exporting a task does not mean that
+the cleanup can rewrite it.
+
+For a concrete strict-Java example, the [whole-task regression](../sandbox_math_cleanup_test/src/org/sandbox/jdt/math/tests/JavaTaskOptimizationTest.java)
+checks that `(high << 32) + low` becomes `v` after `high = v >>> 32` and
+`low = v & 0xffffffffL`, while the intervening array stores remain in place.
+It compares compiled original/generated behavior for extreme values, null/short
+arrays and aliasing, checks exception-visible local state, and requires exact Undo.
+
+Tasks can summarize straight-line static primitive helpers from project source,
+including nonprivate helpers and helpers in other files. Calls and class
+initialization remain in place; changing a source dependency invalidates the
+prepared patch. The [source-helper regression](../sandbox_math_cleanup_test/src/org/sandbox/jdt/internal/corext/fix/math/SourceMethodSummaryTest.java)
+covers these retained calls, initialization failure and stale-source rejection.
+
+Whole-task rewriting does not infer loop invariants, combine control-flow paths,
+or summarize virtual calls and mutable helper state. Loop bodies can supply
+separate straight-line tasks. Configurable SymPy selection and full
+Nat256-addition optimization remain outside the supported fragment.
 
 ## Current implementation and qualification
 
-The [2026-10-27 qualification](../docs/superpowers/plans/2026-10-27-typed-computation-qualification.md)
-records the exact SDK artifact, complete headless tests, matched BC corpus results
-and native integration boundaries. Check the recorded source revisions and the
-integration PR's native checks before applying these results to another version.
+The [2026-10-30 qualification](../docs/superpowers/plans/2026-10-30-math-optimization-qualification.md)
+records the exact SDK artifact, source-aware ranking and whole-task rewrites,
+complete headless tests, matched BC corpus results and native integration
+boundaries. Check the recorded source revisions and the integration PR's native
+checks before applying these results to another version.
 
 Regelsuche now proves generic high/low word reconstruction and preserves shared
 computation graphs through transport and search. Sandbox supplies Java semantics
 and source effects. The [architecture](ARCHITECTURE.md#complete-computation-tasks-and-cas-ownership)
 describes the ownership split and the future configurable CAS boundary.
 
-The recorded matched Bouncy Castle 1.85.2 scans accepted **117 strict-Java regions**
-and **126 mathematical-opt-in regions**, retaining all baseline accepted spans.
+The recorded matched Bouncy Castle 1.85.2 scans accepted **120 strict-Java regions**
+and **129 mathematical-opt-in regions**, compared with the previous 117 and 126.
 Both profiles parsed 3,126 files and retained the same ten parse-error files.
-The headless consumer run recorded 560 tests, zero failures/errors and one
-optional historical-reference skip. These results belong to the exact sources,
-SDK and profiles in the qualification; they are not a measured speedup or a
-claim that every calculation is supported. Native Eclipse/UI and distribution
-checks remain separate.
+The higher totals are not a strict superset of accepted source spans: the report
+records changed Hawk spans under fully accounted work budgets. The headless
+consumer run recorded 568 tests, zero failures/errors and one optional
+historical-reference skip. These results belong to the exact sources, SDK and
+profiles in the qualification; they are not a measured speedup or a claim that
+every calculation is supported. Native Eclipse/UI and distribution checks remain
+separate.
 
 ## BigInteger magnitude and modular regions
 
@@ -115,13 +134,13 @@ or reported overshoot, whichever is greater. Regelsuche owns modular candidates 
 The adapter still verifies emitted Java and requires an estimated runtime saving
 after all receiver checks and fallback costs.
 
-The explanation API's reported presentation work excludes its fresh verification
-work. A complete explanation-call ledger remains a follow-up; the file allowance
-must not be interpreted as accounting for every executed SDK operation.
+Explanation accounting includes independent verification, derivation replay and
+presentation within the remaining work allowance. Completed preparation remains
+charged if a later phase fails.
 
 ## Computations across source helper calls
 
-The runtime source adapter can expand statically resolved private static helpers in the same declaring type. Supported helper bodies contain integral parameters/locals (`byte`, `short`, `char`, `int`, `long`), straight-line initialized local declarations and assignments, and a final value return. With explicit mathematical opt-in, parameters, locals and the returned value can also be `BigInteger`. Nested and overloaded calls use JDT bindings and isolated value frames. No helper name, class name, formula or requested mathematical target selects applicability: the existing Regelsuche SDK searches the resulting original typed graph.
+The expression-region expansion path supports statically resolved private static helpers in the same declaring type. This path has narrower source limits than the [helper summaries used by whole tasks](#verified-whole-task-rewrites) described above. Supported helper bodies contain integral parameters/locals (`byte`, `short`, `char`, `int`, `long`), straight-line initialized local declarations and assignments, and a final value return. With explicit mathematical opt-in, parameters, locals and the returned value can also be `BigInteger`. Nested and overloaded calls use JDT bindings and isolated value frames. No helper name, class name, formula or requested mathematical target selects applicability: the existing Regelsuche SDK searches the resulting original typed graph.
 
 Every argument is translated before the callee body, including unused arguments. Dead callee operations remain in the original evaluation trace. Parameter conversions, compound-assignment narrowing and return conversions use the same decoder as ordinary source statements. Helper definitions and their comments remain unchanged when only the caller is selected. Purely unfolding a method is not itself a measured performance improvement.
 
@@ -140,7 +159,7 @@ Regelsuche can then propose a verified modular multiplication. Algebraic
 cancellations can also cross a helper boundary. The runtime goal still charges
 for guards and rejects proposals without a predicted benefit.
 
-State/field access other than the listed JDK constants, synchronization, native or dynamic dispatch, other declaring classes, recursive cycles, unsupported control flow and unsupported numeric helper expressions are rejected. Source expansion is bounded to 16 nested frames, 64 statements per helper and 256 expanded statements per source region, in addition to the existing expression-depth bound. These are Java translation limits, not a catalog of mathematical problems. Deliberately authored computed constants inside helpers are protected by the same source policy; calls cannot reopen constant-folding-only demos.
+This expansion path rejects state/field access other than the listed JDK constants, synchronization, native or dynamic dispatch, other declaring classes, recursive cycles, unsupported control flow and unsupported numeric helper expressions. Source expansion is bounded to 16 nested frames, 64 statements per helper and 256 expanded statements per source region, in addition to the existing expression-depth bound. These are Java translation limits, not a catalog of mathematical problems. Deliberately authored computed constants inside helpers are protected by the same source policy; calls cannot reopen constant-folding-only demos.
 
 Each numeric kind used by helper parameters and calculations must be selected.
 A helper taking an `int` exponent therefore requires `INT` as well as
