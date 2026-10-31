@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>NumericIteration.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">sandbox_coverage</a> &gt; <a href="../index.html" class="el_bundle">sandbox-functional-converter-core</a> &gt; <a href="index.source.html" class="el_package">org.sandbox.functional.core.model</a> &gt; <span class="el_source">NumericIteration.java</span></div><h1>NumericIteration.java</h1><pre class="source lang-java linenums">/* Copyright (c) 2026 Carsten Hammer. SPDX-License-Identifier: EPL-2.0 */
+package org.sandbox.functional.core.model;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import org.sandbox.functional.core.operation.FilterOp;
+import org.sandbox.functional.core.operation.MapOp;
+import org.sandbox.functional.core.operation.Operation;
+import org.sandbox.functional.core.terminal.ForEachTerminal;
+
+/**
+ * Numeric iteration inspection, independent of converter rendering admission.
+ * Intrinsic sum (especially floating point sum) is not an identity left fold.
+ * This descriptor deliberately does not implement the converter's TerminalOperation.
+ * The pipeline is captured by value; later edits to the input or an accessor result
+ * cannot change this inspection, including operation comments and terminal bodies.
+ */
+public record NumericIteration(LoopModel pipeline, String elementType, Execution execution,
+        EncounterOrder encounterOrder, Terminal terminal) {
+<span class="fc" id="L21">    public enum Execution { SEQUENTIAL, PARALLEL, UNKNOWN }</span>
+<span class="fc" id="L22">    public enum EncounterOrder { ORDERED, UNORDERED, UNKNOWN }</span>
+<span class="fc" id="L23">    public NumericIteration {</span>
+<span class="fc" id="L24">        pipeline = copyPipeline(Objects.requireNonNull(pipeline));</span>
+<span class="fc" id="L25">        Objects.requireNonNull(elementType);</span>
+<span class="fc" id="L26">        Objects.requireNonNull(execution);</span>
+<span class="fc" id="L27">        Objects.requireNonNull(encounterOrder);</span>
+<span class="fc" id="L28">        Objects.requireNonNull(terminal);</span>
+<span class="fc" id="L29">    }</span>
+
+    /** Returns an independent editable copy of the inspected pipeline. */
+    @Override
+    public LoopModel pipeline() {
+<span class="fc" id="L34">        return copyPipeline(pipeline);</span>
+    }
+
+    private static LoopModel copyPipeline(LoopModel original) {
+<span class="fc" id="L38">        var copy = new LoopModel(original.getSource(), original.getElement(), original.getMetadata());</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        for (Operation operation : original.getOperations()) {</span>
+            // Map and filter comments are mutable; the other sealed operation types are values.
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (operation instanceof MapOp map) {</span>
+<span class="fc" id="L42">                var copiedMap = new MapOp(map.expression(), map.targetType(), map.outputVariableName(),</span>
+<span class="fc" id="L43">                        map.isSideEffect(), map.function(), MapOp.Kind.fromMethod(map.operationType()));</span>
+<span class="fc" id="L44">                copiedMap.addComments(map.getComments());</span>
+<span class="fc" id="L45">                copy.addOperation(copiedMap);</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">            } else if (operation instanceof FilterOp filter) {</span>
+<span class="fc" id="L47">                var copiedFilter = new FilterOp(filter.expression(), filter.function());</span>
+<span class="fc" id="L48">                copiedFilter.addComments(filter.getComments());</span>
+<span class="fc" id="L49">                copy.addOperation(copiedFilter);</span>
+<span class="fc" id="L50">            } else {</span>
+<span class="nc" id="L51">                copy.addOperation(operation);</span>
+            }
+<span class="fc" id="L53">        }</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        if (original.getTerminal() instanceof ForEachTerminal forEach) {</span>
+<span class="fc" id="L55">            var statements = forEach.bodyStatements();</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">            copy.setTerminal(new ForEachTerminal(statements == null ? null : new ArrayList&lt;&gt;(statements),</span>
+<span class="fc" id="L57">                    forEach.ordered(), forEach.function()));</span>
+<span class="fc" id="L58">        } else {</span>
+            // All other sealed terminal types, source, element and metadata are immutable values.
+<span class="fc" id="L60">            copy.setTerminal(original.getTerminal());</span>
+        }
+<span class="fc" id="L62">        return copy;</span>
+    }
+
+    /** Original terminal/result shape, including optional versus identity reduction. */
+    public record Terminal(String operation, String resultType, boolean optional,
+            String identity, Accumulator accumulator, String originalSyntax) {
+<span class="fc" id="L68">        public Terminal {</span>
+<span class="fc" id="L69">            Objects.requireNonNull(operation);</span>
+<span class="fc" id="L70">            Objects.requireNonNull(resultType);</span>
+<span class="fc" id="L71">            Objects.requireNonNull(originalSyntax);</span>
+<span class="fc" id="L72">        }</span>
+    }
+
+    /** A binary accumulator is not a unary FunctionalExpression. */
+    public record Accumulator(String expression, List&lt;String&gt; inputTypes,
+            String outputType, String functionType) {
+<span class="fc" id="L78">        public Accumulator {</span>
+<span class="fc" id="L79">            Objects.requireNonNull(expression);</span>
+<span class="fc" id="L80">            inputTypes = List.copyOf(inputTypes);</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">            if (inputTypes.size() != 2) throw new IllegalArgumentException(&quot;A reduction accumulator is binary&quot;);</span>
+<span class="fc" id="L82">            Objects.requireNonNull(outputType);</span>
+<span class="fc" id="L83">            Objects.requireNonNull(functionType);</span>
+<span class="fc" id="L84">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
