@@ -32,6 +32,19 @@ final class JavaRuntimeIterationEmitter {
         var out=new Output(work);
         if(context.stream()) out.append("(new java.util.function.").append(context.width().equals("int")?"IntSupplier":"LongSupplier").append("(){public ").append(context.width()).append(" getAs").append(context.width().equals("int")?"Int":"Long").append("(){\n");
         else out.append("{\n");
+        boolean primitiveGuard=h.stride().abs().equals(BigInteger.ONE)
+                && JavaFiniteSumAnalysis.type(h.start().resolveTypeBinding(),"int")
+                && JavaFiniteSumAnalysis.type(h.bound().resolveTypeBinding(),"int")
+                && (context.stream()?context.width().equals("int"):JavaFiniteSumAnalysis.type(h.counter().getType(),"int"));
+        if(primitiveGuard) {
+            // Admitted headers are total and invariant. Evaluate each in its original int width before
+            // widening: every directed int distance fits long, including empty ranges across the extrema.
+            // A do loop still executes its original first iteration below this unchanged crossover.
+            out.append("if(((long)(").append(text(source,h.stride().signum()>0?h.bound():h.start()))
+                    .append(") - (long)(").append(text(source,h.stride().signum()>0?h.start():h.bound()))
+                    .append(")) < ").append(evidence.minimumIterations()-(h.inclusive()?1:0)).append("L){\n")
+                    .append(fallback(source)).append("\n}else{\n");
+        }
         out.append(BIG).append(' ').append(p).append("start = ").append(BIG).append(".valueOf((long)(").append(text(source,h.start())).append("));\n");
         out.append(BIG).append(' ').append(p).append("bound = ").append(BIG).append(".valueOf((long)(").append(text(source,h.bound())).append("));\n");
         if(context.partition()!=null)JavaPartitionedSumEmitter.capture(out,context,source,p);
@@ -75,6 +88,7 @@ final class JavaRuntimeIterationEmitter {
             finalCounter(out);
         }
         out.append("}else{\n").append(fallback(source)).append("\n}\n");
+        if(primitiveGuard)out.append("}\n");
         if(context.stream()) out.append("}}).getAs").append(context.width().equals("int")?"Int":"Long").append("()");else out.append('}');
         return out.toString();
     }
