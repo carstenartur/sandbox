@@ -22,6 +22,26 @@ public final class MathReviewReport {
     }
 
     private static MathCandidateReview.Assessment assess(MathematicalAnalysis.VerifiedRegion region, MathCleanUpOptions options) {
+        if (region.runtimeIteration() != null) {
+            try {
+                region.runtimeIteration().requireCost(region.cost(), options);
+                var assessment = MathCandidateReview.assess(region.original(), region.replacement(), region.cost().sourceScore(),
+                        region.cost().candidateScore(), region.cost().estimatedRuntimeImprovement(), false, 0, options.targetJava());
+                var reasons = new java.util.ArrayList<>(assessment.cautions()); reasons.add(region.runtimeIteration().description());
+                return new MathCandidateReview.Assessment(assessment.disposition(), assessment.estimatedScoreSaving(),
+                        assessment.changedLines(), assessment.addedBranches(), assessment.addedLocals(), reasons);
+            } catch (IllegalArgumentException unavailable) { return unassessed(unavailable.getMessage()); }
+        }
+        if (region.finiteSum() != null) {
+            try {
+                region.finiteSum().requireCost(region.cost(), options);
+                var assessment = MathCandidateReview.assess(region.original(), region.replacement(), region.cost().sourceScore(),
+                        region.cost().candidateScore(), region.cost().estimatedRuntimeImprovement(), false, 0, options.targetJava());
+                var reasons = new java.util.ArrayList<>(assessment.cautions()); reasons.add(region.finiteSum().description());
+                return new MathCandidateReview.Assessment(assessment.disposition(), assessment.estimatedScoreSaving(),
+                        assessment.changedLines(), assessment.addedBranches(), assessment.addedLocals(), reasons);
+            } catch (IllegalArgumentException unavailable) { return unassessed(unavailable.getMessage()); }
+        }
         if (region.cost() == null || region.proof() == null || region.explanation() == null && region.scheduling() == null)
             return unassessed("INSUFFICIENT_REVIEW_METADATA"); //$NON-NLS-1$
         boolean contractReview = region.proof().safetyProfile() != SafetyProfile.PRESERVE_JAVA

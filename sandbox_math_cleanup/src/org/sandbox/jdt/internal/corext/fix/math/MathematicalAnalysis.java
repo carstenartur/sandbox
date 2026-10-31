@@ -157,6 +157,10 @@ public final class MathematicalAnalysis {
             node.getStartPosition(), node.getLength(), Stage.SOURCE))));
       diagnostics.addAll(connections.diagnostics());
       long remainingWork = options.workBudget() - connections.work() - sourceContext.takeWork();
+      var iterationPreflight = JavaRuntimeIterationOptimizer.preflight(ast, options, remainingWork, cancellation);
+      remainingWork -= iterationPreflight.work();
+      long iterationReserve = iterationPreflight.admitted() ? Math.max(0, remainingWork / 3) : 0;
+      remainingWork -= iterationReserve;
       List<JavaComputationRegion> pending = new ArrayList<>(connections.regions());
       List<JavaComputationRegion> fragments = null;
       List<JavaComputationRegion> statements = null;
@@ -610,10 +614,19 @@ public final class MathematicalAnalysis {
          return cancelled(sourceDigest, compilerOptions);
       }
 
+      remainingWork += iterationReserve;
       var acceptedStreamPairs = new ArrayList<JavaNumericIterationContexts.Pair>();
       remainingWork = JavaNumericStreamOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength, compilerOptions,
             environment, replacements, evidence, diagnostics, acceptedStreamPairs, remainingWork - sourceContext.takeWork());
       if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
+      remainingWork = JavaFiniteSumOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, diagnostics, remainingWork - sourceContext.takeWork());
+      if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
+
+      remainingWork = JavaRuntimeIterationOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, diagnostics, remainingWork - sourceContext.takeWork());
+      if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
+
       remainingWork = JavaLoopInvariantOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
             compilerOptions, environment, replacements, evidence, diagnostics, remainingWork - sourceContext.takeWork());
       if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
@@ -631,6 +644,19 @@ public final class MathematicalAnalysis {
                JavaLoopInvariantOptimizer.verifySchedule(ast, combinedAst, source, combined.get(), region, replacements,
                      options, scheduleWork);
             remainingWork -= scheduleWork.used;
+            for (var region : evidence) if (region.finiteSum() != null) {
+               long allowance = Math.min(40000, remainingWork / 2);
+               if (allowance < 10000) throw new JavaLoopInvariantAnalysis.Limit();
+               remainingWork -= 2 * allowance;
+               var allEdits = new ArrayList<>(replacements); allEdits.addAll(analysis.documentation());
+               JavaFiniteSumOptimizer.verify(ast, combinedAst, source, combined.get(), region, allEdits,
+                     options, allowance, cancellation);
+            }
+            for (var region : evidence) if (region.runtimeIteration() != null) {
+               var allEdits = new ArrayList<>(replacements); allEdits.addAll(analysis.documentation());
+               remainingWork -= JavaRuntimeIterationOptimizer.verify(ast, combinedAst, source, combined.get(), region,
+                     allEdits, options, remainingWork, cancellation);
+            }
          } catch (IllegalArgumentException | BadLocationException | JavaLoopInvariantAnalysis.Limit invalidEdits) {
             diagnostics.add(new MathematicalAnalysis.Diagnostic("COMBINED_EDITS_INVALID", invalidEdits.getMessage(), 0, source.length()));
             return new MathematicalAnalysis.Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
@@ -1036,12 +1062,22 @@ public final class MathematicalAnalysis {
 
    public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
       String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
-      LoopSchedulingEvidence scheduling) {
+      LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum, RuntimeIterationEvidence runtimeIteration) {
       public VerifiedRegion {
          if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {
             throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
          }
+      }
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+            LoopSchedulingEvidence scheduling, FiniteSumEvidence finiteSum) {
+         this(offset, length, proof, cost, original, replacement, explanation, sourcePlan, scheduling, finiteSum, null);
+      }
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+            LoopSchedulingEvidence scheduling) {
+         this(offset, length, proof, cost, original, replacement, explanation, sourcePlan, scheduling, null);
       }
       public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
             String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan) {
