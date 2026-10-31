@@ -11,11 +11,19 @@ This writes bounded computation-task summaries and diagnostics to `review.json`,
 including typed inputs/outputs, source bindings and the ordered read/commit/store
 schedule. The same source snapshot reconstructs the full typed graph through
 `JavaComputationExtractor.extractTasks`; the summary does not recursively expand
-shared expressions or define a new CAS wire protocol. These tasks are inspection
-data (`editable: false`), separate from accepted cleanup regions and timing claims.
+shared expressions or define a new CAS wire protocol. These exported summaries
+are inspection data (`editable: false`). Ordinary cleanup separately attempts
+[verified whole-task rewrites](../../sandbox_math_cleanup/README.md#verified-whole-task-rewrites),
+which appear in the accepted cleanup results only after source and proof checks.
+Neither a task summary nor an accepted rewrite establishes a measured speedup.
 
-The [typed-computation qualification](../../docs/superpowers/plans/2026-10-27-typed-computation-qualification.md)
-records the exact SDK, 560-test consumer run and matched full-corpus comparison.
+The [2026-10-31 qualification](../../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md)
+records the exact SDK, 714-test mathematics run and matched full-corpus comparison:
+146 strict-Java and 147 mathematical-opt-in accepted regions, retaining all
+120/129 baseline spans. These are the dated report's results for its pinned
+inputs and profiles, not a new test run or measured speedup. The preceding
+[2026-10-30 qualification](../../docs/superpowers/plans/2026-10-30-math-optimization-qualification.md)
+records why the earlier 120/129 totals did not retain every older accepted span.
 
 ## Current BC qualification (Java 25 / Maven)
 

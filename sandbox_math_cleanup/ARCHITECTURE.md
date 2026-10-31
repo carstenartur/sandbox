@@ -1,6 +1,6 @@
 # Mathematics Cleanup
 
-This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The [current qualification](../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md) identifies tested revisions and pending integration gates separately from historical results.
+This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The [current qualification](../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md) identifies the tested revisions and boundaries of its dated evidence; consult the linked integration PR for current CI results.
 
 ## Complete computation tasks and CAS ownership
 
@@ -88,9 +88,9 @@ overshoots; unused allowance remains available. Unknown legacy failures reserve
 the request allowance plus bounded unreported preparation. Existing
 file limits and region weights remain unchanged. Completed bounded searches debit
 their reported work when the SDK certifies complete accounting; partial checker
-stops still reserve the allocation or reported overshoot. The older explanation API still
-reports presentation work separately from fresh re-verification; a complete
-explanation-call work ledger is a documented upstream follow-up.
+stops still reserve the allocation or reported overshoot. Explanation verification,
+replay and presentation share the remaining allowance as described above;
+completed preparation is still charged when a later phase fails.
 
 ## Callable, iteration and scheduling adapters
 

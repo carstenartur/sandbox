@@ -63,7 +63,7 @@ A trial uses the project's source, compiler options and classpath without instal
 
 For numerical-code reviewers and tool authors, [Mathematics Cleanup](sandbox_math_cleanup/README.md) turns bounded Java calculations into typed Regelsuche requests and offers verified Java replacements for review. Start with its actual Bouncy Castle source rewrite, then use Eclipse cleanup/selection Quick Assist or the [headless corpus workflow](qa/math-optimization/README.md).
 
-Sandbox owns Java bindings, source effects and edits; [Regelsuche](https://github.com/carstenartur/Regelsuche) owns mathematical search and independent proof. The cleanup is disabled by default. Strict Java behavior and explicit mathematical opt-in remain separate, complete computation tasks are inspection-only, and accepted rewrites or estimated costs do not establish a measured speedup or constant-time behavior. The [dated qualification](docs/superpowers/plans/2026-10-27-typed-computation-qualification.md) records exact sources, SDK bytes and corpus results.
+Sandbox owns Java bindings, source effects and edits; [Regelsuche](https://github.com/carstenartur/Regelsuche) owns mathematical search and independent proof. The cleanup is disabled by default. Strict Java behavior and explicit mathematical opt-in remain separate. Supported straight-line primitive integral tasks can simplify arithmetic while retaining reads, calls, local assignments and stores in their original order; the scanner's optional task summaries remain inspection data. Accepted rewrites or estimated costs do not establish a measured speedup or constant-time behavior. The [dated qualification](docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md) records exact sources, SDK bytes, corpus results and remaining boundaries.
 
 ### Search Git and source history
 
@@ -175,7 +175,7 @@ Experimental, Regelsuche-backed optimization of method-local Java calculations. 
 
 Whole-file strict integral analysis can connect a bounded set of immutable local calculations across unchanged call statements. Source-version-bound provenance and grouped JDT edits keep those calls and comments intact; uncertain effects, memory dependencies and arithmetic exceptions remain conservative boundaries. The cleanup is disabled by default and initially selects BigInteger only; select primitive integral types to use the new connected-slice fragment.
 
-**Documentation:** [Plugin README](sandbox_math_cleanup/README.md) | [JDT/CAS architecture](sandbox_math_cleanup/ARCHITECTURE.md) | [Current qualification](docs/superpowers/plans/2026-10-27-typed-computation-qualification.md) | [Source slices and limits](sandbox_math_cleanup/SOURCE_SLICES.md) | [Source-backed BigInteger rewrites](sandbox_math_cleanup/SOURCE_BACKED_REWRITES.md) | [Practical BC/SWT review profiles](qa/math-optimization/PRACTICAL_REVIEW.md) | [Installed Help source](sandbox_math_cleanup_help/html/cleanup.html)
+**Documentation:** [Plugin README](sandbox_math_cleanup/README.md) | [JDT/CAS architecture](sandbox_math_cleanup/ARCHITECTURE.md) | [Current qualification](docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md) | [Source slices and limits](sandbox_math_cleanup/SOURCE_SLICES.md) | [Source-backed BigInteger rewrites](sandbox_math_cleanup/SOURCE_BACKED_REWRITES.md) | [Practical BC/SWT review profiles](qa/math-optimization/PRACTICAL_REVIEW.md) | [Installed Help source](sandbox_math_cleanup_help/html/cleanup.html)
 
 ---
 
