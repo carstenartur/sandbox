@@ -146,7 +146,12 @@ class JavaPartitionedSumTest extends JavaContextTestSupport {
         JavaRuntimeIterationOptimizer.verify(JavaEarlyExitGuardFactsTest.parse(source),JavaEarlyExitGuardFactsTest.parse(generated),source,generated,candidate,List.of(edit),options(),1000000,()->false);
     }
     @Test void childModelAdmissionChargesRepeatedTermValidationAndPollsCancellation() {
-        String term="i";for(int depth=0;depth<7;depth++)term="("+term+"+"+term+")";
+        StringBuilder term=new StringBuilder("i");
+        for(int depth=0;depth<7;depth++) {
+            String previous=term.toString();
+            term.setLength(0);
+            term.append('(').append(previous).append('+').append(previous).append(')');
+        }
         String one=sample("for(int i=0;i<n;i++)if(i%1==0)sum+=i;else sum+="+term+";");
         String many=one.replace("i%1==0","i%32==0");
         var singleWork=new JavaLoopInvariantAnalysis.Work(1000000,()->false);inspectPartition(one,singleWork);
