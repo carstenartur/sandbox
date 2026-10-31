@@ -599,6 +599,9 @@ public final class MathematicalAnalysis {
       remainingWork = JavaNumericStreamOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength, compilerOptions,
             environment, replacements, evidence, diagnostics, acceptedStreamPairs, remainingWork - sourceContext.takeWork());
       if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
+      remainingWork = JavaLoopInvariantOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength,
+            compilerOptions, environment, replacements, evidence, diagnostics, remainingWork - sourceContext.takeWork());
+      if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
 
       MathematicalAnalysis.Analysis analysis = new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation.edits(source));
       if (replacements.size() > 1 || !analysis.documentation().isEmpty()) {
@@ -608,7 +611,12 @@ public final class MathematicalAnalysis {
             CompilationUnit combinedAst = checkGeneratedSource(ast, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment);
             for (var region : acceptedContexts) JavaExpressionContexts.verifyBoundary(ast, combinedAst, region, replacements);
             for (var pair : acceptedStreamPairs) JavaNumericStreamOptimizer.verifyBoundary(ast, combinedAst, pair, replacements);
-         } catch (IllegalArgumentException | BadLocationException invalidEdits) {
+            var scheduleWork = new JavaLoopInvariantAnalysis.Work(Math.max(0, remainingWork), cancellation);
+            for (var region : evidence) if (region.scheduling() != null)
+               JavaLoopInvariantOptimizer.verifySchedule(ast, combinedAst, source, combined.get(), region, replacements,
+                     scheduleWork);
+            remainingWork -= scheduleWork.used;
+         } catch (IllegalArgumentException | BadLocationException | JavaLoopInvariantAnalysis.Limit invalidEdits) {
             diagnostics.add(new MathematicalAnalysis.Diagnostic("COMBINED_EDITS_INVALID", invalidEdits.getMessage(), 0, source.length()));
             return new MathematicalAnalysis.Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
          }
@@ -635,7 +643,9 @@ public final class MathematicalAnalysis {
          if (allowance < 6000) continue;
          remainingWork -= allowance;
          try {
-            JavaTaskSourceRewriter.optimize(ast, source, task, options, allowance, monitor, compilerOptions, environment).ifPresent(applied -> {
+            var attempt = JavaTaskSourceRewriter.optimizeWithRemaining(ast, source, task, options, allowance, monitor, compilerOptions, environment);
+            remainingWork += attempt.remaining();
+            attempt.applied().ifPresent(applied -> {
                replacements.add(applied.replacement()); evidence.add(applied.evidence());
                diagnostics.add(new Diagnostic("VERIFIED_SOURCE_TASK", applied.replacement().description(), task.start(), task.length(), Stage.PROOF)); //$NON-NLS-1$
             });
@@ -1010,12 +1020,17 @@ public final class MathematicalAnalysis {
    }
 
    public record VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
-      String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan) {
+      String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan,
+      LoopSchedulingEvidence scheduling) {
       public VerifiedRegion {
          if (sourcePlan != null) sourcePlan.requireEnvelope(offset, length, original, replacement);
          if (explanation != null && !proof.equals(explanation.verified().proof())) {
             throw new IllegalArgumentException("EXPLANATION_PROOF_BINDING_DIFFERS");
          }
+      }
+      public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
+            String original, String replacement, ComputationExplanation explanation, JavaSourceRewritePlan sourcePlan) {
+         this(offset, length, proof, cost, original, replacement, explanation, sourcePlan, null);
       }
       public VerifiedRegion(int offset, int length, VerificationEvidence proof, CostAssessment cost,
             String original, String replacement, ComputationExplanation explanation) {

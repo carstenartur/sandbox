@@ -22,15 +22,20 @@ public final class MathReviewReport {
     }
 
     private static MathCandidateReview.Assessment assess(MathematicalAnalysis.VerifiedRegion region, MathCleanUpOptions options) {
-        if (region.cost() == null || region.proof() == null || region.explanation() == null)
+        if (region.cost() == null || region.proof() == null || region.explanation() == null && region.scheduling() == null)
             return unassessed("INSUFFICIENT_REVIEW_METADATA"); //$NON-NLS-1$
         boolean contractReview = region.proof().safetyProfile() != SafetyProfile.PRESERVE_JAVA
-                || (options.mathematicalOptIn() && region.explanation().verified().original().steps().stream()
+                || (options.mathematicalOptIn() && region.explanation() != null && region.explanation().verified().original().steps().stream()
                         .anyMatch(step -> step.kind() == NumericKind.BIG_INTEGER));
         try {
-            return MathCandidateReview.assess(region.original(), region.replacement(), region.cost().sourceScore(),
+            var assessment = MathCandidateReview.assess(region.original(), region.replacement(), region.cost().sourceScore(),
                     region.cost().candidateScore(), region.cost().estimatedRuntimeImprovement(), contractReview,
-                    region.explanation().guardedReceivers().size(), options.targetJava());
+                    region.explanation() == null ? 0 : region.explanation().guardedReceivers().size(), options.targetJava());
+            if (region.scheduling() == null) return assessment;
+            var reasons = new java.util.ArrayList<>(assessment.cautions());
+            reasons.add(region.scheduling().description());
+            return new MathCandidateReview.Assessment(assessment.disposition(), assessment.estimatedScoreSaving(),
+                    assessment.changedLines(), assessment.addedBranches(), assessment.addedLocals(), reasons);
         } catch (IllegalArgumentException unavailable) {
             // Review parsing/bounds are not permission to discard the independently verified edit.
             return unassessed(unavailable.getMessage());
