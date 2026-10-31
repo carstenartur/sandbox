@@ -21,10 +21,11 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Inspection task: a typed value graph plus the original Java effect schedule.
+ * A typed value graph plus the original Java effect schedule.
  * Each assignment has its own output; each source read has its own input.
  * Numeric verification says nothing about moving these source events. This
- * object deliberately has no conversion to an editable computation region.
+ * object has no direct conversion to an edit. Realization separately preserves
+ * the event schedule and independently verifies the re-extracted emitted source.
  */
 public record JavaComputationTask(JointComputationPlan plan, SourceEvaluationTrace trace,
         List<Event> schedule, Map<String, String> inputNames, Map<String, String> inputBindings,

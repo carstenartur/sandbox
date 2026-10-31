@@ -21,7 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.core.ICompilationUnit;
-import org.eclipse.jdt.core.IField;
+import org.eclipse.jdt.core.IMember;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.*;
 
@@ -37,21 +37,27 @@ public final class JavaSourceContext implements AutoCloseable {
     private final long allowance;
     private final Map<String, Unit> units = new HashMap<>();
     private final Map<String, Optional<BigInteger>> values = new HashMap<>();
+    private final Map<String, Optional<MethodDeclaration>> methods = new HashMap<>();
     private final Map<String, Dependency> dependencies = new LinkedHashMap<>();
     private long work, accountedWork;
     private int sourceChars;
 
     private JavaSourceContext(CompilationUnit root, String source, MathematicalAnalysis.SourceEnvironment environment,
-            IProgressMonitor monitor, MathCleanUpOptions options) {
+            IProgressMonitor monitor, MathCleanUpOptions options, long remainingWork) {
         this.root = root; this.environment = environment; this.monitor = monitor; this.targetJava = options.targetJava();
-        this.allowance = Math.min(32_000, Math.max(1, options.workBudget() / 8));
+        if (remainingWork < 0) throw new IllegalArgumentException("NEGATIVE_SOURCE_ALLOWANCE"); //$NON-NLS-1$
+        this.allowance = Math.min(32_000, remainingWork);
         // No project-dependent value is retained across requests, or in the mathematical AST.
         root.setProperty(PROPERTY, this);
     }
     static JavaSourceContext open(CompilationUnit root, String source, MathematicalAnalysis.SourceEnvironment environment,
             IProgressMonitor monitor, MathCleanUpOptions options) {
+        return open(root, source, environment, monitor, options, Math.max(1, options.workBudget() / 8));
+    }
+    static JavaSourceContext open(CompilationUnit root, String source, MathematicalAnalysis.SourceEnvironment environment,
+            IProgressMonitor monitor, MathCleanUpOptions options, long remainingWork) {
         if (root.getProperty(PROPERTY) != null) throw new IllegalArgumentException("SOURCE_CONTEXT_ALREADY_ACTIVE"); //$NON-NLS-1$
-        return new JavaSourceContext(root, source, environment, monitor, options);
+        return new JavaSourceContext(root, source, environment, monitor, options, remainingWork);
     }
     @Override public void close() { root.setProperty(PROPERTY, null); }
     long takeWork() { long amount = work - accountedWork; accountedWork = work; return amount; }
@@ -85,6 +91,22 @@ public final class JavaSourceContext implements AutoCloseable {
     private record Dependency(String identity, String sha256, Read read) { }
     private record Unit(CompilationUnit ast, String identity, String sha256) { }
     record Fact(BigInteger value, String provenance) { }
+
+    /** Source-bound body cache used only where the original static call is retained. */
+    static MethodDeclaration method(CompilationUnit unit, IMethodBinding binding) {
+        if (!(unit.getProperty(PROPERTY) instanceof JavaSourceContext context)) return null;
+        try {
+            context.charge(1);
+            String key = binding.getMethodDeclaration().getKey();
+            var cached = context.methods.get(key);
+            if (cached != null) return cached.orElse(null);
+            CompilationUnit definition = context.definitionUnit(binding.getMethodDeclaration(), binding.getDeclaringClass());
+            ASTNode node = definition == null ? null : definition.findDeclaringNode(key);
+            MethodDeclaration method = node instanceof MethodDeclaration declaration ? declaration : null;
+            context.methods.put(key, Optional.ofNullable(method));
+            return method;
+        } catch (Unavailable unavailable) { return null; }
+    }
 
     static Map<String, Fact> proveReceivers(CompilationUnit unit, JavaComputationRegion region, Map<String,Boolean> requirements) {
         if (!(unit.getProperty(PROPERTY) instanceof JavaSourceContext context)) return Map.of();
@@ -202,8 +224,10 @@ public final class JavaSourceContext implements AutoCloseable {
         return value.abs().bitLength() <= 4096 ? Optional.of(value) : Optional.empty();
     }
     private CompilationUnit definitionUnit(IVariableBinding field) {
-        if (root.findDeclaringNode(field.getVariableDeclaration().getKey()) != null) return root;
-        ITypeBinding owner = field.getDeclaringClass();
+        return definitionUnit(field.getVariableDeclaration(), field.getDeclaringClass());
+    }
+    private CompilationUnit definitionUnit(IBinding member, ITypeBinding owner) {
+        if (root.findDeclaringNode(member.getKey()) != null) return root;
         while (owner != null && owner.getDeclaringClass() != null) owner = owner.getDeclaringClass();
         if (owner == null || owner.isRecovered()) return null;
         String type = owner.getQualifiedName();
@@ -214,7 +238,7 @@ public final class JavaSourceContext implements AutoCloseable {
         try {
             if (root.getJavaElement() != null) {
                 // Only actual project source, never an unverified source attachment for a binary library.
-                if (!(field.getJavaElement() instanceof IField element) || element.isBinary()) return null;
+                if (!(member.getJavaElement() instanceof IMember element) || element.isBinary()) return null;
                 ICompilationUnit sourceUnit = element.getCompilationUnit();
                 if (sourceUnit == null || !sourceUnit.exists()) return null;
                 identity = sourceUnit.getHandleIdentifier(); read = sourceUnit::getSource;
@@ -335,8 +359,8 @@ public final class JavaSourceContext implements AutoCloseable {
         return expression;
     }
     private void charge(long amount) {
+        if (amount > allowance - work || Thread.currentThread().isInterrupted() || monitor != null && monitor.isCanceled()) throw new Unavailable();
         work += amount;
-        if (work > allowance || Thread.currentThread().isInterrupted() || monitor != null && monitor.isCanceled()) throw new Unavailable();
     }
     private static final class Unavailable extends RuntimeException { private static final long serialVersionUID = 1L; }
     private static String hash(String source) {

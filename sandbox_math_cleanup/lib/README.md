@@ -2,44 +2,31 @@
 
 ## Current shared-rule integration candidate
 
-Source revision: `b4081ca59ccf2d8b6985bb628856f68d0c118945`.
-Standalone JAR SHA-256: `87fe1a838f21a86c84ee8519e81b7040e47c7775e32ef01d7c8ac04e0a040adf`.
+Source revision: `2dbf8e4a11e2aabc78e5d5c51c10cfe23d8a86a3`.
+Standalone JAR SHA-256: `5160ddecb4c4d4d521676d37c4dc639ae9b81f17fa37b6eaa3eead70f6a46efa`.
 
-The existing native Maven/JUnit SDK qualification and staging jobs both passed
-in [run 40448545085](https://github.com/carstenartur/sandbox/actions/runs/40448545085).
-`qualification.json` is the unchanged packager receipt from that run. The JAR
-and receipt are copied from the exact Git blobs staged on
-`sdk-transfer/b4081ca59ccf2d8b6985bb628856f68d0c118945`; they are not rebuilt or
-edited in the consumer repository. The receipt records a fresh external consumer
-verifying optimization, selected-path replay, checked overflow, and the public
-original/candidate domain API.
+The committed upstream six-module dependency/SDK reactor passed with Java
+25.0.5+8 and Maven 3.9.16. The existing deterministic SDK packager produced this
+standalone JAR and the unchanged `qualification.json` receipt. Its fresh external
+consumer verified optimization, selected-path replay and checked overflow. The [native SDK qualification](https://github.com/carstenartur/sandbox/actions/runs/41171211843)
+also passed two clean builds, 227 SDK tests per build and two fresh consumers; all
+ten distribution files were identical. The unchanged native receipt is retained
+in `reproducibility-2026-10-31.json`. Eclipse consumer CI is a separate gate.
 
-This revision adds independently checked high/low word reconstruction and restores
-shared computation graphs after cold transport in the common Regelsuche resolver.
-Resolver traversal and shallow structural keys remain charged to the work budget;
-the affine domain API uses the same metered traversal. No second CAS or proof
-implementation is introduced in Sandbox. The complete upstream dependency/SDK
-verification passed, including 210 SDK tests. Preparation and derivation capture
-reuse already resolved producer data; external proof replay remains independent.
-Initial-validation preparation failures report earlier trace work plus a safe
-failure bound, allowing smaller retries without discarding already consumed work.
-Completed search limits expose certified aggregate accounting; partial checker
-stops remain conservative. Existing opaque Boolean proofs precede expensive
-projection attempts, and checker revision v11 rejects previous receipts.
+This revision adds independent low-word polynomial congruence, disjoint-word
+addition proofs, magnitude-aware numeric estimates, metered consumer ranking,
+and complete explanation verification/replay/presentation accounting. Original
+source execution and emitted candidate costs have separate ranking entry points;
+runtime work is distinct from a weighted storage/readability score. The default
+SDK optimizer remains compatible. Checker revision v12 and generator revision
+v11 reject superseded evidence.
 
-The existing signed-additive capability belongs to Regelsuche's ordinary core rule
-inventory and its existing term-collection pack. The existing Java adapter lifts
-that inventory; there is no Paeth-specific recognition or separate mathematical
-search in Sandbox. The independently checked Java semantics and cost gates
-remain mandatory.
-
-`NewUpstreamMathPilotTest` now requires the real Commons Imaging predictor to
-reduce its five additions/subtractions to at most three, in addition to proof,
-complete-class compilation, exact Apply/Undo and execution comparisons. This is
-an acceptance requirement. Native Sandbox CI and corpus execution are separate
-from SDK packaging.
-The JCodec Java-8-adapted corpus remains a historical algorithm test, not a Java-6
-compatibility qualification or the primary current-usefulness evidence.
+Sandbox uses the shared search and proof engine, with source-specific magnitude
+bounds and actual emitted capture/guard/local costs. Generic receiver safety
+ceilings are not treated as operand-size measurements. No second proof engine,
+mandatory CAS process or measured speedup is introduced. Fresh full corpus and
+consumer test results are recorded in the October 30 implementation qualification.
+Historical screenshots and benchmark receipts retain their original provenance.
 
 ## Preserved historical qualification (previous SDK)
 

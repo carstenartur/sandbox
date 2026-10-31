@@ -1,10 +1,10 @@
 # Mathematics Cleanup
 
-This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The [current qualification](../docs/superpowers/plans/2026-10-27-typed-computation-qualification.md) identifies tested revisions and pending integration gates separately from historical results.
+This module participates in the explicit mathematics cleanup. Numerical proof and Java source emission are separate from the Eclipse UI. The [current qualification](../docs/superpowers/plans/2026-10-30-math-optimization-qualification.md) identifies tested revisions and pending integration gates separately from historical results.
 
 ## Complete computation tasks and CAS ownership
 
-`JavaComputationExtractor.extractTasks` is an inspection path for bounded,
+`JavaComputationExtractor.extractTasks` exports bounded,
 straight-line primitive integral computations under `PRESERVE_JAVA`. It reuses
 the existing binding/type/operation decoder, retains constant initializers, and
 connects local assignments, array stores and continuing carry calculations.
@@ -24,12 +24,42 @@ This is a value projection, not an executable memory model. The consumer must
 execute each read, local commit and store in its original order. In particular,
 if a store throws, a handler observes preceding local assignments, never a later
 carry shift. Pure numeric equivalence cannot establish that this source schedule
-may change. Tasks therefore have no conversion to editable regions, no `newEdit`
-method and no implicit use by ordinary cleanup. Existing source receipts,
-compilation, cost, Apply/Undo and effect admission remain mandatory for edits.
+may change. `JavaTaskSourceRewriter` can now realize a verified task in ordinary
+cleanup by replacing only total right-hand sides at their original positions.
+It keeps every declaration, call, source read and store, introduces no temporaries,
+and never refers to an overwritten input. It requires a reduction in actual source
+arithmetic, recompiles and re-extracts the complete task, compares its event
+schedule, and independently proves the emitted value plan. Existing source
+receipts and byte-exact Apply/Undo remain mandatory. Whole-task attempts receive
+only the file-budget remainder after established regions, and reserve their full
+allocation in four shares for search, source realization/re-extraction, independent
+verification and explanation. Source-context discovery and explicit preparations
+are charged within their share; reported completed-work overruns additionally
+debit the file budget even when an attempt is rejected.
 Indices depending on regionally changed locals, non-total arithmetic, unsupported
 calls and control-flow joins retain conservative boundaries; loop bodies are
 separate per-iteration tasks, not inferred loop invariants.
+
+Task extraction may summarize a statically bound, straight-line primitive helper
+from actual project/sourcepath source, including nonprivate and cross-file helpers.
+The original call remains in place, preserving argument evaluation and class
+initialization (including failures). Method declarations and parsed source units
+are cached only for the current request. Source hashes are rechecked before an
+edit can be applied. Mutable state, virtual dispatch, recursion and unsupported
+effects remain boundaries; there is no summary inferred from binary attachments.
+
+`JavaCandidateRanking` contributes actual emitted arithmetic, capture references,
+receiver checks and readability footprint to the existing SDK search for memory
+and BigInteger regions. Ordinary scalar regions keep the SDK's structural model.
+Original source occurrences and the candidate DAG have separate cost entry points;
+weighted storage improvements never count as runtime improvements. Source-specific
+BigInteger bounds below the generic receiver safety ceiling enable word-size and
+intermediate-growth estimates. The generic 4096-bit guard remains a safety cap,
+not an assumed operand size. Ranking is metered and cached per search. Explanation
+accounting includes independent verification, derivation replay and presentation,
+bounded by the remaining file allowance without changing the request identity.
+Array search reserves a third of its existing share for source ranking and
+explanation. The overall file limit remains unchanged.
 
 Sandbox owns JDT semantics and source effects. Regelsuche owns arithmetic
 relationships, candidates and independent proofs. A configurable CAS, including
