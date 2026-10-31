@@ -166,12 +166,15 @@ public final class MathematicalAnalysis {
             new java.util.IdentityHashMap<JavaComputationRegion, Boolean>());
       boolean storesScheduled = selectionOffset >= 0;
       boolean contextsScheduled = false;
+      boolean extendedReadsScheduled = selectionOffset >= 0;
       var contextRegions = java.util.Collections.newSetFromMap(
+            new java.util.IdentityHashMap<JavaComputationRegion, Boolean>());
+      var extendedReadRegions = java.util.Collections.newSetFromMap(
             new java.util.IdentityHashMap<JavaComputationRegion, Boolean>());
       var acceptedContexts = new ArrayList<JavaComputationRegion>();
 
       try {
-         for (int regionIndex = 0; regionIndex < pending.size() || !deferredAssignments.isEmpty() || !storesScheduled || !contextsScheduled; regionIndex++) {
+         for (int regionIndex = 0; regionIndex < pending.size() || !deferredAssignments.isEmpty() || !storesScheduled || !contextsScheduled || !extendedReadsScheduled; regionIndex++) {
             if (regionIndex == pending.size()) {
                if (!deferredAssignments.isEmpty()) {
                   pending.addAll(deferredAssignments);
@@ -183,6 +186,17 @@ public final class MathematicalAnalysis {
                         .filter(part -> part.outputs().stream().anyMatch(JavaComputationRegion.OutputBinding::arrayStore))
                         .filter(part -> replacements.stream().noneMatch(other -> overlaps(part.start(), part.length(), other.offset(), other.length())))
                         .toList());
+               }
+               if (regionIndex == pending.size() && !extendedReadsScheduled && remainingWork > 0) {
+                  extendedReadsScheduled = true;
+                  // Original regions, assignments and stores keep their existing shares.
+                  // Richer reads use only the actual remaining allowance.
+                  var expanded = extractor.extractRuntimeExtendedReads(ast, source, options).regions().stream()
+                        .filter(part -> JavaSourceReadShape.hasExtendedReads(ast, part))
+                        .filter(part -> replacements.stream().noneMatch(other -> overlaps(part.start(), part.length(), other.offset(), other.length())))
+                        .toList();
+                  extendedReadRegions.addAll(expanded);
+                  pending.addAll(expanded);
                }
                if (regionIndex == pending.size() && !contextsScheduled && remainingWork > 0) {
                   contextsScheduled = true;
@@ -199,7 +213,8 @@ public final class MathematicalAnalysis {
             JavaComputationRegion region = pending.get(regionIndex);
             boolean contextRegion = contextRegions.contains(region);
             boolean expressionOnly = contextRegion && JavaExpressionContexts.expressionOnly(ast, region);
-            if (contextRegion && replacements.stream().anyMatch(other -> overlaps(region.start(), region.length(), other.offset(), other.length()))) continue;
+            if ((contextRegion || extendedReadRegions.contains(region))
+                  && replacements.stream().anyMatch(other -> overlaps(region.start(), region.length(), other.offset(), other.length()))) continue;
             boolean scalarRetry = scalarRetries.remove(region);
             var slice = connections.slices().get(region);
             if (isCancelled(monitor)) {

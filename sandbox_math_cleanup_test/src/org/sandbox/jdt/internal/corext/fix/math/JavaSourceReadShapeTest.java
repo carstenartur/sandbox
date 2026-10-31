@@ -10,10 +10,32 @@ import org.eclipse.jdt.core.dom.*;
 import org.junit.jupiter.api.Test;
 
 class JavaSourceReadShapeTest {
-    @Test void supportsOneDimensionalLocalAndNonvolatileFieldArraysWithTotalIndices() {
-        for (String expression : List.of("values[i]", "data[i]", "this.data[i]", "values[CONST * 2]", "values[Calculation.CONST << 1]", "values[(int)((long)i + 1)]"))
+    @Test void establishedHawkScalarWindowRemainsAvailableBeforeNewQualifiedArrayReads() throws Exception {
+        String root=System.getProperty("sandbox.math.bc.mavenSources");
+        String binary=System.getProperty("sandbox.math.bc.mavenBinary");
+        String path="org/bouncycastle/pqc/crypto/hawk/HawkEngine.java", source;
+        try(var jar=new java.util.jar.JarFile(java.util.Objects.requireNonNull(root))) {
+            try(var input=jar.getInputStream(jar.getJarEntry(path))) {source=new String(input.readAllBytes(),java.nio.charset.StandardCharsets.UTF_8);}
+        }
+        var parser=ASTParser.newParser(AST.getJLSLatest()); parser.setSource(source.toCharArray()); parser.setUnitName(path); parser.setResolveBindings(true);
+        parser.setEnvironment(new String[]{java.util.Objects.requireNonNull(binary)},new String[0],null,true);
+        var compiler=new HashMap<String,String>(); JavaCore.setComplianceOptions("17",compiler); parser.setCompilerOptions(compiler);
+        var unit=(CompilationUnit)parser.createAST(null);
+        for(var problem:unit.getProblems()) assertFalse(problem.isError(),problem.toString());
+        var options=new MathCleanUpOptions(true,java.util.EnumSet.allOf(de.regelsuche.sdk.optimization.NumericKind.class),de.regelsuche.sdk.optimization.SafetyProfile.PRESERVE_JAVA,
+                de.regelsuche.sdk.optimization.OptimizationGoal.READABILITY,1_000_000,20_000,false,17,List.of());
+        int start=source.indexOf("int logn = lognTop - depth;"), end=source.indexOf("int slen = prof.maxBlSmall[depth];",start);
+        var primary=new JavaComputationExtractor().extractRuntimeWithoutStores(unit,source,options);
+        var window=primary.regions().stream().filter(r -> r.start()==start).findFirst().orElseThrow();
+        assertEquals(source.substring(start,end).stripTrailing(),source.substring(window.start(),window.start()+window.length()));
+        assertTrue(window.arrayReads().isEmpty());
+        var rich=new JavaComputationExtractor().extractRuntime(unit,source,options);
+        assertTrue(rich.regions().stream().anyMatch(r -> r.start()==start && r.arrayReads().size()==2));
+    }
+    @Test void supportsLocalAndNonvolatileFieldArraysWithTotalIndices() {
+        for (String expression : List.of("values[i]", "data[i]", "this.data[i]", "owner.data[i]", "owner.parent.data[i]", "values[CONST * 2]", "values[Calculation.CONST << 1]", "values[(int)((long)i + 1)]"))
             assertTrue(supported(expression), expression);
-        for (String expression : List.of("volatileData[i]", "this.volatileData[i]", "owner.data[i]", "values[i++]", "values[next()]", "values[i / j]", "values[i % j]", "values[volatileIndex]", "values[STATIC_FINAL]", "values[owner.CONST]"))
+        for (String expression : List.of("volatileData[i]", "this.volatileData[i]", "values[i++]", "values[next()]", "values[i / j]", "values[i % j]", "values[volatileIndex]", "values[STATIC_FINAL]", "values[owner.CONST]"))
             assertFalse(supported(expression), expression);
     }
     @Test void recognizesOnlyTheBoundJdkAbsoluteGetSignature() {
@@ -26,10 +48,10 @@ class JavaSourceReadShapeTest {
         assertFalse(supported("owner.get(i)"));
         assertFalse(supported("buffers.get(i)")); // a field receiver, not a fixed local/parameter
     }
-    @Test void finalPrimitiveFieldsKeepTheOriginalReceiverOrClassAccess() {
-        for (String expression : List.of("dynamic", "this.dynamic", "owner.dynamic", "STATIC_FINAL", "Calculation.STATIC_FINAL"))
+    @Test void nonvolatilePrimitiveFieldsKeepTheOriginalReceiverOrClassAccess() {
+        for (String expression : List.of("dynamic", "this.dynamic", "owner.dynamic", "owner.parent.dynamic", "mutable", "owner.mutable", "STATIC_FINAL", "Calculation.STATIC_FINAL"))
             assertTrue(supported(expression), expression);
-        for (String expression : List.of("mutable", "owner.mutable", "volatileIndex", "nextOwner().dynamic", "owner.parent.dynamic", "CONST", "owner.CONST"))
+        for (String expression : List.of("volatileIndex", "nextOwner().dynamic", "CONST", "owner.CONST"))
             assertFalse(supported(expression), expression);
     }
     @Test void producingAnIndexBeforeTheCaptureRequiresARegionBoundary() {

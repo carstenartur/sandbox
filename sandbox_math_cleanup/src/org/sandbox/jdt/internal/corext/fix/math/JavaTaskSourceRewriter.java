@@ -186,6 +186,7 @@ final class JavaTaskSourceRewriter {
         boolean[] effect = {false};
         expression.accept(new ASTVisitor() { @Override public boolean preVisit2(ASTNode node) {
             if (node instanceof MethodInvocation || node instanceof ClassInstanceCreation || node instanceof ArrayAccess
+                    || node instanceof Expression value && value.resolveUnboxing()
                     || node instanceof FieldAccess || node instanceof QualifiedName
                     || node instanceof SimpleName name && name.resolveBinding() instanceof IVariableBinding binding && binding.isField()) effect[0] = true;
             return !effect[0];
