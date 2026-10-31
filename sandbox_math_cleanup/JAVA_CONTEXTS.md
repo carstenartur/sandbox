@@ -109,7 +109,63 @@ otherwise available to later optional passes. Fresh source/dependency receipts,
 combined binding checks, full generated-source validation and exact Apply/Undo
 remain mandatory.
 
-General recurrences, arbitrary virtual numerical summaries, heap/alias analysis,
+Nonlinear recurrences, arbitrary virtual numerical summaries, heap/alias analysis,
 BigDecimal scale/rounding and general floating motion need additional proof
 models. Configurable CAS remains upstream. See the [current qualification](../docs/superpowers/plans/2026-10-31-java-mathematics-context-qualification.md)
 for exact commits, matched corpus evidence and pending integration gates.
+
+## Verified finite sums
+
+After the established scalar and stream passes, a separate finite-sum pass can
+replace a complete counted loop or sequential range sum. Whole-loop reductions
+are considered before overlapping invariant hoists. For example,
+`for (int i=1; i<=100; i++) sum += i;` contributes 5050 while retaining the incoming
+value of `sum`. Existing scalar edits still take precedence; incompatible
+overlapping replacements are not combined.
+
+Constant-range admission supports int or long counters, `<`, `<=`, `>` or `>=`,
+and positive or negative constant strides: increment/decrement, `+=`, `-=`, and
+equivalent additive assignments. The adapter computes the count mathematically
+and proves that the final update remains representable. A for-counter is declared
+in its header. A canonical while/do counter has a single immediately preceding
+declaration and its update is the last body statement; its live final value is
+preserved. Do-loops account for the first execution before testing the condition.
+
+Bodies may declare same-width immutable temporaries before their updates and
+update up to eight independent accumulators, including several ordered updates
+to the same accumulator. Binding-aware substitution rejects temporaries reading
+evolving state and dependencies between accumulator groups. Up to 32 temporaries
+and 32 updates are admitted. Terms use integer literals, invariant local/parameter
+values and `+`, `-`, `*`. Every operator must evaluate at the accumulator's primitive
+width: long arithmetic may consume int leaves, but `long sum; ... sum += i*i;`
+is rejected. Generated long expressions widen int parameters before arithmetic.
+Fields, arrays, unknown calls, abrupt control flow, division, floating point and
+recovered bindings are unavailable. Comments are retained verbatim. Empty loops
+stay unchanged; other reductions require a strict estimated arithmetic gain.
+
+Resolved JDK IntStream/LongStream `range` and `rangeClosed`, optionally followed
+by `sequential` and one expression-lambda `map`, can reduce their `sum` terminal.
+Parallel, filter, peek, unknown-source and effectful pipelines are excluded. The
+source and generated expression types, mapper binding, range semantics and every
+emitted result are independently replayed.
+
+The SDK owns polynomial antidifference synthesis and independent telescoping
+verification, including signed int/long modular arithmetic. The adapter carries
+the incoming accumulator as a free symbol distinct from the recurrence state.
+`VerifiedRegion.finiteSum` contains the recurrence, certificate, actual emitted
+scalar expression, declaration anchors and independently checked operation cost
+for each output;
+scalar `proof` and loop `scheduling` remain absent for this reduction. Public
+certificate/status records are never trusted as proof: replay calls the SDK
+verifier again and recomputes cost, re-admits source control, rebuilds the exact
+generated source, decodes its actual expression and checks declaration bindings.
+Combined edits are replayed with original declaration anchors because local
+binding keys can change after another loop is removed or a temporary is inserted.
+
+Admission scans, model construction, search, verification and generated-source
+reparses consume bounded reservations from the remaining file budget and honor
+cancellation. Review reporting independently verifies numerical evidence before
+ranking its cost. Operations describe the substituted recurrence: a reused Java
+temporary may therefore appear more than once in this estimate. Estimates exclude
+loop control and are not measured speedups. Nonlinear state recurrences and
+infinite series require different proof contracts.

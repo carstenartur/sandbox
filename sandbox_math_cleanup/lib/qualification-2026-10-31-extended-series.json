@@ -1,0 +1,28 @@
+{
+  "apiRevision": "1",
+  "consumer": {
+    "emptyDependencyCache": true,
+    "freshDirectory": true,
+    "output": "optimization=VERIFIED\nderivation=REPLAYED_SELECTED_PATH\nchecked=ORIGINAL_OVERFLOW_DETECTED\ndomains=ORIGINAL_AND_CANDIDATE_VERIFIED\niteration=VERIFIED_TELESCOPING_5050\nseries=VERIFIED_RUNTIME_POLYNOMIAL_AND_AFFINE"
+  },
+  "inputs": {
+    "jackson-annotations-2.22.jar": "21ddb598807d3a51a876704eb979d9296e1c6a6f47ab1826ff88c6d6a127a2d0",
+    "jackson-core-2.22.4.jar": "2d30c375cddea9657a1e1ef97547a2694b663b355facb4de53a097782b312d1a",
+    "jackson-databind-2.22.4.jar": "d4cbf8947087f305869826801913abdc50735a1fab2074a1993e7bc67ca974a3",
+    "jackson-dataformat-yaml-2.22.4.jar": "2f55e2b864f6354b24d4bcccd488f7c4a3fce4977f8c8dbad07242a68e11dde9",
+    "regelsuche-core-0.5.1-SNAPSHOT.jar": "5d60e5bb8f36b070ad18e14a19488cf912e09f67bc745cd6ae8dde7fa885e18c",
+    "regelsuche-egraph-0.5.1-SNAPSHOT.jar": "75b893fa82df264d5e9aa4a26656ca189f5560096b43961d3a11fb55365cb96b",
+    "regelsuche-math-algorithms-0.5.1-SNAPSHOT.jar": "b4b7495760ad5f94d6cf1a138e1852cdb7367ae0feba9cf4310d6b7ed2d8fa4f",
+    "regelsuche-optimization-sdk-0.5.1-SNAPSHOT.jar": "3fb5ec0eee604fad81f37c359ae173f2cc5bc57e70a8850d1cfc5fa41656c933",
+    "regelsuche-search-0.5.1-SNAPSHOT.jar": "1a19f1a24f0b912d4a7a918ebb016908fb4013c245b4b816cffa9a93d6e8983c",
+    "regelsuche-validation-0.5.1-SNAPSHOT.jar": "cc44813ab42748c07e649a6fe41ec16f8bd55e204e5050ee0e583572dd781796",
+    "snakeyaml-2.5.jar": "e6682acf1ace77508ef13649cbf4f8d09d2cf5457bdb61d25ffb6ac0233d78dd"
+  },
+  "javaRelease": 25,
+  "publiclyPublished": false,
+  "schema": "regelsuche.optimization-distribution/v1",
+  "semanticsRevision": "java25-numeric/v1",
+  "sourceRevision": "f7f73638e8b291a761aaa37dba44f3766f8e3608",
+  "standaloneJarSha256": "8314ebdd784421264bd50c3e98af02a5abf76458630784381c8c6bea5e964a7c",
+  "version": "0.5.1-issue1657-f7f73638e8b2"
+}

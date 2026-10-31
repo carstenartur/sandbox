@@ -40,7 +40,7 @@ class MathReviewReportTest {
         assertTrue(assessment.cautions().contains("INSUFFICIENT_REVIEW_METADATA"));
     }
     @Test void forgedLoopCostCannotBecomeAReviewedSaving() {
-        String source="class Sample {int run(int n){int sum=0;for(int i=0;i<8;i++){sum += (n+7)*(n-7);}return sum;}}";
+        String source="class Sample {int run(int n){int sum=0;for(int i=0;i<8;i++){sum ^= (n+7)*(n-7);}return sum;}}";
         var analysis=MathematicalAnalysis.analyze(parse(source),source,options(),null,-1,0);
         var actual=analysis.evidence().stream().filter(e->e.scheduling()!=null).findFirst().orElseThrow();
         var s=actual.scheduling();
