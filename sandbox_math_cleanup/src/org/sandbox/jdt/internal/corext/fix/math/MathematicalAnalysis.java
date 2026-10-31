@@ -165,9 +165,13 @@ public final class MathematicalAnalysis {
       var scalarRetries = java.util.Collections.newSetFromMap(
             new java.util.IdentityHashMap<JavaComputationRegion, Boolean>());
       boolean storesScheduled = selectionOffset >= 0;
+      boolean contextsScheduled = false;
+      var contextRegions = java.util.Collections.newSetFromMap(
+            new java.util.IdentityHashMap<JavaComputationRegion, Boolean>());
+      var acceptedContexts = new ArrayList<JavaComputationRegion>();
 
       try {
-         for (int regionIndex = 0; regionIndex < pending.size() || !deferredAssignments.isEmpty() || !storesScheduled; regionIndex++) {
+         for (int regionIndex = 0; regionIndex < pending.size() || !deferredAssignments.isEmpty() || !storesScheduled || !contextsScheduled; regionIndex++) {
             if (regionIndex == pending.size()) {
                if (!deferredAssignments.isEmpty()) {
                   pending.addAll(deferredAssignments);
@@ -180,10 +184,22 @@ public final class MathematicalAnalysis {
                         .filter(part -> replacements.stream().noneMatch(other -> overlaps(part.start(), part.length(), other.offset(), other.length())))
                         .toList());
                }
+               if (regionIndex == pending.size() && !contextsScheduled && remainingWork > 0) {
+                  contextsScheduled = true;
+                  remainingWork = optimizeSourceTasks(ast, source, options, monitor, selectionOffset, selectionLength,
+                        environment, compilerOptions, sourceContext, replacements, evidence, diagnostics, remainingWork);
+                  var contexts = extractor.extractRuntimeContexts(ast, source, options);
+                  contexts.diagnostics().forEach(part -> diagnostics.add(new Diagnostic(part.code(), part.message(), part.offset(), part.length(), Stage.SOURCE)));
+                  contextRegions.addAll(contexts.regions());
+                  pending.addAll(contexts.regions());
+               }
                if (regionIndex == pending.size()) break;
             }
             remainingWork -= sourceContext.takeWork();
             JavaComputationRegion region = pending.get(regionIndex);
+            boolean contextRegion = contextRegions.contains(region);
+            boolean expressionOnly = contextRegion && JavaExpressionContexts.expressionOnly(ast, region);
+            if (contextRegion && replacements.stream().anyMatch(other -> overlaps(region.start(), region.length(), other.offset(), other.length()))) continue;
             boolean scalarRetry = scalarRetries.remove(region);
             var slice = connections.slices().get(region);
             if (isCancelled(monitor)) {
@@ -203,10 +219,10 @@ public final class MathematicalAnalysis {
                if (selectionOffset < 0 && scalarRetry)
                   regionWork = Math.max(regionWork, remainingWork / (pending.size() - regionIndex));
                boolean mathematicalIntegral = false;
-               boolean canTryMathematical = options.mathematicalOptIn()
+               boolean canTryMathematical = !contextRegion && options.mathematicalOptIn()
                      && region.outputs().stream().noneMatch(JavaComputationRegion.OutputBinding::arrayStore)
                      && IntegralMathematicalDomain.supports(region, cancellation);
-               boolean mathematicalBigInteger = options.mathematicalOptIn()
+               boolean mathematicalBigInteger = !contextRegion && options.mathematicalOptIn()
                      && region.trace().occurrences().stream().anyMatch(o -> o.evaluatedKind() == NumericKind.BIG_INTEGER);
                boolean canRetryBigInteger = mathematicalBigInteger && region.outputs().size() + region.internalBindings().size() > 1;
                // Alternate domains share the allocation equally. Keep a quarter for smaller
@@ -354,6 +370,11 @@ public final class MathematicalAnalysis {
                      throw new IllegalArgumentException("ARRAY_STORE_GUARD_UNSUPPORTED"); //$NON-NLS-1$
                   JavaComputationEmitter.Emission plain = emitter.emit(candidate.prepared(), region.inputNames(), reserved, options.targetJava());
                   if (mathematicalBigInteger) plain = JavaOriginalExpressions.restore(ast, source, region, plain);
+                  if (expressionOnly) {
+                     if (candidate.obligations().guard() != GuardKind.NONE)
+                        throw new IllegalArgumentException("EXPRESSION_CONTEXT_REQUIRES_GUARD"); //$NON-NLS-1$
+                     plain = JavaExpressionContexts.typedExpression(plain, region);
+                  }
                   failureStage = Stage.PROOF;
                   JavaEmissionVerifier.verify(request, candidate, plain, region, options, cancellation);
                   failureStage = Stage.EMISSION;
@@ -404,8 +425,8 @@ public final class MathematicalAnalysis {
                         continue;
                      }
                   }
-                  if (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
-                        || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial()) {
+                  if (!expressionOnly && (options.explanations() == MathCleanUpOptions.ExplanationMode.ALL
+                        || options.explanations() == MathCleanUpOptions.ExplanationMode.NONTRIVIAL && explanationText.nontrivial())) {
                      replacement = indentGenerated(explanationText.sourceComment(), source, region.start()) + replacement;
                   }
                   JavaSourceRewritePlan sourcePlan = null;
@@ -421,7 +442,7 @@ public final class MathematicalAnalysis {
                      if (!replacement.equals(sourcePlan.replacement(source)))
                         throw new IllegalArgumentException("SOURCE_PLAN_REPLACEMENT_DIFFERS"); //$NON-NLS-1$
                   }
-                  checkGeneratedSource(
+                  CompilationUnit generatedAst = checkGeneratedSource(
                      ast,
                      source.substring(0, region.start()) + replacement + source.substring(region.start() + region.length()),
                      compilerOptions,
@@ -429,6 +450,7 @@ public final class MathematicalAnalysis {
                      (IProgressMonitor)monitor,
                      environment
                   );
+                  if (contextRegion) JavaExpressionContexts.verifyBoundary(ast, generatedAst, region, replacement.length());
                   if (isCancelled(monitor)) {
                      return cancelled(sourceDigest, compilerOptions);
                   }
@@ -512,6 +534,7 @@ public final class MathematicalAnalysis {
 
                   description += "\n" + explanationText.detail();
                   replacements.add(new MathematicalAnalysis.Replacement(region.start(), region.length(), replacement, description));
+                  if (contextRegion) acceptedContexts.add(region);
                   ASTParser declarationParser = ASTParser.newParser(ast.getAST().apiLevel());
                   declarationParser.setKind(2);
                   declarationParser.setSource(replacement.toCharArray());
@@ -572,38 +595,13 @@ public final class MathematicalAnalysis {
          return cancelled(sourceDigest, compilerOptions);
       }
 
-      if (options.safety() == SafetyProfile.PRESERVE_JAVA && remainingWork >= 6000) {
-         var tasks = extractor.extractTasks(ast, source, options).tasks().stream()
-               .filter(task -> task.plan().outputs().size() > 1)
-               .filter(task -> selectionOffset < 0 || overlaps(task.start(), task.length(), selectionOffset, Math.max(1, selectionLength)))
-               .filter(task -> replacements.stream().noneMatch(edit -> overlaps(task.start(), task.length(), edit.offset(), edit.length())))
-               .toList();
-         remainingWork -= sourceContext.takeWork();
-         for (int i = 0; i < tasks.size() && remainingWork >= 6000 && !isCancelled(monitor); i++) {
-            var task = tasks.get(i);
-            long allowance = remainingWork / (tasks.size() - i);
-            if (allowance < 6000) continue;
-            remainingWork -= allowance;
-            try {
-               JavaTaskSourceRewriter.optimize(ast, source, task, options, allowance, monitor, compilerOptions, environment).ifPresent(applied -> {
-                  replacements.add(applied.replacement()); evidence.add(applied.evidence());
-                  diagnostics.add(new Diagnostic("VERIFIED_SOURCE_TASK", applied.replacement().description(), task.start(), task.length(), Stage.PROOF)); //$NON-NLS-1$
-               });
-            } catch (JavaTaskSourceRewriter.BudgetOverrun exceeded) {
-               remainingWork -= exceeded.additional;
-               diagnostics.add(new Diagnostic("BUDGET_EXCEEDED", exceeded.getMessage(), task.start(), task.length(), Stage.BUDGET)); //$NON-NLS-1$
-            } catch (IllegalArgumentException | UnsupportedOperationException unavailable) {
-               diagnostics.add(new Diagnostic("SOURCE_TASK_NOT_REALIZED", unavailable.getMessage(), task.start(), task.length(), Stage.EMISSION)); //$NON-NLS-1$
-            }
-         }
-      }
-
       MathematicalAnalysis.Analysis analysis = new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation.edits(source));
       if (replacements.size() > 1 || !analysis.documentation().isEmpty()) {
          try {
             Document combined = new Document(source);
             analysis.newEdit().apply(combined);
-            checkGeneratedSource(ast, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment);
+            CompilationUnit combinedAst = checkGeneratedSource(ast, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment);
+            for (var region : acceptedContexts) JavaExpressionContexts.verifyBoundary(ast, combinedAst, region, replacements);
          } catch (IllegalArgumentException | BadLocationException invalidEdits) {
             diagnostics.add(new MathematicalAnalysis.Diagnostic("COMBINED_EDITS_INVALID", invalidEdits.getMessage(), 0, source.length()));
             return new MathematicalAnalysis.Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
@@ -611,6 +609,38 @@ public final class MathematicalAnalysis {
       }
 
       return isCancelled(monitor) ? cancelled(sourceDigest, compilerOptions) : analysis;
+   }
+
+   /** Preserve the existing task allocation before spending the remainder on new contexts. */
+   private static long optimizeSourceTasks(CompilationUnit ast, String source, MathCleanUpOptions options, IProgressMonitor monitor,
+         int selectionOffset, int selectionLength, SourceEnvironment environment, Map<String, String> compilerOptions,
+         JavaSourceContext sourceContext, List<Replacement> replacements, List<VerifiedRegion> evidence,
+         List<Diagnostic> diagnostics, long remainingWork) {
+      if (options.safety() != SafetyProfile.PRESERVE_JAVA || remainingWork < 6000) return remainingWork;
+      var tasks = new JavaComputationExtractor().extractTasks(ast, source, options).tasks().stream()
+            .filter(task -> task.plan().outputs().size() > 1)
+            .filter(task -> selectionOffset < 0 || overlaps(task.start(), task.length(), selectionOffset, Math.max(1, selectionLength)))
+            .filter(task -> replacements.stream().noneMatch(edit -> overlaps(task.start(), task.length(), edit.offset(), edit.length())))
+            .toList();
+      remainingWork -= sourceContext.takeWork();
+      for (int i = 0; i < tasks.size() && remainingWork >= 6000 && !isCancelled(monitor); i++) {
+         var task = tasks.get(i);
+         long allowance = remainingWork / (tasks.size() - i);
+         if (allowance < 6000) continue;
+         remainingWork -= allowance;
+         try {
+            JavaTaskSourceRewriter.optimize(ast, source, task, options, allowance, monitor, compilerOptions, environment).ifPresent(applied -> {
+               replacements.add(applied.replacement()); evidence.add(applied.evidence());
+               diagnostics.add(new Diagnostic("VERIFIED_SOURCE_TASK", applied.replacement().description(), task.start(), task.length(), Stage.PROOF)); //$NON-NLS-1$
+            });
+         } catch (JavaTaskSourceRewriter.BudgetOverrun exceeded) {
+            remainingWork -= exceeded.additional;
+            diagnostics.add(new Diagnostic("BUDGET_EXCEEDED", exceeded.getMessage(), task.start(), task.length(), Stage.BUDGET)); //$NON-NLS-1$
+         } catch (IllegalArgumentException | UnsupportedOperationException unavailable) {
+            diagnostics.add(new Diagnostic("SOURCE_TASK_NOT_REALIZED", unavailable.getMessage(), task.start(), task.length(), Stage.EMISSION)); //$NON-NLS-1$
+         }
+      }
+      return remainingWork;
    }
 
    /** Interrupts abort the entire invocation, never just the current candidate. */
