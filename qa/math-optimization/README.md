@@ -79,6 +79,12 @@ fresh qualification; the scanner deliberately refuses to overwrite prior output.
 
 ## Finite-series generated-Java measurements
 
+The [2026-10-31 measured results](results/2026-10-31-finite-series/README.md)
+record the public source revision, real original/generated timings, matched BC
+retention, raw data and measurement limits. All five large synthetic pairs had
+lower measured time; four of five small pairs and all eight BC pairs were
+inconclusive. These observations do not establish a general or BC speedup.
+
 The optional profile measures the existing finite-series implementation through
 its actual source analysis, proof/source replay and ordinary Apply output:
 
