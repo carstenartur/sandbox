@@ -33,6 +33,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
 import org.sandbox.jdt.internal.ui.fix.MathematicalCleanUp;
+import org.sandbox.jdt.internal.ui.fix.FunctionalMathOptions;
 
 import de.regelsuche.sdk.optimization.NumericKind;
 import de.regelsuche.sdk.optimization.OptimizationGoal;
@@ -90,6 +91,7 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 	@Override
 	public void setWorkingValues(Map<String, String> values) {
 		MathCleanUpOptions.defaults(25).toMap().forEach(values::putIfAbsent);
+		values.putIfAbsent(FunctionalMathOptions.ENABLED,CleanUpOptions.FALSE);
 		customSelection= !java.util.Set.of("BIG_INTEGER", "INT,LONG", "FLOAT,DOUBLE").contains(values.get(MathCleanUpOptions.KINDS)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		super.setWorkingValues(values);
 	}
@@ -111,6 +113,11 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 		CheckboxPreference enabled= createCheckboxPref(group, columns, "Enable explicit mathematics cleanup", //$NON-NLS-1$
 				MathCleanUpOptions.CLEANUP, FALSE_TRUE);
 		createLabel(columns, group, "Runs locally during explicit cleanup or Quick Assist. Never runs when saving."); //$NON-NLS-1$
+		CheckboxPreference combined= createCheckboxPref(group, columns, "Then convert remaining loops using the Functional Converter profile", //$NON-NLS-1$
+				FunctionalMathOptions.ENABLED, FALSE_TRUE);
+		wrappedLabel(columns, group, "Optional whole-file cleanup: mathematics first, then the selected loop style. " //$NON-NLS-1$
+				+ "Requires both features and Preserve Java behavior. One preview and Undo; generated numerical guards and fallbacks stay intact. " //$NON-NLS-1$
+				+ "All phases share this work budget and one best-effort total time limit. Quick Assist keeps its selected mathematics scope."); //$NON-NLS-1$
 		createLabel(columns, group, "Numeric type profile:"); //$NON-NLS-1$
 		kindPreset= new Combo(group, SWT.READ_ONLY);
 		kindPreset.setItems("Only BigInteger", "int and long", "float and double", "Custom selection"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -194,6 +201,7 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			kindPreset.setEnabled(active);
 			kindButtons.values().forEach(button -> button.setEnabled(active));
 			setEnabledIfChanged(safety, active && !mathematical.getChecked());
+			setEnabledIfChanged(combined, active && safety.hasValue(SafetyProfile.PRESERVE_JAVA.name()) && !mathematical.getChecked());
 			setEnabledIfChanged(optIn, active && checked);
 			setEnabledIfChanged(mathematical, active && safety.hasValue(SafetyProfile.PRESERVE_JAVA.name()));
 			warning.setVisible(checked);
@@ -213,9 +221,16 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			publishStatus();
 		};
 		enabled.addObserver((source, value) -> refresh.run());
-		safety.addObserver((source, value) -> refresh.run());
+		Runnable safetyChanged= () -> {
+			// A deliberate safety-mode change disables the incompatible combination.
+			// Loaded invalid active profiles still fail validation; refresh never rewrites them.
+			if (!safety.hasValue(SafetyProfile.PRESERVE_JAVA.name()) || mathematical.getChecked()) combined.setChecked(false);
+			refresh.run();
+		};
+		safety.addObserver((source, value) -> safetyChanged.run());
 		optIn.addObserver((source, value) -> refresh.run());
-		mathematical.addObserver((source, value) -> refresh.run());
+		mathematical.addObserver((source, value) -> safetyChanged.run());
+		combined.addObserver((source, value) -> refresh.run());
 		// Only the master participates in Select All. Contract-changing consent stays explicit.
 		registerPreference(enabled);
 		// JDT registers contributed pages only after createContents has returned.
@@ -260,7 +275,8 @@ public final class MathematicalCleanUpTabPage extends AbstractCleanUpTabPage {
 			try {
 				Map<String, String> displayedValues= new HashMap<>(fWorkingValues);
 				textValues.forEach((key, control) -> displayedValues.put(key, control.getText().trim()));
-				MathCleanUpOptions.parse(displayedValues, 25);
+				var math= MathCleanUpOptions.parse(displayedValues, 25);
+				FunctionalMathOptions.validate(displayedValues,math,FunctionalMathOptions.converterAvailable());
 				status= null;
 			} catch (IllegalArgumentException e) {
 				status= Status.error(e.getMessage());

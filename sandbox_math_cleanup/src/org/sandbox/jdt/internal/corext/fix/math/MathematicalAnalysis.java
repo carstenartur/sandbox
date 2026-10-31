@@ -63,6 +63,63 @@ public final class MathematicalAnalysis {
    private MathematicalAnalysis() {
    }
 
+   /**
+    * One constrained fresh pass for whole primitive sums exposed by a preceding
+    * verified stream fusion. Never revisits scalar expressions or generated loops.
+    * The caller reserves this entire allowance from its transaction budget.
+    */
+   public static Analysis analyzeFreshSums(CompilationUnit ast, String source, MathCleanUpOptions options,
+         IProgressMonitor monitor, List<? extends org.eclipse.jdt.core.ISourceRange> envelopes) {
+      if (envelopes.size() > 8) throw new IllegalArgumentException("TOO_MANY_FRESH_SUMS"); //$NON-NLS-1$
+      Map<String,String> compiler = ast.getJavaElement().getJavaProject().getOptions(true);
+      if (!matchesAstSource(ast, source, compiler, options.targetJava())) throw new IllegalArgumentException("STALE_AST_SOURCE"); //$NON-NLS-1$
+      var replacements = new ArrayList<Replacement>(); var evidence = new ArrayList<VerifiedRegion>();
+      var diagnostics = new ArrayList<Diagnostic>(); long remaining = options.workBudget();
+      CancellationToken token = () -> isCancelled(monitor);
+      try (var context = JavaSourceContext.open(ast, source, null, monitor, options)) {
+         for (var envelope : envelopes) {
+            if (token.isCancelled()) throw new OperationCanceledException();
+            var node = NodeFinder.perform(ast, envelope.getOffset(), envelope.getLength());
+            if (!(node instanceof org.eclipse.jdt.core.dom.MethodInvocation call)
+                  || !call.getName().getIdentifier().equals("sum") || !call.arguments().isEmpty() //$NON-NLS-1$
+                  || node.getStartPosition() != envelope.getOffset() || node.getLength() != envelope.getLength())
+               throw new IllegalArgumentException("FRESH_SUM_ENVELOPE_DIFFERS"); //$NON-NLS-1$
+            remaining = JavaFiniteSumOptimizer.optimize(ast, source, options, monitor, envelope.getOffset(), envelope.getLength(),
+                  compiler, null, replacements, evidence, diagnostics, remaining - context.takeWork());
+            remaining = JavaRuntimeIterationOptimizer.optimize(ast, source, options, monitor, envelope.getOffset(), envelope.getLength(),
+                  compiler, null, replacements, evidence, diagnostics, remaining - context.takeWork());
+         }
+         if (replacements.stream().anyMatch(edit -> envelopes.stream().noneMatch(range ->
+               range.getOffset() == edit.offset() && range.getLength() == edit.length())))
+            throw new IllegalArgumentException("FRESH_SUM_ESCAPED_ENVELOPE"); //$NON-NLS-1$
+         var result = new Analysis(replacements, diagnostics, digest(source), compiler, evidence);
+         if (replacements.size() > 1) {
+            var document = new Document(source);
+            try { result.newEdit().apply(document); }
+            catch (BadLocationException failure) { throw new IllegalArgumentException(failure); }
+            long preparation = 4L * source.length() + 4L * document.getLength();
+            if (preparation > remaining) throw new IllegalArgumentException("FRESH_SUM_BUDGET_EXCEEDED"); //$NON-NLS-1$
+            remaining -= preparation;
+            String generated = document.get();
+            var after = checkGeneratedSource(ast, generated, compiler, options.targetJava(), monitor, null);
+            for (var receipt : evidence) {
+               if (remaining < 1) throw new IllegalArgumentException("FRESH_SUM_BUDGET_EXCEEDED"); //$NON-NLS-1$
+               if (receipt.finiteSum() != null) {
+                  long allowance = Math.min(40000, remaining / 2); remaining -= 2 * allowance;
+                  JavaFiniteSumOptimizer.verify(ast, after, source, generated, receipt, replacements, options, allowance, token);
+               } else remaining -= JavaRuntimeIterationOptimizer.verify(ast, after, source, generated, receipt,
+                     replacements, options, remaining, token);
+            }
+         }
+         if (token.isCancelled()) throw new OperationCanceledException();
+         var dependencies = context.checkpoint(); dependencies.requireCurrent();
+         return new Analysis(replacements, diagnostics, digest(source), compiler, evidence, List.of(), dependencies);
+      } catch (JavaLoopInvariantAnalysis.Limit exhausted) {
+         if (token.isCancelled()) throw new OperationCanceledException();
+         throw new IllegalArgumentException("FRESH_SUM_BUDGET_EXCEEDED", exhausted); //$NON-NLS-1$
+      }
+   }
+
    public static MathematicalAnalysis.Analysis analyze(CompilationUnit ast, String source, MathCleanUpOptions options, IProgressMonitor progress, int selectionOffset, int selectionLength) {
       return analyze(ast, source, options, progress, selectionOffset, selectionLength, null);
    }
@@ -70,11 +127,18 @@ public final class MathematicalAnalysis {
    public static MathematicalAnalysis.Analysis analyze(
       CompilationUnit ast, String source, MathCleanUpOptions options, IProgressMonitor progress, int selectionOffset, int selectionLength, MathematicalAnalysis.SourceEnvironment environment
    ) {
+      return analyze(ast, source, options, progress, selectionOffset, selectionLength, environment, List.of());
+   }
+
+   /** Protected source envelopes are admission barriers, never proposed edits or proof receipts. */
+   public static Analysis analyze(CompilationUnit ast, String source, MathCleanUpOptions options,
+         IProgressMonitor progress, int selectionOffset, int selectionLength, SourceEnvironment environment,
+         List<? extends org.eclipse.jdt.core.ISourceRange> protectedRegions) {
       Objects.requireNonNull(ast);
       Objects.requireNonNull(source);
       Objects.requireNonNull(options);
       try (var context = JavaSourceContext.open(ast, source, environment, progress, options)) {
-         Analysis result = analyzeWithin(ast, source, options, progress, selectionOffset, selectionLength, environment, context);
+         Analysis result = analyzeWithin(ast, source, options, progress, selectionOffset, selectionLength, environment, context, protectedRegions);
          var dependencies = context.checkpoint();
          if (!dependencies.current()) {
             var diagnostics = new ArrayList<>(result.diagnostics());
@@ -88,7 +152,8 @@ public final class MathematicalAnalysis {
    }
 
    private static Analysis analyzeWithin(CompilationUnit ast, String source, MathCleanUpOptions options,
-         IProgressMonitor progress, int selectionOffset, int selectionLength, SourceEnvironment environment, JavaSourceContext sourceContext) {
+         IProgressMonitor progress, int selectionOffset, int selectionLength, SourceEnvironment environment, JavaSourceContext sourceContext,
+         List<? extends org.eclipse.jdt.core.ISourceRange> protectedRegions) {
       IProgressMonitor monitor = progress == null ? new NullProgressMonitor() : progress;
       Map<String, String> compilerOptions = ast.getJavaElement() == null ? Map.of() : ast.getJavaElement().getJavaProject().getOptions(true);
       String sourceDigest = digest(source);
@@ -125,6 +190,18 @@ public final class MathematicalAnalysis {
          }
       }
 
+      var protectedReservations = new ArrayList<Replacement>();
+      long reservationWork = 0;
+      for (var range : protectedRegions) {
+         int start = range.getOffset(), length = range.getLength();
+         if (start < 0 || length < 1 || (long) start + length > source.length())
+            throw new IllegalArgumentException("INVALID_PROTECTED_SOURCE_RANGE"); //$NON-NLS-1$
+         protectedReservations.add(new Replacement(start, length, source.substring(start, start + length), "Protected source envelope")); //$NON-NLS-1$
+         reservationWork += length;
+      }
+      // Existing specialized passes already reject collisions with this list.
+      // Remove reservations before any final source/binding replay or public result.
+      replacements.addAll(protectedReservations);
       var extractor = new JavaComputationExtractor();
       JavaComputationExtractor.Extraction extraction = selectionOffset < 0
             ? extractor.extractRuntimeWithoutStores(ast, source, options) : extractor.extractRuntime(ast, source, options);
@@ -156,7 +233,7 @@ public final class MathematicalAnalysis {
             "PINNED_SOURCE_EFFECT", "Call retained in its original order; only total local arithmetic crosses it", //$NON-NLS-1$ //$NON-NLS-2$
             node.getStartPosition(), node.getLength(), Stage.SOURCE))));
       diagnostics.addAll(connections.diagnostics());
-      long remainingWork = options.workBudget() - connections.work() - sourceContext.takeWork();
+      long remainingWork = options.workBudget() - connections.work() - sourceContext.takeWork() - reservationWork;
       var iterationPreflight = JavaRuntimeIterationOptimizer.preflight(ast, options, remainingWork, cancellation);
       remainingWork -= iterationPreflight.work();
       long iterationReserve = iterationPreflight.admitted() ? Math.max(0, remainingWork / 3) : 0;
@@ -215,6 +292,7 @@ public final class MathematicalAnalysis {
             }
             remainingWork -= sourceContext.takeWork();
             JavaComputationRegion region = pending.get(regionIndex);
+            if (protectedReservations.stream().anyMatch(range -> overlaps(region.start(), region.length(), range.offset(), range.length()))) continue;
             boolean contextRegion = contextRegions.contains(region);
             boolean expressionOnly = contextRegion && JavaExpressionContexts.expressionOnly(ast, region);
             if ((contextRegion || extendedReadRegions.contains(region))
@@ -631,6 +709,7 @@ public final class MathematicalAnalysis {
             compilerOptions, environment, replacements, evidence, diagnostics, remainingWork - sourceContext.takeWork());
       if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
 
+      replacements.removeAll(protectedReservations);
       MathematicalAnalysis.Analysis analysis = new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation.edits(source));
       if (replacements.size() > 1 || !analysis.documentation().isEmpty()) {
          try {

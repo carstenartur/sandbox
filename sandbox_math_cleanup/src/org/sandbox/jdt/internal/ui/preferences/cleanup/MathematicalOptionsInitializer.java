@@ -7,10 +7,12 @@ package org.sandbox.jdt.internal.ui.preferences.cleanup;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.eclipse.jdt.ui.cleanup.ICleanUpOptionsInitializer;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
+import org.sandbox.jdt.internal.ui.fix.FunctionalMathOptions;
 
 /** Initializes normalized options; cleanup and contract-changing opt-ins stay disabled. */
 public final class MathematicalOptionsInitializer implements ICleanUpOptionsInitializer {
  @Override public void setDefaultOptions(CleanUpOptions options) {
   MathCleanUpOptions.defaults(25).toMap().forEach(options::setOption);
+  options.setOption(FunctionalMathOptions.ENABLED,CleanUpOptions.FALSE);
  }
 }

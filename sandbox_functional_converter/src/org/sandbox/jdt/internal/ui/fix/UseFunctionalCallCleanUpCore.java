@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.internal.ui.fix.AbstractCleanUp;
 import org.eclipse.jdt.ui.cleanup.CleanUpContext;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
@@ -72,6 +73,13 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 		if (context.getAST() == null || !requireAST()) {
 			return null;
 		}
+		// Both explicit profile flags delegate this transaction to the optional host.
+		// A stale flag must never suppress the standalone converter when math is absent.
+		var math = Platform.getBundle("sandbox_math_cleanup");
+		if (isEnabled("cleanup.loop_conversion.with_mathematics") && isEnabled("cleanup.mathematics")
+				&& !(context instanceof org.eclipse.jdt.internal.ui.fix.IMultiLineCleanUp.MultiLineCleanUpContext)
+				&& math != null && (math.getState() & (org.osgi.framework.Bundle.RESOLVED
+						| org.osgi.framework.Bundle.STARTING | org.osgi.framework.Bundle.ACTIVE)) != 0) return null;
 		return LoopConversionService.analyze(context.getAST(), computeFixSet()).createFix(FunctionalCallCleanUpFix_refactor);
 	}
 
@@ -94,25 +102,10 @@ public class UseFunctionalCallCleanUpCore extends AbstractCleanUp {
 	}
 
 	private EnumSet<UseFunctionalCallFixCore> computeFixSet() {
-		// An explicit target takes precedence over legacy stream-only profile flags.
-		if (isEnabled(LOOP_CONVERSION_ENABLED)) {
-			EnumSet<UseFunctionalCallFixCore> result = LoopConversionService.handlers(targetFormat());
-			result.removeIf(handler -> !isEnabled(sourceOption(handler)));
-			return result;
-		}
-		if ((isEnabled(USEFUNCTIONALLOOP_CLEANUP) || isEnabled(USEFUNCTIONALLOOP_CLEANUP_V2))
-				&& !isEnabled(USEFUNCTIONALLOOP_FORMAT_FOR) && !isEnabled(USEFUNCTIONALLOOP_FORMAT_WHILE)) {
-			return LoopConversionService.handlers(LoopTargetFormat.STREAM);
-		}
-		return EnumSet.noneOf(UseFunctionalCallFixCore.class);
+		return LoopConversionService.configuredHandlers(optionsMap);
 	}
 
 	public static String sourceOption(UseFunctionalCallFixCore handler) {
-		return switch (handler) {
-		case LOOP, FOR_TO_ITERATOR -> LOOP_CONVERSION_FROM_ENHANCED_FOR;
-		case ITERATOR_LOOP, ITERATOR_TO_FOR -> LOOP_CONVERSION_FROM_ITERATOR_WHILE;
-		case STREAM_TO_FOR, STREAM_TO_ITERATOR -> LOOP_CONVERSION_FROM_STREAM;
-		case TRADITIONAL_FOR_LOOP -> LOOP_CONVERSION_FROM_CLASSIC_FOR;
-		};
+		return LoopConversionService.sourceOption(handler);
 	}
 }

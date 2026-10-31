@@ -8,11 +8,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.eclipse.jdt.ui.cleanup.CleanUpOptions;
 import org.junit.jupiter.api.Test;
 import org.sandbox.jdt.internal.corext.fix.math.MathCleanUpOptions;
+import org.sandbox.jdt.internal.ui.fix.FunctionalMathOptions;
 
 class MathematicalOptionsInitializerTest {
- @Test void defaultsSupplyExactlyTheTwelveNormalizedDisabledOptions() {
+ @Test void defaultsSupplyNormalizedMathematicsAndTheDisabledCombinedOptIn() {
   CleanUpOptions options=new CleanUpOptions();new MathematicalOptionsInitializer().setDefaultOptions(options);
-  assertEquals(12,options.getKeys().size());
+  assertEquals(13,options.getKeys().size());
+  assertEquals(CleanUpOptions.FALSE,options.getValue(FunctionalMathOptions.ENABLED));
   assertEquals("5",options.getValue(MathCleanUpOptions.TIMEOUT_SECONDS));
   assertEquals("NONTRIVIAL",options.getValue(MathCleanUpOptions.EXPLANATIONS));
   assertEquals("false",options.getValue(MathCleanUpOptions.MATHEMATICAL_OPT_IN));

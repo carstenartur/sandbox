@@ -33,6 +33,7 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
  private final Map<String,MathematicalEnvironment.Snapshot> environments=new HashMap<>();
  private final Map<String,String> originalSources=new HashMap<>();
  private final Map<String,ProfileSnapshot> profiles=new HashMap<>();
+ private final Map<String,FunctionalMathOptions> combinedProfiles=new HashMap<>();
  public MathematicalCleanUpCore() { this(Map.of()); }
  public MathematicalCleanUpCore(Map<String,String> values) { setOptions(values); }
  @Override public void setOptions(CleanUpOptions options) {
@@ -44,6 +45,8 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
   cancellation=monitor==null?new NullProgressMonitor():monitor;diagnostics=new RefactoringStatus();
   try {
    MathCleanUpOptions options=MathCleanUpOptions.parse(values,targetJava(project));
+   FunctionalMathOptions.validate(values,options,FunctionalMathOptions.converterAvailable());
+   combinedProfiles.put(project.getHandleIdentifier(),FunctionalMathOptions.capture(project,values));
    profiles.put(project.getHandleIdentifier(),new ProfileSnapshot(options,persistedMathOptions(project)));
    if(options.enabled()) {
     environments.put(project.getHandleIdentifier(),MathematicalEnvironment.capture(project));
@@ -75,6 +78,26 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
   }
   MathematicalEnvironment.Snapshot environment=environments.get(project.getHandleIdentifier());
   if(environment==null) environment=MathematicalEnvironment.capture(project);
+  if(FunctionalMathOptions.enabled(values)) {
+   if(context instanceof org.eclipse.jdt.internal.ui.fix.IMultiLineCleanUp.MultiLineCleanUpContext) {
+    diagnostics.addInfo("Combined cleanup is available only for an explicit whole-file operation");return null;
+   }
+   var combined=combinedProfiles.computeIfAbsent(project.getHandleIdentifier(),key->FunctionalMathOptions.capture(project,values));
+   try {
+    FunctionalMathOptions.validate(values,options,FunctionalMathOptions.converterAvailable());
+    if(!combined.current(project,values)) throw new IllegalArgumentException("STALE_ANALYSIS: combined cleanup profile changed");
+    var plan=MathematicalAnalysisJob.runAndWait(monitor->FunctionalMathCoordinator.prepare(primary,original,options,combined,monitor),cancellation);
+    plan.phases().stream().flatMap(phase->phase.diagnostics().stream()).limit(20).forEach(item->diagnostics.addInfo(item.code()+": "+item.message()));
+    if(plan.original().equals(plan.result())) return null;
+    var analyzedEnvironment=environment;
+    return monitor->{
+     if(monitor!=null && monitor.isCanceled()) throw new OperationCanceledException();
+     var change=new FunctionalMathChange(primary,plan,()->combinedProfiles.get(project.getHandleIdentifier())==combined
+       && combined.current(project,values),analyzedEnvironment);
+     change.requireCurrent();return change;
+    };
+   } catch(IllegalArgumentException unavailable) {diagnostics.addWarning(unavailable.getMessage());return null;}
+  }
   Map<String,String> compilerOptions=Map.copyOf(project.getOptions(true));
   var analysis=MathematicalAnalysisJob.runAndWait(monitor->MathematicalAnalysis.analyze(context.getAST(),source,options,monitor,-1,0),cancellation);
   if(!environment.matches(project) || !analysis.matches(source,compilerOptions) || !source.equals(unit.getSource())
@@ -103,7 +126,7 @@ public final class MathematicalCleanUpCore extends AbstractCleanUp {
  @Override public RefactoringStatus checkPostConditions(IProgressMonitor monitor) { return diagnostics; }
  @Override public String[] getStepDescriptions() {
   if(!isEnabled(MathCleanUpOptions.CLEANUP)) return new String[0];
-  try { return new String[]{label(MathCleanUpOptions.parse(values,25))}; }
+  try { return new String[]{FunctionalMathOptions.enabled(values)?"Optimize verified mathematics and convert remaining loops":label(MathCleanUpOptions.parse(values,25))}; }
   catch(IllegalArgumentException invalid) { return new String[]{invalid.getMessage()}; }
  }
  @Override public String getPreview() {

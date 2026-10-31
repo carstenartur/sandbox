@@ -92,6 +92,7 @@ final class MathematicalAnalysisJob {
    @Override protected IStatus run(IProgressMonitor monitor) {
     IProgressMonitor combined=new NullProgressMonitor() {
      @Override public boolean isCanceled() { return super.isCanceled() || monitor.isCanceled() || parent.isCanceled(); }
+     @Override public void subTask(String name) { monitor.subTask(name);parent.subTask(name); }
     };
     try {
      if(combined.isCanceled()) return Status.CANCEL_STATUS;

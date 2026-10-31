@@ -7,18 +7,24 @@
  *******************************************************************************/
 package org.sandbox.jdt.internal.corext.fix.helper;
 
+import static org.sandbox.jdt.internal.corext.fix2.MYCleanUpConstants.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.LongConsumer;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.jdt.core.ISourceRange;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.ExpressionStatement;
@@ -46,6 +52,58 @@ public final class LoopConversionService {
 		case FOR_LOOP -> EnumSet.of(UseFunctionalCallFixCore.STREAM_TO_FOR, UseFunctionalCallFixCore.ITERATOR_TO_FOR);
 		case WHILE_LOOP -> EnumSet.of(UseFunctionalCallFixCore.FOR_TO_ITERATOR, UseFunctionalCallFixCore.STREAM_TO_ITERATOR);
 		};
+	}
+
+	/** The explicit profile and ordinary cleanup share exactly the same routing. */
+	public static EnumSet<UseFunctionalCallFixCore> configuredHandlers(Map<String, String> options) {
+		if ("true".equals(options.get(LOOP_CONVERSION_ENABLED))) {
+			var selected = handlers(LoopTargetFormat.fromId(options.get(LOOP_CONVERSION_TARGET_FORMAT)));
+			selected.removeIf(handler -> !"true".equals(options.get(sourceOption(handler))));
+			return selected;
+		}
+		if (("true".equals(options.get(USEFUNCTIONALLOOP_CLEANUP)) || "true".equals(options.get(USEFUNCTIONALLOOP_CLEANUP_V2)))
+				&& !"true".equals(options.get(USEFUNCTIONALLOOP_FORMAT_FOR)) && !"true".equals(options.get(USEFUNCTIONALLOOP_FORMAT_WHILE)))
+			return handlers(LoopTargetFormat.STREAM);
+		return EnumSet.noneOf(UseFunctionalCallFixCore.class);
+	}
+
+	public static String sourceOption(UseFunctionalCallFixCore handler) {
+		return switch (handler) {
+		case LOOP, FOR_TO_ITERATOR -> LOOP_CONVERSION_FROM_ENHANCED_FOR;
+		case ITERATOR_LOOP, ITERATOR_TO_FOR -> LOOP_CONVERSION_FROM_ITERATOR_WHILE;
+		case STREAM_TO_FOR, STREAM_TO_ITERATOR -> LOOP_CONVERSION_FROM_STREAM;
+		case TRADITIONAL_FOR_LOOP -> LOOP_CONVERSION_FROM_CLASSIC_FOR;
+		};
+	}
+
+	/**
+	 * Render from a fresh, resolved working-copy AST without applying it. Callers
+	 * own the transaction and must also validate edits outside operation anchors
+	 * (for example imports). No numerical service is loaded by this API.
+	 */
+	public static CompilationUnitChange renderUnchanged(CompilationUnit unit, Map<String, String> options,
+			List<? extends ISourceRange> excluded, LongConsumer charge, IProgressMonitor monitor) throws CoreException {
+		var selected = configuredHandlers(options);
+		if (selected.isEmpty()) return null;
+		Runnable checkpoint = () -> { if (monitor.isCanceled()) throw new OperationCanceledException(); };
+		int[] size = {0, 0};
+		unit.accept(new ASTVisitor() {
+			@Override public void preVisit(ASTNode node) {
+				checkpoint.run(); charge.accept(1); size[0]++;
+				if (node instanceof ForStatement || node instanceof EnhancedForStatement || node instanceof WhileStatement
+						|| isForEachStatement(node)) size[1]++;
+			}
+		});
+		// Reserve every selected traversal and nested-loop admission, including rejected work.
+		charge.accept((long) size[0] * (selected.size() + 1) * (size[1] + 1));
+		Analysis analysis = analyze(unit, selected, checkpoint);
+		var safe = analysis.operations().stream().filter(operation -> operation instanceof LoopConversionOperation loop
+				&& excluded.stream().noneMatch(range -> loop.getAnchor().getStartPosition() < (long) range.getOffset() + range.getLength()
+						&& range.getOffset() < (long) loop.getAnchor().getStartPosition() + loop.getAnchor().getLength())).toList();
+		checkpoint.run(); charge.accept((long) size[0] * (safe.size() + 1));
+		var fix = new Analysis(unit, safe, analysis.names()).createFix("Convert remaining loops");
+		var change = fix == null ? null : fix.createChange(monitor);
+		checkpoint.run(); return change;
 	}
 
 	public record Analysis(CompilationUnit unit, List<CompilationUnitRewriteOperation> operations, Set<String> names) {
@@ -109,11 +167,16 @@ public final class LoopConversionService {
 	}
 
 	public static Analysis analyze(CompilationUnit unit, EnumSet<UseFunctionalCallFixCore> handlers) {
+		return analyze(unit, handlers, () -> { });
+	}
+
+	private static Analysis analyze(CompilationUnit unit, EnumSet<UseFunctionalCallFixCore> handlers, Runnable checkpoint) {
 		synchronized (unit) {
 			try (var scope = new LoopVariableNames.Scope(unit, Set.of())) {
 				Set<CompilationUnitRewriteOperation> operations = new LinkedHashSet<>();
 				Set<ASTNode> processed = new HashSet<>();
 				for (UseFunctionalCallFixCore handler : handlers) {
+					checkpoint.run();
 					if (supportsSourceLevel(unit, handler)) {
 						handler.findOperations(unit, operations, processed);
 					}

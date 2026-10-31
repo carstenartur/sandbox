@@ -34,6 +34,31 @@ analysis request, even when automatic inclusion in cleanup is disabled.</p>
 <p>There is no save-action search. Changing the source, compiler settings, classpath, referenced project binding state or
 mathematics profile invalidates an existing proposal. Analyze the current version
 again instead of applying old evidence.</p>
+<h2 id="functional-converter">Combine mathematics with the Functional Converter</h2>
+<p>For an explicit whole-file cleanup, enable <strong>Then convert remaining loops
+using the Functional Converter profile</strong> on the Mathematics page. The
+option is off by default. Install and enable both features, choose the desired
+target and source forms on the Functional Converter page, and use
+<strong>Preserve Java behavior</strong> without Mathematical mode.</p>
+<p>Mathematics examines the original loops before style conversion. A verified
+map fusion can receive one further whole-sum analysis. The converter then handles
+remaining eligible code using its existing stream, enhanced-for or iterator-while
+target. Mathematical replacements, numerical guards and original-loop fallbacks
+are preserved. A file without a numerical improvement can still receive its
+selected style conversions. Mathematics path exclusions exclude only the numerical
+phase; the converter's settings continue to apply.</p>
+<p>The complete operation has one file preview, one selectable change group and
+one Undo. Preparing the preview never edits the editor buffer. Changing source,
+referenced definitions, compiler or classpath settings, or either effective cleanup
+profile invalidates the prepared result. If another cleanup has already changed
+the file during this invocation, run the combined operation on the current file.</p>
+<p>All combined phases share one work allowance and one best-effort total time
+limit, including preparation, reparsing and rejected searches. There are at most
+two numerical phases and one converter phase. Exhaustion or cancellation discards
+the private result. These limits can yield fewer candidates than two independent
+cleanup invocations with separate full budgets. Quick Assist remains restricted
+to its mathematics selection. The combined option adds no save action, and the
+ordinary Functional Converter continues to run without the mathematics feature.</p>
 <h2 id="options">Independent options</h2>
 <table><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody>
 <tr><td>Numeric types</td><td>Only BigInteger; int and long; float and double; or a
@@ -51,7 +76,8 @@ bound per optimizer invocation, not a deadline for the whole file. Parsing,
 source generation and independent verification can require additional time.
 Older profiles and programmatic callers retain the five-second default.</td></tr>
 <tr><td>Exclusions</td><td>Semicolon-separated path globs, for example
-<code>**/generated/**;org/example/Secret.java</code>. Excluded files remain unchanged.</td></tr>
+<code>**/generated/**;org/example/Secret.java</code>. Mathematics leaves excluded files unchanged;
+the optional combined converter retains its own settings.</td></tr>
 <tr><td>Underflow checks</td><td>Explicitly unsupported. A zero test cannot detect
 the required tiny-and-inexact event. The disabled control cannot enable it;
 configuration requesting it is rejected.</td></tr>
