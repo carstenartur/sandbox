@@ -3,6 +3,7 @@ package org.sandbox.jdt.internal.corext.fix.math;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
@@ -174,7 +175,7 @@ abstract class JavaContextTestSupport {
     }
     private URLClassLoader compile(String source) throws Exception {
         Path directory = Files.createTempDirectory(temporary, "compiled");
-        Path file = directory.resolve("Sample.java"); Files.writeString(file, source);
+        Path file = directory.resolve("Sample.java"); Files.writeString(file, source, StandardCharsets.UTF_8);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,
                 "--release", "17", "-d", directory.toString(), file.toString()));
         return new URLClassLoader(new java.net.URL[]{directory.toUri().toURL()}, ClassLoader.getPlatformClassLoader());
