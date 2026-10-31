@@ -5,7 +5,8 @@ Bundle-SymbolicName: sandbox_math_cleanup_test;singleton:=true
 Bundle-Version: 1.3.8.qualifier
 Fragment-Host: sandbox_math_cleanup
 Bundle-RequiredExecutionEnvironment: JavaSE-25
-Require-Bundle: bcprov,
+Require-Bundle: org.sandbox.functional.core,
+ bcprov,
  bcprov.source,
  org.junit,
  org.eclipse.jdt.launching,

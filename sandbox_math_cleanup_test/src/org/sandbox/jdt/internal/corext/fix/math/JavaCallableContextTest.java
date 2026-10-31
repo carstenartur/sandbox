@@ -172,7 +172,7 @@ abstract class JavaContextTestSupport {
                 assertEquals(original.invoke(null, input), optimized.invoke(null, input), "input=" + input);
         }
     }
-    private URLClassLoader compile(String source) throws Exception {
+    protected URLClassLoader compile(String source) throws Exception {
         Path directory = Files.createTempDirectory(temporary, "compiled");
         Path file = directory.resolve("Sample.java"); Files.writeString(file, source);
         assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null,

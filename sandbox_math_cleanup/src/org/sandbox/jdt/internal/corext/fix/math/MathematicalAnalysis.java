@@ -595,6 +595,11 @@ public final class MathematicalAnalysis {
          return cancelled(sourceDigest, compilerOptions);
       }
 
+      var acceptedStreamPairs = new ArrayList<JavaNumericIterationContexts.Pair>();
+      remainingWork = JavaNumericStreamOptimizer.optimize(ast, source, options, monitor, selectionOffset, selectionLength, compilerOptions,
+            environment, replacements, evidence, diagnostics, acceptedStreamPairs, remainingWork - sourceContext.takeWork());
+      if (isCancelled(monitor)) return cancelled(sourceDigest, compilerOptions);
+
       MathematicalAnalysis.Analysis analysis = new MathematicalAnalysis.Analysis(replacements, diagnostics, sourceDigest, compilerOptions, evidence, documentation.edits(source));
       if (replacements.size() > 1 || !analysis.documentation().isEmpty()) {
          try {
@@ -602,6 +607,7 @@ public final class MathematicalAnalysis {
             analysis.newEdit().apply(combined);
             CompilationUnit combinedAst = checkGeneratedSource(ast, combined.get(), compilerOptions, options.targetJava(), (IProgressMonitor)monitor, environment);
             for (var region : acceptedContexts) JavaExpressionContexts.verifyBoundary(ast, combinedAst, region, replacements);
+            for (var pair : acceptedStreamPairs) JavaNumericStreamOptimizer.verifyBoundary(ast, combinedAst, pair, replacements);
          } catch (IllegalArgumentException | BadLocationException invalidEdits) {
             diagnostics.add(new MathematicalAnalysis.Diagnostic("COMBINED_EDITS_INVALID", invalidEdits.getMessage(), 0, source.length()));
             return new MathematicalAnalysis.Analysis(List.of(), diagnostics, sourceDigest, compilerOptions);
@@ -644,7 +650,7 @@ public final class MathematicalAnalysis {
    }
 
    /** Interrupts abort the entire invocation, never just the current candidate. */
-   private static boolean isCancelled(IProgressMonitor monitor) {
+   static boolean isCancelled(IProgressMonitor monitor) {
       if (Thread.currentThread().isInterrupted()) {
          throw new OperationCanceledException("Mathematics analysis interrupted");
       }
@@ -660,7 +666,7 @@ public final class MathematicalAnalysis {
       return unreported + Math.min(remainingWork - unreported, allocation);
    }
 
-   private static long consumedWork(OptimizationResult result, long allocation) {
+   static long consumedWork(OptimizationResult result, long allocation) {
       if (result instanceof NoImprovement ordinary) return ordinary.work();
       if (result instanceof OptimizationResult.Inconclusive inconclusive && inconclusive.work() >= 0) return inconclusive.work();
       if (result instanceof OptimizationResult.Unsupported unsupported && unsupported.work() >= 0) return unsupported.work();

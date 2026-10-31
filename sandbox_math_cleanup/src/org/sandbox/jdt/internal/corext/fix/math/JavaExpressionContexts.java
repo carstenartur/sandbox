@@ -16,6 +16,7 @@ import org.eclipse.jdt.core.dom.IBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.Initializer;
+import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.LambdaExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -59,6 +60,13 @@ final class JavaExpressionContexts {
 
     static boolean expressionAnchor(Expression expression) {
         ASTNode parent = expression.getParent();
+        if (parent instanceof InfixExpression comparison && inLambda(comparison)
+                && List.of(InfixExpression.Operator.LESS, InfixExpression.Operator.LESS_EQUALS,
+                        InfixExpression.Operator.GREATER, InfixExpression.Operator.GREATER_EQUALS,
+                        InfixExpression.Operator.EQUALS, InfixExpression.Operator.NOT_EQUALS).contains(comparison.getOperator())) {
+            var type = expression.resolveTypeBinding();
+            return type != null && type.isPrimitive() && List.of("int", "long").contains(type.getName()); //$NON-NLS-1$ //$NON-NLS-2$
+        }
         if (parent instanceof LambdaExpression lambda && lambda.getBody() == expression)
             return lambda.resolveMethodBinding() != null && !lambda.resolveMethodBinding().getReturnType().getName().equals("void"); //$NON-NLS-1$
         if (parent instanceof ConditionalExpression conditional)
@@ -135,7 +143,7 @@ final class JavaExpressionContexts {
                     && !same(expression.resolveTypeBinding(), other.resolveTypeBinding()))
                 throw new IllegalArgumentException("EXPRESSION_CONTEXT_TYPE_CHANGED"); //$NON-NLS-1$
             if (node instanceof LambdaExpression lambda && generated instanceof LambdaExpression other
-                    && !same(lambda.resolveMethodBinding(), other.resolveMethodBinding()))
+                    && !sameSam(lambda, other))
                 throw new IllegalArgumentException("LAMBDA_CONTEXT_SAM_CHANGED"); //$NON-NLS-1$
             IMethodBinding originalBinding = invocation(node), generatedBinding = invocation(generated);
             if (originalBinding != null && !same(originalBinding, generatedBinding))
@@ -148,6 +156,20 @@ final class JavaExpressionContexts {
         if (node instanceof SuperMethodInvocation call) return call.resolveMethodBinding();
         if (node instanceof ClassInstanceCreation call) return call.resolveConstructorBinding();
         return null;
+    }
+
+    /** Synthetic lambda method ordinals change when an earlier lambda is removed. */
+    static boolean sameSam(LambdaExpression left, LambdaExpression right) {
+        var leftType = left.resolveTypeBinding(); var rightType = right.resolveTypeBinding();
+        if (!same(leftType, rightType)) return false;
+        var leftSam = leftType.getFunctionalInterfaceMethod(); var rightSam = rightType.getFunctionalInterfaceMethod();
+        if (leftSam == null || rightSam == null || !same(leftSam.getMethodDeclaration(), rightSam.getMethodDeclaration())
+                || !same(leftSam.getReturnType(), rightSam.getReturnType())) return false;
+        var leftParameters = leftSam.getParameterTypes(); var rightParameters = rightSam.getParameterTypes();
+        if (leftParameters.length != rightParameters.length) return false;
+        for (int index = 0; index < leftParameters.length; index++)
+            if (!same(leftParameters[index], rightParameters[index])) return false;
+        return true;
     }
 
     private static boolean same(IBinding left, IBinding right) {
