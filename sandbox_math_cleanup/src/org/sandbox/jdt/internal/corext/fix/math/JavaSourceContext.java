@@ -235,8 +235,12 @@ public final class JavaSourceContext implements AutoCloseable {
         if (units.size() >= MAX_UNITS) throw new Unavailable();
         String identity; Read read; String unitName;
         ASTParser parser = ASTParser.newParser(root.getAST().apiLevel());
+        // Generated char[] ASTs retain project-backed member bindings even though
+        // getJavaElement() is null. Replaying them must read the same real source.
+        boolean projectSource = root.getJavaElement() != null
+                || member.getJavaElement() instanceof IMember element && !element.isBinary();
         try {
-            if (root.getJavaElement() != null) {
+            if (projectSource) {
                 // Only actual project source, never an unverified source attachment for a binary library.
                 if (!(member.getJavaElement() instanceof IMember element) || element.isBinary()) return null;
                 ICompilationUnit sourceUnit = element.getCompilationUnit();
@@ -266,7 +270,7 @@ public final class JavaSourceContext implements AutoCloseable {
             String digest = hash(source);
             var previous = dependencies.putIfAbsent(identity, new Dependency(identity, digest, read));
             if (previous != null && !previous.sha256().equals(digest)) throw new Unavailable();
-            if (root.getJavaElement() == null) {
+            if (!projectSource) {
                 parser.setSource(source.toCharArray());
                 var compiler = new HashMap<String,String>(); JavaCore.setComplianceOptions(targetJava == 8 ? "1.8" : Integer.toString(targetJava), compiler); //$NON-NLS-1$
                 parser.setCompilerOptions(compiler);
