@@ -357,7 +357,9 @@ public class MathematicalWorkbenchSWTBotTest {
    var pack=project.getPackageFragmentRoot(project.getProject().getFolder("src")).createPackageFragment("example",true,MONITOR);
    String source="package example;\npublic class Calculation {\n    public int compute(int a, int b) {\n        int sum = a + b;\n        int result = sum + 0;\n        return result;\n    }\n}\n";
    ICompilationUnit unit=pack.createCompilationUnit("Calculation.java",source,true,MONITOR);
-   Map<String,String> values=new HashMap<>(enabledOptions());values.put(MathCleanUpOptions.KINDS,"INT");values.put(MathCleanUpOptions.GOAL,"READABILITY");persist(project,values);
+   Map<String,String> values=new HashMap<>(enabledOptions());values.put(MathCleanUpOptions.KINDS,"INT");values.put(MathCleanUpOptions.GOAL,"READABILITY");
+   // Fresh installed processes also pay SDK initialization on slower CI hosts.
+   values.put(MathCleanUpOptions.TIMEOUT_SECONDS,"30");persist(project,values);
    var analysis=MathematicalAnalysisJob.runAndWait(monitor->{try{return MathematicalAnalysis.analyze(parse(unit),source,MathCleanUpOptions.parse(values,17),monitor,-1,0);}catch(Exception failure){throw new IllegalStateException(failure);}},MONITOR);
    assertTrue(analysis.changed(),()->"Retained fixture must contain a verified candidate: "+analysis.diagnostics());
    ResourcesPlugin.getWorkspace().save(true,MONITOR);assertTrue(ERRORS.isEmpty(),()->"Workspace save logged errors: "+ERRORS);
