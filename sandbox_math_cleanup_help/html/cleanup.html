@@ -170,15 +170,19 @@ see <a href="source-guards.html">receiver guards from the Java source</a>.</td><
 <tr><td>byte, short, char, int, long</td><td>Promotions, concrete widths, casts and
 operation order remain part of the proof. Existing exact-arithmetic exceptions
 cannot disappear.</td></tr>
-<tr><td>Own private static helper methods</td><td>Same-class, straight-line helpers
+<tr><td>Own exact-dispatch helper methods</td><td>Same-class private static helpers
+and private/final instance methods or final declaring classes, with implicit or
+explicit unqualified <code>this</code>, can expose straight-line scalar bodies. Helpers
 with primitive integral parameters and locals can participate in the caller's
 calculation. With explicit mathematical opt-in, BigInteger parameters, locals
 and return values are also supported. Nested calls, overloads and local
 reassignments use their resolved Java bindings. Select every numeric kind used
 by the helper, including int for an int exponent.</td></tr>
 <tr><td>Retained source helper calls and array stores</td><td>Whole primitive tasks
-can simplify later arithmetic using a static helper defined in another project
-source file. The original call, initialization effects, reads, local assignments
+can simplify later arithmetic using source-defined static helpers, exact-dispatch
+local/parameter instance receivers or exact primitive JDK SAM method references.
+Method-reference locals must dominate the invocation and have exact primitive
+SAM/target signatures without adaptation. The original call, initialization effects, reads, local assignments
 and array stores remain in their original order. The generated source is compiled,
 re-extracted and independently proved; edits to a helper invalidate the prepared
 change. Unknown dispatch and mutable helper state remain unsupported.</td></tr>
@@ -187,8 +191,8 @@ The supported strict contract requires a target Java level of at least 17.
 Rounding, signed zero, NaN and infinities are not interchangeable with real arithmetic. Only explicitly supported primitive or canonical-value observations qualify; raw-bit and object-identity observations require separate evidence.</td></tr>
 <tr><td>BigDecimal, arbitrary Number subclasses, unresolved bindings</td><td>No
 automatic BigInteger interpretation. Unsupported regions stay unchanged.</td></tr>
-<tr><td>Effects, loops, mutable arrays, unknown calls, identity observations</td><td>No
-general algorithm rewrite. A region must satisfy the extractor's explicit local
+<tr><td>Other effects and control flow</td><td>General recurrence, virtual numerical
+summaries, heap/alias analysis and arbitrary algorithm rewrites remain unsupported. A region must satisfy the extractor's explicit local
 binding, effect and value-semantics checks. External user-defined field constants are rejected because their defining source is not part of the local proof.</td></tr>
 </tbody></table>
 <p>BigInteger helper expansion uses the original helper body as input to
@@ -259,8 +263,36 @@ proposal cannot be applied, the original regions are retried within the remainin
 allowance; unsupported connections never authorize a fallback that repeats side
 effects. Diagnostics now carry a <code>stage</code> distinguishing source,
 search, proof, emission, cost and budget boundaries. An ambiguous SDK rejection
-remains <code>SEARCH_OR_PROOF</code>, not a fabricated cause. This first fragment
-is not general SSA, alias analysis, loop optimization or BigInteger motion.</p>
+remains <code>SEARCH_OR_PROOF</code>, not a fabricated cause. This connected-source fragment
+is not general SSA, alias analysis or BigInteger motion; separately admitted
+counted-loop motion is described below.</p>
+
+<h2 id="java-contexts">Java callable and iteration contexts</h2>
+<p>With primitive integral kinds selected, <code>PRESERVE_JAVA</code> and
+mathematical opt-in off, numeric block/expression lambdas use the nearest resolved
+SAM return type. Conditional arms, switch yields, unbraced returns/assignment RHSs
+and numeric comparison operands in primitive predicates can be simplified in
+place. Exact expression types, functional targets and enclosing overloads are
+rechecked. Conditions, selectors and short-circuit positions remain unchanged.</p>
+<p>Pure ULR numeric inspection is separate from converter rendering. Adjacent
+expression-map kernels on known sequential ordered JDK Int/LongStream sources
+can fuse while preserving the source and sum/reduce/min/max terminal. Total local
+primitive arithmetic and the same intermediate width are required. Unknown
+factories/proxies, filter/peek/mode stages, block maps, reads/calls and floating
+fusion remain excluded; inspection does not authorize stream-to-loop conversion.</p>
+<p>Canonical fixed-count <code>for</code>, enhanced-for, <code>while</code> and
+<code>do</code> loops can move one direct initializer/RHS invariant per loop into
+a final primitive temporary. Exact counts, available unwritten local inputs,
+total integral arithmetic, Block placement and strict cost gain are required.
+Loop controls remain unchanged. Reads, calls, unboxing, division, floating work
+and recurrences cannot move. Expression-only callable/branch sites cannot add
+capture statements; ordered reads require their own straight-line capture positions.</p>
+<p>Loop scheduling has a separately replayed source receipt. The SDK proves one
+numerical evaluation; it does not prove the loop schedule. Cost counts the
+temporary store, per-iteration reads and retained storage. When pinned array
+effects may throw, the estimate is conditional on normal loop completion.
+Operation counts are not measured speedups. General recurrence, virtual-call,
+heap and BigDecimal proof models remain additional work.</p>
 
 <h2 id="headless">Headless use and diagnostics</h2>
 <p>For a strictly read-only analysis, use the separate application with an
@@ -303,8 +335,12 @@ its behavior.</p>
 <h2 id="qualification">Qualification status</h2>
 <p>The <a href="examples.html">real-source screenshot gallery</a> exercises the
 registered cleanup, native preview, application and byte-exact Undo for five
-specific examples. Full corpus, installation and measured Java performance
-qualification remain separate work; these screenshots do not establish them.</p>
+specific examples. Matched 2026-10-31 BC scans at the frozen local code revision accepted 146 strict
+and 147 mathematical regions, retaining all baseline spans; SWT ImageData remained
+at zero. The mathematics suite passed 714 tests with one existing optional skip.
+Native packaging/SpotBugs passed; workbench execution, installation and measured
+Java performance remain separate from these results. Final branch review, policy
+refresh and final-head publication/CI were pending at this documentation checkpoint.</p>
 <p>The source checkout separates new evidence under
 <code>qa/math-optimization/results/</code> from incomplete historical recovery
 under <code>qa/math-optimization/history/pre-reset/</code>. Earlier corpus outputs
