@@ -3,9 +3,13 @@
 The mathematics cleanup exposes bounded Java calculations to the existing
 Regelsuche search and independent numerical verifier. Sandbox checks types,
 bindings, execution order and source edits. Select every primitive kind used by
-a calculation. The new callable, branch, stream and loop fragments require
-`PRESERVE_JAVA` with mathematical opt-in off; ordered read captures retain their
-existing `PRESERVE_JAVA` contract, including mathematical opt-in.
+a calculation. New expression-only callable/branch/predicate contexts admit
+primitive integral calculations under `PRESERVE_JAVA` with mathematical opt-in
+off; stream fusion and loop motion use that same strict integral contract.
+Established block-statement extraction keeps its existing profile admission;
+block-lambda return typing now uses the nearest callable rather than the creator
+method. Ordered read captures retain their existing `PRESERVE_JAVA` contract,
+including mathematical opt-in.
 
 ## Coverage and composition boundaries
 

@@ -109,7 +109,8 @@ new heap equalities. Capture original source syntax and primitive result kind.
 **Files:** plugin README/ARCHITECTURE/help; qualification report beside this plan.
 
 - [x] Run full mathematics and unchanged-core ULR tests, native compile/SpotBugs.
-- [ ] Refresh repository policy gates after documentation commit (controller).
+- [x] Refresh repository policy gates after documentation commit: checkpoint
+  `13638a03`, 12 tests, zero failures/errors/skips; BUILD SUCCESS and SpotBugs 0.
 - [x] Run matched BC/SWT corpus profiles; report exact inputs and changed spans.
 - [ ] Review the complete branch independently and fix material findings.
 - [x] Document delivered support, remaining upstream proof requirements and
@@ -130,5 +131,5 @@ records the frozen code/test/corpus evidence and the remaining controller gates.
 Full mathematics: 714 tests, zero failures/errors, one existing optional skip.
 ULR core: 229 passing at Task3, unchanged since. Native core/math/test/help/feature
 packaging and SpotBugs passed. Matched BC strict 120 -> 146, mathematical 129 ->
-147, all prior spans retained; SWT ImageData 0 -> 0. Final whole-branch review,
-refreshed policy and final integrated publication/CI remain pending here.
+147, all prior spans retained; SWT ImageData 0 -> 0. Fresh policy at `13638a03`: 12 tests, zero failures/errors/skips; BUILD SUCCESS.
+Final whole-branch review and integrated publication/CI remain pending here.

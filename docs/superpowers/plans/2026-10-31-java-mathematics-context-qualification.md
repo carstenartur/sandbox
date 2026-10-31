@@ -4,9 +4,13 @@
 
 Baseline: `4f816e72ee3b369c4456ef1a894426529264edb0` (merged PR #1771).
 Qualified local code: `f648240596f6d9f5451f236d4dc9e0770d142b85`, branch
-`codex/math-java-language-support`. This report records local source/test/corpus
-qualification; final whole-branch independent review, refreshed policy and final
-integrated-head publication/CI are pending at this documentation checkpoint.
+`codex/math-java-language-support`. The prepared GitHub commit
+`68c3c21bbc13bcd1781abdb855b81761d005f383` has the exact same tree as that tested
+local code: `e3f9b0787c7be19ef7f7d4c66518ad8905dc4718`. Branch publication remains
+pending; this prepared identity is not a published final-head CI result.
+This report records local source/test/corpus
+qualification; final whole-branch independent review and integrated-head
+publication/CI are pending at this documentation checkpoint.
 
 Delivered fragments and their individual admission boundaries are in
 [Java computation contexts](../../../sandbox_math_cleanup/JAVA_CONTEXTS.md) and
@@ -34,7 +38,7 @@ classes were copied from that successful QA `target/classes` into immutable
 | Final mathematics | Same command; `/tmp/task5-final-full.log` | 714 tests, 0 failures/errors, 1 existing optional `BouncyCastleMathReferenceTest` skip; BUILD SUCCESS. |
 | ULR core | `-f sandbox-functional-converter-core/pom.xml test`; `/tmp/task3-core-full.log` | 229 tests, 0 failures/errors/skips at `e9f5c08`; core code/tests unchanged since, no redundant final rerun claimed. |
 | Final native package / SpotBugs | `-pl sandbox-functional-converter-core,sandbox_math_cleanup,sandbox_math_cleanup_test,sandbox_math_cleanup_help,sandbox_math_cleanup_feature -am -DskipTests package`; `/tmp/task5-final-native.log` | BUILD SUCCESS; analyzed modules 0 bugs / 0 errors. Native test/help/feature packages compiled; no workbench test execution. |
-| Repository policy checkpoint | `-pl sandbox_common_test -am -Dtest=RepositoryPolicy*Test,PinnedGitRepositoryTest -Dsurefire.failIfNoSpecifiedTests=false -Drepository.policy.base=4f816e7 -Drepository.policy.exception=<verbatim published PR1772 exception> package` | 12 tests passed at Task3; final refresh after documentation commit is pending. The selector permits reactor modules with no selected tests; no failing selected test is ignored. |
+| Fresh repository policy | `-pl sandbox_common_test -am -Dtest=RepositoryPolicy*Test,PinnedGitRepositoryTest -Dsurefire.failIfNoSpecifiedTests=false -Drepository.policy.base=4f816e72ee3b369c4456ef1a894426529264edb0 -Drepository.policy.exception=<verbatim published PR1772 exception> package` | 12 tests, 0 failures/errors/skips, BUILD SUCCESS at documentation checkpoint `13638a03da02bf43f5c94f3537a629f59d01a961`; 42.270 s, bound SpotBugs 0; `evidence/final-policy.log`. The selector permits reactor modules with no selected tests; no failing selected test is ignored. |
 | Task-scoped independent reviews | Tasks 1–3 approved; Task4 `118c43e` findings fixed in `ee58321` and rereviewed; Task5 `f648240` spec PASS / quality APPROVED | No pending task-scoped findings; final complete-branch review remains pending. |
 
 Implementation commits: Task1 `d402504`, Task2 `ff50dd3`, Task3 `e9f5c08`,
@@ -75,7 +79,9 @@ binary/source paths. Profile files are under `qa/math-optimization/profiles/`.
 | `swt-strict` | `org/eclipse/platform/org.eclipse.swt.gtk.linux.x86_64/3.135.0/org.eclipse.swt.gtk.linux.x86_64-3.135.0.jar`; `org/eclipse/platform/org.eclipse.swt.gtk.linux.x86_64/3.135.0/org.eclipse.swt.gtk.linux.x86_64-3.135.0-sources.jar` | Java 21; only `org/eclipse/swt/graphics/ImageData.java` |
 
 The same sources, binaries, selected entries, target levels and normalized options
-were used before/after. All profiles enabled the eight numeric kinds,
+were used before/after. BC profiles enabled all eight numeric kinds
+(`BYTE,SHORT,CHAR,INT,LONG,FLOAT,DOUBLE,BIG_INTEGER`); SWT enabled only the five
+primitive integral kinds (`BYTE,SHORT,CHAR,INT,LONG`). All profiles used
 `PRESERVE_JAVA`, `LOWER_ESTIMATED_RUNTIME`, 1,000,000 work units, 20,000 states,
 5 seconds, `NONTRIVIAL` explanations, no exclusions, checked opt-in false and
 underflow checks false. Only BC mathematical sets mathematical opt-in true.
@@ -172,5 +178,7 @@ identical to local `e9f5c08`. Maven build passed; Oomph initially failed on a
 JDT indexing/classpath transition and its exact failed-job rerun passed without
 source/gate changes. Maven verification then succeeded in run `41186133665`,
 attempt 2. That is Task3 checkpoint evidence, not final integrated-head CI.
-Final whole-branch review, policy refresh and remote publication/check results
-must be appended after the documentation commit; no final remote SHA is asserted.
+Fresh repository policy passed at documentation checkpoint `13638a03`; these
+subsequent wording/identity corrections do not change code or scan inputs. Final
+whole-branch review and remote publication/check results remain pending; no
+published final remote SHA is asserted.

@@ -88,8 +88,8 @@ Both parsed 3,126 files with the same ten parse-error files. SWT 3.135.0
 `ImageData` remained at zero accepted regions. The frozen mathematics suite
 recorded 714 tests, zero failures/errors and one existing optional skip; native
 core/math/test/help/feature packaging and SpotBugs passed. Native tests were
-compiled, not executed in a workbench. Final branch review, refreshed repository
-policy and final-head publication/CI were pending at this documentation checkpoint.
+compiled, not executed in a workbench. Repository policy passed 12 tests at documentation checkpoint `13638a03`.
+Final branch review and final-head publication/CI remain pending.
 These are coverage and verification results, not measured runtime speedups.
 
 Regelsuche owns arithmetic search and independent numerical proof. Sandbox owns
